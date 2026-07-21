@@ -10,7 +10,7 @@ The repo now has a partial theme synchronization fix, but it is still split acro
 
 2. **Full theme replacement**
    - These are still not truly mutable.
-   - In Theme Studio, changing the active tweakcn theme or applying global color overrides still rebuilds demo panel internals instead of mutating the existing live theme state in place.
+   - In Luma Studio, changing the active tweakcn theme or applying global color overrides still rebuilds demo panel internals instead of mutating the existing live theme state in place.
 
 That means the current system is better than the original manual-notify / `refresh_demos` setup, but it is not yet a complete solution.
 
@@ -22,8 +22,8 @@ The remaining gap is:
 This is why the current behavior still feels inconsistent:
 
 - **Gallery** mode toggles are close to correct because they mutate one live `ShadcnLook` and bump the SDK theme revision.
-- **Theme Studio** mode toggles are improved for the same reason.
-- **Theme Studio** full theme changes and override changes still reconstruct panel internals, because the app swaps to a new `Arc<ShadcnLook>` instead of mutating one shared live look.
+- **Luma Studio** mode toggles are improved for the same reason.
+- **Luma Studio** full theme changes and override changes still reconstruct panel internals, because the app swaps to a new `Arc<ShadcnLook>` instead of mutating one shared live look.
 
 ## What Is Already Fixed
 
@@ -83,9 +83,9 @@ The resolver tests were updated accordingly in:
 - `crates/look-shadcn/src/controls/textfield.rs`
 - `crates/look-shadcn/src/controls/textarea.rs`
 
-### 4. Theme Studio Sidebar Refresh Bugs
+### 4. Luma Studio Sidebar Refresh Bugs
 
-Theme Studio also had its own stale-subtree problem in the token sidebar. That was improved by reapplying the sidebar snapshot and rebuilding the token accordion when theme snapshots change, instead of trying to incrementally retheme a stale accordion content subtree.
+Luma Studio also had its own stale-subtree problem in the token sidebar. That was improved by reapplying the sidebar snapshot and rebuilding the token accordion when theme snapshots change, instead of trying to incrementally retheme a stale accordion content subtree.
 
 ## Why The Current State Is Still Incomplete
 
@@ -125,8 +125,8 @@ The desired end state is:
 
 In that model:
 
-- Theme Studio does not recreate demo boards
-- Theme Studio does not recreate panel internals
+- Luma Studio does not recreate demo boards
+- Luma Studio does not recreate panel internals
 - Gallery does not need manual propagation helpers
 - controls behave the same regardless of whether the change was:
   - mode
@@ -182,12 +182,12 @@ At that point there should be no semantic difference between "mode changed" and 
 
 ### Phase 3: Eliminate App-Level Rebuild Workarounds
 
-After the live look becomes mutable, Theme Studio should stop rebuilding panel internals on theme changes.
+After the live look becomes mutable, Luma Studio should stop rebuilding panel internals on theme changes.
 
 That means removing rebuild-based synchronization from:
 
-- `apps/theme-studio/src/studio/demo_controls.rs`
-- `apps/theme-studio/src/studio/app.rs`
+- `apps/luma-studio/src/studio/demo_controls.rs`
+- `apps/luma-studio/src/studio/app.rs`
 
 and replacing it with narrow panel-level updates only where required.
 
@@ -203,7 +203,7 @@ Some app-owned composites will still need explicit retheme hooks even after `Sha
 
 Likely audit targets:
 
-- Theme Studio dashboard shell
+- Luma Studio dashboard shell
   - `SplitView`
   - `NavigationSidebar`
   - paging toolbar chrome closures
@@ -235,7 +235,7 @@ This is the part most likely to widen scope, because the remaining problems are 
 
 - `crates/sdk/src/controls/*`
 - `crates/look-shadcn/src/look.rs`
-- `apps/theme-studio/src/studio/panels/*`
+- `apps/luma-studio/src/studio/panels/*`
 
 ## Concrete Work Items
 
@@ -261,7 +261,7 @@ This is the part most likely to widen scope, because the remaining problems are 
 - Add missing setters where in-place retheming requires them
 - Ensure controls that cache layout, render ids, or sub-entities invalidate correctly on theme revision
 
-### D. Theme Studio
+### D. Luma Studio
 
 - Remove remaining panel-internal rebuild sync paths
 - Convert panels to true retheme-in-place behavior
@@ -302,7 +302,7 @@ Rebuilding panels can hide the underlying mutability gap. The goal of this issue
 - [ ] `ShadcnLook` theme choice changes can be applied in place without replacing the live `Arc<ShadcnLook>`
 - [ ] global color overrides mutate the live look in place
 - [ ] mode changes, theme changes, and override changes all use the same SDK revision invalidation path
-- [ ] Theme Studio does not rebuild demo boards or panel internals to reflect theme changes
+- [ ] Luma Studio does not rebuild demo boards or panel internals to reflect theme changes
 - [ ] Gallery does not require manual control notification plumbing
 - [ ] `TextField` and `TextArea` update correctly across mode, theme, and override changes
 - [ ] app-owned shells such as dashboard/tree side surfaces retheme correctly without respawn
@@ -310,10 +310,10 @@ Rebuilding panels can hide the underlying mutability gap. The goal of this issue
 ## Recommended Implementation Order
 
 1. Refactor `ShadcnLook` to support in-place theme replacement
-2. route Theme Studio theme-choice and override changes through the live mutable look
-3. remove panel-internal rebuild sync from Theme Studio
+2. route Luma Studio theme-choice and override changes through the live mutable look
+3. remove panel-internal rebuild sync from Luma Studio
 4. audit and patch remaining composite controls or app-local shells that still capture stale theme-derived objects
-5. verify Gallery and Theme Studio end-to-end against:
+5. verify Gallery and Luma Studio end-to-end against:
    - mode change
    - theme choice change
    - token override change

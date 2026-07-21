@@ -38,7 +38,7 @@ This prototype pass does **not**:
 * Add or modify any files in `crates/sdk` or `crates/look-shadcn`.
 * Change any production stylesheet/configuration rules.
 * Unify the SDK's `adorner` and `underlay` seams.
-* Create a general theme-studio interface for underlays.
+* Create a general luma-studio interface for underlays.
 
 ---
 

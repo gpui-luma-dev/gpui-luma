@@ -10,7 +10,7 @@ Design record and implementation status for [`crates/sdk/src/controls/resizable_
 | Overlay handles (no layout width), pick'em geometry | **Done** — [`template.rs`](../../crates/sdk/src/controls/resizable_panels/template.rs) |
 | `ResizablePanelSpec::bg(Hsla)` for handle halves | **Done** |
 | `ResizeHandleSize::{Sm,Md,Lg}` via `.resize_handle()` | **Done** — lane, hit target, grip scale together |
-| Theme Studio main split (280px sidebar + fill) | **Done** — macro in [`apps/theme-studio/src/studio/app.rs`](../../apps/theme-studio/src/studio/app.rs) |
+| Luma Studio main split (280px sidebar + fill) | **Done** — macro in [`apps/luma-studio/src/studio/app.rs`](../../apps/luma-studio/src/studio/app.rs) |
 | Gallery demos on weight + pixel constraints | **Done** — [`apps/gallery/.../resizable_panels/pane.rs`](../../apps/gallery/src/gallery/panes/resizable_panels/pane.rs) |
 | Fluent `.pane()` builder chain | **Not started** (§7 below) |
 | `resizable_panels!` macro | **Done** — [`macros.rs`](../../crates/sdk/src/controls/resizable_panels/macros.rs) |
@@ -113,7 +113,7 @@ Keyboard: absolute panes use `keyboard_step` / `keyboard_shift_step` in px; weig
 ## 7. Future: fluent builder (not implemented)
 
 ```rust
-let main_split = ResizablePanels::horizontal("theme-studio-main-split")
+let main_split = ResizablePanels::horizontal("luma-studio-main-split")
     .pane(sidebar_view)
         .size(px(280.0))
         .min(px(200.0))
@@ -126,7 +126,7 @@ let main_split = ResizablePanels::horizontal("theme-studio-main-split")
     .spawn(cx);
 ```
 
-Today, prefer `resizable_panels!` (Theme Studio) or `ResizablePanelsBuilder::panels([...])` with `ResizablePanelSpec`.
+Today, prefer `resizable_panels!` (Luma Studio) or `ResizablePanelsBuilder::panels([...])` with `ResizablePanelSpec`.
 
 ---
 
@@ -140,7 +140,7 @@ use gpui_luma::resizable_panels;
 let split = resizable_panels! {
     cx,
     radix = radix_theme,
-    id: "theme-studio-main-split",
+    id: "luma-studio-main-split",
     layout: Horizontal,
     show_handle: true,
     resize_handle: Sm,
@@ -183,4 +183,4 @@ Additional unit tests (constraint edge cases under mixed drag) and full-viewport
 
 **Current tests:** `cargo test -p gpui-luma resizable_panels`
 
-**Manual:** Theme Studio main split; gallery pane “Resizable Panels”.
+**Manual:** Luma Studio main split; gallery pane “Resizable Panels”.

@@ -13,8 +13,8 @@ This creates several issues:
 
 ## Real-World Pain Points
 
-### Example 1: Theme Studio Plan Upgrade Cards
-In [upgrade.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/content_tabs/cards/upgrade.rs#L194), to render plan options as side-by-side selectable cards instead of simple dot-indicators, the custom template had to unpack five separate event handler iterators and bind them manually:
+### Example 1: Luma Studio Plan Upgrade Cards
+In [upgrade.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/content_tabs/cards/upgrade.rs#L194), to render plan options as side-by-side selectable cards instead of simple dot-indicators, the custom template had to unpack five separate event handler iterators and bind them manually:
 
 ```rust
 fn plan_option_group_template(look: Arc<ShadcnLook>) -> RadioGroupTemplate<PlanOptionItem> {

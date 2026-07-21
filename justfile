@@ -16,15 +16,15 @@ gallery-rel-hud:
 gallery-dbg:
     RUST_BACKTRACE=1 cargo run -p gpui-luma-gallery -- jarvis
 
-theme-studio:
-    cargo run -p gpui-luma-theme-studio -- modern-minimal --light
-    #cargo run -p gpui-luma-theme-studio -- elegent-luxury
+luma-studio:
+    cargo run -p luma-studio -- modern-minimal --light
+    #cargo run -p luma-studio -- elegent-luxury
 
-theme-studio-rel:
-    cargo run -p gpui-luma-theme-studio --release
+luma-studio-rel:
+    cargo run -p luma-studio --release
 
-theme-studio-perf:
-    MTL_HUD_ENABLED=1 cargo run -p gpui-luma-theme-studio --release
+luma-studio-perf:
+    MTL_HUD_ENABLED=1 cargo run -p luma-studio --release
 
 neumorphic-demo:
     cargo run -p gpui-luma-neumorphic-demo

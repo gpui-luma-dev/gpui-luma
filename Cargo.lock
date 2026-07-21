@@ -2528,24 +2528,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gpui-luma-theme-studio"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "gpui",
- "gpui-luma",
- "gpui-luma-look-shadcn",
- "gpui_platform",
- "gtk",
- "lucide-icons",
- "palette",
- "serde",
- "thiserror 2.0.18",
- "tracing",
- "zed-font-kit",
-]
-
-[[package]]
 name = "gpui_linux"
 version = "0.1.0"
 source = "git+https://github.com/zed-industries/zed#3bb0b494d827e7322afd3c01d32b2cc448d44863"
@@ -3474,6 +3456,24 @@ name = "lucide-icons"
 version = "0.575.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fe5ef57a7e2a313b5d15a2fe306a44acfe290247d5ff46af1780d1250b716fe"
+
+[[package]]
+name = "luma-studio"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui-luma-look-shadcn",
+ "gpui_platform",
+ "gtk",
+ "lucide-icons",
+ "palette",
+ "serde",
+ "thiserror 2.0.18",
+ "tracing",
+ "zed-font-kit",
+]
 
 [[package]]
 name = "lyon"

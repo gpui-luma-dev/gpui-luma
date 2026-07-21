@@ -43,7 +43,7 @@ The recent pilot work established a clearer baseline that is good enough to carr
 - `ButtonBuilder`, `SelectorBuilder`, `AccordionBuilder`, `ListViewBuilder`, and `ControlGroupBuilder` expose `with_template_modifier(...)`.
 - `SelectionPanelBuilder`, `ComboBoxBuilder`, and `SearchSelectorBuilder` now also expose first-class builder modifier affordances on their main template seams.
 - Concrete template values in the active pilot families expose `.with_modifier(...)`.
-- `SelectorTemplate` now has a real top-level trigger-shell modifier seam rather than forcing the Theme Studio case into a theme override.
+- `SelectorTemplate` now has a real top-level trigger-shell modifier seam rather than forcing the Luma Studio case into a theme override.
 - The selector-family pressed-preview/list-shell bug was repaired in the shared selector-family list templates rather than patched only in the preview host. `Selector`, `ComboBox`, and `SearchSelector` now share the corrected padded-width behavior.
 - The autocomplete popup theming bug was also fixed in the shared control path by routing popup styling through the builder/model `popup_look_provider` seam instead of a hardcoded default look.
 - Public wrapper-shaped helper names have been reduced in the newer pilot families, and public `Modified*Template` wrapper types have been pushed out of the preferred API story where possible.
@@ -79,11 +79,11 @@ This created repeated friction in design and implementation reviews:
 
 The answer changed per control family, which is why the pilot work focused first on locking the vocabulary and the preferred public path.
 
-## Concrete Example: Theme Studio Selector
-The recent Theme Studio theme chooser change is a good example of the current gap.
+## Concrete Example: Luma Studio Selector
+The recent Luma Studio theme chooser change is a good example of the current gap.
 
 ### Change Requested
-In `apps/theme-studio/src/studio/theme_sidebar/mod.rs`, the theme selector needed two tweaks:
+In `apps/luma-studio/src/studio/theme_sidebar/mod.rs`, the theme selector needed two tweaks:
 
 1. Show a custom selected-item/dropdown item layout with four fixed-size swatches.
 2. Make the closed selector trigger background transparent.
@@ -103,7 +103,7 @@ Before the pilot, `SelectorTemplate` had no useful top-level modifier seam, so t
 That solution was valid for a more significant tweak, but it was the wrong ergonomics for this size of change.
 
 ### What Works After The Pilot
-The selector trigger shell now has a real template modifier seam, and the Theme Studio theme chooser can express the transparent trigger tweak through the template path itself:
+The selector trigger shell now has a real template modifier seam, and the Luma Studio theme chooser can express the transparent trigger tweak through the template path itself:
 
 - custom item content via `Selector::with_item_template(...)`
 - trigger-shell tweak via `ThemedSelectorTemplate::with_modifier(...)`

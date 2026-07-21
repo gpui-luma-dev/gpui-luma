@@ -11,12 +11,12 @@ Elevation is first-class across SDK control looks/templates and look-shadcn styl
 - `ShadowProjectionInsets` + elevation-slot / reserve-shadow geometry (`max(focus, shadow)`; enabled-state probe when disabled clears paint).
 - `elevation_rules` for button/toggle, checkbox, radio, switch, textfield (Primary), floating_menu, card, slider; selection popups inherit floating_menu surface.
 - Selection triggers: selector / search_selector Outline button elevation; combobox / autocomplete Primary textfield elevation.
-- `ShadcnElementExt::shadow_cn` for app chrome; Theme Studio dashboard uses catalog `shadow` instead of a hardcoded panel shadow.
+- `ShadcnElementExt::shadow_cn` for app chrome; Luma Studio dashboard uses catalog `shadow` instead of a hardcoded panel shadow.
 - Gallery prototype `shadow_button` kept as a tuning harness (not migrated into SDK).
 
 **Explicitly out of scope**
 - Outline / Surface textfield elevation — **won't do** (Primary-only).
-- Theme Studio Other-tab ladder regen — separate open issue [`0-shadow-enhance`](../issues/0-shadow-enhance.md).
+- Luma Studio Other-tab ladder regen — separate open issue [`0-shadow-enhance`](../issues/0-shadow-enhance.md).
 - Absolute shadow backing / full bleed-clip QA — unrelated leftovers; only if clipping appears after slots.
 
 ## Acceptance (met)

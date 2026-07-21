@@ -1,13 +1,13 @@
 # Fix Note: Button Size / Radius Preview Ownership
 
-**Area:** `apps/theme-studio/src/studio/style/*`, `crates/sdk/src/controls/command/button/*`, `crates/sdk/src/controls/button_family/*`, `crates/look-shadcn/src/controls/{button,toggle,templates,slider,scrollbar,progress}.rs`, `crates/look-shadcn/src/elements/badge.rs`, `crates/look-shadcn/assets/style.toml`  
-**Status:** Retired / complete as of 2026-07-15. The main sizing rollout is done: Button-family, **Menus**, **Slider**, **Scrollbar / Progress**, **Badge**, **Pager**, and **Selectors** now consume the relevant look/size seams in Theme Studio or runtime surfaces. SDK fallback cleanup for slider, floating menu, popup menu panel sizing, and pager fallback geometry now derives from shared metric/typography tokens instead of local sm/md/lg or fixed px tables. Follow-up work moved to [`../issues/0-sizes-followup.md`](../issues/0-sizes-followup.md). Smarter padding curves moved to [`../issues/0-size-smarter.md`](../issues/0-size-smarter.md). Shadow round-trip remains tracked separately in [`../issues/0-shadow-enhance.md`](../issues/0-shadow-enhance.md).
+**Area:** `apps/luma-studio/src/studio/style/*`, `crates/sdk/src/controls/command/button/*`, `crates/sdk/src/controls/button_family/*`, `crates/look-shadcn/src/controls/{button,toggle,templates,slider,scrollbar,progress}.rs`, `crates/look-shadcn/src/elements/badge.rs`, `crates/look-shadcn/assets/style.toml`  
+**Status:** Retired / complete as of 2026-07-15. The main sizing rollout is done: Button-family, **Menus**, **Slider**, **Scrollbar / Progress**, **Badge**, **Pager**, and **Selectors** now consume the relevant look/size seams in Luma Studio or runtime surfaces. SDK fallback cleanup for slider, floating menu, popup menu panel sizing, and pager fallback geometry now derives from shared metric/typography tokens instead of local sm/md/lg or fixed px tables. Follow-up work moved to [`../issues/0-sizes-followup.md`](../issues/0-sizes-followup.md). Smarter padding curves moved to [`../issues/0-size-smarter.md`](../issues/0-size-smarter.md). Shadow round-trip remains tracked separately in [`../issues/0-shadow-enhance.md`](../issues/0-shadow-enhance.md).
 
 ---
 
 ## Summary
 
-The Theme Studio Style Guide work started as a **local preview experiment**:
+The Luma Studio Style Guide work started as a **local preview experiment**:
 
 1. remove the duplicate Style Guide heading,
 2. add a local buttons tab switcher (`Template Preview` / `All Sizes`),
@@ -17,10 +17,10 @@ The Theme Studio Style Guide work started as a **local preview experiment**:
 The visuals moved in the right direction, but the implementation crossed the wrong seams:
 
 - preview-local concepts became SDK concepts,
-- theme-owned meaning leaked into Theme Studio preview code,
+- theme-owned meaning leaked into Luma Studio preview code,
 - a local inspection surface started shaping shared button rendering behavior.
 
-The core lesson is that **button size and radius must stay semantic and button-owned**, with the **theme crate resolving them**, and Theme Studio should only **display the resolved result**.
+The core lesson is that **button size and radius must stay semantic and button-owned**, with the **theme crate resolving them**, and Luma Studio should only **display the resolved result**.
 
 ---
 
@@ -35,16 +35,16 @@ Early commits (`92706612`, `6d244407`, `9ecda374`) landed button/toggle/choice S
 | `9ecda374` | Checkbox / Radio / Switch split; choice matrices + Sizes tabs |
 | 2026-07-08 | **Menus** four-tab preview; floating-menu typography scales with size; style guide sections alphabetical; buttons text-only in Template/Sizes; menu-trigger `radius_override` in look |
 | 2026-07-08 (later) | **Slider** dedicated section (Template Preview + Sizes); Input Controls split into Scrollbar / Slider / Text Field / Text Area; primary-only slider look; thumb + track radius presets; disabled inactive track = `border` (matches enabled) |
-| 2026-07-15 | **Scrollbar / Progress** size contracts; `[scrollbar.metrics.sm|md|lg]`; `[progress.metrics.sm|md|lg]`; Theme Studio Scrollbar Sizes tab; Progress Sm/Md/Lg row; badge typography resolves from button font metrics |
+| 2026-07-15 | **Scrollbar / Progress** size contracts; `[scrollbar.metrics.sm|md|lg]`; `[progress.metrics.sm|md|lg]`; Luma Studio Scrollbar Sizes tab; Progress Sm/Md/Lg row; badge typography resolves from button font metrics |
 | 2026-07-15 (later) | SDK default slider fallback geometry derives height, track height, and thumb size from `MetricTokens` instead of hardcoded Sm/Md/Lg match tables |
-| 2026-07-15 (scrollbar follow-up) | Added `ScrollbarStyle::Ghost | Soft`; ghost keeps the transparent track, soft uses a muted track channel for Radix-like visibility; Theme Studio scrollbar Template Preview shows both variants in a state-column table; Sizes is horizontal-only; user-tested and accepted |
+| 2026-07-15 (scrollbar follow-up) | Added `ScrollbarStyle::Ghost | Soft`; ghost keeps the transparent track, soft uses a muted track channel for Radix-like visibility; Luma Studio scrollbar Template Preview shows both variants in a state-column table; Sizes is horizontal-only; user-tested and accepted |
 | 2026-07-15 (popup follow-up) | Popup menus gained independent `menu_size`; trigger size remains trigger-owned, while floating panel metrics resolve from menu size; user-tested and accepted |
 | 2026-07-15 (catalog cleanup) | SDK fallback floating-menu typography/icon size now comes from typography + metric tokens; pager fallback geometry now comes from Sm control metrics + spacing tokens; pager template no longer clamps numeric buttons to a local fixed width |
-| 2026-07-15 (pager guide) | Theme Studio Style Guide gained a Pager section copied from the Gallery pager pane examples and wired as an interactive preview |
+| 2026-07-15 (pager guide) | Luma Studio Style Guide gained a Pager section copied from the Gallery pager pane examples and wired as an interactive preview |
 
-### Theme Studio Style Guide (landed)
+### Luma Studio Style Guide (landed)
 
-Shared preview pattern: **`VariantStateTable`** — variants as rows, interaction states as columns (`apps/theme-studio/src/studio/style/variant_state_table.rs`).
+Shared preview pattern: **`VariantStateTable`** — variants as rows, interaction states as columns (`apps/luma-studio/src/studio/style/variant_state_table.rs`).
 
 | Section | Preview tabs | Sizes / sizing preview | Notes |
 |---------|--------------|------------------------|--------|
@@ -103,10 +103,10 @@ This section is retained for historical context. Active remaining work moved to 
 
 #### Control sizing — next targets
 
-| Control | Look layer today | Theme Studio today | Likely work |
+| Control | Look layer today | Luma Studio today | Likely work |
 |---------|------------------|--------------------|-------------|
-| **Slider** | `style.toml` primary color rules; `slider_look(..., size)`; thumb/track radius presets; SDK fallback derives geometry from `MetricTokens` | **Slider** section: Template Preview (states); Sizes (Sm/Md/Lg × radius) | **Done** (Theme Studio + look + SDK fallback cleanup) |
-| **Scrollbar** | `[scrollbar.metrics.sm|md|lg]`; `scrollbar_look(..., size)` | Template Preview + Sizes | **Done / tested** (look metrics + SDK render-model size + Theme Studio Sizes tab) |
+| **Slider** | `style.toml` primary color rules; `slider_look(..., size)`; thumb/track radius presets; SDK fallback derives geometry from `MetricTokens` | **Slider** section: Template Preview (states); Sizes (Sm/Md/Lg × radius) | **Done** (Luma Studio + look + SDK fallback cleanup) |
+| **Scrollbar** | `[scrollbar.metrics.sm|md|lg]`; `scrollbar_look(..., size)` | Template Preview + Sizes | **Done / tested** (look metrics + SDK render-model size + Luma Studio Sizes tab) |
 | **Progress** | `[progress.metrics.sm|md|lg]`; `progress_look(..., size)` | Feedback states + Sm/Md/Lg row | **Done** (look metrics + SDK render-model size + Feedback size row) |
 | **Badge / tags** | `badge_look(variant, size)`; typography resolves from button `font_size` per size | Feedback shows Sm/Md/Lg **inline** | **Done** for typography scaling. Badge-specific metrics remain optional only if tags need a non-button sizing policy later |
 | **Selectors** | Trigger = textfield/combobox/search/selector templates; panel = `selector_items_panel_look(size)` | Template Preview tab plus Sizes tab with Sm/Md/Lg trigger + open-panel rows | **Done** for Style Guide parity. No separate selector-size semantic was added; previews reuse `ControlSize` on the trigger/template side and `selector_items_panel_look(size)` for panels. |
@@ -122,13 +122,13 @@ Current cleanup status:
 
 #### Related (not this note)
 
-- Shadow token ladder + Theme Studio round-trip: [0-shadow-enhance.md](./0-shadow-enhance.md).
+- Shadow token ladder + Luma Studio round-trip: [0-shadow-enhance.md](./0-shadow-enhance.md).
 
 ---
 
 ## What We Changed In The Experiment
 
-### Theme Studio
+### Luma Studio
 
 - Removed the in-tab `Style Guide` heading and description.
 - Added a local tab switcher to the Buttons section:
@@ -161,7 +161,7 @@ Current cleanup status:
 
 ## 1. Size semantics were initially implemented in the wrong place
 
-The first pass made Theme Studio preview presenters responsible for translating:
+The first pass made Luma Studio preview presenters responsible for translating:
 
 - `ButtonSize::Sm/Md/Lg`
 - into font size,
@@ -180,11 +180,11 @@ Why this is wrong:
   - gap,
   - typography,
   - icon scale.
-- That meaning belongs to the **button look/theme seam**, not to Theme Studio preview closures.
+- That meaning belongs to the **button look/theme seam**, not to Luma Studio preview closures.
 
 ---
 
-## 2. Radius semantics were initially driven from raw metrics in Theme Studio
+## 2. Radius semantics were initially driven from raw metrics in Luma Studio
 
 The first matrix used direct token values:
 
@@ -198,7 +198,7 @@ That is also the wrong seam.
 
 Why this is wrong:
 
-- Theme Studio should not decide how a button interprets `Small` vs `Medium` radius.
+- Luma Studio should not decide how a button interprets `Small` vs `Medium` radius.
 - Radius should be **semantic and button-local**, just like size.
 - `None / Small / Medium / Large / Full` should be button-facing abstract values.
 - The look crate should translate those into concrete px for buttons.
@@ -217,20 +217,20 @@ That fix was mechanically correct:
 
 But it exposed a larger issue:
 
-- the preview needed custom override plumbing because Theme Studio was still inventing local button semantics instead of asking the button/theme seam for resolved values.
+- the preview needed custom override plumbing because Luma Studio was still inventing local button semantics instead of asking the button/theme seam for resolved values.
 
 So even when the template patch was correct, it was still attached to a workflow whose ownership was not yet right.
 
 ---
 
-## 4. Theme Studio preview began shaping SDK contracts
+## 4. Luma Studio preview began shaping SDK contracts
 
 To support the experiment, we added shared concepts such as:
 
 - `ButtonRadiusPreset`
 - `ButtonFamilyLook.icon_size`
 
-These are plausible additions, but they were introduced from a **Theme Studio experiment outward**, not from a deliberate SDK review inward.
+These are plausible additions, but they were introduced from a **Luma Studio experiment outward**, not from a deliberate SDK review inward.
 
 That matters because:
 
@@ -249,7 +249,7 @@ This is the main reason the change set should be treated as experimental and rev
 
 ## 5. The preview surface had too much local rendering logic
 
-By the end of the experiment, Theme Studio had accumulated:
+By the end of the experiment, Luma Studio had accumulated:
 
 - local button tabs,
 - local size/radius matrix logic,
@@ -293,7 +293,7 @@ For buttons specifically, size should resolve to:
 - icon size,
 - any other button-family-specific geometry.
 
-That translation belongs in the **theme/look path**, not the template and not Theme Studio preview code.
+That translation belongs in the **theme/look path**, not the template and not Luma Studio preview code.
 
 ## Button radius
 
@@ -307,7 +307,7 @@ Radius presets should also be semantic:
 
 Those values should be translated **locally for buttons** by the look/theme layer.
 
-Theme Studio should display:
+Luma Studio should display:
 
 - semantic radius presets as rows/columns/labels,
 - and then render the **resolved button result**.
@@ -322,9 +322,9 @@ Templates should not be the source of:
 
 Templates should only render a resolved render model / resolved look.
 
-## Theme Studio
+## Luma Studio
 
-Theme Studio should remain a consumer:
+Luma Studio should remain a consumer:
 
 - pick semantic knobs to preview,
 - ask the real control/theme seam for resolved behavior,
@@ -338,11 +338,11 @@ It should not become a parallel implementation of button sizing logic.
 
 ### Short version
 
-Button-family, **Menus**, **Slider**, **Scrollbar**, **Progress**, **Badge**, **Pager**, and **Selectors** now consume the relevant look/size seams in Theme Studio. Selector sizing stays compositional: trigger/input `ControlSize` plus `selector_items_panel_look(size)`.
+Button-family, **Menus**, **Slider**, **Scrollbar**, **Progress**, **Badge**, **Pager**, and **Selectors** now consume the relevant look/size seams in Luma Studio. Selector sizing stays compositional: trigger/input `ControlSize` plus `selector_items_panel_look(size)`.
 
 ### Suggested implementation order
 
-1. ~~**Slider** — Theme Studio Sizes tab (Sm/Md/Lg).~~ **Done**: dedicated **Slider** section with Template Preview + Sizes tabs; primary-only look; thumb/track radius presets; disabled inactive track matches enabled (`border`); SDK template dims fill only when disabled.
+1. ~~**Slider** — Luma Studio Sizes tab (Sm/Md/Lg).~~ **Done**: dedicated **Slider** section with Template Preview + Sizes tabs; primary-only look; thumb/track radius presets; disabled inactive track matches enabled (`border`); SDK template dims fill only when disabled.
 2. ~~**Badge** — use button `font_size` / `icon_size` in `badge_typography`; Feedback Sizes matrix.~~ **Done**: badge typography resolves from button size metrics; Feedback shows Sm/Md/Lg inline.
 3. ~~**Progress** — `[progress.metrics.sm|md|lg]` + `progress_look(size)`; Feedback Sizes samples.~~ **Done**.
 4. ~~**Scrollbar** — product decision: global vs sized; then metrics + preview.~~ **Done / tested**: Scrollbar has Template Preview + Sizes and `Ghost` / `Soft` variants.
@@ -354,7 +354,7 @@ Button-family, **Menus**, **Slider**, **Scrollbar**, **Progress**, **Badge**, **
 
 ## Addendum: SDK Semantic Style Constant Catalog
 
-This follow-up search was aimed at finding the semantic style vocabulary currently living in `crates/sdk` that is a likely candidate to move into `crates/look-shadcn`, or at least to be resolved there instead of being defined ad hoc in Theme Studio or individual templates.
+This follow-up search was aimed at finding the semantic style vocabulary currently living in `crates/sdk` that is a likely candidate to move into `crates/look-shadcn`, or at least to be resolved there instead of being defined ad hoc in Luma Studio or individual templates.
 
 ### Core shared token vocabulary in SDK
 
@@ -490,10 +490,10 @@ Some modules are doing real style-policy translation themselves rather than only
 
 - `crates/sdk/src/controls/slider/theme.rs`
   - slider height, track height, and thumb sizes are hardcoded by semantic size
-  - **look-shadcn** has `[slider.metrics.sm|md|lg]`, primary color rules, and `slider_look(..., size)` — Theme Studio Slider previews use this seam; SDK default theme should defer there too
+  - **look-shadcn** has `[slider.metrics.sm|md|lg]`, primary color rules, and `slider_look(..., size)` — Luma Studio Slider previews use this seam; SDK default theme should defer there too
 
 - `crates/look-shadcn/src/controls/scrollbar.rs` / `progress.rs`
-  - single global metrics blocks; no `ControlSize` parameter yet (slider now has sm/md/lg in look + Theme Studio)
+  - single global metrics blocks; no `ControlSize` parameter yet (slider now has sm/md/lg in look + Luma Studio)
 
 - `crates/look-shadcn/src/elements/badge.rs`
   - `badge_typography` maps size → text roles (caption/label/body), not button `font_size` / `icon_size`
@@ -512,7 +512,7 @@ If this work is revisited, the likely split is:
 
 - shared semantic tokens may stay typed in SDK, but their meaning should be resolved by look/theme code,
 - control-specific style variants such as pager style, popup trigger style, and control-local size/radius translations should be reviewed as look-owned policy,
-- app preview surfaces such as Theme Studio should only select semantic knobs and render the resolved result.
+- app preview surfaces such as Luma Studio should only select semantic knobs and render the resolved result.
 
 Behavioral enums that are not really style policy should likely remain in SDK, for example:
 
@@ -536,7 +536,7 @@ Behavioral enums that are not really style policy should likely remain in SDK, f
 
 4. Expose those resolved values through the button look/render path.
 
-5. Make Theme Studio preview consume those values rather than compute them.
+5. Make Luma Studio preview consume those values rather than compute them.
 
 ---
 
@@ -544,10 +544,10 @@ Behavioral enums that are not really style policy should likely remain in SDK, f
 
 ### Landed — keep unless deliberately rolling back preview work
 
-- `apps/theme-studio/src/studio/style/cards/buttons.rs` — matrix previews for buttons, icon buttons, toggles, checkbox, radio, switch
-- `apps/theme-studio/src/studio/style/cards/menus.rs` — menu trigger + floating menu tabbed previews
-- `apps/theme-studio/src/studio/style/style_guide.rs` — Input Controls split (Scrollbar / Slider / Text Field / Text Area); slider preview tabs; interaction allowlist; alphabetical order
-- `apps/theme-studio/src/studio/style/variant_state_table.rs` — shared table layout
+- `apps/luma-studio/src/studio/style/cards/buttons.rs` — matrix previews for buttons, icon buttons, toggles, checkbox, radio, switch
+- `apps/luma-studio/src/studio/style/cards/menus.rs` — menu trigger + floating menu tabbed previews
+- `apps/luma-studio/src/studio/style/style_guide.rs` — Input Controls split (Scrollbar / Slider / Text Field / Text Area); slider preview tabs; interaction allowlist; alphabetical order
+- `apps/luma-studio/src/studio/style/variant_state_table.rs` — shared table layout
 - `crates/look-shadcn/src/controls/button.rs` — semantic size/radius resolution
 - `crates/look-shadcn/src/controls/toggle.rs` — toggle look + metrics
 - `crates/look-shadcn/src/controls/floating_menu.rs` — item typography/icon scale with size
@@ -557,7 +557,7 @@ Behavioral enums that are not really style policy should likely remain in SDK, f
 - `crates/look-shadcn/src/controls/slider.rs` — primary-only look; thumb/track radius; disabled track = `border`
 - `crates/sdk/src/controls/slider/template/linear.rs` — disabled opacity on fill segments only
 - `crates/sdk/src/controls/command/button/template.rs` — visible `radius_override`
-- `apps/theme-studio/src/studio/style/cards/inputs.rs` — Slider Template Preview + Sizes matrix; Scrollbar / Text Field / Text Area sections
+- `apps/luma-studio/src/studio/style/cards/inputs.rs` — Slider Template Preview + Sizes matrix; Scrollbar / Text Field / Text Area sections
 
 ### Still needs SDK / API review or new look work
 
@@ -571,27 +571,27 @@ Historical list; current follow-ups moved to [`0-sizes-followup.md`](../issues/0
 
 ## Final Takeaway
 
-The experiment exposed the real issue: **Theme Studio was previewing semantic sizing before the button/theme seam owned it.** That is largely fixed for buttons, toggles, choices, menu triggers/panels, and **slider** (Template Preview + Sizes on the look seam).
+The experiment exposed the real issue: **Luma Studio was previewing semantic sizing before the button/theme seam owned it.** That is largely fixed for buttons, toggles, choices, menu triggers/panels, and **slider** (Template Preview + Sizes on the look seam).
 
 **Remaining follow-ups moved out:**
 
 - SDK/API contract review and optional fallback cleanup: [`0-sizes-followup.md`](../issues/0-sizes-followup.md)
 - Smarter size padding curves: [`0-size-smarter.md`](../issues/0-size-smarter.md)
-- Shadow ladder / Theme Studio: [`0-shadow-enhance.md`](../issues/0-shadow-enhance.md)
+- Shadow ladder / Luma Studio: [`0-shadow-enhance.md`](../issues/0-shadow-enhance.md)
 
-Target architecture unchanged: size semantics resolved in look-shadcn; Theme Studio selects knobs and renders resolved results.
+Target architecture unchanged: size semantics resolved in look-shadcn; Luma Studio selects knobs and renders resolved results.
 
 ---
 
 ## Addendum: Naming — shadcn/ui semantics, not Radix Themes
 
-**Decision (2026-07):** look-shadcn and Theme Studio previews target **shadcn/ui** vocabulary. Early notes and experiments sometimes referenced **Radix Themes** (numeric sizes `1–4`, choice variants classic/surface/soft). That framing was the wrong seam for this crate — use **shadcn** names in constants, TOML keys, and preview labels.
+**Decision (2026-07):** look-shadcn and Luma Studio previews target **shadcn/ui** vocabulary. Early notes and experiments sometimes referenced **Radix Themes** (numeric sizes `1–4`, choice variants classic/surface/soft). That framing was the wrong seam for this crate — use **shadcn** names in constants, TOML keys, and preview labels.
 
 ### Style / variant constants
 
 - **Use:** `ShadcnButtonStyle` (`Primary`, `Secondary`, `Outline`, `Ghost`) — already the look-shadcn style axis for buttons and toggles.
 - **Do not introduce:** parallel `Radix*` style enums or Radix Themes variant names (`classic`, `surface`, `soft`) unless we deliberately add a second look crate.
-- **Choice controls today:** API accepts `ShadcnButtonStyle`, but checkbox/radio/switch color rules mostly use it only for **checked/on accent** (`@action_layer`). Theme Studio previews show **Primary + Secondary only**; Outline/Ghost are omitted because they map to the same foreground token for indicators.
+- **Choice controls today:** API accepts `ShadcnButtonStyle`, but checkbox/radio/switch color rules mostly use it only for **checked/on accent** (`@action_layer`). Luma Studio previews show **Primary + Secondary only**; Outline/Ghost are omitted because they map to the same foreground token for indicators.
 
 ### Size constants
 
@@ -610,7 +610,7 @@ Size and role are separate axes:
 
 ### Radius
 
-`ButtonRadiusPreset` (`None`, `Small`, `Medium`, `Large`, `Full`) stays **button-local** in look-shadcn. Theme Studio size matrices:
+`ButtonRadiusPreset` (`None`, `Small`, `Medium`, `Large`, `Full`) stays **button-local** in look-shadcn. Luma Studio size matrices:
 
 - **Rows:** Small / Medium / Large (`ControlSize`)
 - **Columns:** radius presets (buttons/toggles) or Primary/Secondary (choice sizes tab)

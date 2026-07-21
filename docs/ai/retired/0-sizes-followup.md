@@ -7,7 +7,7 @@
 
 The main sizing rollout is complete and retired in `docs/ai/retired/0-fix-sizes.md`.
 
-Theme Studio now has resolved-size previews for the major control families, and shadcn runtime sizing is look-owned for the surfaces covered by that work:
+Luma Studio now has resolved-size previews for the major control families, and shadcn runtime sizing is look-owned for the surfaces covered by that work:
 
 - buttons / icon buttons
 - toggles
@@ -49,7 +49,7 @@ Done — see [`0-size-smarter.md`](./0-size-smarter.md). Padding/`Lg` inset curv
 
 ## Not In Scope
 
-- Shadow token ladder and Theme Studio round-trip: [`0-shadow-enhance.md`](./0-shadow-enhance.md)
+- Shadow token ladder and Luma Studio round-trip: [`0-shadow-enhance.md`](./0-shadow-enhance.md)
 - Choice disabled/elevation layout regression: [`2-elevation.md`](./2-elevation.md) (**done**)
 
 ## Retired Source Note

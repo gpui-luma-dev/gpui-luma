@@ -1,6 +1,6 @@
 # Issue: Upgrade panel plan `RadioGroup` — focus regression & over-engineering
 
-**Panel:** `apps/theme-studio/src/studio/panels/upgrade.rs`  
+**Panel:** `apps/luma-studio/src/studio/panels/upgrade.rs`  
 **Related:** `docs/ai/issues/0-theme-reconcile.md` (Cards / tweakcn parity)  
 **Status:** Visual parity achieved; keyboard focus / roving tabindex broken. Fix not yet applied.
 
@@ -203,7 +203,7 @@ Keep unless used elsewhere:
 
 | Area | Path |
 |------|------|
-| Broken panel | `apps/theme-studio/src/studio/panels/upgrade.rs` |
+| Broken panel | `apps/luma-studio/src/studio/panels/upgrade.rs` |
 | Radio group API | `crates/sdk/src/controls/radio_group/` |
 | Group focus / active | `crates/sdk/src/controls/control_group/control.rs` |
 | Item render paths | `crates/sdk/src/controls/control_group/template.rs`, `crates/sdk/src/controls/radio_group/themed_template.rs` |
@@ -221,7 +221,7 @@ Keep unless used elsewhere:
 1. **Mouse** — Click either card selects; only one selected; selected tint visible in light and dark.
 2. **Keyboard** — Tab to plan group; arrow left/right moves **active** item (visible on radio/active styling if any); Space selects; focus does not escape group incorrectly.
 3. **No dot focus ring** — Keyboard focus does not paint outer ring on radio indicator (card may use selected bg only).
-4. **Theme toggle** — Switch light/dark in theme-studio; tints flip direction (darker vs lighter); text remains readable.
+4. **Theme toggle** — Switch light/dark in luma-studio; tints flip direction (darker vs lighter); text remains readable.
 5. **Regression** — Other `RadioGroup` gallery panes and default `look.radio_group()` unchanged.
 
 ---

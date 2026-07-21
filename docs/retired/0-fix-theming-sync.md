@@ -5,7 +5,7 @@ When the global theme or light/dark mode switch is toggled, persistent view enti
 
 Previously, custom "notification buses" ran into synchronization, memory leak, and re-entrancy borrow panics. As a workaround:
 - The **Gallery** app uses manual tree-walking/propagation methods (`notify_controls`).
-- The **Theme Studio** app recreates the entire board of panels (`refresh_demos`) upon override, but misses updating them on mode toggle.
+- The **Luma Studio** app recreates the entire board of panels (`refresh_demos`) upon override, but misses updating them on mode toggle.
 - The **Neumorphic Demo** app uses static, specialized neumorphic templates independent of the global look but still uses the same SDK control definitions.
 
 The most idiomatic and robust solution is to leverage GPUI's native **Global Observation** pattern. By wrapping the active look in a GPUI `Global`, persistent controls can subscribe to updates during their initialization. GPUI queues these notifications safely to prevent re-entrancy panics and automatically handles cleanup when views are dropped.
@@ -14,7 +14,7 @@ The most idiomatic and robust solution is to leverage GPUI's native **Global Obs
 
 ## App-Specific Audits
 
-### 1. Theme Studio (`apps/theme-studio`)
+### 1. Luma Studio (`apps/luma-studio`)
 - **Current Behavior:** Changes to global color variables trigger `apply_theme_overrides(cx)`, which in turn calls `refresh_demos(cx)` to rebuild the demo panel entities from scratch. However, toggling the light/dark mode switch in the title bar only mutates `look.mode` and calls `refresh_content_pane(cx)`. It does not notify or recreate the demo panel views, leaving all persistent inputs, buttons, and selector triggers in the old mode.
 - **Target Design:** Toggling the mode will update the global `ActiveLook` wrapper. All persistent view entities on the board will automatically invalidate their caches, removing the need for manual panel recreation.
 
@@ -89,6 +89,6 @@ cx.update_global::<ActiveLook>(|active, cx| {
 ## Verification Plan
 
 ### Manual Verification Checklist
-- [ ] Run Theme Studio (`just theme-studio`). Set global color overrides, then toggle light/dark mode. Verify all textfields, select inputs, textareas, and buttons update immediately.
+- [ ] Run Luma Studio (`just luma-studio`). Set global color overrides, then toggle light/dark mode. Verify all textfields, select inputs, textareas, and buttons update immediately.
 - [ ] Run Gallery (`just gallery`). Verify theme changes apply instantly on all pages without manual propagation.
 - [ ] Run Neumorphic Demo (`just neumorphic-demo` or cargo run). Confirm that controls resolve correctly using their custom templates and do not panic due to the missing `ActiveLook` global.

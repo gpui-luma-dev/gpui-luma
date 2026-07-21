@@ -1,8 +1,8 @@
-# Fix Note: Shadow Token Model and Theme Studio Round-Trip
+# Fix Note: Shadow Token Model and Luma Studio Round-Trip
 
-**Area:** `crates/look-shadcn/src/{look,shadow,tokens}.rs`, `crates/look-shadcn/assets/tweakcn/*.css`, `apps/theme-studio/src/studio/{overrides,theme_sidebar/panels/other}.rs`  
+**Area:** `crates/look-shadcn/src/{look,shadow,tokens}.rs`, `crates/look-shadcn/assets/tweakcn/*.css`, `apps/luma-studio/src/studio/{overrides,theme_sidebar/panels/other}.rs`  
 **Status:** Open / partial — fan-out shipped; **parts ↔ ladder regeneration** still TODO.  
-**Owns:** Theme Studio Other → Shadow coherence with the catalog ladder (this note only).  
+**Owns:** Luma Studio Other → Shadow coherence with the catalog ladder (this note only).  
 **Related:** [2-elevation.md](../retired/2-elevation.md) — control paint + projection (**done**, retired 2026-07-19).
 
 ---
@@ -30,7 +30,7 @@ Tweakcn themes (e.g. `academic.css`, `bubblegum.css`) export a **two-layer shado
 
 look-shadcn already **parses** all of these into the mode catalog and resolves the ladder via `ShadcnShadow` + `look.shadow()`. Controls resolve elevation through `style.toml` rules that reference catalog keys (`shadow-xs`, `shadow-md`, etc.).
 
-Theme Studio **Other → Shadow** edits a **single composite** shadow (color, opacity, blur, spread, offset). That override must stay consistent with the full ladder so SDK controls and cards respond together.
+Luma Studio **Other → Shadow** edits a **single composite** shadow (color, opacity, blur, spread, offset). That override must stay consistent with the full ladder so SDK controls and cards respond together.
 
 The gap: we do not yet model parts and ladder as a **unified, regenerating system** — only a flat fan-out of one CSS string to every `shadow-*` key.
 
@@ -63,7 +63,7 @@ The `@theme inline` block maps `--radius-sm: calc(var(--radius) - 4px)` and `--s
 
 `ShadcnShadow` and `ShadcnRadius` do not yet expose `ALL` / `css_name()` like `ShadcnToken`.
 
-### Theme Studio Other tab
+### Luma Studio Other tab
 
 - Sliders → `ThemeShadowOverride` (one box-shadow layer)
 - Saved as `"shadow"` in `StudioOverrides::token_overrides()`
@@ -74,7 +74,7 @@ The `@theme inline` block maps `--radius-sm: calc(var(--radius) - 4px)` and `--s
 
 When `"shadow"` is overridden, `apply_token_overrides` copies that CSS string to **all** ladder keys (`shadow-2xs` … `shadow-2xl`).
 
-**Effect:** controls pick up Theme Studio edits (fixes cards-only update bug).  
+**Effect:** controls pick up Luma Studio edits (fixes cards-only update bug).  
 **Cost:** the theme’s per-level ladder is **flattened** — `shadow-xs` and `shadow-md` become identical until reload from base CSS.
 
 ### Consumers
@@ -86,7 +86,7 @@ When `"shadow"` is overridden, `apply_token_overrides` copies that CSS string to
 | Floating menu, Primary textfield/textarea | `shadow-md` / `shadow-xs` via stylesheet rules |
 | App one-off elevated primary | `ButtonBuilder::with_look` + `look.shadow(...)` (no look change) |
 
-Control paint / projection is done ([2-elevation.md](../retired/2-elevation.md)). This note owns **ladder parts ↔ Theme Studio round-trip only**.
+Control paint / projection is done ([2-elevation.md](../retired/2-elevation.md)). This note owns **ladder parts ↔ Luma Studio round-trip only**.
 
 ---
 
@@ -97,13 +97,13 @@ Control paint / projection is done ([2-elevation.md](../retired/2-elevation.md))
 ```
 shadow parts  →  shadow ladder (2xs…2xl)  →  look.shadow() / controls
        ↑                                              ↓
-              Theme Studio Other tab
+              Luma Studio Other tab
 ```
 
 Today:
 
 - Parts exist in catalog but are disconnected from Other tab and from ladder regeneration.
-- Ladder exists in catalog but Theme Studio override destroys level differentiation.
+- Ladder exists in catalog but Luma Studio override destroys level differentiation.
 - `ShadcnShadow` is complete symbolically; decomposed parts have no symbolic type.
 
 ---
@@ -142,7 +142,7 @@ impl ShadcnShadow {
 
 ### 2. Ladder regeneration
 
-Tweakcn bakes differentiated ladders in `:root` (e.g. academic: same 3px offset, opacity and second-layer offsets vary by level). Theme Studio edits should **regenerate** the ladder, not copy one string everywhere.
+Tweakcn bakes differentiated ladders in `:root` (e.g. academic: same 3px offset, opacity and second-layer offsets vary by level). Luma Studio edits should **regenerate** the ladder, not copy one string everywhere.
 
 **On theme load**
 
@@ -169,7 +169,7 @@ Rules can be derived from fixture themes (`academic.css`, `bubblegum.css`, `nati
 
 Fan-out of one identical string remains a **fallback** only if regeneration is unavailable.
 
-### 4. Theme Studio (thin layer)
+### 4. Luma Studio (thin layer)
 
 **Load (Other → Shadow):**
 
@@ -183,7 +183,7 @@ Fan-out of one identical string remains a **fallback** only if regeneration is u
 
 **Optional later:** read-only ladder preview (xs / md / xl) in Other or Design Tokens panel.
 
-Theme Studio should **not** own generation logic — it belongs in look-shadcn so gallery and apps benefit.
+Luma Studio should **not** own generation logic — it belongs in look-shadcn so gallery and apps benefit.
 
 ### 5. Radius (same pattern, smaller scope)
 
@@ -206,7 +206,7 @@ No need to parse `@theme` calc aliases.
 2. `ShadcnShadowParts` + read from catalog / derive from `--shadow`
 3. Ladder generator + unit tests against `academic.css`, `bubblegum.css` fixtures
 4. Replace flat fan-out with regeneration on override apply
-5. Theme Studio: load/save through parts + regeneration
+5. Luma Studio: load/save through parts + regeneration
 6. Keep [2-elevation.md](../retired/2-elevation.md) cross-links current; note in `docs/architecture.md` if the ladder model becomes a public contract
 
 ---
@@ -219,7 +219,7 @@ No need to parse `@theme` calc aliases.
 | Parts read | `shadow_parts()` matches `:root` `shadow-x` … `shadow-color` |
 | Level parse | `look.shadow(Md)` ≠ empty; md differs from xs on unloaded academic |
 | Regenerate | After parts edit, ladder keys differ by level; md ≠ xs |
-| Override round-trip | Theme Studio–style single-layer edit updates parts + full ladder |
+| Override round-trip | Luma Studio–style single-layer edit updates parts + full ladder |
 | Control resolution | Outline button elevation still resolves `shadow-xs` (or configured rule) from updated catalog |
 
 ---
@@ -228,8 +228,8 @@ No need to parse `@theme` calc aliases.
 
 - Parsing `@theme inline` self-referential aliases
 - Storing only `--shadow` and dropping the ladder (controls use `shadow-xs`, `shadow-md`, …)
-- Moving generation logic into Theme Studio or SDK
-- Per-level shadow editors in Theme Studio v1 (regeneration from one editor is enough initially)
+- Moving generation logic into Luma Studio or SDK
+- Per-level shadow editors in Luma Studio v1 (regeneration from one editor is enough initially)
 - Outline / Surface textfield elevation (Primary-only; won't add)
 - Absolute shadow backing or bleed/clip QA (unrelated leftovers from elevation; revisit only if clipping appears)
 
@@ -252,6 +252,6 @@ No need to parse `@theme` calc aliases.
 - Shadow parse: `crates/look-shadcn/src/shadow.rs`
 - Symbolic shadow roles: `crates/look-shadcn/src/tokens.rs` (`ShadcnShadow`)
 - Look resolution: `crates/look-shadcn/src/look.rs` (`shadow()`, `apply_token_overrides`)
-- Theme Studio shadow UI: `apps/theme-studio/src/studio/theme_sidebar/panels/other.rs`
-- Overrides: `apps/theme-studio/src/studio/overrides.rs` (`ThemeShadowOverride`, `token_overrides`)
+- Luma Studio shadow UI: `apps/luma-studio/src/studio/theme_sidebar/panels/other.rs`
+- Overrides: `apps/luma-studio/src/studio/overrides.rs` (`ThemeShadowOverride`, `token_overrides`)
 - Gallery tuning prototype: `apps/gallery/src/gallery/panes/prototypes/shadow_button/`

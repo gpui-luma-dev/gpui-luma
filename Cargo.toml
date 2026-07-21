@@ -5,7 +5,7 @@ members = [
   "crates/look-shadcn",
   "crates/look-shadcn-inspect",
   "apps/gallery",
-  "apps/theme-studio",
+  "apps/luma-studio",
   "apps/neumorphic-demo",
   "apps/color-viz",
   "apps/graph-viz",
@@ -16,7 +16,7 @@ members = [
   "apps/shells/detached",
   "apps/shells/split-titlebar",
 ]
-default-members = ["crates/sdk", "apps/gallery", "apps/theme-studio", "apps/neumorphic-demo", "apps/color-viz", "apps/graph-viz"]
+default-members = ["crates/sdk", "apps/gallery", "apps/luma-studio", "apps/neumorphic-demo", "apps/color-viz", "apps/graph-viz"]
 
 [workspace.package]
 edition = "2024"
@@ -53,7 +53,7 @@ opt-level = 2
 [profile.dev.package.gpui-luma-gallery]
 opt-level = 1
 
-[profile.dev.package.gpui-luma-theme-studio]
+[profile.dev.package.luma-studio]
 opt-level = 1
 
 [profile.dev.package.gpui-luma-neumorphic-demo]

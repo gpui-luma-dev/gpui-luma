@@ -36,7 +36,7 @@ The `Card` control resolves its visual properties dynamically at paint/layout ti
 - [ ] Wire Card resolving template inside [templates.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/templates.rs).
 - [ ] Add a demo card showcase page to the Gallery.
 - [ ] Refactor the Gallery application's color inspector panels ([shell.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/shared/inspector/shell.rs)) to use the new SDK `Card` control instead of manually styled `div` containers.
-- [ ] Convert the local `card` and `card_header` helper functions in Theme Studio's panels ([common.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panels/common.rs)) to use the new first-class SDK `Card` control.
+- [ ] Convert the local `card` and `card_header` helper functions in Luma Studio's panels ([common.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panels/common.rs)) to use the new first-class SDK `Card` control.
 
 ## Acceptance Criteria
 - Cards display rounded corners, a subtle border, and card shadow based on active Shadcn variables.

@@ -1,7 +1,7 @@
 # Issue #2-GL: WPF-Style Grid Layout Panel
 
 ## Description
-In visual design interfaces (such as `theme-studio` control sidebars), aligning labels, sliders, text inputs, and unit suffixes across separate stacked rows using basic nested flexboxes (`hstack!`/`vstack!`) is fragile and visually inconsistent. Because different labels have varying text lengths and some sliders lack unit suffixes, the controls become unaligned. Hardcoding layout widths (e.g. `.w(px(60.0))` on labels) acts as a temporary workaround but fails under localization or layout size updates.
+In visual design interfaces (such as `luma-studio` control sidebars), aligning labels, sliders, text inputs, and unit suffixes across separate stacked rows using basic nested flexboxes (`hstack!`/`vstack!`) is fragile and visually inconsistent. Because different labels have varying text lengths and some sliders lack unit suffixes, the controls become unaligned. Hardcoding layout widths (e.g. `.w(px(60.0))` on labels) acts as a temporary workaround but fails under localization or layout size updates.
 
 To solve this systematically, we will implement a WPF-inspired **`grid_layout!`** panel. This layout control will support track definitions (`RowDefinitions` and `ColumnDefinitions`) with Star and Pixel sizing, allowing child elements to be explicitly positioned at coordinates `(row, col)` with optional spanning (`colspan`). 
 
@@ -159,7 +159,7 @@ When building the container, `GridLayout` compiles down to nested GPUI `div()` c
 - [ ] Export `grid_layout!` and `GridLayout` via the SDK prelude.
 
 ### Phase 3: Integration & Alignment Tuning
-- [ ] Replace the nested `hstack!` slider rows in [other.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/theme_sidebar/panels/other.rs) with the new `grid_layout!` implementation.
+- [ ] Replace the nested `hstack!` slider rows in [other.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/theme_sidebar/panels/other.rs) with the new `grid_layout!` implementation.
 - [ ] Implement text measurements for label fields to drive the dynamic label column `GridTrack::Px` calculation.
 - [ ] Run verification tests ensuring slider thumbs, text values, and empty suffix fields align vertically across all category blocks.
 - [ ] Confirm code formatting (`cargo fmt`), lint warnings (`cargo clippy`), and existing tests pass cleanly.

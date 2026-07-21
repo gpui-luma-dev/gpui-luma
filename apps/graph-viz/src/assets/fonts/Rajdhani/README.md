@@ -1,6 +1,6 @@
 # Rajdhani (Jarvis built-in theme only)
 
-Bundled for the embedded `jarvis` theme when the gallery or Theme Studio runs with `jarvis`.
+Bundled for the embedded `jarvis` theme when the gallery or Luma Studio runs with `jarvis`.
 
 | File | Purpose |
 |------|---------|

@@ -133,7 +133,7 @@ fn render_badge_with_loader(loading: bool) -> impl IntoElement {
    * Add the `layer_stack!` macro inside `crates/sdk/src/macros.rs`.
 2. **Refactor Existing Bleed-Prone Swatches**:
    * Update [multi_mixer_pane.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/color/multi_mixer_pane.rs) swatches to use the new primitive.
-   * Review other layout widgets in theme studio (like preview chips, selection badges) where absolute overlays are used and convert them.
+   * Review other layout widgets in luma studio (like preview chips, selection badges) where absolute overlays are used and convert them.
 
 ---
 

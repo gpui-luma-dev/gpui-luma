@@ -57,8 +57,8 @@ The old `Slider` is currently used in the following locations, which must be upd
 1. **Gallery App (`apps/gallery/`)**:
    * [pane.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/slider/pane.rs): Merge the old `pane.rs` and the new `slider2_pane.rs` into a single unified `slider_pane.rs` showing off all variants (standard fill, vertical, reversed, domain, blocked, angular, wrapping, and multi-stop).
    * [system_panel.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/introduction/system_panel.rs) & [shadow_button/pane.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/prototypes/shadow_button/pane.rs): Update imports and handle event destructuring.
-2. **Theme Studio (`apps/theme-studio/`)**:
-   * [system_preferences.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panels/system_preferences.rs) & [other.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/theme_sidebar/panels/other.rs): Update imports and handle event destructuring.
+2. **Luma Studio (`apps/luma-studio/`)**:
+   * [system_preferences.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panels/system_preferences.rs) & [other.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/theme_sidebar/panels/other.rs): Update imports and handle event destructuring.
 3. **Neumorphic Demo (`apps/neumorphic-demo/`)**:
    * [app.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/neumorphic-demo/src/app.rs), [slider_template.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/neumorphic-demo/src/slider_template.rs), and [dial.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/neumorphic-demo/src/components/dial.rs): Update custom templates to implement `Slider2Template` (adding `active_thumb_id` and using `Slider2RenderModel`).
 

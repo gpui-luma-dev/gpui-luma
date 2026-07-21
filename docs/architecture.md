@@ -6,7 +6,7 @@ This document defines the core architecture, crate layout, module mapping, and d
 
 ## 1. Project Scope & Workspace Structure
 
-`gpui-luma` is a GPUI-based reusable component SDK. Downstream applications (such as the gallery and theme studio) are consumers that compose these SDK controls, rather than inventing their own interactive chrome.
+`gpui-luma` is a GPUI-based reusable component SDK. Downstream applications (such as the gallery and luma studio) are consumers that compose these SDK controls, rather than inventing their own interactive chrome.
 
 ### Workspace Crates
 
@@ -14,9 +14,9 @@ This document defines the core architecture, crate layout, module mapping, and d
 *   **`crates/look-shadcn` (`gpui-luma-look-shadcn`)**: The CSS-first product runtime theme (Shadcn/CSS look crate). It defines styling catalogs, stylesheet config matching, and look-specific extensions.
 *   **`crates/look-shadcn-inspect`**: Support utilities for theme visual inspection and palette debugging.
 *   **`apps/gallery` (`gpui-luma-gallery`)**: The main showcase and interactive validation app for controls and styles.
-*   **`apps/theme-studio` (`gpui-luma-theme-studio`)**: The theme customization dashboard and visual design testing studio. System font classification for typography pickers lives in `studio/font_catalog/`.
+*   **`apps/luma-studio` (`luma-studio`)**: The theme customization dashboard and visual design testing studio. System font classification for typography pickers lives in `studio/font_catalog/`.
 *   **`apps/color-viz` (`gpui-luma-color-viz`)**: Color visualization workspace (Shadcn look, same theme CLI as gallery).
-*   **`apps/graph-viz` (`gpui-luma-graph-viz`)**: Graph visualization workspace with theme-studio workbench shell (theme sidebar + tabbed content).
+*   **`apps/graph-viz` (`gpui-luma-graph-viz`)**: Graph visualization workspace with luma-studio workbench shell (theme sidebar + tabbed content).
 *   **`apps/shells/`**: Full-window `SplitView` shell reference apps (unified, inset, icon-rail, detached, split-titlebar) with shared theme and Properties navigation sample.
 
 ### Crate Dependencies
@@ -25,7 +25,7 @@ This document defines the core architecture, crate layout, module mapping, and d
 graph TD
     Gallery[apps/gallery] --> SDK[crates/sdk]
     Gallery --> Look[crates/look-shadcn]
-    Studio[apps/theme-studio] --> SDK
+    Studio[apps/luma-studio] --> SDK
     Studio --> Look
     ColorViz[apps/color-viz] --> SDK
     ColorViz --> Look
@@ -103,9 +103,9 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
 *   [`ext.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/ext.rs): Layout extension modifiers (`bg_cn`, `text_cn`, `gap_cn`, `shadow_cn`).
 *   **Elevation:** Control/container shadows resolve from `[[*.elevation_rules]]` in `assets/style.toml` → catalog `--shadow-*` tokens → look fields → template `.shadow()`. SDK hosts reserve projection via `ShadowProjectionInsets` / elevation slots so disabled paint-clear does not shift layout. App chrome may use `div().shadow_cn(ShadcnShadow::…)` inside `with_look`.
 
-### `apps/theme-studio` Experimental Layout Prototypes
-*   `studio/prototypes/flex_layout.rs`: App-local responsive flow prototype retained for Theme Studio experimentation and not part of the SDK surface.
-*   `studio/prototypes/column_layout.rs`: App-local estimated masonry / column-packing prototype retained for Theme Studio experimentation and not part of the SDK surface.
+### `apps/luma-studio` Experimental Layout Prototypes
+*   `studio/prototypes/flex_layout.rs`: App-local responsive flow prototype retained for Luma Studio experimentation and not part of the SDK surface.
+*   `studio/prototypes/column_layout.rs`: App-local estimated masonry / column-packing prototype retained for Luma Studio experimentation and not part of the SDK surface.
 *   `studio/content_tabs/cards/`: Cards-tab board composition and app-local layout tuning layered on top of the experimental layout prototypes.
 
 ---

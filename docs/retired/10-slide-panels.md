@@ -12,7 +12,7 @@ Support standard keyboard accessibility:
 
 ## Constraints
 > [!IMPORTANT]
-> There should be no changes to the `theme-studio` app for this work.
+> There should be no changes to the `luma-studio` app for this work.
 > The prototype control and pane must be fully self-contained within the Gallery application under `apps/gallery/src/gallery/panes/prototypes/slide_panel/` to ensure zero impact outside the gallery.
 
 ## Tasks

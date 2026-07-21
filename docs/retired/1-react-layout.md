@@ -2,7 +2,7 @@
 
 ## Description
 
-Theme Studio's current Cards tab is an absolute-positioned demo board. That is useful for manual arrangement, but it is the wrong behavior for the "tweakcn-style" card gallery use case where cards should react to the available horizontal space.
+Luma Studio's current Cards tab is an absolute-positioned demo board. That is useful for manual arrangement, but it is the wrong behavior for the "tweakcn-style" card gallery use case where cards should react to the available horizontal space.
 
 The target behavior is:
 
@@ -49,11 +49,11 @@ That points to wrapped flex layout with item basis, grow, shrink, and min/max wi
 
 ## Why The Current Cards Tab Is Not This
 
-The live Theme Studio Cards tab currently renders an absolute-positioned board:
+The live Luma Studio Cards tab currently renders an absolute-positioned board:
 
-* [`apps/theme-studio/src/studio/content/board.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/content/board.rs)
-* [`apps/theme-studio/src/studio/panel_layout.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panel_layout.rs)
-* [`apps/theme-studio/src/studio/panel_layout_config.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panel_layout_config.rs)
+* [`apps/luma-studio/src/studio/content/board.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/content/board.rs)
+* [`apps/luma-studio/src/studio/panel_layout.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panel_layout.rs)
+* [`apps/luma-studio/src/studio/panel_layout_config.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panel_layout_config.rs)
 
 That surface persists explicit coordinates and is effectively a draggable board mode.
 
@@ -168,7 +168,7 @@ pub struct ReactiveCardFlow {
 
 This would compile to `FlexLayout`, not replace it.
 
-That keeps the base primitive general while still making the Theme Studio and Gallery use case easy to express.
+That keeps the base primitive general while still making the Luma Studio and Gallery use case easy to express.
 
 ---
 
@@ -230,9 +230,9 @@ impl CardWidthClass {
 }
 ```
 
-### Likely Mapping For Current Theme Studio Cards
+### Likely Mapping For Current Luma Studio Cards
 
-Based on the current board widths in [`apps/theme-studio/src/studio/panel_layout.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panel_layout.rs):
+Based on the current board widths in [`apps/luma-studio/src/studio/panel_layout.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panel_layout.rs):
 
 * `Compact`
   * `CreateAccount` (`340`)
@@ -285,9 +285,9 @@ Avoid in v1:
 
 ---
 
-## Theme Studio Implication
+## Luma Studio Implication
 
-Theme Studio likely wants two distinct card surfaces:
+Luma Studio likely wants two distinct card surfaces:
 
 1. **Board mode**
    Persisted positions, drag arrangement, explicit card placement.
@@ -303,7 +303,7 @@ Trying to make one surface serve both jobs will blur the seam and produce awkwar
 
 ### Manual Verification
 
-Add a temporary Theme Studio or Gallery surface showing:
+Add a temporary Luma Studio or Gallery surface showing:
 
 * 12 cards with shared min / preferred / max widths
 * live resizing of the host pane
@@ -334,6 +334,6 @@ Do not frame this as "we need a Flex because web users know Flex."
 
 Frame it as:
 
-* Theme Studio has a real reactive card-fill layout use case.
+* Luma Studio has a real reactive card-fill layout use case.
 * Wrapped flex with width constraints is the correct behavioral seam.
 * Familiarity is a bonus, not the architectural reason.

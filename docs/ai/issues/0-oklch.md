@@ -6,7 +6,7 @@
 > **Color Library Decision**: All native color representation, parsing, and color-space conversions must leverage the standard `palette` crate (already configured in `Cargo.toml`). Avoid handwritten mathematical conversions, matrix multipliers, or custom bisection gamut clamps in the look or SDK layers.
 
 ## Description
-Migrate the internal color representation, state calculators, and theme studio serialization in the `gpui-luma` workspace from HSL/RGB to native OKLCH.
+Migrate the internal color representation, state calculators, and luma studio serialization in the `gpui-luma` workspace from HSL/RGB to native OKLCH.
 
 ## Rationale
 * **Precision & Consistency**: Avoid precision loss and rounding shifts caused by continuous HSL $\leftrightarrow$ OKLCH round-trip conversions when computing dynamic state highlights (e.g., hover/pressed states) or updating studio overrides.

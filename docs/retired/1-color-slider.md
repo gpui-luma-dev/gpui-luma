@@ -24,7 +24,7 @@ We should rationalize this by aligning their control interfaces and builder APIs
 - Do not add color interpolation or color-space specific features directly to the base `Slider` control.
 - Do not wrap `SliderControl` inside `ColorSlider`, and do not share templates between them. Keep them as separate, parallel controls.
 - Do not add thumb shape enums (like Circle, Square, Bar) to the core `SliderModel`.
-- Do not migrate or replace the Theme Studio HS mixer sliders in this pass; validation in the gallery is sufficient.
+- Do not migrate or replace the Luma Studio HS mixer sliders in this pass; validation in the gallery is sufficient.
 - Do not remove `color_slider` immediately.
 - Do not mix `ColorSlider` demos into the semantic slider pane at `apps/gallery/src/gallery/panes/slider/pane.rs`. Validate semantic `Slider` sizing there, and validate `ColorSlider` separately in its own color/gallery surfaces.
 

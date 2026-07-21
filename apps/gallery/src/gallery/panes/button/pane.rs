@@ -4,24 +4,30 @@ use std::sync::Arc;
 
 use gpui::{
     AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div,
-    prelude::*, px,
+    prelude::*, px, transparent_black,
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize, default_button_family_theme};
 use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasPresenter,
     default_button_template,
 };
+use gpui_luma::controls::resizable_panels::{
+    ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
+};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma::theme::{InteractionState};
-use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
+use gpui_luma::theme::InteractionState;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnButtonStyle, ShadcnLook, ShadcnTextRole};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
-use super::inspector_shell::ButtonInspectorShell;
-use super::inspector_tree::spawn_button_inspector_tree;
-use super::super::shared::{gallery_pane_with_inspector, notify_entity, InspectorToggleRegistry};
+use super::super::shared::{notify_entity, InspectorToggleRegistry};
 use super::labeling::render_vertical_section_rail;
+use super::theme_inspector::ThemeInspector;
+
+const BUTTON_INSPECTOR_INITIAL_WIDTH: f32 = 620.0;
+const BUTTON_INSPECTOR_MIN_WIDTH: f32 = 420.0;
+const BUTTON_INSPECTOR_MAX_WIDTH: f32 = 860.0;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ButtonPane {
@@ -30,7 +36,8 @@ pub(in crate::gallery) struct ButtonPane {
     ghost_button: Entity<Button>,
     primary_button: Entity<Button>,
     state_preview: Entity<ButtonStatePreview>,
-    inspector: Entity<ButtonInspectorShell>,
+    inspector: Entity<ThemeInspector>,
+    split: Entity<ResizablePanels>,
     secondary_clicks: usize,
     outline_clicks: usize,
     ghost_clicks: usize,
@@ -39,16 +46,31 @@ pub(in crate::gallery) struct ButtonPane {
 
 impl ButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        let tree = spawn_button_inspector_tree(look.clone(), cx);
-        let inspector = cx.new(|cx| ButtonInspectorShell::new(look.clone(), tree, cx));
+        let secondary_button = look.secondary_button("button-secondary-example").label("Secondary").spawn(cx);
+        let outline_button = look.outline_button("button-outline-example").label("Outline").spawn(cx);
+        let ghost_button = look.ghost_button("button-ghost-example").label("Ghost").spawn(cx);
+        let primary_button = look.primary_button("button-primary-example").label("Primary").spawn(cx);
+        let state_preview = cx.new(|_| ButtonStatePreview::new(look.clone()));
+        let inspector = cx.new(|cx| ThemeInspector::new(look.clone(), cx));
+        let split = button_split(
+            look.clone(),
+            primary_button.clone(),
+            secondary_button.clone(),
+            outline_button.clone(),
+            ghost_button.clone(),
+            state_preview.clone(),
+            inspector.clone(),
+            cx,
+        );
 
         Self {
-            secondary_button: look.secondary_button("button-secondary-example").label("Secondary").spawn(cx),
-            outline_button: look.outline_button("button-outline-example").label("Outline").spawn(cx),
-            ghost_button: look.ghost_button("button-ghost-example").label("Ghost").spawn(cx),
-            primary_button: look.primary_button("button-primary-example").label("Primary").spawn(cx),
-            state_preview: cx.new(|_| ButtonStatePreview::new(look)),
+            secondary_button,
+            outline_button,
+            ghost_button,
+            primary_button,
+            state_preview,
             inspector,
+            split,
             secondary_clicks: 0,
             outline_clicks: 0,
             ghost_clicks: 0,
@@ -72,28 +94,17 @@ impl ButtonPane {
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
-        gallery_pane_with_inspector(
-            "button",
-            "Command (Text)",
-            div()
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap_5()
-                .child(
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap(px(12.0))
-                        .child(self.primary_button.clone())
-                        .child(self.secondary_button.clone())
-                        .child(self.outline_button.clone())
-                        .child(self.ghost_button.clone()),
-                )
-                .child(self.state_preview.clone())
-                .into_any_element(),
-            self.inspector.clone(),
-            toggles,
+        render_button_pane_shell(
+            toggles.get("button").visible,
+            toggles.get("button").toggle.clone(),
+            self.split.clone(),
+            render_button_showcase(
+                self.primary_button.clone(),
+                self.secondary_button.clone(),
+                self.outline_button.clone(),
+                self.ghost_button.clone(),
+                self.state_preview.clone(),
+            ),
             look,
         )
     }
@@ -105,11 +116,7 @@ impl ButtonPane {
         notify_entity(&self.primary_button, cx);
         notify_entity(&self.state_preview, cx);
         notify_entity(&self.inspector, cx);
-        notify_entity(&self.inspector.read(cx).tree(), cx);
-        let detail = self.inspector.read(cx).detail();
-        notify_entity(&detail, cx);
-        detail.update(cx, |detail, cx| detail.notify_preview_buttons(cx));
-        notify_entity(&self.inspector.read(cx).split(), cx);
+        notify_entity(&self.split, cx);
     }
 
     fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
@@ -159,6 +166,124 @@ impl ButtonPane {
             }
         }
     }
+}
+
+fn button_split(
+    look: Arc<ShadcnLook>,
+    primary_button: Entity<Button>,
+    secondary_button: Entity<Button>,
+    outline_button: Entity<Button>,
+    ghost_button: Entity<Button>,
+    state_preview: Entity<ButtonStatePreview>,
+    inspector: Entity<ThemeInspector>,
+    cx: &mut Context<GalleryApp>,
+) -> Entity<ResizablePanels> {
+    let chrome = look.chrome();
+    let fill_panel = ResizablePanelSpec::new_render(move || {
+        div().size_full().min_h(px(0.0)).min_w(px(0.0)).flex().items_stretch().justify_center().child(
+            render_centered_button_showcase(render_button_showcase(
+                primary_button.clone(),
+                secondary_button.clone(),
+                outline_button.clone(),
+                ghost_button.clone(),
+                state_preview.clone(),
+            )),
+        )
+    })
+    .weight(1.0)
+    .min(px(320.0))
+    .bg(transparent_black());
+
+    let inspector_panel = ResizablePanelSpec::new_render(move || {
+        div().size_full().min_h(px(0.0)).min_w(px(0.0)).pl(px(28.0)).child(inspector.clone())
+    })
+    .size(px(BUTTON_INSPECTOR_INITIAL_WIDTH))
+    .min(px(BUTTON_INSPECTOR_MIN_WIDTH))
+    .max(px(BUTTON_INSPECTOR_MAX_WIDTH))
+    .bg(chrome.content_background);
+
+    look.resizable_panels("button-theme-inspector-page-split")
+        .orientation(ResizablePanelsOrientation::Horizontal)
+        .show_border(false)
+        .show_handle(true)
+        .resize_handle(ResizeHandleSize::Sm)
+        .handle_grip(true)
+        .panels([fill_panel, inspector_panel])
+        .spawn(cx)
+}
+
+fn render_button_pane_shell(
+    inspector_visible: bool,
+    toggle: impl IntoElement,
+    split: Entity<ResizablePanels>,
+    content: AnyElement,
+    look: &ShadcnLook,
+) -> AnyElement {
+    let chrome = look.chrome();
+    let title_style = look.typography_role(ShadcnTextRole::H3);
+
+    div()
+        .size_full()
+        .relative()
+        .flex()
+        .flex_col()
+        .overflow_hidden()
+        .bg(chrome.content_background)
+        .p(px(28.0))
+        .child(
+            div()
+                .w_full()
+                .flex()
+                .items_start()
+                .justify_between()
+                .gap(px(12.0))
+                .child(div().typography_style(title_style).text_color(chrome.title_text).child("Command (Text)"))
+                .child(toggle),
+        )
+        .child(div().min_h(px(0.0)).flex_1().child(if inspector_visible {
+            split.into_any_element()
+        } else {
+            render_centered_button_showcase(content)
+        }))
+        .into_any_element()
+}
+
+fn render_centered_button_showcase(content: AnyElement) -> AnyElement {
+    div()
+        .min_w(px(0.0))
+        .min_h(px(0.0))
+        .flex_1()
+        .flex()
+        .items_center()
+        .justify_center()
+        .child(div().relative().flex().flex_col().items_center().justify_center().gap_4().occlude().child(content))
+        .into_any_element()
+}
+
+fn render_button_showcase(
+    primary_button: Entity<Button>,
+    secondary_button: Entity<Button>,
+    outline_button: Entity<Button>,
+    ghost_button: Entity<Button>,
+    state_preview: Entity<ButtonStatePreview>,
+) -> AnyElement {
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap_5()
+        .child(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(12.0))
+                .child(primary_button)
+                .child(secondary_button)
+                .child(outline_button)
+                .child(ghost_button),
+        )
+        .child(state_preview)
+        .into_any_element()
 }
 
 #[derive(Clone)]

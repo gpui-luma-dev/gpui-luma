@@ -42,14 +42,14 @@ Completed changes:
 Verification completed:
 
 - `cargo fmt --all`
-- `cargo check -p gpui-luma -p gpui-luma-look-shadcn -p gpui-luma-gallery -p gpui-luma-theme-studio`
+- `cargo check -p gpui-luma -p gpui-luma-look-shadcn -p gpui-luma-gallery -p luma-studio`
 - `cargo clippy -p gpui-luma -p gpui-luma-look-shadcn --lib -- -D warnings`
 - Visual verification completed by user.
 
 Known unrelated blockers:
 
 - `cargo test -p gpui-luma pager` is blocked by an unrelated selector test compile error in `crates/sdk/src/controls/selector/template.rs`.
-- App-level clippy still has pre-existing Theme Studio baseline warnings.
+- App-level clippy still has pre-existing Luma Studio baseline warnings.
 
 ## Original Shape
 
@@ -118,7 +118,7 @@ Those are button-family concerns. Pager may need a compact pager-specific varian
 
 The button size/radius experiment demonstrated the real cost:
 
-- a local Theme Studio exploration touched pager
+- a local Luma Studio exploration touched pager
 - not because pager behavior needed work
 - but because pager had adopted the button look’s internal data shape as its dependency surface
 

@@ -385,7 +385,7 @@ Migrate all legacy single-thumb `Slider` usages in the codebase to use the new u
 - Ensure all other client preference panels and demos are adapted and compile.
 - Confirm zero impact on the isolated `ColorSlider` controls.
 
-**Done:** Legacy control deleted; implementation lives flat under `slider/` (with `theme.rs` + `template/`); `slider/mod.rs` re-exports legacy names; `look.slider()` binds the new linear template; gallery unified to one Slider page; theme-studio, neumorphic custom templates, and event handlers updated; ColorSlider untouched.
+**Done:** Legacy control deleted; implementation lives flat under `slider/` (with `theme.rs` + `template/`); `slider/mod.rs` re-exports legacy names; `look.slider()` binds the new linear template; gallery unified to one Slider page; luma-studio, neumorphic custom templates, and event handlers updated; ColorSlider untouched.
 
 ### Phase 6: Add Color-Capable Track Rendering Hooks & ColorSlider Migration ✅
 

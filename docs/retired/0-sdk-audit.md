@@ -128,7 +128,7 @@ Most common inconsistency patterns found:
   - `crates/look-shadcn/src/controls/ext.rs` exposes `look.navigation_sidebar(...)`
   - `apps/gallery/src/gallery/control.rs`
   - `apps/gallery/src/gallery/panes/navigation_sidebar/pane.rs`
-  - `apps/theme-studio/src/studio/panels/dashboard.rs`
+  - `apps/luma-studio/src/studio/panels/dashboard.rs`
 - **Migration Impact:** Medium. Requires keyboard/mouse interaction gating at the top-level sidebar.
 
 ---
@@ -144,8 +144,8 @@ Most common inconsistency patterns found:
   - `crates/sdk/src/controls/accordion/control.rs`
 - **Downstream Usages:**
   - `apps/gallery/src/gallery/panes/accordion/pane.rs` uses `AccordionItem::enabled(false)` at build time
-  - `apps/theme-studio/src/studio/panels/accordion.rs`
-  - `apps/theme-studio/src/studio/theme_sidebar.rs`
+  - `apps/luma-studio/src/studio/panels/accordion.rs`
+  - `apps/luma-studio/src/studio/theme_sidebar.rs`
 - **Migration Impact:** Low. Additive runtime setter.
 
 ---
@@ -184,7 +184,7 @@ Most common inconsistency patterns found:
   - `crates/sdk/src/controls/textarea/model.rs`, `crates/sdk/src/controls/textarea/control.rs`
 - **Downstream Usages:**
   - `apps/gallery/src/gallery/control.rs` mutates `NavigationSidebar` and `SplitView` at runtime, but only on non-template properties
-  - `apps/theme-studio/src/studio/app.rs` calls `ResizablePanels::set_theme(...)`
+  - `apps/luma-studio/src/studio/app.rs` calls `ResizablePanels::set_theme(...)`
   - `apps/gallery/src/gallery/panes/context_menu/pane.rs` and `apps/gallery/src/gallery/panes/popup_menu/pane.rs` configure templates only at build time
   - `apps/gallery/src/gallery/panes/selection_panel/pane.rs` and `apps/gallery/src/gallery/panes/selector/pane.rs` show that related composite controls do support more runtime presentation mutation, highlighting the parity gap here
 - **Migration Impact:** Medium. Mostly additive setters, but the surface area is broad.
@@ -209,9 +209,9 @@ Most common inconsistency patterns found:
 - **Downstream Usages:**
   - `crates/look-shadcn/src/controls/ext.rs` exposes `look.textarea(...)`
   - `apps/gallery/src/gallery/panes/textarea/pane.rs`
-  - `apps/theme-studio/src/studio/panels/report.rs`
-  - `apps/theme-studio/src/studio/panels/upgrade.rs`
-  - contrast: `apps/theme-studio/src/studio/theme_sidebar.rs` actively uses `TextField::set_template(...)` and `TextField::set_look_override(...)`
+  - `apps/luma-studio/src/studio/panels/report.rs`
+  - `apps/luma-studio/src/studio/panels/upgrade.rs`
+  - contrast: `apps/luma-studio/src/studio/theme_sidebar.rs` actively uses `TextField::set_template(...)` and `TextField::set_look_override(...)`
 - **Migration Impact:** Medium. Mostly additive, but parity with `TextField` implies more than one new API.
 
 ---

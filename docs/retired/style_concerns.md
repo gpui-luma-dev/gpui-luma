@@ -33,7 +33,7 @@ This boundary is **fundamentally sound**. It preserves look-agnosticism by preve
 | Per-control `*ColorTable` structs + `fallback()` | Generic resolved-field bag or shared types |
 | `declare_look_table!` matrices (often 20–80 lines) | `[[component.color_rules]]` in TOML |
 | Imperative `_from_palette` re-implementations | Removed (single resolution path) |
-| Style tweaks requiring recompile | Edit TOML; reload at runtime (Theme Studio) |
+| Style tweaks requiring recompile | Edit TOML; reload at runtime (Luma Studio) |
 
 ### Target pipeline (thin shell)
 
@@ -350,7 +350,7 @@ The migration is successful when:
 2. No control file contains an imperative re-implementation of the same rules in `_from_palette`.
 3. Style changes for mapped properties require editing `style.toml`, not touching 25 Rust files.
 4. Remaining Rust in each `controls/*.rs` look function is a **thin shell** — state translation, spec construction, runtime math — readable in one screenful.
-5. Gallery/Theme Studio inspectors cite the matching TOML rule (rule index or selector) as provenance.
+5. Gallery/Luma Studio inspectors cite the matching TOML rule (rule index or selector) as provenance.
 6. Theme designers can override borders, focus geometry, shadows, typography, and role metrics without Rust changes.
 
 ---

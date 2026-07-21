@@ -1,6 +1,6 @@
 # Implementation Plan: Context-Aware Accordion & Decoupled Sidebar
 
-This document describes the plan to refactor the Accordion control's custom content closure signature in the `gpui-luma` SDK to support GPUI context parameters, introduce a standard form row visual template, and clean up the Theme Studio sidebar's layout.
+This document describes the plan to refactor the Accordion control's custom content closure signature in the `gpui-luma` SDK to support GPUI context parameters, introduce a standard form row visual template, and clean up the Luma Studio sidebar's layout.
 
 ---
 
@@ -10,14 +10,14 @@ Currently, the `AccordionControl` in the SDK renders custom content using a cont
 ```rust
 pub(crate) element: Option<Arc<dyn Fn() -> AnyElement + Send + Sync>>,
 ```
-Because the closure does not receive the GPUI application context, any content containing stateful, interactive controls (like textfields and dropdowns in the Theme Studio sidebar) cannot reactively query active state handles without complex workarounds (like wrapping values in `Arc<RwLock>` locks). 
+Because the closure does not receive the GPUI application context, any content containing stateful, interactive controls (like textfields and dropdowns in the Luma Studio sidebar) cannot reactively query active state handles without complex workarounds (like wrapping values in `Arc<RwLock>` locks). 
 
-Additionally, the Theme Studio sidebar layout suffers from collapsing flexbox containers because it mixes state management logic with UI layouts and uses alignment properties (`align=start`) that prevent elements from stretching.
+Additionally, the Luma Studio sidebar layout suffers from collapsing flexbox containers because it mixes state management logic with UI layouts and uses alignment properties (`align=start`) that prevent elements from stretching.
 
 This plan details the steps to:
 1. **Extend AccordionContent** with GPUI context parameters.
 2. **Implement a standard `property_row` layout helper** in the SDK to solve horizontal shrinking bugs.
-3. **Refactor Theme Studio Sidebar** by separating concerns into a `ThemeSidebarViewModel` and a clean, declarative `ThemeSidebar` View.
+3. **Refactor Luma Studio Sidebar** by separating concerns into a `ThemeSidebarViewModel` and a clean, declarative `ThemeSidebar` View.
 4. **Update the Gallery Pane** for the Accordion to exercise this context-aware rendering capability.
 
 ---
@@ -105,9 +105,9 @@ pub fn property_row(
 
 ---
 
-### Component C: Refactoring Theme Studio Sidebar
+### Component C: Refactoring Luma Studio Sidebar
 
-#### [MODIFY] [theme_sidebar.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/theme_sidebar.rs)
+#### [MODIFY] [theme_sidebar.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/theme_sidebar.rs)
 - Extract state management, active selectors, hex textfield tables, and subscription maps into a separate `ThemeSidebarViewModel` entity.
 - Make the `ThemeSidebar` View completely stateless. In `ThemeSidebar::render`:
   1. Initialize `ScrollContainer` to handle styled scrollbars.

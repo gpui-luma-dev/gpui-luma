@@ -132,7 +132,7 @@ You may use `div()` directly **only** for single-child structural wrappers, such
 3. Theme/background borders: `div().bg(look.color(ShadcnToken::Card)).child(inner)`
 
 ### 2.2 Prototype Structure
-When writing a new prototype inside `apps/gallery` or `apps/theme-studio`:
+When writing a new prototype inside `apps/gallery` or `apps/luma-studio`:
 *   Separate the demo pane (scaffolding shell, setup controls, copy texts) from the core control being evaluated.
 *   **Recommended pattern:** Keep `pane.rs` as the demo/shell container, and place the actual prototype behavior/rendering engine inside a sibling file (e.g. `control.rs` or `template.rs`). This allows successful prototypes to graduate into the SDK crate with minimal untangling.
 
@@ -155,7 +155,7 @@ When writing a new prototype inside `apps/gallery` or `apps/theme-studio`:
 To prevent runtime leasing panics (`cannot read/update App while already being updated`), observe the **Snapshot Discipline**:
 
 ```text
-               ThemeStudioApp ( authoritative coordinator )
+               LumaStudioApp ( authoritative coordinator )
                              ↓
              computes immutable BoardSnapshot
                              ↓

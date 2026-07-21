@@ -1,4 +1,4 @@
-# Issue #0: Theme Reconcile (tweakcn HTML vs theme-studio)
+# Issue #0: Theme Reconcile (tweakcn HTML vs luma-studio)
 
 ## Summary
 
@@ -83,11 +83,11 @@ Team Developer and Team Billing are **identical** in HTML (byte-identical classe
 
 ---
 
-## theme-studio Cards tab vs tweakcn HTML
+## luma-studio Cards tab vs tweakcn HTML
 
 ### Coverage
 
-| tweakcn HTML card | theme-studio panel | In Cards tab? |
+| tweakcn HTML card | luma-studio panel | In Cards tab? |
 |-------------------|-------------------|---------------|
 | Upgrade your subscription | `UpgradePanel` | ✓ |
 | Create an account | `AccountPanel` | ✓ |
@@ -98,16 +98,16 @@ Team Developer and Team Billing are **identical** in HTML (byte-identical classe
 | Date picker with range | `DateRangePanel` | ✓ |
 | Share this document | `SharePanel` | ✓ |
 | Move Goal / Exercise Minutes / charts | — | missing |
-| Chat | `ChatPanel` | theme-studio only |
-| Tree view | `TreeViewPanel` | theme-studio only |
-| Accordion | `AccordionPanel` | theme-studio only |
-| System preferences | `SystemPreferencesPanel` | theme-studio only |
+| Chat | `ChatPanel` | luma-studio only |
+| Tree view | `TreeViewPanel` | luma-studio only |
+| Accordion | `AccordionPanel` | luma-studio only |
+| System preferences | `SystemPreferencesPanel` | luma-studio only |
 
-Cards tab panels: `InspectableId::CARDS` in `apps/theme-studio/src/studio/inspectable.rs`.
+Cards tab panels: `InspectableId::CARDS` in `apps/luma-studio/src/studio/inspectable.rs`.
 
 ### Per-panel control comparison
 
-| Panel | tweakcn HTML | theme-studio (`apps/theme-studio/src/studio/panels/`) | Match? |
+| Panel | tweakcn HTML | luma-studio (`apps/luma-studio/src/studio/panels/`) | Match? |
 |-------|--------------|--------------------------------------------------------|--------|
 | **Team Members** | 3× `popover-trigger` outline sm | 3× `PopupMenu` outline sm, no elevation (`team.rs`) | ✓ |
 | **Report issue** | 2× `select-trigger` | 2× `Selector` (`report.rs`) | ✓ |
@@ -124,9 +124,9 @@ Cards tab panels: `InspectableId::CARDS` in `apps/theme-studio/src/studio/inspec
 | **Share document** | `select-trigger` + Copy Link outline | `Selector` + `outline_button` (`share.rs`) | ✓ |
 | **Date picker range** | `popover-trigger` outline | `PopupMenu` outline sm (`date_range.rs`) | ✓ (stub menu) |
 
-### Label vs component (theme-studio specifics)
+### Label vs component (luma-studio specifics)
 
-| theme-studio control | File | tweakcn equivalent |
+| luma-studio control | File | tweakcn equivalent |
 |---------------------|------|------------------|
 | `sofia_menu` label "Owner" | `team.rs` | `popover-trigger` outline |
 | `jackson_menu` label "Developer" | `team.rs` | `popover-trigger` outline |
@@ -143,7 +143,7 @@ Cards tab panels: `InspectableId::CARDS` in `apps/theme-studio/src/studio/inspec
 3. **One rule set per family** in `style.toml` / look crates; ignore layout-only utilities unless visually material.
 4. **Spot-check 2–3 themes** — tune the family rule, not individual cards.
 
-### Priority fixes (align theme-studio to tweakcn)
+### Priority fixes (align luma-studio to tweakcn)
 
 1. ~~**Team** (`team.rs`) — `PopupMenu` outline triggers instead of `Selector`.~~ **Done**
 2. ~~**Payments** (`payments.rs`) — `PopupMenu` ghost for row ⋯ actions.~~ **Done**
@@ -161,7 +161,7 @@ Cards tab panels: `InspectableId::CARDS` in `apps/theme-studio/src/studio/inspec
 
 1. Parse saved HTML for `data-slot` on triggers (`select-trigger`, `popover-trigger`, `dropdown-menu-trigger`).
 2. Classify into family A / B / C (hover modifier summary).
-3. Compare theme-studio panel Rust to that slot + variant, not to label text.
+3. Compare luma-studio panel Rust to that slot + variant, not to label text.
 4. Accept approximate parity unless a specific family looks wrong across themes.
 
 ---
@@ -174,5 +174,5 @@ Cards tab panels: `InspectableId::CARDS` in `apps/theme-studio/src/studio/inspec
 | Style rules | `crates/look-shadcn/assets/style.toml` |
 | Selector look | `crates/look-shadcn/src/controls/selector.rs`, `crates/sdk/src/controls/selector/` |
 | Popup menu look | `crates/look-shadcn/src/controls/popup_menu.rs`, `crates/sdk/src/controls/popup_menu/` |
-| theme-studio panels | `apps/theme-studio/src/studio/panels/` |
-| Cards tab filter | `apps/theme-studio/src/studio/inspectable.rs` (`CARDS`) |
+| luma-studio panels | `apps/luma-studio/src/studio/panels/` |
+| Cards tab filter | `apps/luma-studio/src/studio/inspectable.rs` (`CARDS`) |

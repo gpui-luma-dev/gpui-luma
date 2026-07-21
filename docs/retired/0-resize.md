@@ -3,7 +3,7 @@
 ## Description
 The standard horizontal [Slider](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/slider/mod.rs#L21) control in the SDK is designed with a fixed track width resolved from the active theme/stylesheet (`look.width` / `long_axis`). 
 
-When placed inside layout containers that scale dynamically as the window or sidebar width changes (such as the Luma Theme Studio sidebar), the slider does not dynamically resize its track or position its thumb knob. Instead:
+When placed inside layout containers that scale dynamically as the window or sidebar width changes (such as the Luma Studio sidebar), the slider does not dynamically resize its track or position its thumb knob. Instead:
 - The track remains locked at the theme's resolved pixel width (e.g. `260px` in [DefaultSliderTheme::resolve](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/slider/theme.rs#L44-L81)).
 - If parent containers restrict the width and specify `.overflow_hidden()`, the right portion of the slider and its thumb knob are clipped.
 - While the visual elements remain static, the actual hit-test/interaction bounds (determined by layout-phase canvas measurements) *do* stretch/shrink. This leads to a bug where the visual knob position is desynchronized from the actual value registered by clicking or dragging.
@@ -11,10 +11,10 @@ When placed inside layout containers that scale dynamically as the window or sid
 ---
 
 ## Motivation (Specific Instance)
-The primary motivation for this layout correction is the **Other** tab in the Luma Theme Studio sidebar ([theme_sidebar.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/theme_sidebar.rs)):
+The primary motivation for this layout correction is the **Other** tab in the Luma Studio sidebar ([theme_sidebar.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/theme_sidebar.rs)):
 
 - The sidebar contains two sliders for adjusting **Radius** and **Spacing** metrics.
-- The layout row is constructed using `hstack!` inside [metric_category_content](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/theme_sidebar.rs#L608):
+- The layout row is constructed using `hstack!` inside [metric_category_content](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/theme_sidebar.rs#L608):
   ```rust
   hstack! {
       gap=10 align=center;

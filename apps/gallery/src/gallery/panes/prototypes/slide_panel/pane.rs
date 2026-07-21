@@ -422,7 +422,7 @@ impl Render for SlidePanelDemo {
                     gap=PANE_SECTION_GAP;
                     render_pane_header(
                         "Slide Panel",
-                        "Open drawers from each edge and verify close behavior, focus trap, and focus restore without touching Theme Studio.",
+                        "Open drawers from each edge and verify close behavior, focus trap, and focus restore without touching Luma Studio.",
                         title,
                         muted,
                     ),

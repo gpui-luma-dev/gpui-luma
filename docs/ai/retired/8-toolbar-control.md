@@ -56,7 +56,7 @@ Hosted controls need more design work than a quick builder modifier. Buttons, to
 - [ ] Investigate whether hosted controls need toolbar-local theme specializations rather than generic ghost/outline control styling.
 - [ ] Keep template previews outside the Gallery pane file, e.g. `apps/gallery/src/gallery/panes/toolbar/preview.rs`.
 - [ ] Gallery `pane.rs` should show a working real-world toolbar example first; template/variant previews should be secondary or live in a dedicated preview module.
-- [ ] If Theme Studio needs toolbar previews, reuse the same preview module/pattern where practical instead of duplicating large toolbar construction code.
+- [ ] If Luma Studio needs toolbar previews, reuse the same preview module/pattern where practical instead of duplicating large toolbar construction code.
 - [ ] Update `docs/architecture.md` if the final toolbar abstraction changes the SDK customization or composition guidance.
 
 ## Acceptance Criteria

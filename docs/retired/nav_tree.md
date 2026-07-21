@@ -1,10 +1,10 @@
 # Navigation Tree Declarative Structure Design
 
-This document outlines the proposed design to improve the declarative nature of navigation tree definitions (such as sidebar links and property lists) in `gpui-luma`, specifically targeting the refactoring of [navigation_sidebar.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panels/navigation_sidebar.rs).
+This document outlines the proposed design to improve the declarative nature of navigation tree definitions (such as sidebar links and property lists) in `gpui-luma`, specifically targeting the refactoring of [navigation_sidebar.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panels/navigation_sidebar.rs).
 
 ## Problem Statement
 
-Currently, the navigation hierarchy in [navigation_sidebar.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panels/navigation_sidebar.rs) is defined using multiple static, flat arrays (`PINNED_PROPERTIES`, `LAYOUT_PROPERTIES`, etc.) which are then references inside group arrays, and stitched together at runtime in the `property_nodes()` function.
+Currently, the navigation hierarchy in [navigation_sidebar.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panels/navigation_sidebar.rs) is defined using multiple static, flat arrays (`PINNED_PROPERTIES`, `LAYOUT_PROPERTIES`, etc.) which are then references inside group arrays, and stitched together at runtime in the `property_nodes()` function.
 
 ### Limitations:
 1. **Fragmentation**: The hierarchical structure is split across multiple separate array variables, making it hard to visualize or refactor.

@@ -160,7 +160,7 @@ Luma path (implemented):
 - Optional `.separator_color()` / `.separator_hover_color()` overrides for tests or fixed demos
 - `gpui_luma_look_shadcn::ShadcnLook::split_view_theme()` and `.split_view(id)` factories
 
-Gallery and theme-studio shell split views should use the Shadcn theme factory so light/dark
+Gallery and luma-studio shell split views should use the Shadcn theme factory so light/dark
 toggles update separator cues without rebuilding the control.
 
 ### External Collapse Actions

@@ -1,7 +1,7 @@
 # Issue #1: Typography Standards and Sizing Scales
 
 ## Description
-Throughout the workspace, there are numerous occurrences of hardcoded font-sizes (e.g., `.text_size(px(14.0))`, `.text_size(px(11.0))`) in the application shells (`apps/gallery` and `apps/theme-studio`) and in several SDK controls.
+Throughout the workspace, there are numerous occurrences of hardcoded font-sizes (e.g., `.text_size(px(14.0))`, `.text_size(px(11.0))`) in the application shells (`apps/gallery` and `apps/luma-studio`) and in several SDK controls.
 
 This ad-hoc styling bypasses the centralized design token system (`LumaTypography`) and stylesheet mappings (`style.toml`). As a result, switching themes (such as from *Modern Minimal* to *Retro Arcade* or *Jarvis*) or adjusting scaling factors does not consistently scale or visual-style text elements.
 
@@ -19,13 +19,13 @@ Below are representative examples of hardcoded typography found in the workspace
   * [palette/pane.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/palette/pane.rs): Section titles use `.text_size(px(20.0))` and descriptions use `.text_size(px(13.0))`.
   * [dock_panel/pane.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/dock_panel/pane.rs): Uses `.text_size(px(20.0))` and `.text_size(px(13.0))`.
 
-#### 2. In `apps/theme-studio`
+#### 2. In `apps/luma-studio`
 * **App Shell Headers**:
-  * [studio/app.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/app.rs): The main header "Luma Theme Studio" is hardcoded to `.text_size(px(14.0))` with weight `SEMIBOLD`, and description metadata uses `.text_size(px(11.0))`.
+  * [studio/app.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/app.rs): The main header "Luma Studio" is hardcoded to `.text_size(px(14.0))` with weight `SEMIBOLD`, and description metadata uses `.text_size(px(11.0))`.
 * **Panes & Previews**:
-  * [studio/panels/dashboard.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panels/dashboard.rs): Dashboard headers are hardcoded to `.text_size(px(16.0))` and `.text_size(px(14.0))`.
-  * [studio/panels/team.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panels/team.rs): Uses `.text_size(px(16.0))` and `.text_size(px(12.0))` for member cards.
-  * [studio/panels/palette.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panels/palette.rs): Hardcoded titles at `.text_size(px(20.0))` and secondary metrics labels at `.text_size(px(12.0))`.
+  * [studio/panels/dashboard.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panels/dashboard.rs): Dashboard headers are hardcoded to `.text_size(px(16.0))` and `.text_size(px(14.0))`.
+  * [studio/panels/team.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panels/team.rs): Uses `.text_size(px(16.0))` and `.text_size(px(12.0))` for member cards.
+  * [studio/panels/palette.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panels/palette.rs): Hardcoded titles at `.text_size(px(20.0))` and secondary metrics labels at `.text_size(px(12.0))`.
 
 #### 3. In `crates/sdk`
 * **Controls & Helpers**:
@@ -273,7 +273,7 @@ Literal `.text_size(px(...))` remains acceptable for:
 - [ ] Refactor gallery panes (especially `introduction`, `selection_panel`, `palette`, and pane headers) to replace hardcoded `.text_size(px(...))` with either:
   - GPUI fixed scale helpers in app code, or
   - theme-resolved typography when the text is structural and should track the active look.
-- [ ] Refactor `theme-studio` panels (`dashboard`, `team`, `palette`, app shell) with the same app-level rule.
+- [ ] Refactor `luma-studio` panels (`dashboard`, `team`, `palette`, app shell) with the same app-level rule.
 - [ ] Update SDK internal controls (like `field_label` in `controls/label.rs` and `navigation_sidebar/template.rs`) to use the new SDK typography tokens and resolvers.
 - [ ] Audit SDK/look code to ensure GPUI `text_sm()`-style helpers are not used for semantic control text.
 

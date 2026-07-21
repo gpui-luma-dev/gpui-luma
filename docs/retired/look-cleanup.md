@@ -54,7 +54,7 @@ Phase 1 — SDK default resolvers     ✓ stop reading palette.action.* in crate
 Phase 2 — look-shadcn + legacy TOML ✓ delete from_luma_tokens bridge; kill default-theme.toml
 Phase 3 — Schema cleanup            ✓ delete ActionPalette, ColorTokens shadcn-isms, RawTheme pipeline
 Phase 4 — Variant / metric cleanup  ◐ Surface/Soft in look-shadcn done; MetricTokens duplication open
-Phase 5 — Docs, tests, apps           ◐ gallery + theme-studio updated; broader doc sweep open
+Phase 5 — Docs, tests, apps           ◐ gallery + luma-studio updated; broader doc sweep open
 ```
 
 ---
@@ -69,7 +69,7 @@ Phase 5 — Docs, tests, apps           ◐ gallery + theme-studio updated; broa
 - [x] `LumaTheme::from_toml_str` and the `RawTheme` deserializer pipeline removed from the SDK.
 - [x] `TextFieldVariant` has no ghost branch in the SDK (sole variant: `Standard`). Look-specific **Surface / Soft** live in `ShadcnTextFieldStyle`, not in the SDK enum.
 - [ ] `MetricTokens` has a single size scale (`control.sm/md/lg` via `for_size()`), not duplicated top-level `sm/md/lg`.
-- [x] Gallery and theme-studio run with `ShadcnLook::native()` / CSS themes without referencing SDK action types.
+- [x] Gallery and luma-studio run with `ShadcnLook::native()` / CSS themes without referencing SDK action types.
 - [x] `cargo fmt`, `cargo clippy`, and SDK / look-shadcn theme tests pass.
 
 ---
@@ -128,7 +128,7 @@ Slider, progress, tabs navigation, navigation sidebar, and resizable panels migr
 - `from_luma_tokens`, `ShadcnLook::from_theme`, `ShadcnLook::from_toml_str` removed.
 - `ShadcnLook::native()` loads embedded CSS (`assets/native.css`).
 - `default-theme.toml` and TOML parse path deleted from SDK.
-- [`chat.rs`](../apps/theme-studio/src/studio/panels/chat.rs) uses `ShadcnLook` resolver APIs (e.g. `palette.primary`), not `palette.action(...)`.
+- [`chat.rs`](../apps/luma-studio/src/studio/panels/chat.rs) uses `ShadcnLook` resolver APIs (e.g. `palette.primary`), not `palette.action(...)`.
 
 ---
 
@@ -180,7 +180,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test -p gpui-luma
 cargo test -p gpui-luma-look-shadcn
 just gallery    # smoke: native + CSS themes
-just theme-studio
+just luma-studio
 ```
 
 ### Inventory reference
@@ -210,4 +210,4 @@ rg 'pub sm: f32' crates/sdk/src/theme/tokens.rs   # Phase 4: should be 0 after d
 | Toggles | `checkbox/theme.rs`, `switch/theme.rs`, `radio_button/theme.rs` |
 | Other migrated resolvers | `slider/theme.rs`, `progress/theme.rs`, `tabs_navigation/theme.rs`, `navigation_sidebar/theme.rs`, `resizable_panels/theme.rs` |
 | look-shadcn | `palette.rs`, `mode.rs`, `look.rs`, `usage.rs`, `controls/*.rs` |
-| Apps | `apps/gallery/.../textfield/pane.rs`, `textarea/pane.rs`, `apps/theme-studio/.../chat.rs` |
+| Apps | `apps/gallery/.../textfield/pane.rs`, `textarea/pane.rs`, `apps/luma-studio/.../chat.rs` |

@@ -2,7 +2,7 @@
 
 ## Description
 
-Theme Studio's card gallery requires a responsive, column-first layout where cards stack vertically without vertical empty gaps. 
+Luma Studio's card gallery requires a responsive, column-first layout where cards stack vertically without vertical empty gaps. 
 
 Since GPUI/Taffy does not support runtime bounding-box measurements during render-time tree construction, we implement a lookless estimated masonry layout:
 1. **Column-first structure**: A horizontal flex row (`flex_row`) containing $N$ vertical columns (`flex_col`).
@@ -168,9 +168,9 @@ If a tile specifies `col_span: 2`:
 
 ---
 
-## Theme Studio Card Integration
+## Luma Studio Card Integration
 
-Migrating the Theme Studio cards panel to use `ColumnLayout`:
+Migrating the Luma Studio cards panel to use `ColumnLayout`:
 
 ```rust
 ColumnLayout::new()
@@ -201,5 +201,5 @@ ColumnLayout::new()
 * Test dynamic column calculation from container width constraints.
 
 ### Manual Verification
-* Resize the Theme Studio window and ensure columns wrap and adjust.
+* Resize the Luma Studio window and ensure columns wrap and adjust.
 * Verify the 2x Payments card spans and aligns with the adjacent columns correctly without creating layout overlaps.

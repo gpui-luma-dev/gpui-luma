@@ -38,11 +38,11 @@ panel density: tighter than triggers
 3. **Floating menu metrics wired** — `floating_menu_look` consumes `floating_menu.metrics.{sm,md,lg}`.
 4. **Radius token aliases** — `resolve_stylesheet_metric` accepts `radius.sm|md|lg|xl|none`.
 
-Rebuild Theme Studio after changes (`style.toml` is compile-time embedded).
+Rebuild Luma Studio after changes (`style.toml` is compile-time embedded).
 
 ## Validation
 
-- Theme Studio: Selectors **Sizes** (trigger + open panel Sm/Md/Lg), Menus, Buttons, Toggles.
+- Luma Studio: Selectors **Sizes** (trigger + open panel Sm/Md/Lg), Menus, Buttons, Toggles.
 - Unit tests cover toggle Lg padding, catalog Lg multiplier, and floating-menu padding growth vs typography.
 
 ## Related

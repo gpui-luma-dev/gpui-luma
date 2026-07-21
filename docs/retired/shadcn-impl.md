@@ -1,6 +1,6 @@
 # Implementation Plan: Exhaustive Scaffolding of Shadcn Control Looks
 
-To achieve full visual parity with `gpui-luma-theme-radix` and ensure that downstream applications (`theme-studio` and `gallery`) can compile with `ShadcnLook` templates, the `crates/look-shadcn` crate must implement the complete set of 31 control look files.
+To achieve full visual parity with `gpui-luma-theme-radix` and ensure that downstream applications (`luma-studio` and `gallery`) can compile with `ShadcnLook` templates, the `crates/look-shadcn` crate must implement the complete set of 31 control look files.
 
 ---
 

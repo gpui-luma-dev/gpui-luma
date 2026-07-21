@@ -63,7 +63,7 @@ To keep the SDK core decoupled, apply this litmus test to every compile-time fix
          "crates/sdk",
          "crates/theme-radix",
          "apps/gallery",
-         "apps/theme-studio"
+         "apps/luma-studio"
      ]
      ```
 
@@ -106,14 +106,14 @@ With the Radix theme isolated in its own crate, we can safely address the hidden
 
 ## Phase 5: Update Downstream Applications
 
-Because `apps/gallery` and `apps/theme-studio` reference radix builders, their configurations must be updated to reference both crates.
+Because `apps/gallery` and `apps/luma-studio` reference radix builders, their configurations must be updated to reference both crates.
 
 1. **Cargo Configuration**:
    * Add `gpui-luma-theme-radix` as a dependency in:
      * `apps/gallery/Cargo.toml`
-     * `apps/theme-studio/Cargo.toml`
+     * `apps/luma-studio/Cargo.toml`
 2. **Namespace Updates**:
-   * In the application files (e.g. [apps/theme-studio/src/studio/panels/team.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panels/team.rs)), update imports:
+   * In the application files (e.g. [apps/luma-studio/src/studio/panels/team.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panels/team.rs)), update imports:
      ```rust
      // Before
      use gpui_luma::theme::radix::*;

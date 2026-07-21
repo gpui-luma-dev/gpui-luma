@@ -44,14 +44,14 @@ Each retired document is listed below with a summary of its scope, status, and a
 
 | Document | Description | Recommendation | Rationale |
 | :--- | :--- | :---: | :--- |
-| [theme-studio.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/theme-studio.md) | Spec sheet and card layout outline for the native customizer tool. | **DELETE** | Completed. The Theme Studio app (`theme-studio`) is fully implemented. |
+| [luma-studio.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/luma-studio.md) | Spec sheet and card layout outline for the native customizer tool. | **DELETE** | Completed. The Luma Studio app (`luma-studio`) is fully implemented. |
 | [look.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/look.md) | Design proposal for consolidating look parameter signatures. | **KEEP** | Useful reference for signature patterns if we perform another SDK-wide refactoring. |
 | [closures.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/closures.md) | Argument for stateless visual elements to avoid double storage and synchronization code. | **KEEP** | Represents a major potential architectural direction that could still be revisited. |
 | [form-binding-ideas.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/form-binding-ideas.md) | Exploration of macros vs dispatcher state-sync frameworks. | **KEEP** | Serves as design context for how `declare_form!` was chosen over other patterns. |
 | [nav_tree.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/nav_tree.md) | Proposal for an visual `nav_tree!` shorthand macro. | **DELETE** | Unused; builder syntax is readable enough for current hierarchies. |
 | [plan-model.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/plan-model.md) | Unified state model proposal for introduction panels. | **DELETE** | The `EventBus` approach was retained; this is a dead-end plan. |
 | [gallery-enhancement.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/gallery-enhancement.md) | Draft ideas for mapping token usage tables in the gallery. | **DELETE** | The in-app active usage catalog already handles this natively. |
-| [theme-spec-dumper.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/theme-spec-dumper.md) | Scratched plan to dump JSON specs out of active modules using `linkme`. | **DELETE** | Superseded by the in-app Theme Studio inspector. |
+| [theme-spec-dumper.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/theme-spec-dumper.md) | Scratched plan to dump JSON specs out of active modules using `linkme`. | **DELETE** | Superseded by the in-app Luma Studio inspector. |
 | [proto3.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/proto3.md) | Decision spec for migrating stringly-typed metadata in custom controls. | **KEEP** | Historical context on component refactoring and metadata models. |
 | [proto3_refactored_example.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/proto3_refactored_example.md) | Accompanying code outline demonstrating type-safe field selectors. | **DELETE** | Outdated code scratchpad. |
 | [rhai-thoughts.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/rhai-thoughts.md) | Scratchpad exploring scriptable styling with the Rhai scripting engine. | **DELETE** | Unrelated to the current CSS-driven Radix theme pipeline. |

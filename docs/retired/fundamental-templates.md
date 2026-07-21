@@ -53,7 +53,7 @@ This doc is the **design record** for Phase B. It subsumes earlier “adapters /
 - Full golden parity with hand-maintained TOML (hover/pressed derivation vs lexicon).
 - `shadow_parse` / elevation from CSS shadows.
 - Typography scale from tweakcn `rem`.
-- In-app theme picker; dedicated **theme studio** app.
+- In-app theme picker; dedicated **luma studio** app.
 - Resolving import bugs by editing `palette.action.prominent` in SDK schema.
 
 ---
@@ -136,7 +136,7 @@ Using **only `DevTheme`**, done when:
 
 **Not required for SDK complete:** import golden parity, coral accuracy, Rajdhani/Outfit embedding.
 
-### Future: theme studio (separate app)
+### Future: luma studio (separate app)
 
 After dev theme + paint-only SDK:
 
@@ -393,7 +393,7 @@ Gallery product themes load from **`apps/gallery/tweakcn/*.css`** into `RadixThe
 
 - [ ] Update [`next-step-theme-import.md`](next-step-theme-import.md) status row: import tooling **closed for now**; pointer here for split.
 - [ ] When Phase B starts: add note to [`next-step-variants.md`](next-step-variants.md) that public ladder moves to theme functions.
-- [ ] Add `next-step-theme-studio.md` when studio app is scoped.
+- [ ] Add `next-step-luma-studio.md` when studio app is scoped.
 - [ ] Add `next-step-theme-dev.md` when dev crate API is sketched.
 
 Comments: edit **Open questions** or Phase B roadmap directly in this file.

@@ -89,13 +89,13 @@ The new downstream look crate `crates/look-shadcn` has been successfully created
 
 All 31 control look templates, shadow resolvers, and base styling extension methods have been ported from the legacy radix code and successfully compiled and tested under the `gpui-luma-look-shadcn` package.
 
-### 2. Phase A: Migrate Theme Studio Panels [COMPLETED]
+### 2. Phase A: Migrate Luma Studio Panels [COMPLETED]
 
-Migrate the isolated view pages under `apps/theme-studio/src/studio/panels/` (`team.rs`, `chat.rs`, etc.) and the application shell to consume `ShadcnLook` and its builder extension APIs.
+Migrate the isolated view pages under `apps/luma-studio/src/studio/panels/` (`team.rs`, `chat.rs`, etc.) and the application shell to consume `ShadcnLook` and its builder extension APIs.
 
 #### Step 1: Update Cargo Dependencies
 Add `gpui-luma-look-shadcn` to the dependencies of the downstream apps:
-* In `apps/theme-studio/Cargo.toml`:
+* In `apps/luma-studio/Cargo.toml`:
   ```toml
   gpui-luma-look-shadcn = { path = "../../crates/look-shadcn" }
   ```
@@ -105,11 +105,11 @@ Add `gpui-luma-look-shadcn` to the dependencies of the downstream apps:
   ```
 
 #### Step 2: Implement theme loading in `theme.rs`
-Update [apps/theme-studio/src/theme.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/theme.rs) to resolve and return `Arc<ShadcnLook>`:
+Update [apps/luma-studio/src/theme.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/theme.rs) to resolve and return `Arc<ShadcnLook>`:
 ```rust
 use gpui_luma_look_shadcn::ShadcnLook;
 
-impl StudioThemeChoice {
+impl LumaStudioThemeChoice {
     pub fn shadcn_look(self) -> Arc<ShadcnLook> {
         match self {
             Self::Default => Arc::new(ShadcnLook::native()),
@@ -125,14 +125,14 @@ impl StudioThemeChoice {
 }
 ```
 
-#### Step 3: Transition `ThemeStudioApp` state to `ShadcnLook`
-Update [apps/theme-studio/src/studio/app.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/app.rs) to use `ShadcnLook` as the primary layout styling resolver:
+#### Step 3: Transition `LumaStudioApp` state to `ShadcnLook`
+Update [apps/luma-studio/src/studio/app.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/app.rs) to use `ShadcnLook` as the primary layout styling resolver:
 * Replace the field `pub(super) radix_theme: Arc<RadixTheme>` with `pub(super) look: Arc<ShadcnLook>`.
-* Replace `StudioThemeChoice::radix_theme()` with `.shadcn_look()` during initialization.
+* Replace `LumaStudioThemeChoice::radix_theme()` with `.shadcn_look()` during initialization.
 * Update `DemoControls::spawn`, `ThemeSidebar::new`, and `ResizablePanels` themes to consume the template providers of `self.look`.
 
 #### Step 4: Migrate Individual Panels
-For each layout panel in `apps/theme-studio/src/studio/panels/` (e.g., [team.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/theme-studio/src/studio/panels/team.rs)):
+For each layout panel in `apps/luma-studio/src/studio/panels/` (e.g., [team.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/luma-studio/src/studio/panels/team.rs)):
 * Change imports from `use gpui_luma_theme_radix::prelude::*;` to `use gpui_luma_look_shadcn::prelude::*;`.
 * Change argument signatures from `radix_theme: Arc<RadixTheme>` to `look: Arc<ShadcnLook>`.
 * Replace all explicit theme style modifiers (like `.primary(&self.radix_theme)`) with `.primary(&self.look)`.
