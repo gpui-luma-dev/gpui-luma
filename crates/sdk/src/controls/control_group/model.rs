@@ -1,14 +1,20 @@
 use std::sync::Arc;
 
-use gpui::{App, AppContext, Div, Entity, FocusHandle, IntoElement, ParentElement, SharedString, Stateful, Window, div};
+use gpui::{
+    AnyElement, App, AppContext, Div, Entity, FocusHandle, IntoElement, ParentElement, SharedString, Stateful, Window,
+    div,
+};
 
 use super::control::ControlGroupControl;
+use super::menu_choice_template::{menu_choice_group_template, menu_choice_row_item_element_template};
 use super::template::{
     ControlGroupItemTemplate, ControlGroupItemElementTemplate, ControlGroupTemplate,
     control_group_item_layout_template, default_control_group_template, item_template_with_modifier,
     make_control_group_item_template, modified_control_group_template,
 };
+use super::theme::{ControlGroupItemVisualContext, ControlGroupTheme};
 use crate::controls::state::{CompositeItemState, ControlFocusState};
+use crate::theme::ControlSize;
 
 pub trait ControlGroupItemLike {
     fn id(&self) -> &SharedString;
@@ -493,6 +499,47 @@ where
         E: IntoElement + 'static,
     {
         self.model.template = control_group_item_layout_template(layout);
+        self
+    }
+
+    pub fn with_menu_row_item_content<F>(self, theme: Arc<dyn ControlGroupTheme>, content: F) -> Self
+    where
+        F: for<'a> Fn(
+                &'a ControlGroupItemRenderModel<'a, T>,
+                &ControlGroupItemVisualContext,
+                &mut Window,
+                &mut App,
+            ) -> AnyElement
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.with_menu_row_item_content_sized(theme, ControlSize::Sm, 27.0, 4.0, content)
+    }
+
+    pub fn with_menu_row_item_content_sized<F>(
+        mut self,
+        theme: Arc<dyn ControlGroupTheme>,
+        size: ControlSize,
+        row_height: f32,
+        row_radius: f32,
+        content: F,
+    ) -> Self
+    where
+        F: for<'a> Fn(
+                &'a ControlGroupItemRenderModel<'a, T>,
+                &ControlGroupItemVisualContext,
+                &mut Window,
+                &mut App,
+            ) -> AnyElement
+            + Send
+            + Sync
+            + 'static,
+    {
+        let content = Arc::new(content);
+        self.model.template = menu_choice_group_template();
+        self.model.item_element_template =
+            Some(menu_choice_row_item_element_template(theme, size, row_height, row_radius, content));
         self
     }
 

@@ -1,8 +1,23 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::Hsla;
+use gpui::{Hsla, SharedString};
 
-use crate::theme::{ControlSize, ThemeTokens};
+use crate::controls::button_family::{
+    ButtonFamilyRole, ButtonFamilyTheme, DefaultButtonFamilyTheme, compose_button_family_look,
+};
+use crate::theme::{ControlSize, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
+
+#[derive(Clone, Debug)]
+pub struct ControlGroupItemVisualContext {
+    pub foreground: Hsla,
+    pub background: Hsla,
+    pub muted_foreground: Hsla,
+    pub typography: LumaTextStyle,
+    pub font_family: SharedString,
+    pub focus_ring: Hsla,
+    pub radius: f32,
+    pub height: f32,
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct ControlGroupListLook {
@@ -16,6 +31,53 @@ pub struct ControlGroupListLook {
 
 pub trait ControlGroupTheme: Send + Sync {
     fn resolve_list(&self, enabled: bool) -> ControlGroupListLook;
+
+    fn metrics(&self) -> MetricTokens;
+
+    fn resolve_item_visual(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+        row_height: f32,
+        row_radius: f32,
+    ) -> ControlGroupItemVisualContext {
+        let palette = self.default_item_palette(selected, state, size, scale);
+        ControlGroupItemVisualContext {
+            foreground: palette.foreground,
+            background: palette.background,
+            muted_foreground: palette.muted_foreground,
+            typography: palette.typography,
+            font_family: palette.font_family.clone(),
+            focus_ring: palette.focus_ring,
+            radius: row_radius,
+            height: row_height.max(scale.height),
+        }
+    }
+
+    fn resolve_item_focus_ring(&self, selected: bool, state: InteractionState, size: ControlSize) -> Hsla {
+        let scale = StandardBoxScale::compute(size, &self.metrics(), 1.0);
+        self.default_item_palette(selected, state, size, &scale).focus_ring
+    }
+
+    fn default_item_palette(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> ControlGroupItemPalette;
+}
+
+#[derive(Clone, Debug)]
+pub struct ControlGroupItemPalette {
+    pub foreground: Hsla,
+    pub background: Hsla,
+    pub muted_foreground: Hsla,
+    pub typography: LumaTextStyle,
+    pub font_family: SharedString,
+    pub focus_ring: Hsla,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -51,6 +113,32 @@ impl ControlGroupTheme for DefaultControlGroupTheme {
             padding_x: 6.0,
             padding_y: 4.0,
             gap: 6.0,
+        }
+    }
+
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
+    }
+
+    fn default_item_palette(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> ControlGroupItemPalette {
+        let button_theme = DefaultButtonFamilyTheme::new(self.tokens.clone());
+        let role = ButtonFamilyRole::Toggle { selected };
+        let palette = button_theme.resolve(role, size, state);
+        let look = compose_button_family_look(&palette, role, scale, scale.radius);
+
+        ControlGroupItemPalette {
+            foreground: look.foreground,
+            background: look.background,
+            muted_foreground: self.tokens.palette.app.muted_foreground,
+            typography: look.typography,
+            font_family: look.font_family.clone(),
+            focus_ring: look.focus_ring,
         }
     }
 }

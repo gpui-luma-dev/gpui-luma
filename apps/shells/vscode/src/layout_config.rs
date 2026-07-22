@@ -89,6 +89,17 @@ impl LayoutRegion {
         }
     }
 
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::ActivityBar => "activity-bar",
+            Self::SecondaryActivityBar => "secondary-activity-bar",
+            Self::PrimarySideBar => "primary-side-bar",
+            Self::SecondarySideBar => "secondary-side-bar",
+            Self::Panel => "panel",
+            Self::StatusBar => "status-bar",
+        }
+    }
+
     pub fn shortcut_keys(self) -> Option<[&'static str; 2]> {
         match self {
             Self::PrimarySideBar => Some(["⌘", "B"]),
@@ -162,5 +173,20 @@ impl LayoutConfig {
     pub fn toggle_region(&mut self, region: LayoutRegion) {
         let visible = self.region_visible(region);
         self.set_region_visible(region, !visible);
+    }
+
+    pub fn visible_region_ids(&self) -> Vec<gpui::SharedString> {
+        [
+            LayoutRegion::ActivityBar,
+            LayoutRegion::SecondaryActivityBar,
+            LayoutRegion::PrimarySideBar,
+            LayoutRegion::SecondarySideBar,
+            LayoutRegion::Panel,
+            LayoutRegion::StatusBar,
+        ]
+        .into_iter()
+        .filter(|region| self.region_visible(*region))
+        .map(|region| region.id().into())
+        .collect()
     }
 }

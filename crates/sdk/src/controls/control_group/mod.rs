@@ -1,3 +1,4 @@
+mod menu_choice_template;
 mod button_item_template;
 mod toggle_button_item_template;
 mod control;
@@ -14,6 +15,10 @@ pub use model::{
     ControlGroupStateMode, ControlSelectionMode,
 };
 pub use button_item_template::button_item_template;
+pub use menu_choice_template::{
+    MenuChoiceRowContentFn, configure_menu_choice_group, menu_choice_group_template,
+    menu_choice_row_item_element_template,
+};
 pub use toggle_button_item_template::toggle_button_item_template;
 pub use template::{
     ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemHandlerExt, ControlGroupItemHandlers,
@@ -23,7 +28,10 @@ pub use template::{
     default_control_group_template, make_control_group_item_template, make_control_group_item_element_template,
     render_control_group_item_elements, shared_control_group_template,
 };
-pub use theme::{DefaultControlGroupTheme, ControlGroupListLook, ControlGroupTheme, default_control_group_theme};
+pub use theme::{
+    ControlGroupItemPalette, ControlGroupItemVisualContext, DefaultControlGroupTheme, ControlGroupListLook,
+    ControlGroupTheme, default_control_group_theme,
+};
 pub use themed_template::ThemedControlGroupTemplate;
 
 pub use crate::controls::state::{CompositeItemState as ControlGroupItemState, ControlFocusState};

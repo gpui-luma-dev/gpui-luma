@@ -9,7 +9,8 @@ use gpui_luma::controls::checkbox::{CheckboxTheme, ThemedCheckboxTemplate};
 use gpui_luma::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
 use gpui_luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
 use gpui_luma::controls::control_group::{
-    ControlGroupItemLike, ControlGroupTemplate, ControlGroupTheme, control_group_template_with_theme,
+    ControlGroupBuilder, ControlGroupItemLike, ControlGroupItemPalette, ControlGroupTemplate, ControlGroupTheme,
+    control_group_template_with_theme,
 };
 use gpui_luma::controls::dock_splitter::DockSplitterTheme;
 use gpui_luma::controls::radio_group::{RadioGroupLayout, radio_group_buttons_template};
@@ -1022,6 +1023,30 @@ impl ControlGroupTheme for ShadcnControlGroupTheme {
         let tokens = self.theme.mode_tokens();
         control_group_list_look(tokens.as_ref(), enabled)
     }
+
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
+    }
+
+    fn default_item_palette(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: ControlSize,
+        _scale: &StandardBoxScale,
+    ) -> ControlGroupItemPalette {
+        let look = self.theme.resolve_ghost_button(ButtonFamilyRole::Toggle { selected }, size, state);
+        let chrome = self.theme.chrome();
+
+        ControlGroupItemPalette {
+            foreground: look.foreground,
+            background: look.background,
+            muted_foreground: chrome.muted_text,
+            typography: look.typography,
+            font_family: look.font_family.clone(),
+            focus_ring: look.focus_ring,
+        }
+    }
 }
 
 pub fn control_group_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ControlGroupTheme> {
@@ -1033,6 +1058,13 @@ where
     T: ControlGroupItemLike + Clone + Send + Sync + 'static,
 {
     control_group_template_with_theme(control_group_theme(theme))
+}
+
+pub fn menu_choice_group<T>(_theme: Arc<ShadcnLook>, id: impl Into<gpui::SharedString>) -> ControlGroupBuilder<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    gpui_luma::controls::control_group::new(id).active_descendant()
 }
 
 struct ShadcnToolbarTheme {

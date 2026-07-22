@@ -1,18 +1,18 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Context, Div, Entity, EventEmitter, FocusHandle, Hsla, IntoElement, Render, SharedString,
-    Stateful, Window, div, prelude::*, px,
+    AnyElement, App, Context, EventEmitter, FocusHandle, Hsla, IntoElement, Render, SharedString, Window, div,
+    prelude::*, px,
 };
-use gpui_luma::controls::command::button::{Button, ButtonRenderModel};
-use gpui_luma::controls::command::button::ButtonTemplate;
 use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::overlay_window::{
     OverlayWindow, OverlayWindowDismissPolicy, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition,
     OverlayWindowRenderModel,
 };
-use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::theme::{ControlSize, InteractionState, LayoutCacheKey, LumaLayoutCacheExt, LumaTextStyle, StandardBoxScale};
+use gpui_luma::controls::control_group::{
+    ControlGroup, ControlGroupItem, ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupItemVisualContext,
+};
+use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle};
 use gpui_luma::{GridTrack, grid_layout, hstack, vstack};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole};
 use lucide_icons::Icon as LucideIcon;
@@ -32,98 +32,14 @@ const EYE_COL_W: f32 = 30.0;
 const POSITION_LABEL_COL_W: f32 = 250.0;
 const LAYOUT_ICON_BORDER_W: f32 = 1.0;
 
-struct MenuRowButtonTemplate {
-    look: Arc<ShadcnLook>,
-}
-
-impl MenuRowButtonTemplate {
-    fn new(look: Arc<ShadcnLook>) -> Self {
-        Self { look }
-    }
-}
-
-fn menu_row_template<D: 'static>(look: &Arc<ShadcnLook>) -> Arc<dyn ButtonTemplate<D>> {
-    Arc::new(MenuRowButtonTemplate::new(look.clone()))
-}
-
-impl<D: 'static> ButtonTemplate<D> for MenuRowButtonTemplate {
-    fn render(&self, model: &ButtonRenderModel<D>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let scale_factor = window.scale_factor();
-        let metrics = self.look.mode_tokens().metrics;
-        let scale = cx.use_cached_layout(
-            metrics,
-            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
-        );
-        let mut look = self.look.resolve_ghost_button(model.role, model.size, model.state);
-        look.height = scale.height;
-        look.padding_x = scale.padding_x;
-        look.padding_y = scale.padding_y;
-        look.radius = ROW_RADIUS;
-        let border = if model.state.focused {
-            look.focus_ring
-        } else {
-            gpui::hsla(0.0, 0.0, 0.0, 0.0)
-        };
-
-        let content = (model.content)(model, cx);
-        let mut root = div()
-            .id(model.id.clone())
-            .relative()
-            .w_full()
-            .h(px(ROW_H))
-            .flex()
-            .items_center()
-            .rounded(px(ROW_RADIUS))
-            .border_1()
-            .border_color(border)
-            .bg(look.background)
-            .text_color(look.foreground)
-            .font_family(look.font_family.clone())
-            .text_size(px(look.typography.size))
-            .line_height(px(look.typography.line_height))
-            .font_weight(look.typography.weight)
-            .child(content);
-
-        if model.state.disabled {
-            root = root.opacity(0.56);
-        } else {
-            root = root.cursor_pointer();
-        }
-
-        root
-    }
-}
-
-#[derive(Clone, Copy)]
-pub(crate) struct VisibilityRowData {
-    region: LayoutRegion,
-    visible: bool,
-    show_visibility_header: bool,
-}
-
-#[derive(Clone, Copy)]
-pub(crate) struct PositionRowData {
-    position: PrimarySideBarPosition,
-    selected: bool,
-    show_position_header: bool,
-}
-
-#[derive(Clone, Copy)]
-pub(crate) struct PanelAlignmentRowData {
-    alignment: PanelAlignment,
-    selected: bool,
-    show_alignment_header: bool,
-}
-
 pub struct CustomizeLayoutDialog {
     look: Arc<ShadcnLook>,
     overlay: OverlayWindow,
     close_button: IconButton,
     reset_button: IconButton,
-    visibility_rows: [Entity<Button<VisibilityRowData>>; 6],
-    primary_side_bar_position_rows: [Entity<Button<PositionRowData>>; 2],
-    panel_alignment_rows: [Entity<Button<PanelAlignmentRowData>>; 4],
+    visibility_group: ControlGroup<ControlGroupItem>,
+    primary_side_bar_position_group: ControlGroup<ControlGroupItem>,
+    panel_alignment_group: ControlGroup<ControlGroupItem>,
 }
 
 impl EventEmitter<OverlayWindowEvent> for CustomizeLayoutDialog {}
@@ -139,66 +55,57 @@ impl CustomizeLayoutDialog {
             .size(ControlSize::Sm)
             .spawn(cx);
 
-        let visibility_rows = [
-            spawn_visibility_button(
-                &look,
-                LayoutRegion::ActivityBar,
-                true,
-                config.region_visible(LayoutRegion::ActivityBar),
-                cx,
-            ),
-            spawn_visibility_button(
-                &look,
-                LayoutRegion::SecondaryActivityBar,
-                false,
-                config.region_visible(LayoutRegion::SecondaryActivityBar),
-                cx,
-            ),
-            spawn_visibility_button(
-                &look,
-                LayoutRegion::PrimarySideBar,
-                false,
-                config.region_visible(LayoutRegion::PrimarySideBar),
-                cx,
-            ),
-            spawn_visibility_button(
-                &look,
-                LayoutRegion::SecondarySideBar,
-                false,
-                config.region_visible(LayoutRegion::SecondarySideBar),
-                cx,
-            ),
-            spawn_visibility_button(&look, LayoutRegion::Panel, false, config.region_visible(LayoutRegion::Panel), cx),
-            spawn_visibility_button(
-                &look,
-                LayoutRegion::StatusBar,
-                false,
-                config.region_visible(LayoutRegion::StatusBar),
-                cx,
-            ),
-        ];
+        let shortcut_border = look.chrome().border;
 
-        let primary_side_bar_position_rows = [
-            spawn_primary_side_bar_position_button(
-                &look,
-                PrimarySideBarPosition::Left,
-                config.primary_side_bar_position,
-                cx,
-            ),
-            spawn_primary_side_bar_position_button(
-                &look,
-                PrimarySideBarPosition::Right,
-                config.primary_side_bar_position,
-                cx,
-            ),
-        ];
+        let visibility_group = look
+            .menu_choice_group("customize-layout-visibility")
+            .multiple()
+            .items(visibility_group_items())
+            .selected_ids(config.visible_region_ids())
+            .with_menu_row_item_content_sized(
+                look.control_group_theme(),
+                ControlSize::Sm,
+                ROW_H,
+                ROW_RADIUS,
+                move |model, visual, _window, _cx| visibility_row_content(model, visual, shortcut_border),
+            )
+            .spawn(cx);
 
-        let panel_alignment_rows = [
-            spawn_panel_alignment_button(&look, PanelAlignment::Left, config.panel_alignment, cx),
-            spawn_panel_alignment_button(&look, PanelAlignment::Right, config.panel_alignment, cx),
-            spawn_panel_alignment_button(&look, PanelAlignment::Center, config.panel_alignment, cx),
-            spawn_panel_alignment_button(&look, PanelAlignment::Justify, config.panel_alignment, cx),
-        ];
+        let primary_side_bar_position_group = look
+            .menu_choice_group("customize-layout-primary-side-bar-position")
+            .single_required()
+            .items([
+                ControlGroupItem::new(PrimarySideBarPosition::Left.id()).label(PrimarySideBarPosition::Left.label()),
+                ControlGroupItem::new(PrimarySideBarPosition::Right.id()).label(PrimarySideBarPosition::Right.label()),
+            ])
+            .selected(PrimarySideBarPosition::Left.id())
+            .with_menu_row_item_content_sized(
+                look.control_group_theme(),
+                ControlSize::Sm,
+                ROW_H,
+                ROW_RADIUS,
+                |model, visual, _window, _cx| position_row_content(model, visual),
+            )
+            .spawn(cx);
+
+        let panel_alignment_group = look
+            .menu_choice_group("customize-layout-panel-alignment")
+            .single_required()
+            .items([
+                ControlGroupItem::new(PanelAlignment::Left.id()).label(PanelAlignment::Left.label()),
+                ControlGroupItem::new(PanelAlignment::Right.id()).label(PanelAlignment::Right.label()),
+                ControlGroupItem::new(PanelAlignment::Center.id()).label(PanelAlignment::Center.label()),
+                ControlGroupItem::new(PanelAlignment::Justify.id()).label(PanelAlignment::Justify.label()),
+            ])
+            .selected(PanelAlignment::Center.id())
+            .with_menu_row_item_content_sized(
+                look.control_group_theme(),
+                ControlSize::Sm,
+                ROW_H,
+                ROW_RADIUS,
+                |model, visual, _window, _cx| panel_alignment_row_content(model, visual),
+            )
+            .spawn(cx);
 
         let overlay_look = look.clone();
 
@@ -228,9 +135,9 @@ impl CustomizeLayoutDialog {
             overlay,
             close_button,
             reset_button,
-            visibility_rows,
-            primary_side_bar_position_rows,
-            panel_alignment_rows,
+            visibility_group,
+            primary_side_bar_position_group,
+            panel_alignment_group,
         }
     }
 
@@ -242,40 +149,31 @@ impl CustomizeLayoutDialog {
         self.reset_button.clone()
     }
 
-    pub fn visibility_row(&self, region: LayoutRegion) -> Entity<Button<VisibilityRowData>> {
-        self.visibility_rows[region.index()].clone()
+    pub fn visibility_group(&self) -> ControlGroup<ControlGroupItem> {
+        self.visibility_group.clone()
     }
 
-    pub fn primary_side_bar_position_row(&self, position: PrimarySideBarPosition) -> Entity<Button<PositionRowData>> {
-        self.primary_side_bar_position_rows[position.index()].clone()
+    pub fn primary_side_bar_position_group(&self) -> ControlGroup<ControlGroupItem> {
+        self.primary_side_bar_position_group.clone()
     }
 
-    pub fn panel_alignment_row(&self, alignment: PanelAlignment) -> Entity<Button<PanelAlignmentRowData>> {
-        self.panel_alignment_rows[alignment.index()].clone()
+    pub fn panel_alignment_group(&self) -> ControlGroup<ControlGroupItem> {
+        self.panel_alignment_group.clone()
     }
 
     pub fn sync_from_config(&self, config: &LayoutConfig, cx: &mut App) {
-        self.sync_visibility_rows(config, cx);
-        self.sync_position_rows(config, cx);
-        self.sync_panel_alignment_rows(config, cx);
+        self.sync_visibility_group(config, cx);
+        self.sync_position_group(config, cx);
+        self.sync_panel_alignment_group(config, cx);
     }
 
     pub fn refresh_theme(&self, cx: &mut App) {
         self.overlay.update(cx, |_, cx| cx.notify());
         self.close_button.update(cx, |_, cx| cx.notify());
         self.reset_button.update(cx, |_, cx| cx.notify());
-
-        for row in &self.visibility_rows {
-            row.update(cx, |_, cx| cx.notify());
-        }
-
-        for row in &self.primary_side_bar_position_rows {
-            row.update(cx, |_, cx| cx.notify());
-        }
-
-        for row in &self.panel_alignment_rows {
-            row.update(cx, |_, cx| cx.notify());
-        }
+        self.visibility_group.update(cx, |_, cx| cx.notify());
+        self.primary_side_bar_position_group.update(cx, |_, cx| cx.notify());
+        self.panel_alignment_group.update(cx, |_, cx| cx.notify());
     }
 
     pub fn open(&mut self, opener: Option<FocusHandle>, cx: &mut App) {
@@ -286,50 +184,22 @@ impl CustomizeLayoutDialog {
         self.overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
     }
 
-    fn sync_visibility_rows(&self, config: &LayoutConfig, cx: &mut App) {
-        for (index, region) in VISIBILITY_REGIONS.iter().enumerate() {
-            self.visibility_rows[index].update(cx, |button, cx| {
-                button.set_data(
-                    VisibilityRowData {
-                        region: *region,
-                        visible: config.region_visible(*region),
-                        show_visibility_header: index == 0,
-                    },
-                    cx,
-                );
-            });
-        }
+    fn sync_visibility_group(&self, config: &LayoutConfig, cx: &mut App) {
+        self.visibility_group.update(cx, |group, cx| {
+            group.set_selected_ids(config.visible_region_ids(), cx);
+        });
     }
 
-    fn sync_position_rows(&self, config: &LayoutConfig, cx: &mut App) {
-        for position in [PrimarySideBarPosition::Left, PrimarySideBarPosition::Right] {
-            self.primary_side_bar_position_rows[position.index()].update(cx, |button, cx| {
-                button.set_data(
-                    PositionRowData {
-                        position,
-                        selected: config.primary_side_bar_position == position,
-                        show_position_header: position == PrimarySideBarPosition::Left,
-                    },
-                    cx,
-                );
-            });
-        }
+    fn sync_position_group(&self, config: &LayoutConfig, cx: &mut App) {
+        self.primary_side_bar_position_group.update(cx, |group, cx| {
+            group.set_selected_ids([config.primary_side_bar_position.id()], cx);
+        });
     }
 
-    fn sync_panel_alignment_rows(&self, config: &LayoutConfig, cx: &mut App) {
-        for alignment in [PanelAlignment::Left, PanelAlignment::Right, PanelAlignment::Center, PanelAlignment::Justify]
-        {
-            self.panel_alignment_rows[alignment.index()].update(cx, |button, cx| {
-                button.set_data(
-                    PanelAlignmentRowData {
-                        alignment,
-                        selected: config.panel_alignment == alignment,
-                        show_alignment_header: alignment == PanelAlignment::Left,
-                    },
-                    cx,
-                );
-            });
-        }
+    fn sync_panel_alignment_group(&self, config: &LayoutConfig, cx: &mut App) {
+        self.panel_alignment_group.update(cx, |group, cx| {
+            group.set_selected_ids([config.panel_alignment.id()], cx);
+        });
     }
 
     fn render_body(
@@ -344,11 +214,11 @@ impl CustomizeLayoutDialog {
             dialog_header(&self.look, self.reset_button.clone(), self.close_button.clone()),
             vstack! {
                 gap=SECTION_GAP;
-                visibility_section(&self.visibility_rows),
+                visibility_section(self.visibility_group.clone()),
                 section_divider(chrome.border),
                 positions_section(
-                    &self.primary_side_bar_position_rows,
-                    &self.panel_alignment_rows,
+                    self.primary_side_bar_position_group.clone(),
+                    self.panel_alignment_group.clone(),
                     chrome.border,
                 ),
             },
@@ -364,95 +234,29 @@ impl Render for CustomizeLayoutDialog {
     }
 }
 
-const VISIBILITY_REGIONS: [LayoutRegion; 6] = [
-    LayoutRegion::ActivityBar,
-    LayoutRegion::SecondaryActivityBar,
-    LayoutRegion::PrimarySideBar,
-    LayoutRegion::SecondarySideBar,
-    LayoutRegion::Panel,
-    LayoutRegion::StatusBar,
-];
-
-fn spawn_visibility_button(
-    look: &Arc<ShadcnLook>,
-    region: LayoutRegion,
-    show_visibility_header: bool,
-    visible: bool,
-    cx: &mut Context<CustomizeLayoutDialog>,
-) -> Entity<Button<VisibilityRowData>> {
-    let look = look.clone();
-    let id: SharedString = format!("customize-layout-visibility-{}", region_id(region)).into();
-
-    look.ghost_button(id)
-        .typed(VisibilityRowData { region, visible, show_visibility_header })
-        .template(menu_row_template(&look))
-        .compact()
-        .content(move |model, _| visibility_row_content(&look, model))
-        .spawn(cx)
+fn visibility_group_items() -> [ControlGroupItem; 6] {
+    [
+        visibility_group_item(LayoutRegion::ActivityBar),
+        visibility_group_item(LayoutRegion::SecondaryActivityBar),
+        visibility_group_item(LayoutRegion::PrimarySideBar),
+        visibility_group_item(LayoutRegion::SecondarySideBar),
+        visibility_group_item(LayoutRegion::Panel),
+        visibility_group_item(LayoutRegion::StatusBar),
+    ]
 }
 
-fn spawn_primary_side_bar_position_button(
-    look: &Arc<ShadcnLook>,
-    position: PrimarySideBarPosition,
-    selected: PrimarySideBarPosition,
-    cx: &mut Context<CustomizeLayoutDialog>,
-) -> Entity<Button<PositionRowData>> {
-    spawn_position_button(
-        look,
-        format!("customize-layout-primary-side-bar-position-{}", position.id()),
-        PositionRowData {
-            position,
-            selected: position == selected,
-            show_position_header: position == PrimarySideBarPosition::Left,
-        },
-        cx,
-    )
+fn visibility_group_item(region: LayoutRegion) -> ControlGroupItem {
+    ControlGroupItem::new(region.id()).label(region.label())
 }
 
-fn spawn_panel_alignment_button(
-    look: &Arc<ShadcnLook>,
-    alignment: PanelAlignment,
-    selected: PanelAlignment,
-    cx: &mut Context<CustomizeLayoutDialog>,
-) -> Entity<Button<PanelAlignmentRowData>> {
-    let look = look.clone();
-
-    look.ghost_button(format!("customize-layout-panel-alignment-{}", alignment.id()))
-        .typed(PanelAlignmentRowData {
-            alignment,
-            selected: alignment == selected,
-            show_alignment_header: alignment == PanelAlignment::Left,
-        })
-        .template(menu_row_template(&look))
-        .compact()
-        .content(move |model, _| panel_alignment_row_content(&look, model))
-        .spawn(cx)
-}
-
-fn spawn_position_button(
-    look: &Arc<ShadcnLook>,
-    id: impl Into<SharedString>,
-    data: PositionRowData,
-    cx: &mut Context<CustomizeLayoutDialog>,
-) -> Entity<Button<PositionRowData>> {
-    let look = look.clone();
-
-    look.ghost_button(id)
-        .typed(data)
-        .template(menu_row_template(&look))
-        .compact()
-        .content(move |model, _| position_row_content(&look, model))
-        .spawn(cx)
-}
-
-fn region_id(region: LayoutRegion) -> &'static str {
-    match region {
-        LayoutRegion::ActivityBar => "activity-bar",
-        LayoutRegion::SecondaryActivityBar => "secondary-activity-bar",
-        LayoutRegion::PrimarySideBar => "primary-side-bar",
-        LayoutRegion::SecondarySideBar => "secondary-side-bar",
-        LayoutRegion::Panel => "panel",
-        LayoutRegion::StatusBar => "status-bar",
+fn region_from_id(id: &SharedString) -> LayoutRegion {
+    match id.as_ref() {
+        "secondary-activity-bar" => LayoutRegion::SecondaryActivityBar,
+        "primary-side-bar" => LayoutRegion::PrimarySideBar,
+        "secondary-side-bar" => LayoutRegion::SecondarySideBar,
+        "panel" => LayoutRegion::Panel,
+        "status-bar" => LayoutRegion::StatusBar,
+        _ => LayoutRegion::ActivityBar,
     }
 }
 
@@ -486,50 +290,32 @@ fn dialog_header(look: &ShadcnLook, reset_button: IconButton, close_button: Icon
         )
 }
 
-fn visibility_section(rows: &[Entity<Button<VisibilityRowData>>; 6]) -> impl IntoElement {
-    vstack! {
-        rows[0].clone(),
-        rows[1].clone(),
-        rows[2].clone(),
-        rows[3].clone(),
-        rows[4].clone(),
-        rows[5].clone(),
-    }
-    .w_full()
-    .px(px(CONTENT_PAD_X))
-    .pt(px(CONTENT_PAD_TOP))
+fn visibility_section(group: ControlGroup<ControlGroupItem>) -> impl IntoElement {
+    div().w_full().px(px(CONTENT_PAD_X)).pt(px(CONTENT_PAD_TOP)).child(group)
 }
 
 fn positions_section(
-    primary_rows: &[Entity<Button<PositionRowData>>; 2],
-    panel_alignment_rows: &[Entity<Button<PanelAlignmentRowData>>; 4],
+    primary_group: ControlGroup<ControlGroupItem>,
+    panel_alignment_group: ControlGroup<ControlGroupItem>,
     border: Hsla,
 ) -> impl IntoElement {
     vstack! {
         gap=SECTION_GAP;
-        vstack! {
-            primary_rows[0].clone(),
-            primary_rows[1].clone(),
-        },
+        primary_group,
         div().w_full().h(px(1.0)).bg(border),
-        vstack! {
-            panel_alignment_rows[0].clone(),
-            panel_alignment_rows[1].clone(),
-            panel_alignment_rows[2].clone(),
-            panel_alignment_rows[3].clone(),
-        },
+        panel_alignment_group,
         div().w_full().h(px(1.0)).bg(border),
     }
     .w_full()
     .px(px(CONTENT_PAD_X))
 }
 
-fn visibility_row_content(look: &ShadcnLook, model: &ButtonRenderModel<VisibilityRowData>) -> AnyElement {
-    let data = model.data;
-    let chrome = look.chrome();
-    let body_style = look.typography_role(ShadcnTextRole::P);
-    let muted_style = look.typography_role(ShadcnTextRole::P);
-    let row_foreground = look.resolve_ghost_button(model.role, model.size, model.state).foreground;
+fn visibility_row_content(
+    model: &ControlGroupItemRenderModel<ControlGroupItem>,
+    visual: &ControlGroupItemVisualContext,
+    shortcut_border: Hsla,
+) -> AnyElement {
+    let region = region_from_id(model.item.id());
 
     div()
         .w_full()
@@ -542,33 +328,31 @@ fn visibility_row_content(look: &ShadcnLook, model: &ButtonRenderModel<Visibilit
                 GridTrack::Px(SHORTCUT_COL_W),
                 GridTrack::Px(EYE_COL_W),
             ];
-            [0, 0] => layout_region_icon(data.region, row_foreground),
+            [0, 0] => layout_region_icon(region, visual.foreground),
             [0, 1] => div()
                 .min_w_0()
-                .typography_style(body_style)
-                .text_color(row_foreground)
+                .typography_style(visual.typography)
+                .text_color(visual.foreground)
                 .truncate()
-                .child(data.region.label()),
+                .child(ControlGroupItemLike::label(model.item).to_string()),
             [0, 2] => shortcut_column(
-                data.region,
-                data.show_visibility_header,
-                chrome.border,
-                chrome.muted_text,
-                muted_style,
+                region,
+                model.index == 0,
+                shortcut_border,
+                visual.muted_foreground,
+                visual.typography,
             ),
-            [0, 3] => visibility_eye(data.visible, chrome.muted_text),
+            [0, 3] => visibility_eye(model.selected, visual.muted_foreground),
         })
         .into_any_element()
 }
 
-fn position_row_content(look: &ShadcnLook, model: &ButtonRenderModel<PositionRowData>) -> AnyElement {
-    let data = model.data;
-    let chrome = look.chrome();
-    let body_style = look.typography_role(ShadcnTextRole::P);
-    let muted_style = look.typography_role(ShadcnTextRole::P);
-    let row_foreground = look.resolve_ghost_button(model.role, model.size, model.state).foreground;
-    let label = data.position.label();
-    let icon = primary_side_bar_position_icon(data.position);
+fn position_row_content(
+    model: &ControlGroupItemRenderModel<ControlGroupItem>,
+    visual: &ControlGroupItemVisualContext,
+) -> AnyElement {
+    let position = primary_side_bar_position_from_id(model.item.id());
+    let icon = primary_side_bar_position_icon(position);
 
     div()
         .w_full()
@@ -581,34 +365,32 @@ fn position_row_content(look: &ShadcnLook, model: &ButtonRenderModel<PositionRow
                 GridTrack::Px(POSITION_LABEL_COL_W),
                 GridTrack::Px(EYE_COL_W),
             ];
-            [0, 0] => layout_option_icon(icon, row_foreground),
+            [0, 0] => layout_option_icon(icon, visual.foreground),
             [0, 1] => hstack! {
                 gap=8 align=center;
                 div()
-                    .typography_style(body_style)
-                    .text_color(row_foreground)
-                    .child(label),
-                selected_check(data.selected, row_foreground),
+                    .typography_style(visual.typography)
+                    .text_color(visual.foreground)
+                    .child(ControlGroupItemLike::label(model.item).to_string()),
+                selected_check(model.selected, visual.foreground),
             },
             [0, 2] => position_header(
-                data.show_position_header,
+                position == PrimarySideBarPosition::Left,
                 "Primary Side Bar Position",
-                muted_style,
-                chrome.muted_text,
+                visual.typography,
+                visual.muted_foreground,
             ),
             [0, 3] => div().w(px(EYE_COL_W)),
         })
         .into_any_element()
 }
 
-fn panel_alignment_row_content(look: &ShadcnLook, model: &ButtonRenderModel<PanelAlignmentRowData>) -> AnyElement {
-    let data = model.data;
-    let chrome = look.chrome();
-    let body_style = look.typography_role(ShadcnTextRole::P);
-    let muted_style = look.typography_role(ShadcnTextRole::P);
-    let row_foreground = look.resolve_ghost_button(model.role, model.size, model.state).foreground;
-    let label = data.alignment.label();
-    let icon = panel_alignment_icon(data.alignment);
+fn panel_alignment_row_content(
+    model: &ControlGroupItemRenderModel<ControlGroupItem>,
+    visual: &ControlGroupItemVisualContext,
+) -> AnyElement {
+    let alignment = panel_alignment_from_id(model.item.id());
+    let icon = panel_alignment_icon(alignment);
 
     div()
         .w_full()
@@ -621,19 +403,40 @@ fn panel_alignment_row_content(look: &ShadcnLook, model: &ButtonRenderModel<Pane
                 GridTrack::Px(POSITION_LABEL_COL_W),
                 GridTrack::Px(EYE_COL_W),
             ];
-            [0, 0] => layout_option_icon(icon, row_foreground),
+            [0, 0] => layout_option_icon(icon, visual.foreground),
             [0, 1] => hstack! {
                 gap=8 align=center;
                 div()
-                    .typography_style(body_style)
-                    .text_color(row_foreground)
-                    .child(label),
-                selected_check(data.selected, row_foreground),
+                    .typography_style(visual.typography)
+                    .text_color(visual.foreground)
+                    .child(ControlGroupItemLike::label(model.item).to_string()),
+                selected_check(model.selected, visual.foreground),
             },
-            [0, 2] => position_header(data.show_alignment_header, "Panel Alignment", muted_style, chrome.muted_text),
+            [0, 2] => position_header(
+                alignment == PanelAlignment::Left,
+                "Panel Alignment",
+                visual.typography,
+                visual.muted_foreground,
+            ),
             [0, 3] => div().w(px(EYE_COL_W)),
         })
         .into_any_element()
+}
+
+fn primary_side_bar_position_from_id(id: &SharedString) -> PrimarySideBarPosition {
+    match id.as_ref() {
+        "right" => PrimarySideBarPosition::Right,
+        _ => PrimarySideBarPosition::Left,
+    }
+}
+
+fn panel_alignment_from_id(id: &SharedString) -> PanelAlignment {
+    match id.as_ref() {
+        "left" => PanelAlignment::Left,
+        "right" => PanelAlignment::Right,
+        "justify" => PanelAlignment::Justify,
+        _ => PanelAlignment::Center,
+    }
 }
 
 fn position_header(show: bool, label: &'static str, style: LumaTextStyle, color: Hsla) -> impl IntoElement {

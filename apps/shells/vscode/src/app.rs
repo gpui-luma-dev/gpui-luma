@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, FocusHandle, Focusable, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter};
+use gpui_luma::controls::control_group::ControlGroupEvent;
 use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::overlay_window::OverlayWindowEvent;
 use gpui_luma::controls::resizable_panels::ResizablePanelsEvent;
@@ -139,8 +140,11 @@ impl VscodeShellApp {
         self.apply_layout_config(cx);
     }
 
-    pub fn toggle_layout_region(&mut self, region: LayoutRegion, cx: &mut Context<Self>) {
-        self.layout_config.toggle_region(region);
+    pub fn set_layout_region_visible(&mut self, region: LayoutRegion, visible: bool, cx: &mut Context<Self>) {
+        if self.layout_config.region_visible(region) == visible {
+            return;
+        }
+        self.layout_config.set_region_visible(region, visible);
         match region {
             LayoutRegion::PrimarySideBar | LayoutRegion::SecondarySideBar => self.apply_layout_config(cx),
             LayoutRegion::ActivityBar
@@ -149,6 +153,7 @@ impl VscodeShellApp {
             | LayoutRegion::StatusBar => self.apply_non_sidebar_layout_config(cx),
         }
         self.refresh_customize_layout_dialog(cx);
+        cx.notify();
     }
 
     pub fn set_primary_side_bar_position(&mut self, position: PrimarySideBarPosition, cx: &mut Context<Self>) {
@@ -360,39 +365,48 @@ fn wire_customize_layout_subscriptions(
         }
     }));
 
-    for region in [
-        LayoutRegion::ActivityBar,
-        LayoutRegion::SecondaryActivityBar,
-        LayoutRegion::PrimarySideBar,
-        LayoutRegion::SecondarySideBar,
-        LayoutRegion::Panel,
-        LayoutRegion::StatusBar,
-    ] {
-        let row = dialog.read(cx).visibility_row(region);
-        subscriptions.push(cx.subscribe(&row, move |app, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                app.toggle_layout_region(region, cx);
-            }
-        }));
-    }
+    let visibility_group = dialog.read(cx).visibility_group();
+    subscriptions.push(cx.subscribe(&visibility_group, |app, _, event: &ControlGroupEvent, cx| {
+        let ControlGroupEvent::Change { changed_id, selected, .. } = event else {
+            return;
+        };
+        let region = match changed_id.as_ref() {
+            "activity-bar" => LayoutRegion::ActivityBar,
+            "secondary-activity-bar" => LayoutRegion::SecondaryActivityBar,
+            "primary-side-bar" => LayoutRegion::PrimarySideBar,
+            "secondary-side-bar" => LayoutRegion::SecondarySideBar,
+            "panel" => LayoutRegion::Panel,
+            "status-bar" => LayoutRegion::StatusBar,
+            _ => return,
+        };
+        app.set_layout_region_visible(region, *selected, cx);
+    }));
 
-    for position in [PrimarySideBarPosition::Left, PrimarySideBarPosition::Right] {
-        let row = dialog.read(cx).primary_side_bar_position_row(position);
-        subscriptions.push(cx.subscribe(&row, move |app, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                app.set_primary_side_bar_position(position, cx);
-            }
-        }));
-    }
+    let position_group = dialog.read(cx).primary_side_bar_position_group();
+    subscriptions.push(cx.subscribe(&position_group, |app, _, event: &ControlGroupEvent, cx| {
+        let ControlGroupEvent::Change { changed_id, .. } = event else {
+            return;
+        };
+        let position = match changed_id.as_ref() {
+            "right" => PrimarySideBarPosition::Right,
+            _ => PrimarySideBarPosition::Left,
+        };
+        app.set_primary_side_bar_position(position, cx);
+    }));
 
-    for alignment in [PanelAlignment::Left, PanelAlignment::Right, PanelAlignment::Center, PanelAlignment::Justify] {
-        let row = dialog.read(cx).panel_alignment_row(alignment);
-        subscriptions.push(cx.subscribe(&row, move |app, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                app.set_panel_alignment(alignment, cx);
-            }
-        }));
-    }
+    let alignment_group = dialog.read(cx).panel_alignment_group();
+    subscriptions.push(cx.subscribe(&alignment_group, |app, _, event: &ControlGroupEvent, cx| {
+        let ControlGroupEvent::Change { changed_id, .. } = event else {
+            return;
+        };
+        let alignment = match changed_id.as_ref() {
+            "left" => PanelAlignment::Left,
+            "right" => PanelAlignment::Right,
+            "justify" => PanelAlignment::Justify,
+            _ => PanelAlignment::Center,
+        };
+        app.set_panel_alignment(alignment, cx);
+    }));
 }
 
 fn titlebar_icon_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {

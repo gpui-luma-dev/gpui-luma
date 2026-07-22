@@ -103,6 +103,9 @@ pub trait ShadcnLookControlExt {
     fn radio_group_horizontal<T>(&self, id: impl Into<SharedString>) -> RadioGroupBuilder<T>
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static;
+    fn menu_choice_group<T>(&self, id: impl Into<SharedString>) -> ControlGroupBuilder<T>
+    where
+        T: ControlGroupItemLike + 'static;
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
     fn primary_slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
     fn secondary_slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
@@ -366,6 +369,13 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
             .item_element_template(radio_group_button_item_element_template(
                 self.radio_button_template(ShadcnButtonStyle::Primary),
             ))
+    }
+
+    fn menu_choice_group<T>(&self, id: impl Into<SharedString>) -> ControlGroupBuilder<T>
+    where
+        T: ControlGroupItemLike + 'static,
+    {
+        super::templates::menu_choice_group(Arc::clone(self), id)
     }
 
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder {
