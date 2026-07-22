@@ -5,7 +5,7 @@
 //! - Secondary Side Bar
 //! - Status Bar
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -60,6 +60,8 @@ pub struct WorkbenchLayout {
     primary_side_bar_position: Rc<Cell<PrimarySideBarPosition>>,
     panel_visible: Rc<Cell<bool>>,
     panel_alignment: Rc<Cell<PanelAlignment>>,
+    panel_height_px: Rc<Cell<f32>>,
+    panel_splitter: Rc<RefCell<Rc<dyn Fn() -> AnyElement>>>,
 }
 
 impl WorkbenchLayout {
@@ -75,8 +77,13 @@ impl WorkbenchLayout {
         let primary_side_bar_position = Rc::new(Cell::new(PrimarySideBarPosition::Left));
         let panel_visible = Rc::new(Cell::new(true));
         let panel_alignment = Rc::new(Cell::new(PanelAlignment::Center));
+        let panel_height_px = Rc::new(Cell::new(WORKBENCH_PANEL_H));
         let editor_panel_visible = panel_visible.clone();
         let editor_panel_alignment = panel_alignment.clone();
+        let editor_panel_height_px = panel_height_px.clone();
+        let panel_splitter: Rc<RefCell<Rc<dyn Fn() -> AnyElement>>> =
+            Rc::new(RefCell::new(Rc::new(|| gpui::Empty.into_any_element())));
+        let editor_panel_splitter = panel_splitter.clone();
 
         let panels = look
             .resizable_panels(format!("{id}-panels"))
@@ -96,6 +103,8 @@ impl WorkbenchLayout {
                         &look_for_panels,
                         editor_panel_visible.clone(),
                         editor_panel_alignment.clone(),
+                        editor_panel_height_px.clone(),
+                        editor_panel_splitter.clone(),
                     ))
                 })
                 .weight(1.0)
@@ -109,7 +118,7 @@ impl WorkbenchLayout {
             )))
             .spawn(cx);
 
-        Self { panels, primary_side_bar_position, panel_visible, panel_alignment }
+        Self { panels, primary_side_bar_position, panel_visible, panel_alignment, panel_height_px, panel_splitter }
     }
 
     pub fn panels(&self) -> Entity<ResizablePanels> {
@@ -155,6 +164,20 @@ impl WorkbenchLayout {
         }
         self.panel_visible.set(visible);
         self.panel_alignment.set(alignment);
+        self.panels.update(cx, |_, cx| cx.notify());
+    }
+
+    pub fn set_panel_height<T: 'static>(&self, height: Pixels, cx: &mut Context<T>) {
+        let height = height.as_f32();
+        if (self.panel_height_px.get() - height).abs() < f32::EPSILON {
+            return;
+        }
+        self.panel_height_px.set(height);
+        self.panels.update(cx, |_, cx| cx.notify());
+    }
+
+    pub fn set_panel_splitter<T: 'static>(&self, panel_splitter: Rc<dyn Fn() -> AnyElement>, cx: &mut Context<T>) {
+        *self.panel_splitter.borrow_mut() = panel_splitter;
         self.panels.update(cx, |_, cx| cx.notify());
     }
 }
@@ -212,6 +235,8 @@ fn editor_region(
     look: &ShadcnLook,
     panel_visible: Rc<Cell<bool>>,
     panel_alignment: Rc<Cell<PanelAlignment>>,
+    panel_height_px: Rc<Cell<f32>>,
+    panel_splitter: Rc<RefCell<Rc<dyn Fn() -> AnyElement>>>,
 ) -> AnyElement {
     let chrome = look.chrome();
     let editor = div().id("editor").flex_1().min_h_0().w_full().bg(chrome.content_background);
@@ -223,7 +248,8 @@ fn editor_region(
             .flex()
             .flex_col()
             .child(editor)
-            .child(output_panel(look))
+            .child(panel_splitter.borrow()())
+            .child(output_panel(look, panel_height_px.get()))
             .into_any_element();
     }
 
@@ -234,13 +260,13 @@ fn render_region_slot(content: impl IntoElement) -> AnyElement {
     div().size_full().min_h_0().flex().flex_col().overflow_hidden().child(content).into_any_element()
 }
 
-fn output_panel(look: &ShadcnLook) -> impl IntoElement {
+fn output_panel(look: &ShadcnLook, height_px: f32) -> impl IntoElement {
     let chrome = look.chrome();
     let label_style = look.typography_role(ShadcnTextRole::P);
 
     div()
         .id("panel")
-        .h(px(WORKBENCH_PANEL_H))
+        .h(px(height_px))
         .w_full()
         .flex_shrink_0()
         .bg(chrome.panel_background)

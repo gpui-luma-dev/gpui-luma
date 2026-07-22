@@ -240,6 +240,7 @@ pub struct ResizablePanelsRenderModel<'a> {
     pub resize_handle: ResizeHandleSize,
     pub handle_grip: bool,
     pub panel_sizes_px: &'a [f32],
+    pub panel_hidden: Vec<bool>,
     pub panels: &'a [ResizablePanelSpec],
     pub measured_size: Option<gpui::Size<Pixels>>,
 }

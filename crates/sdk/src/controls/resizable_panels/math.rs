@@ -249,8 +249,11 @@ pub fn apply_pair_collapse_px(
         return false;
     }
 
+    let neighbor_was_weight = matches!(states[neighbor_index], PanelLayoutState::Weight(_));
     states[target_index] = PanelLayoutState::Absolute(new_target);
-    states[neighbor_index] = PanelLayoutState::Absolute(new_neighbor);
+    if !(ignore_target_min && new_target <= f32::EPSILON && neighbor_was_weight) {
+        states[neighbor_index] = PanelLayoutState::Absolute(new_neighbor);
+    }
 
     if let Some(override_min) = min_overrides.get_mut(target_index) {
         *override_min = ignore_target_min && new_target < specs[target_index].min_px.unwrap_or(0.0);
@@ -452,6 +455,28 @@ mod tests {
         let sizes = solve_layout_px_with_min_overrides(&specs, &states, &overrides, 500.0);
         assert!((sizes[0] - 0.0).abs() < f32::EPSILON);
         assert!((sizes[1] - 500.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn complete_collapse_preserves_weight_neighbor_across_resize() {
+        let specs = [
+            absolute_spec(360.0).min(gpui::px(240.0)),
+            weight_spec(1.0),
+            absolute_spec(360.0).min(gpui::px(240.0)),
+        ];
+        let mut states =
+            [PanelLayoutState::Absolute(360.0), PanelLayoutState::Weight(1.0), PanelLayoutState::Absolute(360.0)];
+        let mut overrides = [false, false, false];
+
+        let changed = apply_pair_collapse_px(&specs, &mut states, &mut overrides, 1, 2, 0.0, true, 1000.0);
+
+        assert!(changed);
+        assert_eq!(overrides, [false, false, true]);
+        assert!(matches!(states[1], PanelLayoutState::Weight(_)));
+        let sizes = solve_layout_px_with_min_overrides(&specs, &states, &overrides, 1400.0);
+        assert!((sizes[0] - 360.0).abs() < f32::EPSILON);
+        assert!((sizes[1] - 1040.0).abs() < f32::EPSILON);
+        assert!((sizes[2] - 0.0).abs() < f32::EPSILON);
     }
 
     #[test]

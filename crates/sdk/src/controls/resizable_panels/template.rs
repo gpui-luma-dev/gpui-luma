@@ -175,6 +175,11 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         track = track.child(panels_row);
 
         for (index, &split_px) in split_positions.iter().enumerate() {
+            if model.panel_hidden.get(index).copied().unwrap_or(false)
+                || model.panel_hidden.get(index + 1).copied().unwrap_or(false)
+            {
+                continue;
+            }
             track = track.child(render_overlay_handle(
                 index,
                 model,
