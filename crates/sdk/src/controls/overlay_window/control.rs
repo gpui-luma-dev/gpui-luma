@@ -430,7 +430,10 @@ fn resolve_dialog_origin(
     width: Option<f32>,
 ) -> Point<Pixels> {
     let look = default_dialog_theme().resolve(size, DialogMode::Modeless);
-    let width = px(width.unwrap_or(look.min_width).clamp(look.min_width, look.max_width));
+    let width = px(match width {
+        Some(width) => width.max(look.min_width),
+        None => look.min_width.clamp(look.min_width, look.max_width),
+    });
     let height = px(look.estimated_height);
     let inset = px(24.0);
 

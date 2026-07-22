@@ -10,6 +10,7 @@ cargo run -p gpui-luma-shell-inset -- retro-arcade
 cargo run -p gpui-luma-shell-icon-rail -- default
 cargo run -p gpui-luma-shell-detached -- default
 cargo run -p gpui-luma-shell-split-titlebar -- default
+cargo run -p gpui-luma-shell-vscode -- default
 ```
 
 Pass `default` or any built-in shadcn theme stem (e.g. `jarvis`, `retro-arcade`) as the first CLI argument.
@@ -23,5 +24,6 @@ Pass `default` or any built-in shadcn theme stem (e.g. `jarvis`, `retro-arcade`)
 | `gpui-luma-shell-icon-rail` | Collapse to icon-rail width (128px) |
 | `gpui-luma-shell-detached` | Independent nav/content surfaces; menu toggle in content |
 | `gpui-luma-shell-split-titlebar` | Full-window `ResizablePanels` (title bar included in each pane) |
+| `gpui-luma-shell-vscode` | VS Code workbench shell: Customize Layout regions (Primary Side Bar, Editor, Status Bar) |
 
 Shared code lives in `gpui-luma-shell-common`.

@@ -122,11 +122,16 @@ impl DialogTemplate for ThemedDialogTemplate {
         let DialogTemplateParts { header_drag_handle, handlers } = parts;
         let DialogTemplateHandlers { key_down, header_mouse_down, shell_mouse_down, shell_mouse_down_out } = handlers;
 
+        let shell_width = match model.width {
+            Some(width) => width.max(look.min_width),
+            None => look.min_width.clamp(look.min_width, look.max_width),
+        };
+
         let mut shell = div()
             .id(model.id.clone())
             .relative()
-            .w(px(model.width.unwrap_or(look.min_width).clamp(look.min_width, look.max_width)))
-            .max_w(px(look.max_width))
+            .w(px(shell_width))
+            .when(model.width.is_none(), |shell| shell.max_w(px(look.max_width)))
             .p(px(look.padding))
             .bg(look.background)
             .border_1()

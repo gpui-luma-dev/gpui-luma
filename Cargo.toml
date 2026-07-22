@@ -15,6 +15,7 @@ members = [
   "apps/shells/icon-rail",
   "apps/shells/detached",
   "apps/shells/split-titlebar",
+  "apps/shells/vscode",
 ]
 default-members = ["crates/sdk", "apps/gallery", "apps/luma-studio", "apps/neumorphic-demo", "apps/color-viz", "apps/graph-viz"]
 
@@ -78,6 +79,9 @@ opt-level = 1
 opt-level = 1
 
 [profile.dev.package.gpui-luma-shell-split-titlebar]
+opt-level = 1
+
+[profile.dev.package.gpui-luma-shell-vscode]
 opt-level = 1
 
 [profile.dev.package.gpui]

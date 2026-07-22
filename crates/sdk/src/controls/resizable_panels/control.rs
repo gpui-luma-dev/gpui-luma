@@ -1,5 +1,5 @@
 use gpui::{
-    Context, DragMoveEvent, EventEmitter, FocusHandle, IntoElement, KeyDownEvent, MouseButton, MouseDownEvent,
+    Context, DragMoveEvent, EventEmitter, FocusHandle, Hsla, IntoElement, KeyDownEvent, MouseButton, MouseDownEvent,
     MouseUpEvent, ParentElement, Pixels, Render, SharedString, Window, div, prelude::*,
 };
 
@@ -204,6 +204,17 @@ impl ResizablePanels {
         cx.notify();
     }
 
+    pub fn set_panel_background(&mut self, panel_index: usize, background: Option<Hsla>, cx: &mut Context<Self>) {
+        let Some(spec) = self.model.panels.get_mut(panel_index) else {
+            return;
+        };
+        if spec.background == background {
+            return;
+        }
+        spec.background = background;
+        cx.notify();
+    }
+
     pub fn set_template(
         &mut self,
         template: std::sync::Arc<dyn super::template::ResizablePanelsTemplate>,
@@ -219,6 +230,7 @@ impl ResizablePanels {
         }
         self.model.frame_width = Some(width);
         self.model.frame_height = Some(height);
+        self.refresh_panel_sizes_px();
         cx.notify();
     }
 

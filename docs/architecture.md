@@ -17,7 +17,7 @@ This document defines the core architecture, crate layout, module mapping, and d
 *   **`apps/luma-studio` (`luma-studio`)**: The theme customization dashboard and visual design testing studio. System font classification for typography pickers lives in `studio/font_catalog/`.
 *   **`apps/color-viz` (`gpui-luma-color-viz`)**: Color visualization workspace (Shadcn look, same theme CLI as gallery).
 *   **`apps/graph-viz` (`gpui-luma-graph-viz`)**: Graph visualization workspace with luma-studio workbench shell (theme sidebar + tabbed content).
-*   **`apps/shells/`**: Full-window `SplitView` shell reference apps (unified, inset, icon-rail, detached, split-titlebar) with shared theme and Properties navigation sample.
+*   **`apps/shells/`**: Full-window shell reference apps — `SplitView` recipes (unified, inset, icon-rail, detached, split-titlebar) plus `vscode` (Luma Studio `ResizablePanels` workbench shell) — with shared theme and, where applicable, gallery Properties navigation sample.
 
 ### Crate Dependencies
 

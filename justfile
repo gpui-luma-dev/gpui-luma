@@ -58,6 +58,9 @@ shell-detached:
 shell-titlebar:
     cargo run -p gpui-luma-shell-split-titlebar -- default
 
+shell-vscode:
+    cargo run -p gpui-luma-shell-vscode -- default
+
 loc:
     tokei --types Rust
 
