@@ -99,7 +99,6 @@ impl VscodeShellApp {
             if matches!(event, ButtonEvent::Click) {
                 handle_theme_toggle(this, cx);
                 this.sync_workbench_theme(cx);
-                this.refresh_customize_layout_dialog_theme(cx);
             }
         }));
 
@@ -187,13 +186,6 @@ impl VscodeShellApp {
     fn refresh_customize_layout_dialog(&self, cx: &mut Context<Self>) {
         self.customize_layout_dialog.update(cx, |dialog, cx| {
             dialog.sync_from_config(&self.layout_config, cx);
-        });
-    }
-
-    fn refresh_customize_layout_dialog_theme(&self, cx: &mut Context<Self>) {
-        self.customize_layout_dialog.update(cx, |dialog, cx| {
-            dialog.sync_from_config(&self.layout_config, cx);
-            dialog.refresh_theme(cx);
         });
     }
 

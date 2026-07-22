@@ -8,6 +8,7 @@ use super::{
     DialogBuilder, DialogDismissPolicy, DialogEvent, DialogMode, DialogPosition, DialogRenderModel,
     DialogTemplateHandlers, DialogTemplateParts, default_dialog_theme,
 };
+use super::model::ThemeInvalidator;
 use crate::theme::{ControlSize, observe_theme_revision};
 
 #[derive(Clone)]
@@ -28,6 +29,7 @@ pub struct DialogControl {
     pending_focus: bool,
     pending_focus_restore: bool,
     dragging: Option<DialogDragState>,
+    theme_children: Vec<ThemeInvalidator>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -44,7 +46,11 @@ impl EventEmitter<DialogEvent> for DialogControl {}
 
 impl DialogControl {
     pub(crate) fn from_builder(builder: DialogBuilder, cx: &mut Context<Self>) -> Self {
-        observe_theme_revision(cx, |_, cx| cx.notify()).detach();
+        observe_theme_revision(cx, |this, cx| {
+            this.invalidate_theme_children(cx);
+            cx.notify();
+        })
+        .detach();
 
         Self {
             focus_handle: cx.focus_handle().tab_stop(true),
@@ -53,7 +59,14 @@ impl DialogControl {
             pending_focus: false,
             pending_focus_restore: false,
             dragging: None,
+            theme_children: builder.theme_children,
             _subscriptions: Vec::new(),
+        }
+    }
+
+    fn invalidate_theme_children(&self, cx: &mut Context<Self>) {
+        for child in &self.theme_children {
+            child.invalidate(cx);
         }
     }
 

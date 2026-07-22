@@ -71,8 +71,23 @@ pub struct DialogRenderModel<'a> {
     pub content: &'a DialogElementRenderer,
 }
 
+pub(crate) struct ThemeInvalidator(Box<dyn Fn(&mut App) + Send>);
+
+impl ThemeInvalidator {
+    pub fn from_entity<T: 'static>(entity: Entity<T>) -> Self {
+        Self(Box::new(move |cx| {
+            entity.update(cx, |_, cx| cx.notify());
+        }))
+    }
+
+    pub fn invalidate(&self, cx: &mut App) {
+        (self.0)(cx);
+    }
+}
+
 pub struct DialogBuilder {
     pub(crate) model: DialogModel,
+    pub(crate) theme_children: Vec<ThemeInvalidator>,
 }
 
 pub fn new(id: impl Into<SharedString>) -> DialogBuilder {
@@ -95,7 +110,28 @@ impl DialogBuilder {
                 width: None,
                 template: default_dialog_template(),
             },
+            theme_children: Vec::new(),
         }
+    }
+
+    /// Register a persistent entity hosted in this overlay for theme invalidation fan-out.
+    ///
+    /// Spawn child controls before the overlay, then register them here so they re-render when
+    /// [`crate::theme::LumaThemeRevision`] changes without app-level notify plumbing.
+    pub fn theme_child<T: 'static>(mut self, entity: Entity<T>) -> Self {
+        self.theme_children.push(ThemeInvalidator::from_entity(entity));
+        self
+    }
+
+    pub fn theme_children<I, T>(mut self, entities: I) -> Self
+    where
+        I: IntoIterator<Item = Entity<T>>,
+        T: 'static,
+    {
+        for entity in entities {
+            self.theme_children.push(ThemeInvalidator::from_entity(entity));
+        }
+        self
     }
 
     pub fn content<F>(mut self, content: F) -> Self
@@ -188,5 +224,11 @@ mod tests {
             .with_template_modifier(|element, _| element);
 
         assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn theme_children_starts_empty() {
+        let builder = DialogBuilder::new("dialog-test");
+        assert!(builder.theme_children.is_empty());
     }
 }

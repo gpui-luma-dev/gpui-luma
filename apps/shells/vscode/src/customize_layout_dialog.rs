@@ -55,8 +55,6 @@ impl CustomizeLayoutDialog {
             .size(ControlSize::Sm)
             .spawn(cx);
 
-        let shortcut_border = look.chrome().border;
-
         let visibility_group = look
             .menu_choice_group("customize-layout-visibility")
             .multiple()
@@ -67,7 +65,7 @@ impl CustomizeLayoutDialog {
                 ControlSize::Sm,
                 ROW_H,
                 ROW_RADIUS,
-                move |model, visual, _window, _cx| visibility_row_content(model, visual, shortcut_border),
+                |model, visual, _window, _cx| visibility_row_content(model, visual),
             )
             .spawn(cx);
 
@@ -123,6 +121,11 @@ impl CustomizeLayoutDialog {
                 shell.p_0().overflow_hidden().bg(dialog_background)
             })
             .content(move |overlay_model, window, app| dialog.read(app).render_body(overlay_model, window, app))
+            .theme_child(close_button.clone())
+            .theme_child(reset_button.clone())
+            .theme_child(visibility_group.clone())
+            .theme_child(primary_side_bar_position_group.clone())
+            .theme_child(panel_alignment_group.clone())
             .spawn(cx);
 
         cx.subscribe(&overlay, |_, _, event: &OverlayWindowEvent, cx| {
@@ -165,15 +168,6 @@ impl CustomizeLayoutDialog {
         self.sync_visibility_group(config, cx);
         self.sync_position_group(config, cx);
         self.sync_panel_alignment_group(config, cx);
-    }
-
-    pub fn refresh_theme(&self, cx: &mut App) {
-        self.overlay.update(cx, |_, cx| cx.notify());
-        self.close_button.update(cx, |_, cx| cx.notify());
-        self.reset_button.update(cx, |_, cx| cx.notify());
-        self.visibility_group.update(cx, |_, cx| cx.notify());
-        self.primary_side_bar_position_group.update(cx, |_, cx| cx.notify());
-        self.panel_alignment_group.update(cx, |_, cx| cx.notify());
     }
 
     pub fn open(&mut self, opener: Option<FocusHandle>, cx: &mut App) {
@@ -313,7 +307,6 @@ fn positions_section(
 fn visibility_row_content(
     model: &ControlGroupItemRenderModel<ControlGroupItem>,
     visual: &ControlGroupItemVisualContext,
-    shortcut_border: Hsla,
 ) -> AnyElement {
     let region = region_from_id(model.item.id());
 
@@ -338,7 +331,7 @@ fn visibility_row_content(
             [0, 2] => shortcut_column(
                 region,
                 model.index == 0,
-                shortcut_border,
+                visual.muted_foreground,
                 visual.muted_foreground,
                 visual.typography,
             ),

@@ -128,3 +128,8 @@ User Actions (Pointer/Keyboard)
 *   **Controls** emit semantic events (e.g. `ButtonEvent::Click`, `ControlGroupEvent::Change`, `ControlGroupEvent::Activate`, `SliderEvent::Change { thumb_id, value }`, `SliderEvent::Release { thumb_id, value }`; multi-thumb sliders may also emit `ThumbAdded`, `ThumbRemoved`, `ThumbSelected`).
 *   **Templates** never emit events. They register element event listeners to call control methods, which in turn emit the semantic events.
 *   **Application states** never live inside SDK controls. Apps subscribe to control events using `cx.subscribe` and sync their local models accordingly. Programmatic setters (e.g., `set_value`) update visual state and notify, but do **not** trigger recursive events to avoid update loops.
+
+### Overlay Theme Invalidation
+*   **`OverlayWindow`** observes [`LumaThemeRevision`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/theme/revision.rs) and re-renders itself when the active look changes.
+*   Persistent entities composed into overlay content (buttons, choice groups, etc.) must be registered on the builder via `.theme_child(...)` / `.theme_children([...])` so the overlay fans out invalidation without app-level notify plumbing.
+*   Overlay content closures must resolve look-derived tokens at render time; do not capture colors or metrics from the look at spawn time.

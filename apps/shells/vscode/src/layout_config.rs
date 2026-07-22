@@ -19,13 +19,6 @@ impl PrimarySideBarPosition {
             Self::Right => "Right",
         }
     }
-
-    pub fn index(self) -> usize {
-        match self {
-            Self::Left => 0,
-            Self::Right => 1,
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -53,15 +46,6 @@ impl PanelAlignment {
             Self::Right => "Right",
             Self::Center => "Center",
             Self::Justify => "Justify",
-        }
-    }
-
-    pub fn index(self) -> usize {
-        match self {
-            Self::Left => 0,
-            Self::Right => 1,
-            Self::Center => 2,
-            Self::Justify => 3,
         }
     }
 }
@@ -105,17 +89,6 @@ impl LayoutRegion {
             Self::PrimarySideBar => Some(["⌘", "B"]),
             Self::Panel => Some(["⌘", "J"]),
             _ => None,
-        }
-    }
-
-    pub fn index(self) -> usize {
-        match self {
-            Self::ActivityBar => 0,
-            Self::SecondaryActivityBar => 1,
-            Self::PrimarySideBar => 2,
-            Self::SecondarySideBar => 3,
-            Self::Panel => 4,
-            Self::StatusBar => 5,
         }
     }
 }
