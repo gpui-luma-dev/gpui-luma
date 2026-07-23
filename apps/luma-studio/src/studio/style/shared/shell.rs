@@ -1,6 +1,6 @@
 use gpui::{AnyElement, IntoElement, div, prelude::*, px};
 
-use crate::studio::style::sticky_section_heading::{
+use crate::studio::doc_shell::{
     SECTION_HEADING_CONTENT_GAP, SECTION_HEADING_SHELL_PAD_BOTTOM, SECTION_HEADING_SHELL_PAD_TOP,
     render_section_heading_anchor,
 };

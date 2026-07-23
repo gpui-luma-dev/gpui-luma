@@ -48,21 +48,23 @@ pub(crate) fn render_icon_button_template_matrix_section(
     let active_tab =
         preview_tabs.read(cx).active_id().cloned().unwrap_or_else(|| SharedString::from("template-preview"));
 
+    let transparent_border = gpui::hsla(0.0, 0.0, 0.0, 0.0);
+
     section_shell_with_width(
         960.0,
         "Icon Button",
         "Icon-only button states across style variants.",
         chrome.title_text,
         chrome.muted_text,
-        chrome.border,
-        gpui::hsla(0.0, 0.0, 0.0, 0.0),
+        transparent_border,
+        transparent_border,
         render_icon_button_preview_tabbed_content(
             look.as_ref(),
             &template,
             &samples,
             preview_tabs,
             active_tab,
-            chrome.border,
+            transparent_border,
             window,
             cx,
         ),

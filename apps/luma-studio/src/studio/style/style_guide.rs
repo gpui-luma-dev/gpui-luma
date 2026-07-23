@@ -18,7 +18,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::style::sections;
 use crate::studio::style::shared::callout::render_sparse_catalog_callout;
-use crate::studio::style::sticky_section_heading::{
+use crate::studio::doc_shell::{
     StickySectionHeadingTracker, render_sticky_section_heading_lane, with_sticky_heading_tracker,
 };
 

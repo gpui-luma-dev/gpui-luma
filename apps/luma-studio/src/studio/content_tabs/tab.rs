@@ -8,6 +8,7 @@ pub enum ContentTab {
     Typography,
     Palette,
     ThemeUsage,
+    Controls,
 }
 
 impl ContentTab {
@@ -18,6 +19,7 @@ impl ContentTab {
             "typography" => Some(Self::Typography),
             "palette" => Some(Self::Palette),
             "theme-usage" => Some(Self::ThemeUsage),
+            "controls" => Some(Self::Controls),
             _ => None,
         }
     }
@@ -29,6 +31,7 @@ impl ContentTab {
             Self::Typography => None,
             Self::Palette => None,
             Self::ThemeUsage => None,
+            Self::Controls => None,
         }
     }
 }

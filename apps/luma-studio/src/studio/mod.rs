@@ -2,6 +2,7 @@ mod app;
 mod content_tabs;
 mod controls;
 mod demo_controls;
+mod doc_shell;
 mod export;
 mod font_catalog;
 mod font_family_match;

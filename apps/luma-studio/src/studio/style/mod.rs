@@ -1,4 +1,3 @@
-mod sticky_section_heading;
 mod variant_state_table;
 mod shared;
 mod sections;

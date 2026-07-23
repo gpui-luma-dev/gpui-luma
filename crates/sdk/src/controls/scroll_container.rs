@@ -3,8 +3,8 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, AppContext, Bounds, Context, Entity, Pixels, ScrollHandle, SharedString, Stateful, Window, div,
-    point, prelude::*, px,
+    AnyElement, App, AppContext, Bounds, Context, Entity, Pixels, ScrollHandle, ScrollWheelEvent, SharedString,
+    Stateful, Window, div, point, prelude::*, px,
 };
 
 use crate::controls::scrollbar::{Scrollbar, ScrollbarTemplate};
@@ -115,12 +115,28 @@ impl ScrollContainer {
     }
 
     pub fn render(&self, content: AnyElement) -> Stateful<gpui::Div> {
+        self.render_internal(content, None)
+    }
+
+    pub fn render_with_scroll_wheel(
+        &self,
+        content: AnyElement,
+        on_scroll_wheel: impl Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static,
+    ) -> Stateful<gpui::Div> {
+        self.render_internal(content, Some(Box::new(on_scroll_wheel)))
+    }
+
+    fn render_internal(
+        &self,
+        content: AnyElement,
+        on_scroll_wheel: Option<Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>>,
+    ) -> Stateful<gpui::Div> {
         let scrollable = self.scroll_handle.max_offset().y.as_f32() > 0.5;
         let viewport_right = if scrollable { self.scrollbar_width } else { px(0.0) };
         let scroll_handle = self.scroll_handle.clone();
         let last_max_scroll = self.last_max_scroll.clone();
 
-        let viewport = div()
+        let mut viewport = div()
             .on_children_prepainted(move |_: Vec<Bounds<Pixels>>, window: &mut Window, cx: &mut App| {
                 let max_scroll = scroll_handle.max_offset().y.as_f32().max(0.0);
                 if (last_max_scroll.get() - max_scroll).abs() > 0.5 {
@@ -138,6 +154,10 @@ impl ScrollContainer {
             .scrollbar_width(px(0.0))
             .track_scroll(&self.scroll_handle)
             .child(content);
+
+        if let Some(on_scroll_wheel) = on_scroll_wheel {
+            viewport = viewport.on_scroll_wheel(on_scroll_wheel);
+        }
 
         div().id(self.id.clone()).relative().size_full().child(viewport).when(scrollable, |root| {
             root.child(
