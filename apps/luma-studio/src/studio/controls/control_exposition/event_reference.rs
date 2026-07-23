@@ -36,7 +36,6 @@ pub(crate) fn render_event_reference_section(look: &ShadcnLook, specs: &[EventRe
                     mono.clone(),
                     chrome.title_text,
                     true,
-                    None,
                 ))
                 .children(specs.iter().map(|spec| {
                     render_event_reference_row(
@@ -47,7 +46,6 @@ pub(crate) fn render_event_reference_section(look: &ShadcnLook, specs: &[EventRe
                         mono.clone(),
                         chrome.muted_text,
                         false,
-                        Some(spec.sampled),
                     )
                 })),
         )
@@ -62,7 +60,6 @@ fn render_event_reference_row(
     mono: gpui::SharedString,
     text_color: gpui::Hsla,
     header: bool,
-    sampled: Option<bool>,
 ) -> AnyElement {
     div()
         .w_full()
@@ -72,7 +69,9 @@ fn render_event_reference_row(
         .items_start()
         .child(
             div()
-                .col_span(3)
+                .col_span(5)
+                .flex_shrink_0()
+                .overflow_hidden()
                 .font_family(mono)
                 .typography_style(body_style)
                 .font_weight(if header {
@@ -81,11 +80,12 @@ fn render_event_reference_row(
                     FontWeight::NORMAL
                 })
                 .text_color(text_color)
+                .whitespace_nowrap()
                 .child(event),
         )
         .child(
             div()
-                .col_span(4)
+                .col_span(3)
                 .typography_style(body_style)
                 .font_weight(if header {
                     FontWeight::SEMIBOLD
@@ -97,22 +97,16 @@ fn render_event_reference_row(
         )
         .child(
             div()
-                .col_span(5)
-                .flex()
-                .items_start()
-                .gap(px(8.0))
-                .child(div().flex_1().min_w(px(0.0)).typography_style(body_style).text_color(text_color).child(notes))
-                .when_some(sampled.and_then(|sampled| sampled.then_some(())), |row, _| {
-                    row.child(
-                        div()
-                            .flex_shrink_0()
-                            .typography_style(body_style)
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .text_color(text_color)
-                            .opacity(0.72)
-                            .child("sampled"),
-                    )
-                }),
+                .col_span(4)
+                .min_w(px(0.0))
+                .typography_style(body_style)
+                .font_weight(if header {
+                    FontWeight::SEMIBOLD
+                } else {
+                    FontWeight::NORMAL
+                })
+                .text_color(text_color)
+                .child(notes),
         )
         .into_any_element()
 }

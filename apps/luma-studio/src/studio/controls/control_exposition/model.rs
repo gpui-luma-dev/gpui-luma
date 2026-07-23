@@ -15,5 +15,4 @@ pub struct EventReferenceSpec {
     pub event: &'static str,
     pub trigger: &'static str,
     pub notes: &'static str,
-    pub sampled: bool,
 }

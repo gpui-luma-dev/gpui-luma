@@ -57,7 +57,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Button",
         description: "Command buttons commit actions in forms, dialogs, and toolbars. The look exposes primary, secondary, outline, and ghost builders that map to Shadcn emphasis tiers—use primary for the main call to action and ghost for low-priority utilities. Each button is a GPUI entity: spawn once per id, filter ButtonEvent::Click for activation, and optionally observe focus, hover, and enabled transitions.",
         category: ControlCategory::Command,
-        snippet: "let save = look.primary_button(\"save\").label(\"Save\").spawn(cx);\n\ncx.subscribe(&save, |_, _, event: &ButtonEvent, cx| {\n    if matches!(event, ButtonEvent::Click) {\n        // commit action\n    }\n});",
+        snippet: "let save = look.primary_button(\"save\").label(\"Save\").spawn(cx);\n\ncx.subscribe(&save, |_, _, event: &ButtonEvent, _| {\n    match event {\n        ButtonEvent::Click => { /* commit action */ }\n        ButtonEvent::FocusChanged { focused } => { let _ = focused; }\n        ButtonEvent::HoverChanged { hovered } => { let _ = hovered; }\n        ButtonEvent::EnabledChanged { enabled } => { let _ = enabled; }\n        _ => {}\n    }\n});",
         section_order: 100,
     },
     ControlDocEntry {
