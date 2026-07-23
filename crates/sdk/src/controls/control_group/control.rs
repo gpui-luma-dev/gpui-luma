@@ -1,6 +1,6 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent, Render, SharedString,
-    Subscription, Window, div, prelude::*,
+    App, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
+    Render, SharedString, Subscription, Window, div, prelude::*,
 };
 
 use super::model::{
@@ -20,6 +20,8 @@ use crate::theme::observe_theme_revision;
 pub enum ControlGroupEvent {
     Activate { activated_id: SharedString },
     Change { changed_id: SharedString, selected: bool, selected_ids: Vec<SharedString> },
+    FocusChanged { focused: bool },
+    ItemFocused { item_id: SharedString },
 }
 
 pub struct ControlGroupControl<T>
@@ -28,9 +30,11 @@ where
 {
     model: ControlGroupModel<T>,
     focus_handle: gpui::FocusHandle,
-    focus_subscription: Option<Subscription>,
+    focus_in_subscription: Option<Subscription>,
+    focus_out_subscription: Option<Subscription>,
     item_focus_subscriptions: Vec<Subscription>,
     item_focus_subscription_keys: Vec<(SharedString, gpui::FocusHandle)>,
+    emitted_focused: bool,
     hovered_item: Option<usize>,
     pressed_item: Option<usize>,
 }
@@ -54,9 +58,11 @@ where
         Self {
             model: builder.model,
             focus_handle: cx.focus_handle().tab_stop(tab_stop),
-            focus_subscription: None,
+            focus_in_subscription: None,
+            focus_out_subscription: None,
             item_focus_subscriptions: Vec::new(),
             item_focus_subscription_keys: Vec::new(),
+            emitted_focused: false,
             hovered_item: None,
             pressed_item: None,
         }
@@ -114,7 +120,6 @@ where
             return;
         }
         self.model.focus_strategy = focus_strategy;
-        self.focus_subscription = None;
         self.clear_item_focus_subscriptions();
         cx.notify();
     }
@@ -131,12 +136,13 @@ where
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
         self.focus_handle = self.focus_handle.clone().tab_stop(enabled && self.model.tab_stop);
-        self.focus_subscription = None;
+        self.clear_focus_subscriptions();
         self.clear_item_focus_subscriptions();
 
         if !enabled {
             self.hovered_item = None;
             self.pressed_item = None;
+            self.emit_focus_changed(false, cx);
         }
 
         cx.notify();
@@ -145,7 +151,7 @@ where
     pub fn set_tab_stop(&mut self, tab_stop: bool, cx: &mut Context<Self>) {
         self.model.tab_stop = tab_stop;
         self.focus_handle = self.focus_handle.clone().tab_stop(self.model.enabled && tab_stop);
-        self.focus_subscription = None;
+        self.clear_focus_subscriptions();
         cx.notify();
     }
 
@@ -401,13 +407,34 @@ where
             return;
         }
 
-        self.model.active_id = Some(item_id);
+        self.model.active_id = Some(item_id.clone());
+        cx.emit(ControlGroupEvent::ItemFocused { item_id });
         cx.notify();
+    }
+
+    fn emit_focus_changed(&mut self, focused: bool, cx: &mut Context<Self>) -> bool {
+        let focused = self.model.enabled && focused;
+        if self.emitted_focused == focused {
+            return false;
+        }
+
+        self.emitted_focused = focused;
+        cx.emit(ControlGroupEvent::FocusChanged { focused });
+        true
+    }
+
+    fn clear_focus_subscriptions(&mut self) {
+        self.focus_in_subscription = None;
+        self.focus_out_subscription = None;
     }
 
     fn clear_item_focus_subscriptions(&mut self) {
         self.item_focus_subscriptions.clear();
         self.item_focus_subscription_keys.clear();
+    }
+
+    fn any_item_focus_target_focused(&self, window: &Window) -> bool {
+        self.item_focus_subscription_keys.iter().any(|(_, focus_handle)| focus_handle.is_focused(window))
     }
 
     fn ensure_item_focus_subscriptions(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -442,9 +469,25 @@ where
             self.item_focus_subscriptions.push(cx.on_focus_in(&focus_handle, window, {
                 let item_id = item_id.clone();
                 move |this, _window, cx| {
+                    let focus_changed = this.emit_focus_changed(true, cx);
                     this.set_active_id_from_focus(item_id.clone(), cx);
+                    if focus_changed {
+                        cx.notify();
+                    }
                 }
             }));
+            self.item_focus_subscriptions.push(cx.on_focus_out(
+                &focus_handle,
+                window,
+                move |this, _: FocusOutEvent, window, cx| {
+                    if !this.focus_handle.is_focused(window)
+                        && !this.any_item_focus_target_focused(window)
+                        && this.emit_focus_changed(false, cx)
+                    {
+                        cx.notify();
+                    }
+                },
+            ));
         }
     }
 
@@ -461,7 +504,9 @@ where
             return false;
         }
 
-        self.model.active_id = Some(item.id().clone());
+        let item_id = item.id().clone();
+        self.model.active_id = Some(item_id.clone());
+        cx.emit(ControlGroupEvent::ItemFocused { item_id });
         if let Some(window) = window {
             self.focus_item_for_strategy(index, window, cx);
         }
@@ -497,8 +542,10 @@ where
     ) {
         if self.can_use_item(index) {
             self.pressed_item = Some(index);
-            self.model.active_id = Some(self.model.items[index].id().clone());
-            self.focus_item_for_strategy(index, window, cx);
+            let changed = self.set_active_index(index, Some(window), cx);
+            if !changed {
+                self.focus_item_for_strategy(index, window, cx);
+            }
             cx.notify();
         }
     }
@@ -617,17 +664,20 @@ where
     T: ControlGroupItemLike + 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        if self.focus_subscription.is_none() {
-            self.focus_subscription = Some(cx.on_focus(&self.focus_handle, window, Self::handle_group_focus_entry));
+        if self.focus_in_subscription.is_none() {
+            self.focus_in_subscription = Some(cx.on_focus(&self.focus_handle, window, Self::handle_group_focus_entry));
+        }
+        if self.focus_out_subscription.is_none() {
+            self.focus_out_subscription =
+                Some(cx.on_focus_out(&self.focus_handle, window, Self::handle_group_focus_out));
         }
         self.ensure_item_focus_subscriptions(window, cx);
 
         if self.model.focus_strategy == ControlGroupFocusStrategy::RovingItemFocus
             && self.focus_handle.is_focused(window)
+            && let Some(target) = self.active_focus_target(window, cx)
         {
-            if let Some(target) = self.active_focus_target(window, cx) {
-                target.focus_handle.focus(window, cx);
-            }
+            target.focus_handle.focus(window, cx);
         }
 
         let model = self.render_model(window, cx);
@@ -656,7 +706,17 @@ impl<T> ControlGroupControl<T>
 where
     T: ControlGroupItemLike + 'static,
 {
-    fn handle_group_focus_entry(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {}
+    fn handle_group_focus_entry(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.emit_focus_changed(true, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_group_focus_out(&mut self, _: FocusOutEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.any_item_focus_target_focused(window) && self.emit_focus_changed(false, cx) {
+            cx.notify();
+        }
+    }
 
     fn handle_group_next_focus(&mut self, _: &crate::focus::NextFocus, window: &mut Window, cx: &mut Context<Self>) {
         if self.model.focus_strategy != ControlGroupFocusStrategy::RovingItemFocus {

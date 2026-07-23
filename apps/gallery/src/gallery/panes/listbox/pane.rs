@@ -131,7 +131,9 @@ impl ListBoxPane {
                 self.single_choice = fruit_label(changed_id.as_ref());
                 cx.notify();
             }
-            ControlGroupEvent::Activate { .. } => {}
+            ControlGroupEvent::Activate { .. }
+            | ControlGroupEvent::FocusChanged { .. }
+            | ControlGroupEvent::ItemFocused { .. } => {}
         }
     }
 
@@ -141,7 +143,9 @@ impl ListBoxPane {
                 self.horizontal_choice = fruit_label(changed_id.as_ref());
                 cx.notify();
             }
-            ControlGroupEvent::Activate { .. } => {}
+            ControlGroupEvent::Activate { .. }
+            | ControlGroupEvent::FocusChanged { .. }
+            | ControlGroupEvent::ItemFocused { .. } => {}
         }
     }
 
@@ -154,7 +158,9 @@ impl ListBoxPane {
                 }
                 cx.notify();
             }
-            ControlGroupEvent::Activate { .. } => {}
+            ControlGroupEvent::Activate { .. }
+            | ControlGroupEvent::FocusChanged { .. }
+            | ControlGroupEvent::ItemFocused { .. } => {}
         }
     }
 }

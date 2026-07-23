@@ -11,8 +11,9 @@ Status as of 2026-07-23:
 * **Complete**: `CommandCore` / `ButtonEvent` now emits `Click`, `FocusChanged`, `EnabledChanged`, and `HoverChanged`. Activation-only app handlers have been migrated to filter click events.
 * **Complete**: `Checkbox`, `Switch`, and `Toggle` are SDK-owned boolean choice controls. They emit typed `Change` events with domain payloads (`checked`, `on`, `selected`) plus focus/enabled/hover lifecycle events. Their inner `Button<bool>` entities are private implementation details and are no longer exposed to apps.
 * **Complete**: `Toolbar` fans in command button clicks and toggle changes through sourced child controls. Toggle toolbar items now consume `ToggleEvent::Change` instead of flipping raw button data.
+* **Complete**: `ControlGroupEvent` now includes `FocusChanged { focused }` and `ItemFocused { item_id }` alongside existing `Activate` and `Change` events. Active-descendant and roving-item focus strategies both contribute to semantic focus notifications.
 * **Complete**: App usages touched by this migration now subscribe to semantic SDK events instead of depending on the old one-event button assumption or raw boolean button state.
-* **Open**: `ControlGroup`, radio-specific wrappers, selector-family controls, text inputs, sliders, scrollbars, navigation, menus/overlays, and structural layout controls still reflect the audit/proposed-event state below unless their individual section says otherwise.
+* **Open**: Radio-specific wrappers, selector-family controls, text inputs, sliders, scrollbars, navigation, menus/overlays, and structural layout controls still reflect the audit/proposed-event state below unless their individual section says otherwise.
 * **Open**: Luma Studio's event log exists as app-local infrastructure, but comprehensive per-control event showcase wiring is not complete.
 
 ---
@@ -131,11 +132,13 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
 ### 2.3 Selection & Grouping Controls
 
 #### **ControlGroup (`control_group`)**
-* **Current Events**:
+* **Implemented Events**:
   - `ControlGroupEvent::Activate { activated_id: SharedString }`
   - `ControlGroupEvent::Change { changed_id: SharedString, selected: bool, selected_ids: Vec<SharedString> }`
-* **Audit & Gap Analysis**: Strong selection event model; needs parent focus notification and item focus navigation notifications.
-* **Proposed Standardized Event (`ControlGroupEvent`)**:
+  - `ControlGroupEvent::FocusChanged { focused: bool }`
+  - `ControlGroupEvent::ItemFocused { item_id: SharedString }`
+* **Audit Result**: Strong selection event model with parent focus and item focus navigation notifications. Programmatic selection and active-item setters update state without emitting value/focus events.
+* **Standardized Event (`ControlGroupEvent`)**:
   ```rust
   pub enum ControlGroupEvent {
       Activate { activated_id: SharedString },
@@ -377,5 +380,5 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
    - Open: `TextField`, `TextArea`, `Slider`, and the remaining audited control families still need follow-up standardization.
 3. **Phase 3: Container Fan-In & Studio Event Log - Partially Complete**:
    - Complete: `Toolbar` fans in command button clicks and toggle changes from semantic child events.
-   - Open: `ControlGroup` fan-in additions from this audit are not complete.
+   - Complete: `ControlGroup` emits semantic activation, selection, group focus, and item focus events.
    - Open: Luma Studio's `EventLogView` has not yet been wired into comprehensive real-time event demos across all controls.
