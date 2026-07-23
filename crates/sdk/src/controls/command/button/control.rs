@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent,
-    MouseUpEvent, Render, SharedString, Window, div, prelude::*,
+    AnyElement, App, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseButton,
+    MouseDownEvent, MouseUpEvent, Render, SharedString, Subscription, Window, div, prelude::*,
 };
 
 pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
@@ -17,6 +17,8 @@ use crate::theme::observe_theme_revision;
 pub struct Button<D = ()> {
     pub(crate) model: super::model::ButtonModel<D>,
     command: CommandCore,
+    focus_in_subscription: Option<Subscription>,
+    focus_out_subscription: Option<Subscription>,
 }
 
 impl<D: 'static> EventEmitter<ButtonEvent> for Button<D> {}
@@ -44,7 +46,12 @@ impl<D: Clone + 'static> Button<D> {
         let enabled = builder.model.enabled;
         let tab_stop = builder.model.tab_stop;
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
-        Self { model: builder.model, command: CommandCore::new_with_tab_stop(enabled, tab_stop, cx) }
+        Self {
+            model: builder.model,
+            command: CommandCore::new_with_tab_stop(enabled, tab_stop, cx),
+            focus_in_subscription: None,
+            focus_out_subscription: None,
+        }
     }
 
     pub fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<D>>, cx: &mut Context<Self>) {
@@ -73,8 +80,9 @@ impl<D: Clone + 'static> Button<D> {
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
-        self.command.set_enabled(enabled);
-        cx.notify();
+        if self.command.set_enabled(enabled, cx) {
+            cx.notify();
+        }
     }
 
     pub fn data(&self) -> &D {
@@ -111,7 +119,19 @@ impl<D: Clone + 'static> Button<D> {
     }
 
     fn handle_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.command.handle_hover(*hovered) {
+        if self.command.handle_hover(self.model.enabled, *hovered, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_in(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.command.handle_focus_changed(self.model.enabled, true, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.command.handle_focus_changed(self.model.enabled, false, cx) {
             cx.notify();
         }
     }
@@ -137,6 +157,15 @@ impl<D: 'static> Focusable for Button<D> {
 
 impl<D: Clone + 'static> Render for Button<D> {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.focus_in_subscription.is_none() {
+            let focus_handle = self.command.focus_handle().clone();
+            self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
+        }
+        if self.focus_out_subscription.is_none() {
+            let focus_handle = self.command.focus_handle().clone();
+            self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
+        }
+
         let model = self.render_model(window);
 
         div()

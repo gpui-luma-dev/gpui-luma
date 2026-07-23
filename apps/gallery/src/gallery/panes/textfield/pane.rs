@@ -5,6 +5,7 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::presenter::HasPresenter;
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::textfield::{
     TextField, TextFieldClickHandler, TextFieldEvent, TextFieldHoverHandler, TextFieldKeyDownHandler,
@@ -30,9 +31,9 @@ pub(in crate::gallery) struct TextFieldPane {
     inspector: Entity<ColorInspectorShell>,
     set_sample_button: Entity<Button>,
     clear_button: Entity<Button>,
-    enabled_checkbox: Entity<Button<bool>>,
-    clean_on_escape_checkbox: Entity<Button<bool>>,
-    validation_checkbox: Entity<Button<bool>>,
+    enabled_checkbox: Checkbox,
+    clean_on_escape_checkbox: Checkbox,
+    validation_checkbox: Checkbox,
     enabled: bool,
     clean_on_escape: bool,
     strict_validation: bool,
@@ -107,19 +108,25 @@ impl TextFieldPane {
         subscriptions.push(cx.subscribe(&self.text_field, |app, _, event: &TextFieldEvent, cx| {
             app.panes.textfield.handle_text_field_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.set_sample_button, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.set_sample_button, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.textfield.set_sample_value(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.clear_button, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.clear_button, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.textfield.clear_value(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.enabled_checkbox, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.enabled_checkbox, |app, _, event: &CheckboxEvent, cx| {
             app.panes.textfield.handle_option_changed(TextFieldOption::Enabled, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.clean_on_escape_checkbox, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.clean_on_escape_checkbox, |app, _, event: &CheckboxEvent, cx| {
             app.panes.textfield.handle_option_changed(TextFieldOption::CleanOnEscape, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.validation_checkbox, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.validation_checkbox, |app, _, event: &CheckboxEvent, cx| {
             app.panes.textfield.handle_option_changed(TextFieldOption::StrictValidation, event, cx);
         }));
     }
@@ -261,21 +268,22 @@ impl TextFieldPane {
         cx.notify();
     }
 
-    fn handle_option_changed(&mut self, option: TextFieldOption, _event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_option_changed(&mut self, option: TextFieldOption, event: &CheckboxEvent, cx: &mut Context<GalleryApp>) {
+        let CheckboxEvent::Change { checked } = event else {
+            return;
+        };
+
         match option {
             TextFieldOption::Enabled => {
-                self.enabled = !self.enabled;
-                self.enabled_checkbox.update(cx, |b, cx| b.set_data(self.enabled, cx));
+                self.enabled = *checked;
                 self.enabled
             }
             TextFieldOption::CleanOnEscape => {
-                self.clean_on_escape = !self.clean_on_escape;
-                self.clean_on_escape_checkbox.update(cx, |b, cx| b.set_data(self.clean_on_escape, cx));
+                self.clean_on_escape = *checked;
                 self.clean_on_escape
             }
             TextFieldOption::StrictValidation => {
-                self.strict_validation = !self.strict_validation;
-                self.validation_checkbox.update(cx, |b, cx| b.set_data(self.strict_validation, cx));
+                self.strict_validation = *checked;
                 self.strict_validation
             }
         };

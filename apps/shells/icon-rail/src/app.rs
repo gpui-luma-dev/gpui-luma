@@ -66,7 +66,10 @@ impl IconRailShellApp {
         }));
         subscriptions.push(cx.subscribe(&toggle_button, {
             let split_view = split_view.clone();
-            move |_, _, _: &ButtonEvent, cx| {
+            move |_, _, event: &ButtonEvent, cx| {
+                if !event.is_click() {
+                    return;
+                }
                 split_view.update(cx, |split_view, cx| {
                     split_view.toggle_collapsed(cx);
                 });

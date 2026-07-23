@@ -67,10 +67,16 @@ impl DraggableDialogDemo {
         cx: &mut Context<GalleryApp>,
         subscriptions: &mut Vec<Subscription>,
     ) {
-        subscriptions.push(cx.subscribe(&self.trigger, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.trigger, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.dialog.draggable.open(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.close, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.close, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.dialog.draggable.dismiss("Dismissed draggable overlay.", cx);
         }));
         subscriptions.push(cx.subscribe(&self.dialog, |app, _, event: &OverlayWindowEvent, cx| {

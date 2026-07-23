@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Entity, IntoElement, ParentElement, Pixels, SharedString, Styled, div, px, rgb};
-use gpui_luma::controls::command::button::ButtonEvent;
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility};
-use gpui_luma::controls::switch::Switch;
+use gpui_luma::controls::switch::{Switch, SwitchEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -99,26 +98,18 @@ pub(super) fn separator_visibility_label(visibility: SplitViewSeparatorVisibilit
 
 pub(super) fn apply_separator_visibility_toggle(
     split_view: &Entity<SplitView>,
-    switch: &Switch,
-    event: &ButtonEvent,
+    _switch: &Switch,
+    event: &SwitchEvent,
     cx: &mut gpui::Context<GalleryApp>,
 ) {
-    if !matches!(event, ButtonEvent::Click) {
-        return;
-    }
+    let SwitchEvent::Change { on } = event else { return };
 
     split_view.update(cx, |split_view, cx| {
-        let next = match split_view.separator_visibility() {
-            SplitViewSeparatorVisibility::Always => SplitViewSeparatorVisibility::Hover,
-            SplitViewSeparatorVisibility::Hover => SplitViewSeparatorVisibility::Always,
+        let next = match on {
+            true => SplitViewSeparatorVisibility::Always,
+            false => SplitViewSeparatorVisibility::Hover,
         };
         split_view.set_separator_visibility(next, cx);
-    });
-    switch.update(cx, |button, cx| {
-        let checked = matches!(split_view.read(cx).separator_visibility(), SplitViewSeparatorVisibility::Always);
-        if *button.data() != checked {
-            button.set_data(checked, cx);
-        }
     });
 }
 

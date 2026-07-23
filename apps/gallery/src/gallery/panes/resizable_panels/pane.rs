@@ -350,7 +350,10 @@ impl ResizablePanelsPane {
                 app.panes.resizable_panels.toggle_external_panel(cx);
             }
         }));
-        subscriptions.push(cx.subscribe(&self.reset_controlled_button, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.reset_controlled_button, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.resizable_panels.reset_controlled(cx);
         }));
         subscriptions.push(cx.subscribe(&self.controlled, |app, _, event: &ResizablePanelsEvent, cx| {

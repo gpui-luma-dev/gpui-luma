@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, FontWeight, IntoElement, Render, Window, div, prelude::*};
-use gpui_luma::controls::checkbox::Checkbox;
-use gpui_luma::controls::command::button::ButtonEvent;
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::progress::Progress;
 use gpui_luma::controls::slider::{Slider, SliderEvent};
-use gpui_luma::controls::switch::Switch;
+use gpui_luma::controls::switch::{Switch, SwitchEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use gpui_luma::{declare_form, vstack};
@@ -22,29 +21,29 @@ declare_form! {
                 .primary_switch("luma-studio-system-two-factor")
                 .with_data(false)
                 .content(|_, _| div().child("Two-factor authentication").into_any_element())
-                => ButtonEvent |this, event, cx| {
+                => SwitchEvent |this, event, cx| {
                     this.handle_two_factor_event(event, cx);
                 },
             terms_checkbox: Checkbox = look
                 .primary_checkbox("luma-studio-system-terms")
                 .with_data(false)
                 .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
-                => ButtonEvent |this, _event, cx| {
-                    this.handle_terms_event(cx);
+                => CheckboxEvent |this, event, cx| {
+                    this.handle_terms_event(event, cx);
                 },
             social_checkbox: Checkbox = look
                 .primary_checkbox("luma-studio-system-social")
                 .with_data(true)
                 .content(|_, _| div().child("Social").into_any_element())
-                => ButtonEvent |this, _event, cx| {
-                    this.handle_social_event(cx);
+                => CheckboxEvent |this, event, cx| {
+                    this.handle_social_event(event, cx);
                 },
             referral_checkbox: Checkbox = look
                 .primary_checkbox("luma-studio-system-referral")
                 .with_data(false)
                 .content(|_, _| div().child("Referral").into_any_element())
-                => ButtonEvent |this, _event, cx| {
-                    this.handle_referral_event(cx);
+                => CheckboxEvent |this, event, cx| {
+                    this.handle_referral_event(event, cx);
                 },
             budget_slider: Slider = look
                 .slider("luma-studio-system-budget")
@@ -75,34 +74,31 @@ declare_form! {
 }
 
 impl SystemPreferencesPanel {
-    fn handle_terms_event(&mut self, cx: &mut Context<Self>) {
-        self.accepted_terms = !self.accepted_terms;
-        self.terms_checkbox.update(cx, |button, cx| button.set_data(self.accepted_terms, cx));
-        cx.notify();
+    fn handle_terms_event(&mut self, event: &CheckboxEvent, cx: &mut Context<Self>) {
+        if let CheckboxEvent::Change { checked } = event {
+            self.accepted_terms = *checked;
+            cx.notify();
+        }
     }
 
-    fn handle_social_event(&mut self, cx: &mut Context<Self>) {
-        self.social_source = !self.social_source;
-        self.social_checkbox.update(cx, |button, cx| button.set_data(self.social_source, cx));
-        cx.notify();
+    fn handle_social_event(&mut self, event: &CheckboxEvent, cx: &mut Context<Self>) {
+        if let CheckboxEvent::Change { checked } = event {
+            self.social_source = *checked;
+            cx.notify();
+        }
     }
 
-    fn handle_referral_event(&mut self, cx: &mut Context<Self>) {
-        self.referral_source = !self.referral_source;
-        self.referral_checkbox.update(cx, |button, cx| button.set_data(self.referral_source, cx));
-        cx.notify();
+    fn handle_referral_event(&mut self, event: &CheckboxEvent, cx: &mut Context<Self>) {
+        if let CheckboxEvent::Change { checked } = event {
+            self.referral_source = *checked;
+            cx.notify();
+        }
     }
 
-    fn handle_two_factor_event(&mut self, event: &ButtonEvent, cx: &mut Context<Self>) {
-        match event {
-            ButtonEvent::Click => {
-                self.two_factor_switch.update(cx, |button, cx| {
-                    let next_on = !*button.data();
-                    button.set_data(next_on, cx);
-                });
-                self.two_factor_enabled = !self.two_factor_enabled;
-                cx.notify();
-            }
+    fn handle_two_factor_event(&mut self, event: &SwitchEvent, cx: &mut Context<Self>) {
+        if let SwitchEvent::Change { on } = event {
+            self.two_factor_enabled = *on;
+            cx.notify();
         }
     }
 

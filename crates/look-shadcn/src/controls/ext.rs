@@ -41,7 +41,7 @@ use gpui_luma::controls::tree_view::TreeViewBuilder;
 use gpui_luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationBuilder};
 use gpui_luma::controls::textarea::{self, TextAreaBuilder, ThemedTextAreaTemplate};
 use gpui_luma::controls::textfield::{self, TextFieldBuilder, ThemedTextFieldTemplate};
-use gpui_luma::controls::toggle;
+use gpui_luma::controls::toggle::{self, ToggleBuilder};
 use gpui_luma::controls::toolbar::{self, ToolbarBuilder};
 use super::button::ShadcnButtonStyle;
 use crate::elements::Badge;
@@ -83,12 +83,12 @@ pub trait ShadcnLookControlExt {
     fn ghost_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()>;
     fn content_only_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()>;
 
-    fn toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
-    fn primary_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
-    fn secondary_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
-    fn outline_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
-    fn ghost_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
-    fn content_only_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
+    fn toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder;
+    fn primary_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder;
+    fn secondary_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder;
+    fn outline_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder;
+    fn ghost_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder;
+    fn content_only_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder;
 
     fn popup_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::popup_menu::PopupMenuBuilder;
     fn context_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::context_menu::ContextMenuBuilder;
@@ -293,27 +293,27 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
             .without_elevation()
     }
 
-    fn toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder {
         toggle::new(id).template(self.toggle_template(ShadcnButtonStyle::Secondary))
     }
 
-    fn primary_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn primary_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder {
         toggle::new(id).template(self.toggle_template(ShadcnButtonStyle::Primary))
     }
 
-    fn secondary_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn secondary_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder {
         toggle::new(id).template(self.toggle_template(ShadcnButtonStyle::Secondary))
     }
 
-    fn outline_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn outline_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder {
         toggle::new(id).template(self.toggle_template(ShadcnButtonStyle::Outline))
     }
 
-    fn ghost_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn ghost_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder {
         toggle::new(id).template(self.toggle_template(ShadcnButtonStyle::Ghost))
     }
 
-    fn content_only_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn content_only_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder {
         toggle::new(id)
             .template(self.toggle_template(ShadcnButtonStyle::ContentOnly))
             .without_adorners()

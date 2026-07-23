@@ -4,7 +4,7 @@ use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, pre
 use lucide_icons::Icon as LucideIcon;
 use gpui_luma::column_numeric;
 use gpui_luma::column_text;
-use gpui_luma::controls::checkbox::Checkbox;
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::list_view::{
     ListViewColumn, ListViewColumnCellTemplate, ListViewControl, ListViewEvent, ListViewRowRenderModel,
@@ -82,7 +82,7 @@ impl PaymentsPanel {
 
         for (index, checkbox) in row_checkboxes.iter().enumerate() {
             subscriptions.push(cx.subscribe(checkbox, move |panel, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
+                if matches!(event, CheckboxEvent::Change { .. }) {
                     panel.toggle_row_selection(index, cx);
                 }
             }));

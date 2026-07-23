@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::switch::Switch;
+use gpui_luma::controls::command::button::Button;
+use gpui_luma::controls::switch::{Switch, SwitchEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, hstack, vstack};
@@ -17,17 +17,21 @@ declare_form! {
                 .primary_switch("cookies-necessary")
                 .with_data(true)
                 .content(|_, _| div().into_any_element())
-                => ButtonEvent |this, _event, cx| {
-                    this.necessary_enabled = !this.necessary_enabled;
-                    this.necessary_switch.update(cx, |button, cx| button.set_data(this.necessary_enabled, cx));
+                => SwitchEvent |this, event, cx| {
+                    if let SwitchEvent::Change { on } = event {
+                        this.necessary_enabled = *on;
+                        cx.notify();
+                    }
                 },
             functional_switch: Switch = look
                 .primary_switch("cookies-functional")
                 .with_data(false)
                 .content(|_, _| div().into_any_element())
-                => ButtonEvent |this, _event, cx| {
-                    this.functional_enabled = !this.functional_enabled;
-                    this.functional_switch.update(cx, |button, cx| button.set_data(this.functional_enabled, cx));
+                => SwitchEvent |this, event, cx| {
+                    if let SwitchEvent::Change { on } = event {
+                        this.functional_enabled = *on;
+                        cx.notify();
+                    }
                 },
             save_button: Entity<Button> = look.outline_button("cookies-save").label("Save preferences"),
         },

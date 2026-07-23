@@ -3,9 +3,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, ParentElement, SharedString, Subscription, div, prelude::*, px, rgb};
-use gpui_luma::controls::command::button::ButtonEvent;
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent, SplitViewSeparatorVisibility};
-use gpui_luma::controls::switch::Switch;
+use gpui_luma::controls::switch::{Switch, SwitchEvent};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -157,10 +156,10 @@ impl SplitViewPane {
         demo: &DemoState,
         cx: &mut Context<GalleryApp>,
         subscriptions: &mut Vec<Subscription>,
-        handler: fn(&mut GalleryApp, &ButtonEvent, &mut Context<GalleryApp>),
+        handler: fn(&mut GalleryApp, &SwitchEvent, &mut Context<GalleryApp>),
     ) {
         let switch = demo.separator_switch.clone();
-        subscriptions.push(cx.subscribe(&switch, move |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&switch, move |app, _, event: &SwitchEvent, cx| {
             handler(app, event, cx);
         }));
     }
@@ -252,7 +251,7 @@ impl SplitViewPane {
 }
 
 impl DemoState {
-    fn apply_separator_toggle(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn apply_separator_toggle(&mut self, event: &SwitchEvent, cx: &mut Context<GalleryApp>) {
         apply_separator_visibility_toggle(&self.split_view, &self.separator_switch, event, cx);
         let read = self.split_view.read(cx);
         self.separator_visibility = read.separator_visibility();

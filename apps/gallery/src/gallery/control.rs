@@ -78,13 +78,19 @@ impl GalleryApp {
         ];
         for route_button in route_buttons.iter().cloned() {
             let page_id = route_button.page_id.to_string();
-            subscriptions.push(cx.subscribe(&route_button.button, move |this, _, _: &ButtonEvent, cx| {
+            subscriptions.push(cx.subscribe(&route_button.button, move |this, _, event: &ButtonEvent, cx| {
+                if !event.is_click() {
+                    return;
+                }
                 this.set_nav_selection(&page_id, cx);
             }));
         }
         for branch_button in branch_buttons {
             let node_id = branch_button.node_id.to_string();
-            subscriptions.push(cx.subscribe(&branch_button.button, move |this, _, _: &ButtonEvent, cx| {
+            subscriptions.push(cx.subscribe(&branch_button.button, move |this, _, event: &ButtonEvent, cx| {
+                if !event.is_click() {
+                    return;
+                }
                 this.navigation_sidebar.update(cx, |sidebar, cx| {
                     sidebar.toggle_node_expanded(node_id.clone(), cx);
                 });

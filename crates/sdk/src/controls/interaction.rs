@@ -25,6 +25,14 @@ impl ControlInteraction {
         &self.focus_handle
     }
 
+    pub fn enabled(&self) -> bool {
+        !self.state.disabled
+    }
+
+    pub fn hovered(&self) -> bool {
+        self.state.hovered
+    }
+
     pub fn set_enabled(&mut self, enabled: bool) {
         self.state.disabled = !enabled;
         self.focus_handle = self.focus_handle.clone().tab_stop(enabled && self.tab_stop);

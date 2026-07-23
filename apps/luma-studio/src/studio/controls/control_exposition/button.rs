@@ -28,9 +28,21 @@ const EVENT_SPECS: &[EventReferenceSpec] = &[
         sampled: true,
     },
     EventReferenceSpec {
-        event: "(none)",
-        trigger: "Hover / focus changes",
-        notes: "InteractionState updates for rendering only; buttons do not emit hover or focus events.",
+        event: "ButtonEvent::HoverChanged { hovered }",
+        trigger: "Pointer enters or leaves the enabled control.",
+        notes: "Emitted only when hover state actually changes.",
+        sampled: true,
+    },
+    EventReferenceSpec {
+        event: "ButtonEvent::FocusChanged { focused }",
+        trigger: "Focus enters or leaves the control.",
+        notes: "Emitted once per effective focus transition.",
+        sampled: true,
+    },
+    EventReferenceSpec {
+        event: "ButtonEvent::EnabledChanged { enabled }",
+        trigger: "Button::set_enabled changes enabled state.",
+        notes: "Programmatic state transition; repeated same-value setters are silent.",
         sampled: false,
     },
     EventReferenceSpec {
@@ -83,7 +95,7 @@ impl ButtonControlExposition {
                 cx,
                 look.clone(),
                 "controls-button-event-log",
-                "Subscribe with cx.subscribe and handle ButtonEvent::Click in the parent.",
+                "Subscribe with cx.subscribe and filter ButtonEvent::Click for activation-only behavior.",
             )
         });
 
@@ -176,8 +188,18 @@ fn subscribe_button(
     cx: &mut Context<ButtonControlExposition>,
 ) -> Vec<Subscription> {
     vec![cx.subscribe(button, move |_, _, event: &ButtonEvent, cx| {
-        let ButtonEvent::Click = event;
-        let line = format!("ButtonEvent::Click — {} (\"{button_id}\")", variant.label());
+        let line = match event {
+            ButtonEvent::Click => format!("ButtonEvent::Click - {} (\"{button_id}\")", variant.label()),
+            ButtonEvent::FocusChanged { focused } => {
+                format!("ButtonEvent::FocusChanged {{ focused: {focused} }} - {} (\"{button_id}\")", variant.label())
+            }
+            ButtonEvent::EnabledChanged { enabled } => {
+                format!("ButtonEvent::EnabledChanged {{ enabled: {enabled} }} - {} (\"{button_id}\")", variant.label())
+            }
+            ButtonEvent::HoverChanged { hovered } => {
+                format!("ButtonEvent::HoverChanged {{ hovered: {hovered} }} - {} (\"{button_id}\")", variant.label())
+            }
+        };
         event_stream.update(cx, |stream, cx| {
             stream.append_line(&line, cx);
             cx.notify();

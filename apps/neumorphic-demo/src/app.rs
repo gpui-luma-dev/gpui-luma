@@ -1,11 +1,10 @@
-use gpui::{Context, Entity, Render, Subscription, Window, div, hsla, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
+use gpui::{Context, Render, Subscription, Window, div, hsla, prelude::*, px};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::radio_group::{self, RadioGroup, RadioGroupItem};
 use gpui_luma::controls::slider::{self, Slider, SliderOrientation};
-use gpui_luma::controls::switch::{self, Switch};
-use gpui_luma::controls::toggle;
+use gpui_luma::controls::switch::{self, Switch, SwitchEvent};
+use gpui_luma::controls::toggle::{self, Toggle, ToggleEvent};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::background::deck_background;
@@ -28,9 +27,9 @@ pub struct NeumorphicDemoApp {
     high_slider: Slider,
     air_slider: Slider,
     speed_group: RadioGroup<RadioGroupItem>,
-    left_power: Entity<Button<bool>>,
-    middle_power: Entity<Button<bool>>,
-    right_power: Entity<Button<bool>>,
+    left_power: Toggle,
+    middle_power: Toggle,
+    right_power: Toggle,
     left_switch: Switch,
     middle_switch: Switch,
     right_switch: Switch,
@@ -107,22 +106,22 @@ impl NeumorphicDemoApp {
             .spawn(cx);
 
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&left_power, |this, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&left_power, |this, _, event: &ToggleEvent, cx| {
             this.handle_power_event(PanelSlot::Left, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&middle_power, |this, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&middle_power, |this, _, event: &ToggleEvent, cx| {
             this.handle_power_event(PanelSlot::Middle, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&right_power, |this, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&right_power, |this, _, event: &ToggleEvent, cx| {
             this.handle_power_event(PanelSlot::Right, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&left_switch, |this, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&left_switch, |this, _, event: &SwitchEvent, cx| {
             this.handle_switch_event(PanelSlot::Left, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&middle_switch, |this, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&middle_switch, |this, _, event: &SwitchEvent, cx| {
             this.handle_switch_event(PanelSlot::Middle, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&right_switch, |this, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&right_switch, |this, _, event: &SwitchEvent, cx| {
             this.handle_switch_event(PanelSlot::Right, event, cx);
         }));
 
@@ -149,38 +148,19 @@ impl NeumorphicDemoApp {
         }
     }
 
-    fn handle_power_event(&mut self, slot: PanelSlot, event: &ButtonEvent, cx: &mut Context<Self>) {
-        if !matches!(event, ButtonEvent::Click) {
+    fn handle_power_event(&mut self, _slot: PanelSlot, event: &ToggleEvent, cx: &mut Context<Self>) {
+        if !matches!(event, ToggleEvent::Change { .. }) {
             return;
         }
 
-        let button = match slot {
-            PanelSlot::Left => &self.left_power,
-            PanelSlot::Middle => &self.middle_power,
-            PanelSlot::Right => &self.right_power,
-        };
-
-        button.update(cx, |button, cx| {
-            button.set_data(!*button.data(), cx);
-        });
         cx.notify();
     }
 
-    fn handle_switch_event(&mut self, slot: PanelSlot, event: &ButtonEvent, cx: &mut Context<Self>) {
-        if !matches!(event, ButtonEvent::Click) {
+    fn handle_switch_event(&mut self, _slot: PanelSlot, event: &SwitchEvent, cx: &mut Context<Self>) {
+        if !matches!(event, SwitchEvent::Change { .. }) {
             return;
         }
 
-        let switch = match slot {
-            PanelSlot::Left => &self.left_switch,
-            PanelSlot::Middle => &self.middle_switch,
-            PanelSlot::Right => &self.right_switch,
-        };
-
-        switch.update(cx, |button, cx| {
-            let next_on = !*button.data();
-            button.set_data(next_on, cx);
-        });
         cx.notify();
     }
 }
@@ -370,7 +350,7 @@ fn adv_row(switch: &Switch) -> gpui::Div {
         .child(switch.clone())
 }
 
-fn power_toggle_row(toggle: &Entity<Button<bool>>) -> gpui::Div {
+fn power_toggle_row(toggle: &Toggle) -> gpui::Div {
     div().w_full().flex().justify_center().child(toggle.clone())
 }
 

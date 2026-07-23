@@ -93,7 +93,10 @@ impl InspectorToggleRegistry {
         for (page_id, entry) in &registry.entries {
             let page_id = *page_id;
             let toggle = entry.toggle.clone();
-            subscriptions.push(cx.subscribe(&toggle, move |app, _, _: &ButtonEvent, cx| {
+            subscriptions.push(cx.subscribe(&toggle, move |app, _, event: &ButtonEvent, cx| {
+                if !event.is_click() {
+                    return;
+                }
                 app.panes.inspector_toggles.toggle(page_id);
                 if page_id == "button" {
                     let entry = app.panes.inspector_toggles.get("button");

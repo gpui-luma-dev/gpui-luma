@@ -70,13 +70,22 @@ impl ModelessDialogDemo {
         cx: &mut Context<GalleryApp>,
         subscriptions: &mut Vec<Subscription>,
     ) {
-        subscriptions.push(cx.subscribe(&self.trigger, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.trigger, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.dialog.modeless.open(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.background_counter, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.background_counter, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.dialog.modeless.increment_background(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.close, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.close, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.dialog.modeless.dismiss("Dismissed modeless overlay.", cx);
         }));
         subscriptions.push(cx.subscribe(&self.dialog, |app, _, event: &OverlayWindowEvent, cx| {

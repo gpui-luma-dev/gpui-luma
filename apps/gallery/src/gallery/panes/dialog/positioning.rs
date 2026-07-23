@@ -71,19 +71,31 @@ impl PositioningDialogDemo {
         cx: &mut Context<GalleryApp>,
         subscriptions: &mut Vec<Subscription>,
     ) {
-        subscriptions.push(cx.subscribe(&self.center_trigger, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.center_trigger, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.dialog.positioning.open(OverlayWindowPosition::Center, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.corner_trigger, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.corner_trigger, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.dialog.positioning.open(OverlayWindowPosition::TopRight, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.absolute_trigger, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.absolute_trigger, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes
                 .dialog
                 .positioning
                 .open(OverlayWindowPosition::Absolute(gpui::point(px(180.0), px(280.0))), cx);
         }));
-        subscriptions.push(cx.subscribe(&self.close, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.close, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.dialog.positioning.dismiss("Dismissed positioned overlay.", cx);
         }));
         subscriptions.push(cx.subscribe(&self.dialog, |app, _, event: &OverlayWindowEvent, cx| {

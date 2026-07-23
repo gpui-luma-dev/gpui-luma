@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma::controls::checkbox::Checkbox;
-use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use gpui_luma::controls::command::button::{Button, ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::control_group::{ControlGroupItemElementTemplate, ControlGroupItemRenderModel};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::radio_button::ThemedRadioButtonTemplate;
@@ -84,18 +84,22 @@ declare_form! {
                 .with_data(true)
                 .compact()
                 .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
-                => ButtonEvent |this, _event, cx| {
-                    this.terms_accepted = !this.terms_accepted;
-                    this.terms_checkbox.update(cx, |button, cx| button.set_data(this.terms_accepted, cx));
+                => CheckboxEvent |this, event, cx| {
+                    if let CheckboxEvent::Change { checked } = event {
+                        this.terms_accepted = *checked;
+                        cx.notify();
+                    }
                 },
             email_checkbox: Checkbox = look
                 .primary_checkbox("upgrade-email-opt")
                 .with_data(false)
                 .compact()
                 .content(|_, _| div().child("Allow us to send you emails").into_any_element())
-                => ButtonEvent |this, _event, cx| {
-                    this.email_opt_in = !this.email_opt_in;
-                    this.email_checkbox.update(cx, |button, cx| button.set_data(this.email_opt_in, cx));
+                => CheckboxEvent |this, event, cx| {
+                    if let CheckboxEvent::Change { checked } = event {
+                        this.email_opt_in = *checked;
+                        cx.notify();
+                    }
                 },
             cancel_button: Entity<Button> = look.outline_button("upgrade-cancel").label("Cancel").size(size),
             upgrade_button: Entity<Button> = look.primary_button("upgrade-submit").label("Upgrade Plan").size(size),

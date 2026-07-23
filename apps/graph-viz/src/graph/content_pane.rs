@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::controls::command::button::HasPresenter;
 use gpui_luma::controls::control_group::ControlGroupEvent;
 use gpui_luma::controls::list_view::ScrollingListView;
 use gpui_luma::controls::listbox::ListBox;
@@ -9,6 +9,7 @@ use gpui_luma::controls::slider::{Slider, SliderEvent};
 use gpui_luma::controls::tabs_navigation::{
     TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
 };
+use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
@@ -57,9 +58,9 @@ pub struct ContentPaneHost {
     ride: RideActivity,
     available_metrics: Vec<TelemetryMetric>,
     metric_listbox: ListBox,
-    speed_unit_toggle: Entity<Button<bool>>,
-    power_unit_toggle: Entity<Button<bool>>,
-    x_axis_toggle: Entity<Button<bool>>,
+    speed_unit_toggle: Toggle,
+    power_unit_toggle: Toggle,
+    x_axis_toggle: Toggle,
     timeline_slider: Slider,
     laps_list_view: ScrollingListView<LapRow>,
     scrub_fraction: f32,
@@ -128,29 +129,20 @@ impl ContentPaneHost {
         subscriptions.push(cx.subscribe(&metric_listbox_for_sub, |_, _, _: &ControlGroupEvent, cx| {
             cx.notify();
         }));
-        subscriptions.push(cx.subscribe(&speed_unit_toggle_for_sub, |host, toggle, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                toggle.update(cx, |button, cx| {
-                    button.set_data(!*button.data(), cx);
-                });
-                let speed_unit = SpeedUnit::from_toggle(*toggle.read(cx).data());
+        subscriptions.push(cx.subscribe(&speed_unit_toggle_for_sub, |host, _, event: &ToggleEvent, cx| {
+            if let ToggleEvent::Change { selected } = event {
+                let speed_unit = SpeedUnit::from_toggle(*selected);
                 refresh_laps_list_view(&host.laps_list_view, &host.ride.laps, speed_unit, cx);
                 cx.notify();
             }
         }));
-        subscriptions.push(cx.subscribe(&power_unit_toggle_for_sub, |_, toggle, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                toggle.update(cx, |button, cx| {
-                    button.set_data(!*button.data(), cx);
-                });
+        subscriptions.push(cx.subscribe(&power_unit_toggle_for_sub, |_, _, event: &ToggleEvent, cx| {
+            if matches!(event, ToggleEvent::Change { .. }) {
                 cx.notify();
             }
         }));
-        subscriptions.push(cx.subscribe(&x_axis_toggle_for_sub, |_, toggle, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                toggle.update(cx, |button, cx| {
-                    button.set_data(!*button.data(), cx);
-                });
+        subscriptions.push(cx.subscribe(&x_axis_toggle_for_sub, |_, _, event: &ToggleEvent, cx| {
+            if matches!(event, ToggleEvent::Change { .. }) {
                 cx.notify();
             }
         }));

@@ -4,6 +4,19 @@ This document defines the standardized event taxonomy for the `gpui-luma` SDK co
 
 ---
 
+## 0. Implementation Status
+
+Status as of 2026-07-23:
+
+* **Complete**: `CommandCore` / `ButtonEvent` now emits `Click`, `FocusChanged`, `EnabledChanged`, and `HoverChanged`. Activation-only app handlers have been migrated to filter click events.
+* **Complete**: `Checkbox`, `Switch`, and `Toggle` are SDK-owned boolean choice controls. They emit typed `Change` events with domain payloads (`checked`, `on`, `selected`) plus focus/enabled/hover lifecycle events. Their inner `Button<bool>` entities are private implementation details and are no longer exposed to apps.
+* **Complete**: `Toolbar` fans in command button clicks and toggle changes through sourced child controls. Toggle toolbar items now consume `ToggleEvent::Change` instead of flipping raw button data.
+* **Complete**: App usages touched by this migration now subscribe to semantic SDK events instead of depending on the old one-event button assumption or raw boolean button state.
+* **Open**: `ControlGroup`, radio-specific wrappers, selector-family controls, text inputs, sliders, scrollbars, navigation, menus/overlays, and structural layout controls still reflect the audit/proposed-event state below unless their individual section says otherwise.
+* **Open**: Luma Studio's event log exists as app-local infrastructure, but comprehensive per-control event showcase wiring is not complete.
+
+---
+
 ## 1. Event Invariants & Architectural Taxonomy
 
 All SDK controls emit semantic events via GPUI's `EventEmitter` mechanism (`cx.emit(...)`). Templates render presentation element trees (`Div`) and hook element listeners to forward user actions to control entities; **templates never emit events directly**.
@@ -25,7 +38,7 @@ Events across all control families are categorized into four standard layers:
    - User interactions (mouse clicks, keypresses, drags) **MUST** emit semantic events.
    - Direct programmatic setters (e.g. `control.set_value(val, cx)`) update visual state and call `cx.notify()`, but **MUST NOT** emit events, avoiding feedback loop cascades.
 2. **Payload Naming Standard**:
-   - Boolean toggles use `value: bool` or `selected: bool`.
+   - Boolean controls use domain-specific payload names (`checked`, `on`, `selected`) rather than reusing raw button payloads.
    - String payloads use `value: String`.
    - Identifiers use `id: SharedString`.
    - State transition flags use `focused: bool`, `enabled: bool`, `hovered: bool`.
@@ -44,9 +57,9 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
 
 #### **Button / IconButton (`command/button`, `command/icon_button`)**
 * **Core Engine**: `CommandCore`
-* **Current Events**: `CommandEvent::Click`
-* **Audit & Gap Analysis**: Lacks focus, enabled, and hover state notifications needed for event logs and host container coordination.
-* **Proposed Standardized Event (`ButtonEvent`)**:
+* **Implemented Events**: `ButtonEvent::Click`, `ButtonEvent::FocusChanged`, `ButtonEvent::EnabledChanged`, `ButtonEvent::HoverChanged`
+* **Audit Result**: Implemented through `CommandCore`; callers that only care about activation must filter `ButtonEvent::Click`.
+* **Standardized Event (`ButtonEvent`)**:
   ```rust
   pub enum ButtonEvent {
       Click,
@@ -57,15 +70,13 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
   ```
 
 #### **Toolbar (`toolbar`)**
-* **Current Events**: `ToolbarEvent::Action { item_id }`, `ToolbarEvent::Change { item_id, selected }`
-* **Audit & Gap Analysis**: Aggregates child controls. Needs focus and item enable/disable fan-in.
-* **Proposed Standardized Event (`ToolbarEvent`)**:
+* **Implemented Events**: `ToolbarEvent::Click { id }`, `ToolbarEvent::Change { id, value }`
+* **Audit Result**: Aggregates sourced child controls. Toolbar toggle items now consume `ToggleEvent::Change` rather than flipping raw `Button<bool>` state internally.
+* **Current Event (`ToolbarEvent`)**:
   ```rust
   pub enum ToolbarEvent {
-      Action { item_id: SharedString },
-      Change { item_id: SharedString, selected: bool },
-      FocusChanged { focused: bool },
-      ItemEnabledChanged { item_id: SharedString, enabled: bool },
+      Click { id: SharedString },
+      Change { id: SharedString, value: ToolbarValue },
   }
   ```
 
@@ -74,39 +85,44 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
 ### 2.2 Boolean & Choice Controls
 
 #### **Checkbox (`checkbox`)**
-* **Current Wrapper**: `Button<bool>`
-* **Current Events**: Emits `CommandEvent::Click`
-* **Audit & Gap Analysis**: Currently relies on command clicks. Needs explicit boolean `Change` event and focus state transitions.
-* **Proposed Standardized Event (`CheckboxEvent`)**:
+* **Current Wrapper**: `CheckboxControl` owns an inner `Button<bool>` and does not expose raw button access.
+* **Implemented Events**: `CheckboxEvent::Change { checked }`, `FocusChanged`, `EnabledChanged`, `HoverChanged`
+* **Audit Result**: Click-to-checked transition lives inside the SDK control. Programmatic `set_data` updates visual state and does not emit `Change`.
+* **Standardized Event (`CheckboxEvent`)**:
   ```rust
   pub enum CheckboxEvent {
-      Change { value: bool },
+      Change { checked: bool },
       FocusChanged { focused: bool },
       EnabledChanged { enabled: bool },
+      HoverChanged { hovered: bool },
   }
   ```
 
 #### **Switch (`switch`)**
-* **Current Events**: `SwitchEvent::Change { value: bool }` (implicit via toggle)
-* **Audit & Gap Analysis**: Lacks standardized focus and interaction state events.
-* **Proposed Standardized Event (`SwitchEvent`)**:
+* **Current Wrapper**: `SwitchControl` owns an inner `Button<bool>` and does not expose raw button access.
+* **Implemented Events**: `SwitchEvent::Change { on }`, `FocusChanged`, `EnabledChanged`, `HoverChanged`
+* **Audit Result**: Click-to-on transition lives inside the SDK control. Programmatic `set_data` updates visual state and does not emit `Change`.
+* **Standardized Event (`SwitchEvent`)**:
   ```rust
   pub enum SwitchEvent {
-      Change { value: bool },
+      Change { on: bool },
       FocusChanged { focused: bool },
       EnabledChanged { enabled: bool },
+      HoverChanged { hovered: bool },
   }
   ```
 
 #### **Toggle (`toggle`)**
-* **Current Events**: `ToggleEvent::Change { selected: bool }`
-* **Audit & Gap Analysis**: Needs focus, hover, and enabled events.
-* **Proposed Standardized Event (`ToggleEvent`)**:
+* **Current Wrapper**: `Toggle` is `Entity<ToggleControl>`; `ToggleControl` owns an inner `Button<bool>` and does not expose raw button access.
+* **Implemented Events**: `ToggleEvent::Change { selected }`, `FocusChanged`, `EnabledChanged`, `HoverChanged`
+* **Audit Result**: Click-to-selected transition lives inside the SDK control. Programmatic `set_data` updates visual state and does not emit `Change`.
+* **Standardized Event (`ToggleEvent`)**:
   ```rust
   pub enum ToggleEvent {
       Change { selected: bool },
       FocusChanged { focused: bool },
       EnabledChanged { enabled: bool },
+      HoverChanged { hovered: bool },
   }
   ```
 
@@ -352,11 +368,14 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
 
 ## 3. Summary & Phased Implementation Plan
 
-1. **Phase 1: Universal State Trait & Common Variants**:
-   - Introduce standardized helper payloads (`FocusChanged { focused: bool }`, `EnabledChanged { enabled: bool }`, `HoverChanged { hovered: bool }`).
-2. **Phase 2: Core Control Update**:
-   - Update `CommandCore` to emit `FocusChanged` and `HoverChanged` alongside `Click`.
-   - Update `Checkbox`, `Switch`, `Toggle`, `TextField`, and `Slider`.
-3. **Phase 3: Container Fan-In & Studio Event Log**:
-   - Wire `Toolbar` and `ControlGroup` fan-in listeners.
-   - Connect Luma Studio's `EventLogView` to showcase real-time event streaming across all control demos.
+1. **Phase 1: Universal State Trait & Common Variants - Partially Complete**:
+   - Complete for command and boolean choice controls: `FocusChanged { focused: bool }`, `EnabledChanged { enabled: bool }`, and `HoverChanged { hovered: bool }`.
+   - Still open for the broader SDK audit where controls have not yet adopted lifecycle variants.
+2. **Phase 2: Core Control Update - Partially Complete**:
+   - Complete: `CommandCore` emits lifecycle events alongside `Click`.
+   - Complete: `Checkbox`, `Switch`, and `Toggle` own their click-to-value transitions and emit typed `Change` events.
+   - Open: `TextField`, `TextArea`, `Slider`, and the remaining audited control families still need follow-up standardization.
+3. **Phase 3: Container Fan-In & Studio Event Log - Partially Complete**:
+   - Complete: `Toolbar` fans in command button clicks and toggle changes from semantic child events.
+   - Open: `ControlGroup` fan-in additions from this audit are not complete.
+   - Open: Luma Studio's `EventLogView` has not yet been wired into comprehensive real-time event demos across all controls.

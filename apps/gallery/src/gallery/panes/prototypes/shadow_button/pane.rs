@@ -10,6 +10,7 @@ use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderMode
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::slider::{Slider, SliderEvent};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent, Validator};
+use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn::prelude::*;
@@ -37,7 +38,7 @@ pub(in crate::gallery) struct ButtonPane {
     demo_button: Entity<Button>,
     state_preview: Entity<ButtonStatePreview>,
     reset_button: Entity<Button>,
-    bounds_toggle: Entity<Button<bool>>,
+    bounds_toggle: Toggle,
     color_field: TextField,
 
     offset_x_slider: Slider,
@@ -113,7 +114,7 @@ impl ButtonPane {
         subscriptions.push(cx.subscribe(&self.reset_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.shadow_button.handle_reset(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.bounds_toggle, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.bounds_toggle, |app, _, event: &ToggleEvent, cx| {
             app.panes.shadow_button.handle_bounds_toggle(event, cx);
         }));
         subscriptions.push(cx.subscribe(&self.color_field, |app, _, event: &TextFieldEvent, cx| {
@@ -305,13 +306,9 @@ impl ButtonPane {
         }
     }
 
-    fn handle_bounds_toggle(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, ButtonEvent::Click) {
-            self.bounds_toggle.update(cx, |button, cx| {
-                let new_selected = !*button.data();
-                button.set_data(new_selected, cx);
-                self.show_bounds = new_selected;
-            });
+    fn handle_bounds_toggle(&mut self, event: &ToggleEvent, cx: &mut Context<GalleryApp>) {
+        if let ToggleEvent::Change { selected } = event {
+            self.show_bounds = *selected;
             cx.notify();
         }
     }

@@ -4,6 +4,7 @@ use gpui::{
     AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, TextRun, Window, div, font,
     prelude::*, px,
 };
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::textarea::{
@@ -29,9 +30,9 @@ pub(in crate::gallery) struct TextAreaPane {
     inspector: Entity<ColorInspectorShell>,
     set_sample_button: Entity<Button>,
     clear_button: Entity<Button>,
-    enabled_checkbox: Entity<Button<bool>>,
-    clean_on_escape_checkbox: Entity<Button<bool>>,
-    validation_checkbox: Entity<Button<bool>>,
+    enabled_checkbox: Checkbox,
+    clean_on_escape_checkbox: Checkbox,
+    validation_checkbox: Checkbox,
     enabled: bool,
     clean_on_escape: bool,
     strict_validation: bool,
@@ -101,19 +102,25 @@ impl TextAreaPane {
         subscriptions.push(cx.subscribe(&self.text_area, |app, _, event: &TextAreaEvent, cx| {
             app.panes.textarea.handle_text_area_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.set_sample_button, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.set_sample_button, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.textarea.set_sample_value(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.clear_button, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.clear_button, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.textarea.clear_value(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.enabled_checkbox, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.enabled_checkbox, |app, _, event: &CheckboxEvent, cx| {
             app.panes.textarea.handle_option_changed(TextAreaOption::Enabled, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.clean_on_escape_checkbox, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.clean_on_escape_checkbox, |app, _, event: &CheckboxEvent, cx| {
             app.panes.textarea.handle_option_changed(TextAreaOption::CleanOnEscape, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.validation_checkbox, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.validation_checkbox, |app, _, event: &CheckboxEvent, cx| {
             app.panes.textarea.handle_option_changed(TextAreaOption::StrictValidation, event, cx);
         }));
     }
@@ -248,21 +255,22 @@ impl TextAreaPane {
         cx.notify();
     }
 
-    fn handle_option_changed(&mut self, option: TextAreaOption, _event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_option_changed(&mut self, option: TextAreaOption, event: &CheckboxEvent, cx: &mut Context<GalleryApp>) {
+        let CheckboxEvent::Change { checked } = event else {
+            return;
+        };
+
         match option {
             TextAreaOption::Enabled => {
-                self.enabled = !self.enabled;
-                self.enabled_checkbox.update(cx, |b, cx| b.set_data(self.enabled, cx));
+                self.enabled = *checked;
                 self.enabled
             }
             TextAreaOption::CleanOnEscape => {
-                self.clean_on_escape = !self.clean_on_escape;
-                self.clean_on_escape_checkbox.update(cx, |b, cx| b.set_data(self.clean_on_escape, cx));
+                self.clean_on_escape = *checked;
                 self.clean_on_escape
             }
             TextAreaOption::StrictValidation => {
-                self.strict_validation = !self.strict_validation;
-                self.validation_checkbox.update(cx, |b, cx| b.set_data(self.strict_validation, cx));
+                self.strict_validation = *checked;
                 self.strict_validation
             }
         };

@@ -113,7 +113,10 @@ impl ButtonPane {
         subscriptions.push(cx.subscribe(&primary_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.button.handle_primary_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&inspector_close, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&inspector_close, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             let toggle = app.panes.inspector_toggles.get("button").toggle.clone();
             let focus = toggle.read(cx).focus_handle(cx);
             app.panes.inspector_toggles.set_visible("button", false);
@@ -217,51 +220,51 @@ impl ButtonPaneView {
     }
 
     fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<Self>) {
-        match event {
-            ButtonEvent::Click => {
-                self.secondary_clicks += 1;
-                let label = format!("Secondary {}", self.secondary_clicks);
-                self.secondary_button.update(cx, |button, cx| {
-                    button.set_label(label, cx);
-                });
-            }
+        if !event.is_click() {
+            return;
         }
+
+        self.secondary_clicks += 1;
+        let label = format!("Secondary {}", self.secondary_clicks);
+        self.secondary_button.update(cx, |button, cx| {
+            button.set_label(label, cx);
+        });
     }
 
     fn handle_outline_event(&mut self, event: &ButtonEvent, cx: &mut Context<Self>) {
-        match event {
-            ButtonEvent::Click => {
-                self.outline_clicks += 1;
-                let label = format!("Outline {}", self.outline_clicks);
-                self.outline_button.update(cx, |button, cx| {
-                    button.set_label(label, cx);
-                });
-            }
+        if !event.is_click() {
+            return;
         }
+
+        self.outline_clicks += 1;
+        let label = format!("Outline {}", self.outline_clicks);
+        self.outline_button.update(cx, |button, cx| {
+            button.set_label(label, cx);
+        });
     }
 
     fn handle_ghost_event(&mut self, event: &ButtonEvent, cx: &mut Context<Self>) {
-        match event {
-            ButtonEvent::Click => {
-                self.ghost_clicks += 1;
-                let label = format!("Ghost {}", self.ghost_clicks);
-                self.ghost_button.update(cx, |button, cx| {
-                    button.set_label(label, cx);
-                });
-            }
+        if !event.is_click() {
+            return;
         }
+
+        self.ghost_clicks += 1;
+        let label = format!("Ghost {}", self.ghost_clicks);
+        self.ghost_button.update(cx, |button, cx| {
+            button.set_label(label, cx);
+        });
     }
 
     fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<Self>) {
-        match event {
-            ButtonEvent::Click => {
-                self.primary_clicks += 1;
-                let label = format!("Primary {}", self.primary_clicks);
-                self.primary_button.update(cx, |button, cx| {
-                    button.set_label(label, cx);
-                });
-            }
+        if !event.is_click() {
+            return;
         }
+
+        self.primary_clicks += 1;
+        let label = format!("Primary {}", self.primary_clicks);
+        self.primary_button.update(cx, |button, cx| {
+            button.set_label(label, cx);
+        });
     }
 
     fn handle_overlay_key_down(&mut self, event: &gpui::KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {

@@ -6,10 +6,20 @@ use crate::keyhandling::ActivateControl;
 
 /// Semantic command event emitted by command-like controls.
 ///
-/// This is intentionally presentation-agnostic: it models activation behavior only.
+/// This is intentionally presentation-agnostic: it models user activation
+/// and observable command interaction-state transitions.
 #[derive(Clone, Debug)]
 pub enum CommandEvent {
     Click,
+    FocusChanged { focused: bool },
+    EnabledChanged { enabled: bool },
+    HoverChanged { hovered: bool },
+}
+
+impl CommandEvent {
+    pub fn is_click(&self) -> bool {
+        matches!(self, Self::Click)
+    }
 }
 
 /// Shared behavior core for command-like controls.
@@ -19,22 +29,46 @@ pub enum CommandEvent {
 /// presentations) can reuse this behavior and provide their own templates.
 pub struct CommandCore {
     interaction: ControlInteraction,
+    emitted_focused: bool,
 }
 
 impl CommandCore {
     /// Create a new command behavior core.
     pub fn new<T>(enabled: bool, cx: &mut Context<T>) -> Self {
-        Self { interaction: ControlInteraction::new(enabled, cx) }
+        Self { interaction: ControlInteraction::new(enabled, cx), emitted_focused: false }
     }
 
     /// Create a new command behavior core with explicit tab-stop participation.
     pub fn new_with_tab_stop<T>(enabled: bool, tab_stop: bool, cx: &mut Context<T>) -> Self {
-        Self { interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx) }
+        Self { interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx), emitted_focused: false }
     }
 
     /// Propagate enabled changes into interaction state.
-    pub fn set_enabled(&mut self, enabled: bool) {
+    pub fn set_enabled<T>(&mut self, enabled: bool, cx: &mut Context<T>) -> bool
+    where
+        T: EventEmitter<CommandEvent>,
+    {
+        let old_enabled = self.interaction.enabled();
+        let old_hovered = self.interaction.hovered();
         self.interaction.set_enabled(enabled);
+
+        let mut changed = old_enabled != enabled;
+        if changed {
+            cx.emit(CommandEvent::EnabledChanged { enabled });
+        }
+
+        if old_hovered != self.interaction.hovered() {
+            changed = true;
+            cx.emit(CommandEvent::HoverChanged { hovered: self.interaction.hovered() });
+        }
+
+        if !enabled && self.emitted_focused {
+            self.emitted_focused = false;
+            changed = true;
+            cx.emit(CommandEvent::FocusChanged { focused: false });
+        }
+
+        changed
     }
 
     /// Compute render-time interaction state for templates/presenters.
@@ -86,8 +120,32 @@ impl CommandCore {
     }
 
     /// Update hover state. Returns `true` when caller should notify.
-    pub fn handle_hover(&mut self, hovered: bool) -> bool {
-        self.interaction.handle_hover(hovered)
+    pub fn handle_hover<T>(&mut self, enabled: bool, hovered: bool, cx: &mut Context<T>) -> bool
+    where
+        T: EventEmitter<CommandEvent>,
+    {
+        let hovered = enabled && hovered;
+        if !self.interaction.handle_hover(hovered) {
+            return false;
+        }
+
+        cx.emit(CommandEvent::HoverChanged { hovered });
+        true
+    }
+
+    /// Update focus state. Returns `true` when caller should notify.
+    pub fn handle_focus_changed<T>(&mut self, enabled: bool, focused: bool, cx: &mut Context<T>) -> bool
+    where
+        T: EventEmitter<CommandEvent>,
+    {
+        let focused = enabled && focused;
+        if self.emitted_focused == focused {
+            return false;
+        }
+
+        self.emitted_focused = focused;
+        cx.emit(CommandEvent::FocusChanged { focused });
+        true
     }
 
     /// Update pressed state on mouse down. Returns `true` when caller should notify.

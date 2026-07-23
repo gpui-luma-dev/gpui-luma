@@ -5,6 +5,7 @@ use gpui::{
     MouseUpEvent, Overflow, Render, Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma::{flow, hstack, vstack};
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn::prelude::*;
@@ -109,32 +110,56 @@ impl SlidePanelPane {
             )
         };
 
-        subscriptions.push(cx.subscribe(&trigger_left, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&trigger_left, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.slide_panel.handle_trigger_open(SlidePanelEdge::Left, cx);
         }));
-        subscriptions.push(cx.subscribe(&trigger_right, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&trigger_right, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.slide_panel.handle_trigger_open(SlidePanelEdge::Right, cx);
         }));
-        subscriptions.push(cx.subscribe(&trigger_top, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&trigger_top, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.slide_panel.handle_trigger_open(SlidePanelEdge::Top, cx);
         }));
-        subscriptions.push(cx.subscribe(&trigger_bottom, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&trigger_bottom, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.slide_panel.handle_trigger_open(SlidePanelEdge::Bottom, cx);
         }));
-        subscriptions.push(cx.subscribe(&close_button, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&close_button, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.slide_panel.handle_close_button(cx);
         }));
-        subscriptions.push(cx.subscribe(&primary_action, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&primary_action, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.slide_panel.handle_primary_action(cx);
         }));
-        subscriptions.push(cx.subscribe(&secondary_action, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&secondary_action, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.slide_panel.handle_secondary_action(cx);
         }));
-        subscriptions.push(cx.subscribe(&archive_action, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&archive_action, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.slide_panel.handle_archive_action(cx);
         }));
-        subscriptions.push(cx.subscribe(&backdrop_toggle, |app, _, _: &ButtonEvent, cx| {
-            app.panes.slide_panel.handle_backdrop_toggle(cx);
+        subscriptions.push(cx.subscribe(&backdrop_toggle, |app, _, event: &ToggleEvent, cx| {
+            app.panes.slide_panel.handle_backdrop_toggle(event, cx);
         }));
     }
 
@@ -185,11 +210,13 @@ impl SlidePanelPane {
         });
     }
 
-    fn handle_backdrop_toggle(&self, cx: &mut Context<GalleryApp>) {
+    fn handle_backdrop_toggle(&self, event: &ToggleEvent, cx: &mut Context<GalleryApp>) {
+        let ToggleEvent::Change { selected } = event else {
+            return;
+        };
         self.demo.update(cx, |demo, cx| {
-            let enabled = !demo.state.backdrop_click_closes();
+            let enabled = *selected;
             demo.state.set_backdrop_click_closes(enabled);
-            demo.backdrop_toggle.update(cx, |button, cx| button.set_data(enabled, cx));
             demo.last_action = if enabled {
                 "Backdrop click dismissal enabled.".to_string()
             } else {
@@ -210,7 +237,7 @@ struct SlidePanelDemo {
     primary_action: Entity<Button>,
     secondary_action: Entity<Button>,
     archive_action: Entity<Button>,
-    backdrop_toggle: Entity<Button<bool>>,
+    backdrop_toggle: Toggle,
     state: SlidePanelState,
     last_action: String,
 }

@@ -86,13 +86,22 @@ impl ModalDialogDemo {
         cx: &mut Context<GalleryApp>,
         subscriptions: &mut Vec<Subscription>,
     ) {
-        subscriptions.push(cx.subscribe(&self.trigger, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.trigger, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.dialog.modal.open(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.cancel, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.cancel, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.dialog.modal.dismiss("Dismissed modal overlay.", cx);
         }));
-        subscriptions.push(cx.subscribe(&self.archive, |app, _, _: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.archive, |app, _, event: &ButtonEvent, cx| {
+            if !event.is_click() {
+                return;
+            }
             app.panes.dialog.modal.dismiss("Archived project from composed action.", cx);
         }));
         subscriptions.push(cx.subscribe(&self.dialog, |app, _, event: &OverlayWindowEvent, cx| {

@@ -6,9 +6,9 @@ use gpui::{
     AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div,
     prelude::*, px,
 };
-use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
-use gpui_luma::controls::switch::Switch;
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, HasPresenter};
+use gpui_luma::controls::switch::{Switch, SwitchEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState};
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
@@ -66,10 +66,10 @@ impl SwitchPane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.secondary_switch, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.secondary_switch, |app, _, event: &SwitchEvent, cx| {
             app.panes.switch.handle_secondary_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.primary_switch, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.primary_switch, |app, _, event: &SwitchEvent, cx| {
             app.panes.switch.handle_primary_event(event, cx);
         }));
     }
@@ -127,24 +127,16 @@ impl SwitchPane {
         notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
-    fn flip_switch(switch: &Switch, on: &mut bool, cx: &mut Context<GalleryApp>) {
-        switch.update(cx, |button, cx| {
-            let new_on = !*button.data();
-            button.set_data(new_on, cx);
-            *on = new_on;
-        });
-    }
-
-    fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, ButtonEvent::Click) {
-            Self::flip_switch(&self.secondary_switch, &mut self.secondary_on, cx);
+    fn handle_secondary_event(&mut self, event: &SwitchEvent, cx: &mut Context<GalleryApp>) {
+        if let SwitchEvent::Change { on } = event {
+            self.secondary_on = *on;
             cx.notify();
         }
     }
 
-    fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, ButtonEvent::Click) {
-            Self::flip_switch(&self.primary_switch, &mut self.primary_on, cx);
+    fn handle_primary_event(&mut self, event: &SwitchEvent, cx: &mut Context<GalleryApp>) {
+        if let SwitchEvent::Change { on } = event {
+            self.primary_on = *on;
             cx.notify();
         }
     }

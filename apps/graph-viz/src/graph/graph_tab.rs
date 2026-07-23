@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::Button;
+use gpui::{AnyElement, App, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::listbox::{ListBox, ListBoxItem};
 use gpui_luma::controls::slider::Slider;
+use gpui_luma::controls::toggle::Toggle;
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use super::activity::{RideActivity, cumulative_distance_profile, distance_axis_available};
@@ -21,9 +21,9 @@ pub fn render_graph_tab(
     visible_metrics: &[TelemetryMetric],
     scrub_fraction: f32,
     metric_listbox: ListBox,
-    speed_unit_toggle: Entity<Button<bool>>,
-    power_unit_toggle: Entity<Button<bool>>,
-    x_axis_toggle: Entity<Button<bool>>,
+    speed_unit_toggle: Toggle,
+    power_unit_toggle: Toggle,
+    x_axis_toggle: Toggle,
     timeline_slider: Slider,
     look: &Arc<ShadcnLook>,
     window: &mut Window,
@@ -163,10 +163,10 @@ fn push_metric_chart(
 }
 
 fn chart_display(
-    speed_unit_toggle: &Entity<Button<bool>>,
-    power_unit_toggle: &Entity<Button<bool>>,
+    speed_unit_toggle: &Toggle,
+    power_unit_toggle: &Toggle,
     rider_weight_kg: Option<f32>,
-    x_axis_toggle: &Entity<Button<bool>>,
+    x_axis_toggle: &Toggle,
     distance_available: bool,
     cx: &App,
 ) -> MetricDisplay {
@@ -188,11 +188,11 @@ fn chart_display(
     }
 }
 
-fn selected_speed_unit(toggle: &Entity<Button<bool>>, cx: &App) -> SpeedUnit {
+fn selected_speed_unit(toggle: &Toggle, cx: &App) -> SpeedUnit {
     SpeedUnit::from_toggle(*toggle.read(cx).data())
 }
 
-fn selected_x_axis(toggle: &Entity<Button<bool>>, cx: &App) -> XAxisMode {
+fn selected_x_axis(toggle: &Toggle, cx: &App) -> XAxisMode {
     XAxisMode::from_toggle(*toggle.read(cx).data())
 }
 
@@ -218,10 +218,10 @@ fn chart_title(
 fn render_chart_controls(
     look: &Arc<ShadcnLook>,
     metric_listbox: ListBox,
-    speed_unit_toggle: Entity<Button<bool>>,
-    power_unit_toggle: Entity<Button<bool>>,
+    speed_unit_toggle: Toggle,
+    power_unit_toggle: Toggle,
     show_power_unit_toggle: bool,
-    x_axis_toggle: Entity<Button<bool>>,
+    x_axis_toggle: Toggle,
     timeline_slider: Slider,
     ride: &RideActivity,
     scrub_fraction: f32,

@@ -6,9 +6,9 @@ use gpui::{
     AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div,
     prelude::*, px,
 };
-use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
-use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnButtonStyle, ShadcnLook, ShadcnTextSize};
@@ -66,10 +66,10 @@ impl CheckboxPane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.secondary_checkbox, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.secondary_checkbox, |app, _, event: &CheckboxEvent, cx| {
             app.panes.checkbox.handle_secondary_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.primary_checkbox, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.primary_checkbox, |app, _, event: &CheckboxEvent, cx| {
             app.panes.checkbox.handle_primary_event(event, cx);
         }));
     }
@@ -125,24 +125,16 @@ impl CheckboxPane {
         notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
-    fn flip_checkbox(checkbox: &Checkbox, checked: &mut bool, cx: &mut Context<GalleryApp>) {
-        checkbox.update(cx, |button, cx| {
-            let new_checked = !*button.data();
-            button.set_data(new_checked, cx);
-            *checked = new_checked;
-        });
-    }
-
-    fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, ButtonEvent::Click) {
-            Self::flip_checkbox(&self.secondary_checkbox, &mut self.secondary_checked, cx);
+    fn handle_secondary_event(&mut self, event: &CheckboxEvent, cx: &mut Context<GalleryApp>) {
+        if let CheckboxEvent::Change { checked } = event {
+            self.secondary_checked = *checked;
             cx.notify();
         }
     }
 
-    fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, ButtonEvent::Click) {
-            Self::flip_checkbox(&self.primary_checkbox, &mut self.primary_checked, cx);
+    fn handle_primary_event(&mut self, event: &CheckboxEvent, cx: &mut Context<GalleryApp>) {
+        if let CheckboxEvent::Change { checked } = event {
+            self.primary_checked = *checked;
             cx.notify();
         }
     }

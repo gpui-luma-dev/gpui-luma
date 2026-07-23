@@ -73,12 +73,7 @@ pub(crate) fn render_control_exposition_card(
     .when_some(between_preview_and_snippet, |card, section| {
         card.child(render_card_section(section, borderless, chrome, PREVIEW_PAD))
     })
-    .child(render_card_section(
-        render_snippet_block(look, entry.snippet),
-        borderless,
-        chrome,
-        SNIPPET_PAD,
-    ))
+    .child(render_card_section(render_snippet_block(look, entry.snippet), borderless, chrome, SNIPPET_PAD))
     .into_any_element()
 }
 

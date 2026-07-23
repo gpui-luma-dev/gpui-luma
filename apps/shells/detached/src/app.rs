@@ -63,7 +63,10 @@ impl DetachedShellApp {
         let toggle_for_sub = toggle_button.clone();
         subscriptions.push(cx.subscribe(&toggle_for_sub, {
             let split_view = split_view.clone();
-            move |_, _, _: &ButtonEvent, cx| {
+            move |_, _, event: &ButtonEvent, cx| {
+                if !event.is_click() {
+                    return;
+                }
                 split_view.update(cx, |split_view, cx| {
                     split_view.toggle_collapsed(cx);
                 });

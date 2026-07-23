@@ -8,13 +8,134 @@ pub use crate::theme::InteractionState as SwitchState;
 
 use std::sync::Arc;
 
-use gpui::{App, Context, Entity, IntoElement, SharedString};
+use gpui::{
+    AnyElement, App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
+    Render, SharedString, Subscription, Window, div,
+};
 
 use crate::controls::button_family::ButtonSize;
-use crate::controls::command::button::{Button, ButtonBuilder, ButtonRenderModel, ButtonTemplate};
+use crate::controls::command::button::{Button, ButtonBuilder, ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use crate::controls::presenter::{ControlPresenter, HasPresenter};
 
-pub type Switch = Entity<Button<bool>>;
+pub type Switch = Entity<SwitchControl>;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SwitchEvent {
+    Change { on: bool },
+    FocusChanged { focused: bool },
+    EnabledChanged { enabled: bool },
+    HoverChanged { hovered: bool },
+}
+
+pub struct SwitchControl {
+    on: bool,
+    button: Entity<Button<bool>>,
+    _subscriptions: Vec<Subscription>,
+}
+
+impl EventEmitter<SwitchEvent> for SwitchControl {}
+
+impl SwitchControl {
+    fn from_builder(builder: SwitchBuilder, cx: &mut Context<Self>) -> Self {
+        let on = builder.0.model.data;
+        let button = builder.0.spawn(cx);
+        let subscription = cx.subscribe(&button, Self::handle_button_event);
+
+        Self { on, button, _subscriptions: vec![subscription] }
+    }
+
+    pub fn set_data(&mut self, on: bool, cx: &mut Context<Self>) {
+        self.on = on;
+        self.button.update(cx, |button, cx| button.set_data(on, cx));
+        cx.notify();
+    }
+
+    pub fn data(&self) -> &bool {
+        &self.on
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.button.update(cx, |button, cx| button.set_enabled(enabled, cx));
+        cx.notify();
+    }
+
+    pub fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<bool>>, cx: &mut Context<Self>) {
+        self.button.update(cx, |button, cx| button.set_presenter(content, cx));
+        cx.notify();
+    }
+
+    pub fn set_template(&mut self, template: Arc<dyn ButtonTemplate<bool>>, cx: &mut Context<Self>) {
+        self.button.update(cx, |button, cx| button.set_template(template, cx));
+        cx.notify();
+    }
+
+    pub fn set_switch_orientation(&mut self, orientation: SwitchOrientation, cx: &mut Context<Self>) {
+        self.button.update(cx, |button, cx| button.set_switch_orientation(orientation, cx));
+        cx.notify();
+    }
+
+    pub fn set_switch_track_length_extra(&mut self, extra_length: f32, cx: &mut Context<Self>) {
+        self.button.update(cx, |button, cx| button.set_switch_track_length_extra(extra_length, cx));
+        cx.notify();
+    }
+
+    pub fn set_switch_track_width_extra(&mut self, extra_width: f32, cx: &mut Context<Self>) {
+        self.set_switch_track_length_extra(extra_width, cx);
+    }
+
+    pub fn set_switch_track_content<F, E>(&mut self, builder: F, cx: &mut Context<Self>)
+    where
+        F: Fn(&ButtonRenderModel<bool>, &mut App) -> E + Send + Sync + 'static,
+        E: IntoElement + 'static,
+    {
+        self.button.update(cx, |button, cx| button.set_switch_track_content(builder, cx));
+        cx.notify();
+    }
+
+    pub fn set_switch_thumb_content<F, E>(&mut self, builder: F, cx: &mut Context<Self>)
+    where
+        F: Fn(&ButtonRenderModel<bool>, &mut App) -> E + Send + Sync + 'static,
+        E: IntoElement + 'static,
+    {
+        self.button.update(cx, |button, cx| button.set_switch_thumb_content(builder, cx));
+        cx.notify();
+    }
+
+    fn handle_button_event(&mut self, _: Entity<Button<bool>>, event: &ButtonEvent, cx: &mut Context<Self>) {
+        match event {
+            ButtonEvent::Click => {
+                let on = !self.on;
+                self.on = on;
+                self.button.update(cx, |button, cx| button.set_data(on, cx));
+                cx.emit(SwitchEvent::Change { on });
+                cx.notify();
+            }
+            ButtonEvent::FocusChanged { focused } => cx.emit(SwitchEvent::FocusChanged { focused: *focused }),
+            ButtonEvent::EnabledChanged { enabled } => cx.emit(SwitchEvent::EnabledChanged { enabled: *enabled }),
+            ButtonEvent::HoverChanged { hovered } => cx.emit(SwitchEvent::HoverChanged { hovered: *hovered }),
+        }
+    }
+}
+
+impl Focusable for SwitchControl {
+    fn focus_handle(&self, cx: &App) -> FocusHandle {
+        self.button.read(cx).focus_handle(cx)
+    }
+}
+
+impl Render for SwitchControl {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div().child(self.button.clone()).into_any_element()
+    }
+}
+
+impl IntoElement for SwitchControl {
+    type Element = AnyElement;
+
+    fn into_element(self) -> Self::Element {
+        self.into_any_element()
+    }
+}
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum SwitchOrientation {
@@ -105,7 +226,7 @@ impl SwitchBuilder {
     }
 
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Switch {
-        self.0.spawn(cx)
+        cx.new(|cx| SwitchControl::from_builder(self, cx))
     }
 }
 

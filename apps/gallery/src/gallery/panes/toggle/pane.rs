@@ -7,7 +7,8 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, HasPresenter};
+use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState};
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
@@ -24,10 +25,10 @@ type ChoiceContentRenderer = dyn Fn(&ButtonRenderModel<bool>, &mut App) -> AnyEl
 
 #[derive(Clone)]
 pub(in crate::gallery) struct TogglePane {
-    secondary_toggle: Entity<Button<bool>>,
-    primary_toggle: Entity<Button<bool>>,
-    secondary_round_icon_toggle: Entity<Button<bool>>,
-    primary_round_icon_toggle: Entity<Button<bool>>,
+    secondary_toggle: Toggle,
+    primary_toggle: Toggle,
+    secondary_round_icon_toggle: Toggle,
+    primary_round_icon_toggle: Toggle,
     state_preview: Entity<ToggleStatePreview>,
     inspector: Entity<ColorInspectorShell>,
     secondary_selected: bool,
@@ -84,16 +85,16 @@ impl TogglePane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.secondary_toggle, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.secondary_toggle, |app, _, event: &ToggleEvent, cx| {
             app.panes.toggle.handle_secondary_toggle_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.primary_toggle, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.primary_toggle, |app, _, event: &ToggleEvent, cx| {
             app.panes.toggle.handle_primary_toggle_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.secondary_round_icon_toggle, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.secondary_round_icon_toggle, |app, _, event: &ToggleEvent, cx| {
             app.panes.toggle.handle_secondary_round_icon_toggle_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.primary_round_icon_toggle, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.primary_round_icon_toggle, |app, _, event: &ToggleEvent, cx| {
             app.panes.toggle.handle_primary_round_icon_toggle_event(event, cx);
         }));
     }
@@ -177,48 +178,38 @@ impl TogglePane {
         notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
-    fn flip_toggle(button: &Entity<Button<bool>>, selected: &mut bool, cx: &mut Context<GalleryApp>) {
-        button.update(cx, |button, cx| {
-            let new_selected = !*button.data();
-            button.set_data(new_selected, cx);
-            *selected = new_selected;
-        });
-    }
-
-    fn handle_secondary_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, ButtonEvent::Click) {
-            Self::flip_toggle(&self.secondary_toggle, &mut self.secondary_selected, cx);
+    fn handle_secondary_toggle_event(&mut self, event: &ToggleEvent, cx: &mut Context<GalleryApp>) {
+        if let ToggleEvent::Change { selected } = event {
+            self.secondary_selected = *selected;
             cx.notify();
         }
     }
 
-    fn handle_primary_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, ButtonEvent::Click) {
-            Self::flip_toggle(&self.primary_toggle, &mut self.primary_selected, cx);
+    fn handle_primary_toggle_event(&mut self, event: &ToggleEvent, cx: &mut Context<GalleryApp>) {
+        if let ToggleEvent::Change { selected } = event {
+            self.primary_selected = *selected;
             cx.notify();
         }
     }
 
-    fn handle_secondary_round_icon_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, ButtonEvent::Click) {
-            self.secondary_round_icon_toggle.update(cx, |button, cx| {
-                let new_selected = !*button.data();
-                button.set_data(new_selected, cx);
-                button.set_presenter(Arc::new(move |_, _| round_icon_glyph(new_selected).into_any_element()), cx);
-                self.secondary_round_icon_selected = new_selected;
+    fn handle_secondary_round_icon_toggle_event(&mut self, event: &ToggleEvent, cx: &mut Context<GalleryApp>) {
+        if let ToggleEvent::Change { selected } = event {
+            let selected = *selected;
+            self.secondary_round_icon_toggle.update(cx, |toggle, cx| {
+                toggle.set_presenter(Arc::new(move |_, _| round_icon_glyph(selected).into_any_element()), cx);
             });
+            self.secondary_round_icon_selected = selected;
             cx.notify();
         }
     }
 
-    fn handle_primary_round_icon_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, ButtonEvent::Click) {
-            self.primary_round_icon_toggle.update(cx, |button, cx| {
-                let new_selected = !*button.data();
-                button.set_data(new_selected, cx);
-                button.set_presenter(Arc::new(move |_, _| round_icon_glyph(new_selected).into_any_element()), cx);
-                self.primary_round_icon_selected = new_selected;
+    fn handle_primary_round_icon_toggle_event(&mut self, event: &ToggleEvent, cx: &mut Context<GalleryApp>) {
+        if let ToggleEvent::Change { selected } = event {
+            let selected = *selected;
+            self.primary_round_icon_toggle.update(cx, |toggle, cx| {
+                toggle.set_presenter(Arc::new(move |_, _| round_icon_glyph(selected).into_any_element()), cx);
             });
+            self.primary_round_icon_selected = selected;
             cx.notify();
         }
     }

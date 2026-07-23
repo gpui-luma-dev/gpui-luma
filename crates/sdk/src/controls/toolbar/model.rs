@@ -15,6 +15,7 @@ use crate::controls::presenter::{HostedContent, Presenter};
 use crate::controls::selector::Selector;
 use crate::controls::state::CompositeItemState;
 use crate::controls::textfield::TextField;
+use crate::controls::toggle::Toggle;
 use crate::theme::ControlSize;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -27,7 +28,7 @@ pub enum ToolbarItemKind {
 #[derive(Clone)]
 pub enum ToolbarItemSource {
     CommandButton(Entity<Button<()>>),
-    ToggleButton(Entity<Button<bool>>),
+    ToggleButton(Toggle),
     Menu(Entity<PopupMenu>),
     Selector(Entity<Selector>),
     TextField(TextField),
@@ -124,7 +125,7 @@ impl ToolbarItem {
     }
 
     /// Host a toggle button, auto-flip its value on click, and emit click/change events.
-    pub fn toggle_button(id: impl Into<SharedString>, entity: Entity<Button<bool>>, cx: &App) -> Self {
+    pub fn toggle_button(id: impl Into<SharedString>, entity: Toggle, cx: &App) -> Self {
         let focus = entity.read(cx).focus_handle(cx);
         let render = entity.clone();
         Self::toggle(id, move |_, _, _| render.clone())

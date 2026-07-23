@@ -13,6 +13,7 @@ use crate::controls::control_group::{
 use crate::controls::popup_menu::PopupMenuEvent;
 use crate::controls::selector::SelectorEvent;
 use crate::controls::textfield::TextFieldEvent;
+use crate::controls::toggle::ToggleEvent;
 use crate::theme::ControlSize;
 
 #[derive(Clone, Debug)]
@@ -189,15 +190,10 @@ fn wire_item_subscriptions(items: &[ToolbarItem], cx: &mut Context<Toolbar>) -> 
                 }));
             }
             ToolbarItemSource::ToggleButton(entity) => {
-                subscriptions.push(cx.subscribe(&entity, move |this, button, event: &ButtonEvent, cx| {
-                    if matches!(event, ButtonEvent::Click) {
-                        let next = button.update(cx, |button, cx| {
-                            let next = !*button.data();
-                            button.set_data(next, cx);
-                            next
-                        });
+                subscriptions.push(cx.subscribe(&entity, move |this, _, event: &ToggleEvent, cx| {
+                    if let ToggleEvent::Change { selected } = event {
                         this.dispatch_click(&id, cx);
-                        this.dispatch_change(&id, ToolbarValue::Bool(next), cx);
+                        this.dispatch_change(&id, ToolbarValue::Bool(*selected), cx);
                     }
                 }));
             }

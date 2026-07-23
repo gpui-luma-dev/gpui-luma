@@ -256,76 +256,76 @@ impl ModButtonPane {
     }
 
     fn handle_basic_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        match event {
-            ButtonEvent::Click => {
-                self.basic_clicks += 1;
-                let label = format!("Basic {}", self.basic_clicks);
-
-                self.basic_button.update(cx, |button, cx| {
-                    button.set_label(label, cx);
-                });
-            }
+        if !event.is_click() {
+            return;
         }
+
+        self.basic_clicks += 1;
+        let label = format!("Basic {}", self.basic_clicks);
+
+        self.basic_button.update(cx, |button, cx| {
+            button.set_label(label, cx);
+        });
     }
 
     fn handle_modified_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        match event {
-            ButtonEvent::Click => {
-                self.modified_clicks += 1;
-                let label = format!("New Button {}", self.modified_clicks);
-
-                self.modified_button.update(cx, |button, cx| {
-                    button.set_label(label, cx);
-                });
-            }
+        if !event.is_click() {
+            return;
         }
+
+        self.modified_clicks += 1;
+        let label = format!("New Button {}", self.modified_clicks);
+
+        self.modified_button.update(cx, |button, cx| {
+            button.set_label(label, cx);
+        });
     }
 
     fn handle_custom_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        match event {
-            ButtonEvent::Click => {
-                self.custom_clicks += 1;
-                let label = format!("Customized {}", self.custom_clicks);
-
-                self.custom_button.update(cx, |button, cx| {
-                    button.set_presenter(
-                        Arc::new(move |model, _| {
-                            let color = if model.state.hovered {
-                                rgb(0x4f46e5)
-                            } else {
-                                rgb(0x3730a3)
-                            };
-                            div()
-                                .flex()
-                                .items_center()
-                                .gap(px(8.0))
-                                .child(
-                                    div()
-                                        .font_family("lucide")
-                                        .text_size(px(16.0))
-                                        .child(char::from(LucideIcon::Check).to_string()),
-                                )
-                                .child(label.clone())
-                                .text_color(color)
-                                .into_any_element()
-                        }),
-                        cx,
-                    );
-                });
-            }
+        if !event.is_click() {
+            return;
         }
+
+        self.custom_clicks += 1;
+        let label = format!("Customized {}", self.custom_clicks);
+
+        self.custom_button.update(cx, |button, cx| {
+            button.set_presenter(
+                Arc::new(move |model, _| {
+                    let color = if model.state.hovered {
+                        rgb(0x4f46e5)
+                    } else {
+                        rgb(0x3730a3)
+                    };
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(8.0))
+                        .child(
+                            div()
+                                .font_family("lucide")
+                                .text_size(px(16.0))
+                                .child(char::from(LucideIcon::Check).to_string()),
+                        )
+                        .child(label.clone())
+                        .text_color(color)
+                        .into_any_element()
+                }),
+                cx,
+            );
+        });
     }
 
     fn handle_reactive_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        match event {
-            ButtonEvent::Click => {
-                self.reactive_button.update(cx, |button, cx| {
-                    let mut data = button.data().clone();
-                    data.count += 1;
-                    button.set_data(data, cx);
-                });
-            }
+        if !event.is_click() {
+            return;
         }
+
+        self.reactive_button.update(cx, |button, cx| {
+            let mut data = button.data().clone();
+            data.count += 1;
+            button.set_data(data, cx);
+        });
     }
 }
 

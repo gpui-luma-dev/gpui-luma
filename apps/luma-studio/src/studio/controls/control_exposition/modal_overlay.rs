@@ -59,19 +59,28 @@ impl ModalOverlayControlExposition {
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&trigger, {
             let overlay = overlay.clone();
-            move |_, _, _: &ButtonEvent, cx| {
+            move |_, _, event: &ButtonEvent, cx| {
+                if !event.is_click() {
+                    return;
+                }
                 overlay.update(cx, |overlay, cx| overlay.open(cx));
             }
         }));
         subscriptions.push(cx.subscribe(&cancel, {
             let overlay = overlay.clone();
-            move |_, _, _: &ButtonEvent, cx| {
+            move |_, _, event: &ButtonEvent, cx| {
+                if !event.is_click() {
+                    return;
+                }
                 overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
             }
         }));
         subscriptions.push(cx.subscribe(&confirm, {
             let overlay = overlay.clone();
-            move |_, _, _: &ButtonEvent, cx| {
+            move |_, _, event: &ButtonEvent, cx| {
+                if !event.is_click() {
+                    return;
+                }
                 overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
             }
         }));

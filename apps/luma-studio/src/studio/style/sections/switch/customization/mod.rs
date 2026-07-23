@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel};
+use gpui_luma::controls::command::button::ButtonRenderModel;
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::switch::{Switch, SwitchBuilder, SwitchOrientation};
+use gpui_luma::controls::switch::{Switch, SwitchBuilder, SwitchEvent, SwitchOrientation};
 use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::paint::switch_look;
 use gpui_luma_look_shadcn::prelude::*;
@@ -73,21 +73,18 @@ impl SwitchCustomizationPreview {
     }
 
     fn subscribe(&mut self, cx: &mut Context<Self>) {
-        self._subscriptions.push(cx.subscribe(&self.primary_switch, |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                flip_labeled_switch(&this.primary_switch, cx);
+        self._subscriptions.push(cx.subscribe(&self.primary_switch, |_, _, event: &SwitchEvent, cx| {
+            if matches!(event, SwitchEvent::Change { .. }) {
                 cx.notify();
             }
         }));
-        self._subscriptions.push(cx.subscribe(&self.secondary_switch, |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                flip_labeled_switch(&this.secondary_switch, cx);
+        self._subscriptions.push(cx.subscribe(&self.secondary_switch, |_, _, event: &SwitchEvent, cx| {
+            if matches!(event, SwitchEvent::Change { .. }) {
                 cx.notify();
             }
         }));
-        self._subscriptions.push(cx.subscribe(&self.vertical_switch, |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                flip_labeled_switch(&this.vertical_switch, cx);
+        self._subscriptions.push(cx.subscribe(&self.vertical_switch, |_, _, event: &SwitchEvent, cx| {
+            if matches!(event, SwitchEvent::Change { .. }) {
                 cx.notify();
             }
         }));
@@ -144,12 +141,6 @@ fn icon_thumb_content(
         let icon = if model.data { LucideIcon::Check } else { LucideIcon::X };
         div().text_color(palette.track_background).child(render_lucide_icon(icon, 11.0)).into_any_element()
     }
-}
-
-fn flip_labeled_switch(switch: &Switch, cx: &mut Context<SwitchCustomizationPreview>) {
-    switch.update(cx, |button, cx| {
-        button.set_data(!*button.data(), cx);
-    });
 }
 
 impl Render for SwitchCustomizationPreview {
