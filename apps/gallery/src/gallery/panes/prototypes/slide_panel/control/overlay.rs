@@ -1,13 +1,17 @@
+use std::sync::Arc;
+
 use gpui::{
-    AnyElement, App, Corner, Hsla, KeyDownEvent, MouseButton, MouseDownEvent, Size, Window, anchored, div, point,
-    prelude::*, px,
+    AnyElement, App, Corner, KeyDownEvent, MouseButton, MouseDownEvent, Size, Window, anchored, div, point, prelude::*,
+    px, transparent_black,
 };
+use gpui_luma::controls::resizable_panels::{ResizeHandleSize, ResizablePanelsLook};
+use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::ShadcnLook;
 
+use super::handle::{SlidePanelResizeHandlers, SlidePanelResizeHitHandlers, render_slide_panel_resize_handle};
 use super::state::{SUPPORTED_TOP_ANCHORS, SlidePanelEdge, SlidePanelState};
 
-const BACKDROP_ALPHA_MAX: f32 = 0.48;
-const SIDE_PANEL_WIDTH: f32 = 360.0;
+const DEFAULT_SIDE_PANEL_WIDTH: f32 = 360.0;
 const EDGE_PANEL_DESIRED_HEIGHT: f32 = 420.0;
 const EDGE_PANEL_MAX_VIEWPORT_RATIO: f32 = 0.72;
 
@@ -20,11 +24,13 @@ pub(in crate::gallery) struct SlidePanelOverlayHandlers {
 }
 
 pub(in crate::gallery) fn render_slide_panel_overlay(
-    look: &ShadcnLook,
+    look: &Arc<ShadcnLook>,
+    panels_look: &ResizablePanelsLook,
     state: &SlidePanelState,
     viewport: Size<gpui::Pixels>,
     panel_content: AnyElement,
     handlers: SlidePanelOverlayHandlers,
+    resize_handlers: SlidePanelResizeHandlers,
 ) -> AnyElement {
     debug_assert_eq!(SUPPORTED_TOP_ANCHORS.len(), 2);
 
@@ -33,21 +39,31 @@ pub(in crate::gallery) fn render_slide_panel_overlay(
     };
 
     let chrome = look.chrome();
-    let border = look.token_color("border").unwrap_or(chrome.border);
     let panel_background = look.token_color("card").unwrap_or(chrome.panel_background);
-    let backdrop = Hsla { a: BACKDROP_ALPHA_MAX * state.open_progress(), ..gpui::black() };
     let overlay_top_inset = state.top_anchor().inset();
     let available_height = (viewport.height - overlay_top_inset).max(px(1.0));
+    let viewport_width = viewport.width.as_f32();
+    let viewport_height = available_height.as_f32();
 
-    let capped_edge_panel_height =
-        px(EDGE_PANEL_DESIRED_HEIGHT.min(available_height.as_f32() * EDGE_PANEL_MAX_VIEWPORT_RATIO));
+    let capped_edge_panel_height = EDGE_PANEL_DESIRED_HEIGHT.min(viewport_height * EDGE_PANEL_MAX_VIEWPORT_RATIO);
+    let side_panel_width = state.main_axis_size(DEFAULT_SIDE_PANEL_WIDTH);
+    let edge_panel_height = state.main_axis_size(capped_edge_panel_height);
     let (panel_width, panel_height) = match edge {
-        SlidePanelEdge::Left | SlidePanelEdge::Right => (px(SIDE_PANEL_WIDTH), available_height),
-        SlidePanelEdge::Top | SlidePanelEdge::Bottom => (viewport.width, capped_edge_panel_height),
+        SlidePanelEdge::Left | SlidePanelEdge::Right => (px(side_panel_width), available_height),
+        SlidePanelEdge::Top | SlidePanelEdge::Bottom => (viewport.width, px(edge_panel_height)),
     };
 
-    let horizontal_offset = px(-((1.0 - state.open_progress()) * SIDE_PANEL_WIDTH));
-    let vertical_offset = px(-((1.0 - state.open_progress()) * panel_height.as_f32()));
+    let horizontal_offset = px(-((1.0 - state.open_progress()) * side_panel_width));
+    let vertical_offset = px(-((1.0 - state.open_progress()) * edge_panel_height));
+    let split_px = resize_split_px(
+        edge,
+        viewport_width,
+        viewport_height,
+        side_panel_width,
+        edge_panel_height,
+        horizontal_offset,
+        vertical_offset,
+    );
 
     let panel_shell = div()
         .id("slide-panel-shell")
@@ -66,39 +82,69 @@ pub(in crate::gallery) fn render_slide_panel_overlay(
             panel.bottom(vertical_offset).left_0().right_0().h(panel_height)
         })
         .bg(panel_background)
-        .border_1()
-        .border_color(border)
-        .shadow(vec![gpui::BoxShadow {
-            offset: point(px(0.0), px(18.0)),
-            blur_radius: px(42.0),
-            spread_radius: px(-18.0),
-            color: Hsla { a: 0.22 * state.open_progress(), ..gpui::black() },
-        }])
         .on_key_down(handlers.key_down)
         .child(panel_content);
+
+    let handle_metrics = ResizeHandleSize::Sm.metrics();
+    let handle_active = state.resize_handle_hovered() || state.is_resizing();
+    let SlidePanelResizeHandlers { mouse_down, drag_move, mouse_up, mouse_up_out, hover } = resize_handlers;
+    let resize_handle = render_slide_panel_resize_handle(
+        edge,
+        panels_look,
+        &handle_metrics,
+        split_px,
+        handle_active,
+        SlidePanelResizeHitHandlers { mouse_down, hover },
+    );
+
+    let mut overlay_root = div()
+        .id("slide-panel-window-overlay")
+        .relative()
+        .w(viewport.width)
+        .h(available_height)
+        .overflow_hidden()
+        .on_drag_move(drag_move)
+        .on_mouse_up(MouseButton::Left, mouse_up)
+        .on_mouse_up_out(MouseButton::Left, mouse_up_out);
+
+    if state.backdrop_click_closes() {
+        overlay_root = overlay_root.child(
+            div()
+                .absolute()
+                .top_0()
+                .left_0()
+                .w_full()
+                .h_full()
+                .bg(transparent_black())
+                .on_mouse_down(MouseButton::Left, handlers.backdrop_mouse_down),
+        );
+    }
 
     anchored()
         .snap_to_window_with_margin(px(0.0))
         .anchor(Corner::TopLeft)
         .position(point(px(0.0), overlay_top_inset))
-        .child(
-            div()
-                .id("slide-panel-window-overlay")
-                .relative()
-                .w(viewport.width)
-                .h(available_height)
-                .overflow_hidden()
-                .child(
-                    div()
-                        .absolute()
-                        .top_0()
-                        .left_0()
-                        .w_full()
-                        .h_full()
-                        .bg(backdrop)
-                        .on_mouse_down(MouseButton::Left, handlers.backdrop_mouse_down),
-                )
-                .child(panel_shell),
-        )
+        .child(overlay_root.child(panel_shell).child(resize_handle))
         .into_any_element()
+}
+
+fn resize_split_px(
+    edge: SlidePanelEdge,
+    viewport_width: f32,
+    viewport_height: f32,
+    side_panel_width: f32,
+    edge_panel_height: f32,
+    horizontal_offset: gpui::Pixels,
+    vertical_offset: gpui::Pixels,
+) -> f32 {
+    match edge {
+        SlidePanelEdge::Right => viewport_width - side_panel_width - horizontal_offset.as_f32(),
+        SlidePanelEdge::Left => side_panel_width + horizontal_offset.as_f32(),
+        SlidePanelEdge::Bottom => viewport_height - edge_panel_height - vertical_offset.as_f32(),
+        SlidePanelEdge::Top => edge_panel_height + vertical_offset.as_f32(),
+    }
+}
+
+pub(in crate::gallery) fn slide_panel_panels_look(look: &Arc<ShadcnLook>) -> ResizablePanelsLook {
+    look.resizable_panels_theme().resolve(InteractionState::default())
 }

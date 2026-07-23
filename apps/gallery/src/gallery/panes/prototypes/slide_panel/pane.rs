@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Context, Entity, FocusHandle, Focusable, FontWeight, Hsla, IntoElement, MouseDownEvent, Overflow,
-    Render, Subscription, Window, div, prelude::*, px,
+    AnyElement, App, Context, Entity, FocusHandle, Focusable, FontWeight, Hsla, IntoElement, MouseDownEvent,
+    MouseUpEvent, Overflow, Render, Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
 use gpui_luma::{flow, hstack, vstack};
@@ -13,8 +13,16 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 
 use super::control::{
-    SlidePanelEdge, SlidePanelOverlayHandlers, SlidePanelState, SlidePanelTopAnchor, render_slide_panel_overlay,
+    SlidePanelEdge, SlidePanelOverlayHandlers, SlidePanelResizeDrag, SlidePanelResizeHandlers, SlidePanelSizeConfig,
+    SlidePanelState, SlidePanelTopAnchor, render_slide_panel_overlay, slide_panel_panels_look,
 };
+
+const SIDE_PANEL_DEFAULT_WIDTH: f32 = 360.0;
+const SIDE_PANEL_MIN_WIDTH: f32 = 280.0;
+const SIDE_PANEL_MAX_WIDTH: f32 = 720.0;
+const EDGE_PANEL_DEFAULT_HEIGHT: f32 = 420.0;
+const EDGE_PANEL_MIN_HEIGHT: f32 = 240.0;
+const EDGE_PANEL_MAX_HEIGHT: f32 = 640.0;
 
 const PANEL_SIDE_TOP_PADDING: f32 = 42.0;
 const PANEL_VERTICAL_TOP_PADDING: f32 = 22.0;
@@ -241,7 +249,10 @@ impl SlidePanelDemo {
             secondary_action,
             archive_action,
             backdrop_toggle,
-            state: SlidePanelState::new(SlidePanelTopAnchor::BelowTopBar),
+            state: SlidePanelState::new(
+                SlidePanelTopAnchor::BelowTopBar,
+                SlidePanelSizeConfig::new(SIDE_PANEL_DEFAULT_WIDTH, SIDE_PANEL_MIN_WIDTH, SIDE_PANEL_MAX_WIDTH),
+            ),
             last_action: "Panel closed. Use one of the edge triggers to open a drawer.".to_string(),
         }
     }
@@ -269,8 +280,21 @@ impl SlidePanelDemo {
             SlidePanelEdge::Top => self.trigger_top.read(cx).focus_handle(cx),
             SlidePanelEdge::Bottom => self.trigger_bottom.read(cx).focus_handle(cx),
         };
+        self.configure_size_for_edge(edge);
         self.state.open(edge, opener);
         self.last_action = format!("Opened the {} slide panel.", edge.label());
+    }
+
+    fn configure_size_for_edge(&mut self, edge: SlidePanelEdge) {
+        let config = match edge {
+            SlidePanelEdge::Left | SlidePanelEdge::Right => {
+                SlidePanelSizeConfig::new(SIDE_PANEL_DEFAULT_WIDTH, SIDE_PANEL_MIN_WIDTH, SIDE_PANEL_MAX_WIDTH)
+            }
+            SlidePanelEdge::Top | SlidePanelEdge::Bottom => {
+                SlidePanelSizeConfig::new(EDGE_PANEL_DEFAULT_HEIGHT, EDGE_PANEL_MIN_HEIGHT, EDGE_PANEL_MAX_HEIGHT)
+            }
+        };
+        self.state.set_size_config(config);
     }
 
     fn extra_focus_handles(&self, cx: &App) -> Vec<FocusHandle> {
@@ -302,7 +326,7 @@ impl SlidePanelDemo {
     }
 
     fn handle_backdrop_mouse_down(&mut self, _event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
-        if !self.state.backdrop_click_closes() {
+        if !self.state.backdrop_click_closes() || self.state.is_resizing() {
             return;
         }
 
@@ -310,6 +334,49 @@ impl SlidePanelDemo {
         if self.state.request_close() {
             window.prevent_default();
             cx.stop_propagation();
+            cx.notify();
+        }
+    }
+
+    fn handle_resize_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(edge) = self.state.active_edge() else {
+            return;
+        };
+
+        if self.state.begin_resize(event.position, edge) {
+            window.prevent_default();
+            cx.stop_propagation();
+            cx.notify();
+        }
+    }
+
+    fn handle_resize_drag_move(
+        &mut self,
+        event: &gpui::DragMoveEvent<SlidePanelResizeDrag>,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(edge) = self.state.active_edge() else {
+            return;
+        };
+
+        if self.state.update_resize(event.event.position, edge) {
+            cx.notify();
+        }
+    }
+
+    fn handle_resize_mouse_up(&mut self, event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if event.button != gpui::MouseButton::Left {
+            return;
+        }
+
+        if self.state.finish_resize() {
+            cx.notify();
+        }
+    }
+
+    fn handle_resize_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.state.set_resize_handle_hovered(*hovered) {
             cx.notify();
         }
     }
@@ -442,12 +509,21 @@ impl Render for SlidePanelDemo {
                 key_down: Box::new(cx.listener(Self::handle_overlay_key_down)),
                 backdrop_mouse_down: Box::new(cx.listener(Self::handle_backdrop_mouse_down)),
             };
+            let resize_handlers = SlidePanelResizeHandlers {
+                mouse_down: Box::new(cx.listener(Self::handle_resize_mouse_down)),
+                drag_move: Box::new(cx.listener(Self::handle_resize_drag_move)),
+                mouse_up: Box::new(cx.listener(Self::handle_resize_mouse_up)),
+                mouse_up_out: Box::new(cx.listener(Self::handle_resize_mouse_up)),
+                hover: Box::new(cx.listener(Self::handle_resize_hover)),
+            };
             let overlay = render_slide_panel_overlay(
                 &self.look,
+                &slide_panel_panels_look(&self.look),
                 &self.state,
                 viewport,
                 self.render_panel_content(edge, &self.look),
                 handlers,
+                resize_handlers,
             );
             root = root.child(gpui::deferred(overlay).with_priority(10));
         }
