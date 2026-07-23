@@ -9,6 +9,7 @@ use crate::keyhandling::ActivateControl;
 /// This is intentionally presentation-agnostic: it models user activation
 /// and observable command interaction-state transitions.
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum CommandEvent {
     Click,
     FocusChanged { focused: bool },

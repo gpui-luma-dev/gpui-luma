@@ -4,7 +4,9 @@ mod template;
 mod theme;
 
 pub use control::{Scrollbar, ScrollbarDrag, ScrollbarEvent};
-pub use model::{ScrollbarBuilder, ScrollbarModel, ScrollbarOrientation, ScrollbarRenderModel, ScrollbarStyle};
+pub use model::{
+    ScrollbarBuilder, ScrollbarModel, ScrollbarOrientation, ScrollbarRenderModel, ScrollbarStyle, ScrollbarViewport,
+};
 pub use template::{
     ScrollbarBoundsHandler, ScrollbarDragMoveHandler, ScrollbarHoverHandler, ScrollbarMouseDownHandler,
     ScrollbarMouseUpHandler, ScrollbarScrollWheelHandler, ScrollbarTemplate, ScrollbarTemplateHandlers,

@@ -332,7 +332,8 @@ impl ButtonPane {
                     cx.notify();
                 }
             }
-            TextFieldEvent::Focus | TextFieldEvent::Blur => {}
+            TextFieldEvent::FocusChanged { .. } => {}
+            _ => {}
         }
     }
 

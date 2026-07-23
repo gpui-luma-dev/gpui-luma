@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseMoveEvent,
-    MouseUpEvent, Pixels, Point, Render, SharedString, Window, div, prelude::*,
+    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
+    MouseMoveEvent, MouseUpEvent, Pixels, Point, Render, SharedString, Subscription, Window, div, prelude::*,
 };
 
 use super::input::{
@@ -27,12 +27,18 @@ use crate::keyhandling::{
 use crate::theme::{ControlSize, observe_theme_revision};
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum SliderEvent {
     Change { thumb_id: ThumbId, value: f32 },
     Release { thumb_id: ThumbId, value: f32 },
+    DragStart { thumb_id: ThumbId },
+    DragEnd { thumb_id: ThumbId, value: f32 },
     ThumbAdded { thumb_id: ThumbId, value: f32 },
     ThumbRemoved { thumb_id: ThumbId },
     ThumbSelected { thumb_id: ThumbId },
+    FocusChanged { focused: bool },
+    HoverChanged { hovered: bool },
+    EnabledChanged { enabled: bool },
 }
 
 #[derive(Clone, Debug)]
@@ -60,6 +66,9 @@ pub struct SliderControl {
     active_thumb_id: Option<ThumbId>,
     angular_drag_angle_offset: Option<f32>,
     angular_drag_pointer_angle: Option<f32>,
+    focus_in_subscription: Option<Subscription>,
+    focus_out_subscription: Option<Subscription>,
+    emitted_focused: bool,
 }
 
 impl EventEmitter<SliderEvent> for SliderControl {}
@@ -84,6 +93,9 @@ impl SliderControl {
             active_thumb_id,
             angular_drag_angle_offset: None,
             angular_drag_pointer_angle: None,
+            focus_in_subscription: None,
+            focus_out_subscription: None,
+            emitted_focused: false,
         }
     }
 
@@ -175,11 +187,27 @@ impl SliderControl {
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if self.model.enabled == enabled {
+            return;
+        }
+
+        let was_hovered = self.interaction.hovered();
+        let was_pressed = self.interaction.is_pressed();
+        let active_thumb_id = self.active_thumb_id;
         self.model.enabled = enabled;
         self.interaction.set_enabled(enabled);
         if !enabled {
             self.active_thumb_id = None;
+            if was_pressed && let Some(thumb_id) = active_thumb_id {
+                let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
+                cx.emit(SliderEvent::DragEnd { thumb_id, value });
+            }
+            if was_hovered {
+                cx.emit(SliderEvent::HoverChanged { hovered: false });
+            }
+            self.emit_focus_changed(false, cx);
         }
+        cx.emit(SliderEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -390,6 +418,19 @@ impl SliderControl {
 
     fn handle_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
         if self.interaction.handle_hover(*hovered) {
+            cx.emit(SliderEvent::HoverChanged { hovered: self.interaction.hovered() });
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_in(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.model.enabled && self.emit_focus_changed(true, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.emit_focus_changed(false, cx) {
             cx.notify();
         }
     }
@@ -401,8 +442,10 @@ impl SliderControl {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        let was_pressed = self.interaction.is_pressed();
         let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
         let selection_changed = self.select_thumb(*thumb_id, true, cx);
+        self.emit_drag_start_if_needed(was_pressed, Some(*thumb_id), cx);
 
         if interaction_changed || selection_changed {
             cx.stop_propagation();
@@ -419,6 +462,7 @@ impl SliderControl {
                 if !self.angular_accepts_pointer(bounds, event.position) {
                     return;
                 }
+                let was_pressed = self.interaction.is_pressed();
                 let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
                 let thumb_id = self.active_thumb_id.or_else(|| self.model.thumbs.first().map(|thumb| thumb.id));
                 let mut changed = false;
@@ -446,14 +490,17 @@ impl SliderControl {
                     self.angular_drag_angle_offset = Some(0.0);
                     self.angular_drag_pointer_angle = pointer_angle;
                 }
+                self.emit_drag_start_if_needed(was_pressed, thumb_id, cx);
                 if interaction_changed || changed {
                     cx.stop_propagation();
                     cx.notify();
                 }
             }
             SliderInputStrategy::Horizontal | SliderInputStrategy::Vertical => {
+                let was_pressed = self.interaction.is_pressed();
                 let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
                 let changed = self.set_value_from_position(event.position, true, cx);
+                self.emit_drag_start_if_needed(was_pressed, self.active_thumb_id, cx);
                 if interaction_changed || changed {
                     cx.stop_propagation();
                     cx.notify();
@@ -481,6 +528,7 @@ impl SliderControl {
             if let Some(thumb_id) = self.active_thumb_id {
                 let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
                 cx.emit(SliderEvent::Release { thumb_id, value });
+                cx.emit(SliderEvent::DragEnd { thumb_id, value });
             }
             cx.notify();
         }
@@ -677,6 +725,26 @@ impl SliderControl {
             self.remove_thumb(thumb_id, cx);
         }
     }
+
+    fn emit_focus_changed(&mut self, focused: bool, cx: &mut Context<Self>) -> bool {
+        if self.emitted_focused == focused {
+            return false;
+        }
+
+        self.emitted_focused = focused;
+        cx.emit(SliderEvent::FocusChanged { focused });
+        true
+    }
+
+    fn emit_drag_start_if_needed(&mut self, was_pressed: bool, thumb_id: Option<ThumbId>, cx: &mut Context<Self>) {
+        if was_pressed || !self.interaction.is_pressed() {
+            return;
+        }
+
+        if let Some(thumb_id) = thumb_id {
+            cx.emit(SliderEvent::DragStart { thumb_id });
+        }
+    }
 }
 
 impl Focusable for SliderControl {
@@ -687,6 +755,15 @@ impl Focusable for SliderControl {
 
 impl Render for SliderControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.focus_in_subscription.is_none() {
+            let focus_handle = self.interaction.focus_handle().clone();
+            self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
+        }
+        if self.focus_out_subscription.is_none() {
+            let focus_handle = self.interaction.focus_handle().clone();
+            self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
+        }
+
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);
         let active_thumb_id = self

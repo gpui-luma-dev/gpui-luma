@@ -92,6 +92,7 @@ impl DockPanelPaneState {
                 cx.notify();
             }
             DockSplitterEvent::ResizeEnd => {}
+            _ => {}
         })
         .detach();
         cx.subscribe(&this.top_splitter, |this, _, event: &DockSplitterEvent, cx| match event {
@@ -101,6 +102,7 @@ impl DockPanelPaneState {
                 cx.notify();
             }
             DockSplitterEvent::ResizeEnd => {}
+            _ => {}
         })
         .detach();
         cx.subscribe(&this.right_splitter, |this, _, event: &DockSplitterEvent, cx| match event {
@@ -110,6 +112,7 @@ impl DockPanelPaneState {
                 cx.notify();
             }
             DockSplitterEvent::ResizeEnd => {}
+            _ => {}
         })
         .detach();
         cx.subscribe(&this.bottom_splitter, |this, _, event: &DockSplitterEvent, cx| match event {
@@ -119,6 +122,7 @@ impl DockPanelPaneState {
                 cx.notify();
             }
             DockSplitterEvent::ResizeEnd => {}
+            _ => {}
         })
         .detach();
 

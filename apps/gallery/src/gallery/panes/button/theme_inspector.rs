@@ -168,7 +168,9 @@ impl ThemeInspector {
 
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&tabs, |inspector, _, event: &TabsNavigationEvent, cx| {
-            let TabsNavigationEvent::Activate { tab_id, .. } = event;
+            let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+                return;
+            };
             inspector.active_variant = ThemeVariant::from_id(tab_id.as_ref());
             cx.notify();
         }));
@@ -458,7 +460,9 @@ impl LayoutSizeInspector {
 
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&tabs, |inspector, _, event: &TabsNavigationEvent, cx| {
-            let TabsNavigationEvent::Activate { tab_id, .. } = event;
+            let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+                return;
+            };
             inspector.active_size = control_size_from_id(tab_id.as_ref());
             cx.notify();
         }));

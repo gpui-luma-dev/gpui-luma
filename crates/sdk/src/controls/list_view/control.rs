@@ -1,6 +1,7 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, ListOffset, ListState, MouseButton, MouseDownEvent,
-    MouseUpEvent, Render, ScrollWheelEvent, SharedString, TouchPhase, Window, div, list, prelude::*, px,
+    App, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, ListOffset, ListState, MouseButton,
+    MouseDownEvent, MouseUpEvent, Render, ScrollWheelEvent, SharedString, Subscription, TouchPhase, Window, div, list,
+    prelude::*, px,
 };
 
 use super::layout::{
@@ -25,11 +26,16 @@ use crate::theme::{ControlSize, InteractionState, LayoutCacheKey, ListRowScale, 
 use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum ListViewEvent {
     SelectionChanged { selected_indices: Vec<usize> },
     ActiveIndexChanged { active_index: Option<usize> },
     PageChanged { page: usize },
     PageSizeChanged { page_size: usize },
+    ScrollChanged { top_index: usize },
+    FocusChanged { focused: bool },
+    RowHoverChanged { index: usize, hovered: bool },
+    EnabledChanged { enabled: bool },
 }
 
 pub struct ListViewControl<T>
@@ -39,9 +45,13 @@ where
     model: ListViewModel<T>,
     list_state: ListState,
     focus_handle: gpui::FocusHandle,
+    focus_in_subscription: Option<Subscription>,
+    focus_out_subscription: Option<Subscription>,
     hovered_index: Option<usize>,
     pressed_index: Option<usize>,
     current_page: usize,
+    emitted_scroll_top_index: usize,
+    emitted_focused: bool,
     /// When fill-height + paged, row height stretched so `page_size` rows fill the viewport.
     fill_row_height: Option<f32>,
 }
@@ -79,10 +89,14 @@ where
         Self {
             list_state,
             focus_handle: cx.focus_handle().tab_stop(builder.model.enabled),
+            focus_in_subscription: None,
+            focus_out_subscription: None,
             model: builder.model,
             hovered_index: None,
             pressed_index: None,
             current_page: 0,
+            emitted_scroll_top_index: 0,
+            emitted_focused: false,
             fill_row_height: None,
         }
     }
@@ -260,6 +274,7 @@ where
         } else {
             self.list_state.scroll_to_reveal_item(index);
         }
+        self.emit_scroll_changed_if_needed(cx);
         cx.notify();
     }
 
@@ -272,6 +287,7 @@ where
         if self.is_scroll_snap() {
             self.snap_scroll_position();
         }
+        self.emit_scroll_changed_if_needed(cx);
         cx.notify();
     }
 
@@ -282,12 +298,16 @@ where
 
         self.model.enabled = enabled;
         self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
+        self.focus_in_subscription = None;
+        self.focus_out_subscription = None;
 
         if !enabled {
-            self.hovered_index = None;
+            self.clear_hovered_index(cx);
             self.pressed_index = None;
+            self.emit_focus_changed(false, cx);
         }
 
+        cx.emit(ListViewEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -470,11 +490,12 @@ where
 
     /// Keep the active row rendered inside the viewport. When moving up within the
     /// first page, pin scroll at row 0 so the list top stays anchored.
-    fn scroll_active_into_view(&mut self, index: usize, direction: Option<ListDirection>) {
+    fn scroll_active_into_view(&mut self, index: usize, direction: Option<ListDirection>, cx: &mut Context<Self>) {
         let visible_rows = self.visible_row_capacity().max(1);
 
         if direction == Some(ListDirection::Previous) && index < visible_rows {
             self.list_state.scroll_to(ListOffset { item_ix: 0, offset_in_item: px(0.0) });
+            self.emit_scroll_changed_if_needed(cx);
             return;
         }
 
@@ -487,6 +508,7 @@ where
         } else {
             self.list_state.scroll_to_reveal_item(index);
         }
+        self.emit_scroll_changed_if_needed(cx);
     }
 
     fn snap_scroll_position(&mut self) {
@@ -680,7 +702,7 @@ where
             if self.is_paged() {
                 // All rows on the current page are visible without scrolling.
             } else {
-                self.scroll_active_into_view(index, scroll_direction);
+                self.scroll_active_into_view(index, scroll_direction, cx);
             }
         }
         cx.emit(ListViewEvent::ActiveIndexChanged { active_index: next });
@@ -715,9 +737,15 @@ where
             return;
         }
 
-        self.hovered_index = None;
+        self.clear_hovered_index(cx);
         self.pressed_index = None;
         cx.notify();
+    }
+
+    fn clear_hovered_index(&mut self, cx: &mut Context<Self>) {
+        if let Some(index) = self.hovered_index.take() {
+            cx.emit(ListViewEvent::RowHoverChanged { index, hovered: false });
+        }
     }
 
     fn handle_item_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
@@ -727,11 +755,13 @@ where
 
         if hovered {
             if self.hovered_index != Some(index) {
+                self.clear_hovered_index(cx);
                 self.hovered_index = Some(index);
+                cx.emit(ListViewEvent::RowHoverChanged { index, hovered: true });
                 cx.notify();
             }
         } else if self.hovered_index == Some(index) {
-            self.hovered_index = None;
+            self.clear_hovered_index(cx);
             if self.pressed_index == Some(index) {
                 self.pressed_index = None;
             }
@@ -843,6 +873,7 @@ where
             if self.is_scroll_snap() {
                 self.snap_scroll_position();
             }
+            self.emit_scroll_changed_if_needed(cx);
             cx.notify();
         }
     }
@@ -861,12 +892,20 @@ where
             if self.is_scroll_snap() {
                 self.snap_scroll_position();
             }
+            self.emit_scroll_changed_if_needed(cx);
             cx.notify();
         }
     }
 
     fn handle_scroll_wheel(&mut self, event: &ScrollWheelEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if !self.is_scroll_snap() || self.is_paged() || !self.model.enabled {
+        if self.is_paged() || !self.model.enabled {
+            return;
+        }
+
+        if !self.is_scroll_snap() {
+            if self.emit_scroll_changed_if_needed(cx) {
+                cx.notify();
+            }
             return;
         }
 
@@ -876,6 +915,7 @@ where
             // and felt erratic (especially with natural scrolling).
             if matches!(event.touch_phase, TouchPhase::Ended) {
                 self.snap_scroll_position();
+                self.emit_scroll_changed_if_needed(cx);
                 cx.notify();
             }
             return;
@@ -888,8 +928,42 @@ where
         }
 
         self.snap_scroll_position();
+        self.emit_scroll_changed_if_needed(cx);
         cx.stop_propagation();
         cx.notify();
+    }
+
+    fn handle_focus_in(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.model.enabled && self.emit_focus_changed(true, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.emit_focus_changed(false, cx) {
+            cx.notify();
+        }
+    }
+
+    fn emit_focus_changed(&mut self, focused: bool, cx: &mut Context<Self>) -> bool {
+        if self.emitted_focused == focused {
+            return false;
+        }
+
+        self.emitted_focused = focused;
+        cx.emit(ListViewEvent::FocusChanged { focused });
+        true
+    }
+
+    fn emit_scroll_changed_if_needed(&mut self, cx: &mut Context<Self>) -> bool {
+        let top_index = self.list_state.logical_scroll_top().item_ix;
+        if self.emitted_scroll_top_index == top_index {
+            return false;
+        }
+
+        self.emitted_scroll_top_index = top_index;
+        cx.emit(ListViewEvent::ScrollChanged { top_index });
+        true
     }
 }
 
@@ -907,6 +981,15 @@ where
     T: 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.focus_in_subscription.is_none() {
+            let focus_handle = self.focus_handle.clone();
+            self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
+        }
+        if self.focus_out_subscription.is_none() {
+            let focus_handle = self.focus_handle.clone();
+            self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
+        }
+
         let render_model = self.render_model(window, cx);
         let header = self
             .model
@@ -935,7 +1018,7 @@ where
             .on_action(cx.listener(Self::handle_select_last_item))
             .on_action(cx.listener(Self::handle_activate_control));
 
-        if self.is_scroll_snap() && !self.is_paged() {
+        if !self.is_paged() {
             shell = shell.on_scroll_wheel(cx.listener(Self::handle_scroll_wheel));
         }
 

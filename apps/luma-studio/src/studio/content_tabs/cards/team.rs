@@ -22,7 +22,9 @@ declare_form! {
                 .without_elevation()
                 .items(role_menu_items())
                 => PopupMenuEvent |this, event, cx| {
-                    let PopupMenuEvent::Select { label, .. } = event;
+                    let PopupMenuEvent::Select { label, .. } = event else {
+                        return;
+                    };
                     this.sofia_menu.update(cx, |menu, cx| menu.set_label(label.clone(), cx));
                 },
             jackson_menu: Entity<PopupMenu> = look
@@ -32,7 +34,9 @@ declare_form! {
                 .without_elevation()
                 .items(role_menu_items())
                 => PopupMenuEvent |this, event, cx| {
-                    let PopupMenuEvent::Select { label, .. } = event;
+                    let PopupMenuEvent::Select { label, .. } = event else {
+                        return;
+                    };
                     this.jackson_menu.update(cx, |menu, cx| menu.set_label(label.clone(), cx));
                 },
             isabella_menu: Entity<PopupMenu> = look
@@ -42,7 +46,9 @@ declare_form! {
                 .without_elevation()
                 .items(role_menu_items())
                 => PopupMenuEvent |this, event, cx| {
-                    let PopupMenuEvent::Select { label, .. } = event;
+                    let PopupMenuEvent::Select { label, .. } = event else {
+                        return;
+                    };
                     this.isabella_menu.update(cx, |menu, cx| menu.set_label(label.clone(), cx));
                 },
         },

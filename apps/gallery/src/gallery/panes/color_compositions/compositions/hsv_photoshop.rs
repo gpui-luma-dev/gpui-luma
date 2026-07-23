@@ -87,49 +87,46 @@ impl HsvPlaneState {
 
         let subscriptions = vec![
             cx.subscribe(&plane, |this, _, event: &ColorFieldEvent, cx| {
-                if !this.sync.begin_sync() {
-                    return;
-                }
                 let hsv = match event {
                     ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
+                    _ => return,
+                };
+                let Some(_sync_guard) = this.sync.begin_guard() else {
+                    return;
                 };
                 this.hsv.h = hsv.h;
                 this.hsv.s = hsv.s;
                 this.hsv.v = hsv.v;
                 this.sync_controls(cx);
-                this.sync.end_sync();
                 cx.notify();
             }),
             cx.subscribe(&slider_h, |this, _, event, cx| {
                 if let Some(value) = primary_slider_value(event) {
-                    if !this.sync.begin_sync() {
+                    let Some(_sync_guard) = this.sync.begin_guard() else {
                         return;
-                    }
+                    };
                     this.hsv.h = value;
                     this.sync_controls(cx);
-                    this.sync.end_sync();
                     cx.notify();
                 }
             }),
             cx.subscribe(&slider_s, |this, _, event, cx| {
                 if let Some(value) = primary_slider_value(event) {
-                    if !this.sync.begin_sync() {
+                    let Some(_sync_guard) = this.sync.begin_guard() else {
                         return;
-                    }
+                    };
                     this.hsv.s = value;
                     this.sync_controls(cx);
-                    this.sync.end_sync();
                     cx.notify();
                 }
             }),
             cx.subscribe(&slider_v, |this, _, event, cx| {
                 if let Some(value) = primary_slider_value(event) {
-                    if !this.sync.begin_sync() {
+                    let Some(_sync_guard) = this.sync.begin_guard() else {
                         return;
-                    }
+                    };
                     this.hsv.v = value;
                     this.sync_controls(cx);
-                    this.sync.end_sync();
                     cx.notify();
                 }
             }),

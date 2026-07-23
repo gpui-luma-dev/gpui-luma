@@ -130,12 +130,13 @@ impl ColorHarmoniesState {
 
         let subscriptions = vec![
             cx.subscribe(&wheel, |this, _, event: &ColorFieldEvent, cx| {
+                let hsv = match event {
+                    ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
+                    _ => return,
+                };
                 if !this.sync.begin_sync() {
                     return;
                 }
-                let hsv = match event {
-                    ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
-                };
                 this.color.h = (hsv.h / 360.0).rem_euclid(1.0);
                 this.color.s = hsv.s.clamp(0.0, 1.0);
                 this.sync_ring(cx);
@@ -156,9 +157,10 @@ impl ColorHarmoniesState {
                 cx.notify();
             }),
             cx.subscribe(&harmony_menu, |this, _, event: &SelectorEvent, cx| {
-                let SelectorEvent::Change { item_id, .. } = event;
-                this.selected_combination = ColorCombination::from_id(item_id.as_ref());
-                cx.notify();
+                if let SelectorEvent::Change { item_id, .. } = event {
+                    this.selected_combination = ColorCombination::from_id(item_id.as_ref());
+                    cx.notify();
+                }
             }),
             cx.subscribe(&color_input, |this, _, event: &TextFieldEvent, cx| {
                 if this.color_input_programmatic_update {

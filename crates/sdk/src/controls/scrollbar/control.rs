@@ -1,9 +1,13 @@
 use gpui::{
-    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
-    Pixels, Point, Render, ScrollDelta, ScrollWheelEvent, SharedString, Window, div, prelude::*, px,
+    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
+    MouseUpEvent, Pixels, Point, Render, ScrollDelta, ScrollWheelEvent, SharedString, Subscription, Window, div,
+    prelude::*, px,
 };
 
-use super::{ScrollbarBuilder, ScrollbarOrientation, ScrollbarRenderModel, ScrollbarStyle, ScrollbarTemplateHandlers};
+use super::{
+    ScrollbarBuilder, ScrollbarOrientation, ScrollbarRenderModel, ScrollbarStyle, ScrollbarTemplateHandlers,
+    ScrollbarViewport,
+};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::scrollbar::model::{ScrollbarModel, normalized_thumb_fraction};
 use crate::controls::value::{ControlRange, value_from_input};
@@ -13,8 +17,14 @@ use crate::keyhandling::{
 use crate::theme::{ControlSize, observe_theme_revision};
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum ScrollbarEvent {
     Change { value: f32 },
+    DragStart,
+    DragEnd { value: f32 },
+    FocusChanged { focused: bool },
+    HoverChanged { hovered: bool },
+    EnabledChanged { enabled: bool },
 }
 
 #[derive(Clone, Debug)]
@@ -41,6 +51,9 @@ pub struct Scrollbar {
     thumb_length: Option<f32>,
     drag_anchor: Option<f32>,
     scroll_remainder: f32,
+    focus_in_subscription: Option<Subscription>,
+    focus_out_subscription: Option<Subscription>,
+    emitted_focused: bool,
 }
 
 const DEFAULT_MIN_THUMB_LENGTH: f32 = 28.0;
@@ -64,6 +77,9 @@ impl Scrollbar {
             thumb_length: None,
             drag_anchor: None,
             scroll_remainder: 0.0,
+            focus_in_subscription: None,
+            focus_out_subscription: None,
+            emitted_focused: false,
         }
     }
 
@@ -148,6 +164,36 @@ impl Scrollbar {
         }
     }
 
+    pub fn set_viewport(
+        &mut self,
+        content_start: impl Into<f64>,
+        content_end: impl Into<f64>,
+        visible_start: impl Into<f64>,
+        visible_end: impl Into<f64>,
+        cx: &mut Context<Self>,
+    ) {
+        let viewport = ScrollbarViewport::new(
+            value_from_input(content_start),
+            value_from_input(content_end),
+            value_from_input(visible_start),
+            value_from_input(visible_end),
+        );
+        let range = viewport.scroll_range();
+        let value = viewport.value(self.model.step);
+        let thumb_fraction = viewport.thumb_fraction();
+        let changed = self.model.range != range
+            || (self.model.value - value).abs() > f32::EPSILON
+            || (self.model.thumb_fraction - thumb_fraction).abs() > f32::EPSILON;
+
+        self.model.range = range;
+        self.model.value = value;
+        self.model.thumb_fraction = thumb_fraction;
+
+        if changed {
+            cx.notify();
+        }
+    }
+
     pub fn set_length(&mut self, length: impl Into<f64>, cx: &mut Context<Self>) {
         let length = value_from_input(length);
         let length = (length.is_finite() && length > 0.0).then_some(length);
@@ -177,12 +223,26 @@ impl Scrollbar {
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if self.model.enabled == enabled {
+            return;
+        }
+
+        let was_hovered = self.interaction.hovered();
+        let was_pressed = self.interaction.is_pressed();
         self.model.enabled = enabled;
         self.interaction.set_enabled(enabled);
         if !enabled {
             self.drag_anchor = None;
             self.scroll_remainder = 0.0;
+            if was_pressed {
+                cx.emit(ScrollbarEvent::DragEnd { value: self.model.value });
+            }
+            if was_hovered {
+                cx.emit(ScrollbarEvent::HoverChanged { hovered: false });
+            }
+            self.emit_focus_changed(false, cx);
         }
+        cx.emit(ScrollbarEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -323,11 +383,25 @@ impl Scrollbar {
 
     fn handle_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
         if self.interaction.handle_hover(*hovered) {
+            cx.emit(ScrollbarEvent::HoverChanged { hovered: self.interaction.hovered() });
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_in(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.model.enabled && self.emit_focus_changed(true, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.emit_focus_changed(false, cx) {
             cx.notify();
         }
     }
 
     fn handle_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        let was_pressed = self.interaction.is_pressed();
         let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
         if !self.model.enabled {
             if interaction_changed {
@@ -342,6 +416,7 @@ impl Scrollbar {
             self.set_drag_anchor_from_position(event.position);
         }
 
+        self.emit_drag_start_if_needed(was_pressed, cx);
         if interaction_changed || value_changed {
             cx.notify();
         }
@@ -350,6 +425,7 @@ impl Scrollbar {
     fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
         self.drag_anchor = None;
         if self.interaction.handle_mouse_up() {
+            cx.emit(ScrollbarEvent::DragEnd { value: self.model.value });
             cx.notify();
         }
     }
@@ -428,6 +504,24 @@ impl Scrollbar {
     fn handle_move_to_end(&mut self, _: &MoveToEnd, _window: &mut Window, cx: &mut Context<Self>) {
         self.move_to_value(self.model.range.end, cx);
     }
+
+    fn emit_focus_changed(&mut self, focused: bool, cx: &mut Context<Self>) -> bool {
+        if self.emitted_focused == focused {
+            return false;
+        }
+
+        self.emitted_focused = focused;
+        cx.emit(ScrollbarEvent::FocusChanged { focused });
+        true
+    }
+
+    fn emit_drag_start_if_needed(&mut self, was_pressed: bool, cx: &mut Context<Self>) {
+        if was_pressed || !self.interaction.is_pressed() {
+            return;
+        }
+
+        cx.emit(ScrollbarEvent::DragStart);
+    }
 }
 
 impl Focusable for Scrollbar {
@@ -438,6 +532,15 @@ impl Focusable for Scrollbar {
 
 impl Render for Scrollbar {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.focus_in_subscription.is_none() {
+            let focus_handle = self.interaction.focus_handle().clone();
+            self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
+        }
+        if self.focus_out_subscription.is_none() {
+            let focus_handle = self.interaction.focus_handle().clone();
+            self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
+        }
+
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);
 

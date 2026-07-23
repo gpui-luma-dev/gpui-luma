@@ -326,6 +326,8 @@ struct SelectionPanelEventDemo {
     hover_changes: usize,
     activate_rows: usize,
     active_index_changes: usize,
+    focus_changes: usize,
+    open_changes: usize,
     last_event: SharedString,
 }
 
@@ -336,6 +338,8 @@ impl SelectionPanelEventDemo {
             hover_changes: 0,
             activate_rows: 0,
             active_index_changes: 0,
+            focus_changes: 0,
+            open_changes: 0,
             last_event: SharedString::default(),
         }
     }
@@ -357,6 +361,15 @@ impl SelectionPanelEventDemo {
                 self.active_index_changes += 1;
                 self.last_event = SharedString::from(format!("ActiveIndexChanged -> {:?}", visible_index));
             }
+            SelectionPanelEvent::FocusChanged { focused } => {
+                self.focus_changes += 1;
+                self.last_event = SharedString::from(format!("FocusChanged -> {}", focused));
+            }
+            SelectionPanelEvent::OpenChanged { open } => {
+                self.open_changes += 1;
+                self.last_event = SharedString::from(format!("OpenChanged -> {}", open));
+            }
+            _ => {}
         }
     }
 }
@@ -410,7 +423,9 @@ impl Render for SelectionPanelEventDemo {
                     .gap(px(6.0))
                     .child(render_event_count("HoverChanged", self.hover_changes, style))
                     .child(render_event_count("ActiveIndexChanged", self.active_index_changes, style))
-                    .child(render_event_count("ActivateRow", self.activate_rows, style)),
+                    .child(render_event_count("ActivateRow", self.activate_rows, style))
+                    .child(render_event_count("FocusChanged", self.focus_changes, style))
+                    .child(render_event_count("OpenChanged", self.open_changes, style)),
             )
             .child(
                 div()

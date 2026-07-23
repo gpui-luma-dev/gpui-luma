@@ -33,11 +33,12 @@ struct TextFieldLayoutPreview {
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum TextFieldEvent {
     Change { value: String },
     Submit { value: String },
-    Focus,
-    Blur,
+    FocusChanged { focused: bool },
+    EnabledChanged { enabled: bool },
 }
 
 pub struct TextFieldControl {
@@ -130,12 +131,17 @@ impl TextFieldControl {
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if self.model.enabled == enabled {
+            return;
+        }
+
         self.model.enabled = enabled;
         self.focus_handle = self.focus_handle.clone().tab_stop(enabled && self.model.tab_stop);
         if !enabled {
             self.state.set_hovered(false);
             self.mouse_selecting = false;
         }
+        cx.emit(TextFieldEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -297,7 +303,7 @@ impl TextFieldControl {
             self.state.preferred_column = None;
             self.state.set_focus_visible(true);
             self.focus_count += 1;
-            cx.emit(TextFieldEvent::Focus);
+            cx.emit(TextFieldEvent::FocusChanged { focused: true });
             self.start_caret_blink(cx);
         } else {
             self.mouse_selecting = false;
@@ -306,7 +312,7 @@ impl TextFieldControl {
                 self.state.cursor = self.model.value.chars().count();
             }
             self.blur_count += 1;
-            cx.emit(TextFieldEvent::Blur);
+            cx.emit(TextFieldEvent::FocusChanged { focused: false });
             self.stop_caret_blink(cx);
         }
 

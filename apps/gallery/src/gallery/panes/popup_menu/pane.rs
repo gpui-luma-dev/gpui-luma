@@ -165,10 +165,8 @@ impl PopupMenuPane {
     }
 
     fn handle_event(&mut self, event: &PopupMenuEvent, cx: &mut Context<GalleryApp>) {
-        match event {
-            PopupMenuEvent::Select { label, .. } => {
-                self.handle_selection(label, cx);
-            }
+        if let PopupMenuEvent::Select { label, .. } = event {
+            self.handle_selection(label, cx);
         }
     }
 

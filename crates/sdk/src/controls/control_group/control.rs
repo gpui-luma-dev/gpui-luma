@@ -17,6 +17,7 @@ use crate::keyhandling::{
 use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum ControlGroupEvent {
     Activate { activated_id: SharedString },
     Change { changed_id: SharedString, selected: bool, selected_ids: Vec<SharedString> },

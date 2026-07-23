@@ -32,5 +32,6 @@ pub(super) fn status_for(event: &OverlayWindowEvent, label: &str) -> String {
     match event {
         OverlayWindowEvent::Opened => format!("Opened {label}."),
         OverlayWindowEvent::Dismissed => format!("Dismissed {label}."),
+        _ => format!("Unchanged {label}."),
     }
 }

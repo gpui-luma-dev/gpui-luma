@@ -23,6 +23,7 @@ use crate::controls::presenter::{ControlPresenter, HasPresenter};
 pub type RadioButton = Entity<RadioButtonControl>;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum RadioButtonEvent {
     Change { selected: bool },
     FocusChanged { focused: bool },

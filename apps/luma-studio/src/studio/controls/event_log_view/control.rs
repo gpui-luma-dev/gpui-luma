@@ -30,7 +30,9 @@ impl EventLogView {
         );
         let scrollbar = scroll.scrollbar();
         let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {
-            let ScrollbarEvent::Change { value } = event;
+            let ScrollbarEvent::Change { value } = event else {
+                return;
+            };
             this.scroll.set_vertical_offset(*value, cx);
             this.scroll_to_end_pending = false;
         })];

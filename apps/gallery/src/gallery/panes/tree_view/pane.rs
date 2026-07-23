@@ -124,6 +124,7 @@ impl TreeViewPane {
                 let ids: Vec<_> = selected_ids.iter().map(|id| id.as_ref()).collect();
                 format!("selection {:?}", ids).into()
             }
+            _ => self.last_event.clone(),
         };
         cx.notify();
     }

@@ -130,6 +130,7 @@ impl GalleryApp {
                 });
                 cx.notify();
             }
+            _ => {}
         }
     }
 
@@ -147,6 +148,7 @@ impl GalleryApp {
                     split_view.set_collapsed(*collapsed, cx);
                 });
             }
+            _ => {}
         }
     }
 

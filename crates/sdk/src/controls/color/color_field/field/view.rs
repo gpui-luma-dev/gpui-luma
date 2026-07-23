@@ -210,7 +210,7 @@ impl ColorField {
                     if !state.contains_pointer(ev.position) {
                         return;
                     }
-                    state.begin_interaction();
+                    state.begin_interaction(cx);
                     cx.stop_propagation();
                     state.update_from_mouse(ev.position, window, cx);
                     cx.notify();
@@ -229,6 +229,12 @@ impl ColorField {
                 },
             ),
         )
+        .on_hover(window.listener_for(
+            &state_entity,
+            |state: &mut ColorFieldState, hovered: &bool, _: &mut Window, cx: &mut Context<ColorFieldState>| {
+                state.handle_hover(hovered, cx);
+            },
+        ))
         .on_mouse_move(window.listener_for(
             &state_entity,
             |state: &mut ColorFieldState, ev: &MouseMoveEvent, _: &mut Window, cx: &mut Context<ColorFieldState>| {

@@ -16,11 +16,15 @@ use super::template::{
 use super::text_selection::{self, TextSelectionEvent};
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum AutocompleteTextBoxEvent {
-    Change,
-    Select,
-    Complete,
+    Change { query: SharedString },
+    Select { item_id: SharedString, label: SharedString },
+    Complete { item_id: SharedString, label: SharedString },
     Clear,
+    FocusChanged { focused: bool },
+    OpenChanged { open: bool },
+    Dismiss,
 }
 
 pub type AutocompleteTextBox = Entity<AutocompleteTextBoxControl>;
@@ -66,10 +70,12 @@ impl AutocompleteTextBoxControl {
 
         let subscriptions = vec![
             cx.subscribe(&textfield, |this, _, event: &crate::controls::textfield::TextFieldEvent, cx| {
-                this.handle_text_selection_event(text_selection::map_event(event), cx);
+                if let Some(event) = text_selection::map_event(event) {
+                    this.handle_text_selection_event(event, cx);
+                }
             }),
-            cx.subscribe(&popup_surface.scrollbar(), |this, _, event: &ScrollbarEvent, cx| match event {
-                ScrollbarEvent::Change { value } => {
+            cx.subscribe(&popup_surface.scrollbar(), |this, _, event: &ScrollbarEvent, cx| {
+                if let ScrollbarEvent::Change { value } = event {
                     this.popup_surface.set_vertical_offset(*value, cx);
                     cx.notify();
                 }
@@ -95,9 +101,11 @@ impl AutocompleteTextBoxControl {
 
         match event {
             TextSelectionEvent::Change { value } => {
+                let was_open = self.behavior.state.open;
                 self.behavior.set_query(value.clone(), &self.model.items);
                 self.last_event = SharedString::from("change");
-                cx.emit(AutocompleteTextBoxEvent::Change);
+                self.emit_open_changed_if_needed(was_open, false, cx);
+                cx.emit(AutocompleteTextBoxEvent::Change { query: value.into() });
                 cx.notify();
             }
             TextSelectionEvent::Submit { value } => {
@@ -106,10 +114,15 @@ impl AutocompleteTextBoxControl {
                 self.handle_submit_result(result, cx);
             }
             TextSelectionEvent::FocusEnter => {
+                let was_focused = self.behavior.state.focused;
+                let was_open = self.behavior.state.open;
                 self.behavior.apply(SelectionEvent::Focus, &self.model.items);
+                self.emit_focus_changed_if_needed(was_focused, cx);
+                self.emit_open_changed_if_needed(was_open, false, cx);
                 cx.notify();
             }
             TextSelectionEvent::FocusLeave => {
+                let was_focused = self.behavior.state.focused;
                 if self.behavior.state.status == SelectionStatus::Searching
                     && let Some(index) = self
                         .behavior
@@ -120,7 +133,10 @@ impl AutocompleteTextBoxControl {
                     self.select_item(index, false, cx);
                 }
 
+                let was_open = self.behavior.state.open;
                 self.behavior.apply(SelectionEvent::Blur, &self.model.items);
+                self.emit_focus_changed_if_needed(was_focused, cx);
+                self.emit_open_changed_if_needed(was_open, true, cx);
                 cx.notify();
             }
         }
@@ -139,18 +155,22 @@ impl AutocompleteTextBoxControl {
     }
 
     fn clear(&mut self, cx: &mut Context<Self>) {
+        let was_open = self.behavior.state.open;
         self.behavior.apply(SelectionEvent::Clear, &self.model.items);
         self.last_event = SharedString::from("clear");
 
         self.textfield.update(cx, |textfield, cx| textfield.set_value("", cx));
 
+        self.emit_open_changed_if_needed(was_open, false, cx);
         cx.emit(AutocompleteTextBoxEvent::Clear);
         cx.notify();
     }
 
     fn select_item(&mut self, index: usize, exact_complete: bool, cx: &mut Context<Self>) {
         let item = &self.model.items[index];
+        let item_id = item.id.clone();
         let label = item.label.clone();
+        let was_open = self.behavior.state.open;
 
         self.behavior.set_query(label.clone(), &self.model.items);
         self.behavior.select_index(index);
@@ -158,10 +178,12 @@ impl AutocompleteTextBoxControl {
 
         self.textfield.update(cx, move |textfield, cx| textfield.set_value(label.as_ref(), cx));
 
+        let label = self.model.items[index].label.clone();
+        self.emit_open_changed_if_needed(was_open, false, cx);
         if exact_complete {
-            cx.emit(AutocompleteTextBoxEvent::Complete);
+            cx.emit(AutocompleteTextBoxEvent::Complete { item_id, label });
         } else {
-            cx.emit(AutocompleteTextBoxEvent::Select);
+            cx.emit(AutocompleteTextBoxEvent::Select { item_id, label });
         }
         cx.notify();
     }
@@ -211,7 +233,9 @@ impl AutocompleteTextBoxControl {
 
         match event.keystroke.key.as_str() {
             "escape" => {
+                let was_open = self.behavior.state.open;
                 self.behavior.apply(SelectionEvent::Escape, &self.model.items);
+                self.emit_open_changed_if_needed(was_open, true, cx);
                 window.prevent_default();
                 cx.stop_propagation();
                 cx.notify();
@@ -275,8 +299,10 @@ impl AutocompleteTextBoxControl {
 
         self.model.enabled = enabled;
         if !enabled {
+            let was_open = self.behavior.state.open;
             self.behavior.state.open = false;
             self.behavior.state.highlighted_filtered = None;
+            self.emit_open_changed_if_needed(was_open, false, cx);
         }
         self.textfield.update(cx, |textfield, cx| textfield.set_enabled(enabled, cx));
         cx.notify();
@@ -304,6 +330,27 @@ impl AutocompleteTextBoxControl {
         if let Some(visible_index) = self.behavior.state.highlighted_filtered {
             self.popup_surface.ensure_item_visible(visible_index, cx);
         }
+    }
+
+    fn emit_open_changed_if_needed(&mut self, was_open: bool, dismissed: bool, cx: &mut Context<Self>) -> bool {
+        if was_open == self.behavior.state.open {
+            return false;
+        }
+
+        cx.emit(AutocompleteTextBoxEvent::OpenChanged { open: self.behavior.state.open });
+        if dismissed && !self.behavior.state.open {
+            cx.emit(AutocompleteTextBoxEvent::Dismiss);
+        }
+        true
+    }
+
+    fn emit_focus_changed_if_needed(&mut self, was_focused: bool, cx: &mut Context<Self>) -> bool {
+        if was_focused == self.behavior.state.focused {
+            return false;
+        }
+
+        cx.emit(AutocompleteTextBoxEvent::FocusChanged { focused: self.behavior.state.focused });
+        true
     }
 }
 

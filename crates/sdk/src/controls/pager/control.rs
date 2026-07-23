@@ -5,9 +5,12 @@ use super::template::PagerTemplateHandlers;
 use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum PagerEvent {
     PageChanged { page: usize },
     PageSizeChanged { page_size: usize },
+    PageSizeOpenChanged { open: bool },
+    EnabledChanged { enabled: bool },
 }
 
 pub struct PagerControl {
@@ -110,8 +113,9 @@ impl PagerControl {
 
         self.model.enabled = enabled;
         if !enabled {
-            self.page_size_open = false;
+            self.set_page_size_open(false, true, cx);
         }
+        cx.emit(PagerEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -208,8 +212,7 @@ impl PagerControl {
             return;
         }
 
-        self.page_size_open = !self.page_size_open;
-        cx.notify();
+        self.set_page_size_open(!self.page_size_open, true, cx);
     }
 
     fn set_page_internal(&mut self, page: usize, emit: bool, cx: &mut Context<Self>) {
@@ -232,9 +235,21 @@ impl PagerControl {
         }
 
         self.model.page_size = page_size;
-        self.page_size_open = false;
+        self.set_page_size_open(false, emit, cx);
         if emit {
             cx.emit(PagerEvent::PageSizeChanged { page_size });
+        }
+        cx.notify();
+    }
+
+    fn set_page_size_open(&mut self, open: bool, emit: bool, cx: &mut Context<Self>) {
+        if self.page_size_open == open {
+            return;
+        }
+
+        self.page_size_open = open;
+        if emit {
+            cx.emit(PagerEvent::PageSizeOpenChanged { open });
         }
         cx.notify();
     }

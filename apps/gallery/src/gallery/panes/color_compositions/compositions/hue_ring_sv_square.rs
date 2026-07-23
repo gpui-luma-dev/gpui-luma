@@ -79,25 +79,24 @@ impl HsvWheelState {
                 let Some(hue) = primary_slider_value(event) else {
                     return;
                 };
-                if !this.sync.begin_sync() {
+                let Some(_sync_guard) = this.sync.begin_guard() else {
                     return;
-                }
+                };
                 this.hsv.h = hue;
                 this.sync_controls(cx);
-                this.sync.end_sync();
                 cx.notify();
             }),
             cx.subscribe(&plane_sv, |this, _, event: &ColorFieldEvent, cx| {
-                if !this.sync.begin_sync() {
-                    return;
-                }
                 let hsv = match event {
                     ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
+                    _ => return,
+                };
+                let Some(_sync_guard) = this.sync.begin_guard() else {
+                    return;
                 };
                 this.hsv.s = hsv.s;
                 this.hsv.v = hsv.v;
                 this.sync_controls(cx);
-                this.sync.end_sync();
                 cx.notify();
             }),
         ];

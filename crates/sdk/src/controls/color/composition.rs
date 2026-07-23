@@ -44,6 +44,16 @@ pub struct ColorCompositionSync {
     epsilon: f32,
 }
 
+pub struct ColorCompositionSyncGuard<'a> {
+    sync: &'a ColorCompositionSync,
+}
+
+impl Drop for ColorCompositionSyncGuard<'_> {
+    fn drop(&mut self) {
+        self.sync.end_sync();
+    }
+}
+
 impl Default for ColorCompositionSync {
     fn default() -> Self {
         Self::new()
@@ -65,6 +75,14 @@ impl ColorCompositionSync {
         }
         self.is_syncing.set(true);
         true
+    }
+
+    pub fn begin_guard(&self) -> Option<ColorCompositionSyncGuard<'_>> {
+        if self.begin_sync() {
+            Some(ColorCompositionSyncGuard { sync: self })
+        } else {
+            None
+        }
     }
 
     pub fn end_sync(&self) {

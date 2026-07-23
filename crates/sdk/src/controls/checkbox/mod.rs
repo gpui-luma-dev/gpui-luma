@@ -22,6 +22,7 @@ use crate::theme::ControlSize;
 pub type Checkbox = Entity<CheckboxControl>;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum CheckboxEvent {
     Change { checked: bool },
     FocusChanged { focused: bool },

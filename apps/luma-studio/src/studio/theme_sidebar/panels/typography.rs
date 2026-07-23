@@ -99,12 +99,10 @@ impl TypographyPanel {
         subscriptions: &mut Vec<Subscription>,
     ) {
         let sans = panel.read(cx).sans.search_selector.clone();
-        subscriptions.push(cx.subscribe(&sans, |app, selector, event: &SearchSelectorEvent, cx| {
-            if !matches!(event, SearchSelectorEvent::Select | SearchSelectorEvent::Complete) {
-                return;
-            }
-            let Some(item_id) = selector.read(cx).selected_id().map(|id| id.clone()) else {
-                return;
+        subscriptions.push(cx.subscribe(&sans, |app, _, event: &SearchSelectorEvent, cx| {
+            let item_id = match event {
+                SearchSelectorEvent::Select { item_id, .. } | SearchSelectorEvent::Complete { item_id, .. } => item_id,
+                _ => return,
             };
             if item_id.as_ref() == ALL_FONTS_DIVIDER_ID {
                 return;
@@ -113,12 +111,10 @@ impl TypographyPanel {
         }));
 
         let serif = panel.read(cx).serif.search_selector.clone();
-        subscriptions.push(cx.subscribe(&serif, |app, selector, event: &SearchSelectorEvent, cx| {
-            if !matches!(event, SearchSelectorEvent::Select | SearchSelectorEvent::Complete) {
-                return;
-            }
-            let Some(item_id) = selector.read(cx).selected_id().map(|id| id.clone()) else {
-                return;
+        subscriptions.push(cx.subscribe(&serif, |app, _, event: &SearchSelectorEvent, cx| {
+            let item_id = match event {
+                SearchSelectorEvent::Select { item_id, .. } | SearchSelectorEvent::Complete { item_id, .. } => item_id,
+                _ => return,
             };
             if item_id.as_ref() == ALL_FONTS_DIVIDER_ID {
                 return;
@@ -127,12 +123,10 @@ impl TypographyPanel {
         }));
 
         let mono = panel.read(cx).mono.search_selector.clone();
-        subscriptions.push(cx.subscribe(&mono, |app, selector, event: &SearchSelectorEvent, cx| {
-            if !matches!(event, SearchSelectorEvent::Select | SearchSelectorEvent::Complete) {
-                return;
-            }
-            let Some(item_id) = selector.read(cx).selected_id().map(|id| id.clone()) else {
-                return;
+        subscriptions.push(cx.subscribe(&mono, |app, _, event: &SearchSelectorEvent, cx| {
+            let item_id = match event {
+                SearchSelectorEvent::Select { item_id, .. } | SearchSelectorEvent::Complete { item_id, .. } => item_id,
+                _ => return,
             };
             if item_id.as_ref() == ALL_FONTS_DIVIDER_ID {
                 return;

@@ -70,47 +70,42 @@ impl ColorPickerState {
 
         let subscriptions = vec![
             cx.subscribe(&field, |this, _, event: &ColorFieldEvent, cx| {
-                if !this.sync.begin_sync() {
-                    return;
-                }
-
                 let hsv = match event {
                     ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
+                    _ => return,
+                };
+                let Some(_sync_guard) = this.sync.begin_guard() else {
+                    return;
                 };
                 this.hsv.h = hsv.h;
                 this.hsv.s = hsv.s;
                 this.hsv.v = hsv.v;
                 this.sync_controls(cx, false);
-                this.sync.end_sync();
                 cx.notify();
             }),
             cx.subscribe(&hue_slider, |this, _, event, cx| {
-                if !this.sync.begin_sync() {
+                let Some(hue) = primary_slider_value(event) else {
                     return;
-                }
+                };
 
-                if let Some(hue) = primary_slider_value(event) {
-                    this.hsv.h = hue;
-                    this.sync_controls(cx, true);
-                    this.sync.end_sync();
-                    cx.notify();
-                } else {
-                    this.sync.end_sync();
-                }
+                let Some(_sync_guard) = this.sync.begin_guard() else {
+                    return;
+                };
+                this.hsv.h = hue;
+                this.sync_controls(cx, true);
+                cx.notify();
             }),
             cx.subscribe(&alpha_slider, |this, _, event, cx| {
-                if !this.sync.begin_sync() {
+                let Some(alpha) = primary_slider_value(event) else {
                     return;
-                }
+                };
 
-                if let Some(alpha) = primary_slider_value(event) {
-                    this.hsv.a = alpha;
-                    this.sync_controls(cx, true);
-                    this.sync.end_sync();
-                    cx.notify();
-                } else {
-                    this.sync.end_sync();
-                }
+                let Some(_sync_guard) = this.sync.begin_guard() else {
+                    return;
+                };
+                this.hsv.a = alpha;
+                this.sync_controls(cx, true);
+                cx.notify();
             }),
         ];
 

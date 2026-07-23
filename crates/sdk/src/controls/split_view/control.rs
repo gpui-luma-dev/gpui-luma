@@ -10,11 +10,14 @@ use super::{
 };
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum SplitViewEvent {
     ResizeStart,
     SidebarWidthChanged { width: Pixels },
     ResizeEnd { width: Pixels },
     CollapsedChanged { collapsed: bool },
+    SeparatorHoverChanged { hovered: bool },
+    EnabledChanged { enabled: bool },
 }
 
 #[derive(Clone, Debug)]
@@ -152,10 +155,18 @@ impl SplitView {
 
         self.model.enabled = enabled;
         if !enabled {
+            if self.dragging_separator && self.drag_moved {
+                cx.emit(SplitViewEvent::ResizeEnd { width: self.model.sidebar_width });
+            }
+            if self.separator_hovered {
+                cx.emit(SplitViewEvent::SeparatorHoverChanged { hovered: false });
+            }
+            self.separator_hovered = false;
             self.dragging_separator = false;
             self.drag_moved = false;
             self.suppress_next_separator_click = false;
         }
+        cx.emit(SplitViewEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -193,6 +204,7 @@ impl SplitView {
         }
 
         self.separator_hovered = *hovered;
+        cx.emit(SplitViewEvent::SeparatorHoverChanged { hovered: *hovered });
         cx.notify();
     }
 

@@ -38,6 +38,7 @@ impl GradientBuilder {
             SliderEvent::Change { .. } | SliderEvent::Release { .. } => {
                 self.rebuild_stops(cx);
             }
+            _ => {}
         }
     }
 
@@ -77,7 +78,9 @@ impl GradientBuilder {
     }
 
     pub(super) fn handle_top_tabs_event(&mut self, event: &TabsNavigationEvent, cx: &mut Context<Self>) {
-        let TabsNavigationEvent::Activate { tab_id, .. } = event;
+        let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+            return;
+        };
         let next = match tab_id.as_ref() {
             "mesh" => BuilderTab::Mesh,
             _ => BuilderTab::Gradients,
@@ -92,7 +95,9 @@ impl GradientBuilder {
     }
 
     pub(super) fn handle_type_event(&mut self, event: &SelectorEvent, cx: &mut Context<Self>) {
-        let SelectorEvent::Change { item_id, .. } = event;
+        let SelectorEvent::Change { item_id, .. } = event else {
+            return;
+        };
         let next = match item_id.as_ref() {
             "radial" => GradientType::Radial,
             "angular" => GradientType::Angular,
@@ -106,7 +111,9 @@ impl GradientBuilder {
     }
 
     pub(super) fn handle_renderer_event(&mut self, event: &SelectorEvent, cx: &mut Context<Self>) {
-        let SelectorEvent::Change { item_id, .. } = event;
+        let SelectorEvent::Change { item_id, .. } = event else {
+            return;
+        };
         let next = match item_id.as_ref() {
             "render" => PreviewRenderer::RenderImageSync,
             "render_async" => PreviewRenderer::RenderImageAsync,
@@ -120,7 +127,9 @@ impl GradientBuilder {
     }
 
     pub(super) fn handle_mesh_grid_event(&mut self, event: &SelectorEvent, cx: &mut Context<Self>) {
-        let SelectorEvent::Change { item_id, .. } = event;
+        let SelectorEvent::Change { item_id, .. } = event else {
+            return;
+        };
         let next = MeshGridPreset::from_item_id(item_id.as_ref());
         if self.mesh_grid_preset != next {
             self.mesh_grid_preset = next;
@@ -129,7 +138,9 @@ impl GradientBuilder {
     }
 
     pub(super) fn handle_mesh_aspect_ratio_event(&mut self, event: &SelectorEvent, cx: &mut Context<Self>) {
-        let SelectorEvent::Change { item_id, .. } = event;
+        let SelectorEvent::Change { item_id, .. } = event else {
+            return;
+        };
         let next = MeshAspectRatioPreset::from_item_id(item_id.as_ref());
         if self.mesh_aspect_ratio_preset != next {
             self.mesh_aspect_ratio_preset = next;

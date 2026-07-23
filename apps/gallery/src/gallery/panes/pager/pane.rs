@@ -245,6 +245,7 @@ impl PagerPane {
                 self.page_size = *page_size;
                 self.sync_pagers(cx);
             }
+            _ => {}
         }
     }
 

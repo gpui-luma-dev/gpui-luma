@@ -6,8 +6,12 @@ use crate::controls::tabs_navigation::model::TabsNavigationWidthMode;
 use crate::theme::ControlSize;
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum TabsNavigationEvent {
+    Change { tab_id: SharedString, label: SharedString },
     Activate { tab_id: SharedString, label: SharedString },
+    FocusChanged { focused: bool },
+    ItemFocused { tab_id: SharedString, label: SharedString },
 }
 
 pub struct TabsNavigation {
@@ -133,20 +137,40 @@ impl TabsNavigation {
     }
 
     fn handle_group_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<Self>) {
-        let ControlGroupEvent::Activate { activated_id } = event else {
-            return;
-        };
+        match event {
+            ControlGroupEvent::Change { changed_id, selected, .. } => {
+                if !selected {
+                    return;
+                }
+                let Some((tab_id, label)) = self.item_event_payload(changed_id) else {
+                    return;
+                };
+                self.active_id = Some(tab_id.clone());
+                cx.emit(TabsNavigationEvent::Change { tab_id, label });
+            }
+            ControlGroupEvent::Activate { activated_id } => {
+                let Some((tab_id, label)) = self.item_event_payload(activated_id) else {
+                    return;
+                };
+                self.active_id = Some(tab_id.clone());
+                cx.emit(TabsNavigationEvent::Activate { tab_id, label });
+            }
+            ControlGroupEvent::FocusChanged { focused } => {
+                cx.emit(TabsNavigationEvent::FocusChanged { focused: *focused });
+            }
+            ControlGroupEvent::ItemFocused { item_id } => {
+                let Some((tab_id, label)) = self.item_event_payload(item_id) else {
+                    return;
+                };
+                cx.emit(TabsNavigationEvent::ItemFocused { tab_id, label });
+            }
+        }
+    }
 
-        let Some((tab_id, label)) = self
-            .items
+    fn item_event_payload(&self, item_id: &SharedString) -> Option<(SharedString, SharedString)> {
+        self.items
             .iter()
-            .find_map(|item| (item.id() == activated_id).then(|| (item.id().clone(), item.label_text().clone())))
-        else {
-            return;
-        };
-
-        self.active_id = Some(tab_id.clone());
-        cx.emit(TabsNavigationEvent::Activate { tab_id, label });
+            .find_map(|item| (item.id() == item_id).then(|| (item.id().clone(), item.label_text().clone())))
     }
 }
 

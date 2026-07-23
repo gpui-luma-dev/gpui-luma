@@ -164,36 +164,33 @@ impl SplitRingState {
                 let Some(hue) = primary_slider_value(event) else {
                     return;
                 };
-                if !this.sync.begin_sync() {
+                let Some(_sync_guard) = this.sync.begin_guard() else {
                     return;
-                }
+                };
                 this.color.hue_degrees = hue;
                 this.sync_controls(cx);
-                this.sync.end_sync();
                 cx.notify();
             }),
             cx.subscribe(&saturation_arc, |this, _, event, cx| {
                 let Some(saturation) = primary_slider_value(event) else {
                     return;
                 };
-                if !this.sync.begin_sync() {
+                let Some(_sync_guard) = this.sync.begin_guard() else {
                     return;
-                }
+                };
                 this.color.saturation = saturation.clamp(0.0, 1.0);
                 this.sync_controls(cx);
-                this.sync.end_sync();
                 cx.notify();
             }),
             cx.subscribe(&lightness_arc, |this, _, event, cx| {
                 let Some(lightness) = primary_slider_value(event) else {
                     return;
                 };
-                if !this.sync.begin_sync() {
+                let Some(_sync_guard) = this.sync.begin_guard() else {
                     return;
-                }
+                };
                 this.color.lightness = lightness.clamp(0.0, 1.0);
                 this.sync_controls(cx);
-                this.sync.end_sync();
                 cx.notify();
             }),
         ];

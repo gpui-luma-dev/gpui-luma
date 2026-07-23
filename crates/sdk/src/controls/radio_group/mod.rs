@@ -31,6 +31,7 @@ pub type SelectionMode = ControlSelectionMode;
 pub use crate::controls::control_group::ControlGroupItemLike as RadioGroupItemLike;
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum RadioGroupEvent {
     Change { value: Option<SharedString> },
     Activate { value: SharedString },

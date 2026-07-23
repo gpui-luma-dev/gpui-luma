@@ -24,11 +24,15 @@ use super::template::{
 use super::text_selection::{self, TextSelectionEvent};
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum SearchSelectorEvent {
-    Change,
-    Select,
-    Complete,
+    Change { query: SharedString },
+    Select { item_id: SharedString, label: SharedString },
+    Complete { item_id: SharedString, label: SharedString },
     Clear,
+    FocusChanged { focused: bool },
+    OpenChanged { open: bool },
+    Dismiss,
 }
 
 pub type SearchSelector = Entity<SearchSelectorControl>;
@@ -85,10 +89,12 @@ impl SearchSelectorControl {
 
         let subscriptions = vec![
             cx.subscribe(&popup_search_textfield, |this, _, event: &crate::controls::textfield::TextFieldEvent, cx| {
-                this.handle_popup_search_event(text_selection::map_event(event), cx);
+                if let Some(event) = text_selection::map_event(event) {
+                    this.handle_popup_search_event(event, cx);
+                }
             }),
-            cx.subscribe(&popup_surface.scrollbar(), |this, _, event: &ScrollbarEvent, cx| match event {
-                ScrollbarEvent::Change { value } => {
+            cx.subscribe(&popup_surface.scrollbar(), |this, _, event: &ScrollbarEvent, cx| {
+                if let ScrollbarEvent::Change { value } = event {
                     this.popup_surface.set_vertical_offset(*value, cx);
                     cx.notify();
                 }
@@ -164,15 +170,19 @@ impl SearchSelectorControl {
 
         match event {
             TextSelectionEvent::Change { value } => {
+                let was_open = self.behavior.state.open;
                 self.behavior.set_query(value.clone(), &self.model.items);
-                self.behavior.state.open = true;
+                if !self.behavior.state.filtered.is_empty() {
+                    self.behavior.state.open = true;
+                }
+                self.emit_open_changed_if_needed(was_open, false, cx);
                 self.last_event = SharedString::from("search:change");
 
                 if self.behavior.state.filtered.is_empty() {
                     self.clear_committed_selection(cx);
                 }
 
-                cx.emit(SearchSelectorEvent::Change);
+                cx.emit(SearchSelectorEvent::Change { query: value.into() });
                 self.sync_popup_highlight_visibility(cx);
                 cx.notify();
             }
@@ -182,22 +192,28 @@ impl SearchSelectorControl {
                 self.handle_submit_result(result, cx);
             }
             TextSelectionEvent::FocusEnter => {
+                let was_focused = self.behavior.state.focused;
+                let was_open = self.behavior.state.open;
                 self.behavior.apply(SelectionEvent::Focus, &self.model.items);
+                self.emit_focus_changed_if_needed(was_focused, cx);
+                self.emit_open_changed_if_needed(was_open, false, cx);
                 if self.behavior.state.query.trim().is_empty() {
                     self.open_popup_with_all_items(cx);
                 } else {
-                    self.behavior.state.open = true;
+                    self.set_popup_open(true, cx);
                     self.sync_popup_highlight_visibility(cx);
                     cx.notify();
                 }
             }
             TextSelectionEvent::FocusLeave => {
+                let was_focused = self.behavior.state.focused;
+                let was_open = self.behavior.state.open;
                 self.behavior.apply(SelectionEvent::Blur, &self.model.items);
-                if self.behavior.state.open {
-                    self.close_popup(cx);
-                } else {
-                    cx.notify();
+                self.emit_focus_changed_if_needed(was_focused, cx);
+                if was_open {
+                    self.emit_open_changed_if_needed(was_open, true, cx);
                 }
+                cx.notify();
             }
         }
     }
@@ -227,25 +243,31 @@ impl SearchSelectorControl {
 
     fn select_item(&mut self, index: usize, exact_complete: bool, cx: &mut Context<Self>) {
         let item = &self.model.items[index];
+        let item_id = item.id.clone();
+        let label = item.label.clone();
+        let was_open = self.behavior.state.open;
 
         self.behavior.select_index(index);
         self.committed_selection = Some(index);
         self.last_event = SharedString::from(format!("select:{}", item.label));
 
         self.clear_popup_search(cx);
+        self.emit_open_changed_if_needed(was_open, false, cx);
 
         if exact_complete {
-            cx.emit(SearchSelectorEvent::Complete);
+            cx.emit(SearchSelectorEvent::Complete { item_id, label });
         } else {
-            cx.emit(SearchSelectorEvent::Select);
+            cx.emit(SearchSelectorEvent::Select { item_id, label });
         }
         cx.notify();
     }
 
     fn close_popup(&mut self, cx: &mut Context<Self>) {
+        let was_open = self.behavior.state.open;
         self.behavior.state.open = false;
         self.behavior.state.highlighted_filtered = None;
         self.clear_popup_search(cx);
+        self.emit_open_changed_if_needed(was_open, true, cx);
         cx.notify();
     }
 
@@ -316,8 +338,10 @@ impl SearchSelectorControl {
 
         match event.keystroke.key.as_str() {
             "escape" => {
+                let was_open = self.behavior.state.open;
                 self.behavior.apply(SelectionEvent::Escape, &self.model.items);
-                self.close_popup(cx);
+                self.emit_open_changed_if_needed(was_open, true, cx);
+                cx.notify();
                 window.prevent_default();
                 cx.stop_propagation();
             }
@@ -346,7 +370,7 @@ impl SearchSelectorControl {
                 cx.notify();
             }
             "pagedown" | "page_down" | "pgdown" if !self.behavior.state.filtered.is_empty() => {
-                self.behavior.state.open = true;
+                self.set_popup_open(true, cx);
                 self.move_highlight_page(true, self.popup_page_size());
                 self.sync_popup_highlight_visibility(cx);
                 window.prevent_default();
@@ -354,7 +378,7 @@ impl SearchSelectorControl {
                 cx.notify();
             }
             "pageup" | "page_up" | "pgup" if !self.behavior.state.filtered.is_empty() => {
-                self.behavior.state.open = true;
+                self.set_popup_open(true, cx);
                 self.move_highlight_page(false, self.popup_page_size());
                 self.sync_popup_highlight_visibility(cx);
                 window.prevent_default();
@@ -362,7 +386,7 @@ impl SearchSelectorControl {
                 cx.notify();
             }
             "home" if !self.behavior.state.filtered.is_empty() => {
-                self.behavior.state.open = true;
+                self.set_popup_open(true, cx);
                 self.behavior.state.highlighted_filtered = Some(0);
                 self.sync_popup_highlight_visibility(cx);
                 window.prevent_default();
@@ -370,7 +394,7 @@ impl SearchSelectorControl {
                 cx.notify();
             }
             "end" if !self.behavior.state.filtered.is_empty() => {
-                self.behavior.state.open = true;
+                self.set_popup_open(true, cx);
                 self.behavior.state.highlighted_filtered = Some(self.behavior.state.filtered.len() - 1);
                 self.sync_popup_highlight_visibility(cx);
                 window.prevent_default();
@@ -393,9 +417,11 @@ impl SearchSelectorControl {
         }
 
         if self.model.items.is_empty() {
+            let was_open = self.behavior.state.open;
             self.behavior.state.filtered.clear();
             self.behavior.state.highlighted_filtered = None;
             self.behavior.state.open = false;
+            self.emit_open_changed_if_needed(was_open, false, cx);
             return;
         }
 
@@ -404,7 +430,7 @@ impl SearchSelectorControl {
         self.behavior.state.filtered = (0..self.model.items.len()).collect();
         self.behavior.state.highlighted_filtered =
             self.model.items.iter().enumerate().find_map(|(index, item)| item.enabled.then_some(index));
-        self.behavior.state.open = true;
+        self.set_popup_open(true, cx);
         self.behavior.state.status = SelectionStatus::Searching;
         self.sync_popup_highlight_visibility(cx);
         cx.notify();
@@ -473,9 +499,11 @@ impl SearchSelectorControl {
         self.interaction.set_enabled(enabled);
         self.popup_search_textfield.update(cx, |textfield, cx| textfield.set_enabled(enabled, cx));
         if !enabled {
+            let was_open = self.behavior.state.open;
             self.behavior.state.open = false;
             self.behavior.state.highlighted_filtered = None;
             self.clear_popup_search(cx);
+            self.emit_open_changed_if_needed(was_open, false, cx);
         }
         cx.notify();
     }
@@ -534,6 +562,33 @@ impl SearchSelectorControl {
         }
 
         self.close_popup(cx);
+    }
+
+    fn set_popup_open(&mut self, open: bool, cx: &mut Context<Self>) -> bool {
+        let was_open = self.behavior.state.open;
+        self.behavior.state.open = open;
+        self.emit_open_changed_if_needed(was_open, false, cx)
+    }
+
+    fn emit_open_changed_if_needed(&mut self, was_open: bool, dismissed: bool, cx: &mut Context<Self>) -> bool {
+        if was_open == self.behavior.state.open {
+            return false;
+        }
+
+        cx.emit(SearchSelectorEvent::OpenChanged { open: self.behavior.state.open });
+        if dismissed && !self.behavior.state.open {
+            cx.emit(SearchSelectorEvent::Dismiss);
+        }
+        true
+    }
+
+    fn emit_focus_changed_if_needed(&mut self, was_focused: bool, cx: &mut Context<Self>) -> bool {
+        if was_focused == self.behavior.state.focused {
+            return false;
+        }
+
+        cx.emit(SearchSelectorEvent::FocusChanged { focused: self.behavior.state.focused });
+        true
     }
 
     fn focus_popup_search(&self, window: &mut Window, cx: &mut Context<Self>) {

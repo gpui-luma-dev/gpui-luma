@@ -172,6 +172,7 @@ impl DashboardPanel {
                 self.sidebar_collapsed = *collapsed;
                 cx.notify();
             }
+            _ => {}
         }
     }
 

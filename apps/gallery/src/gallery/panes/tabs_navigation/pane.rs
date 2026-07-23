@@ -137,29 +137,23 @@ impl TabsNavigationPane {
     }
 
     fn handle_event(&mut self, event: &TabsNavigationEvent, cx: &mut Context<GalleryApp>) {
-        match event {
-            TabsNavigationEvent::Activate { label, .. } => {
-                self.active_label = label.to_string();
-                cx.notify();
-            }
+        if let TabsNavigationEvent::Activate { label, .. } = event {
+            self.active_label = label.to_string();
+            cx.notify();
         }
     }
 
     fn handle_uniform_event(&mut self, event: &TabsNavigationEvent, cx: &mut Context<GalleryApp>) {
-        match event {
-            TabsNavigationEvent::Activate { label, .. } => {
-                self.uniform_active_label = label.to_string();
-                cx.notify();
-            }
+        if let TabsNavigationEvent::Activate { label, .. } = event {
+            self.uniform_active_label = label.to_string();
+            cx.notify();
         }
     }
 
     fn handle_local_theme_event(&mut self, event: &TabsNavigationEvent, cx: &mut Context<GalleryApp>) {
-        match event {
-            TabsNavigationEvent::Activate { label, .. } => {
-                self.local_theme_active_label = label.to_string();
-                cx.notify();
-            }
+        if let TabsNavigationEvent::Activate { label, .. } = event {
+            self.local_theme_active_label = label.to_string();
+            cx.notify();
         }
     }
 }

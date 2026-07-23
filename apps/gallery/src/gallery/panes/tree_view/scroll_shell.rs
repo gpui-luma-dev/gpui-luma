@@ -17,8 +17,8 @@ impl TreeViewScrollShell {
     pub fn new(look: Arc<ShadcnLook>, tree: Entity<TreeViewControl<SharedString>>, cx: &mut Context<Self>) -> Self {
         let scroll = ScrollContainer::new("gallery-tree-scroll", look.scrollbar_template(), cx);
         let scrollbar = scroll.scrollbar();
-        let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| match event {
-            ScrollbarEvent::Change { value } => {
+        let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {
+            if let ScrollbarEvent::Change { value } = event {
                 this.scroll.set_vertical_offset(*value, cx);
             }
         })];

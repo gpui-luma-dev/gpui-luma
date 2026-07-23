@@ -19,7 +19,9 @@ declare_form! {
                 .size(ControlSize::Sm)
                 .items(date_stub_items())
                 => PopupMenuEvent |this, event, cx| {
-                    let PopupMenuEvent::Select { label, .. } = event;
+                    let PopupMenuEvent::Select { label, .. } = event else {
+                        return;
+                    };
                     this.date_menu.update(cx, |menu, cx| menu.set_label(label.clone(), cx));
                 },
         },

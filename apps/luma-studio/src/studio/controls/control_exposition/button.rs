@@ -199,6 +199,7 @@ fn subscribe_button(
             ButtonEvent::HoverChanged { hovered } => {
                 format!("ButtonEvent::HoverChanged {{ hovered: {hovered} }} - {} (\"{button_id}\")", variant.label())
             }
+            _ => return,
         };
         event_stream.update(cx, |stream, cx| {
             stream.append_line(&line, cx);

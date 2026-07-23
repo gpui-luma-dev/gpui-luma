@@ -1,6 +1,6 @@
 use gpui::{
-    App, AppContext, ClickEvent, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, MouseDownEvent,
-    MouseUpEvent, Render, ScrollWheelEvent, SharedString, Subscription, Window, div, prelude::*, px,
+    App, AppContext, ClickEvent, Context, Entity, EventEmitter, FocusHandle, FocusOutEvent, Focusable, IntoElement,
+    MouseDownEvent, MouseUpEvent, Render, ScrollWheelEvent, SharedString, Subscription, Window, div, prelude::*, px,
 };
 
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
@@ -23,10 +23,13 @@ use crate::keyhandling::{
 use crate::theme::ControlSize;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum SelectionPanelEvent {
     HoverChanged { visible_index: Option<usize> },
     ActivateRow { source_index: usize, visible_index: usize, item_id: SharedString },
     ActiveIndexChanged { visible_index: Option<usize> },
+    FocusChanged { focused: bool },
+    OpenChanged { open: bool },
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -50,6 +53,9 @@ where
     pressed_visible_index: Option<usize>,
     focus_handle: FocusHandle,
     popup_surface: PopupScrollSurface,
+    focus_in_subscription: Option<Subscription>,
+    focus_out_subscription: Option<Subscription>,
+    emitted_focused: bool,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -88,13 +94,12 @@ where
         popup_surface.set_scrolling_enabled(model.scrolling);
         popup_surface.set_snap_to_rows(true);
 
-        let subscriptions =
-            vec![cx.subscribe(&popup_surface.scrollbar(), |this, _, event: &ScrollbarEvent, cx| match event {
-                ScrollbarEvent::Change { value } => {
-                    this.popup_surface.set_vertical_offset(*value, cx);
-                    cx.notify();
-                }
-            })];
+        let subscriptions = vec![cx.subscribe(&popup_surface.scrollbar(), |this, _, event: &ScrollbarEvent, cx| {
+            if let ScrollbarEvent::Change { value } = event {
+                this.popup_surface.set_vertical_offset(*value, cx);
+                cx.notify();
+            }
+        })];
 
         Self {
             focus_handle: cx.focus_handle().tab_stop(model.enabled),
@@ -105,6 +110,9 @@ where
             },
             pressed_visible_index: None,
             popup_surface,
+            focus_in_subscription: None,
+            focus_out_subscription: None,
+            emitted_focused: false,
             _subscriptions: subscriptions,
         }
     }
@@ -151,6 +159,7 @@ where
             return;
         }
         self.model.open = open;
+        cx.emit(SelectionPanelEvent::OpenChanged { open });
         cx.notify();
     }
 
@@ -161,9 +170,12 @@ where
 
         self.model.enabled = enabled;
         self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
+        self.focus_in_subscription = None;
+        self.focus_out_subscription = None;
         if !enabled {
             self.state.set_hovered_visible_index(None);
             self.pressed_visible_index = None;
+            self.emit_focus_changed(false, cx);
         }
         cx.notify();
     }
@@ -397,6 +409,27 @@ where
         }
     }
 
+    fn emit_focus_changed(&mut self, focused: bool, cx: &mut Context<Self>) -> bool {
+        if self.emitted_focused == focused {
+            return false;
+        }
+        self.emitted_focused = focused;
+        cx.emit(SelectionPanelEvent::FocusChanged { focused });
+        true
+    }
+
+    fn handle_focus_in(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.model.enabled && self.emit_focus_changed(true, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.emit_focus_changed(false, cx) {
+            cx.notify();
+        }
+    }
+
     fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, _window: &mut Window, cx: &mut Context<Self>) {
         self.move_active(SelectionPanelStepDirection::Previous, cx);
     }
@@ -560,6 +593,12 @@ where
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.clamp_state();
+        if self.focus_in_subscription.is_none() {
+            self.focus_in_subscription = Some(cx.on_focus(&self.focus_handle, window, Self::handle_focus_in));
+        }
+        if self.focus_out_subscription.is_none() {
+            self.focus_out_subscription = Some(cx.on_focus_out(&self.focus_handle, window, Self::handle_focus_out));
+        }
 
         let look = (self.model.look_provider)(self.model.size);
         let panel_min_width = look.min_width;

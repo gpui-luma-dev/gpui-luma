@@ -104,12 +104,11 @@ impl SvTrianglePicker {
     }
 
     pub fn set_color(&mut self, color: Hsla, cx: &mut Context<Self>) {
-        if !self.sync.begin_sync() {
+        let Some(_sync_guard) = self.sync.begin_guard() else {
             return;
-        }
+        };
         self.hsv = hsla_to_sdk_hsv(color);
         self.sync_controls(cx);
-        self.sync.end_sync();
         cx.notify();
     }
 
@@ -123,24 +122,23 @@ impl SvTrianglePicker {
             let Some(hue) = primary_slider_value(event) else {
                 return;
             };
-            if !this.sync.begin_sync() {
+            let Some(_sync_guard) = this.sync.begin_guard() else {
                 return;
-            }
+            };
             this.hsv.h = hue;
             this.sync_controls(cx);
-            this.sync.end_sync();
             cx.notify();
         }));
         self._subscriptions.push(cx.subscribe(&triangle, |this, _, event: &ColorFieldEvent, cx| {
-            if !this.sync.begin_sync() {
-                return;
-            }
             let hsv = match event {
                 ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
+                _ => return,
+            };
+            let Some(_sync_guard) = this.sync.begin_guard() else {
+                return;
             };
             this.hsv.s = hsv.s;
             this.hsv.v = hsv.v;
-            this.sync.end_sync();
             cx.notify();
         }));
     }

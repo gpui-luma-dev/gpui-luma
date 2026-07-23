@@ -225,16 +225,17 @@ impl TextAreaPane {
                 self.change_count += 1;
                 self.last_event = format!("Change: {} chars", value.chars().count()).into();
             }
-            TextAreaEvent::Focus => {
+            TextAreaEvent::FocusChanged { focused: true } => {
                 self.focused = true;
                 self.focus_count += 1;
                 self.last_event = SharedString::from("Focus");
             }
-            TextAreaEvent::Blur => {
+            TextAreaEvent::FocusChanged { focused: false } => {
                 self.focused = false;
                 self.blur_count += 1;
                 self.last_event = SharedString::from("Blur");
             }
+            _ => {}
         }
 
         cx.notify();

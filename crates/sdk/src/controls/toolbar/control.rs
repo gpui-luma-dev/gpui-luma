@@ -23,6 +23,7 @@ pub enum ToolbarValue {
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum ToolbarEvent {
     /// Triggered when a button or toggle is clicked.
     Click { id: SharedString },
@@ -199,14 +200,16 @@ fn wire_item_subscriptions(items: &[ToolbarItem], cx: &mut Context<Toolbar>) -> 
             }
             ToolbarItemSource::Menu(entity) => {
                 subscriptions.push(cx.subscribe(&entity, move |this, _, event: &PopupMenuEvent, cx| {
-                    let PopupMenuEvent::Select { item_id, .. } = event;
-                    this.dispatch_change(&id, ToolbarValue::String(item_id.clone()), cx);
+                    if let PopupMenuEvent::Select { item_id, .. } = event {
+                        this.dispatch_change(&id, ToolbarValue::String(item_id.clone()), cx);
+                    }
                 }));
             }
             ToolbarItemSource::Selector(entity) => {
                 subscriptions.push(cx.subscribe(&entity, move |this, _, event: &SelectorEvent, cx| {
-                    let SelectorEvent::Change { item_id, .. } = event;
-                    this.dispatch_change(&id, ToolbarValue::String(item_id.clone()), cx);
+                    if let SelectorEvent::Change { item_id, .. } = event {
+                        this.dispatch_change(&id, ToolbarValue::String(item_id.clone()), cx);
+                    }
                 }));
             }
             ToolbarItemSource::TextField(entity) => {

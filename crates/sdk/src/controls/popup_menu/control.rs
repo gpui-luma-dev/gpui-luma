@@ -16,8 +16,14 @@ use crate::keyhandling::{
 };
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum PopupMenuEvent {
     Select { item_id: SharedString, label: SharedString },
+    OpenChanged { open: bool },
+    Dismiss,
+    FocusChanged { focused: bool },
+    HoverChanged { hovered: bool },
+    EnabledChanged { enabled: bool },
 }
 
 pub struct PopupMenu {
@@ -26,6 +32,8 @@ pub struct PopupMenu {
     trigger_bounds: Option<Bounds<Pixels>>,
     menu_state: FloatingMenuState,
     interaction: ControlInteraction,
+    emitted_focused: bool,
+    focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
 }
 
@@ -47,6 +55,8 @@ impl PopupMenu {
             trigger_bounds: None,
             menu_state: FloatingMenuState::default(),
             interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx),
+            emitted_focused: false,
+            focus_in_subscription: None,
             focus_out_subscription: None,
         }
     }
@@ -62,16 +72,22 @@ impl PopupMenu {
         cx: &mut Context<Self>,
     ) {
         self.model.items = items.into_iter().collect();
-        self.close_menu();
+        self.close_menu(cx);
         cx.notify();
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        let changed = self.model.enabled != enabled;
         self.model.enabled = enabled;
         self.interaction.set_enabled(enabled);
+        self.focus_in_subscription = None;
         self.focus_out_subscription = None;
         if !enabled {
-            self.close_menu();
+            self.close_menu(cx);
+            self.emit_focus_changed(false, cx);
+        }
+        if changed {
+            cx.emit(PopupMenuEvent::EnabledChanged { enabled });
         }
         cx.notify();
     }
@@ -79,6 +95,7 @@ impl PopupMenu {
     pub fn set_tab_stop(&mut self, tab_stop: bool, cx: &mut Context<Self>) {
         self.model.tab_stop = tab_stop;
         self.interaction.set_tab_stop(self.model.enabled, tab_stop);
+        self.focus_in_subscription = None;
         self.focus_out_subscription = None;
         cx.notify();
     }
@@ -149,15 +166,41 @@ impl PopupMenu {
         }
     }
 
-    fn close_menu(&mut self) {
+    fn close_menu(&mut self, cx: &mut Context<Self>) -> bool {
+        let was_open = self.open;
         self.open = false;
         self.menu_state.clear();
+        if was_open {
+            cx.emit(PopupMenuEvent::OpenChanged { open: false });
+        }
+        was_open
     }
 
-    fn open_menu_with(&mut self, active_path: Option<MenuPath>) -> bool {
+    fn dismiss_menu(&mut self, cx: &mut Context<Self>) -> bool {
+        let closed = self.close_menu(cx);
+        if closed {
+            cx.emit(PopupMenuEvent::Dismiss);
+        }
+        closed
+    }
+
+    fn open_menu_with(&mut self, active_path: Option<MenuPath>, cx: &mut Context<Self>) -> bool {
+        let was_open = self.open;
         let changed = !self.open || self.menu_state.open_with(active_path);
         self.open = true;
+        if !was_open {
+            cx.emit(PopupMenuEvent::OpenChanged { open: true });
+        }
         changed
+    }
+
+    fn emit_focus_changed(&mut self, focused: bool, cx: &mut Context<Self>) -> bool {
+        if self.emitted_focused == focused {
+            return false;
+        }
+        self.emitted_focused = focused;
+        cx.emit(PopupMenuEvent::FocusChanged { focused });
+        true
     }
 
     fn select_item_at_path(&mut self, path: &[usize], cx: &mut Context<Self>) -> bool {
@@ -166,7 +209,7 @@ impl PopupMenu {
         }
 
         if let Some((item_id, label)) = self.menu_state.select_at_path(&self.model.items, path) {
-            self.close_menu();
+            self.close_menu(cx);
             cx.emit(PopupMenuEvent::Select { item_id, label });
             return true;
         }
@@ -185,9 +228,9 @@ impl PopupMenu {
 
         if self.model.enabled {
             if self.open {
-                self.close_menu();
+                self.dismiss_menu(cx);
             } else {
-                self.open_menu_with(None);
+                self.open_menu_with(None, cx);
             }
             cx.notify();
         }
@@ -215,6 +258,7 @@ impl PopupMenu {
 
     fn handle_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
         if self.interaction.handle_hover(*hovered) {
+            cx.emit(PopupMenuEvent::HoverChanged { hovered: *hovered });
             cx.notify();
         }
     }
@@ -232,8 +276,7 @@ impl PopupMenu {
     }
 
     fn handle_mouse_down_out(&mut self, _event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.open {
-            self.close_menu();
+        if self.dismiss_menu(cx) {
             cx.notify();
         }
     }
@@ -251,7 +294,7 @@ impl PopupMenu {
         }
         .map(MenuPath::Root);
 
-        if self.open_menu_with(active_path) {
+        if self.open_menu_with(active_path, cx) {
             cx.notify();
         }
     }
@@ -315,7 +358,7 @@ impl PopupMenu {
             FloatingMenuActivateResult::None => {}
             FloatingMenuActivateResult::OpenedSubmenu => cx.notify(),
             FloatingMenuActivateResult::Select { item_id, label } => {
-                self.close_menu();
+                self.close_menu(cx);
                 cx.emit(PopupMenuEvent::Select { item_id, label });
                 cx.notify();
             }
@@ -380,16 +423,23 @@ impl PopupMenu {
 
     fn handle_escape_focus(&mut self, _: &EscapeFocus, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
-            self.close_menu();
+            self.dismiss_menu(cx);
             cx.notify();
         } else {
             cx.propagate();
         }
     }
 
+    fn handle_focus_in(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.emit_focus_changed(true, cx) {
+            cx.notify();
+        }
+    }
+
     fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.open {
-            self.close_menu();
+        let focused = self.emit_focus_changed(false, cx);
+        let closed = self.dismiss_menu(cx);
+        if focused || closed {
             cx.notify();
         }
     }
@@ -403,6 +453,10 @@ impl Focusable for PopupMenu {
 
 impl Render for PopupMenu {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.focus_in_subscription.is_none() {
+            let focus_handle = self.interaction.focus_handle().clone();
+            self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
+        }
         if self.focus_out_subscription.is_none() {
             let focus_handle = self.interaction.focus_handle().clone();
             self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));

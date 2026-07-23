@@ -1,6 +1,6 @@
 use gpui::{
-    App, Context, DragMoveEvent, EventEmitter, FocusHandle, Focusable, IntoElement, KeyDownEvent, MouseButton,
-    MouseDownEvent, MouseUpEvent, Render, SharedString, Window, div, prelude::*,
+    App, Context, DragMoveEvent, EventEmitter, FocusHandle, FocusOutEvent, Focusable, IntoElement, KeyDownEvent,
+    MouseButton, MouseDownEvent, MouseUpEvent, Render, SharedString, Subscription, Window, div, prelude::*,
 };
 
 use super::{
@@ -11,10 +11,14 @@ use crate::controls::state::ControlFocusState;
 use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum DockSplitterEvent {
     ResizeStart,
     Resize { total_delta: f32 },
     ResizeEnd,
+    FocusChanged { focused: bool },
+    HoverChanged { hovered: bool },
+    EnabledChanged { enabled: bool },
 }
 
 #[derive(Clone, Debug)]
@@ -33,6 +37,9 @@ pub struct DockSplitter {
     focus_handle: FocusHandle,
     hovered: bool,
     dragging: bool,
+    emitted_focused: bool,
+    focus_in_subscription: Option<Subscription>,
+    focus_out_subscription: Option<Subscription>,
     drag_start_axis_px: f32,
 }
 
@@ -53,6 +60,9 @@ impl DockSplitter {
             focus_handle: cx.focus_handle().tab_stop(enabled),
             hovered: false,
             dragging: false,
+            emitted_focused: false,
+            focus_in_subscription: None,
+            focus_out_subscription: None,
             drag_start_axis_px: 0.0,
         }
     }
@@ -62,10 +72,20 @@ impl DockSplitter {
             return;
         }
         self.model.enabled = enabled;
+        self.focus_in_subscription = None;
+        self.focus_out_subscription = None;
         if !enabled {
+            if self.hovered {
+                cx.emit(DockSplitterEvent::HoverChanged { hovered: false });
+            }
             self.hovered = false;
+            if self.dragging {
+                cx.emit(DockSplitterEvent::ResizeEnd);
+            }
             self.dragging = false;
+            self.emit_focus_changed(false, cx);
         }
+        cx.emit(DockSplitterEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -119,7 +139,29 @@ impl DockSplitter {
             return;
         }
         self.hovered = *hovered;
+        cx.emit(DockSplitterEvent::HoverChanged { hovered: *hovered });
         cx.notify();
+    }
+
+    fn emit_focus_changed(&mut self, focused: bool, cx: &mut Context<Self>) -> bool {
+        if self.emitted_focused == focused {
+            return false;
+        }
+        self.emitted_focused = focused;
+        cx.emit(DockSplitterEvent::FocusChanged { focused });
+        true
+    }
+
+    fn handle_focus_in(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.emit_focus_changed(true, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.emit_focus_changed(false, cx) {
+            cx.notify();
+        }
     }
 
     fn handle_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
@@ -208,6 +250,15 @@ impl Focusable for DockSplitter {
 
 impl Render for DockSplitter {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.focus_in_subscription.is_none() {
+            let focus_handle = self.focus_handle.clone();
+            self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
+        }
+        if self.focus_out_subscription.is_none() {
+            let focus_handle = self.focus_handle.clone();
+            self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
+        }
+
         let model = self.render_model(window);
         let look = self.look();
         let handlers = self.template_handlers(cx);

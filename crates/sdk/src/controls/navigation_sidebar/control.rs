@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use gpui::{
-    Bounds, ClickEvent, Context, EventEmitter, FocusHandle, IntoElement, MouseDownEvent, MouseUpEvent, Pixels, Render,
-    SharedString, Subscription, Window, div, prelude::*,
+    Bounds, ClickEvent, Context, EventEmitter, FocusHandle, FocusOutEvent, IntoElement, MouseDownEvent, MouseUpEvent,
+    Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
 };
 
 use super::{
@@ -20,10 +20,16 @@ use crate::keyhandling::{
 use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum NavigationSidebarEvent {
     Activate { node_id: SharedString, label: SharedString },
     BranchExpandedChanged { node_id: SharedString, expanded: bool },
     CollapsedChanged { collapsed: bool },
+    FocusChanged { focused: bool },
+    ItemFocused { node_id: SharedString, label: SharedString },
+    ItemHoverChanged { node_id: SharedString, hovered: bool },
+    RailSubmenuOpenChanged { node_id: Option<SharedString> },
+    EnabledChanged { enabled: bool },
 }
 
 pub struct NavigationSidebar {
@@ -41,6 +47,9 @@ pub struct NavigationSidebar {
     rail_submenu_open_submenu: Option<usize>,
     rail_submenu_active_path: Option<MenuPath>,
     visible_focus_nodes: Vec<(NavigationFocusTarget, FocusHandle)>,
+    focus_subscriptions: Vec<Subscription>,
+    focus_subscription_keys: Vec<(NavigationFocusTarget, FocusHandle)>,
+    emitted_focused: bool,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -61,8 +70,8 @@ impl NavigationSidebar {
         );
         let scrollbar = main_scroll.scrollbar();
         let subscriptions = vec![
-            cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| match event {
-                ScrollbarEvent::Change { value } => {
+            cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {
+                if let ScrollbarEvent::Change { value } = event {
                     this.main_scroll.set_vertical_offset(*value, cx);
                 }
             }),
@@ -84,25 +93,28 @@ impl NavigationSidebar {
             rail_submenu_open_submenu: None,
             rail_submenu_active_path: None,
             visible_focus_nodes: Vec::new(),
+            focus_subscriptions: Vec::new(),
+            focus_subscription_keys: Vec::new(),
+            emitted_focused: false,
             _subscriptions: subscriptions,
         }
     }
 
     pub fn set_header_nodes(&mut self, nodes: impl IntoIterator<Item = NavNode>, cx: &mut Context<Self>) {
         self.model.header_nodes = nodes.into_iter().collect();
-        self.close_rail_submenu();
+        self.close_rail_submenu(cx);
         cx.notify();
     }
 
     pub fn set_items(&mut self, nodes: impl IntoIterator<Item = NavNode>, cx: &mut Context<Self>) {
         self.model.nodes = nodes.into_iter().collect();
-        self.close_rail_submenu();
+        self.close_rail_submenu(cx);
         cx.notify();
     }
 
     pub fn set_footer_nodes(&mut self, nodes: impl IntoIterator<Item = NavNode>, cx: &mut Context<Self>) {
         self.model.footer_nodes = nodes.into_iter().collect();
-        self.close_rail_submenu();
+        self.close_rail_submenu(cx);
         cx.notify();
     }
 
@@ -171,13 +183,17 @@ impl NavigationSidebar {
         self.model.enabled = enabled;
         self.collapse_trigger_focus_handle =
             self.collapse_trigger_focus_handle.clone().tab_stop(enabled && self.model.collapsible);
+        self.focus_subscriptions.clear();
+        self.focus_subscription_keys.clear();
         if !enabled {
-            self.hovered_node = None;
+            self.clear_hovered_node(cx);
             self.pressed_node = None;
             self.collapse_trigger_hovered = false;
             self.collapse_trigger_pressed = false;
-            self.close_rail_submenu();
+            self.close_rail_submenu(cx);
+            self.emit_focus_changed(false, cx);
         }
+        cx.emit(NavigationSidebarEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -199,11 +215,11 @@ impl NavigationSidebar {
     pub fn set_collapsed(&mut self, collapsed: bool, cx: &mut Context<Self>) {
         if self.model.collapsed != collapsed {
             self.model.collapsed = collapsed;
-            self.hovered_node = None;
+            self.clear_hovered_node(cx);
             self.pressed_node = None;
             self.collapse_trigger_hovered = false;
             self.collapse_trigger_pressed = false;
-            self.close_rail_submenu();
+            self.close_rail_submenu(cx);
             cx.emit(NavigationSidebarEvent::CollapsedChanged { collapsed });
             cx.notify();
         }
@@ -444,19 +460,29 @@ impl NavigationSidebar {
                 .is_some_and(|node| collapsed_rail_node_visible(node) && node.enabled)
     }
 
-    fn close_rail_submenu(&mut self) {
+    fn close_rail_submenu(&mut self, cx: &mut Context<Self>) -> bool {
+        if self.open_rail_submenu.is_none()
+            && self.rail_submenu_open_submenu.is_none()
+            && self.rail_submenu_active_path.is_none()
+        {
+            return false;
+        }
+
         self.open_rail_submenu = None;
         self.rail_submenu_open_submenu = None;
         self.rail_submenu_active_path = None;
+        cx.emit(NavigationSidebarEvent::RailSubmenuOpenChanged { node_id: None });
+        true
     }
 
-    fn set_open_rail_submenu(&mut self, node_id: SharedString) {
+    fn set_open_rail_submenu(&mut self, node_id: SharedString, cx: &mut Context<Self>) {
         if self.open_rail_submenu.as_ref() == Some(&node_id) {
-            self.close_rail_submenu();
+            self.close_rail_submenu(cx);
         } else {
-            self.open_rail_submenu = Some(node_id);
+            self.open_rail_submenu = Some(node_id.clone());
             self.rail_submenu_open_submenu = None;
             self.rail_submenu_active_path = None;
+            cx.emit(NavigationSidebarEvent::RailSubmenuOpenChanged { node_id: Some(node_id) });
         }
     }
 
@@ -548,11 +574,11 @@ impl NavigationSidebar {
 
         if hovered {
             if self.hovered_node.as_ref() != Some(&node_id) {
-                self.hovered_node = Some(node_id);
+                self.set_hovered_node(Some(node_id), cx);
                 cx.notify();
             }
         } else if self.hovered_node.as_ref() == Some(&node_id) {
-            self.hovered_node = None;
+            self.set_hovered_node(None, cx);
             if self.pressed_node.as_ref() == Some(&node_id) {
                 self.pressed_node = None;
             }
@@ -612,11 +638,11 @@ impl NavigationSidebar {
 
         if hovered {
             if self.hovered_node.as_ref() != Some(&node_id) {
-                self.hovered_node = Some(node_id);
+                self.set_hovered_node(Some(node_id), cx);
                 cx.notify();
             }
         } else if self.hovered_node.as_ref() == Some(&node_id) {
-            self.hovered_node = None;
+            self.set_hovered_node(None, cx);
             if self.pressed_node.as_ref() == Some(&node_id) {
                 self.pressed_node = None;
             }
@@ -652,10 +678,10 @@ impl NavigationSidebar {
         }
 
         if self.find_top_level_main_node(&node_id).is_some_and(|node| node.children.is_empty()) {
-            self.close_rail_submenu();
+            self.close_rail_submenu(cx);
             self.activate_node(node_id, cx);
         } else {
-            self.set_open_rail_submenu(node_id);
+            self.set_open_rail_submenu(node_id, cx);
             cx.notify();
         }
     }
@@ -677,7 +703,7 @@ impl NavigationSidebar {
         cx: &mut Context<Self>,
     ) {
         if self.open_rail_submenu.is_some() {
-            self.close_rail_submenu();
+            self.close_rail_submenu(cx);
             cx.notify();
         }
     }
@@ -712,7 +738,7 @@ impl NavigationSidebar {
             return;
         }
 
-        self.close_rail_submenu();
+        self.close_rail_submenu(cx);
         self.activate_node(node_id, cx);
         cx.notify();
     }
@@ -732,6 +758,29 @@ impl NavigationSidebar {
         }
 
         cx.emit(NavigationSidebarEvent::Activate { node_id, label });
+    }
+
+    fn set_hovered_node(&mut self, hovered_node: Option<SharedString>, cx: &mut Context<Self>) {
+        if self.hovered_node == hovered_node {
+            return;
+        }
+
+        if let Some(node_id) = self.hovered_node.take() {
+            cx.emit(NavigationSidebarEvent::ItemHoverChanged { node_id, hovered: false });
+        }
+
+        if let Some(node_id) = hovered_node {
+            cx.emit(NavigationSidebarEvent::ItemHoverChanged { node_id: node_id.clone(), hovered: true });
+            self.hovered_node = Some(node_id);
+        }
+    }
+
+    fn clear_hovered_node(&mut self, cx: &mut Context<Self>) {
+        self.set_hovered_node(None, cx);
+    }
+
+    fn node_label(&self, node_id: &SharedString) -> SharedString {
+        self.find_node(node_id).and_then(|node| node.label.clone()).unwrap_or_else(|| node_id.clone())
     }
 
     fn focused_target(&self, window: &Window) -> Option<NavigationFocusTarget> {
@@ -801,10 +850,10 @@ impl NavigationSidebar {
             NavigationFocusTarget::CollapseTrigger => self.toggle_collapsed(cx),
             NavigationFocusTarget::Node(node_id) if self.model.collapsed => {
                 if self.find_top_level_main_node(&node_id).is_some_and(|node| node.children.is_empty()) {
-                    self.close_rail_submenu();
+                    self.close_rail_submenu(cx);
                     self.activate_node(node_id, cx);
                 } else {
-                    self.set_open_rail_submenu(node_id);
+                    self.set_open_rail_submenu(node_id, cx);
                     cx.notify();
                 }
             }
@@ -815,6 +864,56 @@ impl NavigationSidebar {
             }
             NavigationFocusTarget::Node(node_id) => self.activate_node(node_id, cx),
         }
+    }
+
+    fn sync_focus_subscriptions(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.visible_focus_nodes == self.focus_subscription_keys {
+            return;
+        }
+
+        self.focus_subscriptions.clear();
+        self.focus_subscription_keys = self.visible_focus_nodes.clone();
+
+        for (target, focus_handle) in self.focus_subscription_keys.clone() {
+            self.focus_subscriptions.push(cx.on_focus_in(&focus_handle, window, {
+                let target = target.clone();
+                move |this, _window, cx| {
+                    let focus_changed = this.emit_focus_changed(true, cx);
+                    if let NavigationFocusTarget::Node(node_id) = &target {
+                        cx.emit(NavigationSidebarEvent::ItemFocused {
+                            node_id: node_id.clone(),
+                            label: this.node_label(node_id),
+                        });
+                    }
+                    if focus_changed {
+                        cx.notify();
+                    }
+                }
+            }));
+            self.focus_subscriptions.push(cx.on_focus_out(
+                &focus_handle,
+                window,
+                move |this, _: FocusOutEvent, window, cx| {
+                    if !this.any_focus_target_focused(window) && this.emit_focus_changed(false, cx) {
+                        cx.notify();
+                    }
+                },
+            ));
+        }
+    }
+
+    fn any_focus_target_focused(&self, window: &Window) -> bool {
+        self.focus_subscription_keys.iter().any(|(_, focus_handle)| focus_handle.is_focused(window))
+    }
+
+    fn emit_focus_changed(&mut self, focused: bool, cx: &mut Context<Self>) -> bool {
+        if self.emitted_focused == focused {
+            return false;
+        }
+
+        self.emitted_focused = focused;
+        cx.emit(NavigationSidebarEvent::FocusChanged { focused });
+        true
     }
 }
 
@@ -827,6 +926,7 @@ enum NavigationFocusTarget {
 impl Render for NavigationSidebar {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model(window, cx);
+        self.sync_focus_subscriptions(window, cx);
         let handlers = self.template_handlers(&model, cx);
         self.main_scroll.sync_scrollbar(cx);
 

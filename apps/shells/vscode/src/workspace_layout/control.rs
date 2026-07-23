@@ -80,6 +80,7 @@ impl WorkspaceLayout {
                 cx.notify();
             }
             DockSplitterEvent::ResizeEnd => {}
+            _ => {}
         })
         .detach();
 

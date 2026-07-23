@@ -121,18 +121,16 @@ impl ScrollbarPane {
         event: &ScrollbarEvent,
         cx: &mut Context<GalleryApp>,
     ) {
-        match event {
-            ScrollbarEvent::Change { value } => {
-                match presentation {
-                    ScrollbarPresentation::Horizontal => {
-                        self.horizontal_value = *value;
-                    }
-                    ScrollbarPresentation::Vertical => {
-                        self.vertical_value = *value;
-                    }
+        if let ScrollbarEvent::Change { value } = event {
+            match presentation {
+                ScrollbarPresentation::Horizontal => {
+                    self.horizontal_value = *value;
                 }
-                cx.notify();
+                ScrollbarPresentation::Vertical => {
+                    self.vertical_value = *value;
+                }
             }
+            cx.notify();
         }
     }
 

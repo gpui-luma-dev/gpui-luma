@@ -90,7 +90,9 @@ impl ThemeSidebar {
 
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&tabs, |sidebar, _, event: &TabsNavigationEvent, cx| {
-            let TabsNavigationEvent::Activate { tab_id, .. } = event;
+            let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+                return;
+            };
             if let Some(tab) = SidebarTab::from_id(tab_id.as_ref()) {
                 sidebar.active_tab = tab;
                 cx.notify();

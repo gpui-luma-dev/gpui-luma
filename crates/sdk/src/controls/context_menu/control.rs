@@ -1,6 +1,6 @@
 use gpui::{
-    App, Bounds, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent, Pixels,
-    Point, Render, SharedString, Window, div, point, prelude::*, px,
+    App, Bounds, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
+    MouseUpEvent, Pixels, Point, Render, SharedString, Subscription, Window, div, point, prelude::*, px,
 };
 
 use super::{ContextMenuBuilder, ContextMenuRenderModel, ContextMenuTemplateHandlers};
@@ -16,8 +16,14 @@ use crate::keyhandling::{
 };
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum ContextMenuEvent {
     Select { item_id: SharedString, label: SharedString },
+    OpenChanged { open: bool },
+    Dismiss,
+    FocusChanged { focused: bool },
+    HoverChanged { hovered: bool },
+    EnabledChanged { enabled: bool },
 }
 
 pub struct ContextMenu {
@@ -26,6 +32,9 @@ pub struct ContextMenu {
     target_bounds: Option<Bounds<Pixels>>,
     menu_state: FloatingMenuState,
     interaction: ControlInteraction,
+    emitted_focused: bool,
+    focus_in_subscription: Option<Subscription>,
+    focus_out_subscription: Option<Subscription>,
 }
 
 impl EventEmitter<ContextMenuEvent> for ContextMenu {}
@@ -45,6 +54,9 @@ impl ContextMenu {
             target_bounds: None,
             menu_state: FloatingMenuState::default(),
             interaction: ControlInteraction::new(enabled, cx),
+            emitted_focused: false,
+            focus_in_subscription: None,
+            focus_out_subscription: None,
         }
     }
 
@@ -59,15 +71,22 @@ impl ContextMenu {
         cx: &mut Context<Self>,
     ) {
         self.model.items = items.into_iter().collect();
-        self.close_menu();
+        self.close_menu(cx);
         cx.notify();
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        let changed = self.model.enabled != enabled;
         self.model.enabled = enabled;
         self.interaction.set_enabled(enabled);
+        self.focus_in_subscription = None;
+        self.focus_out_subscription = None;
         if !enabled {
-            self.close_menu();
+            self.close_menu(cx);
+            self.emit_focus_changed(false, cx);
+        }
+        if changed {
+            cx.emit(ContextMenuEvent::EnabledChanged { enabled });
         }
         cx.notify();
     }
@@ -120,12 +139,43 @@ impl ContextMenu {
         }
     }
 
-    fn open_menu_at(&mut self, position: Point<Pixels>, active_path: Option<MenuPath>) -> bool {
+    fn open_menu_at(&mut self, position: Point<Pixels>, active_path: Option<MenuPath>, cx: &mut Context<Self>) -> bool {
+        let was_open = self.menu_position.is_some();
         let changed = self.menu_position != Some(position) || self.menu_state.open_with(active_path);
 
         self.menu_position = Some(position);
+        if !was_open {
+            cx.emit(ContextMenuEvent::OpenChanged { open: true });
+        }
 
         changed
+    }
+
+    fn close_menu(&mut self, cx: &mut Context<Self>) -> bool {
+        let was_open = self.menu_position.is_some();
+        self.menu_position = None;
+        self.menu_state.clear();
+        if was_open {
+            cx.emit(ContextMenuEvent::OpenChanged { open: false });
+        }
+        was_open
+    }
+
+    fn dismiss_menu(&mut self, cx: &mut Context<Self>) -> bool {
+        let closed = self.close_menu(cx);
+        if closed {
+            cx.emit(ContextMenuEvent::Dismiss);
+        }
+        closed
+    }
+
+    fn emit_focus_changed(&mut self, focused: bool, cx: &mut Context<Self>) -> bool {
+        if self.emitted_focused == focused {
+            return false;
+        }
+        self.emitted_focused = focused;
+        cx.emit(ContextMenuEvent::FocusChanged { focused });
+        true
     }
 
     fn keyboard_menu_position(&self) -> Point<Pixels> {
@@ -140,7 +190,7 @@ impl ContextMenu {
         }
 
         if let Some((item_id, label)) = self.menu_state.select_at_path(&self.model.items, path) {
-            self.close_menu();
+            self.close_menu(cx);
             cx.emit(ContextMenuEvent::Select { item_id, label });
             return true;
         }
@@ -157,7 +207,7 @@ impl ContextMenu {
             && event.is_right_click()
             && let Some(position) = event.mouse_position()
         {
-            self.open_menu_at(position, None);
+            self.open_menu_at(position, None, cx);
             cx.stop_propagation();
             cx.notify();
         }
@@ -185,6 +235,7 @@ impl ContextMenu {
 
     fn handle_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
         if self.interaction.handle_hover(*hovered) {
+            cx.emit(ContextMenuEvent::HoverChanged { hovered: *hovered });
             cx.notify();
         }
     }
@@ -202,15 +253,9 @@ impl ContextMenu {
     }
 
     fn handle_mouse_down_out(&mut self, _event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.menu_position.is_some() {
-            self.close_menu();
+        if self.dismiss_menu(cx) {
             cx.notify();
         }
-    }
-
-    fn close_menu(&mut self) {
-        self.menu_position = None;
-        self.menu_state.clear();
     }
 
     fn open_keyboard_menu(&mut self, cx: &mut Context<Self>) {
@@ -221,7 +266,7 @@ impl ContextMenu {
         let navigator = MenuNavigator::new(&self.model.items);
         let active_path = navigator.first_root().map(MenuPath::Root);
 
-        if self.open_menu_at(self.keyboard_menu_position(), active_path) {
+        if self.open_menu_at(self.keyboard_menu_position(), active_path, cx) {
             cx.notify();
         }
     }
@@ -275,7 +320,7 @@ impl ContextMenu {
             FloatingMenuActivateResult::None => {}
             FloatingMenuActivateResult::OpenedSubmenu => cx.notify(),
             FloatingMenuActivateResult::Select { item_id, label } => {
-                self.close_menu();
+                self.close_menu(cx);
                 cx.emit(ContextMenuEvent::Select { item_id, label });
                 cx.notify();
             }
@@ -344,10 +389,24 @@ impl ContextMenu {
 
     fn handle_escape_focus(&mut self, _: &EscapeFocus, _window: &mut Window, cx: &mut Context<Self>) {
         if self.menu_position.is_some() {
-            self.close_menu();
+            self.dismiss_menu(cx);
             cx.notify();
         } else {
             cx.propagate();
+        }
+    }
+
+    fn handle_focus_in(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.emit_focus_changed(true, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        let focused = self.emit_focus_changed(false, cx);
+        let closed = self.dismiss_menu(cx);
+        if focused || closed {
+            cx.notify();
         }
     }
 }
@@ -360,6 +419,15 @@ impl Focusable for ContextMenu {
 
 impl Render for ContextMenu {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.focus_in_subscription.is_none() {
+            let focus_handle = self.interaction.focus_handle().clone();
+            self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
+        }
+        if self.focus_out_subscription.is_none() {
+            let focus_handle = self.interaction.focus_handle().clone();
+            self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
+        }
+
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);
 

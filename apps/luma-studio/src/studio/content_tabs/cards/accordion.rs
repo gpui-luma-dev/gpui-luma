@@ -41,6 +41,7 @@ impl AccordionPanel {
             AccordionEvent::ExpandedChanged { item_id, expanded } => {
                 format!("{} {}", item_id, if *expanded { "expanded" } else { "collapsed" }).into()
             }
+            _ => self.last_event.clone(),
         };
         cx.notify();
     }

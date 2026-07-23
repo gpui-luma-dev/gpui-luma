@@ -140,6 +140,7 @@ impl ToolbarPane {
                     ToolbarValue::Bool(on) => format!("{id}: {}", if *on { "on" } else { "off" }),
                     ToolbarValue::String(value) => format!("{id}: {value}"),
                 },
+                _ => app.panes.toolbar.status.clone(),
             };
             cx.notify();
         }));

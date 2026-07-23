@@ -133,18 +133,16 @@ impl ContextMenuPane {
         event: &ContextMenuEvent,
         cx: &mut Context<GalleryApp>,
     ) {
-        match event {
-            ContextMenuEvent::Select { label, .. } => {
-                match presentation {
-                    ContextMenuPresentation::Default => {
-                        self.default_selection = label.to_string();
-                    }
-                    ContextMenuPresentation::Radial => {
-                        self.radial_selection = label.to_string();
-                    }
+        if let ContextMenuEvent::Select { label, .. } = event {
+            match presentation {
+                ContextMenuPresentation::Default => {
+                    self.default_selection = label.to_string();
                 }
-                cx.notify();
+                ContextMenuPresentation::Radial => {
+                    self.radial_selection = label.to_string();
+                }
             }
+            cx.notify();
         }
     }
 }

@@ -38,6 +38,7 @@ impl SelectionStatus {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum SelectionEvent {
     Focus,
     Blur,

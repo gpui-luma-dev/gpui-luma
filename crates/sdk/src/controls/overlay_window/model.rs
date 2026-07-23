@@ -39,6 +39,7 @@ pub enum DialogPosition {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum DialogEvent {
     Opened,
     Dismissed,

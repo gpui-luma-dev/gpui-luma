@@ -8,7 +8,6 @@ use gpui::{
 };
 
 use crate::controls::scrollbar::{Scrollbar, ScrollbarTemplate};
-use crate::controls::value::ControlRange;
 
 #[derive(Clone)]
 pub struct ScrollContainer {
@@ -97,19 +96,12 @@ impl ScrollContainer {
         let max_scroll = self.scroll_handle.max_offset().y.as_f32().max(0.0);
         let value = (-self.scroll_handle.offset().y.as_f32()).clamp(0.0, max_scroll);
         let content_height = viewport_height + max_scroll;
-        let thumb_fraction = if content_height > 0.0 {
-            (viewport_height / content_height).clamp(0.05, 1.0)
-        } else {
-            1.0
-        };
 
         self.scrollbar.update(cx, |scrollbar, cx| {
             scrollbar.set_length(viewport_height.max(1.0), cx);
-            scrollbar.set_range(ControlRange::new(0.0, max_scroll.max(1.0)), cx);
             scrollbar.set_step(24.0, cx);
             scrollbar.set_page_step((viewport_height * 0.85).max(1.0), cx);
-            scrollbar.set_thumb_fraction(thumb_fraction, cx);
-            scrollbar.set_value(value, cx);
+            scrollbar.set_viewport(0.0, content_height.max(1.0), value, value + viewport_height, cx);
             scrollbar.set_enabled(max_scroll > 0.5, cx);
         });
     }

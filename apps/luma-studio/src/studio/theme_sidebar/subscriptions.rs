@@ -16,12 +16,10 @@ impl ThemeSidebar {
         subscriptions: &mut Vec<Subscription>,
     ) {
         let theme_selector = sidebar.read(cx).theme_selector.clone();
-        subscriptions.push(cx.subscribe(&theme_selector, |app, selector, event: &SearchSelectorEvent, cx| {
-            if !matches!(event, SearchSelectorEvent::Select | SearchSelectorEvent::Complete) {
-                return;
-            }
-            let Some(theme_id) = selector.read(cx).selected_id().map(|id| id.clone()) else {
-                return;
+        subscriptions.push(cx.subscribe(&theme_selector, |app, _, event: &SearchSelectorEvent, cx| {
+            let theme_id = match event {
+                SearchSelectorEvent::Select { item_id, .. } | SearchSelectorEvent::Complete { item_id, .. } => item_id,
+                _ => return,
             };
             app.change_theme(theme_id.as_ref(), cx);
         }));

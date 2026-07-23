@@ -106,9 +106,14 @@ struct FieldImageCacheKey {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum ColorFieldEvent {
     Change(Hsv),
     Release(Hsv),
+    DragStart { hsv: Hsv },
+    DragEnd { hsv: Hsv },
+    HoverChanged { hovered: bool },
+    EnabledChanged { enabled: bool },
 }
 
 pub struct ColorFieldState {
@@ -422,9 +427,10 @@ impl ColorFieldState {
         if self.disabled != disabled {
             self.disabled = disabled;
             if disabled {
-                self.interaction_active = false;
-                self.hover_inside_domain = false;
+                self.end_interaction(cx);
+                self.emit_hover_changed(false, cx);
             }
+            cx.emit(ColorFieldEvent::EnabledChanged { enabled });
             cx.notify();
         }
     }
@@ -592,7 +598,10 @@ impl ColorFieldState {
         }
     }
 
-    pub(super) fn begin_interaction(&mut self) {
+    pub(super) fn begin_interaction(&mut self, cx: &mut Context<Self>) {
+        if !self.interaction_active {
+            cx.emit(ColorFieldEvent::DragStart { hsv: self.hsv });
+        }
         self.interaction_active = true;
     }
 
@@ -602,6 +611,7 @@ impl ColorFieldState {
         }
         self.interaction_active = false;
         cx.emit(ColorFieldEvent::Release(self.hsv));
+        cx.emit(ColorFieldEvent::DragEnd { hsv: self.hsv });
     }
 
     pub(super) fn is_interaction_active(&self) -> bool {
@@ -610,10 +620,22 @@ impl ColorFieldState {
 
     pub(super) fn update_hover_inside_domain(&mut self, pointer: Point<Pixels>, cx: &mut Context<Self>) {
         let inside = self.accepts_pointer_at(pointer);
-        if inside != self.hover_inside_domain {
-            self.hover_inside_domain = inside;
-            cx.notify();
+        self.emit_hover_changed(inside, cx);
+    }
+
+    pub(super) fn handle_hover(&mut self, hovered: &bool, cx: &mut Context<Self>) {
+        if !*hovered {
+            self.emit_hover_changed(false, cx);
         }
+    }
+
+    fn emit_hover_changed(&mut self, hovered: bool, cx: &mut Context<Self>) {
+        if hovered == self.hover_inside_domain {
+            return;
+        }
+        self.hover_inside_domain = hovered;
+        cx.emit(ColorFieldEvent::HoverChanged { hovered });
+        cx.notify();
     }
 
     pub(super) fn refresh_bounds_and_render_cache(&mut self, bounds: Bounds<Pixels>, cx: &mut Context<Self>) {

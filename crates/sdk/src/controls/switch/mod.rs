@@ -20,6 +20,7 @@ use crate::controls::presenter::{ControlPresenter, HasPresenter};
 pub type Switch = Entity<SwitchControl>;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum SwitchEvent {
     Change { on: bool },
     FocusChanged { focused: bool },

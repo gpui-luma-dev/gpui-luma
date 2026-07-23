@@ -531,6 +531,7 @@ impl ResizablePanelsPane {
             ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden } => {
                 format!("PanelHiddenChanged: {panel_index} {hidden}").into()
             }
+            _ => self.controlled_last_event.clone(),
         };
         notify_entity(&self.controlled, cx);
         cx.notify();
@@ -543,6 +544,7 @@ impl ResizablePanelsPane {
                 cx.notify();
             }
             ResizablePanelsEvent::ResizeStart | ResizablePanelsEvent::PanelHiddenChanged { .. } => {}
+            _ => {}
         }
     }
 
@@ -555,6 +557,7 @@ impl ResizablePanelsPane {
         let sizes = match event {
             ResizablePanelsEvent::SizesChanged { sizes_px } | ResizablePanelsEvent::ResizeEnd { sizes_px } => sizes_px,
             ResizablePanelsEvent::ResizeStart | ResizablePanelsEvent::PanelHiddenChanged { .. } => return,
+            _ => return,
         };
         assign(self, format_sizes_px(sizes).into());
         cx.notify();

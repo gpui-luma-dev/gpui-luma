@@ -64,7 +64,9 @@ impl ContentPaneHost {
         let tabs_for_sub = tabs.clone();
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&tabs_for_sub, |host, _, event: &TabsNavigationEvent, cx| {
-            let TabsNavigationEvent::Activate { tab_id, .. } = event;
+            let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+                return;
+            };
             if let Some(tab) = ContentTab::from_id(tab_id.as_ref()) {
                 host.set_active_tab(tab, cx);
             }

@@ -48,15 +48,19 @@ impl<T: 'static> PagingListViewControl<T> {
                     });
                 }
                 ListViewEvent::ActiveIndexChanged { .. } => {}
+                _ => {}
             }
         })
         .detach();
 
         let list_clone = list.clone();
         cx.subscribe(&pager, move |_, _, event, cx| {
-            list_clone.update(cx, |list_control, cx| match event {
-                PagerEvent::PageChanged { page } => list_control.set_page(*page, cx),
-                PagerEvent::PageSizeChanged { page_size } => list_control.set_page_size(*page_size, cx),
+            list_clone.update(cx, |list_control, cx| {
+                if let PagerEvent::PageChanged { page } = event {
+                    list_control.set_page(*page, cx);
+                } else if let PagerEvent::PageSizeChanged { page_size } = event {
+                    list_control.set_page_size(*page_size, cx);
+                }
             });
         })
         .detach();

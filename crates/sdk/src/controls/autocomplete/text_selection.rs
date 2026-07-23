@@ -4,6 +4,7 @@ use crate::controls::textfield::{self, TextField, TextFieldBuilder, TextFieldEve
 pub type TextSelection = TextField;
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum TextSelectionEvent {
     Change { value: String },
     Submit { value: String },
@@ -15,11 +16,12 @@ pub fn new(id: impl Into<SharedString>) -> TextFieldBuilder {
     textfield::new(id)
 }
 
-pub fn map_event(event: &TextFieldEvent) -> TextSelectionEvent {
+pub fn map_event(event: &TextFieldEvent) -> Option<TextSelectionEvent> {
     match event {
-        TextFieldEvent::Change { value } => TextSelectionEvent::Change { value: value.clone() },
-        TextFieldEvent::Submit { value } => TextSelectionEvent::Submit { value: value.clone() },
-        TextFieldEvent::Focus => TextSelectionEvent::FocusEnter,
-        TextFieldEvent::Blur => TextSelectionEvent::FocusLeave,
+        TextFieldEvent::Change { value } => Some(TextSelectionEvent::Change { value: value.clone() }),
+        TextFieldEvent::Submit { value } => Some(TextSelectionEvent::Submit { value: value.clone() }),
+        TextFieldEvent::FocusChanged { focused: true } => Some(TextSelectionEvent::FocusEnter),
+        TextFieldEvent::FocusChanged { focused: false } => Some(TextSelectionEvent::FocusLeave),
+        TextFieldEvent::EnabledChanged { .. } => None,
     }
 }

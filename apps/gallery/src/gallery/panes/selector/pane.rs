@@ -191,6 +191,8 @@ impl SelectorPane {
                 self.selection = label.to_string();
                 cx.notify();
             }
+            SelectorEvent::FocusChanged { .. } | SelectorEvent::OpenChanged { .. } | SelectorEvent::Dismiss => {}
+            _ => {}
         }
     }
 }

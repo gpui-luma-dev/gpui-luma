@@ -1,6 +1,6 @@
 use gpui::{
-    Context, DragMoveEvent, EventEmitter, FocusHandle, Hsla, IntoElement, KeyDownEvent, MouseButton, MouseDownEvent,
-    MouseUpEvent, ParentElement, Pixels, Render, SharedString, Window, div, prelude::*,
+    Context, DragMoveEvent, EventEmitter, FocusHandle, FocusOutEvent, Hsla, IntoElement, KeyDownEvent, MouseButton,
+    MouseDownEvent, MouseUpEvent, ParentElement, Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
 };
 
 use super::{
@@ -26,11 +26,15 @@ impl Render for ResizablePanelsHandleDrag {
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum ResizablePanelsEvent {
     ResizeStart,
     SizesChanged { sizes_px: Vec<f32> },
     ResizeEnd { sizes_px: Vec<f32> },
     PanelHiddenChanged { panel_index: usize, hidden: bool },
+    HandleFocusChanged { handle_index: usize, focused: bool },
+    HandleHoverChanged { handle_index: usize, hovered: bool },
+    EnabledChanged { enabled: bool },
 }
 
 #[derive(Clone, Debug)]
@@ -63,6 +67,8 @@ pub struct ResizablePanels {
     panel_hide_restore: Vec<Option<CollapseRestoreState>>,
     panel_sizes_px: Vec<f32>,
     handle_focuses: Vec<FocusHandle>,
+    handle_focus_subscriptions: Vec<Subscription>,
+    emitted_focused_handles: Vec<bool>,
     hovered_handle: Option<usize>,
     dragging_handle: Option<usize>,
     drag_start_axis_px: f32,
@@ -115,6 +121,8 @@ impl ResizablePanels {
             panel_hide_restore,
             panel_sizes_px,
             handle_focuses,
+            handle_focus_subscriptions: Vec::new(),
+            emitted_focused_handles: vec![false; handle_count],
             hovered_handle: None,
             dragging_handle: None,
             drag_start_axis_px: 0.0,
@@ -149,11 +157,19 @@ impl ResizablePanels {
         }
         self.model.enabled = enabled;
         if !enabled {
-            self.hovered_handle = None;
-            self.dragging_handle = None;
+            if let Some(handle_index) = self.hovered_handle.take() {
+                cx.emit(ResizablePanelsEvent::HandleHoverChanged { handle_index, hovered: false });
+            }
+            if self.dragging_handle.take().is_some() {
+                cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px: self.panel_sizes_px.clone() });
+            }
             self.drag_content_axis_px = None;
+            for index in 0..self.emitted_focused_handles.len() {
+                self.emit_handle_focus_changed(index, false, cx);
+            }
             self.clear_all_restore_state(cx);
         }
+        cx.emit(ResizablePanelsEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -606,7 +622,38 @@ impl ResizablePanels {
             return;
         }
         self.hovered_handle = next;
+        cx.emit(ResizablePanelsEvent::HandleHoverChanged { handle_index: index, hovered: *hovered });
         cx.notify();
+    }
+
+    fn emit_handle_focus_changed(&mut self, index: usize, focused: bool, cx: &mut Context<Self>) -> bool {
+        let Some(current) = self.emitted_focused_handles.get_mut(index) else {
+            return false;
+        };
+        if *current == focused {
+            return false;
+        }
+        *current = focused;
+        cx.emit(ResizablePanelsEvent::HandleFocusChanged { handle_index: index, focused });
+        true
+    }
+
+    fn handle_handle_focus_in(&mut self, index: usize, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.emit_handle_focus_changed(index, true, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_handle_focus_out(
+        &mut self,
+        index: usize,
+        _: FocusOutEvent,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.emit_handle_focus_changed(index, false, cx) {
+            cx.notify();
+        }
     }
 
     pub(crate) fn handle_drag_move(
@@ -680,6 +727,7 @@ impl ResizablePanels {
         if self.apply_pair_delta(index, delta_px, cx) {
             self.refresh_panel_sizes_px();
             let sizes_px = self.panel_sizes_px.clone();
+            cx.emit(ResizablePanelsEvent::ResizeStart);
             cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
             cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
             window.prevent_default();
@@ -717,10 +765,31 @@ impl ResizablePanels {
             measured_size: self.measured_size,
         }
     }
+
+    fn sync_handle_focus_subscriptions(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.handle_focus_subscriptions.len() == self.handle_focuses.len() * 2 {
+            return;
+        }
+
+        self.handle_focus_subscriptions.clear();
+        for (index, focus_handle) in self.handle_focuses.clone().into_iter().enumerate() {
+            self.handle_focus_subscriptions.push(cx.on_focus(&focus_handle, window, move |this, window, cx| {
+                this.handle_handle_focus_in(index, window, cx);
+            }));
+            self.handle_focus_subscriptions.push(cx.on_focus_out(
+                &focus_handle,
+                window,
+                move |this, event: FocusOutEvent, window, cx| {
+                    this.handle_handle_focus_out(index, event, window, cx);
+                },
+            ));
+        }
+    }
 }
 
 impl Render for ResizablePanels {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.sync_handle_focus_subscriptions(window, cx);
         self.refresh_panel_sizes_px();
         let look = self.model.theme.resolve(InteractionState { disabled: !self.model.enabled, ..Default::default() });
         let model = self.render_model();

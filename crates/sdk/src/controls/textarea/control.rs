@@ -13,7 +13,6 @@ use lucide_icons::Icon as LucideIcon;
 use super::{TextAreaBuilder, TextAreaState, TextAreaTemplateHandlers, model::TextAreaModel};
 use crate::controls::scrollbar::{Scrollbar, ScrollbarEvent, ScrollbarOrientation};
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
-use crate::controls::value::ControlRange;
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, observe_theme_revision};
@@ -118,10 +117,11 @@ fn colored_runs_for_text(
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum TextAreaEvent {
     Change { value: String },
-    Focus,
-    Blur,
+    FocusChanged { focused: bool },
+    EnabledChanged { enabled: bool },
 }
 
 #[derive(Clone, Debug)]
@@ -201,8 +201,8 @@ impl TextArea {
         let scrollbar = Scrollbar::new(format!("{}-scrollbar", builder.model.id))
             .orientation(ScrollbarOrientation::Vertical)
             .spawn(cx);
-        let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| match event {
-            ScrollbarEvent::Change { value } => {
+        let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {
+            if let ScrollbarEvent::Change { value } = event {
                 this.vertical_scroll = px(*value);
                 this.clamp_vertical_scroll_to_cache();
                 cx.notify();
@@ -273,6 +273,10 @@ impl TextArea {
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if self.model.enabled == enabled {
+            return;
+        }
+
         self.model.enabled = enabled;
         self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
         if !enabled {
@@ -280,6 +284,7 @@ impl TextArea {
             self.mouse_selecting = false;
             self.stop_selection_autoscroll();
         }
+        cx.emit(TextAreaEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -391,7 +396,7 @@ impl TextArea {
             self.state.preferred_column = None;
             self.state.set_focus_visible(true);
             self.focus_count += 1;
-            cx.emit(TextAreaEvent::Focus);
+            cx.emit(TextAreaEvent::FocusChanged { focused: true });
             self.start_caret_blink(cx);
         } else {
             if !self.mouse_selecting {
@@ -402,7 +407,7 @@ impl TextArea {
                 self.state.cursor = self.model.value.chars().count();
             }
             self.blur_count += 1;
-            cx.emit(TextAreaEvent::Blur);
+            cx.emit(TextAreaEvent::FocusChanged { focused: false });
             self.stop_caret_blink(cx);
         }
 
@@ -714,26 +719,16 @@ impl TextArea {
         let max_scroll = Self::max_vertical_scroll_for_cache(cache).as_f32().max(0.0);
         let viewport_height = cache.text_viewport.size.height.as_f32().max(1.0);
         let content_height = viewport_height + max_scroll;
-        let thumb_fraction = if content_height > 0.0 {
-            (viewport_height / content_height).clamp(0.05, 1.0)
-        } else {
-            1.0
-        };
         let enabled = self.model.enabled && max_scroll > 0.5;
         let value = self.vertical_scroll.as_f32().clamp(0.0, max_scroll);
         let step = cache.line_height.as_f32().max(1.0);
-        let enabled_changed = self.scrollbar_enabled != enabled;
 
         self.scrollbar.update(cx, |scrollbar, cx| {
             scrollbar.set_length(viewport_height, cx);
-            scrollbar.set_range(ControlRange::new(0.0, max_scroll.max(1.0)), cx);
             scrollbar.set_step(step, cx);
             scrollbar.set_page_step((viewport_height * 0.85).max(step), cx);
-            scrollbar.set_thumb_fraction(thumb_fraction, cx);
-            scrollbar.set_value(value, cx);
-            if enabled_changed {
-                scrollbar.set_enabled(enabled, cx);
-            }
+            scrollbar.set_viewport(0.0, content_height.max(1.0), value, value + viewport_height, cx);
+            scrollbar.set_enabled(enabled, cx);
         });
         self.scrollbar_enabled = enabled;
     }

@@ -240,16 +240,17 @@ impl TextFieldPane {
                 self.submit_count += 1;
                 self.last_event = format!("Submit: {value}").into();
             }
-            TextFieldEvent::Focus => {
+            TextFieldEvent::FocusChanged { focused: true } => {
                 self.focused = true;
                 self.focus_count += 1;
                 self.last_event = SharedString::from("Focus");
             }
-            TextFieldEvent::Blur => {
+            TextFieldEvent::FocusChanged { focused: false } => {
                 self.focused = false;
                 self.blur_count += 1;
                 self.last_event = SharedString::from("Blur");
             }
+            _ => {}
         }
 
         cx.notify();

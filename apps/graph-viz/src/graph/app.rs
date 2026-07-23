@@ -67,8 +67,9 @@ impl GraphVizApp {
         subscriptions.push(cx.subscribe(
             &theme_selector,
             |app, _, event: &gpui_luma::controls::selector::SelectorEvent, cx| {
-                let gpui_luma::controls::selector::SelectorEvent::Change { item_id, .. } = event;
-                app.change_theme(item_id.as_ref(), cx);
+                if let gpui_luma::controls::selector::SelectorEvent::Change { item_id, .. } = event {
+                    app.change_theme(item_id.as_ref(), cx);
+                }
             },
         ));
         subscriptions.push(cx.subscribe(&workbench.panels(), |app, _, event: &ResizablePanelsEvent, cx| {

@@ -13,8 +13,24 @@ Status as of 2026-07-23:
 * **Complete**: `Toolbar` fans in command button clicks and toggle changes through sourced child controls. Toggle toolbar items now consume `ToggleEvent::Change` instead of flipping raw button data.
 * **Complete**: `ControlGroupEvent` now includes `FocusChanged { focused }` and `ItemFocused { item_id }` alongside existing `Activate` and `Change` events. Active-descendant and roving-item focus strategies both contribute to semantic focus notifications.
 * **Complete**: `RadioGroup` is a semantic wrapper over `ControlGroup` that emits dedicated `RadioGroupEvent` values rather than exposing raw `ControlGroupEvent` payloads.
+* **Complete**: `SelectorEvent` now includes semantic selection, focus, open-state, and dismiss events. Consumers that only handle selection now filter `SelectorEvent::Change` instead of assuming it is the only variant.
+* **Complete**: `SelectionPanelEvent` now includes standard focus and open-state lifecycle events alongside row hover, active-index, and row activation events.
+* **Complete**: `SearchSelectorEvent` now carries query and selected-item payloads and emits focus/open/dismiss lifecycle events. Consumers use selection payloads directly instead of reading current selection back out of the control.
+* **Complete**: `ComboBoxEvent` and `AutocompleteTextBoxEvent` now carry query and selected-item payloads and emit focus/open/dismiss lifecycle events.
+* **Complete**: `TextFieldEvent` and `TextAreaEvent` now use `FocusChanged { focused }` and emit `EnabledChanged { enabled }` for programmatic enabled transitions. Selector-family text adapters filter only the text events they consume.
+* **Complete**: `SliderEvent` now includes drag, focus, hover, and enabled lifecycle events alongside existing value and multi-thumb events.
+* **Complete**: Color slider, arc, and ring controls use the unified `SliderEvent` surface. `ColorFieldEvent` now includes change, release, drag, hover, and enabled lifecycle events for color surface controls.
+* **Complete**: `ScrollbarEvent` now includes drag, focus, hover, and enabled lifecycle events alongside value changes. Scrollbar consumers that only need offsets filter `Change`. `Scrollbar` also exposes abstract viewport/range support so callers can provide content start/end and visible start/end values instead of manually deriving track range, value, and thumb fraction.
+* **Complete**: `TabsNavigationEvent` fans out selection, activation, group focus, and item focus events from its inner `ControlGroup` without exposing raw group events.
+* **Complete**: `AccordionEvent` now includes focus, item-focus, item-hover, and enabled lifecycle events alongside section expansion changes.
+* **Complete**: `PagerEvent` now includes page-size popover open-state and enabled lifecycle events alongside page/page-size changes. SDK list paging filters only page mutation events.
+* **Complete**: `NavigationSidebarEvent` now includes focus, item-focus, item-hover, rail submenu open-state, and enabled lifecycle events alongside activation, branch expansion, and collapse events.
+* **Complete**: `ListViewEvent` now includes scroll, focus, row-hover, and enabled lifecycle events alongside selection, active-index, page, and page-size events. `Listbox` is a typed `ControlGroupControl<ListBoxItem>` surface and uses the already-standardized `ControlGroupEvent`.
+* **Complete**: `TreeViewEvent` now includes active-node, scroll, focus, row-hover, and enabled lifecycle events alongside node expand/collapse and selection events.
+* **Complete**: `PopupMenuEvent` and `ContextMenuEvent` now include select, open-state, dismiss, focus, hover, and enabled lifecycle events. `FloatingMenu` remains shared state/template infrastructure with no standalone public event emitter. `OverlayWindowEvent` was already complete as a non-exhaustive opened/dismissed lifecycle surface.
+* **Complete**: Structural layout controls now expose resize lifecycle events. `SplitViewEvent` covers sidebar width, resize start/end, collapse, separator hover, and enabled transitions; `ResizablePanelsEvent` covers size changes, resize start/end, panel visibility, handle focus/hover, and enabled transitions; `DockSplitterEvent` covers resize start/change/end plus focus/hover/enabled lifecycle events.
+* **Complete**: Public SDK control event enums are marked `#[non_exhaustive]`. Downstream consumers now use explicit filters or wildcard arms so future event additions do not require a full workspace refactor.
 * **Complete**: App usages touched by this migration now subscribe to semantic SDK events instead of depending on the old one-event button assumption or raw boolean button state.
-* **Open**: Selector-family controls, text inputs, sliders, scrollbars, navigation, menus/overlays, and structural layout controls still reflect the audit/proposed-event state below unless their individual section says otherwise.
 * **Open**: Luma Studio's event log exists as app-local infrastructure, but comprehensive per-control event showcase wiring is not complete.
 
 ---
@@ -46,6 +62,9 @@ Events across all control families are categorized into four standard layers:
    - State transition flags use `focused: bool`, `enabled: bool`, `hovered: bool`.
 3. **Container Event Fan-In**:
    - Container controls (`Toolbar`, `ControlGroup`, `Form`) aggregate and fan-in item events, surfacing child events wrapped in a parent envelope (e.g. `ToolbarEvent::ItemClick { item_id }`).
+4. **Forward-Compatible Event Enums**:
+   - Public SDK control event enums **MUST** be `#[non_exhaustive]`.
+   - Downstream code **MUST NOT** exhaustively match SDK events unless it includes a wildcard arm. Prefer `if let`, `let ... else { return; }`, or an explicit `_ => {}` for event variants the consumer does not handle.
 
 ---
 
@@ -177,16 +196,30 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
   }
   ```
 
-#### **Selector / SelectionPanel (`selector`, `selection_panel`)**
-* **Current Events**: `SelectorEvent::Select { index: usize }`, `SelectionPanelEvent::Change { selected_indices: Vec<usize> }`
-* **Audit & Gap Analysis**: Needs standard focus and cancel/escape actions.
-* **Proposed Standardized Event (`SelectorEvent`)**:
+#### **Selector (`selector`)**
+* **Implemented Events**: `SelectorEvent::Change { item_id, label }`, `FocusChanged`, `OpenChanged`, `Dismiss`
+* **Audit Result**: Selection changes are domain-specific and keyed by item id. Programmatic `set_selected_id` updates visual state without emitting `Change`. Selection-only consumers must filter `SelectorEvent::Change` because focus and overlay lifecycle events share the same semantic event stream.
+* **Standardized Event (`SelectorEvent`)**:
   ```rust
   pub enum SelectorEvent {
-      Select { index: usize, id: SharedString },
-      Change { selected_indices: Vec<usize> },
+      Change { item_id: SharedString, label: SharedString },
       FocusChanged { focused: bool },
+      OpenChanged { open: bool },
       Dismiss,
+  }
+  ```
+
+#### **SelectionPanel (`selection_panel`)**
+* **Implemented Events**: `SelectionPanelEvent::HoverChanged { visible_index }`, `ActivateRow { source_index, visible_index, item_id }`, `ActiveIndexChanged { visible_index }`, `FocusChanged`, `OpenChanged`
+* **Audit Result**: Event model covers row hover, row activation, active-index keyboard navigation, parent focus, and open-state lifecycle. Programmatic selected-index updates do not emit activation events.
+* **Standardized Event (`SelectionPanelEvent`)**:
+  ```rust
+  pub enum SelectionPanelEvent {
+      HoverChanged { visible_index: Option<usize> },
+      ActivateRow { source_index: usize, visible_index: usize, item_id: SharedString },
+      ActiveIndexChanged { visible_index: Option<usize> },
+      FocusChanged { focused: bool },
+      OpenChanged { open: bool },
   }
   ```
 
@@ -195,46 +228,63 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
 ### 2.4 Text & Input Controls
 
 #### **TextField (`textfield`)**
-* **Current Events**:
+* **Implemented Events**:
   - `TextFieldEvent::Change { value: String }`
   - `TextFieldEvent::Submit { value: String }`
-  - `TextFieldEvent::Focus`
-  - `TextFieldEvent::Blur`
-* **Audit & Gap Analysis**: Uses split `Focus`/`Blur` variants. Standardize focus to unified `FocusChanged { focused: bool }` or keep backwards-compatible `Focus`/`Blur` aliases alongside `EnabledChanged`.
-* **Proposed Standardized Event (`TextFieldEvent`)**:
+  - `TextFieldEvent::FocusChanged { focused: bool }`
+  - `TextFieldEvent::EnabledChanged { enabled: bool }`
+* **Audit Result**: Value mutation and submit payloads are explicit. Focus uses the standard boolean transition event, and programmatic enabled changes emit a lifecycle event. Selector-family text adapters ignore lifecycle variants they do not consume.
+* **Standardized Event (`TextFieldEvent`)**:
   ```rust
   pub enum TextFieldEvent {
       Change { value: String },
       Submit { value: String },
       FocusChanged { focused: bool },
       EnabledChanged { enabled: bool },
-      Escape,
   }
   ```
 
 #### **TextArea (`textarea`)**
-* **Current Events**: `TextAreaEvent::Change { value: String }`, `Focus`, `Blur`
-* **Audit & Gap Analysis**: Needs `Submit` (e.g. `Cmd+Enter`), `FocusChanged`, and cursor selection change notifications.
-* **Proposed Standardized Event (`TextAreaEvent`)**:
+* **Implemented Events**: `TextAreaEvent::Change { value: String }`, `FocusChanged { focused }`, `EnabledChanged { enabled }`
+* **Audit Result**: Value mutation has payloads, focus uses the standard boolean transition event, and programmatic enabled changes emit a lifecycle event. Submit shortcuts and cursor/selection notifications remain deferred behavior/API decisions.
+* **Standardized Event (`TextAreaEvent`)**:
   ```rust
   pub enum TextAreaEvent {
       Change { value: String },
-      Submit { value: String },
       FocusChanged { focused: bool },
-      SelectionChanged { range: std::ops::Range<usize> },
+      EnabledChanged { enabled: bool },
   }
   ```
 
-#### **Autocomplete / ComboBox / SearchSelector (`autocomplete`, `combobox`, `search_selector`)**
-* **Current Events**: `ComboBoxEvent::Select { index: usize }`, `Change { query: String }`, `Open`, `Close`
-* **Audit & Gap Analysis**: Needs standardized dropdown overlay visibility and item commit events.
-* **Proposed Standardized Event (`ComboBoxEvent`)**:
+#### **SearchSelector (`search_selector`)**
+* **Implemented Events**: `SearchSelectorEvent::Change { query }`, `Select { item_id, label }`, `Complete { item_id, label }`, `Clear`, `FocusChanged`, `OpenChanged`, `Dismiss`
+* **Audit Result**: Selection consumers can use the event payload directly. Query mutation, committed selection, exact completion, clear, focus, and popup visibility are distinct semantic events.
+* **Standardized Event (`SearchSelectorEvent`)**:
+  ```rust
+  pub enum SearchSelectorEvent {
+      Change { query: SharedString },
+      Select { item_id: SharedString, label: SharedString },
+      Complete { item_id: SharedString, label: SharedString },
+      Clear,
+      FocusChanged { focused: bool },
+      OpenChanged { open: bool },
+      Dismiss,
+  }
+  ```
+
+#### **Autocomplete / ComboBox (`autocomplete`, `combobox`)**
+* **Implemented Events**: `Change { query }`, `Select { item_id, label }`, `Complete { item_id, label }`, `Clear`, `FocusChanged`, `OpenChanged`, `Dismiss`
+* **Audit Result**: Query mutation, committed selection, exact completion, clear, focus, and popup visibility are distinct semantic events. Selection consumers can use the event payload directly instead of reading the control state.
+* **Standardized Events (`ComboBoxEvent`, `AutocompleteTextBoxEvent`)**:
   ```rust
   pub enum ComboBoxEvent {
-      QueryChange { query: String },
-      Select { id: SharedString, value: String },
-      OverlayVisibilityChanged { open: bool },
+      Change { query: SharedString },
+      Select { item_id: SharedString, label: SharedString },
+      Complete { item_id: SharedString, label: SharedString },
+      Clear,
       FocusChanged { focused: bool },
+      OpenChanged { open: bool },
+      Dismiss,
   }
   ```
 
@@ -243,32 +293,67 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
 ### 2.5 Range & Numeric Controls
 
 #### **Slider (`slider`, `color_slider`, `color_arc`, `color_ring`)**
-* **Current Events**:
+* **Implemented Events**:
   - `SliderEvent::Change { thumb_id: ThumbId, value: f32 }`
   - `SliderEvent::Release { thumb_id: ThumbId, value: f32 }`
-  - `SliderEvent::ThumbAdded`, `ThumbRemoved`, `ThumbSelected`
-* **Audit & Gap Analysis**: Comprehensive value and multi-thumb event model. Missing focus and drag start/end interaction markers.
-* **Proposed Standardized Event (`SliderEvent`)**:
+  - `SliderEvent::DragStart { thumb_id: ThumbId }`
+  - `SliderEvent::DragEnd { thumb_id: ThumbId, value: f32 }`
+  - `SliderEvent::ThumbAdded { thumb_id: ThumbId, value: f32 }`
+  - `SliderEvent::ThumbRemoved { thumb_id: ThumbId }`
+  - `SliderEvent::ThumbSelected { thumb_id: ThumbId }`
+  - `SliderEvent::FocusChanged { focused: bool }`
+  - `SliderEvent::HoverChanged { hovered: bool }`
+  - `SliderEvent::EnabledChanged { enabled: bool }`
+* **Audit Result**: Value changes, keyboard commits, pointer drag lifecycle, multi-thumb mutation, active-thumb selection, focus, hover, and enabled state now have distinct semantic events. `Release` remains the value-commit event and can still come from keyboard adjustments; `DragEnd` identifies pointer drag completion.
+* **Standardized Event (`SliderEvent`)**:
   ```rust
   pub enum SliderEvent {
       Change { thumb_id: ThumbId, value: f32 },
       Release { thumb_id: ThumbId, value: f32 },
       DragStart { thumb_id: ThumbId },
+      DragEnd { thumb_id: ThumbId, value: f32 },
       ThumbAdded { thumb_id: ThumbId, value: f32 },
       ThumbRemoved { thumb_id: ThumbId },
       ThumbSelected { thumb_id: ThumbId },
       FocusChanged { focused: bool },
+      HoverChanged { hovered: bool },
+      EnabledChanged { enabled: bool },
+  }
+  ```
+
+#### **ColorField (`color/color_field`)**
+* **Implemented Events**:
+  - `ColorFieldEvent::Change(Hsv)`
+  - `ColorFieldEvent::Release(Hsv)`
+  - `ColorFieldEvent::DragStart { hsv: Hsv }`
+  - `ColorFieldEvent::DragEnd { hsv: Hsv }`
+  - `ColorFieldEvent::HoverChanged { hovered: bool }`
+  - `ColorFieldEvent::EnabledChanged { enabled: bool }`
+* **Audit Result**: Color surface controls now emit value mutation, value commit, pointer drag lifecycle, hover, and enabled transitions from `ColorFieldState`. Color slider, arc, and ring controls intentionally use the unified `SliderEvent` surface instead of defining parallel color-specific slider events. Color composition consumers filter for value events before acquiring sync state, and `ColorCompositionSync::begin_guard()` is available for scoped sync cleanup when handlers may return early.
+* **Standardized Event (`ColorFieldEvent`)**:
+  ```rust
+  pub enum ColorFieldEvent {
+      Change(Hsv),
+      Release(Hsv),
+      DragStart { hsv: Hsv },
+      DragEnd { hsv: Hsv },
+      HoverChanged { hovered: bool },
+      EnabledChanged { enabled: bool },
   }
   ```
 
 #### **Scrollbar (`scrollbar`)**
-* **Current Events**: `ScrollbarEvent::Scroll { offset: f32 }`
-* **Audit & Gap Analysis**: Needs drag state indicators (`DragStart`, `DragEnd`).
-* **Proposed Standardized Event (`ScrollbarEvent`)**:
+* **Implemented Events**: `ScrollbarEvent::Change { value }`, `DragStart`, `DragEnd { value }`, `FocusChanged { focused }`, `HoverChanged { hovered }`, `EnabledChanged { enabled }`
+* **Audit Result**: Scroll value mutation remains `Change { value }`; pointer drag lifecycle and standard focus/hover/enabled transitions are separate semantic events. SDK internals that use scrollbars for popup/list offsets filter only `Change`. `ScrollbarViewport` maps abstract content and visible ranges onto the scrollbar's internal range/value/thumb geometry.
+* **Standardized Event (`ScrollbarEvent`)**:
   ```rust
   pub enum ScrollbarEvent {
-      ScrollTo { offset: f32 },
-      DragStateChanged { dragging: bool },
+      Change { value: f32 },
+      DragStart,
+      DragEnd { value: f32 },
+      FocusChanged { focused: bool },
+      HoverChanged { hovered: bool },
+      EnabledChanged { enabled: bool },
   }
   ```
 
@@ -277,62 +362,97 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
 ### 2.6 Navigation & Hierarchical Controls
 
 #### **TabsNavigation (`tabs_navigation`)**
-* **Current Events**: `TabsNavigationEvent::Select { tab_id: SharedString }`
-* **Audit & Gap Analysis**: Missing tab close trigger and focus events.
-* **Proposed Standardized Event (`TabsNavigationEvent`)**:
+* **Implemented Events**: `TabsNavigationEvent::Change { tab_id, label }`, `Activate { tab_id, label }`, `FocusChanged { focused }`, `ItemFocused { tab_id, label }`
+* **Audit Result**: Implemented as a semantic wrapper over `ControlGroup`; consumers receive tab-specific identifiers and labels instead of raw group payloads.
+* **Standardized Event (`TabsNavigationEvent`)**:
   ```rust
   pub enum TabsNavigationEvent {
-      Select { tab_id: SharedString },
-      Close { tab_id: SharedString },
+      Change { tab_id: SharedString, label: SharedString },
+      Activate { tab_id: SharedString, label: SharedString },
       FocusChanged { focused: bool },
+      ItemFocused { tab_id: SharedString, label: SharedString },
   }
   ```
 
 #### **NavigationSidebar (`navigation_sidebar`)**
-* **Current Events**: `NavigationSidebarEvent::Select { item_id: SharedString }`
-* **Audit & Gap Analysis**: Missing collapse/expand state change notifications.
-* **Proposed Standardized Event (`NavigationSidebarEvent`)**:
+* **Implemented Events**: `NavigationSidebarEvent::Activate { node_id, label }`, `BranchExpandedChanged { node_id, expanded }`, `CollapsedChanged { collapsed }`, `FocusChanged { focused }`, `ItemFocused { node_id, label }`, `ItemHoverChanged { node_id, hovered }`, `RailSubmenuOpenChanged { node_id }`, `EnabledChanged { enabled }`
+* **Audit Result**: Activation, branch expansion, sidebar collapse, focus, item-focus, hover, rail submenu visibility, and enabled transitions are now distinct semantic events. Internal scrollbar events remain filtered to `ScrollbarEvent::Change`.
+* **Standardized Event (`NavigationSidebarEvent`)**:
   ```rust
   pub enum NavigationSidebarEvent {
-      Select { item_id: SharedString },
+      Activate { node_id: SharedString, label: SharedString },
+      BranchExpandedChanged { node_id: SharedString, expanded: bool },
       CollapsedChanged { collapsed: bool },
       FocusChanged { focused: bool },
+      ItemFocused { node_id: SharedString, label: SharedString },
+      ItemHoverChanged { node_id: SharedString, hovered: bool },
+      RailSubmenuOpenChanged { node_id: Option<SharedString> },
+      EnabledChanged { enabled: bool },
   }
   ```
 
 #### **Accordion (`accordion`)**
-* **Current Events**: `AccordionEvent::Toggle { section_id: SharedString, expanded: bool }`
-* **Audit & Gap Analysis**: Complete for section toggles; add focus tracking.
-* **Proposed Standardized Event (`AccordionEvent`)**:
+* **Implemented Events**: `AccordionEvent::ExpandedChanged { item_id, expanded }`, `FocusChanged { focused }`, `ItemFocused { item_id }`, `ItemHoverChanged { item_id, hovered }`, `EnabledChanged { enabled }`
+* **Audit Result**: Section expansion remains the value event; focus, item focus, hover, and enabled transitions are now explicit lifecycle events.
+* **Standardized Event (`AccordionEvent`)**:
   ```rust
   pub enum AccordionEvent {
-      SectionToggled { section_id: SharedString, expanded: bool },
+      ExpandedChanged { item_id: SharedString, expanded: bool },
       FocusChanged { focused: bool },
+      ItemFocused { item_id: SharedString },
+      ItemHoverChanged { item_id: SharedString, hovered: bool },
+      EnabledChanged { enabled: bool },
   }
   ```
 
-#### **ListView / Listbox (`list_view`, `listbox`)**
-* **Current Events**: `ListViewEvent::Select { index: usize }`, `Activate { index: usize }`
-* **Audit & Gap Analysis**: Needs selection change, scroll offset change, and item action events.
-* **Proposed Standardized Event (`ListViewEvent`)**:
+#### **Pager (`pager`)**
+* **Implemented Events**: `PagerEvent::PageChanged { page }`, `PageSizeChanged { page_size }`, `PageSizeOpenChanged { open }`, `EnabledChanged { enabled }`
+* **Audit Result**: Page and page-size mutation events remain separate from page-size selector lifecycle and enabled transitions. `PagingListViewControl` filters only page mutation events.
+* **Standardized Event (`PagerEvent`)**:
+  ```rust
+  pub enum PagerEvent {
+      PageChanged { page: usize },
+      PageSizeChanged { page_size: usize },
+      PageSizeOpenChanged { open: bool },
+      EnabledChanged { enabled: bool },
+  }
+  ```
+
+#### **ListView (`list_view`)**
+* **Implemented Events**: `ListViewEvent::SelectionChanged { selected_indices }`, `ActiveIndexChanged { active_index }`, `PageChanged { page }`, `PageSizeChanged { page_size }`, `ScrollChanged { top_index }`, `FocusChanged { focused }`, `RowHoverChanged { index, hovered }`, `EnabledChanged { enabled }`
+* **Audit Result**: Selection, active row, paging, scrolling, focus, hover, and enabled transitions are explicit semantic events. Paged-list adapters filter only the page/selection events they consume.
+* **Standardized Event (`ListViewEvent`)**:
   ```rust
   pub enum ListViewEvent {
-      Select { indices: Vec<usize> },
-      Activate { index: usize },
+      SelectionChanged { selected_indices: Vec<usize> },
+      ActiveIndexChanged { active_index: Option<usize> },
+      PageChanged { page: usize },
+      PageSizeChanged { page_size: usize },
       ScrollChanged { top_index: usize },
       FocusChanged { focused: bool },
+      RowHoverChanged { index: usize, hovered: bool },
+      EnabledChanged { enabled: bool },
   }
   ```
 
+#### **Listbox (`listbox`)**
+* **Implemented Events**: `ControlGroupEvent::Change`, `Activate`, `FocusChanged`, `ItemFocused`
+* **Audit Result**: `ListBox` is a typed alias over `ControlGroupControl<ListBoxItem>`, so listbox selection and focus semantics come from the standardized control-group event surface.
+
 #### **TreeView (`tree_view`)**
-* **Current Events**: `TreeViewEvent::Select { node_id }`, `ToggleExpand { node_id }`
-* **Audit & Gap Analysis**: Well structured; ensure standard focus payload.
-* **Proposed Standardized Event (`TreeViewEvent<T>`)**:
+* **Implemented Events**: `TreeViewEvent::NodeExpanded { node_id, data }`, `NodeCollapsed { node_id, data }`, `SelectionChanged { selected_ids }`, `ActiveNodeChanged { node_id }`, `ScrollChanged { top_index }`, `FocusChanged { focused }`, `RowHoverChanged { node_id, index, hovered }`, `EnabledChanged { enabled }`
+* **Audit Result**: Expand/collapse and selection events remain stable. Active-node, scroll, focus, hover, and enabled transitions are now explicit lifecycle events.
+* **Standardized Event (`TreeViewEvent<T>`)**:
   ```rust
   pub enum TreeViewEvent<T> {
-      Select { node_id: T },
-      ToggleExpand { node_id: T, expanded: bool },
+      NodeExpanded { node_id: SharedString, data: T },
+      NodeCollapsed { node_id: SharedString, data: T },
+      SelectionChanged { selected_ids: HashSet<SharedString> },
+      ActiveNodeChanged { node_id: Option<SharedString> },
+      ScrollChanged { top_index: usize },
       FocusChanged { focused: bool },
+      RowHoverChanged { node_id: SharedString, index: usize, hovered: bool },
+      EnabledChanged { enabled: bool },
   }
   ```
 
@@ -341,27 +461,35 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
 ### 2.7 Menus & Overlays
 
 #### **PopupMenu / ContextMenu (`popup_menu`, `context_menu`)**
-* **Current Events**: `PopupMenuEvent::Select { item_id: SharedString }`, `Dismiss`
-* **Audit & Gap Analysis**: Clean overlay event model. Ensure `Open` and `Dismiss` events fire reliably on backdrop click or `Escape`.
-* **Proposed Standardized Event (`PopupMenuEvent`)**:
+* **Implemented Events**:
+  - `PopupMenuEvent::Select { item_id: SharedString, label: SharedString }`
+  - `PopupMenuEvent::OpenChanged { open: bool }`
+  - `PopupMenuEvent::Dismiss`
+  - `PopupMenuEvent::FocusChanged { focused: bool }`
+  - `PopupMenuEvent::HoverChanged { hovered: bool }`
+  - `PopupMenuEvent::EnabledChanged { enabled: bool }`
+  - `ContextMenuEvent` mirrors the same lifecycle shape.
+* **Audit Result**: Implemented in `control.rs`. Selection closes emit `OpenChanged { open: false }` plus `Select`; cancelled closes from trigger toggle, outside click, focus loss, or `Escape` emit `Dismiss`. `FloatingMenu` is shared state/template infrastructure and intentionally has no standalone event emitter.
+* **Standardized Event (`PopupMenuEvent`)**:
   ```rust
   pub enum PopupMenuEvent {
-      Select { item_id: SharedString },
-      Open,
+      Select { item_id: SharedString, label: SharedString },
+      OpenChanged { open: bool },
       Dismiss,
+      FocusChanged { focused: bool },
+      HoverChanged { hovered: bool },
+      EnabledChanged { enabled: bool },
   }
   ```
 
 #### **OverlayWindow / Dialog (`overlay_window`)**
-* **Current Events**: `DialogEvent::Confirm`, `DialogEvent::Cancel`, `DialogEvent::Dismiss`
-* **Audit & Gap Analysis**: Excellent modal lifecycle handling. Needs `OpenStateChanged { open: bool }`.
-* **Proposed Standardized Event (`DialogEvent`)**:
+* **Implemented Events**: `DialogEvent::Opened`, `DialogEvent::Dismissed`
+* **Audit Result**: Complete. `DialogEvent` is non-exhaustive and already emits reliable open/dismiss lifecycle events from `DialogControl::open_from` and `DialogControl::dismiss`. The earlier proposed confirm/cancel/open-state names were stale against the current overlay primitive.
+* **Standardized Event (`DialogEvent`)**:
   ```rust
   pub enum DialogEvent {
-      Confirm,
-      Cancel,
-      Dismiss,
-      OpenStateChanged { open: bool },
+      Opened,
+      Dismissed,
   }
   ```
 
@@ -370,18 +498,36 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
 ### 2.8 Layout & Structure Controls
 
 #### **SplitView / ResizablePanels / DockSplitter (`split_view`, `resizable_panels`, `dock_splitter`)**
-* **Current Events**:
-  - `SplitViewEvent::Resize { split_offset: f32 }`
-  - `ResizablePanelsEvent::Resize { panel_sizes: Vec<f32> }`
-  - `DockSplitterEvent::Resize { position: f32 }`
-* **Audit & Gap Analysis**: Structural resize controls. Add `ResizeStart` and `ResizeEnd` for smooth drag performance tuning in heavy viewports.
-* **Proposed Standardized Event (`SplitViewEvent`)**:
+* **Implemented Events**:
+  - `SplitViewEvent::ResizeStart`
+  - `SplitViewEvent::SidebarWidthChanged { width: Pixels }`
+  - `SplitViewEvent::ResizeEnd { width: Pixels }`
+  - `SplitViewEvent::CollapsedChanged { collapsed: bool }`
+  - `SplitViewEvent::SeparatorHoverChanged { hovered: bool }`
+  - `SplitViewEvent::EnabledChanged { enabled: bool }`
+  - `ResizablePanelsEvent::ResizeStart`
+  - `ResizablePanelsEvent::SizesChanged { sizes_px: Vec<f32> }`
+  - `ResizablePanelsEvent::ResizeEnd { sizes_px: Vec<f32> }`
+  - `ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden }`
+  - `ResizablePanelsEvent::HandleFocusChanged { handle_index, focused }`
+  - `ResizablePanelsEvent::HandleHoverChanged { handle_index, hovered }`
+  - `ResizablePanelsEvent::EnabledChanged { enabled }`
+  - `DockSplitterEvent::ResizeStart`
+  - `DockSplitterEvent::Resize { total_delta: f32 }`
+  - `DockSplitterEvent::ResizeEnd`
+  - `DockSplitterEvent::FocusChanged { focused }`
+  - `DockSplitterEvent::HoverChanged { hovered }`
+  - `DockSplitterEvent::EnabledChanged { enabled }`
+* **Audit Result**: Complete. Pointer and keyboard resize paths emit explicit resize transactions. Programmatic layout visibility/collapse setters emit semantic state changes without requiring apps to infer them from visual state.
+* **Standardized Event (`SplitViewEvent`)**:
   ```rust
   pub enum SplitViewEvent {
-      Resize { offset: f32 },
       ResizeStart,
-      ResizeEnd,
-      CollapseToggled { panel_index: usize, collapsed: bool },
+      SidebarWidthChanged { width: Pixels },
+      ResizeEnd { width: Pixels },
+      CollapsedChanged { collapsed: bool },
+      SeparatorHoverChanged { hovered: bool },
+      EnabledChanged { enabled: bool },
   }
   ```
 
@@ -389,15 +535,12 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
 
 ## 3. Summary & Phased Implementation Plan
 
-1. **Phase 1: Universal State Trait & Common Variants - Partially Complete**:
-   - Complete for command and SDK-owned boolean choice controls: `FocusChanged { focused: bool }`, `EnabledChanged { enabled: bool }`, and `HoverChanged { hovered: bool }`.
-   - Still open for the broader SDK audit where controls have not yet adopted lifecycle variants.
-2. **Phase 2: Core Control Update - Partially Complete**:
-   - Complete: `CommandCore` emits lifecycle events alongside `Click`.
-   - Complete: `Checkbox`, `Switch`, `Toggle`, and `RadioButton` own their click-to-value transitions and emit typed `Change` events.
-   - Complete: `RadioGroup` wraps `ControlGroup` and emits dedicated radio-specific events.
-   - Open: `TextField`, `TextArea`, `Slider`, and the remaining audited control families still need follow-up standardization.
-3. **Phase 3: Container Fan-In & Studio Event Log - Partially Complete**:
-   - Complete: `Toolbar` fans in command button clicks and toggle changes from semantic child events.
-   - Complete: `ControlGroup` emits semantic activation, selection, group focus, and item focus events.
+1. **Phase 1: Universal State Trait & Common Variants - Complete**:
+   - Audited SDK controls now expose typed focus, hover, enabled, open/dismiss, drag, resize, selection, and value events where those states apply.
+   - Public SDK event enums are `#[non_exhaustive]`, and consumers must filter the variants they handle.
+2. **Phase 2: Core Control Update - Complete**:
+   - Command, boolean choice, selector-family, text input, slider, scrollbar, navigation, menu/overlay, and structural layout controls now emit semantic SDK events from `control.rs`.
+   - Programmatic value setters update visual state without recursive mutation events; idempotent lifecycle setters emit explicit lifecycle transitions when state changes.
+3. **Phase 3: Container Fan-In & Studio Event Log - SDK Complete / Showcase Open**:
+   - Complete: `Toolbar`, `ControlGroup`, `RadioGroup`, `TabsNavigation`, list paging, scrollbar consumers, and selector adapters filter child events instead of assuming single-variant streams.
    - Open: Luma Studio's `EventLogView` has not yet been wired into comprehensive real-time event demos across all controls.

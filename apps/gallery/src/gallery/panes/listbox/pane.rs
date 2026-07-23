@@ -134,6 +134,7 @@ impl ListBoxPane {
             ControlGroupEvent::Activate { .. }
             | ControlGroupEvent::FocusChanged { .. }
             | ControlGroupEvent::ItemFocused { .. } => {}
+            _ => {}
         }
     }
 
@@ -146,6 +147,7 @@ impl ListBoxPane {
             ControlGroupEvent::Activate { .. }
             | ControlGroupEvent::FocusChanged { .. }
             | ControlGroupEvent::ItemFocused { .. } => {}
+            _ => {}
         }
     }
 
@@ -161,6 +163,7 @@ impl ListBoxPane {
             ControlGroupEvent::Activate { .. }
             | ControlGroupEvent::FocusChanged { .. }
             | ControlGroupEvent::ItemFocused { .. } => {}
+            _ => {}
         }
     }
 }

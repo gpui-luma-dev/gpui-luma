@@ -159,6 +159,7 @@ impl ColorFieldPane {
     fn handle_event(&mut self, event: &ColorFieldEvent, cx: &mut Context<GalleryApp>) {
         self.hsv = match event {
             ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
+            _ => return,
         };
         cx.notify();
     }

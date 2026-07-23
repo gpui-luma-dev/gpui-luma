@@ -37,6 +37,54 @@ pub struct ScrollbarModel {
     pub(crate) template: Arc<dyn ScrollbarTemplate>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ScrollbarViewport {
+    pub content: ControlRange,
+    pub visible_start: f32,
+    pub visible_end: f32,
+}
+
+impl ScrollbarViewport {
+    pub fn new(content_start: f32, content_end: f32, visible_start: f32, visible_end: f32) -> Self {
+        let content = ControlRange::new(content_start, content_end);
+        let visible_start = if visible_start.is_finite() {
+            visible_start
+        } else {
+            content.start
+        };
+        let visible_end = if visible_end.is_finite() {
+            visible_end
+        } else {
+            visible_start
+        };
+
+        Self { content, visible_start, visible_end }
+    }
+
+    pub fn scroll_range(self) -> ControlRange {
+        let visible_span = self.visible_span();
+        ControlRange::new(self.content.start, (self.content.end - visible_span).max(self.content.start))
+    }
+
+    pub fn value(self, step: f32) -> f32 {
+        self.scroll_range().snap(self.visible_start, step)
+    }
+
+    pub fn thumb_fraction(self) -> f32 {
+        normalized_thumb_fraction(self.visible_span() / self.content.span())
+    }
+
+    pub fn scrollable(self) -> bool {
+        self.content.span() - self.visible_span() > 0.5
+    }
+
+    fn visible_span(self) -> f32 {
+        let start = self.visible_start.min(self.visible_end);
+        let end = self.visible_start.max(self.visible_end);
+        (end - start).clamp(0.0, self.content.span())
+    }
+}
+
 pub struct ScrollbarRenderModel<'a> {
     pub id: &'a SharedString,
     pub orientation: ScrollbarOrientation,
@@ -125,6 +173,26 @@ impl ScrollbarBuilder {
         self
     }
 
+    pub fn viewport(
+        mut self,
+        content_start: impl Into<f64>,
+        content_end: impl Into<f64>,
+        visible_start: impl Into<f64>,
+        visible_end: impl Into<f64>,
+    ) -> Self {
+        let viewport = ScrollbarViewport::new(
+            value_from_input(content_start),
+            value_from_input(content_end),
+            value_from_input(visible_start),
+            value_from_input(visible_end),
+        );
+        self.model.range = viewport.scroll_range();
+        self.model.value = viewport.value(self.model.step);
+        self.model.thumb_fraction = viewport.thumb_fraction();
+        self.model.enabled = self.model.enabled && viewport.scrollable();
+        self
+    }
+
     pub fn size(mut self, size: ControlSize) -> Self {
         self.model.size = size;
         self
@@ -181,7 +249,10 @@ pub(crate) fn normalized_thumb_fraction(value: f32) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{ScrollbarBuilder, ScrollbarStyle, default_scrollbar_template, normalized_thumb_fraction};
+    use super::{
+        ScrollbarBuilder, ScrollbarStyle, ScrollbarViewport, default_scrollbar_template, normalized_thumb_fraction,
+    };
+    use crate::controls::value::ControlRange;
 
     #[test]
     fn thumb_fraction_stays_visible_and_finite() {
@@ -205,5 +276,25 @@ mod tests {
     fn style_helpers_set_scrollbar_style() {
         assert_eq!(ScrollbarBuilder::new("soft").soft().model.style, ScrollbarStyle::Soft);
         assert_eq!(ScrollbarBuilder::new("ghost").soft().ghost().model.style, ScrollbarStyle::Ghost);
+    }
+
+    #[test]
+    fn viewport_maps_content_and_visible_window_to_scrollbar_state() {
+        let viewport = ScrollbarViewport::new(0.0, 1_000.0, 250.0, 450.0);
+
+        assert_eq!(viewport.scroll_range(), ControlRange::new(0.0, 800.0));
+        assert_eq!(viewport.value(1.0), 250.0);
+        assert_eq!(viewport.thumb_fraction(), 0.2);
+        assert!(viewport.scrollable());
+    }
+
+    #[test]
+    fn viewport_clamps_thumb_fraction_when_content_fits() {
+        let viewport = ScrollbarViewport::new(0.0, 100.0, 0.0, 100.0);
+
+        assert_eq!(viewport.scroll_range(), ControlRange::new(0.0, 1.0));
+        assert_eq!(viewport.value(1.0), 0.0);
+        assert_eq!(viewport.thumb_fraction(), 1.0);
+        assert!(!viewport.scrollable());
     }
 }

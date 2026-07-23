@@ -16,6 +16,7 @@ use crate::theme::ControlSize;
 pub type Toggle = Entity<ToggleControl>;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum ToggleEvent {
     Change { selected: bool },
     FocusChanged { focused: bool },

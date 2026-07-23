@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, FocusHandle, IntoElement, ListAlignment, ListState, Render,
-    SharedString, Window, div, list, prelude::*, px,
+    App, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, FocusHandle, IntoElement, ListAlignment,
+    ListState, Render, ScrollWheelEvent, SharedString, Subscription, Window, div, list, prelude::*, px,
 };
 
 use super::{
@@ -18,6 +18,7 @@ use crate::theme::observe_theme_revision;
 gpui::actions!(tree_view, [ExpandNode, CollapseNode]);
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum TreeViewEvent<T>
 where
     T: Clone,
@@ -25,6 +26,11 @@ where
     NodeExpanded { node_id: SharedString, data: T },
     NodeCollapsed { node_id: SharedString, data: T },
     SelectionChanged { selected_ids: HashSet<SharedString> },
+    ActiveNodeChanged { node_id: Option<SharedString> },
+    ScrollChanged { top_index: usize },
+    FocusChanged { focused: bool },
+    RowHoverChanged { node_id: SharedString, index: usize, hovered: bool },
+    EnabledChanged { enabled: bool },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -49,6 +55,8 @@ where
 {
     model: TreeViewModel<T>,
     focus_handle: FocusHandle,
+    focus_in_subscription: Option<Subscription>,
+    focus_out_subscription: Option<Subscription>,
     list_state: ListState,
     expanded_ids: HashSet<SharedString>,
     selected_ids: HashSet<SharedString>,
@@ -56,6 +64,8 @@ where
     hovered_index: Option<usize>,
     pressed_index: Option<usize>,
     flat_cache: Vec<FlatNodeWrapper<T>>,
+    emitted_scroll_top_index: usize,
+    emitted_focused: bool,
 }
 
 impl<T> EventEmitter<TreeViewEvent<T>> for TreeViewControl<T> where T: Clone + Send + Sync + 'static {}
@@ -71,6 +81,8 @@ where
         let mut control = Self {
             model: builder.model,
             focus_handle: cx.focus_handle().tab_stop(enabled),
+            focus_in_subscription: None,
+            focus_out_subscription: None,
             list_state: ListState::new(0, ListAlignment::Top, px(480.0)),
             expanded_ids: HashSet::new(),
             selected_ids: HashSet::new(),
@@ -78,6 +90,8 @@ where
             hovered_index: None,
             pressed_index: None,
             flat_cache: Vec::new(),
+            emitted_scroll_top_index: 0,
+            emitted_focused: false,
         };
 
         control.populate_initial_expands();
@@ -130,12 +144,16 @@ where
 
         self.model.enabled = enabled;
         self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
+        self.focus_in_subscription = None;
+        self.focus_out_subscription = None;
 
         if !enabled {
-            self.hovered_index = None;
+            self.clear_hovered_index(cx);
             self.pressed_index = None;
+            self.emit_focus_changed(false, cx);
         }
 
+        cx.emit(TreeViewEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -183,7 +201,7 @@ where
         self.selected_ids.clear();
         self.selected_ids.insert(node_id.clone());
         if let Some(idx) = self.flat_index_for_id(&node_id) {
-            self.set_active_index(Some(idx), false);
+            self.set_active_index(Some(idx), false, cx);
         }
         cx.emit(TreeViewEvent::SelectionChanged { selected_ids: self.selected_ids.clone() });
         cx.notify();
@@ -247,6 +265,7 @@ where
             && self.flat_index_for_id(&active_id).is_none()
         {
             self.active_node_id = None;
+            cx.emit(TreeViewEvent::ActiveNodeChanged { node_id: None });
         }
 
         self.sync_list_state_after_flat_change(old_count, splice_anchor);
@@ -296,11 +315,23 @@ where
         find_in_tree(&self.model.items, node_id)
     }
 
-    fn set_active_index(&mut self, index: Option<usize>, scroll: bool) {
-        self.active_node_id = index.and_then(|idx| self.flat_cache.get(idx).map(|node| node.id.clone()));
+    fn set_active_index(&mut self, index: Option<usize>, scroll: bool, cx: &mut Context<Self>) -> bool {
+        let next = index.and_then(|idx| self.flat_cache.get(idx).map(|node| node.id.clone()));
+        if self.active_node_id == next {
+            if scroll && let Some(idx) = index {
+                self.list_state.scroll_to_reveal_item(idx);
+                self.emit_scroll_changed_if_needed(cx);
+            }
+            return false;
+        }
+
+        self.active_node_id = next.clone();
         if scroll && let Some(idx) = index {
             self.list_state.scroll_to_reveal_item(idx);
+            self.emit_scroll_changed_if_needed(cx);
         }
+        cx.emit(TreeViewEvent::ActiveNodeChanged { node_id: next });
+        true
     }
 
     pub fn toggle_node_at_index(&mut self, index: usize, cx: &mut Context<Self>) {
@@ -370,11 +401,14 @@ where
 
         if hovered {
             if self.hovered_index != Some(index) {
+                self.clear_hovered_index(cx);
                 self.hovered_index = Some(index);
+                let node_id = self.flat_cache[index].id.clone();
+                cx.emit(TreeViewEvent::RowHoverChanged { node_id, index, hovered: true });
                 cx.notify();
             }
         } else if self.hovered_index == Some(index) {
-            self.hovered_index = None;
+            self.clear_hovered_index(cx);
             if self.pressed_index == Some(index) {
                 self.pressed_index = None;
             }
@@ -390,7 +424,7 @@ where
             mouse_down: Box::new(cx.listener(move |this, _, window, cx| {
                 if this.model.enabled && this.flat_cache.get(idx).is_some_and(|node| node.enabled) {
                     this.pressed_index = Some(idx);
-                    this.set_active_index(Some(idx), false);
+                    this.set_active_index(Some(idx), false, cx);
                     this.focus_handle.focus(window, cx);
                     cx.notify();
                 }
@@ -439,7 +473,7 @@ where
             }
         }
 
-        self.set_active_index(Some(idx), false);
+        self.set_active_index(Some(idx), false, cx);
         cx.emit(TreeViewEvent::SelectionChanged { selected_ids: self.selected_ids.clone() });
         cx.notify();
     }
@@ -452,7 +486,7 @@ where
         let current = self.active_node_id.as_ref().and_then(|id| self.flat_index_for_id(id));
         let next = next_enabled_flat_index(&self.flat_cache, current, direction);
         if let Some(idx) = next {
-            self.set_active_index(Some(idx), true);
+            self.set_active_index(Some(idx), true, cx);
             cx.notify();
         }
     }
@@ -470,7 +504,7 @@ where
             return;
         }
         if let Some(idx) = first_enabled_flat_index(&self.flat_cache) {
-            self.set_active_index(Some(idx), true);
+            self.set_active_index(Some(idx), true, cx);
             cx.notify();
         }
     }
@@ -480,7 +514,7 @@ where
             return;
         }
         if let Some(idx) = last_enabled_flat_index(&self.flat_cache) {
-            self.set_active_index(Some(idx), true);
+            self.set_active_index(Some(idx), true, cx);
             cx.notify();
         }
     }
@@ -504,7 +538,7 @@ where
         }
 
         if idx + 1 < self.flat_cache.len() {
-            self.set_active_index(Some(idx + 1), true);
+            self.set_active_index(Some(idx + 1), true, cx);
             cx.notify();
         }
     }
@@ -532,7 +566,7 @@ where
         while search_idx > 0 {
             search_idx -= 1;
             if self.flat_cache[search_idx].depth < current_depth {
-                self.set_active_index(Some(search_idx), true);
+                self.set_active_index(Some(search_idx), true, cx);
                 cx.notify();
                 break;
             }
@@ -553,6 +587,53 @@ where
             self.handle_node_select(idx, cx);
         }
     }
+
+    fn clear_hovered_index(&mut self, cx: &mut Context<Self>) {
+        if let Some(index) = self.hovered_index.take()
+            && let Some(node) = self.flat_cache.get(index)
+        {
+            cx.emit(TreeViewEvent::RowHoverChanged { node_id: node.id.clone(), index, hovered: false });
+        }
+    }
+
+    fn handle_scroll_wheel(&mut self, _event: &ScrollWheelEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.model.enabled && self.emit_scroll_changed_if_needed(cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_in(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.model.enabled && self.emit_focus_changed(true, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.emit_focus_changed(false, cx) {
+            cx.notify();
+        }
+    }
+
+    fn emit_scroll_changed_if_needed(&mut self, cx: &mut Context<Self>) -> bool {
+        let top_index = self.list_state.logical_scroll_top().item_ix;
+        if self.emitted_scroll_top_index == top_index {
+            return false;
+        }
+
+        self.emitted_scroll_top_index = top_index;
+        cx.emit(TreeViewEvent::ScrollChanged { top_index });
+        true
+    }
+
+    fn emit_focus_changed(&mut self, focused: bool, cx: &mut Context<Self>) -> bool {
+        if self.emitted_focused == focused {
+            return false;
+        }
+
+        self.emitted_focused = focused;
+        cx.emit(TreeViewEvent::FocusChanged { focused });
+        true
+    }
 }
 
 impl<T> Focusable for TreeViewControl<T>
@@ -569,6 +650,15 @@ where
     T: Clone + Send + Sync + 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.focus_in_subscription.is_none() {
+            let focus_handle = self.focus_handle.clone();
+            self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
+        }
+        if self.focus_out_subscription.is_none() {
+            let focus_handle = self.focus_handle.clone();
+            self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
+        }
+
         let render_model = TreeViewRenderModel {
             id: &self.model.id,
             selection_mode: self.model.selection_mode,
@@ -591,6 +681,7 @@ where
             .on_action(cx.listener(Self::handle_expand_focused_node))
             .on_action(cx.listener(Self::handle_collapse_focused_node))
             .on_action(cx.listener(Self::handle_activate))
+            .on_scroll_wheel(cx.listener(Self::handle_scroll_wheel))
     }
 }
 

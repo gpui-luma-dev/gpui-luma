@@ -19,8 +19,12 @@ use crate::keyhandling::{
 use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum SelectorEvent {
     Change { item_id: SharedString, label: SharedString },
+    FocusChanged { focused: bool },
+    OpenChanged { open: bool },
+    Dismiss,
 }
 
 pub struct Selector<T = SelectorItem>
@@ -33,7 +37,9 @@ where
     selected_index: Option<usize>,
     active_index: Option<usize>,
     interaction: ControlInteraction,
+    focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
+    emitted_focused: bool,
 }
 
 impl<T> EventEmitter<SelectorEvent> for Selector<T> where T: SelectorItemLike + 'static {}
@@ -74,7 +80,9 @@ where
             selected_index,
             active_index: None,
             interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx),
+            focus_in_subscription: None,
             focus_out_subscription: None,
+            emitted_focused: false,
         }
     }
 
@@ -94,9 +102,11 @@ where
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
         self.interaction.set_enabled(enabled);
+        self.focus_in_subscription = None;
         self.focus_out_subscription = None;
         if !enabled {
             self.close_menu();
+            self.emit_focus_changed(false, cx);
         }
         cx.notify();
     }
@@ -104,6 +114,7 @@ where
     pub fn set_tab_stop(&mut self, tab_stop: bool, cx: &mut Context<Self>) {
         self.model.tab_stop = tab_stop;
         self.interaction.set_tab_stop(self.model.enabled, tab_stop);
+        self.focus_in_subscription = None;
         self.focus_out_subscription = None;
         cx.notify();
     }
@@ -264,21 +275,46 @@ where
         self.active_index = None;
     }
 
-    fn open_menu_with_active(&mut self, active_index: Option<usize>) -> bool {
+    fn close_menu_with_event(&mut self, dismiss: bool, cx: &mut Context<Self>) -> bool {
+        let was_open = self.open;
+        self.close_menu();
+        if was_open {
+            cx.emit(SelectorEvent::OpenChanged { open: false });
+            if dismiss {
+                cx.emit(SelectorEvent::Dismiss);
+            }
+        }
+        was_open
+    }
+
+    fn open_menu_with_active(&mut self, active_index: Option<usize>, cx: &mut Context<Self>) -> bool {
         let next_active =
             active_index.filter(|index| self.model.items.get(*index).is_some_and(|item| self.is_selectable_item(item)));
         let changed = !self.open || self.active_index != next_active;
+        let open_changed = !self.open;
         self.open = true;
         self.active_index = next_active;
+        if open_changed {
+            cx.emit(SelectorEvent::OpenChanged { open: true });
+        }
         changed
     }
 
-    fn open_with_default_active(&mut self) -> bool {
+    fn open_with_default_active(&mut self, cx: &mut Context<Self>) -> bool {
         let active = self
             .selected_index
             .filter(|index| self.model.items.get(*index).is_some_and(|item| self.is_selectable_item(item)))
             .or_else(|| self.first_selectable_index());
-        self.open_menu_with_active(active)
+        self.open_menu_with_active(active, cx)
+    }
+
+    fn emit_focus_changed(&mut self, focused: bool, cx: &mut Context<Self>) -> bool {
+        if self.emitted_focused == focused {
+            return false;
+        }
+        self.emitted_focused = focused;
+        cx.emit(SelectorEvent::FocusChanged { focused });
+        true
     }
 
     fn select_index(&mut self, index: usize, emit: bool, cx: &mut Context<Self>) -> bool {
@@ -293,13 +329,18 @@ where
         let label = item.label().clone();
         let changed = self.selected_index != Some(index);
         self.selected_index = Some(index);
-        self.close_menu();
+        let closed = if emit {
+            self.close_menu_with_event(false, cx)
+        } else {
+            self.close_menu();
+            false
+        };
 
-        if emit {
+        if emit && changed {
             cx.emit(SelectorEvent::Change { item_id, label });
         }
 
-        changed
+        changed || closed
     }
 
     fn select_by_id(&mut self, item_id: &SharedString, emit: bool, cx: &mut Context<Self>) -> bool {
@@ -316,7 +357,7 @@ where
         }
 
         if !self.open {
-            if self.open_with_default_active() {
+            if self.open_with_default_active(cx) {
                 cx.notify();
             }
             return;
@@ -340,9 +381,9 @@ where
 
         if self.model.enabled {
             if self.open {
-                self.close_menu();
+                self.close_menu_with_event(true, cx);
             } else {
-                self.open_with_default_active();
+                self.open_with_default_active(cx);
             }
             cx.notify();
         }
@@ -395,7 +436,7 @@ where
 
     fn handle_mouse_down_out(&mut self, _event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
-            self.close_menu();
+            self.close_menu_with_event(true, cx);
             cx.notify();
         }
     }
@@ -411,7 +452,7 @@ where
                 self.active_index = next;
                 cx.notify();
             }
-        } else if self.model.tab_stop && self.open_menu_with_active(self.last_selectable_index()) {
+        } else if self.model.tab_stop && self.open_menu_with_active(self.last_selectable_index(), cx) {
             cx.notify();
         } else {
             cx.propagate();
@@ -429,7 +470,7 @@ where
                 self.active_index = next;
                 cx.notify();
             }
-        } else if self.model.tab_stop && self.open_menu_with_active(self.first_selectable_index()) {
+        } else if self.model.tab_stop && self.open_menu_with_active(self.first_selectable_index(), cx) {
             cx.notify();
         } else {
             cx.propagate();
@@ -466,16 +507,25 @@ where
 
     fn handle_escape_focus(&mut self, _: &EscapeFocus, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
-            self.close_menu();
+            self.close_menu_with_event(true, cx);
             cx.notify();
         } else {
             cx.propagate();
         }
     }
 
+    fn handle_focus_in(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.model.enabled && self.emit_focus_changed(true, cx) {
+            cx.notify();
+        }
+    }
+
     fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        let mut changed = self.emit_focus_changed(false, cx);
         if self.open {
-            self.close_menu();
+            changed |= self.close_menu_with_event(true, cx);
+        }
+        if changed {
             cx.notify();
         }
     }
@@ -495,6 +545,10 @@ where
     T: SelectorItemLike + 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.focus_in_subscription.is_none() {
+            let focus_handle = self.interaction.focus_handle().clone();
+            self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
+        }
         if self.focus_out_subscription.is_none() {
             let focus_handle = self.interaction.focus_handle().clone();
             self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
