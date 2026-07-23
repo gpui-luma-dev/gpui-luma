@@ -81,3 +81,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
 pub fn entries_for_category(category: ControlCategory) -> impl Iterator<Item = &'static ControlDocEntry> {
     CONTROL_CATALOG.iter().filter(move |entry| entry.category == category)
 }
+
+pub fn catalog_entry(id: &str) -> Option<&'static ControlDocEntry> {
+    CONTROL_CATALOG.iter().find(|entry| entry.id == id)
+}

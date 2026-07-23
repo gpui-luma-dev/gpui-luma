@@ -3,74 +3,185 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div,
-    prelude::*, px, transparent_black,
+    AnyElement, App, Context, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, IntoElement, MouseDownEvent,
+    MouseUpEvent, Render, SharedString, Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize, default_button_family_theme};
 use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasPresenter,
     default_button_template,
 };
-use gpui_luma::controls::resizable_panels::{
-    ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
-};
-use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::theme::InteractionState;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnButtonStyle, ShadcnLook, ShadcnTextRole};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{notify_entity, InspectorToggleRegistry};
+use super::super::prototypes::{
+    SlidePanelEdge, SlidePanelOverlayHandlers, SlidePanelResizeDrag, SlidePanelResizeHandlers, SlidePanelSizeConfig,
+    SlidePanelState, SlidePanelTopAnchor, render_slide_panel_inset, slide_panel_panels_look,
+};
+use super::super::shared::InspectorToggleRegistry;
 use super::labeling::render_vertical_section_rail;
 use super::theme_inspector::ThemeInspector;
 
-const BUTTON_INSPECTOR_INITIAL_WIDTH: f32 = 620.0;
+const BUTTON_INSPECTOR_PANEL_WIDTH: f32 = 620.0;
 const BUTTON_INSPECTOR_MIN_WIDTH: f32 = 420.0;
 const BUTTON_INSPECTOR_MAX_WIDTH: f32 = 860.0;
+const PANE_PADDING: f32 = 28.0;
+
+#[derive(Clone, Debug)]
+enum ButtonPaneViewEvent {
+    InspectorDismissed,
+}
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ButtonPane {
+    view: Entity<ButtonPaneView>,
+}
+
+struct ButtonPaneView {
+    look: Arc<ShadcnLook>,
+    inspector_toggle: IconButton,
+    inspector_close: IconButton,
     secondary_button: Entity<Button>,
     outline_button: Entity<Button>,
     ghost_button: Entity<Button>,
     primary_button: Entity<Button>,
     state_preview: Entity<ButtonStatePreview>,
     inspector: Entity<ThemeInspector>,
-    split: Entity<ResizablePanels>,
+    slide_state: SlidePanelState,
+    inspector_visible: bool,
     secondary_clicks: usize,
     outline_clicks: usize,
     ghost_clicks: usize,
     primary_clicks: usize,
 }
 
+impl EventEmitter<ButtonPaneViewEvent> for ButtonPaneView {}
+
 impl ButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+    pub(in crate::gallery) fn new(
+        cx: &mut Context<GalleryApp>,
+        look: Arc<ShadcnLook>,
+        inspector_toggle: IconButton,
+    ) -> Self {
+        Self { view: cx.new(|cx| ButtonPaneView::new(look, inspector_toggle, cx)) }
+    }
+
+    pub(in crate::gallery) fn sync_inspector_visibility(
+        &self,
+        visible: bool,
+        opener: FocusHandle,
+        cx: &mut Context<GalleryApp>,
+    ) {
+        self.view.update(cx, |view, cx| {
+            view.set_inspector_visibility(visible, opener, cx);
+        });
+    }
+
+    pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
+        let view = self.view.clone();
+        let (secondary_button, outline_button, ghost_button, primary_button, inspector_close) = {
+            let view = self.view.read(cx);
+            (
+                view.secondary_button.clone(),
+                view.outline_button.clone(),
+                view.ghost_button.clone(),
+                view.primary_button.clone(),
+                view.inspector_close.clone(),
+            )
+        };
+
+        subscriptions.push(cx.subscribe(&view, |app, _, event: &ButtonPaneViewEvent, cx| {
+            if matches!(event, ButtonPaneViewEvent::InspectorDismissed) {
+                app.panes.inspector_toggles.set_visible("button", false);
+                cx.notify();
+            }
+        }));
+        subscriptions.push(cx.subscribe(&secondary_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_secondary_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&outline_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_outline_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&ghost_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_ghost_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&primary_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_primary_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&inspector_close, |app, _, _: &ButtonEvent, cx| {
+            let toggle = app.panes.inspector_toggles.get("button").toggle.clone();
+            let focus = toggle.read(cx).focus_handle(cx);
+            app.panes.inspector_toggles.set_visible("button", false);
+            app.panes.button.sync_inspector_visibility(false, focus, cx);
+            cx.notify();
+        }));
+    }
+
+    pub(in crate::gallery) fn render(&self, _look: &ShadcnLook, _toggles: &InspectorToggleRegistry) -> AnyElement {
+        self.view.clone().into_any_element()
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        self.view.update(cx, |view, cx| {
+            view.notify_controls(cx);
+            cx.notify();
+        });
+    }
+
+    fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        self.view.update(cx, |view, cx| view.handle_secondary_event(event, cx));
+    }
+
+    fn handle_outline_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        self.view.update(cx, |view, cx| view.handle_outline_event(event, cx));
+    }
+
+    fn handle_ghost_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        self.view.update(cx, |view, cx| view.handle_ghost_event(event, cx));
+    }
+
+    fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        self.view.update(cx, |view, cx| view.handle_primary_event(event, cx));
+    }
+}
+
+impl ButtonPaneView {
+    fn new(look: Arc<ShadcnLook>, inspector_toggle: IconButton, cx: &mut Context<Self>) -> Self {
         let secondary_button = look.secondary_button("button-secondary-example").label("Secondary").spawn(cx);
         let outline_button = look.outline_button("button-outline-example").label("Outline").spawn(cx);
         let ghost_button = look.ghost_button("button-ghost-example").label("Ghost").spawn(cx);
         let primary_button = look.primary_button("button-primary-example").label("Primary").spawn(cx);
         let state_preview = cx.new(|_| ButtonStatePreview::new(look.clone()));
-        let inspector = cx.new(|cx| ThemeInspector::new(look.clone(), cx));
-        let split = button_split(
-            look.clone(),
-            primary_button.clone(),
-            secondary_button.clone(),
-            outline_button.clone(),
-            ghost_button.clone(),
-            state_preview.clone(),
-            inspector.clone(),
-            cx,
+        let inspector_close = look.ghost_icon_button("button-inspector-close", LucideIcon::X).spawn(cx);
+        let inspector = cx.new(|cx| ThemeInspector::for_side_panel(look.clone(), inspector_close.clone(), cx));
+
+        let mut slide_state = SlidePanelState::new(
+            SlidePanelTopAnchor::WindowEdge,
+            SlidePanelSizeConfig::new(
+                BUTTON_INSPECTOR_PANEL_WIDTH,
+                BUTTON_INSPECTOR_MIN_WIDTH,
+                BUTTON_INSPECTOR_MAX_WIDTH,
+            ),
         );
+        slide_state.set_backdrop_click_closes(false);
 
         Self {
+            look,
+            inspector_toggle,
+            inspector_close,
             secondary_button,
             outline_button,
             ghost_button,
             primary_button,
             state_preview,
             inspector,
-            split,
+            slide_state,
+            inspector_visible: false,
             secondary_clicks: 0,
             outline_clicks: 0,
             ghost_clicks: 0,
@@ -78,48 +189,34 @@ impl ButtonPane {
         }
     }
 
-    pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.secondary_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.button.handle_secondary_event(event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&self.outline_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.button.handle_outline_event(event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&self.ghost_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.button.handle_ghost_event(event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&self.primary_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.button.handle_primary_event(event, cx);
-        }));
+    fn set_inspector_visibility(&mut self, visible: bool, opener: FocusHandle, cx: &mut Context<Self>) {
+        if self.inspector_visible == visible {
+            if visible && self.slide_state.active_edge().is_none() {
+                self.slide_state.open(SlidePanelEdge::Right, opener);
+                cx.notify();
+            }
+            return;
+        }
+
+        self.inspector_visible = visible;
+        if visible {
+            self.slide_state.open(SlidePanelEdge::Right, opener);
+        } else {
+            self.slide_state.request_close();
+        }
+        cx.notify();
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
-        render_button_pane_shell(
-            toggles.get("button").visible,
-            toggles.get("button").toggle.clone(),
-            self.split.clone(),
-            render_button_showcase(
-                self.primary_button.clone(),
-                self.secondary_button.clone(),
-                self.outline_button.clone(),
-                self.ghost_button.clone(),
-                self.state_preview.clone(),
-            ),
-            look,
-        )
+    fn notify_controls(&self, cx: &mut Context<Self>) {
+        self.secondary_button.update(cx, |_, cx| cx.notify());
+        self.outline_button.update(cx, |_, cx| cx.notify());
+        self.ghost_button.update(cx, |_, cx| cx.notify());
+        self.primary_button.update(cx, |_, cx| cx.notify());
+        self.state_preview.update(cx, |_, cx| cx.notify());
+        self.inspector.update(cx, |_, cx| cx.notify());
     }
 
-    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        notify_entity(&self.secondary_button, cx);
-        notify_entity(&self.outline_button, cx);
-        notify_entity(&self.ghost_button, cx);
-        notify_entity(&self.primary_button, cx);
-        notify_entity(&self.state_preview, cx);
-        notify_entity(&self.inspector, cx);
-        notify_entity(&self.split, cx);
-    }
-
-    fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<Self>) {
         match event {
             ButtonEvent::Click => {
                 self.secondary_clicks += 1;
@@ -131,7 +228,7 @@ impl ButtonPane {
         }
     }
 
-    fn handle_outline_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_outline_event(&mut self, event: &ButtonEvent, cx: &mut Context<Self>) {
         match event {
             ButtonEvent::Click => {
                 self.outline_clicks += 1;
@@ -143,7 +240,7 @@ impl ButtonPane {
         }
     }
 
-    fn handle_ghost_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_ghost_event(&mut self, event: &ButtonEvent, cx: &mut Context<Self>) {
         match event {
             ButtonEvent::Click => {
                 self.ghost_clicks += 1;
@@ -155,7 +252,7 @@ impl ButtonPane {
         }
     }
 
-    fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<Self>) {
         match event {
             ButtonEvent::Click => {
                 self.primary_clicks += 1;
@@ -166,93 +263,157 @@ impl ButtonPane {
             }
         }
     }
+
+    fn handle_overlay_key_down(&mut self, event: &gpui::KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if event.keystroke.key.as_str() == "escape" && self.slide_state.handle_escape(window, cx) {
+            self.inspector_visible = false;
+            cx.emit(ButtonPaneViewEvent::InspectorDismissed);
+            cx.notify();
+        }
+    }
+
+    fn handle_resize_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(edge) = self.slide_state.active_edge() else {
+            return;
+        };
+
+        if self.slide_state.begin_resize(event.position, edge) {
+            window.prevent_default();
+            cx.stop_propagation();
+            cx.notify();
+        }
+    }
+
+    fn handle_resize_drag_move(
+        &mut self,
+        event: &gpui::DragMoveEvent<SlidePanelResizeDrag>,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(edge) = self.slide_state.active_edge() else {
+            return;
+        };
+
+        if self.slide_state.update_resize(event.event.position, edge) {
+            cx.notify();
+        }
+    }
+
+    fn handle_resize_mouse_up(&mut self, event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if event.button != gpui::MouseButton::Left {
+            return;
+        }
+
+        if self.slide_state.finish_resize() {
+            cx.notify();
+        }
+    }
+
+    fn handle_resize_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.slide_state.set_resize_handle_hovered(*hovered) {
+            cx.notify();
+        }
+    }
 }
 
-fn button_split(
-    look: Arc<ShadcnLook>,
-    primary_button: Entity<Button>,
-    secondary_button: Entity<Button>,
-    outline_button: Entity<Button>,
-    ghost_button: Entity<Button>,
-    state_preview: Entity<ButtonStatePreview>,
-    inspector: Entity<ThemeInspector>,
-    cx: &mut Context<GalleryApp>,
-) -> Entity<ResizablePanels> {
-    let chrome = look.chrome();
-    let fill_panel = ResizablePanelSpec::new_render(move || {
-        div().size_full().min_h(px(0.0)).min_w(px(0.0)).flex().items_stretch().justify_center().child(
-            render_centered_button_showcase(render_button_showcase(
-                primary_button.clone(),
-                secondary_button.clone(),
-                outline_button.clone(),
-                ghost_button.clone(),
-                state_preview.clone(),
-            )),
-        )
-    })
-    .weight(1.0)
-    .min(px(320.0))
-    .bg(transparent_black());
+impl Render for ButtonPaneView {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let _ = self.slide_state.sync_animation();
+        self.slide_state.schedule_animation_frame(window, cx);
 
-    let inspector_panel = ResizablePanelSpec::new_render(move || {
-        div().size_full().min_h(px(0.0)).min_w(px(0.0)).pl(px(28.0)).child(inspector.clone())
-    })
-    .size(px(BUTTON_INSPECTOR_INITIAL_WIDTH))
-    .min(px(BUTTON_INSPECTOR_MIN_WIDTH))
-    .max(px(BUTTON_INSPECTOR_MAX_WIDTH))
-    .bg(chrome.content_background);
-
-    look.resizable_panels("button-theme-inspector-page-split")
-        .orientation(ResizablePanelsOrientation::Horizontal)
-        .show_border(false)
-        .show_handle(true)
-        .resize_handle(ResizeHandleSize::Sm)
-        .handle_grip(true)
-        .panels([fill_panel, inspector_panel])
-        .spawn(cx)
-}
-
-fn render_button_pane_shell(
-    inspector_visible: bool,
-    toggle: impl IntoElement,
-    split: Entity<ResizablePanels>,
-    content: AnyElement,
-    look: &ShadcnLook,
-) -> AnyElement {
-    let chrome = look.chrome();
-    let title_style = look.typography_role(ShadcnTextRole::H3);
-
-    div()
-        .size_full()
-        .relative()
-        .flex()
-        .flex_col()
-        .overflow_hidden()
-        .bg(chrome.content_background)
-        .p(px(28.0))
-        .child(
-            div()
-                .w_full()
-                .flex()
-                .items_start()
-                .justify_between()
-                .gap(px(12.0))
-                .child(div().typography_style(title_style).text_color(chrome.title_text).child("Command (Text)"))
-                .child(toggle),
-        )
-        .child(div().min_h(px(0.0)).flex_1().child(if inspector_visible {
-            split.into_any_element()
+        let opener_focus = self.inspector_toggle.read(cx).focus_handle(cx);
+        if self.inspector_visible || self.slide_state.active_edge().is_some() {
+            let close_focus = self.inspector_close.read(cx).focus_handle(cx);
+            self.slide_state.schedule_pending_focus(window, cx, close_focus);
         } else {
-            render_centered_button_showcase(content)
-        }))
-        .into_any_element()
+            self.slide_state.schedule_pending_focus(window, cx, opener_focus);
+        }
+
+        let chrome = self.look.chrome();
+        let title_style = self.look.typography_role(ShadcnTextRole::H3);
+        let panel_open = self.inspector_visible || self.slide_state.active_edge().is_some();
+        let showcase = render_button_showcase(
+            self.primary_button.clone(),
+            self.secondary_button.clone(),
+            self.outline_button.clone(),
+            self.ghost_button.clone(),
+            self.state_preview.clone(),
+        );
+
+        let mut pane = div()
+            .id("button-pane")
+            .size_full()
+            .relative()
+            .overflow_hidden()
+            .bg(chrome.content_background)
+            .child(
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .child(
+                        div()
+                            .flex_none()
+                            .w_full()
+                            .px(px(PANE_PADDING))
+                            .pt(px(PANE_PADDING))
+                            .pb(px(12.0))
+                            .flex()
+                            .items_start()
+                            .gap(px(12.0))
+                            .when(!panel_open, |header| header.child(self.inspector_toggle.clone()))
+                            .child(
+                                div()
+                                    .typography_style(title_style)
+                                    .text_color(chrome.title_text)
+                                    .child("Command (Text)"),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .id("button-pane-body")
+                            .flex_1()
+                            .min_h(px(0.0))
+                            .relative()
+                            .child(render_centered_button_showcase(showcase)),
+                    ),
+            );
+
+        if panel_open {
+            let handlers = SlidePanelOverlayHandlers {
+                key_down: Box::new(cx.listener(Self::handle_overlay_key_down)),
+                backdrop_mouse_down: Box::new(|_, _, _| {}),
+            };
+            let resize_handlers = SlidePanelResizeHandlers {
+                mouse_down: Box::new(cx.listener(Self::handle_resize_mouse_down)),
+                drag_move: Box::new(cx.listener(Self::handle_resize_drag_move)),
+                mouse_up: Box::new(cx.listener(Self::handle_resize_mouse_up)),
+                mouse_up_out: Box::new(cx.listener(Self::handle_resize_mouse_up)),
+                hover: Box::new(cx.listener(Self::handle_resize_hover)),
+            };
+            let inspector_panel = div().size_full().min_h(px(0.0)).min_w(px(0.0)).child(self.inspector.clone());
+            let panel = render_slide_panel_inset(
+                &slide_panel_panels_look(&self.look),
+                &self.slide_state,
+                inspector_panel.into_any_element(),
+                chrome.panel_background,
+                handlers,
+                resize_handlers,
+            );
+            pane = pane.child(panel);
+        }
+
+        pane
+    }
 }
 
 fn render_centered_button_showcase(content: AnyElement) -> AnyElement {
     div()
+        .size_full()
         .min_w(px(0.0))
         .min_h(px(0.0))
-        .flex_1()
+        .px(px(PANE_PADDING))
+        .pb(px(PANE_PADDING))
         .flex()
         .items_center()
         .justify_center()

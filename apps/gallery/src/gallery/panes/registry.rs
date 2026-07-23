@@ -502,6 +502,7 @@ impl GalleryPanes {
 
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         let inspector_toggles = InspectorToggleRegistry::new(look.clone(), cx);
+        let button_inspector_toggle = inspector_toggles.get("button").toggle.clone();
         Self {
             look: look.clone(),
             inspector_toggles,
@@ -519,7 +520,7 @@ impl GalleryPanes {
             selector_templates: selector_controls_template::SelectorControlsTemplatePane::new(cx, look.clone()),
             custom_button: prototypes::ModButtonPane::new(cx, look.clone()),
             toolbar: toolbar::ToolbarPane::new(cx, look.clone()),
-            button: button::ButtonPane::new(cx, look.clone()),
+            button: button::ButtonPane::new(cx, look.clone(), button_inspector_toggle),
             toggle: toggle::TogglePane::new(cx, look.clone()),
             toggle_group: toggle_group::ToggleGroupPane::new(cx, look.clone()),
             switch: switch::SwitchPane::new(cx, look.clone()),
@@ -641,7 +642,12 @@ impl GalleryPanes {
             GalleryPageKind::SelectorTemplates => self.selector_templates.notify_controls(cx),
             GalleryPageKind::CustomButton => self.custom_button.notify_controls(cx),
             GalleryPageKind::Toolbar => self.toolbar.notify_controls(cx),
-            GalleryPageKind::Button => self.button.notify_controls(cx),
+            GalleryPageKind::Button => {
+                self.button.notify_controls(cx);
+                let entry = self.inspector_toggles.get("button");
+                let focus = entry.toggle.read(cx).focus_handle(cx);
+                self.button.sync_inspector_visibility(entry.visible, focus, cx);
+            }
             GalleryPageKind::Toggle => self.toggle.notify_controls(cx),
             GalleryPageKind::ToggleGroup => self.toggle_group.notify_controls(cx),
             GalleryPageKind::Switch => self.switch.notify_controls(cx),

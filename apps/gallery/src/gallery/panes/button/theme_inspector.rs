@@ -11,6 +11,7 @@ use gpui_luma::controls::accordion::{
     AccordionContent, AccordionControl, AccordionItem, AccordionSelectionMode, AccordionTrigger,
 };
 use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem};
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnLookControlExt};
@@ -122,6 +123,8 @@ pub(in crate::gallery) struct ThemeInspector {
     variants: Vec<VariantInspectorControls>,
     active_variant: ThemeVariant,
     synced_mode: gpui_luma::theme::ThemeMode,
+    embedded: bool,
+    close_button: Option<IconButton>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -176,8 +179,21 @@ impl ThemeInspector {
             tabs,
             variants,
             active_variant: ThemeVariant::Primary,
+            embedded: false,
+            close_button: None,
             _subscriptions: subscriptions,
         }
+    }
+
+    pub(in crate::gallery) fn for_side_panel(
+        look: Arc<ShadcnLook>,
+        close_button: IconButton,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        let mut inspector = Self::new(look, cx);
+        inspector.embedded = true;
+        inspector.close_button = Some(close_button);
+        inspector
     }
 
     fn active_tree(&self) -> Entity<AccordionControl> {
@@ -206,7 +222,7 @@ impl Render for ThemeInspector {
         let body = &self.look.mode_tokens().typography.text.body;
         let caption = &self.look.mode_tokens().typography.text.caption;
 
-        div()
+        let mut root = div()
             .id("button-theme-inspector")
             .size_full()
             .min_w(px(0.0))
@@ -214,53 +230,63 @@ impl Render for ThemeInspector {
             .flex()
             .flex_col()
             .overflow_hidden()
-            .border_1()
-            .border_color(chrome.border)
-            .rounded(px(8.0))
-            .bg(chrome.panel_background)
-            .child(
-                div()
-                    .flex_none()
-                    .flex()
-                    .flex_col()
-                    .gap(px(10.0))
-                    .border_b_1()
-                    .border_color(chrome.border)
-                    .p(px(layout::PANEL_PADDING))
-                    .child(
-                        div()
-                            .flex()
-                            .items_baseline()
-                            .justify_between()
-                            .gap(px(12.0))
-                            .child(
-                                div()
-                                    .text_size(px(body.size + 3.0))
-                                    .line_height(px(body.line_height + 3.0))
-                                    .font_weight(FontWeight::MEDIUM)
-                                    .text_color(chrome.title_text)
-                                    .child("ThemeInspector"),
-                            )
-                            .child(
-                                div()
-                                    .text_size(px(caption.size))
-                                    .line_height(px(caption.line_height))
-                                    .text_color(chrome.muted_text)
-                                    .child("Button"),
-                            ),
-                    )
-                    .child(self.tabs.clone()),
-            )
-            .child(
-                div()
-                    .id("button-theme-inspector-scroll")
-                    .flex_1()
-                    .min_h(px(0.0))
-                    .min_w(px(0.0))
-                    .overflow_y_scroll()
-                    .p(px(layout::PANEL_PADDING))
-                    .child(self.active_tree()),
-            )
+            .bg(chrome.panel_background);
+
+        if !self.embedded {
+            root = root.border_1().border_color(chrome.border).rounded(px(8.0));
+        }
+
+        root.child(
+            div()
+                .flex_none()
+                .flex()
+                .flex_col()
+                .gap(px(10.0))
+                .border_b_1()
+                .border_color(chrome.border)
+                .p(px(layout::PANEL_PADDING))
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(12.0))
+                        .when_some(self.close_button.clone(), |row, close_button| row.child(close_button))
+                        .child(
+                            div()
+                                .flex()
+                                .items_baseline()
+                                .gap(px(12.0))
+                                .child(
+                                    div()
+                                        .text_size(px(body.size + 3.0))
+                                        .line_height(px(body.line_height + 3.0))
+                                        .font_weight(FontWeight::MEDIUM)
+                                        .text_color(chrome.title_text)
+                                        .child("ThemeInspector"),
+                                )
+                                .when(!self.embedded, |row| {
+                                    row.child(
+                                        div()
+                                            .text_size(px(caption.size))
+                                            .line_height(px(caption.line_height))
+                                            .text_color(chrome.muted_text)
+                                            .child("Button"),
+                                    )
+                                }),
+                        ),
+                )
+                .child(self.tabs.clone()),
+        )
+        .child(
+            div()
+                .id("button-theme-inspector-scroll")
+                .flex_1()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .p(px(layout::PANEL_PADDING))
+                .child(self.active_tree()),
+        )
     }
 }
 

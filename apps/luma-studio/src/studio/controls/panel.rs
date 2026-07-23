@@ -1,20 +1,12 @@
 use std::sync::Arc;
 
-use gpui::{
-    AnyElement, Context, Entity, FontWeight, MouseButton, ScrollHandle, Subscription, Window, div, point, prelude::*,
-    px,
-};
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::overlay_window::OverlayWindow;
-use gpui_luma::controls::textfield::TextField;
+use gpui::{AnyElement, App, Context, FontWeight, MouseButton, ScrollHandle, Window, div, point, prelude::*, px};
 use gpui_luma::controls::color::style::ElementExt;
-use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::catalog::{ControlCategory, ControlDocEntry, entries_for_category};
-use super::doc_card::{render_control_doc_card, render_category_heading};
-use super::eventing::{ButtonEventStream, ButtonVariant, render_button_possible_events_section};
+use super::control_exposition::{ControlExposition, render_category_heading};
 use crate::studio::doc_shell::{
     StickySectionHeadingTracker, render_sticky_section_heading_lane, with_sticky_heading_tracker,
 };
@@ -23,149 +15,30 @@ const CONTROL_INDEX_WIDTH: f32 = 168.0;
 
 pub struct ControlsPanel {
     look: Arc<ShadcnLook>,
+    expositions: Vec<ControlExposition>,
     scroll_handle: ScrollHandle,
     sticky_heading_tracker: std::rc::Rc<std::cell::RefCell<StickySectionHeadingTracker>>,
     last_scroll_offset: std::rc::Rc<std::cell::Cell<f32>>,
     last_max_scroll: std::rc::Rc<std::cell::Cell<f32>>,
-    button_primary: Entity<Button>,
-    button_secondary: Entity<Button>,
-    button_outline: Entity<Button>,
-    button_ghost: Entity<Button>,
-    button_event_stream: Entity<ButtonEventStream>,
-    textfield_preview: TextField,
-    dialog_trigger: Entity<Button>,
-    dialog_cancel: Entity<Button>,
-    dialog_confirm: Entity<Button>,
-    dialog_overlay: OverlayWindow,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl ControlsPanel {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let button_primary = look.primary_button("controls-doc-button-primary").label("Primary").spawn(cx);
-        let button_secondary = look.secondary_button("controls-doc-button-secondary").label("Secondary").spawn(cx);
-        let button_outline = look.outline_button("controls-doc-button-outline").label("Outline").spawn(cx);
-        let button_ghost = look.ghost_button("controls-doc-button-ghost").label("Ghost").spawn(cx);
-        let button_event_stream = cx.new(|cx| ButtonEventStream::new(cx, look.clone()));
-        let textfield_preview = look
-            .textfield("controls-doc-textfield-preview")
-            .placeholder("Email address")
-            .full_width(true)
-            .spawn(cx);
-
-        let dialog_cancel = look.outline_button("controls-doc-dialog-cancel").label("Cancel").spawn(cx);
-        let dialog_confirm = look.primary_button("controls-doc-dialog-confirm").label("Confirm").spawn(cx);
-        let dialog_overlay = look
-            .overlay_window("controls-doc-dialog-overlay")
-            .mode(gpui_luma::controls::overlay_window::OverlayWindowMode::Modal)
-            .content({
-                let cancel = dialog_cancel.clone();
-                let confirm = dialog_confirm.clone();
-                move |_, _, _| {
-                    div()
-                        .w_full()
-                        .flex()
-                        .flex_col()
-                        .gap(px(12.0))
-                        .p(px(20.0))
-                        .child("Archive this project? This action cannot be undone.")
-                        .child(
-                            div()
-                                .w_full()
-                                .flex()
-                                .justify_end()
-                                .gap(px(8.0))
-                                .child(cancel.clone())
-                                .child(confirm.clone()),
-                        )
-                        .into_any_element()
-                }
-            })
-            .theme_children([dialog_cancel.clone(), dialog_confirm.clone()])
-            .spawn(cx);
-        let dialog_trigger = look.primary_button("controls-doc-dialog-trigger").label("Open modal").spawn(cx);
-
-        let mut subscriptions = Vec::new();
-
-        subscriptions.extend(subscribe_button_event(
-            &button_primary,
-            ButtonVariant::Primary,
-            "controls-doc-button-primary",
-            button_event_stream.clone(),
-            cx,
-        ));
-        subscriptions.extend(subscribe_button_event(
-            &button_secondary,
-            ButtonVariant::Secondary,
-            "controls-doc-button-secondary",
-            button_event_stream.clone(),
-            cx,
-        ));
-        subscriptions.extend(subscribe_button_event(
-            &button_outline,
-            ButtonVariant::Outline,
-            "controls-doc-button-outline",
-            button_event_stream.clone(),
-            cx,
-        ));
-        subscriptions.extend(subscribe_button_event(
-            &button_ghost,
-            ButtonVariant::Ghost,
-            "controls-doc-button-ghost",
-            button_event_stream.clone(),
-            cx,
-        ));
-
-        subscriptions.push(cx.subscribe(&dialog_trigger, {
-            let overlay = dialog_overlay.clone();
-            move |_, _, _: &ButtonEvent, cx| {
-                overlay.update(cx, |overlay, cx| overlay.open(cx));
-            }
-        }));
-        subscriptions.push(cx.subscribe(&dialog_cancel, {
-            let overlay = dialog_overlay.clone();
-            move |_, _, _: &ButtonEvent, cx| {
-                overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
-            }
-        }));
-        subscriptions.push(cx.subscribe(&dialog_confirm, {
-            let overlay = dialog_overlay.clone();
-            move |_, _, _: &ButtonEvent, cx| {
-                overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
-            }
-        }));
-
         Self {
-            look,
+            look: look.clone(),
+            expositions: ControlExposition::spawn_all(look, cx),
             scroll_handle: ScrollHandle::new(),
             sticky_heading_tracker: std::rc::Rc::new(std::cell::RefCell::new(StickySectionHeadingTracker::default())),
             last_scroll_offset: std::rc::Rc::new(std::cell::Cell::new(0.0)),
             last_max_scroll: std::rc::Rc::new(std::cell::Cell::new(0.0)),
-            button_primary,
-            button_secondary,
-            button_outline,
-            button_ghost,
-            button_event_stream,
-            textfield_preview,
-            dialog_trigger,
-            dialog_cancel,
-            dialog_confirm,
-            dialog_overlay,
-            _subscriptions: subscriptions,
         }
     }
 
     pub fn sync_snapshot(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        for entity in [&self.button_primary, &self.button_secondary, &self.button_outline, &self.button_ghost] {
-            entity.update(cx, |_, cx| cx.notify());
+        for exposition in &self.expositions {
+            exposition.sync_look(look.clone(), cx);
         }
-        self.button_event_stream.update(cx, |stream, cx| stream.sync_look(look.clone(), cx));
-        self.textfield_preview.update(cx, |_, cx| cx.notify());
-        for entity in [&self.dialog_trigger, &self.dialog_cancel, &self.dialog_confirm] {
-            entity.update(cx, |_, cx| cx.notify());
-        }
-        self.dialog_overlay.update(cx, |_, cx| cx.notify());
         self.sticky_heading_tracker.borrow_mut().reset();
         cx.notify();
     }
@@ -181,42 +54,6 @@ impl ControlsPanel {
         };
         let max = self.scroll_handle.max_offset().y.as_f32().max(0.0);
         self.set_vertical_offset(top.clamp(0.0, max), cx);
-    }
-
-    fn render_preview(&self, entry: ControlDocEntry) -> AnyElement {
-        match entry.id {
-            "button" => div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .gap(px(16.0))
-                .child(
-                    div().w_full().flex().justify_center().child(
-                        div()
-                            .flex()
-                            .flex_wrap()
-                            .justify_center()
-                            .gap(px(12.0))
-                            .child(self.button_primary.clone())
-                            .child(self.button_secondary.clone())
-                            .child(self.button_outline.clone())
-                            .child(self.button_ghost.clone()),
-                    ),
-                )
-                .child(self.button_event_stream.clone())
-                .into_any_element(),
-            "textfield" => div().w_full().max_w(px(360.0)).child(self.textfield_preview.clone()).into_any_element(),
-            "modal-overlay" => div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(12.0))
-                .child(self.dialog_trigger.clone())
-                .child(self.dialog_overlay.clone())
-                .into_any_element(),
-            _ => div().into_any_element(),
-        }
     }
 }
 
@@ -312,7 +149,8 @@ impl gpui::Render for ControlsPanel {
                                                                     &self.look,
                                                                     category,
                                                                     &entries,
-                                                                    |entry| self.render_preview(entry),
+                                                                    &self.expositions,
+                                                                    cx,
                                                                 ))
                                                             },
                                                         )),
@@ -336,7 +174,8 @@ fn render_category_section(
     look: &ShadcnLook,
     category: ControlCategory,
     entries: &[&ControlDocEntry],
-    preview_for: impl Fn(ControlDocEntry) -> AnyElement + Copy,
+    expositions: &[ControlExposition],
+    cx: &App,
 ) -> AnyElement {
     let chrome = look.chrome();
     let category_order = category.index_order() * 1000;
@@ -354,36 +193,10 @@ fn render_category_section(
             chrome.muted_text,
             chrome.border,
         ))
-        .children(entries.iter().map(|entry| {
-            let between_preview_and_snippet = if entry.id == "button" {
-                Some(render_button_possible_events_section(look))
-            } else {
-                None
-            };
-            render_control_doc_card(
-                look,
-                **entry,
-                preview_for(**entry),
-                between_preview_and_snippet,
-                entry.id == "button",
-            )
+        .children(entries.iter().filter_map(|entry| {
+            ControlExposition::find(expositions, entry.id, cx).map(|exposition| exposition.render(cx))
         }))
         .into_any_element()
-}
-
-fn subscribe_button_event(
-    button: &Entity<Button>,
-    variant: ButtonVariant,
-    button_id: &'static str,
-    event_stream: Entity<ButtonEventStream>,
-    cx: &mut Context<ControlsPanel>,
-) -> Vec<Subscription> {
-    vec![cx.subscribe(button, move |_, _, event: &ButtonEvent, cx| {
-        event_stream.update(cx, |stream, cx| {
-            stream.record_event(variant, button_id, event, cx);
-            cx.notify();
-        });
-    })]
 }
 
 fn category_description(category: ControlCategory) -> &'static str {

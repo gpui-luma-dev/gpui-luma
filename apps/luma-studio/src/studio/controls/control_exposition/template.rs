@@ -1,7 +1,8 @@
-use gpui::{AnyElement, IntoElement, div, prelude::*, px};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
-use super::catalog::ControlDocEntry;
+use super::model::ControlExpositionLayout;
+use crate::studio::controls::catalog::ControlDocEntry;
 use crate::studio::doc_shell::{render_section_heading_anchor_with_order, render_section_heading_anchor_with_order_options};
 
 const PREVIEW_PAD: f32 = 20.0;
@@ -18,16 +19,36 @@ pub(crate) fn render_category_heading(
     render_section_heading_anchor_with_order(title, description, order, title_color, muted_text, border)
 }
 
-pub(crate) fn render_control_doc_card(
+pub(crate) fn controls_mono_font() -> gpui::SharedString {
+    #[cfg(target_os = "macos")]
+    {
+        "Menlo".into()
+    }
+    #[cfg(target_os = "windows")]
+    {
+        "Consolas".into()
+    }
+    #[cfg(target_os = "linux")]
+    {
+        "DejaVu Sans Mono".into()
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    {
+        "monospace".into()
+    }
+}
+
+pub(crate) fn render_control_exposition_card(
     look: &ShadcnLook,
     entry: ControlDocEntry,
     preview: AnyElement,
     between_preview_and_snippet: Option<AnyElement>,
-    borderless: bool,
+    layout: ControlExpositionLayout,
 ) -> AnyElement {
     let chrome = look.chrome();
     let card_bg = look.token_color("card").unwrap_or(chrome.panel_background);
     let card_id = entry.id;
+    let borderless = layout.borderless;
 
     let mut card = div().id(format!("controls-doc-card-{card_id}")).w_full().flex().flex_col();
 
@@ -53,7 +74,7 @@ pub(crate) fn render_control_doc_card(
         card.child(render_card_section(section, borderless, chrome, PREVIEW_PAD))
     })
     .child(render_card_section(
-        render_snippet_block(entry.snippet, chrome.muted_text),
+        render_snippet_block(look, entry.snippet),
         borderless,
         chrome,
         SNIPPET_PAD,
@@ -83,33 +104,31 @@ fn render_card_section(
     }
 }
 
-pub(crate) fn controls_mono_font() -> gpui::SharedString {
-    #[cfg(target_os = "macos")]
-    {
-        "Menlo".into()
-    }
-    #[cfg(target_os = "windows")]
-    {
-        "Consolas".into()
-    }
-    #[cfg(target_os = "linux")]
-    {
-        "DejaVu Sans Mono".into()
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
-    {
-        "monospace".into()
-    }
-}
-
-fn render_snippet_block(snippet: &str, muted_text: gpui::Hsla) -> AnyElement {
+fn render_snippet_block(look: &ShadcnLook, snippet: &str) -> AnyElement {
+    let chrome = look.chrome();
+    let title_style = look.typography_scale(ShadcnTextSize::Sm);
     let mono = controls_mono_font();
+
     div()
         .w_full()
-        .text_size(px(12.0))
-        .line_height(px(18.0))
-        .font_family(mono)
-        .text_color(muted_text)
-        .child(snippet.to_string())
+        .flex()
+        .flex_col()
+        .gap(px(6.0))
+        .child(
+            div()
+                .typography_style(title_style)
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(chrome.title_text)
+                .child("Code Sample"),
+        )
+        .child(
+            div()
+                .w_full()
+                .text_size(px(12.0))
+                .line_height(px(18.0))
+                .font_family(mono)
+                .text_color(chrome.muted_text)
+                .child(snippet.to_string()),
+        )
         .into_any_element()
 }

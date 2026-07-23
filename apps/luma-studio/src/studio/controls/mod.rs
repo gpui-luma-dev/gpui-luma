@@ -1,7 +1,6 @@
 mod catalog;
-mod doc_card;
+mod control_exposition;
 mod event_log_view;
-mod eventing;
 mod panel;
 pub mod workbench_layout;
 

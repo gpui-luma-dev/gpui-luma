@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use gpui::{Context, Subscription};
+use gpui::{Context, Focusable, Subscription};
 use gpui_luma::controls::command::button::ButtonEvent;
 use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma_look_shadcn::prelude::*;
@@ -79,6 +79,12 @@ impl InspectorToggleRegistry {
         }
     }
 
+    pub(in crate::gallery) fn set_visible(&mut self, page_id: &'static str, visible: bool) {
+        if let Some(entry) = self.entries.get_mut(page_id) {
+            entry.visible = visible;
+        }
+    }
+
     pub(in crate::gallery) fn subscribe(
         registry: &Self,
         cx: &mut Context<GalleryApp>,
@@ -89,6 +95,11 @@ impl InspectorToggleRegistry {
             let toggle = entry.toggle.clone();
             subscriptions.push(cx.subscribe(&toggle, move |app, _, _: &ButtonEvent, cx| {
                 app.panes.inspector_toggles.toggle(page_id);
+                if page_id == "button" {
+                    let entry = app.panes.inspector_toggles.get("button");
+                    let focus = entry.toggle.read(cx).focus_handle(cx);
+                    app.panes.button.sync_inspector_visibility(entry.visible, focus, cx);
+                }
                 cx.notify();
             }));
         }
