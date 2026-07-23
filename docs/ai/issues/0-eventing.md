@@ -9,11 +9,12 @@ This document defines the standardized event taxonomy for the `gpui-luma` SDK co
 Status as of 2026-07-23:
 
 * **Complete**: `CommandCore` / `ButtonEvent` now emits `Click`, `FocusChanged`, `EnabledChanged`, and `HoverChanged`. Activation-only app handlers have been migrated to filter click events.
-* **Complete**: `Checkbox`, `Switch`, and `Toggle` are SDK-owned boolean choice controls. They emit typed `Change` events with domain payloads (`checked`, `on`, `selected`) plus focus/enabled/hover lifecycle events. Their inner `Button<bool>` entities are private implementation details and are no longer exposed to apps.
+* **Complete**: `Checkbox`, `Switch`, `Toggle`, and `RadioButton` are SDK-owned boolean choice controls. They emit typed `Change` events with domain payloads (`checked`, `on`, `selected`) plus focus/enabled/hover lifecycle events. Their inner `Button<bool>` entities are private implementation details and are no longer exposed to apps.
 * **Complete**: `Toolbar` fans in command button clicks and toggle changes through sourced child controls. Toggle toolbar items now consume `ToggleEvent::Change` instead of flipping raw button data.
 * **Complete**: `ControlGroupEvent` now includes `FocusChanged { focused }` and `ItemFocused { item_id }` alongside existing `Activate` and `Change` events. Active-descendant and roving-item focus strategies both contribute to semantic focus notifications.
+* **Complete**: `RadioGroup` is a semantic wrapper over `ControlGroup` that emits dedicated `RadioGroupEvent` values rather than exposing raw `ControlGroupEvent` payloads.
 * **Complete**: App usages touched by this migration now subscribe to semantic SDK events instead of depending on the old one-event button assumption or raw boolean button state.
-* **Open**: Radio-specific wrappers, selector-family controls, text inputs, sliders, scrollbars, navigation, menus/overlays, and structural layout controls still reflect the audit/proposed-event state below unless their individual section says otherwise.
+* **Open**: Selector-family controls, text inputs, sliders, scrollbars, navigation, menus/overlays, and structural layout controls still reflect the audit/proposed-event state below unless their individual section says otherwise.
 * **Open**: Luma Studio's event log exists as app-local infrastructure, but comprehensive per-control event showcase wiring is not complete.
 
 ---
@@ -148,14 +149,31 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
   }
   ```
 
-#### **RadioGroup / RadioButton (`radio_group`, `radio_button`)**
-* **Current Events**: Wrapped in `ControlGroupEvent`
-* **Audit & Gap Analysis**: Standardized via `ControlGroupEvent` with single-selection invariant.
-* **Proposed Standardized Event (`RadioGroupEvent`)**:
+#### **RadioButton (`radio_button`)**
+* **Current Wrapper**: `RadioButton` is `Entity<RadioButtonControl>`; `RadioButtonControl` owns an inner `Button<bool>` and does not expose raw button access.
+* **Implemented Events**: `RadioButtonEvent::Change { selected }`, `FocusChanged`, `EnabledChanged`, `HoverChanged`
+* **Audit Result**: Click-to-selected transition lives inside the SDK control. Clicking an already-selected radio button is a no-op. Programmatic `set_data` updates visual state and does not emit `Change`.
+* **Standardized Event (`RadioButtonEvent`)**:
+  ```rust
+  pub enum RadioButtonEvent {
+      Change { selected: bool },
+      FocusChanged { focused: bool },
+      EnabledChanged { enabled: bool },
+      HoverChanged { hovered: bool },
+  }
+  ```
+
+#### **RadioGroup (`radio_group`)**
+* **Current Wrapper**: `RadioGroup` is `Entity<RadioGroupControl<T>>`; `RadioGroupControl<T>` owns an inner `ControlGroupControl<T>` and maps control-group events to radio-specific events.
+* **Implemented Events**: `RadioGroupEvent::Change { value }`, `Activate`, `FocusChanged`, `ItemFocused`
+* **Audit Result**: Radio consumers no longer depend on raw `ControlGroupEvent` payloads. `Change { value }` uses `Option<SharedString>` so radio-like allow-none groups can represent an empty selection.
+* **Standardized Event (`RadioGroupEvent`)**:
   ```rust
   pub enum RadioGroupEvent {
-      Change { value: SharedString },
+      Change { value: Option<SharedString> },
+      Activate { value: SharedString },
       FocusChanged { focused: bool },
+      ItemFocused { item_id: SharedString },
   }
   ```
 
@@ -372,11 +390,12 @@ Below is the complete audit of all control families in `crates/sdk/src/controls/
 ## 3. Summary & Phased Implementation Plan
 
 1. **Phase 1: Universal State Trait & Common Variants - Partially Complete**:
-   - Complete for command and boolean choice controls: `FocusChanged { focused: bool }`, `EnabledChanged { enabled: bool }`, and `HoverChanged { hovered: bool }`.
+   - Complete for command and SDK-owned boolean choice controls: `FocusChanged { focused: bool }`, `EnabledChanged { enabled: bool }`, and `HoverChanged { hovered: bool }`.
    - Still open for the broader SDK audit where controls have not yet adopted lifecycle variants.
 2. **Phase 2: Core Control Update - Partially Complete**:
    - Complete: `CommandCore` emits lifecycle events alongside `Click`.
-   - Complete: `Checkbox`, `Switch`, and `Toggle` own their click-to-value transitions and emit typed `Change` events.
+   - Complete: `Checkbox`, `Switch`, `Toggle`, and `RadioButton` own their click-to-value transitions and emit typed `Change` events.
+   - Complete: `RadioGroup` wraps `ControlGroup` and emits dedicated radio-specific events.
    - Open: `TextField`, `TextArea`, `Slider`, and the remaining audited control families still need follow-up standardization.
 3. **Phase 3: Container Fan-In & Studio Event Log - Partially Complete**:
    - Complete: `Toolbar` fans in command button clicks and toggle changes from semantic child events.

@@ -211,34 +211,34 @@ impl RadioGroupPane {
     }
 
     fn handle_vertical_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
-        let RadioGroupEvent::Change { selected_ids, .. } = event else {
+        let RadioGroupEvent::Change { value } = event else {
             return;
         };
-        self.vertical_choice = selected_ids.first().map_or_else(|| "None".to_string(), ToString::to_string);
+        self.vertical_choice = value.as_ref().map_or_else(|| "None".to_string(), ToString::to_string);
         cx.notify();
     }
 
     fn handle_horizontal_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
-        let RadioGroupEvent::Change { selected_ids, .. } = event else {
+        let RadioGroupEvent::Change { value } = event else {
             return;
         };
-        self.horizontal_choice = selected_ids.first().map_or_else(|| "None".to_string(), ToString::to_string);
+        self.horizontal_choice = value.as_ref().map_or_else(|| "None".to_string(), ToString::to_string);
         cx.notify();
     }
 
     fn handle_indented_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
-        let RadioGroupEvent::Change { selected_ids, .. } = event else {
+        let RadioGroupEvent::Change { value } = event else {
             return;
         };
-        self.indented_choice = selected_ids.first().map_or_else(|| "None".to_string(), ToString::to_string);
+        self.indented_choice = value.as_ref().map_or_else(|| "None".to_string(), ToString::to_string);
         cx.notify();
     }
 
     fn handle_delivery_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
-        let RadioGroupEvent::Change { selected_ids, .. } = event else {
+        let RadioGroupEvent::Change { value } = event else {
             return;
         };
-        self.delivery_choice = selected_ids.first().map_or_else(|| "None".to_string(), ToString::to_string);
+        self.delivery_choice = value.as_ref().map_or_else(|| "None".to_string(), ToString::to_string);
         cx.notify();
     }
 }

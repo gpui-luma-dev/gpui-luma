@@ -6,9 +6,9 @@ use gpui::{
     AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div,
     prelude::*, px,
 };
-use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
-use gpui_luma::controls::radio_button::RadioButton;
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, HasPresenter};
+use gpui_luma::controls::radio_button::{RadioButton, RadioButtonEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState};
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
@@ -71,10 +71,10 @@ impl RadioButtonPane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.secondary_radio, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.secondary_radio, |app, _, event: &RadioButtonEvent, cx| {
             app.panes.radio_button.handle_secondary_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.primary_radio, |app, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.primary_radio, |app, _, event: &RadioButtonEvent, cx| {
             app.panes.radio_button.handle_primary_event(event, cx);
         }));
     }
@@ -132,24 +132,16 @@ impl RadioButtonPane {
         notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
-    fn flip_radio(radio: &RadioButton, selected: &mut bool, cx: &mut Context<GalleryApp>) {
-        radio.update(cx, |button, cx| {
-            let new_selected = !*button.data();
-            button.set_data(new_selected, cx);
-            *selected = new_selected;
-        });
-    }
-
-    fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, ButtonEvent::Click) {
-            Self::flip_radio(&self.secondary_radio, &mut self.secondary_selected, cx);
+    fn handle_secondary_event(&mut self, event: &RadioButtonEvent, cx: &mut Context<GalleryApp>) {
+        if let RadioButtonEvent::Change { selected } = event {
+            self.secondary_selected = *selected;
             cx.notify();
         }
     }
 
-    fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, ButtonEvent::Click) {
-            Self::flip_radio(&self.primary_radio, &mut self.primary_selected, cx);
+    fn handle_primary_event(&mut self, event: &RadioButtonEvent, cx: &mut Context<GalleryApp>) {
+        if let RadioButtonEvent::Change { selected } = event {
+            self.primary_selected = *selected;
             cx.notify();
         }
     }

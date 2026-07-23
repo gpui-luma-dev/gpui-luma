@@ -26,7 +26,7 @@ use gpui_luma::controls::pager::{self, PagerBuilder};
 use gpui_luma::controls::popup_menu::PopupMenu;
 use gpui_luma::controls::progress::{self, ProgressBuilder};
 use gpui_luma::controls::resizable_panels::ResizablePanelsBuilder;
-use gpui_luma::controls::radio_button;
+use gpui_luma::controls::radio_button::{self, RadioButtonBuilder};
 use gpui_luma::controls::radio_group::{
     self, RadioGroupBuilder, RadioGroupLayout, radio_group_button_item_element_template, radio_group_buttons_template,
 };
@@ -70,12 +70,12 @@ pub trait ShadcnLookControlExt {
     fn ghost_switch(&self, id: impl Into<SharedString>) -> SwitchBuilder;
     fn content_only_switch(&self, id: impl Into<SharedString>) -> SwitchBuilder;
 
-    fn radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
-    fn primary_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
-    fn secondary_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
-    fn outline_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
-    fn ghost_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
-    fn content_only_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
+    fn radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder;
+    fn primary_radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder;
+    fn secondary_radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder;
+    fn outline_radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder;
+    fn ghost_radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder;
+    fn content_only_radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder;
 
     fn primary_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()>;
     fn secondary_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()>;
@@ -243,27 +243,27 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
             .without_elevation()
     }
 
-    fn radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder {
         radio_button::new(id).template(self.radio_button_template(ShadcnButtonStyle::Primary))
     }
 
-    fn primary_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn primary_radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder {
         radio_button::new(id).template(self.radio_button_template(ShadcnButtonStyle::Primary))
     }
 
-    fn secondary_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn secondary_radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder {
         radio_button::new(id).template(self.radio_button_template(ShadcnButtonStyle::Secondary))
     }
 
-    fn outline_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn outline_radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder {
         radio_button::new(id).template(self.radio_button_template(ShadcnButtonStyle::Outline))
     }
 
-    fn ghost_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn ghost_radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder {
         radio_button::new(id).template(self.radio_button_template(ShadcnButtonStyle::Ghost))
     }
 
-    fn content_only_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+    fn content_only_radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder {
         radio_button::new(id)
             .template(self.radio_button_template(ShadcnButtonStyle::ContentOnly))
             .without_adorners()
