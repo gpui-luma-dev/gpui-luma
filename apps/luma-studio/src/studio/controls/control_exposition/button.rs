@@ -10,9 +10,9 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::event_reference::render_event_reference_section;
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, EventReferenceSpec};
+use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
+use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[
@@ -45,6 +45,84 @@ const EVENT_SPECS: &[EventReferenceSpec] = &[
         event: "(none)",
         trigger: "Disabled interaction",
         notes: "Pointer and keyboard activation are ignored while disabled.",
+    },
+];
+
+const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
+    PublicInterfaceSpec {
+        symbol: "Button",
+        surface: "Type",
+        notes: "Entity<Button> — spawn once per stable id and compose into the view tree.",
+    },
+    PublicInterfaceSpec {
+        symbol: "ButtonEvent",
+        surface: "Event",
+        notes: "Non-exhaustive enum: Click, FocusChanged, HoverChanged, EnabledChanged.",
+    },
+    PublicInterfaceSpec {
+        symbol: "Button::new(id)",
+        surface: "Factory",
+        notes: "Starts an untyped ButtonBuilder with default command template and text role.",
+    },
+    PublicInterfaceSpec {
+        symbol: "Button::icon(id, icon)",
+        surface: "Factory",
+        notes: "Icon-role builder with round chrome; accepts Lucide or SVG path markers.",
+    },
+    PublicInterfaceSpec {
+        symbol: "ButtonBuilder::label(text)",
+        surface: "Builder",
+        notes: "HasPresenter helper — sets a simple text label presenter before spawn.",
+    },
+    PublicInterfaceSpec {
+        symbol: "ButtonBuilder::content(...)",
+        surface: "Builder",
+        notes: "Custom label/content closure receiving ButtonRenderModel snapshot.",
+    },
+    PublicInterfaceSpec {
+        symbol: "ButtonBuilder::size / role / round",
+        surface: "Builder",
+        notes: "Layout and chrome: ButtonSize, ButtonFamilyRole, round vs square corners.",
+    },
+    PublicInterfaceSpec {
+        symbol: "ButtonBuilder::enabled / tab_stop",
+        surface: "Builder",
+        notes: "Initial interaction state and Tab-key focus traversal participation.",
+    },
+    PublicInterfaceSpec {
+        symbol: "ButtonBuilder::compact / without_elevation / without_adorners",
+        surface: "Builder",
+        notes: "Density and chrome toggles for embedded toolbars and low-emphasis rows.",
+    },
+    PublicInterfaceSpec {
+        symbol: "ButtonBuilder::template / with_template_modifier",
+        surface: "Builder",
+        notes: "First- and second-tier customization ladder hooks on the template root.",
+    },
+    PublicInterfaceSpec {
+        symbol: "ButtonBuilder::spawn(cx)",
+        surface: "Builder",
+        notes: "Materializes the GPUI entity; subscribe with cx.subscribe for ButtonEvent.",
+    },
+    PublicInterfaceSpec {
+        symbol: "Button::set_enabled / set_label",
+        surface: "Entity",
+        notes: "Programmatic lifecycle updates; EnabledChanged may fan out focus/hover false.",
+    },
+    PublicInterfaceSpec {
+        symbol: "Button::set_template / set_presenter",
+        surface: "Entity",
+        notes: "Hot-swap presentation after spawn; triggers cx.notify on the entity.",
+    },
+    PublicInterfaceSpec {
+        symbol: "look.primary_button(id) … ghost_button(id)",
+        surface: "Look",
+        notes: "ShadcnLookControlExt style factories — bind Primary/Secondary/Outline/Ghost templates.",
+    },
+    PublicInterfaceSpec {
+        symbol: "look.*_icon_button(id, icon)",
+        surface: "Look",
+        notes: "Icon variants for the same emphasis tiers via Button::icon + look template.",
     },
 ];
 
@@ -186,19 +264,18 @@ impl Render for ButtonControlExposition {
                 .flex_col()
                 .gap(px(16.0))
                 .child(
-                    div().w_full().flex().justify_center().child(
-                        div()
-                            .flex()
-                            .flex_wrap()
-                            .justify_center()
-                            .items_center()
-                            .gap(px(12.0))
-                            .child(self.enabled_switch.clone())
-                            .child(self.primary.clone())
-                            .child(self.secondary.clone())
-                            .child(self.outline.clone())
-                            .child(self.ghost.clone()),
-                    ),
+                    div()
+                        .w_full()
+                        .flex()
+                        .flex_wrap()
+                        .items_center()
+                        .justify_start()
+                        .gap(px(12.0))
+                        .child(self.enabled_switch.clone())
+                        .child(self.primary.clone())
+                        .child(self.secondary.clone())
+                        .child(self.outline.clone())
+                        .child(self.ghost.clone()),
                 )
                 .child(self.event_stream.clone());
 
@@ -206,7 +283,7 @@ impl Render for ButtonControlExposition {
                 &self.look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_event_reference_section(&self.look, EVENT_SPECS)),
+                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
                 ControlExpositionLayout::BORDERLESS,
             )
         })

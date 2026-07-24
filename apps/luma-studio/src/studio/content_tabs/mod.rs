@@ -1,4 +1,5 @@
 pub(crate) mod cards;
+mod components;
 mod controls;
 mod dashboard;
 mod host;

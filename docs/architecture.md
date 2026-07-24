@@ -107,8 +107,8 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
 *   `studio/prototypes/flex_layout.rs`: App-local responsive flow prototype retained for Luma Studio experimentation and not part of the SDK surface.
 *   `studio/prototypes/column_layout.rs`: App-local estimated masonry / column-packing prototype retained for Luma Studio experimentation and not part of the SDK surface.
 *   `studio/content_tabs/cards/`: Cards-tab board composition and app-local layout tuning layered on top of the experimental layout prototypes.
-*   `studio/doc_shell/`: Shared scrollable-doc chrome (sticky section headings, anchored headings, index scroll targets) used by Style Guide and Controls tabs.
-*   `studio/controls/`: SDK control documentation panel for the Controls content tab (`ControlDocCard`, catalog entries, live previews). Includes app-local `EventLogView` (LMTP split: read-only scrollable log display for event demos). Distinct from `studio/style/`, which focuses on theme/visual inspection (variant matrices, customization ladders).
+*   `studio/doc_shell/`: Shared scrollable-doc chrome (sticky section headings, anchored headings) used by the Style Guide tab.
+*   `studio/controls/`: SDK control documentation panel for the Controls content tab — page-based navigation via the right-side control index, one exposition per selection (`ControlDocCard`, catalog entries, live previews). Includes app-local `EventLogView` (LMTP split: read-only scrollable log display for event demos). Distinct from `studio/style/`, which focuses on theme/visual inspection (variant matrices, customization ladders).
 
 ---
 

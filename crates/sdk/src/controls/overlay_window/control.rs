@@ -348,6 +348,10 @@ fn render_modal_overlay(
                 .relative()
                 .w(viewport.width)
                 .h(viewport.height)
+                .on_scroll_wheel(|_event, window, cx| {
+                    window.prevent_default();
+                    cx.stop_propagation();
+                })
                 .child(
                     div()
                         .absolute()

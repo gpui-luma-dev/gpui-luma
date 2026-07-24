@@ -1,4 +1,5 @@
 mod app;
+mod components;
 mod content_tabs;
 mod controls;
 mod demo_controls;

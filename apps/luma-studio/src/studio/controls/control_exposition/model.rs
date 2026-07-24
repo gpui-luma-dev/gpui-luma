@@ -16,3 +16,10 @@ pub struct EventReferenceSpec {
     pub trigger: &'static str,
     pub notes: &'static str,
 }
+
+#[derive(Clone, Copy)]
+pub struct PublicInterfaceSpec {
+    pub symbol: &'static str,
+    pub surface: &'static str,
+    pub notes: &'static str,
+}

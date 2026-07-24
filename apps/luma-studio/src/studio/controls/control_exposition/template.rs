@@ -3,21 +3,10 @@ use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use super::model::ControlExpositionLayout;
 use crate::studio::controls::catalog::ControlDocEntry;
-use crate::studio::doc_shell::{render_section_heading_anchor_with_order, render_section_heading_anchor_with_order_options};
+use crate::studio::doc_shell::render_section_heading_anchor_with_order_options;
 
 const PREVIEW_PAD: f32 = 20.0;
 const SNIPPET_PAD: f32 = 14.0;
-
-pub(crate) fn render_category_heading(
-    title: &'static str,
-    description: &'static str,
-    order: usize,
-    title_color: gpui::Hsla,
-    muted_text: gpui::Hsla,
-    border: gpui::Hsla,
-) -> AnyElement {
-    render_section_heading_anchor_with_order(title, description, order, title_color, muted_text, border)
-}
 
 pub(crate) fn controls_mono_font() -> gpui::SharedString {
     #[cfg(target_os = "macos")]

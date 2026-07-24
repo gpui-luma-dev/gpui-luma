@@ -76,13 +76,10 @@ impl RadioButtonControl {
     fn handle_button_event(&mut self, _: Entity<Button<bool>>, event: &ButtonEvent, cx: &mut Context<Self>) {
         match event {
             ButtonEvent::Click => {
-                if self.selected {
-                    return;
-                }
-
-                self.selected = true;
-                self.button.update(cx, |button, cx| button.set_data(true, cx));
-                cx.emit(RadioButtonEvent::Change { selected: true });
+                let selected = !self.selected;
+                self.selected = selected;
+                self.button.update(cx, |button, cx| button.set_data(selected, cx));
+                cx.emit(RadioButtonEvent::Change { selected });
                 cx.notify();
             }
             ButtonEvent::FocusChanged { focused } => cx.emit(RadioButtonEvent::FocusChanged { focused: *focused }),

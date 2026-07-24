@@ -9,6 +9,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn::prelude::*;
 
 use super::cards::render_demo_board;
+use super::components;
 use super::controls;
 use super::dashboard;
 use super::navigation::luma_studio_tabs_navigation_template;
@@ -17,6 +18,7 @@ use super::style_guide;
 use super::tab::ContentTab;
 use super::theme_usage;
 use super::super::app::LumaStudioApp;
+use super::super::components::ComponentsPanel;
 use super::super::controls::ControlsPanel;
 use super::super::demo_controls::DemoControls;
 use super::super::overrides::StudioOverrides;
@@ -35,6 +37,7 @@ pub struct ContentPaneHost {
     tabs: Entity<TabsNavigation>,
     style_guide_panel: Entity<StyleGuidePanel>,
     controls_panel: Entity<ControlsPanel>,
+    components_panel: Entity<ComponentsPanel>,
     palette_panel: Entity<PalettePanel>,
     theme_usage_panel: Entity<ThemeUsagePanel>,
     board: BoardSnapshot,
@@ -55,6 +58,7 @@ impl ContentPaneHost {
                 TabsNavigationItem::new("dashboard").label("Dashboard"),
                 TabsNavigationItem::new("typography").label("Style Guide"),
                 TabsNavigationItem::new("controls").label("Controls"),
+                TabsNavigationItem::new("components").label("Components"),
                 TabsNavigationItem::new("palette").label("Palette"),
                 TabsNavigationItem::new("theme-usage").label("Theme Usage"),
             ])
@@ -74,6 +78,7 @@ impl ContentPaneHost {
 
         let style_guide_panel = cx.new(|cx| StyleGuidePanel::new(cx, board.look.clone()));
         let controls_panel = cx.new(|cx| ControlsPanel::new(cx, board.look.clone()));
+        let components_panel = cx.new(|cx| ComponentsPanel::new(cx, board.look.clone()));
         let palette_panel = cx.new(|cx| PalettePanel::new(cx, board.look.clone(), board.overrides.clone()));
         let theme_usage_panel = cx.new(|cx| ThemeUsagePanel::new(cx, board.look.clone()));
 
@@ -81,6 +86,7 @@ impl ContentPaneHost {
             tabs,
             style_guide_panel,
             controls_panel,
+            components_panel,
             palette_panel,
             theme_usage_panel,
             board,
@@ -103,6 +109,11 @@ impl ContentPaneHost {
         if tab == ContentTab::Controls {
             let look = self.board.look.clone();
             self.controls_panel.update(cx, |panel, cx| panel.sync_snapshot(look, cx));
+        }
+
+        if tab == ContentTab::Components {
+            let look = self.board.look.clone();
+            self.components_panel.update(cx, |panel, cx| panel.sync_snapshot(look, cx));
         }
 
         if tab == ContentTab::Palette {
@@ -133,6 +144,7 @@ impl ContentPaneHost {
         });
         self.style_guide_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
         self.controls_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
+        self.components_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
         self.palette_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), overrides, cx));
         self.theme_usage_panel.update(cx, |panel, cx| panel.sync_snapshot(look, cx));
         cx.notify();
@@ -166,6 +178,7 @@ impl Render for ContentPaneHost {
                 ContentTab::Dashboard => dashboard::viewport().child(board.demos.dashboard.clone()),
                 ContentTab::Typography => style_guide::viewport().child(self.style_guide_panel.clone()),
                 ContentTab::Controls => controls::viewport().child(self.controls_panel.clone()),
+                ContentTab::Components => components::viewport().child(self.components_panel.clone()),
                 ContentTab::Palette => palette::viewport().child(self.palette_panel.clone()),
                 ContentTab::ThemeUsage => theme_usage::viewport().child(self.theme_usage_panel.clone()),
             })
