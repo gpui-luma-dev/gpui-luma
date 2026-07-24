@@ -1,4 +1,1 @@
-mod catalog;
-mod panel;
-
-pub use panel::ComponentsPanel;
+pub(crate) mod catalog;

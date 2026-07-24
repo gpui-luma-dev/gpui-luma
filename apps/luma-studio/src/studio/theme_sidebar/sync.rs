@@ -54,7 +54,7 @@ impl ThemeSidebar {
         self.tabs.update(cx, |tabs, cx| {
             tabs.set_size(ControlSize::Lg, cx);
             tabs.set_width_mode(TabsNavigationWidthMode::Uniform, cx);
-            tabs.set_template(luma_studio_tabs_navigation_template(theme.clone(), ControlSize::Lg), cx);
+            tabs.set_template(luma_studio_tabs_navigation_template(theme.clone(), ControlSize::Lg, None), cx);
         });
     }
 

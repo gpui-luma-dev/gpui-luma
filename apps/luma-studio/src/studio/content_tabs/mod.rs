@@ -1,6 +1,6 @@
 pub(crate) mod cards;
-mod components;
 mod controls;
+pub(crate) mod controls_tab_chrome;
 mod dashboard;
 mod host;
 mod navigation;

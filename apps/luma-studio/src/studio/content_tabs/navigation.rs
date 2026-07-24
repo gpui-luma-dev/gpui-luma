@@ -1,26 +1,42 @@
 use std::sync::Arc;
 
 use gpui::{App, Div, ElementId, Hsla, SharedString, Stateful, TextRun, Window, div, font, prelude::*, px};
+use gpui_luma::controls::color::style::ElementExt;
 use gpui_luma::controls::control_group::ControlGroupItemHandlerExt;
+use gpui_luma::controls::icon::lucide_icon;
 use gpui_luma::controls::tabs_navigation::{
     TabsNavigationItemLook, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
     TabsNavigationTheme, TabsNavigationWidthMode,
 };
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
+use lucide_icons::Icon as LucideIcon;
+
+use super::controls_tab_chrome::ControlsTabChrome;
+
+const CONTROLS_TAB_ID: &str = "controls";
+const TAB_CHEVRON_SIZE: f32 = 12.0;
+const TAB_CHEVRON_GAP: f32 = 4.0;
 
 pub fn luma_studio_tabs_navigation_template(
     look: Arc<ShadcnLook>,
     tab_size: ControlSize,
+    controls_tab_chrome: Option<ControlsTabChrome>,
 ) -> Arc<dyn TabsNavigationTemplate> {
     let full_bar_color = look.token_color("border").unwrap_or(look.chrome().border);
-    Arc::new(LumaStudioTabsNavigationTemplate { theme: look.tabs_navigation_theme(), full_bar_color, tab_size })
+    Arc::new(LumaStudioTabsNavigationTemplate {
+        theme: look.tabs_navigation_theme(),
+        full_bar_color,
+        tab_size,
+        controls_tab_chrome,
+    })
 }
 
 struct LumaStudioTabsNavigationTemplate {
     theme: Arc<dyn TabsNavigationTheme>,
     full_bar_color: Hsla,
     tab_size: ControlSize,
+    controls_tab_chrome: Option<ControlsTabChrome>,
 }
 
 struct TabsNavigationItemVisualModel<'a> {
@@ -38,7 +54,13 @@ impl TabsNavigationTemplate for LumaStudioTabsNavigationTemplate {
         _cx: &mut App,
     ) -> Stateful<Div> {
         let list_look = self.theme.resolve_list(model.enabled, self.tab_size);
-        let uniform_width = resolve_uniform_tab_width(model, self.theme.as_ref(), self.tab_size, window);
+        let uniform_width = resolve_uniform_tab_width(
+            model,
+            self.theme.as_ref(),
+            self.tab_size,
+            self.controls_tab_chrome.is_some(),
+            window,
+        );
 
         let mut root = div()
             .id(model.id.clone())
@@ -63,6 +85,7 @@ impl TabsNavigationTemplate for LumaStudioTabsNavigationTemplate {
 
         for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
             let look = self.theme.resolve_item(item.active, item.state.interaction_state(), self.tab_size);
+            let is_controls_tab = item.id.as_ref() == CONTROLS_TAB_ID;
             let mut tab = render_tabs_navigation_item_visual(
                 TabsNavigationItemVisualModel {
                     id: ElementId::NamedChild(Arc::new(model.id.clone().into()), format!("tab-{}", item.id).into()),
@@ -70,6 +93,11 @@ impl TabsNavigationTemplate for LumaStudioTabsNavigationTemplate {
                     state: item.state,
                 },
                 look,
+                if is_controls_tab {
+                    self.controls_tab_chrome.as_ref()
+                } else {
+                    None
+                },
             )
             .control_group_item_handlers(item_handlers);
 
@@ -92,6 +120,7 @@ fn resolve_uniform_tab_width(
     model: &TabsNavigationRenderModel<'_>,
     theme: &dyn TabsNavigationTheme,
     tab_size: ControlSize,
+    controls_has_chevron: bool,
     window: &mut Window,
 ) -> Option<f32> {
     if model.width_mode != TabsNavigationWidthMode::Uniform {
@@ -116,7 +145,10 @@ fn resolve_uniform_tab_width(
             strikethrough: None,
         };
         let line = window.text_system().shape_line(item.label.clone(), px(look.label_typography.size), &[run], None);
-        let width = line.x_for_index(item.label.len()).as_f32() + look.padding_x * 2.0;
+        let mut width = line.x_for_index(item.label.len()).as_f32() + look.padding_x * 2.0;
+        if controls_has_chevron && item.id.as_ref() == CONTROLS_TAB_ID {
+            width += TAB_CHEVRON_SIZE + TAB_CHEVRON_GAP;
+        }
         max_width = max_width.max(width);
     }
 
@@ -126,7 +158,29 @@ fn resolve_uniform_tab_width(
 fn render_tabs_navigation_item_visual(
     model: TabsNavigationItemVisualModel<'_>,
     look: TabsNavigationItemLook,
+    controls_tab_chrome: Option<&ControlsTabChrome>,
 ) -> Stateful<Div> {
+    let label_content = if let Some(chrome) = controls_tab_chrome {
+        let picker_open = chrome.is_picker_open();
+        div()
+            .flex()
+            .items_center()
+            .gap(px(TAB_CHEVRON_GAP))
+            .child(model.label.clone())
+            .child(lucide_icon(
+                if picker_open {
+                    LucideIcon::ChevronUp
+                } else {
+                    LucideIcon::ChevronDown
+                },
+                look.label_color,
+                TAB_CHEVRON_SIZE,
+            ))
+            .into_any_element()
+    } else {
+        div().child(model.label.clone()).into_any_element()
+    };
+
     let mut root = div()
         .id(model.id)
         .relative()
@@ -140,7 +194,7 @@ fn render_tabs_navigation_item_visual(
         .text_size(px(look.label_typography.size))
         .line_height(px(look.label_typography.line_height))
         .font_weight(look.label_typography.weight)
-        .child(model.label.clone());
+        .child(label_content);
 
     if let Some(indicator) = look.indicator {
         root = root.child(
@@ -153,6 +207,13 @@ fn render_tabs_navigation_item_visual(
                 .rounded(px(look.indicator_height))
                 .bg(indicator),
         );
+    }
+
+    if let Some(chrome) = controls_tab_chrome {
+        let chrome = chrome.clone();
+        root = root.on_prepaint(move |bounds, _, _| {
+            chrome.set_tab_bounds(bounds);
+        });
     }
 
     if model.state.disabled {
