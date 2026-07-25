@@ -163,6 +163,14 @@ pub fn controls_exposition_id(gallery_id: &str) -> Option<&'static str> {
         "textfield" => Some("textfield"),
         "color-slider" => Some("color-slider"),
         "dialog-modal" => Some("modal-overlay"),
+        "context-menu" => Some("context-menu"),
+        "floating-menu" => Some("floating-menu"),
+        "popup-menu" => Some("popup-menu"),
+        "autocomplete-textfield" => Some("autocomplete-textfield"),
+        "combobox" => Some("combobox"),
+        "search-selector" => Some("search-selector"),
+        "popup-selector" => Some("popup-selector"),
+        "selection-panel" => Some("selection-panel"),
         _ => None,
     }
 }

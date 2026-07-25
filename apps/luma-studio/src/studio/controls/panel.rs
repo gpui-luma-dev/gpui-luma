@@ -49,9 +49,11 @@ impl ControlsPanel {
             cx.notify();
         }));
 
+        let expositions = ControlExposition::spawn_all(look.clone(), cx);
+
         Self {
             look: look.clone(),
-            expositions: ControlExposition::spawn_all(look, cx),
+            expositions,
             scroll_handle: ScrollHandle::new(),
             selected_entry_id: first_controls_exposition_id().unwrap_or("button"),
             controls_tab_visited: false,

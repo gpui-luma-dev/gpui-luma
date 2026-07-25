@@ -134,6 +134,9 @@ User Actions (Pointer/Keyboard)
 *   **Public SDK event enums are non-exhaustive.** Consumers must match only the variants they handle and include a wildcard arm or use `if let` / `let ... else`. Adding a new lifecycle or semantic event must not force an exhaustive-match refactor across downstream apps.
 *   **Boolean choice controls** (`Checkbox`, `Switch`, `Toggle`, `RadioButton`) own their click-to-value transition in the SDK. Apps subscribe to `CheckboxEvent::Change`, `SwitchEvent::Change`, `ToggleEvent::Change`, or `RadioButtonEvent::Change` and assign their local model from the event payload. Use `set_data` only for programmatic synchronization; do not subscribe to an inner `ButtonEvent` or flip raw `Button<bool>` state in app code.
 
+### Composed controls & demo event logs (Luma Studio)
+Composed controls such as `autocomplete`, `combobox`, and `search_selector` wrap textfield and popup child controls, but their public semantic events follow the same SDK contract as simpler controls: update owned state, emit with `cx.emit(...)`, and notify as needed. Luma Studio event-log demos should retain subscriptions on the preview entity and lay out popup-based controls so their overlays do not cover the event stream.
+
 ### Overlay Theme Invalidation
 *   **`OverlayWindow`** observes [`LumaThemeRevision`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/theme/revision.rs) and re-renders itself when the active look changes.
 *   Persistent entities composed into overlay content (buttons, choice groups, etc.) must be registered on the builder via `.theme_child(...)` / `.theme_children([...])` so the overlay fans out invalidation without app-level notify plumbing.

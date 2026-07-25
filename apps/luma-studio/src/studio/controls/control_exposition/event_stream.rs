@@ -42,6 +42,7 @@ impl ControlEventStream {
         let line = format!("[{}] {line}", self.next_index);
         self.next_index += 1;
         self.event_log.update(cx, |log, cx| log.append_line(&line, cx));
+        cx.notify();
     }
 }
 
