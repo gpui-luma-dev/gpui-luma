@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    App, Bounds, ClickEvent, Corner, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Stateful, Window,
+    Anchor, App, Bounds, ClickEvent, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Stateful, Window,
     anchored, deferred, div, px, prelude::*,
 };
 
@@ -195,7 +195,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             );
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
-                .anchor(Corner::TopLeft)
+                .anchor(Anchor::TopLeft)
                 .position(position)
                 .child(menu);
 

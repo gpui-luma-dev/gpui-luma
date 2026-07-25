@@ -39,18 +39,21 @@ impl ButtonTemplate<bool> for NeumorphicSwitchTemplate {
                     offset: gpui::point(px(0.0), px(2.0)),
                     blur_radius: px(3.0),
                     spread_radius: px(0.0),
+                    inset: false,
                 },
                 gpui::BoxShadow {
                     color: hsla(220.0 / 360.0, 0.24, 0.08, 0.42),
                     offset: gpui::point(px(1.0), px(6.0)),
                     blur_radius: px(10.0),
                     spread_radius: px(0.0),
+                    inset: false,
                 },
                 gpui::BoxShadow {
                     color: hsla(220.0 / 360.0, 0.26, 0.06, 0.34),
                     offset: gpui::point(px(2.0), px(10.0)),
                     blur_radius: px(15.0),
                     spread_radius: px(-1.0),
+                    inset: false,
                 },
             ]
         };

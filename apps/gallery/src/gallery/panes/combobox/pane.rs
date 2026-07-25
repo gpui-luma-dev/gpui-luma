@@ -200,7 +200,7 @@ impl ComboBoxPanelTemplate for GalleryComboboxPanelTemplate {
             return deferred(
                 anchored()
                     .snap_to_window_with_margin(px(8.0))
-                    .anchor(gpui::Corner::TopLeft)
+                    .anchor(gpui::Anchor::TopLeft)
                     .position(point(bounds.left(), bounds.bottom()))
                     .offset(point(px(0.0), px(4.0)))
                     .child(

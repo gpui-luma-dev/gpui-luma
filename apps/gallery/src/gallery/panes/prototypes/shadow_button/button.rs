@@ -340,6 +340,7 @@ fn shadow_layers(spec: ShadowButtonSpec) -> Vec<BoxShadow> {
         offset: point(px(spec.offset_x), px(spec.offset_y)),
         blur_radius: px(spec.blur_radius.max(0.0)),
         spread_radius: px(spec.spread_radius),
+        inset: false,
     }]
 }
 

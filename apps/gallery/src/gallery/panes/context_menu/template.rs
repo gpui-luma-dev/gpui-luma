@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{App, ClickEvent, Corner, Div, Stateful, Window, anchored, deferred, div, px, prelude::*};
+use gpui::{App, ClickEvent, Anchor, Div, Stateful, Window, anchored, deferred, div, px, prelude::*};
 use gpui_luma::controls::context_menu::{ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers};
 use gpui_luma::controls::floating_menu::render_floating_menu;
 use gpui_luma::controls::context_menu::{ContextMenuLook, ContextMenuTheme};
@@ -66,7 +66,7 @@ impl ContextMenuTemplate for GalleryContextMenuTemplate {
             );
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
-                .anchor(Corner::TopLeft)
+                .anchor(Anchor::TopLeft)
                 .position(position)
                 .child(menu);
 

@@ -1,7 +1,7 @@
 use super::*;
 
 use gpui::{
-    ClickEvent, Context, Corner, Corners, HitboxBehavior, ImageSource, MouseButton, MouseDownEvent, MouseMoveEvent,
+    ClickEvent, Context, Anchor, Corners, HitboxBehavior, ImageSource, MouseButton, MouseDownEvent, MouseMoveEvent,
     MouseUpEvent, Pixels, Render, Window, anchored, canvas, deferred, div, img, point, prelude::*, px, relative, size,
 };
 use gpui_luma::controls::color::style::{ElementExt, StyledExt};
@@ -190,7 +190,7 @@ impl Render for GradientBuilder {
                             deferred(
                                 anchored()
                                     .snap_to_window_with_margin(px(8.0))
-                                    .anchor(Corner::TopLeft)
+                                    .anchor(Anchor::TopLeft)
                                     .position(point(bounds.left(), bounds.bottom()))
                                     .offset(point(px(0.0), px(4.0)))
                                     .child(
@@ -302,7 +302,7 @@ impl Render for GradientBuilder {
                             deferred(
                                 anchored()
                                     .snap_to_window_with_margin(px(8.0))
-                                    .anchor(Corner::TopLeft)
+                                    .anchor(Anchor::TopLeft)
                                     .position(point(bounds.left(), bounds.bottom()))
                                     .offset(point(px(0.0), px(4.0)))
                                     .child(

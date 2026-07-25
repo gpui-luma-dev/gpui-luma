@@ -1,5 +1,5 @@
 use gpui::{
-    anchored, deferred, point, App, Context, Corner, DragMoveEvent, EventEmitter, FocusHandle, Focusable, IntoElement,
+    anchored, deferred, point, Anchor, App, Context, DragMoveEvent, EventEmitter, FocusHandle, Focusable, IntoElement,
     KeyDownEvent, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Point, Render, SharedString, Size, Subscription,
     Window, div, prelude::*, px,
 };
@@ -340,7 +340,7 @@ fn render_modal_overlay(
 
     anchored()
         .snap_to_window_with_margin(px(0.0))
-        .anchor(Corner::TopLeft)
+        .anchor(Anchor::TopLeft)
         .position(point(px(0.0), px(0.0)))
         .child(
             div()
@@ -416,7 +416,7 @@ fn render_modeless_overlay(
     let origin = resolve_dialog_origin(position, viewport, size, width);
     anchored()
         .snap_to_window_with_margin(px(12.0))
-        .anchor(Corner::TopLeft)
+        .anchor(Anchor::TopLeft)
         .position(point(px(0.0), px(0.0)))
         .child(
             div()

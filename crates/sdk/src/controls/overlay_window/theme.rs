@@ -72,6 +72,7 @@ impl DialogTheme for DefaultDialogTheme {
                     blur_radius: px(38.0),
                     spread_radius: px(-16.0),
                     color: Hsla { a: 0.20, ..black() },
+                    inset: false,
                 }]
             },
             radius: metrics.radius.xl,

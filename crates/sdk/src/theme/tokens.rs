@@ -704,6 +704,7 @@ impl LumaShadowLayer {
             offset: point(px(self.offset_x), px(self.offset_y)),
             blur_radius: px(self.blur),
             spread_radius: px(self.spread),
+            inset: false,
         }
     }
 }

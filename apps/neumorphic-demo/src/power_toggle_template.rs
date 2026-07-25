@@ -47,12 +47,14 @@ impl ButtonTemplate<bool> for NeumorphicPowerToggleTemplate {
                     offset: point(px(0.0), px(2.0)),
                     blur_radius: px(3.0),
                     spread_radius: px(0.0),
+                    inset: false,
                 },
                 gpui::BoxShadow {
                     color: hsla(220.0 / 360.0, 0.20, 0.08, 0.26),
                     offset: point(px(1.0), px(6.0)),
                     blur_radius: px(9.0),
                     spread_radius: px(0.0),
+                    inset: false,
                 },
             ]
         };
@@ -65,6 +67,7 @@ impl ButtonTemplate<bool> for NeumorphicPowerToggleTemplate {
                 offset: point(px(0.0), px(1.0)),
                 blur_radius: px(2.0),
                 spread_radius: px(0.0),
+                inset: false,
             }]
         };
 

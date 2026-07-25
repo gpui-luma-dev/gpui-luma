@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Corner, Div, FontWeight, Stateful, Window, anchored, deferred, div, point, prelude::*,
+    AnyElement, App, ClickEvent, Anchor, Div, FontWeight, Stateful, Window, anchored, deferred, div, point, prelude::*,
     px, svg,
 };
 use gpui_luma::controls::context_menu::{ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers};
@@ -73,7 +73,7 @@ impl ContextMenuTemplate for GalleryRadialContextMenuTemplate {
             let radial_menu = render_radial_menu(model, look.floating_menu, item_hovers, item_clicks);
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
-                .anchor(Corner::TopLeft)
+                .anchor(Anchor::TopLeft)
                 .position(position)
                 .offset(point(px(-RADIAL_RADIUS), px(-RADIAL_RADIUS)))
                 .child(radial_menu);

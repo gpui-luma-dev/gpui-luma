@@ -68,12 +68,14 @@ impl SliderTemplate for NeumorphicSliderTemplate {
                     offset: gpui::point(px(0.0), px(1.0)),
                     blur_radius: px(2.0),
                     spread_radius: px(0.0),
+                    inset: false,
                 },
                 gpui::BoxShadow {
                     color: hsla(220.0 / 360.0, 0.24, 0.08, 0.24),
                     offset: gpui::point(px(0.0), px(3.0)),
                     blur_radius: px(5.0),
                     spread_radius: px(0.0),
+                    inset: false,
                 },
             ]
         } else {
@@ -156,6 +158,7 @@ impl SliderTemplate for NeumorphicSliderTemplate {
                     offset: gpui::point(px(1.0), px(6.0)),
                     blur_radius: px(9.0),
                     spread_radius: px(0.0),
+                    inset: false,
                 }]
             } else {
                 Vec::new()

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Corner, KeyDownEvent, MouseButton, MouseDownEvent, Size, Window, anchored, div, point, prelude::*,
+    AnyElement, App, Anchor, KeyDownEvent, MouseButton, MouseDownEvent, Size, Window, anchored, div, point, prelude::*,
     px, transparent_black,
 };
 use gpui_luma::controls::resizable_panels::{ResizeHandleSize, ResizablePanelsLook};
@@ -125,7 +125,7 @@ pub(in crate::gallery) fn render_slide_panel_overlay(
 
     anchored()
         .snap_to_window_with_margin(px(0.0))
-        .anchor(Corner::TopLeft)
+        .anchor(Anchor::TopLeft)
         .position(point(px(0.0), overlay_top_inset))
         .child(overlay_root.child(panel_shell).child(resize_handle))
         .into_any_element()

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{
-    App, Bounds, ClickEvent, Corner, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Point, Size, Stateful,
+    Anchor, App, Bounds, ClickEvent, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Point, Size, Stateful,
     Window, anchored, deferred, div, point, px, prelude::*,
 };
 use lucide_icons::Icon as LucideIcon;
@@ -365,7 +365,7 @@ where
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ResolvedSelectorPlacement {
-    anchor: Corner,
+    anchor: Anchor,
     position: Point<Pixels>,
     offset: Point<Pixels>,
     max_height: Pixels,
@@ -417,28 +417,28 @@ pub(crate) fn resolve_selector_popup_metrics(
 
     match resolved {
         SelectorPlacement::Smart | SelectorPlacement::BelowStart => ResolvedSelectorPlacement {
-            anchor: Corner::TopLeft,
+            anchor: Anchor::TopLeft,
             position: point(trigger_bounds.left(), trigger_bounds.bottom()),
             offset: point(px(0.0), offset_y),
             max_height,
             scrolling,
         },
         SelectorPlacement::AboveStart => ResolvedSelectorPlacement {
-            anchor: Corner::BottomLeft,
+            anchor: Anchor::BottomLeft,
             position: point(trigger_bounds.left(), trigger_bounds.top()),
             offset: point(px(0.0), -offset_y),
             max_height,
             scrolling,
         },
         SelectorPlacement::CenteredOnTrigger => ResolvedSelectorPlacement {
-            anchor: Corner::TopLeft,
+            anchor: Anchor::TopLeft,
             position: trigger_bounds.center(),
             offset: point(-(menu_size.width * 0.5), -(max_height * 0.5)),
             max_height,
             scrolling,
         },
         SelectorPlacement::OverlayOnTrigger => ResolvedSelectorPlacement {
-            anchor: Corner::TopLeft,
+            anchor: Anchor::TopLeft,
             position: trigger_bounds.origin,
             offset: point(px(0.0), px(0.0)),
             max_height,
@@ -490,7 +490,7 @@ mod tests {
             size(px(320.0), px(360.0)),
         );
 
-        assert_eq!(popup_metrics.anchor, Corner::TopLeft);
+        assert_eq!(popup_metrics.anchor, Anchor::TopLeft);
         assert_eq!(popup_metrics.position, point(px(12.0), px(112.0)));
         assert!(!popup_metrics.scrolling);
     }
@@ -507,7 +507,7 @@ mod tests {
             size(px(320.0), px(360.0)),
         );
 
-        assert_eq!(popup_metrics.anchor, Corner::TopLeft);
+        assert_eq!(popup_metrics.anchor, Anchor::TopLeft);
         assert_eq!(popup_metrics.position, point(px(30.0), px(70.0)));
         assert_eq!(popup_metrics.offset, point(px(0.0), px(0.0)));
     }
@@ -524,7 +524,7 @@ mod tests {
             size(px(320.0), px(280.0)),
         );
 
-        assert_eq!(popup_metrics.anchor, Corner::BottomLeft);
+        assert_eq!(popup_metrics.anchor, Anchor::BottomLeft);
         assert!(popup_metrics.scrolling);
         assert!(popup_metrics.max_height < estimated_menu_size(&look, 20, trigger.size.width).height);
     }

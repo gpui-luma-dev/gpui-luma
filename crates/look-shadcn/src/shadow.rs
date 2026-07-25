@@ -53,14 +53,13 @@ fn parse_shadow_layer(layer: &str) -> Result<BoxShadow> {
 
     let color = catalog_color(color_raw)?;
 
-    Ok(
-        BoxShadow {
-            color,
-            offset: point(px(offset_x), px(offset_y)),
-            blur_radius: px(blur),
-            spread_radius: px(spread),
-        },
-    )
+    Ok(BoxShadow {
+        color,
+        offset: point(px(offset_x), px(offset_y)),
+        blur_radius: px(blur),
+        spread_radius: px(spread),
+        inset: false,
+    })
 }
 
 fn split_lengths_and_color(layer: &str) -> Result<(&str, &str)> {

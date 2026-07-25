@@ -1,5 +1,5 @@
 use gpui::{
-    anchored, deferred, point, App, Bounds, Context, Corner, EventEmitter, FocusHandle, FocusOutEvent, Focusable,
+    anchored, deferred, point, Anchor, App, Bounds, Context, EventEmitter, FocusHandle, FocusOutEvent, Focusable,
     IntoElement, MouseButton, MouseDownEvent, Pixels, Point, Render, SharedString, Size, Subscription, Window, div,
     prelude::*, px,
 };
@@ -315,7 +315,7 @@ impl Render for AnchoredPanel {
 
 #[derive(Clone, Copy, Debug)]
 struct ResolvedAnchoredPanelPlacement {
-    anchor: Corner,
+    anchor: Anchor,
     position: Point<Pixels>,
     offset: Point<Pixels>,
 }
@@ -343,17 +343,17 @@ fn resolve_anchored_panel_placement(
 
     match resolved {
         AnchoredPanelPlacement::BelowStart | AnchoredPanelPlacement::SmartStart => ResolvedAnchoredPanelPlacement {
-            anchor: Corner::TopLeft,
+            anchor: Anchor::TopLeft,
             position: point(anchor_bounds.left(), anchor_bounds.bottom()),
             offset: point(px(0.0), offset_y),
         },
         AnchoredPanelPlacement::BelowCenter => ResolvedAnchoredPanelPlacement {
-            anchor: Corner::TopLeft,
+            anchor: Anchor::TopLeft,
             position: point(anchor_bounds.center().x, anchor_bounds.bottom()),
             offset: point(content_size.map_or(px(0.0), |size| -(size.width * 0.5)), offset_y),
         },
         AnchoredPanelPlacement::AboveStart => ResolvedAnchoredPanelPlacement {
-            anchor: Corner::BottomLeft,
+            anchor: Anchor::BottomLeft,
             position: point(anchor_bounds.left(), anchor_bounds.top()),
             offset: point(px(0.0), -offset_y),
         },
@@ -377,7 +377,7 @@ mod tests {
             px(8.0),
         );
 
-        assert_eq!(placement.anchor, Corner::TopLeft);
+        assert_eq!(placement.anchor, Anchor::TopLeft);
         assert_eq!(placement.position, point(px(40.0), px(30.0)));
         assert_eq!(placement.offset, point(px(-50.0), px(4.0)));
     }
@@ -393,7 +393,7 @@ mod tests {
             px(8.0),
         );
 
-        assert_eq!(placement.anchor, Corner::BottomLeft);
+        assert_eq!(placement.anchor, Anchor::BottomLeft);
         assert_eq!(placement.position, point(px(20.0), px(450.0)));
         assert_eq!(placement.offset, point(px(0.0), px(-4.0)));
     }

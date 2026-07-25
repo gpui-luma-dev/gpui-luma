@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Component, Context, Decorations, Hsla, InteractiveElement, IntoElement, MouseButton,
+    AnyElement, App, ClickEvent, Context, Decorations, Hsla, InteractiveElement, IntoElement, MouseButton,
     ParentElement, Pixels, Render, RenderOnce, StatefulInteractiveElement as _, StyleRefinement, Styled,
     TitlebarOptions, Window, WindowControlArea, div, hsla, point, prelude::*, px,
 };
@@ -20,6 +20,7 @@ type CloseWindowHandler = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;
 /// TitleBar used to customize the look of the title bar.
 ///
 /// You can put arbitrary elements inside the title bar.
+#[derive(IntoElement)]
 pub struct TitleBar {
     style: StyleRefinement,
     children: Vec<AnyElement>,
@@ -75,14 +76,6 @@ impl TitleBar {
 impl Default for TitleBar {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl IntoElement for TitleBar {
-    type Element = Component<Self>;
-
-    fn into_element(self) -> Self::Element {
-        Component::new(self)
     }
 }
 

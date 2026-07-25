@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Corner, Div, FocusHandle, FontFeatures, FontWeight, MouseButton,
+    Anchor, AnyElement, App, Bounds, ClickEvent, Div, FocusHandle, FontFeatures, FontWeight, MouseButton,
     MouseDownEvent, MouseUpEvent, Pixels, SharedString, Stateful, Window, anchored, deferred, div, point, prelude::*,
     px,
 };
@@ -811,7 +811,7 @@ fn render_rail_submenu_overlay(
 
     anchored()
         .snap_to_window_with_margin(px(8.0))
-        .anchor(Corner::TopLeft)
+        .anchor(Anchor::TopLeft)
         .position(point(submenu.parent_bounds.right(), submenu.parent_bounds.top()))
         .offset(point(px(RAIL_SUBMENU_OFFSET_X), px(0.0)))
         .child(menu)

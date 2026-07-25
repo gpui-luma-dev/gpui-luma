@@ -235,7 +235,7 @@ fn paint_dial(bounds: Bounds<Pixels>, value: f32, dial_size: DialSize, window: &
     let face_bounds = Bounds { origin: point(center.x - radius, center.y - radius), size: size(diameter, diameter) };
     let face_corners = Corners::all(radius);
 
-    window.paint_shadows(face_bounds, face_corners, &raised_shadows(dial_size));
+    window.paint_drop_shadows(face_bounds, face_corners, &raised_shadows(dial_size));
     window.paint_quad(fill(face_bounds, rgb(0xE9EDF2)).corner_radii(face_corners));
     paint_face_noise(window, center, radius, dial_size);
 
@@ -264,12 +264,14 @@ fn raised_shadows(dial_size: DialSize) -> [BoxShadow; 2] {
                 offset: point(px(0.0), px(4.0)),
                 blur_radius: px(6.0),
                 spread_radius: px(0.0),
+                inset: false,
             },
             BoxShadow {
                 color: hsla(220.0 / 360.0, 0.22, 0.09, 0.62),
                 offset: point(px(4.0), px(22.0)),
                 blur_radius: px(27.0),
                 spread_radius: px(-6.0),
+                inset: false,
             },
         ],
         DialSize::Medium => [
@@ -278,12 +280,14 @@ fn raised_shadows(dial_size: DialSize) -> [BoxShadow; 2] {
                 offset: point(px(0.0), px(3.0)),
                 blur_radius: px(5.0),
                 spread_radius: px(0.0),
+                inset: false,
             },
             BoxShadow {
                 color: hsla(220.0 / 360.0, 0.22, 0.09, 0.46),
                 offset: point(px(2.0), px(13.0)),
                 blur_radius: px(16.0),
                 spread_radius: px(-3.0),
+                inset: false,
             },
         ],
         DialSize::Small => [
@@ -292,12 +296,14 @@ fn raised_shadows(dial_size: DialSize) -> [BoxShadow; 2] {
                 offset: point(px(0.0), px(2.0)),
                 blur_radius: px(4.0),
                 spread_radius: px(0.0),
+                inset: false,
             },
             BoxShadow {
                 color: hsla(220.0 / 360.0, 0.22, 0.09, 0.46),
                 offset: point(px(2.0), px(11.0)),
                 blur_radius: px(13.0),
                 spread_radius: px(-2.5),
+                inset: false,
             },
         ],
     }

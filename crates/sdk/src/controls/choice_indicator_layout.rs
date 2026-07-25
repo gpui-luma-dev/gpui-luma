@@ -119,6 +119,7 @@ mod tests {
             blur_radius: px(4.0),
             spread_radius: px(0.0),
             color: Hsla { a: 0.5, ..black() },
+            inset: false,
         }]
     }
 

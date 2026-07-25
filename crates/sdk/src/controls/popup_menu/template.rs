@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Corner, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
+    Anchor, AnyElement, App, Bounds, ClickEvent, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
     Point, Size, Stateful, Window, anchored, deferred, div, point, px, prelude::*,
 };
 use lucide_icons::Icon as LucideIcon;
@@ -256,7 +256,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
 
 #[derive(Clone, Copy, Debug)]
 struct ResolvedPopupMenuPlacement {
-    anchor: Corner,
+    anchor: Anchor,
     position: Point<Pixels>,
     offset: Point<Pixels>,
 }
@@ -287,17 +287,17 @@ fn resolve_popup_menu_placement(
 
     match resolved {
         PopupMenuPlacement::Smart | PopupMenuPlacement::BelowStart => ResolvedPopupMenuPlacement {
-            anchor: Corner::TopLeft,
+            anchor: Anchor::TopLeft,
             position: point(trigger_bounds.left(), trigger_bounds.bottom()),
             offset: point(px(0.0), offset_y),
         },
         PopupMenuPlacement::AboveStart => ResolvedPopupMenuPlacement {
-            anchor: Corner::BottomLeft,
+            anchor: Anchor::BottomLeft,
             position: point(trigger_bounds.left(), trigger_bounds.top()),
             offset: point(px(0.0), -offset_y),
         },
         PopupMenuPlacement::CenteredOnTrigger => ResolvedPopupMenuPlacement {
-            anchor: Corner::TopLeft,
+            anchor: Anchor::TopLeft,
             position: trigger_bounds.center(),
             offset: point(-(menu_size.width * 0.5), -(menu_size.height * 0.5)),
         },
@@ -363,7 +363,7 @@ mod tests {
             size(px(320.0), px(360.0)),
         );
 
-        assert_eq!(placement.anchor, Corner::TopLeft);
+        assert_eq!(placement.anchor, Anchor::TopLeft);
         assert_eq!(placement.position, point(trigger.left(), trigger.bottom()));
         assert_eq!(placement.offset, point(px(0.0), px(look.menu_offset_y)));
     }
@@ -380,7 +380,7 @@ mod tests {
             size(px(320.0), px(360.0)),
         );
 
-        assert_eq!(placement.anchor, Corner::BottomLeft);
+        assert_eq!(placement.anchor, Anchor::BottomLeft);
         assert_eq!(placement.position, point(trigger.left(), trigger.top()));
         assert_eq!(placement.offset, point(px(0.0), -px(look.menu_offset_y)));
     }
@@ -397,7 +397,7 @@ mod tests {
             size(px(320.0), px(360.0)),
         );
 
-        assert_eq!(placement.anchor, Corner::BottomLeft);
+        assert_eq!(placement.anchor, Anchor::BottomLeft);
         assert_eq!(placement.position, point(trigger.left(), trigger.top()));
     }
 
@@ -414,7 +414,7 @@ mod tests {
             size(px(320.0), px(360.0)),
         );
 
-        assert_eq!(placement.anchor, Corner::TopLeft);
+        assert_eq!(placement.anchor, Anchor::TopLeft);
         assert_eq!(placement.position, trigger.center());
         assert_eq!(placement.offset, point(-(menu_size.width * 0.5), -(menu_size.height * 0.5)));
     }
