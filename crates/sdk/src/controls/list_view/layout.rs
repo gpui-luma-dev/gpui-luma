@@ -142,10 +142,12 @@ pub fn page_after_size_change(
         return clamp_page(0, item_count, new_page_size);
     }
 
-    if let Some(index) = keep_in_view {
-        if index < item_count && index >= old_start && index < old_end {
-            return clamp_page(index / new_page_size, item_count, new_page_size);
-        }
+    if let Some(index) = keep_in_view
+        && index < item_count
+        && index >= old_start
+        && index < old_end
+    {
+        return clamp_page(index / new_page_size, item_count, new_page_size);
     }
 
     let pages = page_count(item_count, new_page_size);

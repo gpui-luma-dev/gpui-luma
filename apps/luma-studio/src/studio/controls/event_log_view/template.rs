@@ -13,8 +13,6 @@ pub struct EventLogViewTemplateHandlers {
 }
 
 pub trait EventLogViewTemplate: Send + Sync {
-    fn theme(&self) -> Arc<dyn EventLogTheme>;
-
     fn render(
         &self,
         model: &EventLogViewRenderModel<'_>,
@@ -25,21 +23,15 @@ pub trait EventLogViewTemplate: Send + Sync {
     ) -> Stateful<Div>;
 }
 
-pub struct ThemedEventLogViewTemplate {
-    theme: Arc<dyn EventLogTheme>,
-}
+pub struct ThemedEventLogViewTemplate;
 
 impl ThemedEventLogViewTemplate {
-    pub fn new(theme: Arc<dyn EventLogTheme>) -> Self {
-        Self { theme }
+    pub fn new(_theme: Arc<dyn EventLogTheme>) -> Self {
+        Self
     }
 }
 
 impl EventLogViewTemplate for ThemedEventLogViewTemplate {
-    fn theme(&self) -> Arc<dyn EventLogTheme> {
-        Arc::clone(&self.theme)
-    }
-
     fn render(
         &self,
         model: &EventLogViewRenderModel<'_>,

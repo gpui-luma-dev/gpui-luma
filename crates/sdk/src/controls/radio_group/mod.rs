@@ -142,6 +142,7 @@ where
             ControlGroupEvent::ItemFocused { item_id } => {
                 cx.emit(RadioGroupEvent::ItemFocused { item_id: item_id.clone() });
             }
+            ControlGroupEvent::ItemBoundsChanged { .. } => {}
         }
     }
 }

@@ -12,7 +12,6 @@ use super::cards::render_demo_board;
 use super::controls;
 use super::dashboard;
 use super::navigation::luma_studio_tabs_navigation_template;
-use super::controls_tab_chrome::ControlsTabChrome;
 use super::palette;
 use super::style_guide;
 use super::tab::ContentTab;
@@ -38,7 +37,6 @@ pub struct ContentPaneHost {
     controls_panel: Entity<ControlsPanel>,
     palette_panel: Entity<PalettePanel>,
     theme_usage_panel: Entity<ThemeUsagePanel>,
-    controls_tab_chrome: ControlsTabChrome,
     board: BoardSnapshot,
     active_tab: ContentTab,
     _subscriptions: Vec<Subscription>,
@@ -46,22 +44,17 @@ pub struct ContentPaneHost {
 
 impl ContentPaneHost {
     pub fn new(_app: Entity<LumaStudioApp>, board: BoardSnapshot, cx: &mut Context<Self>) -> Self {
-        let controls_tab_chrome = ControlsTabChrome::default();
         let tabs = board
             .look
             .tabs_navigation("luma-studio-content-tabs")
             .size(ControlSize::Lg)
             .width_mode(TabsNavigationWidthMode::Uniform)
-            .template(luma_studio_tabs_navigation_template(
-                board.look.clone(),
-                ControlSize::Lg,
-                Some(controls_tab_chrome.clone()),
-            ))
+            .template(luma_studio_tabs_navigation_template(board.look.clone(), ControlSize::Lg))
             .items([
                 TabsNavigationItem::new("cards").label("Cards"),
                 TabsNavigationItem::new("dashboard").label("Dashboard"),
                 TabsNavigationItem::new("typography").label("Style Guide"),
-                TabsNavigationItem::new("controls").label("Controls"),
+                TabsNavigationItem::new("controls").label("Controls").dropdown_trigger(),
                 TabsNavigationItem::new("palette").label("Palette"),
                 TabsNavigationItem::new("theme-usage").label("Theme Usage"),
             ])
@@ -71,24 +64,33 @@ impl ContentPaneHost {
         let tabs_for_sub = tabs.clone();
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&tabs_for_sub, |host, _, event: &TabsNavigationEvent, cx| match event {
-            TabsNavigationEvent::Activate { tab_id, .. } => {
+            TabsNavigationEvent::Change { tab_id, .. } => {
                 let Some(tab) = ContentTab::from_id(tab_id.as_ref()) else {
                     return;
                 };
-                if host.active_tab == tab {
-                    if tab == ContentTab::Controls {
-                        host.controls_panel.update(cx, |panel, cx| panel.toggle_catalog_picker(cx));
+                host.set_active_tab(tab, cx);
+            }
+            TabsNavigationEvent::DropdownRequested { tab_id, bounds, .. } => {
+                if tab_id.as_ref() != "controls" {
+                    return;
+                }
+                host.controls_panel.update(cx, |panel, cx| {
+                    if let Some(bounds) = bounds {
+                        panel.set_catalog_picker_anchor(*bounds, cx);
                     }
-                } else {
-                    host.set_active_tab(tab, cx);
+                    panel.toggle_catalog_picker(cx);
+                });
+            }
+            TabsNavigationEvent::ItemBoundsChanged { tab_id, bounds } => {
+                if tab_id.as_ref() == "controls" {
+                    host.controls_panel.update(cx, |panel, cx| panel.set_catalog_picker_anchor(*bounds, cx));
                 }
             }
             _ => {}
         }));
 
         let style_guide_panel = cx.new(|cx| StyleGuidePanel::new(cx, board.look.clone()));
-        let controls_panel =
-            cx.new(|cx| ControlsPanel::new(cx, board.look.clone(), controls_tab_chrome.clone(), tabs.clone()));
+        let controls_panel = cx.new(|cx| ControlsPanel::new(cx, board.look.clone(), tabs.clone()));
         let palette_panel = cx.new(|cx| PalettePanel::new(cx, board.look.clone(), board.overrides.clone()));
         let theme_usage_panel = cx.new(|cx| ThemeUsagePanel::new(cx, board.look.clone()));
 
@@ -98,7 +100,6 @@ impl ContentPaneHost {
             controls_panel,
             palette_panel,
             theme_usage_panel,
-            controls_tab_chrome,
             board,
             active_tab: ContentTab::Cards,
             _subscriptions: subscriptions,
@@ -151,14 +152,7 @@ impl ContentPaneHost {
         self.tabs.update(cx, |tabs, cx| {
             tabs.set_size(ControlSize::Lg, cx);
             tabs.set_width_mode(TabsNavigationWidthMode::Uniform, cx);
-            tabs.set_template(
-                luma_studio_tabs_navigation_template(
-                    look.clone(),
-                    ControlSize::Lg,
-                    Some(self.controls_tab_chrome.clone()),
-                ),
-                cx,
-            );
+            tabs.set_template(luma_studio_tabs_navigation_template(look.clone(), ControlSize::Lg), cx);
         });
         self.style_guide_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
         self.controls_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));

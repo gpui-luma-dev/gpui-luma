@@ -145,10 +145,6 @@ impl StickySectionHeadingTracker {
     }
 }
 
-pub(crate) fn install_sticky_heading_tracker(tracker: Rc<RefCell<StickySectionHeadingTracker>>) {
-    ACTIVE_STICKY_HEADING_TRACKER.with(|slot| *slot.borrow_mut() = Some(tracker));
-}
-
 pub(crate) fn with_sticky_heading_tracker<T>(
     tracker: Rc<RefCell<StickySectionHeadingTracker>>,
     f: impl FnOnce() -> T,

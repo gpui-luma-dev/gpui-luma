@@ -253,10 +253,10 @@ where
     /// Row to keep visible across a page-size change: active when selected (or when nothing is
     /// selected), otherwise the first selected index.
     fn focus_index_for_page_size_change(&self) -> Option<usize> {
-        if let Some(active) = self.model.active_index {
-            if self.model.selected_indices.is_empty() || self.model.selected_indices.contains(&active) {
-                return Some(active);
-            }
+        if let Some(active) = self.model.active_index
+            && (self.model.selected_indices.is_empty() || self.model.selected_indices.contains(&active))
+        {
+            return Some(active);
         }
         self.model.selected_indices.first().copied()
     }

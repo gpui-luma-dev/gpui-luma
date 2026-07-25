@@ -4,6 +4,17 @@
 
 Design note for the next SDK refactor. This should be handled before public release if possible, because `TabsNavigation` is a core SDK surface and recent Luma Studio work exposed that it is too narrow.
 
+Started:
+
+- `TabsNavigationEvent::Reactivate` now provides an explicit signal for invoking the already-selected tab. Luma Studio uses this instead of inferring reactivation from app-local active-tab state.
+- `TabsNavigationItemAccessory` now supports leading/trailing icon accessories and trailing disclosure state. Luma Studio uses `TabsNavigationItem::trailing_disclosure(false)` plus `TabsNavigation::set_item_disclosure_open(...)` instead of app-local picker-open state for the Controls tab chevron.
+- `ControlGroupEvent::ItemBoundsChanged` now flows through `TabsNavigationEvent::ItemBoundsChanged`, so apps can anchor dropdown/popover content to tab items without tab-specific `on_prepaint` code in custom templates.
+- `AnchoredPanel` now provides the reusable arbitrary-content popup primitive: anchor bounds, below-start/below-center/above-start/smart-start placement, click-away dismissal, focus-loss dismissal that ignores inactive app windows, Escape dismissal, focus scheduling, and content measurement. Luma Studio's Controls picker uses it instead of app-local popup lifecycle code.
+- `TabsNavigationItem::dropdown_trigger()` now marks a tab as dropdown-capable and supplies a default disclosure accessory. `TabsNavigationEvent::DropdownRequested` gives callers a semantic trigger event with the latest tab bounds instead of requiring app code to infer dropdown intent from `Reactivate`.
+- The default `TabsNavigation` item renderer now builds each tab trigger as a controlled button-family toggle render model (`ButtonFamilyRole::Toggle { selected }`) and delegates sizing, disabled handling, pointer affordance, and focus adorners to `DefaultButtonTemplate`. The tabs theme is adapted into `ButtonFamilyLook`, with the tabs-specific underline indicator layered by the tab template modifier.
+- `render_tabs_navigation_item_button(...)` and `resolve_tabs_navigation_uniform_item_width(...)` now expose the shared item-render path to derived tab templates. Luma Studio and Graph Viz use these helpers instead of duplicating tab item chrome.
+- Focused unit tests now cover dropdown reactivation event ordering, selected-change activation suppression of dropdown events, and disclosure accessory state transitions. `cargo clippy -p gpui-luma -- -D warnings` is clean.
+
 ## Problem Summary
 
 The Luma Studio Controls tab now needs to behave as both:
@@ -46,7 +57,7 @@ This bug-fix pass may remain app-local if needed, but it should be treated as a 
 - focus and keyboard handling through the group
 - `Change`, `Activate`, `FocusChanged`, and `ItemFocused` events
 
-But `TabsNavigationItem` is still too thin:
+`TabsNavigationItem` used to be too thin:
 
 ```rust
 id
@@ -54,17 +65,20 @@ label
 enabled
 ```
 
-The default tab template renders custom tab `Div`s directly. It does not reuse `Toggle` or button-family item chrome, and it has no first-class item accessory, disclosure state, or anchor reporting.
+That has started to change. It now carries trigger kind, leading/trailing accessories, disclosure state, and anchor reporting.
 
-The result is a half-refactor:
+The default tab template no longer renders an entirely bespoke clickable `Div` for each tab. It now creates a controlled button-family toggle render model per item and delegates the core button/toggle visual contract to `DefaultButtonTemplate`. The tab template still owns tabs-specific composition: list layout, uniform width measurement, accessory content, and underline indicator paint.
+
+The current model is now:
 
 ```text
 TabsNavigation
   -> ControlGroup selection/focus engine
-  -> bespoke tabs item visual
+  -> controlled button-family Toggle-style item render model
+  -> tabs-specific theme adapter and indicator/accessory composition
 ```
 
-The desired model is stronger:
+The remaining desired model is stronger:
 
 ```text
 TabsNavigation

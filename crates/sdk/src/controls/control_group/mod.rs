@@ -21,12 +21,12 @@ pub use menu_choice_template::{
 };
 pub use toggle_button_item_template::toggle_button_item_template;
 pub use template::{
-    ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemHandlerExt, ControlGroupItemHandlers,
-    ControlGroupItemTemplate, ControlGroupMouseDownHandler, ControlGroupMouseUpHandler, ControlGroupItemElement,
-    ControlGroupItemElements, ControlGroupItemElementTemplate, ControlGroupItemLayout, ControlGroupTemplate,
-    ControlGroupTemplateHandlers, control_group_item_layout_template, control_group_template_with_theme,
-    default_control_group_template, make_control_group_item_template, make_control_group_item_element_template,
-    render_control_group_item_elements, shared_control_group_template,
+    ControlGroupBoundsHandler, ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemElement,
+    ControlGroupItemElementTemplate, ControlGroupItemElements, ControlGroupItemHandlerExt, ControlGroupItemHandlers,
+    ControlGroupItemLayout, ControlGroupItemTemplate, ControlGroupMouseDownHandler, ControlGroupMouseUpHandler,
+    ControlGroupTemplate, ControlGroupTemplateHandlers, control_group_item_layout_template,
+    control_group_template_with_theme, default_control_group_template, make_control_group_item_element_template,
+    make_control_group_item_template, render_control_group_item_elements, shared_control_group_template,
 };
 pub use theme::{
     ControlGroupItemPalette, ControlGroupItemVisualContext, DefaultControlGroupTheme, ControlGroupListLook,

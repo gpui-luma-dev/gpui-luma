@@ -76,7 +76,7 @@ impl ControlExposition {
         }
     }
 
-    pub fn render(&self, cx: &App) -> AnyElement {
+    pub fn render(&self, _cx: &App) -> AnyElement {
         match self {
             Self::Button(entity) => entity.clone().into_any_element(),
             Self::Checkbox(entity) => entity.clone().into_any_element(),

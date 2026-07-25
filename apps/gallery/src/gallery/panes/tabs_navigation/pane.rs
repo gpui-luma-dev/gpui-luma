@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Context, Entity, IntoElement, MouseDownEvent, MouseUpEvent, Render, SharedString,
-    Subscription, Window, div, prelude::*, px,
+    AnyElement, App, Bounds, ClickEvent, Context, Entity, IntoElement, MouseDownEvent, MouseUpEvent, Pixels, Render,
+    SharedString, Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::tabs_navigation::{
-    ControlFocusState, TabsNavigation, TabsNavigationClickHandler, TabsNavigationEvent, TabsNavigationHoverHandler,
-    TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler, TabsNavigationMouseUpHandler,
-    TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
-    ThemedTabsNavigationTemplate, TabsNavigationTheme, TabsNavigationWidthMode,
+    ControlFocusState, TabsNavigation, TabsNavigationBoundsHandler, TabsNavigationClickHandler, TabsNavigationEvent,
+    TabsNavigationHoverHandler, TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler,
+    TabsNavigationMouseUpHandler, TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate,
+    TabsNavigationTemplateHandlers, ThemedTabsNavigationTemplate, TabsNavigationTheme, TabsNavigationWidthMode,
 };
 use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn::prelude::*;
@@ -343,7 +343,16 @@ fn render_tabs_state_sample(
                 state.focus_visible = false;
             }
 
-            TabsNavigationRenderItem { id: item.id(), label: item.label_text(), active, enabled: item_enabled, state }
+            TabsNavigationRenderItem {
+                id: item.id(),
+                label: item.label_text(),
+                trigger_kind: item.trigger_kind_value(),
+                leading_accessory: item.leading_accessory_ref(),
+                trailing_accessory: item.trailing_accessory_ref(),
+                active,
+                enabled: item_enabled,
+                state,
+            }
         })
         .collect::<Vec<_>>();
     let model = TabsNavigationRenderModel {
@@ -416,6 +425,7 @@ fn preview_tabs() -> [TabsNavigationItem; 3] {
 
 fn tabs_navigation_preview_handlers(count: usize) -> TabsNavigationTemplateHandlers {
     TabsNavigationTemplateHandlers {
+        item_bounds: (0..count).map(|_| Box::new(noop_bounds) as TabsNavigationBoundsHandler).collect(),
         item_hovers: (0..count).map(|_| Box::new(noop_hover) as TabsNavigationHoverHandler).collect(),
         item_mouse_downs: (0..count).map(|_| Box::new(noop_mouse_down) as TabsNavigationMouseDownHandler).collect(),
         item_mouse_ups: (0..count).map(|_| Box::new(noop_mouse_up) as TabsNavigationMouseUpHandler).collect(),
@@ -423,6 +433,8 @@ fn tabs_navigation_preview_handlers(count: usize) -> TabsNavigationTemplateHandl
         item_clicks: (0..count).map(|_| Box::new(noop_click) as TabsNavigationClickHandler).collect(),
     }
 }
+
+fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
 
 fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
 

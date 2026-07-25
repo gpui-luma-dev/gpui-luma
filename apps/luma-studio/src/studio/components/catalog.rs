@@ -174,7 +174,3 @@ pub fn first_controls_exposition_id() -> Option<&'static str> {
         .flat_map(|group| group.entries.iter())
         .find_map(|entry| controls_exposition_id(entry.id))
 }
-
-pub fn catalog_entry(gallery_id: &str) -> Option<&'static ComponentCatalogEntry> {
-    COMPONENT_CATALOG.iter().flat_map(|group| group.entries.iter()).find(|entry| entry.id == gallery_id)
-}

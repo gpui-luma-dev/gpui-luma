@@ -3,6 +3,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{App, MouseButton, Stateful, Window, div, hsla, px, prelude::*};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::controls::color::style::ElementExt;
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::control_group::{ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplateHandlers};
 use gpui_luma::controls::radio_group::RadioGroupTemplate;
@@ -133,9 +134,16 @@ fn render_segmented_rows<T>(
 where
     T: ControlGroupItemLike + 'static,
 {
-    let ControlGroupTemplateHandlers { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } =
-        handlers;
+    let ControlGroupTemplateHandlers {
+        item_bounds,
+        item_hovers,
+        item_mouse_downs,
+        item_mouse_ups,
+        item_mouse_up_outs,
+        item_clicks,
+    } = handlers;
 
+    let mut item_bounds = item_bounds.into_iter();
     let mut item_hovers = item_hovers.into_iter();
     let mut item_mouse_downs = item_mouse_downs.into_iter();
     let mut item_mouse_ups = item_mouse_ups.into_iter();
@@ -144,6 +152,9 @@ where
     let mut rows = Vec::with_capacity(model.items.len());
 
     for item in &model.items {
+        let Some(item_bounds) = item_bounds.next() else {
+            break;
+        };
         let Some(item_hover) = item_hovers.next() else {
             break;
         };
@@ -180,6 +191,9 @@ where
 
         let mut button = button_template
             .render(&render_model, window, cx)
+            .on_prepaint(move |bounds, window, cx| {
+                item_bounds(&bounds, window, cx);
+            })
             .on_hover(item_hover)
             .on_mouse_down(MouseButton::Left, item_mouse_down)
             .on_mouse_up(MouseButton::Left, item_mouse_up)

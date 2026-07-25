@@ -1,6 +1,6 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
-    Render, SharedString, Subscription, Window, div, prelude::*,
+    App, Bounds, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
+    MouseUpEvent, Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
 };
 
 use super::model::{
@@ -21,6 +21,7 @@ use crate::theme::observe_theme_revision;
 pub enum ControlGroupEvent {
     Activate { activated_id: SharedString },
     Change { changed_id: SharedString, selected: bool, selected_ids: Vec<SharedString> },
+    ItemBoundsChanged { item_id: SharedString, bounds: Bounds<Pixels> },
     FocusChanged { focused: bool },
     ItemFocused { item_id: SharedString },
 }
@@ -38,6 +39,7 @@ where
     emitted_focused: bool,
     hovered_item: Option<usize>,
     pressed_item: Option<usize>,
+    item_bounds: Vec<Option<Bounds<Pixels>>>,
 }
 
 impl<T> EventEmitter<ControlGroupEvent> for ControlGroupControl<T> where T: ControlGroupItemLike + 'static {}
@@ -66,6 +68,7 @@ where
             emitted_focused: false,
             hovered_item: None,
             pressed_item: None,
+            item_bounds: Vec::new(),
         }
     }
 
@@ -129,6 +132,7 @@ where
         self.model.items = items.into_iter().collect();
         self.hovered_item = None;
         self.pressed_item = None;
+        self.item_bounds.clear();
         self.clear_item_focus_subscriptions();
         normalize_model(&mut self.model);
         cx.notify();
@@ -280,6 +284,13 @@ where
 
     fn template_handlers(&self, cx: &mut Context<Self>) -> ControlGroupTemplateHandlers {
         ControlGroupTemplateHandlers {
+            item_bounds: (0..self.model.items.len())
+                .map(|index| {
+                    Box::new(cx.listener(move |this, bounds, _window, cx| {
+                        this.handle_item_bounds(index, *bounds, cx);
+                    })) as _
+                })
+                .collect(),
             item_hovers: (0..self.model.items.len())
                 .map(|index| {
                     Box::new(cx.listener(move |this, hovered, _window, cx| {
@@ -532,6 +543,20 @@ where
             }
             cx.notify();
         }
+    }
+
+    fn handle_item_bounds(&mut self, index: usize, bounds: Bounds<Pixels>, cx: &mut Context<Self>) {
+        let Some(item) = self.model.items.get(index) else {
+            return;
+        };
+        if self.item_bounds.len() != self.model.items.len() {
+            self.item_bounds.resize(self.model.items.len(), None);
+        }
+        if self.item_bounds.get(index).copied().flatten() == Some(bounds) {
+            return;
+        }
+        self.item_bounds[index] = Some(bounds);
+        cx.emit(ControlGroupEvent::ItemBoundsChanged { item_id: item.id().clone(), bounds });
     }
 
     fn handle_item_mouse_down(
@@ -878,8 +903,8 @@ where
 
     match direction {
         ControlGroupDirection::Next => {
-            for i in (current + 1)..len {
-                if items[i].is_enabled() {
+            for (i, item) in items.iter().enumerate().take(len).skip(current + 1) {
+                if item.is_enabled() {
                     return Some(i);
                 }
             }

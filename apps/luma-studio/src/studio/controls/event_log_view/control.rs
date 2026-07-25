@@ -49,20 +49,6 @@ impl EventLogView {
         }
     }
 
-    pub fn text(&self) -> &str {
-        &self.text
-    }
-
-    pub fn append_text(&mut self, text: &str, cx: &mut Context<Self>) {
-        if text.is_empty() {
-            return;
-        }
-
-        self.text.push_str(text);
-        self.scroll_to_end_pending = true;
-        cx.notify();
-    }
-
     pub fn append_line(&mut self, line: &str, cx: &mut Context<Self>) {
         if line.is_empty() {
             return;
@@ -73,17 +59,6 @@ impl EventLogView {
             self.text.push('\n');
         }
         self.scroll_to_end_pending = true;
-        cx.notify();
-    }
-
-    pub fn clear(&mut self, cx: &mut Context<Self>) {
-        if self.text.is_empty() {
-            return;
-        }
-
-        self.text.clear();
-        self.scroll_to_end_pending = false;
-        self.scroll.set_vertical_offset(0.0, cx);
         cx.notify();
     }
 
@@ -171,7 +146,6 @@ impl Render for EventLogView {
             id: &self.model.id,
             text: &self.text,
             placeholder: &self.model.placeholder,
-            rows: self.model.rows,
             full_width: self.model.full_width,
             look,
         };

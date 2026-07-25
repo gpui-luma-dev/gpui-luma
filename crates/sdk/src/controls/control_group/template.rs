@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful,
-    StatefulInteractiveElement, Window, div, prelude::*,
+    AnyElement, App, Bounds, ClickEvent, Div, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
+    SharedString, Stateful, StatefulInteractiveElement, Window, div, prelude::*,
 };
 
 use super::model::{
@@ -11,13 +11,16 @@ use super::model::{
 };
 use super::theme::{ControlGroupTheme, default_control_group_theme};
 use super::themed_template::{ThemedControlGroupTemplate, themed_control_group_template};
+use crate::controls::color::style::ElementExt;
 
 pub type ControlGroupClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type ControlGroupHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type ControlGroupMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type ControlGroupMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+pub type ControlGroupBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 
 pub struct ControlGroupTemplateHandlers {
+    pub item_bounds: Vec<ControlGroupBoundsHandler>,
     pub item_hovers: Vec<ControlGroupHoverHandler>,
     pub item_mouse_downs: Vec<ControlGroupMouseDownHandler>,
     pub item_mouse_ups: Vec<ControlGroupMouseUpHandler>,
@@ -26,6 +29,7 @@ pub struct ControlGroupTemplateHandlers {
 }
 
 pub struct ControlGroupItemHandlers {
+    pub bounds: ControlGroupBoundsHandler,
     pub hover: ControlGroupHoverHandler,
     pub mouse_down: ControlGroupMouseDownHandler,
     pub mouse_up: ControlGroupMouseUpHandler,
@@ -35,15 +39,17 @@ pub struct ControlGroupItemHandlers {
 
 impl ControlGroupTemplateHandlers {
     pub fn into_item_handlers(self) -> impl Iterator<Item = ControlGroupItemHandlers> {
-        let Self { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } = self;
+        let Self { item_bounds, item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } = self;
 
-        item_hovers
+        item_bounds
             .into_iter()
+            .zip(item_hovers)
             .zip(item_mouse_downs)
             .zip(item_mouse_ups)
             .zip(item_mouse_up_outs)
             .zip(item_clicks)
-            .map(|((((hover, mouse_down), mouse_up), mouse_up_out), click)| ControlGroupItemHandlers {
+            .map(|(((((bounds, hover), mouse_down), mouse_up), mouse_up_out), click)| ControlGroupItemHandlers {
+                bounds,
                 hover,
                 mouse_down,
                 mouse_up,
@@ -53,20 +59,23 @@ impl ControlGroupTemplateHandlers {
     }
 }
 
-pub trait ControlGroupItemHandlerExt: StatefulInteractiveElement + Sized {
+pub trait ControlGroupItemHandlerExt: ParentElement + StatefulInteractiveElement + Sized {
     fn control_group_item_handlers(self, handlers: ControlGroupItemHandlers) -> Self;
 }
 
 impl<E> ControlGroupItemHandlerExt for E
 where
-    E: StatefulInteractiveElement + Sized,
+    E: ParentElement + StatefulInteractiveElement + Sized,
 {
     fn control_group_item_handlers(self, handlers: ControlGroupItemHandlers) -> Self {
-        self.on_hover(handlers.hover)
-            .on_mouse_down(MouseButton::Left, handlers.mouse_down)
-            .on_mouse_up(MouseButton::Left, handlers.mouse_up)
-            .on_mouse_up_out(MouseButton::Left, handlers.mouse_up_out)
-            .on_click(handlers.click)
+        self.on_prepaint(move |bounds, window, cx| {
+            (handlers.bounds)(&bounds, window, cx);
+        })
+        .on_hover(handlers.hover)
+        .on_mouse_down(MouseButton::Left, handlers.mouse_down)
+        .on_mouse_up(MouseButton::Left, handlers.mouse_up)
+        .on_mouse_up_out(MouseButton::Left, handlers.mouse_up_out)
+        .on_click(handlers.click)
     }
 }
 

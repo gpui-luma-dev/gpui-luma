@@ -22,7 +22,6 @@ pub struct EventLogViewRenderModel<'a> {
     pub id: &'a SharedString,
     pub text: &'a str,
     pub placeholder: &'a SharedString,
-    pub rows: usize,
     pub full_width: bool,
     pub look: super::theme::EventLogLook,
 }
@@ -67,16 +66,6 @@ impl EventLogViewBuilder {
 
     pub fn font_family(mut self, font_family: impl Into<String>) -> Self {
         self.model.font_family = Some(font_family.into());
-        self
-    }
-
-    pub fn theme(mut self, theme: Arc<dyn EventLogTheme>) -> Self {
-        self.model.theme = theme;
-        self
-    }
-
-    pub fn scrollbar_template(mut self, template: Arc<dyn ScrollbarTemplate>) -> Self {
-        self.model.scrollbar_template = template;
         self
     }
 

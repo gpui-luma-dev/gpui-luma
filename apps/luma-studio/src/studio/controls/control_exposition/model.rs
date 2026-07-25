@@ -5,7 +5,6 @@ pub struct ControlExpositionLayout {
 
 impl ControlExpositionLayout {
     pub const BORDERLESS: Self = Self { borderless: true };
-    pub const CARD: Self = Self { borderless: false };
 }
 
 pub const EVENT_SECTION_INDENT: f32 = 100.0;

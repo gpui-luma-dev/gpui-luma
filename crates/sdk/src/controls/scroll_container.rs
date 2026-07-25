@@ -9,6 +9,8 @@ use gpui::{
 
 use crate::controls::scrollbar::{Scrollbar, ScrollbarTemplate};
 
+type ScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+
 #[derive(Clone)]
 pub struct ScrollContainer {
     id: SharedString,
@@ -118,11 +120,7 @@ impl ScrollContainer {
         self.render_internal(content, Some(Box::new(on_scroll_wheel)))
     }
 
-    fn render_internal(
-        &self,
-        content: AnyElement,
-        on_scroll_wheel: Option<Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>>,
-    ) -> Stateful<gpui::Div> {
+    fn render_internal(&self, content: AnyElement, on_scroll_wheel: Option<ScrollWheelHandler>) -> Stateful<gpui::Div> {
         let scrollable = self.scroll_handle.max_offset().y.as_f32() > 0.5;
         let viewport_right = if scrollable { self.scrollbar_width } else { px(0.0) };
         let scroll_handle = self.scroll_handle.clone();

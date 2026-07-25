@@ -79,7 +79,7 @@ impl ThemeSidebar {
             .tabs_navigation("luma-studio-sidebar-tabs")
             .size(ControlSize::Lg)
             .width_mode(TabsNavigationWidthMode::Uniform)
-            .template(luma_studio_tabs_navigation_template(look.clone(), ControlSize::Lg, None))
+            .template(luma_studio_tabs_navigation_template(look.clone(), ControlSize::Lg))
             .items([
                 TabsNavigationItem::new("colors").label("Colors"),
                 TabsNavigationItem::new("typography").label("Typography"),

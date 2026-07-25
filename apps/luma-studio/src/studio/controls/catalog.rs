@@ -1,4 +1,5 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum ControlCategory {
     Command,
     Choice,
@@ -9,47 +10,12 @@ pub enum ControlCategory {
     OverlaysDialogs,
 }
 
-impl ControlCategory {
-    pub const ALL: [Self; 7] = [
-        Self::Command,
-        Self::Choice,
-        Self::Inputs,
-        Self::Color,
-        Self::Selection,
-        Self::NavigationPanels,
-        Self::OverlaysDialogs,
-    ];
-
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Command => "Command",
-            Self::Choice => "Choice",
-            Self::Inputs => "Inputs",
-            Self::Color => "Color",
-            Self::Selection => "Selection",
-            Self::NavigationPanels => "Navigation & Panels",
-            Self::OverlaysDialogs => "Overlays & Dialogs",
-        }
-    }
-
-    pub fn index_order(self) -> usize {
-        match self {
-            Self::Command => 0,
-            Self::Choice => 1,
-            Self::Inputs => 2,
-            Self::Color => 3,
-            Self::Selection => 4,
-            Self::NavigationPanels => 5,
-            Self::OverlaysDialogs => 6,
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug)]
 pub struct ControlDocEntry {
     pub id: &'static str,
     pub title: &'static str,
     pub description: &'static str,
+    #[allow(dead_code)]
     pub category: ControlCategory,
     pub snippet: &'static str,
     pub section_order: usize,
@@ -113,10 +79,6 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         section_order: 300,
     },
 ];
-
-pub fn entries_for_category(category: ControlCategory) -> impl Iterator<Item = &'static ControlDocEntry> {
-    CONTROL_CATALOG.iter().filter(move |entry| entry.category == category)
-}
 
 pub fn catalog_entry(id: &str) -> Option<&'static ControlDocEntry> {
     CONTROL_CATALOG.iter().find(|entry| entry.id == id)

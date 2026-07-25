@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, IntoElement, SharedString, Window, div, prelude::*, px};
+use gpui::{AnyElement, App, Bounds, IntoElement, Pixels, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::tabs_navigation::{
-    ControlFocusState as TabsControlFocusState, TabsNavigationClickHandler, TabsNavigationHoverHandler,
-    TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler, TabsNavigationMouseUpHandler,
-    TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
-    TabsNavigationWidthMode,
+    ControlFocusState as TabsControlFocusState, TabsNavigationBoundsHandler, TabsNavigationClickHandler,
+    TabsNavigationHoverHandler, TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler,
+    TabsNavigationMouseUpHandler, TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate,
+    TabsNavigationTemplateHandlers, TabsNavigationWidthMode,
 };
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -87,7 +87,16 @@ fn render_tabs_navigation_state_sample(
                 state.focus_visible = false;
             }
 
-            TabsNavigationRenderItem { id: item.id(), label: item.label_text(), active, enabled: item_enabled, state }
+            TabsNavigationRenderItem {
+                id: item.id(),
+                label: item.label_text(),
+                trigger_kind: item.trigger_kind_value(),
+                leading_accessory: item.leading_accessory_ref(),
+                trailing_accessory: item.trailing_accessory_ref(),
+                active,
+                enabled: item_enabled,
+                state,
+            }
         })
         .collect::<Vec<_>>();
     let model = TabsNavigationRenderModel {
@@ -192,6 +201,7 @@ fn tabs_navigation_state_samples() -> [TabsNavigationStateSample; 7] {
 
 fn tabs_navigation_preview_handlers(count: usize) -> TabsNavigationTemplateHandlers {
     TabsNavigationTemplateHandlers {
+        item_bounds: (0..count).map(|_| Box::new(input_noop_bounds) as TabsNavigationBoundsHandler).collect(),
         item_hovers: (0..count).map(|_| Box::new(input_noop_hover) as TabsNavigationHoverHandler).collect(),
         item_mouse_downs: (0..count)
             .map(|_| Box::new(input_noop_mouse_down) as TabsNavigationMouseDownHandler)
@@ -201,6 +211,8 @@ fn tabs_navigation_preview_handlers(count: usize) -> TabsNavigationTemplateHandl
         item_clicks: (0..count).map(|_| Box::new(input_noop_click) as TabsNavigationClickHandler).collect(),
     }
 }
+
+fn input_noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
 
 fn tabs_navigation_preview_tabs() -> [TabsNavigationItem; 3] {
     [
