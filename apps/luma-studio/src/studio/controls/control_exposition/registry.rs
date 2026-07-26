@@ -3,29 +3,62 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, AppContext, Context, Entity, IntoElement};
 
 use super::autocomplete_textfield::AutocompleteTextFieldControlExposition;
+use super::badge::BadgeControlExposition;
 use super::button::ButtonControlExposition;
 use super::checkbox::CheckboxControlExposition;
 use super::color_slider::ColorSliderControlExposition;
 use super::combobox::ComboBoxControlExposition;
 use super::context_menu::ContextMenuControlExposition;
+use super::custom_button::CustomButtonControlExposition;
+use super::dock_panel::DockPanelControlExposition;
 use super::floating_menu::FloatingMenuControlExposition;
 use super::modal_overlay::ModalOverlayControlExposition;
+use super::navigation_sidebar::NavigationSidebarControlExposition;
+use super::pager::PagerControlExposition;
 use super::popup_menu::PopupMenuControlExposition;
 use super::popup_selector::PopupSelectorControlExposition;
+use super::progress::ProgressControlExposition;
 use super::radio_button::RadioButtonControlExposition;
+use super::radio_group::RadioGroupControlExposition;
+use super::resizable_panels::ResizablePanelsControlExposition;
+use super::scrollbar::ScrollbarControlExposition;
 use super::search_selector::SearchSelectorControlExposition;
 use super::selection_panel::SelectionPanelControlExposition;
+use super::slider::SliderControlExposition;
+use super::slide_panel::SlidePanelControlExposition;
 use super::switch::SwitchControlExposition;
+use super::tabs_navigation::TabsNavigationControlExposition;
+use super::textarea::TextAreaControlExposition;
 use super::textfield::TextFieldControlExposition;
+use super::toggle::ToggleControlExposition;
+use super::toggle_group::ToggleGroupControlExposition;
+use super::toolbar::ToolbarControlExposition;
+use super::tree_view::TreeViewControlExposition;
 use crate::studio::controls::catalog::ControlDocEntry;
 
 pub enum ControlExposition {
     Button(Entity<ButtonControlExposition>),
+    CustomButton(Entity<CustomButtonControlExposition>),
     Checkbox(Entity<CheckboxControlExposition>),
     RadioButton(Entity<RadioButtonControlExposition>),
+    RadioGroup(Entity<RadioGroupControlExposition>),
     Switch(Entity<SwitchControlExposition>),
+    Toggle(Entity<ToggleControlExposition>),
+    ToggleGroup(Entity<ToggleGroupControlExposition>),
+    Toolbar(Entity<ToolbarControlExposition>),
+    Pager(Entity<PagerControlExposition>),
+    TreeView(Entity<TreeViewControlExposition>),
+    Badge(Entity<BadgeControlExposition>),
+    Progress(Entity<ProgressControlExposition>),
     ColorSlider(Entity<ColorSliderControlExposition>),
     TextField(Entity<TextFieldControlExposition>),
+    TextArea(Entity<TextAreaControlExposition>),
+    Slider(Entity<SliderControlExposition>),
+    Scrollbar(Entity<ScrollbarControlExposition>),
+    DockPanel(Entity<DockPanelControlExposition>),
+    ResizablePanels(Entity<ResizablePanelsControlExposition>),
+    NavigationSidebar(Entity<NavigationSidebarControlExposition>),
+    TabsNavigation(Entity<TabsNavigationControlExposition>),
     ContextMenu(Entity<ContextMenuControlExposition>),
     FloatingMenu(Entity<FloatingMenuControlExposition>),
     PopupMenu(Entity<PopupMenuControlExposition>),
@@ -35,17 +68,34 @@ pub enum ControlExposition {
     PopupSelector(Entity<PopupSelectorControlExposition>),
     SelectionPanel(Entity<SelectionPanelControlExposition>),
     ModalOverlay(Entity<ModalOverlayControlExposition>),
+    SlidePanel(Entity<SlidePanelControlExposition>),
 }
 
 impl ControlExposition {
     pub fn spawn_all<T: 'static>(look: Arc<gpui_luma_look_shadcn::ShadcnLook>, cx: &mut Context<T>) -> Vec<Self> {
         vec![
             Self::Button(cx.new(|cx| ButtonControlExposition::new(cx, look.clone()))),
+            Self::CustomButton(cx.new(|cx| CustomButtonControlExposition::new(cx, look.clone()))),
             Self::Checkbox(cx.new(|cx| CheckboxControlExposition::new(cx, look.clone()))),
             Self::RadioButton(cx.new(|cx| RadioButtonControlExposition::new(cx, look.clone()))),
+            Self::RadioGroup(cx.new(|cx| RadioGroupControlExposition::new(cx, look.clone()))),
             Self::Switch(cx.new(|cx| SwitchControlExposition::new(cx, look.clone()))),
+            Self::Toggle(cx.new(|cx| ToggleControlExposition::new(cx, look.clone()))),
+            Self::ToggleGroup(cx.new(|cx| ToggleGroupControlExposition::new(cx, look.clone()))),
+            Self::Toolbar(cx.new(|cx| ToolbarControlExposition::new(cx, look.clone()))),
+            Self::Pager(cx.new(|cx| PagerControlExposition::new(cx, look.clone()))),
+            Self::TreeView(cx.new(|cx| TreeViewControlExposition::new(cx, look.clone()))),
+            Self::Badge(cx.new(|cx| BadgeControlExposition::new(cx, look.clone()))),
+            Self::Progress(cx.new(|cx| ProgressControlExposition::new(cx, look.clone()))),
             Self::ColorSlider(cx.new(|cx| ColorSliderControlExposition::new(cx, look.clone()))),
             Self::TextField(cx.new(|cx| TextFieldControlExposition::new(cx, look.clone()))),
+            Self::TextArea(cx.new(|cx| TextAreaControlExposition::new(cx, look.clone()))),
+            Self::Slider(cx.new(|cx| SliderControlExposition::new(cx, look.clone()))),
+            Self::Scrollbar(cx.new(|cx| ScrollbarControlExposition::new(cx, look.clone()))),
+            Self::DockPanel(cx.new(|cx| DockPanelControlExposition::new(cx, look.clone()))),
+            Self::ResizablePanels(cx.new(|cx| ResizablePanelsControlExposition::new(cx, look.clone()))),
+            Self::NavigationSidebar(cx.new(|cx| NavigationSidebarControlExposition::new(cx, look.clone()))),
+            Self::TabsNavigation(cx.new(|cx| TabsNavigationControlExposition::new(cx, look.clone()))),
             Self::ContextMenu(cx.new(|cx| ContextMenuControlExposition::new(cx, look.clone()))),
             Self::FloatingMenu(cx.new(|cx| FloatingMenuControlExposition::new(cx, look.clone()))),
             Self::PopupMenu(cx.new(|cx| PopupMenuControlExposition::new(cx, look.clone()))),
@@ -55,6 +105,7 @@ impl ControlExposition {
             Self::PopupSelector(cx.new(|cx| PopupSelectorControlExposition::new(cx, look.clone()))),
             Self::SelectionPanel(cx.new(|cx| SelectionPanelControlExposition::new(cx, look.clone()))),
             Self::ModalOverlay(cx.new(|cx| ModalOverlayControlExposition::new(cx, look.clone()))),
+            Self::SlidePanel(cx.new(|cx| SlidePanelControlExposition::new(cx, look.clone()))),
         ]
     }
 
@@ -65,11 +116,27 @@ impl ControlExposition {
     pub fn entry(&self, cx: &App) -> ControlDocEntry {
         match self {
             Self::Button(entity) => entity.read(cx).entry(),
+            Self::CustomButton(entity) => entity.read(cx).entry(),
             Self::Checkbox(entity) => entity.read(cx).entry(),
             Self::RadioButton(entity) => entity.read(cx).entry(),
+            Self::RadioGroup(entity) => entity.read(cx).entry(),
             Self::Switch(entity) => entity.read(cx).entry(),
+            Self::Toggle(entity) => entity.read(cx).entry(),
+            Self::ToggleGroup(entity) => entity.read(cx).entry(),
+            Self::Toolbar(entity) => entity.read(cx).entry(),
+            Self::Pager(entity) => entity.read(cx).entry(),
+            Self::TreeView(entity) => entity.read(cx).entry(),
+            Self::Badge(entity) => entity.read(cx).entry(),
+            Self::Progress(entity) => entity.read(cx).entry(),
             Self::ColorSlider(entity) => entity.read(cx).entry(),
             Self::TextField(entity) => entity.read(cx).entry(),
+            Self::TextArea(entity) => entity.read(cx).entry(),
+            Self::Slider(entity) => entity.read(cx).entry(),
+            Self::Scrollbar(entity) => entity.read(cx).entry(),
+            Self::DockPanel(entity) => entity.read(cx).entry(),
+            Self::ResizablePanels(entity) => entity.read(cx).entry(),
+            Self::NavigationSidebar(entity) => entity.read(cx).entry(),
+            Self::TabsNavigation(entity) => entity.read(cx).entry(),
             Self::ContextMenu(entity) => entity.read(cx).entry(),
             Self::FloatingMenu(entity) => entity.read(cx).entry(),
             Self::PopupMenu(entity) => entity.read(cx).entry(),
@@ -79,17 +146,34 @@ impl ControlExposition {
             Self::PopupSelector(entity) => entity.read(cx).entry(),
             Self::SelectionPanel(entity) => entity.read(cx).entry(),
             Self::ModalOverlay(entity) => entity.read(cx).entry(),
+            Self::SlidePanel(entity) => entity.read(cx).entry(),
         }
     }
 
     pub fn sync_look(&self, look: Arc<gpui_luma_look_shadcn::ShadcnLook>, cx: &mut App) {
         match self {
             Self::Button(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::CustomButton(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::Checkbox(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::RadioButton(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::RadioGroup(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::Switch(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::Toggle(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::ToggleGroup(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::Toolbar(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::Pager(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::TreeView(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::Badge(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::Progress(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::ColorSlider(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::TextField(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::TextArea(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::Slider(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::Scrollbar(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::DockPanel(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::ResizablePanels(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::NavigationSidebar(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::TabsNavigation(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::ContextMenu(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::FloatingMenu(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::PopupMenu(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
@@ -99,17 +183,34 @@ impl ControlExposition {
             Self::PopupSelector(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::SelectionPanel(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::ModalOverlay(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::SlidePanel(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
         }
     }
 
     pub fn render(&self, _cx: &App) -> AnyElement {
         match self {
             Self::Button(entity) => entity.clone().into_any_element(),
+            Self::CustomButton(entity) => entity.clone().into_any_element(),
             Self::Checkbox(entity) => entity.clone().into_any_element(),
             Self::RadioButton(entity) => entity.clone().into_any_element(),
+            Self::RadioGroup(entity) => entity.clone().into_any_element(),
             Self::Switch(entity) => entity.clone().into_any_element(),
+            Self::Toggle(entity) => entity.clone().into_any_element(),
+            Self::ToggleGroup(entity) => entity.clone().into_any_element(),
+            Self::Toolbar(entity) => entity.clone().into_any_element(),
+            Self::Pager(entity) => entity.clone().into_any_element(),
+            Self::TreeView(entity) => entity.clone().into_any_element(),
+            Self::Badge(entity) => entity.clone().into_any_element(),
+            Self::Progress(entity) => entity.clone().into_any_element(),
             Self::ColorSlider(entity) => entity.clone().into_any_element(),
             Self::TextField(entity) => entity.clone().into_any_element(),
+            Self::TextArea(entity) => entity.clone().into_any_element(),
+            Self::Slider(entity) => entity.clone().into_any_element(),
+            Self::Scrollbar(entity) => entity.clone().into_any_element(),
+            Self::DockPanel(entity) => entity.clone().into_any_element(),
+            Self::ResizablePanels(entity) => entity.clone().into_any_element(),
+            Self::NavigationSidebar(entity) => entity.clone().into_any_element(),
+            Self::TabsNavigation(entity) => entity.clone().into_any_element(),
             Self::ContextMenu(entity) => entity.clone().into_any_element(),
             Self::FloatingMenu(entity) => entity.clone().into_any_element(),
             Self::PopupMenu(entity) => entity.clone().into_any_element(),
@@ -119,6 +220,7 @@ impl ControlExposition {
             Self::PopupSelector(entity) => entity.clone().into_any_element(),
             Self::SelectionPanel(entity) => entity.clone().into_any_element(),
             Self::ModalOverlay(entity) => entity.clone().into_any_element(),
+            Self::SlidePanel(entity) => entity.clone().into_any_element(),
         }
     }
 
