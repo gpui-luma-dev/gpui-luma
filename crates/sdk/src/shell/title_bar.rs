@@ -2,12 +2,13 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ClickEvent, Context, Decorations, Hsla, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, Pixels, Render, RenderOnce, StatefulInteractiveElement as _, StyleRefinement, Styled,
-    TitlebarOptions, Window, WindowControlArea, div, hsla, point, prelude::*, px,
+    MouseDownEvent, MouseMoveEvent, ParentElement, Pixels, Point, Render, RenderOnce, StatefulInteractiveElement as _,
+    StyleRefinement, Styled, TitlebarOptions, Window, WindowControlArea, div, hsla, point, prelude::*, px,
 };
 use lucide_icons::Icon as LucideIcon;
 
 pub const TITLE_BAR_HEIGHT: Pixels = px(34.0);
+const TITLE_BAR_DRAG_THRESHOLD_PX: f64 = 4.0;
 
 /// Left inset before custom title-bar content (macOS traffic lights, etc.).
 #[cfg(target_os = "macos")]
@@ -246,7 +247,7 @@ impl ParentElement for TitleBar {
 }
 
 struct TitleBarState {
-    should_move: bool,
+    drag_start_position: Option<Point<Pixels>>,
 }
 
 // Keep this lightweight state render to satisfy `use_state` requirements.
@@ -263,7 +264,7 @@ impl RenderOnce for TitleBar {
         let border_color = self.border_color.unwrap_or(hsla(0.0, 0.0, 1.0, 0.1));
         let background_color = self.background_color.unwrap_or(hsla(0.0, 0.0, 0.11, 1.0));
 
-        let state = window.use_state(cx, |_, _| TitleBarState { should_move: false });
+        let state = window.use_state(cx, |_, _| TitleBarState { drag_start_position: None });
 
         div().flex_shrink_0().child(
             div()
@@ -278,23 +279,25 @@ impl RenderOnce for TitleBar {
                 .border_color(border_color)
                 .bg(background_color)
                 .on_mouse_down_out(window.listener_for(&state, |state, _, _, _| {
-                    state.should_move = false;
+                    state.drag_start_position = None;
                 }))
                 .on_mouse_down(
                     MouseButton::Left,
-                    window.listener_for(&state, |state, _, _, _| {
-                        state.should_move = true;
+                    window.listener_for(&state, |state, event: &MouseDownEvent, _, _| {
+                        state.drag_start_position = (event.click_count < 2).then_some(event.position);
                     }),
                 )
                 .on_mouse_up(
                     MouseButton::Left,
                     window.listener_for(&state, |state, _, _, _| {
-                        state.should_move = false;
+                        state.drag_start_position = None;
                     }),
                 )
-                .on_mouse_move(window.listener_for(&state, |state, _, window, _| {
-                    if state.should_move {
-                        state.should_move = false;
+                .on_mouse_move(window.listener_for(&state, |state, event: &MouseMoveEvent, window, _| {
+                    if let Some(origin) = state.drag_start_position
+                        && event.position.relative_to(&origin).magnitude() >= TITLE_BAR_DRAG_THRESHOLD_PX
+                    {
+                        state.drag_start_position = None;
                         window.start_window_move();
                     }
                 }))
