@@ -24,7 +24,7 @@ pub mod prelude;
 pub mod tables;
 
 pub use catalog::{CssTokenCatalog, CssTokenMap, parse_css_catalog};
-pub use context::with_look;
+pub use context::{sync_color_control_theme, with_look};
 pub use ext::{LumaTypographyExt, ShadcnElementExt};
 pub use look::ShadcnLook;
 pub use mode::ShadcnModeTokens;

@@ -51,7 +51,6 @@ struct SplitRingMetrics {
     track_width: f32,
     arc_ring_gap: f32,
     ring_swatch_gap: f32,
-    border_gap: f32,
     arc_horizontal_offset: f32,
 }
 
@@ -67,7 +66,6 @@ impl SplitRingMetrics {
             track_width: (20.0 * scale).max(12.0),
             arc_ring_gap: (5.0 * scale).max(3.0),
             ring_swatch_gap: (14.0 * scale).max(8.0),
-            border_gap: (14.0 * scale).max(10.0),
             arc_horizontal_offset: (5.0 * scale).max(3.0),
         }
     }
@@ -84,13 +82,9 @@ impl SplitRingMetrics {
         self.outer_size + self.arc_horizontal_offset * 2.0
     }
 
-    fn border_size(self) -> f32 {
-        self.frame_size() + self.border_gap * 2.0
-    }
-
-    /// Visible ring diameter — drives card width and readout preview (Profile A).
+    /// Visible composition width — drives card width and readout preview.
     fn primary_width(self) -> f32 {
-        self.border_size()
+        self.frame_size()
     }
 
     fn card_width(self) -> f32 {
@@ -238,6 +232,14 @@ impl SplitRingDemo {
         self.hue_ring.clone()
     }
 
+    pub fn saturation_arc(&self) -> Entity<SliderControl> {
+        self.saturation_arc.clone()
+    }
+
+    pub fn lightness_arc(&self) -> Entity<SliderControl> {
+        self.lightness_arc.clone()
+    }
+
     fn sync_controls(&self, cx: &mut Context<Self>) {
         let hue_degrees = self.color.hue_degrees;
         let saturation = self.color.saturation;
@@ -298,7 +300,6 @@ impl Render for SplitRingDemo {
                 div()
                     .relative()
                     .size(px(primary_width))
-                    .child(div().absolute().inset_0().rounded_full().border_1().border_color(look.chrome().border))
                     .child(
                         div()
                             .absolute()

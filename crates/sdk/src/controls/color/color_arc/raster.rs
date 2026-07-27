@@ -2,7 +2,7 @@ use super::common::{arc_contains_turn, turn_to_position};
 use super::track_context::ColorArcTrackContext;
 use super::types::ColorArcDelegate;
 use crate::controls::color::color_slider::color_spec::Hsv;
-use crate::controls::color::style::Size as ComponentSize;
+use crate::controls::color::style::{Size as ComponentSize, active_color_control_theme};
 use gpui::*;
 use std::sync::Mutex;
 use std::f32::consts::TAU;
@@ -311,7 +311,7 @@ impl ColorArcDelegate for RasterArcDelegate {
     }
 
     fn raster_cached_image(&self, context: &ColorArcTrackContext, image_size: Size<Pixels>) -> Option<Arc<Image>> {
-        self.ensure_cache(context, image_size, context.border_color)
+        self.ensure_cache(context, image_size, active_color_control_theme().border)
     }
 }
 

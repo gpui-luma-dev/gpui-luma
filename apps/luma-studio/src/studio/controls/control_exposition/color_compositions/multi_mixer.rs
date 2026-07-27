@@ -147,7 +147,6 @@ struct MixerSliderRow {
 }
 
 struct ColorSpaceMixerState<S: ColorSpecification> {
-    id_prefix: &'static str,
     subtitle: Option<&'static str>,
     show_gamut_warning: bool,
     look: Arc<ShadcnLook>,
@@ -214,8 +213,7 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
             })
             .collect();
 
-        let state =
-            Self { id_prefix, subtitle, show_gamut_warning, look, spec, sliders, _subscriptions: subscriptions };
+        let state = Self { subtitle, show_gamut_warning, look, spec, sliders, _subscriptions: subscriptions };
         state.sync_sliders(cx);
         state
     }

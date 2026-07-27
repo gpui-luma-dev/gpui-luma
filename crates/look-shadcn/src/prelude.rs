@@ -11,7 +11,7 @@
 //! });
 //! ```
 
-pub use crate::context::with_look;
+pub use crate::context::{sync_color_control_theme, with_look};
 pub use crate::controls::{
     ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt,
     ShadcnTextAreaExt, ShadcnTextFieldExt, ShadcnToolbarItemExt,

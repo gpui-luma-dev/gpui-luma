@@ -81,60 +81,6 @@ pub(crate) fn render_slide_panel_resize_handle(
     handle.child(divider).child(interaction_layer).into_any_element()
 }
 
-pub(crate) fn render_slide_panel_inner_resize_handle(
-    edge: SlidePanelEdge,
-    look: &ResizablePanelsLook,
-    handle_metrics: &ResizeHandleMetrics,
-    handle_active: bool,
-    handlers: SlidePanelResizeHitHandlers,
-) -> AnyElement {
-    let orientation = if edge.is_horizontal_main_axis() {
-        ResizablePanelsOrientation::Horizontal
-    } else {
-        ResizablePanelsOrientation::Vertical
-    };
-
-    let hit_px = handle_hit_target_main_axis_px(handle_metrics);
-    let hit_main = px(hit_px);
-    let hit_inset = px(hit_px * 0.5 - 0.5);
-
-    let mut handle = div()
-        .id("slide-panel-resize-handle")
-        .absolute()
-        .occlude()
-        .when(orientation == ResizablePanelsOrientation::Horizontal, |this| this.cursor_col_resize())
-        .when(orientation == ResizablePanelsOrientation::Vertical, |this| this.cursor_row_resize());
-
-    handle = match edge {
-        SlidePanelEdge::Right => handle.left(-hit_inset).top_0().bottom_0().w(hit_main),
-        SlidePanelEdge::Left => handle.right(-hit_inset).top_0().bottom_0().w(hit_main),
-        SlidePanelEdge::Bottom => handle.top(-hit_inset).left_0().right_0().h(hit_main),
-        SlidePanelEdge::Top => handle.bottom(-hit_inset).left_0().right_0().h(hit_main),
-    };
-
-    if handle_active {
-        handle = handle
-            .when(orientation == ResizablePanelsOrientation::Horizontal, |this| {
-                this.flex().justify_center().items_center()
-            })
-            .when(orientation == ResizablePanelsOrientation::Vertical, |this| {
-                this.flex().flex_col().justify_center().items_center()
-            })
-            .child(render_handle_grip(orientation, look.grip_emphasis, handle_metrics));
-    }
-
-    let SlidePanelResizeHitHandlers { mouse_down, hover } = handlers;
-
-    handle
-        .on_hover(hover)
-        .on_mouse_down(MouseButton::Left, mouse_down)
-        .on_drag(SlidePanelResizeDrag, |drag, _, _, cx| {
-            cx.stop_propagation();
-            cx.new(|_| drag.clone())
-        })
-        .into_any_element()
-}
-
 fn handle_overlay_geometry(split_px: f32, handle_width_px: f32) -> (f32, f32, f32) {
     let width = handle_width_px.max(1.0).round();
     let width_i = width as i32;

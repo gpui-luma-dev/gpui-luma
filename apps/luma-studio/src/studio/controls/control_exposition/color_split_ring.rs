@@ -21,8 +21,8 @@ use super::template::render_control_exposition_card;
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[EventReferenceSpec {
     event: "SliderEvent::Change / Release { value }",
-    trigger: "Drag the inner hue ring",
-    notes: "Updates hue on the shared HSL model; saturation and lightness arcs stay linked.",
+    trigger: "Drag the hue ring or saturation/lightness arcs",
+    notes: "Updates the shared HSL model; linked controls stay in sync through ColorCompositionSync.",
 }];
 
 const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
@@ -66,7 +66,7 @@ impl ColorSplitRingControlExposition {
                 cx,
                 look.clone(),
                 "controls-color-split-ring-event-log",
-                "Edit the medium split ring; hue ring SliderEvent variants appear below.",
+                "Edit the medium split ring; hue, saturation, and lightness SliderEvent variants appear below.",
             )
         });
 
@@ -157,13 +157,31 @@ fn wire_split_ring_events(
     cx: &mut Context<ColorSplitRingControlExposition>,
 ) -> Vec<Subscription> {
     let hue_ring = state.read(cx).hue_ring();
+    let saturation_arc = state.read(cx).saturation_arc();
+    let lightness_arc = state.read(cx).lightness_arc();
+    let event_stream = event_stream.clone();
 
-    vec![cx.subscribe(&hue_ring, {
-        let event_stream = event_stream.clone();
-        move |_, _, event: &SliderEvent, cx| {
-            if let Some(line) = format_slider_event("Hue Ring", event) {
+    vec![
+        cx.subscribe(&hue_ring, {
+            let event_stream = event_stream.clone();
+            move |_, _, event: &SliderEvent, cx| {
+                if let Some(line) = format_slider_event("Hue Ring", event) {
+                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                }
+            }
+        }),
+        cx.subscribe(&saturation_arc, {
+            let event_stream = event_stream.clone();
+            move |_, _, event: &SliderEvent, cx| {
+                if let Some(line) = format_slider_event("Saturation Arc", event) {
+                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                }
+            }
+        }),
+        cx.subscribe(&lightness_arc, move |_, _, event: &SliderEvent, cx| {
+            if let Some(line) = format_slider_event("Lightness Arc", event) {
                 event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
             }
-        }
-    })]
+        }),
+    ]
 }

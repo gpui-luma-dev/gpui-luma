@@ -228,50 +228,6 @@ pub(super) fn render_field_card_with_padding(
         .into_any_element()
 }
 
-pub(super) fn render_compact_field_card(
-    look: &ShadcnLook,
-    title: &'static str,
-    description: &'static str,
-    width_px: f32,
-    title_size: ShadcnTextSize,
-    description_size: ShadcnTextSize,
-    content: impl IntoElement,
-) -> gpui::AnyElement {
-    let chrome = look.chrome();
-    let title_style = look.typography_scale(title_size);
-    let description_style = look.typography_scale(description_size);
-
-    div()
-        .w(px(width_px))
-        .max_w_full()
-        .min_w(px(0.0))
-        .flex()
-        .flex_col()
-        .gap(px(12.0))
-        .rounded(px(composition_card_radius(look)))
-        .border_1()
-        .border_color(chrome.border)
-        .bg(chrome.panel_background)
-        .px(px(18.0))
-        .py(px(16.0))
-        .child(
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(2.0))
-                .child(
-                    div()
-                        .typography_style(title_style)
-                        .font_weight(FontWeight::MEDIUM)
-                        .text_color(chrome.title_text)
-                        .child(title),
-                )
-                .child(div().typography_style(description_style).text_color(chrome.muted_text).child(description)),
-        )
-        .child(div().w_full().min_w(px(0.0)).child(content))
-        .into_any_element()
-}
-
 pub(super) fn composition_title_text_size(size: CompositionSize) -> ShadcnTextSize {
     match size {
         CompositionSize::Sm => ShadcnTextSize::Sm,
@@ -400,45 +356,6 @@ pub(super) fn format_hsl_label(color: Hsla) -> String {
     )
 }
 
-pub(super) fn render_sized_triple_section(
-    look: &ShadcnLook,
-    title: &'static str,
-    description: &'static str,
-    card_width: f32,
-    sm: impl IntoElement,
-    md: impl IntoElement,
-    lg: impl IntoElement,
-) -> gpui::AnyElement {
-    render_sized_triple_section_with_widths(look, title, description, card_width, card_width, card_width, sm, md, lg)
-}
-
-pub(super) fn render_sized_triple_section_with_widths(
-    look: &ShadcnLook,
-    title: &'static str,
-    description: &'static str,
-    sm_width: f32,
-    md_width: f32,
-    lg_width: f32,
-    sm: impl IntoElement,
-    md: impl IntoElement,
-    lg: impl IntoElement,
-) -> gpui::AnyElement {
-    render_demo_section(
-        look,
-        title,
-        description,
-        div()
-            .flex()
-            .flex_wrap()
-            .items_start()
-            .gap(px(16.0))
-            .child(render_field_card(look, "Sm", "Compact composition metrics.", sm_width, sm))
-            .child(render_field_card(look, "Md", "Default composition metrics.", md_width, md))
-            .child(render_field_card(look, "Lg", "Expanded composition metrics.", lg_width, lg))
-            .into_any_element(),
-    )
-}
-
 pub(super) fn slider_labeled_row(
     look: &ShadcnLook,
     label: &'static str,
@@ -453,27 +370,6 @@ pub(super) fn slider_labeled_row_wide(
     slider: gpui::Entity<gpui_luma::controls::slider::SliderControl>,
 ) -> gpui::AnyElement {
     slider_labeled_row_with_width(look, label, slider, SLIDER_LABEL_WIDTH_WIDE)
-}
-
-pub(super) fn slider_labeled_row_sized(
-    look: &ShadcnLook,
-    label: &'static str,
-    slider: gpui::Entity<gpui_luma::controls::slider::SliderControl>,
-    label_text_size: ShadcnTextSize,
-) -> gpui::AnyElement {
-    div()
-        .w_full()
-        .flex()
-        .items_center()
-        .gap(px(12.0))
-        .child(
-            div()
-                .flex_shrink_0()
-                .w(px(SLIDER_LABEL_WIDTH))
-                .child(control_label_sized(look, label, label_text_size)),
-        )
-        .child(div().flex_1().min_w(px(0.0)).child(slider))
-        .into_any_element()
 }
 
 pub(super) fn slider_labeled_row_compact_sized(

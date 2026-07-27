@@ -183,6 +183,14 @@ impl HsvPlaneDemo {
         self.slider_h.clone()
     }
 
+    pub fn slider_s(&self) -> Entity<SliderControl> {
+        self.slider_s.clone()
+    }
+
+    pub fn slider_v(&self) -> Entity<SliderControl> {
+        self.slider_v.clone()
+    }
+
     fn sync_controls(&self, cx: &mut Context<Self>) {
         let hsv = self.hsv;
         self.plane.update(cx, |plane, cx| {

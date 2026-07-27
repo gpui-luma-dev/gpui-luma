@@ -1,5 +1,6 @@
 use super::track_context::ColorArcTrackContext;
 use super::types::ColorArcDelegate;
+use crate::controls::color::style::active_color_control_theme;
 use crate::controls::color::color_slider::color_spec::Hsv;
 use crate::controls::color::shape::{Arc, ArcData};
 use crate::controls::color::style::Size;
@@ -128,7 +129,7 @@ fn paint_vector_arc_spectrum(
     let start_turn = context.start_turns();
     let sweep_turns = context.sweep_turns();
     let reversed = context.reversed;
-    let border_color = context.border_color;
+    let border_color = active_color_control_theme().border;
     if sweep_turns <= f32::EPSILON {
         return;
     }

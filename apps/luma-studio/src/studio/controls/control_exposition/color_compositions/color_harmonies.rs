@@ -1,11 +1,14 @@
 #![allow(clippy::too_many_arguments)]
 
-//! Color harmonies composition — wheel, lightness ring, harmony selector, and palette readout.
+//! Color harmonies composition — HSL hue/saturation wheel at current lightness, with harmony palette readout.
 
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, FontWeight, Hsla, Render, Subscription, Window, div, hsla, prelude::*, px, rgb};
-use gpui_luma::controls::color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, WhiteMixHueWheelModel};
+use gpui::{
+    AnyElement, Context, Entity, FontWeight, Hsla, Render, Subscription, Window, div, hsla, prelude::*, px, rgb,
+    transparent_black,
+};
+use gpui_luma::controls::color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, HslWheelModel};
 use gpui_luma::controls::color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingTrackContext, LightnessRingDelegate, primary_slider_value,
     sizing,
@@ -21,7 +24,7 @@ use gpui_luma::vstack;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
-use super::super::color_exposition_common::{composition_size_label, format_hsl_label};
+use super::super::color_exposition_common::{composition_demo_card_width, composition_size_label, format_hsl_label};
 
 pub fn composition_title_text_size(size: CompositionSize) -> ShadcnTextSize {
     super::super::color_exposition_common::composition_title_text_size(size)
@@ -41,10 +44,8 @@ pub fn composition_control_size(size: CompositionSize) -> ControlSize {
 const COMPONENT_GAP_PX: f32 = 20.0;
 const ROW_GAP_PX: f32 = 12.0;
 const COLOR_SWATCH_SIZE: f32 = 48.0;
-/// Minimum width for the HSL text field (content + textfield padding).
 const MIN_COLOR_INPUT_WIDTH: f32 = 152.0;
 const MIN_SELECTOR_WIDTH: f32 = 158.0;
-const CARD_HORIZONTAL_PADDING: f32 = 36.0;
 const COLOR_LABEL_RESERVE: f32 = 40.0;
 const COMBINATION_LABEL_RESERVE: f32 = 88.0;
 
@@ -82,23 +83,12 @@ impl ColorHarmoniesMetrics {
         color_row_width.max(combination_row_width)
     }
 
-    fn target_wheel_block(size: CompositionSize, proportional_block: f32, content_width: f32) -> f32 {
-        match size {
-            // Fill the card content area; form rows set card width at this tier.
-            CompositionSize::Sm => content_width,
-            // Step above Sm; card grows with the wheel.
-            CompositionSize::Md => proportional_block.max(content_width + 32.0),
-            CompositionSize::Lg | CompositionSize::Custom(_) => proportional_block,
-        }
-    }
-
     fn resolve(size: CompositionSize) -> Self {
         let mut metrics = Self::resolve_proportional(size);
         let content_width = Self::form_content_width();
         let wheel_block = metrics.ring_size + metrics.ring_canvas_padding;
-        let target_block = Self::target_wheel_block(size, wheel_block, content_width);
-        if wheel_block < target_block {
-            metrics.ring_size += target_block - wheel_block;
+        if wheel_block < content_width {
+            metrics.ring_size += content_width - wheel_block;
             metrics.wheel_thumb_size = (metrics.wheel_size() * 0.07).max(10.0);
         }
         metrics
@@ -130,8 +120,7 @@ impl ColorHarmoniesMetrics {
     }
 
     fn content_width(self) -> f32 {
-        let wheel_width = self.ring_size + self.ring_canvas_padding;
-        Self::form_content_width().max(wheel_width)
+        (self.ring_size + self.ring_canvas_padding).max(Self::form_content_width())
     }
 
     fn palette_swatch_diameter(self, swatch_count: usize) -> f32 {
@@ -141,15 +130,11 @@ impl ColorHarmoniesMetrics {
 
         let count = swatch_count as f32;
         let gap_total = (swatch_count.saturating_sub(1)) as f32 * ROW_GAP_PX;
-        let fit = ((self.content_width() - gap_total) / count).max(0.0);
-        fit.min(COLOR_SWATCH_SIZE)
+        ((self.content_width() - gap_total) / count).max(0.0).min(COLOR_SWATCH_SIZE)
     }
 
     fn card_width(self) -> f32 {
-        let wheel_width = self.ring_size + self.ring_canvas_padding;
-        let color_row_width = COLOR_LABEL_RESERVE + ROW_GAP_PX + COLOR_SWATCH_SIZE + ROW_GAP_PX + MIN_COLOR_INPUT_WIDTH;
-        let combination_row_width = COMBINATION_LABEL_RESERVE + ROW_GAP_PX + MIN_SELECTOR_WIDTH;
-        wheel_width.max(color_row_width).max(combination_row_width) + CARD_HORIZONTAL_PADDING
+        composition_demo_card_width(self.content_width())
     }
 }
 
@@ -169,7 +154,7 @@ impl ColorHarmoniesDemo {
                 format!("controls-doc-color-harmonies-wheel-{size_label}"),
                 hsla_to_wheel_hsv(color),
                 Arc::new(CircleDomain),
-                Arc::new(WhiteMixHueWheelModel),
+                Arc::new(HslWheelModel),
             )
             .thumb_size(metrics.wheel_thumb_size)
             .inside_field()
@@ -210,28 +195,26 @@ impl ColorHarmoniesDemo {
                     ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
                     _ => return,
                 };
-                {
-                    let Some(_sync_guard) = this.sync.begin_guard() else {
-                        return;
-                    };
-                    this.color.h = (hsv.h / 360.0).rem_euclid(1.0);
-                    this.color.s = hsv.s.clamp(0.0, 1.0);
+                if !this.sync.begin_sync() {
+                    return;
                 }
+                this.color.h = (hsv.h / 360.0).rem_euclid(1.0);
+                this.color.s = hsv.s.clamp(0.0, 1.0);
                 this.sync_ring(cx);
+                this.sync.end_sync();
                 cx.notify();
             }),
             cx.subscribe(&lightness_ring, |this, _, event, cx| {
                 let Some(lightness) = primary_slider_value(event) else {
                     return;
                 };
-                {
-                    let Some(_sync_guard) = this.sync.begin_guard() else {
-                        return;
-                    };
-                    this.color.l = lightness.clamp(0.0, 1.0);
+                if !this.sync.begin_sync() {
+                    return;
                 }
+                this.color.l = lightness.clamp(0.0, 1.0);
                 this.sync_wheel(cx);
                 this.sync_ring(cx);
+                this.sync.end_sync();
                 cx.notify();
             }),
             cx.subscribe(&harmony_menu, |this, _, event: &SelectorEvent, cx| {
@@ -330,13 +313,14 @@ impl Render for ColorHarmoniesDemo {
         let color = self.color;
         let swatches = self.selected_combination.palette(color);
         let harmony_points = harmony_points_from_swatches(&swatches);
-        let title_text = self.look.chrome().title_text;
-        let border = self.look.chrome().border;
+        let look = &self.look;
+        let title_text = look.chrome().title_text;
+        let border = look.chrome().border;
         let metrics = self.metrics;
         let label_text_size = composition_title_text_size(self.composition_size);
 
         render_combinations_body(
-            &self.look,
+            look,
             title_text,
             border,
             label_text_size,
@@ -352,11 +336,12 @@ impl Render for ColorHarmoniesDemo {
     }
 }
 
+/// Maps the shared HSL color into wheel HSV — `v` carries lightness so the disk re-tints with the ring.
 fn hsla_to_wheel_hsv(color: Hsla) -> Hsv {
     Hsv {
         h: (color.h * 360.0).rem_euclid(360.0),
         s: color.s.clamp(0.0, 1.0),
-        v: 1.0,
+        v: color.l.clamp(0.0, 1.0),
         a: color.a.clamp(0.0, 1.0),
     }
 }
@@ -524,10 +509,11 @@ fn render_combo_wheel_layer(
     wheel: Entity<ColorFieldState>,
     harmony_points: Vec<CombinationSwatch>,
     metrics: ColorHarmoniesMetrics,
+    border: Hsla,
 ) -> impl gpui::IntoElement {
     let wheel_size = metrics.wheel_size();
     let center = wheel_size * 0.5;
-    let marker_size = (metrics.wheel_thumb_size * 0.64).max(8.0);
+    let marker_size = metrics.wheel_thumb_size;
     let marker_half = marker_size * 0.5;
     let marker_radius_max = (center - marker_half).max(0.0);
 
@@ -548,19 +534,8 @@ fn render_combo_wheel_layer(
                 .size(px(marker_size))
                 .rounded_full()
                 .border_1()
-                .border_color(hsla(0.0, 0.0, 0.0, 0.95))
-                .bg(hsla(0.0, 0.0, 1.0, 0.96))
-                .flex()
-                .items_center()
-                .justify_center()
-                .child(
-                    div()
-                        .size(px((marker_size - 5.0).max(3.0)))
-                        .rounded_full()
-                        .bg(swatch.color)
-                        .border_1()
-                        .border_color(hsla(0.0, 0.0, 1.0, 1.0)),
-                )
+                .border_color(border)
+                .bg(transparent_black())
                 .into_any_element()
         }))
 }
@@ -604,7 +579,7 @@ fn render_combinations_body(
                             .size(px(metrics.wheel_size()))
                             .rounded_full()
                             .overflow_hidden()
-                            .child(render_combo_wheel_layer(wheel, harmony_points, metrics)),
+                            .child(render_combo_wheel_layer(wheel, harmony_points, metrics, border)),
                     ),
             ),
         render_color_field_row(look, title_text, label_text_size, border, color, color_input),
@@ -651,6 +626,7 @@ fn render_color_field_row(
     color_input: TextField,
 ) -> AnyElement {
     div()
+        .w_full()
         .flex()
         .items_center()
         .gap(px(ROW_GAP_PX))
@@ -675,6 +651,7 @@ fn render_combination_field_row(
     harmony_menu: Entity<Selector>,
 ) -> AnyElement {
     div()
+        .w_full()
         .flex()
         .items_center()
         .gap(px(ROW_GAP_PX))

@@ -28,8 +28,8 @@ const EVENT_SPECS: &[EventReferenceSpec] = &[
     },
     EventReferenceSpec {
         event: "SliderEvent::Change / Release { value }",
-        trigger: "Drag the H hue slider",
-        notes: "Hue slider stays linked through ColorCompositionSync.",
+        trigger: "Drag the H, S, or V channel sliders",
+        notes: "Channel sliders stay linked through ColorCompositionSync.",
     },
 ];
 
@@ -166,6 +166,8 @@ fn wire_hsv_plane_events(
 ) -> Vec<Subscription> {
     let plane = state.read(cx).plane();
     let slider_h = state.read(cx).slider_h();
+    let slider_s = state.read(cx).slider_s();
+    let slider_v = state.read(cx).slider_v();
     let event_stream = event_stream.clone();
 
     vec![
@@ -177,8 +179,24 @@ fn wire_hsv_plane_events(
                 }
             }
         }),
-        cx.subscribe(&slider_h, move |_, _, event: &SliderEvent, cx| {
-            if let Some(line) = format_slider_event("Hue", event) {
+        cx.subscribe(&slider_h, {
+            let event_stream = event_stream.clone();
+            move |_, _, event: &SliderEvent, cx| {
+                if let Some(line) = format_slider_event("Hue", event) {
+                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                }
+            }
+        }),
+        cx.subscribe(&slider_s, {
+            let event_stream = event_stream.clone();
+            move |_, _, event: &SliderEvent, cx| {
+                if let Some(line) = format_slider_event("Saturation", event) {
+                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                }
+            }
+        }),
+        cx.subscribe(&slider_v, move |_, _, event: &SliderEvent, cx| {
+            if let Some(line) = format_slider_event("Value", event) {
                 event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
             }
         }),

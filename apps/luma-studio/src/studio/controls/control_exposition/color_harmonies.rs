@@ -36,9 +36,9 @@ const EVENT_SPECS: &[EventReferenceSpec] = &[
 
 const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
     PublicInterfaceSpec {
-        symbol: "WhiteMixHueWheelModel + ColorRingBuilder::lightness",
+        symbol: "HslWheelModel + ColorRingBuilder::lightness",
         surface: "Composition",
-        notes: "Hue wheel with outer lightness ring, harmony selector, and palette readout.",
+        notes: "HSL hue/saturation wheel at current lightness, with outer lightness ring and palette readout.",
     },
     PublicInterfaceSpec {
         symbol: "ColorCombination",

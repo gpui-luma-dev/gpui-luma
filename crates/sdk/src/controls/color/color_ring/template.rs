@@ -1,5 +1,6 @@
 use std::sync::{Arc, OnceLock, RwLock};
 
+use crate::controls::color::style::active_color_control_theme;
 use gpui::{App, Div, Stateful, Window, div, img, px, prelude::*};
 
 use crate::controls::color::color_slider::color_thumb::{ColorThumb, ThumbShape};
@@ -55,6 +56,7 @@ impl SliderTemplate for ColorRingTemplate {
         let outer_radius = dial_size * 0.5;
         let track_radius = (outer_radius - ring_thickness * 0.5).max(0.0);
         let visual = default_color_ring_visual(model.enabled);
+        let border_color = active_color_control_theme().border;
 
         let primary_thumb =
             model.thumbs.iter().find(|thumb| thumb.id == primary_thumb_id).or_else(|| model.thumbs.first());
@@ -89,16 +91,11 @@ impl SliderTemplate for ColorRingTemplate {
                 track
             })
             .when(context.ring_outer_border, |this| {
-                this.child(div().absolute().inset_0().rounded_full().border_1().border_color(context.ring_border_color))
+                this.child(div().absolute().inset_0().rounded_full().border_1().border_color(border_color))
             })
             .when(context.ring_inner_border, |this| {
                 this.child(
-                    div()
-                        .absolute()
-                        .inset(px(ring_thickness))
-                        .rounded_full()
-                        .border_1()
-                        .border_color(context.ring_border_color),
+                    div().absolute().inset(px(ring_thickness)).rounded_full().border_1().border_color(border_color),
                 )
             })
             .when(model.enabled, |this| {

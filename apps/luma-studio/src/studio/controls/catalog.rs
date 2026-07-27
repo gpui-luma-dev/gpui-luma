@@ -340,7 +340,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Color Harmonies",
         description: "Hue wheel and lightness ring with harmony selector and palette readout. Monochromatic through hexadic palettes derived from the base color.",
         category: ControlCategory::ColorCompositions,
-        snippet: "ColorFieldState::new(\"wheel\", hsv, CircleDomain, WhiteMixHueWheelModel);\nColorRingBuilder::lightness(\"l\", l, h, s).spawn(cx);",
+        snippet: "ColorFieldState::new(\"wheel\", hsv, CircleDomain, HslWheelModel);\nColorRingBuilder::lightness(\"l\", l, h, s).spawn(cx);",
         section_order: 220,
     },
     ControlDocEntry {

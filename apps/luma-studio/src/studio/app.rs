@@ -7,7 +7,7 @@ use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, LumaThemeSyncExt, ThemeMode};
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole, sync_color_control_theme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::theme::{LumaStudioLaunchOptions, LumaStudioThemeChoice};
@@ -53,6 +53,7 @@ impl LumaStudioApp {
         let mode = launch_options.initial_mode;
         let look = Self::load_theme(&active_theme_id);
         look.set_mode(mode);
+        sync_color_control_theme(look.as_ref());
         let demos = DemoControls::spawn(cx, look.clone(), ControlSize::Md);
 
         let overrides = StudioOverrides::default();
@@ -162,6 +163,7 @@ impl LumaStudioApp {
         if let Err(err) = self.look.apply_token_overrides(&token_overrides) {
             tracing::warn!("failed to apply studio token overrides: {err:?}");
         }
+        sync_color_control_theme(self.look.as_ref());
         cx.bump_luma_theme_revision();
         self.sync_split_themes(cx);
         self.refresh_content_pane(cx);
@@ -499,6 +501,7 @@ impl LumaStudioApp {
             ThemeMode::Dark => ThemeMode::Light,
         };
         self.look.set_mode(mode);
+        sync_color_control_theme(self.look.as_ref());
         self.mode_toggle.update(cx, |button, cx| {
             button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(toggle_mode_icon(mode))), cx);
         });
