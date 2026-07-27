@@ -47,23 +47,26 @@ pub(crate) fn render_control_exposition_card(
         card = card.rounded(px(12.0)).border_1().border_color(chrome.border).bg(card_bg).overflow_hidden();
     }
 
-    card.child(div().w_full().flex().flex_col().gap(px(10.0)).p(px(16.0)).child(
-        render_section_heading_anchor_with_order_options(
-            entry.title,
-            entry.description,
-            entry.section_order,
-            chrome.title_text,
-            chrome.muted_text,
-            chrome.border,
-            false,
-        ),
-    ))
-    .child(render_card_section(preview, borderless, chrome, PREVIEW_PAD))
-    .when_some(between_preview_and_snippet, |card, section| {
-        card.child(render_card_section(section, borderless, chrome, PREVIEW_PAD))
-    })
-    .child(render_card_section(render_snippet_block(look, entry.snippet), borderless, chrome, SNIPPET_PAD))
-    .into_any_element()
+    if !layout.skip_heading {
+        card = card.child(div().w_full().flex().flex_col().gap(px(10.0)).p(px(16.0)).child(
+            render_section_heading_anchor_with_order_options(
+                entry.title,
+                entry.description,
+                entry.section_order,
+                chrome.title_text,
+                chrome.muted_text,
+                chrome.border,
+                false,
+            ),
+        ));
+    }
+
+    card.child(render_card_section(preview, borderless, chrome, PREVIEW_PAD))
+        .when_some(between_preview_and_snippet, |card, section| {
+            card.child(render_card_section(section, borderless, chrome, PREVIEW_PAD))
+        })
+        .child(render_card_section(render_snippet_block(look, entry.snippet), borderless, chrome, SNIPPET_PAD))
+        .into_any_element()
 }
 
 fn render_card_section(

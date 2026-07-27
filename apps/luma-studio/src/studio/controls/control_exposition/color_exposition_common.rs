@@ -17,22 +17,16 @@ const SLIDER_GRID_GAP_Y: f32 = 12.0;
 
 /// Inner demo-card horizontal padding (`render_demo_card` default).
 pub(super) const COMPOSITION_DEMO_CARD_PADDING_X: f32 = 18.0;
-/// Minimum inner content width so Hex/HSLA readout rows do not clip.
-pub(super) const COMPOSITION_READOUT_MIN_WIDTH: f32 = 236.0;
 pub(super) const COMPOSITION_PRIMARY_READOUT_GAP: f32 = 10.0;
 pub(super) const COMPOSITION_READOUT_ROW_GAP: f32 = 4.0;
 pub(super) const COMPOSITION_READOUT_SWATCH_HEIGHT: f32 = 24.0;
 
-pub(super) fn composition_content_width(natural_width: f32) -> f32 {
-    natural_width.max(COMPOSITION_READOUT_MIN_WIDTH)
-}
-
 pub(super) fn composition_demo_card_width(content_width: f32) -> f32 {
-    composition_content_width(content_width) + COMPOSITION_DEMO_CARD_PADDING_X * 2.0
+    content_width + COMPOSITION_DEMO_CARD_PADDING_X * 2.0
 }
 
 pub(super) fn composition_card_width(content_width: f32, horizontal_padding: f32) -> f32 {
-    composition_content_width(content_width) + horizontal_padding * 2.0
+    content_width + horizontal_padding * 2.0
 }
 
 pub(super) fn composition_card_radius(look: &ShadcnLook) -> f32 {
@@ -493,11 +487,7 @@ pub(super) fn slider_labeled_row_compact_sized(
         .flex()
         .items_center()
         .gap(px(8.0))
-        .child(
-            div()
-                .flex_shrink_0()
-                .child(control_label_sized(look, label, label_text_size)),
-        )
+        .child(div().flex_shrink_0().child(control_label_sized(look, label, label_text_size)))
         .child(div().flex_1().min_w(px(0.0)).child(slider))
         .into_any_element()
 }

@@ -48,13 +48,16 @@ const COLOR_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "color-arc", label: "Color Arc" },
     ComponentCatalogEntry { id: "color-slider", label: "Color Slider" },
     ComponentCatalogEntry { id: "color-slider-revealed", label: "Color Slider Revealed" },
-    ComponentCatalogEntry { id: "color-harmonies", label: "Color Harmonies" },
+    ComponentCatalogEntry { id: "color-multi-mixer", label: "Multi Mixer" },
+];
+
+const COLOR_COMPOSITIONS_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "color-picker", label: "Color Picker" },
     ComponentCatalogEntry { id: "color-hsv-plane", label: "HSV Plane" },
     ComponentCatalogEntry { id: "color-hsv-wheel", label: "HSV Wheel" },
     ComponentCatalogEntry { id: "color-sv-triangle", label: "SV Triangle" },
-    ComponentCatalogEntry { id: "color-multi-mixer", label: "Multi Mixer" },
     ComponentCatalogEntry { id: "color-split-ring", label: "Split Ring" },
+    ComponentCatalogEntry { id: "color-harmonies", label: "Color Harmonies" },
 ];
 
 const MENU_ENTRIES: &[ComponentCatalogEntry] = &[
@@ -104,6 +107,12 @@ pub const COMPONENT_CATALOG: &[ComponentCatalogGroup] = &[
     ComponentCatalogGroup { id: "choice", label: "CHOICE", icon: LucideIcon::ListChecks, entries: CHOICE_ENTRIES },
     ComponentCatalogGroup { id: "input", label: "INPUT", icon: LucideIcon::SlidersHorizontal, entries: INPUT_ENTRIES },
     ComponentCatalogGroup { id: "color", label: "COLOR", icon: LucideIcon::Palette, entries: COLOR_ENTRIES },
+    ComponentCatalogGroup {
+        id: "color-compositions",
+        label: "COLOR COMPOSITIONS",
+        icon: LucideIcon::Blend,
+        entries: COLOR_COMPOSITIONS_ENTRIES,
+    },
     ComponentCatalogGroup { id: "menu", label: "MENU", icon: LucideIcon::Menu, entries: MENU_ENTRIES },
     ComponentCatalogGroup { id: "layout", label: "LAYOUT", icon: LucideIcon::Columns2, entries: LAYOUT_ENTRIES },
     ComponentCatalogGroup {
@@ -137,7 +146,7 @@ pub const COMPONENT_CATALOG: &[ComponentCatalogGroup] = &[
 const COLUMN_GROUP_IDS: [&[&str]; 4] = [
     &["command", "input", "selection"],
     &["choice", "prototypes"],
-    &["color", "menu"],
+    &["color", "color-compositions", "menu"],
     &["layout", "navigation", "feedback"],
 ];
 

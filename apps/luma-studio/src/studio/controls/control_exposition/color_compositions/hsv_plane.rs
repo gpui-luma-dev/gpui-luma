@@ -3,7 +3,6 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::color::ColorSwatch;
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::color_slider::{
@@ -15,8 +14,8 @@ use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::super::color_exposition_common::{
-    composition_demo_card_width, composition_inset_radius, composition_size_label, composition_title_text_size,
-    detail_row_sized, format_compact_hsla, format_hex_color, slider_labeled_row_compact_sized,
+    composition_demo_card_width, composition_size_label, composition_title_text_size,
+    render_composition_readout_footer, slider_labeled_row_compact_sized, COMPOSITION_PRIMARY_READOUT_GAP,
 };
 
 pub struct HsvPlaneDemo {
@@ -223,26 +222,11 @@ impl Render for HsvPlaneDemo {
             .max_w_full()
             .flex()
             .flex_col()
-            .gap(px(10.0))
+            .gap(px(COMPOSITION_PRIMARY_READOUT_GAP))
             .child(div().w(px(plane_size)).h(px(plane_size)).overflow_hidden().child(self.plane.clone()))
             .child(slider_labeled_row_compact_sized(look, "H", self.slider_h.clone(), text_size))
             .child(slider_labeled_row_compact_sized(look, "S", self.slider_s.clone(), text_size))
             .child(slider_labeled_row_compact_sized(look, "V", self.slider_v.clone(), text_size))
-            .child(
-                div()
-                    .w_full()
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .gap(px(8.0))
-                    .child(
-                        ColorSwatch::new(hsla)
-                            .checkerboard(false)
-                            .height(px(40.0))
-                            .rounded(px(composition_inset_radius(look))),
-                    )
-                    .child(detail_row_sized(look, "Hex", format_hex_color(hsla), text_size))
-                    .child(detail_row_sized(look, "HSLA", format_compact_hsla(hsla), text_size)),
-            )
+            .child(render_composition_readout_footer(look, hsla, text_size, Some(plane_size)))
     }
 }

@@ -13,8 +13,8 @@ use gpui_luma::controls::slider::SliderControl;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::super::color_exposition_common::{
-    composition_demo_card_width, composition_inset_radius, composition_size_label, composition_title_text_size,
-    detail_row_sized, format_compact_hsla, format_hex_color,
+    composition_demo_card_width, composition_size_label, composition_title_text_size,
+    render_composition_readout_footer, COMPOSITION_PRIMARY_READOUT_GAP,
 };
 
 pub struct SvTriangleDemo {
@@ -167,7 +167,7 @@ impl Render for SvTriangleDemo {
             .flex()
             .flex_col()
             .items_center()
-            .gap(px(14.0))
+            .gap(px(COMPOSITION_PRIMARY_READOUT_GAP))
             .child(
                 div()
                     .size(px(ring_outer_size))
@@ -187,23 +187,7 @@ impl Render for SvTriangleDemo {
                             .child(self.triangle.clone()),
                     ),
             )
-            .child(
-                div()
-                    .w_full()
-                    .flex()
-                    .flex_col()
-                    .gap(px(8.0))
-                    .child(
-                        div()
-                            .h(px(40.0))
-                            .rounded(px(composition_inset_radius(look)))
-                            .border_1()
-                            .border_color(look.chrome().border)
-                            .bg(swatch),
-                    )
-                    .child(detail_row_sized(look, "Hex", format_hex_color(swatch), text_size))
-                    .child(detail_row_sized(look, "HSLA", format_compact_hsla(swatch), text_size)),
-            )
+            .child(render_composition_readout_footer(look, swatch, text_size, Some(ring_outer_size)))
     }
 }
 

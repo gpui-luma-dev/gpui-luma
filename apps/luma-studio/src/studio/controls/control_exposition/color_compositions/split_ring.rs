@@ -16,7 +16,7 @@ use gpui_luma::controls::slider::SliderControl;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::super::color_exposition_common::{
-    composition_content_width, composition_demo_card_width, composition_size_label, composition_title_text_size,
+    composition_demo_card_width, composition_size_label, composition_title_text_size,
     render_composition_readout_footer, COMPOSITION_PRIMARY_READOUT_GAP,
 };
 
@@ -51,7 +51,6 @@ struct SplitRingMetrics {
     track_width: f32,
     arc_ring_gap: f32,
     ring_swatch_gap: f32,
-    outer_padding: f32,
     border_gap: f32,
     arc_horizontal_offset: f32,
 }
@@ -61,17 +60,6 @@ impl SplitRingMetrics {
     const ARC_ROTATION_DEGREES: f32 = 90.0;
 
     fn resolve(size: CompositionSize) -> Self {
-        let metrics = Self::resolve_proportional(size);
-        let canvas = metrics.canvas_size();
-        let target = composition_content_width(canvas);
-        if canvas < target {
-            metrics.scale(target / canvas)
-        } else {
-            metrics
-        }
-    }
-
-    fn resolve_proportional(size: CompositionSize) -> Self {
         let outer_size = size.resolve_primary(220.0, 300.0, 380.0);
         let scale = outer_size / 300.0;
         Self {
@@ -79,21 +67,8 @@ impl SplitRingMetrics {
             track_width: (20.0 * scale).max(12.0),
             arc_ring_gap: (5.0 * scale).max(3.0),
             ring_swatch_gap: (14.0 * scale).max(8.0),
-            outer_padding: (12.0 * scale).max(8.0),
             border_gap: (14.0 * scale).max(10.0),
             arc_horizontal_offset: (5.0 * scale).max(3.0),
-        }
-    }
-
-    fn scale(self, factor: f32) -> Self {
-        Self {
-            outer_size: self.outer_size * factor,
-            track_width: self.track_width * factor,
-            arc_ring_gap: self.arc_ring_gap * factor,
-            ring_swatch_gap: self.ring_swatch_gap * factor,
-            outer_padding: self.outer_padding * factor,
-            border_gap: self.border_gap * factor,
-            arc_horizontal_offset: self.arc_horizontal_offset * factor,
         }
     }
 
@@ -113,12 +88,13 @@ impl SplitRingMetrics {
         self.frame_size() + self.border_gap * 2.0
     }
 
-    fn canvas_size(self) -> f32 {
-        self.border_size() + self.outer_padding * 2.0
+    /// Visible ring diameter — drives card width and readout preview (Profile A).
+    fn primary_width(self) -> f32 {
+        self.border_size()
     }
 
     fn card_width(self) -> f32 {
-        composition_demo_card_width(self.canvas_size())
+        composition_demo_card_width(self.primary_width())
     }
 
     fn ring_size(self) -> f32 {
@@ -126,8 +102,7 @@ impl SplitRingMetrics {
     }
 
     fn swatch_size(self) -> f32 {
-        let full = (self.ring_outer_radius() - self.track_width - self.ring_swatch_gap).max(0.0) * 2.0;
-        full.min(self.ring_size() * 0.36).max(28.0)
+        (self.ring_outer_radius() - self.track_width - self.ring_swatch_gap).max(0.0) * 2.0
     }
 }
 
@@ -302,17 +277,14 @@ impl Render for SplitRingDemo {
             hsla((self.color.hue_degrees / 360.0).rem_euclid(1.0), self.color.saturation, self.color.lightness, 1.0);
         let ring_size = self.metrics.ring_size();
         let swatch_size = self.metrics.swatch_size();
+        let primary_width = self.metrics.primary_width();
         let group_width = self.metrics.frame_size();
-        let border_size = self.metrics.border_size();
-        let canvas_size = self.metrics.canvas_size();
         let arc_offset = self.metrics.arc_horizontal_offset;
         let look = &self.look;
         let text_size = composition_title_text_size(self.composition_size);
 
-        let group_left = (canvas_size - group_width) * 0.5;
-        let group_top = (canvas_size - self.metrics.outer_size) * 0.5;
-        let border_left = (canvas_size - border_size) * 0.5;
-        let border_top = (canvas_size - border_size) * 0.5;
+        let group_left = (primary_width - group_width) * 0.5;
+        let group_top = (primary_width - self.metrics.outer_size) * 0.5;
         let ring_offset = (self.metrics.outer_size - ring_size) * 0.5;
         let swatch_offset = (self.metrics.outer_size - swatch_size) * 0.5;
 
@@ -325,17 +297,8 @@ impl Render for SplitRingDemo {
             .child(
                 div()
                     .relative()
-                    .size(px(canvas_size))
-                    .child(
-                        div()
-                            .absolute()
-                            .left(px(border_left))
-                            .top(px(border_top))
-                            .size(px(border_size))
-                            .rounded_full()
-                            .border_1()
-                            .border_color(look.chrome().border),
-                    )
+                    .size(px(primary_width))
+                    .child(div().absolute().inset_0().rounded_full().border_1().border_color(look.chrome().border))
                     .child(
                         div()
                             .absolute()
@@ -372,6 +335,6 @@ impl Render for SplitRingDemo {
                             .border_color(look.chrome().border),
                     ),
             )
-            .child(render_composition_readout_footer(look, swatch_color, text_size, None))
+            .child(render_composition_readout_footer(look, swatch_color, text_size, Some(primary_width)))
     }
 }

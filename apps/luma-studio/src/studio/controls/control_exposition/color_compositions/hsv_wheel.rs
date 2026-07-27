@@ -13,7 +13,7 @@ use gpui_luma::controls::slider::SliderControl;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::super::color_exposition_common::{
-    composition_content_width, composition_demo_card_width, composition_size_label, composition_title_text_size,
+    composition_demo_card_width, composition_size_label, composition_title_text_size,
     render_composition_readout_footer, COMPOSITION_PRIMARY_READOUT_GAP,
 };
 
@@ -38,8 +38,7 @@ struct HsvWheelMetrics {
 
 impl HsvWheelMetrics {
     fn resolve(size: CompositionSize) -> Self {
-        let ring_natural = size.resolve_primary(220.0, 300.0, 380.0);
-        let ring_outer_size = composition_content_width(ring_natural);
+        let ring_outer_size = size.resolve_primary(220.0, 300.0, 380.0);
         let scale = ring_outer_size / 300.0;
         Self {
             ring_outer_size,

@@ -154,7 +154,7 @@ impl Render for ColorHarmoniesControlExposition {
                 self.entry,
                 preview.into_any_element(),
                 Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
+                ControlExpositionLayout::BORDERLESS_NO_HEADING,
             )
         })
     }
