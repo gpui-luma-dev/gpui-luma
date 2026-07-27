@@ -1,7 +1,7 @@
 use gpui::{AnyElement, FontWeight, div, prelude::*, px};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
-use super::model::{EventReferenceSpec, EVENT_SECTION_INDENT};
+use super::model::EventReferenceSpec;
 use super::template::controls_mono_font;
 
 pub(crate) fn render_event_reference_section(look: &ShadcnLook, specs: &[EventReferenceSpec]) -> AnyElement {
@@ -11,9 +11,9 @@ pub(crate) fn render_event_reference_section(look: &ShadcnLook, specs: &[EventRe
 
     div()
         .w_full()
-        .pl(px(EVENT_SECTION_INDENT))
         .flex()
         .flex_col()
+        .items_start()
         .gap(px(6.0))
         .child(
             div()

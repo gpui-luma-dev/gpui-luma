@@ -15,6 +15,7 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::color_exposition_common::slider_labeled_row;
 use super::event_stream::ControlEventStream;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
@@ -307,9 +308,9 @@ impl Render for ColorSliderControlExposition {
                             .flex()
                             .flex_col()
                             .gap(px(12.0))
-                            .child(slider_row(&self.look, "Hue", self.hue_slider.clone()))
-                            .child(slider_row(&self.look, "Saturation", self.saturation_slider.clone()))
-                            .child(slider_row(&self.look, "Alpha", self.alpha_slider.clone()))
+                            .child(slider_labeled_row(&self.look, "Hue", self.hue_slider.clone()))
+                            .child(slider_labeled_row(&self.look, "Saturation", self.saturation_slider.clone()))
+                            .child(slider_labeled_row(&self.look, "Alpha", self.alpha_slider.clone()))
                             .child(
                                 ColorSwatch::new(selected)
                                     .checkerboard(true)
@@ -333,9 +334,9 @@ impl Render for ColorSliderControlExposition {
                             .flex()
                             .flex_col()
                             .gap(px(12.0))
-                            .child(slider_row(&self.look, "RGB", self.gradient_rgb.clone()))
-                            .child(slider_row(&self.look, "HSL", self.gradient_hsl.clone()))
-                            .child(slider_row(&self.look, "Lab", self.gradient_lab.clone())),
+                            .child(slider_labeled_row(&self.look, "RGB", self.gradient_rgb.clone()))
+                            .child(slider_labeled_row(&self.look, "HSL", self.gradient_hsl.clone()))
+                            .child(slider_labeled_row(&self.look, "Lab", self.gradient_lab.clone())),
                     ),
                 ))
                 .child(render_demo_section(
@@ -350,9 +351,9 @@ impl Render for ColorSliderControlExposition {
                             .flex()
                             .flex_col()
                             .gap(px(12.0))
-                            .child(slider_row(&self.look, "Red", self.red_slider.clone()))
-                            .child(slider_row(&self.look, "Green", self.green_slider.clone()))
-                            .child(slider_row(&self.look, "Blue", self.blue_slider.clone())),
+                            .child(slider_labeled_row(&self.look, "Red", self.red_slider.clone()))
+                            .child(slider_labeled_row(&self.look, "Green", self.green_slider.clone()))
+                            .child(slider_labeled_row(&self.look, "Blue", self.blue_slider.clone())),
                     ),
                 ))
                 .child(self.event_stream.clone());
@@ -455,26 +456,6 @@ fn render_demo_card(look: &ShadcnLook, width_px: f32, content: impl IntoElement)
         .bg(chrome.panel_background)
         .p(px(18.0))
         .child(content)
-        .into_any_element()
-}
-
-fn slider_row(look: &ShadcnLook, label: &'static str, slider: Entity<SliderControl>) -> gpui::AnyElement {
-    div()
-        .w_full()
-        .flex()
-        .items_center()
-        .gap(px(12.0))
-        .child(div().w(px(74.0)).child(control_label(look, label)))
-        .child(div().flex_1().child(slider))
-        .into_any_element()
-}
-
-fn control_label(look: &ShadcnLook, label: &'static str) -> gpui::AnyElement {
-    div()
-        .typography_style(look.typography_scale(ShadcnTextSize::Xs))
-        .font_weight(FontWeight::MEDIUM)
-        .text_color(look.chrome().muted_text)
-        .child(label)
         .into_any_element()
 }
 

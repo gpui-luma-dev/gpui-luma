@@ -2,7 +2,7 @@ use gpui::{AnyElement, FontWeight, div, prelude::*, px};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use super::event_reference::render_event_reference_section;
-use super::model::{EventReferenceSpec, PublicInterfaceSpec, EVENT_SECTION_INDENT};
+use super::model::{EventReferenceSpec, PublicInterfaceSpec};
 use super::template::controls_mono_font;
 
 pub(crate) fn render_exposition_doc_sections(
@@ -14,6 +14,7 @@ pub(crate) fn render_exposition_doc_sections(
         .w_full()
         .flex()
         .flex_col()
+        .items_start()
         .gap(px(16.0))
         .child(render_event_reference_section(look, event_specs))
         .child(render_public_interface_section(look, public_specs))
@@ -27,9 +28,9 @@ pub(crate) fn render_public_interface_section(look: &ShadcnLook, specs: &[Public
 
     div()
         .w_full()
-        .pl(px(EVENT_SECTION_INDENT))
         .flex()
         .flex_col()
+        .items_start()
         .gap(px(6.0))
         .child(
             div()

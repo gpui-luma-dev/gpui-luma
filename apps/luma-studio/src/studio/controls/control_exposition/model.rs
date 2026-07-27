@@ -7,8 +7,6 @@ impl ControlExpositionLayout {
     pub const BORDERLESS: Self = Self { borderless: true };
 }
 
-pub const EVENT_SECTION_INDENT: f32 = 100.0;
-
 #[derive(Clone, Copy)]
 pub struct EventReferenceSpec {
     pub event: &'static str,

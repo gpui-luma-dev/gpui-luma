@@ -1,0 +1,446 @@
+//! Color ring control exposition — linked HSL rings and renderer comparison.
+
+use std::sync::Arc;
+
+use gpui::{Context, Entity, Hsla, Render, Subscription, Window, div, hsla, prelude::*, px};
+use gpui_luma::controls::color::color_ring::{
+    ColorRingBuilder, ColorRingDomainRenderer, ColorRingRenderer, ColorRingTrackContext, HueRingDelegate,
+    LightnessRingDelegate, RasterRingDelegate, SaturationRingDelegate, primary_slider_value, refresh_color_ring,
+    update_ring_delegate,
+};
+use gpui_luma::controls::color::color_slider::color_spec::{Hsl, Hsv};
+use gpui_luma::controls::color::color_slider::ColorSpecification;
+use gpui_luma::controls::color::style::Size;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
+use gpui_luma::{vstack, wrappanel};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
+
+use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::color_exposition_common::{detail_row, format_slider_event, render_demo_card, render_demo_section};
+use super::event_stream::ControlEventStream;
+use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
+use super::public_interface::render_exposition_doc_sections;
+use super::template::render_control_exposition_card;
+
+const SWATCH_SIZE: f32 = 220.0;
+const RING_FRAME_PX: f32 = 256.0;
+const RING_MEDIUM_PX: f32 = 220.0;
+const SLIDER_COLUMN_WIDTH: f32 = 280.0;
+const READOUT_WIDTH: f32 = 160.0;
+const WIDE_CARD: f32 = 1120.0;
+
+const EVENT_SPECS: &[EventReferenceSpec] = &[
+    EventReferenceSpec {
+        event: "SliderEvent::Change { value }",
+        trigger: "Pointer drag on ring track",
+        notes: "Hue, saturation, and lightness rings emit through the shared slider engine.",
+    },
+    EventReferenceSpec {
+        event: "SliderEvent::Release { value }",
+        trigger: "Pointer up after ring drag",
+        notes: "Prefer for committing model state.",
+    },
+];
+
+const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
+    PublicInterfaceSpec {
+        symbol: "ColorRingBuilder",
+        surface: "Factory",
+        notes: "Hue, saturation, and lightness ring builders returning SliderControl entities.",
+    },
+    PublicInterfaceSpec {
+        symbol: "ColorRingBuilder::hue / saturation / lightness",
+        surface: "Factory",
+        notes: "Domain-specific ring delegates with Size and inner-target options.",
+    },
+    PublicInterfaceSpec {
+        symbol: "ColorRingRenderer::Vector / Raster",
+        surface: "Renderer",
+        notes: "Vector paths vs raster pre-image rendering paths.",
+    },
+    PublicInterfaceSpec {
+        symbol: "update_ring_delegate / refresh_color_ring",
+        surface: "Sync",
+        notes: "Push updated delegates when linked HSL channels change.",
+    },
+];
+
+struct RingDemo {
+    slider: Entity<SliderControl>,
+    renderer: Arc<ColorRingDomainRenderer>,
+    track_context: ColorRingTrackContext,
+}
+
+impl RingDemo {
+    fn spawn(builder: ColorRingBuilder, cx: &mut Context<ColorRingControlExposition>) -> Self {
+        let renderer = builder.domain_renderer();
+        let track_context = builder.track_context();
+        let slider = builder.spawn(cx);
+        Self { slider, renderer, track_context }
+    }
+
+    fn sync_saturation(&self, hue: f32, hsv_value: f32, cx: &mut Context<ColorRingControlExposition>) {
+        update_ring_delegate(
+            &self.renderer,
+            Arc::new(SaturationRingDelegate { hue, hsv_value }),
+            self.track_context.clone(),
+        );
+        refresh_color_ring(&self.slider, cx);
+    }
+
+    fn sync_lightness(&self, hue: f32, saturation: f32, cx: &mut Context<ColorRingControlExposition>) {
+        update_ring_delegate(
+            &self.renderer,
+            Arc::new(LightnessRingDelegate { hue, saturation }),
+            self.track_context.clone(),
+        );
+        refresh_color_ring(&self.slider, cx);
+    }
+
+    fn sync_hue_raster(&self, saturation: f32, lightness: f32, cx: &mut Context<ColorRingControlExposition>) {
+        update_ring_delegate(
+            &self.renderer,
+            Arc::new(RasterRingDelegate::hue(saturation, lightness)),
+            self.track_context.clone(),
+        );
+        refresh_color_ring(&self.slider, cx);
+    }
+
+    fn sync_hue_vector(&self, saturation: f32, lightness: f32, cx: &mut Context<ColorRingControlExposition>) {
+        update_ring_delegate(
+            &self.renderer,
+            Arc::new(HueRingDelegate { saturation, lightness }),
+            self.track_context.clone(),
+        );
+        refresh_color_ring(&self.slider, cx);
+    }
+
+    fn set_value(&self, value: f32, cx: &mut Context<ColorRingControlExposition>) {
+        self.slider.update(cx, |slider, cx| slider.set_value(value, cx));
+    }
+}
+
+pub struct ColorRingControlExposition {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
+    color_ring: RingDemo,
+    color_ring_vector: RingDemo,
+    color_ring_raster: RingDemo,
+    ring_saturation: RingDemo,
+    ring_lightness: RingDemo,
+    ring_hsl: Hsl,
+    ring_color: Hsla,
+    event_stream: Entity<ControlEventStream>,
+    _subscriptions: Vec<Subscription>,
+}
+
+impl ColorRingControlExposition {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let entry = *catalog_entry("color-ring").expect("color-ring catalog entry");
+        let hsla_color = hsla(0.0, 1.0, 0.5, 1.0);
+        let hsl = Hsl::from_hsla(hsla_color);
+
+        let color_ring = RingDemo::spawn(
+            ColorRingBuilder::hue("controls-doc-color-ring", hsl.h, hsl.s, hsl.l)
+                .size(Size::Medium)
+                .allow_inner_target(true),
+            cx,
+        );
+        let color_ring_vector = RingDemo::spawn(
+            ColorRingBuilder::hue_with_renderer(
+                "controls-doc-color-ring-vector",
+                hsl.h,
+                hsl.s,
+                hsl.l,
+                ColorRingRenderer::Vector,
+            )
+            .size(Size::Medium),
+            cx,
+        );
+        let color_ring_raster = RingDemo::spawn(
+            ColorRingBuilder::hue_with_renderer(
+                "controls-doc-color-ring-raster",
+                hsl.h,
+                hsl.s,
+                hsl.l,
+                ColorRingRenderer::Raster,
+            )
+            .size(Size::Medium),
+            cx,
+        );
+        let ring_saturation = RingDemo::spawn(
+            ColorRingBuilder::saturation(
+                "controls-doc-color-ring-saturation",
+                hsl.s,
+                hsl.h,
+                hsv_value_for_saturation_ring(hsl),
+            )
+            .size(Size::Medium)
+            .allow_inner_target(true),
+            cx,
+        );
+        let ring_lightness = RingDemo::spawn(
+            ColorRingBuilder::lightness("controls-doc-color-ring-lightness", hsl.l, hsl.h, hsl.s)
+                .size(Size::Medium)
+                .allow_inner_target(true),
+            cx,
+        );
+
+        let event_stream = cx.new(|cx| {
+            ControlEventStream::new(
+                cx,
+                look.clone(),
+                "controls-color-ring-event-log",
+                "Drag hue, saturation, or lightness rings; SliderEvent variants appear below.",
+            )
+        });
+
+        let mut subscriptions = Vec::new();
+        subscriptions.push(cx.subscribe(&color_ring.slider, {
+            let event_stream = event_stream.clone();
+            move |this, _, event: &SliderEvent, cx| {
+                this.handle_hue_event(event, cx);
+                append_slider_event(&event_stream, "Hue", event, cx);
+            }
+        }));
+        subscriptions.push(cx.subscribe(&ring_saturation.slider, {
+            let event_stream = event_stream.clone();
+            move |this, _, event: &SliderEvent, cx| {
+                this.handle_saturation_event(event, cx);
+                append_slider_event(&event_stream, "Saturation", event, cx);
+            }
+        }));
+        subscriptions.push(cx.subscribe(&ring_lightness.slider, {
+            let event_stream = event_stream.clone();
+            move |this, _, event: &SliderEvent, cx| {
+                this.handle_lightness_event(event, cx);
+                append_slider_event(&event_stream, "Lightness", event, cx);
+            }
+        }));
+
+        let mut this = Self {
+            look,
+            entry,
+            color_ring,
+            color_ring_vector,
+            color_ring_raster,
+            ring_saturation,
+            ring_lightness,
+            ring_hsl: hsl,
+            ring_color: hsla_color,
+            event_stream,
+            _subscriptions: subscriptions,
+        };
+        this.sync_ring(cx, SyncSource::HueRing);
+        this
+    }
+
+    fn handle_hue_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
+        if let Some(value) = primary_slider_value(event) {
+            self.ring_hsl.h = value;
+            self.sync_ring(cx, SyncSource::HueRing);
+        }
+    }
+
+    fn handle_saturation_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
+        if let Some(value) = primary_slider_value(event) {
+            self.ring_hsl.s = value;
+            self.sync_ring(cx, SyncSource::SaturationRing);
+        }
+    }
+
+    fn handle_lightness_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
+        if let Some(value) = primary_slider_value(event) {
+            self.ring_hsl.l = value;
+            self.sync_ring(cx, SyncSource::LightnessRing);
+        }
+    }
+
+    fn sync_ring(&mut self, cx: &mut Context<Self>, source: SyncSource) {
+        let hsl = self.ring_hsl;
+        let hsv_value = hsv_value_for_saturation_ring(hsl);
+        self.ring_color = hsl.to_hsla();
+        let lightness = self.ring_color.l;
+
+        if !matches!(source, SyncSource::HueRing) {
+            self.color_ring.set_value(hsl.h, cx);
+        }
+        for ring in [&self.color_ring_vector, &self.color_ring_raster] {
+            ring.set_value(hsl.h, cx);
+        }
+        for ring in [&self.color_ring, &self.color_ring_vector] {
+            ring.sync_hue_vector(hsl.s, lightness, cx);
+        }
+        self.color_ring_raster.sync_hue_raster(hsl.s, lightness, cx);
+
+        if !matches!(source, SyncSource::SaturationRing) {
+            self.ring_saturation.set_value(hsl.s, cx);
+        }
+        self.ring_saturation.sync_saturation(hsl.h, hsv_value, cx);
+
+        if !matches!(source, SyncSource::LightnessRing) {
+            self.ring_lightness.set_value(hsl.l, cx);
+        }
+        self.ring_lightness.sync_lightness(hsl.h, hsl.s, cx);
+
+        cx.notify();
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        for ring in [
+            &self.color_ring,
+            &self.color_ring_vector,
+            &self.color_ring_raster,
+            &self.ring_saturation,
+            &self.ring_lightness,
+        ] {
+            ring.slider.update(cx, |_, cx| cx.notify());
+        }
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
+    }
+}
+
+impl Render for ColorRingControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            let look = &self.look;
+            let chrome = look.chrome();
+
+            let interactive = wrappanel! {
+                gap=24 align=center;
+                div()
+                    .size(px(SWATCH_SIZE))
+                    .flex_shrink_0()
+                    .rounded(px(8.0))
+                    .bg(self.ring_color)
+                    .border_1()
+                    .border_color(chrome.border),
+                div()
+                    .size(px(RING_FRAME_PX))
+                    .flex_shrink_0()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .child(self.color_ring.slider.clone()),
+                div()
+                    .w(px(SLIDER_COLUMN_WIDTH))
+                    .flex_shrink_0()
+                    .child(vstack! {
+                        gap=16;
+                        div()
+                            .size(px(RING_MEDIUM_PX))
+                            .flex_shrink_0()
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .child(self.ring_saturation.slider.clone()),
+                        div()
+                            .size(px(RING_MEDIUM_PX))
+                            .flex_shrink_0()
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .child(self.ring_lightness.slider.clone()),
+                    }),
+                div()
+                    .w(px(READOUT_WIDTH))
+                    .flex_shrink_0()
+                    .child(vstack! {
+                        gap=8;
+                        detail_row(look, "H", format!("{:.1}°", self.ring_color.h * 360.0)),
+                        detail_row(look, "S", format!("{:.3}", self.ring_color.s)),
+                        detail_row(look, "L", format!("{:.3}", self.ring_color.l)),
+                        detail_row(look, "A", format!("{:.3}", self.ring_color.a)),
+                    }),
+            };
+
+            let preview = div()
+                .w_full()
+                .flex()
+                .flex_col()
+                .items_start()
+                .gap(px(28.0))
+                .child(render_demo_section(
+                    look,
+                    "Interactive HSL Mixer",
+                    "Primary hue, saturation, and lightness rings linked to a shared swatch.",
+                    render_demo_card(look, WIDE_CARD, interactive),
+                ))
+                .child(render_demo_section(
+                    look,
+                    "Renderer Compare",
+                    "Vector paths vs raster pre-image for the same hue ring.",
+                    render_demo_card(
+                        look,
+                        WIDE_CARD,
+                        wrappanel! {
+                            gap=24 align=center;
+                            render_ring_variant(look, "Vector", self.color_ring_vector.slider.clone(), RING_MEDIUM_PX),
+                            render_ring_variant(look, "Raster", self.color_ring_raster.slider.clone(), RING_MEDIUM_PX),
+                        },
+                    ),
+                ))
+                .child(self.event_stream.clone());
+
+            render_control_exposition_card(
+                look,
+                self.entry,
+                preview.into_any_element(),
+                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                ControlExpositionLayout::BORDERLESS,
+            )
+        })
+    }
+}
+
+#[derive(Clone, Copy)]
+enum SyncSource {
+    HueRing,
+    SaturationRing,
+    LightnessRing,
+}
+
+fn hsv_value_for_saturation_ring(hsl: Hsl) -> f32 {
+    Hsv::from_hsla_ext(hsl.to_hsla()).v
+}
+
+fn append_slider_event(
+    event_stream: &Entity<ControlEventStream>,
+    source: &str,
+    event: &SliderEvent,
+    cx: &mut Context<ColorRingControlExposition>,
+) {
+    if let Some(line) = format_slider_event(source, event) {
+        event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+    }
+}
+
+fn render_ring_variant(
+    look: &ShadcnLook,
+    label: &'static str,
+    ring: Entity<SliderControl>,
+    frame_px: f32,
+) -> impl IntoElement {
+    let label_style = look.typography_scale(gpui_luma_look_shadcn::ShadcnTextSize::Xs);
+
+    vstack! {
+        gap=8 align=center;
+        div()
+            .typography_style(label_style)
+            .text_color(look.chrome().muted_text)
+            .child(label),
+        div()
+            .size(px(frame_px))
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(ring),
+    }
+}

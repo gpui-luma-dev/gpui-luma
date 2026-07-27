@@ -289,32 +289,28 @@ impl Render for CustomButtonControlExposition {
                             chrome,
                         )),
                 )
-                .child(
-                    demo_section(
-                        "Standard factory layouts",
-                        chrome.muted_text,
-                        div()
-                            .flex()
-                            .flex_wrap()
-                            .gap(px(12.0))
-                            .child(self.standard_icon_only.clone())
-                            .child(self.standard_text_icon.clone())
-                            .child(self.standard_icon_text.clone()),
-                    ),
-                )
-                .child(
-                    demo_section(
-                        "Prominent factory layouts",
-                        chrome.muted_text,
-                        div()
-                            .flex()
-                            .flex_wrap()
-                            .gap(px(12.0))
-                            .child(self.prominent_icon_only.clone())
-                            .child(self.prominent_text_icon.clone())
-                            .child(self.prominent_icon_text.clone()),
-                    ),
-                )
+                .child(demo_section(
+                    "Standard factory layouts",
+                    chrome.muted_text,
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .gap(px(12.0))
+                        .child(self.standard_icon_only.clone())
+                        .child(self.standard_text_icon.clone())
+                        .child(self.standard_icon_text.clone()),
+                ))
+                .child(demo_section(
+                    "Prominent factory layouts",
+                    chrome.muted_text,
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .gap(px(12.0))
+                        .child(self.prominent_icon_only.clone())
+                        .child(self.prominent_text_icon.clone())
+                        .child(self.prominent_icon_text.clone()),
+                ))
                 .child(self.event_stream.clone());
 
             render_control_exposition_card(

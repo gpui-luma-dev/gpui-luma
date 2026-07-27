@@ -73,7 +73,7 @@ fn render_card_section(
     pad: f32,
 ) -> gpui::Div {
     if borderless {
-        div().w_full().px(px(16.0)).pb(px(12.0)).child(content)
+        div().w_full().px(px(16.0)).pb(px(12.0)).flex().flex_col().items_start().child(content)
     } else {
         div()
             .w_full()
@@ -97,6 +97,7 @@ fn render_snippet_block(look: &ShadcnLook, snippet: &str) -> AnyElement {
         .w_full()
         .flex()
         .flex_col()
+        .items_start()
         .gap(px(6.0))
         .child(
             div()

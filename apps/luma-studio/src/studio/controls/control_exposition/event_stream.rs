@@ -4,7 +4,6 @@ use gpui::{Context, Entity, FontWeight, Render, Window, div, prelude::*, px};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
-use super::model::EVENT_SECTION_INDENT;
 use super::template::controls_mono_font;
 use crate::studio::controls::event_log_view::{EventLogView, EventLogViewLookExt, shadcn_event_log_theme};
 
@@ -56,15 +55,16 @@ impl Render for ControlEventStream {
             div()
                 .id(self.log_id)
                 .w_full()
-                .pl(px(EVENT_SECTION_INDENT))
                 .flex()
                 .flex_col()
+                .items_start()
                 .gap(px(12.0))
                 .child(
                     div()
                         .w_full()
                         .flex()
                         .flex_col()
+                        .items_start()
                         .gap(px(4.0))
                         .child(
                             div()
@@ -82,6 +82,7 @@ impl Render for ControlEventStream {
                         .w_full()
                         .flex()
                         .flex_col()
+                        .items_start()
                         .gap(px(6.0))
                         .child(
                             div()

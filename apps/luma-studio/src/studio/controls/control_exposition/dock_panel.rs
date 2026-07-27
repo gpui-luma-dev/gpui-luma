@@ -98,7 +98,7 @@ impl Render for DockPanelControlExposition {
                 .flex_col()
                 .items_start()
                 .gap(px(12.0))
-                .child(div().w_full().h(px(480.0)).min_w(px(0.0)).child(self.demo.clone()))
+                .child(div().w_full().px(px(100.0)).h(px(480.0)).min_w(px(0.0)).child(self.demo.clone()))
                 .child(self.event_stream.clone());
 
             render_control_exposition_card(

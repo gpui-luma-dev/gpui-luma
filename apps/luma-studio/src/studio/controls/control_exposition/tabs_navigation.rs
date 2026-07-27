@@ -1,13 +1,11 @@
-//! Tabs navigation control exposition — intrinsic, uniform, and local theme examples.
+//! Tabs navigation control exposition — intrinsic and uniform width examples.
 
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::tabs_navigation::{
-    TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationTheme, TabsNavigationWidthMode,
-    ThemedTabsNavigationTemplate,
+    TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
 };
-use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -58,11 +56,9 @@ pub struct TabsNavigationControlExposition {
     entry: ControlDocEntry,
     tabs: Entity<TabsNavigation>,
     uniform_tabs: Entity<TabsNavigation>,
-    local_theme_tabs: Entity<TabsNavigation>,
     event_stream: Entity<ControlEventStream>,
     active_label: String,
     uniform_active_label: String,
-    local_theme_active_label: String,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -77,11 +73,6 @@ impl TabsNavigationControlExposition {
             .active("recent-activity")
             .width_mode(TabsNavigationWidthMode::Uniform)
             .spawn(cx);
-        let local_theme_tabs = TabsNavigation::new("controls-doc-tabs-local-theme")
-            .items(project_tabs())
-            .active("activity")
-            .template(local_tabs_navigation_template(look.clone()))
-            .spawn(cx);
 
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
@@ -93,16 +84,13 @@ impl TabsNavigationControlExposition {
         });
 
         let mut subscriptions = Vec::new();
-        for (entity, label_field) in
-            [(tabs.clone(), "intrinsic"), (uniform_tabs.clone(), "uniform"), (local_theme_tabs.clone(), "local")]
-        {
+        for (entity, label_field) in [(tabs.clone(), "intrinsic"), (uniform_tabs.clone(), "uniform")] {
             let event_stream = event_stream.clone();
             subscriptions.push(cx.subscribe(&entity, move |this, _, event: &TabsNavigationEvent, cx| {
                 if let TabsNavigationEvent::Activate { label, .. } = event {
                     match label_field {
                         "intrinsic" => this.active_label = label.to_string(),
-                        "uniform" => this.uniform_active_label = label.to_string(),
-                        _ => this.local_theme_active_label = label.to_string(),
+                        _ => this.uniform_active_label = label.to_string(),
                     }
                     cx.notify();
                 }
@@ -117,11 +105,9 @@ impl TabsNavigationControlExposition {
             entry,
             tabs,
             uniform_tabs,
-            local_theme_tabs,
             event_stream,
             active_label: "Activity".to_string(),
             uniform_active_label: "Recent Activity".to_string(),
-            local_theme_active_label: "Activity".to_string(),
             _subscriptions: subscriptions,
         }
     }
@@ -132,9 +118,6 @@ impl TabsNavigationControlExposition {
 
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.local_theme_tabs.update(cx, |tabs, cx| {
-            tabs.set_template(local_tabs_navigation_template(look.clone()), cx);
-        });
         self.tabs.update(cx, |_, cx| cx.notify());
         self.uniform_tabs.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
@@ -169,14 +152,6 @@ impl Render for TabsNavigationControlExposition {
                     "The widest label defines the slot width for every tab.",
                     420.0,
                 ))
-                .child(render_tabs_example(
-                    look,
-                    "Local theme customization",
-                    self.local_theme_tabs.clone(),
-                    &self.local_theme_active_label,
-                    "Template overrides still work with the shared tabs behavior.",
-                    360.0,
-                ))
                 .child(self.event_stream.clone());
 
             render_control_exposition_card(
@@ -209,40 +184,6 @@ fn format_tabs_navigation_event(event: &TabsNavigationEvent) -> Option<String> {
         }
         _ => None,
     }
-}
-
-struct LocalTabsNavigationTheme {
-    inner: Arc<dyn TabsNavigationTheme>,
-}
-
-impl TabsNavigationTheme for LocalTabsNavigationTheme {
-    fn resolve_list(
-        &self,
-        enabled: bool,
-        size: ControlSize,
-    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationListLook {
-        self.inner.resolve_list(enabled, size)
-    }
-
-    fn resolve_item(
-        &self,
-        active: bool,
-        state: InteractionState,
-        size: ControlSize,
-    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationItemLook {
-        self.inner.resolve_item(active, InteractionState { focused: false, ..state }, size)
-    }
-
-    fn font_family(&self) -> SharedString {
-        self.inner.font_family()
-    }
-}
-
-fn local_tabs_navigation_template(
-    look: Arc<ShadcnLook>,
-) -> Arc<dyn gpui_luma::controls::tabs_navigation::TabsNavigationTemplate> {
-    let inner = look.tabs_navigation_theme();
-    Arc::new(ThemedTabsNavigationTemplate::new(Arc::new(LocalTabsNavigationTheme { inner })))
 }
 
 fn render_tabs_example(
