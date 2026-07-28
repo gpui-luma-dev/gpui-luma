@@ -1,22 +1,24 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::tabs_navigation::{
     TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
 };
 use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::paint::floating_menu_look;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn::prelude::*;
 
 use super::cards::render_demo_board;
 use super::controls;
 use super::dashboard;
-use super::navigation::luma_studio_tabs_navigation_template;
+use super::navigation::{ControlsCatalogDropdown, luma_studio_tabs_navigation_template_with_controls_dropdown};
 use super::palette;
 use super::style_guide;
 use super::tab::ContentTab;
 use super::theme_usage;
 use super::super::app::LumaStudioApp;
+use super::super::controls::control_catalog_picker::render_control_catalog_picker;
 use super::super::controls::ControlsPanel;
 use super::super::demo_controls::DemoControls;
 use super::super::overrides::StudioOverrides;
@@ -39,17 +41,24 @@ pub struct ContentPaneHost {
     theme_usage_panel: Entity<ThemeUsagePanel>,
     board: BoardSnapshot,
     active_tab: ContentTab,
+    catalog_picker_open: bool,
     _subscriptions: Vec<Subscription>,
 }
 
 impl ContentPaneHost {
     pub fn new(_app: Entity<LumaStudioApp>, board: BoardSnapshot, cx: &mut Context<Self>) -> Self {
+        let host = cx.entity();
+        let controls_panel = cx.new(|cx| ControlsPanel::new(cx, board.look.clone()));
         let tabs = board
             .look
             .tabs_navigation("luma-studio-content-tabs")
             .size(ControlSize::Lg)
             .width_mode(TabsNavigationWidthMode::Uniform)
-            .template(luma_studio_tabs_navigation_template(board.look.clone(), ControlSize::Lg))
+            .template(luma_studio_tabs_navigation_template_with_controls_dropdown(
+                board.look.clone(),
+                ControlSize::Lg,
+                Some(ControlsCatalogDropdown::new(host.clone())),
+            ))
             .items([
                 TabsNavigationItem::new("cards").label("Cards"),
                 TabsNavigationItem::new("dashboard").label("Dashboard"),
@@ -70,27 +79,16 @@ impl ContentPaneHost {
                 };
                 host.set_active_tab(tab, cx);
             }
-            TabsNavigationEvent::DropdownRequested { tab_id, bounds, .. } => {
+            TabsNavigationEvent::DropdownRequested { tab_id, .. } => {
                 if tab_id.as_ref() != "controls" {
                     return;
                 }
-                host.controls_panel.update(cx, |panel, cx| {
-                    if let Some(bounds) = bounds {
-                        panel.set_catalog_picker_anchor(*bounds, cx);
-                    }
-                    panel.toggle_catalog_picker(cx);
-                });
-            }
-            TabsNavigationEvent::ItemBoundsChanged { tab_id, bounds } => {
-                if tab_id.as_ref() == "controls" {
-                    host.controls_panel.update(cx, |panel, cx| panel.set_catalog_picker_anchor(*bounds, cx));
-                }
+                host.toggle_catalog_picker(cx);
             }
             _ => {}
         }));
 
         let style_guide_panel = cx.new(|cx| StyleGuidePanel::new(cx, board.look.clone()));
-        let controls_panel = cx.new(|cx| ControlsPanel::new(cx, board.look.clone(), tabs.clone()));
         let palette_panel = cx.new(|cx| PalettePanel::new(cx, board.look.clone(), board.overrides.clone()));
         let theme_usage_panel = cx.new(|cx| ThemeUsagePanel::new(cx, board.look.clone()));
 
@@ -102,6 +100,7 @@ impl ContentPaneHost {
             theme_usage_panel,
             board,
             active_tab: ContentTab::Cards,
+            catalog_picker_open: false,
             _subscriptions: subscriptions,
         }
     }
@@ -111,7 +110,7 @@ impl ContentPaneHost {
             return;
         }
         if self.active_tab == ContentTab::Controls {
-            self.controls_panel.update(cx, |panel, cx| panel.close_catalog_picker(cx));
+            self.close_catalog_picker(cx);
         }
         self.active_tab = tab;
 
@@ -141,6 +140,32 @@ impl ContentPaneHost {
         cx.notify();
     }
 
+    fn toggle_catalog_picker(&mut self, cx: &mut Context<Self>) {
+        self.set_catalog_picker_open(!self.catalog_picker_open, cx);
+    }
+
+    pub(super) fn close_catalog_picker(&mut self, cx: &mut Context<Self>) {
+        self.set_catalog_picker_open(false, cx);
+    }
+
+    fn set_catalog_picker_open(&mut self, open: bool, cx: &mut Context<Self>) {
+        self.catalog_picker_open = open;
+        self.tabs.update(cx, |tabs, cx| {
+            tabs.set_item_disclosure_open("controls", open, cx);
+        });
+        cx.notify();
+    }
+
+    pub(super) fn render_catalog_picker(&mut self, cx: &mut Context<Self>) -> AnyElement {
+        let menu_look =
+            floating_menu_look(self.board.look.mode_tokens().as_ref(), self.board.look.mode(), ControlSize::Md);
+        let selected_entry_id = self.controls_panel.read(cx).selected_entry_id();
+        render_control_catalog_picker(&menu_look, Some(selected_entry_id), true, cx, |host, exposition_id, _, cx| {
+            host.controls_panel.update(cx, |panel, cx| panel.select_entry(exposition_id, cx));
+            host.close_catalog_picker(cx);
+        })
+    }
+
     pub fn notify_tabs(&self, cx: &mut Context<Self>) {
         self.tabs.update(cx, |_, cx| cx.notify());
     }
@@ -148,11 +173,19 @@ impl ContentPaneHost {
     pub fn sync_board_snapshot(&mut self, board: BoardSnapshot, cx: &mut Context<Self>) {
         let look = board.look.clone();
         let overrides = board.overrides.clone();
+        let host = cx.entity();
         self.board = board;
         self.tabs.update(cx, |tabs, cx| {
             tabs.set_size(ControlSize::Lg, cx);
             tabs.set_width_mode(TabsNavigationWidthMode::Uniform, cx);
-            tabs.set_template(luma_studio_tabs_navigation_template(look.clone(), ControlSize::Lg), cx);
+            tabs.set_template(
+                luma_studio_tabs_navigation_template_with_controls_dropdown(
+                    look.clone(),
+                    ControlSize::Lg,
+                    Some(ControlsCatalogDropdown::new(host.clone())),
+                ),
+                cx,
+            );
         });
         self.style_guide_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
         self.controls_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));

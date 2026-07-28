@@ -10,9 +10,10 @@ pub use model::{
 };
 pub use template::{
     TabsNavigationBoundsHandler, TabsNavigationClickHandler, TabsNavigationHoverHandler, TabsNavigationItemButtonStyle,
-    TabsNavigationMouseDownHandler, TabsNavigationMouseUpHandler, TabsNavigationTemplate,
-    TabsNavigationTemplateHandlers, ThemedTabsNavigationTemplate, default_tabs_navigation_template,
-    render_tabs_navigation_item_button, render_tabs_navigation_item_button_with_style,
+    TabsNavigationItemOverlay, TabsNavigationMouseDownHandler, TabsNavigationMouseUpHandler,
+    TabsNavigationOverlayPlacement, TabsNavigationOverlayState, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
+    ThemedTabsNavigationTemplate, default_tabs_navigation_template, render_tabs_navigation_item_button,
+    render_tabs_navigation_item_button_with_style, render_tabs_navigation_item_overlay_host,
     resolve_tabs_navigation_uniform_item_width,
 };
 

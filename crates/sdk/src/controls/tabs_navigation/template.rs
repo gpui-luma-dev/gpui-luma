@@ -1,7 +1,10 @@
 use std::cell::Cell;
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 
-use gpui::{App, Div, Hsla, SharedString, Stateful, TextRun, Window, div, font, hsla, px, prelude::*};
+use gpui::{
+    Anchor, AnyElement, App, Bounds, Div, Hsla, MouseDownEvent, Pixels, Point, SharedString, Size, Stateful, TextRun,
+    Window, anchored, deferred, div, font, hsla, point, px, prelude::*,
+};
 use lucide_icons::Icon as LucideIcon;
 
 use super::{
@@ -31,6 +34,42 @@ pub type TabsNavigationTemplateHandlers = ControlGroupTemplateHandlers;
 
 pub type TabsNavigationTemplateModifier =
     Box<dyn Fn(Stateful<Div>, &TabsNavigationRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
+#[derive(Clone, Default)]
+pub struct TabsNavigationOverlayState {
+    trigger_bounds: Arc<Mutex<Option<Bounds<Pixels>>>>,
+}
+
+impl TabsNavigationOverlayState {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn trigger_bounds(&self) -> Option<Bounds<Pixels>> {
+        *self.trigger_bounds.lock().expect("tabs navigation overlay trigger bounds lock")
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum TabsNavigationOverlayPlacement {
+    BelowStart,
+    BelowCenter,
+}
+
+pub struct TabsNavigationItemOverlay {
+    pub content: AnyElement,
+    pub content_size: Size<Pixels>,
+    pub placement: TabsNavigationOverlayPlacement,
+    pub offset_y: Pixels,
+    pub window_margin: Pixels,
+}
+
+#[derive(Clone, Copy)]
+struct ResolvedTabsNavigationOverlayPlacement {
+    anchor: Anchor,
+    position: Point<Pixels>,
+    offset: Point<Pixels>,
+}
 
 #[derive(Clone, Copy)]
 struct TabsNavigationButtonData {
@@ -247,6 +286,73 @@ pub fn resolve_tabs_navigation_uniform_item_width(
     Some(max_width)
 }
 
+pub fn render_tabs_navigation_item_overlay_host<F>(
+    id: impl Into<SharedString>,
+    mut trigger: Stateful<Div>,
+    width: Option<Pixels>,
+    overlay_state: TabsNavigationOverlayState,
+    overlay: Option<TabsNavigationItemOverlay>,
+    on_mouse_down_out: F,
+) -> AnyElement
+where
+    F: Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+{
+    let id = id.into();
+    let mut root = div()
+        .on_children_prepainted({
+            let trigger_bounds = overlay_state.trigger_bounds.clone();
+            move |bounds, _, _| {
+                if let Some(bounds) = bounds.first() {
+                    *trigger_bounds.lock().expect("tabs navigation overlay trigger bounds lock") = Some(*bounds);
+                }
+            }
+        })
+        .id(id)
+        .relative()
+        .on_mouse_down_out(on_mouse_down_out);
+
+    if let Some(width) = width {
+        trigger = trigger.w_full();
+        root = root.w(width).flex_none();
+    }
+
+    root = root.child(trigger);
+
+    if let Some(overlay) = overlay {
+        let placement = resolve_tabs_navigation_overlay_placement(overlay_state.trigger_bounds(), &overlay);
+        let overlay = anchored()
+            .snap_to_window_with_margin(overlay.window_margin)
+            .anchor(placement.anchor)
+            .position(placement.position)
+            .offset(placement.offset)
+            .child(overlay.content);
+        root = root.child(deferred(overlay).with_priority(1));
+    }
+
+    root.into_any_element()
+}
+
+fn resolve_tabs_navigation_overlay_placement(
+    trigger_bounds: Option<Bounds<Pixels>>,
+    overlay: &TabsNavigationItemOverlay,
+) -> ResolvedTabsNavigationOverlayPlacement {
+    let trigger_bounds = trigger_bounds
+        .unwrap_or_else(|| Bounds::new(point(px(0.0), px(0.0)), Size { width: px(0.0), height: px(0.0) }));
+
+    match overlay.placement {
+        TabsNavigationOverlayPlacement::BelowStart => ResolvedTabsNavigationOverlayPlacement {
+            anchor: Anchor::TopLeft,
+            position: point(trigger_bounds.left(), trigger_bounds.bottom()),
+            offset: point(px(0.0), overlay.offset_y),
+        },
+        TabsNavigationOverlayPlacement::BelowCenter => ResolvedTabsNavigationOverlayPlacement {
+            anchor: Anchor::TopLeft,
+            position: point(trigger_bounds.center().x, trigger_bounds.bottom()),
+            offset: point(-(overlay.content_size.width * 0.5), overlay.offset_y),
+        },
+    }
+}
+
 fn tabs_navigation_item_button_template() -> Arc<dyn ButtonTemplate<TabsNavigationButtonData>> {
     static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate<TabsNavigationButtonData>>> = OnceLock::new();
 
@@ -440,5 +546,46 @@ fn tabs_navigation_render_model<'a>(
         active_id: model.selected_ids.first(),
         enabled: model.enabled,
         focus: model.focus,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use gpui::{Bounds, point, px, size};
+
+    use super::*;
+
+    fn overlay(placement: TabsNavigationOverlayPlacement) -> TabsNavigationItemOverlay {
+        TabsNavigationItemOverlay {
+            content: div().into_any_element(),
+            content_size: size(px(200.0), px(120.0)),
+            placement,
+            offset_y: px(6.0),
+            window_margin: px(8.0),
+        }
+    }
+
+    #[test]
+    fn overlay_below_start_anchors_to_trigger_bottom_left() {
+        let placement = resolve_tabs_navigation_overlay_placement(
+            Some(Bounds::new(point(px(40.0), px(10.0)), size(px(80.0), px(32.0)))),
+            &overlay(TabsNavigationOverlayPlacement::BelowStart),
+        );
+
+        assert_eq!(placement.anchor, Anchor::TopLeft);
+        assert_eq!(placement.position, point(px(40.0), px(42.0)));
+        assert_eq!(placement.offset, point(px(0.0), px(6.0)));
+    }
+
+    #[test]
+    fn overlay_below_center_anchors_to_trigger_center_with_content_offset() {
+        let placement = resolve_tabs_navigation_overlay_placement(
+            Some(Bounds::new(point(px(40.0), px(10.0)), size(px(80.0), px(32.0)))),
+            &overlay(TabsNavigationOverlayPlacement::BelowCenter),
+        );
+
+        assert_eq!(placement.anchor, Anchor::TopLeft);
+        assert_eq!(placement.position, point(px(80.0), px(42.0)));
+        assert_eq!(placement.offset, point(px(-100.0), px(6.0)));
     }
 }
