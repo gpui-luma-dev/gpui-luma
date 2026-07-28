@@ -472,6 +472,10 @@ impl LumaStudioApp {
         cx.notify();
     }
 
+    fn refresh_controls_layout(&self, cx: &mut Context<Self>) {
+        self.content_pane.update(cx, |pane, cx| pane.request_controls_layout_refresh(cx));
+    }
+
     fn handle_workbench_event(&mut self, event: &ResizablePanelsEvent, cx: &mut Context<Self>) {
         if let ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden } = event
             && *panel_index == LEFT_SIDEBAR_PANEL_INDEX
@@ -485,6 +489,10 @@ impl LumaStudioApp {
             self.sidebar_toggle.update(cx, |button, cx| {
                 button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(icon)), cx);
             });
+        }
+
+        if matches!(event, ResizablePanelsEvent::PanelHiddenChanged { .. } | ResizablePanelsEvent::ResizeEnd { .. }) {
+            self.refresh_controls_layout(cx);
         }
         cx.notify();
     }

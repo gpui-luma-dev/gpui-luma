@@ -210,6 +210,25 @@ impl ControlExposition {
         }
     }
 
+    pub fn fills_viewport(&self, cx: &App) -> bool {
+        match self {
+            Self::Button(entity) => entity.read(cx).fills_viewport(),
+            _ => false,
+        }
+    }
+
+    pub fn request_layout_refresh(&self, cx: &mut App) {
+        if let Self::Button(entity) = self {
+            entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx));
+        }
+    }
+
+    pub fn set_viewport_size(&self, size: gpui::Size<gpui::Pixels>, cx: &mut App) {
+        if let Self::Button(entity) = self {
+            entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx));
+        }
+    }
+
     pub fn sync_look(&self, look: Arc<gpui_luma_look_shadcn::ShadcnLook>, cx: &mut App) {
         match self {
             Self::Accordion(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),

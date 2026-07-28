@@ -6,7 +6,7 @@ use super::{
     control::{ResizablePanels, ResizablePanelsHandleDrag},
     math::{handle_hit_target_main_axis_px, handle_overlay_geometry, split_positions_px},
     model::{
-        ResizeHandleMetrics, ResizeHandleVisibility, ResizablePanelSpec, ResizablePanelsOrientation,
+        PanelSize, ResizeHandleMetrics, ResizeHandleVisibility, ResizablePanelSpec, ResizablePanelsOrientation,
         ResizablePanelsRenderModel,
     },
     theme::ResizablePanelsLook,
@@ -124,6 +124,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
     ) -> Stateful<Div> {
         let handle_metrics = model.resize_handle.metrics();
         let split_positions = split_positions_px(model.panel_sizes_px);
+        let provisional_weight_layout = provisional_weight_layout(model);
 
         let mut root = div()
             .on_children_prepainted({
@@ -169,27 +170,30 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         for (index, panel) in model.panels.iter().enumerate() {
             let main_axis_px = model.panel_sizes_px.get(index).copied().unwrap_or(0.0);
             let main_size = px(main_axis_px.max(0.0));
-            panels_row = panels_row.child(render_panel(model.orientation, panel, main_size, look));
+            panels_row =
+                panels_row.child(render_panel(model.orientation, panel, main_size, provisional_weight_layout, look));
         }
 
         track = track.child(panels_row);
 
-        for (index, &split_px) in split_positions.iter().enumerate() {
-            if model.panel_hidden.get(index).copied().unwrap_or(false)
-                || model.panel_hidden.get(index + 1).copied().unwrap_or(false)
-            {
-                continue;
+        if !provisional_weight_layout {
+            for (index, &split_px) in split_positions.iter().enumerate() {
+                if model.panel_hidden.get(index).copied().unwrap_or(false)
+                    || model.panel_hidden.get(index + 1).copied().unwrap_or(false)
+                {
+                    continue;
+                }
+                track = track.child(render_overlay_handle(
+                    index,
+                    model,
+                    look,
+                    &handle_focuses[index],
+                    &handle_metrics,
+                    split_px,
+                    window,
+                    cx,
+                ));
             }
-            track = track.child(render_overlay_handle(
-                index,
-                model,
-                look,
-                &handle_focuses[index],
-                &handle_metrics,
-                split_px,
-                window,
-                cx,
-            ));
         }
 
         let root = root.child(track);
@@ -197,10 +201,31 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
     }
 }
 
+fn provisional_weight_layout(model: &ResizablePanelsRenderModel<'_>) -> bool {
+    if model.frame_width.is_some() || model.frame_height.is_some() {
+        return false;
+    }
+
+    let main_axis_px = match model.orientation {
+        ResizablePanelsOrientation::Horizontal => model.measured_size.map(|size| size.width.as_f32()).unwrap_or(0.0),
+        ResizablePanelsOrientation::Vertical => model.measured_size.map(|size| size.height.as_f32()).unwrap_or(0.0),
+    };
+
+    main_axis_px < 64.0
+}
+
+fn panel_flex_weight(panel: &ResizablePanelSpec) -> f32 {
+    match panel.size {
+        PanelSize::Weight(weight) => weight.max(0.0),
+        PanelSize::Absolute(px) => px.as_f32().max(1.0),
+    }
+}
+
 fn render_panel(
     orientation: ResizablePanelsOrientation,
     panel: &ResizablePanelSpec,
     main_size: Pixels,
+    provisional_weight_layout: bool,
     look: &ResizablePanelsLook,
 ) -> impl IntoElement {
     let mut panel_node = div().overflow_hidden().child((panel.render.clone())());
@@ -208,6 +233,17 @@ fn render_panel(
         panel_node = panel_node.bg(background);
     } else {
         panel_node = panel_node.bg(look.border);
+    }
+    if provisional_weight_layout && matches!(panel.size, PanelSize::Weight(_)) {
+        let weight = panel_flex_weight(panel);
+        return match orientation {
+            ResizablePanelsOrientation::Horizontal => {
+                panel_node.flex_grow(weight).flex_shrink_0().min_w(px(0.0)).h_full()
+            }
+            ResizablePanelsOrientation::Vertical => {
+                panel_node.flex_grow(weight).flex_shrink_0().min_h(px(0.0)).w_full()
+            }
+        };
     }
     match orientation {
         ResizablePanelsOrientation::Horizontal => panel_node.w(main_size).h_full().flex_shrink_0(),

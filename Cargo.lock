@@ -3587,6 +3587,7 @@ dependencies = [
  "anyhow",
  "gpui-luma",
  "gpui-luma-look-shadcn",
+ "gpui-luma-look-shadcn-inspect",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",

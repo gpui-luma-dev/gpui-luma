@@ -151,6 +151,17 @@ impl ResizablePanels {
         cx.notify();
     }
 
+    /// Clears cached prepaint measurement so the next layout pass can re-measure the parent.
+    pub fn invalidate_measured_size(&mut self, cx: &mut Context<Self>) {
+        if self.main_axis_frame_pinned() {
+            return;
+        }
+        if self.measured_size.take().is_some() {
+            self.refresh_panel_sizes_px();
+            cx.notify();
+        }
+    }
+
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         if self.model.enabled == enabled {
             return;
