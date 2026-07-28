@@ -158,7 +158,7 @@ impl ContentPaneHost {
 
     pub(super) fn render_catalog_picker(&mut self, cx: &mut Context<Self>) -> AnyElement {
         let menu_look =
-            floating_menu_look(self.board.look.mode_tokens().as_ref(), self.board.look.mode(), ControlSize::Md);
+            floating_menu_look(self.board.look.mode_tokens().as_ref(), self.board.look.mode(), ControlSize::Sm);
         let selected_entry_id = self.controls_panel.read(cx).selected_entry_id();
         render_control_catalog_picker(&menu_look, Some(selected_entry_id), true, cx, |host, exposition_id, _, cx| {
             host.controls_panel.update(cx, |panel, cx| panel.select_entry(exposition_id, cx));

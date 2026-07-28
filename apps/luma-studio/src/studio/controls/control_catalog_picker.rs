@@ -14,6 +14,13 @@ use crate::studio::components::catalog::{
 
 const COLUMN_COUNT: usize = 4;
 const CATEGORY_ICON_SIZE: f32 = 14.0;
+const LEAF_LEFT_INDENT: f32 = 7.0;
+const COLUMN_GAP_EXTRA: f32 = 5.0;
+const CONTAINER_INNER_PADDING: f32 = 15.0;
+
+fn column_gap(menu_look: &FloatingMenuLook) -> f32 {
+    menu_look.item_gap * 3.5 + COLUMN_GAP_EXTRA
+}
 
 pub(crate) fn render_control_catalog_picker<M: 'static>(
     menu_look: &FloatingMenuLook,
@@ -31,13 +38,13 @@ pub(crate) fn render_control_catalog_picker<M: 'static>(
             .id("controls-catalog-picker")
             .flex_shrink_0()
             .occlude()
-            .p(px(menu_look.padding))
+            .p(px(CONTAINER_INNER_PADDING))
             .bg(menu_look.background)
             .border_1()
             .border_color(menu_look.border)
             .rounded(px(menu_look.radius))
             .shadow(menu_look.shadow.clone())
-            .child(div().flex_shrink_0().flex().items_start().gap(px(menu_look.item_gap * 3.5)).children(
+            .child(div().flex_shrink_0().flex().items_start().gap(px(column_gap(menu_look))).children(
                 (0..COLUMN_COUNT).map(|column| {
                     render_column(
                         menu_look,
@@ -62,16 +69,16 @@ pub(crate) fn estimate_control_catalog_picker_size(
     window: &mut Window,
 ) -> Size<Pixels> {
     let elevation_extent = shadow_extent_from_slice(&menu_look.shadow, 1.0, true);
-    let column_gap = menu_look.item_gap * 3.5;
+    let column_gap = column_gap(menu_look);
     let column_widths = (0..COLUMN_COUNT)
         .map(|column| estimate_column_width(menu_look, column, font_family.clone(), window))
         .collect::<Vec<_>>();
     let width = elevation_extent * 2.0
-        + menu_look.padding * 2.0
+        + CONTAINER_INNER_PADDING * 2.0
         + column_widths.iter().sum::<f32>()
         + column_gap * (COLUMN_COUNT.saturating_sub(1) as f32);
     let height = elevation_extent * 2.0
-        + menu_look.padding * 2.0
+        + CONTAINER_INNER_PADDING * 2.0
         + (0..COLUMN_COUNT).map(|column| estimate_column_height(menu_look, column)).fold(0.0_f32, f32::max);
 
     size(px(width), px(height))
@@ -158,6 +165,7 @@ fn estimate_category_width(
         .map(|entry| {
             shaped_text_width(entry.label, menu_look.item_typography, font_family.clone(), window)
                 + menu_look.item_padding_x * 2.0
+                + LEAF_LEFT_INDENT
         })
         .fold(0.0_f32, f32::max);
 
@@ -247,7 +255,8 @@ fn render_catalog_item<M: 'static>(
         .id(format!("controls-catalog-item-{gallery_id}"))
         .flex_shrink_0()
         .whitespace_nowrap()
-        .px(px(menu_look.item_padding_x))
+        .pl(px(menu_look.item_padding_x + LEAF_LEFT_INDENT))
+        .pr(px(menu_look.item_padding_x))
         .min_h(px(menu_look.item_height * 0.85))
         .flex()
         .items_center()

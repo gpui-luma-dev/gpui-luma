@@ -139,7 +139,7 @@ impl LumaStudioTabsNavigationTemplate {
             .unwrap_or(false);
 
         let overlay = if open {
-            let menu_look = floating_menu_look(self.look.mode_tokens().as_ref(), self.look.mode(), ControlSize::Md);
+            let menu_look = floating_menu_look(self.look.mode_tokens().as_ref(), self.look.mode(), ControlSize::Sm);
             let content_size = estimate_control_catalog_picker_size(
                 &menu_look,
                 self.look.font(gpui_luma_look_shadcn::ShadcnFont::Sans),
