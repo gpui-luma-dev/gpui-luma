@@ -84,7 +84,7 @@ impl SvTriangleDemo {
                 Arc::new(PhotoshopSvTriangleModel),
             )
             .thumb_size(metrics.thumb_size)
-            .raster_image()
+            .raster_image_prewarmed_square(metrics.triangle_size())
             .rounded(px(0.0))
             .no_border()
             .edge_to_edge()

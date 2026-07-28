@@ -42,6 +42,7 @@ impl ColorFieldPane {
         let wheel_field = cx.new(|_| {
             ColorFieldState::hue_saturation_wheel("color-field-wheel", hsv, sizing::THUMB_SIZE_MEDIUM)
                 //.vector() TODO add sample to this file for vector vs raster
+                .raster_image_prewarmed_square(FIELD_SIZE)
                 .inside_field()
         });
         let hue_value_field = cx.new(|_| {

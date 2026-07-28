@@ -54,7 +54,7 @@ impl HsvPlaneState {
 
         let plane = cx.new(|_| {
             ColorFieldState::hue_saturation_value("composition-hsv-plane", initial_hsv, sizing::THUMB_SIZE_MEDIUM)
-                .raster_image()
+                .raster_image_prewarmed_square(metrics.plane_size)
                 .rounded(px(0.0))
         });
         let slider_h = ColorSliderBuilder::hue("composition-hsv-plane-h", initial_hsv.h)

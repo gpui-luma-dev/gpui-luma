@@ -13,7 +13,6 @@ pub struct ControlsPanel {
     expositions: Vec<ControlExposition>,
     scroll_handle: ScrollHandle,
     selected_entry_id: &'static str,
-    controls_tab_visited: bool,
 }
 
 impl ControlsPanel {
@@ -25,7 +24,6 @@ impl ControlsPanel {
             expositions,
             scroll_handle: ScrollHandle::new(),
             selected_entry_id: first_controls_exposition_id().unwrap_or("button"),
-            controls_tab_visited: false,
         }
     }
 
@@ -35,17 +33,6 @@ impl ControlsPanel {
             exposition.sync_look(look.clone(), cx);
         }
         cx.notify();
-    }
-
-    pub fn activate_controls_tab(&mut self, cx: &mut Context<Self>) {
-        if !self.controls_tab_visited {
-            self.controls_tab_visited = true;
-            if let Some(entry_id) = first_controls_exposition_id() {
-                self.selected_entry_id = entry_id;
-                self.scroll_handle.set_offset(point(px(0.0), px(0.0)));
-            }
-            cx.notify();
-        }
     }
 
     pub(crate) fn selected_entry_id(&self) -> &'static str {

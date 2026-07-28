@@ -64,7 +64,7 @@ impl HsvPlaneDemo {
                 initial_hsv,
                 sizing::THUMB_SIZE_MEDIUM,
             )
-            .raster_image()
+            .raster_image_prewarmed_square(metrics.plane_size)
             .rounded(px(0.0))
         });
         let slider_h = ColorSliderBuilder::hue(format!("controls-doc-hsv-plane-h-{size_label}"), initial_hsv.h)

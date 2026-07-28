@@ -121,10 +121,8 @@ impl ContentPaneHost {
 
         if tab == ContentTab::Controls {
             let look = self.board.look.clone();
-            self.controls_panel.update(cx, |panel, cx| {
-                panel.sync_snapshot(look, cx);
-                panel.activate_controls_tab(cx);
-            });
+            self.controls_panel.update(cx, |panel, cx| panel.sync_snapshot(look, cx));
+            self.set_catalog_picker_open(true, cx);
         }
 
         if tab == ContentTab::Palette {

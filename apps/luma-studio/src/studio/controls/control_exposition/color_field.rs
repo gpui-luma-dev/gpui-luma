@@ -105,6 +105,7 @@ impl ColorFieldControlExposition {
         });
         let wheel_field = cx.new(|_| {
             ColorFieldState::hue_saturation_wheel("controls-doc-color-field-wheel", hsv, sizing::THUMB_SIZE_MEDIUM)
+                .raster_image_prewarmed_square(FIELD_SIZE)
                 .inside_field()
         });
         let hue_value_field = cx.new(|_| {
