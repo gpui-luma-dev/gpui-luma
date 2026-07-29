@@ -17,6 +17,7 @@ pub(crate) mod progress;
 pub(crate) mod radio;
 pub(crate) mod resizable_panels;
 pub(crate) mod scrollbar;
+pub(crate) mod slide_panel;
 pub(crate) mod split_view;
 pub(crate) mod selection_panel;
 pub(crate) mod selector;
@@ -38,6 +39,7 @@ pub(crate) use typography::apply_button_metrics_typography;
 pub use button::{ButtonRadiusPreset, ShadcnButtonStyle};
 pub use toggle::ToggleLayout;
 pub use card::{ShadcnCard, ShadcnCardBuilder};
+pub use slide_panel::{slide_panel_background, slide_panel_panels_look};
 pub use textfield::ShadcnTextFieldStyle;
 pub use toolbar_item::{ShadcnToolbarItemExt, ToolbarTextFieldItemBuilder};
 pub use ext::{

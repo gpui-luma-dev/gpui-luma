@@ -5,7 +5,7 @@ use gpui::{Context, FocusHandle, KeyDownEvent, Point, Pixels, Window, px};
 const PANEL_ANIMATION_SECONDS: f32 = 0.22;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum SlidePanelEdge {
+pub enum SlidePanelEdge {
     Left,
     Right,
     Top,
@@ -13,7 +13,7 @@ pub(crate) enum SlidePanelEdge {
 }
 
 impl SlidePanelEdge {
-    pub(crate) fn label(self) -> &'static str {
+    pub fn label(self) -> &'static str {
         match self {
             Self::Left => "Left",
             Self::Right => "Right",
@@ -22,7 +22,7 @@ impl SlidePanelEdge {
         }
     }
 
-    pub(crate) fn description(self) -> &'static str {
+    pub fn description(self) -> &'static str {
         match self {
             Self::Left => "Navigation drawer pinned to the leading edge.",
             Self::Right => "Detail panel suited for inspectors and settings.",
@@ -31,13 +31,13 @@ impl SlidePanelEdge {
         }
     }
 
-    pub(crate) fn is_horizontal_main_axis(self) -> bool {
+    pub fn is_horizontal_main_axis(self) -> bool {
         matches!(self, Self::Left | Self::Right)
     }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum SlidePanelTopAnchor {
+pub enum SlidePanelTopAnchor {
     WindowEdge,
     BelowTopBar,
 }
@@ -46,10 +46,10 @@ pub(super) const SUPPORTED_TOP_ANCHORS: [SlidePanelTopAnchor; 2] =
     [SlidePanelTopAnchor::WindowEdge, SlidePanelTopAnchor::BelowTopBar];
 
 impl SlidePanelTopAnchor {
-    pub(super) fn inset(self) -> gpui::Pixels {
+    pub fn inset(self) -> gpui::Pixels {
         match self {
             Self::WindowEdge => px(0.0),
-            Self::BelowTopBar => gpui_luma::shell::TITLE_BAR_HEIGHT,
+            Self::BelowTopBar => crate::shell::TITLE_BAR_HEIGHT,
         }
     }
 }
@@ -68,19 +68,19 @@ struct SlidePanelResizeSession {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct SlidePanelSizeConfig {
+pub struct SlidePanelSizeConfig {
     size: f32,
     min: f32,
     max: f32,
 }
 
 impl SlidePanelSizeConfig {
-    pub(crate) fn new(size: f32, min: f32, max: f32) -> Self {
+    pub fn new(size: f32, min: f32, max: f32) -> Self {
         Self { size, min, max }
     }
 }
 
-pub(crate) struct SlidePanelState {
+pub struct SlidePanelState {
     active_edge: Option<SlidePanelEdge>,
     open_progress: f32,
     animation: Option<SlidePanelAnimation>,
@@ -95,7 +95,7 @@ pub(crate) struct SlidePanelState {
 }
 
 impl SlidePanelState {
-    pub(crate) fn new(top_anchor: SlidePanelTopAnchor, size_config: SlidePanelSizeConfig) -> Self {
+    pub fn new(top_anchor: SlidePanelTopAnchor, size_config: SlidePanelSizeConfig) -> Self {
         Self {
             active_edge: None,
             open_progress: 0.0,
@@ -111,11 +111,11 @@ impl SlidePanelState {
         }
     }
 
-    pub(crate) fn set_size_config(&mut self, config: SlidePanelSizeConfig) {
+    pub fn set_size_config(&mut self, config: SlidePanelSizeConfig) {
         self.size_config = config;
     }
 
-    pub(crate) fn main_axis_size(&self, fallback: f32) -> f32 {
+    pub fn main_axis_size(&self, fallback: f32) -> f32 {
         if self.size_config.size > 0.0 {
             self.size_config.size
         } else {
@@ -123,11 +123,11 @@ impl SlidePanelState {
         }
     }
 
-    pub(crate) fn resize_handle_hovered(&self) -> bool {
+    pub fn resize_handle_hovered(&self) -> bool {
         self.resize_handle_hovered
     }
 
-    pub(crate) fn set_resize_handle_hovered(&mut self, hovered: bool) -> bool {
+    pub fn set_resize_handle_hovered(&mut self, hovered: bool) -> bool {
         if self.resize_handle_hovered == hovered {
             return false;
         }
@@ -135,11 +135,11 @@ impl SlidePanelState {
         true
     }
 
-    pub(crate) fn is_resizing(&self) -> bool {
+    pub fn is_resizing(&self) -> bool {
         self.resize_drag.is_some()
     }
 
-    pub(crate) fn begin_resize(&mut self, pointer: Point<Pixels>, edge: SlidePanelEdge) -> bool {
+    pub fn begin_resize(&mut self, pointer: Point<Pixels>, edge: SlidePanelEdge) -> bool {
         self.resize_drag = Some(SlidePanelResizeSession {
             start_pointer: main_axis_pointer(pointer, edge),
             start_size: self.size_config.size,
@@ -147,7 +147,7 @@ impl SlidePanelState {
         true
     }
 
-    pub(crate) fn update_resize(&mut self, pointer: Point<Pixels>, edge: SlidePanelEdge) -> bool {
+    pub fn update_resize(&mut self, pointer: Point<Pixels>, edge: SlidePanelEdge) -> bool {
         let Some(drag) = self.resize_drag else {
             return false;
         };
@@ -165,31 +165,31 @@ impl SlidePanelState {
         true
     }
 
-    pub(crate) fn finish_resize(&mut self) -> bool {
+    pub fn finish_resize(&mut self) -> bool {
         self.resize_drag.take().is_some()
     }
 
-    pub(crate) fn active_edge(&self) -> Option<SlidePanelEdge> {
+    pub fn active_edge(&self) -> Option<SlidePanelEdge> {
         self.active_edge
     }
 
-    pub(crate) fn open_progress(&self) -> f32 {
+    pub fn open_progress(&self) -> f32 {
         self.open_progress
     }
 
-    pub(crate) fn backdrop_click_closes(&self) -> bool {
+    pub fn backdrop_click_closes(&self) -> bool {
         self.backdrop_click_closes
     }
 
-    pub(crate) fn top_anchor(&self) -> SlidePanelTopAnchor {
+    pub fn top_anchor(&self) -> SlidePanelTopAnchor {
         self.top_anchor
     }
 
-    pub(crate) fn set_backdrop_click_closes(&mut self, backdrop_click_closes: bool) {
+    pub fn set_backdrop_click_closes(&mut self, backdrop_click_closes: bool) {
         self.backdrop_click_closes = backdrop_click_closes;
     }
 
-    pub(crate) fn open(&mut self, edge: SlidePanelEdge, opener: FocusHandle) {
+    pub fn open(&mut self, edge: SlidePanelEdge, opener: FocusHandle) {
         self.restore_focus = Some(opener);
         self.active_edge = Some(edge);
         self.pending_panel_focus = true;
@@ -197,7 +197,7 @@ impl SlidePanelState {
         self.start_animation(1.0);
     }
 
-    pub(crate) fn request_close(&mut self) -> bool {
+    pub fn request_close(&mut self) -> bool {
         if self.active_edge.is_none() && self.open_progress <= 0.0 {
             return false;
         }
@@ -208,7 +208,7 @@ impl SlidePanelState {
         true
     }
 
-    pub(crate) fn handle_escape<T>(&mut self, window: &mut Window, cx: &mut Context<T>) -> bool
+    pub fn handle_escape<T>(&mut self, window: &mut Window, cx: &mut Context<T>) -> bool
     where
         T: 'static,
     {
@@ -225,7 +225,7 @@ impl SlidePanelState {
         true
     }
 
-    pub(crate) fn handle_tab_navigation<T>(
+    pub fn handle_tab_navigation<T>(
         &self,
         primary_focus: FocusHandle,
         extra_focuses: &[FocusHandle],
@@ -260,7 +260,7 @@ impl SlidePanelState {
         true
     }
 
-    pub(crate) fn sync_animation(&mut self) -> bool {
+    pub fn sync_animation(&mut self) -> bool {
         let Some(animation) = self.animation else {
             return false;
         };
@@ -281,7 +281,7 @@ impl SlidePanelState {
         true
     }
 
-    pub(crate) fn schedule_animation_frame<T>(&self, window: &mut Window, cx: &mut Context<T>)
+    pub fn schedule_animation_frame<T>(&self, window: &mut Window, cx: &mut Context<T>)
     where
         T: 'static,
     {
@@ -295,12 +295,8 @@ impl SlidePanelState {
         });
     }
 
-    pub(crate) fn schedule_pending_focus<T>(
-        &mut self,
-        window: &mut Window,
-        cx: &mut Context<T>,
-        primary_focus: FocusHandle,
-    ) where
+    pub fn schedule_pending_focus<T>(&mut self, window: &mut Window, cx: &mut Context<T>, primary_focus: FocusHandle)
+    where
         T: 'static,
     {
         if self.pending_panel_focus && self.open_progress >= 0.999 {

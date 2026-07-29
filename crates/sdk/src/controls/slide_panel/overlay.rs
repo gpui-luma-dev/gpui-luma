@@ -1,12 +1,9 @@
-use std::sync::Arc;
-
 use gpui::{
-    AnyElement, App, Anchor, KeyDownEvent, MouseButton, MouseDownEvent, Size, Window, anchored, div, point, prelude::*,
-    px, transparent_black,
+    AnyElement, App, Anchor, Hsla, KeyDownEvent, MouseButton, MouseDownEvent, Size, Window, anchored, div, point,
+    prelude::*, px, transparent_black,
 };
-use gpui_luma::controls::resizable_panels::{ResizeHandleSize, ResizablePanelsLook};
-use gpui_luma::theme::InteractionState;
-use gpui_luma_look_shadcn::ShadcnLook;
+
+use crate::controls::resizable_panels::{ResizeHandleSize, ResizablePanelsLook};
 
 use super::handle::{
     SlidePanelResizeHandlers, SlidePanelResizeHitHandlers, render_slide_panel_inner_resize_handle,
@@ -18,16 +15,16 @@ const DEFAULT_SIDE_PANEL_WIDTH: f32 = 360.0;
 const EDGE_PANEL_DESIRED_HEIGHT: f32 = 420.0;
 const EDGE_PANEL_MAX_VIEWPORT_RATIO: f32 = 0.72;
 
-pub(in crate::gallery) type SlidePanelKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
-pub(in crate::gallery) type SlidePanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+pub type SlidePanelKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
+pub type SlidePanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 
-pub(in crate::gallery) struct SlidePanelOverlayHandlers {
+pub struct SlidePanelOverlayHandlers {
     pub key_down: SlidePanelKeyDownHandler,
     pub backdrop_mouse_down: SlidePanelMouseDownHandler,
 }
 
-pub(in crate::gallery) fn render_slide_panel_overlay(
-    look: &Arc<ShadcnLook>,
+pub fn render_slide_panel_overlay(
+    panel_background: Hsla,
     panels_look: &ResizablePanelsLook,
     state: &SlidePanelState,
     viewport: Size<gpui::Pixels>,
@@ -41,8 +38,6 @@ pub(in crate::gallery) fn render_slide_panel_overlay(
         return div().into_any_element();
     };
 
-    let chrome = look.chrome();
-    let panel_background = look.token_color("card").unwrap_or(chrome.panel_background);
     let overlay_top_inset = state.top_anchor().inset();
     let available_height = (viewport.height - overlay_top_inset).max(px(1.0));
     let viewport_width = viewport.width.as_f32();
@@ -131,11 +126,11 @@ pub(in crate::gallery) fn render_slide_panel_overlay(
         .into_any_element()
 }
 
-pub(in crate::gallery) fn render_slide_panel_inset(
+pub fn render_slide_panel_inset(
     panels_look: &ResizablePanelsLook,
     state: &SlidePanelState,
     panel_content: AnyElement,
-    panel_background: gpui::Hsla,
+    panel_background: Hsla,
     handlers: SlidePanelOverlayHandlers,
     resize_handlers: SlidePanelResizeHandlers,
 ) -> AnyElement {
@@ -143,7 +138,7 @@ pub(in crate::gallery) fn render_slide_panel_inset(
         return div().into_any_element();
     };
 
-    debug_assert_eq!(edge, SlidePanelEdge::Right, "button pane inset panel supports right edge only");
+    debug_assert_eq!(edge, SlidePanelEdge::Right, "inset panel supports right edge only");
 
     let side_panel_width = state.main_axis_size(DEFAULT_SIDE_PANEL_WIDTH);
     let panel_width = px(side_panel_width);
@@ -215,8 +210,4 @@ fn resize_split_px(
         SlidePanelEdge::Bottom => viewport_height - edge_panel_height - vertical_offset.as_f32(),
         SlidePanelEdge::Top => edge_panel_height + vertical_offset.as_f32(),
     }
-}
-
-pub(in crate::gallery) fn slide_panel_panels_look(look: &Arc<ShadcnLook>) -> ResizablePanelsLook {
-    look.resizable_panels_theme().resolve(InteractionState::default())
 }

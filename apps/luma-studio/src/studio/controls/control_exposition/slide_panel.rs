@@ -7,17 +7,17 @@ use gpui::{
     MouseUpEvent, Overflow, Render, Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::controls::slide_panel::{
+    SlidePanelEdge, SlidePanelOverlayHandlers, SlidePanelResizeDrag, SlidePanelResizeHandlers, SlidePanelSizeConfig,
+    SlidePanelState, SlidePanelTopAnchor, render_slide_panel_overlay,
+};
 use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma::{flow, hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{ShadcnLook, slide_panel_background, slide_panel_panels_look};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use crate::studio::controls::slide_panel::{
-    SlidePanelEdge, SlidePanelOverlayHandlers, SlidePanelResizeDrag, SlidePanelResizeHandlers, SlidePanelSizeConfig,
-    SlidePanelState, SlidePanelTopAnchor, render_slide_panel_overlay, slide_panel_panels_look,
-};
 use super::event_stream::ControlEventStream;
 use super::model::{ControlExpositionLayout, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
@@ -513,7 +513,7 @@ impl Render for SlidePanelDemo {
                 hover: Box::new(cx.listener(Self::handle_resize_hover)),
             };
             let overlay = render_slide_panel_overlay(
-                &self.look,
+                slide_panel_background(&self.look),
                 &slide_panel_panels_look(&self.look),
                 &self.state,
                 viewport,

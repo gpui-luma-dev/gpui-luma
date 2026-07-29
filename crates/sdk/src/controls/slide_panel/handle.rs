@@ -1,21 +1,20 @@
 use gpui::{
     AnyElement, App, Div, DragMoveEvent, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Window, div, prelude::*, px,
 };
-use gpui_luma::controls::resizable_panels::{
-    ResizablePanelsOrientation, ResizeHandleMetrics, handle_hit_target_main_axis_px,
+
+use crate::controls::resizable_panels::{
+    ResizablePanelsLook, ResizablePanelsOrientation, ResizeHandleMetrics, handle_hit_target_main_axis_px,
 };
-use gpui_luma::controls::resizable_panels::ResizablePanelsLook;
 
 use super::resize::SlidePanelResizeDrag;
 use super::state::SlidePanelEdge;
 
-pub(crate) type SlidePanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub(crate) type SlidePanelDragMoveHandler =
-    Box<dyn Fn(&DragMoveEvent<SlidePanelResizeDrag>, &mut Window, &mut App) + 'static>;
-pub(crate) type SlidePanelMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
-pub(crate) type SlidePanelResizeHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
+pub type SlidePanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+pub type SlidePanelDragMoveHandler = Box<dyn Fn(&DragMoveEvent<SlidePanelResizeDrag>, &mut Window, &mut App) + 'static>;
+pub type SlidePanelMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+pub type SlidePanelResizeHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 
-pub(crate) struct SlidePanelResizeHandlers {
+pub struct SlidePanelResizeHandlers {
     pub mouse_down: SlidePanelMouseDownHandler,
     pub drag_move: SlidePanelDragMoveHandler,
     pub mouse_up: SlidePanelMouseUpHandler,
@@ -23,12 +22,12 @@ pub(crate) struct SlidePanelResizeHandlers {
     pub hover: SlidePanelResizeHoverHandler,
 }
 
-pub(crate) struct SlidePanelResizeHitHandlers {
+pub struct SlidePanelResizeHitHandlers {
     pub mouse_down: SlidePanelMouseDownHandler,
     pub hover: SlidePanelResizeHoverHandler,
 }
 
-pub(crate) fn render_slide_panel_resize_handle(
+pub fn render_slide_panel_resize_handle(
     edge: SlidePanelEdge,
     look: &ResizablePanelsLook,
     handle_metrics: &ResizeHandleMetrics,
@@ -79,6 +78,60 @@ pub(crate) fn render_slide_panel_resize_handle(
     let interaction_layer = render_handle_interaction_layer(orientation, handle_hit_px, split_px, origin_px, handlers);
 
     handle.child(divider).child(interaction_layer).into_any_element()
+}
+
+pub fn render_slide_panel_inner_resize_handle(
+    edge: SlidePanelEdge,
+    look: &ResizablePanelsLook,
+    handle_metrics: &ResizeHandleMetrics,
+    handle_active: bool,
+    handlers: SlidePanelResizeHitHandlers,
+) -> AnyElement {
+    let orientation = if edge.is_horizontal_main_axis() {
+        ResizablePanelsOrientation::Horizontal
+    } else {
+        ResizablePanelsOrientation::Vertical
+    };
+
+    let hit_px = handle_hit_target_main_axis_px(handle_metrics);
+    let hit_main = px(hit_px);
+    let hit_inset = px(hit_px * 0.5 - 0.5);
+
+    let mut handle = div()
+        .id("slide-panel-resize-handle")
+        .absolute()
+        .occlude()
+        .when(orientation == ResizablePanelsOrientation::Horizontal, |this| this.cursor_col_resize())
+        .when(orientation == ResizablePanelsOrientation::Vertical, |this| this.cursor_row_resize());
+
+    handle = match edge {
+        SlidePanelEdge::Right => handle.left(-hit_inset).top_0().bottom_0().w(hit_main),
+        SlidePanelEdge::Left => handle.right(-hit_inset).top_0().bottom_0().w(hit_main),
+        SlidePanelEdge::Bottom => handle.top(-hit_inset).left_0().right_0().h(hit_main),
+        SlidePanelEdge::Top => handle.bottom(-hit_inset).left_0().right_0().h(hit_main),
+    };
+
+    if handle_active {
+        handle = handle
+            .when(orientation == ResizablePanelsOrientation::Horizontal, |this| {
+                this.flex().justify_center().items_center()
+            })
+            .when(orientation == ResizablePanelsOrientation::Vertical, |this| {
+                this.flex().flex_col().justify_center().items_center()
+            })
+            .child(render_handle_grip(orientation, look.grip_emphasis, handle_metrics));
+    }
+
+    let SlidePanelResizeHitHandlers { mouse_down, hover } = handlers;
+
+    handle
+        .on_hover(hover)
+        .on_mouse_down(MouseButton::Left, mouse_down)
+        .on_drag(SlidePanelResizeDrag, |drag, _, _, cx| {
+            cx.stop_propagation();
+            cx.new(|_| drag.clone())
+        })
+        .into_any_element()
 }
 
 fn handle_overlay_geometry(split_px: f32, handle_width_px: f32) -> (f32, f32, f32) {

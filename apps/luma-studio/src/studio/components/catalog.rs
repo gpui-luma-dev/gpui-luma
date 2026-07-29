@@ -71,6 +71,7 @@ const LAYOUT_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "resizable-panels", label: "Resizable Panels" },
     ComponentCatalogEntry { id: "split-view-inset", label: "Split View: Inset" },
     ComponentCatalogEntry { id: "split-view-unified", label: "Split View: Unified" },
+    ComponentCatalogEntry { id: "slide-panel", label: "Slide Panel" },
 ];
 
 const NAVIGATION_ENTRIES: &[ComponentCatalogEntry] = &[
@@ -98,7 +99,6 @@ const SELECTION_ENTRIES: &[ComponentCatalogEntry] = &[
 const PROTOTYPES_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "decorated-button", label: "Decorated Button" },
     ComponentCatalogEntry { id: "shadow-button", label: "Shadow Button" },
-    ComponentCatalogEntry { id: "slide-panel", label: "Slide Panel" },
 ];
 
 /// Gallery-aligned control catalog (mirrors `apps/gallery/src/gallery/panes/registry.rs`).

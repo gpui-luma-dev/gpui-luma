@@ -395,8 +395,8 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         id: "slide-panel",
         title: "Slide Panel",
         description: "Gallery drawer prototype — deferred window overlay with edge-anchored panels, open/close animation, focus trap and restore, Escape and backdrop dismissal, and draggable resize handles.",
-        category: ControlCategory::OverlaysDialogs,
-        snippet: "SlidePanelState::open(edge, opener_focus);\nrender_slide_panel_overlay(look, panels_look, &state, viewport, content, handlers, resize_handlers);",
+        category: ControlCategory::NavigationPanels,
+        snippet: "let mut state = SlidePanelState::new(SlidePanelTopAnchor::BelowTopBar, SlidePanelSizeConfig::new(360.0, 280.0, 720.0));\nstate.open(SlidePanelEdge::Right, opener_focus);\nrender_slide_panel_overlay(slide_panel_background(&look), &slide_panel_panels_look(&look), &state, viewport, content, handlers, resize_handlers);",
         section_order: 314,
     },
 ];

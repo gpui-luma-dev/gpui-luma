@@ -19,10 +19,11 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::prototypes::{
+use gpui_luma::controls::slide_panel::{
     SlidePanelEdge, SlidePanelOverlayHandlers, SlidePanelResizeDrag, SlidePanelResizeHandlers, SlidePanelSizeConfig,
-    SlidePanelState, SlidePanelTopAnchor, render_slide_panel_inset, slide_panel_panels_look,
+    SlidePanelState, SlidePanelTopAnchor, render_slide_panel_inset,
 };
+use gpui_luma_look_shadcn::slide_panel_panels_look;
 use super::super::shared::InspectorToggleRegistry;
 use super::labeling::render_vertical_section_rail;
 use super::theme_inspector::ThemeInspector;
