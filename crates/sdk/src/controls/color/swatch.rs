@@ -8,6 +8,7 @@
 use gpui::{prelude::*, *};
 
 use crate::controls::color::checkerboard_paint::{DEFAULT_CHECKERBOARD_SQUARE_SIZE, paint_masked_checkerboard};
+use crate::controls::color::chrome_tokens::swatch_checkerboard_colors;
 use crate::controls::color::style::ActiveTheme;
 use crate::theme::ControlSize;
 
@@ -124,11 +125,7 @@ impl RenderOnce for ColorSwatch {
             canvas(
                 move |_, _, _| (),
                 move |bounds, _, window, _| {
-                    let (c1, c2) = if is_dark {
-                        (hsla(0., 0., 0.1, 1.), hsla(0., 0., 0.13, 1.))
-                    } else {
-                        (hsla(0., 0., 1.0, 1.), hsla(0., 0., 0.95, 1.))
-                    };
+                    let (c1, c2) = swatch_checkerboard_colors(is_dark);
 
                     let inner_bounds = bounds.inset(border_width);
                     let inner_r = (radius - border_width).max(px(0.0));

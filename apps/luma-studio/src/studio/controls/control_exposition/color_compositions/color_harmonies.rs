@@ -130,7 +130,7 @@ impl ColorHarmoniesMetrics {
 
         let count = swatch_count as f32;
         let gap_total = (swatch_count.saturating_sub(1)) as f32 * ROW_GAP_PX;
-        ((self.content_width() - gap_total) / count).max(0.0).min(COLOR_SWATCH_SIZE)
+        ((self.content_width() - gap_total) / count).clamp(0.0, COLOR_SWATCH_SIZE)
     }
 
     fn card_width(self) -> f32 {

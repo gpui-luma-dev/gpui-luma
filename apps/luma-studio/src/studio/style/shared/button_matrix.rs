@@ -19,7 +19,7 @@ pub(crate) const BUTTON_TABLE_SIZE_HEADER_HEIGHT: f32 = 40.0;
 
 pub(crate) const SIZE_PREVIEW_STYLE: ShadcnButtonStyle = ShadcnButtonStyle::Primary;
 
-pub(crate) const BUTTON_SIZES: [(ButtonSize, &'static str); 3] =
+pub(crate) const BUTTON_SIZES: [(ButtonSize, &str); 3] =
     [(ButtonSize::Sm, "Small"), (ButtonSize::Md, "Medium"), (ButtonSize::Lg, "Large")];
 
 pub(crate) struct ButtonStyleVariantDef {

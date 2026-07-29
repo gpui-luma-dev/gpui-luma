@@ -5,3 +5,4 @@ pub type ToolbarThemeInspector = ThemeInspector;
 pub type AccordionThemeInspector = ThemeInspector;
 pub type ResizablePanelsThemeInspector = ThemeInspector;
 pub type SplitViewThemeInspector = ThemeInspector;
+pub type PagerThemeInspector = ThemeInspector;

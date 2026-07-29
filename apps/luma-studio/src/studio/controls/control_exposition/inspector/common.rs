@@ -156,10 +156,31 @@ pub fn progress_enabled(state_id: &str) -> bool {
     state_id != "disabled"
 }
 
-pub fn scrollbar_orientation(variant_id: &str) -> gpui_luma::controls::scrollbar::ScrollbarOrientation {
+pub fn scrollbar_style(variant_id: &str) -> gpui_luma::controls::scrollbar::ScrollbarStyle {
     match variant_id {
-        "vertical" => gpui_luma::controls::scrollbar::ScrollbarOrientation::Vertical,
-        _ => gpui_luma::controls::scrollbar::ScrollbarOrientation::Horizontal,
+        "soft" => gpui_luma::controls::scrollbar::ScrollbarStyle::Soft,
+        _ => gpui_luma::controls::scrollbar::ScrollbarStyle::Ghost,
+    }
+}
+
+pub fn pager_style(variant_id: &str) -> gpui_luma::controls::pager::PagerStyle {
+    match variant_id {
+        "minimal" => gpui_luma::controls::pager::PagerStyle::Minimal,
+        "minimal-edge" => gpui_luma::controls::pager::PagerStyle::MinimalEdge,
+        _ => gpui_luma::controls::pager::PagerStyle::Numeric,
+    }
+}
+
+pub fn pager_shell_enabled(state_id: &str) -> bool {
+    state_id != "disabled"
+}
+
+pub fn pager_button_role(variant_id: &str, value_id: &str) -> gpui_luma::controls::button_family::ButtonFamilyRole {
+    match variant_id {
+        "page" => {
+            gpui_luma::controls::button_family::ButtonFamilyRole::Toggle { selected: value_flag(value_id, "selected") }
+        }
+        _ => gpui_luma::controls::button_family::ButtonFamilyRole::Icon,
     }
 }
 
@@ -167,6 +188,13 @@ pub fn popup_menu_trigger_style(variant_id: &str) -> gpui_luma::controls::popup_
     match variant_id {
         "ghost" => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Ghost,
         _ => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Outline,
+    }
+}
+
+pub fn toolbar_variant(variant_id: &str) -> gpui_luma::controls::toolbar::ToolbarVariant {
+    match variant_id {
+        "ghost" => gpui_luma::controls::toolbar::ToolbarVariant::Ghost,
+        _ => gpui_luma::controls::toolbar::ToolbarVariant::Outline,
     }
 }
 

@@ -17,5 +17,6 @@ pub(crate) mod tabs;
 pub(crate) mod textarea;
 pub(crate) mod textfield;
 pub(crate) mod toggle;
+pub(crate) mod toolbar;
 pub(crate) mod tree_view;
 pub(crate) mod typography;

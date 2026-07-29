@@ -38,6 +38,7 @@ enum StyleGuideSection {
     Pager,
     Selectors,
     Tabs,
+    Toolbar,
     Scrollbar,
     Slider,
     TextField,
@@ -50,7 +51,7 @@ enum StyleGuideSection {
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 21] = [
+    const ALL: [Self; 22] = [
         Self::Accordion,
         Self::Buttons,
         Self::Checkbox,
@@ -70,6 +71,7 @@ impl StyleGuideSection {
         Self::TextArea,
         Self::TextField,
         Self::Toggle,
+        Self::Toolbar,
         Self::TreeView,
         Self::Typography,
     ];
@@ -95,6 +97,7 @@ impl StyleGuideSection {
             Self::TextArea => "Text Area",
             Self::TextField => "Text Field",
             Self::Toggle => "Toggles",
+            Self::Toolbar => "Toolbar",
             Self::TreeView => "Tree View",
             Self::Typography => "Typography",
         }
@@ -138,6 +141,8 @@ declare_form! {
             tree_view_preview: Option<Entity<sections::tree_view::TreeViewPreview>> = None,
             accordion_preview_tabs: Option<Entity<TabsNavigation>> = None,
             accordion_preview: Option<Entity<sections::accordion::AccordionPreview>> = None,
+            toolbar_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            toolbar_preview: Option<Entity<sections::toolbar::ToolbarPreview>> = None,
         }
     }
 }
@@ -166,6 +171,8 @@ impl StyleGuidePanel {
         self.sync_tree_view_preview(cx);
         self.sync_accordion_preview_tabs(cx);
         self.sync_accordion_preview(cx);
+        self.sync_toolbar_preview_tabs(cx);
+        self.sync_toolbar_preview(cx);
         self.sync_slider_preview_tabs(cx);
         self.sync_slider_customization_preview(cx);
         self.sticky_heading_tracker.borrow_mut().reset();
@@ -781,6 +788,35 @@ impl StyleGuidePanel {
             preview.update(cx, move |preview, cx| preview.sync_look(look, cx));
         }
     }
+
+    fn toolbar_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.toolbar_preview_tabs.clone() {
+            return tabs;
+        }
+        let tabs = self.spawn_template_sizes_tabs("luma-studio-toolbar-preview-tabs", cx);
+        self.toolbar_preview_tabs = Some(tabs.clone());
+        tabs
+    }
+
+    fn sync_toolbar_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        self.sync_preview_tabs(self.toolbar_preview_tabs.clone(), cx);
+    }
+
+    fn toolbar_preview(&mut self, cx: &mut Context<Self>) -> Entity<sections::toolbar::ToolbarPreview> {
+        if let Some(preview) = self.toolbar_preview.clone() {
+            return preview;
+        }
+        let preview = cx.new(|cx| sections::toolbar::ToolbarPreview::new(cx, self.look.clone()));
+        self.toolbar_preview = Some(preview.clone());
+        preview
+    }
+
+    fn sync_toolbar_preview(&mut self, cx: &mut Context<Self>) {
+        if let Some(preview) = self.toolbar_preview.clone() {
+            let look = self.look.clone();
+            preview.update(cx, move |preview, cx| preview.sync_look(look, cx));
+        }
+    }
 }
 
 impl Render for StyleGuidePanel {
@@ -808,6 +844,8 @@ impl Render for StyleGuidePanel {
         let _ = self.tree_view_preview(cx);
         let _ = self.accordion_preview_tabs(cx);
         let _ = self.accordion_preview(cx);
+        let _ = self.toolbar_preview_tabs(cx);
+        let _ = self.toolbar_preview(cx);
         with_look(&self.look, || {
             let chrome = self.look.chrome();
             let scroll_handle = self.scroll_handle.clone();
@@ -957,6 +995,7 @@ impl StyleGuidePanel {
                 | StyleGuideSection::ListView
                 | StyleGuideSection::TreeView
                 | StyleGuideSection::Accordion
+                | StyleGuideSection::Toolbar
         )
     }
 
@@ -1071,6 +1110,12 @@ impl StyleGuidePanel {
                 self.look.clone(),
                 self.accordion_preview_tabs.clone().expect("accordion preview tabs"),
                 self.accordion_preview.clone().expect("accordion preview"),
+                cx,
+            ),
+            StyleGuideSection::Toolbar => sections::toolbar::render_toolbar_template_section(
+                self.look.clone(),
+                self.toolbar_preview_tabs.clone().expect("toolbar preview tabs"),
+                self.toolbar_preview.clone().expect("toolbar preview"),
                 cx,
             ),
             StyleGuideSection::Typography => sections::typography::render_typography_section(self.look.as_ref()),

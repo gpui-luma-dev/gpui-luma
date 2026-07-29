@@ -25,7 +25,7 @@ pub fn spawn_viewport_inspector<T: 'static>(
     let inspector_split = cx.new(|cx| {
         let left = left.clone();
         let theme_inspector = theme_inspector.clone();
-        InspectorSplitShell::new(cx, look, split_id, move || left(), move || theme_inspector.clone().into_any_element())
+        InspectorSplitShell::new(cx, look, split_id, left, move || theme_inspector.clone().into_any_element())
     });
     ViewportInspectorPane { theme_inspector, inspector_split }
 }

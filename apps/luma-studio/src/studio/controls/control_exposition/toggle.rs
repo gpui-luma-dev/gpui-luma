@@ -218,35 +218,24 @@ impl ToggleControlExposition {
         });
 
         let left_pane = cx.new(|cx| {
-            let mut subscriptions = Vec::new();
-            subscriptions.push(wire_toggle(
-                cx,
-                &secondary_toggle,
-                "secondary",
-                ToggleTarget::Secondary,
-                event_stream.clone(),
-            ));
-            subscriptions.push(wire_toggle(
-                cx,
-                &primary_toggle,
-                "primary",
-                ToggleTarget::Primary,
-                event_stream.clone(),
-            ));
-            subscriptions.push(wire_toggle(
-                cx,
-                &secondary_round_icon_toggle,
-                "secondary-round-icon",
-                ToggleTarget::SecondaryRoundIcon,
-                event_stream.clone(),
-            ));
-            subscriptions.push(wire_toggle(
-                cx,
-                &primary_round_icon_toggle,
-                "primary-round-icon",
-                ToggleTarget::PrimaryRoundIcon,
-                event_stream.clone(),
-            ));
+            let subscriptions = vec![
+                wire_toggle(cx, &secondary_toggle, "secondary", ToggleTarget::Secondary, event_stream.clone()),
+                wire_toggle(cx, &primary_toggle, "primary", ToggleTarget::Primary, event_stream.clone()),
+                wire_toggle(
+                    cx,
+                    &secondary_round_icon_toggle,
+                    "secondary-round-icon",
+                    ToggleTarget::SecondaryRoundIcon,
+                    event_stream.clone(),
+                ),
+                wire_toggle(
+                    cx,
+                    &primary_round_icon_toggle,
+                    "primary-round-icon",
+                    ToggleTarget::PrimaryRoundIcon,
+                    event_stream.clone(),
+                ),
+            ];
 
             ToggleExpositionLeftPane {
                 look: look.clone(),

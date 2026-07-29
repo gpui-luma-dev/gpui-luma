@@ -112,8 +112,9 @@ pub(in crate::gallery) fn textarea_layout_data(
 pub(in crate::gallery) fn scrollbar_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     orientation: gpui_luma::controls::scrollbar::ScrollbarOrientation,
+    style: gpui_luma::controls::scrollbar::ScrollbarStyle,
 ) -> InspectLayoutSizeData {
-    let metrics = ShadcnInspect::new(look).inspect_scrollbar_metrics(orientation);
+    let metrics = ShadcnInspect::new(look).inspect_scrollbar_metrics(orientation, style);
     layout_size(gpui_luma::theme::ControlSize::Md, scrollbar_metric_properties(&metrics))
 }
 

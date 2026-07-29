@@ -371,7 +371,7 @@ fn font_search_selector_items(
 
     let mut suggested: Vec<&String> =
         picker_names.iter().copied().filter(|name| font_catalog.is_suggested_for_slot(name, slot)).collect();
-    suggested.sort_by(|left, right| left.to_ascii_lowercase().cmp(&right.to_ascii_lowercase()));
+    suggested.sort_by_key(|left| left.to_ascii_lowercase());
 
     for name in suggested {
         items.push(font_item(name, primary_label, selected_id));
@@ -384,7 +384,7 @@ fn font_search_selector_items(
 
     let mut others: Vec<&String> =
         picker_names.iter().copied().filter(|name| !listed.contains(name.as_str())).collect();
-    others.sort_by(|left, right| left.to_ascii_lowercase().cmp(&right.to_ascii_lowercase()));
+    others.sort_by_key(|left| left.to_ascii_lowercase());
 
     for name in &others {
         items.push(font_item(name, primary_label, selected_id));

@@ -2,8 +2,8 @@ use gpui_luma_look_shadcn_inspect::{
     AccordionContentInspectPalette, AccordionTriggerInspectPalette, ListBoxListInspectPalette,
     ListBoxRowInspectPalette, ListViewInspectPalette, ListViewRowInspectPalette,
     NavigationSidebarContainerInspectPalette, NavigationSidebarItemInspectPalette,
-    NavigationSidebarSectionInspectPalette, ResizablePanelsInspectPalette, SplitViewInspectPalette,
-    TabsNavigationItemInspectPalette, TabsNavigationListInspectPalette, ToolbarInspectPalette,
+    NavigationSidebarSectionInspectPalette, PagerShellInspectPalette, ResizablePanelsInspectPalette,
+    SplitViewInspectPalette, TabsNavigationItemInspectPalette, TabsNavigationListInspectPalette, ToolbarInspectPalette,
     TreeViewRowInspectPalette,
 };
 
@@ -102,6 +102,17 @@ pub fn toolbar_shell_color_rows(palette: &ToolbarInspectPalette) -> Vec<InspectC
         color_row("background", &palette.background),
         color_row("border", &palette.border),
         color_row("separator", &palette.separator),
+    ]
+}
+
+pub fn pager_shell_color_rows(palette: &PagerShellInspectPalette) -> Vec<InspectColorRow> {
+    vec![
+        color_row("panel background", &palette.panel_background),
+        color_row("border", &palette.border),
+        color_row("body text", &palette.body_text),
+        color_row("muted text", &palette.muted_text),
+        color_row("selected background", &palette.selected_background),
+        color_row("selected foreground", &palette.selected_foreground),
     ]
 }
 

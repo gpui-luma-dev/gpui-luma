@@ -3,10 +3,10 @@ use std::sync::Arc;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 
-use super::inspector::common::{interaction_state, scrollbar_orientation};
+use super::inspector::common::{interaction_state, scrollbar_style};
 use super::inspector::metrics::scrollbar_layout_section;
 use super::inspector::provenance::color_row;
-use super::inspector::specs::{COLOR_LAYOUT_INTERACTION_STATES, SCROLLBAR_ORIENTATIONS};
+use super::inspector::specs::{COLOR_LAYOUT_INTERACTION_STATES, SCROLLBAR_STYLE_VARIANTS};
 use super::inspector::{
     ControlInspectorResolver, ControlInspectorSpec, InspectColorRow, InspectorCategoryContent, InspectorSelection,
     SharedInspectorResolver,
@@ -18,12 +18,12 @@ pub static SCROLLBAR_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec
     control_label: "Scrollbar",
     id_prefix: "scrollbar-theme-inspector",
     parts: &[],
-    variants: &SCROLLBAR_ORIENTATIONS,
+    variants: &SCROLLBAR_STYLE_VARIANTS,
     states: &SCROLLBAR_STATES,
     sizes: &[],
     value_modes: &[],
     default_part_id: "",
-    default_variant_id: "horizontal",
+    default_variant_id: "ghost",
     default_size_id: "",
     default_value_id: "",
 };
@@ -56,9 +56,9 @@ impl ControlInspectorResolver for ScrollbarInspectorAdapter {
 }
 
 fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> Vec<InspectColorRow> {
-    let orientation = scrollbar_orientation(selection.variant_id);
+    let style = scrollbar_style(selection.variant_id);
     let palette =
-        ShadcnInspect::new(look).inspect_scrollbar_color_palette(orientation, interaction_state(selection.state_id));
+        ShadcnInspect::new(look).inspect_scrollbar_color_palette(style, interaction_state(selection.state_id));
     let mut rows = vec![
         color_row("track background", &palette.track_background),
         color_row("thumb background", &palette.thumb_background),

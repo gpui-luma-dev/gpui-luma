@@ -8,8 +8,10 @@ use gpui_luma_look_shadcn::LumaTypographyExt;
 use super::model::EventLogViewRenderModel;
 use super::theme::EventLogTheme;
 
+type ScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+
 pub struct EventLogViewTemplateHandlers {
-    pub scroll_wheel: Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>,
+    pub scroll_wheel: ScrollWheelHandler,
 }
 
 pub trait EventLogViewTemplate: Send + Sync {

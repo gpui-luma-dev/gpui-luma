@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments, clippy::type_complexity)]
+
 mod app_shell;
 #[path = "assets/assets.rs"]
 mod assets;

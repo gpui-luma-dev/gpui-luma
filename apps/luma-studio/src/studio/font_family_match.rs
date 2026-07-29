@@ -38,10 +38,10 @@ pub fn match_css_named_family(family: &str, font_names: &[String]) -> Option<Sha
 
 fn alias_candidates(family: &str) -> Vec<&str> {
     let mut candidates = vec![family];
-    if let Some(alias) = lookup_alias(family) {
-        if !candidates.contains(&alias) {
-            candidates.push(alias);
-        }
+    if let Some(alias) = lookup_alias(family)
+        && !candidates.contains(&alias)
+    {
+        candidates.push(alias);
     }
     candidates
 }

@@ -161,17 +161,12 @@ impl RadioGroupControlExposition {
             )
         });
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(wire_group(cx, &vertical_group, "vertical", GroupTarget::Vertical, event_stream.clone()));
-        subscriptions.push(wire_group(
-            cx,
-            &horizontal_group,
-            "horizontal",
-            GroupTarget::Horizontal,
-            event_stream.clone(),
-        ));
-        subscriptions.push(wire_group(cx, &indented_group, "indented", GroupTarget::Indented, event_stream.clone()));
-        subscriptions.push(wire_group(cx, &delivery_group, "delivery", GroupTarget::Delivery, event_stream.clone()));
+        let subscriptions = vec![
+            wire_group(cx, &vertical_group, "vertical", GroupTarget::Vertical, event_stream.clone()),
+            wire_group(cx, &horizontal_group, "horizontal", GroupTarget::Horizontal, event_stream.clone()),
+            wire_group(cx, &indented_group, "indented", GroupTarget::Indented, event_stream.clone()),
+            wire_group(cx, &delivery_group, "delivery", GroupTarget::Delivery, event_stream.clone()),
+        ];
 
         Self {
             look,
@@ -230,10 +225,10 @@ fn wire_group<T: RadioGroupItemLike + 'static>(
             }
             cx.notify();
         }
-        if matches!(target, GroupTarget::Vertical) {
-            if let Some(line) = format_radio_group_event(label, event) {
-                event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
-            }
+        if matches!(target, GroupTarget::Vertical)
+            && let Some(line) = format_radio_group_event(label, event)
+        {
+            event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
         }
     })
 }

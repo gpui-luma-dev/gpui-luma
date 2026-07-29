@@ -16,6 +16,7 @@ pub use crate::controls::navigation_sidebar::{
     navigation_sidebar_branch_look, navigation_sidebar_container_look, navigation_sidebar_item_look,
     navigation_sidebar_section_look,
 };
+pub use crate::controls::pager::pager_look;
 pub use crate::controls::popup_menu::popup_menu_palette;
 pub use crate::controls::progress::progress_look;
 pub use crate::controls::radio::radio_button_look;

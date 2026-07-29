@@ -378,5 +378,5 @@ fn slider_size_metrics(
     let tokens = look.mode_tokens();
     let slider_look =
         slider_look(tokens.as_ref(), look.mode(), ShadcnButtonStyle::Primary, size, None, InteractionState::default());
-    (tokens.metrics.clone(), slider_look)
+    (tokens.metrics, slider_look)
 }

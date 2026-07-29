@@ -328,11 +328,9 @@ impl SlidePanelDemo {
 
     fn handle_overlay_key_down(&mut self, event: &gpui::KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         match event.keystroke.key.as_str() {
-            "escape" => {
-                if self.state.handle_escape(window, cx) {
-                    let event_stream = self.event_stream.clone();
-                    self.set_action("Closed with Escape and restored focus to the trigger.", &event_stream, cx);
-                }
+            "escape" if self.state.handle_escape(window, cx) => {
+                let event_stream = self.event_stream.clone();
+                self.set_action("Closed with Escape and restored focus to the trigger.", &event_stream, cx);
             }
             "tab" => {
                 let close_focus = self.close_button.read(cx).focus_handle(cx);

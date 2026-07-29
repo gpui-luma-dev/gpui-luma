@@ -471,6 +471,7 @@ impl Render for ColorRingControlExposition {
 }
 
 #[derive(Clone, Copy)]
+#[allow(clippy::enum_variant_names)]
 enum SyncSource {
     HueRing,
     SaturationRing,

@@ -460,10 +460,10 @@ fn wire_value_slider(
                 cx.notify();
             });
         }
-        if matches!(target, SliderValueTarget::Fill) {
-            if let Some(line) = format_slider_event(label, event) {
-                event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
-            }
+        if matches!(target, SliderValueTarget::Fill)
+            && let Some(line) = format_slider_event(label, event)
+        {
+            event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
         }
     })
 }

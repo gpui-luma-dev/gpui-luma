@@ -1,3 +1,4 @@
+use gpui_luma::controls::toolbar::ToolbarVariant;
 use gpui_luma::controls::tree_view::TreeNode;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn_inspect::{ShadcnInspect, ToolbarInspectPalette};
@@ -12,24 +13,42 @@ pub(in crate::gallery) fn build_toolbar_inspect_tree(look: &ShadcnLook) -> Vec<T
 
 fn shell_branch(look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {
     let id = "inspect-toolbar";
-    let enabled = shell_state_branch(format!("{id}-enabled"), "enabled", true, look, true);
-    let disabled = shell_state_branch(format!("{id}-disabled"), "disabled", false, look, false);
+    let outline = variant_branch(id, "outline", ToolbarVariant::Outline, look, true);
+    let ghost = variant_branch(id, "ghost", ToolbarVariant::Ghost, look, false);
     let layout = choice_layout_branch(id, false, look, toolbar_layout_data);
 
     TreeNode::new(id.to_owned(), "toolbar shell", ColorInspectTreeData::Branch)
         .branch(true)
         .expanded(true)
-        .children([enabled, disabled, layout])
+        .children([outline, ghost, layout])
+}
+
+fn variant_branch(
+    prefix: &str,
+    label: &str,
+    variant: ToolbarVariant,
+    look: &ShadcnLook,
+    expand: bool,
+) -> TreeNode<ColorInspectTreeData> {
+    let id = format!("{prefix}-{label}");
+    let enabled = shell_state_branch(format!("{id}-enabled"), "enabled", true, variant, look, expand);
+    let disabled = shell_state_branch(format!("{id}-disabled"), "disabled", false, variant, look, false);
+
+    TreeNode::new(id, label.to_owned(), ColorInspectTreeData::Branch)
+        .branch(true)
+        .expanded(expand)
+        .children([enabled, disabled])
 }
 
 fn shell_state_branch(
     id: String,
     label: &str,
     enabled: bool,
+    variant: ToolbarVariant,
     look: &ShadcnLook,
     expand: bool,
 ) -> TreeNode<ColorInspectTreeData> {
-    let palette = ShadcnInspect::new(look).inspect_toolbar_color_palette(enabled);
+    let palette = ShadcnInspect::new(look).inspect_toolbar_color_palette(enabled, variant);
     TreeNode::new(id.clone(), label.to_owned(), ColorInspectTreeData::Branch)
         .branch(true)
         .expanded(expand)

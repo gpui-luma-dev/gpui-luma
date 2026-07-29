@@ -1,5 +1,6 @@
 use gpui::SharedString;
 use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::scrollbar::ScrollbarOrientation;
 use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use gpui_luma_look_shadcn_inspect::{
@@ -8,7 +9,7 @@ use gpui_luma_look_shadcn_inspect::{
     ListViewInspectMetrics, NavigationSidebarInspectMetrics, ProgressInspectMetrics, RadioButtonInspectMetrics,
     ResizablePanelsInspectMetrics, ScrollbarInspectMetrics, ShadcnInspect, SliderInspectMetrics,
     SplitViewInspectMetrics, SwitchInspectMetrics, TabsNavigationInspectMetrics, TextFieldInspectMetrics,
-    ToolbarInspectMetrics, TreeViewInspectMetrics,
+    PagerInspectMetrics, ToolbarInspectMetrics, TreeViewInspectMetrics,
 };
 
 use super::box_model::InspectBoxModelSnapshot;
@@ -118,8 +119,13 @@ pub fn slider_layout_section(look: &ShadcnLook, diagram_id: &str) -> InspectLayo
 }
 
 pub fn scrollbar_layout_section(look: &ShadcnLook, diagram_id: &str, variant_id: &str) -> InspectLayoutSection {
-    let orientation = super::common::scrollbar_orientation(variant_id);
-    scrollbar_metrics_layout_section(look, diagram_id, &ShadcnInspect::new(look).inspect_scrollbar_metrics(orientation))
+    let style = super::common::scrollbar_style(variant_id);
+    let orientation = ScrollbarOrientation::Vertical;
+    scrollbar_metrics_layout_section(
+        look,
+        diagram_id,
+        &ShadcnInspect::new(look).inspect_scrollbar_metrics(orientation, style),
+    )
 }
 
 pub fn floating_menu_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
@@ -209,6 +215,16 @@ pub fn toolbar_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str
         diagram_id,
         &ShadcnInspect::new(look).inspect_toolbar_metrics(control_size(size_id)),
     )
+}
+
+pub fn pager_shell_layout_section(look: &ShadcnLook, diagram_id: &str, variant_id: &str) -> InspectLayoutSection {
+    let style = super::common::pager_style(variant_id);
+    pager_shell_metrics_layout_section(look, diagram_id, &ShadcnInspect::new(look).inspect_pager_metrics(style))
+}
+
+pub fn pager_button_layout_section(look: &ShadcnLook, diagram_id: &str) -> InspectLayoutSection {
+    let style = gpui_luma::controls::pager::PagerStyle::Numeric;
+    pager_button_metrics_layout_section(look, diagram_id, &ShadcnInspect::new(look).inspect_pager_metrics(style))
 }
 
 pub fn accordion_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
@@ -756,6 +772,67 @@ fn toolbar_metrics_layout_section(
             ("gap", &metrics.gap),
             ("radius", &metrics.radius),
             ("separator height", &metrics.separator_height),
+        ]),
+    )
+}
+
+fn pager_shell_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &PagerInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.control_height.value_px,
+        padding_x: metrics.padding_x.value_px,
+        padding_y: metrics.padding_y.value_px,
+        border_width: 0.0,
+        gap: metrics.group_gap.value_px,
+        radius: metrics.radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("control height", &metrics.control_height),
+            ("padding x", &metrics.padding_x),
+            ("padding y", &metrics.padding_y),
+            ("item gap", &metrics.gap),
+            ("group gap", &metrics.group_gap),
+            ("radius", &metrics.radius),
+        ]),
+    )
+}
+
+fn pager_button_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &PagerInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.button_size.value_px,
+        padding_x: metrics.padding_x.value_px,
+        padding_y: 0.0,
+        border_width: 0.0,
+        gap: metrics.gap.value_px,
+        radius: metrics.radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("button size", &metrics.button_size),
+            ("button min width", &metrics.button_min_width),
+            ("padding x", &metrics.padding_x),
+            ("gap", &metrics.gap),
+            ("radius", &metrics.radius),
         ]),
     )
 }

@@ -1,4 +1,5 @@
 pub mod checkerboard_paint;
+pub mod chrome_tokens;
 pub mod composition;
 pub mod color_arc;
 pub mod color_field;

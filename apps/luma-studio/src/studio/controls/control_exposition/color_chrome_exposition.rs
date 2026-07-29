@@ -20,18 +20,11 @@ pub fn spawn_color_chrome_viewport<T: 'static>(
     profiles: &'static [ColorChromeProfile],
     left: impl Fn() -> AnyElement + 'static + Clone,
 ) -> ColorChromeViewportPane {
-    let chrome_inspector =
-        cx.new(|cx| ColorChromeInspector::new(look.clone(), inspector_id, profiles, cx));
+    let chrome_inspector = cx.new(|cx| ColorChromeInspector::new(look.clone(), inspector_id, profiles, cx));
     let inspector_split = cx.new(|cx| {
         let left = left.clone();
         let chrome_inspector = chrome_inspector.clone();
-        InspectorSplitShell::new(
-            cx,
-            look,
-            split_id,
-            move || left(),
-            move || chrome_inspector.clone().into_any_element(),
-        )
+        InspectorSplitShell::new(cx, look, split_id, left, move || chrome_inspector.clone().into_any_element())
     });
     ColorChromeViewportPane { chrome_inspector, inspector_split }
 }

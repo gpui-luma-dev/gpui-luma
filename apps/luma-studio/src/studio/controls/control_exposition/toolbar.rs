@@ -81,7 +81,6 @@ struct ToolbarExpositionLeftPane {
     roving_focus_button: Entity<Button<()>>,
     sequential_focus_button: Entity<Button<()>>,
     event_stream: Entity<ControlEventStream>,
-    status: String,
     focus_mode: &'static str,
 }
 
@@ -123,13 +122,6 @@ impl Render for ToolbarExpositionLeftPane {
                                 .text_color(chrome.muted_text)
                                 .child(format!("mode: {}", self.focus_mode)),
                         ),
-                )
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .text_color(chrome.muted_text)
-                        .child(self.status.clone()),
                 )
                 .child(self.event_stream.clone());
 
@@ -248,7 +240,6 @@ impl ToolbarControlExposition {
             roving_focus_button: roving_focus_button.clone(),
             sequential_focus_button: sequential_focus_button.clone(),
             event_stream: event_stream.clone(),
-            status: "Paragraph editing toolbar".to_string(),
             focus_mode: "roving",
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
@@ -266,19 +257,7 @@ impl ToolbarControlExposition {
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&toolbar, {
             let event_stream = event_stream.clone();
-            let left_pane = left_pane.clone();
             move |_, _, event: &ToolbarEvent, cx| {
-                left_pane.update(cx, |pane, cx| {
-                    pane.status = match event {
-                        ToolbarEvent::Click { id } => format!("{id} clicked"),
-                        ToolbarEvent::Change { id, value } => match value {
-                            ToolbarValue::Bool(on) => format!("{id}: {}", if *on { "on" } else { "off" }),
-                            ToolbarValue::String(value) => format!("{id}: {value}"),
-                        },
-                        _ => pane.status.clone(),
-                    };
-                    cx.notify();
-                });
                 if let Some(line) = format_toolbar_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
@@ -293,7 +272,6 @@ impl ToolbarControlExposition {
                             toolbar.set_focus_strategy(ControlGroupFocusStrategy::RovingItemFocus, cx);
                         });
                         pane.focus_mode = "roving";
-                        pane.status = "Focus strategy: roving".to_string();
                         cx.notify();
                     });
                 }
@@ -308,7 +286,6 @@ impl ToolbarControlExposition {
                             toolbar.set_focus_strategy(ControlGroupFocusStrategy::ActiveDescendant, cx);
                         });
                         pane.focus_mode = "sequential";
-                        pane.status = "Focus strategy: sequential".to_string();
                         cx.notify();
                     });
                 }

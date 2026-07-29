@@ -1,5 +1,6 @@
 //! Inspect metadata for `toolbar`.
 
+use gpui_luma::controls::toolbar::ToolbarVariant;
 use gpui_luma::theme::{ControlSize, ThemeMode};
 use gpui_luma_look_shadcn::{ColorSource, LookContext, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
@@ -23,20 +24,33 @@ pub fn inspect_toolbar_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     enabled: bool,
+    variant: ToolbarVariant,
 ) -> ToolbarInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, Default::default());
     let tokens = ctx.tokens;
-    let background = if enabled {
-        tokens.palette.muted_background
-    } else {
-        tokens.palette.disabled_background
+    let separator = resolved_from_hsla(tokens.palette.border_default, ColorSource::CssVar { token: "border".into() });
+
+    let (background, border) = match variant {
+        ToolbarVariant::Ghost => (ResolvedColor::transparent(), ResolvedColor::transparent()),
+        ToolbarVariant::Outline => {
+            let background_value = if enabled {
+                tokens.palette.muted_background
+            } else {
+                tokens.palette.disabled_background
+            };
+            let background_source = if enabled {
+                ColorSource::CssVar { token: "muted".into() }
+            } else {
+                ColorSource::Derived { note: "muted · disabled".into() }
+            };
+            (
+                resolved_from_hsla(background_value, background_source),
+                resolved_from_hsla(tokens.palette.border_default, ColorSource::CssVar { token: "border".into() }),
+            )
+        }
     };
 
-    ToolbarInspectPalette {
-        background: resolved_from_hsla(background, ColorSource::CssVar { token: "muted".into() }),
-        border: resolved_from_hsla(tokens.palette.border_default, ColorSource::CssVar { token: "border".into() }),
-        separator: resolved_from_hsla(tokens.palette.border_default, ColorSource::CssVar { token: "border".into() }),
-    }
+    ToolbarInspectPalette { background, border, separator }
 }
 
 pub fn inspect_toolbar_metrics(

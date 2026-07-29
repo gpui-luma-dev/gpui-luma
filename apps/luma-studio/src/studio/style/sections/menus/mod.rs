@@ -83,7 +83,7 @@ const MENU_TRIGGER_TABLE_SIZE_HEADER_HEIGHT: f32 = 40.0;
 
 const MENU_TRIGGER_SIZE_PREVIEW_STYLE: PopupMenuTriggerStyle = PopupMenuTriggerStyle::Outline;
 
-const MENU_TRIGGER_SIZES: [(ButtonSize, &'static str); 3] =
+const MENU_TRIGGER_SIZES: [(ButtonSize, &str); 3] =
     [(ButtonSize::Sm, "Small"), (ButtonSize::Md, "Medium"), (ButtonSize::Lg, "Large")];
 
 struct MenuTriggerStyleDef {

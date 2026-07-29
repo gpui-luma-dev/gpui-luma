@@ -139,10 +139,10 @@ impl ToggleGroupControlExposition {
             let event_stream = event_stream.clone();
             subscriptions.push(cx.subscribe(&group, move |this, _, event: &IconGroupEvent, cx| {
                 this.apply_event(index, event, cx);
-                if index == 0 {
-                    if let Some(line) = format_icon_group_event(event) {
-                        event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
-                    }
+                if index == 0
+                    && let Some(line) = format_icon_group_event(event)
+                {
+                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }));
         }

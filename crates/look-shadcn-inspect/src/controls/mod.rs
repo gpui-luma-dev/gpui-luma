@@ -1,3 +1,4 @@
+mod color_chrome;
 mod accordion;
 mod autocomplete;
 mod badge;
@@ -10,6 +11,7 @@ mod floating_menu;
 mod list_view;
 mod listbox;
 mod navigation_sidebar;
+mod pager;
 mod popup_menu;
 mod progress;
 mod radio;
@@ -25,6 +27,10 @@ mod textfield;
 mod toolbar;
 mod tree_view;
 
+pub use color_chrome::{
+    ColorChromeInspectSection, ColorChromeProfile, COLOR_ARC_CHROME_PROFILES, COLOR_FIELD_CHROME_PROFILES,
+    COLOR_RING_CHROME_PROFILES, COLOR_SLIDER_CHROME_PROFILES, inspect_color_chrome_sections,
+};
 pub use accordion::{
     AccordionContentInspectPalette, AccordionInspectMetrics, AccordionTriggerInspectPalette,
     inspect_accordion_content_color_palette, inspect_accordion_metrics, inspect_accordion_trigger_color_palette,
@@ -109,6 +115,7 @@ pub use navigation_sidebar::{
     inspect_navigation_sidebar_container_color_palette, inspect_navigation_sidebar_item_color_palette,
     inspect_navigation_sidebar_metrics, inspect_navigation_sidebar_section_color_palette,
 };
+pub use pager::{PagerInspectMetrics, PagerShellInspectPalette, inspect_pager_metrics, inspect_pager_shell_color_palette};
 pub use selector::{
     SelectorInspectMetrics, SelectorInspectPalette, inspect_selector_color_palette, inspect_selector_metrics,
 };

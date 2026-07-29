@@ -190,14 +190,76 @@ pub static PROGRESS_STATES: [InspectorStateSpec; 2] = [
     },
 ];
 
-pub static SCROLLBAR_ORIENTATIONS: [InspectorVariant; 2] = [
-    InspectorVariant { id: "horizontal", label: "Horizontal" },
-    InspectorVariant { id: "vertical", label: "Vertical" },
-];
+pub static SCROLLBAR_STYLE_VARIANTS: [InspectorVariant; 2] =
+    [InspectorVariant { id: "ghost", label: "Ghost" }, InspectorVariant { id: "soft", label: "Soft" }];
 
 pub static POPUP_MENU_TRIGGER_VARIANTS: [InspectorVariant; 2] = [
     InspectorVariant { id: "outline", label: "Outline" },
     InspectorVariant { id: "ghost", label: "Ghost" },
+];
+
+pub static TOOLBAR_VARIANTS: [InspectorVariant; 2] = [
+    InspectorVariant { id: "outline", label: "Outline" },
+    InspectorVariant { id: "ghost", label: "Ghost" },
+];
+
+pub static PAGER_STYLE_VARIANTS: [InspectorVariant; 3] = [
+    InspectorVariant { id: "minimal", label: "Minimal" },
+    InspectorVariant { id: "minimal-edge", label: "Minimal + edges" },
+    InspectorVariant { id: "numeric", label: "Numeric" },
+];
+
+pub static PAGER_BUTTON_VARIANTS: [InspectorVariant; 2] =
+    [InspectorVariant { id: "nav", label: "Nav" }, InspectorVariant { id: "page", label: "Page" }];
+
+pub static PAGER_PARTS: [InspectorPart; 2] = [
+    InspectorPart { id: "shell", label: "Shell", variants: &PAGER_STYLE_VARIANTS, default_variant_id: "minimal" },
+    InspectorPart { id: "button", label: "Button", variants: &PAGER_BUTTON_VARIANTS, default_variant_id: "nav" },
+];
+
+pub static PAGER_STATES: [InspectorStateSpec; 6] = [
+    InspectorStateSpec {
+        id: "enabled",
+        label: "Enabled",
+        icon: LucideIcon::Circle,
+        expanded_default: true,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "disabled",
+        label: "Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "default",
+        label: "Default",
+        icon: LucideIcon::Circle,
+        expanded_default: true,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "hover",
+        label: "Hover",
+        icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "focused",
+        label: "Focused",
+        icon: LucideIcon::Focus,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "pressed",
+        label: "Pressed",
+        icon: LucideIcon::MousePointerClick,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
 ];
 
 pub static POPUP_MENU_PARTS: [InspectorPart; 2] = [

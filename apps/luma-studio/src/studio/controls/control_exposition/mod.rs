@@ -52,6 +52,7 @@ mod model;
 mod navigation_sidebar;
 mod navigation_sidebar_inspector_adapter;
 mod pager;
+mod pager_inspector_adapter;
 mod paging_list_view;
 mod popup_menu;
 mod popup_menu_inspector_adapter;

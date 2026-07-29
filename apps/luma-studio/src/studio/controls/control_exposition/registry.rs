@@ -237,6 +237,7 @@ impl ControlExposition {
             Self::NavigationSidebar(entity) => entity.read(cx).fills_viewport(),
             Self::TabsNavigation(entity) => entity.read(cx).fills_viewport(),
             Self::Toolbar(entity) => entity.read(cx).fills_viewport(),
+            Self::Pager(entity) => entity.read(cx).fills_viewport(),
             Self::Accordion(entity) => entity.read(cx).fills_viewport(),
             Self::ResizablePanels(entity) => entity.read(cx).fills_viewport(),
             Self::DockPanel(entity) => entity.read(cx).fills_viewport(),
@@ -281,6 +282,7 @@ impl ControlExposition {
             }
             Self::TabsNavigation(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Toolbar(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Pager(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Accordion(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::ResizablePanels(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::DockPanel(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
@@ -325,6 +327,7 @@ impl ControlExposition {
             }
             Self::TabsNavigation(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Toolbar(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Pager(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Accordion(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::ResizablePanels(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::DockPanel(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),

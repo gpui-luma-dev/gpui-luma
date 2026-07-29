@@ -12,7 +12,7 @@ use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
 use super::inspector::{
-    ControlInspectorSpec, InspectorCategory, InspectorSelection, InspectorStateSpec, InspectorVariant,
+    ControlInspectorSpec, InspectorCategory, InspectorPart, InspectorSelection, InspectorStateSpec, InspectorVariant,
     SharedInspectorResolver, layout, render_category_content,
 };
 
@@ -76,14 +76,16 @@ impl ThemeInspector {
         cx: &mut Context<Self>,
     ) -> Self {
         let mut subscriptions = Vec::new();
+        let applicable = applicable_parts(&look, spec, &resolver);
 
-        let (part_tabs, active_part_id) = if spec.parts.is_empty() {
+        let (part_tabs, active_part_id) = if spec.parts.is_empty() || applicable.is_empty() {
             (None, SharedString::from(""))
         } else {
+            let active_part_id = default_active_part_id(&applicable, spec);
             let tabs = look
                 .tabs_navigation(format!("{}-part-tabs", spec.id_prefix))
-                .items(part_tab_items(spec))
-                .active(spec.default_part_id)
+                .items(part_tab_items(&applicable))
+                .active(active_part_id.as_ref())
                 .spawn(cx);
 
             subscriptions.push(cx.subscribe(&tabs, |inspector, _, event: &TabsNavigationEvent, cx| {
@@ -95,20 +97,20 @@ impl ThemeInspector {
                 cx.notify();
             }));
 
-            (Some(tabs), SharedString::from(spec.default_part_id))
+            (Some(tabs), active_part_id)
         };
 
         let active_variant_id = if spec.parts.is_empty() {
             SharedString::from(spec.default_variant_id)
         } else {
-            default_variant_for_part(spec, spec.default_part_id)
+            default_variant_for_part(spec, active_part_id.as_ref())
         };
 
         let (parts, part_subscriptions) =
             build_part_controls(look.clone(), spec, resolver.clone(), cx, &mut subscriptions);
         subscriptions.extend(part_subscriptions);
 
-        Self {
+        let mut inspector = Self {
             synced_mode: look.mode(),
             look,
             spec,
@@ -119,7 +121,9 @@ impl ThemeInspector {
             active_variant_id,
             embedded,
             _subscriptions: subscriptions,
-        }
+        };
+        inspector.reconcile_active_selection();
+        inspector
     }
 
     pub fn for_embedded_pane_with_spec(
@@ -133,8 +137,14 @@ impl ThemeInspector {
 
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look;
-        let (parts, _) = build_part_controls(self.look.clone(), self.spec, self.resolver.clone(), cx, &mut vec![]);
+        self.sync_part_tabs(cx);
+        let part_tab_sub_count = usize::from(self.part_tabs.is_some());
+        self._subscriptions.truncate(part_tab_sub_count);
+        let (parts, part_subscriptions) =
+            build_part_controls(self.look.clone(), self.spec, self.resolver.clone(), cx, &mut self._subscriptions);
         self.parts = parts;
+        self._subscriptions.extend(part_subscriptions);
+        self.reconcile_active_selection();
         self.synced_mode = self.look.mode();
         if let Some(tabs) = &self.part_tabs {
             tabs.update(cx, |_, cx| cx.notify());
@@ -147,7 +157,65 @@ impl ThemeInspector {
         cx.notify();
     }
 
-    fn active_tree(&self) -> Entity<AccordionControl> {
+    fn sync_part_tabs(&mut self, cx: &mut Context<Self>) {
+        let applicable = applicable_parts(&self.look, self.spec, &self.resolver);
+
+        if self.spec.parts.is_empty() || applicable.is_empty() {
+            if self.part_tabs.take().is_some() && !self._subscriptions.is_empty() {
+                let _ = self._subscriptions.remove(0);
+            }
+            return;
+        }
+
+        let active_part_id = default_active_part_id(&applicable, self.spec);
+
+        if let Some(tabs) = &self.part_tabs {
+            tabs.update(cx, |tabs, cx| {
+                tabs.set_items(part_tab_items(&applicable), cx);
+                tabs.set_active(active_part_id.as_ref(), cx);
+            });
+        } else {
+            let tabs = self
+                .look
+                .tabs_navigation(format!("{}-part-tabs", self.spec.id_prefix))
+                .items(part_tab_items(&applicable))
+                .active(active_part_id.as_ref())
+                .spawn(cx);
+
+            let subscription = cx.subscribe(&tabs, |inspector, _, event: &TabsNavigationEvent, cx| {
+                let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+                    return;
+                };
+                inspector.active_part_id = tab_id.clone();
+                inspector.active_variant_id = default_variant_for_part(inspector.spec, tab_id.as_ref());
+                cx.notify();
+            });
+            self._subscriptions.insert(0, subscription);
+            self.part_tabs = Some(tabs);
+        }
+
+        self.active_part_id = active_part_id.clone();
+        self.active_variant_id = default_variant_for_part(self.spec, active_part_id.as_ref());
+    }
+
+    fn reconcile_active_selection(&mut self) {
+        if self.parts.is_empty() {
+            return;
+        }
+
+        if !self.parts.iter().any(|part| part.part_id == self.active_part_id) {
+            self.active_part_id = self.parts[0].part_id.clone();
+        }
+
+        if let Some(part) = self.parts.iter().find(|part| part.part_id == self.active_part_id)
+            && !part.variants.iter().any(|variant| variant.variant_id == self.active_variant_id)
+        {
+            self.active_variant_id =
+                part.variants.first().map(|variant| variant.variant_id.clone()).unwrap_or_default();
+        }
+    }
+
+    fn active_tree(&self) -> Option<Entity<AccordionControl>> {
         self.parts
             .iter()
             .find(|part| part.part_id == self.active_part_id)
@@ -158,7 +226,6 @@ impl ThemeInspector {
                     .map(|variant| variant.state.clone())
             })
             .or_else(|| self.parts.first()?.variants.first().map(|variant| variant.state.clone()))
-            .expect("theme inspector must have at least one variant control tree")
     }
 
     fn sync_if_needed(&mut self, cx: &mut Context<Self>) {
@@ -240,21 +307,58 @@ impl Render for ThemeInspector {
             header = header.child(variant_tabs.clone());
         }
 
-        root.child(header).child(
-            div()
-                .id(SharedString::from(format!("{}-scroll", self.spec.id_prefix)))
-                .flex_1()
-                .min_h(px(0.0))
-                .min_w(px(0.0))
-                .overflow_y_scroll()
-                .p(px(layout::PANEL_PADDING))
-                .child(self.active_tree()),
-        )
+        let scroll = div()
+            .id(SharedString::from(format!("{}-scroll", self.spec.id_prefix)))
+            .flex_1()
+            .min_h(px(0.0))
+            .min_w(px(0.0))
+            .overflow_y_scroll()
+            .p(px(layout::PANEL_PADDING));
+
+        root.child(header).child(if let Some(tree) = self.active_tree() {
+            scroll.child(tree)
+        } else {
+            scroll
+        })
     }
 }
 
-fn part_tab_items(spec: &ControlInspectorSpec) -> Vec<TabsNavigationItem> {
-    spec.parts.iter().map(|part| TabsNavigationItem::new(part.id).label(part.label)).collect()
+fn applicable_parts(
+    look: &ShadcnLook,
+    spec: &'static ControlInspectorSpec,
+    resolver: &SharedInspectorResolver,
+) -> Vec<&'static InspectorPart> {
+    spec.parts
+        .iter()
+        .filter(|part| {
+            resolver.part_applies(
+                look,
+                inspector_selection(
+                    part.id,
+                    part.default_variant_id,
+                    "default",
+                    spec.default_size_id,
+                    spec.default_value_id,
+                ),
+                part,
+            )
+        })
+        .collect()
+}
+
+fn part_tab_items(parts: &[&InspectorPart]) -> Vec<TabsNavigationItem> {
+    parts.iter().map(|part| TabsNavigationItem::new(part.id).label(part.label)).collect()
+}
+
+fn default_active_part_id(applicable: &[&InspectorPart], spec: &ControlInspectorSpec) -> SharedString {
+    if applicable.iter().any(|part| part.id == spec.default_part_id) {
+        SharedString::from(spec.default_part_id)
+    } else {
+        applicable
+            .first()
+            .map(|part| SharedString::from(part.id))
+            .unwrap_or_else(|| SharedString::from(spec.default_part_id))
+    }
 }
 
 fn variant_tab_items(variants: &[InspectorVariant]) -> Vec<TabsNavigationItem> {
@@ -288,22 +392,8 @@ fn build_part_controls(
         return (vec![PartInspectorControls { part_id: SharedString::from(""), variant_tabs, variants }], vec![]);
     }
 
-    let parts = spec
-        .parts
-        .iter()
-        .filter(|part| {
-            resolver.part_applies(
-                &look,
-                inspector_selection(
-                    part.id,
-                    part.default_variant_id,
-                    "default",
-                    spec.default_size_id,
-                    spec.default_value_id,
-                ),
-                part,
-            )
-        })
+    let parts = applicable_parts(&look, spec, &resolver)
+        .into_iter()
         .map(|part| {
             let part_id = SharedString::from(part.id);
             let (variant_tabs, variant_subscriptions, _) = if part.variants.is_empty() {

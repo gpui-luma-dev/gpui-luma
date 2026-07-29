@@ -43,21 +43,21 @@ const INPUT_ENTRIES: &[ComponentCatalogEntry] = &[
 ];
 
 const COLOR_ENTRIES: &[ComponentCatalogEntry] = &[
+    ComponentCatalogEntry { id: "color-arc", label: "Color Arc" },
     ComponentCatalogEntry { id: "color-field", label: "Color Field" },
     ComponentCatalogEntry { id: "color-ring", label: "Color Ring" },
-    ComponentCatalogEntry { id: "color-arc", label: "Color Arc" },
     ComponentCatalogEntry { id: "color-slider", label: "Color Slider" },
     ComponentCatalogEntry { id: "color-slider-revealed", label: "Color Slider Revealed" },
     ComponentCatalogEntry { id: "color-multi-mixer", label: "Multi Mixer" },
 ];
 
 const COLOR_COMPOSITIONS_ENTRIES: &[ComponentCatalogEntry] = &[
+    ComponentCatalogEntry { id: "color-harmonies", label: "Color Harmonies" },
     ComponentCatalogEntry { id: "color-picker", label: "Color Picker" },
     ComponentCatalogEntry { id: "color-hsv-plane", label: "HSV Plane" },
     ComponentCatalogEntry { id: "color-hsv-wheel", label: "HSV Wheel" },
-    ComponentCatalogEntry { id: "color-sv-triangle", label: "SV Triangle" },
     ComponentCatalogEntry { id: "color-split-ring", label: "Split Ring" },
-    ComponentCatalogEntry { id: "color-harmonies", label: "Color Harmonies" },
+    ComponentCatalogEntry { id: "color-sv-triangle", label: "SV Triangle" },
 ];
 
 const MENU_ENTRIES: &[ComponentCatalogEntry] = &[
