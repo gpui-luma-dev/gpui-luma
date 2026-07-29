@@ -1,0 +1,171 @@
+use gpui::hsla;
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma_look_shadcn::ShadcnButtonStyle;
+use gpui_luma_look_shadcn::ShadcnTextFieldStyle;
+
+use super::box_model::BoxModelLayerColors;
+
+pub fn primary_secondary_style(variant_id: &str) -> ShadcnButtonStyle {
+    choice_variant_style(variant_id)
+}
+
+pub fn choice_variant_style(variant_id: &str) -> ShadcnButtonStyle {
+    match variant_id {
+        "secondary" => ShadcnButtonStyle::Secondary,
+        "content-only" => ShadcnButtonStyle::ContentOnly,
+        _ => ShadcnButtonStyle::Primary,
+    }
+}
+
+pub fn button_variant_style(variant_id: &str) -> ShadcnButtonStyle {
+    match variant_id {
+        "secondary" => ShadcnButtonStyle::Secondary,
+        "outline" => ShadcnButtonStyle::Outline,
+        "ghost" => ShadcnButtonStyle::Ghost,
+        _ => ShadcnButtonStyle::Primary,
+    }
+}
+
+pub fn interaction_state(state_id: &str) -> InteractionState {
+    match state_id {
+        "hover" => InteractionState { hovered: true, ..InteractionState::default() },
+        "focused" => InteractionState { focused: true, ..InteractionState::default() },
+        "pressed" => InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
+        "disabled" => InteractionState { disabled: true, ..InteractionState::default() },
+        _ => InteractionState::default(),
+    }
+}
+
+pub fn control_size(size_id: &str) -> ControlSize {
+    match size_id {
+        "sm" => ControlSize::Sm,
+        "lg" => ControlSize::Lg,
+        _ => ControlSize::Md,
+    }
+}
+
+pub fn neutral_box_model_colors(mode: ThemeMode) -> BoxModelLayerColors {
+    match mode {
+        ThemeMode::Dark => BoxModelLayerColors {
+            margin: hsla(0.0, 0.0, 0.16, 1.0),
+            border: hsla(0.0, 0.0, 0.24, 1.0),
+            padding: hsla(0.0, 0.0, 0.32, 1.0),
+            content: hsla(0.0, 0.0, 0.40, 1.0),
+            stroke: hsla(0.0, 0.0, 0.88, 0.92),
+            highlight: hsla(0.0, 0.0, 0.96, 1.0),
+        },
+        ThemeMode::Light => BoxModelLayerColors {
+            margin: hsla(0.0, 0.0, 0.94, 1.0),
+            border: hsla(0.0, 0.0, 0.86, 1.0),
+            padding: hsla(0.0, 0.0, 0.78, 1.0),
+            content: hsla(0.0, 0.0, 0.70, 1.0),
+            stroke: hsla(0.0, 0.0, 0.18, 0.88),
+            highlight: hsla(0.0, 0.0, 0.08, 1.0),
+        },
+    }
+}
+
+pub fn neutral_box_model_label_color(mode: ThemeMode) -> gpui::Hsla {
+    match mode {
+        ThemeMode::Dark => hsla(0.0, 0.0, 0.94, 0.96),
+        ThemeMode::Light => hsla(0.0, 0.0, 0.14, 0.96),
+    }
+}
+
+pub fn value_flag(value_id: &str, true_id: &str) -> bool {
+    value_id == true_id
+}
+
+pub fn inspector_elevation_applies(state_id: &str) -> bool {
+    state_id != "disabled"
+}
+
+pub fn choice_elevation_applies(variant_id: &str, state_id: &str) -> bool {
+    variant_id != "content-only" && inspector_elevation_applies(state_id)
+}
+
+pub fn button_elevation_applies(variant_id: &str, state_id: &str) -> bool {
+    variant_id == "outline" && inspector_elevation_applies(state_id)
+}
+
+pub fn textfield_variant_style(variant_id: &str) -> ShadcnTextFieldStyle {
+    match variant_id {
+        "primary" => ShadcnTextFieldStyle::Primary,
+        "surface" => ShadcnTextFieldStyle::Surface,
+        _ => ShadcnTextFieldStyle::Outline,
+    }
+}
+
+pub fn textfield_enabled(state_id: &str) -> bool {
+    state_id != "disabled"
+}
+
+pub fn textfield_state(state_id: &str) -> gpui_luma::controls::textfield::TextFieldState {
+    match state_id {
+        "hover" => gpui_luma::controls::textfield::TextFieldState {
+            hovered: true,
+            ..gpui_luma::controls::textfield::TextFieldState::default()
+        },
+        "focus" => gpui_luma::controls::textfield::TextFieldState {
+            focused: true,
+            focus_visible: true,
+            ..gpui_luma::controls::textfield::TextFieldState::default()
+        },
+        _ => gpui_luma::controls::textfield::TextFieldState::default(),
+    }
+}
+
+pub fn textarea_state(state_id: &str) -> gpui_luma::controls::textarea::TextAreaState {
+    match state_id {
+        "hover" => gpui_luma::controls::textarea::TextAreaState {
+            hovered: true,
+            ..gpui_luma::controls::textarea::TextAreaState::default()
+        },
+        "focus" => gpui_luma::controls::textarea::TextAreaState {
+            focused: true,
+            focus_visible: true,
+            ..gpui_luma::controls::textarea::TextAreaState::default()
+        },
+        _ => gpui_luma::controls::textarea::TextAreaState::default(),
+    }
+}
+
+pub fn textfield_elevation_applies(variant_id: &str, state_id: &str) -> bool {
+    variant_id == "primary" && textfield_enabled(state_id)
+}
+
+pub fn selector_textfield_state(state_id: &str) -> gpui_luma::controls::textfield::TextFieldState {
+    let mut state = textfield_state(state_id);
+    if state_id == "focused" {
+        state.focused = true;
+        state.focus_visible = true;
+    }
+    state
+}
+
+pub fn badge_variant(variant_id: &str) -> gpui_luma_look_shadcn::BadgeVariant {
+    match variant_id {
+        "secondary" => gpui_luma_look_shadcn::BadgeVariant::Secondary,
+        "outline" => gpui_luma_look_shadcn::BadgeVariant::Outline,
+        "ghost" => gpui_luma_look_shadcn::BadgeVariant::Ghost,
+        _ => gpui_luma_look_shadcn::BadgeVariant::Default,
+    }
+}
+
+pub fn progress_enabled(state_id: &str) -> bool {
+    state_id != "disabled"
+}
+
+pub fn scrollbar_orientation(variant_id: &str) -> gpui_luma::controls::scrollbar::ScrollbarOrientation {
+    match variant_id {
+        "vertical" => gpui_luma::controls::scrollbar::ScrollbarOrientation::Vertical,
+        _ => gpui_luma::controls::scrollbar::ScrollbarOrientation::Horizontal,
+    }
+}
+
+pub fn popup_menu_trigger_style(variant_id: &str) -> gpui_luma::controls::popup_menu::PopupMenuTriggerStyle {
+    match variant_id {
+        "ghost" => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Ghost,
+        _ => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Outline,
+    }
+}

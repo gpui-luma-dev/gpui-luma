@@ -213,19 +213,76 @@ impl ControlExposition {
     pub fn fills_viewport(&self, cx: &App) -> bool {
         match self {
             Self::Button(entity) => entity.read(cx).fills_viewport(),
+            Self::Checkbox(entity) => entity.read(cx).fills_viewport(),
+            Self::RadioButton(entity) => entity.read(cx).fills_viewport(),
+            Self::Switch(entity) => entity.read(cx).fills_viewport(),
+            Self::Toggle(entity) => entity.read(cx).fills_viewport(),
+            Self::TextField(entity) => entity.read(cx).fills_viewport(),
+            Self::TextArea(entity) => entity.read(cx).fills_viewport(),
+            Self::Badge(entity) => entity.read(cx).fills_viewport(),
+            Self::Progress(entity) => entity.read(cx).fills_viewport(),
+            Self::Slider(entity) => entity.read(cx).fills_viewport(),
+            Self::Scrollbar(entity) => entity.read(cx).fills_viewport(),
+            Self::FloatingMenu(entity) => entity.read(cx).fills_viewport(),
+            Self::PopupMenu(entity) => entity.read(cx).fills_viewport(),
+            Self::ContextMenu(entity) => entity.read(cx).fills_viewport(),
+            Self::PopupSelector(entity) => entity.read(cx).fills_viewport(),
+            Self::ComboBox(entity) => entity.read(cx).fills_viewport(),
+            Self::AutocompleteTextField(entity) => entity.read(cx).fills_viewport(),
+            Self::SearchSelector(entity) => entity.read(cx).fills_viewport(),
             _ => false,
         }
     }
 
     pub fn request_layout_refresh(&self, cx: &mut App) {
-        if let Self::Button(entity) = self {
-            entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx));
+        match self {
+            Self::Button(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Checkbox(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::RadioButton(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Switch(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Toggle(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::TextField(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::TextArea(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Badge(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Progress(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Slider(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Scrollbar(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::FloatingMenu(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::PopupMenu(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ContextMenu(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::PopupSelector(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ComboBox(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::AutocompleteTextField(entity) => {
+                entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx))
+            }
+            Self::SearchSelector(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            _ => {}
         }
     }
 
     pub fn set_viewport_size(&self, size: gpui::Size<gpui::Pixels>, cx: &mut App) {
-        if let Self::Button(entity) = self {
-            entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx));
+        match self {
+            Self::Button(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Checkbox(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::RadioButton(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Switch(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Toggle(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::TextField(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::TextArea(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Badge(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Progress(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Slider(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Scrollbar(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::FloatingMenu(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::PopupMenu(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ContextMenu(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::PopupSelector(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ComboBox(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::AutocompleteTextField(entity) => {
+                entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx))
+            }
+            Self::SearchSelector(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            _ => {}
         }
     }
 

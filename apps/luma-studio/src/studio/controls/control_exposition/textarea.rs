@@ -10,9 +10,13 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::input_theme_inspectors::TextAreaThemeInspector;
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
+use super::textarea_inspector_adapter::{TextAreaInspectorAdapter, TEXTAREA_INSPECTOR_SPEC};
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[
     EventReferenceSpec {
@@ -66,6 +70,15 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct TextAreaControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<TextAreaExpositionLeftPane>,
+    theme_inspector: Entity<TextAreaThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
+}
+
+struct TextAreaExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     text_area: Entity<TextArea>,
     event_stream: Entity<ControlEventStream>,
     set_sample_button: Entity<Button>,
@@ -76,7 +89,96 @@ pub struct TextAreaControlExposition {
     enabled: bool,
     clean_on_escape: bool,
     strict_validation: bool,
-    _subscriptions: Vec<Subscription>,
+}
+
+impl TextAreaExpositionLeftPane {
+    fn current_validator(&self) -> Option<Validator> {
+        if !self.strict_validation {
+            return None;
+        }
+        Some(Arc::new(|value: &str| {
+            value.chars().all(|ch| ch.is_ascii_alphanumeric() || ch == ' ' || ch == '\n')
+        }))
+    }
+
+    fn sync_text_area_settings(&mut self, cx: &mut Context<Self>) {
+        let enabled = self.enabled;
+        let clean_on_escape = self.clean_on_escape;
+        let validator = self.current_validator();
+        self.text_area.update(cx, move |text_area, cx| {
+            text_area.set_enabled(enabled, cx);
+            text_area.set_clean_on_escape(clean_on_escape, cx);
+            text_area.set_validator(validator, cx);
+        });
+    }
+
+    fn handle_option_changed(&mut self, option: TextAreaOption, event: &CheckboxEvent, cx: &mut Context<Self>) {
+        let CheckboxEvent::Change { checked } = event else {
+            return;
+        };
+        match option {
+            TextAreaOption::Enabled => self.enabled = *checked,
+            TextAreaOption::CleanOnEscape => self.clean_on_escape = *checked,
+            TextAreaOption::StrictValidation => self.strict_validation = *checked,
+        }
+        self.sync_text_area_settings(cx);
+        cx.notify();
+    }
+
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.text_area.update(cx, |_, cx| cx.notify());
+        self.set_sample_button.update(cx, |_, cx| cx.notify());
+        self.clear_button.update(cx, |_, cx| cx.notify());
+        self.enabled_checkbox.update(cx, |_, cx| cx.notify());
+        self.clean_on_escape_checkbox.update(cx, |_, cx| cx.notify());
+        self.validation_checkbox.update(cx, |_, cx| cx.notify());
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
+    }
+}
+
+impl Render for TextAreaExpositionLeftPane {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            let preview = div()
+                .w_full()
+                .max_w(px(620.0))
+                .flex()
+                .flex_col()
+                .gap(px(16.0))
+                .child(self.text_area.clone())
+                .child(div().flex().flex_wrap().gap(px(8.0)).children([
+                    self.set_sample_button.clone().into_any_element(),
+                    self.clear_button.clone().into_any_element(),
+                ]))
+                .child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .items_center()
+                        .gap(px(14.0))
+                        .child(self.enabled_checkbox.clone())
+                        .child(self.clean_on_escape_checkbox.clone())
+                        .child(self.validation_checkbox.clone()),
+                )
+                .child(self.event_stream.clone());
+
+            div()
+                .id("controls-doc-textarea-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
 }
 
 impl TextAreaControlExposition {
@@ -116,6 +218,33 @@ impl TextAreaControlExposition {
             .content(|_, _| div().child("Strict validation").into_any_element())
             .spawn(cx);
 
+        let left_pane = cx.new(|_| TextAreaExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            text_area: text_area.clone(),
+            event_stream: event_stream.clone(),
+            set_sample_button: set_sample_button.clone(),
+            clear_button: clear_button.clone(),
+            enabled_checkbox: enabled_checkbox.clone(),
+            clean_on_escape_checkbox: clean_on_escape_checkbox.clone(),
+            validation_checkbox: validation_checkbox.clone(),
+            enabled: true,
+            clean_on_escape: true,
+            strict_validation: false,
+        });
+
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-textarea-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &TEXTAREA_INSPECTOR_SPEC,
+            TextAreaInspectorAdapter::shared(),
+        );
+
         let mut subscriptions = vec![cx.subscribe(&text_area, {
             let event_stream = event_stream.clone();
             move |_, _, event: &TextAreaEvent, cx| {
@@ -150,74 +279,35 @@ impl TextAreaControlExposition {
             (clean_on_escape_checkbox.clone(), TextAreaOption::CleanOnEscape),
             (validation_checkbox.clone(), TextAreaOption::StrictValidation),
         ] {
-            subscriptions.push(cx.subscribe(&checkbox, move |this, _, event: &CheckboxEvent, cx| {
-                this.handle_option_changed(option, event, cx);
+            let left_pane = left_pane.clone();
+            subscriptions.push(cx.subscribe(&checkbox, move |_, _, event: &CheckboxEvent, cx| {
+                left_pane.update(cx, |pane, cx| pane.handle_option_changed(option, event, cx));
             }));
         }
 
-        Self {
-            look,
-            entry,
-            text_area,
-            event_stream,
-            set_sample_button,
-            clear_button,
-            enabled_checkbox,
-            clean_on_escape_checkbox,
-            validation_checkbox,
-            enabled: true,
-            clean_on_escape: true,
-            strict_validation: false,
-            _subscriptions: subscriptions,
-        }
-    }
-
-    fn current_validator(&self) -> Option<Validator> {
-        if !self.strict_validation {
-            return None;
-        }
-        Some(Arc::new(|value: &str| {
-            value.chars().all(|ch| ch.is_ascii_alphanumeric() || ch == ' ' || ch == '\n')
-        }))
-    }
-
-    fn sync_text_area_settings(&mut self, cx: &mut Context<Self>) {
-        let enabled = self.enabled;
-        let clean_on_escape = self.clean_on_escape;
-        let validator = self.current_validator();
-        self.text_area.update(cx, move |text_area, cx| {
-            text_area.set_enabled(enabled, cx);
-            text_area.set_clean_on_escape(clean_on_escape, cx);
-            text_area.set_validator(validator, cx);
-        });
-    }
-
-    fn handle_option_changed(&mut self, option: TextAreaOption, event: &CheckboxEvent, cx: &mut Context<Self>) {
-        let CheckboxEvent::Change { checked } = event else {
-            return;
-        };
-        match option {
-            TextAreaOption::Enabled => self.enabled = *checked,
-            TextAreaOption::CleanOnEscape => self.clean_on_escape = *checked,
-            TextAreaOption::StrictValidation => self.strict_validation = *checked,
-        }
-        self.sync_text_area_settings(cx);
-        cx.notify();
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
     }
 
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.text_area.update(cx, |_, cx| cx.notify());
-        self.set_sample_button.update(cx, |_, cx| cx.notify());
-        self.clear_button.update(cx, |_, cx| cx.notify());
-        self.enabled_checkbox.update(cx, |_, cx| cx.notify());
-        self.clean_on_escape_checkbox.update(cx, |_, cx| cx.notify());
-        self.validation_checkbox.update(cx, |_, cx| cx.notify());
-        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
         cx.notify();
     }
 }
@@ -232,36 +322,12 @@ enum TextAreaOption {
 impl Render for TextAreaControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
-            let preview = div()
-                .w_full()
-                .max_w(px(620.0))
-                .flex()
-                .flex_col()
-                .gap(px(16.0))
-                .child(self.text_area.clone())
-                .child(div().flex().flex_wrap().gap(px(8.0)).children([
-                    self.set_sample_button.clone().into_any_element(),
-                    self.clear_button.clone().into_any_element(),
-                ]))
-                .child(
-                    div()
-                        .flex()
-                        .flex_wrap()
-                        .items_center()
-                        .gap(px(14.0))
-                        .child(self.enabled_checkbox.clone())
-                        .child(self.clean_on_escape_checkbox.clone())
-                        .child(self.validation_checkbox.clone()),
-                )
-                .child(self.event_stream.clone());
-
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-textarea-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

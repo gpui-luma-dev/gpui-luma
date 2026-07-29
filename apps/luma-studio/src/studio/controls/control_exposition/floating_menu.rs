@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{App, ClickEvent, Context, Render, SharedString, Window, div, prelude::*, px};
+use gpui::{App, ClickEvent, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::floating_menu::{
     FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuLook, render_floating_menu,
 };
@@ -11,8 +11,12 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::floating_menu_inspector_adapter::{FloatingMenuInspectorAdapter, FLOATING_MENU_INSPECTOR_SPEC};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
+use super::standalone_theme_inspectors::FloatingMenuThemeInspector;
 use super::template::render_control_exposition_card;
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[EventReferenceSpec {
@@ -47,25 +51,24 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct FloatingMenuControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<FloatingMenuExpositionLeftPane>,
+    theme_inspector: Entity<FloatingMenuThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
 }
 
-impl FloatingMenuControlExposition {
-    pub fn new(_cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("floating-menu").expect("floating-menu catalog entry");
-        Self { look, entry }
-    }
+struct FloatingMenuExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
+}
 
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
-    }
-
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+impl FloatingMenuExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look;
         cx.notify();
     }
 }
 
-impl Render for FloatingMenuControlExposition {
+impl Render for FloatingMenuExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let menu_look = self.look.floating_menu_theme().resolve();
@@ -81,13 +84,75 @@ impl Render for FloatingMenuControlExposition {
                 .child(render_menu_sample("Disabled item", &menu_look, &disabled_items(), None))
                 .child(render_menu_sample("Submenu affordance", &menu_look, &submenu_items(), None));
 
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-floating-menu-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
+}
+
+impl FloatingMenuControlExposition {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let entry = *catalog_entry("floating-menu").expect("floating-menu catalog entry");
+        let left_pane = cx.new(|_| FloatingMenuExpositionLeftPane { look: look.clone(), entry });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-floating-menu-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &FLOATING_MENU_INSPECTOR_SPEC,
+            FloatingMenuInspectorAdapter::shared(),
+        );
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+impl Render for FloatingMenuControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-floating-menu-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

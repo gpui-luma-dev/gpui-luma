@@ -18,6 +18,50 @@ pub struct InspectMetricPropertyData {
     pub provenance: Option<SharedString>,
 }
 
+pub fn radio_occupation(look: &ShadcnLook, focus_oversize: f32) -> InspectOccupationSnapshot {
+    let state = InteractionState::default();
+    let tokens = look.mode_tokens();
+    let palette = paint::radio_button_look(tokens.as_ref(), ShadcnButtonStyle::Primary, false, state, ControlSize::Md);
+    choice_indicator_occupation(palette.indicator_shadow.as_ref(), focus_oversize, state.disabled)
+}
+
+pub fn checkbox_occupation(look: &ShadcnLook, focus_oversize: f32) -> InspectOccupationSnapshot {
+    let state = InteractionState::default();
+    let tokens = look.mode_tokens();
+    let palette = paint::checkbox_look(tokens.as_ref(), ShadcnButtonStyle::Primary, false, state, ControlSize::Md);
+    choice_indicator_occupation(palette.indicator_shadow.as_ref(), focus_oversize, state.disabled)
+}
+
+pub fn switch_occupation(look: &ShadcnLook, focus_oversize: f32) -> InspectOccupationSnapshot {
+    let state = InteractionState::default();
+    let tokens = look.mode_tokens();
+    let palette =
+        paint::switch_look(tokens.as_ref(), look.mode(), ShadcnButtonStyle::Primary, true, state, ControlSize::Md);
+    let shadows = if palette.thumb_shadow.is_empty() {
+        None
+    } else {
+        Some(&palette.thumb_shadow)
+    };
+    choice_indicator_occupation(shadows, focus_oversize, state.disabled)
+}
+
+fn choice_indicator_occupation(
+    shadows: Option<&Vec<BoxShadow>>,
+    focus_oversize: f32,
+    disabled: bool,
+) -> InspectOccupationSnapshot {
+    if disabled {
+        return InspectOccupationSnapshot::default();
+    }
+
+    let shadow_insets = shadow_insets_from(shadows);
+    let shadow_extent = shadow_insets.max_edge();
+    let layout_extent = focus_oversize.max(shadow_extent);
+    let layout = InspectEdgeInsets::symmetric(layout_extent);
+    let paint = shadow_insets.union(InspectEdgeInsets::symmetric(focus_oversize));
+    InspectOccupationSnapshot { paint, layout }
+}
+
 pub fn button_family_occupation(
     look: &ShadcnLook,
     style: ShadcnButtonStyle,

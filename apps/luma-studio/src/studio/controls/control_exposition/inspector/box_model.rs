@@ -182,6 +182,32 @@ impl InspectBoxModelSnapshot {
             focus_ring_offset: metrics.focus_ring_offset.value_px,
         }
     }
+
+    pub fn from_textfield_metrics(metrics: &gpui_luma_look_shadcn_inspect::TextFieldInspectMetrics) -> Self {
+        Self {
+            height: metrics.min_height.value_px,
+            padding_x: metrics.padding_x.value_px,
+            padding_y: metrics.padding_y.value_px,
+            border_width: metrics.border_width.value_px,
+            gap: 0.0,
+            radius: metrics.radius.value_px,
+            focus_ring_width: metrics.focus_ring_width.value_px,
+            focus_ring_offset: metrics.focus_ring_offset.value_px,
+        }
+    }
+
+    pub fn from_badge_metrics(metrics: &gpui_luma_look_shadcn_inspect::BadgeInspectMetrics) -> Self {
+        Self {
+            height: metrics.min_height.value_px,
+            padding_x: metrics.padding_x.value_px,
+            padding_y: metrics.padding_y.value_px,
+            border_width: 0.0,
+            gap: metrics.gap.value_px,
+            radius: metrics.radius.value_px,
+            focus_ring_width: 0.0,
+            focus_ring_offset: 0.0,
+        }
+    }
 }
 
 fn choice_indicator_box_model(

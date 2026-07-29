@@ -7,8 +7,12 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
+use super::scrollbar_inspector_adapter::{ScrollbarInspectorAdapter, SCROLLBAR_INSPECTOR_SPEC};
+use super::standalone_theme_inspectors::ScrollbarThemeInspector;
 use super::template::render_control_exposition_card;
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[
@@ -72,12 +76,75 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct ScrollbarControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<ScrollbarExpositionLeftPane>,
+    theme_inspector: Entity<ScrollbarThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
+}
+
+struct ScrollbarExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     horizontal_scrollbar: Entity<Scrollbar>,
     vertical_scrollbar: Entity<Scrollbar>,
     event_stream: Entity<ControlEventStream>,
     horizontal_value: f32,
     vertical_value: f32,
-    _subscriptions: Vec<Subscription>,
+}
+
+impl ScrollbarExpositionLeftPane {
+    fn handle_scrollbar_event(&mut self, axis: &str, event: &ScrollbarEvent, cx: &mut Context<Self>) {
+        if let ScrollbarEvent::Change { value } = event {
+            match axis {
+                "horizontal" => self.horizontal_value = *value,
+                _ => self.vertical_value = *value,
+            }
+            cx.notify();
+        }
+    }
+
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.horizontal_scrollbar.update(cx, |_, cx| cx.notify());
+        self.vertical_scrollbar.update(cx, |_, cx| cx.notify());
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
+    }
+}
+
+impl Render for ScrollbarExpositionLeftPane {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            let preview = div()
+                .w_full()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(16.0))
+                .child(scrollbar_pair(
+                    self.horizontal_value,
+                    self.vertical_value,
+                    self.horizontal_scrollbar.clone(),
+                    self.vertical_scrollbar.clone(),
+                    &self.look,
+                ))
+                .child(self.event_stream.clone());
+
+            div()
+                .id("controls-doc-scrollbar-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
 }
 
 impl ScrollbarControlExposition {
@@ -110,50 +177,64 @@ impl ScrollbarControlExposition {
             )
         });
 
+        let left_pane = cx.new(|_| ScrollbarExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            horizontal_scrollbar: horizontal_scrollbar.clone(),
+            vertical_scrollbar: vertical_scrollbar.clone(),
+            event_stream: event_stream.clone(),
+            horizontal_value: 40.0,
+            vertical_value: 80.0,
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-scrollbar-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &SCROLLBAR_INSPECTOR_SPEC,
+            ScrollbarInspectorAdapter::shared(),
+        );
+
         let mut subscriptions = Vec::new();
         for (scrollbar, axis) in
             [(horizontal_scrollbar.clone(), "horizontal"), (vertical_scrollbar.clone(), "vertical")]
         {
             let event_stream = event_stream.clone();
-            subscriptions.push(cx.subscribe(&scrollbar, move |this, _, event: &ScrollbarEvent, cx| {
-                this.handle_scrollbar_event(axis, event, cx);
+            let left_pane = left_pane.clone();
+            subscriptions.push(cx.subscribe(&scrollbar, move |_, _, event: &ScrollbarEvent, cx| {
+                left_pane.update(cx, |pane, cx| pane.handle_scrollbar_event(axis, event, cx));
                 if let Some(line) = format_scrollbar_event(axis, event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }));
         }
 
-        Self {
-            look,
-            entry,
-            horizontal_scrollbar,
-            vertical_scrollbar,
-            event_stream,
-            horizontal_value: 40.0,
-            vertical_value: 80.0,
-            _subscriptions: subscriptions,
-        }
-    }
-
-    fn handle_scrollbar_event(&mut self, axis: &str, event: &ScrollbarEvent, cx: &mut Context<Self>) {
-        if let ScrollbarEvent::Change { value } = event {
-            match axis {
-                "horizontal" => self.horizontal_value = *value,
-                _ => self.vertical_value = *value,
-            }
-            cx.notify();
-        }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
     }
 
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.horizontal_scrollbar.update(cx, |_, cx| cx.notify());
-        self.vertical_scrollbar.update(cx, |_, cx| cx.notify());
-        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
         cx.notify();
     }
 }
@@ -161,28 +242,12 @@ impl ScrollbarControlExposition {
 impl Render for ScrollbarControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
-            let preview = div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(16.0))
-                .child(scrollbar_pair(
-                    self.horizontal_value,
-                    self.vertical_value,
-                    self.horizontal_scrollbar.clone(),
-                    self.vertical_scrollbar.clone(),
-                    &self.look,
-                ))
-                .child(self.event_stream.clone());
-
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-scrollbar-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

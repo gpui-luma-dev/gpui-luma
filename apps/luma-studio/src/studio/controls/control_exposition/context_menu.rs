@@ -8,9 +8,13 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::context_menu_inspector_adapter::{ContextMenuInspectorAdapter, CONTEXT_MENU_INSPECTOR_SPEC};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
+use super::standalone_theme_inspectors::ContextMenuThemeInspector;
 use super::template::render_control_exposition_card;
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[
@@ -87,9 +91,55 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct ContextMenuControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<ContextMenuExpositionLeftPane>,
+    theme_inspector: Entity<ContextMenuThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
+}
+
+struct ContextMenuExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     preview: Entity<ContextMenu>,
     event_stream: Entity<ControlEventStream>,
-    _subscriptions: Vec<Subscription>,
+}
+
+impl ContextMenuExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.preview.update(cx, |_, cx| cx.notify());
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
+    }
+}
+
+impl Render for ContextMenuExpositionLeftPane {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            let preview = div()
+                .w_full()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(16.0))
+                .child(div().min_h(px(160.0)).flex().items_center().justify_center().child(self.preview.clone()))
+                .child(self.event_stream.clone());
+
+            div()
+                .id("controls-doc-context-menu-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
 }
 
 impl ContextMenuControlExposition {
@@ -108,6 +158,23 @@ impl ContextMenuControlExposition {
                 "Right-click the target and choose items; ContextMenuEvent variants appear below.",
             )
         });
+        let left_pane = cx.new(|_| ContextMenuExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            preview: preview.clone(),
+            event_stream: event_stream.clone(),
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-context-menu-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &CONTEXT_MENU_INSPECTOR_SPEC,
+            ContextMenuInspectorAdapter::shared(),
+        );
 
         let subscription = cx.subscribe(&preview, {
             let event_stream = event_stream.clone();
@@ -115,22 +182,33 @@ impl ContextMenuControlExposition {
                 let line = format_context_menu_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
-                    cx.notify();
                 });
             }
         });
 
-        Self { look, entry, preview, event_stream, _subscriptions: vec![subscription] }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![subscription] }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
     }
 
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.preview.update(cx, |_, cx| cx.notify());
-        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
         cx.notify();
     }
 }
@@ -138,22 +216,12 @@ impl ContextMenuControlExposition {
 impl Render for ContextMenuControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
-            let preview = div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(16.0))
-                .child(div().min_h(px(160.0)).flex().items_center().justify_center().child(self.preview.clone()))
-                .child(self.event_stream.clone());
-
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-context-menu-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

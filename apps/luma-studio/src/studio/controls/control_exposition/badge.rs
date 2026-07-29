@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use gpui::{Context, Render, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::{flow, hstack};
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::prelude::*;
@@ -10,8 +10,12 @@ use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::badge_inspector_adapter::{BadgeInspectorAdapter, BADGE_INSPECTOR_SPEC};
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
+use super::standalone_theme_inspectors::BadgeThemeInspector;
 use super::template::render_control_exposition_card;
 
 const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
@@ -35,25 +39,24 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct BadgeControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<BadgeExpositionLeftPane>,
+    theme_inspector: Entity<BadgeThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
 }
 
-impl BadgeControlExposition {
-    pub fn new(_cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("badge").expect("badge catalog entry");
-        Self { look, entry }
-    }
+struct BadgeExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
+}
 
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
-    }
-
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+impl BadgeExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look;
         cx.notify();
     }
 }
 
-impl Render for BadgeControlExposition {
+impl Render for BadgeExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
@@ -116,13 +119,75 @@ impl Render for BadgeControlExposition {
                     .items_center(),
                 ));
 
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, &[], PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-badge-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(look, &[], PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
+}
+
+impl BadgeControlExposition {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let entry = *catalog_entry("badge").expect("badge catalog entry");
+        let left_pane = cx.new(|_| BadgeExpositionLeftPane { look: look.clone(), entry });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-badge-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &BADGE_INSPECTOR_SPEC,
+            BadgeInspectorAdapter::shared(),
+        );
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+impl Render for BadgeControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-badge-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

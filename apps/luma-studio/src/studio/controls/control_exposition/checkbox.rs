@@ -9,7 +9,10 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::checkbox_theme_inspector::CheckboxThemeInspector;
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
@@ -126,7 +129,67 @@ pub struct CheckboxControlExposition {
     secondary_checkbox: Checkbox,
     primary_checkbox: Checkbox,
     event_stream: Entity<ControlEventStream>,
+    left_pane: Entity<CheckboxExpositionLeftPane>,
+    theme_inspector: Entity<CheckboxThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
     _subscriptions: Vec<Subscription>,
+}
+
+struct CheckboxExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
+    secondary_checkbox: Checkbox,
+    primary_checkbox: Checkbox,
+    event_stream: Entity<ControlEventStream>,
+}
+
+impl CheckboxExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        for checkbox in [&self.secondary_checkbox, &self.primary_checkbox] {
+            checkbox.update(cx, |_, cx| cx.notify());
+        }
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
+    }
+}
+
+impl Render for CheckboxExpositionLeftPane {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            let preview = div()
+                .w_full()
+                .flex()
+                .flex_col()
+                .gap(px(16.0))
+                .child(
+                    div()
+                        .w_full()
+                        .flex()
+                        .flex_wrap()
+                        .items_center()
+                        .justify_start()
+                        .gap(px(12.0))
+                        .child(self.secondary_checkbox.clone())
+                        .child(self.primary_checkbox.clone()),
+                )
+                .child(self.event_stream.clone());
+
+            div()
+                .id("controls-doc-checkbox-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
 }
 
 impl CheckboxControlExposition {
@@ -151,6 +214,25 @@ impl CheckboxControlExposition {
             )
         });
 
+        let left_pane = cx.new(|_| CheckboxExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            secondary_checkbox: secondary_checkbox.clone(),
+            primary_checkbox: primary_checkbox.clone(),
+            event_stream: event_stream.clone(),
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-checkbox-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &super::checkbox_inspector_adapter::CHECKBOX_INSPECTOR_SPEC,
+            super::checkbox_inspector_adapter::CheckboxInspectorAdapter::shared(),
+        );
+
         let mut subscriptions = Vec::new();
         subscriptions.extend(subscribe_checkbox(
             &secondary_checkbox,
@@ -167,11 +249,33 @@ impl CheckboxControlExposition {
             cx,
         ));
 
-        Self { look, entry, secondary_checkbox, primary_checkbox, event_stream, _subscriptions: subscriptions }
+        Self {
+            look,
+            entry,
+            secondary_checkbox,
+            primary_checkbox,
+            event_stream,
+            left_pane,
+            theme_inspector,
+            inspector_split,
+            _subscriptions: subscriptions,
+        }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
     }
 
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
@@ -179,39 +283,23 @@ impl CheckboxControlExposition {
         for checkbox in [&self.secondary_checkbox, &self.primary_checkbox] {
             checkbox.update(cx, |_, cx| cx.notify());
         }
-        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look.clone(), cx));
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
         cx.notify();
     }
 }
 
 impl Render for CheckboxControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        let inspector_split = self.inspector_split.clone();
         with_look(&self.look, || {
-            let preview = div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .gap(px(16.0))
-                .child(
-                    div()
-                        .w_full()
-                        .flex()
-                        .flex_wrap()
-                        .items_center()
-                        .justify_start()
-                        .gap(px(12.0))
-                        .child(self.secondary_checkbox.clone())
-                        .child(self.primary_checkbox.clone()),
-                )
-                .child(self.event_stream.clone());
-
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-checkbox-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(inspector_split)
         })
     }
 }

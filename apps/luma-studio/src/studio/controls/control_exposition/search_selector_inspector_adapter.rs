@@ -1,0 +1,19 @@
+use super::inspector::specs::{CHOICE_SIZES, DEFAULT_INTERACTION_STATES};
+use super::inspector::ControlInspectorSpec;
+use super::textfield_menu_inspector_adapter::TextFieldMenuInspectorAdapter;
+
+pub static SEARCH_SELECTOR_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
+    control_label: "SearchSelector",
+    id_prefix: "search-selector-theme-inspector",
+    variants: &[],
+    states: &DEFAULT_INTERACTION_STATES,
+    sizes: &CHOICE_SIZES,
+    value_modes: &[],
+    default_variant_id: "",
+    default_size_id: "md",
+    default_value_id: "",
+};
+
+pub fn search_selector_inspector_adapter() -> super::inspector::SharedInspectorResolver {
+    TextFieldMenuInspectorAdapter::shared("search-selector-theme-inspector-box-model")
+}

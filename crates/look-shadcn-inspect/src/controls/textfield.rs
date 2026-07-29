@@ -85,6 +85,43 @@ pub fn inspect_textfield_metrics(
     }
 }
 
+pub fn inspect_textfield_elevation(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnTextFieldStyle,
+    enabled: bool,
+) -> crate::controls::button::ButtonInspectElevation {
+    use gpui_luma::theme::InteractionState;
+    use gpui_luma_look_shadcn::paint::textfield_palette;
+    use gpui_luma_look_shadcn::stylesheet::{
+        embedded_stylesheet, find_textfield_elevation_rule, resolve_stylesheet_shadow_token,
+    };
+    use crate::controls::button::inspect_layered_elevation;
+
+    let palette = textfield_palette(mode, theme_mode, style, TextFieldState::default(), enabled);
+    let rule = find_textfield_elevation_rule(embedded_stylesheet(), style);
+    let rule_shadow = rule.map(|rule| rule.shadow.clone()).unwrap_or_else(|| "none".to_string());
+    let token = rule.and_then(|rule| resolve_stylesheet_shadow_token(&rule.shadow));
+    inspect_layered_elevation(
+        mode,
+        theme_mode,
+        InteractionState { disabled: !enabled, ..InteractionState::default() },
+        rule_shadow,
+        token,
+        palette.shadow.as_ref(),
+        textfield_style_key(style),
+    )
+}
+
+fn textfield_style_key(style: ShadcnTextFieldStyle) -> &'static str {
+    match style {
+        ShadcnTextFieldStyle::Outline => "outline",
+        ShadcnTextFieldStyle::Input => "input",
+        ShadcnTextFieldStyle::Primary => "primary",
+        ShadcnTextFieldStyle::Surface => "surface",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

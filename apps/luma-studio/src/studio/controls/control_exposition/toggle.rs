@@ -11,9 +11,12 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
+use super::toggle_theme_inspector::ToggleThemeInspector;
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[
     EventReferenceSpec {
@@ -65,6 +68,14 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct ToggleControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<ToggleExpositionLeftPane>,
+    theme_inspector: Entity<ToggleThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+}
+
+struct ToggleExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     secondary_toggle: Toggle,
     primary_toggle: Toggle,
     secondary_round_icon_toggle: Toggle,
@@ -77,87 +88,8 @@ pub struct ToggleControlExposition {
     _subscriptions: Vec<Subscription>,
 }
 
-impl ToggleControlExposition {
-    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("toggle").expect("toggle catalog entry");
-
-        let secondary_toggle = look
-            .secondary_toggle("controls-doc-toggle-secondary")
-            .with_data(true)
-            .content(|_, _| div().child("Secondary").into_any_element())
-            .spawn(cx);
-        let primary_toggle = look
-            .primary_toggle("controls-doc-toggle-primary")
-            .with_data(false)
-            .content(|_, _| div().child("Primary").into_any_element())
-            .spawn(cx);
-        let secondary_round_icon_toggle = look
-            .secondary_toggle("controls-doc-toggle-secondary-round-icon")
-            .with_data(false)
-            .round(true)
-            .content(|_, _| round_icon_glyph(false).into_any_element())
-            .spawn(cx);
-        let primary_round_icon_toggle = look
-            .primary_toggle("controls-doc-toggle-primary-round-icon")
-            .with_data(true)
-            .round(true)
-            .content(|_, _| round_icon_glyph(true).into_any_element())
-            .spawn(cx);
-
-        let event_stream = cx.new(|cx| {
-            ControlEventStream::new(
-                cx,
-                look.clone(),
-                "controls-toggle-event-log",
-                "Toggle the preview controls; ToggleEvent variants appear below.",
-            )
-        });
-
-        let mut subscriptions = Vec::new();
-        subscriptions.push(wire_toggle(
-            cx,
-            &secondary_toggle,
-            "secondary",
-            ToggleTarget::Secondary,
-            event_stream.clone(),
-        ));
-        subscriptions.push(wire_toggle(cx, &primary_toggle, "primary", ToggleTarget::Primary, event_stream.clone()));
-        subscriptions.push(wire_toggle(
-            cx,
-            &secondary_round_icon_toggle,
-            "secondary-round-icon",
-            ToggleTarget::SecondaryRoundIcon,
-            event_stream.clone(),
-        ));
-        subscriptions.push(wire_toggle(
-            cx,
-            &primary_round_icon_toggle,
-            "primary-round-icon",
-            ToggleTarget::PrimaryRoundIcon,
-            event_stream.clone(),
-        ));
-
-        Self {
-            look,
-            entry,
-            secondary_toggle,
-            primary_toggle,
-            secondary_round_icon_toggle,
-            primary_round_icon_toggle,
-            event_stream,
-            secondary_selected: true,
-            primary_selected: false,
-            secondary_round_icon_selected: false,
-            primary_round_icon_selected: true,
-            _subscriptions: subscriptions,
-        }
-    }
-
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
-    }
-
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+impl ToggleExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         for toggle in [
             &self.secondary_toggle,
@@ -172,50 +104,7 @@ impl ToggleControlExposition {
     }
 }
 
-#[derive(Clone, Copy)]
-enum ToggleTarget {
-    Secondary,
-    Primary,
-    SecondaryRoundIcon,
-    PrimaryRoundIcon,
-}
-
-fn wire_toggle(
-    cx: &mut Context<ToggleControlExposition>,
-    toggle: &Toggle,
-    label: &'static str,
-    target: ToggleTarget,
-    event_stream: Entity<ControlEventStream>,
-) -> Subscription {
-    cx.subscribe(toggle, move |this, _, event: &ToggleEvent, cx| {
-        if let ToggleEvent::Change { selected } = event {
-            match target {
-                ToggleTarget::Secondary => this.secondary_selected = *selected,
-                ToggleTarget::Primary => this.primary_selected = *selected,
-                ToggleTarget::SecondaryRoundIcon => {
-                    let selected = *selected;
-                    this.secondary_round_icon_toggle.update(cx, |toggle, cx| {
-                        toggle.set_presenter(Arc::new(move |_, _| round_icon_glyph(selected).into_any_element()), cx);
-                    });
-                    this.secondary_round_icon_selected = selected;
-                }
-                ToggleTarget::PrimaryRoundIcon => {
-                    let selected = *selected;
-                    this.primary_round_icon_toggle.update(cx, |toggle, cx| {
-                        toggle.set_presenter(Arc::new(move |_, _| round_icon_glyph(selected).into_any_element()), cx);
-                    });
-                    this.primary_round_icon_selected = selected;
-                }
-            }
-            cx.notify();
-        }
-        if let Some(line) = format_toggle_event(label, event) {
-            event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
-        }
-    })
-}
-
-impl Render for ToggleControlExposition {
+impl Render for ToggleExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let chrome = self.look.chrome();
@@ -275,13 +164,197 @@ impl Render for ToggleControlExposition {
                 )
                 .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
+            div()
+                .id("controls-doc-toggle-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
+}
+
+impl ToggleControlExposition {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let entry = *catalog_entry("toggle").expect("toggle catalog entry");
+
+        let secondary_toggle = look
+            .secondary_toggle("controls-doc-toggle-secondary")
+            .with_data(true)
+            .content(|_, _| div().child("Secondary").into_any_element())
+            .spawn(cx);
+        let primary_toggle = look
+            .primary_toggle("controls-doc-toggle-primary")
+            .with_data(false)
+            .content(|_, _| div().child("Primary").into_any_element())
+            .spawn(cx);
+        let secondary_round_icon_toggle = look
+            .secondary_toggle("controls-doc-toggle-secondary-round-icon")
+            .with_data(false)
+            .round(true)
+            .content(|_, _| round_icon_glyph(false).into_any_element())
+            .spawn(cx);
+        let primary_round_icon_toggle = look
+            .primary_toggle("controls-doc-toggle-primary-round-icon")
+            .with_data(true)
+            .round(true)
+            .content(|_, _| round_icon_glyph(true).into_any_element())
+            .spawn(cx);
+
+        let event_stream = cx.new(|cx| {
+            ControlEventStream::new(
+                cx,
+                look.clone(),
+                "controls-toggle-event-log",
+                "Toggle the preview controls; ToggleEvent variants appear below.",
             )
+        });
+
+        let left_pane = cx.new(|cx| {
+            let mut subscriptions = Vec::new();
+            subscriptions.push(wire_toggle(
+                cx,
+                &secondary_toggle,
+                "secondary",
+                ToggleTarget::Secondary,
+                event_stream.clone(),
+            ));
+            subscriptions.push(wire_toggle(
+                cx,
+                &primary_toggle,
+                "primary",
+                ToggleTarget::Primary,
+                event_stream.clone(),
+            ));
+            subscriptions.push(wire_toggle(
+                cx,
+                &secondary_round_icon_toggle,
+                "secondary-round-icon",
+                ToggleTarget::SecondaryRoundIcon,
+                event_stream.clone(),
+            ));
+            subscriptions.push(wire_toggle(
+                cx,
+                &primary_round_icon_toggle,
+                "primary-round-icon",
+                ToggleTarget::PrimaryRoundIcon,
+                event_stream.clone(),
+            ));
+
+            ToggleExpositionLeftPane {
+                look: look.clone(),
+                entry,
+                secondary_toggle,
+                primary_toggle,
+                secondary_round_icon_toggle,
+                primary_round_icon_toggle,
+                event_stream,
+                secondary_selected: true,
+                primary_selected: false,
+                secondary_round_icon_selected: false,
+                primary_round_icon_selected: true,
+                _subscriptions: subscriptions,
+            }
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-toggle-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &super::toggle_inspector_adapter::TOGGLE_INSPECTOR_SPEC,
+            super::toggle_inspector_adapter::ToggleInspectorAdapter::shared(),
+        );
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+#[derive(Clone, Copy)]
+enum ToggleTarget {
+    Secondary,
+    Primary,
+    SecondaryRoundIcon,
+    PrimaryRoundIcon,
+}
+
+fn wire_toggle(
+    cx: &mut Context<ToggleExpositionLeftPane>,
+    toggle: &Toggle,
+    label: &'static str,
+    target: ToggleTarget,
+    event_stream: Entity<ControlEventStream>,
+) -> Subscription {
+    cx.subscribe(toggle, move |this, _, event: &ToggleEvent, cx| {
+        if let ToggleEvent::Change { selected } = event {
+            match target {
+                ToggleTarget::Secondary => this.secondary_selected = *selected,
+                ToggleTarget::Primary => this.primary_selected = *selected,
+                ToggleTarget::SecondaryRoundIcon => {
+                    let selected = *selected;
+                    this.secondary_round_icon_toggle.update(cx, |toggle, cx| {
+                        toggle.set_presenter(Arc::new(move |_, _| round_icon_glyph(selected).into_any_element()), cx);
+                    });
+                    this.secondary_round_icon_selected = selected;
+                }
+                ToggleTarget::PrimaryRoundIcon => {
+                    let selected = *selected;
+                    this.primary_round_icon_toggle.update(cx, |toggle, cx| {
+                        toggle.set_presenter(Arc::new(move |_, _| round_icon_glyph(selected).into_any_element()), cx);
+                    });
+                    this.primary_round_icon_selected = selected;
+                }
+            }
+            cx.notify();
+        }
+        if let Some(line) = format_toggle_event(label, event) {
+            event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+        }
+    })
+}
+
+impl Render for ToggleControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        let inspector_split = self.inspector_split.clone();
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-toggle-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(inspector_split)
         })
     }
 }

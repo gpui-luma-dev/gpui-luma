@@ -8,8 +8,12 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
+use super::slider_inspector_adapter::{SliderInspectorAdapter, SLIDER_INSPECTOR_SPEC};
+use super::standalone_theme_inspectors::SliderThemeInspector;
 use super::template::render_control_exposition_card;
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[
@@ -73,6 +77,15 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct SliderControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<SliderExpositionLeftPane>,
+    theme_inspector: Entity<SliderThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
+}
+
+struct SliderExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     fill_slider: Slider,
     blocked_slider: Slider,
     reversed_slider: Slider,
@@ -87,128 +100,9 @@ pub struct SliderControlExposition {
     wrapping_value: f32,
     stop_summary: String,
     stops_interaction_hint: Option<String>,
-    _subscriptions: Vec<Subscription>,
 }
 
-impl SliderControlExposition {
-    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("slider").expect("slider catalog entry");
-        let stops_policy = SliderThumbPolicy::multi_stop();
-        let stops_interaction_hint = multi_stop_interaction_hint(stops_policy);
-
-        let fill_slider = look.slider("controls-doc-slider-fill").range(1..100).step(1).value(41).spawn(cx);
-        let blocked_slider = look
-            .slider("controls-doc-slider-blocked")
-            .range(0.0..360.0)
-            .step(10.0)
-            .value(100.0)
-            .allowed_intervals(vec![0.0..=120.0, 180.0..=240.0, 300.0..=360.0])
-            .spawn(cx);
-        let reversed_slider =
-            look.slider("controls-doc-slider-reversed").reversed(true).range(1..100).step(1).value(41).spawn(cx);
-        let angular_slider = look
-            .slider("controls-doc-slider-angular")
-            .angular(-1.25 * PI, 0.25 * PI)
-            .template(look.slider_angular_template())
-            .range(0..100)
-            .step(1)
-            .value(50)
-            .spawn(cx);
-        let wrapping_slider = look
-            .slider("controls-doc-slider-wrapping")
-            .angular(0.0, 2.0 * PI)
-            .wrapping(true)
-            .domain()
-            .template(look.slider_circular_ring_template())
-            .range(0.0..360.0)
-            .step(1.0)
-            .value(180.0)
-            .spawn(cx);
-        let stops_slider = look
-            .slider("controls-doc-slider-stops")
-            .multi_stop()
-            .range(0.0..360.0)
-            .step(1.0)
-            .thumb_values([(0.0, None), (180.0, None), (300.0, None)])
-            .spawn(cx);
-        let event_stream = cx.new(|cx| {
-            ControlEventStream::new(
-                cx,
-                look.clone(),
-                "controls-slider-event-log",
-                "Drag sliders; SliderEvent variants from the fill track appear below.",
-            )
-        });
-
-        let mut subscriptions = Vec::new();
-        subscriptions.push(wire_value_slider(cx, &fill_slider, "fill", event_stream.clone(), SliderValueTarget::Fill));
-        subscriptions.push(wire_value_slider(
-            cx,
-            &blocked_slider,
-            "blocked",
-            event_stream.clone(),
-            SliderValueTarget::Blocked,
-        ));
-        subscriptions.push(wire_value_slider(
-            cx,
-            &reversed_slider,
-            "reversed",
-            event_stream.clone(),
-            SliderValueTarget::Reversed,
-        ));
-        subscriptions.push(wire_value_slider(
-            cx,
-            &angular_slider,
-            "angular",
-            event_stream.clone(),
-            SliderValueTarget::Angular,
-        ));
-        subscriptions.push(wire_value_slider(
-            cx,
-            &wrapping_slider,
-            "wrapping",
-            event_stream.clone(),
-            SliderValueTarget::Wrapping,
-        ));
-        subscriptions.push(cx.subscribe(&stops_slider, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &SliderEvent, cx| {
-                this.handle_stops_event(event, cx);
-                if let Some(line) = format_slider_event("stops", event) {
-                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
-                }
-            }
-        }));
-
-        let mut this = Self {
-            look,
-            entry,
-            fill_slider,
-            blocked_slider,
-            reversed_slider,
-            angular_slider,
-            wrapping_slider,
-            stops_slider,
-            event_stream,
-            fill_value: 41.0,
-            blocked_value: 100.0,
-            reversed_value: 41.0,
-            angular_value: 50.0,
-            wrapping_value: 180.0,
-            stop_summary: String::new(),
-            stops_interaction_hint,
-            _subscriptions: subscriptions,
-        };
-        this.sync_stop_summary(cx);
-        this
-    }
-
-    fn handle_stops_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
-        if let SliderEvent::ThumbSelected { .. } = event {}
-        self.sync_stop_summary(cx);
-        cx.notify();
-    }
-
+impl SliderExpositionLeftPane {
     fn sync_stop_summary(&mut self, cx: &mut Context<Self>) {
         let slider = self.stops_slider.read(cx);
         let mut stops = slider.thumbs().iter().map(|thumb| slider.range().value_at(thumb.position)).collect::<Vec<_>>();
@@ -227,11 +121,12 @@ impl SliderControlExposition {
         );
     }
 
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
+    fn handle_stops_event(&mut self, _event: &SliderEvent, cx: &mut Context<Self>) {
+        self.sync_stop_summary(cx);
+        cx.notify();
     }
 
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         for slider in [
             &self.fill_slider,
@@ -248,42 +143,7 @@ impl SliderControlExposition {
     }
 }
 
-#[derive(Clone, Copy)]
-enum SliderValueTarget {
-    Fill,
-    Blocked,
-    Reversed,
-    Angular,
-    Wrapping,
-}
-
-fn wire_value_slider(
-    cx: &mut Context<SliderControlExposition>,
-    slider: &Slider,
-    label: &'static str,
-    event_stream: Entity<ControlEventStream>,
-    target: SliderValueTarget,
-) -> Subscription {
-    cx.subscribe(slider, move |this, _, event: &SliderEvent, cx| {
-        if let Some(value) = slider_release_or_change_value(event) {
-            match target {
-                SliderValueTarget::Fill => this.fill_value = value,
-                SliderValueTarget::Blocked => this.blocked_value = value,
-                SliderValueTarget::Reversed => this.reversed_value = value,
-                SliderValueTarget::Angular => this.angular_value = value,
-                SliderValueTarget::Wrapping => this.wrapping_value = value,
-            }
-            cx.notify();
-        }
-        if matches!(target, SliderValueTarget::Fill) {
-            if let Some(line) = format_slider_event(label, event) {
-                event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
-            }
-        }
-    })
-}
-
-impl Render for SliderControlExposition {
+impl Render for SliderExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let chrome = self.look.chrome();
@@ -390,13 +250,233 @@ impl Render for SliderControlExposition {
                 ))
                 .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
+            div()
+                .id("controls-doc-slider-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
+}
+
+impl SliderControlExposition {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let entry = *catalog_entry("slider").expect("slider catalog entry");
+        let stops_policy = SliderThumbPolicy::multi_stop();
+        let stops_interaction_hint = multi_stop_interaction_hint(stops_policy);
+
+        let fill_slider = look.slider("controls-doc-slider-fill").range(1..100).step(1).value(41).spawn(cx);
+        let blocked_slider = look
+            .slider("controls-doc-slider-blocked")
+            .range(0.0..360.0)
+            .step(10.0)
+            .value(100.0)
+            .allowed_intervals(vec![0.0..=120.0, 180.0..=240.0, 300.0..=360.0])
+            .spawn(cx);
+        let reversed_slider =
+            look.slider("controls-doc-slider-reversed").reversed(true).range(1..100).step(1).value(41).spawn(cx);
+        let angular_slider = look
+            .slider("controls-doc-slider-angular")
+            .angular(-1.25 * PI, 0.25 * PI)
+            .template(look.slider_angular_template())
+            .range(0..100)
+            .step(1)
+            .value(50)
+            .spawn(cx);
+        let wrapping_slider = look
+            .slider("controls-doc-slider-wrapping")
+            .angular(0.0, 2.0 * PI)
+            .wrapping(true)
+            .domain()
+            .template(look.slider_circular_ring_template())
+            .range(0.0..360.0)
+            .step(1.0)
+            .value(180.0)
+            .spawn(cx);
+        let stops_slider = look
+            .slider("controls-doc-slider-stops")
+            .multi_stop()
+            .range(0.0..360.0)
+            .step(1.0)
+            .thumb_values([(0.0, None), (180.0, None), (300.0, None)])
+            .spawn(cx);
+        let event_stream = cx.new(|cx| {
+            ControlEventStream::new(
+                cx,
+                look.clone(),
+                "controls-slider-event-log",
+                "Drag sliders; SliderEvent variants from the fill track appear below.",
             )
+        });
+
+        let mut subscriptions = Vec::new();
+        let left_pane = cx.new(|cx| {
+            let mut pane = SliderExpositionLeftPane {
+                look: look.clone(),
+                entry,
+                fill_slider: fill_slider.clone(),
+                blocked_slider: blocked_slider.clone(),
+                reversed_slider: reversed_slider.clone(),
+                angular_slider: angular_slider.clone(),
+                wrapping_slider: wrapping_slider.clone(),
+                stops_slider: stops_slider.clone(),
+                event_stream: event_stream.clone(),
+                fill_value: 41.0,
+                blocked_value: 100.0,
+                reversed_value: 41.0,
+                angular_value: 50.0,
+                wrapping_value: 180.0,
+                stop_summary: String::new(),
+                stops_interaction_hint,
+            };
+            pane.sync_stop_summary(cx);
+            pane
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-slider-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &SLIDER_INSPECTOR_SPEC,
+            SliderInspectorAdapter::shared(),
+        );
+
+        subscriptions.push(wire_value_slider(
+            cx,
+            &fill_slider,
+            "fill",
+            event_stream.clone(),
+            left_pane.clone(),
+            SliderValueTarget::Fill,
+        ));
+        subscriptions.push(wire_value_slider(
+            cx,
+            &blocked_slider,
+            "blocked",
+            event_stream.clone(),
+            left_pane.clone(),
+            SliderValueTarget::Blocked,
+        ));
+        subscriptions.push(wire_value_slider(
+            cx,
+            &reversed_slider,
+            "reversed",
+            event_stream.clone(),
+            left_pane.clone(),
+            SliderValueTarget::Reversed,
+        ));
+        subscriptions.push(wire_value_slider(
+            cx,
+            &angular_slider,
+            "angular",
+            event_stream.clone(),
+            left_pane.clone(),
+            SliderValueTarget::Angular,
+        ));
+        subscriptions.push(wire_value_slider(
+            cx,
+            &wrapping_slider,
+            "wrapping",
+            event_stream.clone(),
+            left_pane.clone(),
+            SliderValueTarget::Wrapping,
+        ));
+        subscriptions.push(cx.subscribe(&stops_slider, {
+            let event_stream = event_stream.clone();
+            let left_pane = left_pane.clone();
+            move |_, _, event: &SliderEvent, cx| {
+                left_pane.update(cx, |pane, cx| pane.handle_stops_event(event, cx));
+                if let Some(line) = format_slider_event("stops", event) {
+                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                }
+            }
+        }));
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+#[derive(Clone, Copy)]
+enum SliderValueTarget {
+    Fill,
+    Blocked,
+    Reversed,
+    Angular,
+    Wrapping,
+}
+
+fn wire_value_slider(
+    cx: &mut Context<SliderControlExposition>,
+    slider: &Slider,
+    label: &'static str,
+    event_stream: Entity<ControlEventStream>,
+    left_pane: Entity<SliderExpositionLeftPane>,
+    target: SliderValueTarget,
+) -> Subscription {
+    cx.subscribe(slider, move |_, _, event: &SliderEvent, cx| {
+        if let Some(value) = slider_release_or_change_value(event) {
+            left_pane.update(cx, |pane, cx| {
+                match target {
+                    SliderValueTarget::Fill => pane.fill_value = value,
+                    SliderValueTarget::Blocked => pane.blocked_value = value,
+                    SliderValueTarget::Reversed => pane.reversed_value = value,
+                    SliderValueTarget::Angular => pane.angular_value = value,
+                    SliderValueTarget::Wrapping => pane.wrapping_value = value,
+                }
+                cx.notify();
+            });
+        }
+        if matches!(target, SliderValueTarget::Fill) {
+            if let Some(line) = format_slider_event(label, event) {
+                event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+            }
+        }
+    })
+}
+
+impl Render for SliderControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-slider-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

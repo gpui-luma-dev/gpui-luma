@@ -90,3 +90,30 @@ pub fn inspect_radio_button_metrics(
         focus_ring_offset: focus_ring_offset_metric(metrics),
     }
 }
+
+pub fn inspect_radio_button_elevation(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    selected: bool,
+    state: InteractionState,
+) -> crate::controls::button::ButtonInspectElevation {
+    use gpui_luma::theme::ControlSize;
+    use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
+    use crate::controls::button::{button_style_key, inspect_layered_elevation};
+
+    let look = gpui_luma_look_shadcn::paint::radio_button_look(mode, style, selected, state, ControlSize::Md);
+    let layer = state.layer();
+    let rule = embedded_stylesheet().radio.elevation_rule_for_layer(layer);
+    let rule_shadow = rule.map(|rule| rule.shadow.clone()).unwrap_or_else(|| "none".to_string());
+    let token = rule.and_then(|rule| resolve_stylesheet_shadow_token(&rule.shadow));
+    inspect_layered_elevation(
+        mode,
+        theme_mode,
+        state,
+        rule_shadow,
+        token,
+        look.indicator_shadow.as_ref(),
+        button_style_key(style),
+    )
+}

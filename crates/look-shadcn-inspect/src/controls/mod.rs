@@ -41,7 +41,8 @@ pub use button::{
 };
 pub use card::{CardInspectMetrics, inspect_card_metrics};
 pub use checkbox::{
-    CheckboxInspectMetrics, CheckboxInspectPalette, inspect_checkbox_color_palette, inspect_checkbox_metrics,
+    CheckboxInspectMetrics, CheckboxInspectPalette, inspect_checkbox_color_palette, inspect_checkbox_elevation,
+    inspect_checkbox_metrics,
 };
 pub use control_group::{
     ControlGroupInspectMetrics, ControlGroupListInspectPalette, inspect_control_group_list_color_palette,
@@ -49,7 +50,7 @@ pub use control_group::{
 };
 pub use radio::{
     RadioButtonInspectMetrics, RadioButtonInspectPalette, inspect_radio_button_color_palette,
-    inspect_radio_button_metrics,
+    inspect_radio_button_elevation, inspect_radio_button_metrics,
 };
 pub use floating_menu::{
     FloatingMenuInspectMetrics, FloatingMenuInspectPalette, inspect_floating_menu_color_palette,
@@ -84,9 +85,13 @@ pub use scrollbar::{
     ScrollbarInspectMetrics, ScrollbarInspectPalette, inspect_scrollbar_color_palette, inspect_scrollbar_metrics,
 };
 pub use slider::{SliderInspectMetrics, SliderInspectPalette, inspect_slider_color_palette, inspect_slider_metrics};
-pub use switch::{SwitchInspectMetrics, SwitchInspectPalette, inspect_switch_color_palette, inspect_switch_metrics};
+pub use switch::{
+    SwitchInspectMetrics, SwitchInspectPalette, inspect_switch_color_palette, inspect_switch_elevation,
+    inspect_switch_metrics,
+};
 pub use textfield::{
-    TextFieldInspectMetrics, TextFieldInspectPalette, inspect_textfield_color_palette, inspect_textfield_metrics,
+    TextFieldInspectMetrics, TextFieldInspectPalette, inspect_textfield_color_palette, inspect_textfield_elevation,
+    inspect_textfield_metrics,
 };
 pub use tabs_navigation::{
     TabsNavigationInspectMetrics, TabsNavigationItemInspectPalette, TabsNavigationListInspectPalette,

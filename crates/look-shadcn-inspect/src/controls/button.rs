@@ -154,6 +154,33 @@ pub fn inspect_button_elevation(
     }
 }
 
+pub fn inspect_layered_elevation(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    state: InteractionState,
+    rule_shadow: String,
+    token: Option<String>,
+    shadows: Option<&Vec<BoxShadow>>,
+    style_key: &str,
+) -> ButtonInspectElevation {
+    let ctx = LookContext::new(mode, theme_mode, state);
+    let catalog_value = token.as_ref().and_then(|t| ctx.catalog().get(t).map(|value| value.to_string()));
+    let layers: Vec<ButtonInspectElevationLayer> = shadows
+        .map(|shadows| shadows.iter().enumerate().map(|(index, shadow)| elevation_layer(index, shadow)).collect())
+        .unwrap_or_default();
+    let applied = !state.disabled && !layers.is_empty();
+
+    ButtonInspectElevation {
+        applied,
+        rule_shadow,
+        style_key: style_key.to_string(),
+        token,
+        catalog_value,
+        layers,
+        shadows: shadows.cloned(),
+    }
+}
+
 pub fn format_inspect_box_shadow_layer(layer: &ButtonInspectElevationLayer) -> String {
     layer.css.clone()
 }
@@ -203,7 +230,7 @@ fn effective_button_style(style: ShadcnButtonStyle, role: ButtonFamilyRole) -> S
     }
 }
 
-fn button_style_key(style: ShadcnButtonStyle) -> &'static str {
+pub(crate) fn button_style_key(style: ShadcnButtonStyle) -> &'static str {
     match style {
         ShadcnButtonStyle::Primary => "primary",
         ShadcnButtonStyle::Secondary => "secondary",

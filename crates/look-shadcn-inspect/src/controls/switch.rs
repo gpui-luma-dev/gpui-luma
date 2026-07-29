@@ -115,3 +115,27 @@ pub fn inspect_switch_metrics(
         focus_ring_offset: focus_ring_offset_metric(metrics),
     }
 }
+
+pub fn inspect_switch_elevation(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    on: bool,
+    state: InteractionState,
+) -> crate::controls::button::ButtonInspectElevation {
+    use gpui_luma::theme::ControlSize;
+    use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
+    use crate::controls::button::{button_style_key, inspect_layered_elevation};
+
+    let look = gpui_luma_look_shadcn::paint::switch_look(mode, theme_mode, style, on, state, ControlSize::Md);
+    let layer = state.layer();
+    let rule = embedded_stylesheet().switch.elevation_rule_for_layer(layer);
+    let rule_shadow = rule.map(|rule| rule.shadow.clone()).unwrap_or_else(|| "none".to_string());
+    let token = rule.and_then(|rule| resolve_stylesheet_shadow_token(&rule.shadow));
+    let shadows = if look.thumb_shadow.is_empty() {
+        None
+    } else {
+        Some(&look.thumb_shadow)
+    };
+    inspect_layered_elevation(mode, theme_mode, state, rule_shadow, token, shadows, button_style_key(style))
+}
