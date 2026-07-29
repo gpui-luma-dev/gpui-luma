@@ -9,48 +9,20 @@ impl AssetSource for Assets {
         let path = path.trim_start_matches('/');
 
         let bytes = match path {
-            "assets/labels/prominent-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/prominent-label.svg").as_slice())
-            }
-            "assets/labels/primary-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/primary-label.svg").as_slice())
-            }
-            "assets/labels/standard-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/standard-label.svg").as_slice())
-            }
-            "assets/labels/secondary-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/secondary-label.svg").as_slice())
-            }
-            "assets/labels/outline-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/outline-label.svg").as_slice())
-            }
-            "assets/labels/subtle-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/subtle-label.svg").as_slice())
-            }
-            "assets/labels/ghost-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/ghost-label.svg").as_slice())
-            }
-            "assets/labels/selected-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/selected-label.svg").as_slice())
-            }
-            "assets/labels/unselected-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/unselected-label.svg").as_slice())
-            }
-            "assets/labels/default-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/default-label.svg").as_slice())
-            }
-            "assets/labels/hover-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/hover-label.svg").as_slice())
-            }
-            "assets/labels/focused-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/focused-label.svg").as_slice())
-            }
-            "assets/labels/pressed-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/pressed-label.svg").as_slice())
-            }
-            "assets/labels/disabled-label.svg" => {
-                Some(include_bytes!("../../../gallery/src/assets/labels/disabled-label.svg").as_slice())
-            }
+            "assets/labels/prominent-label.svg" => Some(include_bytes!("labels/prominent-label.svg").as_slice()),
+            "assets/labels/primary-label.svg" => Some(include_bytes!("labels/primary-label.svg").as_slice()),
+            "assets/labels/standard-label.svg" => Some(include_bytes!("labels/standard-label.svg").as_slice()),
+            "assets/labels/secondary-label.svg" => Some(include_bytes!("labels/secondary-label.svg").as_slice()),
+            "assets/labels/outline-label.svg" => Some(include_bytes!("labels/outline-label.svg").as_slice()),
+            "assets/labels/subtle-label.svg" => Some(include_bytes!("labels/subtle-label.svg").as_slice()),
+            "assets/labels/ghost-label.svg" => Some(include_bytes!("labels/ghost-label.svg").as_slice()),
+            "assets/labels/selected-label.svg" => Some(include_bytes!("labels/selected-label.svg").as_slice()),
+            "assets/labels/unselected-label.svg" => Some(include_bytes!("labels/unselected-label.svg").as_slice()),
+            "assets/labels/default-label.svg" => Some(include_bytes!("labels/default-label.svg").as_slice()),
+            "assets/labels/hover-label.svg" => Some(include_bytes!("labels/hover-label.svg").as_slice()),
+            "assets/labels/focused-label.svg" => Some(include_bytes!("labels/focused-label.svg").as_slice()),
+            "assets/labels/pressed-label.svg" => Some(include_bytes!("labels/pressed-label.svg").as_slice()),
+            "assets/labels/disabled-label.svg" => Some(include_bytes!("labels/disabled-label.svg").as_slice()),
             _ => None,
         };
 
