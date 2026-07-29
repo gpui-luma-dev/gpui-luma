@@ -71,10 +71,12 @@ static BUTTON_STATES: [InspectorStateSpec; 5] = [
 pub static BUTTON_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Button",
     id_prefix: "button-theme-inspector",
+    parts: &[],
     variants: &BUTTON_VARIANTS,
     states: &BUTTON_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &[],
+    default_part_id: "",
     default_variant_id: "primary",
     default_size_id: "md",
     default_value_id: "",

@@ -15,10 +15,12 @@ use super::inspector::{
 pub static PROGRESS_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Progress",
     id_prefix: "progress-theme-inspector",
+    parts: &[],
     variants: &[],
     states: &PROGRESS_STATES,
     sizes: &[],
     value_modes: &[],
+    default_part_id: "",
     default_variant_id: "",
     default_size_id: "",
     default_value_id: "",

@@ -15,8 +15,14 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::color_chrome_exposition::{
+    color_chrome_set_viewport_size, spawn_color_chrome_viewport, sync_color_chrome_viewport, ColorChromeViewportPane,
+};
+use super::color_chrome_inspector::ColorChromeInspector;
 use super::color_exposition_common::slider_labeled_row;
 use super::event_stream::ControlEventStream;
+use super::inspector::color_chrome::COLOR_SLIDER_CHROME_PROFILES;
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
@@ -123,6 +129,14 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct ColorSliderControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<ColorSliderExpositionLeftPane>,
+    chrome_inspector: Entity<ColorChromeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+}
+
+struct ColorSliderExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     hue_slider: Entity<SliderControl>,
     saturation_slider: Entity<SliderControl>,
     alpha_slider: Entity<SliderControl>,
@@ -139,120 +153,8 @@ pub struct ColorSliderControlExposition {
     _subscriptions: Vec<Subscription>,
 }
 
-impl ColorSliderControlExposition {
-    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("color-slider").expect("color-slider catalog entry");
-        let hsl = Hsl { h: 210.0, s: 0.72, l: 0.52, a: 0.85 };
-
-        let hue_slider = ColorSliderBuilder::hue("controls-doc-color-slider-hue", hsl.h)
-            .size(ControlSize::Sm)
-            .thumb_medium()
-            .spawn(cx);
-        let saturation_builder =
-            ColorSliderBuilder::channel("controls-doc-color-slider-saturation", hsl.s, hsl, Hsl::SATURATION)
-                .expect("HSL saturation delegate should be valid")
-                .size(ControlSize::Sm)
-                .thumb_medium()
-                .edge_to_edge();
-        let saturation_domain = saturation_builder.domain_renderer();
-        let saturation_slider = saturation_builder.spawn(cx);
-        let alpha_builder = ColorSliderBuilder::alpha("controls-doc-color-slider-alpha", hsl.a, hsl)
-            .size(ControlSize::Sm)
-            .thumb_medium()
-            .edge_to_edge();
-        let alpha_domain = alpha_builder.domain_renderer();
-        let alpha_slider = alpha_builder.spawn(cx);
-
-        let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let blue = gpui::hsla(240.0 / 360.0, 1.0, 0.5, 1.0);
-        let gradient_rgb = ColorSliderBuilder::gradient("controls-doc-color-slider-gradient-rgb", 0.5, vec![red, blue])
-            .interpolation(ColorInterpolation::Rgb)
-            .spawn(cx);
-        let gradient_hsl = ColorSliderBuilder::gradient("controls-doc-color-slider-gradient-hsl", 0.5, vec![red, blue])
-            .interpolation(ColorInterpolation::Hsl)
-            .spawn(cx);
-        let gradient_lab = ColorSliderBuilder::gradient("controls-doc-color-slider-gradient-lab", 0.5, vec![red, blue])
-            .interpolation(ColorInterpolation::Lab)
-            .spawn(cx);
-
-        let rgba = RgbaSpec { r: 255.0, g: 128.0, b: 0.0, a: 1.0 };
-        let red_slider = ColorSliderBuilder::channel("controls-doc-color-slider-red", rgba.r, rgba, RgbaSpec::RED)
-            .expect("RGBA red delegate should be valid")
-            .min(0.0)
-            .max(255.0)
-            .spawn(cx);
-        let green_slider =
-            ColorSliderBuilder::channel("controls-doc-color-slider-green", rgba.g, rgba, RgbaSpec::GREEN)
-                .expect("RGBA green delegate should be valid")
-                .min(0.0)
-                .max(255.0)
-                .spawn(cx);
-        let blue_slider = ColorSliderBuilder::channel("controls-doc-color-slider-blue", rgba.b, rgba, RgbaSpec::BLUE)
-            .expect("RGBA blue delegate should be valid")
-            .min(0.0)
-            .max(255.0)
-            .spawn(cx);
-
-        let event_stream = cx.new(|cx| {
-            ControlEventStream::new(
-                cx,
-                look.clone(),
-                "controls-color-slider-event-log",
-                "Drag the hue, saturation, and alpha sliders; SliderEvent variants appear in the stream below.",
-            )
-        });
-
-        let mut subscriptions = Vec::new();
-        for (slider, label) in [(&hue_slider, "Hue"), (&saturation_slider, "Saturation"), (&alpha_slider, "Alpha")] {
-            subscriptions.extend(subscribe_slider(slider, label, event_stream.clone(), cx));
-        }
-        subscriptions.push(cx.subscribe(&hue_slider, |this, _, event, cx| {
-            if let Some(value) = slider_release_or_change_value(event) {
-                this.hsl.h = value;
-                this.sync_delegates(cx);
-                cx.notify();
-            }
-        }));
-        subscriptions.push(cx.subscribe(&saturation_slider, |this, _, event, cx| {
-            if let Some(value) = slider_release_or_change_value(event) {
-                this.hsl.s = value;
-                this.sync_delegates(cx);
-                cx.notify();
-            }
-        }));
-        subscriptions.push(cx.subscribe(&alpha_slider, |this, _, event, cx| {
-            if let Some(value) = slider_release_or_change_value(event) {
-                this.hsl.a = value;
-                this.sync_delegates(cx);
-                cx.notify();
-            }
-        }));
-
-        Self {
-            look,
-            entry,
-            hue_slider,
-            saturation_slider,
-            alpha_slider,
-            saturation_domain,
-            alpha_domain,
-            gradient_rgb,
-            gradient_hsl,
-            gradient_lab,
-            red_slider,
-            green_slider,
-            blue_slider,
-            hsl,
-            event_stream,
-            _subscriptions: subscriptions,
-        }
-    }
-
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
-    }
-
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+impl ColorSliderExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         for slider in [
             &self.hue_slider,
@@ -286,7 +188,7 @@ impl ColorSliderControlExposition {
     }
 }
 
-impl Render for ColorSliderControlExposition {
+impl Render for ColorSliderExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let selected = self.hsl.to_hsla();
@@ -358,13 +260,182 @@ impl Render for ColorSliderControlExposition {
                 ))
                 .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
+            div()
+                .id("controls-doc-color-slider-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
+}
+
+impl ColorSliderControlExposition {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let entry = *catalog_entry("color-slider").expect("color-slider catalog entry");
+        let hsl = Hsl { h: 210.0, s: 0.72, l: 0.52, a: 0.85 };
+
+        let hue_slider = ColorSliderBuilder::hue("controls-doc-color-slider-hue", hsl.h)
+            .size(ControlSize::Sm)
+            .thumb_medium()
+            .spawn(cx);
+        let saturation_builder =
+            ColorSliderBuilder::channel("controls-doc-color-slider-saturation", hsl.s, hsl, Hsl::SATURATION)
+                .expect("HSL saturation delegate should be valid")
+                .size(ControlSize::Sm)
+                .thumb_medium()
+                .edge_to_edge();
+        let saturation_domain = saturation_builder.domain_renderer();
+        let saturation_slider = saturation_builder.spawn(cx);
+        let alpha_builder = ColorSliderBuilder::alpha("controls-doc-color-slider-alpha", hsl.a, hsl)
+            .size(ControlSize::Sm)
+            .thumb_medium()
+            .edge_to_edge();
+        let alpha_domain = alpha_builder.domain_renderer();
+        let alpha_slider = alpha_builder.spawn(cx);
+
+        let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+        let blue = gpui::hsla(240.0 / 360.0, 1.0, 0.5, 1.0);
+        let gradient_rgb = ColorSliderBuilder::gradient("controls-doc-color-slider-gradient-rgb", 0.5, vec![red, blue])
+            .interpolation(ColorInterpolation::Rgb)
+            .spawn(cx);
+        let gradient_hsl = ColorSliderBuilder::gradient("controls-doc-color-slider-gradient-hsl", 0.5, vec![red, blue])
+            .interpolation(ColorInterpolation::Hsl)
+            .spawn(cx);
+        let gradient_lab = ColorSliderBuilder::gradient("controls-doc-color-slider-gradient-lab", 0.5, vec![red, blue])
+            .interpolation(ColorInterpolation::Lab)
+            .spawn(cx);
+
+        let rgba = RgbaSpec { r: 255.0, g: 128.0, b: 0.0, a: 1.0 };
+        let red_slider = ColorSliderBuilder::channel("controls-doc-color-slider-red", rgba.r, rgba, RgbaSpec::RED)
+            .expect("RGBA red delegate should be valid")
+            .min(0.0)
+            .max(255.0)
+            .spawn(cx);
+        let green_slider =
+            ColorSliderBuilder::channel("controls-doc-color-slider-green", rgba.g, rgba, RgbaSpec::GREEN)
+                .expect("RGBA green delegate should be valid")
+                .min(0.0)
+                .max(255.0)
+                .spawn(cx);
+        let blue_slider = ColorSliderBuilder::channel("controls-doc-color-slider-blue", rgba.b, rgba, RgbaSpec::BLUE)
+            .expect("RGBA blue delegate should be valid")
+            .min(0.0)
+            .max(255.0)
+            .spawn(cx);
+
+        let event_stream = cx.new(|cx| {
+            ControlEventStream::new(
+                cx,
+                look.clone(),
+                "controls-color-slider-event-log",
+                "Drag the hue, saturation, and alpha sliders; SliderEvent variants appear in the stream below.",
             )
+        });
+
+        let left_pane = cx.new(|cx| {
+            let mut pane_subscriptions = Vec::new();
+            for (slider, label) in [(&hue_slider, "Hue"), (&saturation_slider, "Saturation"), (&alpha_slider, "Alpha")]
+            {
+                pane_subscriptions.extend(subscribe_slider(slider, label, event_stream.clone(), cx));
+            }
+            pane_subscriptions.push(cx.subscribe(&hue_slider, |this, _, event, cx| {
+                if let Some(value) = slider_release_or_change_value(event) {
+                    this.hsl.h = value;
+                    this.sync_delegates(cx);
+                    cx.notify();
+                }
+            }));
+            pane_subscriptions.push(cx.subscribe(&saturation_slider, |this, _, event, cx| {
+                if let Some(value) = slider_release_or_change_value(event) {
+                    this.hsl.s = value;
+                    this.sync_delegates(cx);
+                    cx.notify();
+                }
+            }));
+            pane_subscriptions.push(cx.subscribe(&alpha_slider, |this, _, event, cx| {
+                if let Some(value) = slider_release_or_change_value(event) {
+                    this.hsl.a = value;
+                    this.sync_delegates(cx);
+                    cx.notify();
+                }
+            }));
+
+            ColorSliderExpositionLeftPane {
+                look: look.clone(),
+                entry,
+                hue_slider,
+                saturation_slider,
+                alpha_slider,
+                saturation_domain,
+                alpha_domain,
+                gradient_rgb,
+                gradient_hsl,
+                gradient_lab,
+                red_slider,
+                green_slider,
+                blue_slider,
+                hsl,
+                event_stream,
+                _subscriptions: pane_subscriptions,
+            }
+        });
+
+        let ColorChromeViewportPane { chrome_inspector, inspector_split } = spawn_color_chrome_viewport(
+            cx,
+            look.clone(),
+            "controls-doc-color-slider-pane",
+            "controls-doc-color-slider-chrome",
+            COLOR_SLIDER_CHROME_PROFILES,
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+        );
+
+        Self { look, entry, left_pane, chrome_inspector, inspector_split }
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        color_chrome_set_viewport_size(&self.inspector_split, size, cx);
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_color_chrome_viewport(look, &self.chrome_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+impl Render for ColorSliderControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-color-slider-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }
@@ -373,7 +444,7 @@ fn subscribe_slider(
     slider: &Entity<SliderControl>,
     label: &'static str,
     event_stream: Entity<ControlEventStream>,
-    cx: &mut Context<ColorSliderControlExposition>,
+    cx: &mut Context<ColorSliderExpositionLeftPane>,
 ) -> Vec<Subscription> {
     let label = label.to_string();
     vec![cx.subscribe(slider, move |_, _, event: &SliderEvent, cx| {

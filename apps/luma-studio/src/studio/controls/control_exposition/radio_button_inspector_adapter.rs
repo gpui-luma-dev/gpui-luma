@@ -19,10 +19,12 @@ static RADIO_BUTTON_STATES: [super::inspector::InspectorStateSpec; 5] = CHOICE_I
 pub static RADIO_BUTTON_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Radio Button",
     id_prefix: "radio-button-theme-inspector",
+    parts: &[],
     variants: &PRIMARY_SECONDARY_CONTENT_ONLY_VARIANTS,
     states: &RADIO_BUTTON_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &SELECTED_UNSELECTED_VALUES,
+    default_part_id: "",
     default_variant_id: "primary",
     default_size_id: "md",
     default_value_id: "selected",

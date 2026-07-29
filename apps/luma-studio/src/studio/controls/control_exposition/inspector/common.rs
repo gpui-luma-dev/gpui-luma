@@ -169,3 +169,42 @@ pub fn popup_menu_trigger_style(variant_id: &str) -> gpui_luma::controls::popup_
         _ => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Outline,
     }
 }
+
+pub fn listbox_list_enabled(state_id: &str) -> bool {
+    state_id == "enabled" || state_id == "focused"
+}
+
+pub fn listbox_list_focused(state_id: &str) -> bool {
+    state_id == "focused"
+}
+
+pub fn listbox_row_state(state_id: &str) -> InteractionState {
+    match state_id {
+        "keyboard-active" => InteractionState { focused: true, ..InteractionState::default() },
+        other => interaction_state(other),
+    }
+}
+
+pub fn list_view_row_selected(value_id: &str) -> bool {
+    value_id == "selected"
+}
+
+pub fn accordion_content_expanded(state_id: &str) -> bool {
+    state_id == "expanded"
+}
+
+pub fn tabs_navigation_active(variant_id: &str) -> bool {
+    variant_id == "active"
+}
+
+pub fn navigation_sidebar_item_selected(value_id: &str) -> bool {
+    value_id == "selected"
+}
+
+pub fn resize_handle_size(size_id: &str) -> gpui_luma::controls::resizable_panels::ResizeHandleSize {
+    match size_id {
+        "sm" => gpui_luma::controls::resizable_panels::ResizeHandleSize::Sm,
+        "lg" => gpui_luma::controls::resizable_panels::ResizeHandleSize::Lg,
+        _ => gpui_luma::controls::resizable_panels::ResizeHandleSize::Md,
+    }
+}

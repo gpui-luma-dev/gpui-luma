@@ -1,23 +1,23 @@
 use std::sync::Arc;
 
-use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 
-use super::inspector::input::floating_menu_palette_rows;
-use super::inspector::metrics::floating_menu_layout_section;
-use super::inspector::specs::{CHOICE_SIZES, DEFAULT_INTERACTION_STATES};
+use super::inspector::collection::tree_view_row_color_rows;
+use super::inspector::common::{interaction_state, listbox_row_state};
+use super::inspector::metrics::tree_view_layout_section;
+use super::inspector::specs::{CHOICE_SIZES, TREE_VIEW_ROW_STATES};
 use super::inspector::{
     ControlInspectorResolver, ControlInspectorSpec, InspectorCategoryContent, InspectorSelection,
     SharedInspectorResolver,
 };
 
-pub static FLOATING_MENU_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
-    control_label: "Floating Menu",
-    id_prefix: "floating-menu-theme-inspector",
+pub static TREE_VIEW_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
+    control_label: "TreeView",
+    id_prefix: "tree-view-theme-inspector",
     parts: &[],
     variants: &[],
-    states: &DEFAULT_INTERACTION_STATES,
+    states: &TREE_VIEW_ROW_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &[],
     default_part_id: "",
@@ -26,15 +26,15 @@ pub static FLOATING_MENU_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspector
     default_value_id: "",
 };
 
-pub struct FloatingMenuInspectorAdapter;
+pub struct TreeViewInspectorAdapter;
 
-impl FloatingMenuInspectorAdapter {
+impl TreeViewInspectorAdapter {
     pub fn shared() -> SharedInspectorResolver {
         Arc::new(Self)
     }
 }
 
-impl ControlInspectorResolver for FloatingMenuInspectorAdapter {
+impl ControlInspectorResolver for TreeViewInspectorAdapter {
     fn resolve_category(
         &self,
         look: &ShadcnLook,
@@ -43,9 +43,9 @@ impl ControlInspectorResolver for FloatingMenuInspectorAdapter {
     ) -> InspectorCategoryContent {
         match category_id {
             "color" => InspectorCategoryContent::Colors(resolve_color_rows(look, selection)),
-            "layout" => InspectorCategoryContent::Layout(floating_menu_layout_section(
+            "layout" => InspectorCategoryContent::Layout(tree_view_layout_section(
                 look,
-                "floating-menu-theme-inspector-box-model",
+                "tree-view-theme-inspector-box-model",
                 selection.size_id,
             )),
             _ => InspectorCategoryContent::Colors(Vec::new()),
@@ -54,11 +54,11 @@ impl ControlInspectorResolver for FloatingMenuInspectorAdapter {
 }
 
 fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> Vec<super::inspector::InspectColorRow> {
-    let size = match selection.size_id {
-        "sm" => ControlSize::Sm,
-        "lg" => ControlSize::Lg,
-        _ => ControlSize::Md,
+    let state = if selection.state_id == "disabled" {
+        interaction_state("disabled")
+    } else {
+        listbox_row_state(selection.state_id)
     };
-    let palette = ShadcnInspect::new(look).inspect_floating_menu_color_palette(size);
-    floating_menu_palette_rows(&palette)
+    let palette = ShadcnInspect::new(look).inspect_tree_view_row_color_palette(state);
+    tree_view_row_color_rows(&palette)
 }

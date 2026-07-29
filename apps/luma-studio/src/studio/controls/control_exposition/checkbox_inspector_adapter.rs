@@ -19,10 +19,12 @@ static CHECKBOX_STATES: [super::inspector::InspectorStateSpec; 5] = CHOICE_INTER
 pub static CHECKBOX_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Checkbox",
     id_prefix: "checkbox-theme-inspector",
+    parts: &[],
     variants: &PRIMARY_SECONDARY_VARIANTS,
     states: &CHECKBOX_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &CHECKED_UNCHECKED_VALUES,
+    default_part_id: "",
     default_variant_id: "primary",
     default_size_id: "md",
     default_value_id: "checked",

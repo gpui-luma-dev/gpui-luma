@@ -10,7 +10,11 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::collection_theme_inspectors::ListBoxThemeInspector;
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
+use super::listbox_inspector_adapter::{ListBoxInspectorAdapter, LISTBOX_INSPECTOR_SPEC};
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
@@ -54,6 +58,14 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct ListBoxControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<ListBoxExpositionLeftPane>,
+    theme_inspector: Entity<ListBoxThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+}
+
+struct ListBoxExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     single: ListBox,
     horizontal: ListBox,
     multiple: ListBox,
@@ -64,63 +76,7 @@ pub struct ListBoxControlExposition {
     _subscriptions: Vec<Subscription>,
 }
 
-impl ListBoxControlExposition {
-    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("listbox").expect("listbox catalog entry");
-
-        let single = fruit_listbox(&look, "controls-doc-listbox-single", ListBoxMode::Single, ["oranges"], cx);
-        let horizontal =
-            fruit_listbox(&look, "controls-doc-listbox-horizontal", ListBoxMode::HorizontalSingle, ["oranges"], cx);
-        let multiple =
-            fruit_listbox(&look, "controls-doc-listbox-multiple", ListBoxMode::Multiple, ["apples", "bananas"], cx);
-
-        let event_stream = cx.new(|cx| {
-            ControlEventStream::new(
-                cx,
-                look.clone(),
-                "controls-listbox-event-log",
-                "Select list rows; ControlGroupEvent::Change appears below.",
-            )
-        });
-
-        let mut this = Self {
-            look,
-            entry,
-            single: single.clone(),
-            horizontal: horizontal.clone(),
-            multiple: multiple.clone(),
-            single_choice: "Oranges".to_string(),
-            horizontal_choice: "Oranges".to_string(),
-            multi_choices: vec!["Apples".to_string(), "Bananas".to_string()],
-            event_stream: event_stream.clone(),
-            _subscriptions: Vec::new(),
-        };
-
-        this._subscriptions.push(cx.subscribe(&single, {
-            let event_stream = event_stream.clone();
-            move |this, _, event, cx| {
-                this.handle_single_event(event, cx);
-                append_listbox_event(&event_stream, event, cx);
-            }
-        }));
-        this._subscriptions.push(cx.subscribe(&horizontal, {
-            let event_stream = event_stream.clone();
-            move |this, _, event, cx| {
-                this.handle_horizontal_event(event, cx);
-                append_listbox_event(&event_stream, event, cx);
-            }
-        }));
-        this._subscriptions.push(cx.subscribe(&multiple, {
-            let event_stream = event_stream.clone();
-            move |this, _, event, cx| {
-                this.handle_multi_event(event, cx);
-                append_listbox_event(&event_stream, event, cx);
-            }
-        }));
-
-        this
-    }
-
+impl ListBoxExpositionLeftPane {
     fn handle_single_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<Self>) {
         if let ControlGroupEvent::Change { changed_id, .. } = event {
             self.single_choice = fruit_label(changed_id.as_ref());
@@ -145,11 +101,7 @@ impl ListBoxControlExposition {
         }
     }
 
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
-    }
-
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.single.update(cx, |_, cx| cx.notify());
         self.horizontal.update(cx, |_, cx| cx.notify());
@@ -159,7 +111,7 @@ impl ListBoxControlExposition {
     }
 }
 
-impl Render for ListBoxControlExposition {
+impl Render for ListBoxExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
@@ -193,13 +145,129 @@ impl Render for ListBoxControlExposition {
             .max_w(px(420.0))
             .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-listbox-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
+}
+
+impl ListBoxControlExposition {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let entry = *catalog_entry("listbox").expect("listbox catalog entry");
+
+        let left_pane = cx.new(|cx| {
+            let single = fruit_listbox(&look, "controls-doc-listbox-single", ListBoxMode::Single, ["oranges"], cx);
+            let horizontal =
+                fruit_listbox(&look, "controls-doc-listbox-horizontal", ListBoxMode::HorizontalSingle, ["oranges"], cx);
+            let multiple =
+                fruit_listbox(&look, "controls-doc-listbox-multiple", ListBoxMode::Multiple, ["apples", "bananas"], cx);
+
+            let event_stream = cx.new(|cx| {
+                ControlEventStream::new(
+                    cx,
+                    look.clone(),
+                    "controls-listbox-event-log",
+                    "Select list rows; ControlGroupEvent::Change appears below.",
+                )
+            });
+
+            let mut pane = ListBoxExpositionLeftPane {
+                look: look.clone(),
+                entry,
+                single: single.clone(),
+                horizontal: horizontal.clone(),
+                multiple: multiple.clone(),
+                single_choice: "Oranges".to_string(),
+                horizontal_choice: "Oranges".to_string(),
+                multi_choices: vec!["Apples".to_string(), "Bananas".to_string()],
+                event_stream: event_stream.clone(),
+                _subscriptions: Vec::new(),
+            };
+
+            pane._subscriptions.push(cx.subscribe(&single, {
+                let event_stream = event_stream.clone();
+                move |pane, _, event, cx| {
+                    pane.handle_single_event(event, cx);
+                    append_listbox_event(&event_stream, event, cx);
+                }
+            }));
+            pane._subscriptions.push(cx.subscribe(&horizontal, {
+                let event_stream = event_stream.clone();
+                move |pane, _, event, cx| {
+                    pane.handle_horizontal_event(event, cx);
+                    append_listbox_event(&event_stream, event, cx);
+                }
+            }));
+            pane._subscriptions.push(cx.subscribe(&multiple, {
+                let event_stream = event_stream.clone();
+                move |pane, _, event, cx| {
+                    pane.handle_multi_event(event, cx);
+                    append_listbox_event(&event_stream, event, cx);
+                }
+            }));
+
+            pane
+        });
+
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-listbox-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &LISTBOX_INSPECTOR_SPEC,
+            ListBoxInspectorAdapter::shared(),
+        );
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+impl Render for ListBoxControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-listbox-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }
@@ -207,7 +275,7 @@ impl Render for ListBoxControlExposition {
 fn append_listbox_event(
     event_stream: &Entity<ControlEventStream>,
     event: &ControlGroupEvent,
-    cx: &mut Context<ListBoxControlExposition>,
+    cx: &mut Context<ListBoxExpositionLeftPane>,
 ) {
     if let Some(line) = format_listbox_event(event) {
         event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
@@ -244,7 +312,7 @@ fn fruit_listbox(
     id: &'static str,
     mode: ListBoxMode,
     selected_ids: impl IntoIterator<Item = &'static str>,
-    cx: &mut Context<ListBoxControlExposition>,
+    cx: &mut Context<ListBoxExpositionLeftPane>,
 ) -> ListBox {
     let mut builder = match mode {
         ListBoxMode::Single | ListBoxMode::HorizontalSingle => look.listbox(id),

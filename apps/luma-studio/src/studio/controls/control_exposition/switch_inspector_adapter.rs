@@ -17,10 +17,12 @@ static SWITCH_STATES: [super::inspector::InspectorStateSpec; 5] = CHOICE_INTERAC
 pub static SWITCH_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Switch",
     id_prefix: "switch-theme-inspector",
+    parts: &[],
     variants: &PRIMARY_SECONDARY_VARIANTS,
     states: &SWITCH_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &ON_OFF_VALUES,
+    default_part_id: "",
     default_variant_id: "primary",
     default_size_id: "md",
     default_value_id: "on",

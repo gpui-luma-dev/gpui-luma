@@ -1,24 +1,24 @@
 use std::sync::Arc;
 
-use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 
-use super::inspector::input::floating_menu_palette_rows;
-use super::inspector::metrics::floating_menu_layout_section;
-use super::inspector::specs::{CHOICE_SIZES, DEFAULT_INTERACTION_STATES};
+use super::inspector::collection::resizable_panels_color_rows;
+use super::inspector::common::interaction_state;
+use super::inspector::metrics::resizable_panels_layout_section;
+use super::inspector::specs::{RESIZE_HANDLE_SIZES, TREE_VIEW_ROW_STATES};
 use super::inspector::{
     ControlInspectorResolver, ControlInspectorSpec, InspectorCategoryContent, InspectorSelection,
     SharedInspectorResolver,
 };
 
-pub static FLOATING_MENU_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
-    control_label: "Floating Menu",
-    id_prefix: "floating-menu-theme-inspector",
+pub static RESIZABLE_PANELS_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
+    control_label: "Resizable Panels",
+    id_prefix: "resizable-panels-theme-inspector",
     parts: &[],
     variants: &[],
-    states: &DEFAULT_INTERACTION_STATES,
-    sizes: &CHOICE_SIZES,
+    states: &TREE_VIEW_ROW_STATES,
+    sizes: &RESIZE_HANDLE_SIZES,
     value_modes: &[],
     default_part_id: "",
     default_variant_id: "",
@@ -26,15 +26,15 @@ pub static FLOATING_MENU_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspector
     default_value_id: "",
 };
 
-pub struct FloatingMenuInspectorAdapter;
+pub struct ResizablePanelsInspectorAdapter;
 
-impl FloatingMenuInspectorAdapter {
+impl ResizablePanelsInspectorAdapter {
     pub fn shared() -> SharedInspectorResolver {
         Arc::new(Self)
     }
 }
 
-impl ControlInspectorResolver for FloatingMenuInspectorAdapter {
+impl ControlInspectorResolver for ResizablePanelsInspectorAdapter {
     fn resolve_category(
         &self,
         look: &ShadcnLook,
@@ -43,9 +43,9 @@ impl ControlInspectorResolver for FloatingMenuInspectorAdapter {
     ) -> InspectorCategoryContent {
         match category_id {
             "color" => InspectorCategoryContent::Colors(resolve_color_rows(look, selection)),
-            "layout" => InspectorCategoryContent::Layout(floating_menu_layout_section(
+            "layout" => InspectorCategoryContent::Layout(resizable_panels_layout_section(
                 look,
-                "floating-menu-theme-inspector-box-model",
+                "resizable-panels-theme-inspector-box-model",
                 selection.size_id,
             )),
             _ => InspectorCategoryContent::Colors(Vec::new()),
@@ -54,11 +54,7 @@ impl ControlInspectorResolver for FloatingMenuInspectorAdapter {
 }
 
 fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> Vec<super::inspector::InspectColorRow> {
-    let size = match selection.size_id {
-        "sm" => ControlSize::Sm,
-        "lg" => ControlSize::Lg,
-        _ => ControlSize::Md,
-    };
-    let palette = ShadcnInspect::new(look).inspect_floating_menu_color_palette(size);
-    floating_menu_palette_rows(&palette)
+    let palette =
+        ShadcnInspect::new(look).inspect_resizable_panels_color_palette(interaction_state(selection.state_id));
+    resizable_panels_color_rows(&palette)
 }

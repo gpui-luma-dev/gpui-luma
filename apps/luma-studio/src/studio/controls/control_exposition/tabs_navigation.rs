@@ -11,8 +11,12 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
+use super::shell_theme_inspectors::TabsNavigationThemeInspector;
+use super::tabs_navigation_inspector_adapter::{TabsNavigationInspectorAdapter, TABS_NAVIGATION_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[
@@ -54,69 +58,24 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct TabsNavigationControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<TabsNavigationExpositionLeftPane>,
+    theme_inspector: Entity<TabsNavigationThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
+}
+
+struct TabsNavigationExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     tabs: Entity<TabsNavigation>,
     uniform_tabs: Entity<TabsNavigation>,
     event_stream: Entity<ControlEventStream>,
     active_label: String,
     uniform_active_label: String,
-    _subscriptions: Vec<Subscription>,
 }
 
-impl TabsNavigationControlExposition {
-    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("tabs-navigation").expect("tabs-navigation catalog entry");
-
-        let tabs = look.tabs_navigation("controls-doc-tabs").items(project_tabs()).active("activity").spawn(cx);
-        let uniform_tabs = look
-            .tabs_navigation("controls-doc-tabs-uniform")
-            .items(uniform_width_tabs())
-            .active("recent-activity")
-            .width_mode(TabsNavigationWidthMode::Uniform)
-            .spawn(cx);
-
-        let event_stream = cx.new(|cx| {
-            ControlEventStream::new(
-                cx,
-                look.clone(),
-                "controls-tabs-navigation-event-log",
-                "Click tabs or use keyboard navigation; TabsNavigationEvent variants appear below.",
-            )
-        });
-
-        let mut subscriptions = Vec::new();
-        for (entity, label_field) in [(tabs.clone(), "intrinsic"), (uniform_tabs.clone(), "uniform")] {
-            let event_stream = event_stream.clone();
-            subscriptions.push(cx.subscribe(&entity, move |this, _, event: &TabsNavigationEvent, cx| {
-                if let TabsNavigationEvent::Activate { label, .. } = event {
-                    match label_field {
-                        "intrinsic" => this.active_label = label.to_string(),
-                        _ => this.uniform_active_label = label.to_string(),
-                    }
-                    cx.notify();
-                }
-                if let Some(line) = format_tabs_navigation_event(event) {
-                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
-                }
-            }));
-        }
-
-        Self {
-            look,
-            entry,
-            tabs,
-            uniform_tabs,
-            event_stream,
-            active_label: "Activity".to_string(),
-            uniform_active_label: "Recent Activity".to_string(),
-            _subscriptions: subscriptions,
-        }
-    }
-
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
-    }
-
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+impl TabsNavigationExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.tabs.update(cx, |_, cx| cx.notify());
         self.uniform_tabs.update(cx, |_, cx| cx.notify());
@@ -125,7 +84,7 @@ impl TabsNavigationControlExposition {
     }
 }
 
-impl Render for TabsNavigationControlExposition {
+impl Render for TabsNavigationExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
@@ -154,13 +113,122 @@ impl Render for TabsNavigationControlExposition {
                 ))
                 .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
+            div()
+                .id("controls-doc-tabs-navigation-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
+}
+
+impl TabsNavigationControlExposition {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let entry = *catalog_entry("tabs-navigation").expect("tabs-navigation catalog entry");
+
+        let tabs = look.tabs_navigation("controls-doc-tabs").items(project_tabs()).active("activity").spawn(cx);
+        let uniform_tabs = look
+            .tabs_navigation("controls-doc-tabs-uniform")
+            .items(uniform_width_tabs())
+            .active("recent-activity")
+            .width_mode(TabsNavigationWidthMode::Uniform)
+            .spawn(cx);
+
+        let event_stream = cx.new(|cx| {
+            ControlEventStream::new(
+                cx,
+                look.clone(),
+                "controls-tabs-navigation-event-log",
+                "Click tabs or use keyboard navigation; TabsNavigationEvent variants appear below.",
             )
+        });
+
+        let left_pane = cx.new(|_| TabsNavigationExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            tabs: tabs.clone(),
+            uniform_tabs: uniform_tabs.clone(),
+            event_stream: event_stream.clone(),
+            active_label: "Activity".to_string(),
+            uniform_active_label: "Recent Activity".to_string(),
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-tabs-navigation-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &TABS_NAVIGATION_INSPECTOR_SPEC,
+            TabsNavigationInspectorAdapter::shared(),
+        );
+
+        let mut subscriptions = Vec::new();
+        for (entity, label_field, left_pane) in
+            [(tabs.clone(), "intrinsic", left_pane.clone()), (uniform_tabs.clone(), "uniform", left_pane.clone())]
+        {
+            let event_stream = event_stream.clone();
+            subscriptions.push(cx.subscribe(&entity, move |_, _, event: &TabsNavigationEvent, cx| {
+                if let TabsNavigationEvent::Activate { label, .. } = event {
+                    left_pane.update(cx, |pane, cx| {
+                        match label_field {
+                            "intrinsic" => pane.active_label = label.to_string(),
+                            _ => pane.uniform_active_label = label.to_string(),
+                        }
+                        cx.notify();
+                    });
+                }
+                if let Some(line) = format_tabs_navigation_event(event) {
+                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                }
+            }));
+        }
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+impl Render for TabsNavigationControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-tabs-navigation-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

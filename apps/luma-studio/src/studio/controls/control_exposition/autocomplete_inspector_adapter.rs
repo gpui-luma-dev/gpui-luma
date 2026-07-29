@@ -16,10 +16,12 @@ static AUTOCOMPLETE_STATES: [super::inspector::InspectorStateSpec; 1] = DEFAULT_
 pub static AUTOCOMPLETE_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Autocomplete",
     id_prefix: "autocomplete-theme-inspector",
+    parts: &[],
     variants: &[],
     states: &AUTOCOMPLETE_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &[],
+    default_part_id: "",
     default_variant_id: "",
     default_size_id: "md",
     default_value_id: "",

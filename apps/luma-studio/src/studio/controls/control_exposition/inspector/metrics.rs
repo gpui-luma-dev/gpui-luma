@@ -3,10 +3,12 @@ use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use gpui_luma_look_shadcn_inspect::{
-    AutocompleteInspectMetrics, BadgeInspectMetrics, ButtonInspectMetrics, CheckboxInspectMetrics,
-    ContextMenuInspectMetrics, FloatingMenuInspectMetrics, PopupMenuInspectMetrics, ProgressInspectMetrics,
-    RadioButtonInspectMetrics, ScrollbarInspectMetrics, ShadcnInspect, SliderInspectMetrics, SwitchInspectMetrics,
-    TextFieldInspectMetrics,
+    AccordionInspectMetrics, AutocompleteInspectMetrics, BadgeInspectMetrics, ButtonInspectMetrics,
+    CheckboxInspectMetrics, ContextMenuInspectMetrics, FloatingMenuInspectMetrics, ListBoxInspectMetrics,
+    ListViewInspectMetrics, NavigationSidebarInspectMetrics, ProgressInspectMetrics, RadioButtonInspectMetrics,
+    ResizablePanelsInspectMetrics, ScrollbarInspectMetrics, ShadcnInspect, SliderInspectMetrics,
+    SplitViewInspectMetrics, SwitchInspectMetrics, TabsNavigationInspectMetrics, TextFieldInspectMetrics,
+    ToolbarInspectMetrics, TreeViewInspectMetrics,
 };
 
 use super::box_model::InspectBoxModelSnapshot;
@@ -129,7 +131,7 @@ pub fn floating_menu_layout_section(look: &ShadcnLook, diagram_id: &str, size_id
     )
 }
 
-pub fn popup_menu_layout_section(
+pub fn popup_menu_trigger_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
     variant_id: &str,
@@ -137,16 +139,96 @@ pub fn popup_menu_layout_section(
 ) -> InspectLayoutSection {
     let size = control_size(size_id);
     let trigger_style = super::common::popup_menu_trigger_style(variant_id);
-    popup_menu_metrics_layout_section(
+    let metrics = ShadcnInspect::new(look).inspect_popup_menu_metrics(trigger_style, size);
+    let box_model = InspectBoxModelSnapshot::from_button_metrics(&metrics.trigger);
+    layout_section(
         look,
         diagram_id,
-        &ShadcnInspect::new(look).inspect_popup_menu_metrics(trigger_style, size),
+        box_model,
+        None,
+        metric_properties(&[
+            ("trigger height", &metrics.trigger.height),
+            ("trigger padding x", &metrics.trigger.padding_x),
+            ("trigger padding y", &metrics.trigger.padding_y),
+            ("trigger radius", &metrics.trigger.radius),
+            ("trigger border width", &metrics.trigger.border_width),
+            ("trigger focus ring width", &metrics.trigger.focus_ring_width),
+            ("trigger focus ring offset", &metrics.trigger.focus_ring_offset),
+        ]),
     )
 }
 
 pub fn context_menu_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
     let size = control_size(size_id);
     context_menu_metrics_layout_section(look, diagram_id, &ShadcnInspect::new(look).inspect_context_menu_metrics(size))
+}
+
+pub fn listbox_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+    listbox_metrics_layout_section(
+        look,
+        diagram_id,
+        &ShadcnInspect::new(look).inspect_listbox_metrics(control_size(size_id)),
+    )
+}
+
+pub fn list_view_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+    list_view_metrics_layout_section(
+        look,
+        diagram_id,
+        &ShadcnInspect::new(look).inspect_list_view_metrics(control_size(size_id)),
+    )
+}
+
+pub fn tree_view_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+    tree_view_metrics_layout_section(
+        look,
+        diagram_id,
+        &ShadcnInspect::new(look).inspect_tree_view_metrics(control_size(size_id)),
+    )
+}
+
+pub fn navigation_sidebar_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+    navigation_sidebar_metrics_layout_section(
+        look,
+        diagram_id,
+        &ShadcnInspect::new(look).inspect_navigation_sidebar_metrics(control_size(size_id)),
+    )
+}
+
+pub fn tabs_navigation_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+    tabs_navigation_metrics_layout_section(
+        look,
+        diagram_id,
+        &ShadcnInspect::new(look).inspect_tabs_navigation_metrics(control_size(size_id)),
+    )
+}
+
+pub fn toolbar_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+    toolbar_metrics_layout_section(
+        look,
+        diagram_id,
+        &ShadcnInspect::new(look).inspect_toolbar_metrics(control_size(size_id)),
+    )
+}
+
+pub fn accordion_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+    accordion_metrics_layout_section(
+        look,
+        diagram_id,
+        &ShadcnInspect::new(look).inspect_accordion_metrics(control_size(size_id)),
+    )
+}
+
+pub fn resizable_panels_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+    resizable_panels_metrics_layout_section(
+        look,
+        diagram_id,
+        &ShadcnInspect::new(look).inspect_resizable_panels_metrics(super::common::resize_handle_size(size_id)),
+    )
+}
+
+pub fn split_view_layout_section(look: &ShadcnLook, diagram_id: &str) -> InspectLayoutSection {
+    split_view_metrics_layout_section(look, diagram_id, &ShadcnInspect::new(look).inspect_split_view_metrics())
 }
 
 fn button_metrics_layout_section(
@@ -451,25 +533,6 @@ fn floating_menu_metrics_layout_section(
     layout_section(look, diagram_id, box_model, None, floating_menu_metric_rows(metrics))
 }
 
-fn popup_menu_metrics_layout_section(
-    look: &ShadcnLook,
-    diagram_id: &str,
-    metrics: &PopupMenuInspectMetrics,
-) -> InspectLayoutSection {
-    let box_model = InspectBoxModelSnapshot::from_button_metrics(&metrics.trigger);
-    let mut rows = metric_properties(&[
-        ("trigger height", &metrics.trigger.height),
-        ("trigger padding x", &metrics.trigger.padding_x),
-        ("trigger padding y", &metrics.trigger.padding_y),
-        ("trigger radius", &metrics.trigger.radius),
-        ("trigger border width", &metrics.trigger.border_width),
-        ("trigger focus ring width", &metrics.trigger.focus_ring_width),
-        ("trigger focus ring offset", &metrics.trigger.focus_ring_offset),
-    ]);
-    rows.extend(floating_menu_metric_rows(&metrics.menu));
-    layout_section(look, diagram_id, box_model, None, rows)
-}
-
 fn context_menu_metrics_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
@@ -507,6 +570,286 @@ fn floating_menu_metric_rows(metrics: &FloatingMenuInspectMetrics) -> Vec<super:
         ("menu item radius", &metrics.item_radius),
         ("menu submenu offset x", &metrics.submenu_offset_x),
     ])
+}
+
+fn listbox_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &ListBoxInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.row_min_height.value_px,
+        padding_x: metrics.row_padding_x.value_px,
+        padding_y: metrics.row_padding_y.value_px,
+        border_width: 0.0,
+        gap: metrics.row_gap.value_px,
+        radius: metrics.radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("radius", &metrics.radius),
+            ("padding x", &metrics.padding_x),
+            ("padding y", &metrics.padding_y),
+            ("row gap", &metrics.row_gap),
+            ("row min height", &metrics.row_min_height),
+            ("row padding x", &metrics.row_padding_x),
+            ("row padding y", &metrics.row_padding_y),
+        ]),
+    )
+}
+
+fn list_view_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &ListViewInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.row_min_height.value_px,
+        padding_x: metrics.row_padding_x.value_px,
+        padding_y: metrics.row_padding_y.value_px,
+        border_width: 0.0,
+        gap: 0.0,
+        radius: metrics.radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("radius", &metrics.radius),
+            ("padding x", &metrics.padding_x),
+            ("padding y", &metrics.padding_y),
+            ("row min height", &metrics.row_min_height),
+            ("row padding x", &metrics.row_padding_x),
+            ("row padding y", &metrics.row_padding_y),
+        ]),
+    )
+}
+
+fn tree_view_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &TreeViewInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.row_height.value_px,
+        padding_x: metrics.base_padding_x.value_px,
+        padding_y: 0.0,
+        border_width: 0.0,
+        gap: metrics.inner_gap.value_px,
+        radius: metrics.radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("row height", &metrics.row_height),
+            ("base padding x", &metrics.base_padding_x),
+            ("indentation width", &metrics.indentation_width),
+            ("inner gap", &metrics.inner_gap),
+            ("radius", &metrics.radius),
+            ("icon size", &metrics.icon_size),
+            ("chevron size", &metrics.chevron_size),
+        ]),
+    )
+}
+
+fn navigation_sidebar_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &NavigationSidebarInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.item_height.value_px,
+        padding_x: metrics.item_padding_x.value_px,
+        padding_y: 0.0,
+        border_width: 0.0,
+        gap: metrics.item_gap.value_px,
+        radius: metrics.item_radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("section height", &metrics.section_height),
+            ("item height", &metrics.item_height),
+            ("item padding x", &metrics.item_padding_x),
+            ("item gap", &metrics.item_gap),
+            ("item radius", &metrics.item_radius),
+            ("item icon size", &metrics.item_icon_size),
+        ]),
+    )
+}
+
+fn tabs_navigation_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &TabsNavigationInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.item_height.value_px,
+        padding_x: metrics.item_padding_x.value_px,
+        padding_y: metrics.list_padding.value_px,
+        border_width: 0.0,
+        gap: metrics.list_gap.value_px,
+        radius: metrics.item_radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("list radius", &metrics.list_radius),
+            ("list gap", &metrics.list_gap),
+            ("list padding", &metrics.list_padding),
+            ("item padding x", &metrics.item_padding_x),
+            ("item height", &metrics.item_height),
+            ("item radius", &metrics.item_radius),
+            ("indicator height", &metrics.indicator_height),
+        ]),
+    )
+}
+
+fn toolbar_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &ToolbarInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.separator_height.value_px,
+        padding_x: metrics.padding_x.value_px,
+        padding_y: metrics.padding_y.value_px,
+        border_width: 0.0,
+        gap: metrics.gap.value_px,
+        radius: metrics.radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("padding x", &metrics.padding_x),
+            ("padding y", &metrics.padding_y),
+            ("gap", &metrics.gap),
+            ("radius", &metrics.radius),
+            ("separator height", &metrics.separator_height),
+        ]),
+    )
+}
+
+fn accordion_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &AccordionInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.trigger_height.value_px,
+        padding_x: metrics.padding_x.value_px,
+        padding_y: metrics.padding_y.value_px,
+        border_width: 0.0,
+        gap: metrics.inner_gap.value_px,
+        radius: metrics.radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("trigger height", &metrics.trigger_height),
+            ("padding x", &metrics.padding_x),
+            ("padding y", &metrics.padding_y),
+            ("content padding y", &metrics.content_padding_y),
+            ("radius", &metrics.radius),
+            ("inner gap", &metrics.inner_gap),
+            ("icon size", &metrics.icon_size),
+            ("chevron size", &metrics.chevron_size),
+        ]),
+    )
+}
+
+fn resizable_panels_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &ResizablePanelsInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.hit_target_px.value_px,
+        padding_x: 0.0,
+        padding_y: 0.0,
+        border_width: 0.0,
+        gap: 0.0,
+        radius: 0.0,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("lane", &metrics.lane_px),
+            ("hit target", &metrics.hit_target_px),
+            ("grip cross axis", &metrics.grip_cross_axis_px),
+            ("grip main axis", &metrics.grip_main_axis_px),
+        ]),
+    )
+}
+
+fn split_view_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &SplitViewInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.separator_hitbox_width.value_px,
+        padding_x: 0.0,
+        padding_y: metrics.separator_cue_inset_y.value_px,
+        border_width: 0.0,
+        gap: 0.0,
+        radius: metrics.separator_cue_radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("separator hitbox width", &metrics.separator_hitbox_width),
+            ("separator cue width", &metrics.separator_cue_width),
+            ("separator cue hovered width", &metrics.separator_cue_hovered_width),
+            ("separator cue radius", &metrics.separator_cue_radius),
+            ("separator cue inset y", &metrics.separator_cue_inset_y),
+        ]),
+    )
 }
 
 fn layout_section(

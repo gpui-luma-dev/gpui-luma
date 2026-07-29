@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{App, AppContext, Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::color::color_arc::{
     ColorArcBuilder, ColorArcDomainRenderer, ColorArcRenderer, ColorArcTrackContext, HueArcDelegate,
     LightnessArcDelegate, RasterArcDelegate, SaturationArcDelegate, refresh_color_arc, update_arc_delegate,
@@ -14,11 +14,17 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::color_chrome_exposition::{
+    color_chrome_set_viewport_size, spawn_color_chrome_viewport, sync_color_chrome_viewport, ColorChromeViewportPane,
+};
+use super::color_chrome_inspector::ColorChromeInspector;
 use super::color_exposition_common::{
     centered_field, detail_row, format_compact_hsla, format_hex_color, format_slider_event, render_demo_section,
     render_field_card,
 };
 use super::event_stream::ControlEventStream;
+use super::inspector::color_chrome::COLOR_ARC_CHROME_PROFILES;
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
@@ -68,14 +74,14 @@ struct ArcDemo {
 }
 
 impl ArcDemo {
-    fn spawn(builder: ColorArcBuilder, cx: &mut Context<ColorArcControlExposition>) -> Self {
+    fn spawn(builder: ColorArcBuilder, cx: &mut impl AppContext) -> Self {
         let renderer = builder.domain_renderer();
         let track_context = builder.track_context();
         let slider = builder.spawn(cx);
         Self { slider, renderer, track_context }
     }
 
-    fn sync_saturation(&self, hue: f32, hsv_value: f32, cx: &mut Context<ColorArcControlExposition>) {
+    fn sync_saturation(&self, hue: f32, hsv_value: f32, cx: &mut App) {
         update_arc_delegate(
             &self.renderer,
             Arc::new(SaturationArcDelegate { hue, hsv_value }),
@@ -84,7 +90,7 @@ impl ArcDemo {
         refresh_color_arc(&self.slider, cx);
     }
 
-    fn sync_lightness(&self, hue: f32, saturation: f32, cx: &mut Context<ColorArcControlExposition>) {
+    fn sync_lightness(&self, hue: f32, saturation: f32, cx: &mut App) {
         update_arc_delegate(
             &self.renderer,
             Arc::new(LightnessArcDelegate { hue, saturation }),
@@ -93,7 +99,7 @@ impl ArcDemo {
         refresh_color_arc(&self.slider, cx);
     }
 
-    fn sync_hue_raster(&self, saturation: f32, lightness: f32, cx: &mut Context<ColorArcControlExposition>) {
+    fn sync_hue_raster(&self, saturation: f32, lightness: f32, cx: &mut App) {
         update_arc_delegate(
             &self.renderer,
             Arc::new(RasterArcDelegate::hue(saturation, lightness)),
@@ -102,7 +108,7 @@ impl ArcDemo {
         refresh_color_arc(&self.slider, cx);
     }
 
-    fn sync_hue_vector(&self, saturation: f32, lightness: f32, cx: &mut Context<ColorArcControlExposition>) {
+    fn sync_hue_vector(&self, saturation: f32, lightness: f32, cx: &mut App) {
         update_arc_delegate(
             &self.renderer,
             Arc::new(HueArcDelegate { saturation, lightness }),
@@ -111,12 +117,20 @@ impl ArcDemo {
         refresh_color_arc(&self.slider, cx);
     }
 
-    fn set_value(&self, value: f32, cx: &mut Context<ColorArcControlExposition>) {
+    fn set_value(&self, value: f32, cx: &mut App) {
         self.slider.update(cx, |slider, cx| slider.set_value(value, cx));
     }
 }
 
 pub struct ColorArcControlExposition {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
+    left_pane: Entity<ColorArcExpositionLeftPane>,
+    chrome_inspector: Entity<ColorChromeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+}
+
+struct ColorArcExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     hue_arc: ArcDemo,
@@ -132,112 +146,7 @@ pub struct ColorArcControlExposition {
     _subscriptions: Vec<Subscription>,
 }
 
-impl ColorArcControlExposition {
-    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("color-arc").expect("color-arc catalog entry");
-        let hsv = Hsv { h: 28.0, s: 0.74, v: 0.92, a: 1.0 };
-        let lightness = hsv.to_hsla_ext().l;
-
-        let hue_arc = ArcDemo::spawn(
-            ColorArcBuilder::hue("controls-doc-color-arc-hue", hsv.h, hsv.s, lightness)
-                .size(Size::Medium)
-                .start_degrees(-45.0)
-                .sweep_degrees(270.0),
-            cx,
-        );
-        let saturation_arc = ArcDemo::spawn(
-            ColorArcBuilder::saturation("controls-doc-color-arc-saturation", hsv.s, hsv.h, hsv.v)
-                .size(Size::Medium)
-                .start_degrees(-45.0)
-                .sweep_degrees(270.0),
-            cx,
-        );
-        let lightness_arc = ArcDemo::spawn(
-            ColorArcBuilder::lightness("controls-doc-color-arc-lightness", lightness, hsv.h, hsv.s)
-                .size(Size::Medium)
-                .start_degrees(-45.0)
-                .sweep_degrees(270.0),
-            cx,
-        );
-        let vector_arc = ArcDemo::spawn(
-            ColorArcBuilder::hue_with_renderer(
-                "controls-doc-color-arc-vector",
-                hsv.h,
-                hsv.s,
-                lightness,
-                ColorArcRenderer::Vector,
-            )
-            .size(Size::Medium)
-            .start_degrees(0.0)
-            .sweep_degrees(180.0),
-            cx,
-        );
-        let raster_arc = ArcDemo::spawn(
-            ColorArcBuilder::hue_with_renderer(
-                "controls-doc-color-arc-raster",
-                hsv.h,
-                hsv.s,
-                lightness,
-                ColorArcRenderer::Raster,
-            )
-            .size(Size::Medium)
-            .start_degrees(0.0)
-            .sweep_degrees(180.0),
-            cx,
-        );
-        let thickness_small_arc = ArcDemo::spawn(
-            ColorArcBuilder::hue("controls-doc-color-arc-thickness-small", hsv.h, hsv.s, lightness)
-                .size(Size::Medium)
-                .arc_thickness_size(Size::Small)
-                .start_degrees(0.0)
-                .sweep_degrees(180.0),
-            cx,
-        );
-        let thickness_large_arc = ArcDemo::spawn(
-            ColorArcBuilder::hue("controls-doc-color-arc-thickness-large", hsv.h, hsv.s, lightness)
-                .size(Size::Medium)
-                .arc_thickness_size(Size::Large)
-                .start_degrees(0.0)
-                .sweep_degrees(180.0),
-            cx,
-        );
-
-        let event_stream = cx.new(|cx| {
-            ControlEventStream::new(
-                cx,
-                look.clone(),
-                "controls-color-arc-event-log",
-                "Drag the hue arc; SliderEvent variants appear below.",
-            )
-        });
-
-        let subscriptions = vec![cx.subscribe(&hue_arc.slider, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &SliderEvent, cx| {
-                this.handle_event(event, cx);
-                if let Some(line) = format_slider_event("Hue Arc", event) {
-                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
-                }
-            }
-        })];
-
-        Self {
-            look,
-            entry,
-            hue_arc,
-            saturation_arc,
-            lightness_arc,
-            vector_arc,
-            raster_arc,
-            thickness_small_arc,
-            thickness_large_arc,
-            hsv,
-            last_event: "Release".to_string(),
-            event_stream,
-            _subscriptions: subscriptions,
-        }
-    }
-
+impl ColorArcExpositionLeftPane {
     fn handle_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
         let hue = match event {
             SliderEvent::Change { value, .. } => {
@@ -274,11 +183,7 @@ impl ColorArcControlExposition {
         self.thickness_large_arc.sync_hue_raster(saturation, lightness, cx);
     }
 
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
-    }
-
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         for arc in [
             &self.hue_arc,
@@ -296,7 +201,7 @@ impl ColorArcControlExposition {
     }
 }
 
-impl Render for ColorArcControlExposition {
+impl Render for ColorArcExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
@@ -409,13 +314,178 @@ impl Render for ColorArcControlExposition {
                 ))
                 .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
+            div()
+                .id("controls-doc-color-arc-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
+}
+
+impl ColorArcControlExposition {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let entry = *catalog_entry("color-arc").expect("color-arc catalog entry");
+        let hsv = Hsv { h: 28.0, s: 0.74, v: 0.92, a: 1.0 };
+        let lightness = hsv.to_hsla_ext().l;
+
+        let hue_arc = ArcDemo::spawn(
+            ColorArcBuilder::hue("controls-doc-color-arc-hue", hsv.h, hsv.s, lightness)
+                .size(Size::Medium)
+                .start_degrees(-45.0)
+                .sweep_degrees(270.0),
+            cx,
+        );
+        let saturation_arc = ArcDemo::spawn(
+            ColorArcBuilder::saturation("controls-doc-color-arc-saturation", hsv.s, hsv.h, hsv.v)
+                .size(Size::Medium)
+                .start_degrees(-45.0)
+                .sweep_degrees(270.0),
+            cx,
+        );
+        let lightness_arc = ArcDemo::spawn(
+            ColorArcBuilder::lightness("controls-doc-color-arc-lightness", lightness, hsv.h, hsv.s)
+                .size(Size::Medium)
+                .start_degrees(-45.0)
+                .sweep_degrees(270.0),
+            cx,
+        );
+        let vector_arc = ArcDemo::spawn(
+            ColorArcBuilder::hue_with_renderer(
+                "controls-doc-color-arc-vector",
+                hsv.h,
+                hsv.s,
+                lightness,
+                ColorArcRenderer::Vector,
             )
+            .size(Size::Medium)
+            .start_degrees(0.0)
+            .sweep_degrees(180.0),
+            cx,
+        );
+        let raster_arc = ArcDemo::spawn(
+            ColorArcBuilder::hue_with_renderer(
+                "controls-doc-color-arc-raster",
+                hsv.h,
+                hsv.s,
+                lightness,
+                ColorArcRenderer::Raster,
+            )
+            .size(Size::Medium)
+            .start_degrees(0.0)
+            .sweep_degrees(180.0),
+            cx,
+        );
+        let thickness_small_arc = ArcDemo::spawn(
+            ColorArcBuilder::hue("controls-doc-color-arc-thickness-small", hsv.h, hsv.s, lightness)
+                .size(Size::Medium)
+                .arc_thickness_size(Size::Small)
+                .start_degrees(0.0)
+                .sweep_degrees(180.0),
+            cx,
+        );
+        let thickness_large_arc = ArcDemo::spawn(
+            ColorArcBuilder::hue("controls-doc-color-arc-thickness-large", hsv.h, hsv.s, lightness)
+                .size(Size::Medium)
+                .arc_thickness_size(Size::Large)
+                .start_degrees(0.0)
+                .sweep_degrees(180.0),
+            cx,
+        );
+
+        let event_stream = cx.new(|cx| {
+            ControlEventStream::new(
+                cx,
+                look.clone(),
+                "controls-color-arc-event-log",
+                "Drag the hue arc; SliderEvent variants appear below.",
+            )
+        });
+
+        let left_pane = cx.new(|cx| {
+            let subscriptions = vec![cx.subscribe(&hue_arc.slider, {
+                let event_stream = event_stream.clone();
+                move |this: &mut ColorArcExpositionLeftPane, _, event: &SliderEvent, cx| {
+                    this.handle_event(event, cx);
+                    if let Some(line) = format_slider_event("Hue Arc", event) {
+                        event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                    }
+                }
+            })];
+
+            ColorArcExpositionLeftPane {
+                look: look.clone(),
+                entry,
+                hue_arc,
+                saturation_arc,
+                lightness_arc,
+                vector_arc,
+                raster_arc,
+                thickness_small_arc,
+                thickness_large_arc,
+                hsv,
+                last_event: "Release".to_string(),
+                event_stream,
+                _subscriptions: subscriptions,
+            }
+        });
+
+        let ColorChromeViewportPane { chrome_inspector, inspector_split } = spawn_color_chrome_viewport(
+            cx,
+            look.clone(),
+            "controls-doc-color-arc-pane",
+            "controls-doc-color-arc-chrome",
+            COLOR_ARC_CHROME_PROFILES,
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+        );
+
+        Self { look, entry, left_pane, chrome_inspector, inspector_split }
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        color_chrome_set_viewport_size(&self.inspector_split, size, cx);
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_color_chrome_viewport(look, &self.chrome_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+impl Render for ColorArcControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-color-arc-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

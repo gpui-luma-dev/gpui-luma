@@ -11,9 +11,13 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::accordion_inspector_adapter::{AccordionInspectorAdapter, ACCORDION_INSPECTOR_SPEC};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
+use super::shell_theme_inspectors::AccordionThemeInspector;
 use super::template::render_control_exposition_card;
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[
@@ -55,12 +59,67 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct AccordionControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<AccordionExpositionLeftPane>,
+    theme_inspector: Entity<AccordionThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
+}
+
+struct AccordionExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     single: Entity<AccordionControl>,
     multiple: Entity<AccordionControl>,
     interactive: Entity<AccordionControl>,
     interactive_field: TextField,
     event_stream: Entity<ControlEventStream>,
-    _subscriptions: Vec<Subscription>,
+}
+
+impl AccordionExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        for entity in [&self.single, &self.multiple, &self.interactive] {
+            entity.update(cx, |_, cx| cx.notify());
+        }
+        self.interactive_field.update(cx, |_, cx| cx.notify());
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
+    }
+}
+
+impl Render for AccordionExpositionLeftPane {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            let look = &self.look;
+            let muted = look.chrome().muted_text;
+
+            let preview = div()
+                .w_full()
+                .max_w(px(420.0))
+                .flex()
+                .flex_col()
+                .items_start()
+                .gap(px(16.0))
+                .child(demo_section("Single expansion", muted, self.single.clone()))
+                .child(demo_section("Multiple expansion", muted, self.multiple.clone()))
+                .child(demo_section("Context-aware content", muted, self.interactive.clone()))
+                .child(self.event_stream.clone());
+
+            div()
+                .id("controls-doc-accordion-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
 }
 
 impl AccordionControlExposition {
@@ -131,6 +190,27 @@ impl AccordionControlExposition {
             )
         });
 
+        let left_pane = cx.new(|_| AccordionExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            single: single.clone(),
+            multiple: multiple.clone(),
+            interactive: interactive.clone(),
+            interactive_field: interactive_field.clone(),
+            event_stream: event_stream.clone(),
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-accordion-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &ACCORDION_INSPECTOR_SPEC,
+            AccordionInspectorAdapter::shared(),
+        );
+
         let mut subscriptions = Vec::new();
         for entity in [single.clone(), multiple.clone(), interactive.clone()] {
             let event_stream = event_stream.clone();
@@ -149,29 +229,29 @@ impl AccordionControlExposition {
             }
         }));
 
-        Self {
-            look,
-            entry,
-            single,
-            multiple,
-            interactive,
-            interactive_field,
-            event_stream,
-            _subscriptions: subscriptions,
-        }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
     }
 
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        for entity in [&self.single, &self.multiple, &self.interactive] {
-            entity.update(cx, |_, cx| cx.notify());
-        }
-        self.interactive_field.update(cx, |_, cx| cx.notify());
-        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
         cx.notify();
     }
 }
@@ -179,28 +259,12 @@ impl AccordionControlExposition {
 impl Render for AccordionControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
-            let look = &self.look;
-            let muted = look.chrome().muted_text;
-
-            let preview = div()
-                .w_full()
-                .max_w(px(420.0))
-                .flex()
-                .flex_col()
-                .items_start()
-                .gap(px(16.0))
-                .child(demo_section("Single expansion", muted, self.single.clone()))
-                .child(demo_section("Multiple expansion", muted, self.multiple.clone()))
-                .child(demo_section("Context-aware content", muted, self.interactive.clone()))
-                .child(self.event_stream.clone());
-
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-accordion-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

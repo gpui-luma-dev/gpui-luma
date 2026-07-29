@@ -15,8 +15,12 @@ use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt,
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
+use super::resizable_panels_inspector_adapter::{ResizablePanelsInspectorAdapter, RESIZABLE_PANELS_INSPECTOR_SPEC};
+use super::shell_theme_inspectors::ResizablePanelsThemeInspector;
 use super::template::render_control_exposition_card;
 
 const DEMO_WIDTH: f32 = 480.0;
@@ -62,6 +66,15 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct ResizablePanelsControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<ResizablePanelsExpositionLeftPane>,
+    theme_inspector: Entity<ResizablePanelsThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
+}
+
+struct ResizablePanelsExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     horizontal: Entity<ResizablePanels>,
     vertical: Entity<ResizablePanels>,
     controlled: Entity<ResizablePanels>,
@@ -71,7 +84,93 @@ pub struct ResizablePanelsControlExposition {
     vertical_sizes: String,
     controlled_sizes: String,
     event_stream: Entity<ControlEventStream>,
-    _subscriptions: Vec<Subscription>,
+}
+
+impl ResizablePanelsExpositionLeftPane {
+    fn apply_sizes_event(
+        &mut self,
+        event: &ResizablePanelsEvent,
+        assign: impl FnOnce(&mut Self, String),
+        cx: &mut Context<Self>,
+    ) {
+        let sizes = match event {
+            ResizablePanelsEvent::SizesChanged { sizes_px } | ResizablePanelsEvent::ResizeEnd { sizes_px } => sizes_px,
+            _ => return,
+        };
+        assign(self, format_sizes(sizes));
+        cx.notify();
+    }
+
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.horizontal.update(cx, |_, cx| cx.notify());
+        self.vertical.update(cx, |_, cx| cx.notify());
+        self.controlled.update(cx, |_, cx| cx.notify());
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
+    }
+}
+
+impl Render for ResizablePanelsExpositionLeftPane {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            let look = &self.look;
+            let chrome = look.chrome();
+            let label_color = chrome.muted_text;
+
+            let preview = div()
+                .w_full()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(16.0))
+                .child(demo_frame(
+                    look,
+                    "Horizontal",
+                    &self.horizontal_sizes,
+                    label_color,
+                    chrome.border,
+                    self.horizontal.clone(),
+                ))
+                .child(demo_frame(
+                    look,
+                    "Vertical",
+                    &self.vertical_sizes,
+                    label_color,
+                    chrome.border,
+                    self.vertical.clone(),
+                ))
+                .child(demo_frame(
+                    look,
+                    "Controlled min/max",
+                    &self.controlled_sizes,
+                    label_color,
+                    chrome.border,
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap(px(8.0))
+                        .child(self.controlled.clone())
+                        .child(self.reset_controlled_button.clone()),
+                ))
+                .child(self.event_stream.clone());
+
+            div()
+                .id("controls-doc-resizable-panels-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
 }
 
 impl ResizablePanelsControlExposition {
@@ -193,86 +292,106 @@ impl ResizablePanelsControlExposition {
             )
         });
 
-        let mut this = Self {
-            look,
+        let left_pane = cx.new(|_| ResizablePanelsExpositionLeftPane {
+            look: look.clone(),
             entry,
             horizontal: horizontal.clone(),
             vertical: vertical.clone(),
             controlled: controlled.clone(),
             reset_controlled_button: reset_controlled_button.clone(),
-            controlled_panel_sizes,
+            controlled_panel_sizes: controlled_panel_sizes.clone(),
             horizontal_sizes: format_sizes(&[DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]),
             vertical_sizes: format_sizes(&[DEMO_HEIGHT * 0.3, DEMO_HEIGHT * 0.7]),
             controlled_sizes: format_sizes(&[DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]),
             event_stream: event_stream.clone(),
-            _subscriptions: Vec::new(),
-        };
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-resizable-panels-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &RESIZABLE_PANELS_INSPECTOR_SPEC,
+            ResizablePanelsInspectorAdapter::shared(),
+        );
 
-        this._subscriptions.push(cx.subscribe(&horizontal, {
+        let mut subscriptions = Vec::new();
+        subscriptions.push(cx.subscribe(&horizontal, {
             let event_stream = event_stream.clone();
-            move |this, _, event, cx| {
-                this.apply_sizes_event(event, |this, sizes| this.horizontal_sizes = sizes, cx);
+            let left_pane = left_pane.clone();
+            move |_, _, event, cx| {
+                left_pane.update(cx, |pane, cx| {
+                    pane.apply_sizes_event(event, |pane, sizes| pane.horizontal_sizes = sizes, cx);
+                });
                 append_resizable_event(&event_stream, event, cx);
             }
         }));
-        this._subscriptions.push(cx.subscribe(&vertical, {
+        subscriptions.push(cx.subscribe(&vertical, {
             let event_stream = event_stream.clone();
-            move |this, _, event, cx| {
-                this.apply_sizes_event(event, |this, sizes| this.vertical_sizes = sizes, cx);
+            let left_pane = left_pane.clone();
+            move |_, _, event, cx| {
+                left_pane.update(cx, |pane, cx| {
+                    pane.apply_sizes_event(event, |pane, sizes| pane.vertical_sizes = sizes, cx);
+                });
                 append_resizable_event(&event_stream, event, cx);
             }
         }));
-        this._subscriptions.push(cx.subscribe(&controlled, {
+        subscriptions.push(cx.subscribe(&controlled, {
             let event_stream = event_stream.clone();
-            move |this, _, event, cx| {
-                if let ResizablePanelsEvent::SizesChanged { sizes_px } | ResizablePanelsEvent::ResizeEnd { sizes_px } =
-                    event
-                    && sizes_px.len() >= 2
-                {
-                    this.controlled_panel_sizes.set([sizes_px[0], sizes_px[1]]);
-                }
-                this.apply_sizes_event(event, |this, sizes| this.controlled_sizes = sizes, cx);
+            let left_pane = left_pane.clone();
+            move |_, _, event, cx| {
+                left_pane.update(cx, |pane, cx| {
+                    if let ResizablePanelsEvent::SizesChanged { sizes_px }
+                    | ResizablePanelsEvent::ResizeEnd { sizes_px } = event
+                        && sizes_px.len() >= 2
+                    {
+                        pane.controlled_panel_sizes.set([sizes_px[0], sizes_px[1]]);
+                    }
+                    pane.apply_sizes_event(event, |pane, sizes| pane.controlled_sizes = sizes, cx);
+                });
                 append_resizable_event(&event_stream, event, cx);
             }
         }));
-        this._subscriptions
-            .push(cx.subscribe(&reset_controlled_button, move |this, _, event: &ButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&reset_controlled_button, {
+            let left_pane = left_pane.clone();
+            move |_, _, event: &ButtonEvent, cx| {
                 if !event.is_click() {
                     return;
                 }
-                this.controlled.update(cx, |panels, cx| panels.set_weights(vec![3.0, 7.0], cx));
-                this.controlled_panel_sizes.set([DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]);
-                this.controlled_sizes = format_sizes(&[DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]);
-                cx.notify();
-            }));
+                left_pane.update(cx, |pane, cx| {
+                    pane.controlled.update(cx, |panels, cx| panels.set_weights(vec![3.0, 7.0], cx));
+                    pane.controlled_panel_sizes.set([DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]);
+                    pane.controlled_sizes = format_sizes(&[DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]);
+                    cx.notify();
+                });
+            }
+        }));
 
-        this
-    }
-
-    fn apply_sizes_event(
-        &mut self,
-        event: &ResizablePanelsEvent,
-        assign: impl FnOnce(&mut Self, String),
-        cx: &mut Context<Self>,
-    ) {
-        let sizes = match event {
-            ResizablePanelsEvent::SizesChanged { sizes_px } | ResizablePanelsEvent::ResizeEnd { sizes_px } => sizes_px,
-            _ => return,
-        };
-        assign(self, format_sizes(sizes));
-        cx.notify();
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
     }
 
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.horizontal.update(cx, |_, cx| cx.notify());
-        self.vertical.update(cx, |_, cx| cx.notify());
-        self.controlled.update(cx, |_, cx| cx.notify());
-        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
         cx.notify();
     }
 }
@@ -280,55 +399,12 @@ impl ResizablePanelsControlExposition {
 impl Render for ResizablePanelsControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
-            let look = &self.look;
-            let chrome = look.chrome();
-            let label_color = chrome.muted_text;
-
-            let preview = div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(16.0))
-                .child(demo_frame(
-                    look,
-                    "Horizontal",
-                    &self.horizontal_sizes,
-                    label_color,
-                    chrome.border,
-                    self.horizontal.clone(),
-                ))
-                .child(demo_frame(
-                    look,
-                    "Vertical",
-                    &self.vertical_sizes,
-                    label_color,
-                    chrome.border,
-                    self.vertical.clone(),
-                ))
-                .child(demo_frame(
-                    look,
-                    "Controlled min/max",
-                    &self.controlled_sizes,
-                    label_color,
-                    chrome.border,
-                    div()
-                        .flex()
-                        .flex_col()
-                        .items_center()
-                        .gap(px(8.0))
-                        .child(self.controlled.clone())
-                        .child(self.reset_controlled_button.clone()),
-                ))
-                .child(self.event_stream.clone());
-
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-resizable-panels-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

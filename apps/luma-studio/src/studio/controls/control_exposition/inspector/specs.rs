@@ -1,6 +1,8 @@
 use lucide_icons::Icon as LucideIcon;
 
-use super::schema::{InspectorCategory, InspectorSize, InspectorStateSpec, InspectorValueMode, InspectorVariant};
+use super::schema::{
+    InspectorCategory, InspectorPart, InspectorSize, InspectorStateSpec, InspectorValueMode, InspectorVariant,
+};
 
 pub static PRIMARY_SECONDARY_VARIANTS: [InspectorVariant; 2] = [
     InspectorVariant { id: "primary", label: "Primary" },
@@ -194,6 +196,359 @@ pub static SCROLLBAR_ORIENTATIONS: [InspectorVariant; 2] = [
 ];
 
 pub static POPUP_MENU_TRIGGER_VARIANTS: [InspectorVariant; 2] = [
-    InspectorVariant { id: "outline", label: "Outline Trigger" },
-    InspectorVariant { id: "ghost", label: "Ghost Trigger" },
+    InspectorVariant { id: "outline", label: "Outline" },
+    InspectorVariant { id: "ghost", label: "Ghost" },
+];
+
+pub static POPUP_MENU_PARTS: [InspectorPart; 2] = [
+    InspectorPart {
+        id: "trigger",
+        label: "Trigger",
+        variants: &POPUP_MENU_TRIGGER_VARIANTS,
+        default_variant_id: "outline",
+    },
+    InspectorPart { id: "panel", label: "Panel", variants: &[], default_variant_id: "" },
+];
+
+pub static POPUP_MENU_STATES: [InspectorStateSpec; 8] = [
+    InspectorStateSpec {
+        id: "default",
+        label: "Default",
+        icon: LucideIcon::Circle,
+        expanded_default: true,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "hover",
+        label: "Hover",
+        icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "focused",
+        label: "Focused",
+        icon: LucideIcon::Focus,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "pressed",
+        label: "Pressed",
+        icon: LucideIcon::MousePointerClick,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "disabled",
+        label: "Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "panel-default",
+        label: "Surface",
+        icon: LucideIcon::Circle,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "panel-hover",
+        label: "Item Hover",
+        icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "panel-disabled",
+        label: "Item Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+];
+
+pub static LISTBOX_VARIANTS: [InspectorVariant; 2] =
+    [InspectorVariant { id: "list", label: "List" }, InspectorVariant { id: "row", label: "Row" }];
+
+pub static LISTBOX_STATES: [InspectorStateSpec; 7] = [
+    InspectorStateSpec {
+        id: "enabled",
+        label: "Enabled",
+        icon: LucideIcon::Circle,
+        expanded_default: true,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "disabled",
+        label: "Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "focused",
+        label: "Focused",
+        icon: LucideIcon::Focus,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "default",
+        label: "Default",
+        icon: LucideIcon::Circle,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "hover",
+        label: "Hover",
+        icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "pressed",
+        label: "Pressed",
+        icon: LucideIcon::MousePointerClick,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "keyboard-active",
+        label: "Keyboard Active",
+        icon: LucideIcon::Focus,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+];
+
+pub static LIST_VIEW_VARIANTS: [InspectorVariant; 2] =
+    [InspectorVariant { id: "surface", label: "Surface" }, InspectorVariant { id: "row", label: "Row" }];
+
+pub static LIST_VIEW_STATES: [InspectorStateSpec; 7] = LISTBOX_STATES;
+
+pub static LIST_VIEW_ROW_VALUE_MODES: [InspectorValueMode; 2] = [
+    InspectorValueMode { id: "unselected", label: "unselected" },
+    InspectorValueMode { id: "selected", label: "selected" },
+];
+
+pub static NAVIGATION_SIDEBAR_VARIANTS: [InspectorVariant; 4] = [
+    InspectorVariant { id: "container", label: "Container" },
+    InspectorVariant { id: "section", label: "Section" },
+    InspectorVariant { id: "branch", label: "Branch Item" },
+    InspectorVariant { id: "nav-item", label: "Nav Item" },
+];
+
+pub static NAV_ITEM_VALUE_MODES: [InspectorValueMode; 2] = [
+    InspectorValueMode { id: "unselected", label: "unselected" },
+    InspectorValueMode { id: "selected", label: "selected" },
+];
+
+pub static TABS_NAVIGATION_VARIANTS: [InspectorVariant; 3] = [
+    InspectorVariant { id: "inactive", label: "Inactive" },
+    InspectorVariant { id: "active", label: "Active" },
+    InspectorVariant { id: "list", label: "List" },
+];
+
+pub static ACCORDION_VARIANTS: [InspectorVariant; 2] = [
+    InspectorVariant { id: "trigger", label: "Trigger" },
+    InspectorVariant { id: "content", label: "Content" },
+];
+
+pub static RESIZE_HANDLE_SIZES: [InspectorSize; 3] = [
+    InspectorSize { id: "sm", label: "sm" },
+    InspectorSize { id: "md", label: "md" },
+    InspectorSize { id: "lg", label: "lg" },
+];
+
+pub static TREE_VIEW_ROW_STATES: [InspectorStateSpec; 4] = [
+    InspectorStateSpec {
+        id: "default",
+        label: "Default",
+        icon: LucideIcon::Circle,
+        expanded_default: true,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "hover",
+        label: "Hover",
+        icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "pressed",
+        label: "Pressed",
+        icon: LucideIcon::MousePointerClick,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "disabled",
+        label: "Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+];
+
+pub static NAVIGATION_SIDEBAR_STATES: [InspectorStateSpec; 5] = [
+    InspectorStateSpec {
+        id: "default",
+        label: "Default",
+        icon: LucideIcon::Circle,
+        expanded_default: true,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "hover",
+        label: "Hover",
+        icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "pressed",
+        label: "Pressed",
+        icon: LucideIcon::MousePointerClick,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "focused",
+        label: "Focused",
+        icon: LucideIcon::Focus,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "disabled",
+        label: "Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+];
+
+pub static TABS_NAVIGATION_STATES: [InspectorStateSpec; 7] = [
+    InspectorStateSpec {
+        id: "enabled",
+        label: "Enabled",
+        icon: LucideIcon::Circle,
+        expanded_default: true,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "disabled",
+        label: "Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "default",
+        label: "Default",
+        icon: LucideIcon::Circle,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "hover",
+        label: "Hover",
+        icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "focused",
+        label: "Focused",
+        icon: LucideIcon::Focus,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "pressed",
+        label: "Pressed",
+        icon: LucideIcon::MousePointerClick,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "item-disabled",
+        label: "Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+];
+
+pub static ACCORDION_STATES: [InspectorStateSpec; 6] = [
+    InspectorStateSpec {
+        id: "default",
+        label: "Default",
+        icon: LucideIcon::Circle,
+        expanded_default: true,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "hover",
+        label: "Hover",
+        icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "pressed",
+        label: "Pressed",
+        icon: LucideIcon::MousePointerClick,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "disabled",
+        label: "Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "expanded",
+        label: "Expanded",
+        icon: LucideIcon::ChevronDown,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "collapsed",
+        label: "Collapsed",
+        icon: LucideIcon::ChevronRight,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+];
+
+pub static FLOATING_MENU_ITEM_STATES: [InspectorStateSpec; 3] = [
+    InspectorStateSpec {
+        id: "default",
+        label: "Surface",
+        icon: LucideIcon::Circle,
+        expanded_default: true,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "hover",
+        label: "Item Hover",
+        icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "disabled",
+        label: "Item Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
 ];

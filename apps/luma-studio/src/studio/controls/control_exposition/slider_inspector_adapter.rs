@@ -17,10 +17,12 @@ static SLIDER_STATES: [super::inspector::InspectorStateSpec; 5] = COLOR_LAYOUT_I
 pub static SLIDER_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Slider",
     id_prefix: "slider-theme-inspector",
+    parts: &[],
     variants: &[],
     states: &SLIDER_STATES,
     sizes: &[],
     value_modes: &[],
+    default_part_id: "",
     default_variant_id: "",
     default_size_id: "",
     default_value_id: "",

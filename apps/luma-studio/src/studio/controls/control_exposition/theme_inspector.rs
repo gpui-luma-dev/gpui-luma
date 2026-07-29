@@ -12,20 +12,27 @@ use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
 use super::inspector::{
-    ControlInspectorSpec, InspectorCategory, InspectorSelection, InspectorStateSpec, SharedInspectorResolver, layout,
-    render_category_content,
+    ControlInspectorSpec, InspectorCategory, InspectorSelection, InspectorStateSpec, InspectorVariant,
+    SharedInspectorResolver, layout, render_category_content,
 };
 
 pub struct ThemeInspector {
     look: Arc<ShadcnLook>,
     spec: &'static ControlInspectorSpec,
     resolver: SharedInspectorResolver,
-    variant_tabs: Option<Entity<TabsNavigation>>,
-    variants: Vec<VariantInspectorControls>,
+    part_tabs: Option<Entity<TabsNavigation>>,
+    parts: Vec<PartInspectorControls>,
+    active_part_id: SharedString,
     active_variant_id: SharedString,
     synced_mode: ThemeMode,
     embedded: bool,
     _subscriptions: Vec<Subscription>,
+}
+
+struct PartInspectorControls {
+    part_id: SharedString,
+    variant_tabs: Option<Entity<TabsNavigation>>,
+    variants: Vec<VariantInspectorControls>,
 }
 
 struct VariantInspectorControls {
@@ -40,6 +47,7 @@ struct ThemePropertyTree {
 struct LayoutSizeInspector {
     look: Arc<ShadcnLook>,
     resolver: SharedInspectorResolver,
+    part_id: SharedString,
     variant_id: SharedString,
     state_id: SharedString,
     size_tabs: Entity<TabsNavigation>,
@@ -51,6 +59,7 @@ struct ColorValueInspector {
     look: Arc<ShadcnLook>,
     spec: &'static ControlInspectorSpec,
     resolver: SharedInspectorResolver,
+    part_id: SharedString,
     variant_id: SharedString,
     state_id: SharedString,
     value_tabs: Entity<TabsNavigation>,
@@ -66,36 +75,47 @@ impl ThemeInspector {
         embedded: bool,
         cx: &mut Context<Self>,
     ) -> Self {
-        let (variant_tabs, subscriptions, active_variant_id) = if spec.variants.is_empty() {
-            (None, Vec::new(), SharedString::from(""))
+        let mut subscriptions = Vec::new();
+
+        let (part_tabs, active_part_id) = if spec.parts.is_empty() {
+            (None, SharedString::from(""))
         } else {
             let tabs = look
-                .tabs_navigation(format!("{}-variant-tabs", spec.id_prefix))
-                .items(variant_tab_items(spec))
-                .active(spec.default_variant_id)
+                .tabs_navigation(format!("{}-part-tabs", spec.id_prefix))
+                .items(part_tab_items(spec))
+                .active(spec.default_part_id)
                 .spawn(cx);
 
-            let mut subs = Vec::new();
-            subs.push(cx.subscribe(&tabs, |inspector, _, event: &TabsNavigationEvent, cx| {
+            subscriptions.push(cx.subscribe(&tabs, |inspector, _, event: &TabsNavigationEvent, cx| {
                 let TabsNavigationEvent::Activate { tab_id, .. } = event else {
                     return;
                 };
-                inspector.active_variant_id = tab_id.clone();
+                inspector.active_part_id = tab_id.clone();
+                inspector.active_variant_id = default_variant_for_part(inspector.spec, tab_id.as_ref());
                 cx.notify();
             }));
 
-            (Some(tabs), subs, SharedString::from(spec.default_variant_id))
+            (Some(tabs), SharedString::from(spec.default_part_id))
         };
 
-        let variants = build_variant_controls(look.clone(), spec, resolver.clone(), cx);
+        let active_variant_id = if spec.parts.is_empty() {
+            SharedString::from(spec.default_variant_id)
+        } else {
+            default_variant_for_part(spec, spec.default_part_id)
+        };
+
+        let (parts, part_subscriptions) =
+            build_part_controls(look.clone(), spec, resolver.clone(), cx, &mut subscriptions);
+        subscriptions.extend(part_subscriptions);
 
         Self {
             synced_mode: look.mode(),
             look,
             spec,
             resolver,
-            variant_tabs,
-            variants,
+            part_tabs,
+            parts,
+            active_part_id,
             active_variant_id,
             embedded,
             _subscriptions: subscriptions,
@@ -113,24 +133,32 @@ impl ThemeInspector {
 
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look;
-        self.variants = build_variant_controls(self.look.clone(), self.spec, self.resolver.clone(), cx);
+        let (parts, _) = build_part_controls(self.look.clone(), self.spec, self.resolver.clone(), cx, &mut vec![]);
+        self.parts = parts;
         self.synced_mode = self.look.mode();
-        if let Some(tabs) = &self.variant_tabs {
+        if let Some(tabs) = &self.part_tabs {
             tabs.update(cx, |_, cx| cx.notify());
+        }
+        for part in &self.parts {
+            if let Some(tabs) = &part.variant_tabs {
+                tabs.update(cx, |_, cx| cx.notify());
+            }
         }
         cx.notify();
     }
 
     fn active_tree(&self) -> Entity<AccordionControl> {
-        if self.spec.variants.is_empty() {
-            return self.variants[0].state.clone();
-        }
-
-        self.variants
+        self.parts
             .iter()
-            .find(|controls| controls.variant_id == self.active_variant_id)
-            .map(|controls| controls.state.clone())
-            .unwrap_or_else(|| self.variants[0].state.clone())
+            .find(|part| part.part_id == self.active_part_id)
+            .and_then(|part| {
+                part.variants
+                    .iter()
+                    .find(|variant| variant.variant_id == self.active_variant_id)
+                    .map(|variant| variant.state.clone())
+            })
+            .or_else(|| self.parts.first()?.variants.first().map(|variant| variant.state.clone()))
+            .expect("theme inspector must have at least one variant control tree")
     }
 
     fn sync_if_needed(&mut self, cx: &mut Context<Self>) {
@@ -199,7 +227,16 @@ impl Render for ThemeInspector {
                 ),
             );
 
-        if let Some(variant_tabs) = &self.variant_tabs {
+        if let Some(part_tabs) = &self.part_tabs {
+            header = header.child(part_tabs.clone());
+        }
+
+        if let Some(variant_tabs) = self
+            .parts
+            .iter()
+            .find(|part| part.part_id == self.active_part_id)
+            .and_then(|part| part.variant_tabs.as_ref())
+        {
             header = header.child(variant_tabs.clone());
         }
 
@@ -216,67 +253,170 @@ impl Render for ThemeInspector {
     }
 }
 
-fn variant_tab_items(spec: &ControlInspectorSpec) -> Vec<TabsNavigationItem> {
-    spec.variants
+fn part_tab_items(spec: &ControlInspectorSpec) -> Vec<TabsNavigationItem> {
+    spec.parts.iter().map(|part| TabsNavigationItem::new(part.id).label(part.label)).collect()
+}
+
+fn variant_tab_items(variants: &[InspectorVariant]) -> Vec<TabsNavigationItem> {
+    variants.iter().map(|variant| TabsNavigationItem::new(variant.id).label(variant.label)).collect()
+}
+
+fn default_variant_for_part(spec: &ControlInspectorSpec, part_id: &str) -> SharedString {
+    if spec.parts.is_empty() {
+        return SharedString::from(spec.default_variant_id);
+    }
+
+    spec.parts
         .iter()
-        .map(|variant| TabsNavigationItem::new(variant.id).label(variant.label))
-        .collect()
+        .find(|part| part.id == part_id)
+        .map(|part| SharedString::from(part.default_variant_id))
+        .unwrap_or_default()
+}
+
+fn build_part_controls(
+    look: Arc<ShadcnLook>,
+    spec: &'static ControlInspectorSpec,
+    resolver: SharedInspectorResolver,
+    cx: &mut Context<ThemeInspector>,
+    subscriptions: &mut Vec<Subscription>,
+) -> (Vec<PartInspectorControls>, Vec<Subscription>) {
+    if spec.parts.is_empty() {
+        let (variant_tabs, variant_subscriptions, _) =
+            spawn_variant_tabs(look.clone(), spec, spec.variants, spec.default_variant_id, SharedString::from(""), cx);
+        subscriptions.extend(variant_subscriptions);
+        let variants = build_variant_controls(look, spec, resolver, SharedString::from(""), spec.variants, cx);
+        return (vec![PartInspectorControls { part_id: SharedString::from(""), variant_tabs, variants }], vec![]);
+    }
+
+    let parts = spec
+        .parts
+        .iter()
+        .filter(|part| {
+            resolver.part_applies(
+                &look,
+                inspector_selection(
+                    part.id,
+                    part.default_variant_id,
+                    "default",
+                    spec.default_size_id,
+                    spec.default_value_id,
+                ),
+                part,
+            )
+        })
+        .map(|part| {
+            let part_id = SharedString::from(part.id);
+            let (variant_tabs, variant_subscriptions, _) = if part.variants.is_empty() {
+                (None, Vec::new(), SharedString::from(""))
+            } else {
+                spawn_variant_tabs(look.clone(), spec, part.variants, part.default_variant_id, part_id.clone(), cx)
+            };
+            subscriptions.extend(variant_subscriptions);
+            let variants =
+                build_variant_controls(look.clone(), spec, resolver.clone(), part_id.clone(), part.variants, cx);
+            PartInspectorControls { part_id, variant_tabs, variants }
+        })
+        .collect();
+    (parts, vec![])
+}
+
+fn spawn_variant_tabs(
+    look: Arc<ShadcnLook>,
+    spec: &'static ControlInspectorSpec,
+    variants: &[InspectorVariant],
+    default_variant_id: &str,
+    part_id: SharedString,
+    cx: &mut Context<ThemeInspector>,
+) -> (Option<Entity<TabsNavigation>>, Vec<Subscription>, SharedString) {
+    if variants.is_empty() {
+        return (None, Vec::new(), SharedString::from(""));
+    }
+
+    let tabs = look
+        .tabs_navigation(format!("{}-{}-variant-tabs", spec.id_prefix, part_id))
+        .items(variant_tab_items(variants))
+        .active(default_variant_id)
+        .spawn(cx);
+
+    let mut subs = Vec::new();
+    subs.push(cx.subscribe(&tabs, move |inspector, _, event: &TabsNavigationEvent, cx| {
+        let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+            return;
+        };
+        inspector.active_part_id = part_id.clone();
+        inspector.active_variant_id = tab_id.clone();
+        cx.notify();
+    }));
+
+    (Some(tabs), subs, SharedString::from(default_variant_id))
 }
 
 fn build_variant_controls(
     look: Arc<ShadcnLook>,
     spec: &'static ControlInspectorSpec,
     resolver: SharedInspectorResolver,
+    part_id: SharedString,
+    variants: &[InspectorVariant],
     cx: &mut Context<ThemeInspector>,
 ) -> Vec<VariantInspectorControls> {
-    if spec.variants.is_empty() {
-        let state_trees = spec
-            .states
-            .iter()
-            .map(|state_spec| {
-                let categories = applicable_categories(&look, &resolver, spec, "", state_spec);
-                let tree = cx.new(|cx| {
-                    ThemePropertyTree::new(
-                        look.clone(),
-                        spec,
-                        resolver.clone(),
-                        SharedString::from(""),
-                        SharedString::from(state_spec.id),
-                        categories,
-                        cx,
-                    )
-                });
-                (*state_spec, tree)
-            })
-            .collect();
-        let state = state_accordion(look, spec, SharedString::from(""), state_trees, cx);
+    if variants.is_empty() {
+        let state_trees =
+            build_state_trees(look.clone(), spec, resolver.clone(), part_id.clone(), SharedString::from(""), cx);
+        let state = state_accordion(look, spec, part_id, SharedString::from(""), state_trees, cx);
         return vec![VariantInspectorControls { variant_id: SharedString::from(""), state }];
     }
 
-    spec.variants
+    variants
         .iter()
         .map(|variant| {
-            let state_trees = spec
-                .states
-                .iter()
-                .map(|state_spec| {
-                    let categories = applicable_categories(&look, &resolver, spec, variant.id, state_spec);
-                    let tree = cx.new(|cx| {
-                        ThemePropertyTree::new(
-                            look.clone(),
-                            spec,
-                            resolver.clone(),
-                            SharedString::from(variant.id),
-                            SharedString::from(state_spec.id),
-                            categories,
-                            cx,
-                        )
-                    });
-                    (*state_spec, tree)
-                })
-                .collect();
-            let state = state_accordion(look.clone(), spec, SharedString::from(variant.id), state_trees, cx);
-            VariantInspectorControls { variant_id: SharedString::from(variant.id), state }
+            let variant_id = SharedString::from(variant.id);
+            let state_trees =
+                build_state_trees(look.clone(), spec, resolver.clone(), part_id.clone(), variant_id.clone(), cx);
+            let state = state_accordion(look.clone(), spec, part_id.clone(), variant_id.clone(), state_trees, cx);
+            VariantInspectorControls { variant_id, state }
+        })
+        .collect()
+}
+
+fn build_state_trees(
+    look: Arc<ShadcnLook>,
+    spec: &'static ControlInspectorSpec,
+    resolver: SharedInspectorResolver,
+    part_id: SharedString,
+    variant_id: SharedString,
+    cx: &mut Context<ThemeInspector>,
+) -> Vec<(InspectorStateSpec, Entity<ThemePropertyTree>)> {
+    spec.states
+        .iter()
+        .filter(|state_spec| {
+            resolver.state_applies(
+                &look,
+                inspector_selection(
+                    part_id.as_ref(),
+                    variant_id.as_ref(),
+                    state_spec.id,
+                    spec.default_size_id,
+                    spec.default_value_id,
+                ),
+                state_spec,
+            )
+        })
+        .map(|state_spec| {
+            let categories =
+                applicable_categories(&look, &resolver, spec, part_id.as_ref(), variant_id.as_ref(), state_spec);
+            let tree = cx.new(|cx| {
+                ThemePropertyTree::new(
+                    look.clone(),
+                    spec,
+                    resolver.clone(),
+                    part_id.clone(),
+                    variant_id.clone(),
+                    SharedString::from(state_spec.id),
+                    categories,
+                    cx,
+                )
+            });
+            (*state_spec, tree)
         })
         .collect()
 }
@@ -285,10 +425,12 @@ fn applicable_categories(
     look: &ShadcnLook,
     resolver: &SharedInspectorResolver,
     spec: &ControlInspectorSpec,
+    part_id: &str,
     variant_id: &str,
     state_spec: &InspectorStateSpec,
 ) -> Vec<InspectorCategory> {
-    let selection = inspector_selection(variant_id, state_spec.id, spec.default_size_id, spec.default_value_id);
+    let selection =
+        inspector_selection(part_id, variant_id, state_spec.id, spec.default_size_id, spec.default_value_id);
     state_spec
         .categories
         .iter()
@@ -300,11 +442,12 @@ fn applicable_categories(
 fn state_accordion(
     look: Arc<ShadcnLook>,
     spec: &'static ControlInspectorSpec,
+    part_id: SharedString,
     variant_id: SharedString,
     state_trees: Vec<(InspectorStateSpec, Entity<ThemePropertyTree>)>,
     cx: &mut Context<ThemeInspector>,
 ) -> Entity<AccordionControl> {
-    look.accordion(format!("{}-{}-states", spec.id_prefix, variant_id))
+    look.accordion(format!("{}-{}-{}-states", spec.id_prefix, part_id, variant_id))
         .mode(AccordionSelectionMode::Multiple)
         .item_dividers(false)
         .trigger_min_height(30.0)
@@ -313,7 +456,7 @@ fn state_accordion(
         .content_padding_bottom(6.0)
         .items(state_trees.into_iter().map(|(state_spec, tree)| {
             AccordionItem::new(
-                format!("{}-{}", variant_id, state_spec.id),
+                format!("{}-{}-{}", part_id, variant_id, state_spec.id),
                 AccordionTrigger::new(state_spec.label).icon(state_spec.icon),
                 AccordionContent::custom({
                     let tree = tree.clone();
@@ -330,6 +473,7 @@ impl ThemePropertyTree {
         look: Arc<ShadcnLook>,
         spec: &'static ControlInspectorSpec,
         resolver: SharedInspectorResolver,
+        part_id: SharedString,
         variant_id: SharedString,
         state_id: SharedString,
         categories: Vec<InspectorCategory>,
@@ -337,15 +481,42 @@ impl ThemePropertyTree {
     ) -> Self {
         let layout = if categories.iter().any(|category| category.id == "layout") && !spec.sizes.is_empty() {
             Some(cx.new(|cx| {
-                LayoutSizeInspector::new(look.clone(), resolver.clone(), variant_id.clone(), state_id.clone(), spec, cx)
+                LayoutSizeInspector::new(
+                    look.clone(),
+                    resolver.clone(),
+                    part_id.clone(),
+                    variant_id.clone(),
+                    state_id.clone(),
+                    spec,
+                    cx,
+                )
             }))
         } else {
             None
         };
 
-        let color = if categories.iter().any(|category| category.id == "color") && !spec.value_modes.is_empty() {
+        let color = if categories.iter().any(|category| category.id == "color")
+            && !spec.value_modes.is_empty()
+            && resolver.value_modes_applies(
+                &look,
+                inspector_selection(
+                    part_id.as_ref(),
+                    variant_id.as_ref(),
+                    state_id.as_ref(),
+                    spec.default_size_id,
+                    spec.default_value_id,
+                ),
+            ) {
             Some(cx.new(|cx| {
-                ColorValueInspector::new(look.clone(), spec, resolver.clone(), variant_id.clone(), state_id.clone(), cx)
+                ColorValueInspector::new(
+                    look.clone(),
+                    spec,
+                    resolver.clone(),
+                    part_id.clone(),
+                    variant_id.clone(),
+                    state_id.clone(),
+                    cx,
+                )
             }))
         } else {
             None
@@ -355,6 +526,7 @@ impl ThemePropertyTree {
             look.clone(),
             spec,
             resolver.clone(),
+            part_id.clone(),
             variant_id.clone(),
             state_id.clone(),
             layout,
@@ -376,6 +548,7 @@ fn category_accordion(
     look: Arc<ShadcnLook>,
     spec: &'static ControlInspectorSpec,
     resolver: SharedInspectorResolver,
+    part_id: SharedString,
     variant_id: SharedString,
     state_id: SharedString,
     layout: Option<Entity<LayoutSizeInspector>>,
@@ -383,7 +556,7 @@ fn category_accordion(
     categories: &[InspectorCategory],
     cx: &mut Context<ThemePropertyTree>,
 ) -> Entity<AccordionControl> {
-    look.accordion(format!("{}-{}-categories", spec.id_prefix, variant_id))
+    look.accordion(format!("{}-{}-{}-categories", spec.id_prefix, part_id, variant_id))
         .mode(AccordionSelectionMode::Multiple)
         .item_dividers(false)
         .trigger_min_height(28.0)
@@ -395,6 +568,7 @@ fn category_accordion(
                 look.clone(),
                 spec,
                 resolver.clone(),
+                part_id.clone(),
                 variant_id.clone(),
                 state_id.clone(),
                 layout.clone(),
@@ -409,6 +583,7 @@ fn category_item(
     look: Arc<ShadcnLook>,
     spec: &'static ControlInspectorSpec,
     resolver: SharedInspectorResolver,
+    part_id: SharedString,
     variant_id: SharedString,
     state_id: SharedString,
     layout: Option<Entity<LayoutSizeInspector>>,
@@ -432,6 +607,7 @@ fn category_item(
             }
 
             let selection = inspector_selection(
+                part_id.as_ref(),
                 variant_id.as_ref(),
                 state_id.as_ref(),
                 spec.default_size_id,
@@ -445,25 +621,27 @@ fn category_item(
 }
 
 fn inspector_selection<'a>(
+    part_id: &'a str,
     variant_id: &'a str,
     state_id: &'a str,
     size_id: &'a str,
     value_id: &'a str,
 ) -> InspectorSelection<'a> {
-    InspectorSelection { variant_id, state_id, size_id, value_id }
+    InspectorSelection { part_id, variant_id, state_id, size_id, value_id }
 }
 
 impl LayoutSizeInspector {
     fn new(
         look: Arc<ShadcnLook>,
         resolver: SharedInspectorResolver,
+        part_id: SharedString,
         variant_id: SharedString,
         state_id: SharedString,
         spec: &'static ControlInspectorSpec,
         cx: &mut Context<Self>,
     ) -> Self {
         let size_tabs = look
-            .tabs_navigation(format!("{}-{}-size-tabs", spec.id_prefix, variant_id))
+            .tabs_navigation(format!("{}-{}-{}-size-tabs", spec.id_prefix, part_id, variant_id))
             .items(size_tab_items(spec))
             .active(spec.default_size_id)
             .spawn(cx);
@@ -480,6 +658,7 @@ impl LayoutSizeInspector {
         Self {
             look,
             resolver,
+            part_id,
             variant_id,
             state_id,
             size_tabs,
@@ -491,8 +670,13 @@ impl LayoutSizeInspector {
 
 impl Render for LayoutSizeInspector {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let selection =
-            inspector_selection(self.variant_id.as_ref(), self.state_id.as_ref(), self.active_size_id.as_ref(), "");
+        let selection = inspector_selection(
+            self.part_id.as_ref(),
+            self.variant_id.as_ref(),
+            self.state_id.as_ref(),
+            self.active_size_id.as_ref(),
+            "",
+        );
         let content = self.resolver.resolve_category(&self.look, selection, "layout");
 
         div()
@@ -511,12 +695,13 @@ impl ColorValueInspector {
         look: Arc<ShadcnLook>,
         spec: &'static ControlInspectorSpec,
         resolver: SharedInspectorResolver,
+        part_id: SharedString,
         variant_id: SharedString,
         state_id: SharedString,
         cx: &mut Context<Self>,
     ) -> Self {
         let value_tabs = look
-            .tabs_navigation(format!("{}-{}-value-tabs", spec.id_prefix, variant_id))
+            .tabs_navigation(format!("{}-{}-{}-value-tabs", spec.id_prefix, part_id, variant_id))
             .items(value_tab_items(spec))
             .active(spec.default_value_id)
             .spawn(cx);
@@ -534,6 +719,7 @@ impl ColorValueInspector {
             look,
             spec,
             resolver,
+            part_id,
             variant_id,
             state_id,
             value_tabs,
@@ -546,6 +732,7 @@ impl ColorValueInspector {
 impl Render for ColorValueInspector {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let selection = inspector_selection(
+            self.part_id.as_ref(),
             self.variant_id.as_ref(),
             self.state_id.as_ref(),
             self.spec.default_size_id,

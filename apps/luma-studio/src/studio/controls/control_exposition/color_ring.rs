@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Hsla, Render, Subscription, Window, div, hsla, prelude::*, px};
+use gpui::{App, AppContext, Context, Entity, Hsla, Render, Subscription, Window, div, hsla, prelude::*, px};
 use gpui_luma::controls::color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingRenderer, ColorRingTrackContext, HueRingDelegate,
     LightnessRingDelegate, RasterRingDelegate, SaturationRingDelegate, primary_slider_value, refresh_color_ring,
@@ -17,8 +17,14 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::color_chrome_exposition::{
+    color_chrome_set_viewport_size, spawn_color_chrome_viewport, sync_color_chrome_viewport, ColorChromeViewportPane,
+};
+use super::color_chrome_inspector::ColorChromeInspector;
 use super::color_exposition_common::{detail_row, format_slider_event, render_demo_card, render_demo_section};
 use super::event_stream::ControlEventStream;
+use super::inspector::color_chrome::COLOR_RING_CHROME_PROFILES;
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
@@ -73,14 +79,14 @@ struct RingDemo {
 }
 
 impl RingDemo {
-    fn spawn(builder: ColorRingBuilder, cx: &mut Context<ColorRingControlExposition>) -> Self {
+    fn spawn(builder: ColorRingBuilder, cx: &mut impl AppContext) -> Self {
         let renderer = builder.domain_renderer();
         let track_context = builder.track_context();
         let slider = builder.spawn(cx);
         Self { slider, renderer, track_context }
     }
 
-    fn sync_saturation(&self, hue: f32, hsv_value: f32, cx: &mut Context<ColorRingControlExposition>) {
+    fn sync_saturation(&self, hue: f32, hsv_value: f32, cx: &mut App) {
         update_ring_delegate(
             &self.renderer,
             Arc::new(SaturationRingDelegate { hue, hsv_value }),
@@ -89,7 +95,7 @@ impl RingDemo {
         refresh_color_ring(&self.slider, cx);
     }
 
-    fn sync_lightness(&self, hue: f32, saturation: f32, cx: &mut Context<ColorRingControlExposition>) {
+    fn sync_lightness(&self, hue: f32, saturation: f32, cx: &mut App) {
         update_ring_delegate(
             &self.renderer,
             Arc::new(LightnessRingDelegate { hue, saturation }),
@@ -98,7 +104,7 @@ impl RingDemo {
         refresh_color_ring(&self.slider, cx);
     }
 
-    fn sync_hue_raster(&self, saturation: f32, lightness: f32, cx: &mut Context<ColorRingControlExposition>) {
+    fn sync_hue_raster(&self, saturation: f32, lightness: f32, cx: &mut App) {
         update_ring_delegate(
             &self.renderer,
             Arc::new(RasterRingDelegate::hue(saturation, lightness)),
@@ -107,7 +113,7 @@ impl RingDemo {
         refresh_color_ring(&self.slider, cx);
     }
 
-    fn sync_hue_vector(&self, saturation: f32, lightness: f32, cx: &mut Context<ColorRingControlExposition>) {
+    fn sync_hue_vector(&self, saturation: f32, lightness: f32, cx: &mut App) {
         update_ring_delegate(
             &self.renderer,
             Arc::new(HueRingDelegate { saturation, lightness }),
@@ -116,12 +122,20 @@ impl RingDemo {
         refresh_color_ring(&self.slider, cx);
     }
 
-    fn set_value(&self, value: f32, cx: &mut Context<ColorRingControlExposition>) {
+    fn set_value(&self, value: f32, cx: &mut App) {
         self.slider.update(cx, |slider, cx| slider.set_value(value, cx));
     }
 }
 
 pub struct ColorRingControlExposition {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
+    left_pane: Entity<ColorRingExpositionLeftPane>,
+    chrome_inspector: Entity<ColorChromeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+}
+
+struct ColorRingExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     color_ring: RingDemo,
@@ -135,107 +149,7 @@ pub struct ColorRingControlExposition {
     _subscriptions: Vec<Subscription>,
 }
 
-impl ColorRingControlExposition {
-    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("color-ring").expect("color-ring catalog entry");
-        let hsla_color = hsla(0.0, 1.0, 0.5, 1.0);
-        let hsl = Hsl::from_hsla(hsla_color);
-
-        let color_ring = RingDemo::spawn(
-            ColorRingBuilder::hue("controls-doc-color-ring", hsl.h, hsl.s, hsl.l)
-                .size(Size::Medium)
-                .allow_inner_target(true),
-            cx,
-        );
-        let color_ring_vector = RingDemo::spawn(
-            ColorRingBuilder::hue_with_renderer(
-                "controls-doc-color-ring-vector",
-                hsl.h,
-                hsl.s,
-                hsl.l,
-                ColorRingRenderer::Vector,
-            )
-            .size(Size::Medium),
-            cx,
-        );
-        let color_ring_raster = RingDemo::spawn(
-            ColorRingBuilder::hue_with_renderer(
-                "controls-doc-color-ring-raster",
-                hsl.h,
-                hsl.s,
-                hsl.l,
-                ColorRingRenderer::Raster,
-            )
-            .size(Size::Medium),
-            cx,
-        );
-        let ring_saturation = RingDemo::spawn(
-            ColorRingBuilder::saturation(
-                "controls-doc-color-ring-saturation",
-                hsl.s,
-                hsl.h,
-                hsv_value_for_saturation_ring(hsl),
-            )
-            .size(Size::Medium)
-            .allow_inner_target(true),
-            cx,
-        );
-        let ring_lightness = RingDemo::spawn(
-            ColorRingBuilder::lightness("controls-doc-color-ring-lightness", hsl.l, hsl.h, hsl.s)
-                .size(Size::Medium)
-                .allow_inner_target(true),
-            cx,
-        );
-
-        let event_stream = cx.new(|cx| {
-            ControlEventStream::new(
-                cx,
-                look.clone(),
-                "controls-color-ring-event-log",
-                "Drag hue, saturation, or lightness rings; SliderEvent variants appear below.",
-            )
-        });
-
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&color_ring.slider, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &SliderEvent, cx| {
-                this.handle_hue_event(event, cx);
-                append_slider_event(&event_stream, "Hue", event, cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&ring_saturation.slider, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &SliderEvent, cx| {
-                this.handle_saturation_event(event, cx);
-                append_slider_event(&event_stream, "Saturation", event, cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&ring_lightness.slider, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &SliderEvent, cx| {
-                this.handle_lightness_event(event, cx);
-                append_slider_event(&event_stream, "Lightness", event, cx);
-            }
-        }));
-
-        let mut this = Self {
-            look,
-            entry,
-            color_ring,
-            color_ring_vector,
-            color_ring_raster,
-            ring_saturation,
-            ring_lightness,
-            ring_hsl: hsl,
-            ring_color: hsla_color,
-            event_stream,
-            _subscriptions: subscriptions,
-        };
-        this.sync_ring(cx, SyncSource::HueRing);
-        this
-    }
-
+impl ColorRingExpositionLeftPane {
     fn handle_hue_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
         if let Some(value) = primary_slider_value(event) {
             self.ring_hsl.h = value;
@@ -287,11 +201,7 @@ impl ColorRingControlExposition {
         cx.notify();
     }
 
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
-    }
-
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         for ring in [
             &self.color_ring,
@@ -307,7 +217,7 @@ impl ColorRingControlExposition {
     }
 }
 
-impl Render for ColorRingControlExposition {
+impl Render for ColorRingExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
@@ -389,13 +299,173 @@ impl Render for ColorRingControlExposition {
                 ))
                 .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
+            div()
+                .id("controls-doc-color-ring-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
+}
+
+impl ColorRingControlExposition {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let entry = *catalog_entry("color-ring").expect("color-ring catalog entry");
+        let hsla_color = hsla(0.0, 1.0, 0.5, 1.0);
+        let hsl = Hsl::from_hsla(hsla_color);
+
+        let color_ring = RingDemo::spawn(
+            ColorRingBuilder::hue("controls-doc-color-ring", hsl.h, hsl.s, hsl.l)
+                .size(Size::Medium)
+                .allow_inner_target(true),
+            cx,
+        );
+        let color_ring_vector = RingDemo::spawn(
+            ColorRingBuilder::hue_with_renderer(
+                "controls-doc-color-ring-vector",
+                hsl.h,
+                hsl.s,
+                hsl.l,
+                ColorRingRenderer::Vector,
             )
+            .size(Size::Medium),
+            cx,
+        );
+        let color_ring_raster = RingDemo::spawn(
+            ColorRingBuilder::hue_with_renderer(
+                "controls-doc-color-ring-raster",
+                hsl.h,
+                hsl.s,
+                hsl.l,
+                ColorRingRenderer::Raster,
+            )
+            .size(Size::Medium),
+            cx,
+        );
+        let ring_saturation = RingDemo::spawn(
+            ColorRingBuilder::saturation(
+                "controls-doc-color-ring-saturation",
+                hsl.s,
+                hsl.h,
+                hsv_value_for_saturation_ring(hsl),
+            )
+            .size(Size::Medium)
+            .allow_inner_target(true),
+            cx,
+        );
+        let ring_lightness = RingDemo::spawn(
+            ColorRingBuilder::lightness("controls-doc-color-ring-lightness", hsl.l, hsl.h, hsl.s)
+                .size(Size::Medium)
+                .allow_inner_target(true),
+            cx,
+        );
+
+        let event_stream = cx.new(|cx| {
+            ControlEventStream::new(
+                cx,
+                look.clone(),
+                "controls-color-ring-event-log",
+                "Drag hue, saturation, or lightness rings; SliderEvent variants appear below.",
+            )
+        });
+
+        let left_pane = cx.new(|cx| {
+            let mut subscriptions = Vec::new();
+            subscriptions.push(cx.subscribe(&color_ring.slider, {
+                let event_stream = event_stream.clone();
+                move |this: &mut ColorRingExpositionLeftPane, _, event: &SliderEvent, cx| {
+                    this.handle_hue_event(event, cx);
+                    append_slider_event(&event_stream, "Hue", event, cx);
+                }
+            }));
+            subscriptions.push(cx.subscribe(&ring_saturation.slider, {
+                let event_stream = event_stream.clone();
+                move |this: &mut ColorRingExpositionLeftPane, _, event: &SliderEvent, cx| {
+                    this.handle_saturation_event(event, cx);
+                    append_slider_event(&event_stream, "Saturation", event, cx);
+                }
+            }));
+            subscriptions.push(cx.subscribe(&ring_lightness.slider, {
+                let event_stream = event_stream.clone();
+                move |this: &mut ColorRingExpositionLeftPane, _, event: &SliderEvent, cx| {
+                    this.handle_lightness_event(event, cx);
+                    append_slider_event(&event_stream, "Lightness", event, cx);
+                }
+            }));
+
+            let mut pane = ColorRingExpositionLeftPane {
+                look: look.clone(),
+                entry,
+                color_ring,
+                color_ring_vector,
+                color_ring_raster,
+                ring_saturation,
+                ring_lightness,
+                ring_hsl: hsl,
+                ring_color: hsla_color,
+                event_stream,
+                _subscriptions: subscriptions,
+            };
+            pane.sync_ring(cx, SyncSource::HueRing);
+            pane
+        });
+
+        let ColorChromeViewportPane { chrome_inspector, inspector_split } = spawn_color_chrome_viewport(
+            cx,
+            look.clone(),
+            "controls-doc-color-ring-pane",
+            "controls-doc-color-ring-chrome",
+            COLOR_RING_CHROME_PROFILES,
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+        );
+
+        Self { look, entry, left_pane, chrome_inspector, inspector_split }
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        color_chrome_set_viewport_size(&self.inspector_split, size, cx);
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_color_chrome_viewport(look, &self.chrome_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+impl Render for ColorRingControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-color-ring-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }
@@ -411,12 +481,7 @@ fn hsv_value_for_saturation_ring(hsl: Hsl) -> f32 {
     Hsv::from_hsla_ext(hsl.to_hsla()).v
 }
 
-fn append_slider_event(
-    event_stream: &Entity<ControlEventStream>,
-    source: &str,
-    event: &SliderEvent,
-    cx: &mut Context<ColorRingControlExposition>,
-) {
+fn append_slider_event(event_stream: &Entity<ControlEventStream>, source: &str, event: &SliderEvent, cx: &mut App) {
     if let Some(line) = format_slider_event(source, event) {
         event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
     }

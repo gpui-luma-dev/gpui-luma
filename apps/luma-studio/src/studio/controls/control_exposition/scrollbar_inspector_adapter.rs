@@ -17,10 +17,12 @@ static SCROLLBAR_STATES: [super::inspector::InspectorStateSpec; 5] = COLOR_LAYOU
 pub static SCROLLBAR_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Scrollbar",
     id_prefix: "scrollbar-theme-inspector",
+    parts: &[],
     variants: &SCROLLBAR_ORIENTATIONS,
     states: &SCROLLBAR_STATES,
     sizes: &[],
     value_modes: &[],
+    default_part_id: "",
     default_variant_id: "horizontal",
     default_size_id: "",
     default_value_id: "",

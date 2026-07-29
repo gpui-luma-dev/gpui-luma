@@ -11,10 +11,14 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::collection_theme_inspectors::TreeViewThemeInspector;
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
+use super::tree_view_inspector_adapter::{TreeViewInspectorAdapter, TREE_VIEW_INSPECTOR_SPEC};
 
 const TREE_DEPTH: usize = 5;
 
@@ -78,50 +82,21 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct TreeViewControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    shell: Entity<TreeViewScrollShell>,
-    event_stream: Entity<ControlEventStream>,
+    left_pane: Entity<TreeViewExpositionLeftPane>,
+    theme_inspector: Entity<TreeViewThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
     _subscriptions: Vec<Subscription>,
 }
 
-impl TreeViewControlExposition {
-    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("tree-view").expect("tree-view catalog entry");
+struct TreeViewExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
+    shell: Entity<TreeViewScrollShell>,
+    event_stream: Entity<ControlEventStream>,
+}
 
-        let tree = look
-            .tree_view("controls-doc-tree-view")
-            .selection_mode(TreeViewSelectionMode::Single)
-            .items(mock_file_tree())
-            .spawn(cx);
-
-        let shell = cx.new(|cx| TreeViewScrollShell::new(look.clone(), tree, cx));
-
-        let event_stream = cx.new(|cx| {
-            ControlEventStream::new(
-                cx,
-                look.clone(),
-                "controls-tree-view-event-log",
-                "Expand branches and select leaves; TreeViewEvent variants appear below.",
-            )
-        });
-
-        let tree_entity = shell.read(cx).tree();
-        let subscriptions = vec![cx.subscribe(&tree_entity, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &TreeViewEvent<SharedString>, cx| {
-                if let Some(line) = format_tree_view_event(event) {
-                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
-                }
-            }
-        })];
-
-        Self { look, entry, shell, event_stream, _subscriptions: subscriptions }
-    }
-
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
-    }
-
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+impl TreeViewExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.shell.update(cx, |shell, cx| shell.sync_look(look.clone(), cx));
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
@@ -129,48 +104,7 @@ impl TreeViewControlExposition {
     }
 }
 
-struct TreeViewScrollShell {
-    look: Arc<ShadcnLook>,
-    scroll: ScrollContainer,
-    tree: TreeView<SharedString>,
-    _subscriptions: Vec<Subscription>,
-}
-
-impl TreeViewScrollShell {
-    fn new(look: Arc<ShadcnLook>, tree: TreeView<SharedString>, cx: &mut Context<Self>) -> Self {
-        let scroll = ScrollContainer::new("controls-doc-tree-scroll", look.scrollbar_template(), cx);
-        let scrollbar = scroll.scrollbar();
-        let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {
-            if let ScrollbarEvent::Change { value } = event {
-                this.scroll.set_vertical_offset(*value, cx);
-            }
-        })];
-
-        Self { look, scroll, tree, _subscriptions: subscriptions }
-    }
-
-    fn tree(&self) -> TreeView<SharedString> {
-        self.tree.clone()
-    }
-
-    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
-        self.look = look;
-        self.tree.update(cx, |_, cx| cx.notify());
-        cx.notify();
-    }
-}
-
-impl Render for TreeViewScrollShell {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.scroll.sync_scrollbar(cx);
-
-        self.scroll.render(
-            div().id("controls-doc-tree-scroll-content").size_full().child(self.tree.clone()).into_any_element(),
-        )
-    }
-}
-
-impl Render for TreeViewControlExposition {
+impl Render for TreeViewExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let chrome = self.look.chrome();
@@ -200,14 +134,145 @@ impl Render for TreeViewControlExposition {
                     )
                     .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-tree-view-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
         })
+    }
+}
+
+impl TreeViewControlExposition {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let entry = *catalog_entry("tree-view").expect("tree-view catalog entry");
+
+        let tree = look
+            .tree_view("controls-doc-tree-view")
+            .selection_mode(TreeViewSelectionMode::Single)
+            .items(mock_file_tree())
+            .spawn(cx);
+
+        let shell = cx.new(|cx| TreeViewScrollShell::new(look.clone(), tree.clone(), cx));
+
+        let event_stream = cx.new(|cx| {
+            ControlEventStream::new(
+                cx,
+                look.clone(),
+                "controls-tree-view-event-log",
+                "Expand branches and select leaves; TreeViewEvent variants appear below.",
+            )
+        });
+
+        let left_pane = cx.new(|_| TreeViewExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            shell: shell.clone(),
+            event_stream: event_stream.clone(),
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-tree-view-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &TREE_VIEW_INSPECTOR_SPEC,
+            TreeViewInspectorAdapter::shared(),
+        );
+
+        let subscription = cx.subscribe(&tree, {
+            let event_stream = event_stream.clone();
+            move |_, _, event: &TreeViewEvent<SharedString>, cx| {
+                if let Some(line) = format_tree_view_event(event) {
+                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                }
+            }
+        });
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![subscription] }
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+impl Render for TreeViewControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-tree-view-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
+        })
+    }
+}
+
+struct TreeViewScrollShell {
+    look: Arc<ShadcnLook>,
+    scroll: ScrollContainer,
+    tree: TreeView<SharedString>,
+    _subscriptions: Vec<Subscription>,
+}
+
+impl TreeViewScrollShell {
+    fn new(look: Arc<ShadcnLook>, tree: TreeView<SharedString>, cx: &mut Context<Self>) -> Self {
+        let scroll = ScrollContainer::new("controls-doc-tree-scroll", look.scrollbar_template(), cx);
+        let scrollbar = scroll.scrollbar();
+        let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {
+            if let ScrollbarEvent::Change { value } = event {
+                this.scroll.set_vertical_offset(*value, cx);
+            }
+        })];
+
+        Self { look, scroll, tree, _subscriptions: subscriptions }
+    }
+
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look;
+        self.tree.update(cx, |_, cx| cx.notify());
+        cx.notify();
+    }
+}
+
+impl Render for TreeViewScrollShell {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.scroll.sync_scrollbar(cx);
+
+        self.scroll.render(
+            div().id("controls-doc-tree-scroll-content").size_full().child(self.tree.clone()).into_any_element(),
+        )
     }
 }
 

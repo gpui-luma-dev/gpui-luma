@@ -11,8 +11,12 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::collection_theme_inspectors::NavigationSidebarThemeInspector;
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
+use super::navigation_sidebar_inspector_adapter::{NavigationSidebarInspectorAdapter, NAVIGATION_SIDEBAR_INSPECTOR_SPEC};
 use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
 
@@ -122,10 +126,70 @@ const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
 pub struct NavigationSidebarControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<NavigationSidebarExpositionLeftPane>,
+    theme_inspector: Entity<NavigationSidebarThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
+}
+
+struct NavigationSidebarExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     sidebar: Entity<NavigationSidebar>,
     collapsed: Rc<Cell<bool>>,
     event_stream: Entity<ControlEventStream>,
-    _subscriptions: Vec<Subscription>,
+}
+
+impl NavigationSidebarExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.sidebar.update(cx, |_, cx| cx.notify());
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
+    }
+}
+
+impl Render for NavigationSidebarExpositionLeftPane {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            let look = &self.look;
+            let chrome = look.chrome();
+            let width = if self.collapsed.get() { px(56.0) } else { px(300.0) };
+
+            let preview = div()
+                .w_full()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(12.0))
+                .child(
+                    div()
+                        .flex_none()
+                        .w(width)
+                        .h(px(500.0))
+                        .overflow_hidden()
+                        .rounded(px(8.0))
+                        .border_1()
+                        .border_color(chrome.border)
+                        .child(self.sidebar.clone()),
+                )
+                .child(self.event_stream.clone());
+
+            div()
+                .id("controls-doc-navigation-sidebar-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
 }
 
 impl NavigationSidebarControlExposition {
@@ -152,31 +216,63 @@ impl NavigationSidebarControlExposition {
         });
 
         let collapsed = Rc::new(Cell::new(false));
+        let left_pane = cx.new(|_| NavigationSidebarExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            sidebar: sidebar.clone(),
+            collapsed: collapsed.clone(),
+            event_stream: event_stream.clone(),
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-navigation-sidebar-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &NAVIGATION_SIDEBAR_INSPECTOR_SPEC,
+            NavigationSidebarInspectorAdapter::shared(),
+        );
+
         let collapsed_cell = collapsed.clone();
-        let subscriptions = vec![cx.subscribe(&sidebar, {
+        let subscription = cx.subscribe(&sidebar, {
             let event_stream = event_stream.clone();
+            let left_pane = left_pane.clone();
             move |_, _, event: &NavigationSidebarEvent, cx| {
                 if let NavigationSidebarEvent::CollapsedChanged { collapsed } = event {
                     collapsed_cell.set(*collapsed);
-                    cx.notify();
+                    left_pane.update(cx, |_, cx| cx.notify());
                 }
                 if let Some(line) = format_navigation_sidebar_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }
-        })];
+        });
 
-        Self { look, entry, sidebar, collapsed, event_stream, _subscriptions: subscriptions }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![subscription] }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
     }
 
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.sidebar.update(cx, |_, cx| cx.notify());
-        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
         cx.notify();
     }
 }
@@ -184,36 +280,12 @@ impl NavigationSidebarControlExposition {
 impl Render for NavigationSidebarControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
-            let look = &self.look;
-            let chrome = look.chrome();
-            let width = if self.collapsed.get() { px(56.0) } else { px(300.0) };
-
-            let preview = div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(12.0))
-                .child(
-                    div()
-                        .flex_none()
-                        .w(width)
-                        .h(px(500.0))
-                        .overflow_hidden()
-                        .rounded(px(8.0))
-                        .border_1()
-                        .border_color(chrome.border)
-                        .child(self.sidebar.clone()),
-                )
-                .child(self.event_stream.clone());
-
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-navigation-sidebar-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

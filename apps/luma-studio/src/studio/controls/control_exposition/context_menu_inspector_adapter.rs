@@ -18,10 +18,12 @@ static CONTEXT_MENU_STATES: [super::inspector::InspectorStateSpec; 5] = COLOR_LA
 pub static CONTEXT_MENU_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Context Menu",
     id_prefix: "context-menu-theme-inspector",
+    parts: &[],
     variants: &[],
     states: &CONTEXT_MENU_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &[],
+    default_part_id: "",
     default_variant_id: "",
     default_size_id: "md",
     default_value_id: "",

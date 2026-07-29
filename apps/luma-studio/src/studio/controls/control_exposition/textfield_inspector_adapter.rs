@@ -18,10 +18,12 @@ static TEXTFIELD_STATES: [super::inspector::InspectorStateSpec; 4] = TEXTFIELD_I
 pub static TEXTFIELD_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "TextField",
     id_prefix: "textfield-theme-inspector",
+    parts: &[],
     variants: &TEXTFIELD_VARIANTS,
     states: &TEXTFIELD_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &[],
+    default_part_id: "",
     default_variant_id: "outline",
     default_size_id: "md",
     default_value_id: "",

@@ -3,10 +3,9 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
 use gpui_luma::controls::control_group::ControlGroupFocusStrategy;
 use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::selector::SelectorItem;
 use gpui_luma::controls::toolbar::{ToolbarControl, ToolbarEvent, ToolbarValue};
 use gpui_luma_look_shadcn::prelude::*;
@@ -15,9 +14,13 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
+use super::shell_theme_inspectors::ToolbarThemeInspector;
 use super::template::render_control_exposition_card;
+use super::toolbar_inspector_adapter::{ToolbarInspectorAdapter, TOOLBAR_INSPECTOR_SPEC};
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[
     EventReferenceSpec {
@@ -65,13 +68,86 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct ToolbarControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<ToolbarExpositionLeftPane>,
+    theme_inspector: Entity<ToolbarThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
+}
+
+struct ToolbarExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     toolbar: ToolbarControl,
     roving_focus_button: Entity<Button<()>>,
     sequential_focus_button: Entity<Button<()>>,
     event_stream: Entity<ControlEventStream>,
     status: String,
     focus_mode: &'static str,
-    _subscriptions: Vec<Subscription>,
+}
+
+impl ToolbarExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.toolbar.update(cx, |toolbar, cx| toolbar.notify_items(cx));
+        self.roving_focus_button.update(cx, |_, cx| cx.notify());
+        self.sequential_focus_button.update(cx, |_, cx| cx.notify());
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
+    }
+}
+
+impl Render for ToolbarExpositionLeftPane {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            let chrome = self.look.chrome();
+            let preview = div()
+                .w_full()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(16.0))
+                .child(self.toolbar.clone())
+                .child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .items_center()
+                        .justify_center()
+                        .gap(px(8.0))
+                        .child(self.roving_focus_button.clone())
+                        .child(self.sequential_focus_button.clone())
+                        .child(
+                            div()
+                                .text_size(px(12.0))
+                                .line_height(px(16.0))
+                                .text_color(chrome.muted_text)
+                                .child(format!("mode: {}", self.focus_mode)),
+                        ),
+                )
+                .child(
+                    div()
+                        .text_size(px(12.0))
+                        .line_height(px(16.0))
+                        .text_color(chrome.muted_text)
+                        .child(self.status.clone()),
+                )
+                .child(self.event_stream.clone());
+
+            div()
+                .id("controls-doc-toolbar-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
 }
 
 impl ToolbarControlExposition {
@@ -165,72 +241,103 @@ impl ToolbarControlExposition {
             )
         });
 
+        let left_pane = cx.new(|_| ToolbarExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            toolbar: toolbar.clone(),
+            roving_focus_button: roving_focus_button.clone(),
+            sequential_focus_button: sequential_focus_button.clone(),
+            event_stream: event_stream.clone(),
+            status: "Paragraph editing toolbar".to_string(),
+            focus_mode: "roving",
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-toolbar-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &TOOLBAR_INSPECTOR_SPEC,
+            ToolbarInspectorAdapter::shared(),
+        );
+
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&toolbar, {
             let event_stream = event_stream.clone();
-            move |this, _, event: &ToolbarEvent, cx| {
-                this.status = match event {
-                    ToolbarEvent::Click { id } => format!("{id} clicked"),
-                    ToolbarEvent::Change { id, value } => match value {
-                        ToolbarValue::Bool(on) => format!("{id}: {}", if *on { "on" } else { "off" }),
-                        ToolbarValue::String(value) => format!("{id}: {value}"),
-                    },
-                    _ => this.status.clone(),
-                };
+            let left_pane = left_pane.clone();
+            move |_, _, event: &ToolbarEvent, cx| {
+                left_pane.update(cx, |pane, cx| {
+                    pane.status = match event {
+                        ToolbarEvent::Click { id } => format!("{id} clicked"),
+                        ToolbarEvent::Change { id, value } => match value {
+                            ToolbarValue::Bool(on) => format!("{id}: {}", if *on { "on" } else { "off" }),
+                            ToolbarValue::String(value) => format!("{id}: {value}"),
+                        },
+                        _ => pane.status.clone(),
+                    };
+                    cx.notify();
+                });
                 if let Some(line) = format_toolbar_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
-                cx.notify();
             }
         }));
         subscriptions.push(cx.subscribe(&roving_focus_button, {
-            move |this, _, event: &ButtonEvent, cx| {
+            let left_pane = left_pane.clone();
+            move |_, _, event: &ButtonEvent, cx| {
                 if matches!(event, ButtonEvent::Click) {
-                    this.toolbar.update(cx, |toolbar, cx| {
-                        toolbar.set_focus_strategy(ControlGroupFocusStrategy::RovingItemFocus, cx);
+                    left_pane.update(cx, |pane, cx| {
+                        pane.toolbar.update(cx, |toolbar, cx| {
+                            toolbar.set_focus_strategy(ControlGroupFocusStrategy::RovingItemFocus, cx);
+                        });
+                        pane.focus_mode = "roving";
+                        pane.status = "Focus strategy: roving".to_string();
+                        cx.notify();
                     });
-                    this.focus_mode = "roving";
-                    this.status = "Focus strategy: roving".to_string();
-                    cx.notify();
                 }
             }
         }));
         subscriptions.push(cx.subscribe(&sequential_focus_button, {
-            move |this, _, event: &ButtonEvent, cx| {
+            let left_pane = left_pane.clone();
+            move |_, _, event: &ButtonEvent, cx| {
                 if matches!(event, ButtonEvent::Click) {
-                    this.toolbar.update(cx, |toolbar, cx| {
-                        toolbar.set_focus_strategy(ControlGroupFocusStrategy::ActiveDescendant, cx);
+                    left_pane.update(cx, |pane, cx| {
+                        pane.toolbar.update(cx, |toolbar, cx| {
+                            toolbar.set_focus_strategy(ControlGroupFocusStrategy::ActiveDescendant, cx);
+                        });
+                        pane.focus_mode = "sequential";
+                        pane.status = "Focus strategy: sequential".to_string();
+                        cx.notify();
                     });
-                    this.focus_mode = "sequential";
-                    this.status = "Focus strategy: sequential".to_string();
-                    cx.notify();
                 }
             }
         }));
 
-        Self {
-            look,
-            entry,
-            toolbar,
-            roving_focus_button,
-            sequential_focus_button,
-            event_stream,
-            status: "Paragraph editing toolbar".to_string(),
-            focus_mode: "roving",
-            _subscriptions: subscriptions,
-        }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
     }
 
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.toolbar.update(cx, |toolbar, cx| toolbar.notify_items(cx));
-        self.roving_focus_button.update(cx, |_, cx| cx.notify());
-        self.sequential_focus_button.update(cx, |_, cx| cx.notify());
-        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
         cx.notify();
     }
 }
@@ -238,47 +345,12 @@ impl ToolbarControlExposition {
 impl Render for ToolbarControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
-            let chrome = self.look.chrome();
-            let preview = div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(16.0))
-                .child(self.toolbar.clone())
-                .child(
-                    div()
-                        .flex()
-                        .flex_wrap()
-                        .items_center()
-                        .justify_center()
-                        .gap(px(8.0))
-                        .child(self.roving_focus_button.clone())
-                        .child(self.sequential_focus_button.clone())
-                        .child(
-                            div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
-                                .text_color(chrome.muted_text)
-                                .child(format!("mode: {}", self.focus_mode)),
-                        ),
-                )
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .text_color(chrome.muted_text)
-                        .child(self.status.clone()),
-                )
-                .child(self.event_stream.clone());
-
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-toolbar-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

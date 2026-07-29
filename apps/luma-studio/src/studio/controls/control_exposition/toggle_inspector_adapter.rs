@@ -20,10 +20,12 @@ static TOGGLE_STATES: [super::inspector::InspectorStateSpec; 5] = COLOR_LAYOUT_I
 pub static TOGGLE_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Toggle",
     id_prefix: "toggle-theme-inspector",
+    parts: &[],
     variants: &PRIMARY_SECONDARY_VARIANTS,
     states: &TOGGLE_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &SELECTED_UNSELECTED_VALUES,
+    default_part_id: "",
     default_variant_id: "primary",
     default_size_id: "md",
     default_value_id: "selected",

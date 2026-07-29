@@ -18,10 +18,12 @@ static TEXTAREA_STATES: [super::inspector::InspectorStateSpec; 4] = TEXTFIELD_IN
 pub static TEXTAREA_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "TextArea",
     id_prefix: "textarea-theme-inspector",
+    parts: &[],
     variants: &TEXTFIELD_VARIANTS,
     states: &TEXTAREA_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &[],
+    default_part_id: "",
     default_variant_id: "outline",
     default_size_id: "md",
     default_value_id: "",

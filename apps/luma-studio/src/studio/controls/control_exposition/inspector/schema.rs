@@ -9,13 +9,23 @@ use super::box_model::{BoxModelLayerColors, InspectBoxModelSnapshot, InspectOccu
 pub struct ControlInspectorSpec {
     pub control_label: &'static str,
     pub id_prefix: &'static str,
+    pub parts: &'static [InspectorPart],
     pub variants: &'static [InspectorVariant],
     pub states: &'static [InspectorStateSpec],
     pub sizes: &'static [InspectorSize],
     pub value_modes: &'static [InspectorValueMode],
+    pub default_part_id: &'static str,
     pub default_variant_id: &'static str,
     pub default_size_id: &'static str,
     pub default_value_id: &'static str,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct InspectorPart {
+    pub id: &'static str,
+    pub label: &'static str,
+    pub variants: &'static [InspectorVariant],
+    pub default_variant_id: &'static str,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -55,6 +65,7 @@ pub struct InspectorCategory {
 
 #[derive(Clone, Copy, Debug)]
 pub struct InspectorSelection<'a> {
+    pub part_id: &'a str,
     pub variant_id: &'a str,
     pub state_id: &'a str,
     pub size_id: &'a str,
@@ -124,6 +135,23 @@ pub trait ControlInspectorResolver: Send + Sync {
     ) -> InspectorCategoryContent;
 
     fn category_applies(&self, _look: &ShadcnLook, _selection: InspectorSelection<'_>, _category_id: &str) -> bool {
+        true
+    }
+
+    fn state_applies(
+        &self,
+        _look: &ShadcnLook,
+        _selection: InspectorSelection<'_>,
+        _state: &InspectorStateSpec,
+    ) -> bool {
+        true
+    }
+
+    fn value_modes_applies(&self, _look: &ShadcnLook, _selection: InspectorSelection<'_>) -> bool {
+        true
+    }
+
+    fn part_applies(&self, _look: &ShadcnLook, _selection: InspectorSelection<'_>, _part: &InspectorPart) -> bool {
         true
     }
 }

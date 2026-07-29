@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
 use gpui_luma::dock_panel;
 use gpui_luma_look_shadcn::prelude::*;
@@ -10,8 +10,12 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
+use super::shell_theme_inspectors::SplitViewThemeInspector;
+use super::split_view_inspector_adapter::{SplitViewInspectorAdapter, SPLIT_VIEW_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 
 const EVENT_SPECS: &[EventReferenceSpec] = &[
@@ -53,9 +57,55 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct DockPanelControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<DockPanelExpositionLeftPane>,
+    theme_inspector: Entity<SplitViewThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+}
+
+struct DockPanelExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     demo: Entity<DockPanelDemo>,
     event_stream: Entity<ControlEventStream>,
-    _subscriptions: Vec<Subscription>,
+}
+
+impl DockPanelExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.demo.update(cx, |demo, cx| demo.sync_look(look.clone(), cx));
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
+    }
+}
+
+impl Render for DockPanelExpositionLeftPane {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            let look = &self.look;
+            let preview = div()
+                .w_full()
+                .flex()
+                .flex_col()
+                .items_start()
+                .gap(px(12.0))
+                .child(div().w_full().px(px(100.0)).h(px(480.0)).min_w(px(0.0)).child(self.demo.clone()))
+                .child(self.event_stream.clone());
+
+            div()
+                .id("controls-doc-dock-panel-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
 }
 
 impl DockPanelControlExposition {
@@ -71,19 +121,47 @@ impl DockPanelControlExposition {
             )
         });
 
-        let demo = cx.new(|cx| DockPanelDemo::new(look.clone(), event_stream.clone(), cx));
+        let left_pane = cx.new(|cx| DockPanelExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            demo: cx.new(|cx| DockPanelDemo::new(look.clone(), event_stream.clone(), cx)),
+            event_stream: event_stream.clone(),
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-dock-panel-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &SPLIT_VIEW_INSPECTOR_SPEC,
+            SplitViewInspectorAdapter::shared(),
+        );
 
-        Self { look, entry, demo, event_stream, _subscriptions: Vec::new() }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
     }
 
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.demo.update(cx, |demo, cx| demo.sync_look(look, cx));
-        self.event_stream.update(cx, |stream, cx| stream.sync_look(self.look.clone(), cx));
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
         cx.notify();
     }
 }
@@ -91,23 +169,12 @@ impl DockPanelControlExposition {
 impl Render for DockPanelControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
-            let look = &self.look;
-            let preview = div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .items_start()
-                .gap(px(12.0))
-                .child(div().w_full().px(px(100.0)).h(px(480.0)).min_w(px(0.0)).child(self.demo.clone()))
-                .child(self.event_stream.clone());
-
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-dock-panel-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

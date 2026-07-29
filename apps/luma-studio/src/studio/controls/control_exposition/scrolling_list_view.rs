@@ -11,8 +11,12 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
+use super::collection_theme_inspectors::ListViewThemeInspector;
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector_split::InspectorSplitShell;
 use super::list_view_demo::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
+use super::list_view_inspector_adapter::{ListViewInspectorAdapter, LIST_VIEW_INSPECTOR_SPEC};
 use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
 use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
@@ -68,10 +72,91 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
 pub struct ScrollingListViewControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<ScrollingListViewExpositionLeftPane>,
+    theme_inspector: Entity<ListViewThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
+}
+
+struct ScrollingListViewExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     list_view: ScrollingListView<Task>,
     selected_indices: Vec<usize>,
     event_stream: Entity<ControlEventStream>,
-    _subscriptions: Vec<Subscription>,
+}
+
+impl ScrollingListViewExpositionLeftPane {
+    fn handle_list_event(&mut self, event: &ListViewEvent, cx: &mut Context<Self>) {
+        if let ListViewEvent::SelectionChanged { selected_indices } = event {
+            self.selected_indices = selected_indices.clone();
+            cx.notify();
+        }
+    }
+
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.list_view.update(cx, |_, cx| cx.notify());
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
+    }
+}
+
+impl Render for ScrollingListViewExpositionLeftPane {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        with_look(&self.look, || {
+            let look = &self.look;
+            let chrome = look.chrome();
+
+            let preview = div()
+                .w_full()
+                .max_w(px(760.0))
+                .flex()
+                .flex_col()
+                .items_start()
+                .gap(px(16.0))
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap(px(4.0))
+                        .child(
+                            div()
+                                .text_sm()
+                                .text_color(chrome.muted_text)
+                                .child("Scrollable task grid with a fixed viewport and row snap scrolling."),
+                        )
+                        .child(
+                            div()
+                                .text_sm()
+                                .text_color(chrome.body_text)
+                                .child(selected_summary(&self.selected_indices)),
+                        )
+                        .child(
+                            div()
+                                .text_sm()
+                                .text_color(chrome.muted_text)
+                                .child("Keyboard: Arrow keys move the active row. Enter or Space selects it."),
+                        ),
+                )
+                .child(self.list_view.clone())
+                .child(self.event_stream.clone());
+
+            div()
+                .id("controls-doc-scrolling-list-view-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    ControlExpositionLayout::BORDERLESS,
+                ))
+        })
+    }
 }
 
 impl ScrollingListViewControlExposition {
@@ -145,34 +230,59 @@ impl ScrollingListViewControlExposition {
             )
         });
 
-        let subscriptions = vec![cx.subscribe(&list_view, {
+        let left_pane = cx.new(|_| ScrollingListViewExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            list_view: list_view.clone(),
+            selected_indices: vec![1],
+            event_stream: event_stream.clone(),
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-scrolling-list-view-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &LIST_VIEW_INSPECTOR_SPEC,
+            ListViewInspectorAdapter::shared(),
+        );
+
+        let subscription = cx.subscribe(&list_view, {
             let event_stream = event_stream.clone();
-            move |this, _, event: &ListViewEvent, cx| {
-                this.handle_list_event(event, cx);
+            let left_pane = left_pane.clone();
+            move |_, _, event: &ListViewEvent, cx| {
+                left_pane.update(cx, |pane, cx| pane.handle_list_event(event, cx));
                 if let Some(line) = format_list_view_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }
-        })];
+        });
 
-        Self { look, entry, list_view, selected_indices: vec![1], event_stream, _subscriptions: subscriptions }
-    }
-
-    fn handle_list_event(&mut self, event: &ListViewEvent, cx: &mut Context<Self>) {
-        if let ListViewEvent::SelectionChanged { selected_indices } = event {
-            self.selected_indices = selected_indices.clone();
-            cx.notify();
-        }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![subscription] }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
     }
 
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.list_view.update(cx, |_, cx| cx.notify());
-        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
         cx.notify();
     }
 }
@@ -180,50 +290,12 @@ impl ScrollingListViewControlExposition {
 impl Render for ScrollingListViewControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
-            let look = &self.look;
-            let chrome = look.chrome();
-
-            let preview = div()
-                .w_full()
-                .max_w(px(760.0))
-                .flex()
-                .flex_col()
-                .items_start()
-                .gap(px(16.0))
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap(px(4.0))
-                        .child(
-                            div()
-                                .text_sm()
-                                .text_color(chrome.muted_text)
-                                .child("Scrollable task grid with a fixed viewport and row snap scrolling."),
-                        )
-                        .child(
-                            div()
-                                .text_sm()
-                                .text_color(chrome.body_text)
-                                .child(selected_summary(&self.selected_indices)),
-                        )
-                        .child(
-                            div()
-                                .text_sm()
-                                .text_color(chrome.muted_text)
-                                .child("Keyboard: Arrow keys move the active row. Enter or Space selects it."),
-                        ),
-                )
-                .child(self.list_view.clone())
-                .child(self.event_stream.clone());
-
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-scrolling-list-view-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(self.inspector_split.clone())
         })
     }
 }

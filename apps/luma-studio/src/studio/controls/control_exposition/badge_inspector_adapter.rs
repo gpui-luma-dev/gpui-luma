@@ -15,10 +15,12 @@ use super::inspector::{
 pub static BADGE_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Badge",
     id_prefix: "badge-theme-inspector",
+    parts: &[],
     variants: &BADGE_VARIANTS,
     states: &DEFAULT_INTERACTION_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &[],
+    default_part_id: "",
     default_variant_id: "default",
     default_size_id: "md",
     default_value_id: "",

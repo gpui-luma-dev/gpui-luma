@@ -230,6 +230,20 @@ impl ControlExposition {
             Self::ComboBox(entity) => entity.read(cx).fills_viewport(),
             Self::AutocompleteTextField(entity) => entity.read(cx).fills_viewport(),
             Self::SearchSelector(entity) => entity.read(cx).fills_viewport(),
+            Self::ListBox(entity) => entity.read(cx).fills_viewport(),
+            Self::ScrollingListView(entity) => entity.read(cx).fills_viewport(),
+            Self::SelectionPanel(entity) => entity.read(cx).fills_viewport(),
+            Self::TreeView(entity) => entity.read(cx).fills_viewport(),
+            Self::NavigationSidebar(entity) => entity.read(cx).fills_viewport(),
+            Self::TabsNavigation(entity) => entity.read(cx).fills_viewport(),
+            Self::Toolbar(entity) => entity.read(cx).fills_viewport(),
+            Self::Accordion(entity) => entity.read(cx).fills_viewport(),
+            Self::ResizablePanels(entity) => entity.read(cx).fills_viewport(),
+            Self::DockPanel(entity) => entity.read(cx).fills_viewport(),
+            Self::ColorField(entity) => entity.read(cx).fills_viewport(),
+            Self::ColorSlider(entity) => entity.read(cx).fills_viewport(),
+            Self::ColorRing(entity) => entity.read(cx).fills_viewport(),
+            Self::ColorArc(entity) => entity.read(cx).fills_viewport(),
             _ => false,
         }
     }
@@ -256,6 +270,24 @@ impl ControlExposition {
                 entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx))
             }
             Self::SearchSelector(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ListBox(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ScrollingListView(entity) => {
+                entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx))
+            }
+            Self::SelectionPanel(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::TreeView(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::NavigationSidebar(entity) => {
+                entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx))
+            }
+            Self::TabsNavigation(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Toolbar(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Accordion(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ResizablePanels(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::DockPanel(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ColorField(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ColorSlider(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ColorRing(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ColorArc(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             _ => {}
         }
     }
@@ -282,6 +314,24 @@ impl ControlExposition {
                 entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx))
             }
             Self::SearchSelector(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ListBox(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ScrollingListView(entity) => {
+                entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx))
+            }
+            Self::SelectionPanel(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::TreeView(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::NavigationSidebar(entity) => {
+                entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx))
+            }
+            Self::TabsNavigation(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Toolbar(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Accordion(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ResizablePanels(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::DockPanel(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ColorField(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ColorSlider(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ColorRing(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ColorArc(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             _ => {}
         }
     }
