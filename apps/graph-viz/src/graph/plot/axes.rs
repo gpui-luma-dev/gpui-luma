@@ -23,14 +23,6 @@ enum XLabelPlacement {
     End,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub enum YAxisLabelSide {
-    #[default]
-    Left,
-    #[allow(dead_code)]
-    Right,
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct AxisLabelsLayer {
     pub x_tick_values: Vec<f32>,
@@ -40,7 +32,6 @@ pub struct AxisLabelsLayer {
     pub metric: TelemetryMetric,
     pub units: MetricDisplay,
     pub y_inverted: bool,
-    pub y_label_side: YAxisLabelSide,
     pub style: AxisLabelStyle,
 }
 
@@ -70,10 +61,7 @@ pub fn paint_axis_labels(
     y_domain: &PlotDomain2D,
     layer: &AxisLabelsLayer,
 ) {
-    match layer.y_label_side {
-        YAxisLabelSide::Left => paint_left_y_axis_labels(window, cx, viewport, y_domain, layer),
-        YAxisLabelSide::Right => paint_right_y_axis_labels_from_layer(window, cx, viewport, y_domain, layer),
-    }
+    paint_left_y_axis_labels(window, cx, viewport, y_domain, layer);
     paint_x_axis_labels(
         window,
         cx,
@@ -92,31 +80,6 @@ pub fn paint_right_axis_labels(
     viewport: &Viewport2D,
     y_domain: &PlotDomain2D,
     layer: &RightAxisLabelsLayer,
-) {
-    let y_anchor_x = viewport.bounds.right() + px(LABEL_GAP);
-
-    for &value in &layer.y_tick_values {
-        let display = layer.metric.to_display(value, layer.units);
-        let label = layer.metric.format_display_tick(display, layer.y_tick_step_display);
-        let fraction = y_fraction(y_domain, value, layer.y_inverted);
-        let tick_y = viewport.uv_to_pixels(gpui::point(0.0, fraction)).y;
-        paint_y_tick_label_right(
-            window,
-            cx,
-            &label,
-            y_anchor_x,
-            tick_y - px(layer.style.line_height / 2.0),
-            &layer.style,
-        );
-    }
-}
-
-fn paint_right_y_axis_labels_from_layer(
-    window: &mut Window,
-    cx: &mut App,
-    viewport: &Viewport2D,
-    y_domain: &PlotDomain2D,
-    layer: &AxisLabelsLayer,
 ) {
     let y_anchor_x = viewport.bounds.right() + px(LABEL_GAP);
 

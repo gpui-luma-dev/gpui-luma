@@ -160,7 +160,7 @@ pub fn cull_ticks_by_label_width(
     let mut kept = vec![ticks[0]];
     let mut kept_widths = vec![label_widths.first().copied().unwrap_or(0.0)];
 
-    for index in 1..ticks.len() - 1 {
+    for (index, _) in ticks.iter().enumerate().skip(1).take(ticks.len().saturating_sub(2)) {
         let x = (ticks[index] - x_min) / span * plot_width;
         let half = label_widths.get(index).copied().unwrap_or(0.0) / 2.0;
         let prev_x = (*kept.last().unwrap_or(&x_min) - x_min) / span * plot_width;

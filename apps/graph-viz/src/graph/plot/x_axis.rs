@@ -22,14 +22,6 @@ pub fn format_x_axis_tick(value: f32, step: f32, units: MetricDisplay) -> String
     }
 }
 
-#[allow(dead_code)]
-pub fn x_axis_span(units: MetricDisplay, duration_seconds: f32, distance_extent_display: f32) -> f32 {
-    match units.x_axis {
-        XAxisMode::Time => duration_seconds.max(f32::EPSILON),
-        XAxisMode::Distance => distance_extent_display.max(f32::EPSILON),
-    }
-}
-
 pub fn layout_x_axis(
     units: MetricDisplay,
     duration_seconds: f32,
@@ -94,6 +86,13 @@ pub fn fit_x_axis_margins(
 mod tests {
     use super::*;
     use crate::graph::units::SpeedUnit;
+
+    fn x_axis_span(units: MetricDisplay, duration_seconds: f32, distance_extent_display: f32) -> f32 {
+        match units.x_axis {
+            XAxisMode::Time => duration_seconds.max(f32::EPSILON),
+            XAxisMode::Distance => distance_extent_display.max(f32::EPSILON),
+        }
+    }
 
     #[test]
     fn distance_axis_span_uses_speed_unit() {

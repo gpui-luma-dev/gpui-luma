@@ -239,7 +239,7 @@ fn field_f32_array(record: &FitDataRecord, name: &str) -> Vec<f32> {
     };
 
     match value {
-        Value::Array(values) => values.iter().filter_map(|value| field_f32_from_value(value)).collect(),
+        Value::Array(values) => values.iter().filter_map(field_f32_from_value).collect(),
         _ => field_f32_from_value(value).into_iter().collect(),
     }
 }

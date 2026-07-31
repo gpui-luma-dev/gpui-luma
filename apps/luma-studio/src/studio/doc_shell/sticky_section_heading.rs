@@ -314,8 +314,7 @@ mod tests {
 
     #[test]
     fn snapshot_sticks_after_header_scrolls_past_top() {
-        let mut tracker = StickySectionHeadingTracker::default();
-        tracker.content_origin_y = 0.0;
+        let mut tracker = StickySectionHeadingTracker { content_origin_y: 0.0, ..Default::default() };
         tracker.register(
             "Typography",
             0,

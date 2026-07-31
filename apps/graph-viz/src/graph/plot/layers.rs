@@ -60,8 +60,8 @@ pub fn paint_grid_lines(
     for &y_value in &layer.y_tick_values {
         let fraction = y_fraction(y_domain, y_value, y_inverted);
         let y = viewport.uv_to_pixels(gpui::point(0.0, fraction)).y;
-        let color = if zero_baseline_color.is_some() && y_value.abs() < f32::EPSILON {
-            zero_baseline_color.unwrap()
+        let color = if let Some(zero_color) = zero_baseline_color.filter(|_| y_value.abs() < f32::EPSILON) {
+            zero_color
         } else {
             layer.grid_color
         };

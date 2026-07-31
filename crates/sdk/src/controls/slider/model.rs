@@ -448,21 +448,6 @@ impl SliderBuilder {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn with_template_modifier_wraps_template() {
-        let template = default_slider_template();
-        let builder = SliderBuilder::new("slider-test")
-            .template(template.clone())
-            .with_template_modifier(|element, _| element);
-
-        assert!(!Arc::ptr_eq(&builder.model.template, &template));
-    }
-}
-
 pub(crate) fn primary_value(model: &SliderModel) -> f32 {
     let position = model.thumbs.first().map(|thumb| thumb.position).unwrap_or(0.0);
     let value = value_for_position(model, position);
@@ -503,4 +488,19 @@ pub(crate) fn build_render_segments(model: &SliderModel) -> Vec<TrackSegment> {
     let thumb_position = model.thumbs.first().map(|thumb| thumb.position).unwrap_or(0.0);
     let track_intervals = model.track_intervals.as_ref().unwrap_or(&model.allowed_intervals);
     build_track_segments(presentation, thumb_position, track_intervals, model.range)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_slider_template();
+        let builder = SliderBuilder::new("slider-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
 }

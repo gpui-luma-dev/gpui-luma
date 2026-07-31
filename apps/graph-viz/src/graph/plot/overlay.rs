@@ -1,6 +1,6 @@
 use gpui::Window;
 
-use super::axes::{AxisLabelStyle, RightAxisLabelsLayer, YAxisLabelSide, measure_max_label_width};
+use super::axes::{AxisLabelStyle, RightAxisLabelsLayer, measure_max_label_width};
 use super::domain::PlotDomain2D;
 use super::ticks::nice_value_ticks;
 use super::viewport::ChartMargins;
@@ -62,10 +62,13 @@ pub fn build_speed_hr_overlay_stack(
         TARGET_Y_TICKS,
         speed_metric.preferred_y_display_step(units),
     );
-    let speed_y_range = speed_metric.from_display(*speed_y_display_scale.range.start(), units)
-        ..=speed_metric.from_display(*speed_y_display_scale.range.end(), units);
-    let speed_y_ticks: Vec<f32> =
-        speed_y_display_scale.ticks.iter().map(|tick| speed_metric.from_display(*tick, units)).collect();
+    let speed_y_range = speed_metric.display_to_internal(*speed_y_display_scale.range.start(), units)
+        ..=speed_metric.display_to_internal(*speed_y_display_scale.range.end(), units);
+    let speed_y_ticks: Vec<f32> = speed_y_display_scale
+        .ticks
+        .iter()
+        .map(|tick| speed_metric.display_to_internal(*tick, units))
+        .collect();
     let speed_y_labels: Vec<String> = speed_y_display_scale
         .ticks
         .iter()
@@ -139,7 +142,6 @@ pub fn build_speed_hr_overlay_stack(
             metric: speed_metric,
             units,
             y_inverted: false,
-            y_label_side: YAxisLabelSide::Left,
             style: axis_style.clone(),
         },
         right_axes: RightAxisLabelsLayer {

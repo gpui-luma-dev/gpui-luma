@@ -114,8 +114,7 @@ mod tests {
 
     #[test]
     fn default_pager_fallback_uses_metric_tokens() {
-        let mut tokens = ThemeTokens::default();
-        tokens.metrics = MetricTokens::default();
+        let mut tokens = ThemeTokens { metrics: MetricTokens::default(), ..Default::default() };
         tokens.metrics.control.sm = ControlMetricTokens::new(40.0, 18.0, 7.0, 10.0, 9.0);
         tokens.metrics.spacing.s1 = 5.0;
         tokens.metrics.spacing.s3 = 11.0;

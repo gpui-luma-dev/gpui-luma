@@ -74,11 +74,12 @@ mod tests {
 
     #[test]
     fn resolve_track_corner_radius_uses_configured_value() {
-        let mut corner_radii = CornersRefinement::default();
-        corner_radii.top_left = Some(px(8.0).into());
-        corner_radii.top_right = Some(px(8.0).into());
-        corner_radii.bottom_left = Some(px(8.0).into());
-        corner_radii.bottom_right = Some(px(8.0).into());
+        let corner_radii = CornersRefinement {
+            top_left: Some(px(8.0).into()),
+            top_right: Some(px(8.0).into()),
+            bottom_left: Some(px(8.0).into()),
+            bottom_right: Some(px(8.0).into()),
+        };
 
         let resolved = resolve_track_corner_radius(&corner_radii, px(16.0), px(12.0));
         assert_eq!(f32::from(resolved), 8.0);
@@ -99,8 +100,7 @@ mod tests {
 
     #[test]
     fn inner_track_paint_corner_radius_uses_inset_when_configured() {
-        let mut corner_radii = CornersRefinement::default();
-        corner_radii.top_left = Some(px(8.0).into());
+        let corner_radii = CornersRefinement { top_left: Some(px(8.0).into()), ..Default::default() };
 
         let bounds = Bounds { origin: gpui::point(px(0.0), px(0.0)), size: gpui::size(px(100.0), px(22.0)) };
         let resolved = inner_track_paint_corner_radius(&corner_radii, px(16.0), bounds, Axis::Horizontal);

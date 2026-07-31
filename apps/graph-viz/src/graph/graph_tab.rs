@@ -242,9 +242,6 @@ fn render_chart_controls(
             let power_unit_toggle = power_unit_toggle.clone();
             let x_axis_toggle = x_axis_toggle.clone();
             let timeline_slider = timeline_slider.clone();
-            let show_power_unit_toggle = show_power_unit_toggle;
-            let label_style = label_style;
-            let value_style = value_style;
             let scrub_label = SharedString::from(format!(
                 "Timeline: {} / {}",
                 format_duration(scrub_time),
@@ -307,10 +304,7 @@ pub fn default_selected_metric_ids(metrics: &[TelemetryMetric]) -> Vec<SharedStr
     metrics.iter().map(|metric| SharedString::from(metric.id())).collect()
 }
 
-pub fn visible_metrics_from_ids<'a>(
-    available: &'a [TelemetryMetric],
-    selected_ids: &[SharedString],
-) -> Vec<TelemetryMetric> {
+pub fn visible_metrics_from_ids(available: &[TelemetryMetric], selected_ids: &[SharedString]) -> Vec<TelemetryMetric> {
     TelemetryMetric::ALL
         .iter()
         .copied()

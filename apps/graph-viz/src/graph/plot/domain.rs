@@ -1,7 +1,5 @@
 use std::ops::RangeInclusive;
 
-use gpui::Point;
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct PlotDomain2D {
     pub x_range: RangeInclusive<f32>,
@@ -15,8 +13,8 @@ impl PlotDomain2D {
 
     /// Projects `(x_data, y_data)` into normalized UV `(0.0..=1.0, 0.0..=1.0)`.
     /// Low data values map to low UV Y (bottom of chart domain).
-    #[allow(dead_code)]
-    pub fn to_uv(&self, x: f32, y: f32) -> Point<f32> {
+    #[cfg(test)]
+    pub fn to_uv(&self, x: f32, y: f32) -> gpui::Point<f32> {
         let x_min = *self.x_range.start();
         let x_max = *self.x_range.end();
         let y_min = *self.y_range.start();
@@ -47,19 +45,11 @@ impl PlotDomain2D {
         x_min + fraction.clamp(0.0, 1.0) * (x_max - x_min)
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn y_from_fraction(&self, fraction: f32) -> f32 {
         let y_min = *self.y_range.start();
         let y_max = *self.y_range.end();
         y_min + fraction.clamp(0.0, 1.0) * (y_max - y_min)
-    }
-
-    /// Reserved for local `ChartControl` pointer hit-testing.
-    #[allow(dead_code)]
-    pub fn x_from_pointer(&self, pointer_x: gpui::Pixels, bounds: gpui::Bounds<gpui::Pixels>) -> f32 {
-        let width = bounds.size.width.as_f32().max(f32::EPSILON);
-        let fraction = ((pointer_x - bounds.origin.x).as_f32() / width).clamp(0.0, 1.0);
-        self.x_from_fraction(fraction)
     }
 }
 

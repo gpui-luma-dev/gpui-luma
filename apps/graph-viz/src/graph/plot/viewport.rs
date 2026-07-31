@@ -9,7 +9,7 @@ pub struct ChartMargins {
 }
 
 impl ChartMargins {
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub const DEFAULT: Self = Self { left: 44.0, right: 12.0, top: 10.0, bottom: 24.0 };
 }
 
@@ -19,7 +19,7 @@ pub struct Viewport2D {
 }
 
 impl Viewport2D {
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn new(bounds: Bounds<Pixels>) -> Self {
         Self { bounds }
     }
@@ -36,11 +36,6 @@ impl Viewport2D {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn inset(outer: Bounds<Pixels>, inset: f32) -> Self {
-        Self::with_margins(outer, ChartMargins { left: inset, right: inset, top: inset, bottom: inset })
-    }
-
     /// Maps normalized UV to pixel coordinates. UV Y = 0.0 is the bottom of the viewport.
     pub fn uv_to_pixels(&self, uv: Point<f32>) -> Point<Pixels> {
         let x = self.bounds.origin.x + px(uv.x * self.bounds.size.width.as_f32());
@@ -48,14 +43,9 @@ impl Viewport2D {
         point(x, y)
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn data_to_pixels(&self, domain: &super::PlotDomain2D, x: f32, y: f32) -> Point<Pixels> {
         self.uv_to_pixels(domain.to_uv(x, y))
-    }
-
-    #[allow(dead_code)]
-    pub fn fraction_to_x(&self, fraction: f32) -> Pixels {
-        self.bounds.origin.x + self.bounds.size.width * fraction.clamp(0.0, 1.0)
     }
 }
 

@@ -83,13 +83,13 @@ impl TelemetryMetric {
 
     pub fn to_display(self, value: f32, units: MetricDisplay) -> f32 {
         match self {
-            Self::Speed => units.speed_unit.from_mps(value),
+            Self::Speed => units.speed_unit.mps_to_display(value),
             Self::Power => power_to_display(value, units),
             _ => value,
         }
     }
 
-    pub fn from_display(self, display: f32, units: MetricDisplay) -> f32 {
+    pub fn display_to_internal(self, display: f32, units: MetricDisplay) -> f32 {
         match self {
             Self::Speed => units.speed_unit.to_mps(display),
             Self::Power => power_from_display(display, units),
@@ -264,7 +264,7 @@ mod tests {
             rider_weight_kg: Some(80.0),
         };
         assert!((TelemetryMetric::Power.to_display(160.0, units) - 2.0).abs() < f32::EPSILON);
-        assert!((TelemetryMetric::Power.from_display(2.0, units) - 160.0).abs() < f32::EPSILON);
+        assert!((TelemetryMetric::Power.display_to_internal(2.0, units) - 160.0).abs() < f32::EPSILON);
     }
 
     #[test]

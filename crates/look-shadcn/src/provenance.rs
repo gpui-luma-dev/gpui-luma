@@ -59,13 +59,12 @@ pub struct TableRuleMetadata {
 pub struct LookResolver<'a> {
     catalog: &'a CssTokenMap,
     theme_mode: ThemeMode,
-    #[allow(dead_code)]
-    label: &'a str,
+    _label: &'a str,
 }
 
 impl<'a> LookResolver<'a> {
     pub fn new(catalog: &'a CssTokenMap, theme_mode: ThemeMode, label: &'a str) -> Self {
-        Self { catalog, theme_mode, label }
+        Self { catalog, theme_mode, _label: label }
     }
 
     pub fn resolve_decl(&self, decl: &str) -> anyhow::Result<ResolvedColor> {

@@ -37,7 +37,7 @@ impl SpeedUnit {
         if kmh_selected { Self::Kmh } else { Self::Mph }
     }
 
-    pub fn from_mps(self, meters_per_second: f32) -> f32 {
+    pub fn mps_to_display(self, meters_per_second: f32) -> f32 {
         match self {
             Self::Mph => meters_per_second * 2.236_936_3,
             Self::Kmh => meters_per_second * 3.6,
@@ -138,10 +138,10 @@ mod tests {
     }
 
     #[test]
-    fn mph_and_kmh_convert_from_mps() {
+    fn mph_and_kmh_convert_mps_to_display() {
         let mps = 10.0;
-        assert!((SpeedUnit::Mph.from_mps(mps) - 22.369).abs() < 0.01);
-        assert!((SpeedUnit::Kmh.from_mps(mps) - 36.0).abs() < 0.01);
+        assert!((SpeedUnit::Mph.mps_to_display(mps) - 22.369).abs() < 0.01);
+        assert!((SpeedUnit::Kmh.mps_to_display(mps) - 36.0).abs() < 0.01);
     }
 
     #[test]
@@ -162,7 +162,7 @@ mod tests {
     fn round_trip_display_units() {
         for unit in [SpeedUnit::Mph, SpeedUnit::Kmh] {
             let mps = 8.5;
-            assert!((unit.to_mps(unit.from_mps(mps)) - mps).abs() < 0.001);
+            assert!((unit.to_mps(unit.mps_to_display(mps)) - mps).abs() < 0.001);
         }
     }
 }

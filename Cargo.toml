@@ -26,8 +26,12 @@ publish = false
 
 [workspace.dependencies]
 anyhow = "1"
-gpui = { package = "gpui-unofficial", version = "1.11.3" }
-gpui_platform = { package = "gpui-platform-gpui-unofficial", version = "1.11.3", features = ["font-kit"] }
+gpui = { package = "gpui-unofficial", version = "1.13.1" }
+gpui_platform = {
+  package = "gpui-platform-gpui-unofficial",
+  version = "1.13.1",
+  features = ["font-kit"],
+}
 image = "0.25"
 lucide-icons = "0.575.0"
 serde = "1"

@@ -136,7 +136,7 @@ pub fn format_elevation_for_unit(meters: f32, unit: SpeedUnit) -> String {
 }
 
 pub fn format_speed(meters_per_second: f32, unit: SpeedUnit) -> String {
-    format!("{:.1} {}", unit.from_mps(meters_per_second), unit.label())
+    format!("{:.1} {}", unit.mps_to_display(meters_per_second), unit.label())
 }
 
 pub fn format_heart_rate(beats_per_minute: f32) -> String {

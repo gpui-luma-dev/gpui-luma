@@ -411,10 +411,10 @@ mod tests {
         let mut respiration_samples = 0usize;
         let mut weight_kg = None;
         for record in &records {
-            if record.kind() == fitparser::profile::MesgNum::Record {
-                if super::field_f32_any(record, &["enhanced_respiration_rate", "respiration_rate"]).is_some() {
-                    respiration_samples += 1;
-                }
+            if record.kind() == fitparser::profile::MesgNum::Record
+                && super::field_f32_any(record, &["enhanced_respiration_rate", "respiration_rate"]).is_some()
+            {
+                respiration_samples += 1;
             }
             if record.kind() == fitparser::profile::MesgNum::UserProfile {
                 weight_kg = super::field_f32(record, "weight");

@@ -1,6 +1,6 @@
 use gpui::Window;
 
-use super::axes::{AxisLabelStyle, RightAxisLabelsLayer, YAxisLabelSide, measure_max_label_width};
+use super::axes::{AxisLabelStyle, RightAxisLabelsLayer, measure_max_label_width};
 use super::domain::PlotDomain2D;
 use super::ticks::{fixed_value_ticks, nice_value_ticks};
 use super::viewport::ChartMargins;
@@ -63,9 +63,9 @@ pub fn build_telemetry_chart_stack(
             metric.preferred_y_display_step(units),
         )
     };
-    let y_range = metric.from_display(*y_display_scale.range.start(), units)
-        ..=metric.from_display(*y_display_scale.range.end(), units);
-    let y_ticks: Vec<f32> = y_display_scale.ticks.iter().map(|tick| metric.from_display(*tick, units)).collect();
+    let y_range = metric.display_to_internal(*y_display_scale.range.start(), units)
+        ..=metric.display_to_internal(*y_display_scale.range.end(), units);
+    let y_ticks: Vec<f32> = y_display_scale.ticks.iter().map(|tick| metric.display_to_internal(*tick, units)).collect();
     let y_labels: Vec<String> = y_display_scale
         .ticks
         .iter()
@@ -74,16 +74,15 @@ pub fn build_telemetry_chart_stack(
     let has_pco_overlay = metric == TelemetryMetric::RightPlatformCenterOffset
         && overlay_dot_samples.is_some_and(|samples| samples.len() >= 2);
     let y_label_width = measure_max_label_width(window, axis_style, &y_labels) + LABEL_GAP;
-    let (left_margin, min_right_margin, y_label_side, left_y_inverted) =
-        if metric == TelemetryMetric::RightPlatformCenterOffset {
-            if has_pco_overlay {
-                (y_label_width.max(MIN_LEFT_MARGIN), y_label_width.max(MIN_RIGHT_MARGIN), YAxisLabelSide::Left, true)
-            } else {
-                (y_label_width.max(MIN_LEFT_MARGIN), MIN_RIGHT_MARGIN, YAxisLabelSide::Left, true)
-            }
+    let (left_margin, min_right_margin, left_y_inverted) = if metric == TelemetryMetric::RightPlatformCenterOffset {
+        if has_pco_overlay {
+            (y_label_width.max(MIN_LEFT_MARGIN), y_label_width.max(MIN_RIGHT_MARGIN), true)
         } else {
-            (y_label_width.max(MIN_LEFT_MARGIN), MIN_RIGHT_MARGIN, YAxisLabelSide::Left, y_inverted)
-        };
+            (y_label_width.max(MIN_LEFT_MARGIN), MIN_RIGHT_MARGIN, true)
+        }
+    } else {
+        (y_label_width.max(MIN_LEFT_MARGIN), MIN_RIGHT_MARGIN, y_inverted)
+    };
 
     let distance_extent = ride_distance_display_extent(distance_profile, duration_seconds, units.speed_unit);
     let (right_margin, x_layout) = fit_x_axis_margins(
@@ -111,7 +110,7 @@ pub fn build_telemetry_chart_stack(
         gpui::px(2.0)
     };
     let area_fill = (series_style == SeriesStyle::AreaFilled)
-        .then(|| fill_color)
+        .then_some(fill_color)
         .flatten()
         .map(|fill_color| AreaFillLayer { points: rendered_points.clone(), fill_color });
     let dots = (series_style == SeriesStyle::Dots).then(|| DotsLayer {
@@ -167,7 +166,6 @@ pub fn build_telemetry_chart_stack(
             metric,
             units,
             y_inverted: left_y_inverted,
-            y_label_side,
             style: axis_style.clone(),
         },
         right_axes,
