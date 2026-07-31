@@ -4,13 +4,12 @@ use gpui::{
     prelude::*, px,
 };
 
-use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
 use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::controls::interaction::ControlInteraction;
 
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use crate::controls::scrollbar::ScrollbarEvent;
-use crate::controls::textfield::TextFieldState;
+use crate::controls::textfield::{TextFieldState, TextFieldVariant};
 use crate::theme::observe_theme_revision;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
@@ -608,8 +607,7 @@ impl Render for SearchSelectorControl {
         self.sync_disabled_state(cx);
 
         let trigger_focused = self.interaction.focus_handle().is_focused(window);
-        let tokens = crate::theme::ThemeTokens::default();
-        let autocomplete_look = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve(self.model.size);
+        let autocomplete_look = self.model.autocomplete_theme.resolve(self.model.size);
         let look = (self.model.popup_look_provider)(self.model.size);
         let selected_label = self
             .committed_selection
@@ -617,13 +615,11 @@ impl Render for SearchSelectorControl {
             .map(|item| item.label.to_string());
 
         let minimum_trigger_width = {
-            let textfield_theme = crate::controls::textfield::default_textfield_theme();
-            let textfield_look = textfield_theme.resolve_look(
-                crate::controls::textfield::TextFieldVariant::Standard,
-                crate::controls::textfield::TextFieldState::default(),
+            let textfield_look = self.model.textfield_template.resolve_look(
+                TextFieldVariant::Standard,
+                TextFieldState::default(),
                 true,
                 self.model.size,
-                &crate::theme::StandardBoxScale::compute(self.model.size, &textfield_theme.metrics(), 1.0),
             );
             let mut text_font = font(".SystemUIFont");
             text_font.weight = textfield_look.typography.weight;

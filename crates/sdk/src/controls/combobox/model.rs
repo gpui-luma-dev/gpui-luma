@@ -4,6 +4,7 @@ use gpui::{App, AppContext, Entity, IntoElement, ParentElement, SharedString, St
 
 use super::behavior::SelectionItem;
 use super::control::ComboBoxControl;
+use crate::controls::autocomplete::{AutocompleteTextBoxTheme, default_autocomplete_textbox_theme};
 use super::item_template::{
     ComboBoxItemRenderModel, ComboBoxItemTemplate, item_template_with_modifier, make_combobox_item_template,
 };
@@ -47,6 +48,7 @@ pub struct ComboBoxModel {
     pub(crate) items_template: Arc<dyn ComboBoxItemsTemplate>,
     pub(crate) panel_template: Arc<dyn ComboBoxPanelTemplate>,
     pub(crate) item_template: Option<ComboBoxItemTemplate<SelectionItem>>,
+    pub(crate) autocomplete_theme: Arc<dyn AutocompleteTextBoxTheme>,
     pub(crate) popup_look_provider: ComboBoxPopupLookProvider,
 }
 
@@ -77,6 +79,7 @@ impl ComboBoxBuilder {
                 items_template: default_combobox_items_template(),
                 panel_template: default_combobox_panel_template(),
                 item_template: None,
+                autocomplete_theme: default_autocomplete_textbox_theme(),
                 popup_look_provider: Arc::new(|size| default_selector_items_panel_look(&ThemeTokens::default(), size)),
             },
         }
@@ -173,6 +176,11 @@ impl ComboBoxBuilder {
 
     pub fn panel_template(mut self, template: Arc<dyn ComboBoxPanelTemplate>) -> Self {
         self.model.panel_template = template;
+        self
+    }
+
+    pub fn autocomplete_theme(mut self, theme: Arc<dyn AutocompleteTextBoxTheme>) -> Self {
+        self.model.autocomplete_theme = theme;
         self
     }
 

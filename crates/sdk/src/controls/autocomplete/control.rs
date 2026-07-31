@@ -4,7 +4,6 @@ use gpui::{
 };
 use crate::controls::selector_panel::{SelectorItem, SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::controls::scrollbar::ScrollbarEvent;
-use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::model::AutocompleteTextBoxBuilder;
@@ -356,8 +355,7 @@ impl AutocompleteTextBoxControl {
 
 impl Render for AutocompleteTextBoxControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let tokens = crate::theme::ThemeTokens::default();
-        let autocomplete_look = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve(self.model.size);
+        let autocomplete_look = self.model.autocomplete_theme.resolve(self.model.size);
         let look = (self.model.popup_look_provider)(self.model.size);
         let selected_label = self
             .behavior

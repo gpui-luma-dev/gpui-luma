@@ -4,6 +4,7 @@ use gpui::{App, AppContext, Entity, IntoElement, ParentElement, SharedString, St
 
 use super::behavior::SelectionItem;
 use super::control::SearchSelectorControl;
+use crate::controls::autocomplete::{AutocompleteTextBoxTheme, default_autocomplete_textbox_theme};
 use super::item_template::{
     SearchSelectorItemRenderModel, SearchSelectorItemTemplate, item_template_with_modifier,
     make_search_selector_item_template,
@@ -46,6 +47,7 @@ pub struct SearchSelectorModel {
     pub(crate) items_template: Arc<dyn SearchSelectorItemsTemplate>,
     pub(crate) panel_template: Arc<dyn SearchSelectorPanelTemplate>,
     pub(crate) item_template: Option<SearchSelectorItemTemplate<SelectionItem>>,
+    pub(crate) autocomplete_theme: Arc<dyn AutocompleteTextBoxTheme>,
     pub(crate) popup_look_provider: SearchSelectorPopupLookProvider,
 }
 
@@ -80,6 +82,7 @@ impl SearchSelectorBuilder {
                 items_template: default_search_selector_items_template(),
                 panel_template: default_search_selector_panel_template(),
                 item_template: None,
+                autocomplete_theme: default_autocomplete_textbox_theme(),
                 popup_look_provider: Arc::new(|size| default_selector_items_panel_look(&ThemeTokens::default(), size)),
             },
         }
@@ -200,6 +203,11 @@ impl SearchSelectorBuilder {
 
     pub fn panel_template(mut self, template: Arc<dyn SearchSelectorPanelTemplate>) -> Self {
         self.model.panel_template = template;
+        self
+    }
+
+    pub fn autocomplete_theme(mut self, theme: Arc<dyn AutocompleteTextBoxTheme>) -> Self {
+        self.model.autocomplete_theme = theme;
         self
     }
 

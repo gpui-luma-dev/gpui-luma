@@ -4,6 +4,7 @@ use gpui::{AppContext, Entity, SharedString};
 
 use super::behavior::SelectionItem;
 use super::control::AutocompleteTextBoxControl;
+use super::theme::{AutocompleteTextBoxTheme, default_autocomplete_textbox_theme};
 use super::template::{
     AutocompleteItemsTemplate, AutocompleteTextBoxTemplate, default_autocomplete_items_template,
     default_autocomplete_textbox_template, modified_autocomplete_items_template,
@@ -30,6 +31,7 @@ pub struct AutocompleteTextBoxModel {
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) template: Arc<dyn AutocompleteTextBoxTemplate>,
     pub(crate) items_template: Arc<dyn AutocompleteItemsTemplate>,
+    pub(crate) autocomplete_theme: Arc<dyn AutocompleteTextBoxTheme>,
     pub(crate) popup_look_provider: AutocompletePopupLookProvider,
 }
 
@@ -53,6 +55,7 @@ impl AutocompleteTextBoxBuilder {
                 scrollbar_template: default_scrollbar_template(),
                 template: default_autocomplete_textbox_template(),
                 items_template: default_autocomplete_items_template(),
+                autocomplete_theme: default_autocomplete_textbox_theme(),
                 popup_look_provider: Arc::new(|size| default_selector_items_panel_look(&ThemeTokens::default(), size)),
             },
         }
@@ -133,6 +136,11 @@ impl AutocompleteTextBoxBuilder {
     {
         self.model.items_template =
             modified_autocomplete_items_template(Arc::clone(&self.model.items_template), modifier);
+        self
+    }
+
+    pub fn autocomplete_theme(mut self, theme: Arc<dyn AutocompleteTextBoxTheme>) -> Self {
+        self.model.autocomplete_theme = theme;
         self
     }
 
