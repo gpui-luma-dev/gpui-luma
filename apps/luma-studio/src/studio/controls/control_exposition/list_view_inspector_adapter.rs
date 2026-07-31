@@ -46,6 +46,7 @@ impl ControlInspectorResolver for ListViewInspectorAdapter {
             "layout" => InspectorCategoryContent::Layout(list_view_layout_section(
                 look,
                 "list-view-theme-inspector-box-model",
+                selection.variant_id,
                 selection.size_id,
             )),
             _ => InspectorCategoryContent::Colors(Vec::new()),
@@ -55,7 +56,9 @@ impl ControlInspectorResolver for ListViewInspectorAdapter {
     fn state_applies(&self, _look: &ShadcnLook, selection: InspectorSelection<'_>, state: &InspectorStateSpec) -> bool {
         match selection.variant_id {
             "surface" => matches!(state.id, "enabled" | "disabled"),
-            "row" => matches!(state.id, "default" | "hover" | "pressed" | "keyboard-active" | "disabled"),
+            "row" | "grid-cell" => {
+                matches!(state.id, "default" | "hover" | "pressed" | "keyboard-active" | "disabled")
+            }
             _ => true,
         }
     }
@@ -68,7 +71,7 @@ impl ControlInspectorResolver for ListViewInspectorAdapter {
 fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> Vec<super::inspector::InspectColorRow> {
     let inspect = ShadcnInspect::new(look);
     match selection.variant_id {
-        "row" => {
+        "row" | "grid-cell" => {
             let palette = inspect.inspect_list_view_row_color_palette(
                 list_view_row_selected(selection.value_id),
                 listbox_row_state(selection.state_id),

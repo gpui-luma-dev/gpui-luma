@@ -6,19 +6,19 @@ use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use gpui_luma_look_shadcn_inspect::{
     AccordionInspectMetrics, AutocompleteInspectMetrics, BadgeInspectMetrics, ButtonInspectMetrics,
     CheckboxInspectMetrics, ContextMenuInspectMetrics, FloatingMenuInspectMetrics, ListBoxInspectMetrics,
-    ListViewInspectMetrics, NavigationSidebarInspectMetrics, ProgressInspectMetrics, RadioButtonInspectMetrics,
-    ResizablePanelsInspectMetrics, ScrollbarInspectMetrics, ShadcnInspect, SliderInspectMetrics,
-    SplitViewInspectMetrics, SwitchInspectMetrics, TabsNavigationInspectMetrics, TextFieldInspectMetrics,
-    PagerInspectMetrics, ToolbarInspectMetrics, TreeViewInspectMetrics,
+    ListViewInspectMetrics, NavigationSidebarInspectMetrics, OverlayWindowInspectMetrics, ProgressInspectMetrics,
+    RadioButtonInspectMetrics, ResizablePanelsInspectMetrics, ScrollbarInspectMetrics, ShadcnInspect,
+    SliderInspectMetrics, SplitViewInspectMetrics, SwitchInspectMetrics, TabsNavigationInspectMetrics,
+    TextFieldInspectMetrics, PagerInspectMetrics, ToolbarInspectMetrics, TreeViewInspectMetrics,
 };
 
 use super::box_model::InspectBoxModelSnapshot;
-use super::common::{control_size, neutral_box_model_colors, neutral_box_model_label_color, primary_secondary_style};
+use super::common::{choice_variant_style, control_size, neutral_box_model_colors, neutral_box_model_label_color};
 use super::occupation::{
     button_family_occupation, checkbox_occupation, occupation_metric_properties, radio_occupation, switch_occupation,
 };
 use super::provenance::{metric_properties, property_rows_from_metric_data};
-use super::schema::InspectLayoutSection;
+use super::schema::{InspectLayoutSection, InspectPropertyRow};
 
 pub fn button_layout_section(
     look: &ShadcnLook,
@@ -38,7 +38,7 @@ pub fn toggle_layout_section(
     variant_id: &str,
     size_id: &str,
 ) -> InspectLayoutSection {
-    let style = primary_secondary_style(variant_id);
+    let style = choice_variant_style(variant_id);
     let size = control_size(size_id);
     button_layout_section(
         look,
@@ -50,21 +50,36 @@ pub fn toggle_layout_section(
     )
 }
 
-pub fn checkbox_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+pub fn checkbox_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    size_id: &str,
+    indicator_only: bool,
+) -> InspectLayoutSection {
     let size = control_size(size_id);
     let metrics = ShadcnInspect::new(look).inspect_checkbox_metrics(size);
-    checkbox_metrics_layout_section(look, diagram_id, &metrics)
+    checkbox_metrics_layout_section(look, diagram_id, &metrics, indicator_only)
 }
 
-pub fn radio_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+pub fn radio_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    size_id: &str,
+    indicator_only: bool,
+) -> InspectLayoutSection {
     let size = control_size(size_id);
     let metrics = ShadcnInspect::new(look).inspect_radio_button_metrics(size);
-    radio_metrics_layout_section(look, diagram_id, &metrics)
+    radio_metrics_layout_section(look, diagram_id, &metrics, indicator_only)
 }
 
-pub fn switch_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+pub fn switch_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    variant_id: &str,
+    size_id: &str,
+) -> InspectLayoutSection {
     let size = control_size(size_id);
-    let metrics = ShadcnInspect::new(look).inspect_switch_metrics(size);
+    let metrics = ShadcnInspect::new(look).inspect_switch_metrics_for_style(choice_variant_style(variant_id), size);
     switch_metrics_layout_section(look, diagram_id, &metrics)
 }
 
@@ -137,6 +152,26 @@ pub fn floating_menu_layout_section(look: &ShadcnLook, diagram_id: &str, size_id
     )
 }
 
+pub fn overlay_window_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    variant_id: &str,
+    size_id: &str,
+) -> InspectLayoutSection {
+    use gpui_luma::controls::overlay_window::OverlayWindowMode;
+
+    let size = control_size(size_id);
+    let mode = match variant_id {
+        "modal" => OverlayWindowMode::Modal,
+        _ => OverlayWindowMode::Modeless,
+    };
+    overlay_window_metrics_layout_section(
+        look,
+        diagram_id,
+        &ShadcnInspect::new(look).inspect_overlay_window_metrics(size, mode),
+    )
+}
+
 pub fn popup_menu_trigger_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
@@ -177,7 +212,15 @@ pub fn listbox_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str
     )
 }
 
-pub fn list_view_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+pub fn list_view_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    variant_id: &str,
+    size_id: &str,
+) -> InspectLayoutSection {
+    if variant_id == "grid-cell" {
+        return list_view_grid_cell_layout_section(look, diagram_id, control_size(size_id));
+    }
     list_view_metrics_layout_section(
         look,
         diagram_id,
@@ -276,8 +319,9 @@ fn checkbox_metrics_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
     metrics: &CheckboxInspectMetrics,
+    indicator_only: bool,
 ) -> InspectLayoutSection {
-    let box_model = InspectBoxModelSnapshot::from_checkbox_metrics(metrics);
+    let box_model = InspectBoxModelSnapshot::from_checkbox_metrics(metrics, indicator_only);
     let occupation = checkbox_occupation(look, metrics.focus_ring_offset.value_px);
     let mut rows = metric_properties(&[
         ("height", &metrics.height),
@@ -290,6 +334,15 @@ fn checkbox_metrics_layout_section(
         ("focus ring width", &metrics.focus_ring_width),
         ("focus ring offset", &metrics.focus_ring_offset),
     ]);
+    if indicator_only {
+        rows.push(InspectPropertyRow::new("template path", "indicator_only (no min_h, no py)", "CheckboxTemplate"));
+    } else {
+        rows.push(InspectPropertyRow::new(
+            "padding y (derived)",
+            format!("{:.1}px", box_model.padding_y),
+            "=(control_height − indicator_size) / 2 · centers indicator in min_h",
+        ));
+    }
     rows.extend(property_rows_from_metric_data(&occupation_metric_properties(box_model.height, &occupation)));
     layout_section(look, diagram_id, box_model, Some(occupation), rows)
 }
@@ -298,8 +351,9 @@ fn radio_metrics_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
     metrics: &RadioButtonInspectMetrics,
+    indicator_only: bool,
 ) -> InspectLayoutSection {
-    let box_model = InspectBoxModelSnapshot::from_radio_metrics(metrics);
+    let box_model = InspectBoxModelSnapshot::from_radio_metrics(metrics, indicator_only);
     let occupation = radio_occupation(look, metrics.focus_ring_offset.value_px);
     let mut rows = metric_properties(&[
         ("height", &metrics.height),
@@ -311,6 +365,15 @@ fn radio_metrics_layout_section(
         ("focus ring width", &metrics.focus_ring_width),
         ("focus ring offset", &metrics.focus_ring_offset),
     ]);
+    if indicator_only {
+        rows.push(InspectPropertyRow::new("template path", "indicator_only (no min_h, no py)", "RadioButtonTemplate"));
+    } else {
+        rows.push(InspectPropertyRow::new(
+            "padding y (derived)",
+            format!("{:.1}px", box_model.padding_y),
+            "=(control_height − indicator_size) / 2 · centers indicator in min_h",
+        ));
+    }
     rows.extend(property_rows_from_metric_data(&occupation_metric_properties(box_model.height, &occupation)));
     layout_section(look, diagram_id, box_model, Some(occupation), rows)
 }
@@ -549,6 +612,36 @@ fn floating_menu_metrics_layout_section(
     layout_section(look, diagram_id, box_model, None, floating_menu_metric_rows(metrics))
 }
 
+fn overlay_window_metrics_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &OverlayWindowInspectMetrics,
+) -> InspectLayoutSection {
+    let box_model = InspectBoxModelSnapshot {
+        height: metrics.estimated_height.value_px,
+        padding_x: metrics.padding.value_px,
+        padding_y: metrics.padding.value_px,
+        border_width: 1.0,
+        gap: 0.0,
+        radius: metrics.radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[
+            ("min width", &metrics.min_width),
+            ("max width", &metrics.max_width),
+            ("estimated height", &metrics.estimated_height),
+            ("radius", &metrics.radius),
+            ("padding", &metrics.padding),
+        ]),
+    )
+}
+
 fn context_menu_metrics_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
@@ -648,6 +741,68 @@ fn list_view_metrics_layout_section(
             ("row padding x", &metrics.row_padding_x),
             ("row padding y", &metrics.row_padding_y),
         ]),
+    )
+}
+
+fn compact_table_row_height(size: ControlSize) -> f32 {
+    match size {
+        ControlSize::Sm => 28.0,
+        ControlSize::Md => 32.0,
+        ControlSize::Lg => 36.0,
+    }
+}
+
+fn list_view_grid_cell_layout_section(look: &ShadcnLook, diagram_id: &str, size: ControlSize) -> InspectLayoutSection {
+    const GRID_CONTROL_COLUMN_WIDTH: f32 = 48.0;
+    let row_metrics = ShadcnInspect::new(look).inspect_list_view_metrics(size);
+    let checkbox_metrics = ShadcnInspect::new(look).inspect_checkbox_metrics(ControlSize::Sm);
+    let compact_row_height = compact_table_row_height(size);
+    let inner_row_height = compact_row_height - (row_metrics.row_padding_y.value_px * 2.0);
+
+    let box_model = InspectBoxModelSnapshot {
+        height: compact_row_height,
+        padding_x: 0.0,
+        padding_y: row_metrics.row_padding_y.value_px,
+        border_width: 0.0,
+        gap: 0.0,
+        radius: row_metrics.radius.value_px,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        vec![
+            InspectPropertyRow::new(
+                "grid cell width",
+                format!("{GRID_CONTROL_COLUMN_WIDTH:.0}px"),
+                "ListViewColumn::fixed_control",
+            ),
+            InspectPropertyRow::new(
+                "compact row height",
+                format!("{compact_row_height:.0}px"),
+                "visible_row_height override (data-table rows)",
+            ),
+            InspectPropertyRow::new(
+                "row padding y",
+                format!("{:.1}px", row_metrics.row_padding_y.value_px),
+                "applied inside fixed row height",
+            ),
+            InspectPropertyRow::new(
+                "inner content height",
+                format!("{inner_row_height:.1}px"),
+                "compact row height − (2 × row padding y)",
+            ),
+            InspectPropertyRow::new("embedded checkbox size", "sm · indicator_only", "payments card pattern"),
+            InspectPropertyRow::new(
+                "checkbox indicator size",
+                format!("{:.1}px", checkbox_metrics.indicator_size.value_px),
+                "CheckboxScale at Sm",
+            ),
+        ],
     )
 }
 

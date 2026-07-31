@@ -6,7 +6,7 @@ use gpui_luma::controls::overlay_window::{
 };
 use gpui_luma_look_shadcn::ShadcnLook;
 
-use super::model::{DialogModel, renderer_from_element};
+use super::model::DialogModel;
 use super::template::DialogTemplate;
 
 pub(in crate::gallery) struct Dialog {
@@ -51,15 +51,6 @@ impl Dialog {
         self.notify_overlay(cx);
     }
 
-    pub(in crate::gallery) fn set_header_end(
-        &mut self,
-        header_end: impl IntoElement + Clone + Send + Sync + 'static,
-        cx: &mut Context<Self>,
-    ) {
-        self.model.header_end = Some(renderer_from_element(header_end));
-        self.notify_overlay(cx);
-    }
-
     pub(in crate::gallery) fn set_body_render<F>(&mut self, body: F, cx: &mut Context<Self>)
     where
         F: Fn(&OverlayWindowRenderModel<'_>, &mut Window, &mut App) -> gpui::AnyElement + Send + Sync + 'static,
@@ -74,18 +65,6 @@ impl Dialog {
     {
         self.model.footer = Some(Arc::new(footer));
         self.notify_overlay(cx);
-    }
-
-    pub(in crate::gallery) fn set_mode(&mut self, mode: OverlayWindowMode, cx: &mut Context<Self>) {
-        self.overlay.update(cx, |overlay, cx| overlay.set_mode(mode, cx));
-    }
-
-    pub(in crate::gallery) fn set_position(&mut self, position: OverlayWindowPosition, cx: &mut Context<Self>) {
-        self.overlay.update(cx, |overlay, cx| overlay.set_position(position, cx));
-    }
-
-    pub(in crate::gallery) fn set_draggable(&mut self, draggable: bool, cx: &mut Context<Self>) {
-        self.overlay.update(cx, |overlay, cx| overlay.set_draggable(draggable, cx));
     }
 
     pub(in crate::gallery) fn open(&mut self, opener: Option<gpui::FocusHandle>, cx: &mut Context<Self>) {

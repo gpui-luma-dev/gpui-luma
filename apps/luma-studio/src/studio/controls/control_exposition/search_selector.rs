@@ -110,9 +110,11 @@ impl Render for SearchSelectorExpositionLeftPane {
         with_look(&self.look, || {
             let preview = div()
                 .w_full()
+                .max_w(px(760.0))
                 .flex()
+                .flex_col()
                 .items_start()
-                .gap(px(20.0))
+                .gap(px(16.0))
                 .child(div().w(px(320.0)).flex_none().child(self.preview.clone()))
                 .child(self.event_stream.clone());
 

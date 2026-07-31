@@ -3,10 +3,12 @@ use std::sync::Arc;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 
-use super::inspector::common::{inspector_elevation_applies, interaction_state, primary_secondary_style, value_flag};
+use super::inspector::common::{choice_elevation_applies, choice_variant_style, interaction_state, value_flag};
 use super::inspector::metrics::switch_layout_section;
 use super::inspector::provenance::{color_row, elevation_snapshot};
-use super::inspector::specs::{CHOICE_INTERACTION_STATES, CHOICE_SIZES, ON_OFF_VALUES, PRIMARY_SECONDARY_VARIANTS};
+use super::inspector::specs::{
+    CHOICE_INTERACTION_STATES, CHOICE_SIZES, ON_OFF_VALUES, PRIMARY_SECONDARY_CONTENT_ONLY_VARIANTS,
+};
 use super::inspector::{
     ControlInspectorResolver, ControlInspectorSpec, InspectColorRow, InspectorCategoryContent, InspectorSelection,
     SharedInspectorResolver,
@@ -18,7 +20,7 @@ pub static SWITCH_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Switch",
     id_prefix: "switch-theme-inspector",
     parts: &[],
-    variants: &PRIMARY_SECONDARY_VARIANTS,
+    variants: &PRIMARY_SECONDARY_CONTENT_ONLY_VARIANTS,
     states: &SWITCH_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &ON_OFF_VALUES,
@@ -48,6 +50,7 @@ impl ControlInspectorResolver for SwitchInspectorAdapter {
             "layout" => InspectorCategoryContent::Layout(switch_layout_section(
                 look,
                 "switch-theme-inspector-box-model",
+                selection.variant_id,
                 selection.size_id,
             )),
             "elevation" => InspectorCategoryContent::Elevation(resolve_elevation(look, selection)),
@@ -57,7 +60,7 @@ impl ControlInspectorResolver for SwitchInspectorAdapter {
 
     fn category_applies(&self, _look: &ShadcnLook, selection: InspectorSelection<'_>, category_id: &str) -> bool {
         if category_id == "elevation" {
-            return inspector_elevation_applies(selection.state_id);
+            return choice_elevation_applies(selection.variant_id, selection.state_id);
         }
         true
     }
@@ -66,7 +69,7 @@ impl ControlInspectorResolver for SwitchInspectorAdapter {
 fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> Vec<InspectColorRow> {
     let on = value_flag(selection.value_id, "on");
     let palette = ShadcnInspect::new(look).inspect_switch_color_palette(
-        primary_secondary_style(selection.variant_id),
+        choice_variant_style(selection.variant_id),
         on,
         interaction_state(selection.state_id),
     );
@@ -89,7 +92,7 @@ fn resolve_elevation(
 ) -> super::inspector::InspectElevationSnapshot {
     let on = value_flag(selection.value_id, "on");
     let elevation = ShadcnInspect::new(look).inspect_switch_elevation(
-        primary_secondary_style(selection.variant_id),
+        choice_variant_style(selection.variant_id),
         on,
         interaction_state(selection.state_id),
     );

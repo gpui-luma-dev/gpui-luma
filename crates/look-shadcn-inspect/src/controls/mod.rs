@@ -11,6 +11,7 @@ mod floating_menu;
 mod list_view;
 mod listbox;
 mod navigation_sidebar;
+mod overlay_window;
 mod pager;
 mod popup_menu;
 mod progress;
@@ -114,6 +115,10 @@ pub use navigation_sidebar::{
     NavigationSidebarSectionInspectPalette, inspect_navigation_sidebar_branch_color_palette,
     inspect_navigation_sidebar_container_color_palette, inspect_navigation_sidebar_item_color_palette,
     inspect_navigation_sidebar_metrics, inspect_navigation_sidebar_section_color_palette,
+};
+pub use overlay_window::{
+    OverlayWindowInspectMetrics, OverlayWindowInspectPalette, inspect_overlay_window_color_palette,
+    inspect_overlay_window_metrics,
 };
 pub use pager::{PagerInspectMetrics, PagerShellInspectPalette, inspect_pager_metrics, inspect_pager_shell_color_palette};
 pub use selector::{

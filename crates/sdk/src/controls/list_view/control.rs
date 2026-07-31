@@ -902,6 +902,14 @@ where
             return;
         }
 
+        let delta_y = event.delta.pixel_delta(px(20.0)).y;
+        let is_scroll_end = matches!(event.touch_phase, TouchPhase::Ended);
+        if delta_y == px(0.0) && !is_scroll_end {
+            return;
+        }
+
+        cx.stop_propagation();
+
         if !self.is_scroll_snap() {
             if self.emit_scroll_changed_if_needed(cx) {
                 cx.notify();
@@ -913,7 +921,7 @@ where
             // Trackpad: let GPUI's list scroll smoothly during the gesture, then snap once
             // when the gesture ends. Snapping on every delta fought partial scroll progress
             // and felt erratic (especially with natural scrolling).
-            if matches!(event.touch_phase, TouchPhase::Ended) {
+            if is_scroll_end {
                 self.snap_scroll_position();
                 self.emit_scroll_changed_if_needed(cx);
                 cx.notify();
@@ -922,14 +930,8 @@ where
         }
 
         // Mouse wheel (line deltas): GPUI scrolls first in bubble order; align to the nearest row.
-        let delta_y = event.delta.pixel_delta(px(20.0)).y;
-        if delta_y == px(0.0) {
-            return;
-        }
-
         self.snap_scroll_position();
         self.emit_scroll_changed_if_needed(cx);
-        cx.stop_propagation();
         cx.notify();
     }
 

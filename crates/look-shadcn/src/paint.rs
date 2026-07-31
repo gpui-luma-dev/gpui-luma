@@ -12,6 +12,7 @@ pub use crate::controls::control_group::control_group_list_look;
 pub use crate::controls::floating_menu::floating_menu_look;
 pub use crate::controls::list_view::{list_view_look, list_view_row_palette};
 pub use crate::controls::listbox::{listbox_list_look, listbox_row_palette};
+pub use crate::controls::overlay_window::overlay_window_look;
 pub use crate::controls::navigation_sidebar::{
     navigation_sidebar_branch_look, navigation_sidebar_container_look, navigation_sidebar_item_look,
     navigation_sidebar_section_look,

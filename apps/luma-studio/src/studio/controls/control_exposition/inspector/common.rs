@@ -5,10 +5,6 @@ use gpui_luma_look_shadcn::ShadcnTextFieldStyle;
 
 use super::box_model::BoxModelLayerColors;
 
-pub fn primary_secondary_style(variant_id: &str) -> ShadcnButtonStyle {
-    choice_variant_style(variant_id)
-}
-
 pub fn choice_variant_style(variant_id: &str) -> ShadcnButtonStyle {
     match variant_id {
         "secondary" => ShadcnButtonStyle::Secondary,
@@ -22,8 +18,13 @@ pub fn button_variant_style(variant_id: &str) -> ShadcnButtonStyle {
         "secondary" => ShadcnButtonStyle::Secondary,
         "outline" => ShadcnButtonStyle::Outline,
         "ghost" => ShadcnButtonStyle::Ghost,
+        "content-only" => ShadcnButtonStyle::ContentOnly,
         _ => ShadcnButtonStyle::Primary,
     }
+}
+
+pub fn choice_indicator_only(part_id: &str) -> bool {
+    part_id == "indicator-only"
 }
 
 pub fn interaction_state(state_id: &str) -> InteractionState {

@@ -26,7 +26,10 @@ use super::dock_panel::DockPanelControlExposition;
 use super::floating_menu::FloatingMenuControlExposition;
 use super::listbox::ListBoxControlExposition;
 use super::modal_overlay::ModalOverlayControlExposition;
+use super::modeless_overlay::ModelessOverlayControlExposition;
 use super::navigation_sidebar::NavigationSidebarControlExposition;
+use super::overlay_draggable::DraggableOverlayControlExposition;
+use super::overlay_positioning::OverlayPositioningControlExposition;
 use super::pager::PagerControlExposition;
 use super::paging_list_view::PagingListViewControlExposition;
 use super::popup_selector::PopupSelectorControlExposition;
@@ -40,6 +43,7 @@ use super::scrolling_list_view::ScrollingListViewControlExposition;
 use super::search_selector::SearchSelectorControlExposition;
 use super::selection_panel::SelectionPanelControlExposition;
 use super::slider::SliderControlExposition;
+use super::shadow_button::ShadowButtonControlExposition;
 use super::slide_panel::SlidePanelControlExposition;
 use super::switch::SwitchControlExposition;
 use super::tabs_navigation::TabsNavigationControlExposition;
@@ -98,6 +102,10 @@ pub enum ControlExposition {
     SelectionPanel(Entity<SelectionPanelControlExposition>),
     ListBox(Entity<ListBoxControlExposition>),
     ModalOverlay(Entity<ModalOverlayControlExposition>),
+    ModelessOverlay(Entity<ModelessOverlayControlExposition>),
+    OverlayPositioning(Entity<OverlayPositioningControlExposition>),
+    DraggableOverlay(Entity<DraggableOverlayControlExposition>),
+    ShadowButton(Entity<ShadowButtonControlExposition>),
     SlidePanel(Entity<SlidePanelControlExposition>),
 }
 
@@ -150,6 +158,10 @@ impl ControlExposition {
             Self::PopupSelector(cx.new(|cx| PopupSelectorControlExposition::new(cx, look.clone()))),
             Self::SelectionPanel(cx.new(|cx| SelectionPanelControlExposition::new(cx, look.clone()))),
             Self::ModalOverlay(cx.new(|cx| ModalOverlayControlExposition::new(cx, look.clone()))),
+            Self::ModelessOverlay(cx.new(|cx| ModelessOverlayControlExposition::new(cx, look.clone()))),
+            Self::OverlayPositioning(cx.new(|cx| OverlayPositioningControlExposition::new(cx, look.clone()))),
+            Self::DraggableOverlay(cx.new(|cx| DraggableOverlayControlExposition::new(cx, look.clone()))),
+            Self::ShadowButton(cx.new(|cx| ShadowButtonControlExposition::new(cx, look.clone()))),
             Self::SlidePanel(cx.new(|cx| SlidePanelControlExposition::new(cx, look.clone()))),
         ]
     }
@@ -206,6 +218,10 @@ impl ControlExposition {
             Self::PopupSelector(entity) => entity.read(cx).entry(),
             Self::SelectionPanel(entity) => entity.read(cx).entry(),
             Self::ModalOverlay(entity) => entity.read(cx).entry(),
+            Self::ModelessOverlay(entity) => entity.read(cx).entry(),
+            Self::OverlayPositioning(entity) => entity.read(cx).entry(),
+            Self::DraggableOverlay(entity) => entity.read(cx).entry(),
+            Self::ShadowButton(entity) => entity.read(cx).entry(),
             Self::SlidePanel(entity) => entity.read(cx).entry(),
         }
     }
@@ -232,6 +248,7 @@ impl ControlExposition {
             Self::SearchSelector(entity) => entity.read(cx).fills_viewport(),
             Self::ListBox(entity) => entity.read(cx).fills_viewport(),
             Self::ScrollingListView(entity) => entity.read(cx).fills_viewport(),
+            Self::PagingListView(entity) => entity.read(cx).fills_viewport(),
             Self::SelectionPanel(entity) => entity.read(cx).fills_viewport(),
             Self::TreeView(entity) => entity.read(cx).fills_viewport(),
             Self::NavigationSidebar(entity) => entity.read(cx).fills_viewport(),
@@ -245,6 +262,10 @@ impl ControlExposition {
             Self::ColorSlider(entity) => entity.read(cx).fills_viewport(),
             Self::ColorRing(entity) => entity.read(cx).fills_viewport(),
             Self::ColorArc(entity) => entity.read(cx).fills_viewport(),
+            Self::ModalOverlay(entity) => entity.read(cx).fills_viewport(),
+            Self::ModelessOverlay(entity) => entity.read(cx).fills_viewport(),
+            Self::OverlayPositioning(entity) => entity.read(cx).fills_viewport(),
+            Self::DraggableOverlay(entity) => entity.read(cx).fills_viewport(),
             _ => false,
         }
     }
@@ -275,6 +296,7 @@ impl ControlExposition {
             Self::ScrollingListView(entity) => {
                 entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx))
             }
+            Self::PagingListView(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::SelectionPanel(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::TreeView(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::NavigationSidebar(entity) => {
@@ -290,6 +312,12 @@ impl ControlExposition {
             Self::ColorSlider(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::ColorRing(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::ColorArc(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ModalOverlay(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ModelessOverlay(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::OverlayPositioning(entity) => {
+                entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx))
+            }
+            Self::DraggableOverlay(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             _ => {}
         }
     }
@@ -320,6 +348,7 @@ impl ControlExposition {
             Self::ScrollingListView(entity) => {
                 entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx))
             }
+            Self::PagingListView(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::SelectionPanel(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::TreeView(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::NavigationSidebar(entity) => {
@@ -335,6 +364,14 @@ impl ControlExposition {
             Self::ColorSlider(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::ColorRing(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::ColorArc(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ModalOverlay(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ModelessOverlay(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::OverlayPositioning(entity) => {
+                entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx))
+            }
+            Self::DraggableOverlay(entity) => {
+                entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx))
+            }
             _ => {}
         }
     }
@@ -387,6 +424,10 @@ impl ControlExposition {
             Self::PopupSelector(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::SelectionPanel(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::ModalOverlay(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::ModelessOverlay(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::OverlayPositioning(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::DraggableOverlay(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::ShadowButton(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::SlidePanel(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
         }
     }
@@ -439,6 +480,10 @@ impl ControlExposition {
             Self::PopupSelector(entity) => entity.clone().into_any_element(),
             Self::SelectionPanel(entity) => entity.clone().into_any_element(),
             Self::ModalOverlay(entity) => entity.clone().into_any_element(),
+            Self::ModelessOverlay(entity) => entity.clone().into_any_element(),
+            Self::OverlayPositioning(entity) => entity.clone().into_any_element(),
+            Self::DraggableOverlay(entity) => entity.clone().into_any_element(),
+            Self::ShadowButton(entity) => entity.clone().into_any_element(),
             Self::SlidePanel(entity) => entity.clone().into_any_element(),
         }
     }

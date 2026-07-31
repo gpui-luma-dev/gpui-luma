@@ -4,11 +4,11 @@ use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 
-use super::inspector::common::{interaction_state, primary_secondary_style, value_flag};
+use super::inspector::common::{choice_variant_style, interaction_state, value_flag};
 use super::inspector::metrics::toggle_layout_section;
 use super::inspector::provenance::color_row;
 use super::inspector::specs::{
-    CHOICE_SIZES, COLOR_LAYOUT_INTERACTION_STATES, PRIMARY_SECONDARY_VARIANTS, SELECTED_UNSELECTED_VALUES,
+    CHOICE_SIZES, COLOR_LAYOUT_INTERACTION_STATES, PRIMARY_SECONDARY_CONTENT_ONLY_VARIANTS, SELECTED_UNSELECTED_VALUES,
 };
 use super::inspector::{
     ControlInspectorResolver, ControlInspectorSpec, InspectColorRow, InspectorCategoryContent, InspectorSelection,
@@ -21,7 +21,7 @@ pub static TOGGLE_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Toggle",
     id_prefix: "toggle-theme-inspector",
     parts: &[],
-    variants: &PRIMARY_SECONDARY_VARIANTS,
+    variants: &PRIMARY_SECONDARY_CONTENT_ONLY_VARIANTS,
     states: &TOGGLE_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &SELECTED_UNSELECTED_VALUES,
@@ -62,7 +62,7 @@ impl ControlInspectorResolver for ToggleInspectorAdapter {
 fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> Vec<InspectColorRow> {
     let selected = value_flag(selection.value_id, "selected");
     let palette = ShadcnInspect::new(look).inspect_button_color_palette(
-        primary_secondary_style(selection.variant_id),
+        choice_variant_style(selection.variant_id),
         ButtonFamilyRole::Toggle { selected },
         interaction_state(selection.state_id),
     );

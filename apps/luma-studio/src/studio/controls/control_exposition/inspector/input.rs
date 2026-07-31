@@ -1,7 +1,8 @@
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn_inspect::{
-    AutocompleteChromeInspectPalette, FloatingMenuInspectPalette, ShadcnInspect, TextFieldInspectPalette,
+    AutocompleteChromeInspectPalette, FloatingMenuInspectPalette, OverlayWindowInspectPalette, ShadcnInspect,
+    TextFieldInspectPalette,
 };
 
 use super::provenance::color_row;
@@ -78,6 +79,18 @@ pub fn floating_menu_palette_rows(palette: &FloatingMenuInspectPalette) -> Vec<I
         color_row("menu item hover foreground", &palette.item_hover_foreground),
         color_row("menu item disabled foreground", &palette.item_disabled_foreground),
     ]
+}
+
+pub fn overlay_window_palette_rows(palette: &OverlayWindowInspectPalette) -> Vec<InspectColorRow> {
+    let mut rows = vec![
+        color_row("panel background", &palette.background),
+        color_row("panel foreground", &palette.foreground),
+        color_row("panel border", &palette.border),
+    ];
+    if let Some(backdrop) = &palette.backdrop {
+        rows.push(color_row("modal backdrop", backdrop));
+    }
+    rows
 }
 
 pub fn autocomplete_chrome_color_rows(palette: &AutocompleteChromeInspectPalette) -> Vec<InspectColorRow> {

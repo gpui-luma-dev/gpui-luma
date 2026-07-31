@@ -145,28 +145,48 @@ impl InspectBoxModelSnapshot {
         }
     }
 
-    pub fn from_checkbox_metrics(metrics: &CheckboxInspectMetrics) -> Self {
-        choice_indicator_box_model(
-            metrics.height.value_px,
-            metrics.indicator_size.value_px,
-            metrics.gap.value_px,
-            metrics.border_width.value_px,
-            metrics.control_radius.value_px,
-            metrics.focus_ring_width.value_px,
-            metrics.focus_ring_offset.value_px,
-        )
+    pub fn from_checkbox_metrics(metrics: &CheckboxInspectMetrics, indicator_only: bool) -> Self {
+        if indicator_only {
+            choice_indicator_only_box_model(
+                metrics.indicator_size.value_px,
+                metrics.border_width.value_px,
+                metrics.indicator_radius.value_px,
+                metrics.focus_ring_width.value_px,
+                metrics.focus_ring_offset.value_px,
+            )
+        } else {
+            choice_indicator_box_model(
+                metrics.height.value_px,
+                metrics.indicator_size.value_px,
+                metrics.gap.value_px,
+                metrics.border_width.value_px,
+                metrics.control_radius.value_px,
+                metrics.focus_ring_width.value_px,
+                metrics.focus_ring_offset.value_px,
+            )
+        }
     }
 
-    pub fn from_radio_metrics(metrics: &RadioButtonInspectMetrics) -> Self {
-        choice_indicator_box_model(
-            metrics.height.value_px,
-            metrics.indicator_size.value_px,
-            metrics.gap.value_px,
-            metrics.border_width.value_px,
-            metrics.control_radius.value_px,
-            metrics.focus_ring_width.value_px,
-            metrics.focus_ring_offset.value_px,
-        )
+    pub fn from_radio_metrics(metrics: &RadioButtonInspectMetrics, indicator_only: bool) -> Self {
+        if indicator_only {
+            choice_indicator_only_box_model(
+                metrics.indicator_size.value_px,
+                metrics.border_width.value_px,
+                metrics.control_radius.value_px,
+                metrics.focus_ring_width.value_px,
+                metrics.focus_ring_offset.value_px,
+            )
+        } else {
+            choice_indicator_box_model(
+                metrics.height.value_px,
+                metrics.indicator_size.value_px,
+                metrics.gap.value_px,
+                metrics.border_width.value_px,
+                metrics.control_radius.value_px,
+                metrics.focus_ring_width.value_px,
+                metrics.focus_ring_offset.value_px,
+            )
+        }
     }
 
     pub fn from_switch_metrics(metrics: &SwitchInspectMetrics) -> Self {
@@ -207,6 +227,25 @@ impl InspectBoxModelSnapshot {
             focus_ring_width: 0.0,
             focus_ring_offset: 0.0,
         }
+    }
+}
+
+fn choice_indicator_only_box_model(
+    indicator_size: f32,
+    border_width: f32,
+    indicator_radius: f32,
+    focus_ring_width: f32,
+    focus_ring_offset: f32,
+) -> InspectBoxModelSnapshot {
+    InspectBoxModelSnapshot {
+        height: indicator_size,
+        padding_x: 0.0,
+        padding_y: 0.0,
+        border_width,
+        gap: 0.0,
+        radius: indicator_radius,
+        focus_ring_width,
+        focus_ring_offset,
     }
 }
 

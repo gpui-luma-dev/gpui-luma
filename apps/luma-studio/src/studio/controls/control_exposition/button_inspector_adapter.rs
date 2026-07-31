@@ -14,13 +14,22 @@ use super::inspector::{
     InspectorCategoryContent, InspectorSelection, InspectorStateSpec, InspectorVariant, SharedInspectorResolver,
 };
 
-const BUTTON_ROLE: ButtonFamilyRole = ButtonFamilyRole::Text;
+const BUTTON_ROLE_TEXT: ButtonFamilyRole = ButtonFamilyRole::Text;
 
-static BUTTON_VARIANTS: [InspectorVariant; 4] = [
+fn button_role(selection: InspectorSelection<'_>) -> ButtonFamilyRole {
+    if selection.variant_id == "content-only" {
+        ButtonFamilyRole::Icon
+    } else {
+        BUTTON_ROLE_TEXT
+    }
+}
+
+static BUTTON_VARIANTS: [InspectorVariant; 5] = [
     InspectorVariant { id: "primary", label: "Primary" },
     InspectorVariant { id: "secondary", label: "Secondary" },
     InspectorVariant { id: "outline", label: "Outline" },
     InspectorVariant { id: "ghost", label: "Ghost" },
+    InspectorVariant { id: "content-only", label: "Content Only" },
 ];
 
 static BUTTON_CATEGORIES: [InspectorCategory; 4] = [
@@ -39,9 +48,9 @@ static BUTTON_STATES: [InspectorStateSpec; 5] = [
         categories: &BUTTON_CATEGORIES,
     },
     InspectorStateSpec {
-        id: "hover",
-        label: "Hover",
-        icon: LucideIcon::MousePointer2,
+        id: "disabled",
+        label: "Disabled",
+        icon: LucideIcon::CircleOff,
         expanded_default: false,
         categories: &BUTTON_CATEGORIES,
     },
@@ -53,16 +62,16 @@ static BUTTON_STATES: [InspectorStateSpec; 5] = [
         categories: &BUTTON_CATEGORIES,
     },
     InspectorStateSpec {
-        id: "pressed",
-        label: "Pressed",
-        icon: LucideIcon::MousePointerClick,
+        id: "hover",
+        label: "Hover",
+        icon: LucideIcon::MousePointer2,
         expanded_default: false,
         categories: &BUTTON_CATEGORIES,
     },
     InspectorStateSpec {
-        id: "disabled",
-        label: "Disabled",
-        icon: LucideIcon::CircleOff,
+        id: "pressed",
+        label: "Pressed",
+        icon: LucideIcon::MousePointerClick,
         expanded_default: false,
         categories: &BUTTON_CATEGORIES,
     },
@@ -117,7 +126,7 @@ impl ControlInspectorResolver for ButtonInspectorAdapter {
 fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> Vec<InspectColorRow> {
     let palette = ShadcnInspect::new(look).inspect_button_color_palette(
         button_variant_style(selection.variant_id),
-        BUTTON_ROLE,
+        button_role(selection),
         interaction_state(selection.state_id),
     );
     let mut rows = vec![
@@ -139,7 +148,7 @@ fn resolve_layout_section(
         look,
         "button-theme-inspector-box-model",
         button_variant_style(selection.variant_id),
-        BUTTON_ROLE,
+        button_role(selection),
         control_size(selection.size_id),
         interaction_state(selection.state_id),
     )
@@ -151,7 +160,7 @@ fn resolve_elevation(
 ) -> super::inspector::InspectElevationSnapshot {
     let elevation = ShadcnInspect::new(look).inspect_button_elevation(
         button_variant_style(selection.variant_id),
-        BUTTON_ROLE,
+        button_role(selection),
         interaction_state(selection.state_id),
     );
     elevation_snapshot(&elevation, "resolved button look", "button.elevation_rules[].style")

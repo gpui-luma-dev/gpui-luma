@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, IntoElement, SharedString, Window};
+use gpui::{AnyElement, App, SharedString, Window};
 use gpui_luma::controls::overlay_window::OverlayWindowRenderModel;
 
 pub(in crate::gallery) type DialogRenderer =
@@ -30,10 +30,4 @@ impl DialogModel {
             footer: self.footer.clone(),
         }
     }
-}
-
-pub(in crate::gallery) fn renderer_from_element(
-    element: impl IntoElement + Clone + Send + Sync + 'static,
-) -> DialogRenderer {
-    Arc::new(move |_, _, _| element.clone().into_any_element())
 }
