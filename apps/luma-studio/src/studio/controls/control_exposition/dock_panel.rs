@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui::{Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
 use gpui_luma::dock_panel;
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
@@ -86,9 +86,15 @@ impl Render for DockPanelExpositionLeftPane {
                 .w_full()
                 .flex()
                 .flex_col()
-                .items_start()
                 .gap(px(12.0))
-                .child(div().w_full().px(px(100.0)).h(px(480.0)).min_w(px(0.0)).child(self.demo.clone()))
+                .child(
+                    div()
+                        .w_full()
+                        .h(px(480.0))
+                        .min_w(px(0.0))
+                        .px(px(25.0))
+                        .child(div().size_full().min_h(px(0.0)).min_w(px(0.0)).child(self.demo.clone())),
+                )
                 .child(self.event_stream.clone());
 
             div()
@@ -380,21 +386,37 @@ fn render_nested_dock_examples(
     fill_background: gpui::Hsla,
     fill_foreground: gpui::Hsla,
 ) -> gpui::Div {
+    let title_style = gpui_luma::theme::LumaTypography::default().text.role.h4;
+    let body_style = gpui_luma::theme::LumaTypography::default().text.scale.sm;
+
     div()
         .size_full()
         .flex()
         .flex_col()
-        .items_start()
+        .items_center()
         .justify_center()
-        .gap(px(12.0))
-        .p(px(12.0))
-        .min_w(px(0.0))
-        .overflow_hidden()
+        .gap(px(16.0))
+        .p(px(24.0))
         .child(
-            div().flex().flex_wrap().gap(px(12.0)).min_w(px(0.0)).children([
+            div()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(4.0))
+                .child(div().typography_style(title_style).text_color(foreground).child("Nested DockPanel tests"))
+                .child(
+                    div()
+                        .typography_style(body_style)
+                        .text_color(muted)
+                        .child("Inner examples verify child ordering and last-child-fill behavior."),
+                ),
+        )
+        .child(
+            div().flex().gap(px(16.0)).children([
                 render_nested_example_card(
                     chrome,
                     foreground,
+                    muted,
                     "Default last child fills",
                     dock_panel! {
                         top: demo_band("Top", foreground, band_background),
@@ -406,6 +428,7 @@ fn render_nested_dock_examples(
                 render_nested_example_card(
                     chrome,
                     foreground,
+                    muted,
                     "last_child_fill = false",
                     dock_panel! {
                         last_child_fill = false;
@@ -417,37 +440,32 @@ fn render_nested_dock_examples(
                 ),
             ]),
         )
-        .child(
-            div()
-                .text_size(px(11.0))
-                .text_color(muted)
-                .child("Inner examples verify child ordering and last-child-fill behavior."),
-        )
 }
 
 fn render_nested_example_card(
     chrome: gpui_luma::theme::LumaChrome,
     foreground: gpui::Hsla,
+    muted: gpui::Hsla,
     title: &'static str,
     content: gpui::AnyElement,
 ) -> gpui::Div {
+    let title_style = gpui_luma::theme::LumaTypography::default().text.scale.sm;
+    let caption_style = gpui_luma::theme::LumaTypography::default().text.scale.xs;
     div()
-        .flex_1()
-        .min_w(px(160.0))
-        .max_w(px(200.0))
+        .w(px(220.0))
         .flex()
         .flex_col()
         .gap(px(8.0))
         .child(
             div()
-                .text_size(px(12.0))
+                .typography_style(title_style)
                 .font_weight(gpui::FontWeight::SEMIBOLD)
                 .text_color(foreground)
                 .child(title),
         )
         .child(
             div()
-                .h(px(150.0))
+                .h(px(170.0))
                 .w_full()
                 .overflow_hidden()
                 .rounded(px(8.0))
@@ -456,6 +474,10 @@ fn render_nested_example_card(
                 .bg(chrome.panel_background)
                 .child(content),
         )
+        .child(div().typography_style(caption_style).text_color(muted).child(match title {
+            "Default last child fills" => "The final child becomes the fill region.",
+            _ => "Without fill, undocked child content falls back to Left docking.",
+        }))
 }
 
 fn demo_band(label: &'static str, foreground: gpui::Hsla, background: gpui::Hsla) -> gpui::Div {

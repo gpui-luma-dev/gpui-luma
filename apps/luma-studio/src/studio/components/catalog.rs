@@ -96,10 +96,8 @@ const SELECTION_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "selection-panel", label: "Selection Panel" },
 ];
 
-const PROTOTYPES_ENTRIES: &[ComponentCatalogEntry] = &[
-    ComponentCatalogEntry { id: "decorated-button", label: "Decorated Button" },
-    ComponentCatalogEntry { id: "shadow-button", label: "Shadow Button" },
-];
+const PROTOTYPES_ENTRIES: &[ComponentCatalogEntry] =
+    &[ComponentCatalogEntry { id: "shadow-button", label: "Shadow Button" }];
 
 /// Gallery-aligned control catalog (mirrors `apps/gallery/src/gallery/panes/registry.rs`).
 pub const COMPONENT_CATALOG: &[ComponentCatalogGroup] = &[
@@ -169,7 +167,6 @@ pub fn controls_exposition_id(gallery_id: &str) -> Option<&'static str> {
         "accordion" => Some("accordion"),
         "custom-button" => Some("custom-button"),
         "shadow-button" => Some("shadow-button"),
-        "decorated-button" => None,
         "toolbar" => Some("toolbar"),
         "checkbox" => Some("checkbox"),
         "listbox" => Some("listbox"),
