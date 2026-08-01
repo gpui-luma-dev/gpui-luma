@@ -69,9 +69,8 @@ fn render_event_reference_row(
         .items_start()
         .child(
             div()
-                .col_span(5)
-                .flex_shrink_0()
-                .overflow_hidden()
+                .col_span(6)
+                .min_w(px(0.0))
                 .font_family(mono)
                 .typography_style(body_style)
                 .font_weight(if header {
@@ -80,12 +79,12 @@ fn render_event_reference_row(
                     FontWeight::NORMAL
                 })
                 .text_color(text_color)
-                .whitespace_nowrap()
                 .child(event),
         )
         .child(
             div()
-                .col_span(3)
+                .col_span(2)
+                .flex_shrink_0()
                 .typography_style(body_style)
                 .font_weight(if header {
                     FontWeight::SEMIBOLD
