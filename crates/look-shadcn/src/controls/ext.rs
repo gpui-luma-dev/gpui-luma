@@ -111,6 +111,7 @@ pub trait ShadcnLookControlExt {
     fn secondary_slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
     fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder;
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
+    fn linear_progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
     fn card(&self, id: impl Into<SharedString>) -> ShadcnCardBuilder;
     fn overlay_window(&self, id: impl Into<SharedString>) -> OverlayWindowBuilder;
     fn badge(&self, label: impl Into<SharedString>) -> Badge;
@@ -396,6 +397,10 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder {
         progress::new(id).template(self.progress_template())
+    }
+
+    fn linear_progress(&self, id: impl Into<SharedString>) -> ProgressBuilder {
+        progress::new(id).linear().template(self.linear_progress_template())
     }
 
     fn card(&self, id: impl Into<SharedString>) -> ShadcnCardBuilder {

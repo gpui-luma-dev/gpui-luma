@@ -8,6 +8,9 @@ use crate::theme::{ControlSize, ThemeTokens};
 pub struct ProgressLook {
     pub track_color: Hsla,
     pub progress_color: Hsla,
+    pub thumb_color: Hsla,
+    pub track_height: f32,
+    pub thumb_size: f32,
     pub size: f32,
     pub stroke_width: f32,
 }
@@ -37,24 +40,30 @@ impl ProgressTheme for DefaultProgressTheme {
     fn resolve(&self, enabled: bool, size: ControlSize) -> ProgressLook {
         let palette = &self.tokens.palette;
 
+        let track_color = if enabled {
+            palette.surface.subtle.background
+        } else {
+            palette.state.disabled.background
+        };
+        let progress_color = if enabled {
+            palette.state.selected.background
+        } else {
+            palette.state.disabled.foreground
+        };
+
         ProgressLook {
-            track_color: if enabled {
-                palette.surface.subtle.background
-            } else {
-                palette.state.disabled.background
-            },
-            progress_color: if enabled {
-                palette.state.selected.background
-            } else {
-                palette.state.disabled.foreground
-            },
-            size: progress_size(size),
+            track_color,
+            progress_color,
+            thumb_color: progress_color,
+            track_height: progress_track_height(size),
+            thumb_size: progress_thumb_size(size),
+            size: progress_ring_size(size),
             stroke_width: progress_stroke_width(size),
         }
     }
 }
 
-fn progress_size(size: ControlSize) -> f32 {
+fn progress_ring_size(size: ControlSize) -> f32 {
     match size {
         ControlSize::Sm => 48.0,
         ControlSize::Md => 64.0,
@@ -67,5 +76,21 @@ fn progress_stroke_width(size: ControlSize) -> f32 {
         ControlSize::Sm => 5.0,
         ControlSize::Md => 6.0,
         ControlSize::Lg => 8.0,
+    }
+}
+
+fn progress_track_height(size: ControlSize) -> f32 {
+    match size {
+        ControlSize::Sm => 4.0,
+        ControlSize::Md => 6.0,
+        ControlSize::Lg => 8.0,
+    }
+}
+
+fn progress_thumb_size(size: ControlSize) -> f32 {
+    match size {
+        ControlSize::Sm => 12.0,
+        ControlSize::Md => 16.0,
+        ControlSize::Lg => 20.0,
     }
 }

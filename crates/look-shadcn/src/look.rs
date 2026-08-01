@@ -731,6 +731,10 @@ impl ShadcnLook {
         templates::progress_template(Arc::clone(self))
     }
 
+    pub fn linear_progress_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::progress::ProgressTemplate> {
+        templates::linear_progress_template(Arc::clone(self))
+    }
+
     pub fn progress_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::progress::ProgressTheme> {
         templates::progress_theme(Arc::clone(self))
     }

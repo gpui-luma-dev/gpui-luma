@@ -597,7 +597,12 @@ pub fn resolve_scrollbar_metrics(rule: &ScrollbarMetricsRule) -> ResolvedScrollb
 }
 
 pub fn resolve_progress_metrics(rule: &ProgressMetricsRule) -> ResolvedProgressMetrics {
-    ResolvedProgressMetrics { size: rule.size, stroke_width: rule.stroke_width }
+    ResolvedProgressMetrics {
+        size: rule.size,
+        stroke_width: rule.stroke_width,
+        track_height: rule.track_height,
+        thumb_size: rule.thumb_size,
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -830,6 +835,8 @@ pub struct ResolvedControlGroupListColors {
 pub struct ResolvedProgressMetrics {
     pub size: f32,
     pub stroke_width: f32,
+    pub track_height: f32,
+    pub thumb_size: f32,
 }
 
 #[derive(Clone, Debug)]

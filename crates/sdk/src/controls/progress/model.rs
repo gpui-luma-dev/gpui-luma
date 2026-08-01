@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::template::template_with_modifier;
+use super::direction::{ProgressDirection, ProgressOrientation};
+use super::template::{default_circular_progress_template, default_linear_progress_template, template_with_modifier};
 use super::{ProgressTemplate, default_progress_template};
 use super::control::ProgressControl;
 use crate::controls::value::{ControlRange, value_from_input};
@@ -15,6 +16,8 @@ pub struct ProgressModel {
     pub(crate) value: f32,
     pub(crate) size: ControlSize,
     pub(crate) enabled: bool,
+    pub(crate) direction: ProgressDirection,
+    pub(crate) show_thumb: bool,
     pub(crate) template: Arc<dyn ProgressTemplate>,
 }
 
@@ -25,6 +28,8 @@ pub struct ProgressRenderModel<'a> {
     pub percentage: f32,
     pub size: ControlSize,
     pub enabled: bool,
+    pub direction: ProgressDirection,
+    pub show_thumb: bool,
 }
 
 pub struct ProgressBuilder {
@@ -40,6 +45,8 @@ impl ProgressBuilder {
                 value: 0.0,
                 size: ControlSize::Md,
                 enabled: true,
+                direction: ProgressDirection::default(),
+                show_thumb: false,
                 template: default_progress_template(),
             },
         }
@@ -66,6 +73,47 @@ impl ProgressBuilder {
         self
     }
 
+    pub fn direction(mut self, direction: ProgressDirection) -> Self {
+        self.model.direction = direction;
+        self
+    }
+
+    pub fn orientation(mut self, orientation: ProgressOrientation) -> Self {
+        let reversed = self.model.direction.is_reversed();
+        self.model.direction = match orientation {
+            ProgressOrientation::Horizontal => {
+                if reversed {
+                    ProgressDirection::RightToLeft
+                } else {
+                    ProgressDirection::LeftToRight
+                }
+            }
+            ProgressOrientation::Vertical => {
+                if reversed {
+                    ProgressDirection::TopToBottom
+                } else {
+                    ProgressDirection::BottomToTop
+                }
+            }
+        };
+        self
+    }
+
+    pub fn show_thumb(mut self, show_thumb: bool) -> Self {
+        self.model.show_thumb = show_thumb;
+        self
+    }
+
+    pub fn linear(mut self) -> Self {
+        self.model.template = default_linear_progress_template();
+        self
+    }
+
+    pub fn circular(mut self) -> Self {
+        self.model.template = default_circular_progress_template();
+        self
+    }
+
     pub fn template(mut self, template: Arc<dyn ProgressTemplate>) -> Self {
         self.model.template = template;
         self
@@ -87,6 +135,7 @@ impl ProgressBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::controls::progress::template::default_linear_progress_template;
 
     #[test]
     fn with_template_modifier_wraps_template() {
@@ -96,5 +145,17 @@ mod tests {
             .with_template_modifier(|element, _| element);
 
         assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn linear_assigns_linear_template() {
+        let builder = ProgressBuilder::new("progress-linear").linear();
+        assert!(Arc::ptr_eq(&builder.model.template, &default_linear_progress_template()));
+    }
+
+    #[test]
+    fn value_clamps_to_range() {
+        let builder = ProgressBuilder::new("progress-clamp").range(0..100).value(150);
+        assert_eq!(builder.model.value, 100.0);
     }
 }

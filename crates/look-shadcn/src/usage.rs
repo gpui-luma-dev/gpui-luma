@@ -281,8 +281,8 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Progress",
         parts: &[
-            part("track", "muted", &["enabled"], &["ProgressLook.track_color"]),
-            part("fill", "primary", &["enabled"], &["ProgressLook.progress_color"]),
+            part("track", "accent", &["enabled"], &["ProgressLook.track_color"]),
+            part("fill", "accent-foreground", &["enabled"], &["ProgressLook.progress_color"]),
         ],
     },
     &ThemeUsage {

@@ -212,6 +212,18 @@ impl ProgressStylesheet {
 pub struct ProgressMetricsRule {
     pub size: f32,
     pub stroke_width: f32,
+    #[serde(default = "default_progress_track_height")]
+    pub track_height: f32,
+    #[serde(default = "default_progress_thumb_size")]
+    pub thumb_size: f32,
+}
+
+fn default_progress_track_height() -> f32 {
+    6.0
+}
+
+fn default_progress_thumb_size() -> f32 {
+    16.0
 }
 
 #[derive(Debug, Deserialize, Clone)]

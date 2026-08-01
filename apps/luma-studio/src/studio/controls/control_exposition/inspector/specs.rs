@@ -200,6 +200,11 @@ pub static PROGRESS_STATES: [InspectorStateSpec; 2] = [
     },
 ];
 
+pub static PROGRESS_VARIANTS: [InspectorVariant; 2] = [
+    InspectorVariant { id: "circular", label: "Circular" },
+    InspectorVariant { id: "linear", label: "Linear" },
+];
+
 pub static OVERLAY_WINDOW_MODE_VARIANTS: [InspectorVariant; 2] = [
     InspectorVariant { id: "modal", label: "Modal" },
     InspectorVariant { id: "modeless", label: "Modeless" },

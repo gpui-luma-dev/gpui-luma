@@ -130,9 +130,9 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     ControlDocEntry {
         id: "progress",
         title: "Progress",
-        description: "Read-only progress indicator with Shadcn track and fill tokens. Update value programmatically via set_value; no user interaction events.",
+        description: "Read-only progress indicator with circular ring and linear bar templates. Configure direction, optional thumb, and update value programmatically via set_value.",
         category: ControlCategory::Inputs,
-        snippet: "look.progress(\"upload\")\n    .range(0..100)\n    .value(41)\n    .spawn(cx);",
+        snippet: "look.linear_progress(\"upload\")\n    .range(0..100)\n    .value(41)\n    .direction(ProgressDirection::LeftToRight)\n    .show_thumb(true)\n    .spawn(cx);",
         section_order: 136,
     },
     ControlDocEntry {

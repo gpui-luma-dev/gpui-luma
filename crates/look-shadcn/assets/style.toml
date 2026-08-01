@@ -1226,19 +1226,25 @@ foreground = "foreground"
 [progress.metrics.sm]
 size = 48.0
 stroke_width = 5.0
+track_height = 4.0
+thumb_size = 12.0
 
 [progress.metrics.md]
 size = 64.0
 stroke_width = 6.0
+track_height = 6.0
+thumb_size = 16.0
 
 [progress.metrics.lg]
 size = 80.0
 stroke_width = 8.0
+track_height = 8.0
+thumb_size = 20.0
 
 [[progress.color_rules]]
 enabled = true
-track_color = "muted"
-progress_color = "primary"
+track_color = "accent"
+progress_color = "accent-foreground"
 
 [[progress.color_rules]]
 enabled = false

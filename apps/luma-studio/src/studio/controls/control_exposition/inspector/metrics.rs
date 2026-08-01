@@ -125,8 +125,58 @@ pub fn badge_layout_section(
     badge_metrics_layout_section(look, diagram_id, &ShadcnInspect::new(look).inspect_badge_metrics(variant, size))
 }
 
-pub fn progress_layout_section(look: &ShadcnLook, diagram_id: &str) -> InspectLayoutSection {
-    progress_metrics_layout_section(look, diagram_id, &ShadcnInspect::new(look).inspect_progress_metrics())
+pub fn progress_circular_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &ProgressInspectMetrics,
+) -> InspectLayoutSection {
+    let size = metrics.size.value_px;
+    let box_model = InspectBoxModelSnapshot {
+        height: size,
+        padding_x: 0.0,
+        padding_y: 0.0,
+        border_width: metrics.stroke_width.value_px,
+        gap: 0.0,
+        radius: size / 2.0,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[("size", &metrics.size), ("stroke width", &metrics.stroke_width)]),
+    )
+}
+
+pub fn progress_linear_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &ProgressInspectMetrics,
+) -> InspectLayoutSection {
+    let track_height = metrics.track_height.value_px;
+    let thumb_size = metrics.thumb_size.value_px;
+    let cross_extent = thumb_size.max(track_height);
+    let track_inset = (cross_extent - track_height) / 2.0;
+
+    let box_model = InspectBoxModelSnapshot {
+        height: cross_extent,
+        padding_x: 0.0,
+        padding_y: track_inset,
+        border_width: track_height,
+        gap: 0.0,
+        radius: track_height / 2.0,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[("track height", &metrics.track_height), ("thumb size", &metrics.thumb_size)]),
+    )
 }
 
 pub fn slider_layout_section(look: &ShadcnLook, diagram_id: &str) -> InspectLayoutSection {
@@ -505,31 +555,6 @@ fn badge_metrics_layout_section(
             ("icon size", &metrics.icon_size),
             ("radius", &metrics.radius),
         ]),
-    )
-}
-
-fn progress_metrics_layout_section(
-    look: &ShadcnLook,
-    diagram_id: &str,
-    metrics: &ProgressInspectMetrics,
-) -> InspectLayoutSection {
-    let size = metrics.size.value_px;
-    let box_model = InspectBoxModelSnapshot {
-        height: size,
-        padding_x: 0.0,
-        padding_y: 0.0,
-        border_width: metrics.stroke_width.value_px,
-        gap: 0.0,
-        radius: size / 2.0,
-        focus_ring_width: 0.0,
-        focus_ring_offset: 0.0,
-    };
-    layout_section(
-        look,
-        diagram_id,
-        box_model,
-        None,
-        metric_properties(&[("size", &metrics.size), ("stroke width", &metrics.stroke_width)]),
     )
 }
 

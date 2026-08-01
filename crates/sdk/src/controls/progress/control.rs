@@ -1,5 +1,6 @@
 use gpui::{Context, IntoElement, Render, SharedString, Window, div, prelude::*};
 
+use super::direction::ProgressDirection;
 use super::{ProgressBuilder, ProgressRenderModel};
 use crate::controls::progress::model::ProgressModel;
 use crate::controls::value::{ControlRange, value_from_input};
@@ -36,6 +37,14 @@ impl ProgressControl {
         self.model.size
     }
 
+    pub fn direction(&self) -> ProgressDirection {
+        self.model.direction
+    }
+
+    pub fn show_thumb(&self) -> bool {
+        self.model.show_thumb
+    }
+
     pub fn set_value(&mut self, value: impl Into<f64>, cx: &mut Context<Self>) {
         self.model.value = self.model.range.clamp(value_from_input(value));
         cx.notify();
@@ -65,6 +74,24 @@ impl ProgressControl {
         cx.notify();
     }
 
+    pub fn set_direction(&mut self, direction: ProgressDirection, cx: &mut Context<Self>) {
+        if self.model.direction == direction {
+            return;
+        }
+
+        self.model.direction = direction;
+        cx.notify();
+    }
+
+    pub fn set_show_thumb(&mut self, show_thumb: bool, cx: &mut Context<Self>) {
+        if self.model.show_thumb == show_thumb {
+            return;
+        }
+
+        self.model.show_thumb = show_thumb;
+        cx.notify();
+    }
+
     pub fn set_template(&mut self, template: std::sync::Arc<dyn super::ProgressTemplate>, cx: &mut Context<Self>) {
         self.model.template = template;
         cx.notify();
@@ -78,6 +105,8 @@ impl ProgressControl {
             percentage: self.model.range.percentage(self.model.value),
             size: self.model.size,
             enabled: self.model.enabled,
+            direction: self.model.direction,
+            show_thumb: self.model.show_thumb,
         }
     }
 }

@@ -22,7 +22,7 @@ use gpui_luma::controls::navigation_sidebar::{
 use gpui_luma::controls::listbox::{ListBoxTheme, listbox_template_with_theme};
 use gpui_luma::controls::pager::{PagerLook, PagerTemplate, PagerTheme, ThemedPagerTemplate};
 use gpui_luma::controls::popup_menu::{PopupMenuTheme, ThemedPopupMenuTemplate};
-use gpui_luma::controls::progress::{ProgressTheme, ThemedProgressTemplate};
+use gpui_luma::controls::progress::{ProgressTheme, ThemedLinearProgressTemplate, ThemedProgressTemplate};
 use gpui_luma::controls::radio_button::{RadioButtonTheme, ThemedRadioButtonTemplate};
 use gpui_luma::controls::scrollbar::{ScrollbarTheme, ThemedScrollbarTemplate};
 use gpui_luma::controls::selector::{SelectorTheme, ThemedSelectorTemplate};
@@ -1273,6 +1273,10 @@ impl ProgressTheme for ShadcnProgressTheme {
 
 pub fn progress_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::progress::ProgressTemplate> {
     Arc::new(ThemedProgressTemplate::new(progress_theme(theme)))
+}
+
+pub fn linear_progress_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::progress::ProgressTemplate> {
+    Arc::new(ThemedLinearProgressTemplate::new(progress_theme(theme)))
 }
 
 pub fn progress_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ProgressTheme> {

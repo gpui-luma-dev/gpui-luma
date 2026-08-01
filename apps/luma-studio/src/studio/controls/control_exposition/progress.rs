@@ -1,9 +1,9 @@
-//! Progress control exposition — gallery-aligned interactive bar and static value samples.
+//! Progress control exposition — circular ring and linear bar samples.
 
 use std::sync::Arc;
 
 use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::progress::{Progress, ProgressRenderModel, ProgressTemplate};
+use gpui_luma::controls::progress::{Progress, ProgressDirection, ProgressRenderModel, ProgressTemplate};
 use gpui_luma::controls::value::ControlRange;
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::prelude::*;
@@ -18,6 +18,13 @@ use super::public_interface::render_exposition_doc_sections;
 use super::standalone_theme_inspectors::ProgressThemeInspector;
 use super::template::render_control_exposition_card;
 
+const LINEAR_DEMO_WIDTH: f32 = 420.0;
+const LINEAR_VERTICAL_HEIGHT: f32 = 200.0;
+const LINEAR_VERTICAL_WIDTH: f32 = 48.0;
+const LINEAR_TWO_COLUMN_GAP: f32 = 32.0;
+const LINEAR_SECTION_MAX_WIDTH: f32 = LINEAR_DEMO_WIDTH + LINEAR_TWO_COLUMN_GAP + 160.0;
+const LINEAR_DEMO_SIZE: ControlSize = ControlSize::Lg;
+
 const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
     PublicInterfaceSpec {
         symbol: "Progress",
@@ -25,9 +32,14 @@ const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
         notes: "Entity<ProgressControl> — read-only progress indicator; no user events.",
     },
     PublicInterfaceSpec {
-        symbol: "look.progress(id)",
+        symbol: "look.progress(id) / look.linear_progress(id)",
         surface: "Look",
-        notes: "ShadcnLookControlExt factory with range, value, and size.",
+        notes: "ShadcnLookControlExt factories with range, value, direction, and optional thumb.",
+    },
+    PublicInterfaceSpec {
+        symbol: "ProgressBuilder::linear / circular / direction / show_thumb",
+        surface: "Builder",
+        notes: "Select linear or circular templates and configure fill direction.",
     },
     PublicInterfaceSpec {
         symbol: "ProgressControl::set_value / set_enabled",
@@ -47,14 +59,14 @@ pub struct ProgressControlExposition {
 struct ProgressExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    progress: Progress,
+    linear_progress: Progress,
 }
 
 impl ProgressExpositionLeftPane {
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.progress.update(cx, |progress, cx| {
-            progress.set_template(look.progress_template(), cx);
+        self.linear_progress.update(cx, |progress, cx| {
+            progress.set_template(look.linear_progress_template(), cx);
         });
         cx.notify();
     }
@@ -65,7 +77,8 @@ impl Render for ProgressExpositionLeftPane {
         with_look(&self.look, || {
             let look = &self.look;
             let chrome = look.chrome();
-            let template = look.progress_template();
+            let circular_template = look.progress_template();
+            let linear_template = look.linear_progress_template();
 
             let preview = div()
                 .w_full()
@@ -75,13 +88,49 @@ impl Render for ProgressExpositionLeftPane {
                 .gap(px(16.0))
                 .child(
                     div()
-                        .w(px(360.0))
+                        .w_full()
+                        .max_w(px(LINEAR_SECTION_MAX_WIDTH))
                         .flex()
                         .flex_col()
-                        .items_center()
+                        .items_stretch()
                         .gap(px(8.0))
-                        .child(section_label("Interactive", chrome.muted_text))
-                        .child(self.progress.clone()),
+                        .child(section_label("Linear", chrome.muted_text))
+                        .child(
+                            div()
+                                .flex()
+                                .flex_row()
+                                .items_start()
+                                .gap(px(LINEAR_TWO_COLUMN_GAP))
+                                .child(
+                                    div()
+                                        .flex()
+                                        .flex_col()
+                                        .items_stretch()
+                                        .gap(px(14.0))
+                                        .child(div().w(px(LINEAR_DEMO_WIDTH)).child(self.linear_progress.clone()))
+                                        .child(render_linear_direction_sample(
+                                            &linear_template,
+                                            "rtl",
+                                            ProgressDirection::RightToLeft,
+                                            true,
+                                            chrome.muted_text,
+                                            window,
+                                            cx,
+                                        ))
+                                        .child(section_label("Hide Thumb", chrome.muted_text))
+                                        .child(render_linear_direction_sample_with_label(
+                                            &linear_template,
+                                            "thumb-off",
+                                            None,
+                                            ProgressDirection::LeftToRight,
+                                            false,
+                                            chrome.muted_text,
+                                            window,
+                                            cx,
+                                        )),
+                                )
+                                .child(render_vertical_direction_row(&linear_template, chrome.muted_text, window, cx)),
+                        ),
                 )
                 .child(
                     div()
@@ -89,7 +138,7 @@ impl Render for ProgressExpositionLeftPane {
                         .flex_col()
                         .items_center()
                         .gap(px(8.0))
-                        .child(section_label("Value samples", chrome.muted_text))
+                        .child(section_label("Circular value samples", chrome.muted_text))
                         .child(
                             div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
                                 [
@@ -103,12 +152,14 @@ impl Render for ProgressExpositionLeftPane {
                                 .map(|(id, label, value, enabled)| {
                                     render_progress_sample(
                                         ProgressSample {
-                                            template: &template,
+                                            template: &circular_template,
                                             id,
                                             label,
                                             value,
                                             enabled,
                                             label_color: chrome.muted_text,
+                                            direction: ProgressDirection::LeftToRight,
+                                            show_thumb: false,
                                         },
                                         window,
                                         cx,
@@ -138,8 +189,14 @@ impl Render for ProgressExpositionLeftPane {
 impl ProgressControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("progress").expect("progress catalog entry");
-        let progress = look.progress("controls-doc-progress").range(1..100).value(41).spawn(cx);
-        let left_pane = cx.new(|_| ProgressExpositionLeftPane { look: look.clone(), entry, progress });
+        let linear_progress = look
+            .linear_progress("controls-doc-progress")
+            .range(1..100)
+            .value(41)
+            .size(LINEAR_DEMO_SIZE)
+            .show_thumb(true)
+            .spawn(cx);
+        let left_pane = cx.new(|_| ProgressExpositionLeftPane { look: look.clone(), entry, linear_progress });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
             look.clone(),
@@ -208,10 +265,12 @@ struct ProgressSample<'a> {
     value: f32,
     enabled: bool,
     label_color: gpui::Hsla,
+    direction: ProgressDirection,
+    show_thumb: bool,
 }
 
 fn render_progress_sample(sample: ProgressSample<'_>, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
-    let ProgressSample { template, id, label, value, enabled, label_color } = sample;
+    let ProgressSample { template, id, label, value, enabled, label_color, direction, show_thumb } = sample;
     let id = SharedString::from(format!("controls-doc-progress-{id}"));
     let range = ControlRange::from(0..100);
     let model = ProgressRenderModel {
@@ -221,6 +280,8 @@ fn render_progress_sample(sample: ProgressSample<'_>, window: &mut Window, cx: &
         percentage: range.percentage(value),
         size: ControlSize::Md,
         enabled,
+        direction,
+        show_thumb,
     };
 
     div()
@@ -231,5 +292,107 @@ fn render_progress_sample(sample: ProgressSample<'_>, window: &mut Window, cx: &
         .gap(px(6.0))
         .child(template.render(&model, window, cx))
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(label))
+        .into_any_element()
+}
+
+fn direction_label(direction: ProgressDirection) -> &'static str {
+    match direction {
+        ProgressDirection::LeftToRight => "Left to right",
+        ProgressDirection::RightToLeft => "Right to left",
+        ProgressDirection::BottomToTop => "Bottom to top",
+        ProgressDirection::TopToBottom => "Top to bottom",
+    }
+}
+
+fn render_linear_direction_sample(
+    template: &Arc<dyn ProgressTemplate>,
+    id: &str,
+    direction: ProgressDirection,
+    show_thumb: bool,
+    label_color: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> gpui::AnyElement {
+    render_linear_direction_sample_with_label(
+        template,
+        id,
+        Some(direction_label(direction)),
+        direction,
+        show_thumb,
+        label_color,
+        window,
+        cx,
+    )
+}
+
+fn render_linear_direction_sample_with_label(
+    template: &Arc<dyn ProgressTemplate>,
+    id: &str,
+    label: Option<&'static str>,
+    direction: ProgressDirection,
+    show_thumb: bool,
+    label_color: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> gpui::AnyElement {
+    let sample_id = SharedString::from(format!("controls-doc-progress-linear-{id}"));
+    let range = ControlRange::from(0..100);
+    let value = 41.0;
+    let model = ProgressRenderModel {
+        id: &sample_id,
+        range,
+        value,
+        percentage: range.percentage(value),
+        size: LINEAR_DEMO_SIZE,
+        enabled: true,
+        direction,
+        show_thumb,
+    };
+
+    let track = if direction.orientation() == gpui_luma::controls::progress::ProgressOrientation::Vertical {
+        div()
+            .w(px(LINEAR_VERTICAL_WIDTH))
+            .h(px(LINEAR_VERTICAL_HEIGHT))
+            .child(template.render(&model, window, cx))
+    } else {
+        div().w(px(LINEAR_DEMO_WIDTH)).child(template.render(&model, window, cx))
+    };
+
+    let mut sample = div().flex().flex_col().gap(px(6.0));
+    if let Some(label) = label {
+        sample = sample.child(div().text_size(px(12.0)).line_height(px(16.0)).text_color(label_color).child(label));
+    }
+    sample.child(track).into_any_element()
+}
+
+fn render_vertical_direction_row(
+    template: &Arc<dyn ProgressTemplate>,
+    label_color: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> gpui::AnyElement {
+    div()
+        .flex()
+        .flex_row()
+        .items_end()
+        .gap(px(32.0))
+        .child(render_linear_direction_sample(
+            template,
+            "btt",
+            ProgressDirection::BottomToTop,
+            true,
+            label_color,
+            window,
+            cx,
+        ))
+        .child(render_linear_direction_sample(
+            template,
+            "ttb",
+            ProgressDirection::TopToBottom,
+            true,
+            label_color,
+            window,
+            cx,
+        ))
         .into_any_element()
 }

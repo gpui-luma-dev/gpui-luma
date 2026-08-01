@@ -6,12 +6,15 @@ use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnMode
 pub struct ProgressInspectPalette {
     pub track_color: ResolvedColor,
     pub progress_color: ResolvedColor,
+    pub thumb_color: ResolvedColor,
 }
 
 #[derive(Clone, Debug)]
 pub struct ProgressInspectMetrics {
     pub size: gpui_luma_look_shadcn::ResolvedMetric,
     pub stroke_width: gpui_luma_look_shadcn::ResolvedMetric,
+    pub track_height: gpui_luma_look_shadcn::ResolvedMetric,
+    pub thumb_size: gpui_luma_look_shadcn::ResolvedMetric,
 }
 
 pub fn inspect_progress_color_palette(
@@ -23,7 +26,11 @@ pub fn inspect_progress_color_palette(
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "progress_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_progress_colors(&resolver, enabled)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ProgressColorTable::fallback());
-    ProgressInspectPalette { track_color: colors.track_color, progress_color: colors.progress_color }
+    ProgressInspectPalette {
+        track_color: colors.track_color,
+        progress_color: colors.progress_color.clone(),
+        thumb_color: colors.progress_color,
+    }
 }
 
 pub fn inspect_progress_metrics(mode: &ShadcnModeTokens, _theme_mode: ThemeMode) -> ProgressInspectMetrics {
@@ -34,6 +41,8 @@ pub fn inspect_progress_metrics(mode: &ShadcnModeTokens, _theme_mode: ThemeMode)
     ProgressInspectMetrics {
         size: derived_metric("progress ring diameter", look.size),
         stroke_width: derived_metric("progress stroke width", look.stroke_width),
+        track_height: derived_metric("progress track height", look.track_height),
+        thumb_size: derived_metric("progress thumb size", look.thumb_size),
     }
 }
 
@@ -55,12 +64,24 @@ mod tests {
     }
 
     #[test]
-    fn inspect_enabled_progress_uses_primary_fill() {
+    fn inspect_enabled_progress_uses_accent_foreground_fill() {
         let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
         let palette = inspect_progress_color_palette(&mode, ThemeMode::Light, true);
         assert!(matches!(
             palette.progress_color.source,
-            ColorSource::CssVar { ref token } if token == "primary"
+            ColorSource::CssVar { ref token } if token == "accent-foreground"
         ));
+        assert!(matches!(
+            palette.track_color.source,
+            ColorSource::CssVar { ref token } if token == "accent"
+        ));
+    }
+
+    #[test]
+    fn inspect_progress_metrics_include_linear_fields() {
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        let metrics = inspect_progress_metrics(&mode, ThemeMode::Light);
+        assert!(metrics.track_height.value_px > 0.0);
+        assert!(metrics.thumb_size.value_px > 0.0);
     }
 }

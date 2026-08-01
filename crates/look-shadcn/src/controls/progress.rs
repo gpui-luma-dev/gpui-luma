@@ -1,4 +1,4 @@
-//! Progress — muted track + primary fill.
+//! Progress — accent track + accent-foreground fill.
 
 use gpui_luma::controls::progress::ProgressLook;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
@@ -13,6 +13,8 @@ use crate::stylesheet::{
 
 const DEFAULT_PROGRESS_SIZE: f32 = 64.0;
 const DEFAULT_PROGRESS_STROKE_WIDTH: f32 = 6.0;
+const DEFAULT_PROGRESS_TRACK_HEIGHT: f32 = 6.0;
+const DEFAULT_PROGRESS_THUMB_SIZE: f32 = 16.0;
 
 #[derive(Clone, Debug)]
 pub struct ProgressColorTable {
@@ -49,16 +51,24 @@ pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) 
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "progress");
     let colors = resolve_progress_colors(&resolver, enabled).unwrap_or_else(|_| ProgressColorTable::fallback());
     let stylesheet = embedded_stylesheet();
-    let (size, stroke_width) = stylesheet
+    let (size, stroke_width, track_height, thumb_size) = stylesheet
         .progress
         .metrics_for_size(size)
         .map(resolve_progress_metrics)
-        .map(|metrics| (metrics.size, metrics.stroke_width))
-        .unwrap_or((DEFAULT_PROGRESS_SIZE, DEFAULT_PROGRESS_STROKE_WIDTH));
+        .map(|metrics| (metrics.size, metrics.stroke_width, metrics.track_height, metrics.thumb_size))
+        .unwrap_or((
+            DEFAULT_PROGRESS_SIZE,
+            DEFAULT_PROGRESS_STROKE_WIDTH,
+            DEFAULT_PROGRESS_TRACK_HEIGHT,
+            DEFAULT_PROGRESS_THUMB_SIZE,
+        ));
 
     ProgressLook {
         track_color: colors.track_color.hsla(),
         progress_color: colors.progress_color.hsla(),
+        thumb_color: colors.progress_color.hsla(),
+        track_height,
+        thumb_size,
         size,
         stroke_width,
     }
@@ -84,6 +94,8 @@ mod tests {
             ("foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
             ("muted".into(), "oklch(0.6979 0.0159 196.7940)".into()),
             ("muted-foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
+            ("accent".into(), "oklch(0.5808 0.1732 39.5003)".into()),
+            ("accent-foreground".into(), "oklch(1 0 0)".into()),
             ("card".into(), "oklch(0.9306 0.0260 92.4020)".into()),
             ("border".into(), "oklch(0.6537 0.0197 205.2618)".into()),
             ("input".into(), "oklch(0.6537 0.0197 205.2618)".into()),
@@ -92,13 +104,13 @@ mod tests {
     }
 
     #[test]
-    fn progress_uses_muted_track_and_primary_fill() {
+    fn progress_uses_accent_track_and_accent_foreground_fill() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let look = progress_look(&mode, true, gpui_luma::theme::ControlSize::Md);
 
-        assert_eq!(look.track_color, catalog.color("muted").expect("muted"));
-        assert_eq!(look.progress_color, catalog.color("primary").expect("primary"));
+        assert_eq!(look.track_color, catalog.color("accent").expect("accent"));
+        assert_eq!(look.progress_color, catalog.color("accent-foreground").expect("accent-foreground"));
     }
 
     #[test]

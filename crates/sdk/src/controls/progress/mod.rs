@@ -1,10 +1,16 @@
 mod control;
+mod direction;
 mod model;
 mod template;
 mod theme;
 
+pub use direction::{ProgressDirection, ProgressOrientation, display_position};
 pub use model::{ProgressBuilder, ProgressModel, ProgressRenderModel};
-pub use template::{ProgressTemplate, ThemedProgressTemplate, default_progress_template};
+pub use template::{
+    CircularProgressTemplate, LinearProgressTemplate, ProgressTemplate, ThemedLinearProgressTemplate,
+    ThemedProgressTemplate, default_circular_progress_template, default_linear_progress_template,
+    default_progress_template,
+};
 pub use theme::{DefaultProgressTheme, ProgressLook, ProgressTheme, default_progress_theme};
 
 use gpui::{Entity, SharedString};

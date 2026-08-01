@@ -138,6 +138,8 @@ fn render_progress_state_sample(
         percentage,
         size: gpui_luma::theme::ControlSize::Md,
         enabled: sample.enabled,
+        direction: gpui_luma::controls::progress::ProgressDirection::LeftToRight,
+        show_thumb: false,
     };
 
     div()
