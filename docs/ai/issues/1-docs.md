@@ -48,12 +48,18 @@ The `xtask` CLI parses Rust AST directly from source files in `crates/sdk` and `
   * Parses `crates/sdk/src/controls/**/*.rs`.
   * Identifies builder chain methods (surface: `"method"`) and entity runtime methods/getters (surface: `"method"` or `"getter"`).
 
+* **`*Event` Enum Definitions**:
+  * Parses `pub enum <Control>Event` definitions in `crates/sdk/src/controls/**/*.rs` (e.g., `ButtonEvent`, `SelectorEvent`, `StepperEvent`).
+  * Extracts enum variants and their fields (e.g., `ButtonEvent::HoverChanged { hovered }`).
+  * Generates `EVENT_SPECS: &[EventReferenceSpec]` arrays for event reference documentation.
+
 * **Doc Comment (`///`) Extraction & Fallback Rules**:
-  * Extracts doc comments (`///`) to populate the `notes` field.
-  * **Fallback Handling**: If `///` docs are missing on a public method, `xtask` derives fallback descriptions from naming conventions:
+  * Extracts doc comments (`///`) to populate the `notes` and `trigger` fields.
+  * **Fallback Handling**: If `///` docs are missing on a public method or event variant, `xtask` derives fallback descriptions from naming conventions:
     * `set_<field>(val)` $\rightarrow$ `"Sets <field>."`
     * `is_<flag>()` / `<field>()` $\rightarrow$ `"Returns <field>."`
     * `look.<control>(...)` $\rightarrow$ `"Factory method for <Control>Builder."`
+    * `<Control>Event::<Variant>` $\rightarrow$ `"Emitted on <Variant> interaction."`
 
 ### 3. Zero-Compile-Impact Workflow
 
@@ -105,6 +111,19 @@ pub const CONTROL_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
         symbol: "set_current_step(n)",
         surface: "method",
         notes: "Move the active step; clears workflow_complete.",
+    },
+];
+
+pub const EVENT_SPECS: &[EventReferenceSpec] = &[
+    EventReferenceSpec {
+        event: "ButtonEvent::Click",
+        trigger: "User click",
+        notes: "Primary action triggered.",
+    },
+    EventReferenceSpec {
+        event: "ButtonEvent::HoverChanged { hovered }",
+        trigger: "Pointer enter/leave",
+        notes: "Emitted when hover state transitions.",
     },
 ];
 
