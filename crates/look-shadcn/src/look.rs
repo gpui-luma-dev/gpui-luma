@@ -739,6 +739,14 @@ impl ShadcnLook {
         templates::progress_theme(Arc::clone(self))
     }
 
+    pub fn stepper_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::stepper::StepperTemplate> {
+        templates::stepper_template(Arc::clone(self))
+    }
+
+    pub fn stepper_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::stepper::StepperTheme> {
+        templates::stepper_theme(Arc::clone(self))
+    }
+
     pub fn overlay_window_template(
         self: &Arc<Self>,
     ) -> Arc<dyn gpui_luma::controls::overlay_window::OverlayWindowTemplate> {

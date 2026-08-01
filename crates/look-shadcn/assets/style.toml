@@ -1252,6 +1252,23 @@ track_color = "muted-foreground"
 progress_color = "muted-foreground"
 
 # =====================================================================
+# 12b. STEPPER
+# =====================================================================
+[stepper.metrics.sm]
+step_badge_size = 24.0
+track_thickness = 2.0
+
+[stepper.metrics.md]
+step_badge_size = 32.0
+track_thickness = 2.0
+
+[stepper.metrics.lg]
+step_badge_size = 40.0
+track_thickness = 3.0
+
+# Stepper colors derive from [[progress.color_rules]] (track_color + progress_color).
+
+# =====================================================================
 # 13. CARD
 # =====================================================================
 [[card.elevation_rules]]

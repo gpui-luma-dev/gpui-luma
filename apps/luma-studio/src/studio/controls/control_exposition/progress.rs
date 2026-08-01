@@ -14,7 +14,7 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout, PublicInterfaceSpec};
 use super::progress_inspector_adapter::{ProgressInspectorAdapter, PROGRESS_INSPECTOR_SPEC};
-use super::public_interface::render_exposition_doc_sections;
+use super::public_interface::render_public_interface_section;
 use super::standalone_theme_inspectors::ProgressThemeInspector;
 use super::template::render_control_exposition_card;
 
@@ -179,7 +179,7 @@ impl Render for ProgressExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, &[], PUBLIC_INTERFACE_SPECS)),
+                    Some(render_public_interface_section(look, PUBLIC_INTERFACE_SPECS)),
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

@@ -82,6 +82,7 @@ const NAVIGATION_ENTRIES: &[ComponentCatalogEntry] = &[
 const FEEDBACK_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "badge", label: "Badge" },
     ComponentCatalogEntry { id: "progress", label: "Progress" },
+    ComponentCatalogEntry { id: "stepper", label: "Stepper" },
     ComponentCatalogEntry { id: "dialog-modal", label: "Dialog Modal" },
     ComponentCatalogEntry { id: "dialog-modeless", label: "Dialog Modeless" },
     ComponentCatalogEntry { id: "dialog-positioning", label: "Dialog Positioning" },
@@ -181,6 +182,7 @@ pub fn controls_exposition_id(gallery_id: &str) -> Option<&'static str> {
         "tree-view" => Some("tree-view"),
         "badge" => Some("badge"),
         "progress" => Some("progress"),
+        "stepper" => Some("stepper"),
         "dock-panel" => Some("dock-panel"),
         "resizable-panels" => Some("resizable-panels"),
         "navigation-sidebar" => Some("navigation-sidebar"),

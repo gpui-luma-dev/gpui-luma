@@ -34,6 +34,7 @@ use super::pager::PagerControlExposition;
 use super::paging_list_view::PagingListViewControlExposition;
 use super::popup_selector::PopupSelectorControlExposition;
 use super::progress::ProgressControlExposition;
+use super::stepper::StepperControlExposition;
 use super::radio_button::RadioButtonControlExposition;
 use super::radio_group::RadioGroupControlExposition;
 use super::resizable_panels::ResizablePanelsControlExposition;
@@ -70,6 +71,7 @@ pub enum ControlExposition {
     TreeView(Entity<TreeViewControlExposition>),
     Badge(Entity<BadgeControlExposition>),
     Progress(Entity<ProgressControlExposition>),
+    Stepper(Entity<StepperControlExposition>),
     ColorArc(Entity<ColorArcControlExposition>),
     ColorField(Entity<ColorFieldControlExposition>),
     ColorHarmonies(Entity<ColorHarmoniesControlExposition>),
@@ -129,6 +131,7 @@ impl ControlExposition {
             Self::TreeView(cx.new(|cx| TreeViewControlExposition::new(cx, look.clone()))),
             Self::Badge(cx.new(|cx| BadgeControlExposition::new(cx, look.clone()))),
             Self::Progress(cx.new(|cx| ProgressControlExposition::new(cx, look.clone()))),
+            Self::Stepper(cx.new(|cx| StepperControlExposition::new(cx, look.clone()))),
             Self::ColorArc(cx.new(|cx| ColorArcControlExposition::new(cx, look.clone()))),
             Self::ColorField(cx.new(|cx| ColorFieldControlExposition::new(cx, look.clone()))),
             Self::ColorHarmonies(cx.new(|cx| ColorHarmoniesControlExposition::new(cx, look.clone()))),
@@ -189,6 +192,7 @@ impl ControlExposition {
             Self::TreeView(entity) => entity.read(cx).entry(),
             Self::Badge(entity) => entity.read(cx).entry(),
             Self::Progress(entity) => entity.read(cx).entry(),
+            Self::Stepper(entity) => entity.read(cx).entry(),
             Self::ColorArc(entity) => entity.read(cx).entry(),
             Self::ColorField(entity) => entity.read(cx).entry(),
             Self::ColorHarmonies(entity) => entity.read(cx).entry(),
@@ -237,6 +241,7 @@ impl ControlExposition {
             Self::TextArea(entity) => entity.read(cx).fills_viewport(),
             Self::Badge(entity) => entity.read(cx).fills_viewport(),
             Self::Progress(entity) => entity.read(cx).fills_viewport(),
+            Self::Stepper(entity) => entity.read(cx).fills_viewport(),
             Self::Slider(entity) => entity.read(cx).fills_viewport(),
             Self::Scrollbar(entity) => entity.read(cx).fills_viewport(),
             Self::FloatingMenu(entity) => entity.read(cx).fills_viewport(),
@@ -281,6 +286,7 @@ impl ControlExposition {
             Self::TextArea(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Badge(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Progress(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Stepper(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Slider(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Scrollbar(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::FloatingMenu(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
@@ -333,6 +339,7 @@ impl ControlExposition {
             Self::TextArea(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Badge(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Progress(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Stepper(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Slider(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Scrollbar(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::FloatingMenu(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
@@ -395,6 +402,7 @@ impl ControlExposition {
             Self::TreeView(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::Badge(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::Progress(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::Stepper(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::ColorArc(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::ColorField(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::ColorHarmonies(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
@@ -451,6 +459,7 @@ impl ControlExposition {
             Self::TreeView(entity) => entity.clone().into_any_element(),
             Self::Badge(entity) => entity.clone().into_any_element(),
             Self::Progress(entity) => entity.clone().into_any_element(),
+            Self::Stepper(entity) => entity.clone().into_any_element(),
             Self::ColorArc(entity) => entity.clone().into_any_element(),
             Self::ColorField(entity) => entity.clone().into_any_element(),
             Self::ColorHarmonies(entity) => entity.clone().into_any_element(),

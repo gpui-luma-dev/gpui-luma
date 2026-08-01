@@ -20,6 +20,7 @@ pub use crate::controls::navigation_sidebar::{
 pub use crate::controls::pager::pager_look;
 pub use crate::controls::popup_menu::popup_menu_palette;
 pub use crate::controls::progress::progress_look;
+pub use crate::controls::stepper::stepper_look;
 pub use crate::controls::radio::radio_button_look;
 pub use crate::controls::resizable_panels::resizable_panels_look;
 pub use crate::controls::scrollbar::scrollbar_look;

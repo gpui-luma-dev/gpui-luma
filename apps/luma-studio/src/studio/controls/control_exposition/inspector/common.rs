@@ -157,6 +157,10 @@ pub fn progress_enabled(state_id: &str) -> bool {
     state_id != "disabled"
 }
 
+pub fn stepper_enabled(state_id: &str) -> bool {
+    state_id != "disabled"
+}
+
 pub fn scrollbar_style(variant_id: &str) -> gpui_luma::controls::scrollbar::ScrollbarStyle {
     match variant_id {
         "soft" => gpui_luma::controls::scrollbar::ScrollbarStyle::Soft,

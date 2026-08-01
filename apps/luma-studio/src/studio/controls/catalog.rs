@@ -136,12 +136,20 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         section_order: 136,
     },
     ControlDocEntry {
+        id: "stepper",
+        title: "Stepper",
+        description: "Discrete multi-step process indicator with complete, in-progress, and incomplete step badges plus connector tracks. Configure step count, current step, optional labels, and layout direction.",
+        category: ControlCategory::Inputs,
+        snippet: "look.stepper(\"checkout\", 4)\n    .current_step(1)\n    .labels(vec![\"Account\", \"Shipping\", \"Payment\", \"Review\"])\n    .direction(ProgressDirection::LeftToRight)\n    .spawn(cx);",
+        section_order: 137,
+    },
+    ControlDocEntry {
         id: "accordion",
         title: "Accordion",
         description: "Collapsible sections with single or multiple expansion modes. Triggers support icons, disabled items, and custom content closures for interactive panels.",
         category: ControlCategory::Choice,
         snippet: "look\n    .accordion(\"settings\")\n    .single()\n    .item(AccordionItem::new(\"general\", trigger, content))\n    .spawn(cx);",
-        section_order: 137,
+        section_order: 138,
     },
     ControlDocEntry {
         id: "listbox",
@@ -149,7 +157,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         description: "Vertical or horizontal selectable lists built on control_group semantics. Supports single and multiple selection with keyboard roving focus.",
         category: ControlCategory::Choice,
         snippet: "look\n    .listbox(\"fruits\")\n    .items(items)\n    .selected_ids([\"apples\"])\n    .spawn(cx);",
-        section_order: 138,
+        section_order: 139,
     },
     ControlDocEntry {
         id: "scrolling-list-view",
@@ -157,7 +165,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         description: "Virtualized task grid with fixed viewport, column templates, row snap scrolling, and keyboard selection. Ideal for long datasets that scroll in place.",
         category: ControlCategory::Choice,
         snippet: "scrolling_list_view! {\n    list_view_theme = look.list_view_theme();\n    id = \"tasks\";\n    items = rows;\n    visible_rows = 25;\n    scroll_snap = true;\n    grid_view = { /* columns */ };\n}.spawn(cx);",
-        section_order: 139,
+        section_order: 140,
     },
     ControlDocEntry {
         id: "paging-list-view",

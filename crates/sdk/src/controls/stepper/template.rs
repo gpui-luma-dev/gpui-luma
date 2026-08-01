@@ -1,0 +1,407 @@
+use std::sync::{Arc, OnceLock};
+
+use gpui::{App, Div, FontWeight, SharedString, Stateful, Window, div, px, prelude::*};
+use lucide_icons::Icon as LucideIcon;
+
+use super::model::{StepperLabelPlacement, StepperRenderModel};
+use super::theme::{StepperLook, StepperTheme, default_stepper_theme};
+use super::StepState;
+use crate::controls::icon::{LUCIDE_FONT_FAMILY, lucide_glyph};
+use crate::controls::progress::{ProgressDirection, ProgressOrientation};
+
+pub type StepperTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &StepperRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
+pub trait StepperTemplate: Send + Sync {
+    fn render(&self, model: &StepperRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
+}
+
+pub struct ThemedStepperTemplate {
+    theme: Arc<dyn StepperTheme>,
+    modifiers: Vec<StepperTemplateModifier>,
+}
+
+impl ThemedStepperTemplate {
+    pub fn new(theme: Arc<dyn StepperTheme>) -> Self {
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &StepperRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+}
+
+pub fn default_stepper_template() -> Arc<dyn StepperTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn StepperTemplate>> = OnceLock::new();
+
+    TEMPLATE.get_or_init(|| Arc::new(ThemedStepperTemplate::new(default_stepper_theme()))).clone()
+}
+
+struct ModifiedStepperTemplate {
+    base: Arc<dyn StepperTemplate>,
+    modifiers: Vec<StepperTemplateModifier>,
+}
+
+impl ModifiedStepperTemplate {
+    fn new(base: Arc<dyn StepperTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: StepperTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &StepperRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+}
+
+pub(super) fn template_with_modifier<F>(template: Arc<dyn StepperTemplate>, modifier: F) -> Arc<dyn StepperTemplate>
+where
+    F: Fn(Stateful<Div>, &StepperRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedStepperTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl StepperTemplate for ModifiedStepperTemplate {
+    fn render(&self, model: &StepperRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let root = self.base.render(model, window, cx);
+        self.apply_modifiers(root, model)
+    }
+}
+
+impl StepperTemplate for ThemedStepperTemplate {
+    fn render(&self, model: &StepperRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+        let look = self.theme.resolve(model.enabled, model.size);
+        let display_indices = display_indices(model.step_count, model.direction);
+        let horizontal = model.direction.orientation() == ProgressOrientation::Horizontal;
+
+        let root = if horizontal {
+            render_horizontal_stepper(model, &display_indices, &look)
+        } else {
+            render_vertical_stepper(model, &display_indices, &look)
+        };
+
+        apply_template_modifiers(&self.modifiers, root, model)
+    }
+}
+
+fn display_indices(step_count: usize, direction: ProgressDirection) -> Vec<usize> {
+    if direction.is_reversed() {
+        (0..step_count).rev().collect()
+    } else {
+        (0..step_count).collect()
+    }
+}
+
+fn render_horizontal_stepper(
+    model: &StepperRenderModel<'_>,
+    display_indices: &[usize],
+    look: &StepperLook,
+) -> Stateful<Div> {
+    let badge_size = look.step_badge_size;
+    let track_thickness = look.track_thickness;
+
+    let mut root = div().id(model.id.clone()).w_full().flex().flex_row().items_start();
+
+    for (position, &step_index) in display_indices.iter().enumerate() {
+        let state = model.step_states[step_index];
+        let label = model.labels.get(step_index);
+        let is_first = position == 0;
+        let is_last = position + 1 == display_indices.len();
+
+        let left_active = !is_first
+            && matches!(model.step_states[display_indices[position - 1]], StepState::Complete | StepState::InProgress);
+        let right_active = !is_last && matches!(state, StepState::Complete | StepState::InProgress);
+
+        root = root.child(
+            div()
+                .id(SharedString::from(format!("stepper-step-{step_index}")))
+                .flex_1()
+                .min_w(px(0.0))
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(6.0))
+                .child(
+                    div()
+                        .w_full()
+                        .flex()
+                        .flex_row()
+                        .items_center()
+                        .child(render_horizontal_track(
+                            is_first,
+                            left_active,
+                            track_thickness,
+                            badge_size,
+                            look.track_active_color,
+                            look.track_muted_color,
+                            step_index * 2,
+                        ))
+                        .child(render_badge(step_index, state, badge_size, look))
+                        .child(render_horizontal_track(
+                            is_last,
+                            right_active,
+                            track_thickness,
+                            badge_size,
+                            look.track_active_color,
+                            look.track_muted_color,
+                            step_index * 2 + 1,
+                        )),
+                )
+                .children(label.map(|label| render_step_label(label, look, false).text_center())),
+        );
+    }
+
+    root
+}
+
+fn render_vertical_stepper(
+    model: &StepperRenderModel<'_>,
+    display_indices: &[usize],
+    look: &StepperLook,
+) -> Stateful<Div> {
+    let badge_size = look.step_badge_size;
+    let track_thickness = look.track_thickness;
+    let side_labels = model.label_placement != StepperLabelPlacement::Below;
+
+    let mut root = div()
+        .id(model.id.clone())
+        .h_full()
+        .w_full()
+        .min_w(px(if side_labels {
+            badge_size + 120.0
+        } else {
+            badge_size + 48.0
+        }))
+        .flex()
+        .flex_col()
+        .items_stretch();
+
+    for (position, &step_index) in display_indices.iter().enumerate() {
+        let state = model.step_states[step_index];
+        let label = model.labels.get(step_index);
+        let is_first = position == 0;
+        let is_last = position + 1 == display_indices.len();
+
+        let above_active = !is_first
+            && matches!(model.step_states[display_indices[position - 1]], StepState::Complete | StepState::InProgress);
+        let below_active = !is_last && matches!(state, StepState::Complete | StepState::InProgress);
+
+        let badge_column = div()
+            .w(px(badge_size))
+            .h_full()
+            .flex()
+            .flex_col()
+            .items_center()
+            .child(render_vertical_track(
+                is_first,
+                above_active,
+                track_thickness,
+                badge_size,
+                look.track_active_color,
+                look.track_muted_color,
+                step_index * 2,
+            ))
+            .child(render_badge(step_index, state, badge_size, look))
+            .child(render_vertical_track(
+                is_last,
+                below_active,
+                track_thickness,
+                badge_size,
+                look.track_active_color,
+                look.track_muted_color,
+                step_index * 2 + 1,
+            ));
+
+        root = root.child(match model.label_placement {
+            StepperLabelPlacement::Below => div()
+                .id(SharedString::from(format!("stepper-step-{step_index}")))
+                .flex_1()
+                .min_h(px(0.0))
+                .flex()
+                .flex_col()
+                .items_center()
+                .child(badge_column)
+                .children(label.map(|label| render_step_label(label, look, false))),
+            StepperLabelPlacement::Start => div()
+                .id(SharedString::from(format!("stepper-step-{step_index}")))
+                .flex_1()
+                .min_h(px(0.0))
+                .flex()
+                .flex_row()
+                .items_center()
+                .gap(px(10.0))
+                .child(render_side_label_slot(label, look, true))
+                .child(badge_column)
+                .child(div().flex_1()),
+            StepperLabelPlacement::End => div()
+                .id(SharedString::from(format!("stepper-step-{step_index}")))
+                .flex_1()
+                .min_h(px(0.0))
+                .flex()
+                .flex_row()
+                .items_center()
+                .gap(px(10.0))
+                .child(div().flex_1())
+                .child(badge_column)
+                .child(render_side_label_slot(label, look, false)),
+        });
+    }
+
+    root
+}
+
+fn render_step_label(label: &SharedString, look: &StepperLook, align_end: bool) -> Stateful<Div> {
+    let mut label_node = div()
+        .id(SharedString::from(format!("stepper-label-{label}")))
+        .text_size(px(12.0))
+        .line_height(px(16.0))
+        .text_color(look.incomplete_fg)
+        .child(label.clone());
+
+    if align_end {
+        label_node = label_node.text_right();
+    }
+
+    label_node
+}
+
+fn render_side_label_slot(label: Option<&SharedString>, look: &StepperLook, align_end: bool) -> Stateful<Div> {
+    let mut slot = div()
+        .id(SharedString::from(format!("stepper-label-slot-{align_end}")))
+        .flex_1()
+        .min_w(px(0.0))
+        .flex()
+        .items_center();
+    slot = if align_end {
+        slot.justify_end()
+    } else {
+        slot.justify_start()
+    };
+
+    if let Some(label) = label {
+        slot = slot.child(render_step_label(label, look, align_end));
+    }
+
+    slot
+}
+
+fn render_horizontal_track(
+    is_edge: bool,
+    active: bool,
+    track_thickness: f32,
+    badge_size: f32,
+    active_color: gpui::Hsla,
+    muted_color: gpui::Hsla,
+    segment_id: usize,
+) -> Stateful<Div> {
+    if is_edge {
+        return div()
+            .id(SharedString::from(format!("stepper-track-h-edge-{segment_id}")))
+            .flex_1()
+            .h(px(badge_size));
+    }
+
+    let color = if active { active_color } else { muted_color };
+    div()
+        .id(SharedString::from(format!("stepper-track-h-{segment_id}")))
+        .flex_1()
+        .h(px(badge_size))
+        .flex()
+        .items_center()
+        .child(div().w_full().h(px(track_thickness)).bg(color))
+}
+
+fn render_vertical_track(
+    is_edge: bool,
+    active: bool,
+    track_thickness: f32,
+    badge_size: f32,
+    active_color: gpui::Hsla,
+    muted_color: gpui::Hsla,
+    segment_id: usize,
+) -> Stateful<Div> {
+    if is_edge {
+        return div()
+            .id(SharedString::from(format!("stepper-track-v-edge-{segment_id}")))
+            .flex_1()
+            .w(px(badge_size));
+    }
+
+    let color = if active { active_color } else { muted_color };
+    div()
+        .id(SharedString::from(format!("stepper-track-v-{segment_id}")))
+        .flex_1()
+        .w(px(badge_size))
+        .flex()
+        .justify_center()
+        .child(div().w(px(track_thickness)).h_full().bg(color))
+}
+
+fn render_badge(step_index: usize, state: StepState, badge_size: f32, look: &StepperLook) -> gpui::AnyElement {
+    let badge_radius = badge_size / 2.0;
+    let (background, foreground, border) = match state {
+        StepState::Complete => (look.complete_bg, look.complete_fg, look.complete_bg),
+        StepState::InProgress => (look.in_progress_bg, look.in_progress_fg, look.in_progress_bg),
+        StepState::Incomplete => (look.incomplete_bg, look.incomplete_fg, look.incomplete_border),
+    };
+
+    div()
+        .flex()
+        .flex_shrink_0()
+        .items_center()
+        .justify_center()
+        .size(px(badge_size))
+        .rounded(px(badge_radius))
+        .bg(background)
+        .border_1()
+        .border_color(border)
+        .child(match state {
+            StepState::Complete => render_checkmark(foreground, badge_size * 0.45),
+            StepState::InProgress | StepState::Incomplete => {
+                render_step_number(step_index + 1, foreground, badge_size * 0.38)
+            }
+        })
+        .into_any_element()
+}
+
+fn render_checkmark(color: gpui::Hsla, size: f32) -> gpui::AnyElement {
+    div()
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_color(color)
+        .text_size(px(size))
+        .child(lucide_glyph(LucideIcon::Check))
+        .into_any_element()
+}
+
+fn render_step_number(step_number: usize, color: gpui::Hsla, size: f32) -> gpui::AnyElement {
+    div()
+        .font_family(LUCIDE_FONT_FAMILY)
+        .font_weight(FontWeight::MEDIUM)
+        .text_color(color)
+        .text_size(px(size))
+        .child(step_number.to_string())
+        .into_any_element()
+}
+
+fn apply_template_modifiers(
+    modifiers: &[StepperTemplateModifier],
+    mut root: Stateful<Div>,
+    model: &StepperRenderModel<'_>,
+) -> Stateful<Div> {
+    for modifier in modifiers {
+        root = modifier(root, model);
+    }
+    root
+}

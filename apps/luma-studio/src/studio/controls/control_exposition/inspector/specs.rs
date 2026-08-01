@@ -205,6 +205,28 @@ pub static PROGRESS_VARIANTS: [InspectorVariant; 2] = [
     InspectorVariant { id: "linear", label: "Linear" },
 ];
 
+pub static STEPPER_STATES: [InspectorStateSpec; 2] = [
+    InspectorStateSpec {
+        id: "disabled",
+        label: "Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "enabled",
+        label: "Enabled",
+        icon: LucideIcon::Circle,
+        expanded_default: true,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+];
+
+pub static STEPPER_VARIANTS: [InspectorVariant; 2] = [
+    InspectorVariant { id: "horizontal", label: "Horizontal" },
+    InspectorVariant { id: "vertical", label: "Vertical" },
+];
+
 pub static OVERLAY_WINDOW_MODE_VARIANTS: [InspectorVariant; 2] = [
     InspectorVariant { id: "modal", label: "Modal" },
     InspectorVariant { id: "modeless", label: "Modeless" },

@@ -25,6 +25,7 @@ use gpui_luma::controls::overlay_window::OverlayWindowBuilder;
 use gpui_luma::controls::pager::{self, PagerBuilder};
 use gpui_luma::controls::popup_menu::PopupMenu;
 use gpui_luma::controls::progress::{self, ProgressBuilder};
+use gpui_luma::controls::stepper::{self, StepperBuilder};
 use gpui_luma::controls::resizable_panels::ResizablePanelsBuilder;
 use gpui_luma::controls::radio_button::{self, RadioButtonBuilder};
 use gpui_luma::controls::radio_group::{
@@ -112,6 +113,7 @@ pub trait ShadcnLookControlExt {
     fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder;
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
     fn linear_progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
+    fn stepper(&self, id: impl Into<SharedString>, step_count: usize) -> StepperBuilder;
     fn card(&self, id: impl Into<SharedString>) -> ShadcnCardBuilder;
     fn overlay_window(&self, id: impl Into<SharedString>) -> OverlayWindowBuilder;
     fn badge(&self, label: impl Into<SharedString>) -> Badge;
@@ -401,6 +403,10 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn linear_progress(&self, id: impl Into<SharedString>) -> ProgressBuilder {
         progress::new(id).linear().template(self.linear_progress_template())
+    }
+
+    fn stepper(&self, id: impl Into<SharedString>, step_count: usize) -> StepperBuilder {
+        stepper::stepper(id, step_count).template(self.stepper_template())
     }
 
     fn card(&self, id: impl Into<SharedString>) -> ShadcnCardBuilder {

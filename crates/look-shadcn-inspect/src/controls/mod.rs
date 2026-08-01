@@ -15,6 +15,7 @@ mod overlay_window;
 mod pager;
 mod popup_menu;
 mod progress;
+mod stepper;
 mod radio;
 mod resizable_panels;
 mod scrollbar;
@@ -88,6 +89,7 @@ pub use popup_menu::{
 pub use progress::{
     ProgressInspectMetrics, ProgressInspectPalette, inspect_progress_color_palette, inspect_progress_metrics,
 };
+pub use stepper::{StepperInspectMetrics, StepperInspectPalette, inspect_stepper_color_palette, inspect_stepper_metrics};
 pub use scrollbar::{
     ScrollbarInspectMetrics, ScrollbarInspectPalette, inspect_scrollbar_color_palette, inspect_scrollbar_metrics,
 };

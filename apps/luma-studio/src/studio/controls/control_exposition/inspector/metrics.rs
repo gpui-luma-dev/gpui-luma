@@ -8,8 +8,9 @@ use gpui_luma_look_shadcn_inspect::{
     CheckboxInspectMetrics, ContextMenuInspectMetrics, FloatingMenuInspectMetrics, ListBoxInspectMetrics,
     ListViewInspectMetrics, NavigationSidebarInspectMetrics, OverlayWindowInspectMetrics, ProgressInspectMetrics,
     RadioButtonInspectMetrics, ResizablePanelsInspectMetrics, ScrollbarInspectMetrics, ShadcnInspect,
-    SliderInspectMetrics, SplitViewInspectMetrics, SwitchInspectMetrics, TabsNavigationInspectMetrics,
-    TextFieldInspectMetrics, PagerInspectMetrics, ToolbarInspectMetrics, TreeViewInspectMetrics,
+    SliderInspectMetrics, SplitViewInspectMetrics, StepperInspectMetrics, SwitchInspectMetrics,
+    TabsNavigationInspectMetrics, TextFieldInspectMetrics, PagerInspectMetrics, ToolbarInspectMetrics,
+    TreeViewInspectMetrics,
 };
 
 use super::box_model::InspectBoxModelSnapshot;
@@ -176,6 +177,58 @@ pub fn progress_linear_layout_section(
         box_model,
         None,
         metric_properties(&[("track height", &metrics.track_height), ("thumb size", &metrics.thumb_size)]),
+    )
+}
+
+pub fn stepper_horizontal_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &StepperInspectMetrics,
+) -> InspectLayoutSection {
+    let badge_size = metrics.step_badge_size.value_px;
+    let track_thickness = metrics.track_thickness.value_px;
+    let box_model = InspectBoxModelSnapshot {
+        height: badge_size,
+        padding_x: 0.0,
+        padding_y: 0.0,
+        border_width: track_thickness,
+        gap: 0.0,
+        radius: badge_size / 2.0,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[("badge size", &metrics.step_badge_size), ("track thickness", &metrics.track_thickness)]),
+    )
+}
+
+pub fn stepper_vertical_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    metrics: &StepperInspectMetrics,
+) -> InspectLayoutSection {
+    let badge_size = metrics.step_badge_size.value_px;
+    let track_thickness = metrics.track_thickness.value_px;
+    let box_model = InspectBoxModelSnapshot {
+        height: badge_size * 2.0 + 24.0,
+        padding_x: 0.0,
+        padding_y: 0.0,
+        border_width: track_thickness,
+        gap: 24.0,
+        radius: badge_size / 2.0,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    layout_section(
+        look,
+        diagram_id,
+        box_model,
+        None,
+        metric_properties(&[("badge size", &metrics.step_badge_size), ("track thickness", &metrics.track_thickness)]),
     )
 }
 

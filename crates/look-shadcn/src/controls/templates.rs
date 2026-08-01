@@ -23,6 +23,7 @@ use gpui_luma::controls::listbox::{ListBoxTheme, listbox_template_with_theme};
 use gpui_luma::controls::pager::{PagerLook, PagerTemplate, PagerTheme, ThemedPagerTemplate};
 use gpui_luma::controls::popup_menu::{PopupMenuTheme, ThemedPopupMenuTemplate};
 use gpui_luma::controls::progress::{ProgressTheme, ThemedLinearProgressTemplate, ThemedProgressTemplate};
+use gpui_luma::controls::stepper::{StepperTheme, ThemedStepperTemplate};
 use gpui_luma::controls::radio_button::{RadioButtonTheme, ThemedRadioButtonTemplate};
 use gpui_luma::controls::scrollbar::{ScrollbarTheme, ThemedScrollbarTemplate};
 use gpui_luma::controls::selector::{SelectorTheme, ThemedSelectorTemplate};
@@ -57,6 +58,7 @@ use super::navigation_sidebar::{
 use super::listbox::{listbox_list_look, listbox_row_palette};
 use super::pager::{pager_button_look, pager_look};
 use super::progress::progress_look;
+use super::stepper::stepper_look;
 use super::radio::radio_button_look;
 use super::scrollbar::scrollbar_look;
 use super::selection_panel::selection_panel_look;
@@ -1281,6 +1283,25 @@ pub fn linear_progress_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::co
 
 pub fn progress_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ProgressTheme> {
     Arc::new(ShadcnProgressTheme { theme: theme.as_ref().clone() })
+}
+
+struct ShadcnStepperTheme {
+    theme: ShadcnLook,
+}
+
+impl StepperTheme for ShadcnStepperTheme {
+    fn resolve(&self, enabled: bool, size: gpui_luma::theme::ControlSize) -> gpui_luma::controls::stepper::StepperLook {
+        let tokens = self.theme.mode_tokens();
+        stepper_look(tokens.as_ref(), enabled, size)
+    }
+}
+
+pub fn stepper_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::stepper::StepperTemplate> {
+    Arc::new(ThemedStepperTemplate::new(stepper_theme(theme)))
+}
+
+pub fn stepper_theme(theme: Arc<ShadcnLook>) -> Arc<dyn StepperTheme> {
+    Arc::new(ShadcnStepperTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn overlay_window_template(theme: Arc<ShadcnLook>) -> Arc<dyn OverlayWindowTemplate> {

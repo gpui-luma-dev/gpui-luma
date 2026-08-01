@@ -14,6 +14,7 @@ pub(crate) mod navigation_sidebar;
 pub(crate) mod pager;
 pub(crate) mod popup_menu;
 pub(crate) mod progress;
+pub(crate) mod stepper;
 pub(crate) mod radio;
 pub(crate) mod resizable_panels;
 pub(crate) mod scrollbar;

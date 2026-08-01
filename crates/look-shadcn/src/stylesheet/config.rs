@@ -47,6 +47,8 @@ pub struct StylesheetConfig {
     #[serde(default)]
     pub progress: ProgressStylesheet,
     #[serde(default)]
+    pub stepper: StepperStylesheet,
+    #[serde(default)]
     pub card: CardStylesheet,
     #[serde(default)]
     pub badge: BadgeStylesheet,
@@ -237,6 +239,24 @@ impl EnabledColorRule for ProgressColorRule {
     fn enabled(&self) -> Option<bool> {
         self.enabled
     }
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct StepperStylesheet {
+    #[serde(default)]
+    pub metrics: HashMap<String, StepperMetricsRule>,
+}
+
+impl StepperStylesheet {
+    pub fn metrics_for_size(&self, size: ControlSize) -> Option<&StepperMetricsRule> {
+        self.metrics.get(control_size_key(size))
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Copy)]
+pub struct StepperMetricsRule {
+    pub step_badge_size: f32,
+    pub track_thickness: f32,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]

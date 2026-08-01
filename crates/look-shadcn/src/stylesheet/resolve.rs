@@ -13,8 +13,8 @@ use super::config::{
     ListViewSurfaceColorRule, NavigationSidebarBranchColorRule, NavigationSidebarContainerColorRule,
     NavigationSidebarItemColorRule, NavigationSidebarSectionColorRule, ProgressColorRule, ProgressMetricsRule,
     RadioColorRule, ResizablePanelsColorRule, ScrollbarMetricsRule, SliderMetricsRule, SliderColorRule,
-    SplitViewColorRule, SwitchColorRule, SwitchMetricsRule, ScrollbarColorRule, TabsNavigationItemColorRule,
-    TabsNavigationListColorRule, TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
+    SplitViewColorRule, StepperMetricsRule, SwitchColorRule, SwitchMetricsRule, ScrollbarColorRule,
+    TabsNavigationItemColorRule, TabsNavigationListColorRule, TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
 };
 
 /// Context for resolving derived stylesheet tokens (`@outline_layer`, `@action_layer`, etc.).
@@ -605,10 +605,20 @@ pub fn resolve_progress_metrics(rule: &ProgressMetricsRule) -> ResolvedProgressM
     }
 }
 
+pub fn resolve_stepper_metrics(rule: &StepperMetricsRule) -> ResolvedStepperMetrics {
+    ResolvedStepperMetrics { step_badge_size: rule.step_badge_size, track_thickness: rule.track_thickness }
+}
+
 #[derive(Clone, Debug)]
 pub struct ResolvedProgressColors {
     pub track_color: ResolvedColor,
     pub progress_color: ResolvedColor,
+}
+
+#[derive(Clone, Debug)]
+pub struct ResolvedStepperMetrics {
+    pub step_badge_size: f32,
+    pub track_thickness: f32,
 }
 
 #[derive(Clone, Debug)]

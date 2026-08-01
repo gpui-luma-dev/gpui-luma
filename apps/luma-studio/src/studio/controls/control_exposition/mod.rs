@@ -65,6 +65,8 @@ mod input_theme_inspectors;
 mod popup_selector;
 mod progress;
 mod progress_inspector_adapter;
+mod stepper;
+mod stepper_inspector_adapter;
 mod public_interface;
 mod radio_button;
 mod radio_button_inspector_adapter;

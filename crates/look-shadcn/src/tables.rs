@@ -27,6 +27,7 @@ pub use crate::controls::navigation_sidebar::{
     NavigationSidebarSectionColorTable,
 };
 pub use crate::controls::progress::{resolve_progress_colors, ProgressColorTable};
+pub use crate::controls::stepper::{resolve_stepper_colors, StepperColorTable};
 pub use crate::controls::radio::{resolve_radio_colors, RadioColorTable};
 pub use crate::controls::resizable_panels::{resolve_resizable_panels_colors, ResizablePanelsColorTable};
 pub use crate::controls::scrollbar::{resolve_scrollbar_colors, ScrollbarColorTable};
