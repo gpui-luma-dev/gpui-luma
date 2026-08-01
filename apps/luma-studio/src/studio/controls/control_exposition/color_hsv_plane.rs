@@ -16,40 +16,8 @@ use super::color_exposition_common::{
     render_demo_section, render_labeled_demo_card,
 };
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ColorFieldEvent::Change / Release(Hsv)",
-        trigger: "Drag inside the HSV plane",
-        notes: "Updates hue, saturation, and value on the shared HSV model.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::Change / Release { value }",
-        trigger: "Drag the H, S, or V channel sliders",
-        notes: "Channel sliders stay linked through ColorCompositionSync.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ColorFieldState::hue_saturation_value",
-        surface: "Composition",
-        notes: "Raster HSV plane with linked H, S, and V channel sliders.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorCompositionSync",
-        surface: "Sync",
-        notes: "Prevents feedback loops while syncing linked field and slider values.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CompositionSize",
-        surface: "Layout",
-        notes: "Sm, Md, and Lg resolve plane size scaling.",
-    },
-];
 
 pub struct ColorHsvPlaneControlExposition {
     look: Arc<ShadcnLook>,
@@ -152,7 +120,7 @@ impl Render for ColorHsvPlaneControlExposition {
                 look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                None,
                 ControlExpositionLayout::BORDERLESS_NO_HEADING,
             )
         })

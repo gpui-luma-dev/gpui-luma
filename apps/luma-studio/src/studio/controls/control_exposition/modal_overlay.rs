@@ -10,80 +10,11 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, PublicInterfaceSpec};
+use super::model::{ControlExpositionLayout};
 use super::overlay_demo::render_overlay_dialog_panel_with_footer;
 use super::overlay_window_inspector_adapter::{OverlayWindowInspectorAdapter, OVERLAY_WINDOW_INSPECTOR_SPEC};
-use super::public_interface::render_public_interface_section;
 use super::shell_theme_inspectors::OverlayWindowThemeInspector;
 use super::template::render_control_exposition_card;
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "OverlayWindow",
-        surface: "Type",
-        notes: "Entity<OverlayWindowControl> — modal or modeless overlay host.",
-    },
-    PublicInterfaceSpec {
-        symbol: "OverlayWindowEvent",
-        surface: "Event",
-        notes: "Non-exhaustive enum: Opened, Dismissed.",
-    },
-    PublicInterfaceSpec {
-        symbol: "overlay_window::new(id)",
-        surface: "Factory",
-        notes: "Starts an OverlayWindowBuilder with the default dialog template.",
-    },
-    PublicInterfaceSpec {
-        symbol: "OverlayWindowBuilder::mode",
-        surface: "Builder",
-        notes: "OverlayWindowMode::Modal or Modeless — controls backdrop and focus trap.",
-    },
-    PublicInterfaceSpec {
-        symbol: "OverlayWindowBuilder::content(...)",
-        surface: "Builder",
-        notes: "Closure receiving OverlayWindowRenderModel; returns the panel body.",
-    },
-    PublicInterfaceSpec {
-        symbol: "OverlayWindowBuilder::theme_children([...])",
-        surface: "Builder",
-        notes: "Register child control entities for theme invalidation fan-out.",
-    },
-    PublicInterfaceSpec {
-        symbol: "OverlayWindowBuilder::dismiss_policy / dismissible",
-        surface: "Builder",
-        notes: "Click-away and focus-loss dismissal behavior.",
-    },
-    PublicInterfaceSpec {
-        symbol: "OverlayWindowBuilder::position / width / size",
-        surface: "Builder",
-        notes: "Placement, fixed width override, and ControlSize chrome tier.",
-    },
-    PublicInterfaceSpec {
-        symbol: "OverlayWindowBuilder::with_template_modifier",
-        surface: "Builder",
-        notes: "Second-tier template customization on the overlay shell.",
-    },
-    PublicInterfaceSpec {
-        symbol: "OverlayWindowBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materializes the overlay entity; compose trigger + overlay in the view tree.",
-    },
-    PublicInterfaceSpec {
-        symbol: "OverlayWindow::open / dismiss",
-        surface: "Entity",
-        notes: "Show or hide the overlay; emits Opened or Dismissed.",
-    },
-    PublicInterfaceSpec {
-        symbol: "OverlayWindow::is_open / set_mode / set_dismiss_policy",
-        surface: "Entity",
-        notes: "Query open state and update behavior after spawn.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.overlay_window(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt factory — binds the default Shadcn overlay template.",
-    },
-];
 
 pub struct ModalOverlayControlExposition {
     look: Arc<ShadcnLook>,
@@ -137,7 +68,7 @@ impl Render for ModalOverlayExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview,
-                    Some(render_public_interface_section(&self.look, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

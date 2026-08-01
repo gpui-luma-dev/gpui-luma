@@ -15,45 +15,8 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::listbox_inspector_adapter::{ListBoxInspectorAdapter, LISTBOX_INSPECTOR_SPEC};
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ControlGroupEvent::Change { changed_id, selected, selected_ids }",
-        trigger: "Pointer or keyboard toggles a row",
-        notes: "ListBox uses control_group selection semantics.",
-    },
-    EventReferenceSpec {
-        event: "ControlGroupEvent::Activate { activated_id }",
-        trigger: "Keyboard activate on focused row",
-        notes: "Emitted alongside Change for activation gestures.",
-    },
-    EventReferenceSpec {
-        event: "ControlGroupEvent::ItemFocused { item_id }",
-        trigger: "Roving focus moves to a row",
-        notes: "Useful for screen reader and form coordination.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ListBox",
-        surface: "Type",
-        notes: "Entity<ListBoxControl> — vertical or horizontal selectable lists.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.listbox(id) / listbox_multiple(id)",
-        surface: "Look",
-        notes: "Single or multi-select factories; .horizontal() for inline layout.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ListBoxItem::new / label",
-        surface: "Model",
-        notes: "Row descriptors bound to control_group item templates.",
-    },
-];
 
 pub struct ListBoxControlExposition {
     look: Arc<ShadcnLook>,
@@ -155,7 +118,7 @@ impl Render for ListBoxExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

@@ -13,59 +13,9 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::input_theme_inspectors::TextAreaThemeInspector;
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 use super::textarea_inspector_adapter::{TextAreaInspectorAdapter, TEXTAREA_INSPECTOR_SPEC};
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "TextAreaEvent::Change { value }",
-        trigger: "User edits text (typing, paste, cut, delete)",
-        notes: "Emitted after each committed edit.",
-    },
-    EventReferenceSpec {
-        event: "TextAreaEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the control",
-        notes: "Useful for form-level focus coordination.",
-    },
-    EventReferenceSpec {
-        event: "TextAreaEvent::EnabledChanged { enabled }",
-        trigger: "TextArea::set_enabled changes enabled state",
-        notes: "Programmatic lifecycle transition.",
-    },
-    EventReferenceSpec {
-        event: "(none)",
-        trigger: "TextArea::set_value",
-        notes: "Programmatic value sync does not emit Change.",
-    },
-    EventReferenceSpec { event: "(none)", trigger: "Disabled interaction", notes: "Input ignored while disabled." },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "TextArea",
-        surface: "Type",
-        notes: "Entity<TextAreaControl> — multiline editable text input.",
-    },
-    PublicInterfaceSpec { symbol: "TextAreaEvent", surface: "Event", notes: "Change, FocusChanged, EnabledChanged." },
-    PublicInterfaceSpec { symbol: "look.textarea(id)", surface: "Look", notes: "ShadcnLookControlExt factory." },
-    PublicInterfaceSpec {
-        symbol: "TextAreaBuilder::placeholder / rows / full_width",
-        surface: "Builder",
-        notes: "Placeholder copy, fixed row height, and width.",
-    },
-    PublicInterfaceSpec {
-        symbol: "TextAreaBuilder::clean_on_escape / validator",
-        surface: "Builder",
-        notes: "Escape-to-clear policy and optional validation hook.",
-    },
-    PublicInterfaceSpec {
-        symbol: "TextAreaBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materialize entity; subscribe for TextAreaEvent.",
-    },
-];
 
 pub struct TextAreaControlExposition {
     look: Arc<ShadcnLook>,
@@ -174,7 +124,7 @@ impl Render for TextAreaExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

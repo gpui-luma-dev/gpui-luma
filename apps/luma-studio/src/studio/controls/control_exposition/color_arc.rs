@@ -25,47 +25,10 @@ use super::color_exposition_common::{
 use super::event_stream::ControlEventStream;
 use super::inspector::color_chrome::COLOR_ARC_CHROME_PROFILES;
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const ARC_CARD_WIDTH: f32 = 320.0;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "SliderEvent::Change { value }",
-        trigger: "Pointer drag on arc track",
-        notes: "Primary hue arc drives linked saturation and lightness delegates.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::Release { value }",
-        trigger: "Pointer up after arc drag",
-        notes: "Prefer for committing model state.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ColorArcBuilder",
-        surface: "Factory",
-        notes: "Hue, saturation, and lightness arc builders returning SliderControl entities.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorArcBuilder::start_degrees / sweep_degrees",
-        surface: "Builder",
-        notes: "Configure arc geometry — half arcs, 270-degree sweeps, etc.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorArcRenderer::Vector / Raster",
-        surface: "Renderer",
-        notes: "Segmented vector arc vs raster-backed rendering.",
-    },
-    PublicInterfaceSpec {
-        symbol: "update_arc_delegate / refresh_color_arc",
-        surface: "Sync",
-        notes: "Push updated delegates when linked HSV channels change.",
-    },
-];
 
 struct ArcDemo {
     slider: Entity<SliderControl>,
@@ -324,7 +287,7 @@ impl Render for ColorArcExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

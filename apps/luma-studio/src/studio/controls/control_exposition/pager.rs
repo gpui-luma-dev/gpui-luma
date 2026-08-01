@@ -13,66 +13,12 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
+use super::model::{ControlExpositionLayout};
 use super::pager_inspector_adapter::{PagerInspectorAdapter, PAGER_INSPECTOR_SPEC};
-use super::public_interface::render_exposition_doc_sections;
 use super::shell_theme_inspectors::PagerThemeInspector;
 use super::template::render_control_exposition_card;
 
 const PAGE_SIZES: [usize; 3] = [10, 25, 50];
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "PagerEvent::PageChanged { page }",
-        trigger: "User navigates to a different page",
-        notes: "Zero-based page index.",
-    },
-    EventReferenceSpec {
-        event: "PagerEvent::PageSizeChanged { page_size }",
-        trigger: "User selects a new page size",
-        notes: "Emitted from the page-size selector when present.",
-    },
-    EventReferenceSpec {
-        event: "PagerEvent::PageSizeOpenChanged",
-        trigger: "Page size dropdown opens or closes",
-        notes: "Useful for anchoring overlays.",
-    },
-    EventReferenceSpec { event: "(none)", trigger: "Disabled interaction", notes: "Ignored while disabled." },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "Pager",
-        surface: "Type",
-        notes: "Entity<PagerControl> — standalone pagination chrome.",
-    },
-    PublicInterfaceSpec {
-        symbol: "PagerEvent",
-        surface: "Event",
-        notes: "PageChanged, PageSizeChanged, PageSizeOpenChanged, FocusChanged.",
-    },
-    PublicInterfaceSpec { symbol: "look.pager(id)", surface: "Look", notes: "ShadcnLookControlExt factory." },
-    PublicInterfaceSpec {
-        symbol: "PagerBuilder::style / page_count / current_page",
-        surface: "Builder",
-        notes: "Minimal, MinimalEdge, or Numeric presentation.",
-    },
-    PublicInterfaceSpec {
-        symbol: "PagerBuilder::page_size / page_size_options",
-        surface: "Builder",
-        notes: "Items-per-page value and selector options.",
-    },
-    PublicInterfaceSpec {
-        symbol: "PagerBuilder::show_first_last / numeric_slot_count",
-        surface: "Builder",
-        notes: "Edge buttons and fixed numeric slot layout.",
-    },
-    PublicInterfaceSpec {
-        symbol: "PagerBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materialize entity; subscribe for PagerEvent.",
-    },
-];
 
 pub struct PagerControlExposition {
     look: Arc<ShadcnLook>,
@@ -258,7 +204,7 @@ impl Render for PagerExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

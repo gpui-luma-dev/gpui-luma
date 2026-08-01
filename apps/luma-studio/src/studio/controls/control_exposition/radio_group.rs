@@ -12,8 +12,7 @@ use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const DENSITY_OPTION_COUNT: usize = 3;
@@ -45,53 +44,6 @@ const DELIVERY_DATE_LINE_HEIGHT: f32 = 20.0;
 const DELIVERY_SELECTED_BORDER_WIDTH: f32 = 0.0;
 const DELIVERY_FOCUS_BORDER_WIDTH: f32 = 2.0;
 const DELIVERY_DISABLED_OPACITY: f32 = 0.56;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "RadioGroupEvent::Change { value }",
-        trigger: "User selects a different item",
-        notes: "Option<SharedString> — None when selection is cleared in allow-none mode.",
-    },
-    EventReferenceSpec {
-        event: "RadioGroupEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the group",
-        notes: "Useful for form-level focus coordination.",
-    },
-    EventReferenceSpec { event: "(none)", trigger: "Disabled interaction", notes: "Ignored while disabled." },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "RadioGroup<T>",
-        surface: "Type",
-        notes: "Entity<RadioGroupControl<T>> — single-selection control_group specialization.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioGroupEvent",
-        surface: "Event",
-        notes: "Change, FocusChanged, ItemFocused, and control_group lifecycle events.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.radio_group(id) / radio_group_horizontal(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt vertical and horizontal factories.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioGroupBuilder::items / selected / selection_mode",
-        surface: "Builder",
-        notes: "Item list, initial value, and Single vs SingleAllowNone policy.",
-    },
-    PublicInterfaceSpec {
-        symbol: "with_item_layout / item_element_template",
-        surface: "Builder",
-        notes: "Custom item arrangement and per-item element templates.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioGroupBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materialize entity; subscribe for RadioGroupEvent.",
-    },
-];
 
 pub struct RadioGroupControlExposition {
     look: Arc<ShadcnLook>,
@@ -281,7 +233,7 @@ impl Render for RadioGroupControlExposition {
                 &self.look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                None,
                 ControlExpositionLayout::BORDERLESS,
             )
         })

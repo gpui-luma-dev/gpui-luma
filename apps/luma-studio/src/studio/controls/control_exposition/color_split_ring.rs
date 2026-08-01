@@ -15,33 +15,8 @@ use super::color_exposition_common::{
     render_labeled_demo_card,
 };
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[EventReferenceSpec {
-    event: "SliderEvent::Change / Release { value }",
-    trigger: "Drag the hue ring or saturation/lightness arcs",
-    notes: "Updates the shared HSL model; linked controls stay in sync through ColorCompositionSync.",
-}];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ColorArcBuilder + ColorRingBuilder::hue",
-        surface: "Composition",
-        notes: "Offset saturation and lightness arcs framing an inner hue ring.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorCompositionSync",
-        surface: "Sync",
-        notes: "Keeps arc delegates and hue ring in sync without feedback loops.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CompositionSize",
-        surface: "Layout",
-        notes: "Sm, Md, and Lg resolve outer size, track width, and arc offsets.",
-    },
-];
 
 pub struct ColorSplitRingControlExposition {
     look: Arc<ShadcnLook>,
@@ -144,7 +119,7 @@ impl Render for ColorSplitRingControlExposition {
                 look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                None,
                 ControlExpositionLayout::BORDERLESS_NO_HEADING,
             )
         })

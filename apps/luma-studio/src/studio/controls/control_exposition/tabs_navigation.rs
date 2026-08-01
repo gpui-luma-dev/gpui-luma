@@ -13,47 +13,10 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::shell_theme_inspectors::TabsNavigationThemeInspector;
 use super::tabs_navigation_inspector_adapter::{TabsNavigationInspectorAdapter, TABS_NAVIGATION_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "TabsNavigationEvent::Activate { tab_id, label }",
-        trigger: "Pointer click on an enabled tab",
-        notes: "Primary tab selection signal.",
-    },
-    EventReferenceSpec {
-        event: "TabsNavigationEvent::Change { tab_id, label }",
-        trigger: "Keyboard roving focus changes active tab",
-        notes: "Distinct from Activate for keyboard-driven selection.",
-    },
-    EventReferenceSpec {
-        event: "TabsNavigationEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the tab list",
-        notes: "Emitted once per effective focus transition.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "TabsNavigation",
-        surface: "Type",
-        notes: "Entity<TabsNavigation> — horizontal tab strip with intrinsic or uniform width modes.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.tabs_navigation(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt factory with items, active, width_mode.",
-    },
-    PublicInterfaceSpec {
-        symbol: "TabsNavigationItem::new / label / enabled",
-        surface: "Model",
-        notes: "Tab item descriptors with optional accessories.",
-    },
-];
 
 pub struct TabsNavigationControlExposition {
     look: Arc<ShadcnLook>,
@@ -123,7 +86,7 @@ impl Render for TabsNavigationExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

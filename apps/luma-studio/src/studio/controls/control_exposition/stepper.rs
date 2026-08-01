@@ -14,8 +14,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, PublicInterfaceSpec};
-use super::public_interface::render_public_interface_block;
+use super::model::{ControlExpositionLayout};
 use super::standalone_theme_inspectors::StepperThemeInspector;
 use super::stepper_inspector_adapter::{StepperInspectorAdapter, STEPPER_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
@@ -26,161 +25,6 @@ const SECTION_WIDTH: f32 = 520.0;
 const VERTICAL_DEMO_HEIGHT: f32 = 260.0;
 const VERTICAL_DEMO_WIDTH: f32 = 200.0;
 const DEMO_SIZE: ControlSize = ControlSize::Md;
-
-const LOOK_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "look.stepper(id, step_count)",
-        surface: "factory",
-        notes: "Returns StepperBuilder with Shadcn template bound.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.stepper_template()",
-        surface: "template",
-        notes: "Arc<dyn StepperTemplate> for manual builder wiring.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.stepper_theme()",
-        surface: "theme",
-        notes: "Arc<dyn StepperTheme> for custom themed templates.",
-    },
-];
-
-const BUILDER_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "stepper(id, step_count)",
-        surface: "factory",
-        notes: "SDK entry — gpui_luma::controls::stepper::stepper; same as StepperControl::new.",
-    },
-    PublicInterfaceSpec {
-        symbol: "current_step(n)",
-        surface: "method",
-        notes: "Initial active step; earlier steps derive Complete, later Incomplete.",
-    },
-    PublicInterfaceSpec {
-        symbol: "step_state(i, state)",
-        surface: "method",
-        notes: "Override one badge (StepState) instead of deriving from current_step.",
-    },
-    PublicInterfaceSpec {
-        symbol: "labels(vec)",
-        surface: "method",
-        notes: "Optional per-step labels; omit for number-only badges.",
-    },
-    PublicInterfaceSpec {
-        symbol: "label_placement(p)",
-        surface: "method",
-        notes: "Below (default), Start, or End — side labels for vertical layouts.",
-    },
-    PublicInterfaceSpec {
-        symbol: "direction(d)",
-        surface: "method",
-        notes: "ProgressDirection — LTR, RTL, TTB, or BTT connector flow.",
-    },
-    PublicInterfaceSpec {
-        symbol: "size(s)",
-        surface: "method",
-        notes: "ControlSize — Sm, Md, or Lg badge and track metrics.",
-    },
-    PublicInterfaceSpec { symbol: "enabled(b)", surface: "method", notes: "Initial enabled flag." },
-    PublicInterfaceSpec {
-        symbol: "complete()",
-        surface: "method",
-        notes: "Spawn with every step Complete (finished workflow).",
-    },
-    PublicInterfaceSpec {
-        symbol: "template(t)",
-        surface: "method",
-        notes: "Custom StepperTemplate before spawn.",
-    },
-    PublicInterfaceSpec {
-        symbol: "with_template_modifier(f)",
-        surface: "method",
-        notes: "Second-tier root div modifier on the template output.",
-    },
-    PublicInterfaceSpec {
-        symbol: "spawn(cx)",
-        surface: "method",
-        notes: "Materialize Entity<StepperControl>.",
-    },
-];
-
-const CONTROL_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "set_current_step(n)",
-        surface: "method",
-        notes: "Move the active step; clears workflow_complete.",
-    },
-    PublicInterfaceSpec {
-        symbol: "complete()",
-        surface: "method",
-        notes: "Mark workflow finished — last step shows a checkmark.",
-    },
-    PublicInterfaceSpec {
-        symbol: "set_step_state(i, s)",
-        surface: "method",
-        notes: "Override one step badge at runtime.",
-    },
-    PublicInterfaceSpec {
-        symbol: "clear_step_state(i)",
-        surface: "method",
-        notes: "Remove override; step derives from current_step again.",
-    },
-    PublicInterfaceSpec {
-        symbol: "set_labels(vec)",
-        surface: "method",
-        notes: "Replace per-step labels.",
-    },
-    PublicInterfaceSpec {
-        symbol: "set_label_placement(p)",
-        surface: "method",
-        notes: "Change label side placement for vertical layouts.",
-    },
-    PublicInterfaceSpec {
-        symbol: "set_direction(d)",
-        surface: "method",
-        notes: "Change layout direction at runtime.",
-    },
-    PublicInterfaceSpec {
-        symbol: "set_size(s)",
-        surface: "method",
-        notes: "Change badge and track metrics.",
-    },
-    PublicInterfaceSpec {
-        symbol: "set_enabled(b)",
-        surface: "method",
-        notes: "Toggle disabled styling.",
-    },
-    PublicInterfaceSpec {
-        symbol: "set_template(t)",
-        surface: "method",
-        notes: "Hot-swap presentation template after spawn.",
-    },
-    PublicInterfaceSpec { symbol: "step_count()", surface: "getter", notes: "Total step count." },
-    PublicInterfaceSpec { symbol: "current_step()", surface: "getter", notes: "Active step index." },
-    PublicInterfaceSpec {
-        symbol: "is_complete()",
-        surface: "getter",
-        notes: "Whether complete() was called.",
-    },
-    PublicInterfaceSpec {
-        symbol: "direction()",
-        surface: "getter",
-        notes: "Current ProgressDirection.",
-    },
-    PublicInterfaceSpec {
-        symbol: "label_placement()",
-        surface: "getter",
-        notes: "Current StepperLabelPlacement.",
-    },
-    PublicInterfaceSpec { symbol: "size()", surface: "getter", notes: "Current ControlSize." },
-    PublicInterfaceSpec { symbol: "is_enabled()", surface: "getter", notes: "Current enabled flag." },
-];
-
-const PUBLIC_INTERFACE_GROUPS: &[(&str, &[PublicInterfaceSpec])] = &[
-    ("Look · gpui_luma_look_shadcn::ShadcnLookControlExt", LOOK_INTERFACE_SPECS),
-    ("StepperBuilder", BUILDER_INTERFACE_SPECS),
-    ("StepperControl", CONTROL_INTERFACE_SPECS),
-];
 
 pub struct StepperControlExposition {
     look: Arc<ShadcnLook>,
@@ -352,13 +196,7 @@ impl Render for StepperExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_public_interface_block(
-                        look,
-                        Some(
-                            "gpui_luma::controls::stepper — shared types: StepState, StepperLabelPlacement, ProgressDirection.",
-                        ),
-                        PUBLIC_INTERFACE_GROUPS,
-                    )),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

@@ -13,120 +13,8 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::button_theme_inspector::ButtonThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ButtonEvent::Click",
-        trigger: "Pointer click (primary button)",
-        notes: "Emitted when the control is enabled. Subscribe in the parent with cx.subscribe.",
-    },
-    EventReferenceSpec {
-        event: "ButtonEvent::Click",
-        trigger: "Keyboard activate (Space, Enter)",
-        notes: "Same variant when focused and ActivateControl runs.",
-    },
-    EventReferenceSpec {
-        event: "ButtonEvent::HoverChanged { hovered }",
-        trigger: "Pointer enters or leaves the enabled control",
-        notes: "Emitted only when hover state actually changes.",
-    },
-    EventReferenceSpec {
-        event: "ButtonEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the control",
-        notes: "Emitted once per effective focus transition via focus subscriptions.",
-    },
-    EventReferenceSpec {
-        event: "ButtonEvent::EnabledChanged { enabled }",
-        trigger: "Button::set_enabled changes enabled state",
-        notes: "Programmatic transition; disabling may also emit FocusChanged and HoverChanged false.",
-    },
-    EventReferenceSpec {
-        event: "(none)",
-        trigger: "Disabled interaction",
-        notes: "Pointer and keyboard activation are ignored while disabled.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "Button",
-        surface: "Type",
-        notes: "Entity<Button> — spawn once per stable id and compose into the view tree.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ButtonEvent",
-        surface: "Event",
-        notes: "Non-exhaustive enum: Click, FocusChanged, HoverChanged, EnabledChanged.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Button::new(id)",
-        surface: "Factory",
-        notes: "Starts an untyped ButtonBuilder with default command template and text role.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Button::icon(id, icon)",
-        surface: "Factory",
-        notes: "Icon-role builder with round chrome; accepts Lucide or SVG path markers.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ButtonBuilder::label(text)",
-        surface: "Builder",
-        notes: "HasPresenter helper — sets a simple text label presenter before spawn.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ButtonBuilder::content(...)",
-        surface: "Builder",
-        notes: "Custom label/content closure receiving ButtonRenderModel snapshot.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ButtonBuilder::size / role / round",
-        surface: "Builder",
-        notes: "Layout and chrome: ButtonSize, ButtonFamilyRole, round vs square corners.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ButtonBuilder::enabled / tab_stop",
-        surface: "Builder",
-        notes: "Initial interaction state and Tab-key focus traversal participation.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ButtonBuilder::compact / without_elevation / without_adorners",
-        surface: "Builder",
-        notes: "Density and chrome toggles for embedded toolbars and low-emphasis rows.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ButtonBuilder::template / with_template_modifier",
-        surface: "Builder",
-        notes: "First- and second-tier customization ladder hooks on the template root.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ButtonBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materializes the GPUI entity; subscribe with cx.subscribe for ButtonEvent.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Button::set_enabled / set_label",
-        surface: "Entity",
-        notes: "Programmatic lifecycle updates; EnabledChanged may fan out focus/hover false.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Button::set_template / set_presenter",
-        surface: "Entity",
-        notes: "Hot-swap presentation after spawn; triggers cx.notify on the entity.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.primary_button(id) … ghost_button(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt style factories — bind Primary/Secondary/Outline/Ghost templates.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.*_icon_button(id, icon)",
-        surface: "Look",
-        notes: "Icon variants for the same emphasis tiers via Button::icon + look template.",
-    },
-];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum ButtonVariant {
@@ -204,7 +92,7 @@ impl Render for ButtonExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

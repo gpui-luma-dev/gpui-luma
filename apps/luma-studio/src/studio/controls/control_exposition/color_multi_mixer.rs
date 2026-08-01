@@ -11,33 +11,8 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::color_compositions::multi_mixer::MultiMixerDemo;
 use super::color_exposition_common::{format_slider_event, render_demo_section};
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[EventReferenceSpec {
-    event: "SliderEvent::Change / Release { value }",
-    trigger: "Drag the HSVA hue slider",
-    notes: "Representative channel event from the HSVA mixer card.",
-}];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::channel / hue / alpha",
-        surface: "Factory",
-        notes: "Per-color-space channel sliders bound to ColorSpecification delegates.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSpecification",
-        surface: "Model",
-        notes: "HueAlpha, RGBA, HSLA, HSVA, Lab, and OKLCH specification traits.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSpaceMixerState",
-        surface: "Composition",
-        notes: "Self-contained mixer card with swatch readout and labeled channel rows.",
-    },
-];
 
 pub struct ColorMultiMixerControlExposition {
     look: Arc<ShadcnLook>,
@@ -101,7 +76,7 @@ impl Render for ColorMultiMixerControlExposition {
                 look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                None,
                 ControlExpositionLayout::BORDERLESS,
             )
         })

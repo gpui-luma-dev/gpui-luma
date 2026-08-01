@@ -13,100 +13,8 @@ use super::checkbox_theme_inspector::CheckboxThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "CheckboxEvent::Change { checked }",
-        trigger: "Pointer click or keyboard activate",
-        notes: "Emitted when the user toggles the control. Assign local state from the payload.",
-    },
-    EventReferenceSpec {
-        event: "CheckboxEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the control",
-        notes: "Useful for form-level focus rings or screen-reader coordination.",
-    },
-    EventReferenceSpec {
-        event: "CheckboxEvent::HoverChanged { hovered }",
-        trigger: "Pointer enters or leaves the enabled control",
-        notes: "Emitted only when hover state actually changes.",
-    },
-    EventReferenceSpec {
-        event: "CheckboxEvent::EnabledChanged { enabled }",
-        trigger: "Checkbox::set_enabled changes enabled state",
-        notes: "Programmatic transition; disabling may also emit FocusChanged and HoverChanged false.",
-    },
-    EventReferenceSpec {
-        event: "(none)",
-        trigger: "Disabled interaction",
-        notes: "Pointer and keyboard activation are ignored while disabled.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "Checkbox",
-        surface: "Type",
-        notes: "Entity<CheckboxControl> — boolean toggle with checkbox chrome.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CheckboxEvent",
-        surface: "Event",
-        notes: "Non-exhaustive enum: Change, FocusChanged, HoverChanged, EnabledChanged.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Checkbox::new(id)",
-        surface: "Factory",
-        notes: "Starts a CheckboxBuilder with the default checkbox template.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CheckboxBuilder::with_data(checked)",
-        surface: "Builder",
-        notes: "Initial checked state before spawn.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CheckboxBuilder::content(...)",
-        surface: "Builder",
-        notes: "HasPresenter helper — label slot beside the indicator.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CheckboxBuilder::indicator_only",
-        surface: "Builder",
-        notes: "Renders only the indicator — use in tables and compact rows.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CheckboxBuilder::size / enabled / tab_stop",
-        surface: "Builder",
-        notes: "ControlSize and initial interaction state.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CheckboxBuilder::compact / without_elevation",
-        surface: "Builder",
-        notes: "Density and chrome toggles for embedded layouts.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CheckboxBuilder::template / spawn(cx)",
-        surface: "Builder",
-        notes: "Custom template hook and entity materialization.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Checkbox::set_data / data",
-        surface: "Entity",
-        notes: "Read or programmatically update checked state.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Checkbox::set_enabled / set_presenter / set_template",
-        surface: "Entity",
-        notes: "Lifecycle and presentation updates after spawn.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.primary_checkbox(id) / secondary_checkbox(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt style factories for emphasis tiers.",
-    },
-];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum CheckboxVariant {
@@ -185,7 +93,7 @@ impl Render for CheckboxExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

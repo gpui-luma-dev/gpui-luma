@@ -12,101 +12,9 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::switch_theme_inspector::SwitchThemeInspector;
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "SwitchEvent::Change { on }",
-        trigger: "Pointer click or keyboard activate",
-        notes: "Emitted when the user toggles the control. Assign local state from the payload.",
-    },
-    EventReferenceSpec {
-        event: "SwitchEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the control",
-        notes: "Useful for form-level focus rings or screen-reader coordination.",
-    },
-    EventReferenceSpec {
-        event: "SwitchEvent::HoverChanged { hovered }",
-        trigger: "Pointer enters or leaves the enabled control",
-        notes: "Emitted only when hover state actually changes.",
-    },
-    EventReferenceSpec {
-        event: "SwitchEvent::EnabledChanged { enabled }",
-        trigger: "Switch::set_enabled changes enabled state",
-        notes: "Programmatic transition; disabling may also emit FocusChanged and HoverChanged false.",
-    },
-    EventReferenceSpec {
-        event: "(none)",
-        trigger: "Disabled interaction",
-        notes: "Pointer and keyboard activation are ignored while disabled.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "Switch",
-        surface: "Type",
-        notes: "Entity<SwitchControl> — boolean toggle with switch track and thumb.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SwitchEvent",
-        surface: "Event",
-        notes: "Non-exhaustive enum: Change, FocusChanged, HoverChanged, EnabledChanged.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Switch::new(id)",
-        surface: "Factory",
-        notes: "Starts a SwitchBuilder with the default switch template.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SwitchBuilder::with_data(on)",
-        surface: "Builder",
-        notes: "Initial on/off state before spawn.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SwitchBuilder::content(...)",
-        surface: "Builder",
-        notes: "HasPresenter helper — label slot beside the switch.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SwitchBuilder::orientation / track_content / thumb_content",
-        surface: "Builder",
-        notes: "Horizontal or vertical layout; optional track and thumb interior slots.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SwitchBuilder::track_length_extra",
-        surface: "Builder",
-        notes: "Extra length along the track axis for interior labels.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SwitchBuilder::size / enabled / compact",
-        surface: "Builder",
-        notes: "ButtonSize, interaction state, and density toggles.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SwitchBuilder::template / spawn(cx)",
-        surface: "Builder",
-        notes: "Custom template hook and entity materialization.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Switch::set_data / data",
-        surface: "Entity",
-        notes: "Read or programmatically update on/off state.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Switch::set_switch_orientation / set_switch_track_content",
-        surface: "Entity",
-        notes: "Hot-swap orientation and track/thumb slot content after spawn.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.primary_switch(id) / secondary_switch(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt style factories for emphasis tiers.",
-    },
-];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum SwitchVariant {
@@ -185,7 +93,7 @@ impl Render for SwitchExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

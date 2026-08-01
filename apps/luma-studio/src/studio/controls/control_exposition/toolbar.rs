@@ -16,54 +16,10 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::shell_theme_inspectors::ToolbarThemeInspector;
 use super::template::render_control_exposition_card;
 use super::toolbar_inspector_adapter::{ToolbarInspectorAdapter, TOOLBAR_INSPECTOR_SPEC};
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ToolbarEvent::Click { id }",
-        trigger: "Pointer activate on a toolbar button item",
-        notes: "Emitted for command-style items without a bound value.",
-    },
-    EventReferenceSpec {
-        event: "ToolbarEvent::Change { id, value }",
-        trigger: "Toggle, selector, or textfield item changes value",
-        notes: "ToolbarValue carries bool or string payloads from hosted items.",
-    },
-    EventReferenceSpec { event: "(none)", trigger: "Disabled interaction", notes: "Ignored while disabled." },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ToolbarControl",
-        surface: "Type",
-        notes: "Entity<Toolbar> — horizontal control_group specialization with hosted items.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ToolbarEvent",
-        surface: "Event",
-        notes: "Click, Change, FocusChanged, and item lifecycle fan-in from child controls.",
-    },
-    PublicInterfaceSpec { symbol: "look.toolbar(id)", surface: "Look", notes: "ShadcnLookControlExt factory." },
-    PublicInterfaceSpec {
-        symbol: "ShadcnToolbarItemExt",
-        surface: "Look",
-        notes: "toolbar_button, toolbar_toggle, toolbar_menu, toolbar_selector, toolbar_textfield factories.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ToolbarBuilder::roving_item_focus / set_focus_strategy",
-        surface: "Builder",
-        notes: "RovingItemFocus (default) or ActiveDescendant keyboard traversal.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ToolbarBuilder::item / separator / spawn(cx)",
-        surface: "Builder",
-        notes: "Compose hosted controls and materialize the toolbar entity.",
-    },
-];
 
 pub struct ToolbarControlExposition {
     look: Arc<ShadcnLook>,
@@ -135,7 +91,7 @@ impl Render for ToolbarExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

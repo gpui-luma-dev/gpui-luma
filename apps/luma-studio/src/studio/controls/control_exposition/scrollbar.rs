@@ -9,69 +9,10 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::scrollbar_inspector_adapter::{ScrollbarInspectorAdapter, SCROLLBAR_INSPECTOR_SPEC};
 use super::standalone_theme_inspectors::ScrollbarThemeInspector;
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ScrollbarEvent::Change { value }",
-        trigger: "Thumb drag, track click, or keyboard step",
-        notes: "Scroll offset updates while interacting.",
-    },
-    EventReferenceSpec {
-        event: "ScrollbarEvent::DragStart",
-        trigger: "Pointer down on thumb or track",
-        notes: "Begin drag transaction.",
-    },
-    EventReferenceSpec {
-        event: "ScrollbarEvent::DragEnd { value }",
-        trigger: "Pointer up after drag",
-        notes: "Final committed offset.",
-    },
-    EventReferenceSpec {
-        event: "ScrollbarEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the scrollbar",
-        notes: "Keyboard navigation readiness.",
-    },
-    EventReferenceSpec {
-        event: "ScrollbarEvent::HoverChanged { hovered }",
-        trigger: "Pointer enters or leaves the scrollbar",
-        notes: "Hover chrome transitions.",
-    },
-    EventReferenceSpec { event: "(none)", trigger: "Disabled interaction", notes: "Ignored while disabled." },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "Scrollbar",
-        surface: "Type",
-        notes: "Entity<ScrollbarControl> — standalone scroll thumb/track control.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ScrollbarEvent",
-        surface: "Event",
-        notes: "Change, DragStart, DragEnd, FocusChanged, HoverChanged, EnabledChanged.",
-    },
-    PublicInterfaceSpec { symbol: "look.scrollbar(id)", surface: "Look", notes: "ShadcnLookControlExt factory." },
-    PublicInterfaceSpec {
-        symbol: "ScrollbarBuilder::horizontal / vertical",
-        surface: "Builder",
-        notes: "Orientation before spawn.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ScrollbarBuilder::range / step / page_step / thumb_fraction",
-        surface: "Builder",
-        notes: "Scroll geometry and thumb sizing.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ScrollbarBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materialize entity; subscribe for ScrollbarEvent.",
-    },
-];
 
 pub struct ScrollbarControlExposition {
     look: Arc<ShadcnLook>,
@@ -140,7 +81,7 @@ impl Render for ScrollbarExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

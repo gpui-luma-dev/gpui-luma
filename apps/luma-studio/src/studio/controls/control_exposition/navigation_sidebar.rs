@@ -15,51 +15,9 @@ use super::collection_theme_inspectors::NavigationSidebarThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
+use super::model::{ControlExpositionLayout};
 use super::navigation_sidebar_inspector_adapter::{NavigationSidebarInspectorAdapter, NAVIGATION_SIDEBAR_INSPECTOR_SPEC};
-use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "NavigationSidebarEvent::Activate { node_id, label }",
-        trigger: "Pointer or keyboard activate on an enabled row",
-        notes: "Primary selection signal for navigation sidebars.",
-    },
-    EventReferenceSpec {
-        event: "NavigationSidebarEvent::BranchExpandedChanged { node_id, expanded }",
-        trigger: "Expand/collapse branch rows",
-        notes: "Emitted when branch open state changes.",
-    },
-    EventReferenceSpec {
-        event: "NavigationSidebarEvent::CollapsedChanged { collapsed }",
-        trigger: "Collapse rail toggle",
-        notes: "When collapsible(true), sidebar width switches to icon rail.",
-    },
-    EventReferenceSpec {
-        event: "NavigationSidebarEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the sidebar",
-        notes: "Useful for form-level focus coordination.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "NavigationSidebar",
-        surface: "Type",
-        notes: "Entity<NavigationSidebar> — hierarchical nav with optional collapse rail.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.navigation_sidebar(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt factory with title, items, footer_nodes.",
-    },
-    PublicInterfaceSpec {
-        symbol: "NavNode::new / section / children",
-        surface: "Model",
-        notes: "Branch, leaf, and section header node construction.",
-    },
-];
 
 #[derive(Clone, Copy)]
 struct PropertyLeaf {
@@ -185,7 +143,7 @@ impl Render for NavigationSidebarExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

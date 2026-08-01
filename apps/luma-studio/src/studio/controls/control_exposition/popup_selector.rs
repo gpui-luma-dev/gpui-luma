@@ -11,62 +11,9 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::input_theme_inspectors::SelectorThemeInspector;
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::selector_inspector_adapter::{SelectorInspectorAdapter, SELECTOR_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "SelectorEvent::Change { item_id, label }",
-        trigger: "User picks an item",
-        notes: "Commits selection and updates trigger label.",
-    },
-    EventReferenceSpec {
-        event: "SelectorEvent::OpenChanged { open }",
-        trigger: "Trigger click opens or dismiss closes",
-        notes: "Track popup visibility.",
-    },
-    EventReferenceSpec {
-        event: "SelectorEvent::Dismiss",
-        trigger: "Click-away or Escape while open",
-        notes: "Closed without a selection change.",
-    },
-    EventReferenceSpec {
-        event: "SelectorEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the trigger",
-        notes: "Trigger focus while closed.",
-    },
-    EventReferenceSpec {
-        event: "(none)",
-        trigger: "Disabled interaction",
-        notes: "Trigger clicks ignored while disabled.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "Selector",
-        surface: "Type",
-        notes: "Entity<Selector> — labeled trigger with anchored item popup.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SelectorEvent",
-        surface: "Event",
-        notes: "Change, OpenChanged, Dismiss, FocusChanged.",
-    },
-    PublicInterfaceSpec { symbol: "look.selector(id)", surface: "Look", notes: "ShadcnLookControlExt factory." },
-    PublicInterfaceSpec {
-        symbol: "SelectorBuilder::label / items / placement",
-        surface: "Builder",
-        notes: "Trigger label, SelectorItem list, and SelectorPlacement.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SelectorBuilder::with_item_template / spawn(cx)",
-        surface: "Builder",
-        notes: "Custom row renderer and entity materialization.",
-    },
-];
 
 pub struct PopupSelectorControlExposition {
     look: Arc<ShadcnLook>,
@@ -126,7 +73,7 @@ impl Render for SelectorExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

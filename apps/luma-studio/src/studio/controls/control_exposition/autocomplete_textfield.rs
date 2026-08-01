@@ -11,80 +11,8 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::input_theme_inspectors::AutocompleteThemeInspector;
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "AutocompleteTextBoxEvent::Change { query }",
-        trigger: "User edits the text field",
-        notes: "Filters popup items; does not commit selection.",
-    },
-    EventReferenceSpec {
-        event: "AutocompleteTextBoxEvent::Select { item_id, label }",
-        trigger: "User picks an item from the popup",
-        notes: "Commits selection and updates the field value.",
-    },
-    EventReferenceSpec {
-        event: "AutocompleteTextBoxEvent::Complete { item_id, label }",
-        trigger: "Keyboard complete on highlighted item",
-        notes: "Same commit semantics as Select via keyboard.",
-    },
-    EventReferenceSpec {
-        event: "AutocompleteTextBoxEvent::Clear",
-        trigger: "Clear affordance or escape policy",
-        notes: "Resets query and selection.",
-    },
-    EventReferenceSpec {
-        event: "AutocompleteTextBoxEvent::OpenChanged { open }",
-        trigger: "Popup opens or closes",
-        notes: "Track overlay visibility.",
-    },
-    EventReferenceSpec {
-        event: "AutocompleteTextBoxEvent::Dismiss",
-        trigger: "Click-away while open",
-        notes: "Popup closed without commit.",
-    },
-    EventReferenceSpec {
-        event: "AutocompleteTextBoxEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the field",
-        notes: "Field focus transitions.",
-    },
-    EventReferenceSpec {
-        event: "(none)",
-        trigger: "Disabled interaction",
-        notes: "Input and popup interaction ignored while disabled.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "AutocompleteTextBox",
-        surface: "Type",
-        notes: "Entity<AutocompleteTextBoxControl> — typeahead text field with popup list.",
-    },
-    PublicInterfaceSpec {
-        symbol: "AutocompleteTextBoxEvent",
-        surface: "Event",
-        notes: "Change, Select, Complete, Clear, OpenChanged, Dismiss, FocusChanged.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.autocomplete(id, items)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt factory with default autocomplete templates.",
-    },
-    PublicInterfaceSpec {
-        symbol: "AutocompleteTextBoxBuilder::placeholder / full_width",
-        surface: "Builder",
-        notes: "Placeholder copy and width before spawn.",
-    },
-    PublicInterfaceSpec {
-        symbol: "AutocompleteTextBoxBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materialize entity; subscribe for AutocompleteTextBoxEvent.",
-    },
-];
 
 pub struct AutocompleteTextFieldControlExposition {
     look: Arc<ShadcnLook>,
@@ -136,7 +64,7 @@ impl Render for AutocompleteExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

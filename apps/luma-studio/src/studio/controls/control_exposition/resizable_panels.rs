@@ -17,8 +17,7 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::resizable_panels_inspector_adapter::{ResizablePanelsInspectorAdapter, RESIZABLE_PANELS_INSPECTOR_SPEC};
 use super::shell_theme_inspectors::ResizablePanelsThemeInspector;
 use super::template::render_control_exposition_card;
@@ -26,42 +25,6 @@ use super::template::render_control_exposition_card;
 const DEMO_WIDTH: f32 = 480.0;
 const DEMO_HEIGHT: f32 = 200.0;
 const PANEL_BG_TRANSPARENT: gpui::Hsla = transparent_black();
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ResizablePanelsEvent::ResizeStart",
-        trigger: "Pointer down on resize handle",
-        notes: "Begin panel drag resize.",
-    },
-    EventReferenceSpec {
-        event: "ResizablePanelsEvent::SizesChanged { sizes_px }",
-        trigger: "Live drag updates",
-        notes: "Panel pixel sizes while dragging.",
-    },
-    EventReferenceSpec {
-        event: "ResizablePanelsEvent::ResizeEnd { sizes_px }",
-        trigger: "Pointer up after drag",
-        notes: "Committed panel sizes.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ResizablePanels",
-        surface: "Type",
-        notes: "Entity hosting weighted panels with draggable handles.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.resizable_panels(id) / resizable_panels!",
-        surface: "Look",
-        notes: "Builder or macro with orientation, min/max, and collapse behavior.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ResizablePanelSpec::new_render",
-        surface: "Model",
-        notes: "Lazy panel content factories with weight and size constraints.",
-    },
-];
 
 pub struct ResizablePanelsControlExposition {
     look: Arc<ShadcnLook>,
@@ -166,7 +129,7 @@ impl Render for ResizablePanelsExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

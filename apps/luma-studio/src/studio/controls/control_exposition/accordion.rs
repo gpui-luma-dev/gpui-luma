@@ -15,46 +15,9 @@ use super::accordion_inspector_adapter::{AccordionInspectorAdapter, ACCORDION_IN
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::shell_theme_inspectors::AccordionThemeInspector;
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "AccordionEvent::ExpandedChanged { item_id, expanded }",
-        trigger: "Pointer or keyboard activate on a trigger",
-        notes: "Single mode collapses siblings; multiple mode toggles independently.",
-    },
-    EventReferenceSpec {
-        event: "AccordionEvent::ItemFocused { item_id }",
-        trigger: "Keyboard roving focus moves to a trigger",
-        notes: "Disabled items are skipped.",
-    },
-    EventReferenceSpec {
-        event: "AccordionEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the accordion",
-        notes: "Useful for form-level focus coordination.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "AccordionControl",
-        surface: "Type",
-        notes: "Entity hosting collapsible trigger/content sections.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.accordion(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt factory with single() or multiple() expansion.",
-    },
-    PublicInterfaceSpec {
-        symbol: "AccordionItem / AccordionTrigger / AccordionContent",
-        surface: "Model",
-        notes: "Section descriptors with optional icons and custom content closures.",
-    },
-];
 
 pub struct AccordionControlExposition {
     look: Arc<ShadcnLook>,
@@ -115,7 +78,7 @@ impl Render for AccordionExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

@@ -14,39 +14,9 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::floating_menu_inspector_adapter::{FloatingMenuInspectorAdapter, FLOATING_MENU_INSPECTOR_SPEC};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::standalone_theme_inspectors::FloatingMenuThemeInspector;
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[EventReferenceSpec {
-    event: "(template)",
-    trigger: "render_floating_menu item clicks",
-    notes: "Floating menu is a template primitive; parent controls emit Select/OpenChanged (PopupMenu, ContextMenu).",
-}];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "FloatingMenuLook",
-        surface: "Type",
-        notes: "Resolved menu chrome tokens — background, item height, typography.",
-    },
-    PublicInterfaceSpec {
-        symbol: "render_floating_menu(...)",
-        surface: "Factory",
-        notes: "Renders a menu item list with hover/click handler slots.",
-    },
-    PublicInterfaceSpec {
-        symbol: "FloatingMenuState",
-        surface: "Type",
-        notes: "Keyboard navigation state machine for active path and open submenu.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.floating_menu_theme()",
-        surface: "Look",
-        notes: "ShadcnLook floating menu theme used by popup and context menus.",
-    },
-];
 
 pub struct FloatingMenuControlExposition {
     look: Arc<ShadcnLook>,
@@ -94,7 +64,7 @@ impl Render for FloatingMenuExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

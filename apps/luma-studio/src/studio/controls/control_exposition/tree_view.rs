@@ -15,69 +15,11 @@ use super::collection_theme_inspectors::TreeViewThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 use super::tree_view_inspector_adapter::{TreeViewInspectorAdapter, TREE_VIEW_INSPECTOR_SPEC};
 
 const TREE_DEPTH: usize = 5;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "TreeViewEvent::NodeExpanded { node_id, data }",
-        trigger: "User expands a branch row",
-        notes: "Carries the node id and typed data payload.",
-    },
-    EventReferenceSpec {
-        event: "TreeViewEvent::NodeCollapsed { node_id, data }",
-        trigger: "User collapses a branch row",
-        notes: "Carries the node id and typed data payload.",
-    },
-    EventReferenceSpec {
-        event: "TreeViewEvent::SelectionChanged { selected_ids }",
-        trigger: "Selection set changes",
-        notes: "Depends on TreeViewSelectionMode policy.",
-    },
-    EventReferenceSpec {
-        event: "TreeViewEvent::ActiveNodeChanged { node_id }",
-        trigger: "Keyboard or pointer moves active node",
-        notes: "Distinct from selection in multi-select modes.",
-    },
-    EventReferenceSpec {
-        event: "TreeViewEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the tree",
-        notes: "Useful for form-level focus coordination.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "TreeView<T>",
-        surface: "Type",
-        notes: "Entity<TreeViewControl<T>> — virtualized hierarchical list.",
-    },
-    PublicInterfaceSpec {
-        symbol: "TreeViewEvent<T>",
-        surface: "Event",
-        notes: "Expand/collapse, selection, active node, and focus lifecycle.",
-    },
-    PublicInterfaceSpec { symbol: "look.tree_view(id)", surface: "Look", notes: "ShadcnLookControlExt factory." },
-    PublicInterfaceSpec {
-        symbol: "TreeViewBuilder::items / selection_mode",
-        surface: "Builder",
-        notes: "TreeNode forest and single or multi selection.",
-    },
-    PublicInterfaceSpec {
-        symbol: "TreeNode::new / children / expanded / icon",
-        surface: "Model",
-        notes: "Branch and leaf node construction helpers.",
-    },
-    PublicInterfaceSpec {
-        symbol: "TreeViewBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materialize entity; subscribe for TreeViewEvent.",
-    },
-];
 
 pub struct TreeViewControlExposition {
     look: Arc<ShadcnLook>,
@@ -144,7 +86,7 @@ impl Render for TreeViewExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

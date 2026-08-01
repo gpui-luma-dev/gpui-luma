@@ -10,73 +10,9 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::input_theme_inspectors::SearchSelectorThemeInspector;
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::search_selector_inspector_adapter::{search_selector_inspector_adapter, SEARCH_SELECTOR_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "SearchSelectorEvent::Change { query }",
-        trigger: "User edits popup search input",
-        notes: "Filters visible items while the popup is open.",
-    },
-    EventReferenceSpec {
-        event: "SearchSelectorEvent::Select { item_id, label }",
-        trigger: "User picks an item",
-        notes: "Commits selection and updates trigger label.",
-    },
-    EventReferenceSpec {
-        event: "SearchSelectorEvent::Complete { item_id, label }",
-        trigger: "Keyboard complete on highlighted item",
-        notes: "Same commit semantics as Select via keyboard.",
-    },
-    EventReferenceSpec { event: "SearchSelectorEvent::Clear", trigger: "Clear affordance", notes: "Resets selection." },
-    EventReferenceSpec {
-        event: "SearchSelectorEvent::OpenChanged { open }",
-        trigger: "Trigger opens or closes popup",
-        notes: "Track overlay visibility.",
-    },
-    EventReferenceSpec {
-        event: "SearchSelectorEvent::Dismiss",
-        trigger: "Click-away while open",
-        notes: "Closed without commit.",
-    },
-    EventReferenceSpec {
-        event: "SearchSelectorEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the control",
-        notes: "Trigger focus transitions.",
-    },
-    EventReferenceSpec { event: "(none)", trigger: "Disabled interaction", notes: "Ignored while disabled." },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "SearchSelector",
-        surface: "Type",
-        notes: "Entity<SearchSelectorControl> — read-only trigger with searchable popup list.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SearchSelectorEvent",
-        surface: "Event",
-        notes: "Change, Select, Complete, Clear, OpenChanged, Dismiss, FocusChanged.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.search_selector(id, items)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt factory.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SearchSelectorBuilder::placeholder / search_placeholder",
-        surface: "Builder",
-        notes: "Trigger and popup search placeholders.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SearchSelectorBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materialize entity; subscribe for SearchSelectorEvent.",
-    },
-];
 
 pub struct SearchSelectorControlExposition {
     look: Arc<ShadcnLook>,
@@ -128,7 +64,7 @@ impl Render for SearchSelectorExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

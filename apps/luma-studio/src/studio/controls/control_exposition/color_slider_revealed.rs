@@ -13,40 +13,10 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::color_exposition_common::{format_slider_event, render_demo_section, render_field_card, slider_grid_stack};
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const CARD_WIDTH: f32 = 360.0;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[EventReferenceSpec {
-    event: "SliderEvent::Change / Release { value }",
-    trigger: "Drag the hue delegate sample",
-    notes: "Representative SliderEvent from the delegate survey section.",
-}];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::size / rounded / thumb_*",
-        surface: "Builder",
-        notes: "Track scale, corner radius, and thumb shape variations.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::edge_to_edge",
-        surface: "Builder",
-        notes: "Track ends aligned to the thumb centerline.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::interpolation",
-        surface: "Builder",
-        notes: "RGB, HSL, and Lab interpolation over the same two-color gradient.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::hue / alpha / channel",
-        surface: "Factory",
-        notes: "Representative delegate families from the gallery inventory.",
-    },
-];
 
 pub struct ColorSliderRevealedControlExposition {
     look: Arc<ShadcnLook>,
@@ -376,7 +346,7 @@ impl Render for ColorSliderRevealedControlExposition {
                 look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                None,
                 ControlExpositionLayout::BORDERLESS,
             )
         })

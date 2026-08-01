@@ -12,9 +12,8 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, PublicInterfaceSpec};
+use super::model::{ControlExpositionLayout};
 use super::progress_inspector_adapter::{ProgressInspectorAdapter, PROGRESS_INSPECTOR_SPEC};
-use super::public_interface::render_public_interface_section;
 use super::standalone_theme_inspectors::ProgressThemeInspector;
 use super::template::render_control_exposition_card;
 
@@ -24,29 +23,6 @@ const LINEAR_VERTICAL_WIDTH: f32 = 48.0;
 const LINEAR_TWO_COLUMN_GAP: f32 = 32.0;
 const LINEAR_SECTION_MAX_WIDTH: f32 = LINEAR_DEMO_WIDTH + LINEAR_TWO_COLUMN_GAP + 160.0;
 const LINEAR_DEMO_SIZE: ControlSize = ControlSize::Lg;
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "Progress",
-        surface: "Type",
-        notes: "Entity<ProgressControl> — read-only progress indicator; no user events.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.progress(id) / look.linear_progress(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt factories with range, value, direction, and optional thumb.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ProgressBuilder::linear / circular / direction / show_thumb",
-        surface: "Builder",
-        notes: "Select linear or circular templates and configure fill direction.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ProgressControl::set_value / set_enabled",
-        surface: "API",
-        notes: "Update programmatically from parent state; template re-renders on notify.",
-    },
-];
 
 pub struct ProgressControlExposition {
     look: Arc<ShadcnLook>,
@@ -179,7 +155,7 @@ impl Render for ProgressExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_public_interface_section(look, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

@@ -23,108 +23,11 @@ use super::color_exposition_common::slider_labeled_row;
 use super::event_stream::ControlEventStream;
 use super::inspector::color_chrome::COLOR_SLIDER_CHROME_PROFILES;
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const WIDE_CARD: f32 = 420.0;
 const NARROW_CARD: f32 = 320.0;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "SliderEvent::Change { thumb_id, value }",
-        trigger: "Pointer drag or keyboard nudge while dragging",
-        notes: "Emitted continuously while the thumb moves. Use for live preview updates.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::Release { thumb_id, value }",
-        trigger: "Pointer up or keyboard commit after drag",
-        notes: "Emitted when the user finishes an interaction. Prefer this for committing model state.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::DragStart { thumb_id }",
-        trigger: "Pointer down on thumb or track activation",
-        notes: "Useful for deferring expensive preview work until drag ends.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::DragEnd { thumb_id, value }",
-        trigger: "Pointer up after drag",
-        notes: "Pairs with DragStart for scoped drag transactions.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the slider",
-        notes: "Useful for form-level focus coordination.",
-    },
-    EventReferenceSpec {
-        event: "(none)",
-        trigger: "Disabled interaction",
-        notes: "Pointer and keyboard input are ignored while disabled.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "SliderControl",
-        surface: "Type",
-        notes: "Entity returned by ColorSliderBuilder::spawn — unified slider with color domain.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SliderEvent",
-        surface: "Event",
-        notes: "Non-exhaustive enum: Change, Release, DragStart, DragEnd, FocusChanged, EnabledChanged.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::hue(id, h)",
-        surface: "Factory",
-        notes: "Full-spectrum hue slider (0–360°) with HueDelegate.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::channel / saturation / alpha",
-        surface: "Factory",
-        notes: "Channel delegates bound to a ColorSpecification (Hsl, RgbaSpec, etc.).",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::gradient(id, t, colors)",
-        surface: "Factory",
-        notes: "Multi-stop gradient track with GradientDelegate.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::size / thumb_medium / edge_to_edge",
-        surface: "Builder",
-        notes: "ControlSize, thumb sizing, and track bleed-to-edge layout.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::interpolation / dual_stop / multi_stop",
-        surface: "Builder",
-        notes: "ColorInterpolation mode and fixed or editable gradient stop policy.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::domain_renderer()",
-        surface: "Builder",
-        notes: "Shared Arc<ColorSliderDomainRenderer> for linked channel sliders.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSliderBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materializes the slider entity; subscribe with cx.subscribe for SliderEvent.",
-    },
-    PublicInterfaceSpec {
-        symbol: "update_domain_delegate / refresh_color_slider",
-        surface: "Sync",
-        notes: "Push updated ColorSpecification into linked domain renderers after model changes.",
-    },
-    PublicInterfaceSpec {
-        symbol: "primary_slider_value(event)",
-        surface: "Sync",
-        notes: "Extract the primary thumb value from Change or Release events.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Hsl / RgbaSpec / ColorSpecification",
-        surface: "Model",
-        notes: "Color model traits and specs used by channel and alpha delegates.",
-    },
-];
 
 pub struct ColorSliderControlExposition {
     look: Arc<ShadcnLook>,
@@ -270,7 +173,7 @@ impl Render for ColorSliderExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

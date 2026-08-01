@@ -25,8 +25,7 @@ use super::color_exposition_common::{detail_row, format_slider_event, render_dem
 use super::event_stream::ControlEventStream;
 use super::inspector::color_chrome::COLOR_RING_CHROME_PROFILES;
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const SWATCH_SIZE: f32 = 220.0;
@@ -35,42 +34,6 @@ const RING_MEDIUM_PX: f32 = 220.0;
 const SLIDER_COLUMN_WIDTH: f32 = 280.0;
 const READOUT_WIDTH: f32 = 160.0;
 const WIDE_CARD: f32 = 1120.0;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "SliderEvent::Change { value }",
-        trigger: "Pointer drag on ring track",
-        notes: "Hue, saturation, and lightness rings emit through the shared slider engine.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::Release { value }",
-        trigger: "Pointer up after ring drag",
-        notes: "Prefer for committing model state.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ColorRingBuilder",
-        surface: "Factory",
-        notes: "Hue, saturation, and lightness ring builders returning SliderControl entities.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorRingBuilder::hue / saturation / lightness",
-        surface: "Factory",
-        notes: "Domain-specific ring delegates with Size and inner-target options.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorRingRenderer::Vector / Raster",
-        surface: "Renderer",
-        notes: "Vector paths vs raster pre-image rendering paths.",
-    },
-    PublicInterfaceSpec {
-        symbol: "update_ring_delegate / refresh_color_ring",
-        surface: "Sync",
-        notes: "Push updated delegates when linked HSL channels change.",
-    },
-];
 
 struct RingDemo {
     slider: Entity<SliderControl>,
@@ -309,7 +272,7 @@ impl Render for ColorRingExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

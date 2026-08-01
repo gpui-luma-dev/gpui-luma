@@ -17,57 +17,10 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::inspector_split::InspectorSplitShell;
 use super::list_view_demo::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
 use super::list_view_inspector_adapter::{ListViewInspectorAdapter, LIST_VIEW_INSPECTOR_SPEC};
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const DEFAULT_VISIBLE_ROWS: usize = 25;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ListViewEvent::SelectionChanged { selected_indices }",
-        trigger: "Enter or Space on active row, or pointer click",
-        notes: "Indices refer to the full item vector, not the visible window.",
-    },
-    EventReferenceSpec {
-        event: "ListViewEvent::ActiveIndexChanged { active_index }",
-        trigger: "Arrow keys move roving focus",
-        notes: "Active row may differ from selection in some modes.",
-    },
-    EventReferenceSpec {
-        event: "ListViewEvent::ScrollChanged { top_index }",
-        trigger: "Scrollbar drag or wheel scroll",
-        notes: "Emitted when the first visible row index changes.",
-    },
-    EventReferenceSpec {
-        event: "ListViewEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the list",
-        notes: "Useful for form-level focus coordination.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ScrollingListView<T>",
-        surface: "Type",
-        notes: "Entity<ListViewControl<T>> — virtualized grid with scroll shell.",
-    },
-    PublicInterfaceSpec {
-        symbol: "scrolling_list_view!",
-        surface: "Macro",
-        notes: "Builder macro for grid columns, row template, and scroll options.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.list_view_theme()",
-        surface: "Look",
-        notes: "Shadcn row/header tokens passed as list_view_theme.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ListViewBuilder::visible_rows / scroll_snap",
-        surface: "Builder",
-        notes: "Fixed viewport height and optional row snap scrolling.",
-    },
-];
 
 pub struct ScrollingListViewControlExposition {
     look: Arc<ShadcnLook>,
@@ -152,7 +105,7 @@ impl Render for ScrollingListViewExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

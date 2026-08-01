@@ -12,47 +12,10 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::shell_theme_inspectors::SplitViewThemeInspector;
 use super::split_view_inspector_adapter::{SplitViewInspectorAdapter, SPLIT_VIEW_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "DockSplitterEvent::ResizeStart",
-        trigger: "Pointer down on splitter handle",
-        notes: "Begin drag resize on dock boundary.",
-    },
-    EventReferenceSpec {
-        event: "DockSplitterEvent::Resize { total_delta }",
-        trigger: "Pointer drag on splitter",
-        notes: "Cumulative delta since ResizeStart.",
-    },
-    EventReferenceSpec {
-        event: "DockSplitterEvent::ResizeEnd",
-        trigger: "Pointer up after drag",
-        notes: "Finalize resize gesture.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "dock_panel!",
-        surface: "Macro",
-        notes: "Ordered docking geometry — left/top/right/bottom bands plus fill child.",
-    },
-    PublicInterfaceSpec {
-        symbol: "DockSplitter",
-        surface: "Type",
-        notes: "Entity splitter hosted on dock boundaries for resize handles.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.dock_splitter_theme()",
-        surface: "Look",
-        notes: "Themed splitter chrome paired with ThemedDockSplitterTemplate.",
-    },
-];
 
 pub struct DockPanelControlExposition {
     look: Arc<ShadcnLook>,
@@ -107,7 +70,7 @@ impl Render for DockPanelExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

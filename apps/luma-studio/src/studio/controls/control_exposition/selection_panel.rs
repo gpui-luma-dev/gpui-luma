@@ -12,71 +12,9 @@ use super::collection_theme_inspectors::SelectionPanelThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::selection_panel_inspector_adapter::{SelectionPanelInspectorAdapter, SELECTION_PANEL_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "SelectionPanelEvent::HoverChanged { visible_index }",
-        trigger: "Pointer moves across rows",
-        notes: "Updates hovered row index while open.",
-    },
-    EventReferenceSpec {
-        event: "SelectionPanelEvent::ActivateRow { source_index, visible_index, item_id }",
-        trigger: "Pointer click or Enter on a row",
-        notes: "Primary row activation — commit or drill-in handler.",
-    },
-    EventReferenceSpec {
-        event: "SelectionPanelEvent::ActiveIndexChanged { visible_index }",
-        trigger: "Arrow keys or Home/End",
-        notes: "Keyboard highlight moves between visible rows.",
-    },
-    EventReferenceSpec {
-        event: "SelectionPanelEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the panel",
-        notes: "Panel focus transitions.",
-    },
-    EventReferenceSpec {
-        event: "SelectionPanelEvent::OpenChanged { open }",
-        trigger: "Parent opens or closes the panel",
-        notes: "Track visibility for layout.",
-    },
-    EventReferenceSpec {
-        event: "(none)",
-        trigger: "Disabled interaction",
-        notes: "Row activation ignored while disabled.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "SelectionPanelControl",
-        surface: "Type",
-        notes: "Entity<SelectionPanelControl<T>> — scrollable selectable item list.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SelectionPanelEvent",
-        surface: "Event",
-        notes: "HoverChanged, ActivateRow, ActiveIndexChanged, FocusChanged, OpenChanged.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.selection_panel_builder(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt builder entry point.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SelectionPanelBuilder::items / scrolling / visible_row_limits",
-        surface: "Builder",
-        notes: "Item source, scroll mode, and viewport row caps.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SelectionPanelBuilder::with_item_template / spawn(cx)",
-        surface: "Builder",
-        notes: "Custom row renderer and entity materialization.",
-    },
-];
 
 pub struct SelectionPanelControlExposition {
     look: Arc<ShadcnLook>,
@@ -125,7 +63,7 @@ impl Render for SelectionPanelExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

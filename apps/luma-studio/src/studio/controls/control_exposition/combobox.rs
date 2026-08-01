@@ -11,77 +11,8 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::input_theme_inspectors::ComboBoxThemeInspector;
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ComboBoxEvent::Change { query }",
-        trigger: "User edits the text field",
-        notes: "Filters popup items; strict mode rejects partial matches on commit.",
-    },
-    EventReferenceSpec {
-        event: "ComboBoxEvent::Select { item_id, label }",
-        trigger: "User picks an item from the popup",
-        notes: "Commits selection and updates field text.",
-    },
-    EventReferenceSpec {
-        event: "ComboBoxEvent::Complete { item_id, label }",
-        trigger: "Keyboard complete on highlighted item",
-        notes: "Same commit semantics as Select via keyboard.",
-    },
-    EventReferenceSpec {
-        event: "ComboBoxEvent::Clear",
-        trigger: "Clear affordance",
-        notes: "Resets query and selection.",
-    },
-    EventReferenceSpec {
-        event: "ComboBoxEvent::OpenChanged { open }",
-        trigger: "Down arrow or typing opens popup",
-        notes: "Track overlay visibility.",
-    },
-    EventReferenceSpec {
-        event: "ComboBoxEvent::Dismiss",
-        trigger: "Click-away while open",
-        notes: "Closed without commit.",
-    },
-    EventReferenceSpec {
-        event: "ComboBoxEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the field",
-        notes: "Field focus transitions.",
-    },
-    EventReferenceSpec { event: "(none)", trigger: "Disabled interaction", notes: "Ignored while disabled." },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ComboBox",
-        surface: "Type",
-        notes: "Entity<ComboBoxControl> — editable field with anchored item popup.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ComboBoxEvent",
-        surface: "Event",
-        notes: "Change, Select, Complete, Clear, OpenChanged, Dismiss, FocusChanged.",
-    },
-    PublicInterfaceSpec { symbol: "look.combobox(id, items)", surface: "Look", notes: "ShadcnLookControlExt factory." },
-    PublicInterfaceSpec {
-        symbol: "ComboBoxBuilder::typing_policy / show_down_arrow",
-        surface: "Builder",
-        notes: "Strict vs permissive typing and chrome affordances.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ComboBoxBuilder::items_template / panel_template",
-        surface: "Builder",
-        notes: "Second-tier list and popup shell customization.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ComboBoxBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materialize entity; subscribe for ComboBoxEvent.",
-    },
-];
 
 pub struct ComboBoxControlExposition {
     look: Arc<ShadcnLook>,
@@ -149,7 +80,7 @@ impl Render for ComboBoxExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

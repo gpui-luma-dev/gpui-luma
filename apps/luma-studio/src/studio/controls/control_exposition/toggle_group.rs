@@ -15,8 +15,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const STYLE_VARIANTS: [(&str, ShadcnButtonStyle); 4] = [
@@ -27,48 +26,6 @@ const STYLE_VARIANTS: [(&str, ShadcnButtonStyle); 4] = [
 ];
 
 const PLACEMENT: [(&str, &str); 4] = [("top", "Top"), ("bottom", "Bottom"), ("left", "Left"), ("right", "Right")];
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "IconGroupEvent::Change { changed_id, selected, selected_ids }",
-        trigger: "Pointer or keyboard toggle on an item",
-        notes: "Single- or multi-select depending on builder configuration.",
-    },
-    EventReferenceSpec {
-        event: "IconGroupEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the group",
-        notes: "Useful for form-level focus coordination.",
-    },
-    EventReferenceSpec { event: "(none)", trigger: "Disabled interaction", notes: "Ignored while disabled." },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "IconGroup<T>",
-        surface: "Type",
-        notes: "Entity<IconGroupControl<T>> — control_group-backed toggle button cluster.",
-    },
-    PublicInterfaceSpec {
-        symbol: "IconGroupEvent",
-        surface: "Event",
-        notes: "Change, FocusChanged, ItemFocused, and control_group lifecycle events.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.button_group(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt factory for icon toggle groups.",
-    },
-    PublicInterfaceSpec {
-        symbol: "toggle_button_item_template / with_item_layout",
-        surface: "Builder",
-        notes: "Toggle chrome and custom item arrangement (e.g. pill shell).",
-    },
-    PublicInterfaceSpec {
-        symbol: "ControlGroupBuilder::selected / multiple / spawn(cx)",
-        surface: "Builder",
-        notes: "Single or multi selection policy and entity materialization.",
-    },
-];
 
 #[derive(Clone)]
 enum DemoSelection {
@@ -207,7 +164,7 @@ impl Render for ToggleGroupControlExposition {
                 &self.look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                None,
                 ControlExpositionLayout::BORDERLESS,
             )
         })

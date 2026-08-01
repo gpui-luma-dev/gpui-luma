@@ -10,69 +10,10 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::slider_inspector_adapter::{SliderInspectorAdapter, SLIDER_INSPECTOR_SPEC};
 use super::standalone_theme_inspectors::SliderThemeInspector;
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "SliderEvent::Change { thumb_id, value }",
-        trigger: "Pointer drag or keyboard nudge while dragging",
-        notes: "Emitted continuously while the thumb moves.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::Release { thumb_id, value }",
-        trigger: "Pointer up or keyboard commit after drag",
-        notes: "Prefer for committing model state.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::DragStart { thumb_id }",
-        trigger: "Pointer down on thumb or track activation",
-        notes: "Begin drag transaction.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::DragEnd { thumb_id, value }",
-        trigger: "Pointer up after drag",
-        notes: "Pairs with DragStart.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::ThumbSelected { thumb_id }",
-        trigger: "Multi-stop thumb selection",
-        notes: "Active thumb changed in multi-thumb mode.",
-    },
-    EventReferenceSpec { event: "(none)", trigger: "Disabled interaction", notes: "Ignored while disabled." },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "Slider",
-        surface: "Type",
-        notes: "Entity<SliderControl> — unified linear and angular slider engine.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SliderEvent",
-        surface: "Event",
-        notes: "Change, Release, DragStart, DragEnd, ThumbSelected, FocusChanged, multi-thumb lifecycle.",
-    },
-    PublicInterfaceSpec { symbol: "look.slider(id)", surface: "Look", notes: "ShadcnLookControlExt factory." },
-    PublicInterfaceSpec {
-        symbol: "SliderBuilder::vertical / reversed / angular / multi_stop",
-        surface: "Builder",
-        notes: "Orientation, direction, dial strategies, and thumb policy.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SliderBuilder::allowed_intervals / wrapping / corner_radius",
-        surface: "Builder",
-        notes: "Blocked ranges, circular wrap, and track chrome overrides.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SliderBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materialize entity; subscribe for SliderEvent.",
-    },
-];
 
 pub struct SliderControlExposition {
     look: Arc<ShadcnLook>,
@@ -260,7 +201,7 @@ impl Render for SliderExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

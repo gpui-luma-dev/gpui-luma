@@ -11,40 +11,8 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ButtonEvent::Click",
-        trigger: "Pointer click or keyboard activate",
-        notes: "Subscribe to update labels, presenters, or typed data.",
-    },
-    EventReferenceSpec {
-        event: "ButtonEvent::HoverChanged { hovered }",
-        trigger: "Pointer enters or leaves",
-        notes: "Custom content closures receive hover in ButtonRenderModel.state.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "Button / ButtonBuilder",
-        surface: "Type",
-        notes: "Unified command button with template, content, and typed data hooks.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ButtonTemplate + with_modifier",
-        surface: "Template",
-        notes: "DefaultButtonTemplate layered modifiers for custom chrome.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ButtonBuilder::typed / content / template",
-        surface: "Builder",
-        notes: "Reactive presenters driven by ButtonRenderModel and typed data.",
-    },
-];
 
 #[derive(Clone, Default)]
 struct CounterState {
@@ -317,7 +285,7 @@ impl Render for CustomButtonControlExposition {
                 look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                None,
                 ControlExpositionLayout::BORDERLESS,
             )
         })

@@ -13,28 +13,9 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::badge_inspector_adapter::{BadgeInspectorAdapter, BADGE_INSPECTOR_SPEC};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::standalone_theme_inspectors::BadgeThemeInspector;
 use super::template::render_control_exposition_card;
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "look.badge(label)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt factory returning a Badge builder.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Badge::variant / size / start_icon / end_icon",
-        surface: "Builder",
-        notes: "Default, Secondary, Outline, Ghost variants; Sm/Md/Lg sizing; optional Lucide icons.",
-    },
-    PublicInterfaceSpec {
-        symbol: "Badge (element)",
-        surface: "Type",
-        notes: "Inline status chip — render at compose time; no GPUI entity or events.",
-    },
-];
 
 pub struct BadgeControlExposition {
     look: Arc<ShadcnLook>,
@@ -129,7 +110,7 @@ impl Render for BadgeExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, &[], PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

@@ -22,48 +22,11 @@ use super::color_exposition_common::{
     format_slider_event, render_demo_section, render_labeled_demo_card_with_padding,
 };
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const PICKER_HORIZONTAL_PADDING: f32 = 25.0;
 const PICKER_VERTICAL_PADDING: f32 = 18.0;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ColorFieldEvent::Change / Release(Hsv)",
-        trigger: "Drag inside the saturation/value field",
-        notes: "Updates hue, saturation, and value on the shared HSV model.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::Change / Release { value }",
-        trigger: "Drag hue or alpha sliders",
-        notes: "Hue and alpha sliders stay linked through ColorCompositionSync.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ColorFieldState + ColorSliderBuilder",
-        surface: "Composition",
-        notes: "Gallery Photoshop picker — SV field with hue and alpha sliders.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorCompositionSync",
-        surface: "Sync",
-        notes: "Prevents feedback loops while syncing linked field and slider values.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CompositionSize",
-        surface: "Layout",
-        notes: "Sm, Md, and Lg resolve control width and swatch height scaling.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorSwatch",
-        surface: "Readout",
-        notes: "Checkerboard-backed preview swatch below the controls.",
-    },
-];
 
 pub struct ColorPickerControlExposition {
     look: Arc<ShadcnLook>,
@@ -172,7 +135,7 @@ impl Render for ColorPickerControlExposition {
                 look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                None,
                 ControlExpositionLayout::BORDERLESS_NO_HEADING,
             )
         })

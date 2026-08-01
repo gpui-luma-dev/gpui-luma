@@ -16,40 +16,8 @@ use super::color_exposition_common::{
     render_demo_section, render_labeled_demo_card,
 };
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "SliderEvent::Change / Release { value }",
-        trigger: "Drag the outer hue ring",
-        notes: "Updates hue on the shared HSV model.",
-    },
-    EventReferenceSpec {
-        event: "ColorFieldEvent::Change / Release(Hsv)",
-        trigger: "Drag inside the SV triangle",
-        notes: "Updates saturation and value via the Photoshop barycentric model.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ColorRingBuilder::hue + TriangleDomain",
-        surface: "Composition",
-        notes: "Hue ring with centered Photoshop-style SV triangle field.",
-    },
-    PublicInterfaceSpec {
-        symbol: "PhotoshopSvTriangleModel",
-        surface: "Model",
-        notes: "Custom ColorFieldModel2D mapping barycentric UV to HSV saturation/value.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CompositionSize",
-        surface: "Layout",
-        notes: "Sm, Md, and Lg resolve ring size and inner triangle scaling.",
-    },
-];
 
 pub struct ColorSvTriangleControlExposition {
     look: Arc<ShadcnLook>,
@@ -152,7 +120,7 @@ impl Render for ColorSvTriangleControlExposition {
                 look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                None,
                 ControlExpositionLayout::BORDERLESS_NO_HEADING,
             )
         })

@@ -12,96 +12,9 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
+use super::model::{ControlExpositionLayout};
 use super::radio_button_theme_inspector::RadioButtonThemeInspector;
-use super::public_interface::render_exposition_doc_sections;
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "RadioButtonEvent::Change { selected }",
-        trigger: "Pointer click or keyboard activate",
-        notes: "Toggles selection on each activation. In a mutually exclusive set, deselect siblings in the parent when selected becomes true.",
-    },
-    EventReferenceSpec {
-        event: "RadioButtonEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the control",
-        notes: "Useful for form-level focus rings or screen-reader coordination.",
-    },
-    EventReferenceSpec {
-        event: "RadioButtonEvent::HoverChanged { hovered }",
-        trigger: "Pointer enters or leaves the enabled control",
-        notes: "Emitted only when hover state actually changes.",
-    },
-    EventReferenceSpec {
-        event: "RadioButtonEvent::EnabledChanged { enabled }",
-        trigger: "RadioButton::set_enabled changes enabled state",
-        notes: "Programmatic transition; disabling may also emit FocusChanged and HoverChanged false.",
-    },
-    EventReferenceSpec {
-        event: "(none)",
-        trigger: "Disabled interaction",
-        notes: "Pointer and keyboard activation are ignored while disabled.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "RadioButton",
-        surface: "Type",
-        notes: "Entity<RadioButtonControl> — boolean selection with radio chrome.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioButtonEvent",
-        surface: "Event",
-        notes: "Non-exhaustive enum: Change, FocusChanged, HoverChanged, EnabledChanged.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioButton::new(id)",
-        surface: "Factory",
-        notes: "Starts a RadioButtonBuilder with the default radio template.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioButtonBuilder::with_data(selected)",
-        surface: "Builder",
-        notes: "Initial selected state before spawn.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioButtonBuilder::content(...)",
-        surface: "Builder",
-        notes: "HasPresenter helper — label slot beside the indicator.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioButtonBuilder::size / role / enabled",
-        surface: "Builder",
-        notes: "ButtonSize, ButtonFamilyRole, and initial interaction state.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioButtonBuilder::compact / without_elevation",
-        surface: "Builder",
-        notes: "Density and chrome toggles for embedded layouts.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioButtonBuilder::template / spawn(cx)",
-        surface: "Builder",
-        notes: "Custom template hook and entity materialization.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioButton::set_data / data",
-        surface: "Entity",
-        notes: "Read or programmatically update selected state; click toggles selection.",
-    },
-    PublicInterfaceSpec {
-        symbol: "RadioButton::set_enabled / set_presenter / set_template",
-        surface: "Entity",
-        notes: "Lifecycle and presentation updates after spawn.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.primary_radio(id) / secondary_radio(id) / content_only_radio(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt style factories for emphasis tiers and indicator-only chrome.",
-    },
-];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum RadioButtonVariant {
@@ -185,7 +98,7 @@ impl Render for RadioButtonExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

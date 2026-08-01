@@ -17,40 +17,8 @@ use super::color_exposition_common::{
     format_color_field_event, format_slider_event, render_demo_section, render_labeled_demo_card,
 };
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ColorFieldEvent::Change / Release(Hsv)",
-        trigger: "Drag inside the hue wheel",
-        notes: "Updates hue and saturation on the shared HSL model.",
-    },
-    EventReferenceSpec {
-        event: "SliderEvent::Change / Release { value }",
-        trigger: "Drag the lightness ring",
-        notes: "Updates lightness on the shared HSL model.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "HslWheelModel + ColorRingBuilder::lightness",
-        surface: "Composition",
-        notes: "HSL hue/saturation wheel at current lightness, with outer lightness ring and palette readout.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorCombination",
-        surface: "Model",
-        notes: "Monochromatic through hexadic harmony palettes derived from the base color.",
-    },
-    PublicInterfaceSpec {
-        symbol: "CompositionSize",
-        surface: "Layout",
-        notes: "Sm, Md, and Lg resolve ring size, wheel thumb, and canvas padding.",
-    },
-];
 
 pub struct ColorHarmoniesControlExposition {
     look: Arc<ShadcnLook>,
@@ -153,7 +121,7 @@ impl Render for ColorHarmoniesControlExposition {
                 look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                None,
                 ControlExpositionLayout::BORDERLESS_NO_HEADING,
             )
         })

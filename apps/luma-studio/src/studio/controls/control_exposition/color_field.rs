@@ -19,59 +19,12 @@ use super::color_exposition_common::{
 use super::event_stream::ControlEventStream;
 use super::inspector::color_chrome::COLOR_FIELD_CHROME_PROFILES;
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 use super::color_chrome_inspector::ColorChromeInspector;
 
 const FIELD_SIZE: f32 = 220.0;
 const CARD_WIDTH: f32 = 320.0;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ColorFieldEvent::Change(Hsv)",
-        trigger: "Pointer drag inside the field domain",
-        notes: "Emitted continuously while the thumb moves.",
-    },
-    EventReferenceSpec {
-        event: "ColorFieldEvent::Release(Hsv)",
-        trigger: "Pointer up after drag",
-        notes: "Prefer for committing model state.",
-    },
-    EventReferenceSpec {
-        event: "ColorFieldEvent::DragStart { hsv }",
-        trigger: "Pointer down inside the field",
-        notes: "Useful for deferring expensive preview work.",
-    },
-    EventReferenceSpec {
-        event: "ColorFieldEvent::DragEnd { hsv }",
-        trigger: "Pointer up after drag",
-        notes: "Pairs with DragStart for scoped drag transactions.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ColorFieldState",
-        surface: "Type",
-        notes: "Entity hosting 2D color selection surfaces with vector or raster renderers.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorFieldState::saturation_value_rect",
-        surface: "Factory",
-        notes: "Primary rectangular HSV saturation/value plane.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ColorFieldState::hue_value / hue_saturation_wheel / saturation_value_triangle",
-        surface: "Factory",
-        notes: "Alternate field domains from the gallery inventory.",
-    },
-    PublicInterfaceSpec {
-        symbol: ".vector() / .raster_image_prewarmed_square(size)",
-        surface: "Builder",
-        notes: "Renderer selection and raster prewarm for large fields.",
-    },
-];
 
 pub struct ColorFieldControlExposition {
     look: Arc<ShadcnLook>,
@@ -220,7 +173,7 @@ impl Render for ColorFieldExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

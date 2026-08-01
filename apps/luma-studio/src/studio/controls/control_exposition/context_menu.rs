@@ -12,81 +12,9 @@ use super::context_menu_inspector_adapter::{ContextMenuInspectorAdapter, CONTEXT
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::standalone_theme_inspectors::ContextMenuThemeInspector;
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ContextMenuEvent::Select { item_id, label }",
-        trigger: "User activates a menu item",
-        notes: "Emitted when a leaf item is chosen; submenus navigate without Select.",
-    },
-    EventReferenceSpec {
-        event: "ContextMenuEvent::OpenChanged { open }",
-        trigger: "Aux-click opens or dismiss closes the menu",
-        notes: "Track overlay visibility for focus restoration.",
-    },
-    EventReferenceSpec {
-        event: "ContextMenuEvent::Dismiss",
-        trigger: "Click-away or Escape while open",
-        notes: "Menu closed without a selection.",
-    },
-    EventReferenceSpec {
-        event: "ContextMenuEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the target",
-        notes: "Useful for target chrome while the menu is closed.",
-    },
-    EventReferenceSpec {
-        event: "ContextMenuEvent::HoverChanged { hovered }",
-        trigger: "Pointer enters or leaves the enabled target",
-        notes: "Target hover only; item hover is template-internal.",
-    },
-    EventReferenceSpec {
-        event: "ContextMenuEvent::EnabledChanged { enabled }",
-        trigger: "ContextMenu::set_enabled",
-        notes: "Disabling closes an open menu and ignores aux-click.",
-    },
-    EventReferenceSpec {
-        event: "(none)",
-        trigger: "Disabled interaction",
-        notes: "Aux-click and keyboard open are ignored while disabled.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "ContextMenu",
-        surface: "Type",
-        notes: "Entity<ContextMenu> — right-click target with anchored floating menu.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ContextMenuEvent",
-        surface: "Event",
-        notes: "Non-exhaustive enum: Select, OpenChanged, Dismiss, FocusChanged, HoverChanged, EnabledChanged.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ContextMenu::new(id)",
-        surface: "Factory",
-        notes: "Starts a ContextMenuBuilder with default template.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ContextMenuBuilder::label / items",
-        surface: "Builder",
-        notes: "Target label and MenuItem tree (supports submenus).",
-    },
-    PublicInterfaceSpec {
-        symbol: "ContextMenuBuilder::template / spawn(cx)",
-        surface: "Builder",
-        notes: "Custom ContextMenuTemplate hook and entity materialization.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.context_menu(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt factory with themed context-menu template.",
-    },
-];
 
 pub struct ContextMenuControlExposition {
     look: Arc<ShadcnLook>,
@@ -135,7 +63,7 @@ impl Render for ContextMenuExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

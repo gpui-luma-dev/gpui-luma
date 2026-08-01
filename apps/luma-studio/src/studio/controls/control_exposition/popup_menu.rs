@@ -11,78 +11,10 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
+use super::model::{ControlExpositionLayout};
 use super::popup_menu_inspector_adapter::{PopupMenuInspectorAdapter, POPUP_MENU_INSPECTOR_SPEC};
-use super::public_interface::render_exposition_doc_sections;
 use super::standalone_theme_inspectors::PopupMenuThemeInspector;
 use super::template::render_control_exposition_card;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "PopupMenuEvent::Select { item_id, label }",
-        trigger: "User activates a menu item",
-        notes: "Leaf selection; nested submenus open without Select.",
-    },
-    EventReferenceSpec {
-        event: "PopupMenuEvent::OpenChanged { open }",
-        trigger: "Trigger click opens or dismiss closes",
-        notes: "Track popup visibility for layout and focus.",
-    },
-    EventReferenceSpec {
-        event: "PopupMenuEvent::Dismiss",
-        trigger: "Click-away or Escape while open",
-        notes: "Closed without a selection.",
-    },
-    EventReferenceSpec {
-        event: "PopupMenuEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the trigger",
-        notes: "Trigger focus while the menu is closed.",
-    },
-    EventReferenceSpec {
-        event: "PopupMenuEvent::HoverChanged { hovered }",
-        trigger: "Pointer enters or leaves the enabled trigger",
-        notes: "Trigger hover only.",
-    },
-    EventReferenceSpec {
-        event: "PopupMenuEvent::EnabledChanged { enabled }",
-        trigger: "PopupMenu::set_enabled",
-        notes: "Disabling closes an open menu.",
-    },
-    EventReferenceSpec {
-        event: "(none)",
-        trigger: "Disabled interaction",
-        notes: "Trigger clicks ignored while disabled.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "PopupMenu",
-        surface: "Type",
-        notes: "Entity<PopupMenu> — labeled trigger with anchored popup menu.",
-    },
-    PublicInterfaceSpec {
-        symbol: "PopupMenuEvent",
-        surface: "Event",
-        notes: "Non-exhaustive enum: Select, OpenChanged, Dismiss, FocusChanged, HoverChanged, EnabledChanged.",
-    },
-    PublicInterfaceSpec { symbol: "PopupMenu::new(id)", surface: "Factory", notes: "Starts a PopupMenuBuilder." },
-    PublicInterfaceSpec {
-        symbol: "PopupMenuBuilder::label / items / placement",
-        surface: "Builder",
-        notes: "Trigger label, MenuItem tree, and PopupMenuPlacement anchor strategy.",
-    },
-    PublicInterfaceSpec {
-        symbol: "PopupMenuBuilder::ghost / spawn(cx)",
-        surface: "Builder",
-        notes: "Ghost trigger style and entity materialization.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.popup_menu(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt factory with themed popup-menu template.",
-    },
-];
 
 pub struct PopupMenuControlExposition {
     look: Arc<ShadcnLook>,
@@ -142,7 +74,7 @@ impl Render for PopupMenuExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

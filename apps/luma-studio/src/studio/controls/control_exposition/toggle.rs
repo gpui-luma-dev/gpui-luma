@@ -13,57 +13,9 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 use super::toggle_theme_inspector::ToggleThemeInspector;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ToggleEvent::Change { selected }",
-        trigger: "Pointer click or keyboard activate",
-        notes: "Emitted when the user toggles selection state.",
-    },
-    EventReferenceSpec {
-        event: "ToggleEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the control",
-        notes: "Useful for form-level focus coordination.",
-    },
-    EventReferenceSpec {
-        event: "ToggleEvent::HoverChanged { hovered }",
-        trigger: "Pointer enters or leaves the enabled control",
-        notes: "Emitted only when hover state actually changes.",
-    },
-    EventReferenceSpec { event: "(none)", trigger: "Disabled interaction", notes: "Ignored while disabled." },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "Toggle",
-        surface: "Type",
-        notes: "Entity<ToggleControl> — boolean selection using button-family toggle chrome.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ToggleEvent",
-        surface: "Event",
-        notes: "Non-exhaustive enum: Change, FocusChanged, HoverChanged, EnabledChanged.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.primary_toggle(id) / secondary_toggle(id)",
-        surface: "Look",
-        notes: "ShadcnLookControlExt style factories.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ToggleBuilder::with_data / content / round",
-        surface: "Builder",
-        notes: "Initial state, label slot, and circular icon layout.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ToggleBuilder::spawn(cx)",
-        surface: "Builder",
-        notes: "Materialize entity; subscribe for ToggleEvent.",
-    },
-];
 
 pub struct ToggleControlExposition {
     look: Arc<ShadcnLook>,
@@ -174,7 +126,7 @@ impl Render for ToggleExpositionLeftPane {
                     &self.look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(&self.look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

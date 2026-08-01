@@ -18,57 +18,10 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::inspector_split::InspectorSplitShell;
 use super::list_view_demo::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
 use super::list_view_inspector_adapter::{ListViewInspectorAdapter, LIST_VIEW_INSPECTOR_SPEC};
-use super::model::{ControlExpositionLayout, EventReferenceSpec, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const DEFAULT_PAGE_SIZE: usize = 10;
-
-const EVENT_SPECS: &[EventReferenceSpec] = &[
-    EventReferenceSpec {
-        event: "ListViewEvent::SelectionChanged { selected_indices }",
-        trigger: "Enter or Space on active row, or pointer click",
-        notes: "Indices refer to the full item vector across all pages.",
-    },
-    EventReferenceSpec {
-        event: "ListViewEvent::PageChanged { page }",
-        trigger: "Pager prev/next or page jump",
-        notes: "List view and embedded pager stay in sync.",
-    },
-    EventReferenceSpec {
-        event: "ListViewEvent::ActiveIndexChanged { active_index }",
-        trigger: "Arrow keys move roving focus",
-        notes: "Active row may differ from selection in some modes.",
-    },
-    EventReferenceSpec {
-        event: "ListViewEvent::FocusChanged { focused }",
-        trigger: "Focus enters or leaves the list",
-        notes: "Useful for form-level focus coordination.",
-    },
-];
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "PagingListView<T>",
-        surface: "Type",
-        notes: "Entity<PagingListViewControl<T>> — grid with embedded pager toolbar.",
-    },
-    PublicInterfaceSpec {
-        symbol: "paging_list_view!",
-        surface: "Macro",
-        notes: "Builder macro wiring page_size, pager factory, and grid columns.",
-    },
-    PublicInterfaceSpec {
-        symbol: "look.pager(id).style(PagerStyle::MinimalEdge)",
-        surface: "Look",
-        notes: "Pager chrome paired with list view page commands.",
-    },
-    PublicInterfaceSpec {
-        symbol: "ListViewBuilder::page_size",
-        surface: "Builder",
-        notes: "Rows per page; pager derives page count from item length.",
-    },
-];
 
 pub struct PagingListViewControlExposition {
     look: Arc<ShadcnLook>,
@@ -153,7 +106,7 @@ impl Render for PagingListViewExpositionLeftPane {
                     look,
                     self.entry,
                     preview.into_any_element(),
-                    Some(render_exposition_doc_sections(look, EVENT_SPECS, PUBLIC_INTERFACE_SPECS)),
+                    None,
                     ControlExpositionLayout::BORDERLESS,
                 ))
         })

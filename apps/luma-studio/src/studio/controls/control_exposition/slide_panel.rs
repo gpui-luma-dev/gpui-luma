@@ -19,8 +19,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout, PublicInterfaceSpec};
-use super::public_interface::render_exposition_doc_sections;
+use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const SIDE_PANEL_DEFAULT_WIDTH: f32 = 360.0;
@@ -66,24 +65,6 @@ const LABEL_LINE_HEIGHT: f32 = 16.0;
 const NOTE_LINE_HEIGHT: f32 = 18.0;
 
 const PROGRESS_PERCENT_SCALE: f32 = 100.0;
-
-const PUBLIC_INTERFACE_SPECS: &[PublicInterfaceSpec] = &[
-    PublicInterfaceSpec {
-        symbol: "SlidePanelState",
-        surface: "Type",
-        notes: "Open/close animation, focus restore, backdrop policy, and resize session state.",
-    },
-    PublicInterfaceSpec {
-        symbol: "render_slide_panel_overlay",
-        surface: "Template",
-        notes: "Deferred window overlay with edge-anchored panel shell and resize handle.",
-    },
-    PublicInterfaceSpec {
-        symbol: "SlidePanelEdge",
-        surface: "Model",
-        notes: "Left, Right, Top, Bottom — each with distinct default size constraints.",
-    },
-];
 
 pub struct SlidePanelControlExposition {
     look: Arc<ShadcnLook>,
@@ -140,7 +121,7 @@ impl Render for SlidePanelControlExposition {
                 look,
                 self.entry,
                 preview.into_any_element(),
-                Some(render_exposition_doc_sections(look, &[], PUBLIC_INTERFACE_SPECS)),
+                None,
                 ControlExpositionLayout::BORDERLESS,
             )
         })
