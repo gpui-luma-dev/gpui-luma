@@ -7,7 +7,6 @@ pub mod choice_indicator_layout;
 pub mod command;
 pub mod button_family;
 pub mod button_group;
-pub(crate) mod button_family_template;
 pub mod checkbox;
 pub mod color;
 pub mod control_group;

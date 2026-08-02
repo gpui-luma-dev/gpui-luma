@@ -2,159 +2,138 @@
 
 ## Status
 
-This document reflects the **current direction and partial implementation** of the adorner system.
+**Focus-ring migration complete.** The shared focus-ring adorner infrastructure is now
+the only focus-decoration contract exposed by the in-scope SDK look types. Additional
+adorner kinds are follow-up work.
 
-Implemented so far:
+Implemented today:
 
-- Button family templates use a **host + visual control** structure.
-- Focus decoration for button family is now resolved as **theme-driven adorner specs**.
-- Adorner rendering primitives live under `theme/adorner.rs`.
-- Button family look now carries `adorners` instead of a single `focus_ring` color.
-
-Still in progress:
-
-- Migration of non-button controls from wrapper/border-mutation patterns.
-- Broader adorner kinds (caret/badge/etc.) beyond focus ring.
-
----
+- `theme/adorner.rs` defines `AdornerSpec::FocusRing` with inset and oversize placement.
+- Command buttons render a relative host, visual control, and decorative adorner child.
+- Checkbox, Radio Button, and Switch themes resolve `Option<AdornerSpec>` and their
+  templates use the shared renderer.
+- ListView and ListBox rows, plus the supporting TreeView and Accordion look contracts,
+  have adorner-capable surfaces.
+- Oversize extent and shadow projection are handled by shared choice/button-family
+  layout helpers where required to prevent clipping and focus-toggle jitter.
 
 ## Problem Summary
 
-Historically, controls rendered focus visuals through mixed strategies:
+Controls historically rendered focus visuals through mixed strategies:
 
-1. Wrapper div that adds structural padding/border
-2. Absolute overlay ad-hoc per control
-3. Direct border mutation on control visuals
+1. Wrapper elements that add padding and a border
+2. Absolute overlays implemented independently by each control
+3. Direct border mutation on the visual control
 
-The wrapper strategy caused the main geometry issue: decoration consumed layout space.
-
----
+These approaches made focus styling inconsistent and could change a control's measured
+footprint or clip an oversize ring.
 
 ## Current Architecture
 
-## 1) Theme decides decoration intent
+### 1. Theme owns decoration intent
 
-Theme resolution returns decoration intent as a list of adorner specs on look types.
+Theme resolution should return typed decoration intent (`Option<AdornerSpec>` while the
+current system supports one adorner per look). Templates should not decide focus-ring
+color, width, distance, or placement.
 
-For button family this is now:
-
-- `ButtonFamilyLook.adorners: Vec<AdornerSpec>`
-
-This allows theme policy to vary by control state/variant/role without template branching on decoration semantics.
-
-## 2) Template owns structure only
-
-Template builds:
-
-- host root (`relative`, event/focus owner)
-- visual control child
-- rendered adorner children
-
-The host layer prevents visual-control clipping from constraining oversize adorners.
-
-## 3) Shared renderer paints specs
-
-`theme/adorner.rs` contains adorner rendering primitives and an adapter that maps `AdornerSpec` to concrete `Div` overlays.
-
-Current spec support:
+The current shared spec is:
 
 - `AdornerSpec::FocusRing(FocusRingAdornerSpec)`
-
-Current placement support:
-
 - `AdornerPlacement::Inset`
 - `AdornerPlacement::Oversize`
 
----
+### 2. Template owns structure and event ownership
 
-## Button Family Policy (current)
+Templates own the host/visual hierarchy and render the adorner as a decorative child.
+The host/control root owns `id`, focus tracking, hit testing, and handlers. Adorners must
+not receive focus or install event handlers.
 
-In `DefaultButtonFamilyTheme::resolve(...)`, focused state produces a focus-ring adorner spec.
+### 3. Geometry policy is explicit
 
-Policy is variant-driven:
+Inset adorners paint inside the host bounds and do not require footprint reservation.
+Oversize adorners paint outside the visual bounds and may be clipped by an ancestor with
+`overflow_hidden`.
 
-- `Ghost` → inset focus ring
-- `Standard` / `Prominent` → oversize focus ring
+Some current templates reserve the maximum oversize extent (including a focused-state
+probe) in a stable slot. This is an intentional footprint reservation used to prevent
+clipping and sibling jitter; it is not a claim that oversize paint is layout-free. The
+required invariant is that toggling focus does not change measured bounds.
 
-Icon-role buttons are still focusable controls and currently receive focus adorners under this policy.
+## Button-Family Policy
 
----
+The current button-family renderer derives a focus-ring spec from the resolved border,
+focus color, and metric tokens:
 
-## Design Rules
+- Borderless buttons use an inset ring.
+- Bordered buttons use an oversize ring.
+- Icon-role buttons remain focusable and receive the same focus treatment.
 
-1. Decoration must not consume layout geometry.
-2. Template code should not hardcode decoration policy values.
-3. Theme is the source of truth for adorner policy.
-4. Adorners are decorative-only (no handlers, no focus ownership).
-5. Control root/host owns `id`, focus tracking, and handlers.
+Theme adapters construct typed adorner specs directly from resolved colors and metrics;
+no production template uses the old wrapper or mutates a focus border.
 
----
+## Completed Closure Work
 
-## Geometry Notes
+### 1. Lock the contract and add regression coverage
 
-Inset focus ring:
+- Keep one typed optional focus-ring spec per look until multiple adorner kinds are needed.
+- Define which controls reserve oversize extent and ensure the reservation is stable with
+  and without focus.
+- Existing geometry/layout tests cover button-family extent, shadow reservation, and
+  slider geometry; SDK and Shadcn test suites pass.
 
-- inset distance is based on `gap` (or generic distance)
-- border width draws inward from that edge
+### 2. Finish wrapper migration
 
-Oversize focus ring:
+- Converted TextField, TextArea, and Search Selector to relative hosts plus shared
+  adorner children.
+- Preserve input IDs, focus behavior, selection/caret rendering, shadows, and modifiers.
+- Removed `render_button_family_focus_ring` after its final production consumer migrated.
 
-- uses negative offsets from host bounds
-- can be clipped by ancestor overflow constraints
+### 3. Finish border-mutation migration
 
-Oversize should only be used where host/ancestor layout allows it.
+Converted these controls to shared adorner rendering:
 
----
+- Popup Menu trigger
+- Context Menu target
+- Selector trigger
+- Navigation Sidebar rows
+- Scrollbar focus target
 
-## Migration Plan
+Each migrated path keeps focus and pointer ownership on the control host.
 
-### Phase 1 (done)
+### 4. Normalize composite and thumb focus
 
-- Theme adorner module introduced.
-- Button family switched to theme-driven `adorners` list.
-- Button template switched to host + rendered adorner children.
+- Converted Slider thumb focus and ControlGroup/ToggleGroup item focus to the shared
+  adorner renderer.
+- Audit Tabs Navigation, Search Selector, and other controls that reuse button-family
+  visuals so they do not reintroduce wrapper or bespoke border logic.
 
-### Phase 2
+### 5. Remove drift and verify
 
-Migrate wrapper-based controls to adorner specs:
-
-- `TextField`
-- `TextArea`
-- `Switch`
-- `Checkbox`
-- `RadioButton`
-
-### Phase 3
-
-Migrate border-mutation controls to adorner specs:
-
-- `PopupMenu`
-- `ContextMenu`
-- `NavigationSidebar`
-- `Scrollbar`
-
-### Phase 4
-
-Normalize existing overlay controls to shared adorner specs:
-
-- `ChoiceGroup` / `ToggleGroup`
-- `Slider` (thumb focus)
-
----
+- Removed obsolete bespoke focus-ring helpers and compatibility color fields. Inspector
+  metadata now points at the typed `adorner` field.
+- Update look usage metadata and inspectors to report the adorner source consistently.
+- Ran `cargo fmt`, workspace `cargo check`, workspace Clippy with `-D warnings`, and
+  SDK/Shadcn tests: 351 SDK tests and 153 Shadcn tests passed.
 
 ## Acceptance Criteria
 
-1. Focus on/off does not change layout bounds.
-2. No sibling jitter in flow/flex/grid containers.
-3. Focus behavior remains accessible (keyboard + hit testing unchanged).
-4. Focus visuals are theme-driven (variant/role/state aware).
-5. No mixed token-source drift in runtime theme resolution paths.
+1. Focus on/off does not change measured bounds for every migrated control.
+2. No sibling jitter occurs in flow, flex, or grid layouts.
+3. Keyboard focus, pointer hit testing, and event behavior remain unchanged.
+4. Focus visuals come from typed, theme-resolved adorner specs.
+5. Migrated templates contain no focus-specific border mutation or wrapper-only focus
+   ring logic.
+6. Runtime theme resolution uses one token source for focus color and metrics.
+7. Ancestor clipping behavior and any intentional oversize footprint reservation are
+   documented and covered by tests or visual verification.
 
----
+The issue is ready to close after visual QA in Gallery/Luma Studio confirms keyboard
+focus, mouse hit testing, disabled states, oversize clipping, and flow/flex/grid sibling
+stability.
 
-## Future Considerations (not part of current change)
+## Out of Scope / Follow-Up
 
-- Add more adorner kinds (leading caret, badge, underline, selection marks).
-- Layer intent metadata (`underlay` vs `overlay`) for deterministic ordering.
-- Add optional control-level ergonomics such as a `not_focusable` mode where appropriate.
-- Expose richer adorner policy in theme TOML schema once cross-control model stabilizes.
+- Caret, badge, underline, validation, and selection-mark adorner kinds.
+- Multi-adorner ordering metadata (`underlay` versus `overlay`).
+- Rich adorner policy in the theme TOML schema.
+- A general `not_focusable` control option.

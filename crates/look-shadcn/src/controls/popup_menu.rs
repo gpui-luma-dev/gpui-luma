@@ -49,7 +49,7 @@ pub fn popup_menu_palette(
         trigger_foreground: button.foreground,
         trigger_border: button.border,
         trigger_shadow,
-        focus_ring: state.focused.then_some(button.focus_ring),
+        adorner: button.adorner,
         trigger_typography: button.typography,
         floating_menu: floating_menu_look(mode, theme_mode, metrics.menu_size),
     }

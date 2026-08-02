@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{App, BoxShadow, Div, Hsla, SharedString, Stateful, Window, div, point, prelude::*, px};
-use gpui_luma::controls::button_family::{ButtonFamilyLook, button_family_effective_border, button_family_focus_adorner};
+use gpui_luma::controls::button_family::{ButtonFamilyLook, button_family_effective_border};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use gpui_luma::theme::{AdornerPlacement, AdornerSpec, InteractionState};
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -142,11 +142,8 @@ impl ButtonTemplate<()> for PrototypeShadowButtonTemplate {
         let shadow_spec = resolve_shadow_spec(base_spec, state);
         let shadow_insets = shadow_spec.map(shadow_projection_insets).unwrap_or_default();
 
-        let metrics = &self.look.mode_tokens().metrics;
-        let adorner = button_family_focus_adorner(model.state.focused, look.border, look.focus_ring, metrics);
-        let focused_adorner = focused_probe_look
-            .as_ref()
-            .and_then(|probe| button_family_focus_adorner(true, probe.border, probe.focus_ring, metrics));
+        let adorner = look.adorner;
+        let focused_adorner = focused_probe_look.as_ref().and_then(|probe| probe.adorner);
         let oversize_extent = adorner_oversize_extent(adorner).max(adorner_oversize_extent(focused_adorner));
         let root_insets = combine_outer_insets(shadow_insets, oversize_extent);
 

@@ -13,6 +13,7 @@ use crate::controls::scroll_container::ScrollContainer;
 use crate::theme::{ControlSize, InteractionState, LumaTextStyle, LumaTypography};
 use crate::controls::floating_menu::{FloatingMenuLook, FloatingMenuTheme, default_floating_menu_theme};
 use crate::controls::navigation_sidebar::{NavigationSidebarTheme, default_navigation_sidebar_theme};
+use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 
 const CONTAINER_GAP: f32 = 8.0;
 const CONTAINER_PADDING: f32 = 8.0;
@@ -594,8 +595,8 @@ fn render_item_row(
         row = row.opacity(DISABLED_ROW_OPACITY);
     }
 
-    if let Some(focus_ring) = look.focus_ring {
-        row = row.border_1().border_color(focus_ring);
+    if let Some(adorner) = render_optional_adorner_with_focus_radius(look.adorner, look.radius) {
+        row = row.child(adorner);
     }
 
     let RowHandlers { hover, mouse_down, mouse_up, mouse_up_out, click, .. } = handlers;
@@ -695,8 +696,8 @@ fn render_collapsed_rail_node(
         row = row.opacity(DISABLED_ROW_OPACITY);
     }
 
-    if let Some(focus_ring) = look.focus_ring {
-        row = row.border_1().border_color(focus_ring);
+    if let Some(adorner) = render_optional_adorner_with_focus_radius(look.adorner, look.radius) {
+        row = row.child(adorner);
     }
 
     let RowHandlers { bounds, hover, mouse_down, mouse_up, mouse_up_out, click } = handlers;
@@ -769,8 +770,8 @@ fn render_collapse_trigger(
         row = row.bg(background);
     }
 
-    if let Some(focus_ring) = look.focus_ring {
-        row = row.border_1().border_color(focus_ring);
+    if let Some(adorner) = render_optional_adorner_with_focus_radius(look.adorner, look.radius) {
+        row = row.child(adorner);
     }
 
     let RowHandlers { hover, mouse_down, mouse_up, mouse_up_out, click, .. } = handlers;

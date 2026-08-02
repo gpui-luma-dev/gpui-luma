@@ -12,6 +12,7 @@
 
 use gpui_luma::controls::slider::{SliderLook, SliderThumbSize};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::adorner::focus_ring_adorner;
 
 use crate::controls::button::{ButtonRadiusPreset, ShadcnButtonStyle};
 use crate::look_context::LookContext;
@@ -158,7 +159,7 @@ pub fn slider_look(
         thumb_background: colors.thumb_background.hsla(),
         thumb_border: colors.thumb_border.hsla(),
         thumb_shadow,
-        focus_ring,
+        adorner: focus_ring_adorner(focus_ring, metrics),
         width,
         height,
         track_height,

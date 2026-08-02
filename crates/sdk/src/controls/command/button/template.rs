@@ -4,8 +4,8 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
 use crate::controls::button_family::{
-    ButtonFamilyLook, ButtonFamilyRole, ButtonFamilyTheme, button_family_effective_border, button_family_focus_adorner,
-    compose_button_family_look, default_button_family_theme,
+    ButtonFamilyLook, ButtonFamilyRole, ButtonFamilyTheme, button_family_effective_border, compose_button_family_look,
+    default_button_family_theme,
 };
 use crate::theme::InteractionState;
 
@@ -279,19 +279,12 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             look.radius
         };
 
-        let metrics = self.theme.metrics();
         let suppress_adorners = model.suppress_adorners.get();
-        let adorner = if suppress_adorners {
-            None
-        } else {
-            button_family_focus_adorner(model.state.focused, look.border, look.focus_ring, &metrics)
-        };
+        let adorner = if suppress_adorners { None } else { look.adorner };
         let focused_adorner = if suppress_adorners {
             None
         } else {
-            focused_probe_look
-                .as_ref()
-                .and_then(|probe| button_family_focus_adorner(true, probe.border, probe.focus_ring, &metrics))
+            focused_probe_look.as_ref().and_then(|probe| probe.adorner)
         };
 
         let shadow_extent = crate::controls::choice_indicator_layout::reserve_shadow_extent(
@@ -347,7 +340,7 @@ mod tests {
             background: Hsla { h: 120.0, s: 1.0, l: 0.5, a: 1.0 },
             foreground: Hsla { h: 0.0, s: 0.0, l: 1.0, a: 1.0 },
             border: Some(Hsla { h: 120.0, s: 1.0, l: 0.3, a: 1.0 }),
-            focus_ring: Hsla { h: 200.0, s: 1.0, l: 0.5, a: 1.0 },
+            adorner: None,
             typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
             font_family: "test".into(),
             radius: 8.0,
@@ -389,7 +382,7 @@ mod tests {
             background: Hsla::default(),
             foreground: Hsla::default(),
             border: Some(Hsla::default()),
-            focus_ring: Hsla::default(),
+            adorner: None,
             typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
             font_family: "test".into(),
         };

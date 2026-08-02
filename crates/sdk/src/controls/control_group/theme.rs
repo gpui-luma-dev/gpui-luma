@@ -6,6 +6,7 @@ use crate::controls::button_family::{
     ButtonFamilyRole, ButtonFamilyTheme, DefaultButtonFamilyTheme, compose_button_family_look,
 };
 use crate::theme::{ControlSize, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
+use crate::theme::adorner::AdornerSpec;
 
 #[derive(Clone, Debug)]
 pub struct ControlGroupItemVisualContext {
@@ -14,7 +15,7 @@ pub struct ControlGroupItemVisualContext {
     pub muted_foreground: Hsla,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
-    pub focus_ring: Hsla,
+    pub adorner: Option<AdornerSpec>,
     pub radius: f32,
     pub height: f32,
 }
@@ -50,15 +51,15 @@ pub trait ControlGroupTheme: Send + Sync {
             muted_foreground: palette.muted_foreground,
             typography: palette.typography,
             font_family: palette.font_family.clone(),
-            focus_ring: palette.focus_ring,
+            adorner: palette.adorner,
             radius: row_radius,
             height: row_height.max(scale.height),
         }
     }
 
-    fn resolve_item_focus_ring(&self, selected: bool, state: InteractionState, size: ControlSize) -> Hsla {
+    fn resolve_item_adorner(&self, selected: bool, state: InteractionState, size: ControlSize) -> Option<AdornerSpec> {
         let scale = StandardBoxScale::compute(size, &self.metrics(), 1.0);
-        self.default_item_palette(selected, state, size, &scale).focus_ring
+        self.default_item_palette(selected, state, size, &scale).adorner
     }
 
     fn default_item_palette(
@@ -77,7 +78,7 @@ pub struct ControlGroupItemPalette {
     pub muted_foreground: Hsla,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
-    pub focus_ring: Hsla,
+    pub adorner: Option<AdornerSpec>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -138,7 +139,7 @@ impl ControlGroupTheme for DefaultControlGroupTheme {
             muted_foreground: self.tokens.palette.app.muted_foreground,
             typography: look.typography,
             font_family: look.font_family.clone(),
-            focus_ring: look.focus_ring,
+            adorner: look.adorner,
         }
     }
 }

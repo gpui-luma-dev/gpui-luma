@@ -7,6 +7,7 @@ use gpui::{
 
 use super::{ScrollbarDrag, ScrollbarOrientation, ScrollbarRenderModel};
 use crate::controls::scrollbar::{ScrollbarTheme, default_scrollbar_theme};
+use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 
 pub type ScrollbarBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type ScrollbarHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -245,9 +246,8 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
             root = root.opacity(0.56);
         }
 
-        if let Some(focus_ring) = look.focus_ring {
-            root =
-                root.child(div().absolute().size_full().border_1().border_color(focus_ring).rounded(px(look.radius)));
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(look.adorner, look.radius) {
+            root = root.child(adorner);
         }
 
         self.apply_modifiers(root, model)

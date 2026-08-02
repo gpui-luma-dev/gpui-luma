@@ -23,7 +23,7 @@ pub struct ButtonFamilyPalette {
     pub foreground: Hsla,
     /// Explicit border color from the theme. `None` means borderless.
     pub border: Option<Hsla>,
-    pub focus_ring: Hsla,
+    pub adorner: Option<AdornerSpec>,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
 }
@@ -34,7 +34,7 @@ pub struct ButtonFamilyLook {
     pub foreground: Hsla,
     /// Explicit border color from the theme. `None` means borderless.
     pub border: Option<Hsla>,
-    pub focus_ring: Hsla,
+    pub adorner: Option<AdornerSpec>,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
     pub radius: f32,
@@ -115,11 +115,13 @@ fn native_button_palette(tokens: &ThemeTokens, role: ButtonFamilyRole, state: In
         InteractionLayer::Default => base_background,
     };
 
+    let adorner = button_family_focus_adorner(state.focused, Some(border), palette.focus.ring, &tokens.metrics);
+
     ButtonFamilyPalette {
         background,
         foreground,
         border: Some(border),
-        focus_ring: palette.focus.ring,
+        adorner,
         typography: typography.text.label,
         font_family: typography.font.sans.family.clone().into(),
     }
@@ -139,7 +141,7 @@ pub fn button_family_effective_border(border: Option<Hsla>) -> Hsla {
 pub fn button_family_focus_adorner(
     focused: bool,
     border: Option<Hsla>,
-    focus_ring: Hsla,
+    focus_color: Hsla,
     metrics: &MetricTokens,
 ) -> Option<AdornerSpec> {
     if !focused {
@@ -155,7 +157,7 @@ pub fn button_family_focus_adorner(
     };
 
     Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
-        color: focus_ring,
+        color: focus_color,
         placement,
         distance,
         width: metrics.focus.width,
@@ -172,7 +174,7 @@ pub fn compose_button_family_look(
         background: palette.background,
         foreground: palette.foreground,
         border: palette.border,
-        focus_ring: palette.focus_ring,
+        adorner: palette.adorner,
         typography: palette.typography,
         font_family: palette.font_family.clone(),
         radius: match role {

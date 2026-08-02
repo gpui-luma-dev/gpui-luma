@@ -12,6 +12,7 @@
 //! **Surface**: filled `muted` background, no border, same text/selection tokens.
 
 use gpui_luma::controls::textfield::{TextFieldLook, TextFieldPalette, TextFieldState, compose_textfield_look};
+use gpui_luma::theme::adorner::focus_ring_adorner;
 use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale, ThemeMode};
 
 use crate::look_context::LookContext;
@@ -169,7 +170,7 @@ pub fn textfield_palette_for_size(
         selection_background: colors.selection_background.hsla(),
         selection_foreground: colors.selection_foreground.hsla(),
         caret: colors.caret.hsla(),
-        focus_ring,
+        adorner: focus_ring_adorner(focus_ring, &mode.metrics),
         shadow,
         typography: text_style,
         font_family: typography.font.sans.family.clone().into(),

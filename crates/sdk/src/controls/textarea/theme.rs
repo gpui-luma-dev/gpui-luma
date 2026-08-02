@@ -2,6 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
+use crate::theme::adorner::{AdornerSpec, focus_ring_adorner};
 use crate::theme::{ControlSize, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
 use crate::controls::textarea::TextAreaState;
 use crate::controls::textfield::apply_control_size_typography;
@@ -15,7 +16,7 @@ pub struct TextAreaPalette {
     pub selection_background: Hsla,
     pub selection_foreground: Hsla,
     pub caret: Hsla,
-    pub focus_ring: Option<Hsla>,
+    pub adorner: Option<AdornerSpec>,
     pub shadow: Option<Vec<BoxShadow>>,
     pub typography: LumaTextStyle,
     pub font_family: String,
@@ -30,7 +31,7 @@ pub struct TextAreaLook {
     pub selection_background: Hsla,
     pub selection_foreground: Hsla,
     pub caret: Hsla,
-    pub focus_ring: Option<Hsla>,
+    pub adorner: Option<AdornerSpec>,
     pub shadow: Option<Vec<BoxShadow>>,
     pub typography: LumaTextStyle,
     pub font_family: String,
@@ -118,7 +119,10 @@ impl TextAreaTheme for DefaultTextAreaTheme {
             selection_background,
             selection_foreground,
             caret,
-            focus_ring: (enabled && state.focus_visible).then_some(palette.focus.ring),
+            adorner: focus_ring_adorner(
+                (enabled && state.focus_visible).then_some(palette.focus.ring),
+                &self.tokens.metrics,
+            ),
             shadow: None,
             typography: typography.text.body,
             font_family: typography.font.sans.family.clone(),
@@ -151,7 +155,7 @@ pub fn compose_textarea_look(palette: &TextAreaPalette, scale: &StandardBoxScale
         selection_background: palette.selection_background,
         selection_foreground: palette.selection_foreground,
         caret: palette.caret,
-        focus_ring: palette.focus_ring,
+        adorner: palette.adorner,
         shadow: palette.shadow.clone(),
         typography: palette.typography,
         font_family: palette.font_family.clone(),

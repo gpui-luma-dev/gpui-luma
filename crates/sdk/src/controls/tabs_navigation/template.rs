@@ -2,8 +2,8 @@ use std::cell::Cell;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use gpui::{
-    Anchor, AnyElement, App, Bounds, Div, Hsla, MouseDownEvent, Pixels, Point, SharedString, Size, Stateful, TextRun,
-    Window, anchored, deferred, div, font, hsla, point, px, prelude::*,
+    Anchor, AnyElement, App, Bounds, Div, MouseDownEvent, Pixels, Point, SharedString, Size, Stateful, TextRun, Window,
+    anchored, deferred, div, font, hsla, point, px, prelude::*,
 };
 use lucide_icons::Icon as LucideIcon;
 
@@ -21,6 +21,7 @@ use crate::controls::control_group::{
 use crate::controls::icon::{IconSource, lucide_icon};
 use crate::controls::tabs_navigation::{TabsNavigationItemLook, TabsNavigationTheme, default_tabs_navigation_theme};
 use crate::theme::ControlSize;
+use crate::theme::adorner::AdornerSpec;
 
 const TAB_ACCESSORY_SIZE: f32 = 12.0;
 const TAB_ACCESSORY_GAP: f32 = 4.0;
@@ -74,7 +75,7 @@ struct ResolvedTabsNavigationOverlayPlacement {
 #[derive(Clone, Copy)]
 struct TabsNavigationButtonData {
     look: TabsNavigationItemLook,
-    focus_ring_override: Option<Hsla>,
+    adorner_override: Option<AdornerSpec>,
 }
 
 #[derive(Clone)]
@@ -82,16 +83,16 @@ pub struct TabsNavigationItemButtonStyle {
     pub look: TabsNavigationItemLook,
     pub font_family: SharedString,
     pub size: ControlSize,
-    pub focus_ring_override: Option<Hsla>,
+    pub adorner_override: Option<AdornerSpec>,
 }
 
 impl TabsNavigationItemButtonStyle {
     pub fn new(look: TabsNavigationItemLook, font_family: SharedString, size: ControlSize) -> Self {
-        Self { look, font_family, size, focus_ring_override: None }
+        Self { look, font_family, size, adorner_override: None }
     }
 
-    pub fn focus_ring(mut self, focus_ring: Hsla) -> Self {
-        self.focus_ring_override = Some(focus_ring);
+    pub fn adorner(mut self, adorner: AdornerSpec) -> Self {
+        self.adorner_override = Some(adorner);
         self
     }
 }
@@ -414,7 +415,7 @@ pub fn render_tabs_navigation_item_button_with_style(
             style.look,
             style.font_family,
             style.size,
-            style.focus_ring_override,
+            style.adorner_override,
         ),
         window,
         cx,
@@ -427,7 +428,7 @@ fn tabs_navigation_button_model(
     look: TabsNavigationItemLook,
     font_family: SharedString,
     size: ControlSize,
-    focus_ring_override: Option<Hsla>,
+    adorner_override: Option<AdornerSpec>,
 ) -> ButtonRenderModel<TabsNavigationButtonData> {
     let label = item.label.clone();
     let leading_accessory = item.leading_accessory.cloned();
@@ -435,7 +436,7 @@ fn tabs_navigation_button_model(
 
     ButtonRenderModel {
         id: format!("{}-tab-{}", navigation_id, item.id).into(),
-        data: TabsNavigationButtonData { look, focus_ring_override },
+        data: TabsNavigationButtonData { look, adorner_override },
         content: Arc::new(move |model, _| {
             let mut label_content = div().flex().items_center().gap(px(TAB_ACCESSORY_GAP));
             if let Some(accessory) = &leading_accessory {
@@ -460,21 +461,21 @@ fn tabs_navigation_button_model(
         switch_track_content: None,
         switch_thumb_content: None,
         look: Some(Arc::new(move |model| {
-            tabs_navigation_button_look(model.data.look, model.data.focus_ring_override, font_family.clone())
+            tabs_navigation_button_look(model.data.look, model.data.adorner_override, font_family.clone())
         })),
     }
 }
 
 fn tabs_navigation_button_look(
     look: TabsNavigationItemLook,
-    focus_ring_override: Option<Hsla>,
+    adorner_override: Option<AdornerSpec>,
     font_family: SharedString,
 ) -> ButtonFamilyLook {
     ButtonFamilyLook {
         background: hsla(0.0, 0.0, 0.0, 0.0),
         foreground: look.label_color,
         border: None,
-        focus_ring: focus_ring_override.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0)),
+        adorner: adorner_override,
         typography: look.label_typography,
         font_family,
         radius: look.radius,

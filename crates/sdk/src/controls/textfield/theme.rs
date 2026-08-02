@@ -2,6 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla, SharedString};
 
+use crate::theme::adorner::{AdornerSpec, focus_ring_adorner};
 use crate::theme::{ControlSize, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
 use crate::controls::textfield::TextFieldState;
 
@@ -21,7 +22,7 @@ pub struct TextFieldPalette {
     pub selection_background: Hsla,
     pub selection_foreground: Hsla,
     pub caret: Hsla,
-    pub focus_ring: Option<Hsla>,
+    pub adorner: Option<AdornerSpec>,
     pub shadow: Option<Vec<BoxShadow>>,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
@@ -37,7 +38,7 @@ pub struct TextFieldLook {
     pub selection_background: Hsla,
     pub selection_foreground: Hsla,
     pub caret: Hsla,
-    pub focus_ring: Option<Hsla>,
+    pub adorner: Option<AdornerSpec>,
     pub shadow: Option<Vec<BoxShadow>>,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
@@ -131,7 +132,10 @@ impl TextFieldTheme for DefaultTextFieldTheme {
             selection_background,
             selection_foreground,
             caret,
-            focus_ring: (enabled && state.focus_visible).then_some(palette.focus.ring),
+            adorner: focus_ring_adorner(
+                (enabled && state.focus_visible).then_some(palette.focus.ring),
+                &self.tokens.metrics,
+            ),
             shadow: None,
             typography: typography.text.body,
             font_family: typography.font.sans.family.clone().into(),
@@ -188,7 +192,7 @@ pub fn compose_textfield_look(
         selection_background: palette.selection_background,
         selection_foreground: palette.selection_foreground,
         caret: palette.caret,
-        focus_ring: palette.focus_ring,
+        adorner: palette.adorner,
         shadow: palette.shadow.clone(),
         typography: palette.typography,
         font_family: palette.font_family.clone(),

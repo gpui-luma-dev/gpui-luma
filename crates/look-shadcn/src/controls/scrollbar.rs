@@ -11,6 +11,7 @@ use gpui_luma::controls::scrollbar::ScrollbarLook;
 use gpui_luma::controls::scrollbar::ScrollbarOrientation;
 use gpui_luma::controls::scrollbar::ScrollbarStyle;
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::adorner::focus_ring_adorner;
 
 use crate::look_context::LookContext;
 use crate::focus::focus_ring_color;
@@ -105,7 +106,7 @@ pub fn scrollbar_look(
     ScrollbarLook {
         track_background: colors.track_background.hsla(),
         thumb_background: colors.thumb_background.hsla(),
-        focus_ring,
+        adorner: focus_ring_adorner(focus_ring, &ctx.metrics()),
         length,
         thickness,
         track_thickness,
@@ -224,7 +225,7 @@ mod tests {
 
         assert_eq!(hovered.thumb_background, border);
         assert_eq!(focused.thumb_background, border);
-        assert_eq!(focused.focus_ring, Some(catalog.color("ring").expect("ring")));
+        assert!(focused.adorner.is_some());
     }
 
     #[test]

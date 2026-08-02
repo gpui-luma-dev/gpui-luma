@@ -29,6 +29,28 @@ pub enum AdornerSpec {
     FocusRing(FocusRingAdornerSpec),
 }
 
+/// Builds the standard oversize focus ring used by bordered controls.
+///
+/// The color remains resolved by the control theme; this helper only centralizes the
+/// shared focus-ring geometry and spec construction.
+pub fn focus_ring_adorner(color: Option<Hsla>, metrics: &crate::theme::MetricTokens) -> Option<AdornerSpec> {
+    focus_ring_adorner_with_geometry(
+        color,
+        AdornerPlacement::Oversize,
+        metrics.border_width.default + metrics.focus.width,
+        metrics.focus.width,
+    )
+}
+
+pub(crate) fn focus_ring_adorner_with_geometry(
+    color: Option<Hsla>,
+    placement: AdornerPlacement,
+    distance: f32,
+    width: f32,
+) -> Option<AdornerSpec> {
+    color.map(|color| AdornerSpec::FocusRing(FocusRingAdornerSpec { color, placement, distance, width }))
+}
+
 pub(crate) fn render_adorner(spec: AdornerSpec, radius: f32) -> Option<Div> {
     match spec {
         AdornerSpec::FocusRing(focus_ring) => render_focus_ring_adorner(focus_ring, radius),

@@ -39,7 +39,7 @@ const TEXTFIELD_PARTS: &[ThemePartUsage] = &[
         &["surface focused", "soft focused"],
         &["TextFieldPalette.selection_foreground"],
     ),
-    part("focus ring", "ring", &["surface focused", "soft focused"], &["TextFieldPalette.focus_ring"]),
+    part("focus ring", "ring", &["surface focused", "soft focused"], &["TextFieldPalette.adorner"]),
 ];
 
 const BUTTON_PARTS: &[ThemePartUsage] = &[
@@ -55,7 +55,7 @@ const BUTTON_PARTS: &[ThemePartUsage] = &[
     part("outline border", "border", &["subtle default"], &["ButtonFamilyLook.border"]),
     part("ghost hover", "accent", &["ghost hovered"], &["ButtonFamilyLook.background"]),
     part("disabled", "muted", &["disabled"], &["ButtonFamilyLook.background"]),
-    part("focus ring", "ring", &["focused"], &["ButtonFamilyLook.focus_ring"]),
+    part("focus ring", "ring", &["focused"], &["ButtonFamilyLook.adorner"]),
 ];
 
 const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
@@ -105,7 +105,7 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
             part("track", "border", &["default"], &["SliderLook.track_background"]),
             part("fill", "primary", &["default"], &["SliderLook.fill_background"]),
             part("thumb border", "primary", &["default"], &["SliderLook.thumb_border"]),
-            part("focus ring", "ring", &["focused"], &["SliderLook.focus_ring"]),
+            part("focus ring", "ring", &["focused"], &["SliderLook.adorner"]),
         ],
     },
     &ThemeUsage {

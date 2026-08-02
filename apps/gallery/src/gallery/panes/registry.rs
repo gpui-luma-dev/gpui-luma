@@ -5,6 +5,7 @@ use gpui::{
     Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, entity_presenter};
+use gpui_luma::theme::AdornerSpec;
 use gpui_luma::controls::command::button::{Button, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::navigation_sidebar::NavigationSidebarTheme;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -833,8 +834,8 @@ impl ButtonTemplate<bool> for SidebarDisclosureTemplate {
             root = root.opacity(0.56);
         }
 
-        if let Some(focus_ring) = look.focus_ring {
-            root = root.border_1().border_color(focus_ring);
+        if let Some(AdornerSpec::FocusRing(focus_ring)) = look.adorner {
+            root = root.border_1().border_color(focus_ring.color);
         }
 
         root
@@ -893,8 +894,8 @@ impl ButtonTemplate<bool> for SidebarLeafTemplate {
             row = row.opacity(0.56);
         }
 
-        if let Some(focus_ring) = look.focus_ring {
-            row = row.border_1().border_color(focus_ring);
+        if let Some(AdornerSpec::FocusRing(focus_ring)) = look.adorner {
+            row = row.border_1().border_color(focus_ring.color);
         }
 
         row

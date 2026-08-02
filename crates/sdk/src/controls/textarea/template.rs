@@ -6,9 +6,9 @@ use gpui::{
 };
 
 use super::{TextAreaDrag, TextAreaRenderModel};
-use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
+use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 const TEXTAREA_CARET_WIDTH: f32 = 1.5;
@@ -274,9 +274,14 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
         }
 
         let shadow_extent = reserve_shadow_extent(look.shadow.as_ref(), None, scale_factor, has_elevation);
-        let mut root = render_button_family_focus_ring(model.id.clone(), control, look.focus_ring, look.radius);
-        if shadow_extent > 0.0 {
-            root = div().id(format!("{}-elevation", model.id)).relative().p(px(shadow_extent)).child(root);
+        let adorner = look.adorner;
+        let oversize_extent = adorner_oversize_extent(adorner).max(shadow_extent);
+        let mut root = div().id(model.id.clone()).relative().child(control);
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(adorner, look.radius) {
+            root = root.child(adorner);
+        }
+        if oversize_extent > 0.0 {
+            root = div().id(format!("{}-elevation", model.id)).relative().p(px(oversize_extent)).child(root);
         }
 
         if model.full_width {

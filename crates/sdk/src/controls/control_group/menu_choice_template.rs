@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Hsla, Window, div, prelude::*, px};
+use gpui::{AnyElement, App, Window, div, prelude::*, px};
 
 use super::model::{ControlGroupItemLike, ControlGroupItemRenderModel};
 use super::template::{ControlGroupItemElementTemplate, ControlGroupTemplate, render_control_group_item_elements};
 use super::theme::{ControlGroupItemVisualContext, ControlGroupTheme};
 use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 
 pub type MenuChoiceRowContentFn<T> = Arc<
     dyn for<'a> Fn(
@@ -58,15 +59,9 @@ where
             row_radius,
         );
         if item.state.focus_visible {
-            visual.focus_ring = theme.resolve_item_focus_ring(item.selected, item.state.interaction_state(), size);
+            visual.adorner = theme.resolve_item_adorner(item.selected, item.state.interaction_state(), size);
         }
 
-        let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
-        let border = if item.state.focus_visible {
-            visual.focus_ring
-        } else {
-            transparent
-        };
         let row_content = content(item, &visual, window, cx);
 
         let mut row = div()
@@ -77,8 +72,6 @@ where
             .flex()
             .items_center()
             .rounded(px(visual.radius))
-            .border_1()
-            .border_color(border)
             .bg(visual.background)
             .text_color(visual.foreground)
             .font_family(visual.font_family.clone())
@@ -91,6 +84,10 @@ where
             row = row.opacity(0.56);
         } else {
             row = row.cursor_pointer();
+        }
+
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(visual.adorner, visual.radius) {
+            row = row.child(adorner);
         }
 
         row

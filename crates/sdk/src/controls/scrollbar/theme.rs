@@ -4,13 +4,14 @@ use gpui::{Hsla, hsla};
 
 use crate::controls::scrollbar::{ScrollbarOrientation, ScrollbarStyle};
 
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeTokens};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeTokens};
+use crate::theme::adorner::{AdornerSpec, focus_ring_adorner};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ScrollbarLook {
     pub track_background: Hsla,
     pub thumb_background: Hsla,
-    pub focus_ring: Option<Hsla>,
+    pub adorner: Option<AdornerSpec>,
     pub length: f32,
     pub thickness: f32,
     pub track_thickness: f32,
@@ -27,6 +28,10 @@ pub trait ScrollbarTheme: Send + Sync {
         size: ControlSize,
         style: ScrollbarStyle,
     ) -> ScrollbarLook;
+
+    fn metrics(&self) -> MetricTokens {
+        MetricTokens::default()
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -77,7 +82,7 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
                 hsla(0.0, 0.0, 0.0, 0.0)
             },
             thumb_background,
-            focus_ring: state.focused.then_some(palette.focus.ring),
+            adorner: focus_ring_adorner(state.focused.then_some(palette.focus.ring), &self.tokens.metrics),
             length,
             thickness: scrollbar_thickness(size),
             track_thickness: scrollbar_track_thickness(size),
@@ -85,6 +90,10 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
             min_thumb_length: scrollbar_min_thumb_length(size),
             radius: metrics.radius.pill,
         }
+    }
+
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }
 

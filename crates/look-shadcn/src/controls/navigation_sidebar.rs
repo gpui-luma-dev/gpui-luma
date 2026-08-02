@@ -16,6 +16,7 @@
 use gpui_luma::controls::navigation_sidebar::{
     NavigationSidebarContainerLook, NavigationSidebarItemLook, NavigationSidebarSectionLook,
 };
+use gpui_luma::theme::adorner::focus_ring_adorner;
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
@@ -225,7 +226,7 @@ fn base_item_look(_theme: &ShadcnLook, ctx: &LookContext, size: ControlSize) -> 
         background: None,
         foreground: colors.foreground.hsla(),
         icon_color: colors.icon_color.hsla(),
-        focus_ring,
+        adorner: focus_ring_adorner(focus_ring, metrics),
         typography: typography.text.label,
         radius: metrics.radius(size),
         height: 30.0,

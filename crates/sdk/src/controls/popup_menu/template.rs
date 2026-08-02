@@ -10,6 +10,7 @@ use super::{PopupMenuPlacement, PopupMenuRenderModel};
 use crate::controls::button_family::button_family_effective_border;
 use crate::controls::floating_menu::render_floating_menu;
 use crate::controls::popup_menu::{PopupMenuLook, PopupMenuTheme, PopupMenuTriggerMetrics, default_popup_menu_theme};
+use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 
 pub type PopupMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type PopupMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -149,8 +150,10 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
         };
         let look = self.theme.resolve_look(model.trigger_style, metrics, model.state, scale_factor, _cx);
         let border = button_family_effective_border(look.trigger_border);
+        let focus_adorner = look.adorner;
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
+            .relative()
             .flex()
             .items_center()
             .cursor_pointer()
@@ -205,8 +208,8 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             trigger = trigger.opacity(0.56);
         }
 
-        if let Some(focus_ring) = look.focus_ring {
-            trigger = trigger.border_1().border_color(focus_ring);
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(focus_adorner, look.trigger_radius) {
+            trigger = trigger.child(adorner);
         }
 
         let mut root = div()

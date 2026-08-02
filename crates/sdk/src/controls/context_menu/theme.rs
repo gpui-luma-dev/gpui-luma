@@ -3,14 +3,15 @@ use std::sync::{Arc, OnceLock};
 use gpui::Hsla;
 
 use crate::controls::floating_menu::{FloatingMenuLook, default_floating_menu_look};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use crate::theme::adorner::{AdornerSpec, focus_ring_adorner};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct ContextMenuLook {
     pub target_background: Hsla,
     pub target_foreground: Hsla,
     pub target_border: Hsla,
-    pub focus_ring: Option<Hsla>,
+    pub adorner: Option<AdornerSpec>,
     pub target_typography: LumaTextStyle,
     pub target_radius: f32,
     pub target_padding_x: f32,
@@ -21,6 +22,10 @@ pub struct ContextMenuLook {
 
 pub trait ContextMenuTheme: Send + Sync {
     fn resolve(&self, state: InteractionState) -> ContextMenuLook;
+
+    fn metrics(&self) -> MetricTokens {
+        MetricTokens::default()
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -63,7 +68,7 @@ impl ContextMenuTheme for DefaultContextMenuTheme {
             target_background,
             target_foreground,
             target_border: palette.border.default,
-            focus_ring: state.focused.then_some(palette.focus.ring),
+            adorner: focus_ring_adorner(state.focused.then_some(palette.focus.ring), &self.tokens.metrics),
             target_typography: typography.text.label,
             target_radius: metrics.radius(size),
             target_padding_x: metrics.padding_x(size),
@@ -71,5 +76,9 @@ impl ContextMenuTheme for DefaultContextMenuTheme {
             target_min_width: 200.0,
             floating_menu: default_floating_menu_look(&self.tokens, size),
         }
+    }
+
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }

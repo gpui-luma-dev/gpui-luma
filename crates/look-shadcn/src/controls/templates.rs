@@ -330,6 +330,10 @@ impl ScrollbarTheme for ShadcnScrollbarTheme {
         let tokens = self.theme.mode_tokens();
         scrollbar_look(tokens.as_ref(), state, orientation, size, style)
     }
+
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
+    }
 }
 
 pub fn slider_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::slider::SliderTemplate> {
@@ -414,6 +418,10 @@ impl ContextMenuTheme for ShadcnContextMenuTheme {
     fn resolve(&self, state: InteractionState) -> gpui_luma::controls::context_menu::ContextMenuLook {
         let tokens = self.theme.mode_tokens();
         context_menu_look(tokens.as_ref(), self.theme.mode(), state)
+    }
+
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -975,6 +983,10 @@ impl NavigationSidebarTheme for ShadcnNavigationSidebarTheme {
     ) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarItemLook {
         navigation_sidebar_item_look(&self.theme, selected, state, size)
     }
+
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
+    }
 }
 
 pub fn tree_view_template<T>(theme: Arc<ShadcnLook>) -> Arc<dyn TreeViewTemplate<T>>
@@ -1046,7 +1058,7 @@ impl ControlGroupTheme for ShadcnControlGroupTheme {
             muted_foreground: chrome.muted_text,
             typography: look.typography,
             font_family: look.font_family.clone(),
-            focus_ring: look.focus_ring,
+            adorner: look.adorner,
         }
     }
 }

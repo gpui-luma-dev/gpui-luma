@@ -6,7 +6,6 @@ use gpui::{
 };
 
 use crate::controls::button_family::button_family_effective_border;
-use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::icon::lucide_icon;
 use crate::controls::selector::SelectorLook;
@@ -16,6 +15,7 @@ use super::behavior::SelectionItem;
 use super::item_template::{SearchSelectorItemRenderModel, SearchSelectorItemTemplate};
 use crate::controls::textfield::TextFieldState;
 use crate::theme::{ControlSize, LumaTextStyle};
+use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 
 pub type SearchSelectorKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type SearchSelectorScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -200,13 +200,11 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
 
         let shadow_extent =
             reserve_shadow_extent(trigger_look.trigger_shadow.as_ref(), None, scale_factor, has_elevation);
-        let mut trigger_chrome = render_button_family_focus_ring(
-            format!("{}-trigger-ring", model.id).into(),
-            trigger,
-            trigger_look.focus_ring,
-            trigger_look.trigger_radius,
-        )
-        .w_full();
+        let focus_adorner = trigger_look.adorner;
+        let mut trigger_chrome = div().id(format!("{}-trigger-ring", model.id)).relative().w_full().child(trigger);
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(focus_adorner, trigger_look.trigger_radius) {
+            trigger_chrome = trigger_chrome.child(adorner);
+        }
         if shadow_extent > 0.0 {
             trigger_chrome = div()
                 .id(format!("{}-elevation", model.id))

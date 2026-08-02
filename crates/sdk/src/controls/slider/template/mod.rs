@@ -7,11 +7,12 @@ use std::f32::consts::FRAC_PI_2;
 
 use gpui::{
     App, BorderStyle, Bounds, Corners, Div, DragMoveEvent, Edges, Hsla, IntoElement, MouseButton, MouseDownEvent,
-    MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, SharedString, Stateful, Window, canvas, div, hsla, point,
-    px, size, transparent_black, prelude::*,
+    MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, SharedString, Stateful, Window, canvas, div, point, px,
+    size, transparent_black, prelude::*,
 };
 
 use crate::controls::color::shape::{Arc as ShapeArc, ArcData};
+use crate::theme::adorner::{AdornerPlacement, focus_ring_adorner_with_geometry, render_optional_adorner_with_focus_radius};
 
 use super::model::{SliderRenderModel, SliderThumbValue, ThumbId};
 use super::SliderDrag;
@@ -169,7 +170,7 @@ pub(crate) fn render_slider_thumb_at(
     let thumb_fill = thumb.and_then(|thumb| thumb.preview).unwrap_or(look.thumb_background);
     let offset = look.thumb_size * 0.5 + thumb_focus_offset();
 
-    div()
+    let mut thumb = div()
         .id(id)
         .absolute()
         .left(px(center_x - offset))
@@ -177,9 +178,7 @@ pub(crate) fn render_slider_thumb_at(
         .flex()
         .items_center()
         .justify_center()
-        .p(px(THUMB_FOCUS_GAP))
-        .border(px(THUMB_FOCUS_WIDTH))
-        .border_color(focus_ring_color(look.focus_ring))
+        .p(px(thumb_focus_offset()))
         .rounded(px(thumb_radius + thumb_focus_offset()))
         .child(
             div()
@@ -189,7 +188,23 @@ pub(crate) fn render_slider_thumb_at(
                 .border_color(look.thumb_border)
                 .rounded(px(thumb_radius))
                 .shadow(look.thumb_shadow.clone()),
-        )
+        );
+
+    if let Some(adorner) = render_optional_adorner_with_focus_radius(
+        focus_ring_adorner_with_geometry(
+            look.adorner.map(|spec| match spec {
+                crate::theme::adorner::AdornerSpec::FocusRing(focus) => focus.color,
+            }),
+            AdornerPlacement::Inset,
+            THUMB_FOCUS_GAP,
+            THUMB_FOCUS_WIDTH,
+        ),
+        thumb_radius + thumb_focus_offset(),
+    ) {
+        thumb = thumb.child(adorner);
+    }
+
+    thumb
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -209,7 +224,13 @@ pub(crate) fn render_linear_thumb(
     use gpui::relative;
 
     let thumb_fill = thumb.and_then(|thumb| thumb.preview).unwrap_or(look.thumb_background);
-    let focus_ring = if active { look.focus_ring } else { None };
+    let focus_ring = if active {
+        look.adorner.map(|spec| match spec {
+            crate::theme::adorner::AdornerSpec::FocusRing(focus) => focus.color,
+        })
+    } else {
+        None
+    };
 
     let mut thumb = div()
         .id(id)
@@ -218,9 +239,7 @@ pub(crate) fn render_linear_thumb(
         .flex()
         .items_center()
         .justify_center()
-        .p(px(THUMB_FOCUS_GAP))
-        .border(px(THUMB_FOCUS_WIDTH))
-        .border_color(focus_ring_color(focus_ring))
+        .p(px(thumb_focus_offset()))
         .rounded(px(thumb_radius + thumb_focus_offset()))
         .child(
             div()
@@ -231,6 +250,13 @@ pub(crate) fn render_linear_thumb(
                 .rounded(px(thumb_radius))
                 .shadow(look.thumb_shadow.clone()),
         );
+
+    if let Some(adorner) = render_optional_adorner_with_focus_radius(
+        focus_ring_adorner_with_geometry(focus_ring, AdornerPlacement::Inset, THUMB_FOCUS_GAP, THUMB_FOCUS_WIDTH),
+        thumb_radius + thumb_focus_offset(),
+    ) {
+        thumb = thumb.child(adorner);
+    }
 
     thumb = match model.orientation {
         SliderOrientation::Horizontal => {
@@ -474,10 +500,6 @@ pub(crate) fn polar_point(center: Point<Pixels>, radius: f32, angle: f32) -> Poi
 
 fn thumb_focus_offset() -> f32 {
     THUMB_FOCUS_GAP + THUMB_FOCUS_WIDTH
-}
-
-fn focus_ring_color(focus_ring: Option<Hsla>) -> Hsla {
-    focus_ring.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0))
 }
 
 #[cfg(test)]
