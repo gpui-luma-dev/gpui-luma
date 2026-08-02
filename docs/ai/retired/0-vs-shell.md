@@ -1,5 +1,8 @@
 # VS Code Shell Layout Work Summary
 
+**Status: Complete and verified.** The shell layout, Customize Layout dialog, panel behavior,
+platform shortcuts, status bar, and sidebar visibility interactions were tested successfully.
+
 ## Scope
 
 This work focused on `apps/shells/vscode`, especially the Customize Layout dialog and the workbench-style layout behavior behind it.
@@ -100,23 +103,29 @@ The goal was to make the shell behave more like a VS Code-style workbench while 
 - `Center` panel behavior is implemented inside `WorkbenchLayout`.
 - `Left`, `Right`, and `Justify` panel behavior is implemented as overlays in `WorkspaceLayout`.
 
-## Remaining Issues
+## Historical Design Notes
 
 ### Panel Height Is Not In LayoutConfig
 
-`panel_height_px` lives only inside `WorkspaceLayout`.
+Status: resolved. `LayoutConfig` now owns `panel_height_px`; reset restores the default,
+and `WorkspaceLayoutEvent::PanelHeightChanged` synchronizes user resize changes back to the app model.
 
-Consequences:
+The panel height is now modeled in `LayoutConfig` and synchronized from the workspace control.
+
+Previously:
 
 - Reset does not have an explicit panel-height model value beyond current internal defaults.
 - Future persistence cannot serialize panel height without extending `LayoutConfig`.
 - Tests or callers cannot directly assert panel height through config.
 
-Recommendation:
+Previous recommendation:
 
 - Add `panel_height_px` or a typed panel sizing model to `LayoutConfig` when persistence/reset semantics matter.
 
 ### Panel Ownership Is Split
+
+Status: accepted follow-up, not a blocker. The synchronization API is semantic, but `WorkbenchLayout` still owns
+the Center-mode panel state and render slot.
 
 `WorkspaceLayout` owns most bottom panel behavior, but `WorkbenchLayout` still owns enough panel state to render `Center` mode:
 
@@ -149,6 +158,9 @@ Recommendation:
 
 ### Sync API Is Split
 
+Status: resolved. `WorkspaceLayout` now exposes semantic setters for visibility, alignment,
+side position, and panel height; the app no longer uses separate full/non-sidebar config sync paths.
+
 The app currently uses two sync paths:
 
 - `sync_from_config`: full sync, including sidebar hide/show.
@@ -175,9 +187,9 @@ Gaps:
 
 - no explicit model/template split
 - limited typed public API
-- panel sizing not represented as a stable model
+- panel sizing was not represented as a stable model
 - sidebars are passed in, but editor/panel content is still demo content
-- no event surface for panel resize or layout changes
+- limited event surface for layout changes
 
 Recommendation:
 
@@ -206,6 +218,9 @@ Recommendation:
 
 ### Customize Dialog Should Be Movable
 
+Status: resolved. The dialog enables the SDK draggable modeless overlay, and the SDK clamps
+dragged positions to the viewport bounds.
+
 The dialog can cover the region being configured, especially when live layout changes happen behind it.
 
 Requirements:
@@ -220,6 +235,9 @@ Recommendation:
 - Prefer an SDK-level modeless floating panel primitive if this pattern appears elsewhere.
 
 ### Keyboard Mapping Must Be Multi-Platform
+
+Status: resolved for the current shortcuts. Display labels and bindings now select Command on
+macOS and Control elsewhere, with `B` and `J` actions wired to sidebar/panel toggles.
 
 The shell currently shows shortcut hints such as command-key based combinations. Those are not portable across platforms.
 
@@ -237,6 +255,9 @@ Recommendation:
 - Avoid hardcoding glyphs like `⌘` directly in layout metadata unless wrapped behind platform translation.
 
 ### SDK Hidden vs Collapsed Semantics Need Documentation
+
+Status: resolved. `PanelHideMode` and the hide/show methods now document the distinction between
+minimum-size collapse and explicit hide/show recovery.
 
 The SDK now distinguishes:
 
@@ -261,8 +282,5 @@ Recommendation:
   - panel alignments with both activity rails visible
   - panel resize in all alignments
 - Keep the Customize Layout dialog visible while live-configuring.
-- Make the Customize Layout dialog movable.
-- Add platform-aware shortcut mappings and display labels.
 - Move bottom panel ownership fully into `WorkspaceLayout`.
-- Replace full config sync with semantic control methods.
 - Decide whether `WorkspaceLayout` is a candidate SDK control or should remain a shell-specific composition.

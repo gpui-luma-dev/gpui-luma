@@ -46,7 +46,11 @@ pub enum ResizeCollapseMode {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PanelHideMode {
+    /// Shrink the panel to its minimum size while keeping it in the resize model.
+    /// Use this for a collapsible panel that can be recovered through the splitter.
     ToMinSize,
+    /// Remove the panel from the visible layout and suppress splitter recovery.
+    /// The application must explicitly call `show_panel` to restore it.
     Completely,
 }
 

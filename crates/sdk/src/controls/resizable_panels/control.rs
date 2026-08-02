@@ -321,6 +321,11 @@ impl ResizablePanels {
         self.panel_hide_restore.get(panel_index).is_some_and(Option::is_some)
     }
 
+    /// Hides a panel and records its layout for a later [`Self::show_panel`] call.
+    ///
+    /// `PanelHideMode::ToMinSize` leaves the panel in the interactive resize model;
+    /// `PanelHideMode::Completely` removes its visible extent and requires an
+    /// explicit show operation for recovery.
     pub fn hide_panel(&mut self, panel_index: usize, mode: PanelHideMode, cx: &mut Context<Self>) {
         if panel_index >= self.layout_states.len() || self.is_panel_hidden(panel_index) {
             return;
@@ -359,6 +364,7 @@ impl ResizablePanels {
         cx.notify();
     }
 
+    /// Restores a panel previously hidden with [`Self::hide_panel`].
     pub fn show_panel(&mut self, panel_index: usize, cx: &mut Context<Self>) {
         let Some(restore) = self.panel_hide_restore.get(panel_index).and_then(Option::as_ref).cloned() else {
             return;

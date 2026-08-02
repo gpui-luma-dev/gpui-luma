@@ -16,9 +16,11 @@ use gpui_luma_shell_common::{
 };
 use lucide_icons::Icon as LucideIcon;
 
+gpui::actions!(vscode_layout, [TogglePrimarySideBar, TogglePanel]);
+
 use crate::customize_layout_dialog::CustomizeLayoutDialog;
 use crate::layout_config::{LayoutConfig, LayoutRegion, PanelAlignment, PrimarySideBarPosition};
-use crate::workspace_layout::{PrimarySideBar, SecondarySideBar, WorkspaceLayout};
+use crate::workspace_layout::{PrimarySideBar, SecondarySideBar, WorkspaceLayout, WorkspaceLayoutEvent};
 
 const STATUS_BAR_H: f32 = 32.0;
 
@@ -32,6 +34,7 @@ pub struct VscodeShellApp {
     secondary_side_bar_toggle: IconButton,
     theme_toggle_button: IconButton,
     customize_layout_dialog: Entity<CustomizeLayoutDialog>,
+    applying_layout_config: bool,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -80,6 +83,11 @@ impl VscodeShellApp {
         subscriptions.push(cx.subscribe(&workspace_panels, |this, _, event: &ResizablePanelsEvent, cx| {
             this.handle_workbench_event(event, cx);
         }));
+        subscriptions.push(cx.subscribe(&workspace_layout, |this, _, event: &WorkspaceLayoutEvent, cx| {
+            let WorkspaceLayoutEvent::PanelHeightChanged { height_px } = event;
+            this.layout_config.panel_height_px = *height_px;
+            this.refresh_customize_layout_dialog(cx);
+        }));
         subscriptions.push(cx.subscribe(&customize_layout_toggle, |this, _, event, cx| {
             if matches!(event, ButtonEvent::Click) {
                 this.open_customize_layout(cx);
@@ -112,6 +120,7 @@ impl VscodeShellApp {
             secondary_side_bar_toggle,
             theme_toggle_button,
             customize_layout_dialog,
+            applying_layout_config: false,
             _subscriptions: subscriptions,
         };
         app.sync_workbench_theme(cx);
@@ -144,13 +153,14 @@ impl VscodeShellApp {
             return;
         }
         self.layout_config.set_region_visible(region, visible);
-        match region {
-            LayoutRegion::PrimarySideBar | LayoutRegion::SecondarySideBar => self.apply_layout_config(cx),
-            LayoutRegion::ActivityBar
-            | LayoutRegion::SecondaryActivityBar
-            | LayoutRegion::Panel
-            | LayoutRegion::StatusBar => self.apply_non_sidebar_layout_config(cx),
-        }
+        self.workspace_layout.update(cx, |layout, cx| match region {
+            LayoutRegion::ActivityBar => layout.set_activity_bar_visible(visible, cx),
+            LayoutRegion::SecondaryActivityBar => layout.set_secondary_activity_bar_visible(visible, cx),
+            LayoutRegion::PrimarySideBar => layout.set_primary_side_bar_visible(visible, cx),
+            LayoutRegion::SecondarySideBar => layout.set_secondary_side_bar_visible(visible, cx),
+            LayoutRegion::Panel => layout.set_panel_visible(visible, cx),
+            LayoutRegion::StatusBar => layout.set_status_bar_visible(visible, cx),
+        });
         self.refresh_customize_layout_dialog(cx);
         cx.notify();
     }
@@ -170,7 +180,7 @@ impl VscodeShellApp {
             return;
         }
         self.layout_config.panel_alignment = alignment;
-        self.apply_non_sidebar_layout_config(cx);
+        self.apply_layout_config(cx);
         self.refresh_customize_layout_dialog(cx);
         cx.notify();
     }
@@ -190,23 +200,28 @@ impl VscodeShellApp {
     }
 
     fn apply_layout_config(&mut self, cx: &mut Context<Self>) {
+        self.applying_layout_config = true;
         self.workspace_layout.update(cx, |layout, cx| {
-            layout.sync_from_config(&self.layout_config, cx);
+            layout.set_activity_bar_visible(self.layout_config.activity_bar_visible, cx);
+            layout.set_secondary_activity_bar_visible(self.layout_config.secondary_activity_bar_visible, cx);
+            layout.set_primary_side_bar_visible(self.layout_config.primary_side_bar_visible, cx);
+            layout.set_secondary_side_bar_visible(self.layout_config.secondary_side_bar_visible, cx);
+            layout.set_panel_visible(self.layout_config.panel_visible, cx);
+            layout.set_status_bar_visible(self.layout_config.status_bar_visible, cx);
+            layout.set_primary_side_bar_position(self.layout_config.primary_side_bar_position, cx);
+            layout.set_panel_alignment(self.layout_config.panel_alignment, cx);
+            layout.set_panel_height(self.layout_config.panel_height_px, cx);
         });
+        self.applying_layout_config = false;
         self.sync_side_bar_toggle_icons(cx);
         self.refresh_customize_layout_dialog(cx);
         cx.notify();
     }
 
-    fn apply_non_sidebar_layout_config(&mut self, cx: &mut Context<Self>) {
-        self.workspace_layout.update(cx, |layout, cx| {
-            layout.sync_non_sidebar_from_config(&self.layout_config, cx);
-        });
-        self.refresh_customize_layout_dialog(cx);
-        cx.notify();
-    }
-
     fn handle_workbench_event(&mut self, event: &ResizablePanelsEvent, cx: &mut Context<Self>) {
+        if self.applying_layout_config {
+            return;
+        }
         if let ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden } = event {
             let primary_index = self.workspace_layout.read(cx).primary_side_bar_panel_index();
             let secondary_index = self.workspace_layout.read(cx).secondary_side_bar_panel_index();
@@ -222,13 +237,13 @@ impl VscodeShellApp {
     }
 
     fn toggle_primary_side_bar(&mut self, cx: &mut Context<Self>) {
-        self.layout_config.toggle_region(LayoutRegion::PrimarySideBar);
-        self.apply_layout_config(cx);
+        let visible = !self.layout_config.primary_side_bar_visible;
+        self.set_layout_region_visible(LayoutRegion::PrimarySideBar, visible, cx);
     }
 
     fn toggle_secondary_side_bar(&mut self, cx: &mut Context<Self>) {
-        self.layout_config.toggle_region(LayoutRegion::SecondarySideBar);
-        self.apply_layout_config(cx);
+        let visible = !self.layout_config.secondary_side_bar_visible;
+        self.set_layout_region_visible(LayoutRegion::SecondarySideBar, visible, cx);
     }
 
     fn sync_side_bar_toggle_icons(&mut self, cx: &mut Context<Self>) {
@@ -271,6 +286,7 @@ impl Render for VscodeShellApp {
         let chrome = self.look.chrome();
         let sans = self.look.mode_tokens().typography.font.sans.family.clone();
         let title_style = self.look.typography_role(ShadcnTextRole::H4);
+        let status_style = self.look.typography_role(ShadcnTextRole::P);
         let status_bar_visible = self.layout_config.status_bar_visible;
         let viewport = window.viewport_size();
         let status_height = if status_bar_visible { STATUS_BAR_H } else { 0.0 };
@@ -306,6 +322,12 @@ impl Render for VscodeShellApp {
 
         div()
             .luma_focus_scope(&self.focus_scope)
+            .on_action(cx.listener(|this, _: &TogglePrimarySideBar, _window, cx| {
+                this.toggle_primary_side_bar(cx);
+            }))
+            .on_action(cx.listener(|this, _: &TogglePanel, _window, cx| {
+                this.set_layout_region_visible(LayoutRegion::Panel, !this.layout_config.panel_visible, cx);
+            }))
             .size_full()
             .min_h_0()
             .flex()
@@ -325,7 +347,10 @@ impl Render for VscodeShellApp {
                         .items_center()
                         .bg(chrome.panel_background)
                         .border_t_1()
-                        .border_color(chrome.border),
+                        .border_color(chrome.border)
+                        .px_3()
+                        .text_color(chrome.muted_text)
+                        .child(div().typography_style(status_style).child("Status Bar")),
                 )
             })
             .child(self.customize_layout_dialog.clone())

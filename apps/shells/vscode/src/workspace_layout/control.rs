@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, Pixels, Render, SharedString, Window, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, EventEmitter, Pixels, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
 use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanels, ResizablePanelsTheme};
@@ -29,6 +29,14 @@ pub struct WorkspaceLayout {
     activity_bar_buttons: [IconButton; 5],
     secondary_activity_bar_buttons: [IconButton; 3],
 }
+
+#[derive(Clone, Debug)]
+#[non_exhaustive]
+pub enum WorkspaceLayoutEvent {
+    PanelHeightChanged { height_px: f32 },
+}
+
+impl EventEmitter<WorkspaceLayoutEvent> for WorkspaceLayout {}
 
 impl WorkspaceLayout {
     pub fn new(
@@ -77,6 +85,7 @@ impl WorkspaceLayout {
             DockSplitterEvent::Resize { total_delta } => {
                 this.panel_height_px = this.clamp_panel_height(this.drag_start_panel_height_px - *total_delta);
                 this.workbench.set_panel_height(px(this.panel_height_px), cx);
+                cx.emit(WorkspaceLayoutEvent::PanelHeightChanged { height_px: this.panel_height_px });
                 cx.notify();
             }
             DockSplitterEvent::ResizeEnd => {}
@@ -114,29 +123,56 @@ impl WorkspaceLayout {
         cx.notify();
     }
 
-    pub fn sync_from_config(&mut self, config: &LayoutConfig, cx: &mut Context<Self>) {
-        let previous_position = self.config.primary_side_bar_position;
-        self.config = config.clone();
-        if previous_position != self.config.primary_side_bar_position {
-            self.workbench.set_primary_side_bar_position(self.config.primary_side_bar_position, cx);
-        }
-        self.set_panel_visible(self.primary_side_bar_panel_index(), self.config.primary_side_bar_visible, cx);
-        self.set_panel_visible(self.secondary_side_bar_panel_index(), self.config.secondary_side_bar_visible, cx);
-        self.workbench.set_panel_layout(self.config.panel_visible, self.config.panel_alignment, cx);
-        self.workbench.set_panel_height(px(self.panel_height_px), cx);
-        self.panel_splitter.update(cx, |splitter, cx| {
-            splitter.set_enabled(self.config.panel_visible, cx);
-        });
+    pub fn set_activity_bar_visible(&mut self, visible: bool, cx: &mut Context<Self>) {
+        self.config.activity_bar_visible = visible;
         cx.notify();
     }
 
-    pub fn sync_non_sidebar_from_config(&mut self, config: &LayoutConfig, cx: &mut Context<Self>) {
-        self.config = config.clone();
-        self.workbench.set_panel_layout(self.config.panel_visible, self.config.panel_alignment, cx);
+    pub fn set_secondary_activity_bar_visible(&mut self, visible: bool, cx: &mut Context<Self>) {
+        self.config.secondary_activity_bar_visible = visible;
+        cx.notify();
+    }
+
+    pub fn set_primary_side_bar_visible(&mut self, visible: bool, cx: &mut Context<Self>) {
+        self.config.primary_side_bar_visible = visible;
+        self.sync_panel_visibility(self.primary_side_bar_panel_index(), visible, cx);
+        cx.notify();
+    }
+
+    pub fn set_secondary_side_bar_visible(&mut self, visible: bool, cx: &mut Context<Self>) {
+        self.config.secondary_side_bar_visible = visible;
+        self.sync_panel_visibility(self.secondary_side_bar_panel_index(), visible, cx);
+        cx.notify();
+    }
+
+    pub fn set_panel_visible(&mut self, visible: bool, cx: &mut Context<Self>) {
+        self.config.panel_visible = visible;
+        self.workbench.set_panel_layout(visible, self.config.panel_alignment, cx);
+        self.panel_splitter.update(cx, |splitter, cx| splitter.set_enabled(visible, cx));
+        cx.notify();
+    }
+
+    pub fn set_status_bar_visible(&mut self, visible: bool, cx: &mut Context<Self>) {
+        self.config.status_bar_visible = visible;
+        cx.notify();
+    }
+
+    pub fn set_primary_side_bar_position(&mut self, position: PrimarySideBarPosition, cx: &mut Context<Self>) {
+        self.config.primary_side_bar_position = position;
+        self.workbench.set_primary_side_bar_position(position, cx);
+        cx.notify();
+    }
+
+    pub fn set_panel_alignment(&mut self, alignment: PanelAlignment, cx: &mut Context<Self>) {
+        self.config.panel_alignment = alignment;
+        self.workbench.set_panel_layout(self.config.panel_visible, alignment, cx);
+        cx.notify();
+    }
+
+    pub fn set_panel_height(&mut self, height_px: f32, cx: &mut Context<Self>) {
+        self.panel_height_px = self.clamp_panel_height(height_px);
+        self.config.panel_height_px = self.panel_height_px;
         self.workbench.set_panel_height(px(self.panel_height_px), cx);
-        self.panel_splitter.update(cx, |splitter, cx| {
-            splitter.set_enabled(self.config.panel_visible, cx);
-        });
         cx.notify();
     }
 
@@ -151,7 +187,7 @@ impl WorkspaceLayout {
         });
     }
 
-    fn set_panel_visible(&self, panel_index: usize, visible: bool, cx: &mut Context<Self>) {
+    fn sync_panel_visibility(&self, panel_index: usize, visible: bool, cx: &mut Context<Self>) {
         self.workbench.panels().update(cx, |panels, cx| {
             let hidden = panels.is_panel_hidden(panel_index);
             if hidden == visible {

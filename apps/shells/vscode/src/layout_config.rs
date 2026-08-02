@@ -1,3 +1,5 @@
+pub const DEFAULT_PANEL_HEIGHT_PX: f32 = 180.0;
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum PrimarySideBarPosition {
     #[default]
@@ -85,9 +87,32 @@ impl LayoutRegion {
     }
 
     pub fn shortcut_keys(self) -> Option<[&'static str; 2]> {
+        let (_, key) = self.shortcut_key()?;
+        let modifier = if cfg!(target_os = "macos") { "⌘" } else { "Ctrl" };
+        Some([modifier, key])
+    }
+
+    pub fn shortcut_keystroke(self) -> Option<&'static str> {
+        let (_, key) = self.shortcut_key()?;
+        Some(if cfg!(target_os = "macos") {
+            match key {
+                "B" => "cmd-b",
+                "J" => "cmd-j",
+                _ => return None,
+            }
+        } else {
+            match key {
+                "B" => "ctrl-b",
+                "J" => "ctrl-j",
+                _ => return None,
+            }
+        })
+    }
+
+    fn shortcut_key(self) -> Option<(&'static str, &'static str)> {
         match self {
-            Self::PrimarySideBar => Some(["⌘", "B"]),
-            Self::Panel => Some(["⌘", "J"]),
+            Self::PrimarySideBar => Some(("primary-side-bar", "B")),
+            Self::Panel => Some(("panel", "J")),
             _ => None,
         }
     }
@@ -103,6 +128,7 @@ pub struct LayoutConfig {
     pub status_bar_visible: bool,
     pub primary_side_bar_position: PrimarySideBarPosition,
     pub panel_alignment: PanelAlignment,
+    pub panel_height_px: f32,
 }
 
 impl Default for LayoutConfig {
@@ -116,6 +142,7 @@ impl Default for LayoutConfig {
             status_bar_visible: true,
             primary_side_bar_position: PrimarySideBarPosition::Left,
             panel_alignment: PanelAlignment::Center,
+            panel_height_px: DEFAULT_PANEL_HEIGHT_PX,
         }
     }
 }
@@ -143,11 +170,6 @@ impl LayoutConfig {
         }
     }
 
-    pub fn toggle_region(&mut self, region: LayoutRegion) {
-        let visible = self.region_visible(region);
-        self.set_region_visible(region, !visible);
-    }
-
     pub fn visible_region_ids(&self) -> Vec<gpui::SharedString> {
         [
             LayoutRegion::ActivityBar,
@@ -161,5 +183,31 @@ impl LayoutConfig {
         .filter(|region| self.region_visible(*region))
         .map(|region| region.id().into())
         .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_layout_matches_startup_state() {
+        let config = LayoutConfig::default();
+
+        assert!(config.activity_bar_visible);
+        assert!(config.primary_side_bar_visible);
+        assert!(config.panel_visible);
+        assert_eq!(config.primary_side_bar_position, PrimarySideBarPosition::Left);
+        assert_eq!(config.panel_alignment, PanelAlignment::Center);
+        assert_eq!(config.panel_height_px, DEFAULT_PANEL_HEIGHT_PX);
+    }
+
+    #[test]
+    fn region_toggle_updates_visibility_and_ids() {
+        let mut config = LayoutConfig::default();
+        config.set_region_visible(LayoutRegion::Panel, false);
+
+        assert!(!config.panel_visible);
+        assert!(!config.visible_region_ids().iter().any(|id| id == "panel"));
     }
 }

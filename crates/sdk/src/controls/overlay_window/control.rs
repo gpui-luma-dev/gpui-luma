@@ -201,8 +201,13 @@ impl DialogControl {
             return;
         };
         let delta = event.event.position - dragging.pointer_origin;
-        self.model.position =
-            DialogPosition::Absolute(point(dragging.dialog_origin.x + delta.x, dragging.dialog_origin.y + delta.y));
+        let origin = point(dragging.dialog_origin.x + delta.x, dragging.dialog_origin.y + delta.y);
+        self.model.position = DialogPosition::Absolute(clamp_dialog_origin(
+            origin,
+            _window.viewport_size(),
+            self.model.size,
+            self.model.width,
+        ));
         cx.notify();
     }
 
@@ -466,4 +471,19 @@ fn resolve_dialog_origin(
         DialogPosition::BottomRight => point(viewport.width - width - inset, viewport.height - height - inset),
         DialogPosition::Absolute(point) => point,
     }
+}
+
+fn clamp_dialog_origin(
+    origin: Point<Pixels>,
+    viewport: Size<Pixels>,
+    size: ControlSize,
+    width: Option<f32>,
+) -> Point<Pixels> {
+    let look = default_dialog_theme().resolve(size, DialogMode::Modeless);
+    let width = px(width.unwrap_or(look.min_width).max(look.min_width));
+    let height = px(look.estimated_height);
+    let inset = px(12.0);
+    let max_x = (viewport.width - width - inset).max(inset);
+    let max_y = (viewport.height - height - inset).max(inset);
+    point(origin.x.clamp(inset, max_x), origin.y.clamp(inset, max_y))
 }

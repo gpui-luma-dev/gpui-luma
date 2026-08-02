@@ -111,6 +111,7 @@ impl CustomizeLayoutDialog {
             .overlay_window("customize-layout")
             .mode(OverlayWindowMode::Modeless)
             .position(OverlayWindowPosition::Center)
+            .draggable(true)
             .size(ControlSize::Sm)
             .dismiss_policy(OverlayWindowDismissPolicy::CloseOnClickAway)
             .width(DIALOG_W)
