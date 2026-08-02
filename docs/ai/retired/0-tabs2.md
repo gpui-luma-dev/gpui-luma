@@ -2,9 +2,9 @@
 
 ## Status
 
-Design note for the next SDK refactor. This should be handled before public release if possible, because `TabsNavigation` is a core SDK surface and recent Luma Studio work exposed that it is too narrow.
+**Complete — retired 2026-08-02.** The SDK redesign and Luma Studio Controls-picker migration are implemented and manually verified.
 
-Started:
+Completed:
 
 - `TabsNavigationEvent::Reactivate` now provides an explicit signal for invoking the already-selected tab. Luma Studio uses this instead of inferring reactivation from app-local active-tab state.
 - `TabsNavigationItemAccessory` now supports leading/trailing icon accessories and trailing disclosure state. Luma Studio uses `TabsNavigationItem::trailing_disclosure(false)` plus `TabsNavigation::set_item_disclosure_open(...)` instead of app-local picker-open state for the Controls tab chevron.
@@ -14,6 +14,7 @@ Started:
 - The default `TabsNavigation` item renderer now builds each tab trigger as a controlled button-family toggle render model (`ButtonFamilyRole::Toggle { selected }`) and delegates sizing, disabled handling, pointer affordance, and focus adorners to `DefaultButtonTemplate`. The tabs theme is adapted into `ButtonFamilyLook`, with the tabs-specific underline indicator layered by the tab template modifier.
 - `render_tabs_navigation_item_button(...)` and `resolve_tabs_navigation_uniform_item_width(...)` now expose the shared item-render path to derived tab templates. Luma Studio and Graph Viz use these helpers instead of duplicating tab item chrome.
 - Focused unit tests now cover dropdown reactivation event ordering, selected-change activation suppression of dropdown events, and disclosure accessory state transitions. `cargo clippy -p gpui-luma -- -D warnings` is clean.
+- Luma Studio now uses `AnchoredPanel` for the Controls picker, including guarded opening, click-away/focus-loss/Escape dismissal, anchor bounds, and opener-focus restoration. The main tab bar retains its full-width underline styling.
 
 ## Problem Summary
 

@@ -23,6 +23,8 @@ pub struct AnchoredPanel {
     emitted_focused: bool,
     focus_out_subscription: Option<Subscription>,
     pending_focus: bool,
+    restore_focus: Option<FocusHandle>,
+    pending_focus_restore: bool,
     dismiss_guard: bool,
 }
 
@@ -37,6 +39,8 @@ impl AnchoredPanel {
             content_bounds: None,
             emitted_focused: false,
             focus_out_subscription: None,
+            restore_focus: None,
+            pending_focus_restore: false,
             dismiss_guard: false,
         }
     }
@@ -51,10 +55,24 @@ impl AnchoredPanel {
     }
 
     pub fn open(&mut self, cx: &mut Context<Self>) {
+        self.open_from(None, cx);
+    }
+
+    pub fn open_from(&mut self, opener: Option<FocusHandle>, cx: &mut Context<Self>) {
+        if let Some(opener) = opener {
+            self.restore_focus = Some(opener);
+        }
         self.set_open(true, cx);
     }
 
     pub fn open_guarded(&mut self, cx: &mut Context<Self>) {
+        self.open_guarded_from(None, cx);
+    }
+
+    pub fn open_guarded_from(&mut self, opener: Option<FocusHandle>, cx: &mut Context<Self>) {
+        if let Some(opener) = opener {
+            self.restore_focus = Some(opener);
+        }
         self.dismiss_guard = true;
         self.set_open(true, cx);
     }
@@ -71,10 +89,14 @@ impl AnchoredPanel {
     }
 
     pub fn toggle_guarded(&mut self, cx: &mut Context<Self>) {
+        self.toggle_guarded_from(None, cx);
+    }
+
+    pub fn toggle_guarded_from(&mut self, opener: Option<FocusHandle>, cx: &mut Context<Self>) {
         if self.model.open {
             self.dismiss(cx);
         } else {
-            self.open_guarded(cx);
+            self.open_guarded_from(opener, cx);
         }
     }
 
@@ -141,6 +163,7 @@ impl AnchoredPanel {
     fn open_internal(&mut self, cx: &mut Context<Self>) -> bool {
         let was_open = self.model.open;
         self.model.open = true;
+        self.pending_focus_restore = false;
         if self.model.focus_on_open {
             self.pending_focus = true;
         }
@@ -154,6 +177,7 @@ impl AnchoredPanel {
         let was_open = self.model.open;
         self.model.open = false;
         self.pending_focus = false;
+        self.pending_focus_restore = self.restore_focus.is_some();
         self.dismiss_guard = false;
         if was_open {
             cx.emit(AnchoredPanelEvent::OpenChanged { open: false });
@@ -237,18 +261,26 @@ impl AnchoredPanel {
     }
 
     fn sync_focus(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if !self.pending_focus || !self.model.open || self.model.anchor_bounds.is_none() {
-            return;
+        if self.pending_focus && self.model.open && self.model.anchor_bounds.is_some() {
+            self.pending_focus = false;
+            let focus = self.focus_handle.clone();
+            cx.on_next_frame(window, move |this, window, cx| {
+                if this.model.open {
+                    focus.focus(window, cx);
+                    this.emit_focus_changed(true, cx);
+                }
+            });
+            self.dismiss_guard = false;
         }
-        self.pending_focus = false;
-        let focus = self.focus_handle.clone();
-        cx.on_next_frame(window, move |this, window, cx| {
-            if this.model.open {
-                focus.focus(window, cx);
-                this.emit_focus_changed(true, cx);
+
+        if self.pending_focus_restore && !self.model.open {
+            self.pending_focus_restore = false;
+            if let Some(focus) = self.restore_focus.clone() {
+                cx.on_next_frame(window, move |_this, window, cx| {
+                    focus.focus(window, cx);
+                });
             }
-        });
-        self.dismiss_guard = false;
+        }
     }
 }
 

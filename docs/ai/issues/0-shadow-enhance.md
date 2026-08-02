@@ -1,7 +1,7 @@
 # Fix Note: Shadow Token Model and Luma Studio Round-Trip
 
 **Area:** `crates/look-shadcn/src/{look,shadow,tokens}.rs`, `crates/look-shadcn/assets/tweakcn/*.css`, `apps/luma-studio/src/studio/{overrides,theme_sidebar/panels/other}.rs`  
-**Status:** Open / partial — fan-out shipped; **parts ↔ ladder regeneration** still TODO.  
+**Status:** Open — composite override propagation, parts modeling, and **parts ↔ ladder regeneration** are still TODO.  
 **Owns:** Luma Studio Other → Shadow coherence with the catalog ladder (this note only).  
 **Related:** [2-elevation.md](../retired/2-elevation.md) — control paint + projection (**done**, retired 2026-07-19).
 
@@ -32,7 +32,7 @@ look-shadcn already **parses** all of these into the mode catalog and resolves t
 
 Luma Studio **Other → Shadow** edits a **single composite** shadow (color, opacity, blur, spread, offset). That override must stay consistent with the full ladder so SDK controls and cards respond together.
 
-The gap: we do not yet model parts and ladder as a **unified, regenerating system** — only a flat fan-out of one CSS string to every `shadow-*` key.
+The gap: we do not yet model parts and ladder as a **unified, regenerating system**. The current override path updates only the base `shadow` token; it neither updates the decomposed parts nor propagates the change to the ladder.
 
 ---
 
@@ -70,12 +70,12 @@ The `@theme inline` block maps `--radius-sm: calc(var(--radius) - 4px)` and `--s
 - Load reads first layer of `--shadow` via `default_shadow_override(look)`
 - **Does not** read or write `shadow-x` … `shadow-color` catalog keys directly
 
-### Override application (shipped)
+### Override application (current behavior)
 
-When `"shadow"` is overridden, `apply_token_overrides` copies that CSS string to **all** ladder keys (`shadow-2xs` … `shadow-2xl`).
+When `"shadow"` is overridden, `apply_token_overrides` replaces only the `shadow` catalog key. It does not update the decomposed parts or the ladder keys (`shadow-2xs` … `shadow-2xl`).
 
-**Effect:** controls pick up Luma Studio edits (fixes cards-only update bug).  
-**Cost:** the theme’s per-level ladder is **flattened** — `shadow-xs` and `shadow-md` become identical until reload from base CSS.
+**Effect:** cards and other consumers of `shadow` pick up Luma Studio edits. Controls configured with `shadow-xs`, `shadow-sm`, or `shadow-md` continue using their previous ladder values.  
+**Result:** the base shadow and elevation ladder can become inconsistent; the ladder is not flattened in the current implementation.
 
 ### Consumers
 
@@ -103,7 +103,7 @@ shadow parts  →  shadow ladder (2xs…2xl)  →  look.shadow() / controls
 Today:
 
 - Parts exist in catalog but are disconnected from Other tab and from ladder regeneration.
-- Ladder exists in catalog but Luma Studio override destroys level differentiation.
+- Ladder exists in catalog but Luma Studio override does not update it, leaving the base shadow and ladder inconsistent.
 - `ShadcnShadow` is complete symbolically; decomposed parts have no symbolic type.
 
 ---
@@ -239,6 +239,7 @@ No need to parse `@theme` calc aliases.
 
 | Date | Change |
 |------|--------|
+| 2026-08-02 | **Revalidated:** the documented fan-out is not present in the current implementation. Composite edits update only `shadow`; ladder propagation and parts-based regeneration remain open. |
 | 2026-07-19 | **Status clarified:** elevation paint ([2-elevation](../retired/2-elevation.md)) retired. This note remains open for ladder regen only. Documented unrelated leftovers (absolute backing, clip QA) and won't-do Outline/Surface elevation. |
 | 2026-07-08 | **Shipped:** `apply_token_overrides` fan-out — `"shadow"` override copied to all `shadow-*` catalog keys so SDK controls respond to Other tab (cards already used `--shadow`). |
 | 2026-07-08 | **Identified:** Fan-out flattens tweakcn ladder; parts (`shadow-x` …) not wired to Other tab; no `ShadcnShadowParts` model. |

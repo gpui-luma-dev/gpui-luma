@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, Bounds, Context, Entity, Focusable, Pixels, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::anchored_panel::{
+    AnchoredPanel, AnchoredPanelDismissPolicy, AnchoredPanelEvent, AnchoredPanelPlacement,
+};
 use gpui_luma::controls::tabs_navigation::{
     TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
 };
@@ -12,8 +15,8 @@ use gpui_luma_look_shadcn::prelude::*;
 use super::cards::render_demo_board;
 use super::controls;
 use super::dashboard;
-use super::navigation::{ControlsCatalogDropdown, luma_studio_tabs_navigation_template_with_controls_dropdown};
 use super::palette;
+use super::navigation::luma_studio_tabs_navigation_template;
 use super::style_guide;
 use super::tab::ContentTab;
 use super::theme_usage;
@@ -41,7 +44,7 @@ pub struct ContentPaneHost {
     theme_usage_panel: Entity<ThemeUsagePanel>,
     board: BoardSnapshot,
     active_tab: ContentTab,
-    catalog_picker_open: bool,
+    catalog_picker: Entity<AnchoredPanel>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -49,16 +52,20 @@ impl ContentPaneHost {
     pub fn new(_app: Entity<LumaStudioApp>, board: BoardSnapshot, cx: &mut Context<Self>) -> Self {
         let host = cx.entity();
         let controls_panel = cx.new(|cx| ControlsPanel::new(cx, board.look.clone()));
+        let picker_host = host.clone();
+        let catalog_picker = AnchoredPanel::new("luma-studio-controls-picker")
+            .content(move |_, _, cx| picker_host.update(cx, |host, cx| host.render_catalog_picker(cx)))
+            .placement(AnchoredPanelPlacement::BelowCenter)
+            .dismiss_policy(AnchoredPanelDismissPolicy::CloseOnClickAwayOrFocusLoss)
+            .offset_y(px(4.0))
+            .window_margin(px(8.0))
+            .spawn(cx);
         let tabs = board
             .look
             .tabs_navigation("luma-studio-content-tabs")
             .size(ControlSize::Lg)
             .width_mode(TabsNavigationWidthMode::Uniform)
-            .template(luma_studio_tabs_navigation_template_with_controls_dropdown(
-                board.look.clone(),
-                ControlSize::Lg,
-                Some(ControlsCatalogDropdown::new(host.clone())),
-            ))
+            .template(luma_studio_tabs_navigation_template(board.look.clone(), ControlSize::Lg))
             .items([
                 TabsNavigationItem::new("cards").label("Cards"),
                 TabsNavigationItem::new("dashboard").label("Dashboard"),
@@ -71,6 +78,7 @@ impl ContentPaneHost {
             .spawn(cx);
 
         let tabs_for_sub = tabs.clone();
+        let picker_for_sub = catalog_picker.clone();
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&tabs_for_sub, |host, _, event: &TabsNavigationEvent, cx| match event {
             TabsNavigationEvent::Change { tab_id, .. } => {
@@ -79,13 +87,23 @@ impl ContentPaneHost {
                 };
                 host.set_active_tab(tab, cx);
             }
-            TabsNavigationEvent::DropdownRequested { tab_id, .. } => {
+            TabsNavigationEvent::DropdownRequested { tab_id, bounds, .. } => {
                 if tab_id.as_ref() != "controls" {
                     return;
                 }
-                host.toggle_catalog_picker(cx);
+                host.toggle_catalog_picker(*bounds, cx);
+            }
+            TabsNavigationEvent::ItemBoundsChanged { tab_id, bounds } if tab_id.as_ref() == "controls" => {
+                host.set_catalog_picker_anchor(*bounds, cx);
             }
             _ => {}
+        }));
+        subscriptions.push(cx.subscribe(&picker_for_sub, |host, _, event: &AnchoredPanelEvent, cx| {
+            if let AnchoredPanelEvent::OpenChanged { open } = event {
+                host.tabs.update(cx, |tabs, cx| {
+                    tabs.set_item_disclosure_open("controls", *open, cx);
+                });
+            }
         }));
 
         let style_guide_panel = cx.new(|cx| StyleGuidePanel::new(cx, board.look.clone()));
@@ -100,7 +118,7 @@ impl ContentPaneHost {
             theme_usage_panel,
             board,
             active_tab: ContentTab::Cards,
-            catalog_picker_open: false,
+            catalog_picker,
             _subscriptions: subscriptions,
         }
     }
@@ -125,7 +143,10 @@ impl ContentPaneHost {
                 panel.sync_snapshot(look, cx);
                 panel.request_layout_refresh(cx);
             });
-            self.set_catalog_picker_open(true, cx);
+            let opener = self.tabs.read(cx).focus_handle(cx);
+            self.catalog_picker.update(cx, |picker, cx| {
+                picker.open_from(Some(opener), cx);
+            });
         }
 
         if tab == ContentTab::Palette {
@@ -141,20 +162,26 @@ impl ContentPaneHost {
         cx.notify();
     }
 
-    fn toggle_catalog_picker(&mut self, cx: &mut Context<Self>) {
-        self.set_catalog_picker_open(!self.catalog_picker_open, cx);
+    fn toggle_catalog_picker(&mut self, bounds: Option<Bounds<Pixels>>, cx: &mut Context<Self>) {
+        if let Some(bounds) = bounds {
+            self.set_catalog_picker_anchor(bounds, cx);
+        }
+        let opener = self.tabs.read(cx).focus_handle(cx);
+        self.catalog_picker.update(cx, |picker, cx| {
+            picker.toggle_guarded_from(Some(opener), cx);
+        });
+    }
+
+    fn set_catalog_picker_anchor(&mut self, bounds: Bounds<Pixels>, cx: &mut Context<Self>) {
+        self.catalog_picker.update(cx, |picker, cx| {
+            picker.set_anchor_bounds(bounds, cx);
+        });
     }
 
     pub(super) fn close_catalog_picker(&mut self, cx: &mut Context<Self>) {
-        self.set_catalog_picker_open(false, cx);
-    }
-
-    fn set_catalog_picker_open(&mut self, open: bool, cx: &mut Context<Self>) {
-        self.catalog_picker_open = open;
-        self.tabs.update(cx, |tabs, cx| {
-            tabs.set_item_disclosure_open("controls", open, cx);
+        self.catalog_picker.update(cx, |picker, cx| {
+            picker.dismiss(cx);
         });
-        cx.notify();
     }
 
     pub(super) fn render_catalog_picker(&mut self, cx: &mut Context<Self>) -> AnyElement {
@@ -181,19 +208,11 @@ impl ContentPaneHost {
     pub fn sync_board_snapshot(&mut self, board: BoardSnapshot, cx: &mut Context<Self>) {
         let look = board.look.clone();
         let overrides = board.overrides.clone();
-        let host = cx.entity();
         self.board = board;
         self.tabs.update(cx, |tabs, cx| {
             tabs.set_size(ControlSize::Lg, cx);
             tabs.set_width_mode(TabsNavigationWidthMode::Uniform, cx);
-            tabs.set_template(
-                luma_studio_tabs_navigation_template_with_controls_dropdown(
-                    look.clone(),
-                    ControlSize::Lg,
-                    Some(ControlsCatalogDropdown::new(host.clone())),
-                ),
-                cx,
-            );
+            tabs.set_template(luma_studio_tabs_navigation_template(look.clone(), ControlSize::Lg), cx);
         });
         self.style_guide_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
         self.controls_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
@@ -219,6 +238,7 @@ impl Render for ContentPaneHost {
             .overflow_hidden()
             .bg(board_bg)
             .child(div().flex_shrink_0().pt(px(8.0)).child(div().w_full().child(self.tabs.clone())))
+            .child(self.catalog_picker.clone())
             .child(match active_tab {
                 ContentTab::Cards => {
                     scrollable_body().child(

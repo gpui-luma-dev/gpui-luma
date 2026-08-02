@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{
-    AnyElement, Context, FontFeatures, FontWeight, MouseButton, Pixels, SharedString, Size, TextRun, Window, div, font,
-    prelude::*, px, size,
-};
+use gpui::{AnyElement, Context, FontFeatures, FontWeight, MouseButton, Window, div, prelude::*, px};
 use gpui_luma::controls::choice_indicator_layout::shadow_extent_from_slice;
 use gpui_luma::controls::floating_menu::FloatingMenuLook;
 use gpui_luma::theme::LumaTextStyle;
@@ -63,27 +60,6 @@ pub(crate) fn render_control_catalog_picker<M: 'static>(
     .into_any_element()
 }
 
-pub(crate) fn estimate_control_catalog_picker_size(
-    menu_look: &FloatingMenuLook,
-    font_family: SharedString,
-    window: &mut Window,
-) -> Size<Pixels> {
-    let elevation_extent = shadow_extent_from_slice(&menu_look.shadow, 1.0, true);
-    let column_gap = column_gap(menu_look);
-    let column_widths = (0..COLUMN_COUNT)
-        .map(|column| estimate_column_width(menu_look, column, font_family.clone(), window))
-        .collect::<Vec<_>>();
-    let width = elevation_extent * 2.0
-        + CONTAINER_INNER_PADDING * 2.0
-        + column_widths.iter().sum::<f32>()
-        + column_gap * (COLUMN_COUNT.saturating_sub(1) as f32);
-    let height = elevation_extent * 2.0
-        + CONTAINER_INNER_PADDING * 2.0
-        + (0..COLUMN_COUNT).map(|column| estimate_column_height(menu_look, column)).fold(0.0_f32, f32::max);
-
-    size(px(width), px(height))
-}
-
 fn with_menu_elevation(
     id: impl Into<gpui::SharedString>,
     surface: gpui::Stateful<gpui::Div>,
@@ -124,70 +100,6 @@ fn render_column<M: 'static>(
             )
         }))
         .into_any_element()
-}
-
-fn estimate_column_width(
-    menu_look: &FloatingMenuLook,
-    column: usize,
-    font_family: SharedString,
-    window: &mut Window,
-) -> f32 {
-    groups_for_column(column)
-        .map(|group| estimate_category_width(menu_look, group, font_family.clone(), window))
-        .fold(0.0_f32, f32::max)
-}
-
-fn estimate_column_height(menu_look: &FloatingMenuLook, column: usize) -> f32 {
-    let group_count = groups_for_column(column).count();
-    let group_gaps = group_count.saturating_sub(1) as f32 * menu_look.item_gap * 1.5;
-    groups_for_column(column)
-        .map(|group| {
-            let row_count = 1 + group.entries.len();
-            let row_gaps = row_count.saturating_sub(1) as f32 * menu_look.item_gap * 0.25;
-            row_count as f32 * menu_look.item_height.max(menu_look.item_typography.line_height) + row_gaps
-        })
-        .sum::<f32>()
-        + group_gaps
-}
-
-fn estimate_category_width(
-    menu_look: &FloatingMenuLook,
-    group: &ComponentCatalogGroup,
-    font_family: SharedString,
-    window: &mut Window,
-) -> f32 {
-    let category_width = CATEGORY_ICON_SIZE
-        + menu_look.item_gap
-        + shaped_text_width(group.label, menu_look.item_typography, font_family.clone(), window);
-    let item_width = group
-        .entries
-        .iter()
-        .map(|entry| {
-            shaped_text_width(entry.label, menu_look.item_typography, font_family.clone(), window)
-                + menu_look.item_padding_x * 2.0
-                + LEAF_LEFT_INDENT
-        })
-        .fold(0.0_f32, f32::max);
-
-    category_width.max(item_width)
-}
-
-fn shaped_text_width(text: &'static str, style: LumaTextStyle, font_family: SharedString, window: &mut Window) -> f32 {
-    let text = SharedString::from(text);
-    let run = TextRun {
-        len: text.len(),
-        font: {
-            let mut font = font(font_family);
-            font.weight = style.weight;
-            font
-        },
-        color: gpui::black(),
-        background_color: None,
-        underline: None,
-        strikethrough: None,
-    };
-    let line = window.text_system().shape_line(text.clone(), px(style.size), &[run], None);
-    line.x_for_index(text.len()).as_f32()
 }
 
 fn render_category_section<M: 'static>(
