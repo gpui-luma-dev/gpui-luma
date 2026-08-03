@@ -7,7 +7,6 @@ use crate::controls::textfield::apply_control_size_typography;
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,
 };
-use crate::theme::adorner::{AdornerSpec, focus_ring_adorner};
 
 use super::model::SelectorTriggerStyle;
 
@@ -18,7 +17,6 @@ pub struct SelectorPalette {
     pub trigger_icon: Hsla,
     pub trigger_border: Option<Hsla>,
     pub trigger_shadow: Option<Vec<BoxShadow>>,
-    pub adorner: Option<AdornerSpec>,
     pub trigger_typography: LumaTextStyle,
     pub items_panel: SelectorItemsPanelLook,
 }
@@ -30,7 +28,6 @@ pub struct SelectorLook {
     pub trigger_icon: Hsla,
     pub trigger_border: Option<Hsla>,
     pub trigger_shadow: Option<Vec<BoxShadow>>,
-    pub adorner: Option<AdornerSpec>,
     pub trigger_typography: LumaTextStyle,
     pub trigger_radius: f32,
     pub trigger_padding_x: f32,
@@ -117,7 +114,6 @@ impl SelectorTheme for DefaultSelectorTheme {
             trigger_icon: palette.app.muted_foreground,
             trigger_border,
             trigger_shadow: None,
-            adorner: focus_ring_adorner(state.focused.then_some(palette.focus.ring), &self.tokens.metrics),
             trigger_typography: typography.text.label,
             items_panel: default_selector_items_panel_look(&self.tokens, ControlSize::Md),
         }
@@ -149,7 +145,6 @@ pub(crate) fn compose_selector_look(palette: &SelectorPalette, scale: &StandardB
         trigger_icon: palette.trigger_icon,
         trigger_border: palette.trigger_border,
         trigger_shadow: palette.trigger_shadow.clone(),
-        adorner: palette.adorner,
         trigger_typography: palette.trigger_typography,
         trigger_radius: scale.radius,
         trigger_padding_x: scale.padding_x,

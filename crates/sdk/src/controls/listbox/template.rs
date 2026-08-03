@@ -8,7 +8,6 @@ use crate::controls::control_group::{
     ControlGroupTemplate, ControlGroupTemplateHandlers, render_control_group_item_elements,
 };
 use crate::controls::listbox::{ListBoxRowLook, ListBoxTheme, default_listbox_theme};
-use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner, render_optional_adorner_with_focus_radius};
 use crate::theme::{ControlSize, LayoutCacheKey, ListRowScale, LumaLayoutCacheExt};
 
 pub struct ThemedListBoxTemplate {
@@ -34,13 +33,7 @@ impl ThemedListBoxTemplate {
         cx: &mut App,
     ) -> Stateful<Div> {
         let list_look = self.theme.resolve_list(model.enabled, model.focus.focused, self.size);
-        let focused_probe_list_look = if model.enabled {
-            Some(self.theme.resolve_list(model.enabled, true, self.size))
-        } else {
-            None
-        };
-        let list_oversize_extent = adorner_oversize_extent(list_look.adorner)
-            .max(focused_probe_list_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
+        let list_oversize_extent = 0.0;
 
         let mut root = div()
             .id(model.id.clone())
@@ -55,10 +48,6 @@ impl ThemedListBoxTemplate {
             .bg(list_look.background)
             .border_1()
             .border_color(list_look.border);
-
-        if let Some(adorner) = render_optional_adorner(list_look.adorner, list_look.radius) {
-            root = root.child(adorner);
-        }
 
         root = match model.layout {
             ControlGroupLayout::Horizontal => root.flex_row().items_center(),
@@ -148,15 +137,7 @@ fn listbox_row_item_element_template_with_size(
             |metrics| ListRowScale::compute(size, metrics, scale_factor),
         );
         let row_look = theme.resolve_row_look(item.selected, item.state.interaction_state(), size, &row_scale);
-        let focused_probe_row_look = if !item.state.disabled {
-            let mut focused_state = item.state.interaction_state();
-            focused_state.focused = true;
-            Some(theme.resolve_row_look(item.selected, focused_state, size, &row_scale))
-        } else {
-            None
-        };
-        let row_oversize_extent = adorner_oversize_extent(row_look.adorner)
-            .max(focused_probe_row_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
+        let row_oversize_extent = 0.0;
 
         let content = if let Some(item_template) = item_template {
             item_template(item, window, cx)
@@ -207,10 +188,6 @@ fn render_listbox_row_visual(
         .line_height(px(look.label_typography.line_height))
         .font_weight(look.label_typography.weight)
         .child(div().w_full().mt(px(look.label_baseline_shift)).child(content));
-
-    if let Some(adorner) = render_optional_adorner_with_focus_radius(look.adorner, look.radius) {
-        root = root.child(adorner);
-    }
 
     if state.disabled {
         root = root.opacity(0.56);

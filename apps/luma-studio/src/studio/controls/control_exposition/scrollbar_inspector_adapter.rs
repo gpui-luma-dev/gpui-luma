@@ -12,7 +12,7 @@ use super::inspector::{
     SharedInspectorResolver,
 };
 
-static SCROLLBAR_STATES: [super::inspector::InspectorStateSpec; 5] = COLOR_LAYOUT_INTERACTION_STATES;
+static SCROLLBAR_STATES: [super::inspector::InspectorStateSpec; 4] = COLOR_LAYOUT_INTERACTION_STATES;
 
 pub static SCROLLBAR_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Scrollbar",
@@ -59,12 +59,9 @@ fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> V
     let style = scrollbar_style(selection.variant_id);
     let palette =
         ShadcnInspect::new(look).inspect_scrollbar_color_palette(style, interaction_state(selection.state_id));
-    let mut rows = vec![
+    let rows = vec![
         color_row("track background", &palette.track_background),
         color_row("thumb background", &palette.thumb_background),
     ];
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_row("focus ring", focus_ring));
-    }
     rows
 }

@@ -7,11 +7,9 @@
 
 use gpui_luma::controls::context_menu::ContextMenuLook;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma::theme::adorner::focus_ring_adorner;
 
 use crate::look_context::LookContext;
 use super::floating_menu::floating_menu_look;
-use crate::focus::focus_ring_color;
 use crate::resolve::{resolve_color, resolve_ghost_trigger_background, resolve_ghost_trigger_foreground};
 use crate::mode::ShadcnModeTokens;
 
@@ -30,14 +28,6 @@ pub fn context_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: 
         target_foreground: resolve_ghost_trigger_foreground(catalog, layer, state.disabled)
             .unwrap_or_else(|err| panic!("context menu properties: {err}")),
         target_border: resolve_color(catalog, "border").unwrap_or_else(|err| panic!("context menu properties: {err}")),
-        adorner: focus_ring_adorner(
-            state
-                .focused
-                .then(|| focus_ring_color(catalog))
-                .transpose()
-                .unwrap_or_else(|err| panic!("context menu properties: {err}")),
-            metrics,
-        ),
         target_typography: typography.text.label,
         target_radius: metrics.radius(size),
         target_padding_x: metrics.padding_x(size),

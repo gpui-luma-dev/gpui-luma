@@ -12,7 +12,6 @@ pub(in crate::gallery) fn build_tabs_navigation_inspect_tree(look: &ShadcnLook) 
     let matrix_states = [
         ("default", InteractionState::default()),
         ("hover", InteractionState { hovered: true, ..InteractionState::default() }),
-        ("focused", InteractionState { focused: true, ..InteractionState::default() }),
         ("pressed", InteractionState { hovered: true, pressed: true, ..InteractionState::default() }),
         ("disabled", InteractionState { disabled: true, ..InteractionState::default() }),
     ];

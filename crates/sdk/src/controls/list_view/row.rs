@@ -1,7 +1,6 @@
 use gpui::{AnyElement, Stateful, div, prelude::*, px};
 
 use super::theme::ListViewRowLook;
-use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 
 pub(crate) fn render_list_view_row(
     id: impl Into<gpui::ElementId>,
@@ -45,10 +44,6 @@ pub(crate) fn render_list_view_row(
         row = row.cursor_pointer();
     } else {
         row = row.opacity(0.56);
-    }
-
-    if let Some(adorner) = render_optional_adorner_with_focus_radius(look.adorner, look.radius) {
-        row = row.child(adorner);
     }
 
     row

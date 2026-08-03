@@ -1,5 +1,5 @@
 use gpui_luma::controls::button_family::{
-    ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, button_family_focus_adorner, compose_button_family_look,
+    ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_look,
 };
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, StandardBoxScale, ThemeMode, snap_to_pixel};
 
@@ -225,7 +225,6 @@ pub fn button_palette(
         background,
         foreground,
         border,
-        adorner: button_family_focus_adorner(ctx.state.focused, border, ctx.palette().focus_ring, ctx.metrics()),
         typography,
         font_family: ctx.typography().font.sans.family.clone().into(),
     }

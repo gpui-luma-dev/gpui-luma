@@ -2,7 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla, SharedString};
 
-use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::layout::{label_baseline_shift, snap_to_pixel};
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
 
@@ -53,7 +52,6 @@ pub struct CheckboxPalette {
     pub indicator_border: Hsla,
     pub checkmark_color: Hsla,
     pub label_color: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub label_font_family: SharedString,
     pub indicator_shadow: Option<Vec<BoxShadow>>,
@@ -86,7 +84,6 @@ impl DefaultCheckboxTheme {
 impl CheckboxTheme for DefaultCheckboxTheme {
     fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> CheckboxPalette {
         let palette = &self.tokens.palette;
-        let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let layer = state.layer();
         let selected = palette.state.selected;
@@ -107,17 +104,6 @@ impl CheckboxTheme for DefaultCheckboxTheme {
             palette.app.foreground
         };
 
-        let adorner = if state.focused {
-            Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
-                color: palette.focus.ring,
-                placement: AdornerPlacement::Oversize,
-                distance: metrics.border_width.default + metrics.focus.width,
-                width: metrics.focus.width,
-            }))
-        } else {
-            None
-        };
-
         CheckboxPalette {
             control_background: None,
             control_border: None,
@@ -135,7 +121,6 @@ impl CheckboxTheme for DefaultCheckboxTheme {
                 palette.app.foreground
             },
             label_color,
-            adorner,
             label_typography: {
                 let mut label_typography = typography.text.label;
                 crate::controls::textfield::apply_control_size_typography(&mut label_typography, typography, size);

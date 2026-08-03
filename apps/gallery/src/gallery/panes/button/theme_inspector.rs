@@ -345,7 +345,7 @@ fn state_item(variant: ThemeVariant, spec: ThemeStateSpec, tree: Entity<ThemePro
     .expanded(spec.expanded)
 }
 
-fn state_specs() -> [ThemeStateSpec; 5] {
+fn state_specs() -> [ThemeStateSpec; 4] {
     [
         ThemeStateSpec {
             id: "default",
@@ -359,13 +359,6 @@ fn state_specs() -> [ThemeStateSpec; 5] {
             label: "Hover",
             icon: LucideIcon::MousePointer2,
             state: InteractionState { hovered: true, ..InteractionState::default() },
-            expanded: false,
-        },
-        ThemeStateSpec {
-            id: "focused",
-            label: "Focused",
-            icon: LucideIcon::Focus,
-            state: InteractionState { focused: true, ..InteractionState::default() },
             expanded: false,
         },
         ThemeStateSpec {
@@ -502,14 +495,11 @@ fn control_size_from_id(id: &str) -> ControlSize {
 
 fn render_color_category(variant: ThemeVariant, state: InteractionState, look: &Arc<ShadcnLook>) -> AnyElement {
     let palette = ShadcnInspect::new(look).inspect_button_color_palette(variant.style(), ButtonFamilyRole::Text, state);
-    let mut rows = vec![
+    let rows = vec![
         color_property("background", &palette.background),
         color_property("foreground", &palette.foreground),
         color_property("border", &palette.border),
     ];
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_property("focus ring", focus_ring));
-    }
 
     render_rows_panel(
         look,

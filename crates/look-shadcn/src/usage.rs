@@ -39,7 +39,6 @@ const TEXTFIELD_PARTS: &[ThemePartUsage] = &[
         &["surface focused", "soft focused"],
         &["TextFieldPalette.selection_foreground"],
     ),
-    part("focus ring", "ring", &["surface focused", "soft focused"], &["TextFieldPalette.adorner"]),
 ];
 
 const BUTTON_PARTS: &[ThemePartUsage] = &[
@@ -55,7 +54,6 @@ const BUTTON_PARTS: &[ThemePartUsage] = &[
     part("outline border", "border", &["subtle default"], &["ButtonFamilyLook.border"]),
     part("ghost hover", "accent", &["ghost hovered"], &["ButtonFamilyLook.background"]),
     part("disabled", "muted", &["disabled"], &["ButtonFamilyLook.background"]),
-    part("focus ring", "ring", &["focused"], &["ButtonFamilyLook.adorner"]),
 ];
 
 const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
@@ -68,7 +66,6 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
             part("checked fill", "primary", &["checked"], &["CheckboxPalette.indicator_background"]),
             part("checkmark", "primary-foreground", &["checked"], &["CheckboxPalette.checkmark_color"]),
             part("border", "input", &["unchecked"], &["CheckboxPalette.indicator_border"]),
-            part("focus ring", "ring", &["focused"], &["CheckboxPalette.adorner"]),
         ],
     },
     &ThemeUsage {
@@ -77,7 +74,6 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
             part("selected fill", "primary", &["selected"], &["RadioButtonPalette.indicator_border"]),
             part("dot", "primary-foreground", &["selected"], &["RadioButtonPalette.dot_color"]),
             part("border", "input", &["unselected"], &["RadioButtonPalette.indicator_border"]),
-            part("focus ring", "ring", &["focused"], &["RadioButtonPalette.adorner"]),
         ],
     },
     &ThemeUsage {
@@ -96,7 +92,6 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
             ),
             part("disabled thumb", "muted-foreground", &["disabled"], &["SwitchPalette.thumb_background"]),
             part("disabled thumb border", "muted", &["disabled"], &["SwitchPalette.thumb_border"]),
-            part("focus ring", "ring", &["focused"], &["SwitchPalette.adorner"]),
         ],
     },
     &ThemeUsage {
@@ -105,7 +100,6 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
             part("track", "border", &["default"], &["SliderLook.track_background"]),
             part("fill", "primary", &["default"], &["SliderLook.fill_background"]),
             part("thumb border", "primary", &["default"], &["SliderLook.thumb_border"]),
-            part("focus ring", "ring", &["focused"], &["SliderLook.adorner"]),
         ],
     },
     &ThemeUsage {
@@ -200,7 +194,6 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         parts: &[
             part("inactive label", "foreground", &["inactive"], &["TabsNavigationItemLook.foreground"]),
             part("active label", "primary", &["active"], &["TabsNavigationItemLook.foreground"]),
-            part("focus ring", "ring", &["focused"], &["TabsNavigationItemLook.adorner"]),
         ],
     },
     &ThemeUsage {
@@ -238,7 +231,6 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
             part("list background", "background", &["enabled"], &["ListBoxListLook.background"]),
             part("list border", "input", &["enabled"], &["ListBoxListLook.border"]),
             part("row hover", "accent", &["hovered"], &["ListBoxRowPalette.background"]),
-            part("focus ring", "ring", &["focused"], &["ListBoxListLook.adorner"]),
         ],
     },
     &ThemeUsage {

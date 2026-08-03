@@ -1058,7 +1058,6 @@ impl ControlGroupTheme for ShadcnControlGroupTheme {
             muted_foreground: chrome.muted_text,
             typography: look.typography,
             font_family: look.font_family.clone(),
-            adorner: look.adorner,
         }
     }
 }

@@ -13,7 +13,6 @@ pub struct SelectorInspectPalette {
     pub trigger_background: ResolvedColor,
     pub trigger_foreground: ResolvedColor,
     pub trigger_border: ResolvedColor,
-    pub focus_ring: Option<ResolvedColor>,
     pub items_panel: FloatingMenuInspectPalette,
 }
 
@@ -46,7 +45,6 @@ pub fn inspect_selector_color_palette(
         trigger_background: trigger.background,
         trigger_foreground: trigger.foreground,
         trigger_border: trigger.border,
-        focus_ring: trigger.focus_ring,
         items_panel: menu,
     }
 }

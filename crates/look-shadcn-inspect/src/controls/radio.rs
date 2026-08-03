@@ -8,7 +8,6 @@ pub struct RadioButtonInspectPalette {
     pub indicator_border: ResolvedColor,
     pub dot_color: ResolvedColor,
     pub label_color: ResolvedColor,
-    pub focus_ring: Option<ResolvedColor>,
 }
 
 pub fn inspect_radio_button_color_palette(
@@ -29,14 +28,12 @@ pub fn inspect_radio_button_color_palette(
     } else {
         resolver.resolve_decl("border").unwrap_or(colors.selection_ring)
     };
-    let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
     RadioButtonInspectPalette {
         indicator_background: colors.indicator_background,
         indicator_border,
         dot_color: colors.dot_color,
         label_color: colors.label_color,
-        focus_ring,
     }
 }
 

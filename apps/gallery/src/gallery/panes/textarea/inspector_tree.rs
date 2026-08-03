@@ -80,7 +80,6 @@ fn textarea_color_nodes(prefix: &str, palette: &TextFieldInspectPalette) -> Vec<
             ("selection background", Some(&palette.selection_background)),
             ("selection foreground", Some(&palette.selection_foreground)),
             ("caret", Some(&palette.caret)),
-            ("focus ring", palette.focus_ring.as_ref()),
         ],
     )
 }

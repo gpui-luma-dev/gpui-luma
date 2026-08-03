@@ -177,12 +177,6 @@ pub fn toggle_palette(
         background,
         foreground,
         border,
-        adorner: gpui_luma::controls::button_family::button_family_focus_adorner(
-            ctx.state.focused,
-            border,
-            ctx.palette().focus_ring,
-            ctx.metrics(),
-        ),
         typography,
         font_family: ctx.typography().font.sans.family.clone().into(),
     }

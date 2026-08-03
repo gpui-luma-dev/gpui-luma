@@ -186,10 +186,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     }
 
     fn content_only_button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()> {
-        Button::new(id)
-            .template(self.button_template(ShadcnButtonStyle::ContentOnly))
-            .without_adorners()
-            .without_elevation()
+        Button::new(id).template(self.button_template(ShadcnButtonStyle::ContentOnly)).without_elevation()
     }
 
     fn checkbox(&self, id: impl Into<SharedString>) -> CheckboxBuilder {
@@ -215,7 +212,6 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     fn content_only_checkbox(&self, id: impl Into<SharedString>) -> CheckboxBuilder {
         checkbox::new(id)
             .template(self.checkbox_template(ShadcnButtonStyle::ContentOnly))
-            .without_adorners()
             .without_elevation()
     }
 
@@ -240,10 +236,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     }
 
     fn content_only_switch(&self, id: impl Into<SharedString>) -> SwitchBuilder {
-        switch::new(id)
-            .template(self.switch_template(ShadcnButtonStyle::ContentOnly))
-            .without_adorners()
-            .without_elevation()
+        switch::new(id).template(self.switch_template(ShadcnButtonStyle::ContentOnly)).without_elevation()
     }
 
     fn radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder {
@@ -269,7 +262,6 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     fn content_only_radio(&self, id: impl Into<SharedString>) -> RadioButtonBuilder {
         radio_button::new(id)
             .template(self.radio_button_template(ShadcnButtonStyle::ContentOnly))
-            .without_adorners()
             .without_elevation()
     }
 
@@ -292,7 +284,6 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     fn content_only_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()> {
         icon_button::new(id, icon)
             .template(self.button_template(ShadcnButtonStyle::ContentOnly))
-            .without_adorners()
             .without_elevation()
     }
 
@@ -317,10 +308,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     }
 
     fn content_only_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder {
-        toggle::new(id)
-            .template(self.toggle_template(ShadcnButtonStyle::ContentOnly))
-            .without_adorners()
-            .without_elevation()
+        toggle::new(id).template(self.toggle_template(ShadcnButtonStyle::ContentOnly)).without_elevation()
     }
 
     fn popup_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::popup_menu::PopupMenuBuilder {

@@ -16,7 +16,6 @@
 use gpui_luma::controls::navigation_sidebar::{
     NavigationSidebarContainerLook, NavigationSidebarItemLook, NavigationSidebarSectionLook,
 };
-use gpui_luma::theme::adorner::focus_ring_adorner;
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
@@ -213,12 +212,6 @@ fn base_item_look(_theme: &ShadcnLook, ctx: &LookContext, size: ControlSize) -> 
     let typography = ctx.typography();
     let size_metrics = metrics.for_size(size);
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_item_base");
-    let focus_ring = state
-        .focused
-        .then(|| resolver.resolve_first_decl(&["sidebar-ring", "ring"]))
-        .transpose()
-        .unwrap_or_else(|err| panic!("navigation sidebar item properties: {err}"))
-        .map(|color| color.hsla());
     let colors = resolve_navigation_sidebar_branch_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| NavigationSidebarBranchColorTable::fallback());
 
@@ -226,7 +219,6 @@ fn base_item_look(_theme: &ShadcnLook, ctx: &LookContext, size: ControlSize) -> 
         background: None,
         foreground: colors.foreground.hsla(),
         icon_color: colors.icon_color.hsla(),
-        adorner: focus_ring_adorner(focus_ring, metrics),
         typography: typography.text.label,
         radius: metrics.radius(size),
         height: 30.0,

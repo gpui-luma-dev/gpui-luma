@@ -26,7 +26,6 @@ fn trigger_style_branch(trigger_style: PopupMenuTriggerStyle, look: &ShadcnLook)
     let matrix_states = [
         ("default", InteractionState::default()),
         ("hover", InteractionState { hovered: true, ..InteractionState::default() }),
-        ("focused", InteractionState { focused: true, ..InteractionState::default() }),
         ("pressed", InteractionState { hovered: true, pressed: true, ..InteractionState::default() }),
         ("disabled", InteractionState { disabled: true, ..InteractionState::default() }),
     ];
@@ -57,7 +56,6 @@ fn state_branch(
         &palette.trigger_background,
         &palette.trigger_foreground,
         &palette.trigger_border,
-        palette.focus_ring.as_ref(),
     );
     children.push(floating_menu_surface_branch(&id, &palette.menu, expand));
     children.push(floating_menu_item_hover_branch(&id, &palette.menu, expand));

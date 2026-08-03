@@ -73,7 +73,6 @@ impl SearchSelectorControl {
             .propagate_home_end_to_parent(true)
             .look_override(|mut look| {
                 look.padding_y = (look.padding_y - 3.0).max(0.0);
-                look.adorner = None;
                 look.background = gpui::hsla(0.0, 0.0, 0.0, 0.0);
                 look.typography.line_height = look.typography.size;
                 look.min_height = (look.typography.line_height + (look.padding_y * 2.0)).max(18.0);

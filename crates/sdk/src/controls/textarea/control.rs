@@ -14,7 +14,6 @@ use super::{TextAreaBuilder, TextAreaState, TextAreaTemplateHandlers, model::Tex
 use crate::controls::scrollbar::{Scrollbar, ScrollbarEvent, ScrollbarOrientation};
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
 use crate::controls::choice_indicator_layout::reserve_shadow_extent;
-use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, observe_theme_revision};
 
 const TEXTAREA_RESIZE_ICON_SIZE: f32 = 10.0;
@@ -1349,12 +1348,8 @@ impl Render for TextArea {
         }
 
         let shadow_extent = reserve_shadow_extent(look.shadow.as_ref(), None, scale_factor, has_elevation);
-        let adorner = look.adorner;
-        let oversize_extent = adorner_oversize_extent(adorner).max(shadow_extent);
+        let oversize_extent = shadow_extent;
         let mut root = div().id(self.model.id.clone()).relative().child(control);
-        if let Some(adorner) = render_optional_adorner_with_focus_radius(adorner, look.radius) {
-            root = root.child(adorner);
-        }
         if oversize_extent > 0.0 {
             root = div().id(format!("{}-elevation", self.model.id)).relative().p(px(oversize_extent)).child(root);
         }

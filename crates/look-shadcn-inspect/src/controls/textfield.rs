@@ -15,7 +15,6 @@ pub struct TextFieldInspectPalette {
     pub selection_background: ResolvedColor,
     pub selection_foreground: ResolvedColor,
     pub caret: ResolvedColor,
-    pub focus_ring: Option<ResolvedColor>,
 }
 
 pub fn inspect_textfield_color_palette(
@@ -30,7 +29,6 @@ pub fn inspect_textfield_color_palette(
     let colors =
         gpui_luma_look_shadcn::tables::resolve_textfield_colors(&resolver, style, enabled, state.invalid, theme_mode)
             .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TextFieldColorTable::fallback());
-    let focus_ring = (enabled && state.focus_visible).then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
     TextFieldInspectPalette {
         background: colors.background,
@@ -41,7 +39,6 @@ pub fn inspect_textfield_color_palette(
         selection_background: colors.selection_background,
         selection_foreground: colors.selection_foreground,
         caret: colors.caret,
-        focus_ring,
     }
 }
 

@@ -4,7 +4,6 @@ use gpui::{BoxShadow, Hsla};
 
 use super::SliderThumbSize;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeTokens};
-use crate::theme::adorner::{AdornerSpec, focus_ring_adorner};
 
 #[derive(Clone, Debug)]
 pub struct SliderLook {
@@ -13,7 +12,6 @@ pub struct SliderLook {
     pub thumb_background: Hsla,
     pub thumb_border: Hsla,
     pub thumb_shadow: Vec<BoxShadow>,
-    pub adorner: Option<AdornerSpec>,
     pub width: f32,
     pub height: f32,
     pub track_height: f32,
@@ -73,7 +71,6 @@ impl SliderTheme for DefaultSliderTheme {
                 selected.background
             },
             thumb_shadow: elevation.thumb.to_box_shadows(),
-            adorner: focus_ring_adorner(state.focused.then_some(palette.focus.ring), metrics),
             width: 260.0,
             height: slider_height(metrics, size),
             track_height: slider_track_height(metrics, size),

@@ -2,7 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::theme::adorner::AdornerSpec;
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, ListRowScale, LumaTextStyle, MetricTokens, ThemeTokens,
 };
@@ -11,7 +10,6 @@ use crate::theme::{
 pub struct ListBoxListLook {
     pub background: Hsla,
     pub border: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub divider: Hsla,
     pub radius: f32,
     pub padding_x: f32,
@@ -23,7 +21,6 @@ pub struct ListBoxListLook {
 pub struct ListBoxRowPalette {
     pub background: Hsla,
     pub label_color: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
 }
 
@@ -31,7 +28,6 @@ pub struct ListBoxRowPalette {
 pub struct ListBoxRowLook {
     pub background: Hsla,
     pub label_color: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub radius: f32,
     pub padding_x: f32,
@@ -85,7 +81,6 @@ impl ListBoxTheme for DefaultListBoxTheme {
                 palette.state.disabled.background
             },
             border: palette.form.input.border,
-            adorner: None,
             divider: palette.form.input.border,
             radius: metrics.radius(size),
             padding_x: 6.0,
@@ -114,11 +109,10 @@ impl ListBoxTheme for DefaultListBoxTheme {
             palette.app.foreground
         };
 
-        let adorner = None;
         let mut label_typography = typography.text.label;
         crate::controls::textfield::apply_control_size_typography(&mut label_typography, typography, size);
 
-        ListBoxRowPalette { background, label_color, adorner, label_typography }
+        ListBoxRowPalette { background, label_color, label_typography }
     }
 
     fn metrics(&self) -> MetricTokens {
@@ -130,7 +124,6 @@ pub(crate) fn compose_listbox_row_look(palette: &ListBoxRowPalette, scale: &List
     ListBoxRowLook {
         background: palette.background,
         label_color: palette.label_color,
-        adorner: palette.adorner,
         label_typography: palette.label_typography,
         radius: scale.radius,
         padding_x: scale.padding_x,

@@ -7,7 +7,7 @@
 //! | Disabled | `muted`     | `border`         | `muted-foreground` / `muted` |
 //!
 //! Hover and pressed do not recolor the track or thumb (shadcn Switch has no hover
-//! surface). Only `focused` adds a focus ring via the adorner.
+//! surface).
 
 use gpui_luma::controls::switch::{SwitchPalette, SwitchScale};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeMode, snap_to_pixel};
@@ -15,7 +15,6 @@ use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTo
 use super::apply_button_metrics_typography;
 
 use crate::look_context::LookContext;
-use crate::focus::focus_adorner;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::resolve::resolve_color;
 use crate::shadow::parse_shadow_token;
@@ -147,7 +146,6 @@ pub fn switch_look(
     let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
-    let metrics = ctx.metrics();
     let typography = ctx.typography();
     let layer = state.layer();
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "switch");
@@ -166,12 +164,6 @@ pub fn switch_look(
     } else {
         colors.thumb_border.hsla()
     };
-    let adorner = if content_only {
-        None
-    } else {
-        focus_adorner(catalog, metrics, state.focused).unwrap_or_else(|err| panic!("switch properties: {err}"))
-    };
-
     SwitchPalette {
         track_background,
         track_border,
@@ -183,7 +175,6 @@ pub fn switch_look(
             switch_elevation_shadow(catalog, embedded_stylesheet(), layer)
         },
         label_color: colors.label_color.hsla(),
-        adorner,
         label_typography: {
             let mut label_typography = typography.text.label;
             apply_button_metrics_typography(&mut label_typography, mode, size);
@@ -495,7 +486,7 @@ mod tests {
     }
 
     #[test]
-    fn content_only_switch_keeps_primary_track_without_adorners_or_shadow() {
+    fn content_only_switch_keeps_primary_track_without_shadow() {
         let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
         let primary = switch_look(
             &mode,
@@ -517,7 +508,6 @@ mod tests {
         assert_eq!(content_only.track_background, primary.track_background);
         assert_eq!(content_only.track_border, primary.track_border);
         assert_eq!(content_only.thumb_background, primary.thumb_background);
-        assert!(content_only.adorner.is_none());
         assert!(content_only.thumb_shadow.is_empty());
     }
 }

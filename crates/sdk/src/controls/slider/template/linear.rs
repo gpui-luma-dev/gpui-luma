@@ -86,14 +86,13 @@ impl SliderTemplate for ThemedSliderTemplate {
         let root = match model.orientation {
             SliderOrientation::Horizontal => {
                 let track_top = (short_axis - cross_axis) * 0.5;
-                let thumb_top = (short_axis - look.thumb_size) * 0.5 - thumb_focus_offset();
-                let thumb_center_offset = -(look.thumb_size * 0.5 + thumb_focus_offset());
+                let thumb_top = (short_axis - look.thumb_size) * 0.5;
+                let thumb_center_offset = -(look.thumb_size * 0.5);
 
                 let track = render_horizontal_track(model, &look, track_top, cross_axis, track_radius, track_bounds);
 
                 let thumbs = ordered_thumbs(model).into_iter().map(|thumb| {
                     let display_percentage = display_position(thumb.position.clamp(0.0, 1.0), model.reversed);
-                    let active = model.active_thumb_id == Some(thumb.id);
                     let node = render_linear_thumb(
                         model,
                         &look,
@@ -104,7 +103,6 @@ impl SliderTemplate for ThemedSliderTemplate {
                         None,
                         thumb_radius,
                         Some(thumb),
-                        active,
                     );
                     attach_thumb_drag(node, &model_id, thumb.id, thumb_mouse_down.clone(), drag_move.clone(), enabled)
                 });
@@ -121,18 +119,16 @@ impl SliderTemplate for ThemedSliderTemplate {
                 let thumbs = ordered_thumbs(model).into_iter().map(|thumb| {
                     let display_percentage = display_position(thumb.position.clamp(0.0, 1.0), model.reversed);
                     let thumb_top = (long_axis - look.thumb_size).max(0.0) * (1.0 - display_percentage);
-                    let active = model.active_thumb_id == Some(thumb.id);
                     let node = render_linear_thumb(
                         model,
                         &look,
                         format!("{}-thumb-{}", model.id, thumb.id.as_u64()),
                         display_percentage,
-                        thumb_top - thumb_focus_offset(),
+                        thumb_top,
                         None,
-                        Some(thumb_left - thumb_focus_offset()),
+                        Some(thumb_left),
                         thumb_radius,
                         Some(thumb),
-                        active,
                     );
                     attach_thumb_drag(node, &model_id, thumb.id, thumb_mouse_down.clone(), drag_move.clone(), enabled)
                 });
@@ -316,11 +312,4 @@ fn uses_partitioned_track(model: &SliderRenderModel<'_>) -> bool {
             model.track_segments.iter().any(|segment| segment.kind == TrackSegmentKind::Blocked)
         }
     }
-}
-
-const THUMB_FOCUS_GAP: f32 = 0.0;
-const THUMB_FOCUS_WIDTH: f32 = 2.0;
-
-fn thumb_focus_offset() -> f32 {
-    THUMB_FOCUS_GAP + THUMB_FOCUS_WIDTH
 }

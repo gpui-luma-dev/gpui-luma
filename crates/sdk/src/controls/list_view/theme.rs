@@ -2,7 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::theme::adorner::AdornerSpec;
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, ListRowScale, LumaTextStyle, MetricTokens, ThemeTokens,
 };
@@ -32,7 +31,6 @@ pub struct ListViewRowPalette {
     pub background: Hsla,
     pub label_color: Hsla,
     pub divider: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
 }
 
@@ -41,7 +39,6 @@ pub struct ListViewRowLook {
     pub background: Hsla,
     pub label_color: Hsla,
     pub divider: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub radius: f32,
     pub padding_x: f32,
@@ -146,13 +143,7 @@ impl ListViewTheme for DefaultListViewTheme {
         let mut label_typography = typography.text.label;
         crate::controls::textfield::apply_control_size_typography(&mut label_typography, typography, size);
 
-        ListViewRowPalette {
-            background,
-            label_color,
-            divider: palette.form.input.border,
-            adorner: None,
-            label_typography,
-        }
+        ListViewRowPalette { background, label_color, divider: palette.form.input.border, label_typography }
     }
 
     fn metrics(&self) -> MetricTokens {
@@ -165,7 +156,6 @@ pub(crate) fn compose_list_view_row_look(palette: &ListViewRowPalette, scale: &L
         background: palette.background,
         label_color: palette.label_color,
         divider: palette.divider,
-        adorner: palette.adorner,
         label_typography: palette.label_typography,
         radius: 0.0,
         padding_x: scale.padding_x,

@@ -264,7 +264,6 @@ fn render_toggle_size_radius_cell(
         radius_override: std::cell::Cell::new(None),
         elevation: style != ShadcnButtonStyle::ContentOnly,
         compact: false,
-        suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: Some(look_source),
         ..Default::default()
     };
@@ -316,7 +315,6 @@ fn render_toggle_state_sample(
         radius_override: std::cell::Cell::new(None),
         elevation: style != ShadcnButtonStyle::ContentOnly,
         compact: false,
-        suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: Some(if icon_only {
             toggle_icon_look_for_style(Arc::new(look.clone()), style)
         } else {

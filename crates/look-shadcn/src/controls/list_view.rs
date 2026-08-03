@@ -143,7 +143,6 @@ pub fn list_view_row_palette(
         background: colors.background.hsla(),
         label_color: colors.label_color.hsla(),
         divider: colors.divider.hsla(),
-        adorner: None,
         label_typography,
     }
 }

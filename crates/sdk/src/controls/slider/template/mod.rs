@@ -12,7 +12,6 @@ use gpui::{
 };
 
 use crate::controls::color::shape::{Arc as ShapeArc, ArcData};
-use crate::theme::adorner::{AdornerPlacement, focus_ring_adorner_with_geometry, render_optional_adorner_with_focus_radius};
 
 use super::model::{SliderRenderModel, SliderThumbValue, ThumbId};
 use super::SliderDrag;
@@ -129,9 +128,6 @@ pub(crate) const DISABLED_OPACITY: f32 = 0.56;
 pub(crate) const DIAL_SIZE: f32 = 200.0;
 pub(crate) const TRACK_RADIUS: f32 = 72.0;
 
-const THUMB_FOCUS_GAP: f32 = 0.0;
-const THUMB_FOCUS_WIDTH: f32 = 2.0;
-
 pub(crate) fn uses_static_track_surface(model: &SliderRenderModel<'_>) -> bool {
     model.thumb_policy.is_multi_thumb() || model.presentation == super::model::TrackPresentation::Domain
 }
@@ -168,9 +164,9 @@ pub(crate) fn render_slider_thumb_at(
     thumb: Option<&SliderThumbValue>,
 ) -> Stateful<Div> {
     let thumb_fill = thumb.and_then(|thumb| thumb.preview).unwrap_or(look.thumb_background);
-    let offset = look.thumb_size * 0.5 + thumb_focus_offset();
+    let offset = look.thumb_size * 0.5;
 
-    let mut thumb = div()
+    div()
         .id(id)
         .absolute()
         .left(px(center_x - offset))
@@ -178,8 +174,7 @@ pub(crate) fn render_slider_thumb_at(
         .flex()
         .items_center()
         .justify_center()
-        .p(px(thumb_focus_offset()))
-        .rounded(px(thumb_radius + thumb_focus_offset()))
+        .rounded(px(thumb_radius))
         .child(
             div()
                 .size(px(look.thumb_size))
@@ -188,23 +183,7 @@ pub(crate) fn render_slider_thumb_at(
                 .border_color(look.thumb_border)
                 .rounded(px(thumb_radius))
                 .shadow(look.thumb_shadow.clone()),
-        );
-
-    if let Some(adorner) = render_optional_adorner_with_focus_radius(
-        focus_ring_adorner_with_geometry(
-            look.adorner.map(|spec| match spec {
-                crate::theme::adorner::AdornerSpec::FocusRing(focus) => focus.color,
-            }),
-            AdornerPlacement::Inset,
-            THUMB_FOCUS_GAP,
-            THUMB_FOCUS_WIDTH,
-        ),
-        thumb_radius + thumb_focus_offset(),
-    ) {
-        thumb = thumb.child(adorner);
-    }
-
-    thumb
+        )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -218,20 +197,11 @@ pub(crate) fn render_linear_thumb(
     cross_offset: Option<f32>,
     thumb_radius: f32,
     thumb: Option<&SliderThumbValue>,
-    active: bool,
 ) -> Stateful<Div> {
     use super::model::SliderOrientation;
     use gpui::relative;
 
     let thumb_fill = thumb.and_then(|thumb| thumb.preview).unwrap_or(look.thumb_background);
-    let focus_ring = if active {
-        look.adorner.map(|spec| match spec {
-            crate::theme::adorner::AdornerSpec::FocusRing(focus) => focus.color,
-        })
-    } else {
-        None
-    };
-
     let mut thumb = div()
         .id(id)
         .absolute()
@@ -239,8 +209,7 @@ pub(crate) fn render_linear_thumb(
         .flex()
         .items_center()
         .justify_center()
-        .p(px(thumb_focus_offset()))
-        .rounded(px(thumb_radius + thumb_focus_offset()))
+        .rounded(px(thumb_radius))
         .child(
             div()
                 .size(px(look.thumb_size))
@@ -250,13 +219,6 @@ pub(crate) fn render_linear_thumb(
                 .rounded(px(thumb_radius))
                 .shadow(look.thumb_shadow.clone()),
         );
-
-    if let Some(adorner) = render_optional_adorner_with_focus_radius(
-        focus_ring_adorner_with_geometry(focus_ring, AdornerPlacement::Inset, THUMB_FOCUS_GAP, THUMB_FOCUS_WIDTH),
-        thumb_radius + thumb_focus_offset(),
-    ) {
-        thumb = thumb.child(adorner);
-    }
 
     thumb = match model.orientation {
         SliderOrientation::Horizontal => {
@@ -496,10 +458,6 @@ pub(crate) fn arc_fill_end_cap_colors(
 
 pub(crate) fn polar_point(center: Point<Pixels>, radius: f32, angle: f32) -> Point<Pixels> {
     gpui::point(center.x + px(radius * angle.cos()), center.y + px(radius * angle.sin()))
-}
-
-fn thumb_focus_offset() -> f32 {
-    THUMB_FOCUS_GAP + THUMB_FOCUS_WIDTH
 }
 
 #[cfg(test)]

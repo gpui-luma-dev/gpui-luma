@@ -71,12 +71,7 @@ fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> V
         interaction_state(selection.state_id),
         size,
     );
-    trigger_color_rows(
-        &palette.trigger_background,
-        &palette.trigger_foreground,
-        &palette.trigger_border,
-        palette.focus_ring.as_ref(),
-    )
+    trigger_color_rows(&palette.trigger_background, &palette.trigger_foreground, &palette.trigger_border)
 }
 
 fn resolve_panel_color_rows(

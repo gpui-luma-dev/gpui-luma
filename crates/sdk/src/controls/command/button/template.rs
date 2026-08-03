@@ -12,7 +12,6 @@ use crate::theme::InteractionState;
 const DISABLED_OPACITY: f32 = 0.56;
 
 use crate::controls::template::{Modifier, TemplateWithModifiers};
-use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 pub type ButtonTemplateModifier<D> = Modifier<ButtonRenderModel<D>>;
@@ -54,7 +53,6 @@ fn clone_model_with_state<D: Clone>(model: &ButtonRenderModel<D>, state: Interac
         radius_override: std::cell::Cell::new(model.radius_override.get()),
         elevation: model.elevation,
         compact: model.compact,
-        suppress_adorners: std::cell::Cell::new(model.suppress_adorners.get()),
         switch_track_width_extra: model.switch_track_width_extra,
         switch_orientation: model.switch_orientation,
         switch_track_content: model.switch_track_content.clone(),
@@ -79,19 +77,6 @@ fn resolve_probe_look<D: Clone>(
 
     let palette = theme.resolve(model.role, model.size, state);
     compose_button_family_look(&palette, model.role, scale, theme.metrics().radius.pill)
-}
-
-fn resolve_focus_probe_look<D: Clone>(
-    theme: &Arc<dyn ButtonFamilyTheme>,
-    model: &ButtonRenderModel<D>,
-    scale: &StandardBoxScale,
-) -> Option<ButtonFamilyLook> {
-    if model.state.disabled {
-        return None;
-    }
-
-    let focused_state = InteractionState { focused: true, ..model.state };
-    Some(resolve_probe_look(theme, model, scale, focused_state))
 }
 
 /// Enabled-state look used only for elevation layout reservation when disabled clears paint shadows.
@@ -198,7 +183,6 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
         );
         let look = resolve_look(&self.theme, model, &scale);
-        let focused_probe_look = resolve_focus_probe_look(&self.theme, model, &scale);
         let elevation_probe_look = resolve_elevation_probe_look(&self.theme, model, &scale);
         let border = button_family_effective_border(look.border);
 
@@ -271,42 +255,15 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             control = control.shadow(shadows.clone());
         }
 
-        let radius = if let Some(r) = model.radius_override.get() {
-            r
-        } else if model.round {
-            look.height / 2.0
-        } else {
-            look.radius
-        };
-
-        let suppress_adorners = model.suppress_adorners.get();
-        let adorner = if suppress_adorners { None } else { look.adorner };
-        let focused_adorner = if suppress_adorners {
-            None
-        } else {
-            focused_probe_look.as_ref().and_then(|probe| probe.adorner)
-        };
-
         let shadow_extent = crate::controls::choice_indicator_layout::reserve_shadow_extent(
             look.shadow.as_ref(),
             elevation_probe_look.as_ref().and_then(|probe| probe.shadow.as_ref()),
             scale_factor,
             model.elevation,
         );
-        let oversize_extent = crate::controls::choice_indicator_layout::button_family_oversize_extent(
-            model.compact,
-            model.elevation,
-            model.state.focused,
-            adorner,
-            focused_adorner,
-            shadow_extent,
-        );
+        let oversize_extent = shadow_extent;
 
-        let mut adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
-
-        if let Some(adorner) = render_optional_adorner_with_focus_radius(adorner, radius) {
-            adorned = adorned.child(adorner);
-        }
+        let adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
 
         let mut root = div().id(model.id.clone()).relative();
         root = if oversize_extent > 0.0 {
@@ -340,7 +297,6 @@ mod tests {
             background: Hsla { h: 120.0, s: 1.0, l: 0.5, a: 1.0 },
             foreground: Hsla { h: 0.0, s: 0.0, l: 1.0, a: 1.0 },
             border: Some(Hsla { h: 120.0, s: 1.0, l: 0.3, a: 1.0 }),
-            adorner: None,
             typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
             font_family: "test".into(),
             radius: 8.0,
@@ -382,7 +338,6 @@ mod tests {
             background: Hsla::default(),
             foreground: Hsla::default(),
             border: Some(Hsla::default()),
-            adorner: None,
             typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
             font_family: "test".into(),
         };

@@ -2,7 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{Hsla, SharedString};
 
-use crate::theme::adorner::AdornerSpec;
 use crate::theme::layout::snap_to_pixel;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
 
@@ -44,7 +43,6 @@ pub struct AccordionPalette {
     pub border_color: Hsla,
     pub icon_color: Hsla,
     pub chevron_color: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
 }
@@ -105,7 +103,6 @@ impl AccordionTheme for DefaultAccordionTheme {
             border_color: palette.navigation.border,
             icon_color: foreground,
             chevron_color: palette.navigation.muted_foreground,
-            adorner: None,
             typography: trigger_typography,
             font_family: typography.font.sans.family.clone().into(),
         }

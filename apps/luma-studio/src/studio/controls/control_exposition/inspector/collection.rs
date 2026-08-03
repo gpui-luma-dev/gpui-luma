@@ -11,14 +11,11 @@ use super::provenance::color_row;
 use super::schema::InspectColorRow;
 
 pub fn listbox_list_color_rows(palette: &ListBoxListInspectPalette) -> Vec<InspectColorRow> {
-    let mut rows = vec![
+    let rows = vec![
         color_row("background", &palette.background),
         color_row("border", &palette.border),
         color_row("divider", &palette.divider),
     ];
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_row("focus ring", focus_ring));
-    }
     rows
 }
 
@@ -75,9 +72,6 @@ pub fn navigation_sidebar_item_color_rows(palette: &NavigationSidebarItemInspect
     }
     rows.push(color_row("foreground", &palette.foreground));
     rows.push(color_row("icon", &palette.icon_color));
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_row("focus ring", focus_ring));
-    }
     rows
 }
 

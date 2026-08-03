@@ -42,7 +42,7 @@ pub static COLOR_LAYOUT_ELEVATION_CATEGORIES: [InspectorCategory; 3] = [
     InspectorCategory { id: "elevation", label: "Elevation", icon: LucideIcon::Layers, expanded_default: true },
 ];
 
-pub static COLOR_LAYOUT_INTERACTION_STATES: [InspectorStateSpec; 5] = [
+pub static COLOR_LAYOUT_INTERACTION_STATES: [InspectorStateSpec; 4] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -54,13 +54,6 @@ pub static COLOR_LAYOUT_INTERACTION_STATES: [InspectorStateSpec; 5] = [
         id: "disabled",
         label: "Disabled",
         icon: LucideIcon::CircleOff,
-        expanded_default: false,
-        categories: &COLOR_LAYOUT_CATEGORIES,
-    },
-    InspectorStateSpec {
-        id: "focused",
-        label: "Focused",
-        icon: LucideIcon::Focus,
         expanded_default: false,
         categories: &COLOR_LAYOUT_CATEGORIES,
     },
@@ -80,7 +73,7 @@ pub static COLOR_LAYOUT_INTERACTION_STATES: [InspectorStateSpec; 5] = [
     },
 ];
 
-pub static CHOICE_INTERACTION_STATES: [InspectorStateSpec; 5] = [
+pub static CHOICE_INTERACTION_STATES: [InspectorStateSpec; 4] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -92,13 +85,6 @@ pub static CHOICE_INTERACTION_STATES: [InspectorStateSpec; 5] = [
         id: "disabled",
         label: "Disabled",
         icon: LucideIcon::CircleOff,
-        expanded_default: false,
-        categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
-    },
-    InspectorStateSpec {
-        id: "focused",
-        label: "Focused",
-        icon: LucideIcon::Focus,
         expanded_default: false,
         categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
     },
@@ -259,7 +245,7 @@ pub static PAGER_PARTS: [InspectorPart; 2] = [
     InspectorPart { id: "button", label: "Button", variants: &PAGER_BUTTON_VARIANTS, default_variant_id: "nav" },
 ];
 
-pub static PAGER_STATES: [InspectorStateSpec; 6] = [
+pub static PAGER_STATES: [InspectorStateSpec; 5] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -279,13 +265,6 @@ pub static PAGER_STATES: [InspectorStateSpec; 6] = [
         label: "Enabled",
         icon: LucideIcon::Circle,
         expanded_default: true,
-        categories: &COLOR_LAYOUT_CATEGORIES,
-    },
-    InspectorStateSpec {
-        id: "focused",
-        label: "Focused",
-        icon: LucideIcon::Focus,
-        expanded_default: false,
         categories: &COLOR_LAYOUT_CATEGORIES,
     },
     InspectorStateSpec {
@@ -314,7 +293,7 @@ pub static POPUP_MENU_PARTS: [InspectorPart; 2] = [
     InspectorPart { id: "panel", label: "Panel", variants: &[], default_variant_id: "" },
 ];
 
-pub static POPUP_MENU_STATES: [InspectorStateSpec; 8] = [
+pub static POPUP_MENU_STATES: [InspectorStateSpec; 7] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -326,13 +305,6 @@ pub static POPUP_MENU_STATES: [InspectorStateSpec; 8] = [
         id: "disabled",
         label: "Disabled",
         icon: LucideIcon::CircleOff,
-        expanded_default: false,
-        categories: &COLOR_LAYOUT_CATEGORIES,
-    },
-    InspectorStateSpec {
-        id: "focused",
-        label: "Focused",
-        icon: LucideIcon::Focus,
         expanded_default: false,
         categories: &COLOR_LAYOUT_CATEGORIES,
     },
@@ -376,7 +348,7 @@ pub static POPUP_MENU_STATES: [InspectorStateSpec; 8] = [
 pub static LISTBOX_VARIANTS: [InspectorVariant; 2] =
     [InspectorVariant { id: "list", label: "List" }, InspectorVariant { id: "row", label: "Row" }];
 
-pub static LISTBOX_STATES: [InspectorStateSpec; 7] = [
+pub static LISTBOX_STATES: [InspectorStateSpec; 6] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -396,13 +368,6 @@ pub static LISTBOX_STATES: [InspectorStateSpec; 7] = [
         label: "Enabled",
         icon: LucideIcon::Circle,
         expanded_default: true,
-        categories: &COLOR_LAYOUT_CATEGORIES,
-    },
-    InspectorStateSpec {
-        id: "focused",
-        label: "Focused",
-        icon: LucideIcon::Focus,
-        expanded_default: false,
         categories: &COLOR_LAYOUT_CATEGORIES,
     },
     InspectorStateSpec {
@@ -434,7 +399,7 @@ pub static LIST_VIEW_VARIANTS: [InspectorVariant; 3] = [
     InspectorVariant { id: "grid-cell", label: "Grid Cell" },
 ];
 
-pub static LIST_VIEW_STATES: [InspectorStateSpec; 7] = LISTBOX_STATES;
+pub static LIST_VIEW_STATES: [InspectorStateSpec; 6] = LISTBOX_STATES;
 
 pub static LIST_VIEW_ROW_VALUE_MODES: [InspectorValueMode; 2] = [
     InspectorValueMode { id: "unselected", label: "unselected" },
@@ -501,7 +466,7 @@ pub static TREE_VIEW_ROW_STATES: [InspectorStateSpec; 4] = [
     },
 ];
 
-pub static NAVIGATION_SIDEBAR_STATES: [InspectorStateSpec; 5] = [
+pub static NAVIGATION_SIDEBAR_STATES: [InspectorStateSpec; 4] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -513,13 +478,6 @@ pub static NAVIGATION_SIDEBAR_STATES: [InspectorStateSpec; 5] = [
         id: "disabled",
         label: "Disabled",
         icon: LucideIcon::CircleOff,
-        expanded_default: false,
-        categories: &COLOR_LAYOUT_CATEGORIES,
-    },
-    InspectorStateSpec {
-        id: "focused",
-        label: "Focused",
-        icon: LucideIcon::Focus,
         expanded_default: false,
         categories: &COLOR_LAYOUT_CATEGORIES,
     },
@@ -539,7 +497,7 @@ pub static NAVIGATION_SIDEBAR_STATES: [InspectorStateSpec; 5] = [
     },
 ];
 
-pub static TABS_NAVIGATION_STATES: [InspectorStateSpec; 7] = [
+pub static TABS_NAVIGATION_STATES: [InspectorStateSpec; 6] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -559,13 +517,6 @@ pub static TABS_NAVIGATION_STATES: [InspectorStateSpec; 7] = [
         label: "Enabled",
         icon: LucideIcon::Circle,
         expanded_default: true,
-        categories: &COLOR_LAYOUT_CATEGORIES,
-    },
-    InspectorStateSpec {
-        id: "focused",
-        label: "Focused",
-        icon: LucideIcon::Focus,
-        expanded_default: false,
         categories: &COLOR_LAYOUT_CATEGORIES,
     },
     InspectorStateSpec {

@@ -37,7 +37,6 @@ pub struct ButtonModel<D = ()> {
     pub(crate) round: bool,
     pub(crate) elevation: bool,
     pub(crate) compact: bool,
-    pub(crate) suppress_adorners: bool,
     pub(crate) switch_track_width_extra: f32,
     pub(crate) switch_orientation: crate::controls::switch::SwitchOrientation,
     pub(crate) switch_track_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
@@ -57,7 +56,6 @@ pub struct ButtonRenderModel<D> {
     pub radius_override: Cell<Option<f32>>,
     pub elevation: bool,
     pub compact: bool,
-    pub suppress_adorners: Cell<bool>,
     pub switch_track_width_extra: f32,
     pub switch_orientation: crate::controls::switch::SwitchOrientation,
     pub switch_track_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
@@ -78,7 +76,6 @@ impl<D: Default> Default for ButtonRenderModel<D> {
             radius_override: Cell::new(None),
             elevation: true,
             compact: false,
-            suppress_adorners: Cell::new(false),
             switch_track_width_extra: 0.0,
             switch_orientation: crate::controls::switch::SwitchOrientation::Horizontal,
             switch_track_content: None,
@@ -108,7 +105,6 @@ impl ButtonBuilder<()> {
                 round: false,
                 elevation: true,
                 compact: false,
-                suppress_adorners: false,
                 switch_track_width_extra: 0.0,
                 switch_orientation: crate::controls::switch::SwitchOrientation::Horizontal,
                 switch_track_content: None,
@@ -156,7 +152,6 @@ impl ButtonBuilder<()> {
                 round: old.round,
                 elevation: old.elevation,
                 compact: old.compact,
-                suppress_adorners: old.suppress_adorners,
                 switch_track_width_extra: 0.0,
                 switch_orientation: crate::controls::switch::SwitchOrientation::Horizontal,
                 switch_track_content: None,
@@ -223,15 +218,6 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
         self
     }
 
-    /// Suppresses template adorners and any layout reserve they require.
-    ///
-    /// The current default templates only render a focus adorner, but the flag is intentionally
-    /// plural because templates may add more adorners over time.
-    pub fn without_adorners(mut self) -> Self {
-        self.model.suppress_adorners = true;
-        self
-    }
-
     /// Dense embedding: no elevation and no focus-ring layout reserve until focused.
     pub fn compact(mut self) -> Self {
         self.model.compact = true;
@@ -273,12 +259,6 @@ mod tests {
         let builder = ButtonBuilder::new("compact-test").compact();
         assert!(!builder.model.elevation);
         assert!(builder.model.compact);
-    }
-
-    #[test]
-    fn without_adorners_sets_suppression_flag() {
-        let builder = ButtonBuilder::new("content-only-test").without_adorners();
-        assert!(builder.model.suppress_adorners);
     }
 
     #[test]

@@ -2,7 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla, SharedString};
 
-use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::layout::{label_baseline_shift, snap_to_pixel};
 use crate::theme::{ControlSize, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
 
@@ -41,7 +40,6 @@ pub struct SwitchPalette {
     pub thumb_border: Hsla,
     pub thumb_shadow: Vec<BoxShadow>,
     pub label_color: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub label_font_family: SharedString,
 }
@@ -77,7 +75,6 @@ impl DefaultSwitchTheme {
 impl SwitchTheme for DefaultSwitchTheme {
     fn resolve(&self, on: bool, state: InteractionState, size: ControlSize) -> SwitchPalette {
         let palette = &self.tokens.palette;
-        let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let elevation = &self.tokens.elevation;
         let selected = palette.state.selected;
@@ -88,17 +85,6 @@ impl SwitchTheme for DefaultSwitchTheme {
             selected.background
         } else {
             palette.form.input.background
-        };
-
-        let adorner = if state.focused {
-            Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
-                color: palette.focus.ring,
-                placement: AdornerPlacement::Oversize,
-                distance: metrics.border_width.default + metrics.focus.width,
-                width: metrics.focus.width,
-            }))
-        } else {
-            None
         };
 
         let track_border = if on && !state.disabled {
@@ -127,7 +113,6 @@ impl SwitchTheme for DefaultSwitchTheme {
             } else {
                 palette.app.foreground
             },
-            adorner,
             label_typography: {
                 let mut label_typography = typography.text.label;
                 crate::controls::textfield::apply_control_size_typography(&mut label_typography, typography, size);

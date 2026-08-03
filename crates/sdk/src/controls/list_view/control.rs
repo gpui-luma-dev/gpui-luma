@@ -21,7 +21,6 @@ use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, DecreaseValueLarge, IncreaseValueLarge, SelectFirstItem, SelectLastItem,
     SelectNextItem, SelectPreviousItem,
 };
-use crate::theme::adorner::adorner_oversize_extent;
 use crate::theme::{ControlSize, InteractionState, LayoutCacheKey, ListRowScale, LumaLayoutCacheExt};
 use crate::theme::observe_theme_revision;
 
@@ -608,15 +607,6 @@ where
         if let Some(fill_height) = self.fill_row_height {
             look.min_height = fill_height;
         }
-        let focused_probe_look = if enabled || active {
-            let mut focused_probe_state = interaction;
-            focused_probe_state.focused = true;
-            Some(self.model.theme.resolve_row_look(selected, focused_probe_state, self.model.size, &scale))
-        } else {
-            None
-        };
-        let row_oversize_extent = adorner_oversize_extent(look.adorner)
-            .max(focused_probe_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
 
         let row_model = ListViewRowRenderModel {
             list_id: &self.model.id,
@@ -670,11 +660,7 @@ where
             this.handle_item_click(index, event, cx);
         }));
 
-        if row_oversize_extent > 0.0 {
-            div().relative().w_full().p(px(row_oversize_extent)).child(row).into_any_element()
-        } else {
-            row.into_any_element()
-        }
+        row.into_any_element()
     }
 
     fn set_active_index_internal(

@@ -2,7 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{Hsla, SharedString};
 
-use crate::theme::adorner::AdornerSpec;
 use crate::theme::layout::snap_to_pixel;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
 
@@ -40,7 +39,6 @@ pub struct TreeViewPalette {
     pub foreground: Hsla,
     pub icon_color: Hsla,
     pub chevron_color: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
 }
@@ -93,7 +91,6 @@ impl TreeViewTheme for DefaultTreeViewTheme {
             foreground,
             icon_color: palette.navigation.muted_foreground,
             chevron_color: palette.navigation.muted_foreground,
-            adorner: None,
             typography: row_typography,
             font_family: typography.font.sans.family.clone().into(),
         }

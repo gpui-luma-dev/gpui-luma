@@ -180,7 +180,6 @@ mod tests {
             background: gpui::transparent_black(),
             label_color: gpui::black(),
             divider: gpui::black(),
-            adorner: None,
             label_typography: LumaTextStyle { size: 13.0, line_height: 18.0, weight: gpui::FontWeight::NORMAL },
             radius: 0.0,
             padding_x: 8.0,

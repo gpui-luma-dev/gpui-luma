@@ -1,15 +1,12 @@
 //! Inspect metadata for `listbox`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
-
-use gpui_luma_look_shadcn::paint::focus_ring_color;
+use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct ListBoxListInspectPalette {
     pub background: ResolvedColor,
     pub border: ResolvedColor,
     pub divider: ResolvedColor,
-    pub focus_ring: Option<ResolvedColor>,
 }
 
 #[derive(Clone, Debug)]
@@ -33,25 +30,13 @@ pub fn inspect_listbox_list_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     enabled: bool,
-    focused: bool,
+    _focused: bool,
 ) -> ListBoxListInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "listbox_list_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_listbox_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListBoxListColorTable::fallback());
-    let focus_ring = focused
-        .then(|| focus_ring_color(ctx.catalog()))
-        .transpose()
-        .ok()
-        .flatten()
-        .map(|color| resolved_from_hsla(color, ColorSource::CssVar { token: "ring".into() }));
-
-    ListBoxListInspectPalette {
-        background: colors.background,
-        border: colors.border,
-        divider: colors.divider,
-        focus_ring,
-    }
+    ListBoxListInspectPalette { background: colors.background, border: colors.border, divider: colors.divider }
 }
 
 pub fn inspect_listbox_row_color_palette(
@@ -99,10 +84,6 @@ pub fn inspect_listbox_metrics(
         row_padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, list_scale.padding_x),
         row_padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, list_scale.padding_y),
     }
-}
-
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
 }
 
 #[cfg(test)]

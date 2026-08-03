@@ -3,7 +3,6 @@ use std::sync::{Arc, OnceLock};
 use gpui::Hsla;
 
 use crate::controls::floating_menu::{FloatingMenuLook, default_floating_menu_look};
-use crate::theme::adorner::{AdornerSpec, focus_ring_adorner};
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
 
 #[derive(Clone, Debug)]
@@ -11,7 +10,6 @@ pub struct ContextMenuLook {
     pub target_background: Hsla,
     pub target_foreground: Hsla,
     pub target_border: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub target_typography: LumaTextStyle,
     pub target_radius: f32,
     pub target_padding_x: f32,
@@ -68,7 +66,6 @@ impl ContextMenuTheme for DefaultContextMenuTheme {
             target_background,
             target_foreground,
             target_border: palette.border.default,
-            adorner: focus_ring_adorner(state.focused.then_some(palette.focus.ring), &self.tokens.metrics),
             target_typography: typography.text.label,
             target_radius: metrics.radius(size),
             target_padding_x: metrics.padding_x(size),

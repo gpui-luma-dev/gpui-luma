@@ -13,7 +13,6 @@ pub(in crate::gallery) fn build_checkbox_inspect_tree(look: &ShadcnLook) -> Vec<
     let matrix_states = [
         ("default", InteractionState::default()),
         ("hover", InteractionState { hovered: true, ..InteractionState::default() }),
-        ("focused", InteractionState { focused: true, ..InteractionState::default() }),
         ("pressed", InteractionState { hovered: true, pressed: true, ..InteractionState::default() }),
         ("disabled", InteractionState { disabled: true, ..InteractionState::default() }),
     ];
@@ -95,7 +94,6 @@ fn checkbox_color_nodes(prefix: &str, palette: &CheckboxInspectPalette) -> Vec<T
             ("indicator border", Some(&palette.indicator_border)),
             ("checkmark", Some(&palette.checkmark_color)),
             ("label", Some(&palette.label_color)),
-            ("focus ring", palette.focus_ring.as_ref()),
         ],
     )
 }

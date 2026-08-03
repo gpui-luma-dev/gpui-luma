@@ -120,7 +120,6 @@ pub fn accordion_trigger_palette(
         border_color: colors.border_color.hsla(),
         icon_color: colors.icon_color.hsla(),
         chevron_color: colors.chevron_color.hsla(),
-        adorner: None,
         typography: trigger_typography,
         font_family: typography.font.sans.family.clone().into(),
     }

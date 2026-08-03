@@ -8,7 +8,6 @@ use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaLayoutCacheExt, LumaTextStyle, MetricTokens, StandardBoxScale,
     ThemeTokens,
 };
-use crate::theme::adorner::{AdornerSpec, focus_ring_adorner};
 
 #[derive(Clone, Debug)]
 pub struct PopupMenuPalette {
@@ -16,7 +15,6 @@ pub struct PopupMenuPalette {
     pub trigger_foreground: Hsla,
     pub trigger_border: Option<Hsla>,
     pub trigger_shadow: Option<Vec<BoxShadow>>,
-    pub adorner: Option<AdornerSpec>,
     pub trigger_typography: LumaTextStyle,
     pub floating_menu: FloatingMenuLook,
 }
@@ -27,7 +25,6 @@ pub struct PopupMenuLook {
     pub trigger_foreground: Hsla,
     pub trigger_border: Option<Hsla>,
     pub trigger_shadow: Option<Vec<BoxShadow>>,
-    pub adorner: Option<AdornerSpec>,
     pub trigger_typography: LumaTextStyle,
     pub trigger_radius: f32,
     pub trigger_padding_x: f32,
@@ -156,7 +153,6 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
             trigger_foreground,
             trigger_border,
             trigger_shadow,
-            adorner: focus_ring_adorner(state.focused.then_some(palette.focus.ring), &self.tokens.metrics),
             trigger_typography: typography.text.label,
             floating_menu: default_floating_menu_look(&self.tokens, metrics.menu_size),
         }
@@ -173,7 +169,6 @@ pub fn compose_popup_menu_look(palette: &PopupMenuPalette, scale: &StandardBoxSc
         trigger_foreground: palette.trigger_foreground,
         trigger_border: palette.trigger_border,
         trigger_shadow: palette.trigger_shadow.clone(),
-        adorner: palette.adorner,
         trigger_typography: palette.trigger_typography,
         trigger_radius: scale.radius,
         trigger_padding_x: scale.padding_x,

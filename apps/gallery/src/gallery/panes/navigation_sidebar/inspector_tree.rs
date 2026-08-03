@@ -42,7 +42,6 @@ fn branch_item_branch(look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {
         ("default", InteractionState::default()),
         ("hover", InteractionState { hovered: true, ..InteractionState::default() }),
         ("pressed", InteractionState { hovered: true, pressed: true, ..InteractionState::default() }),
-        ("focused", InteractionState { focused: true, ..InteractionState::default() }),
         ("disabled", InteractionState { disabled: true, ..InteractionState::default() }),
     ];
     let state_nodes: Vec<_> = matrix_states
@@ -158,7 +157,6 @@ fn item_color_nodes(
             ("background", palette.background.as_ref()),
             ("foreground", Some(&palette.foreground)),
             ("icon", Some(&palette.icon_color)),
-            ("focus ring", palette.focus_ring.as_ref()),
         ],
     )
 }

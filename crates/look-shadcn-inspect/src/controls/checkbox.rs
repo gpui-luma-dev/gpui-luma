@@ -11,7 +11,6 @@ pub struct CheckboxInspectPalette {
     pub indicator_border: ResolvedColor,
     pub checkmark_color: ResolvedColor,
     pub label_color: ResolvedColor,
-    pub focus_ring: Option<ResolvedColor>,
 }
 
 pub fn inspect_checkbox_color_palette(
@@ -28,14 +27,12 @@ pub fn inspect_checkbox_color_palette(
     let colors = gpui_luma_look_shadcn::tables::resolve_checkbox_colors(&resolver, style, checked, layer)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::CheckboxColorTable::fallback());
     let indicator_border = effective_checkbox_indicator_border(checked, state.disabled, &colors, &resolver);
-    let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
     CheckboxInspectPalette {
         indicator_background: colors.indicator_background,
         indicator_border,
         checkmark_color: colors.checkmark_color,
         label_color: colors.label_color,
-        focus_ring,
     }
 }
 

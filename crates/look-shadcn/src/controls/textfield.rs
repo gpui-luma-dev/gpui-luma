@@ -12,11 +12,9 @@
 //! **Surface**: filled `muted` background, no border, same text/selection tokens.
 
 use gpui_luma::controls::textfield::{TextFieldLook, TextFieldPalette, TextFieldState, compose_textfield_look};
-use gpui_luma::theme::adorner::focus_ring_adorner;
 use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale, ThemeMode};
 
 use crate::look_context::LookContext;
-use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::shadow::parse_shadow_token;
@@ -139,11 +137,6 @@ pub fn textfield_palette_for_size(
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "textfield");
     let colors = resolve_textfield_colors(&resolver, style, enabled, state.invalid, ctx.theme_mode)
         .unwrap_or_else(|_| TextFieldColorTable::fallback());
-    let focus_ring = if enabled && state.focus_visible {
-        Some(focus_ring_color(catalog).unwrap_or_else(|err| panic!("textfield properties: {err}")))
-    } else {
-        None
-    };
     // Keep elevation in the look when disabled so SDK hosts can reserve projection
     // space; templates gate paint with `enabled` / `should_paint_shadow`.
     let shadow = textfield_elevation_shadow(&ctx, stylesheet, style);
@@ -170,7 +163,6 @@ pub fn textfield_palette_for_size(
         selection_background: colors.selection_background.hsla(),
         selection_foreground: colors.selection_foreground.hsla(),
         caret: colors.caret.hsla(),
-        adorner: focus_ring_adorner(focus_ring, &mode.metrics),
         shadow,
         typography: text_style,
         font_family: typography.font.sans.family.clone().into(),

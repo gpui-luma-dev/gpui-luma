@@ -99,7 +99,6 @@ pub fn listbox_list_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool,
     ListBoxListLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
-        adorner: None,
         divider: colors.divider.hsla(),
         radius: metrics.radius(size),
         padding_x: 6.0,
@@ -123,12 +122,7 @@ pub fn listbox_row_palette(
     let mut label_typography = typography.text.label;
     super::apply_button_metrics_typography(&mut label_typography, mode, size);
 
-    ListBoxRowPalette {
-        background: colors.background.hsla(),
-        label_color: colors.label_color.hsla(),
-        adorner: None,
-        label_typography,
-    }
+    ListBoxRowPalette { background: colors.background.hsla(), label_color: colors.label_color.hsla(), label_typography }
 }
 
 #[cfg(test)]

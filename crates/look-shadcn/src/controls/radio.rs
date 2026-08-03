@@ -14,7 +14,6 @@ use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMod
 use super::apply_button_metrics_typography;
 
 use crate::look_context::LookContext;
-use crate::focus::focus_adorner;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::resolve::resolve_color;
 use super::ShadcnButtonStyle;
@@ -88,7 +87,6 @@ pub fn radio_button_look(
     let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
-    let metrics = ctx.metrics();
     let typography = ctx.typography();
     let layer = choice_indicator_color_layer(state);
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "radio");
@@ -100,12 +98,6 @@ pub fn radio_button_look(
     } else {
         resolve_color(catalog, "border").unwrap_or_else(|err| panic!("radio properties: {err}"))
     };
-    let adorner = if content_only {
-        None
-    } else {
-        focus_adorner(catalog, metrics, state.focused).unwrap_or_else(|err| panic!("radio properties: {err}"))
-    };
-
     RadioButtonPalette {
         control_background: None,
         control_border: None,
@@ -113,7 +105,6 @@ pub fn radio_button_look(
         indicator_border,
         dot_color: colors.dot_color.hsla(),
         label_color: colors.label_color.hsla(),
-        adorner,
         label_typography: {
             let mut label_typography = typography.text.label;
             apply_button_metrics_typography(&mut label_typography, mode, size);
@@ -244,7 +235,7 @@ mod tests {
     }
 
     #[test]
-    fn content_only_radio_keeps_primary_indicator_without_adorners_or_shadow() {
+    fn content_only_radio_keeps_primary_indicator_without_shadow() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
         let primary =
             radio_button_look(&mode, ShadcnButtonStyle::Primary, true, InteractionState::default(), ControlSize::Md);
@@ -259,7 +250,6 @@ mod tests {
         assert_eq!(content_only.indicator_background, primary.indicator_background);
         assert_eq!(content_only.indicator_border, primary.indicator_border);
         assert_eq!(content_only.dot_color, primary.dot_color);
-        assert!(content_only.adorner.is_none());
         assert!(content_only.indicator_shadow.is_none());
     }
 }

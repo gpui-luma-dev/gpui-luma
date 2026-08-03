@@ -15,7 +15,6 @@ pub struct ButtonInspectPalette {
     pub background: ResolvedColor,
     pub foreground: ResolvedColor,
     pub border: ResolvedColor,
-    pub focus_ring: Option<ResolvedColor>,
 }
 
 pub fn inspect_button_color_palette(
@@ -38,9 +37,7 @@ pub fn inspect_button_color_palette(
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ButtonColorPalette::fallback());
 
     let border = effective_border_resolved(&colors);
-    let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
-
-    ButtonInspectPalette { background: colors.background, foreground: colors.foreground, border, focus_ring }
+    ButtonInspectPalette { background: colors.background, foreground: colors.foreground, border }
 }
 
 #[derive(Clone, Debug)]
@@ -349,6 +346,16 @@ fn radius_metric(
     }
 }
 
+fn effective_border_resolved(colors: &gpui_luma_look_shadcn::tables::ButtonColorPalette) -> ResolvedColor {
+    use gpui_luma_look_shadcn::ColorSource;
+
+    if let Some(color) = &colors.border {
+        return color.clone();
+    }
+
+    ResolvedColor { value: gpui::hsla(0.0, 0.0, 0.0, 0.0), source: ColorSource::Transparent }
+}
+
 fn focus_ring_offset_metric(border: gpui::Hsla, metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
     let border_width = metrics.border_width.default;
     let focus = metrics.focus.width;
@@ -360,16 +367,6 @@ fn focus_ring_offset_metric(border: gpui::Hsla, metrics: &gpui_luma::theme::Metr
             source: MetricSource::Derived { note: "border_width.default + focus.width".into() },
         }
     }
-}
-
-fn effective_border_resolved(colors: &gpui_luma_look_shadcn::tables::ButtonColorPalette) -> ResolvedColor {
-    use gpui_luma_look_shadcn::ColorSource;
-
-    if let Some(color) = &colors.border {
-        return color.clone();
-    }
-
-    ResolvedColor { value: gpui::hsla(0.0, 0.0, 0.0, 0.0), source: ColorSource::Transparent }
 }
 
 #[cfg(test)]
@@ -384,20 +381,6 @@ mod tests {
         );
         assert!(!metadata.is_empty());
         assert!(metadata[0].inputs.len() == 4);
-    }
-
-    #[test]
-    fn inspect_palette_focused_includes_ring_token() {
-        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let palette = inspect_button_color_palette(
-            &mode,
-            ThemeMode::Light,
-            ShadcnButtonStyle::Primary,
-            ButtonFamilyRole::Text,
-            InteractionState { focused: true, ..InteractionState::default() },
-        );
-        let ring = palette.focus_ring.expect("focused inspect palette should include ring");
-        assert!(matches!(ring.source, gpui_luma_look_shadcn::ColorSource::CssVar { ref token } if token == "ring"));
     }
 
     #[test]

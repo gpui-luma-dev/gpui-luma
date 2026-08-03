@@ -79,14 +79,11 @@ fn resolve_button_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_
         pager_button_role(selection.variant_id, selection.value_id),
         interaction_state(selection.state_id),
     );
-    let mut rows = vec![
+    let rows = vec![
         color_row("background", &palette.background),
         color_row("foreground", &palette.foreground),
         color_row("border", &palette.border),
     ];
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_row("focus ring", focus_ring));
-    }
     rows
 }
 

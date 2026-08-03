@@ -84,7 +84,6 @@ pub fn tree_view_row_palette(
         foreground: colors.foreground.hsla(),
         icon_color: colors.icon_color.hsla(),
         chevron_color: colors.chevron_color.hsla(),
-        adorner: None,
         typography: row_typography,
         font_family: typography.font.sans.family.clone().into(),
     }

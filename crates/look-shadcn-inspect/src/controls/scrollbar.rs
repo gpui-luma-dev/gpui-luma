@@ -8,7 +8,6 @@ use gpui_luma::controls::scrollbar::{ScrollbarOrientation, ScrollbarStyle};
 pub struct ScrollbarInspectPalette {
     pub track_background: ResolvedColor,
     pub thumb_background: ResolvedColor,
-    pub focus_ring: Option<ResolvedColor>,
 }
 
 #[derive(Clone, Debug)]
@@ -32,13 +31,8 @@ pub fn inspect_scrollbar_color_palette(
     let colors =
         gpui_luma_look_shadcn::tables::resolve_scrollbar_colors(&resolver, style, state.disabled, state.layer())
             .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ScrollbarColorTable::fallback());
-    let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
-    ScrollbarInspectPalette {
-        track_background: colors.track_background,
-        thumb_background: colors.thumb_background,
-        focus_ring,
-    }
+    ScrollbarInspectPalette { track_background: colors.track_background, thumb_background: colors.thumb_background }
 }
 
 pub fn inspect_scrollbar_metrics(

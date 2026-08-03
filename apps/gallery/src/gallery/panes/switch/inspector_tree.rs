@@ -13,7 +13,6 @@ pub(in crate::gallery) fn build_switch_inspect_tree(look: &ShadcnLook) -> Vec<Tr
     let matrix_states = [
         ("default", InteractionState::default()),
         ("hover", InteractionState { hovered: true, ..InteractionState::default() }),
-        ("focused", InteractionState { focused: true, ..InteractionState::default() }),
         ("pressed", InteractionState { hovered: true, pressed: true, ..InteractionState::default() }),
         ("disabled", InteractionState { disabled: true, ..InteractionState::default() }),
     ];
@@ -95,7 +94,6 @@ fn switch_color_nodes(prefix: &str, palette: &SwitchInspectPalette) -> Vec<TreeN
             ("thumb background", Some(&palette.thumb_background)),
             ("thumb border", Some(&palette.thumb_border)),
             ("label", Some(&palette.label_color)),
-            ("focus ring", palette.focus_ring.as_ref()),
         ],
     )
 }

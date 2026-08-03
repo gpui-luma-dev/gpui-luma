@@ -14,7 +14,7 @@ use super::inspector::{
     SharedInspectorResolver,
 };
 
-static SWITCH_STATES: [super::inspector::InspectorStateSpec; 5] = CHOICE_INTERACTION_STATES;
+static SWITCH_STATES: [super::inspector::InspectorStateSpec; 4] = CHOICE_INTERACTION_STATES;
 
 pub static SWITCH_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Switch",
@@ -73,16 +73,13 @@ fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> V
         on,
         interaction_state(selection.state_id),
     );
-    let mut rows = vec![
+    let rows = vec![
         color_row("track background", &palette.track_background),
         color_row("track border", &palette.track_border),
         color_row("thumb background", &palette.thumb_background),
         color_row("thumb border", &palette.thumb_border),
         color_row("label", &palette.label_color),
     ];
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_row("focus ring", focus_ring));
-    }
     rows
 }
 

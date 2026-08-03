@@ -14,7 +14,7 @@ use super::inspector::{
     SharedInspectorResolver,
 };
 
-static CHECKBOX_STATES: [super::inspector::InspectorStateSpec; 5] = CHOICE_INTERACTION_STATES;
+static CHECKBOX_STATES: [super::inspector::InspectorStateSpec; 4] = CHOICE_INTERACTION_STATES;
 
 pub static CHECKBOX_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Checkbox",
@@ -80,9 +80,6 @@ fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> V
     ];
     if !choice_indicator_only(selection.part_id) {
         rows.push(color_row("label", &palette.label_color));
-    }
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_row("focus ring", focus_ring));
     }
     rows
 }

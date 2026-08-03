@@ -13,7 +13,7 @@ use super::inspector::{
     SharedInspectorResolver,
 };
 
-static CONTEXT_MENU_STATES: [super::inspector::InspectorStateSpec; 5] = COLOR_LAYOUT_INTERACTION_STATES;
+static CONTEXT_MENU_STATES: [super::inspector::InspectorStateSpec; 4] = COLOR_LAYOUT_INTERACTION_STATES;
 
 pub static CONTEXT_MENU_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Context Menu",
@@ -64,12 +64,7 @@ fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> V
     };
     let palette =
         ShadcnInspect::new(look).inspect_context_menu_color_palette(interaction_state(selection.state_id), size);
-    let mut rows = trigger_color_rows(
-        &palette.target_background,
-        &palette.target_foreground,
-        &palette.target_border,
-        palette.focus_ring.as_ref(),
-    );
+    let mut rows = trigger_color_rows(&palette.target_background, &palette.target_foreground, &palette.target_border);
     rows.extend(floating_menu_palette_rows(&palette.menu));
     rows
 }

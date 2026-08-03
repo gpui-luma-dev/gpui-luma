@@ -13,7 +13,6 @@ pub(in crate::gallery) fn build_context_menu_inspect_tree(look: &ShadcnLook) -> 
     let matrix_states = [
         ("default", InteractionState::default()),
         ("hover", InteractionState { hovered: true, ..InteractionState::default() }),
-        ("focused", InteractionState { focused: true, ..InteractionState::default() }),
         ("pressed", InteractionState { hovered: true, pressed: true, ..InteractionState::default() }),
         ("disabled", InteractionState { disabled: true, ..InteractionState::default() }),
     ];
@@ -25,13 +24,8 @@ fn state_branch(state_label: &str, state: InteractionState, look: &ShadcnLook) -
     let id = format!("inspect-{}", inspect_slug(state_label));
     let expand = state_label == "default";
     let palette = ShadcnInspect::new(look).inspect_context_menu_color_palette(state, ControlSize::Md);
-    let mut children = ghost_trigger_color_nodes(
-        &id,
-        &palette.target_background,
-        &palette.target_foreground,
-        &palette.target_border,
-        palette.focus_ring.as_ref(),
-    );
+    let mut children =
+        ghost_trigger_color_nodes(&id, &palette.target_background, &palette.target_foreground, &palette.target_border);
     children.push(floating_menu_surface_branch(&id, &palette.menu, expand));
     children.push(floating_menu_item_hover_branch(&id, &palette.menu, expand));
     children.push(floating_menu_item_disabled_branch(&id, &palette.menu, expand));

@@ -133,10 +133,6 @@ impl ToggleBuilder {
         Self(self.0.without_elevation())
     }
 
-    pub fn without_adorners(self) -> Self {
-        Self(self.0.without_adorners())
-    }
-
     pub fn compact(self) -> Self {
         Self(self.0.compact())
     }

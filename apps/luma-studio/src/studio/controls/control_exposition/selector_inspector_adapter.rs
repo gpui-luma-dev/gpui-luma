@@ -12,7 +12,7 @@ use super::inspector::{
     SharedInspectorResolver,
 };
 
-static SELECTOR_STATES: [super::inspector::InspectorStateSpec; 5] = COLOR_LAYOUT_INTERACTION_STATES;
+static SELECTOR_STATES: [super::inspector::InspectorStateSpec; 4] = COLOR_LAYOUT_INTERACTION_STATES;
 
 pub static SELECTOR_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Selector",

@@ -73,7 +73,6 @@ pub(in crate::gallery) fn textfield_color_nodes(
             ("border", Some(&palette.border)),
             ("placeholder", Some(&palette.placeholder)),
             ("icon", Some(&palette.icon)),
-            ("focus ring", palette.focus_ring.as_ref()),
         ],
     )
 }

@@ -21,7 +21,7 @@ pub fn textfield_color_rows_prefixed(prefix: &'static str, palette: &TextFieldIn
 }
 
 fn textfield_field_color_rows(palette: &TextFieldInspectPalette) -> Vec<InspectColorRow> {
-    let mut rows = vec![
+    let rows = vec![
         color_row("background", &palette.background),
         color_row("foreground", &palette.foreground),
         color_row("border", &palette.border),
@@ -31,37 +31,28 @@ fn textfield_field_color_rows(palette: &TextFieldInspectPalette) -> Vec<InspectC
         color_row("selection foreground", &palette.selection_foreground),
         color_row("caret", &palette.caret),
     ];
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_row("focus ring", focus_ring));
-    }
     rows
 }
 
 fn textfield_input_color_rows(palette: &TextFieldInspectPalette) -> Vec<InspectColorRow> {
-    let mut rows = vec![
+    let rows = vec![
         color_row("textfield background", &palette.background),
         color_row("textfield foreground", &palette.foreground),
         color_row("textfield border", &palette.border),
         color_row("textfield placeholder", &palette.placeholder),
         color_row("textfield icon", &palette.icon),
     ];
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_row("textfield focus ring", focus_ring));
-    }
     rows
 }
 
 pub fn textfield_trigger_color_rows(palette: &TextFieldInspectPalette) -> Vec<InspectColorRow> {
-    let mut rows = vec![
+    let rows = vec![
         color_row("trigger background", &palette.background),
         color_row("trigger foreground", &palette.foreground),
         color_row("trigger border", &palette.border),
         color_row("trigger placeholder", &palette.placeholder),
         color_row("trigger icon", &palette.icon),
     ];
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_row("trigger focus ring", focus_ring));
-    }
     rows
 }
 
@@ -106,15 +97,11 @@ pub fn trigger_color_rows(
     background: &gpui_luma_look_shadcn::ResolvedColor,
     foreground: &gpui_luma_look_shadcn::ResolvedColor,
     border: &gpui_luma_look_shadcn::ResolvedColor,
-    focus_ring: Option<&gpui_luma_look_shadcn::ResolvedColor>,
 ) -> Vec<InspectColorRow> {
-    let mut rows = vec![
+    let rows = vec![
         color_row("trigger background", background),
         color_row("trigger foreground", foreground),
         color_row("trigger border", border),
     ];
-    if let Some(focus_ring) = focus_ring {
-        rows.push(color_row("trigger focus ring", focus_ring));
-    }
     rows
 }

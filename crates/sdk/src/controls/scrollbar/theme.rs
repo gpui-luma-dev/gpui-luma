@@ -5,13 +5,11 @@ use gpui::{Hsla, hsla};
 use crate::controls::scrollbar::{ScrollbarOrientation, ScrollbarStyle};
 
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeTokens};
-use crate::theme::adorner::{AdornerSpec, focus_ring_adorner};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ScrollbarLook {
     pub track_background: Hsla,
     pub thumb_background: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub length: f32,
     pub thickness: f32,
     pub track_thickness: f32,
@@ -82,7 +80,6 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
                 hsla(0.0, 0.0, 0.0, 0.0)
             },
             thumb_background,
-            adorner: focus_ring_adorner(state.focused.then_some(palette.focus.ring), &self.tokens.metrics),
             length,
             thickness: scrollbar_thickness(size),
             track_thickness: scrollbar_track_thickness(size),

@@ -165,7 +165,6 @@ pub(crate) fn render_button_state_sample(
         radius_override: std::cell::Cell::new(None),
         elevation: style != ShadcnButtonStyle::ContentOnly,
         compact: false,
-        suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: Some(look),
         ..Default::default()
     };

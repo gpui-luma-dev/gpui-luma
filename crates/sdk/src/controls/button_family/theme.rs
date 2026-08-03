@@ -2,7 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla, SharedString};
 
-use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,
 };
@@ -23,7 +22,6 @@ pub struct ButtonFamilyPalette {
     pub foreground: Hsla,
     /// Explicit border color from the theme. `None` means borderless.
     pub border: Option<Hsla>,
-    pub adorner: Option<AdornerSpec>,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
 }
@@ -34,7 +32,6 @@ pub struct ButtonFamilyLook {
     pub foreground: Hsla,
     /// Explicit border color from the theme. `None` means borderless.
     pub border: Option<Hsla>,
-    pub adorner: Option<AdornerSpec>,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
     pub radius: f32,
@@ -115,13 +112,10 @@ fn native_button_palette(tokens: &ThemeTokens, role: ButtonFamilyRole, state: In
         InteractionLayer::Default => base_background,
     };
 
-    let adorner = button_family_focus_adorner(state.focused, Some(border), palette.focus.ring, &tokens.metrics);
-
     ButtonFamilyPalette {
         background,
         foreground,
         border: Some(border),
-        adorner,
         typography: typography.text.label,
         font_family: typography.font.sans.family.clone().into(),
     }
@@ -134,36 +128,6 @@ pub fn button_family_effective_border(border: Option<Hsla>) -> Hsla {
     border.unwrap_or_else(|| gpui::hsla(0.0, 0.0, 0.0, 0.0))
 }
 
-/// Builds a focus-ring adorner from resolved look colors and scaffold metrics.
-///
-/// Borderless controls (`border.a == 0`) use an inset ring flush with the edge; bordered
-/// controls use an oversize ring outside the border box.
-pub fn button_family_focus_adorner(
-    focused: bool,
-    border: Option<Hsla>,
-    focus_color: Hsla,
-    metrics: &MetricTokens,
-) -> Option<AdornerSpec> {
-    if !focused {
-        return None;
-    }
-
-    let effective_border = button_family_effective_border(border);
-    let borderless = effective_border.a <= 0.0;
-    let (placement, distance) = if borderless {
-        (AdornerPlacement::Inset, 0.0)
-    } else {
-        (AdornerPlacement::Oversize, metrics.border_width.default + metrics.focus.width)
-    };
-
-    Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
-        color: focus_color,
-        placement,
-        distance,
-        width: metrics.focus.width,
-    }))
-}
-
 pub fn compose_button_family_look(
     palette: &ButtonFamilyPalette,
     role: ButtonFamilyRole,
@@ -174,7 +138,6 @@ pub fn compose_button_family_look(
         background: palette.background,
         foreground: palette.foreground,
         border: palette.border,
-        adorner: palette.adorner,
         typography: palette.typography,
         font_family: palette.font_family.clone(),
         radius: match role {
@@ -206,7 +169,6 @@ fn default_button_icon_size(role: ButtonFamilyRole, scale: &StandardBoxScale, ty
 
 #[cfg(test)]
 mod tests {
-    use gpui::hsla;
 
     use super::*;
 
@@ -214,44 +176,5 @@ mod tests {
     fn effective_border_is_transparent_when_absent() {
         let effective = button_family_effective_border(None);
         assert_eq!(effective.a, 0.0);
-    }
-
-    #[test]
-    fn focus_adorner_is_inset_when_borderless() {
-        let metrics = MetricTokens::default();
-        let ring = hsla(200.0, 1.0, 0.5, 1.0);
-
-        let adorner = button_family_focus_adorner(true, None, ring, &metrics).expect("focused adorner");
-        match adorner {
-            AdornerSpec::FocusRing(spec) => {
-                assert_eq!(spec.placement, AdornerPlacement::Inset);
-                assert_eq!(spec.distance, 0.0);
-                assert_eq!(spec.color, ring);
-            }
-        }
-    }
-
-    #[test]
-    fn focus_adorner_is_oversize_when_border_visible() {
-        let metrics = MetricTokens::default();
-        let border = hsla(0.0, 0.0, 0.0, 1.0);
-        let ring = hsla(200.0, 1.0, 0.5, 1.0);
-
-        let adorner = button_family_focus_adorner(true, Some(border), ring, &metrics).expect("focused adorner");
-        match adorner {
-            AdornerSpec::FocusRing(spec) => {
-                assert_eq!(spec.placement, AdornerPlacement::Oversize);
-                assert_eq!(spec.distance, metrics.border_width.default + metrics.focus.width);
-            }
-        }
-    }
-
-    #[test]
-    fn focus_adorner_absent_when_not_focused() {
-        let metrics = MetricTokens::default();
-        assert!(
-            button_family_focus_adorner(false, Some(hsla(0.0, 0.0, 0.0, 1.0)), hsla(0.0, 0.0, 1.0, 1.0), &metrics)
-                .is_none()
-        );
     }
 }

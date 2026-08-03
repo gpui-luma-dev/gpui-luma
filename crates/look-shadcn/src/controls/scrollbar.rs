@@ -11,10 +11,8 @@ use gpui_luma::controls::scrollbar::ScrollbarLook;
 use gpui_luma::controls::scrollbar::ScrollbarOrientation;
 use gpui_luma::controls::scrollbar::ScrollbarStyle;
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
-use gpui_luma::theme::adorner::focus_ring_adorner;
 
 use crate::look_context::LookContext;
-use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
@@ -97,16 +95,9 @@ pub fn scrollbar_look(
             DEFAULT_SCROLLBAR_THUMB_THICKNESS,
             DEFAULT_SCROLLBAR_MIN_THUMB_LENGTH,
         ));
-    let focus_ring = if state.focused {
-        Some(focus_ring_color(catalog).unwrap_or_else(|err| panic!("scrollbar properties: {err}")))
-    } else {
-        None
-    };
-
     ScrollbarLook {
         track_background: colors.track_background.hsla(),
         thumb_background: colors.thumb_background.hsla(),
-        adorner: focus_ring_adorner(focus_ring, &ctx.metrics()),
         length,
         thickness,
         track_thickness,
@@ -225,7 +216,6 @@ mod tests {
 
         assert_eq!(hovered.thumb_background, border);
         assert_eq!(focused.thumb_background, border);
-        assert!(focused.adorner.is_some());
     }
 
     #[test]

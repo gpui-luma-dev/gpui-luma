@@ -69,7 +69,6 @@ fn textarea_from_textfield(textfield: gpui_luma::controls::textfield::TextFieldP
         selection_background: textfield.selection_background,
         selection_foreground: textfield.selection_foreground,
         caret: textfield.caret,
-        adorner: textfield.adorner,
         shadow: textfield.shadow.clone(),
         typography: textfield.typography,
         font_family: textfield.font_family.to_string(),

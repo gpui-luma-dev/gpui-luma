@@ -8,7 +8,6 @@ pub struct SliderInspectPalette {
     pub fill_background: ResolvedColor,
     pub thumb_background: ResolvedColor,
     pub thumb_border: ResolvedColor,
-    pub focus_ring: Option<ResolvedColor>,
 }
 
 #[derive(Clone, Debug)]
@@ -30,14 +29,12 @@ pub fn inspect_slider_color_palette(
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "slider_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_slider_colors(&resolver, ShadcnButtonStyle::Primary, layer)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SliderColorTable::fallback());
-    let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
     SliderInspectPalette {
         track_background: colors.track_background,
         fill_background: colors.fill_background,
         thumb_background: colors.thumb_background,
         thumb_border: colors.thumb_border,
-        focus_ring,
     }
 }
 

@@ -2,7 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla, SharedString};
 
-use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::layout::{label_baseline_shift, snap_to_pixel};
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
 
@@ -50,7 +49,6 @@ pub struct RadioButtonPalette {
     pub indicator_border: Hsla,
     pub dot_color: Hsla,
     pub label_color: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub label_font_family: SharedString,
     pub indicator_shadow: Option<Vec<BoxShadow>>,
@@ -83,7 +81,6 @@ impl DefaultRadioButtonTheme {
 impl RadioButtonTheme for DefaultRadioButtonTheme {
     fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> RadioButtonPalette {
         let palette = &self.tokens.palette;
-        let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let layer = state.layer();
         let selected = palette.state.selected;
@@ -100,17 +97,6 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
             InteractionLayer::Pressed => palette.state.pressed.background,
             InteractionLayer::Hovered => selected.background,
             InteractionLayer::Default => selected.background,
-        };
-
-        let adorner = if state.focused {
-            Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
-                color: palette.focus.ring,
-                placement: AdornerPlacement::Oversize,
-                distance: metrics.border_width.default + metrics.focus.width,
-                width: metrics.focus.width,
-            }))
-        } else {
-            None
         };
 
         RadioButtonPalette {
@@ -134,7 +120,6 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
             } else {
                 palette.app.foreground
             },
-            adorner,
             label_typography: {
                 let mut label_typography = typography.text.label;
                 crate::controls::textfield::apply_control_size_typography(&mut label_typography, typography, size);

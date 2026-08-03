@@ -95,15 +95,15 @@ pub fn focus_ring_width_metric(metrics: &gpui_luma::theme::MetricTokens) -> Reso
     }
 }
 
+pub fn focus_ring_offset_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
+    let border = metrics.border_width.default;
+    let focus = metrics.focus.width;
+    derived_metric("border_width.default + focus.width", border + focus)
+}
+
 pub fn border_width_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
     ResolvedMetric {
         value_px: metrics.border_width.default,
         source: MetricSource::Scaffold { path: "MetricTokens.border_width.default".into() },
     }
-}
-
-pub fn focus_ring_offset_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
-    let border = metrics.border_width.default;
-    let focus = metrics.focus.width;
-    derived_metric("border_width.default + focus.width", border + focus)
 }

@@ -39,7 +39,7 @@ static BUTTON_CATEGORIES: [InspectorCategory; 4] = [
     InspectorCategory { id: "typography", label: "Typography", icon: LucideIcon::Type, expanded_default: true },
 ];
 
-static BUTTON_STATES: [InspectorStateSpec; 5] = [
+static BUTTON_STATES: [InspectorStateSpec; 4] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -51,13 +51,6 @@ static BUTTON_STATES: [InspectorStateSpec; 5] = [
         id: "disabled",
         label: "Disabled",
         icon: LucideIcon::CircleOff,
-        expanded_default: false,
-        categories: &BUTTON_CATEGORIES,
-    },
-    InspectorStateSpec {
-        id: "focused",
-        label: "Focused",
-        icon: LucideIcon::Focus,
         expanded_default: false,
         categories: &BUTTON_CATEGORIES,
     },
@@ -129,14 +122,11 @@ fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> V
         button_role(selection),
         interaction_state(selection.state_id),
     );
-    let mut rows = vec![
+    let rows = vec![
         color_row("background", &palette.background),
         color_row("foreground", &palette.foreground),
         color_row("border", &palette.border),
     ];
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_row("focus ring", focus_ring));
-    }
     rows
 }
 

@@ -8,7 +8,6 @@ use gpui::{
 use super::ContextMenuRenderModel;
 use crate::controls::floating_menu::render_floating_menu;
 use crate::controls::context_menu::{ContextMenuTheme, default_context_menu_theme};
-use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 
 pub type ContextMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -141,7 +140,6 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             item_clicks,
         } = handlers;
         let look = self.theme.resolve(model.state);
-        let focus_adorner = look.adorner;
         let mut target = div()
             .id(format!("{}-target", model.id))
             .relative()
@@ -169,10 +167,6 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
 
         if !model.enabled {
             target = target.opacity(0.56);
-        }
-
-        if let Some(adorner) = render_optional_adorner_with_focus_radius(focus_adorner, look.target_radius) {
-            target = target.child(adorner);
         }
 
         let mut root = div()

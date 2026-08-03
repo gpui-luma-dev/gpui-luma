@@ -3,7 +3,6 @@ use std::sync::{Arc, OnceLock};
 use gpui::Hsla;
 
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
-use crate::theme::adorner::{AdornerSpec, focus_ring_adorner};
 
 #[derive(Clone, Copy, Debug)]
 pub struct NavigationSidebarContainerLook {
@@ -24,7 +23,6 @@ pub struct NavigationSidebarItemLook {
     pub background: Option<Hsla>,
     pub foreground: Hsla,
     pub icon_color: Hsla,
-    pub adorner: Option<AdornerSpec>,
     pub typography: LumaTextStyle,
     pub radius: f32,
     pub height: f32,
@@ -75,7 +73,6 @@ impl DefaultNavigationSidebarTheme {
             background: None,
             foreground,
             icon_color: foreground,
-            adorner: focus_ring_adorner(state.focused.then_some(palette.focus.ring), &self.tokens.metrics),
             typography: typography.text.label,
             radius: metrics.radius(size),
             height: 30.0,

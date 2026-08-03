@@ -1,13 +1,10 @@
 use gpui::{AnyElement, App, Div, Stateful, Window, div, px, prelude::*};
 
 use crate::controls::button_family::ButtonFamilyRole;
-use crate::controls::choice_indicator_layout::{
-    ChoiceLayoutPolicy, indicator_oversize_extent, reserve_shadow_extent, should_paint_shadow,
-};
+use crate::controls::choice_indicator_layout::{reserve_shadow_extent, should_paint_shadow};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
-use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 use crate::controls::radio_button::{RadioButtonTheme, RadioScale, default_radio_button_theme};
 use crate::theme::{InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
 
@@ -23,13 +20,7 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
     fn render(&self, model: &ButtonRenderModel<bool>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let palette = self.theme.resolve(model.data, model.state, model.size);
 
-        let focused_probe_look = if model.state.disabled {
-            None
-        } else {
-            Some(self.theme.resolve(model.data, InteractionState { focused: true, ..model.state }, model.size))
-        };
-        let layout_policy = ChoiceLayoutPolicy::from_render_model(model);
-        let elevation_probe_look = if layout_policy.elevation && model.state.disabled {
+        let elevation_probe_look = if model.elevation && model.state.disabled {
             Some(self.theme.resolve(model.data, InteractionState { disabled: false, ..model.state }, model.size))
         } else {
             None
@@ -41,29 +32,14 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
             |metrics| RadioScale::compute(model.size, metrics, scale_factor),
         );
 
-        let indicator_radius = scale.indicator_size / 2.0;
         let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
-        let adorner = if model.suppress_adorners.get() {
-            None
-        } else {
-            palette.adorner
-        };
-        let focused_probe_adorner = if model.suppress_adorners.get() {
-            None
-        } else {
-            focused_probe_look.as_ref().and_then(|probe| probe.adorner)
-        };
         let shadow_extent = reserve_shadow_extent(
             palette.indicator_shadow.as_ref(),
             elevation_probe_look.as_ref().and_then(|probe| probe.indicator_shadow.as_ref()),
             scale_factor,
-            layout_policy.elevation,
+            model.elevation,
         );
-        let oversize_extent = if indicator_only {
-            0.0
-        } else {
-            indicator_oversize_extent(layout_policy, model.state.focused, adorner, focused_probe_adorner, shadow_extent)
-        };
+        let oversize_extent = if indicator_only { 0.0 } else { shadow_extent };
 
         let indicator_visual = {
             let mut indicator = div()
@@ -79,7 +55,7 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
                 .child(render_dot(model.data, scale.dot_size, palette.dot_color));
 
             if should_paint_shadow(
-                layout_policy.elevation,
+                model.elevation,
                 model.state.disabled,
                 palette.indicator_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),
             ) && let Some(shadows) = palette.indicator_shadow.as_ref()
@@ -90,11 +66,7 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
             indicator
         };
 
-        let mut indicator = div().relative().child(indicator_visual);
-
-        if !indicator_only && let Some(adorner) = render_optional_adorner_with_focus_radius(adorner, indicator_radius) {
-            indicator = indicator.child(adorner);
-        }
+        let indicator = div().relative().child(indicator_visual);
 
         let indicator = if oversize_extent > 0.0 {
             div()

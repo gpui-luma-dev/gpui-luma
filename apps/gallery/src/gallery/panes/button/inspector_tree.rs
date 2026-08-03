@@ -135,7 +135,6 @@ pub(in crate::gallery) fn build_button_inspect_tree(look: &ShadcnLook) -> Vec<Tr
     let matrix_states = [
         ("default", InteractionState::default()),
         ("hover", InteractionState { hovered: true, ..InteractionState::default() }),
-        ("focused", InteractionState { focused: true, ..InteractionState::default() }),
         ("pressed", InteractionState { hovered: true, pressed: true, ..InteractionState::default() }),
         ("disabled", InteractionState { disabled: true, ..InteractionState::default() }),
     ];
@@ -371,9 +370,6 @@ fn field_nodes(prefix: &str, palette: &ButtonInspectPalette) -> Vec<TreeNode<Ins
         ("foreground", &palette.foreground),
         ("border", &palette.border),
     ];
-    if let Some(ring) = &palette.focus_ring {
-        fields.push(("focus ring", ring));
-    }
 
     fields.into_iter().map(|(name, color)| field_node(prefix, name, color)).collect()
 }

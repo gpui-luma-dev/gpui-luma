@@ -14,7 +14,6 @@ pub(in crate::gallery) fn build_radio_group_inspect_tree(look: &ShadcnLook) -> V
     let matrix_states = [
         ("default", InteractionState::default()),
         ("hover", InteractionState { hovered: true, ..InteractionState::default() }),
-        ("focused", InteractionState { focused: true, ..InteractionState::default() }),
         ("pressed", InteractionState { hovered: true, pressed: true, ..InteractionState::default() }),
         ("disabled", InteractionState { disabled: true, ..InteractionState::default() }),
     ];
@@ -89,7 +88,6 @@ fn radio_color_nodes(prefix: &str, palette: &RadioButtonInspectPalette) -> Vec<T
             ("indicator border", Some(&palette.indicator_border)),
             ("dot", Some(&palette.dot_color)),
             ("label", Some(&palette.label_color)),
-            ("focus ring", palette.focus_ring.as_ref()),
         ],
     )
 }

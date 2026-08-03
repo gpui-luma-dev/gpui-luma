@@ -7,7 +7,6 @@ pub struct ContextMenuInspectPalette {
     pub target_background: gpui_luma_look_shadcn::ResolvedColor,
     pub target_foreground: gpui_luma_look_shadcn::ResolvedColor,
     pub target_border: gpui_luma_look_shadcn::ResolvedColor,
-    pub focus_ring: Option<gpui_luma_look_shadcn::ResolvedColor>,
     pub menu: crate::controls::floating_menu::FloatingMenuInspectPalette,
 }
 
@@ -41,9 +40,7 @@ pub fn inspect_context_menu_color_palette(
         value: ctx.catalog().color("border").expect("border"),
         source: ColorSource::CssVar { token: "border".into() },
     });
-    let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
-
-    ContextMenuInspectPalette { target_background, target_foreground, target_border, focus_ring, menu }
+    ContextMenuInspectPalette { target_background, target_foreground, target_border, menu }
 }
 
 pub fn inspect_context_menu_metrics(

@@ -16,12 +16,10 @@ fn list_branch(look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {
     let id = "inspect-list";
     let enabled = list_state_branch(format!("{id}-enabled"), "enabled", true, false, look, true);
     let disabled = list_state_branch(format!("{id}-disabled"), "disabled", false, false, look, false);
-    let focused = list_state_branch(format!("{id}-focused"), "focused", true, true, look, false);
-
     TreeNode::new(id.to_owned(), "list", ColorInspectTreeData::Branch)
         .branch(true)
         .expanded(true)
-        .children([enabled, disabled, focused, choice_layout_branch(id, false, look, listbox_layout_data)])
+        .children([enabled, disabled, choice_layout_branch(id, false, look, listbox_layout_data)])
 }
 
 fn list_state_branch(
@@ -82,7 +80,6 @@ fn list_color_nodes(prefix: &str, palette: &ListBoxListInspectPalette) -> Vec<Tr
             ("background", Some(&palette.background)),
             ("border", Some(&palette.border)),
             ("divider", Some(&palette.divider)),
-            ("focus ring", palette.focus_ring.as_ref()),
         ],
     )
 }

@@ -42,7 +42,6 @@ pub fn selector_palette(
         trigger_icon: icon,
         trigger_border: button.border,
         trigger_shadow,
-        adorner: button.adorner,
         trigger_typography: button.typography,
         items_panel: selector_items_panel_look(mode, theme_mode, ControlSize::Md),
     }
@@ -74,7 +73,6 @@ pub fn selector_look(
         trigger_icon: palette.trigger_icon,
         trigger_border: palette.trigger_border,
         trigger_shadow: palette.trigger_shadow,
-        adorner: palette.adorner,
         trigger_typography: typography,
         trigger_radius: scale.radius,
         trigger_padding_x: scale.padding_x,

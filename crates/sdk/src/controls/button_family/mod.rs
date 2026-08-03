@@ -2,7 +2,7 @@ mod theme;
 
 pub use theme::{
     ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, DefaultButtonFamilyTheme,
-    button_family_focus_adorner, button_family_effective_border, default_button_family_theme,
+    button_family_effective_border, default_button_family_theme,
 };
 pub use theme::compose_button_family_look;
 

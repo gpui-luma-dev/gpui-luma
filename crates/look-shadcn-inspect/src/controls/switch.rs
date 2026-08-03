@@ -12,7 +12,6 @@ pub struct SwitchInspectPalette {
     pub thumb_background: ResolvedColor,
     pub thumb_border: ResolvedColor,
     pub label_color: ResolvedColor,
-    pub focus_ring: Option<ResolvedColor>,
 }
 
 pub fn inspect_switch_color_palette(
@@ -40,7 +39,6 @@ pub fn inspect_switch_color_palette(
     } else {
         thumb_border_color
     };
-    let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
     SwitchInspectPalette {
         track_background: colors.track_background,
@@ -48,7 +46,6 @@ pub fn inspect_switch_color_palette(
         thumb_background: colors.thumb_background,
         thumb_border,
         label_color: colors.label_color,
-        focus_ring,
     }
 }
 

@@ -61,7 +61,6 @@ pub(in crate::gallery) fn ghost_trigger_color_nodes(
     background: &gpui_luma_look_shadcn_inspect::ResolvedColor,
     foreground: &gpui_luma_look_shadcn_inspect::ResolvedColor,
     border: &gpui_luma_look_shadcn_inspect::ResolvedColor,
-    focus_ring: Option<&gpui_luma_look_shadcn_inspect::ResolvedColor>,
 ) -> Vec<TreeNode<ColorInspectTreeData>> {
     color_field_nodes_optional(
         prefix,
@@ -69,7 +68,6 @@ pub(in crate::gallery) fn ghost_trigger_color_nodes(
             ("trigger background", Some(background)),
             ("trigger foreground", Some(foreground)),
             ("trigger border", Some(border)),
-            ("focus ring", focus_ring),
         ],
     )
 }

@@ -9,7 +9,6 @@ use super::{TextFieldLook, TextFieldRenderModel, TextFieldState, TextFieldVarian
 use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::command::button::ControlIcon;
 use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
-use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
 use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 const TEXTFIELD_CARET_WIDTH: f32 = 1.5;
@@ -385,12 +384,8 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         }
 
         let shadow_extent = reserve_shadow_extent(look.shadow.as_ref(), None, scale_factor, has_elevation);
-        let adorner = look.adorner;
-        let oversize_extent = adorner_oversize_extent(adorner).max(shadow_extent);
+        let oversize_extent = shadow_extent;
         let mut root = div().id(model.id.clone()).relative().child(control);
-        if let Some(adorner) = render_optional_adorner_with_focus_radius(adorner, look.radius) {
-            root = root.child(adorner);
-        }
         if oversize_extent > 0.0 {
             root = div().id(format!("{}-elevation", model.id)).relative().p(px(oversize_extent)).child(root);
         }

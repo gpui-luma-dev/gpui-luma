@@ -12,11 +12,9 @@
 
 use gpui_luma::controls::slider::{SliderLook, SliderThumbSize};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
-use gpui_luma::theme::adorner::focus_ring_adorner;
 
 use crate::controls::button::{ButtonRadiusPreset, ShadcnButtonStyle};
 use crate::look_context::LookContext;
-use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::shadow::parse_shadow_token;
@@ -145,12 +143,6 @@ pub fn slider_look(
             DEFAULT_SLIDER_THUMB_SIZE,
             metrics.radius.pill,
         ));
-    let focus_ring = state
-        .focused
-        .then(|| focus_ring_color(catalog))
-        .transpose()
-        .unwrap_or_else(|err| panic!("slider properties: {err}"));
-
     let thumb_size = thumb_size.map(slider_thumb_size).unwrap_or(resolved_thumb_size_px);
 
     SliderLook {
@@ -159,7 +151,6 @@ pub fn slider_look(
         thumb_background: colors.thumb_background.hsla(),
         thumb_border: colors.thumb_border.hsla(),
         thumb_shadow,
-        adorner: focus_ring_adorner(focus_ring, metrics),
         width,
         height,
         track_height,

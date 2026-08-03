@@ -1,14 +1,11 @@
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
-use crate::controls::choice_indicator_layout::{
-    ChoiceLayoutPolicy, indicator_oversize_extent, reserve_shadow_extent_from_slice, should_paint_shadow,
-};
+use crate::controls::choice_indicator_layout::{reserve_shadow_extent_from_slice, should_paint_shadow};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
 use crate::controls::switch::{SwitchOrientation, SwitchTheme, default_switch_theme};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
-use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 use crate::theme::snap_to_pixel;
 
 define_control_template!(
@@ -22,17 +19,7 @@ define_control_template!(
 impl ButtonTemplate<bool> for ThemedSwitchTemplate {
     fn render(&self, model: &ButtonRenderModel<bool>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let palette = self.theme.resolve(model.data, model.state, model.size);
-        let focused_probe_palette = if model.state.disabled {
-            None
-        } else {
-            Some(self.theme.resolve(
-                model.data,
-                crate::theme::InteractionState { focused: true, ..model.state },
-                model.size,
-            ))
-        };
-        let layout_policy = ChoiceLayoutPolicy::from_render_model(model);
-        let elevation_probe_palette = if layout_policy.elevation && model.state.disabled {
+        let elevation_probe_palette = if model.elevation && model.state.disabled {
             Some(self.theme.resolve(
                 model.data,
                 crate::theme::InteractionState { disabled: false, ..model.state },
@@ -94,29 +81,13 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             thumb = thumb.child(content(model, cx));
         }
 
-        let adorner = if model.suppress_adorners.get() {
-            None
-        } else {
-            palette.adorner
-        };
-        let focused_probe_adorner = if model.suppress_adorners.get() {
-            None
-        } else {
-            focused_probe_palette.as_ref().and_then(|probe| probe.adorner)
-        };
         let shadow_extent = reserve_shadow_extent_from_slice(
             &palette.thumb_shadow,
             elevation_probe_palette.as_ref().map(|probe| probe.thumb_shadow.as_slice()),
             scale_factor,
-            layout_policy.elevation,
+            model.elevation,
         );
-        let oversize_extent = indicator_oversize_extent(
-            layout_policy,
-            model.state.focused,
-            adorner,
-            focused_probe_adorner,
-            shadow_extent,
-        );
+        let oversize_extent = shadow_extent;
 
         let mut track_visual = div()
             .id(format!("{}-track", model.id))
@@ -144,15 +115,11 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
 
         track_visual = track_visual.child(thumb);
 
-        if should_paint_shadow(layout_policy.elevation, model.state.disabled, !palette.thumb_shadow.is_empty()) {
+        if should_paint_shadow(model.elevation, model.state.disabled, !palette.thumb_shadow.is_empty()) {
             track_visual = track_visual.shadow(palette.thumb_shadow.clone());
         }
 
-        let mut track = div().relative().child(track_visual);
-
-        if let Some(adorner) = render_optional_adorner_with_focus_radius(adorner, track_radius) {
-            track = track.child(adorner);
-        }
+        let track = div().relative().child(track_visual);
 
         let track = if oversize_extent > 0.0 {
             div()

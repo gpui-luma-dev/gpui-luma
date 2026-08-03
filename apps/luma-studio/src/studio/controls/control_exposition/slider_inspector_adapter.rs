@@ -12,7 +12,7 @@ use super::inspector::{
     SharedInspectorResolver,
 };
 
-static SLIDER_STATES: [super::inspector::InspectorStateSpec; 5] = COLOR_LAYOUT_INTERACTION_STATES;
+static SLIDER_STATES: [super::inspector::InspectorStateSpec; 4] = COLOR_LAYOUT_INTERACTION_STATES;
 
 pub static SLIDER_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Slider",
@@ -55,14 +55,11 @@ impl ControlInspectorResolver for SliderInspectorAdapter {
 
 fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> Vec<InspectColorRow> {
     let palette = ShadcnInspect::new(look).inspect_slider_color_palette(interaction_state(selection.state_id));
-    let mut rows = vec![
+    let rows = vec![
         color_row("track background", &palette.track_background),
         color_row("fill background", &palette.fill_background),
         color_row("thumb background", &palette.thumb_background),
         color_row("thumb border", &palette.thumb_border),
     ];
-    if let Some(focus_ring) = &palette.focus_ring {
-        rows.push(color_row("focus ring", focus_ring));
-    }
     rows
 }

@@ -18,7 +18,6 @@ use crate::controls::selector_panel::{
     default_selector_items_template,
 };
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
-use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 
 use super::theme::{SelectorLook, SelectorTheme, default_selector_theme};
 
@@ -225,7 +224,6 @@ where
         let scale_factor = window.scale_factor();
         let look = self.resolve_look(model, window, cx);
         let border = button_family_effective_border(look.trigger_border);
-        let focus_adorner = look.adorner;
         let trigger_content = render_item_content(model, &look, cx);
         let mut root = div()
             .id(model.id.clone())
@@ -288,10 +286,6 @@ where
 
         if model.state.disabled {
             root = root.opacity(0.56);
-        }
-
-        if let Some(adorner) = render_optional_adorner_with_focus_radius(focus_adorner, look.trigger_radius) {
-            root = root.child(adorner);
         }
 
         let has_elevation = !model.without_elevation && look.trigger_shadow.as_ref().is_some_and(|s| !s.is_empty());
