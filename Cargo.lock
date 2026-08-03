@@ -2430,22 +2430,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gpui-luma-gallery"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "gpui-luma",
- "gpui-luma-look-shadcn",
- "gpui-luma-look-shadcn-inspect",
- "gpui-platform-gpui-unofficial",
- "gpui-unofficial",
- "gtk",
- "lucide-icons",
- "tracing",
- "zed-font-kit 0.14.1-zed (git+https://github.com/zed-industries/font-kit?rev=94b0f28166665e8fd2f53ff6d268a14955c82269)",
-]
-
-[[package]]
 name = "gpui-luma-graph-viz"
 version = "0.1.0"
 dependencies = [

@@ -100,7 +100,7 @@ const SELECTION_ENTRIES: &[ComponentCatalogEntry] = &[
 const PROTOTYPES_ENTRIES: &[ComponentCatalogEntry] =
     &[ComponentCatalogEntry { id: "shadow-button", label: "Shadow Button" }];
 
-/// Gallery-aligned control catalog (mirrors `apps/gallery/src/gallery/panes/registry.rs`).
+/// Control catalog for the Controls tab (grouped SDK families and exposition ids).
 pub const COMPONENT_CATALOG: &[ComponentCatalogGroup] = &[
     ComponentCatalogGroup { id: "command", label: "COMMAND", icon: LucideIcon::Command, entries: COMMAND_ENTRIES },
     ComponentCatalogGroup { id: "choice", label: "CHOICE", icon: LucideIcon::ListChecks, entries: CHOICE_ENTRIES },
@@ -140,7 +140,7 @@ pub const COMPONENT_CATALOG: &[ComponentCatalogGroup] = &[
     },
 ];
 
-/// Height-balanced columns (~15–17 lines each). `COMPONENT_CATALOG` gallery order is unchanged;
+/// Height-balanced columns (~15–17 lines each). `COMPONENT_CATALOG` order is unchanged;
 /// within each column, categories appear in that same order.
 const COLUMN_GROUP_IDS: [&[&str]; 4] = [
     &["command", "input", "selection"],

@@ -1,6 +1,6 @@
 # Shell demo apps
 
-Full-window reference apps for each `SplitView` app-level shell recipe. Each app uses the gallery Properties `NavigationSidebar` sample, gallery-style theme CLI, and a title-bar light/dark toggle.
+Full-window reference apps for each `SplitView` app-level shell recipe. Each app uses the Properties `NavigationSidebar` sample from `apps/shells/common`, the shared shadcn theme CLI, and a title-bar light/dark toggle.
 
 ## Run
 

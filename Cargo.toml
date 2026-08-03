@@ -4,7 +4,6 @@ members = [
   "crates/sdk",
   "crates/look-shadcn",
   "crates/look-shadcn-inspect",
-  "apps/gallery",
   "apps/luma-studio",
   "apps/neumorphic-demo",
   "apps/color-viz",
@@ -17,7 +16,7 @@ members = [
   "apps/shells/split-titlebar",
   "apps/shells/vscode",
 ]
-default-members = ["crates/sdk", "apps/gallery", "apps/luma-studio", "apps/neumorphic-demo", "apps/color-viz", "apps/graph-viz"]
+default-members = ["crates/sdk", "apps/luma-studio", "apps/neumorphic-demo", "apps/color-viz", "apps/graph-viz"]
 
 [workspace.package]
 edition = "2024"
@@ -54,9 +53,6 @@ split-debuginfo = "unpacked"
 
 [profile.dev.package.gpui-luma]
 opt-level = 2
-
-[profile.dev.package.gpui-luma-gallery]
-opt-level = 1
 
 [profile.dev.package.luma-studio]
 opt-level = 1
