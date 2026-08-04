@@ -123,7 +123,7 @@ pub static TEXTFIELD_VARIANTS: [InspectorVariant; 3] = [
     InspectorVariant { id: "surface", label: "Surface" },
 ];
 
-pub static TEXTFIELD_INTERACTION_STATES: [InspectorStateSpec; 4] = [
+pub static TEXTFIELD_INTERACTION_STATES: [InspectorStateSpec; 3] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -135,13 +135,6 @@ pub static TEXTFIELD_INTERACTION_STATES: [InspectorStateSpec; 4] = [
         id: "disabled",
         label: "Disabled",
         icon: LucideIcon::CircleOff,
-        expanded_default: false,
-        categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
-    },
-    InspectorStateSpec {
-        id: "focus",
-        label: "Focus",
-        icon: LucideIcon::Focus,
         expanded_default: false,
         categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
     },

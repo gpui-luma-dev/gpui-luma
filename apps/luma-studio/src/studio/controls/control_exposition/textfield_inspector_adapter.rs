@@ -13,7 +13,7 @@ use super::inspector::{
     SharedInspectorResolver,
 };
 
-static TEXTFIELD_STATES: [super::inspector::InspectorStateSpec; 4] = TEXTFIELD_INTERACTION_STATES;
+static TEXTFIELD_STATES: [super::inspector::InspectorStateSpec; 3] = TEXTFIELD_INTERACTION_STATES;
 
 pub static TEXTFIELD_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "TextField",
