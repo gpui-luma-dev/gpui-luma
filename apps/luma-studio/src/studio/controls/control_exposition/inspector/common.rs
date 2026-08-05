@@ -112,6 +112,10 @@ pub fn textfield_state(state_id: &str) -> gpui_luma::controls::textfield::TextFi
             focus_visible: true,
             ..gpui_luma::controls::textfield::TextFieldState::default()
         },
+        "invalid" => gpui_luma::controls::textfield::TextFieldState {
+            invalid: true,
+            ..gpui_luma::controls::textfield::TextFieldState::default()
+        },
         _ => gpui_luma::controls::textfield::TextFieldState::default(),
     }
 }
@@ -125,6 +129,10 @@ pub fn textarea_state(state_id: &str) -> gpui_luma::controls::textarea::TextArea
         "focus" => gpui_luma::controls::textarea::TextAreaState {
             focused: true,
             focus_visible: true,
+            ..gpui_luma::controls::textarea::TextAreaState::default()
+        },
+        "invalid" => gpui_luma::controls::textarea::TextAreaState {
+            invalid: true,
             ..gpui_luma::controls::textarea::TextAreaState::default()
         },
         _ => gpui_luma::controls::textarea::TextAreaState::default(),

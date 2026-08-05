@@ -7,13 +7,13 @@ use super::inspector::common::{textfield_elevation_applies, textfield_enabled, t
 use super::inspector::input::textfield_color_rows;
 use super::inspector::metrics::textarea_layout_section;
 use super::inspector::provenance::elevation_snapshot;
-use super::inspector::specs::{CHOICE_SIZES, TEXTFIELD_INTERACTION_STATES, TEXTFIELD_VARIANTS};
+use super::inspector::specs::{CHOICE_SIZES, TEXTAREA_INTERACTION_STATES, TEXTFIELD_VARIANTS};
 use super::inspector::{
     ControlInspectorResolver, ControlInspectorSpec, InspectorCategoryContent, InspectorSelection,
     SharedInspectorResolver,
 };
 
-static TEXTAREA_STATES: [super::inspector::InspectorStateSpec; 3] = TEXTFIELD_INTERACTION_STATES;
+static TEXTAREA_STATES: [super::inspector::InspectorStateSpec; 5] = TEXTAREA_INTERACTION_STATES;
 
 pub static TEXTAREA_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "TextArea",

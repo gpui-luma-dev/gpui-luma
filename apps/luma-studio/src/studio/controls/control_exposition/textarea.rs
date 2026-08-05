@@ -30,6 +30,7 @@ struct TextAreaExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     text_area: Entity<TextArea>,
+    required_preview: Entity<TextArea>,
     event_stream: Entity<ControlEventStream>,
     set_sample_button: Entity<Button>,
     clear_button: Entity<Button>,
@@ -78,6 +79,7 @@ impl TextAreaExpositionLeftPane {
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.text_area.update(cx, |_, cx| cx.notify());
+        self.required_preview.update(cx, |_, cx| cx.notify());
         self.set_sample_button.update(cx, |_, cx| cx.notify());
         self.clear_button.update(cx, |_, cx| cx.notify());
         self.enabled_checkbox.update(cx, |_, cx| cx.notify());
@@ -98,6 +100,20 @@ impl Render for TextAreaExpositionLeftPane {
                 .flex_col()
                 .gap(px(16.0))
                 .child(self.text_area.clone())
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap(px(6.0))
+                        .child(div().child("Required / Invalid"))
+                        .child(div().child("Message *"))
+                        .child(self.required_preview.clone())
+                        .child(
+                            div()
+                                .text_color(self.look.mode_tokens().palette.destructive_background)
+                                .child("Please enter a message."),
+                        ),
+                )
                 .child(div().flex().flex_wrap().gap(px(8.0)).children([
                     self.set_sample_button.clone().into_any_element(),
                     self.clear_button.clone().into_any_element(),
@@ -142,6 +158,13 @@ impl TextAreaControlExposition {
             .clean_on_escape(true)
             .select_all_on_tab_focus(true)
             .spawn(cx);
+        let required_preview = look
+            .textarea("controls-doc-textarea-required-preview")
+            .placeholder("Required message")
+            .full_width(true)
+            .rows(3)
+            .validator(Arc::new(|value: &str| !value.is_empty()))
+            .spawn(cx);
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
@@ -172,6 +195,7 @@ impl TextAreaControlExposition {
             look: look.clone(),
             entry,
             text_area: text_area.clone(),
+            required_preview,
             event_stream: event_stream.clone(),
             set_sample_button: set_sample_button.clone(),
             clear_button: clear_button.clone(),

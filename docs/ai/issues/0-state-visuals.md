@@ -8,6 +8,22 @@ existing TextField/theme boundaries and remain composable by higher-level form f
 The implementation should cover invalid, required, and focus presentation without adding a
 generic adorner engine or hidden control behavior.
 
+## Status
+
+The TextField/TextArea portion is implemented and verified:
+
+- Adorner-specific TextField code and exposition examples have been removed.
+- Focus and invalid border visuals are resolved directly by the active theme.
+- TextField and TextArea inspectors expose the actual Default, Disabled, Hover, Focus, and
+  Invalid states.
+- Style-guide examples cover the same state matrix.
+- Local field composition owns labels, validation messaging, required validation, and submit
+  behavior.
+- Required validation is semantic; the local form currently does not render a `*` marker.
+- No invalid icon or generic suffix/adorner engine is currently needed.
+
+The issue is intentionally moving to the next control family: selectors.
+
 ## Design Principles
 
 - TextField theme resolution owns TextField chrome: background, foreground, border, caret,
@@ -127,6 +143,29 @@ Add focused examples for:
 The exposition should make the ownership boundary visible: label and error text belong to the
 field composition, while border and input chrome belong to TextField.
 
+### Phase 6: Selectors
+
+Apply the state-visual approach to the SDK Selector without importing TextField assumptions:
+
+- Identify the Selector-owned visual states: default, hover, focus, open, disabled, and
+  selected/active trigger or item state.
+- Keep selection, open/close behavior, keyboard navigation, and focus ownership in the SDK
+  Selector control.
+- Resolve trigger, popup, and item visuals directly through the Selector theme/template
+  boundary. Do not add a generic adorner or overlay state system.
+- Define explicit precedence for states that share geometry, such as disabled versus hover or
+  open versus focus.
+- Keep empty selectors unselected when the caller intends to show a prompt; do not encode a
+  prompt as a selected placeholder item.
+- Keep required selection and validation policy in the form/domain wrapper. The Selector
+  should only receive a derived state if its own visual contract supports it.
+- Update the Selector theme inspector to show only states that produce real visual output,
+  including trigger and popup/item parts where applicable.
+- Add Selector Controls exposition and style-guide examples for prompt, focused, open,
+  selected, and disabled states.
+- Add tests for initial empty selection, selection changes, focus/open transitions, disabled
+  behavior, and theme-state resolution.
+
 ## Theme Inspector Plan
 
 The inspector must describe actual theme outputs, not imply unsupported states.
@@ -148,4 +187,6 @@ The inspector must describe actual theme outputs, not imply unsupported states.
 - TextField layout remains stable across focus, blur, and invalid transitions.
 - No generic adorner types or adorner-specific template branches remain in the TextField path.
 - Existing Button/ButtonFamily behavior and style-guide output are unchanged.
+- Selector prompt, focus, open, selected, and disabled visuals are resolved by the Selector
+  theme without adorner-specific code.
 - SDK, look, inspector, and Luma Studio checks pass.

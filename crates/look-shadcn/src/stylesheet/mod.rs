@@ -979,7 +979,7 @@ mod tests {
         assert_eq!(stylesheet.tabs_navigation.item.color_rules.len(), 10);
         assert_eq!(stylesheet.tree_view.row.color_rules.len(), 5);
         assert_eq!(stylesheet.navigation_sidebar.item.color_rules.len(), 10);
-        assert_eq!(stylesheet.textfield.color_rules.len(), 15);
+        assert_eq!(stylesheet.textfield.color_rules.len(), 16);
         assert_eq!(stylesheet.textfield.elevation_rules.len(), 4);
         assert_eq!(stylesheet.autocomplete.chrome.color_rules.len(), 1);
         assert_eq!(stylesheet.progress.color_rules.len(), 2);

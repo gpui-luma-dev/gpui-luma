@@ -135,8 +135,13 @@ pub fn textfield_palette_for_size(
     let catalog = ctx.catalog();
     let typography = ctx.typography();
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "textfield");
-    let colors = resolve_textfield_colors(&resolver, style, enabled, state.invalid, ctx.theme_mode)
+    let mut colors = resolve_textfield_colors(&resolver, style, enabled, state.invalid, ctx.theme_mode)
         .unwrap_or_else(|_| TextFieldColorTable::fallback());
+    if state.focused && state.focus_visible && !state.invalid && enabled {
+        if let Ok(focus_border) = resolver.resolve_decl("ring") {
+            colors.border = focus_border;
+        }
+    }
     // Keep elevation in the look when disabled so SDK hosts can reserve projection
     // space; templates gate paint with `enabled` / `should_paint_shadow`.
     let shadow = textfield_elevation_shadow(&ctx, stylesheet, style);

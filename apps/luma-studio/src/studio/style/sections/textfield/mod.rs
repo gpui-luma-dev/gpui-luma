@@ -15,7 +15,8 @@ use crate::studio::style::shared::preview_handlers::input_textfield_handlers;
 use crate::studio::style::shared::shell::section_shell_with_width;
 use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
 
-const TEXTFIELD_TABLE_STATE_COLUMN_WIDTH: f32 = 168.0;
+// Six state columns must fit inside the 960px style-guide section.
+const TEXTFIELD_TABLE_STATE_COLUMN_WIDTH: f32 = 142.0;
 const TEXTFIELD_TABLE_SIZE_COLUMN_WIDTH: f32 = 168.0;
 const TEXTFIELD_TABLE_VARIANT_COLUMN_WIDTH: f32 = 108.0;
 const TEXTFIELD_TABLE_HEADER_HEIGHT: f32 = 28.0;
@@ -56,7 +57,7 @@ pub(crate) fn render_textfield_template_section(
     section_shell_with_width(
         960.0,
         "Text Field",
-        "Template Preview: Primary / Outline / Surface × states. Sizes tab: same variants × Sm/Md/Lg.",
+        "Template Preview: Primary / Outline / Surface × states, including invalid. Sizes tab: same variants × Sm/Md/Lg.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
@@ -92,7 +93,7 @@ fn render_textfield_template_body(look: &Arc<ShadcnLook>, window: &mut Window, c
     let chrome = look.chrome();
     let samples = input_textfield_samples();
 
-    VariantStateTable::new(
+    let matrix = VariantStateTable::new(
         VariantStateTableStyle::from_chrome(&chrome)
             .variant_column_width(TEXTFIELD_TABLE_VARIANT_COLUMN_WIDTH)
             .state_column_width(TEXTFIELD_TABLE_STATE_COLUMN_WIDTH)
@@ -115,7 +116,9 @@ fn render_textfield_template_body(look: &Arc<ShadcnLook>, window: &mut Window, c
                 .collect(),
         }
     }))
-    .build()
+    .build();
+
+    div().w_full().flex().flex_col().gap(px(24.0)).child(matrix).into_any_element()
 }
 
 fn render_textfield_sizes_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
@@ -236,7 +239,7 @@ fn render_textfield_cell(
         .into_any_element()
 }
 
-fn input_textfield_samples() -> [InputTextFieldSample; 5] {
+fn input_textfield_samples() -> [InputTextFieldSample; 6] {
     [
         InputTextFieldSample { id: "default", label: "Default", state: TextFieldState::default(), enabled: true },
         InputTextFieldSample {
@@ -262,6 +265,12 @@ fn input_textfield_samples() -> [InputTextFieldSample; 5] {
                 selection_anchor: Some(0),
                 ..TextFieldState::default()
             },
+            enabled: true,
+        },
+        InputTextFieldSample {
+            id: "invalid",
+            label: "Invalid",
+            state: TextFieldState { invalid: true, ..TextFieldState::default() },
             enabled: true,
         },
         InputTextFieldSample { id: "disabled", label: "Disabled", state: TextFieldState::default(), enabled: false },

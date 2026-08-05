@@ -36,6 +36,7 @@ const CHOICE_ENTRIES: &[ComponentCatalogEntry] = &[
 ];
 
 const INPUT_ENTRIES: &[ComponentCatalogEntry] = &[
+    ComponentCatalogEntry { id: "field-form", label: "Field Form" },
     ComponentCatalogEntry { id: "scrollbar", label: "Scrollbar" },
     ComponentCatalogEntry { id: "slider", label: "Slider" },
     ComponentCatalogEntry { id: "textarea", label: "Text Area" },
@@ -190,6 +191,7 @@ pub fn controls_exposition_id(gallery_id: &str) -> Option<&'static str> {
         "slide-panel" => Some("slide-panel"),
         "textfield" => Some("textfield"),
         "textarea" => Some("textarea"),
+        "field-form" => Some("field-form"),
         "slider" => Some("slider"),
         "scrollbar" => Some("scrollbar"),
         "color-slider" => Some("color-slider"),

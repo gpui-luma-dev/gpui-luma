@@ -31,6 +31,7 @@ struct TextFieldExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     preview: TextField,
+    required_preview: TextField,
     event_stream: Entity<ControlEventStream>,
 }
 
@@ -38,6 +39,7 @@ impl TextFieldExpositionLeftPane {
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.preview.update(cx, |_, cx| cx.notify());
+        self.required_preview.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
     }
@@ -51,7 +53,30 @@ impl Render for TextFieldExpositionLeftPane {
                 .flex()
                 .flex_col()
                 .gap(px(16.0))
-                .child(div().w_full().child(self.preview.clone()))
+                .child(
+                    div()
+                        .w_full()
+                        .flex()
+                        .flex_col()
+                        .gap(px(6.0))
+                        .child(div().child("Default / Focusable"))
+                        .child(self.preview.clone()),
+                )
+                .child(
+                    div()
+                        .w_full()
+                        .flex()
+                        .flex_col()
+                        .gap(px(6.0))
+                        .child(div().child("Required / Invalid"))
+                        .child(div().child("Email *"))
+                        .child(self.required_preview.clone())
+                        .child(
+                            div()
+                                .text_color(self.look.mode_tokens().palette.destructive_background)
+                                .child("Please enter an email address."),
+                        ),
+                )
                 .child(self.event_stream.clone());
 
             div()
@@ -79,6 +104,12 @@ impl TextFieldControlExposition {
             .placeholder("Email address")
             .full_width(true)
             .spawn(cx);
+        let required_preview = look
+            .textfield("controls-doc-textfield-required-preview")
+            .placeholder("Required input")
+            .full_width(true)
+            .validator(Arc::new(|value: &str| !value.is_empty()))
+            .spawn(cx);
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
@@ -91,6 +122,7 @@ impl TextFieldControlExposition {
             look: look.clone(),
             entry,
             preview: preview.clone(),
+            required_preview,
             event_stream: event_stream.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(

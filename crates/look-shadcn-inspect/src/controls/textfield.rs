@@ -26,9 +26,14 @@ pub fn inspect_textfield_color_palette(
 ) -> TextFieldInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "textfield_inspect");
-    let colors =
+    let mut colors =
         gpui_luma_look_shadcn::tables::resolve_textfield_colors(&resolver, style, enabled, state.invalid, theme_mode)
             .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TextFieldColorTable::fallback());
+    if state.focused && state.focus_visible && !state.invalid && enabled {
+        if let Ok(focus_border) = resolver.resolve_decl("ring") {
+            colors.border = focus_border;
+        }
+    }
 
     TextFieldInspectPalette {
         background: colors.background,

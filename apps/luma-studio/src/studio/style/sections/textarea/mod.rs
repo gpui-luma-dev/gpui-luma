@@ -11,7 +11,8 @@ use crate::studio::style::shared::preview_handlers::input_textarea_handlers;
 use crate::studio::style::shared::shell::section_shell_with_width;
 use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
 
-const TEXTAREA_TABLE_STATE_COLUMN_WIDTH: f32 = 168.0;
+// Six state columns must fit inside the 960px style-guide section.
+const TEXTAREA_TABLE_STATE_COLUMN_WIDTH: f32 = 142.0;
 const TEXTAREA_TABLE_VARIANT_COLUMN_WIDTH: f32 = 108.0;
 const TEXTAREA_TABLE_HEADER_HEIGHT: f32 = 28.0;
 /// Tall enough for 3-row previews + Primary elevation.
@@ -44,7 +45,7 @@ pub(crate) fn render_textarea_template_section(look: Arc<ShadcnLook>, window: &m
     section_shell_with_width(
         960.0,
         "Text Area",
-        "Template Preview: Primary / Outline / Surface × states.",
+        "Template Preview: Primary / Outline / Surface × states, including invalid.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
@@ -57,7 +58,7 @@ fn render_textarea_template_body(look: &Arc<ShadcnLook>, window: &mut Window, cx
     let chrome = look.chrome();
     let samples = input_textarea_samples();
 
-    VariantStateTable::new(
+    let matrix = VariantStateTable::new(
         VariantStateTableStyle::from_chrome(&chrome)
             .variant_column_width(TEXTAREA_TABLE_VARIANT_COLUMN_WIDTH)
             .state_column_width(TEXTAREA_TABLE_STATE_COLUMN_WIDTH)
@@ -78,7 +79,9 @@ fn render_textarea_template_body(look: &Arc<ShadcnLook>, window: &mut Window, cx
                 .collect(),
         }
     }))
-    .build()
+    .build();
+
+    div().w_full().flex().flex_col().gap(px(24.0)).child(matrix).into_any_element()
 }
 
 fn textarea_style_pair(look: &Arc<ShadcnLook>, style_id: &str) -> (Arc<dyn TextAreaTemplate>, Arc<dyn TextAreaTheme>) {
@@ -133,7 +136,7 @@ fn render_textarea_cell(
     };
 
     div()
-        .w(px(152.0))
+        .w(px(127.0))
         .flex()
         .items_center()
         .justify_center()
@@ -141,7 +144,7 @@ fn render_textarea_cell(
         .into_any_element()
 }
 
-fn input_textarea_samples() -> [InputTextAreaSample; 5] {
+fn input_textarea_samples() -> [InputTextAreaSample; 6] {
     [
         InputTextAreaSample { id: "default", label: "Default", state: TextAreaState::default(), enabled: true },
         InputTextAreaSample {
@@ -167,6 +170,12 @@ fn input_textarea_samples() -> [InputTextAreaSample; 5] {
                 selection_anchor: Some(4),
                 ..TextAreaState::default()
             },
+            enabled: true,
+        },
+        InputTextAreaSample {
+            id: "invalid",
+            label: "Invalid",
+            state: TextAreaState { invalid: true, ..TextAreaState::default() },
             enabled: true,
         },
         InputTextAreaSample { id: "disabled", label: "Disabled", state: TextAreaState::default(), enabled: false },

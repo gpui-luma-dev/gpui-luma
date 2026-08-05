@@ -123,7 +123,7 @@ pub static TEXTFIELD_VARIANTS: [InspectorVariant; 3] = [
     InspectorVariant { id: "surface", label: "Surface" },
 ];
 
-pub static TEXTFIELD_INTERACTION_STATES: [InspectorStateSpec; 3] = [
+pub static TEXTFIELD_INTERACTION_STATES: [InspectorStateSpec; 5] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -142,6 +142,58 @@ pub static TEXTFIELD_INTERACTION_STATES: [InspectorStateSpec; 3] = [
         id: "hover",
         label: "Hover",
         icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "focus",
+        label: "Focus",
+        icon: LucideIcon::Focus,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "invalid",
+        label: "Invalid",
+        icon: LucideIcon::CircleAlert,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
+    },
+];
+
+pub static TEXTAREA_INTERACTION_STATES: [InspectorStateSpec; 5] = [
+    InspectorStateSpec {
+        id: "default",
+        label: "Default",
+        icon: LucideIcon::Circle,
+        expanded_default: true,
+        categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "disabled",
+        label: "Disabled",
+        icon: LucideIcon::CircleOff,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "hover",
+        label: "Hover",
+        icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "focus",
+        label: "Focus",
+        icon: LucideIcon::Focus,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "invalid",
+        label: "Invalid",
+        icon: LucideIcon::CircleAlert,
         expanded_default: false,
         categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
     },
