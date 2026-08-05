@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{App, AppContext, Bounds, Entity, IntoElement, Pixels, SharedString};
 
-use super::{ControlFocusState, Selector, SelectorState, SelectorTemplate, default_selector_template};
+use super::{ControlFocusState, Selector, SelectorState, SelectorTemplate, SelectorVisualState, default_selector_template};
 use super::template::modified_selector_template;
 pub use crate::controls::selector_item_template::{
     SelectorItemRenderModel, SelectorItemTemplate, make_selector_item_template,
@@ -39,6 +39,7 @@ where
     pub(crate) label: SharedString,
     pub(crate) items: Vec<T>,
     pub(crate) enabled: bool,
+    pub(crate) invalid: bool,
     pub(crate) tab_stop: bool,
     pub(crate) size: ControlSize,
     pub(crate) placement: SelectorPlacement,
@@ -69,6 +70,7 @@ where
     pub panel_template: Option<&'a dyn SelectorItemsTemplate<T>>,
     pub focus: ControlFocusState,
     pub state: SelectorState,
+    pub visual_state: SelectorVisualState,
 }
 
 pub struct SelectorBuilder<T = SelectorItem>
@@ -92,6 +94,7 @@ where
                 id,
                 items: Vec::new(),
                 enabled: true,
+                invalid: false,
                 tab_stop: true,
                 size: ControlSize::Md,
                 placement: SelectorPlacement::Smart,
@@ -142,6 +145,11 @@ where
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn invalid(mut self, invalid: bool) -> Self {
+        self.model.invalid = invalid;
         self
     }
 

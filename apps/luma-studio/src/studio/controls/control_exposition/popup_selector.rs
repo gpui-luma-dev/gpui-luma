@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem, SelectorPlacement};
+use gpui_luma::controls::presenter::HasPresenter;
+use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
@@ -19,6 +21,8 @@ pub struct PopupSelectorControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     left_pane: Entity<SelectorExpositionLeftPane>,
+    selection_required: bool,
+    has_selection: bool,
     theme_inspector: Entity<SelectorThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
     _subscriptions: Vec<Subscription>,
@@ -30,6 +34,7 @@ struct SelectorExpositionLeftPane {
     preview_below: Entity<Selector>,
     preview_smart: Entity<Selector>,
     event_stream: Entity<ControlEventStream>,
+    selection_required_toggle: Toggle,
 }
 
 impl SelectorExpositionLeftPane {
@@ -37,6 +42,7 @@ impl SelectorExpositionLeftPane {
         self.look = look.clone();
         self.preview_below.update(cx, |_, cx| cx.notify());
         self.preview_smart.update(cx, |_, cx| cx.notify());
+        self.selection_required_toggle.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
     }
@@ -61,6 +67,7 @@ impl Render for SelectorExpositionLeftPane {
                         .child(self.preview_below.clone())
                         .child(self.preview_smart.clone()),
                 )
+                .child(self.selection_required_toggle.clone())
                 .child(self.event_stream.clone());
 
             div()
@@ -88,12 +95,19 @@ impl PopupSelectorControlExposition {
             .label("Below selector")
             .items(selector_items())
             .placement(SelectorPlacement::BelowStart)
+            .invalid(false)
             .spawn(cx);
         let preview_smart = look
             .selector("controls-doc-selector-smart")
             .label("Smart selector")
             .items(selector_items())
             .placement(SelectorPlacement::Smart)
+            .invalid(false)
+            .spawn(cx);
+        let selection_required_toggle = look
+            .outline_toggle("controls-doc-selector-selection-required")
+            .with_data(false)
+            .content(|_, _| div().child("Selection Required").into_any_element())
             .spawn(cx);
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
@@ -109,6 +123,7 @@ impl PopupSelectorControlExposition {
             preview_below: preview_below.clone(),
             preview_smart: preview_smart.clone(),
             event_stream: event_stream.clone(),
+            selection_required_toggle: selection_required_toggle.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
@@ -125,16 +140,44 @@ impl PopupSelectorControlExposition {
         let mut subscriptions = Vec::new();
         for preview in [&preview_below, &preview_smart] {
             let event_stream = event_stream.clone();
-            subscriptions.push(cx.subscribe(preview, move |_, _, event: &SelectorEvent, cx| {
+            subscriptions.push(cx.subscribe(preview, move |this, _, event: &SelectorEvent, cx| {
                 let line = format_selector_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
                     cx.notify();
                 });
+                if matches!(event, SelectorEvent::Change { .. }) {
+                    this.has_selection = true;
+                }
+                this.sync_required_validation(cx);
             }));
         }
+        let required_subscription = cx.subscribe(&selection_required_toggle, |this, _, event: &ToggleEvent, cx| {
+            if let ToggleEvent::Change { selected } = event {
+                this.selection_required = *selected;
+                this.sync_required_validation(cx);
+            }
+        });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+        subscriptions.push(required_subscription);
+        Self {
+            look,
+            entry,
+            left_pane,
+            selection_required: false,
+            has_selection: false,
+            theme_inspector,
+            inspector_split,
+            _subscriptions: subscriptions,
+        }
+    }
+
+    fn sync_required_validation(&mut self, cx: &mut Context<Self>) {
+        let invalid = self.selection_required && !self.has_selection;
+        self.left_pane.update(cx, |pane, cx| {
+            pane.preview_below.update(cx, |preview, cx| preview.set_invalid(invalid, cx));
+            pane.preview_smart.update(cx, |preview, cx| preview.set_invalid(invalid, cx));
+        });
     }
 
     pub fn entry(&self) -> ControlDocEntry {

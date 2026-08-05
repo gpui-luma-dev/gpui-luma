@@ -145,6 +145,13 @@ impl TextFieldControl {
         cx.notify();
     }
 
+    pub fn set_invalid(&mut self, invalid: bool, cx: &mut Context<Self>) {
+        if self.state.invalid != invalid {
+            self.state.set_invalid(invalid);
+            cx.notify();
+        }
+    }
+
     pub fn set_tab_stop(&mut self, tab_stop: bool, cx: &mut Context<Self>) {
         self.model.tab_stop = tab_stop;
         self.focus_handle = self.focus_handle.clone().tab_stop(self.model.enabled && tab_stop);

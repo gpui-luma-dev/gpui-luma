@@ -595,8 +595,13 @@ where
         let hovered = enabled && self.hovered_index == Some(index);
         let pressed = enabled && self.pressed_index == Some(index);
         let keyboard_active = active && focus.focused;
-        let interaction =
-            InteractionState { hovered, pressed, focused: keyboard_active, disabled: !enabled && !keyboard_active };
+        let interaction = InteractionState {
+            hovered,
+            pressed,
+            focused: keyboard_active,
+            disabled: !enabled && !keyboard_active,
+            invalid: false,
+        };
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.model.theme.metrics(),

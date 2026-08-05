@@ -551,6 +551,7 @@ fn render_item_row(
         pressed: state.pressed,
         focused: state.focused,
         disabled: !state.enabled,
+        invalid: false,
     };
     let look = if has_children {
         theme.resolve_branch(interaction, ControlSize::Md)
@@ -631,6 +632,7 @@ fn render_collapsed_rail_node(
         pressed: state.pressed,
         focused: state.focused,
         disabled: !state.enabled,
+        invalid: false,
     };
     let look = if has_children {
         theme.resolve_branch(interaction, ControlSize::Md)
@@ -737,6 +739,7 @@ fn render_collapse_trigger(
         pressed: trigger.pressed,
         focused: trigger.focused,
         disabled: !trigger.enabled,
+        invalid: false,
     };
     let look = theme.resolve_item(false, interaction, ControlSize::Md);
     let icon = if trigger.collapsed {

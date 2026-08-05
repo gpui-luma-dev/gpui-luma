@@ -20,6 +20,7 @@ use gpui_luma::controls::search_selector::{
 };
 use gpui_luma::controls::selector::{
     ControlFocusState, SelectorItem, SelectorPath, SelectorPlacement, SelectorRenderModel, SelectorTemplateHandlers,
+    SelectorVisualState,
 };
 use gpui_luma::controls::selector_panel::{
     SelectorItem as SelectorPanelItem, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplateHandlers,
@@ -49,6 +50,8 @@ struct SelectorTemplateStateSample {
     selector_state: InteractionState,
     selector_focus: ControlFocusState,
     selector_enabled: bool,
+    selector_open: bool,
+    selector_selected: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -118,6 +121,8 @@ fn state_label_asset_path(state_id: &str) -> &'static str {
         "default" => "assets/labels/default-label.svg",
         "hover" => "assets/labels/hover-label.svg",
         "focused" => "assets/labels/focused-label.svg",
+        "open" => "assets/labels/open-label.svg",
+        "invalid" => "assets/labels/invalid-label.svg",
         "pressed" => "assets/labels/pressed-label.svg",
         "disabled" => "assets/labels/disabled-label.svg",
         _ => "assets/labels/default-label.svg",
@@ -138,7 +143,7 @@ pub(crate) fn render_selector_templates_section(
     section_shell_with_width(
         960.0,
         "Selectors",
-        "Interaction states and Sm / Md / Lg sizing across selector triggers and panels.",
+        "Default, hover, focused, open, pressed, selected, and disabled trigger states with Sm / Md / Lg sizing across selector panels.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
@@ -274,7 +279,7 @@ fn render_selector_state_row(
                 *control,
                 state,
                 ControlSize::Md,
-                state.id == "pressed",
+                state.id == "pressed" || state.selector_open,
                 scroll_wheel.clone(),
                 window,
                 cx,
@@ -305,6 +310,8 @@ fn render_selector_sizes_body(
         selector_state: InteractionState { hovered: true, focused: true, pressed: true, ..InteractionState::default() },
         selector_focus: ControlFocusState { focused: true, focus_visible: true },
         selector_enabled: true,
+        selector_open: false,
+        selector_selected: true,
     };
 
     div()
@@ -388,7 +395,16 @@ fn render_selector_control_cell(
     };
 
     let popup = if show_popup {
-        Some(render_selector_popup_preview(look, &id, control, size, scroll_wheel.clone(), window, cx))
+        Some(render_selector_popup_preview(
+            look,
+            &id,
+            control,
+            state.selector_selected,
+            size,
+            scroll_wheel.clone(),
+            window,
+            cx,
+        ))
     } else {
         None
     };
@@ -420,7 +436,7 @@ fn render_selector_autocomplete_trigger(
     let textfield_template = look.primary_textfield_template();
     let textfield_theme = look.primary_textfield_theme();
     let autocomplete_template = default_autocomplete_textbox_template();
-    let value = SharedString::from("California");
+    let value = SharedString::from(if state.selector_selected { "California" } else { "" });
     let placeholder = SharedString::from(placeholder);
     let status_theme = look.autocomplete_textbox_theme().resolve(size);
     let popup_look = look.selector_items_panel_look(size);
@@ -441,7 +457,7 @@ fn render_selector_autocomplete_trigger(
             window,
             cx,
         ),
-        query_is_empty: false,
+        query_is_empty: !state.selector_selected,
         popup_width: px(SELECTOR_TRIGGER_WIDTH),
         status_label: SharedString::from(""),
         status_detail: SharedString::from(""),
@@ -480,11 +496,11 @@ fn render_selector_combobox_trigger(
     let textfield_template = look.primary_textfield_template();
     let textfield_theme = look.primary_textfield_theme();
     let combobox_template = default_combobox_template();
-    let value = SharedString::from("California");
+    let value = SharedString::from(if state.selector_selected { "California" } else { "" });
     let placeholder = SharedString::from(placeholder);
     let status_theme = look.autocomplete_textbox_theme().resolve(size);
     let popup_look = look.selector_items_panel_look(size);
-    let popup_bounds = (state.id == "pressed")
+    let popup_bounds = (state.id == "pressed" || state.selector_open)
         .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(SELECTOR_TRIGGER_WIDTH), px(32.0))));
 
     let model = ComboBoxRenderModel {
@@ -502,7 +518,7 @@ fn render_selector_combobox_trigger(
             window,
             cx,
         ),
-        query_is_empty: false,
+        query_is_empty: !state.selector_selected,
         show_down_arrow: true,
         show_clear_button: true,
         full_width: true,
@@ -549,17 +565,26 @@ fn render_selector_search_selector_trigger(
         disabled: !state.textfield_enabled,
         ..InteractionState::default()
     };
-    let trigger_look = selector_theme.resolve_look(
+    let trigger_look = selector_theme.resolve_visual_look(
         Default::default(),
-        interaction,
+        SelectorVisualState {
+            interaction,
+            open: state.selector_open,
+            selected: state.selector_selected,
+            invalid: state.selector_state.invalid,
+        },
         size,
         &StandardBoxScale::compute(size, &selector_theme.metrics(), window.scale_factor()),
         false,
     );
     let model = SearchSelectorRenderModel {
         id: id.clone(),
-        trigger_label: SharedString::from(placeholder),
-        trigger_label_is_placeholder: true,
+        trigger_label: if state.selector_selected {
+            SharedString::from("California")
+        } else {
+            SharedString::from(placeholder)
+        },
+        trigger_label_is_placeholder: !state.selector_selected,
         trigger_state: state.textfield_state,
         trigger_look,
         trigger_typography_override: Some(selector_preview_typography_for_size(
@@ -606,9 +631,9 @@ fn render_selector_selector_trigger(
     let model = SelectorRenderModel {
         id,
         label: &label,
-        selected_index: Some(1),
+        selected_index: state.selector_selected.then_some(1),
         items: &items,
-        open: false,
+        open: state.selector_open,
         trigger_bounds: None,
         placement: SelectorPlacement::BelowStart,
         active_path: None,
@@ -620,6 +645,12 @@ fn render_selector_selector_trigger(
         panel_template: None,
         focus: state.selector_focus,
         state: state.selector_state,
+        visual_state: gpui_luma::controls::selector::SelectorVisualState {
+            interaction: state.selector_state,
+            open: state.selector_open,
+            selected: state.selector_selected,
+            invalid: state.selector_state.invalid,
+        },
     };
 
     selector_template
@@ -676,6 +707,7 @@ fn render_selector_popup_preview(
     look: &Arc<ShadcnLook>,
     id: &SharedString,
     control: SelectorTemplateControl,
+    selected: bool,
     size: ControlSize,
     scroll_wheel: SelectorPreviewScrollWheelHandler,
     window: &mut Window,
@@ -725,7 +757,7 @@ fn render_selector_popup_preview(
                     menu_id: &popup_id,
                     selector_id: id,
                     items: &items,
-                    selected_index: Some(1),
+                    selected_index: selected.then_some(1),
                     active_path: Some(SelectorPath::Item(0)),
                     open: true,
                     enabled: true,
@@ -814,7 +846,7 @@ fn render_selector_popup_preview(
         .into_any_element()
 }
 
-fn selector_template_state_samples() -> [SelectorTemplateStateSample; 5] {
+fn selector_template_state_samples() -> [SelectorTemplateStateSample; 7] {
     [
         SelectorTemplateStateSample {
             id: "default",
@@ -824,6 +856,8 @@ fn selector_template_state_samples() -> [SelectorTemplateStateSample; 5] {
             selector_state: InteractionState::default(),
             selector_focus: ControlFocusState::default(),
             selector_enabled: true,
+            selector_open: false,
+            selector_selected: false,
         },
         SelectorTemplateStateSample {
             id: "hover",
@@ -833,6 +867,8 @@ fn selector_template_state_samples() -> [SelectorTemplateStateSample; 5] {
             selector_state: InteractionState { hovered: true, ..InteractionState::default() },
             selector_focus: ControlFocusState::default(),
             selector_enabled: true,
+            selector_open: false,
+            selector_selected: false,
         },
         SelectorTemplateStateSample {
             id: "focused",
@@ -842,6 +878,35 @@ fn selector_template_state_samples() -> [SelectorTemplateStateSample; 5] {
             selector_state: InteractionState { focused: true, ..InteractionState::default() },
             selector_focus: ControlFocusState { focused: true, focus_visible: true },
             selector_enabled: true,
+            selector_open: false,
+            selector_selected: true,
+        },
+        SelectorTemplateStateSample {
+            id: "open",
+            label: "Open",
+            textfield_state: TextFieldState {
+                hovered: true,
+                focused: true,
+                focus_visible: true,
+                ..TextFieldState::default()
+            },
+            textfield_enabled: true,
+            selector_state: InteractionState { focused: true, ..InteractionState::default() },
+            selector_focus: ControlFocusState { focused: true, focus_visible: true },
+            selector_enabled: true,
+            selector_open: true,
+            selector_selected: true,
+        },
+        SelectorTemplateStateSample {
+            id: "invalid",
+            label: "Invalid",
+            textfield_state: TextFieldState { invalid: true, ..TextFieldState::default() },
+            textfield_enabled: true,
+            selector_state: InteractionState { invalid: true, ..InteractionState::default() },
+            selector_focus: ControlFocusState::default(),
+            selector_enabled: true,
+            selector_open: false,
+            selector_selected: false,
         },
         SelectorTemplateStateSample {
             id: "pressed",
@@ -861,6 +926,8 @@ fn selector_template_state_samples() -> [SelectorTemplateStateSample; 5] {
             },
             selector_focus: ControlFocusState { focused: true, focus_visible: true },
             selector_enabled: true,
+            selector_open: false,
+            selector_selected: true,
         },
         SelectorTemplateStateSample {
             id: "disabled",
@@ -870,6 +937,8 @@ fn selector_template_state_samples() -> [SelectorTemplateStateSample; 5] {
             selector_state: InteractionState { disabled: true, ..InteractionState::default() },
             selector_focus: ControlFocusState::default(),
             selector_enabled: false,
+            selector_open: false,
+            selector_selected: false,
         },
     ]
 }

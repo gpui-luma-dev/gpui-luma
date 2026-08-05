@@ -5,6 +5,7 @@ use gpui::{
 };
 
 use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
+use crate::controls::selector::SelectorVisualState;
 use crate::controls::interaction::ControlInteraction;
 
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
@@ -506,6 +507,13 @@ impl SearchSelectorControl {
         cx.notify();
     }
 
+    pub fn set_invalid(&mut self, invalid: bool, cx: &mut Context<Self>) {
+        if self.model.invalid != invalid {
+            self.model.invalid = invalid;
+            cx.notify();
+        }
+    }
+
     pub fn set_template(&mut self, template: std::sync::Arc<dyn SearchSelectorTemplate>, cx: &mut Context<Self>) {
         self.model.template = template;
         cx.notify();
@@ -766,9 +774,14 @@ impl Render for SearchSelectorControl {
         };
 
         let interaction_state = self.interaction.render_state(self.model.enabled, window);
-        let trigger_look = self.model.selector_theme.resolve_look(
+        let trigger_look = self.model.selector_theme.resolve_visual_look(
             self.model.trigger_style,
-            interaction_state,
+            SelectorVisualState {
+                interaction: interaction_state,
+                open: self.behavior.state.open,
+                selected: self.committed_selection.is_some(),
+                invalid: self.model.invalid,
+            },
             self.model.size,
             &crate::theme::StandardBoxScale::compute(
                 self.model.size,
@@ -785,6 +798,7 @@ impl Render for SearchSelectorControl {
                 hovered: interaction_state.hovered,
                 focused: self.behavior.state.open || trigger_focused,
                 focus_visible: self.behavior.state.open || trigger_focused,
+                invalid: self.model.invalid,
                 ..TextFieldState::default()
             },
             trigger_look,

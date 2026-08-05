@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::autocomplete::{AutocompleteTextBox, AutocompleteTextBoxEvent, SelectionItem};
+use gpui_luma::controls::presenter::HasPresenter;
+use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -20,6 +22,8 @@ pub struct AutocompleteTextFieldControlExposition {
     preview: AutocompleteTextBox,
     event_stream: Entity<ControlEventStream>,
     left_pane: Entity<AutocompleteExpositionLeftPane>,
+    selection_required: bool,
+    has_selection: bool,
     theme_inspector: Entity<AutocompleteThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
     _subscriptions: Vec<Subscription>,
@@ -30,12 +34,14 @@ struct AutocompleteExpositionLeftPane {
     entry: ControlDocEntry,
     preview: AutocompleteTextBox,
     event_stream: Entity<ControlEventStream>,
+    selection_required_toggle: Toggle,
 }
 
 impl AutocompleteExpositionLeftPane {
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.preview.update(cx, |_, cx| cx.notify());
+        self.selection_required_toggle.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
     }
@@ -51,7 +57,16 @@ impl Render for AutocompleteExpositionLeftPane {
                 .flex_col()
                 .items_start()
                 .gap(px(16.0))
-                .child(div().w(px(320.0)).flex_none().child(self.preview.clone()))
+                .child(
+                    div()
+                        .w(px(320.0))
+                        .flex_none()
+                        .flex()
+                        .flex_col()
+                        .gap(px(12.0))
+                        .child(self.selection_required_toggle.clone())
+                        .child(self.preview.clone()),
+                )
                 .child(self.event_stream.clone());
 
             div()
@@ -79,6 +94,12 @@ impl AutocompleteTextFieldControlExposition {
             .placeholder("Start typing…")
             .full_width(true)
             .clean_on_escape(true)
+            .invalid(false)
+            .spawn(cx);
+        let selection_required_toggle = look
+            .outline_toggle("controls-doc-autocomplete-selection-required")
+            .with_data(false)
+            .content(|_, _| div().child("Selection Required").into_any_element())
             .spawn(cx);
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
@@ -93,6 +114,7 @@ impl AutocompleteTextFieldControlExposition {
             entry,
             preview: preview.clone(),
             event_stream: event_stream.clone(),
+            selection_required_toggle: selection_required_toggle.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
@@ -108,11 +130,25 @@ impl AutocompleteTextFieldControlExposition {
 
         let subscription = cx.subscribe(&preview, {
             let event_stream = event_stream.clone();
-            move |_, _, event: &AutocompleteTextBoxEvent, cx| {
+            move |this, _, event: &AutocompleteTextBoxEvent, cx| {
                 let line = format_autocomplete_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
                 });
+                match event {
+                    AutocompleteTextBoxEvent::Select { .. } | AutocompleteTextBoxEvent::Complete { .. } => {
+                        this.has_selection = true;
+                    }
+                    AutocompleteTextBoxEvent::Clear => this.has_selection = false,
+                    _ => {}
+                }
+                this.sync_required_validation(cx);
+            }
+        });
+        let required_subscription = cx.subscribe(&selection_required_toggle, |this, _, event: &ToggleEvent, cx| {
+            if let ToggleEvent::Change { selected } = event {
+                this.selection_required = *selected;
+                this.sync_required_validation(cx);
             }
         });
 
@@ -122,10 +158,17 @@ impl AutocompleteTextFieldControlExposition {
             preview,
             event_stream,
             left_pane,
+            selection_required: false,
+            has_selection: false,
             theme_inspector,
             inspector_split,
-            _subscriptions: vec![subscription],
+            _subscriptions: vec![subscription, required_subscription],
         }
+    }
+
+    fn sync_required_validation(&mut self, cx: &mut Context<Self>) {
+        let invalid = self.selection_required && !self.has_selection;
+        self.preview.update(cx, |preview, cx| preview.set_invalid(invalid, cx));
     }
 
     pub fn entry(&self) -> ControlDocEntry {

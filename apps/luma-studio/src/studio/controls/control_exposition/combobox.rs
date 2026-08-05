@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::combobox::{ComboBox, ComboBoxEvent, SelectionItem, TypingPolicy};
+use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
+use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -20,6 +22,8 @@ pub struct ComboBoxControlExposition {
     preview: ComboBox,
     event_stream: Entity<ControlEventStream>,
     left_pane: Entity<ComboBoxExpositionLeftPane>,
+    selection_required: bool,
+    has_selection: bool,
     theme_inspector: Entity<ComboBoxThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
     _subscriptions: Vec<Subscription>,
@@ -30,12 +34,14 @@ struct ComboBoxExpositionLeftPane {
     entry: ControlDocEntry,
     preview: ComboBox,
     event_stream: Entity<ControlEventStream>,
+    selection_required_toggle: Toggle,
 }
 
 impl ComboBoxExpositionLeftPane {
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.preview.update(cx, |_, cx| cx.notify());
+        self.selection_required_toggle.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
     }
@@ -66,6 +72,7 @@ impl Render for ComboBoxExpositionLeftPane {
                                 .text_color(chrome.muted_text)
                                 .child("Strict typing policy + down arrow"),
                         )
+                        .child(self.selection_required_toggle.clone())
                         .child(self.preview.clone()),
                 )
                 .child(self.event_stream.clone());
@@ -98,6 +105,12 @@ impl ComboBoxControlExposition {
             .typing_policy(TypingPolicy::Strict)
             .show_down_arrow(true)
             .show_clear_button(true)
+            .invalid(false)
+            .spawn(cx);
+        let selection_required_toggle = look
+            .outline_toggle("controls-doc-combobox-selection-required")
+            .with_data(false)
+            .content(|_, _| div().child("Selection Required").into_any_element())
             .spawn(cx);
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
@@ -113,6 +126,7 @@ impl ComboBoxControlExposition {
             entry,
             preview: preview.clone(),
             event_stream: event_stream.clone(),
+            selection_required_toggle: selection_required_toggle.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
@@ -128,11 +142,27 @@ impl ComboBoxControlExposition {
 
         let subscription = cx.subscribe(&preview, {
             let event_stream = event_stream.clone();
-            move |_, _, event: &ComboBoxEvent, cx| {
+            move |this, _, event: &ComboBoxEvent, cx| {
                 let line = format_combobox_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
                 });
+                match event {
+                    ComboBoxEvent::Select { .. } | ComboBoxEvent::Complete { .. } => {
+                        this.has_selection = true;
+                    }
+                    ComboBoxEvent::Clear => {
+                        this.has_selection = false;
+                    }
+                    _ => {}
+                }
+                this.sync_required_validation(cx);
+            }
+        });
+        let required_subscription = cx.subscribe(&selection_required_toggle, |this, _, event: &ToggleEvent, cx| {
+            if let ToggleEvent::Change { selected } = event {
+                this.selection_required = *selected;
+                this.sync_required_validation(cx);
             }
         });
 
@@ -142,10 +172,17 @@ impl ComboBoxControlExposition {
             preview,
             event_stream,
             left_pane,
+            selection_required: false,
+            has_selection: false,
             theme_inspector,
             inspector_split,
-            _subscriptions: vec![subscription],
+            _subscriptions: vec![subscription, required_subscription],
         }
+    }
+
+    fn sync_required_validation(&mut self, cx: &mut Context<Self>) {
+        let invalid = self.selection_required && !self.has_selection;
+        self.preview.update(cx, |preview, cx| preview.set_invalid(invalid, cx));
     }
 
     pub fn entry(&self) -> ControlDocEntry {

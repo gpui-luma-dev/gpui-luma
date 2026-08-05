@@ -143,15 +143,6 @@ pub fn textfield_elevation_applies(variant_id: &str, state_id: &str) -> bool {
     variant_id == "primary" && textfield_enabled(state_id)
 }
 
-pub fn selector_textfield_state(state_id: &str) -> gpui_luma::controls::textfield::TextFieldState {
-    let mut state = textfield_state(state_id);
-    if state_id == "focused" {
-        state.focused = true;
-        state.focus_visible = true;
-    }
-    state
-}
-
 pub fn badge_variant(variant_id: &str) -> gpui_luma_look_shadcn::BadgeVariant {
     match variant_id {
         "secondary" => gpui_luma_look_shadcn::BadgeVariant::Secondary,

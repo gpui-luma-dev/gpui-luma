@@ -206,6 +206,7 @@ fn selector_interaction(model: &SearchSelectorRenderModel) -> InteractionState {
         pressed: false,
         focused: model.trigger_state.focused || model.trigger_state.focus_visible,
         disabled: !model.enabled,
+        invalid: false,
     }
 }
 

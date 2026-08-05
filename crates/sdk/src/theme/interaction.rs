@@ -4,6 +4,7 @@ pub struct InteractionState {
     pub pressed: bool,
     pub focused: bool,
     pub disabled: bool,
+    pub invalid: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

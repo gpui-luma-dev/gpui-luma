@@ -22,7 +22,17 @@ The TextField/TextArea portion is implemented and verified:
 - Required validation is semantic; the local form currently does not render a `*` marker.
 - No invalid icon or generic suffix/adorner engine is currently needed.
 
-The issue is intentionally moving to the next control family: selectors.
+The issue is intentionally moving to the next control family: selectors. The Selector phase
+is implemented under Option A (universal `invalid` state across form input triggers):
+
+- Selector trigger state precedence is explicit: disabled, pressed, open, invalid, hover, default.
+- `SelectorVisualState` carries open, selected, and invalid state through the theme/template boundary.
+- Selector-family previews cover Autocomplete, ComboBox, Selector, and SearchSelector with
+  consistent prompt, selected, focused, open, invalid, pressed, and disabled examples.
+- Selector, SearchSelector, Style Guide, and theme inspector use the same open and invalid-state contracts.
+- When `invalid == true`, Selector trigger theme resolution resolves its border to `--destructive` (matching TextField).
+- Empty prompt selectors remain unselected; selected item checkmarks remain popup-owned.
+- Popup/items inspection is separated from trigger inspection.
 
 ## Design Principles
 
@@ -145,25 +155,24 @@ field composition, while border and input chrome belong to TextField.
 
 ### Phase 6: Selectors
 
-Apply the state-visual approach to the SDK Selector without importing TextField assumptions:
+Apply the state-visual approach to the SDK Selector family under Option A (universal `invalid` state across form input triggers):
 
-- Identify the Selector-owned visual states: default, hover, focus, open, disabled, and
+- Identify the Selector-owned visual states: default, hover, focus, open, invalid, disabled, and
   selected/active trigger or item state.
+- Add `invalid: bool` support to `SelectorState`, `SelectorVisualState`, and `SelectorTheme`.
+- When `invalid == true`, resolve Selector trigger border to `--destructive` (matching TextField).
 - Keep selection, open/close behavior, keyboard navigation, and focus ownership in the SDK
   Selector control.
 - Resolve trigger, popup, and item visuals directly through the Selector theme/template
   boundary. Do not add a generic adorner or overlay state system.
-- Define explicit precedence for states that share geometry, such as disabled versus hover or
-  open versus focus.
+- Define explicit precedence for states that share geometry: `disabled` > `pressed` > `open` > `invalid` > `hover` > `default`.
 - Keep empty selectors unselected when the caller intends to show a prompt; do not encode a
   prompt as a selected placeholder item.
-- Keep required selection and validation policy in the form/domain wrapper. The Selector
-  should only receive a derived state if its own visual contract supports it.
-- Update the Selector theme inspector to show only states that produce real visual output,
-  including trigger and popup/item parts where applicable.
+- Keep required selection and validation policy in the form/domain wrapper, passing the derived `invalid: bool` state to the Selector.
+- Update the Selector theme inspector to include `Invalid` in the trigger state matrix.
 - Add Selector Controls exposition and style-guide examples for prompt, focused, open,
-  selected, and disabled states.
-- Add tests for initial empty selection, selection changes, focus/open transitions, disabled
+  selected, invalid, and disabled states.
+- Add tests for initial empty selection, selection changes, focus/open transitions, invalid state, disabled
   behavior, and theme-state resolution.
 
 ## Theme Inspector Plan
@@ -174,6 +183,7 @@ The inspector must describe actual theme outputs, not imply unsupported states.
   focus visual.
 - Reintroduce Focus only when the TextField theme resolves a real focus visual.
 - Inspect invalid border color from the same resolved TextField palette used by rendering.
+- Add Invalid state to Selector theme inspector for inspecting destructive trigger border.
 - Keep required marker and validation message out of the low-level TextField theme inspector;
   inspect them through the field-wrapper inspector when that wrapper exists.
 - Do not expose adorner geometry, reserved extents, or generic adorner categories.
@@ -181,12 +191,13 @@ The inspector must describe actual theme outputs, not imply unsupported states.
 ## Acceptance Criteria
 
 - Empty required fields do not show a focus-colored border before receiving focus.
-- Invalid focused fields show one deliberate destructive border treatment.
+- Invalid focused fields show one deliberate destructive border treatment across both TextField and Selector controls.
+- Selector triggers support `invalid` state and resolve destructive border styling when invalid, matching TextField.
 - A theme without focus styling produces no focus visual.
 - Required markers and validation messages are wrapper-owned and composable.
-- TextField layout remains stable across focus, blur, and invalid transitions.
-- No generic adorner types or adorner-specific template branches remain in the TextField path.
+- TextField and Selector layout remains stable across focus, blur, and invalid transitions.
+- No generic adorner types or adorner-specific template branches remain in the TextField or Selector path.
 - Existing Button/ButtonFamily behavior and style-guide output are unchanged.
-- Selector prompt, focus, open, selected, and disabled visuals are resolved by the Selector
+- Selector prompt, focus, open, selected, invalid, and disabled visuals are resolved by the Selector
   theme without adorner-specific code.
 - SDK, look, inspector, and Luma Studio checks pass.

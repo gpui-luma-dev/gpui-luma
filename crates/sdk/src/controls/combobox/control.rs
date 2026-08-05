@@ -69,6 +69,7 @@ impl ComboBoxControl {
             .propagate_home_end_to_parent(true)
             .template(model.textfield_template.clone())
             .spawn(cx);
+        textfield.update(cx, |textfield, cx| textfield.set_invalid(model.invalid, cx));
 
         let mut popup_surface =
             PopupScrollSurface::new(format!("{}-popup-surface", model.id), model.scrollbar_template.clone(), cx);
@@ -483,6 +484,14 @@ impl ComboBoxControl {
             self.emit_open_changed_if_needed(was_open, false, cx);
         }
         cx.notify();
+    }
+
+    pub fn set_invalid(&mut self, invalid: bool, cx: &mut Context<Self>) {
+        if self.model.invalid != invalid {
+            self.model.invalid = invalid;
+            self.textfield.update(cx, |textfield, cx| textfield.set_invalid(invalid, cx));
+            cx.notify();
+        }
     }
 
     pub fn set_template(&mut self, template: std::sync::Arc<dyn ComboBoxTemplate>, cx: &mut Context<Self>) {

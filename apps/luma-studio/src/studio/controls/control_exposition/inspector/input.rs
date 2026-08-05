@@ -45,17 +45,6 @@ fn textfield_input_color_rows(palette: &TextFieldInspectPalette) -> Vec<InspectC
     rows
 }
 
-pub fn textfield_trigger_color_rows(palette: &TextFieldInspectPalette) -> Vec<InspectColorRow> {
-    let rows = vec![
-        color_row("trigger background", &palette.background),
-        color_row("trigger foreground", &palette.foreground),
-        color_row("trigger border", &palette.border),
-        color_row("trigger placeholder", &palette.placeholder),
-        color_row("trigger icon", &palette.icon),
-    ];
-    rows
-}
-
 pub fn floating_menu_color_rows(look: &ShadcnLook) -> Vec<InspectColorRow> {
     let palette = ShadcnInspect::new(look).inspect_floating_menu_color_palette(ControlSize::Md);
     floating_menu_palette_rows(&palette)

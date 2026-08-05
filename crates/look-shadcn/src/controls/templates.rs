@@ -26,7 +26,7 @@ use gpui_luma::controls::progress::{ProgressTheme, ThemedLinearProgressTemplate,
 use gpui_luma::controls::stepper::{StepperTheme, ThemedStepperTemplate};
 use gpui_luma::controls::radio_button::{RadioButtonTheme, ThemedRadioButtonTemplate};
 use gpui_luma::controls::scrollbar::{ScrollbarTheme, ThemedScrollbarTemplate};
-use gpui_luma::controls::selector::{SelectorTheme, ThemedSelectorTemplate};
+use gpui_luma::controls::selector::{SelectorTheme, SelectorVisualState, ThemedSelectorTemplate};
 use gpui_luma::controls::selector_panel::default_selector_items_template;
 use gpui_luma::controls::selection_panel::SelectionPanelLookProvider;
 use gpui_luma::controls::resizable_panels::ResizablePanelsTheme;
@@ -480,6 +480,27 @@ impl SelectorTheme for ShadcnSelectorTheme {
             scale,
             without_elevation,
         )
+    }
+
+    fn resolve_visual_look(
+        &self,
+        trigger_style: gpui_luma::controls::selector::SelectorTriggerStyle,
+        visual_state: SelectorVisualState,
+        size: ControlSize,
+        scale: &gpui_luma::theme::StandardBoxScale,
+        without_elevation: bool,
+    ) -> gpui_luma::controls::selector::SelectorLook {
+        let tokens = self.theme.mode_tokens();
+        let look = super::selector::selector_look_with_visual_state(
+            tokens.as_ref(),
+            self.theme.mode(),
+            trigger_style,
+            visual_state,
+            size,
+            scale,
+            without_elevation,
+        );
+        look
     }
 }
 

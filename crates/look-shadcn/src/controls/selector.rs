@@ -1,7 +1,7 @@
 //! Selector property mappings — outline/ghost command-button trigger + accent item panel.
 
 use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::controls::selector::{SelectorLook, SelectorPalette, SelectorTriggerStyle};
+use gpui_luma::controls::selector::{SelectorLook, SelectorPalette, SelectorTriggerStyle, SelectorVisualState};
 use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale, ThemeMode};
 
 use crate::look_context::LookContext;
@@ -67,11 +67,14 @@ pub fn selector_look(
         }
     }
 
+    let trigger_border = (!state.disabled && state.invalid)
+        .then_some(mode.palette.destructive_background)
+        .or(palette.trigger_border);
     SelectorLook {
         trigger_background: palette.trigger_background,
         trigger_foreground: palette.trigger_foreground,
         trigger_icon: palette.trigger_icon,
-        trigger_border: palette.trigger_border,
+        trigger_border,
         trigger_shadow: palette.trigger_shadow,
         trigger_typography: typography,
         trigger_radius: scale.radius,
@@ -80,9 +83,30 @@ pub fn selector_look(
         trigger_gap: scale.gap,
         trigger_height: scale.height,
         trigger_icon_size: scale.height / 3.0,
+        trigger_focus_border: None,
         menu_offset_y: scale.gap * 0.5,
         items_panel: selector_items_panel_look(mode, theme_mode, size),
     }
+}
+
+pub fn selector_look_with_visual_state(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    trigger_style: SelectorTriggerStyle,
+    visual_state: SelectorVisualState,
+    size: ControlSize,
+    scale: &StandardBoxScale,
+    without_elevation: bool,
+) -> SelectorLook {
+    let state = visual_state.resolved_interaction();
+    let mut look = selector_look(mode, theme_mode, trigger_style, state, size, scale, without_elevation);
+    if visual_state.invalid && !visual_state.interaction.disabled {
+        look.trigger_border = Some(mode.palette.destructive_background);
+        look.trigger_focus_border = Some(mode.palette.destructive_background);
+    } else if visual_state.interaction.focused && !visual_state.interaction.disabled && look.trigger_border.is_some() {
+        look.trigger_focus_border = crate::focus::focus_ring_color(&mode.catalog).ok();
+    }
+    look
 }
 
 #[cfg(test)]
@@ -90,7 +114,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use gpui_luma::controls::button_family::ButtonFamilyRole;
-    use gpui_luma::controls::selector::SelectorTriggerStyle;
+    use gpui_luma::controls::selector::{SelectorTriggerStyle, SelectorVisualState};
     use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::catalog::CssTokenMap;
@@ -98,7 +122,7 @@ mod tests {
     use crate::look_context::LookContext;
     use crate::mode::ShadcnModeTokens;
     use crate::stylesheet::embedded_stylesheet;
-    use super::{selector_look, selector_palette};
+    use super::{selector_look, selector_look_with_visual_state, selector_palette};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -171,6 +195,58 @@ mod tests {
         let selector =
             selector_palette(&mode, ThemeMode::Light, SelectorTriggerStyle::Outline, InteractionState::default(), true);
         assert!(selector.trigger_shadow.is_none());
+    }
+
+    #[test]
+    fn open_trigger_uses_hover_palette_but_disabled_still_wins() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
+        let scale = gpui_luma::theme::StandardBoxScale::compute(ControlSize::Md, &mode.metrics, 1.0);
+        let open = selector_look_with_visual_state(
+            &mode,
+            ThemeMode::Light,
+            SelectorTriggerStyle::Outline,
+            SelectorVisualState { open: true, ..Default::default() },
+            ControlSize::Md,
+            &scale,
+            false,
+        );
+        let hover = selector_look(
+            &mode,
+            ThemeMode::Light,
+            SelectorTriggerStyle::Outline,
+            InteractionState { hovered: true, ..Default::default() },
+            ControlSize::Md,
+            &scale,
+            false,
+        );
+        let disabled_open = selector_look_with_visual_state(
+            &mode,
+            ThemeMode::Light,
+            SelectorTriggerStyle::Outline,
+            SelectorVisualState {
+                open: true,
+                interaction: InteractionState { disabled: true, ..Default::default() },
+                ..Default::default()
+            },
+            ControlSize::Md,
+            &scale,
+            false,
+        );
+        let disabled = selector_look(
+            &mode,
+            ThemeMode::Light,
+            SelectorTriggerStyle::Outline,
+            InteractionState { disabled: true, ..Default::default() },
+            ControlSize::Md,
+            &scale,
+            false,
+        );
+
+        assert_eq!(open.trigger_background, hover.trigger_background);
+        assert_eq!(open.trigger_foreground, hover.trigger_foreground);
+        assert_eq!(disabled_open.trigger_background, disabled.trigger_background);
+        assert_eq!(disabled_open.trigger_foreground, disabled.trigger_foreground);
     }
 
     #[test]

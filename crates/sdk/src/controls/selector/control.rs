@@ -111,6 +111,13 @@ where
         cx.notify();
     }
 
+    pub fn set_invalid(&mut self, invalid: bool, cx: &mut Context<Self>) {
+        if self.model.invalid != invalid {
+            self.model.invalid = invalid;
+            cx.notify();
+        }
+    }
+
     pub fn set_tab_stop(&mut self, tab_stop: bool, cx: &mut Context<Self>) {
         self.model.tab_stop = tab_stop;
         self.interaction.set_tab_stop(self.model.enabled, tab_stop);
@@ -162,6 +169,8 @@ where
     }
 
     fn render_model<'a>(&'a self, window: &Window) -> SelectorRenderModel<'a, T> {
+        let mut interaction = self.interaction.render_state(self.model.enabled, window);
+        interaction.invalid = self.model.invalid;
         SelectorRenderModel {
             id: &self.model.id,
             label: self.trigger_label(),
@@ -178,7 +187,13 @@ where
             item_template: self.model.item_template.as_ref(),
             panel_template: Some(self.model.panel_template.as_ref()),
             focus: ControlFocusState::from_focus_handle(self.model.enabled, self.interaction.focus_handle(), window),
-            state: self.interaction.render_state(self.model.enabled, window),
+            state: interaction,
+            visual_state: crate::controls::selector::SelectorVisualState {
+                interaction,
+                open: self.open,
+                selected: self.selected_index.is_some(),
+                invalid: self.model.invalid,
+            },
         }
     }
 
@@ -618,6 +633,14 @@ mod tests {
         let builder = Selector::new("selector").items(items()).selected_id("second");
 
         assert_eq!(builder.initial_selected_id.as_ref().map(|id| id.as_ref()), Some("second"));
+    }
+
+    #[test]
+    fn builder_leaves_selector_unselected_without_a_valid_selection() {
+        let builder = Selector::new("selector").items(items());
+
+        assert!(builder.initial_selected_id.is_none());
+        assert!(builder.model.items.iter().all(|item| !item.is_selected()));
     }
 
     #[test]

@@ -198,8 +198,13 @@ where
             LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
         );
-        self.theme
-            .resolve_look(model.trigger_style, model.state, model.size, &scale, model.without_elevation)
+        self.theme.resolve_visual_look(
+            model.trigger_style,
+            model.visual_state,
+            model.size,
+            &scale,
+            model.without_elevation,
+        )
     }
 
     fn render(
@@ -275,6 +280,14 @@ where
 
         if border.a > 0.0 {
             root = root.border_1().border_color(border);
+        }
+
+        if model.visual_state.interaction.focused
+            && !model.visual_state.interaction.disabled
+            && !model.visual_state.invalid
+            && let Some(focus_border) = look.trigger_focus_border
+        {
+            root = root.border_color(focus_border);
         }
 
         let paint_shadow = !model.state.disabled

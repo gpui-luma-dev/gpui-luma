@@ -49,7 +49,9 @@ pub use template::{
     SelectorTemplate, SelectorTemplateHandlers, SelectorTemplateModifier, ThemedSelectorTemplate,
     default_selector_template,
 };
-pub use theme::{DefaultSelectorTheme, SelectorLook, SelectorPalette, SelectorTheme, default_selector_theme};
+pub use theme::{
+    DefaultSelectorTheme, SelectorLook, SelectorPalette, SelectorTheme, SelectorVisualState, default_selector_theme,
+};
 #[allow(unused_imports)]
 pub(crate) use theme::compose_selector_look;
 
