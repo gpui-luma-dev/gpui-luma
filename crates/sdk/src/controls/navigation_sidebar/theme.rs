@@ -21,6 +21,7 @@ pub struct NavigationSidebarSectionLook {
 #[derive(Clone, Copy, Debug)]
 pub struct NavigationSidebarItemLook {
     pub background: Option<Hsla>,
+    pub focus_border: Option<Hsla>,
     pub foreground: Hsla,
     pub icon_color: Hsla,
     pub typography: LumaTextStyle,
@@ -71,6 +72,7 @@ impl DefaultNavigationSidebarTheme {
 
         NavigationSidebarItemLook {
             background: None,
+            focus_border: (state.focused && !state.disabled).then_some(palette.focus.ring),
             foreground,
             icon_color: foreground,
             typography: typography.text.label,

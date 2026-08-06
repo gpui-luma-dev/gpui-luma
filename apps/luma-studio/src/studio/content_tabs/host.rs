@@ -129,6 +129,7 @@ impl ContentPaneHost {
         }
         if self.active_tab == ContentTab::Controls {
             self.close_catalog_picker(cx);
+            self.controls_panel.update(cx, |panel, cx| panel.dismiss_overlays(cx));
         }
         self.active_tab = tab;
 

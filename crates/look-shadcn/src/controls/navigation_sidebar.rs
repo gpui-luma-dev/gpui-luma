@@ -217,6 +217,10 @@ fn base_item_look(_theme: &ShadcnLook, ctx: &LookContext, size: ControlSize) -> 
 
     NavigationSidebarItemLook {
         background: None,
+        focus_border: (state.focused && !state.disabled).then(|| {
+            crate::focus::focus_ring_color(ctx.catalog())
+                .unwrap_or_else(|err| panic!("navigation sidebar focus ring: {err}"))
+        }),
         foreground: colors.foreground.hsla(),
         icon_color: colors.icon_color.hsla(),
         typography: typography.text.label,

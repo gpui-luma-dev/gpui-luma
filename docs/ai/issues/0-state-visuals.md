@@ -19,7 +19,6 @@ The TextField/TextArea portion is implemented and verified:
 - Style-guide examples cover the same state matrix.
 - Local field composition owns labels, validation messaging, required validation, and submit
   behavior.
-- Required validation is semantic; the local form currently does not render a `*` marker.
 - No invalid icon or generic suffix/adorner engine is currently needed.
 
 The issue is intentionally moving to the next control family: selectors. The Selector phase

@@ -14,7 +14,7 @@ use super::inspector::{
     SharedInspectorResolver,
 };
 
-static CHECKBOX_STATES: [super::inspector::InspectorStateSpec; 4] = CHOICE_INTERACTION_STATES;
+static CHECKBOX_STATES: [super::inspector::InspectorStateSpec; 5] = CHOICE_INTERACTION_STATES;
 
 pub static CHECKBOX_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Checkbox",

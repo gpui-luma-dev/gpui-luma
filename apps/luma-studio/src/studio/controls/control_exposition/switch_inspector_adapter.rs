@@ -14,7 +14,7 @@ use super::inspector::{
     SharedInspectorResolver,
 };
 
-static SWITCH_STATES: [super::inspector::InspectorStateSpec; 4] = CHOICE_INTERACTION_STATES;
+static SWITCH_STATES: [super::inspector::InspectorStateSpec; 5] = CHOICE_INTERACTION_STATES;
 
 pub static SWITCH_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Switch",

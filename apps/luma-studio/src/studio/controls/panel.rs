@@ -38,6 +38,12 @@ impl ControlsPanel {
         cx.notify();
     }
 
+    pub fn dismiss_overlays(&self, cx: &mut Context<Self>) {
+        for exposition in &self.expositions {
+            exposition.dismiss_overlays(cx);
+        }
+    }
+
     pub(crate) fn selected_entry_id(&self) -> &'static str {
         self.selected_entry_id
     }

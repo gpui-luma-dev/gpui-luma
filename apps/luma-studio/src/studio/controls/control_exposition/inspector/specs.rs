@@ -73,7 +73,7 @@ pub static COLOR_LAYOUT_INTERACTION_STATES: [InspectorStateSpec; 4] = [
     },
 ];
 
-pub static CHOICE_INTERACTION_STATES: [InspectorStateSpec; 4] = [
+pub static CHOICE_INTERACTION_STATES: [InspectorStateSpec; 5] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -92,6 +92,13 @@ pub static CHOICE_INTERACTION_STATES: [InspectorStateSpec; 4] = [
         id: "hover",
         label: "Hover",
         icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "focused",
+        label: "Focused",
+        icon: LucideIcon::Focus,
         expanded_default: false,
         categories: &COLOR_LAYOUT_ELEVATION_CATEGORIES,
     },
@@ -454,8 +461,8 @@ pub static LIST_VIEW_ROW_VALUE_MODES: [InspectorValueMode; 2] = [
 pub static NAVIGATION_SIDEBAR_VARIANTS: [InspectorVariant; 4] = [
     InspectorVariant { id: "container", label: "Container" },
     InspectorVariant { id: "section", label: "Section" },
-    InspectorVariant { id: "branch", label: "Branch Item" },
-    InspectorVariant { id: "nav-item", label: "Nav Item" },
+    InspectorVariant { id: "branch", label: "Parent Item" },
+    InspectorVariant { id: "nav-item", label: "Leaf Item" },
 ];
 
 pub static NAV_ITEM_VALUE_MODES: [InspectorValueMode; 2] = [
@@ -511,7 +518,7 @@ pub static TREE_VIEW_ROW_STATES: [InspectorStateSpec; 4] = [
     },
 ];
 
-pub static NAVIGATION_SIDEBAR_STATES: [InspectorStateSpec; 4] = [
+pub static NAVIGATION_SIDEBAR_STATES: [InspectorStateSpec; 5] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -530,6 +537,13 @@ pub static NAVIGATION_SIDEBAR_STATES: [InspectorStateSpec; 4] = [
         id: "hover",
         label: "Hover",
         icon: LucideIcon::MousePointer2,
+        expanded_default: false,
+        categories: &COLOR_LAYOUT_CATEGORIES,
+    },
+    InspectorStateSpec {
+        id: "focused",
+        label: "Focused",
+        icon: LucideIcon::Focus,
         expanded_default: false,
         categories: &COLOR_LAYOUT_CATEGORIES,
     },

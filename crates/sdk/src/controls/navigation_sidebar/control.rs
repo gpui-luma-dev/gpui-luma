@@ -789,12 +789,16 @@ impl NavigationSidebar {
             .find_map(|(target, focus_handle)| focus_handle.is_focused(window).then(|| target.clone()))
     }
 
-    fn move_focus(&self, window: &mut Window, cx: &mut Context<Self>, direction: FocusDirection) {
-        let Some(next_focus_handle) = next_focus_handle(&self.visible_focus_nodes, window, direction) else {
+    fn move_focus(&mut self, window: &mut Window, cx: &mut Context<Self>, direction: FocusDirection) {
+        let Some((target, next_focus_handle)) = next_focus_target(&self.visible_focus_nodes, window, direction) else {
             return;
         };
 
         next_focus_handle.focus(window, cx);
+
+        if let NavigationFocusTarget::Node(node_id) = target {
+            self.activate_node(node_id, cx);
+        }
     }
 
     fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, window: &mut Window, cx: &mut Context<Self>) {
@@ -1215,18 +1219,18 @@ enum FocusDirection {
     Last,
 }
 
-fn next_focus_handle(
+fn next_focus_target(
     focus_nodes: &[(NavigationFocusTarget, FocusHandle)],
     window: &Window,
     direction: FocusDirection,
-) -> Option<FocusHandle> {
+) -> Option<(NavigationFocusTarget, FocusHandle)> {
     if focus_nodes.is_empty() {
         return None;
     }
 
     match direction {
-        FocusDirection::First => focus_nodes.first().map(|(_, focus_handle)| focus_handle.clone()),
-        FocusDirection::Last => focus_nodes.last().map(|(_, focus_handle)| focus_handle.clone()),
+        FocusDirection::First => focus_nodes.first().cloned(),
+        FocusDirection::Last => focus_nodes.last().cloned(),
         FocusDirection::Previous | FocusDirection::Next => {
             let current_index = focus_nodes.iter().position(|(_, focus_handle)| focus_handle.is_focused(window));
             let next_index = match (current_index, direction) {
@@ -1237,7 +1241,7 @@ fn next_focus_handle(
                 _ => unreachable!(),
             };
 
-            focus_nodes.get(next_index).map(|(_, focus_handle)| focus_handle.clone())
+            focus_nodes.get(next_index).cloned()
         }
     }
 }

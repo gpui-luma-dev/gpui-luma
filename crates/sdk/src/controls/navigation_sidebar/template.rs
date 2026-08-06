@@ -589,6 +589,10 @@ fn render_item_row(
         row = row.bg(background);
     }
 
+    if let Some(focus_border) = look.focus_border {
+        row = row.border_1().border_color(focus_border);
+    }
+
     if state.enabled {
         row = row.cursor_pointer();
     } else {
@@ -685,6 +689,10 @@ fn render_collapsed_rail_node(
 
     if let Some(background) = look.background {
         row = row.bg(background);
+    }
+
+    if let Some(focus_border) = look.focus_border {
+        row = row.border_1().border_color(focus_border);
     }
 
     if state.enabled {

@@ -34,6 +34,11 @@ struct PopupMenuExpositionLeftPane {
 }
 
 impl PopupMenuExpositionLeftPane {
+    fn dismiss_overlays(&mut self, cx: &mut Context<Self>) {
+        self.preview_smart.update(cx, |preview, cx| preview.dismiss(cx));
+        self.preview_below.update(cx, |preview, cx| preview.dismiss(cx));
+    }
+
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.preview_smart.update(cx, |_, cx| cx.notify());
@@ -144,6 +149,10 @@ impl PopupMenuControlExposition {
 
     pub fn fills_viewport(&self) -> bool {
         true
+    }
+
+    pub fn dismiss_overlays(&mut self, cx: &mut Context<Self>) {
+        self.left_pane.update(cx, |pane, cx| pane.dismiss_overlays(cx));
     }
 
     pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {

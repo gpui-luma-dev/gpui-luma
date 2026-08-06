@@ -58,7 +58,7 @@ impl ControlInspectorResolver for NavigationSidebarInspectorAdapter {
         match selection.variant_id {
             "container" | "section" => state.id == "default",
             "branch" => matches!(state.id, "default" | "hover" | "pressed" | "focused" | "disabled"),
-            "nav-item" => matches!(state.id, "default" | "hover" | "pressed" | "disabled"),
+            "nav-item" => matches!(state.id, "default" | "hover" | "focused" | "pressed" | "disabled"),
             _ => true,
         }
     }

@@ -14,7 +14,7 @@ use super::inspector::{
     SharedInspectorResolver,
 };
 
-static RADIO_BUTTON_STATES: [super::inspector::InspectorStateSpec; 4] = CHOICE_INTERACTION_STATES;
+static RADIO_BUTTON_STATES: [super::inspector::InspectorStateSpec; 5] = CHOICE_INTERACTION_STATES;
 
 pub static RADIO_BUTTON_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
     control_label: "Radio Button",

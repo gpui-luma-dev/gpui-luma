@@ -103,7 +103,9 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
             control_background: None,
             control_border: None,
             indicator_background,
-            indicator_border: if checked && !state.disabled {
+            indicator_border: if state.focused && !state.disabled {
+                palette.focus.ring
+            } else if checked && !state.disabled {
                 selected_color
             } else {
                 palette.form.input.border

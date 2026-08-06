@@ -70,6 +70,9 @@ pub fn navigation_sidebar_item_color_rows(palette: &NavigationSidebarItemInspect
     if let Some(background) = &palette.background {
         rows.push(color_row("background", background));
     }
+    if let Some(focus_border) = &palette.focus_border {
+        rows.push(color_row("focus border", focus_border));
+    }
     rows.push(color_row("foreground", &palette.foreground));
     rows.push(color_row("icon", &palette.icon_color));
     rows

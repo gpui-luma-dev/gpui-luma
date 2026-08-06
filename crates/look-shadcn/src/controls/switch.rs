@@ -153,7 +153,9 @@ pub fn switch_look(
         .unwrap_or_else(|_| SwitchColorTable::fallback());
 
     let track_background = colors.track_background.hsla();
-    let track_border = if on && !state.disabled {
+    let track_border = if state.focused && !state.disabled {
+        crate::focus::focus_ring_color(catalog).unwrap_or_else(|err| panic!("switch focus ring: {err}"))
+    } else if on && !state.disabled {
         track_background
     } else {
         resolve_color(catalog, "border").unwrap_or_else(|err| panic!("switch properties: {err}"))

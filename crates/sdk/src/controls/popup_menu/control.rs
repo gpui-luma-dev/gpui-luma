@@ -184,6 +184,13 @@ impl PopupMenu {
         closed
     }
 
+    /// Closes the popup and emits the normal dismissal events when it was open.
+    pub fn dismiss(&mut self, cx: &mut Context<Self>) {
+        if self.dismiss_menu(cx) {
+            cx.notify();
+        }
+    }
+
     fn open_menu_with(&mut self, active_path: Option<MenuPath>, cx: &mut Context<Self>) -> bool {
         let was_open = self.open;
         let changed = !self.open || self.menu_state.open_with(active_path);

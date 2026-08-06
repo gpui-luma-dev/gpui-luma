@@ -111,6 +111,13 @@ where
         cx.notify();
     }
 
+    /// Closes the popup and emits the normal dismissal events when it was open.
+    pub fn dismiss(&mut self, cx: &mut Context<Self>) {
+        if self.close_menu_with_event(true, cx) {
+            cx.notify();
+        }
+    }
+
     pub fn set_invalid(&mut self, invalid: bool, cx: &mut Context<Self>) {
         if self.model.invalid != invalid {
             self.model.invalid = invalid;

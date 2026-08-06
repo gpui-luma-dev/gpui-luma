@@ -87,7 +87,9 @@ impl SwitchTheme for DefaultSwitchTheme {
             palette.form.input.background
         };
 
-        let track_border = if on && !state.disabled {
+        let track_border = if state.focused && !state.disabled {
+            palette.focus.ring
+        } else if on && !state.disabled {
             track_background
         } else {
             palette.border.default

@@ -19,6 +19,7 @@ pub struct NavigationSidebarSectionInspectPalette {
 #[derive(Clone, Debug)]
 pub struct NavigationSidebarItemInspectPalette {
     pub background: Option<ResolvedColor>,
+    pub focus_border: Option<ResolvedColor>,
     pub foreground: ResolvedColor,
     pub icon_color: ResolvedColor,
 }
@@ -74,6 +75,7 @@ pub fn inspect_navigation_sidebar_branch_color_palette(
     .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarBranchColorTable::fallback());
     NavigationSidebarItemInspectPalette {
         background: colors.background,
+        focus_border: state.focused.then(|| resolver.resolve_decl("ring").ok()).flatten(),
         foreground: colors.foreground,
         icon_color: colors.icon_color,
     }
@@ -96,6 +98,7 @@ pub fn inspect_navigation_sidebar_item_color_palette(
     .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarItemColorTable::fallback());
     NavigationSidebarItemInspectPalette {
         background: colors.background,
+        focus_border: state.focused.then(|| resolver.resolve_decl("ring").ok()).flatten(),
         foreground: colors.foreground,
         icon_color: colors.icon_color,
     }

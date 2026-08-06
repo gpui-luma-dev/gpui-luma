@@ -633,7 +633,10 @@ fn render_selector_selector_trigger(
         label: &label,
         selected_index: state.selector_selected.then_some(1),
         items: &items,
-        open: state.selector_open,
+        // The open sample renders its panel inline in `render_selector_control_cell`.
+        // Keep the trigger's visual state open without asking the SDK template to
+        // create a second anchored overlay with no trigger bounds.
+        open: false,
         trigger_bounds: None,
         placement: SelectorPlacement::BelowStart,
         active_path: None,

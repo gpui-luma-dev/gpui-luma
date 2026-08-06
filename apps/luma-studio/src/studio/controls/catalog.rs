@@ -192,14 +192,6 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         section_order: 201,
     },
     ControlDocEntry {
-        id: "field-form",
-        title: "Field Form",
-        description: "Local form-composition exposition modeled after shadcn Field, FieldGroup, FieldSet, and FieldSeparator patterns.",
-        category: ControlCategory::Inputs,
-        snippet: "field_set!(\"Payment Method\";\n    field_group!(\n        field!(\"Name on Card\"; look.textfield(\"name\"))\n    )\n);",
-        section_order: 201,
-    },
-    ControlDocEntry {
         id: "slider",
         title: "Slider",
         description: "Unified linear and angular slider engine — fill tracks, vertical and reversed orientation, blocked intervals, multi-stop thumbs, dials, and size variants. Subscribe to SliderEvent::Change for live preview and SliderEvent::Release to commit.",

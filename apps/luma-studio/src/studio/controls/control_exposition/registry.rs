@@ -24,7 +24,6 @@ use super::context_menu::ContextMenuControlExposition;
 use super::custom_button::CustomButtonControlExposition;
 use super::dock_panel::DockPanelControlExposition;
 use super::floating_menu::FloatingMenuControlExposition;
-use super::field_form::FieldFormControlExposition;
 use super::listbox::ListBoxControlExposition;
 use super::modal_overlay::ModalOverlayControlExposition;
 use super::modeless_overlay::ModelessOverlayControlExposition;
@@ -87,7 +86,6 @@ pub enum ControlExposition {
     ColorSvTriangle(Entity<ColorSvTriangleControlExposition>),
     TextField(Entity<TextFieldControlExposition>),
     TextArea(Entity<TextAreaControlExposition>),
-    FieldForm(Entity<FieldFormControlExposition>),
     Slider(Entity<SliderControlExposition>),
     Scrollbar(Entity<ScrollbarControlExposition>),
     DockPanel(Entity<DockPanelControlExposition>),
@@ -148,7 +146,6 @@ impl ControlExposition {
             Self::ColorSvTriangle(cx.new(|cx| ColorSvTriangleControlExposition::new(cx, look.clone()))),
             Self::TextField(cx.new(|cx| TextFieldControlExposition::new(cx, look.clone()))),
             Self::TextArea(cx.new(|cx| TextAreaControlExposition::new(cx, look.clone()))),
-            Self::FieldForm(cx.new(|cx| FieldFormControlExposition::new(cx, look.clone()))),
             Self::Slider(cx.new(|cx| SliderControlExposition::new(cx, look.clone()))),
             Self::Scrollbar(cx.new(|cx| ScrollbarControlExposition::new(cx, look.clone()))),
             Self::DockPanel(cx.new(|cx| DockPanelControlExposition::new(cx, look.clone()))),
@@ -210,7 +207,6 @@ impl ControlExposition {
             Self::ColorSvTriangle(entity) => entity.read(cx).entry(),
             Self::TextField(entity) => entity.read(cx).entry(),
             Self::TextArea(entity) => entity.read(cx).entry(),
-            Self::FieldForm(entity) => entity.read(cx).entry(),
             Self::Slider(entity) => entity.read(cx).entry(),
             Self::Scrollbar(entity) => entity.read(cx).entry(),
             Self::DockPanel(entity) => entity.read(cx).entry(),
@@ -243,7 +239,6 @@ impl ControlExposition {
             Self::Toggle(entity) => entity.read(cx).fills_viewport(),
             Self::TextField(entity) => entity.read(cx).fills_viewport(),
             Self::TextArea(entity) => entity.read(cx).fills_viewport(),
-            Self::FieldForm(entity) => entity.read(cx).fills_viewport(),
             Self::Badge(entity) => entity.read(cx).fills_viewport(),
             Self::Progress(entity) => entity.read(cx).fills_viewport(),
             Self::Stepper(entity) => entity.read(cx).fills_viewport(),
@@ -289,7 +284,6 @@ impl ControlExposition {
             Self::Toggle(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::TextField(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::TextArea(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
-            Self::FieldForm(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Badge(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Progress(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Stepper(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
@@ -334,6 +328,14 @@ impl ControlExposition {
         }
     }
 
+    pub fn dismiss_overlays(&self, cx: &mut App) {
+        match self {
+            Self::PopupMenu(entity) => entity.update(cx, |exposition, cx| exposition.dismiss_overlays(cx)),
+            Self::PopupSelector(entity) => entity.update(cx, |exposition, cx| exposition.dismiss_overlays(cx)),
+            _ => {}
+        }
+    }
+
     pub fn set_viewport_size(&self, size: gpui::Size<gpui::Pixels>, cx: &mut App) {
         match self {
             Self::Button(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
@@ -343,7 +345,6 @@ impl ControlExposition {
             Self::Toggle(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::TextField(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::TextArea(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
-            Self::FieldForm(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Badge(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Progress(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Stepper(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
@@ -424,7 +425,6 @@ impl ControlExposition {
             Self::ColorSvTriangle(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::TextField(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::TextArea(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
-            Self::FieldForm(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::Slider(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::Scrollbar(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::DockPanel(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
@@ -482,7 +482,6 @@ impl ControlExposition {
             Self::ColorSvTriangle(entity) => entity.clone().into_any_element(),
             Self::TextField(entity) => entity.clone().into_any_element(),
             Self::TextArea(entity) => entity.clone().into_any_element(),
-            Self::FieldForm(entity) => entity.clone().into_any_element(),
             Self::Slider(entity) => entity.clone().into_any_element(),
             Self::Scrollbar(entity) => entity.clone().into_any_element(),
             Self::DockPanel(entity) => entity.clone().into_any_element(),

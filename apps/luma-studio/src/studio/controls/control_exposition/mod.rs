@@ -10,7 +10,6 @@ mod button_theme_inspector;
 mod checkbox_inspector_adapter;
 mod checkbox_theme_inspector;
 mod exposition_inspector;
-mod field_form;
 mod theme_inspector;
 mod toggle_inspector_adapter;
 mod toggle_theme_inspector;
