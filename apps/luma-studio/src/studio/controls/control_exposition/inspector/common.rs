@@ -229,7 +229,7 @@ pub fn tabs_navigation_active(variant_id: &str) -> bool {
     variant_id == "active"
 }
 
-pub fn navigation_sidebar_item_selected(value_id: &str) -> bool {
+pub fn sidebar_item_selected(value_id: &str) -> bool {
     value_id == "selected"
 }
 

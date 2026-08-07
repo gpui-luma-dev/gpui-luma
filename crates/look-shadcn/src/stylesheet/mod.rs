@@ -12,9 +12,9 @@ pub use resolve::{
     resolve_badge_color_rule, resolve_button_metrics_rule, resolve_card_color_rule, resolve_checkbox_color_rule,
     resolve_control_group_list_color_rule, resolve_floating_menu_surface_color_rule,
     resolve_floating_menu_trigger_color_rule, resolve_list_view_row_color_rule, resolve_list_view_surface_color_rule,
-    resolve_listbox_list_color_rule, resolve_listbox_row_color_rule, resolve_navigation_sidebar_branch_color_rule,
-    resolve_navigation_sidebar_container_color_rule, resolve_navigation_sidebar_item_color_rule,
-    resolve_navigation_sidebar_section_color_rule, resolve_autocomplete_chrome_color_rule, resolve_progress_color_rule,
+    resolve_listbox_list_color_rule, resolve_listbox_row_color_rule, resolve_sidebar_branch_color_rule,
+    resolve_sidebar_container_color_rule, resolve_sidebar_item_color_rule, resolve_sidebar_metrics,
+    resolve_sidebar_section_color_rule, resolve_autocomplete_chrome_color_rule, resolve_progress_color_rule,
     resolve_progress_metrics, resolve_color_ref, resolve_stepper_metrics, resolve_radio_color_rule,
     resolve_resizable_panels_color_rule, resolve_scrollbar_color_rule, resolve_scrollbar_metrics,
     resolve_slider_color_rule, resolve_slider_metrics, resolve_split_view_color_rule, resolve_stylesheet_shadow_token,
@@ -36,10 +36,10 @@ use config::{
     AccordionContentColorRule, AccordionTriggerColorRule, AutocompleteChromeColorRule, BadgeColorRule, ButtonColorRule,
     CardColorRule, CheckboxColorRule, ControlGroupListColorRule, FloatingMenuSurfaceColorRule,
     FloatingMenuTriggerColorRule, ListboxListColorRule, ListboxRowColorRule, ListViewRowColorRule,
-    ListViewSurfaceColorRule, NavigationSidebarBranchColorRule, NavigationSidebarContainerColorRule,
-    NavigationSidebarItemColorRule, NavigationSidebarSectionColorRule, ProgressColorRule, RadioColorRule,
-    ResizablePanelsColorRule, ScrollbarColorRule, SliderColorRule, SplitViewColorRule, SwitchColorRule,
-    TabsNavigationItemColorRule, TabsNavigationListColorRule, TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
+    ListViewSurfaceColorRule, SidebarBranchColorRule, SidebarContainerColorRule, SidebarItemColorRule,
+    SidebarSectionColorRule, ProgressColorRule, RadioColorRule, ResizablePanelsColorRule, ScrollbarColorRule,
+    SliderColorRule, SplitViewColorRule, SwitchColorRule, TabsNavigationItemColorRule, TabsNavigationListColorRule,
+    TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
 };
 use selector::{AsSelectorState, ButtonSelectorState, badge_variant_key, theme_mode_key};
 
@@ -223,33 +223,33 @@ pub fn find_tree_view_row_color_rule(
     stylesheet.tree_view.row.find_color_rule(disabled, layer)
 }
 
-pub fn find_navigation_sidebar_container_color_rule(
-    stylesheet: &StylesheetConfig,
-) -> Option<&NavigationSidebarContainerColorRule> {
-    stylesheet.navigation_sidebar.container.color_rule()
+pub fn find_sidebar_metrics(stylesheet: &StylesheetConfig) -> &crate::stylesheet::config::SidebarMetricsRule {
+    &stylesheet.sidebar.metrics
 }
 
-pub fn find_navigation_sidebar_section_color_rule(
-    stylesheet: &StylesheetConfig,
-) -> Option<&NavigationSidebarSectionColorRule> {
-    stylesheet.navigation_sidebar.section.color_rule()
+pub fn find_sidebar_container_color_rule(stylesheet: &StylesheetConfig) -> Option<&SidebarContainerColorRule> {
+    stylesheet.sidebar.container.color_rule()
 }
 
-pub fn find_navigation_sidebar_branch_color_rule(
+pub fn find_sidebar_section_color_rule(stylesheet: &StylesheetConfig) -> Option<&SidebarSectionColorRule> {
+    stylesheet.sidebar.section.color_rule()
+}
+
+pub fn find_sidebar_branch_color_rule(
     stylesheet: &StylesheetConfig,
     disabled: bool,
     layer: InteractionLayer,
-) -> Option<&NavigationSidebarBranchColorRule> {
-    stylesheet.navigation_sidebar.branch.find_color_rule(disabled, layer)
+) -> Option<&SidebarBranchColorRule> {
+    stylesheet.sidebar.branch.find_color_rule(disabled, layer)
 }
 
-pub fn find_navigation_sidebar_item_color_rule(
+pub fn find_sidebar_item_color_rule(
     stylesheet: &StylesheetConfig,
     selected: bool,
     disabled: bool,
     layer: InteractionLayer,
-) -> Option<&NavigationSidebarItemColorRule> {
-    stylesheet.navigation_sidebar.item.find_color_rule(selected, disabled, layer)
+) -> Option<&SidebarItemColorRule> {
+    stylesheet.sidebar.item.find_color_rule(selected, disabled, layer)
 }
 
 pub fn find_textfield_color_rule<'a>(
@@ -654,9 +654,9 @@ pub fn resolve_tree_view_row_colors_metadata(stylesheet: &StylesheetConfig) -> V
         .collect()
 }
 
-pub fn resolve_navigation_sidebar_container_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
+pub fn resolve_sidebar_container_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
     stylesheet
-        .navigation_sidebar
+        .sidebar
         .container
         .color_rules
         .iter()
@@ -671,9 +671,9 @@ pub fn resolve_navigation_sidebar_container_colors_metadata(stylesheet: &Stylesh
         .collect()
 }
 
-pub fn resolve_navigation_sidebar_section_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
+pub fn resolve_sidebar_section_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
     stylesheet
-        .navigation_sidebar
+        .sidebar
         .section
         .color_rules
         .iter()
@@ -684,9 +684,9 @@ pub fn resolve_navigation_sidebar_section_colors_metadata(stylesheet: &Styleshee
         .collect()
 }
 
-pub fn resolve_navigation_sidebar_branch_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
+pub fn resolve_sidebar_branch_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
     stylesheet
-        .navigation_sidebar
+        .sidebar
         .branch
         .color_rules
         .iter()
@@ -707,9 +707,9 @@ pub fn resolve_navigation_sidebar_branch_colors_metadata(stylesheet: &Stylesheet
         .collect()
 }
 
-pub fn resolve_navigation_sidebar_item_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
+pub fn resolve_sidebar_item_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
     stylesheet
-        .navigation_sidebar
+        .sidebar
         .item
         .color_rules
         .iter()
@@ -902,30 +902,10 @@ pub fn all_color_rule_metadata(stylesheet: &StylesheetConfig) -> Vec<ColorRuleMe
         section(stylesheet, "tabs_navigation", "list", resolve_tabs_navigation_list_colors_metadata(stylesheet)),
         section(stylesheet, "tabs_navigation", "item", resolve_tabs_navigation_item_colors_metadata(stylesheet)),
         section(stylesheet, "tree_view", "row", resolve_tree_view_row_colors_metadata(stylesheet)),
-        section(
-            stylesheet,
-            "navigation_sidebar",
-            "container",
-            resolve_navigation_sidebar_container_colors_metadata(stylesheet),
-        ),
-        section(
-            stylesheet,
-            "navigation_sidebar",
-            "section",
-            resolve_navigation_sidebar_section_colors_metadata(stylesheet),
-        ),
-        section(
-            stylesheet,
-            "navigation_sidebar",
-            "branch",
-            resolve_navigation_sidebar_branch_colors_metadata(stylesheet),
-        ),
-        section(
-            stylesheet,
-            "navigation_sidebar",
-            "item",
-            resolve_navigation_sidebar_item_colors_metadata(stylesheet),
-        ),
+        section(stylesheet, "sidebar", "container", resolve_sidebar_container_colors_metadata(stylesheet)),
+        section(stylesheet, "sidebar", "section", resolve_sidebar_section_colors_metadata(stylesheet)),
+        section(stylesheet, "sidebar", "branch", resolve_sidebar_branch_colors_metadata(stylesheet)),
+        section(stylesheet, "sidebar", "item", resolve_sidebar_item_colors_metadata(stylesheet)),
         section(stylesheet, "textfield", "color", resolve_textfield_colors_metadata(stylesheet)),
         section(stylesheet, "autocomplete", "chrome", resolve_autocomplete_chrome_colors_metadata(stylesheet)),
         section(stylesheet, "progress", "color", resolve_progress_colors_metadata(stylesheet)),
@@ -978,7 +958,7 @@ mod tests {
         assert_eq!(stylesheet.floating_menu.surface.elevation_rules.len(), 1);
         assert_eq!(stylesheet.tabs_navigation.item.color_rules.len(), 10);
         assert_eq!(stylesheet.tree_view.row.color_rules.len(), 5);
-        assert_eq!(stylesheet.navigation_sidebar.item.color_rules.len(), 10);
+        assert_eq!(stylesheet.sidebar.item.color_rules.len(), 10);
         assert_eq!(stylesheet.textfield.color_rules.len(), 16);
         assert_eq!(stylesheet.textfield.elevation_rules.len(), 4);
         assert_eq!(stylesheet.autocomplete.chrome.color_rules.len(), 1);
@@ -1029,10 +1009,10 @@ mod tests {
                 + embedded_stylesheet().tabs_navigation.list.color_rules.len()
                 + embedded_stylesheet().tabs_navigation.item.color_rules.len()
                 + embedded_stylesheet().tree_view.row.color_rules.len()
-                + embedded_stylesheet().navigation_sidebar.container.color_rules.len()
-                + embedded_stylesheet().navigation_sidebar.section.color_rules.len()
-                + embedded_stylesheet().navigation_sidebar.branch.color_rules.len()
-                + embedded_stylesheet().navigation_sidebar.item.color_rules.len()
+                + embedded_stylesheet().sidebar.container.color_rules.len()
+                + embedded_stylesheet().sidebar.section.color_rules.len()
+                + embedded_stylesheet().sidebar.branch.color_rules.len()
+                + embedded_stylesheet().sidebar.item.color_rules.len()
                 + embedded_stylesheet().textfield.color_rules.len()
                 + embedded_stylesheet().autocomplete.chrome.color_rules.len()
                 + embedded_stylesheet().progress.color_rules.len()

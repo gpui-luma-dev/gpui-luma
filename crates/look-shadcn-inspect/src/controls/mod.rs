@@ -10,7 +10,7 @@ mod control_group;
 mod floating_menu;
 mod list_view;
 mod listbox;
-mod navigation_sidebar;
+mod sidebar;
 mod overlay_window;
 mod pager;
 mod popup_menu;
@@ -112,11 +112,10 @@ pub use toolbar::{ToolbarInspectMetrics, ToolbarInspectPalette, inspect_toolbar_
 pub use tree_view::{
     TreeViewInspectMetrics, TreeViewRowInspectPalette, inspect_tree_view_metrics, inspect_tree_view_row_color_palette,
 };
-pub use navigation_sidebar::{
-    NavigationSidebarContainerInspectPalette, NavigationSidebarInspectMetrics, NavigationSidebarItemInspectPalette,
-    NavigationSidebarSectionInspectPalette, inspect_navigation_sidebar_branch_color_palette,
-    inspect_navigation_sidebar_container_color_palette, inspect_navigation_sidebar_item_color_palette,
-    inspect_navigation_sidebar_metrics, inspect_navigation_sidebar_section_color_palette,
+pub use sidebar::{
+    SidebarContainerInspectPalette, SidebarInspectMetrics, SidebarItemInspectPalette, SidebarSectionInspectPalette,
+    inspect_sidebar_branch_color_palette, inspect_sidebar_container_color_palette, inspect_sidebar_item_color_palette,
+    inspect_sidebar_metrics, inspect_sidebar_section_color_palette,
 };
 pub use overlay_window::{
     OverlayWindowInspectMetrics, OverlayWindowInspectPalette, inspect_overlay_window_color_palette,

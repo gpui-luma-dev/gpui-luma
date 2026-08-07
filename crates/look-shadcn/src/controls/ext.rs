@@ -19,7 +19,11 @@ use gpui_luma::controls::command::icon_button;
 use gpui_luma::controls::control_group::{ControlGroupBuilder, ControlGroupItemLike};
 use gpui_luma::controls::list_view::{self, ListViewBuilder};
 use gpui_luma::controls::listbox::{self, ListBoxItem};
-use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarBuilder};
+use gpui_luma::controls::sidebar::{
+    SidebarBuilder, SidebarContentBuilder, SidebarControlBuilder, SidebarFooterBuilder, SidebarGroupBuilder,
+    SidebarHeaderBuilder, SidebarInsetBuilder, SidebarMenuBuilder, SidebarMenuItemBuilder, SidebarMenuSubBuilder,
+    SidebarRailBuilder,
+};
 use gpui_luma::controls::context_menu::ContextMenu;
 use gpui_luma::controls::overlay_window::OverlayWindowBuilder;
 use gpui_luma::controls::pager::{self, PagerBuilder};
@@ -125,7 +129,18 @@ pub trait ShadcnLookControlExt {
     fn tree_view<T>(&self, id: impl Into<SharedString>) -> TreeViewBuilder<T>
     where
         T: Clone + Send + Sync + 'static;
-    fn navigation_sidebar(&self, id: impl Into<SharedString>) -> NavigationSidebarBuilder;
+    fn sidebar_control(&self, id: impl Into<SharedString>) -> SidebarControlBuilder;
+    fn sidebar(&self, id: impl Into<SharedString>) -> SidebarBuilder;
+    fn sidebar_header(&self) -> SidebarHeaderBuilder;
+    fn sidebar_content(&self) -> SidebarContentBuilder;
+    fn sidebar_group(&self) -> SidebarGroupBuilder;
+    fn sidebar_menu(&self, id: impl Into<SharedString>) -> SidebarMenuBuilder;
+    fn sidebar_menu_item(&self, id: impl Into<SharedString>, label: impl Into<SharedString>) -> SidebarMenuItemBuilder;
+    fn sidebar_menu_sub(&self) -> SidebarMenuSubBuilder;
+    fn sidebar_footer(&self) -> SidebarFooterBuilder;
+    fn sidebar_rail(&self) -> SidebarRailBuilder;
+    fn sidebar_inset(&self) -> SidebarInsetBuilder;
+    fn sidebar_trigger(&self, id: impl Into<SharedString>) -> ButtonBuilder<()>;
 
     fn autocomplete(
         &self,
@@ -436,10 +451,52 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         ShadcnLook::tree_view(self, id)
     }
 
-    fn navigation_sidebar(&self, id: impl Into<SharedString>) -> NavigationSidebarBuilder {
-        NavigationSidebar::new(id)
-            .template(self.navigation_sidebar_template())
-            .scrollbar_template(self.scrollbar_template())
+    fn sidebar_control(&self, id: impl Into<SharedString>) -> SidebarControlBuilder {
+        ShadcnLook::sidebar_control(self, id)
+    }
+
+    fn sidebar(&self, id: impl Into<SharedString>) -> SidebarBuilder {
+        ShadcnLook::sidebar(self, id)
+    }
+
+    fn sidebar_header(&self) -> SidebarHeaderBuilder {
+        ShadcnLook::sidebar_header(self)
+    }
+
+    fn sidebar_content(&self) -> SidebarContentBuilder {
+        ShadcnLook::sidebar_content(self)
+    }
+
+    fn sidebar_group(&self) -> SidebarGroupBuilder {
+        ShadcnLook::sidebar_group(self)
+    }
+
+    fn sidebar_menu(&self, id: impl Into<SharedString>) -> SidebarMenuBuilder {
+        ShadcnLook::sidebar_menu(self, id)
+    }
+
+    fn sidebar_menu_item(&self, id: impl Into<SharedString>, label: impl Into<SharedString>) -> SidebarMenuItemBuilder {
+        ShadcnLook::sidebar_menu_item(self, id, label)
+    }
+
+    fn sidebar_menu_sub(&self) -> SidebarMenuSubBuilder {
+        ShadcnLook::sidebar_menu_sub(self)
+    }
+
+    fn sidebar_footer(&self) -> SidebarFooterBuilder {
+        ShadcnLook::sidebar_footer(self)
+    }
+
+    fn sidebar_rail(&self) -> SidebarRailBuilder {
+        ShadcnLook::sidebar_rail(self)
+    }
+
+    fn sidebar_inset(&self) -> SidebarInsetBuilder {
+        ShadcnLook::sidebar_inset(self)
+    }
+
+    fn sidebar_trigger(&self, id: impl Into<SharedString>) -> ButtonBuilder<()> {
+        ShadcnLook::sidebar_trigger(self, id)
     }
 
     fn autocomplete(

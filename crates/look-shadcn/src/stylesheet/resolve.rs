@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use gpui::FontWeight;
+use gpui::{FontWeight, px};
+use gpui_luma::controls::sidebar::SidebarMetricScale;
 use gpui_luma::theme::{ControlSize, InteractionLayer, LumaTextStyle, MetricTokens};
 
 use crate::controls::ShadcnButtonStyle;
@@ -10,11 +11,11 @@ use super::config::{
     AccordionContentColorRule, AccordionTriggerColorRule, AutocompleteChromeColorRule, BadgeColorRule, ButtonColorRule,
     ButtonMetricsRule, CardColorRule, CheckboxColorRule, ControlGroupListColorRule, FloatingMenuSurfaceColorRule,
     FloatingMenuTriggerColorRule, ListboxListColorRule, ListboxRowColorRule, ListViewRowColorRule,
-    ListViewSurfaceColorRule, NavigationSidebarBranchColorRule, NavigationSidebarContainerColorRule,
-    NavigationSidebarItemColorRule, NavigationSidebarSectionColorRule, ProgressColorRule, ProgressMetricsRule,
-    RadioColorRule, ResizablePanelsColorRule, ScrollbarMetricsRule, SliderMetricsRule, SliderColorRule,
-    SplitViewColorRule, StepperMetricsRule, SwitchColorRule, SwitchMetricsRule, ScrollbarColorRule,
-    TabsNavigationItemColorRule, TabsNavigationListColorRule, TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
+    ListViewSurfaceColorRule, SidebarBranchColorRule, SidebarContainerColorRule, SidebarItemColorRule,
+    SidebarMetricsRule, SidebarSectionColorRule, ProgressColorRule, ProgressMetricsRule, RadioColorRule,
+    ResizablePanelsColorRule, ScrollbarMetricsRule, SliderMetricsRule, SliderColorRule, SplitViewColorRule,
+    StepperMetricsRule, SwitchColorRule, SwitchMetricsRule, ScrollbarColorRule, TabsNavigationItemColorRule,
+    TabsNavigationListColorRule, TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
 };
 
 /// Context for resolving derived stylesheet tokens (`@outline_layer`, `@action_layer`, etc.).
@@ -467,10 +468,10 @@ pub fn resolve_tree_view_row_color_rule(
     Ok(ResolvedTreeViewRowColors { foreground, icon_color, chevron_color, background })
 }
 
-pub fn resolve_navigation_sidebar_container_color_rule(
+pub fn resolve_sidebar_container_color_rule(
     resolver: &LookResolver<'_>,
-    rule: &NavigationSidebarContainerColorRule,
-) -> anyhow::Result<ResolvedNavigationSidebarContainerColors> {
+    rule: &SidebarContainerColorRule,
+) -> anyhow::Result<ResolvedSidebarContainerColors> {
     let ctx = ResolveContext::default();
     let mut fields = ResolvedFields::default();
     let background = resolve_stylesheet_color(resolver, &rule.background, &fields, &ctx)?;
@@ -478,23 +479,23 @@ pub fn resolve_navigation_sidebar_container_color_rule(
     let foreground = resolve_stylesheet_color(resolver, &rule.foreground, &fields, &ctx)?;
     fields.insert("foreground", foreground.clone());
     let border = resolve_stylesheet_color(resolver, &rule.border, &fields, &ctx)?;
-    Ok(ResolvedNavigationSidebarContainerColors { background, foreground, border })
+    Ok(ResolvedSidebarContainerColors { background, foreground, border })
 }
 
-pub fn resolve_navigation_sidebar_section_color_rule(
+pub fn resolve_sidebar_section_color_rule(
     resolver: &LookResolver<'_>,
-    rule: &NavigationSidebarSectionColorRule,
-) -> anyhow::Result<ResolvedNavigationSidebarSectionColors> {
+    rule: &SidebarSectionColorRule,
+) -> anyhow::Result<ResolvedSidebarSectionColors> {
     let label_color =
         resolve_stylesheet_color(resolver, &rule.label_color, &ResolvedFields::default(), &ResolveContext::default())?;
-    Ok(ResolvedNavigationSidebarSectionColors { label_color })
+    Ok(ResolvedSidebarSectionColors { label_color })
 }
 
-pub fn resolve_navigation_sidebar_branch_color_rule(
+pub fn resolve_sidebar_branch_color_rule(
     resolver: &LookResolver<'_>,
-    rule: &NavigationSidebarBranchColorRule,
+    rule: &SidebarBranchColorRule,
     layer: InteractionLayer,
-) -> anyhow::Result<ResolvedNavigationSidebarBranchColors> {
+) -> anyhow::Result<ResolvedSidebarBranchColors> {
     let ctx = ResolveContext { style: ShadcnButtonStyle::Primary, layer, disabled: rule.disabled.unwrap_or(false) };
     let mut fields = ResolvedFields::default();
     let foreground = resolve_stylesheet_color(resolver, &rule.foreground, &fields, &ctx)?;
@@ -502,14 +503,14 @@ pub fn resolve_navigation_sidebar_branch_color_rule(
     let icon_color = resolve_stylesheet_color(resolver, &rule.icon_color, &fields, &ctx)?;
     fields.insert("icon_color", icon_color.clone());
     let background = resolve_optional_stylesheet_color(resolver, rule.background.as_deref(), &fields, &ctx)?;
-    Ok(ResolvedNavigationSidebarBranchColors { foreground, icon_color, background })
+    Ok(ResolvedSidebarBranchColors { foreground, icon_color, background })
 }
 
-pub fn resolve_navigation_sidebar_item_color_rule(
+pub fn resolve_sidebar_item_color_rule(
     resolver: &LookResolver<'_>,
-    rule: &NavigationSidebarItemColorRule,
+    rule: &SidebarItemColorRule,
     layer: InteractionLayer,
-) -> anyhow::Result<ResolvedNavigationSidebarItemColors> {
+) -> anyhow::Result<ResolvedSidebarItemColors> {
     let ctx = ResolveContext { style: ShadcnButtonStyle::Primary, layer, disabled: rule.disabled.unwrap_or(false) };
     let mut fields = ResolvedFields::default();
     let foreground = resolve_stylesheet_color(resolver, &rule.foreground, &fields, &ctx)?;
@@ -517,7 +518,7 @@ pub fn resolve_navigation_sidebar_item_color_rule(
     let icon_color = resolve_stylesheet_color(resolver, &rule.icon_color, &fields, &ctx)?;
     fields.insert("icon_color", icon_color.clone());
     let background = resolve_optional_stylesheet_color(resolver, rule.background.as_deref(), &fields, &ctx)?;
-    Ok(ResolvedNavigationSidebarItemColors { foreground, icon_color, background })
+    Ok(ResolvedSidebarItemColors { foreground, icon_color, background })
 }
 
 pub fn resolve_textfield_color_rule(
@@ -766,26 +767,26 @@ pub struct ResolvedTreeViewRowColors {
 }
 
 #[derive(Clone, Debug)]
-pub struct ResolvedNavigationSidebarContainerColors {
+pub struct ResolvedSidebarContainerColors {
     pub background: ResolvedColor,
     pub foreground: ResolvedColor,
     pub border: ResolvedColor,
 }
 
 #[derive(Clone, Debug)]
-pub struct ResolvedNavigationSidebarSectionColors {
+pub struct ResolvedSidebarSectionColors {
     pub label_color: ResolvedColor,
 }
 
 #[derive(Clone, Debug)]
-pub struct ResolvedNavigationSidebarBranchColors {
+pub struct ResolvedSidebarBranchColors {
     pub foreground: ResolvedColor,
     pub icon_color: ResolvedColor,
     pub background: Option<ResolvedColor>,
 }
 
 #[derive(Clone, Debug)]
-pub struct ResolvedNavigationSidebarItemColors {
+pub struct ResolvedSidebarItemColors {
     pub foreground: ResolvedColor,
     pub icon_color: ResolvedColor,
     pub background: Option<ResolvedColor>,
@@ -880,6 +881,25 @@ pub fn resolve_button_metrics_rule(
     }
 }
 
+pub fn resolve_sidebar_metrics(rule: &SidebarMetricsRule, metrics: &MetricTokens) -> SidebarMetricScale {
+    let defaults = SidebarMetricScale::default();
+    let size = ControlSize::Md;
+    let resolve =
+        |raw: &str, fallback: gpui::Pixels| resolve_stylesheet_metric(raw, metrics, size).map(px).unwrap_or(fallback);
+
+    SidebarMetricScale {
+        width_expanded: resolve(&rule.width_expanded, defaults.width_expanded),
+        width_icon_rail: resolve(&rule.width_icon_rail, defaults.width_icon_rail),
+        width_mobile: resolve(&rule.width_mobile, defaults.width_mobile),
+        padding_expanded: resolve(&rule.padding_expanded, defaults.padding_expanded),
+        padding_icon_rail: resolve(&rule.padding_icon_rail, defaults.padding_icon_rail),
+        item_height: resolve(&rule.item_height, defaults.item_height),
+        icon_size: resolve(&rule.icon_size, defaults.icon_size),
+        rail_hit_width: resolve(&rule.rail_hit_width, defaults.rail_hit_width),
+        popover_offset: resolve(&rule.popover_offset, defaults.popover_offset),
+    }
+}
+
 pub fn resolve_stylesheet_shadow_token(raw: &str) -> Option<String> {
     match raw.trim() {
         "" | "none" => None,
@@ -929,6 +949,7 @@ fn resolve_f32_literal(raw: &str) -> anyhow::Result<f32> {
 mod tests {
     use std::collections::BTreeMap;
 
+    use gpui::px;
     use gpui_luma::theme::{ControlSize, MetricTokens, ThemeMode};
 
     use crate::catalog::CssTokenMap;
@@ -959,6 +980,21 @@ mod tests {
     fn f32_literal_parses_px_and_rem() {
         assert!((resolve_f32_literal("12.0").expect("literal") - 12.0).abs() < f32::EPSILON);
         assert!((resolve_f32_literal("1rem").expect("rem") - 16.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn resolve_sidebar_metrics_from_rem_literals() {
+        use crate::stylesheet::config::SidebarMetricsRule;
+
+        let metrics = MetricTokens::default();
+        let rule = SidebarMetricsRule::default();
+        let scale = resolve_sidebar_metrics(&rule, &metrics);
+        assert_eq!(scale.width_expanded, px(256.0));
+        assert_eq!(scale.width_icon_rail, px(48.0));
+        assert_eq!(scale.width_mobile, px(288.0));
+        assert_eq!(scale.padding_expanded, px(12.0));
+        assert_eq!(scale.item_height, px(32.0));
+        assert_eq!(scale.icon_size, px(16.0));
     }
 
     #[test]

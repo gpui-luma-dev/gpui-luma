@@ -13,10 +13,7 @@ pub use crate::controls::floating_menu::floating_menu_look;
 pub use crate::controls::list_view::{list_view_look, list_view_row_palette};
 pub use crate::controls::listbox::{listbox_list_look, listbox_row_palette};
 pub use crate::controls::overlay_window::overlay_window_look;
-pub use crate::controls::navigation_sidebar::{
-    navigation_sidebar_branch_look, navigation_sidebar_container_look, navigation_sidebar_item_look,
-    navigation_sidebar_section_look,
-};
+pub use crate::controls::sidebar::{sidebar_branch_look, sidebar_container_look, sidebar_item_look, sidebar_section_look};
 pub use crate::controls::pager::pager_look;
 pub use crate::controls::popup_menu::popup_menu_palette;
 pub use crate::controls::progress::progress_look;

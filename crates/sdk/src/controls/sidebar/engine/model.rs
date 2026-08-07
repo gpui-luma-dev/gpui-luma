@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, AppContext, Bounds, Entity, FocusHandle, IntoElement, Pixels, SharedString, div, prelude::*};
 use lucide_icons::Icon as LucideIcon;
 
-use super::{NavigationSidebar, NavigationSidebarTemplate, default_navigation_sidebar_template};
-use super::template::modified_navigation_sidebar_template;
+use super::{SidebarPanelEngine, SidebarPanelTemplate, default_sidebar_panel_template};
+use super::template::modified_sidebar_panel_template;
 use crate::controls::presenter::{Presenter, HostedContent, IntoPresenter};
 use crate::controls::menu_item::MenuItem;
 use crate::controls::state::MenuPath;
@@ -121,7 +121,7 @@ impl NavNode {
 }
 
 #[derive(Clone)]
-pub struct NavigationSidebarModel {
+pub struct SidebarPanelEngineModel {
     pub(crate) id: SharedString,
     pub(crate) title: Option<SharedString>,
     pub(crate) subtitle: Option<SharedString>,
@@ -132,7 +132,7 @@ pub struct NavigationSidebarModel {
     pub(crate) enabled: bool,
     pub(crate) collapsible: bool,
     pub(crate) collapsed: bool,
-    pub(crate) template: Arc<dyn NavigationSidebarTemplate>,
+    pub(crate) template: Arc<dyn SidebarPanelTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
 }
 
@@ -155,7 +155,7 @@ pub struct RenderedRailSubmenu {
     pub active_path: Option<MenuPath>,
 }
 
-pub struct NavigationSidebarRenderModel {
+pub struct SidebarPanelEngineRenderModel {
     pub id: SharedString,
     pub title: Option<SharedString>,
     pub subtitle: Option<SharedString>,
@@ -183,14 +183,14 @@ pub struct RenderedNavNode {
     pub children: Vec<RenderedNavNode>,
 }
 
-pub struct NavigationSidebarBuilder {
-    pub(crate) model: NavigationSidebarModel,
+pub struct SidebarPanelEngineBuilder {
+    pub(crate) model: SidebarPanelEngineModel,
 }
 
-impl NavigationSidebarBuilder {
+impl SidebarPanelEngineBuilder {
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
-            model: NavigationSidebarModel {
+            model: SidebarPanelEngineModel {
                 id: id.into(),
                 title: None,
                 subtitle: None,
@@ -201,7 +201,7 @@ impl NavigationSidebarBuilder {
                 enabled: true,
                 collapsible: false,
                 collapsed: false,
-                template: default_navigation_sidebar_template(),
+                template: default_sidebar_panel_template(),
                 scrollbar_template: default_scrollbar_template(),
             },
         }
@@ -267,7 +267,7 @@ impl NavigationSidebarBuilder {
         self
     }
 
-    pub fn template(mut self, template: Arc<dyn NavigationSidebarTemplate>) -> Self {
+    pub fn template(mut self, template: Arc<dyn SidebarPanelTemplate>) -> Self {
         self.model.template = template;
         self
     }
@@ -276,7 +276,7 @@ impl NavigationSidebarBuilder {
     where
         F: Fn(gpui::Stateful<gpui::Div>) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
     {
-        self.model.template = modified_navigation_sidebar_template(Arc::clone(&self.model.template), modifier);
+        self.model.template = modified_sidebar_panel_template(Arc::clone(&self.model.template), modifier);
         self
     }
 
@@ -285,8 +285,8 @@ impl NavigationSidebarBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<NavigationSidebar> {
-        cx.new(|cx| NavigationSidebar::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<SidebarPanelEngine> {
+        cx.new(|cx| SidebarPanelEngine::from_builder(self, cx))
     }
 }
 
@@ -306,8 +306,8 @@ mod tests {
 
     #[test]
     fn with_template_modifier_wraps_template() {
-        let template = default_navigation_sidebar_template();
-        let builder = NavigationSidebarBuilder::new("nav-test")
+        let template = default_sidebar_panel_template();
+        let builder = SidebarPanelEngineBuilder::new("nav-test")
             .template(template.clone())
             .with_template_modifier(|element| element);
 

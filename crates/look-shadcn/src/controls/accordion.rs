@@ -172,7 +172,7 @@ mod tests {
     }
 
     #[test]
-    fn trigger_uses_paired_accent_hover_like_navigation_sidebar() {
+    fn trigger_uses_paired_accent_hover_like_sidebar() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let default = accordion_trigger_palette(&mode, ThemeMode::Light, InteractionState::default(), ControlSize::Md);

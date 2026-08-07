@@ -1,10 +1,10 @@
 use gpui::{AnyElement, Entity, IntoElement, div, prelude::*, px};
-use gpui_luma::controls::navigation_sidebar::NavigationSidebar;
+use gpui_luma::controls::sidebar::SidebarControl;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::shared::shell::section_shell_with_width;
 
-pub(crate) fn render_sidebar_template_section(sidebar: Entity<NavigationSidebar>, look: &ShadcnLook) -> AnyElement {
+pub(crate) fn render_sidebar_template_section(sidebar: Entity<SidebarControl>, look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
 
     section_shell_with_width(

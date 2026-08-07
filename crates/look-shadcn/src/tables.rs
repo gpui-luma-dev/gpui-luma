@@ -20,11 +20,10 @@ pub use crate::controls::list_view::{
 pub use crate::controls::listbox::{
     resolve_listbox_list_colors, resolve_listbox_row_colors, ListBoxListColorTable, ListBoxRowColorTable,
 };
-pub use crate::controls::navigation_sidebar::{
-    resolve_navigation_sidebar_branch_colors, resolve_navigation_sidebar_container_colors,
-    resolve_navigation_sidebar_item_colors, resolve_navigation_sidebar_section_colors,
-    NavigationSidebarBranchColorTable, NavigationSidebarContainerColorTable, NavigationSidebarItemColorTable,
-    NavigationSidebarSectionColorTable,
+pub use crate::controls::sidebar::{
+    resolve_sidebar_branch_colors, resolve_sidebar_container_colors, resolve_sidebar_item_colors,
+    resolve_sidebar_section_colors, SidebarBranchColorTable, SidebarContainerColorTable, SidebarItemColorTable,
+    SidebarSectionColorTable,
 };
 pub use crate::controls::progress::{resolve_progress_colors, ProgressColorTable};
 pub use crate::controls::stepper::{resolve_stepper_colors, StepperColorTable};

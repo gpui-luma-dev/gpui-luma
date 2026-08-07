@@ -3,23 +3,21 @@ use std::sync::Arc;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 
-use super::inspector::collection::{
-    navigation_sidebar_container_color_rows, navigation_sidebar_item_color_rows, navigation_sidebar_section_color_rows,
-};
-use super::inspector::common::{interaction_state, navigation_sidebar_item_selected};
-use super::inspector::metrics::navigation_sidebar_layout_section;
-use super::inspector::specs::{CHOICE_SIZES, NAVIGATION_SIDEBAR_STATES, NAVIGATION_SIDEBAR_VARIANTS, NAV_ITEM_VALUE_MODES};
+use super::inspector::collection::{sidebar_container_color_rows, sidebar_item_color_rows, sidebar_section_color_rows};
+use super::inspector::common::{interaction_state, sidebar_item_selected};
+use super::inspector::metrics::sidebar_layout_section;
+use super::inspector::specs::{CHOICE_SIZES, SIDEBAR_STATES, SIDEBAR_VARIANTS, NAV_ITEM_VALUE_MODES};
 use super::inspector::{
     ControlInspectorResolver, ControlInspectorSpec, InspectorCategoryContent, InspectorSelection, InspectorStateSpec,
     SharedInspectorResolver,
 };
 
-pub static NAVIGATION_SIDEBAR_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
-    control_label: "Navigation Sidebar",
-    id_prefix: "navigation-sidebar-theme-inspector",
+pub static SIDEBAR_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
+    control_label: "Sidebar",
+    id_prefix: "sidebar-theme-inspector",
     parts: &[],
-    variants: &NAVIGATION_SIDEBAR_VARIANTS,
-    states: &NAVIGATION_SIDEBAR_STATES,
+    variants: &SIDEBAR_VARIANTS,
+    states: &SIDEBAR_STATES,
     sizes: &CHOICE_SIZES,
     value_modes: &NAV_ITEM_VALUE_MODES,
     default_part_id: "",
@@ -28,15 +26,15 @@ pub static NAVIGATION_SIDEBAR_INSPECTOR_SPEC: ControlInspectorSpec = ControlInsp
     default_value_id: "unselected",
 };
 
-pub struct NavigationSidebarInspectorAdapter;
+pub struct SidebarInspectorAdapter;
 
-impl NavigationSidebarInspectorAdapter {
+impl SidebarInspectorAdapter {
     pub fn shared() -> SharedInspectorResolver {
         Arc::new(Self)
     }
 }
 
-impl ControlInspectorResolver for NavigationSidebarInspectorAdapter {
+impl ControlInspectorResolver for SidebarInspectorAdapter {
     fn resolve_category(
         &self,
         look: &ShadcnLook,
@@ -45,9 +43,9 @@ impl ControlInspectorResolver for NavigationSidebarInspectorAdapter {
     ) -> InspectorCategoryContent {
         match category_id {
             "color" => InspectorCategoryContent::Colors(resolve_color_rows(look, selection)),
-            "layout" => InspectorCategoryContent::Layout(navigation_sidebar_layout_section(
+            "layout" => InspectorCategoryContent::Layout(sidebar_layout_section(
                 look,
-                "navigation-sidebar-theme-inspector-box-model",
+                "sidebar-theme-inspector-box-model",
                 selection.size_id,
             )),
             _ => InspectorCategoryContent::Colors(Vec::new()),
@@ -72,24 +70,23 @@ fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> V
     let inspect = ShadcnInspect::new(look);
     match selection.variant_id {
         "section" => {
-            let palette = inspect.inspect_navigation_sidebar_section_color_palette();
-            navigation_sidebar_section_color_rows(&palette)
+            let palette = inspect.inspect_sidebar_section_color_palette();
+            sidebar_section_color_rows(&palette)
         }
         "branch" => {
-            let palette =
-                inspect.inspect_navigation_sidebar_branch_color_palette(interaction_state(selection.state_id));
-            navigation_sidebar_item_color_rows(&palette)
+            let palette = inspect.inspect_sidebar_branch_color_palette(interaction_state(selection.state_id));
+            sidebar_item_color_rows(&palette)
         }
         "nav-item" => {
-            let palette = inspect.inspect_navigation_sidebar_item_color_palette(
-                navigation_sidebar_item_selected(selection.value_id),
+            let palette = inspect.inspect_sidebar_item_color_palette(
+                sidebar_item_selected(selection.value_id),
                 interaction_state(selection.state_id),
             );
-            navigation_sidebar_item_color_rows(&palette)
+            sidebar_item_color_rows(&palette)
         }
         _ => {
-            let palette = inspect.inspect_navigation_sidebar_container_color_palette();
-            navigation_sidebar_container_color_rows(&palette)
+            let palette = inspect.inspect_sidebar_container_color_palette();
+            sidebar_container_color_rows(&palette)
         }
     }
 }

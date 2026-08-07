@@ -1,5 +1,5 @@
 mod dashboard;
-mod navigation_sidebar;
+pub(crate) mod sidebar;
 pub(crate) mod palette;
 mod task_list;
 mod theme_usage;

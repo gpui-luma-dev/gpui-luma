@@ -23,7 +23,7 @@ pub(crate) mod interaction;
 pub mod menu_item;
 pub(crate) mod menu_navigation;
 
-pub mod navigation_sidebar;
+pub mod sidebar;
 pub mod popup_menu;
 pub mod popup_scroll_surface;
 pub mod selector;

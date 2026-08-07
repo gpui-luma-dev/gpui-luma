@@ -1,22 +1,22 @@
-//! Navigation sidebar control exposition — gallery-aligned properties tree.
+//! Navigation sidebar control exposition — `SidebarControl` preview and event log.
 
 use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar, NavigationSidebarEvent};
+use gpui_luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::collection_theme_inspectors::NavigationSidebarThemeInspector;
+use super::collection_theme_inspectors::SidebarThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::model::{ControlExpositionLayout};
-use super::navigation_sidebar_inspector_adapter::{NavigationSidebarInspectorAdapter, NAVIGATION_SIDEBAR_INSPECTOR_SPEC};
+use super::model::ControlExpositionLayout;
+use super::sidebar_inspector_adapter::{SidebarInspectorAdapter, SIDEBAR_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 
 #[derive(Clone, Copy)]
@@ -81,60 +81,58 @@ const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
     PropertyLeaf { id: "reset-overrides", label: "Reset Overrides", icon: Some(LucideIcon::RotateCcw), enabled: false },
 ];
 
-pub struct NavigationSidebarControlExposition {
+pub struct SidebarControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    left_pane: Entity<NavigationSidebarExpositionLeftPane>,
-    theme_inspector: Entity<NavigationSidebarThemeInspector>,
+    left_pane: Entity<SidebarExpositionLeftPane>,
+    theme_inspector: Entity<SidebarThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
     _subscriptions: Vec<Subscription>,
 }
 
-struct NavigationSidebarExpositionLeftPane {
+struct SidebarExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    sidebar: Entity<NavigationSidebar>,
-    collapsed: Rc<Cell<bool>>,
+    sidebar_control: Entity<SidebarControl>,
+    control_open: Rc<Cell<bool>>,
     event_stream: Entity<ControlEventStream>,
 }
 
-impl NavigationSidebarExpositionLeftPane {
+impl SidebarExpositionLeftPane {
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.sidebar.update(cx, |_, cx| cx.notify());
+        self.sidebar_control.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
     }
 }
 
-impl Render for NavigationSidebarExpositionLeftPane {
+impl Render for SidebarExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
             let chrome = look.chrome();
-            let width = if self.collapsed.get() { px(56.0) } else { px(300.0) };
+            let metrics = look.sidebar_metric_scale();
+            let control_width = if self.control_open.get() {
+                metrics.width_expanded
+            } else {
+                metrics.width_icon_rail
+            };
 
             let preview = div()
                 .w_full()
                 .flex()
                 .flex_col()
-                .items_center()
-                .gap(px(12.0))
-                .child(
-                    div()
-                        .flex_none()
-                        .w(width)
-                        .h(px(500.0))
-                        .overflow_hidden()
-                        .rounded(px(8.0))
-                        .border_1()
-                        .border_color(chrome.border)
-                        .child(self.sidebar.clone()),
-                )
+                .gap(px(16.0))
+                .child(div().w_full().flex().flex_row().items_start().justify_center().child(preview_column(
+                    chrome.border,
+                    control_width,
+                    self.sidebar_control.clone().into_any_element(),
+                )))
                 .child(self.event_stream.clone());
 
             div()
-                .id("controls-doc-navigation-sidebar-left-pane")
+                .id("controls-doc-sidebar-left-pane")
                 .size_full()
                 .min_h(px(0.0))
                 .min_w(px(0.0))
@@ -150,65 +148,57 @@ impl Render for NavigationSidebarExpositionLeftPane {
     }
 }
 
-impl NavigationSidebarControlExposition {
+impl SidebarControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("navigation-sidebar").expect("navigation-sidebar catalog entry");
+        let entry = *catalog_entry("sidebar").expect("sidebar catalog entry");
 
-        let sidebar = look
-            .navigation_sidebar("controls-doc-navigation-sidebar")
-            .title("Properties")
-            .subtitle("Rectangle / Prominent card")
-            .collapsible(true)
-            .selected_id(INITIAL_PROPERTY_SELECTION_ID)
-            .items(property_nodes())
-            .footer_nodes(FOOTER_PROPERTIES.iter().map(property_leaf_node))
-            .spawn(cx);
+        let sidebar_control = spawn_sidebar_control(&look, cx);
 
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
                 look.clone(),
-                "controls-navigation-sidebar-event-log",
-                "Expand branches, select rows, and toggle collapse; events appear below.",
+                "controls-sidebar-event-log",
+                "Expand branches, select rows, and toggle collapse to inspect SidebarEvent output.",
             )
         });
 
-        let collapsed = Rc::new(Cell::new(false));
-        let left_pane = cx.new(|_| NavigationSidebarExpositionLeftPane {
+        let control_open = Rc::new(Cell::new(true));
+        let left_pane = cx.new(|_| SidebarExpositionLeftPane {
             look: look.clone(),
             entry,
-            sidebar: sidebar.clone(),
-            collapsed: collapsed.clone(),
+            sidebar_control: sidebar_control.clone(),
+            control_open: control_open.clone(),
             event_stream: event_stream.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
             look.clone(),
-            "controls-doc-navigation-sidebar-pane",
+            "controls-doc-sidebar-pane",
             {
                 let left_pane = left_pane.clone();
                 move || left_pane.clone().into_any_element()
             },
-            &NAVIGATION_SIDEBAR_INSPECTOR_SPEC,
-            NavigationSidebarInspectorAdapter::shared(),
+            &SIDEBAR_INSPECTOR_SPEC,
+            SidebarInspectorAdapter::shared(),
         );
 
-        let collapsed_cell = collapsed.clone();
-        let subscription = cx.subscribe(&sidebar, {
+        let control_open_cell = control_open.clone();
+        let control_subscription = cx.subscribe(&sidebar_control, {
             let event_stream = event_stream.clone();
             let left_pane = left_pane.clone();
-            move |_, _, event: &NavigationSidebarEvent, cx| {
-                if let NavigationSidebarEvent::CollapsedChanged { collapsed } = event {
-                    collapsed_cell.set(*collapsed);
+            move |_, _, event: &SidebarEvent, cx| {
+                if let SidebarEvent::OpenChanged { open, .. } = event {
+                    control_open_cell.set(*open);
                     left_pane.update(cx, |_, cx| cx.notify());
                 }
-                if let Some(line) = format_navigation_sidebar_event(event) {
+                if let Some(line) = format_sidebar_control_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }
         });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![subscription] }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![control_subscription] }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
@@ -235,11 +225,11 @@ impl NavigationSidebarControlExposition {
     }
 }
 
-impl Render for NavigationSidebarControlExposition {
+impl Render for SidebarControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             div()
-                .id("controls-doc-navigation-sidebar-exposition")
+                .id("controls-doc-sidebar-exposition")
                 .size_full()
                 .min_h(px(0.0))
                 .min_w(px(0.0))
@@ -248,61 +238,92 @@ impl Render for NavigationSidebarControlExposition {
     }
 }
 
-fn format_navigation_sidebar_event(event: &NavigationSidebarEvent) -> Option<String> {
+fn preview_column(border: gpui::Hsla, width: gpui::Pixels, child: gpui::AnyElement) -> gpui::Div {
+    div().flex().flex_col().items_center().gap(px(8.0)).child(
+        div()
+            .flex_none()
+            .w(width)
+            .h(px(500.0))
+            .overflow_hidden()
+            .rounded(px(8.0))
+            .border_1()
+            .border_color(border)
+            .child(child),
+    )
+}
+
+fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControlExposition>) -> Entity<SidebarControl> {
+    let mut pinned_menu = look.sidebar_menu("pinned_menu");
+    for leaf in PINNED_PROPERTIES {
+        pinned_menu = pinned_menu.item(property_leaf_menu_item(look, leaf));
+    }
+
+    let mut properties_menu = look.sidebar_menu("properties_menu");
+    for group in PROPERTY_GROUPS {
+        let mut sub = look.sidebar_menu_sub();
+        for leaf in group.leaves {
+            sub = sub.item(property_leaf_menu_item(look, leaf));
+        }
+        properties_menu = properties_menu
+            .item(look.sidebar_menu_item(group.id, group.label).icon(group.icon).expanded(group.expanded).sub(sub));
+    }
+
+    let mut footer = look.sidebar_footer();
+    for leaf in FOOTER_PROPERTIES {
+        footer = footer.child(property_leaf_menu_item(look, leaf));
+    }
+
+    look.sidebar_control("controls-doc-sidebar-control")
+        .default_open(true)
+        .collapsible(SidebarCollapsible::Icon)
+        .sidebar(
+            look.sidebar("workbench_sidebar")
+                .header(look.sidebar_header().title("Properties").subtitle("Rectangle / Prominent card"))
+                .content(
+                    look.sidebar_content()
+                        .group(look.sidebar_group().label("Pinned").menu(pinned_menu))
+                        .group(look.sidebar_group().label("Properties").menu(properties_menu)),
+                )
+                .footer(footer)
+                .rail(look.sidebar_rail()),
+        )
+        .spawn(cx)
+}
+
+fn property_leaf_menu_item(
+    look: &Arc<ShadcnLook>,
+    leaf: &PropertyLeaf,
+) -> gpui_luma::controls::sidebar::SidebarMenuItemBuilder {
+    let mut item = look
+        .sidebar_menu_item(leaf.id, leaf.label)
+        .disabled(!leaf.enabled)
+        .active(leaf.id == INITIAL_PROPERTY_SELECTION_ID);
+    if let Some(icon) = leaf.icon {
+        item = item.icon(icon);
+    }
+    item
+}
+
+fn format_sidebar_control_event(event: &SidebarEvent) -> Option<String> {
     match event {
-        NavigationSidebarEvent::Activate { node_id, label } => {
-            Some(format!("NavigationSidebarEvent::Activate {{ node_id: \"{node_id}\", label: \"{label}\" }}"))
+        SidebarEvent::OpenChanged { open, collapsible } => {
+            Some(format!("SidebarEvent::OpenChanged {{ open: {open}, collapsible: {collapsible:?} }}"))
         }
-        NavigationSidebarEvent::BranchExpandedChanged { node_id, expanded } => Some(format!(
-            "NavigationSidebarEvent::BranchExpandedChanged {{ node_id: \"{node_id}\", expanded: {expanded} }}"
-        )),
-        NavigationSidebarEvent::CollapsedChanged { collapsed } => {
-            Some(format!("NavigationSidebarEvent::CollapsedChanged {{ collapsed: {collapsed} }}"))
-        }
-        NavigationSidebarEvent::FocusChanged { focused } => {
-            Some(format!("NavigationSidebarEvent::FocusChanged {{ focused: {focused} }}"))
-        }
-        NavigationSidebarEvent::ItemFocused { node_id, label } => {
-            Some(format!("NavigationSidebarEvent::ItemFocused {{ node_id: \"{node_id}\", label: \"{label}\" }}"))
-        }
-        NavigationSidebarEvent::ItemHoverChanged { node_id, hovered } => {
-            Some(format!("NavigationSidebarEvent::ItemHoverChanged {{ node_id: \"{node_id}\", hovered: {hovered} }}"))
-        }
-        NavigationSidebarEvent::RailSubmenuOpenChanged { node_id } => Some(match node_id {
-            Some(id) => format!("NavigationSidebarEvent::RailSubmenuOpenChanged {{ node_id: Some(\"{id}\") }}"),
-            None => "NavigationSidebarEvent::RailSubmenuOpenChanged { node_id: None }".to_string(),
+        SidebarEvent::Dismissed => Some("SidebarEvent::Dismissed".to_string()),
+        SidebarEvent::Select { id } => Some(format!("SidebarEvent::Select {{ id: \"{id}\" }}")),
+        SidebarEvent::Activate { id } => Some(format!("SidebarEvent::Activate {{ id: \"{id}\" }}")),
+        SidebarEvent::ItemFocused { id } => Some(format!("SidebarEvent::ItemFocused {{ id: \"{id}\" }}")),
+        SidebarEvent::HoverChanged { id } => Some(match id {
+            Some(id) => format!("SidebarEvent::HoverChanged {{ id: Some(\"{id}\") }}"),
+            None => "SidebarEvent::HoverChanged { id: None }".to_string(),
         }),
-        NavigationSidebarEvent::EnabledChanged { enabled } => {
-            Some(format!("NavigationSidebarEvent::EnabledChanged {{ enabled: {enabled} }}"))
+        SidebarEvent::SubMenuToggle { id, open } => {
+            Some(format!("SidebarEvent::SubMenuToggle {{ id: \"{id}\", open: {open} }}"))
         }
+        SidebarEvent::EnabledChanged { enabled } => {
+            Some(format!("SidebarEvent::EnabledChanged {{ enabled: {enabled} }}"))
+        }
+        SidebarEvent::ResizeStart | SidebarEvent::Resized { .. } | SidebarEvent::ResizeEnd { .. } => None,
         _ => None,
     }
-}
-
-fn property_nodes() -> Vec<NavNode> {
-    let mut nodes = Vec::new();
-
-    nodes.push(NavNode::section("pinned-label", "Pinned"));
-    nodes.extend(PINNED_PROPERTIES.iter().map(property_leaf_node));
-
-    nodes.push(NavNode::section("properties-label", "Properties"));
-    nodes.extend(PROPERTY_GROUPS.iter().map(|group| {
-        NavNode::new(group.id)
-            .label(group.label)
-            .icon(group.icon)
-            .expanded(group.expanded)
-            .children(group.leaves.iter().map(property_leaf_node))
-    }));
-
-    nodes
-}
-
-fn property_leaf_node(leaf: &PropertyLeaf) -> NavNode {
-    let mut node = NavNode::new(leaf.id).label(leaf.label).enabled(leaf.enabled);
-
-    if let Some(icon) = leaf.icon {
-        node = node.icon(icon);
-    }
-
-    node
 }

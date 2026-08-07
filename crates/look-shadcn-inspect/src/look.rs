@@ -15,28 +15,27 @@ use crate::controls::{
     CheckboxInspectMetrics, CheckboxInspectPalette, ContextMenuInspectMetrics, ContextMenuInspectPalette,
     ControlGroupInspectMetrics, ControlGroupListInspectPalette, FloatingMenuInspectMetrics, FloatingMenuInspectPalette,
     ListBoxInspectMetrics, ListBoxListInspectPalette, ListBoxRowInspectPalette, ListViewInspectMetrics,
-    ListViewInspectPalette, ListViewRowInspectPalette, NavigationSidebarContainerInspectPalette,
-    NavigationSidebarInspectMetrics, NavigationSidebarItemInspectPalette, NavigationSidebarSectionInspectPalette,
-    OverlayWindowInspectMetrics, OverlayWindowInspectPalette, PagerInspectMetrics, PagerShellInspectPalette,
-    PopupMenuInspectMetrics, PopupMenuInspectPalette, ProgressInspectMetrics, ProgressInspectPalette,
-    RadioButtonInspectMetrics, RadioButtonInspectPalette, ResizablePanelsInspectMetrics, ResizablePanelsInspectPalette,
-    ScrollbarInspectMetrics, ScrollbarInspectPalette, SelectorInspectMetrics, SelectorInspectPalette,
-    SliderInspectMetrics, SliderInspectPalette, SplitViewInspectMetrics, SplitViewInspectPalette,
-    StepperInspectMetrics, StepperInspectPalette, SwitchInspectMetrics, SwitchInspectPalette,
-    TabsNavigationInspectMetrics, TabsNavigationItemInspectPalette, TabsNavigationListInspectPalette,
-    TextFieldInspectMetrics, TextFieldInspectPalette, ToolbarInspectMetrics, ToolbarInspectPalette,
-    TreeViewInspectMetrics, TreeViewRowInspectPalette, ColorChromeInspectSection, ColorChromeProfile,
-    inspect_accordion_content_color_palette, inspect_accordion_metrics, inspect_accordion_trigger_color_palette,
-    inspect_autocomplete_chrome_color_palette, inspect_autocomplete_menu_color_palette, inspect_autocomplete_metrics,
-    inspect_badge_color_palette, inspect_badge_metrics, inspect_button_color_palette, inspect_button_elevation,
-    inspect_button_metrics, inspect_button_typography, inspect_card_metrics, inspect_checkbox_color_palette,
-    inspect_checkbox_elevation, inspect_checkbox_metrics, inspect_context_menu_color_palette,
-    inspect_context_menu_metrics, inspect_control_group_list_color_palette, inspect_control_group_metrics,
-    inspect_floating_menu_color_palette, inspect_floating_menu_metrics, inspect_list_view_color_palette,
-    inspect_list_view_metrics, inspect_list_view_row_color_palette, inspect_listbox_list_color_palette,
-    inspect_listbox_metrics, inspect_listbox_row_color_palette, inspect_navigation_sidebar_branch_color_palette,
-    inspect_navigation_sidebar_container_color_palette, inspect_navigation_sidebar_item_color_palette,
-    inspect_navigation_sidebar_metrics, inspect_navigation_sidebar_section_color_palette,
+    ListViewInspectPalette, ListViewRowInspectPalette, SidebarContainerInspectPalette, SidebarInspectMetrics,
+    SidebarItemInspectPalette, SidebarSectionInspectPalette, OverlayWindowInspectMetrics, OverlayWindowInspectPalette,
+    PagerInspectMetrics, PagerShellInspectPalette, PopupMenuInspectMetrics, PopupMenuInspectPalette,
+    ProgressInspectMetrics, ProgressInspectPalette, RadioButtonInspectMetrics, RadioButtonInspectPalette,
+    ResizablePanelsInspectMetrics, ResizablePanelsInspectPalette, ScrollbarInspectMetrics, ScrollbarInspectPalette,
+    SelectorInspectMetrics, SelectorInspectPalette, SliderInspectMetrics, SliderInspectPalette,
+    SplitViewInspectMetrics, SplitViewInspectPalette, StepperInspectMetrics, StepperInspectPalette,
+    SwitchInspectMetrics, SwitchInspectPalette, TabsNavigationInspectMetrics, TabsNavigationItemInspectPalette,
+    TabsNavigationListInspectPalette, TextFieldInspectMetrics, TextFieldInspectPalette, ToolbarInspectMetrics,
+    ToolbarInspectPalette, TreeViewInspectMetrics, TreeViewRowInspectPalette, ColorChromeInspectSection,
+    ColorChromeProfile, inspect_accordion_content_color_palette, inspect_accordion_metrics,
+    inspect_accordion_trigger_color_palette, inspect_autocomplete_chrome_color_palette,
+    inspect_autocomplete_menu_color_palette, inspect_autocomplete_metrics, inspect_badge_color_palette,
+    inspect_badge_metrics, inspect_button_color_palette, inspect_button_elevation, inspect_button_metrics,
+    inspect_button_typography, inspect_card_metrics, inspect_checkbox_color_palette, inspect_checkbox_elevation,
+    inspect_checkbox_metrics, inspect_context_menu_color_palette, inspect_context_menu_metrics,
+    inspect_control_group_list_color_palette, inspect_control_group_metrics, inspect_floating_menu_color_palette,
+    inspect_floating_menu_metrics, inspect_list_view_color_palette, inspect_list_view_metrics,
+    inspect_list_view_row_color_palette, inspect_listbox_list_color_palette, inspect_listbox_metrics,
+    inspect_listbox_row_color_palette, inspect_sidebar_branch_color_palette, inspect_sidebar_container_color_palette,
+    inspect_sidebar_item_color_palette, inspect_sidebar_metrics, inspect_sidebar_section_color_palette,
     inspect_overlay_window_color_palette, inspect_overlay_window_metrics, inspect_pager_metrics,
     inspect_pager_shell_color_palette, inspect_popup_menu_color_palette, inspect_popup_menu_metrics,
     inspect_progress_color_palette, inspect_progress_metrics, inspect_radio_button_color_palette,
@@ -419,31 +418,28 @@ impl<'a> ShadcnInspect<'a> {
         inspect_tree_view_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
-    pub fn inspect_navigation_sidebar_container_color_palette(&self) -> NavigationSidebarContainerInspectPalette {
-        inspect_navigation_sidebar_container_color_palette(&self.mode_tokens(), self.theme_mode())
+    pub fn inspect_sidebar_container_color_palette(&self) -> SidebarContainerInspectPalette {
+        inspect_sidebar_container_color_palette(&self.mode_tokens(), self.theme_mode())
     }
 
-    pub fn inspect_navigation_sidebar_section_color_palette(&self) -> NavigationSidebarSectionInspectPalette {
-        inspect_navigation_sidebar_section_color_palette(&self.mode_tokens(), self.theme_mode())
+    pub fn inspect_sidebar_section_color_palette(&self) -> SidebarSectionInspectPalette {
+        inspect_sidebar_section_color_palette(&self.mode_tokens(), self.theme_mode())
     }
 
-    pub fn inspect_navigation_sidebar_branch_color_palette(
-        &self,
-        state: InteractionState,
-    ) -> NavigationSidebarItemInspectPalette {
-        inspect_navigation_sidebar_branch_color_palette(&self.mode_tokens(), self.theme_mode(), state)
+    pub fn inspect_sidebar_branch_color_palette(&self, state: InteractionState) -> SidebarItemInspectPalette {
+        inspect_sidebar_branch_color_palette(&self.mode_tokens(), self.theme_mode(), state)
     }
 
-    pub fn inspect_navigation_sidebar_item_color_palette(
+    pub fn inspect_sidebar_item_color_palette(
         &self,
         selected: bool,
         state: InteractionState,
-    ) -> NavigationSidebarItemInspectPalette {
-        inspect_navigation_sidebar_item_color_palette(&self.mode_tokens(), self.theme_mode(), selected, state)
+    ) -> SidebarItemInspectPalette {
+        inspect_sidebar_item_color_palette(&self.mode_tokens(), self.theme_mode(), selected, state)
     }
 
-    pub fn inspect_navigation_sidebar_metrics(&self, size: ControlSize) -> NavigationSidebarInspectMetrics {
-        inspect_navigation_sidebar_metrics(&self.mode_tokens(), self.theme_mode(), size)
+    pub fn inspect_sidebar_metrics(&self, size: ControlSize) -> SidebarInspectMetrics {
+        inspect_sidebar_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_autocomplete_chrome_color_palette(&self) -> AutocompleteChromeInspectPalette {

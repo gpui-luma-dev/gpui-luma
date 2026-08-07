@@ -6,8 +6,9 @@ use gpui::{
 };
 
 use super::{
-    NavNode, NavNodeKind, NavNodeState, NavigationSidebarBuilder, NavigationSidebarModel, NavigationSidebarRenderModel,
-    NavigationSidebarTemplateHandlers, RenderedCollapseTrigger, RenderedNavNode, RenderedRailSubmenu,
+    NavNode, NavNodeKind, NavNodeState, SidebarPanelEngineBuilder, SidebarPanelEngineModel,
+    SidebarPanelEngineRenderModel, SidebarPanelTemplateHandlers, RenderedCollapseTrigger, RenderedNavNode,
+    RenderedRailSubmenu,
 };
 use crate::controls::menu_item::MenuItem;
 use crate::controls::scroll_container::ScrollContainer;
@@ -21,7 +22,7 @@ use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
-pub enum NavigationSidebarEvent {
+pub enum SidebarPanelEngineEvent {
     Activate { node_id: SharedString, label: SharedString },
     BranchExpandedChanged { node_id: SharedString, expanded: bool },
     CollapsedChanged { collapsed: bool },
@@ -32,8 +33,8 @@ pub enum NavigationSidebarEvent {
     EnabledChanged { enabled: bool },
 }
 
-pub struct NavigationSidebar {
-    model: NavigationSidebarModel,
+pub struct SidebarPanelEngine {
+    model: SidebarPanelEngineModel,
     main_scroll: ScrollContainer,
     hovered_node: Option<SharedString>,
     pressed_node: Option<SharedString>,
@@ -53,15 +54,15 @@ pub struct NavigationSidebar {
     _subscriptions: Vec<Subscription>,
 }
 
-impl EventEmitter<NavigationSidebarEvent> for NavigationSidebar {}
+impl EventEmitter<SidebarPanelEngineEvent> for SidebarPanelEngine {}
 
-impl NavigationSidebar {
+impl SidebarPanelEngine {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(id: impl Into<SharedString>) -> NavigationSidebarBuilder {
-        NavigationSidebarBuilder::new(id)
+    pub fn new(id: impl Into<SharedString>) -> SidebarPanelEngineBuilder {
+        SidebarPanelEngineBuilder::new(id)
     }
 
-    pub(crate) fn from_builder(builder: NavigationSidebarBuilder, cx: &mut Context<Self>) -> Self {
+    pub(crate) fn from_builder(builder: SidebarPanelEngineBuilder, cx: &mut Context<Self>) -> Self {
         let collapse_tab_stop = builder.model.enabled && builder.model.collapsible;
         let main_scroll = ScrollContainer::new(
             format!("{}-main-scroll", builder.model.id),
@@ -118,11 +119,7 @@ impl NavigationSidebar {
         cx.notify();
     }
 
-    pub fn set_template(
-        &mut self,
-        template: std::sync::Arc<dyn super::NavigationSidebarTemplate>,
-        cx: &mut Context<Self>,
-    ) {
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn super::SidebarPanelTemplate>, cx: &mut Context<Self>) {
         self.model.template = template;
         cx.notify();
     }
@@ -193,7 +190,7 @@ impl NavigationSidebar {
             self.close_rail_submenu(cx);
             self.emit_focus_changed(false, cx);
         }
-        cx.emit(NavigationSidebarEvent::EnabledChanged { enabled });
+        cx.emit(SidebarPanelEngineEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -207,7 +204,7 @@ impl NavigationSidebar {
             self.collapse_trigger_focus_handle.clone().tab_stop(self.model.enabled && collapsible);
         if !collapsible && self.model.collapsed {
             self.model.collapsed = false;
-            cx.emit(NavigationSidebarEvent::CollapsedChanged { collapsed: false });
+            cx.emit(SidebarPanelEngineEvent::CollapsedChanged { collapsed: false });
         }
         cx.notify();
     }
@@ -220,7 +217,7 @@ impl NavigationSidebar {
             self.collapse_trigger_hovered = false;
             self.collapse_trigger_pressed = false;
             self.close_rail_submenu(cx);
-            cx.emit(NavigationSidebarEvent::CollapsedChanged { collapsed });
+            cx.emit(SidebarPanelEngineEvent::CollapsedChanged { collapsed });
             cx.notify();
         }
     }
@@ -238,7 +235,7 @@ impl NavigationSidebar {
             || set_expanded_in_nodes(&mut self.model.header_nodes, &node_id, expanded)
             || set_expanded_in_nodes(&mut self.model.footer_nodes, &node_id, expanded)
         {
-            cx.emit(NavigationSidebarEvent::BranchExpandedChanged { node_id, expanded });
+            cx.emit(SidebarPanelEngineEvent::BranchExpandedChanged { node_id, expanded });
             cx.notify();
         }
     }
@@ -252,11 +249,11 @@ impl NavigationSidebar {
             return;
         };
 
-        cx.emit(NavigationSidebarEvent::BranchExpandedChanged { node_id, expanded });
+        cx.emit(SidebarPanelEngineEvent::BranchExpandedChanged { node_id, expanded });
         cx.notify();
     }
 
-    fn render_model(&mut self, window: &mut Window, cx: &mut Context<Self>) -> NavigationSidebarRenderModel {
+    fn render_model(&mut self, window: &mut Window, cx: &mut Context<Self>) -> SidebarPanelEngineRenderModel {
         let mut visible_focus_nodes = Vec::new();
         let collapse_trigger = self.model.collapsible.then(|| {
             let focus_handle = self.collapse_trigger_focus_handle.clone();
@@ -310,7 +307,7 @@ impl NavigationSidebar {
         if self.model.collapsed {
             self.visible_focus_nodes = visible_focus_nodes;
 
-            return NavigationSidebarRenderModel {
+            return SidebarPanelEngineRenderModel {
                 id: self.model.id.clone(),
                 title: self.model.title.clone(),
                 subtitle: self.model.subtitle.clone(),
@@ -369,7 +366,7 @@ impl NavigationSidebar {
 
         self.visible_focus_nodes = visible_focus_nodes;
 
-        NavigationSidebarRenderModel {
+        SidebarPanelEngineRenderModel {
             id: self.model.id.clone(),
             title: self.model.title.clone(),
             subtitle: self.model.subtitle.clone(),
@@ -388,10 +385,10 @@ impl NavigationSidebar {
 
     fn template_handlers(
         &self,
-        model: &NavigationSidebarRenderModel,
+        model: &SidebarPanelEngineRenderModel,
         cx: &mut Context<Self>,
-    ) -> NavigationSidebarTemplateHandlers {
-        let mut handlers = NavigationSidebarTemplateHandlers::default();
+    ) -> SidebarPanelTemplateHandlers {
+        let mut handlers = SidebarPanelTemplateHandlers::default();
 
         if model.collapsible {
             handlers.collapse_hover = Some(Box::new(cx.listener(Self::handle_collapse_trigger_hover)));
@@ -471,7 +468,7 @@ impl NavigationSidebar {
         self.open_rail_submenu = None;
         self.rail_submenu_open_submenu = None;
         self.rail_submenu_active_path = None;
-        cx.emit(NavigationSidebarEvent::RailSubmenuOpenChanged { node_id: None });
+        cx.emit(SidebarPanelEngineEvent::RailSubmenuOpenChanged { node_id: None });
         true
     }
 
@@ -482,7 +479,7 @@ impl NavigationSidebar {
             self.open_rail_submenu = Some(node_id.clone());
             self.rail_submenu_open_submenu = None;
             self.rail_submenu_active_path = None;
-            cx.emit(NavigationSidebarEvent::RailSubmenuOpenChanged { node_id: Some(node_id) });
+            cx.emit(SidebarPanelEngineEvent::RailSubmenuOpenChanged { node_id: Some(node_id) });
         }
     }
 
@@ -757,7 +754,7 @@ impl NavigationSidebar {
             cx.notify();
         }
 
-        cx.emit(NavigationSidebarEvent::Activate { node_id, label });
+        cx.emit(SidebarPanelEngineEvent::Activate { node_id, label });
     }
 
     fn set_hovered_node(&mut self, hovered_node: Option<SharedString>, cx: &mut Context<Self>) {
@@ -766,11 +763,11 @@ impl NavigationSidebar {
         }
 
         if let Some(node_id) = self.hovered_node.take() {
-            cx.emit(NavigationSidebarEvent::ItemHoverChanged { node_id, hovered: false });
+            cx.emit(SidebarPanelEngineEvent::ItemHoverChanged { node_id, hovered: false });
         }
 
         if let Some(node_id) = hovered_node {
-            cx.emit(NavigationSidebarEvent::ItemHoverChanged { node_id: node_id.clone(), hovered: true });
+            cx.emit(SidebarPanelEngineEvent::ItemHoverChanged { node_id: node_id.clone(), hovered: true });
             self.hovered_node = Some(node_id);
         }
     }
@@ -884,7 +881,7 @@ impl NavigationSidebar {
                 move |this, _window, cx| {
                     let focus_changed = this.emit_focus_changed(true, cx);
                     if let NavigationFocusTarget::Node(node_id) = &target {
-                        cx.emit(NavigationSidebarEvent::ItemFocused {
+                        cx.emit(SidebarPanelEngineEvent::ItemFocused {
                             node_id: node_id.clone(),
                             label: this.node_label(node_id),
                         });
@@ -916,7 +913,7 @@ impl NavigationSidebar {
         }
 
         self.emitted_focused = focused;
-        cx.emit(NavigationSidebarEvent::FocusChanged { focused });
+        cx.emit(SidebarPanelEngineEvent::FocusChanged { focused });
         true
     }
 }
@@ -927,7 +924,7 @@ enum NavigationFocusTarget {
     Node(SharedString),
 }
 
-impl Render for NavigationSidebar {
+impl Render for SidebarPanelEngine {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model(window, cx);
         self.sync_focus_subscriptions(window, cx);
@@ -961,7 +958,7 @@ fn render_nodes(
     row_focus_handles: &mut HashMap<SharedString, FocusHandle>,
     visible_focus_nodes: &mut Vec<(NavigationFocusTarget, FocusHandle)>,
     window: &mut Window,
-    cx: &mut Context<NavigationSidebar>,
+    cx: &mut Context<SidebarPanelEngine>,
 ) -> Vec<RenderedNavNode> {
     let sibling_count = nodes.iter().filter(|node| node.visible).count();
     let mut visible_index = 0;
@@ -1050,7 +1047,7 @@ fn render_collapsed_rail_nodes(
     rail_focus_handles: &mut HashMap<SharedString, FocusHandle>,
     visible_focus_nodes: &mut Vec<(NavigationFocusTarget, FocusHandle)>,
     window: &mut Window,
-    cx: &mut Context<NavigationSidebar>,
+    cx: &mut Context<SidebarPanelEngine>,
 ) -> Vec<RenderedNavNode> {
     let sibling_count = collapsed_rail_node_count(nodes);
     let mut rendered_nodes = Vec::new();
@@ -1150,8 +1147,8 @@ enum SidebarNodeInteraction {
 
 fn push_template_handlers(
     nodes: &[RenderedNavNode],
-    handlers: &mut NavigationSidebarTemplateHandlers,
-    cx: &mut Context<NavigationSidebar>,
+    handlers: &mut SidebarPanelTemplateHandlers,
+    cx: &mut Context<SidebarPanelEngine>,
     interaction: SidebarNodeInteraction,
 ) {
     for node in nodes {
@@ -1190,8 +1187,8 @@ fn push_template_handlers(
             }
         }
 
-        handlers.row_mouse_ups.push(Box::new(cx.listener(NavigationSidebar::handle_node_mouse_up)));
-        handlers.row_mouse_up_outs.push(Box::new(cx.listener(NavigationSidebar::handle_node_mouse_up)));
+        handlers.row_mouse_ups.push(Box::new(cx.listener(SidebarPanelEngine::handle_node_mouse_up)));
+        handlers.row_mouse_up_outs.push(Box::new(cx.listener(SidebarPanelEngine::handle_node_mouse_up)));
 
         let click_id = node.id.clone();
         match interaction {
@@ -1296,7 +1293,7 @@ mod tests {
     use lucide_icons::Icon as LucideIcon;
 
     use super::{collapsed_rail_node_count, set_expanded_in_nodes, toggle_expanded_in_nodes};
-    use crate::controls::navigation_sidebar::NavNode;
+    use super::NavNode;
 
     #[test]
     fn toggles_enabled_branch() {

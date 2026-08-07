@@ -5,21 +5,21 @@ use gpui::Hsla;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
-pub struct NavigationSidebarContainerLook {
+pub struct SidebarContainerLook {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct NavigationSidebarSectionLook {
+pub struct SidebarSectionLook {
     pub label_color: Hsla,
     pub typography: LumaTextStyle,
     pub height: f32,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct NavigationSidebarItemLook {
+pub struct SidebarItemLook {
     pub background: Option<Hsla>,
     pub focus_border: Option<Hsla>,
     pub foreground: Hsla,
@@ -32,11 +32,11 @@ pub struct NavigationSidebarItemLook {
     pub icon_size: f32,
 }
 
-pub trait NavigationSidebarTheme: Send + Sync {
-    fn resolve_container(&self) -> NavigationSidebarContainerLook;
-    fn resolve_section(&self) -> NavigationSidebarSectionLook;
-    fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook;
-    fn resolve_item(&self, selected: bool, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook;
+pub trait SidebarTheme: Send + Sync {
+    fn resolve_container(&self) -> SidebarContainerLook;
+    fn resolve_section(&self) -> SidebarSectionLook;
+    fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> SidebarItemLook;
+    fn resolve_item(&self, selected: bool, state: InteractionState, size: ControlSize) -> SidebarItemLook;
 
     fn metrics(&self) -> MetricTokens {
         MetricTokens::default()
@@ -44,22 +44,22 @@ pub trait NavigationSidebarTheme: Send + Sync {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct DefaultNavigationSidebarTheme {
+pub struct DefaultSidebarTheme {
     tokens: ThemeTokens,
 }
 
-pub fn default_navigation_sidebar_theme() -> Arc<dyn NavigationSidebarTheme> {
-    static THEME: OnceLock<Arc<dyn NavigationSidebarTheme>> = OnceLock::new();
+pub fn default_sidebar_theme() -> Arc<dyn SidebarTheme> {
+    static THEME: OnceLock<Arc<dyn SidebarTheme>> = OnceLock::new();
 
-    THEME.get_or_init(|| Arc::new(DefaultNavigationSidebarTheme::default())).clone()
+    THEME.get_or_init(|| Arc::new(DefaultSidebarTheme::default())).clone()
 }
 
-impl DefaultNavigationSidebarTheme {
+impl DefaultSidebarTheme {
     pub fn new(tokens: ThemeTokens) -> Self {
         Self { tokens }
     }
 
-    fn base_item(&self, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook {
+    fn base_item(&self, state: InteractionState, size: ControlSize) -> SidebarItemLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
@@ -70,7 +70,7 @@ impl DefaultNavigationSidebarTheme {
             palette.navigation.foreground
         };
 
-        NavigationSidebarItemLook {
+        SidebarItemLook {
             background: None,
             focus_border: (state.focused && !state.disabled).then_some(palette.focus.ring),
             foreground,
@@ -85,26 +85,26 @@ impl DefaultNavigationSidebarTheme {
     }
 }
 
-impl NavigationSidebarTheme for DefaultNavigationSidebarTheme {
-    fn resolve_container(&self) -> NavigationSidebarContainerLook {
+impl SidebarTheme for DefaultSidebarTheme {
+    fn resolve_container(&self) -> SidebarContainerLook {
         let navigation = &self.tokens.palette.navigation;
 
-        NavigationSidebarContainerLook {
+        SidebarContainerLook {
             background: navigation.background,
             foreground: navigation.foreground,
             border: navigation.border,
         }
     }
 
-    fn resolve_section(&self) -> NavigationSidebarSectionLook {
-        NavigationSidebarSectionLook {
+    fn resolve_section(&self) -> SidebarSectionLook {
+        SidebarSectionLook {
             label_color: self.tokens.palette.navigation.muted_foreground,
             typography: self.tokens.typography.text.caption,
             height: 20.0,
         }
     }
 
-    fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook {
+    fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> SidebarItemLook {
         let mut look = self.base_item(state, size);
         let palette = &self.tokens.palette;
 
@@ -117,7 +117,7 @@ impl NavigationSidebarTheme for DefaultNavigationSidebarTheme {
         look
     }
 
-    fn resolve_item(&self, selected: bool, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook {
+    fn resolve_item(&self, selected: bool, state: InteractionState, size: ControlSize) -> SidebarItemLook {
         let mut look = self.base_item(state, size);
         let palette = &self.tokens.palette;
 

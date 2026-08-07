@@ -75,7 +75,7 @@ const LAYOUT_ENTRIES: &[ComponentCatalogEntry] = &[
 ];
 
 const NAVIGATION_ENTRIES: &[ComponentCatalogEntry] = &[
-    ComponentCatalogEntry { id: "navigation-sidebar", label: "Navigation Sidebar" },
+    ComponentCatalogEntry { id: "sidebar", label: "Sidebar" },
     ComponentCatalogEntry { id: "tabs-navigation", label: "Tabs Navigation" },
 ];
 
@@ -185,7 +185,7 @@ pub fn controls_exposition_id(gallery_id: &str) -> Option<&'static str> {
         "stepper" => Some("stepper"),
         "dock-panel" => Some("dock-panel"),
         "resizable-panels" => Some("resizable-panels"),
-        "navigation-sidebar" => Some("navigation-sidebar"),
+        "sidebar" => Some("sidebar"),
         "tabs-navigation" => Some("tabs-navigation"),
         "slide-panel" => Some("slide-panel"),
         "textfield" => Some("textfield"),

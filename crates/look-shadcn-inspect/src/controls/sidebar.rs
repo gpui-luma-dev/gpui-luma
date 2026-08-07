@@ -1,23 +1,23 @@
-//! Inspect metadata for `navigation_sidebar`.
+//! Inspect metadata for sidebar flush theme tokens.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 use gpui_luma_look_shadcn::catalog::SpacingField;
 
-pub struct NavigationSidebarContainerInspectPalette {
+pub struct SidebarContainerInspectPalette {
     pub background: ResolvedColor,
     pub foreground: ResolvedColor,
     pub border: ResolvedColor,
 }
 
 #[derive(Clone, Debug)]
-pub struct NavigationSidebarSectionInspectPalette {
+pub struct SidebarSectionInspectPalette {
     pub label_color: ResolvedColor,
 }
 
 #[derive(Clone, Debug)]
-pub struct NavigationSidebarItemInspectPalette {
+pub struct SidebarItemInspectPalette {
     pub background: Option<ResolvedColor>,
     pub focus_border: Option<ResolvedColor>,
     pub foreground: ResolvedColor,
@@ -25,7 +25,7 @@ pub struct NavigationSidebarItemInspectPalette {
 }
 
 #[derive(Clone, Debug)]
-pub struct NavigationSidebarInspectMetrics {
+pub struct SidebarInspectMetrics {
     pub section_height: ResolvedMetric,
     pub item_height: ResolvedMetric,
     pub item_padding_x: ResolvedMetric,
@@ -34,46 +34,42 @@ pub struct NavigationSidebarInspectMetrics {
     pub item_icon_size: ResolvedMetric,
 }
 
-pub fn inspect_navigation_sidebar_container_color_palette(
+pub fn inspect_sidebar_container_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-) -> NavigationSidebarContainerInspectPalette {
+) -> SidebarContainerInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_container_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_container_colors(&resolver, true)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarContainerColorTable::fallback());
-    NavigationSidebarContainerInspectPalette {
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_container_inspect");
+    let colors = gpui_luma_look_shadcn::tables::resolve_sidebar_container_colors(&resolver, true)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SidebarContainerColorTable::fallback());
+    SidebarContainerInspectPalette {
         background: colors.background,
         foreground: colors.foreground,
         border: colors.border,
     }
 }
 
-pub fn inspect_navigation_sidebar_section_color_palette(
+pub fn inspect_sidebar_section_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-) -> NavigationSidebarSectionInspectPalette {
+) -> SidebarSectionInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_section_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_section_colors(&resolver, true)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarSectionColorTable::fallback());
-    NavigationSidebarSectionInspectPalette { label_color: colors.label_color }
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_section_inspect");
+    let colors = gpui_luma_look_shadcn::tables::resolve_sidebar_section_colors(&resolver, true)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SidebarSectionColorTable::fallback());
+    SidebarSectionInspectPalette { label_color: colors.label_color }
 }
 
-pub fn inspect_navigation_sidebar_branch_color_palette(
+pub fn inspect_sidebar_branch_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     state: InteractionState,
-) -> NavigationSidebarItemInspectPalette {
+) -> SidebarItemInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_branch_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_branch_colors(
-        &resolver,
-        state.disabled,
-        state.layer(),
-    )
-    .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarBranchColorTable::fallback());
-    NavigationSidebarItemInspectPalette {
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_branch_inspect");
+    let colors = gpui_luma_look_shadcn::tables::resolve_sidebar_branch_colors(&resolver, state.disabled, state.layer())
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SidebarBranchColorTable::fallback());
+    SidebarItemInspectPalette {
         background: colors.background,
         focus_border: state.focused.then(|| resolver.resolve_decl("ring").ok()).flatten(),
         foreground: colors.foreground,
@@ -81,22 +77,18 @@ pub fn inspect_navigation_sidebar_branch_color_palette(
     }
 }
 
-pub fn inspect_navigation_sidebar_item_color_palette(
+pub fn inspect_sidebar_item_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     selected: bool,
     state: InteractionState,
-) -> NavigationSidebarItemInspectPalette {
+) -> SidebarItemInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_item_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_item_colors(
-        &resolver,
-        selected,
-        state.disabled,
-        state.layer(),
-    )
-    .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarItemColorTable::fallback());
-    NavigationSidebarItemInspectPalette {
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_item_inspect");
+    let colors =
+        gpui_luma_look_shadcn::tables::resolve_sidebar_item_colors(&resolver, selected, state.disabled, state.layer())
+            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SidebarItemColorTable::fallback());
+    SidebarItemInspectPalette {
         background: colors.background,
         focus_border: state.focused.then(|| resolver.resolve_decl("ring").ok()).flatten(),
         foreground: colors.foreground,
@@ -104,11 +96,11 @@ pub fn inspect_navigation_sidebar_item_color_palette(
     }
 }
 
-pub fn inspect_navigation_sidebar_metrics(
+pub fn inspect_sidebar_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     size: ControlSize,
-) -> NavigationSidebarInspectMetrics {
+) -> SidebarInspectMetrics {
     use crate::metrics::{derived_metric, radius_metric, spacing_control_metric};
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
@@ -116,7 +108,7 @@ pub fn inspect_navigation_sidebar_metrics(
     let catalog = ctx.catalog();
     let size_metrics = metrics.for_size(size);
 
-    NavigationSidebarInspectMetrics {
+    SidebarInspectMetrics {
         section_height: derived_metric("navigation sidebar section height", 20.0),
         item_height: derived_metric("navigation sidebar item height", 30.0),
         item_padding_x: derived_metric("navigation sidebar item padding x", 8.0),
@@ -132,9 +124,9 @@ mod tests {
     use crate::test_support::sample_catalog;
 
     #[test]
-    fn navigation_sidebar_container_metadata_matches_table() {
+    fn sidebar_container_metadata_matches_table() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_navigation_sidebar_container_colors_metadata(
+            gpui_luma_look_shadcn::stylesheet::resolve_sidebar_container_colors_metadata(
                 gpui_luma_look_shadcn::embedded_stylesheet()
             )
             .len(),
@@ -143,9 +135,9 @@ mod tests {
     }
 
     #[test]
-    fn navigation_sidebar_item_metadata_matches_table() {
+    fn sidebar_item_metadata_matches_table() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_navigation_sidebar_item_colors_metadata(
+            gpui_luma_look_shadcn::stylesheet::resolve_sidebar_item_colors_metadata(
                 gpui_luma_look_shadcn::embedded_stylesheet()
             )
             .len(),
@@ -158,8 +150,7 @@ mod tests {
         let catalog = sample_catalog();
         let sidebar_primary = catalog.color("sidebar-primary").expect("sidebar-primary");
         let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
-        let palette =
-            inspect_navigation_sidebar_item_color_palette(&mode, ThemeMode::Light, true, InteractionState::default());
+        let palette = inspect_sidebar_item_color_palette(&mode, ThemeMode::Light, true, InteractionState::default());
         assert_eq!(palette.background.as_ref().map(|color| color.value), Some(sidebar_primary));
     }
 
@@ -167,7 +158,7 @@ mod tests {
     fn inspect_container_palette_uses_sidebar_tokens() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let palette = inspect_navigation_sidebar_container_color_palette(&mode, ThemeMode::Light);
+        let palette = inspect_sidebar_container_color_palette(&mode, ThemeMode::Light);
         assert_eq!(palette.background.value, catalog.color("sidebar").expect("sidebar"));
     }
 }

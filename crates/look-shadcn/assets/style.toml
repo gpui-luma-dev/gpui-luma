@@ -1489,41 +1489,52 @@ background = "transparent"
 
 
 # =====================================================================
-# 18. NAVIGATION SIDEBAR
+# 18. SIDEBAR
 # =====================================================================
-[[navigation_sidebar.container.color_rules]]
+[sidebar.metrics]
+width_expanded = "16rem"       # 256px
+width_icon_rail = "3rem"       # 48px
+width_mobile = "18rem"         # 288px
+padding_expanded = "0.75rem"   # 12px
+padding_icon_rail = "0.375rem" # 6px
+item_height = "2rem"           # 32px
+icon_size = "1rem"             # 16px
+rail_hit_width = "0.375rem"    # 6px
+popover_offset = "0.5rem"      # 8px
+
+[[sidebar.container.color_rules]]
 background = "first(sidebar,card,background)"
 foreground = "first(sidebar-foreground,foreground)"
 border = "first(sidebar-border,border)"
 
-[[navigation_sidebar.section.color_rules]]
+[[sidebar.section.color_rules]]
 label_color = "muted-foreground"
 
-[[navigation_sidebar.branch.color_rules]]
+[[sidebar.branch.color_rules]]
 disabled = true
 foreground = "muted-foreground"
 icon_color = "muted-foreground"
 
-[[navigation_sidebar.branch.color_rules]]
+[[sidebar.branch.color_rules]]
 disabled = false
 layer = "default"
 foreground = "first(sidebar-foreground,foreground)"
 icon_color = "first(sidebar-foreground,foreground)"
 
-[[navigation_sidebar.branch.color_rules]]
+[[sidebar.branch.color_rules]]
 disabled = false
 layer = "disabled"
 foreground = "first(sidebar-foreground,foreground)"
 icon_color = "first(sidebar-foreground,foreground)"
 
-[[navigation_sidebar.branch.color_rules]]
+[[sidebar.branch.color_rules]]
 disabled = false
 layer = "hover"
 foreground = "accent-foreground"
 icon_color = "accent-foreground"
 background = "accent"
 
-[[navigation_sidebar.branch.color_rules]]
+[[sidebar.branch.color_rules]]
 disabled = false
 layer = "pressed"
 foreground = "accent-foreground"
@@ -1531,19 +1542,19 @@ icon_color = "accent-foreground"
 background = "accent"
 
 # Sidebar Items (Leaf level)
-[[navigation_sidebar.item.color_rules]]
+[[sidebar.item.color_rules]]
 selected = true
 disabled = true
 foreground = "muted-foreground"
 icon_color = "muted-foreground"
 
-[[navigation_sidebar.item.color_rules]]
+[[sidebar.item.color_rules]]
 selected = false
 disabled = true
 foreground = "muted-foreground"
 icon_color = "muted-foreground"
 
-[[navigation_sidebar.item.color_rules]]
+[[sidebar.item.color_rules]]
 selected = true
 disabled = false
 layer = "default"
@@ -1551,7 +1562,7 @@ foreground = "first(sidebar-primary-foreground,primary-foreground)"
 icon_color = "first(sidebar-primary-foreground,primary-foreground)"
 background = "first(sidebar-primary,primary)"
 
-[[navigation_sidebar.item.color_rules]]
+[[sidebar.item.color_rules]]
 selected = true
 disabled = false
 layer = "hover"
@@ -1559,7 +1570,7 @@ foreground = "first(sidebar-primary-foreground,primary-foreground)"
 icon_color = "first(sidebar-primary-foreground,primary-foreground)"
 background = "first_layer(sidebar-primary,primary)"
 
-[[navigation_sidebar.item.color_rules]]
+[[sidebar.item.color_rules]]
 selected = true
 disabled = false
 layer = "pressed"
@@ -1567,7 +1578,7 @@ foreground = "first(sidebar-primary-foreground,primary-foreground)"
 icon_color = "first(sidebar-primary-foreground,primary-foreground)"
 background = "first_layer(sidebar-primary,primary)"
 
-[[navigation_sidebar.item.color_rules]]
+[[sidebar.item.color_rules]]
 selected = true
 disabled = false
 layer = "disabled"
@@ -1575,21 +1586,21 @@ foreground = "first(sidebar-primary-foreground,primary-foreground)"
 icon_color = "first(sidebar-primary-foreground,primary-foreground)"
 background = "first(sidebar-primary,primary)"
 
-[[navigation_sidebar.item.color_rules]]
+[[sidebar.item.color_rules]]
 selected = false
 disabled = false
 layer = "default"
 foreground = "first(sidebar-foreground,foreground)"
 icon_color = "first(sidebar-foreground,foreground)"
 
-[[navigation_sidebar.item.color_rules]]
+[[sidebar.item.color_rules]]
 selected = false
 disabled = false
 layer = "disabled"
 foreground = "first(sidebar-foreground,foreground)"
 icon_color = "first(sidebar-foreground,foreground)"
 
-[[navigation_sidebar.item.color_rules]]
+[[sidebar.item.color_rules]]
 selected = false
 disabled = false
 layer = "hover"
@@ -1597,7 +1608,7 @@ foreground = "accent-foreground"
 icon_color = "accent-foreground"
 background = "accent"
 
-[[navigation_sidebar.item.color_rules]]
+[[sidebar.item.color_rules]]
 selected = false
 disabled = false
 layer = "pressed"

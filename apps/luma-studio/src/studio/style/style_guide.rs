@@ -6,7 +6,7 @@ use gpui::{
     AnyElement, App, Context, Entity, FontWeight, IntoElement, KeyDownEvent, MouseButton, Pixels, Render, ScrollHandle,
     ScrollWheelEvent, Window, div, point, prelude::*, px,
 };
-use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar};
+use gpui_luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
 use gpui_luma::controls::tabs_navigation::{
     TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
 };
@@ -14,8 +14,7 @@ use gpui_luma::controls::color::style::ElementExt;
 use gpui_luma::{declare_form};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
-use lucide_icons::Icon as LucideIcon;
-
+use crate::studio::panels::sidebar::{INITIAL_PROPERTY_SELECTION_ID, property_sidebar};
 use crate::studio::style::sections;
 use crate::studio::style::shared::callout::render_sparse_catalog_callout;
 use crate::studio::doc_shell::{
@@ -116,7 +115,7 @@ declare_form! {
                 Rc::new(RefCell::new(StickySectionHeadingTracker::default())),
             last_scroll_offset: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
             last_max_scroll: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
-            sidebar_preview: Option<Entity<NavigationSidebar>> = None,
+            sidebar_preview: Option<Entity<SidebarControl>> = None,
             buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
             icon_buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
             checkbox_preview_tabs: Option<Entity<TabsNavigation>> = None,
@@ -196,20 +195,26 @@ impl StyleGuidePanel {
         true
     }
 
-    fn sidebar_preview(&mut self, cx: &mut Context<Self>) -> Entity<NavigationSidebar> {
+    fn sidebar_preview(&mut self, cx: &mut Context<Self>) -> Entity<SidebarControl> {
         if let Some(sidebar) = self.sidebar_preview.clone() {
             return sidebar;
         }
 
-        let sidebar = self
-            .look
-            .navigation_sidebar("luma-studio-style-guide-sidebar-preview")
-            .title("Properties")
-            .subtitle("Task workspace")
-            .collapsible(true)
-            .selected_id(INITIAL_SIDEBAR_SELECTION_ID)
-            .items(style_guide_sidebar_nodes())
-            .footer_nodes(style_guide_sidebar_footer_nodes())
+        let look = self.look.clone();
+        let sidebar = look
+            .sidebar_control("luma-studio-style-guide-sidebar-preview")
+            .default_open(true)
+            .collapsible(SidebarCollapsible::Icon)
+            .selected_id(INITIAL_PROPERTY_SELECTION_ID)
+            .sidebar(
+                property_sidebar(
+                    &look,
+                    "luma-studio-style-guide-sidebar-preview-panel",
+                    "Properties",
+                    "Task workspace",
+                )
+                .rail(look.sidebar_rail()),
+            )
             .spawn(cx);
 
         self.sidebar_preview = Some(sidebar.clone());
@@ -220,11 +225,19 @@ impl StyleGuidePanel {
         if let Some(sidebar) = self.sidebar_preview.clone() {
             let look = self.look.clone();
             sidebar.update(cx, move |sidebar, cx| {
-                sidebar.set_template(look.navigation_sidebar_template(), cx);
+                sidebar.set_panel_template(look.sidebar_panel_template(), cx);
                 sidebar.set_scrollbar_template(look.scrollbar_template(), cx);
-                sidebar.set_items(style_guide_sidebar_nodes(), cx);
-                sidebar.set_footer_nodes(style_guide_sidebar_footer_nodes(), cx);
-                sidebar.set_selected_id(INITIAL_SIDEBAR_SELECTION_ID, cx);
+                sidebar.set_sidebar(
+                    property_sidebar(
+                        &look,
+                        "luma-studio-style-guide-sidebar-preview-panel",
+                        "Properties",
+                        "Task workspace",
+                    )
+                    .rail(look.sidebar_rail()),
+                    cx,
+                );
+                sidebar.set_selected_id(INITIAL_PROPERTY_SELECTION_ID, cx);
             });
         }
     }
@@ -1233,52 +1246,4 @@ fn render_style_index_item(
         )
         .child(label)
         .into_any_element()
-}
-
-const INITIAL_SIDEBAR_SELECTION_ID: &str = "dimensions";
-
-fn style_guide_sidebar_nodes() -> Vec<NavNode> {
-    vec![
-        NavNode::section("pinned-label", "Pinned"),
-        sidebar_leaf_node("summary", "Summary", Some(LucideIcon::Info), true),
-        sidebar_leaf_node("tokens", "Design Tokens", Some(LucideIcon::Tags), true),
-        NavNode::section("properties-label", "Properties"),
-        NavNode::new("layout").label("Layout").icon(LucideIcon::Ruler).expanded(true).children([
-            sidebar_leaf_node("position", "Position", None, true),
-            sidebar_leaf_node(INITIAL_SIDEBAR_SELECTION_ID, "Dimensions", None, true),
-            sidebar_leaf_node("constraints", "Constraints", None, true),
-            sidebar_leaf_node("grid", "Grid", None, true),
-        ]),
-        NavNode::new("look").label("Look").icon(LucideIcon::Palette).expanded(true).children([
-            sidebar_leaf_node("fill", "Fill", None, true),
-            sidebar_leaf_node("stroke", "Stroke", None, true),
-            sidebar_leaf_node("typography", "Typography", None, true),
-            sidebar_leaf_node("effects", "Effects", None, true),
-        ]),
-        NavNode::new("behavior")
-            .label("Behavior")
-            .icon(LucideIcon::MousePointer2)
-            .expanded(false)
-            .children([
-                sidebar_leaf_node("interactions", "Interactions", None, true),
-                sidebar_leaf_node("conditions", "Conditions", None, true),
-                sidebar_leaf_node("validation", "Validation", None, true),
-                sidebar_leaf_node("data-binding", "Data Binding", None, false),
-            ]),
-    ]
-}
-
-fn style_guide_sidebar_footer_nodes() -> Vec<NavNode> {
-    vec![
-        sidebar_leaf_node("audit-log", "Audit Log", Some(LucideIcon::FileText), true),
-        sidebar_leaf_node("reset-overrides", "Reset Overrides", Some(LucideIcon::RotateCcw), false),
-    ]
-}
-
-fn sidebar_leaf_node(id: &'static str, label: &'static str, icon: Option<LucideIcon>, enabled: bool) -> NavNode {
-    let mut node = NavNode::new(id).label(label).enabled(enabled);
-    if let Some(icon) = icon {
-        node = node.icon(icon);
-    }
-    node
 }

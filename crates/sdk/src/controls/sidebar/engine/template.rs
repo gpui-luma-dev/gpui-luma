@@ -7,12 +7,12 @@ use gpui::{
 };
 use lucide_icons::Icon as LucideIcon;
 
-use super::{NavNodeKind, NavigationSidebarRenderModel, RenderedCollapseTrigger, RenderedNavNode, RenderedRailSubmenu};
+use super::{NavNodeKind, SidebarPanelEngineRenderModel, RenderedCollapseTrigger, RenderedNavNode, RenderedRailSubmenu};
 use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler, render_floating_menu};
 use crate::controls::scroll_container::ScrollContainer;
 use crate::theme::{ControlSize, InteractionState, LumaTextStyle, LumaTypography};
 use crate::controls::floating_menu::{FloatingMenuLook, FloatingMenuTheme, default_floating_menu_theme};
-use crate::controls::navigation_sidebar::{NavigationSidebarTheme, default_navigation_sidebar_theme};
+use super::{SidebarTheme, default_sidebar_theme};
 
 const CONTAINER_GAP: f32 = 8.0;
 const CONTAINER_PADDING: f32 = 8.0;
@@ -38,56 +38,56 @@ const RAIL_BRANCH_INDICATOR_RIGHT: f32 = -10.0;
 const LUCIDE_FONT_FAMILY: &str = "lucide";
 const ICON_FONT_WEIGHT: FontWeight = FontWeight::NORMAL;
 
-pub type NavigationSidebarBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
-pub type NavigationSidebarClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
-pub type NavigationSidebarHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
-pub type NavigationSidebarMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub type NavigationSidebarMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+pub type SidebarPanelBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
+pub type SidebarPanelClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
+pub type SidebarPanelHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
+pub type SidebarPanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+pub type SidebarPanelMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 
 #[derive(Default)]
-pub struct NavigationSidebarTemplateHandlers {
-    pub collapse_hover: Option<NavigationSidebarHoverHandler>,
-    pub collapse_mouse_down: Option<NavigationSidebarMouseDownHandler>,
-    pub collapse_mouse_up: Option<NavigationSidebarMouseUpHandler>,
-    pub collapse_mouse_up_out: Option<NavigationSidebarMouseUpHandler>,
-    pub collapse_click: Option<NavigationSidebarClickHandler>,
-    pub row_bounds: Vec<NavigationSidebarBoundsHandler>,
-    pub row_hovers: Vec<NavigationSidebarHoverHandler>,
-    pub row_mouse_downs: Vec<NavigationSidebarMouseDownHandler>,
-    pub row_mouse_ups: Vec<NavigationSidebarMouseUpHandler>,
-    pub row_mouse_up_outs: Vec<NavigationSidebarMouseUpHandler>,
-    pub row_clicks: Vec<NavigationSidebarClickHandler>,
-    pub rail_submenu_mouse_down_out: Option<NavigationSidebarMouseDownHandler>,
+pub struct SidebarPanelTemplateHandlers {
+    pub collapse_hover: Option<SidebarPanelHoverHandler>,
+    pub collapse_mouse_down: Option<SidebarPanelMouseDownHandler>,
+    pub collapse_mouse_up: Option<SidebarPanelMouseUpHandler>,
+    pub collapse_mouse_up_out: Option<SidebarPanelMouseUpHandler>,
+    pub collapse_click: Option<SidebarPanelClickHandler>,
+    pub row_bounds: Vec<SidebarPanelBoundsHandler>,
+    pub row_hovers: Vec<SidebarPanelHoverHandler>,
+    pub row_mouse_downs: Vec<SidebarPanelMouseDownHandler>,
+    pub row_mouse_ups: Vec<SidebarPanelMouseUpHandler>,
+    pub row_mouse_up_outs: Vec<SidebarPanelMouseUpHandler>,
+    pub row_clicks: Vec<SidebarPanelClickHandler>,
+    pub rail_submenu_mouse_down_out: Option<SidebarPanelMouseDownHandler>,
     pub rail_submenu_item_hovers: Vec<FloatingMenuHoverHandler>,
     pub rail_submenu_item_clicks: Vec<FloatingMenuClickHandler>,
 }
 
-pub type NavigationSidebarTemplateModifier = Box<dyn Fn(Stateful<Div>) -> Stateful<Div> + Send + Sync + 'static>;
+pub type SidebarPanelTemplateModifier = Box<dyn Fn(Stateful<Div>) -> Stateful<Div> + Send + Sync + 'static>;
 
-pub trait NavigationSidebarTemplate: Send + Sync {
+pub trait SidebarPanelTemplate: Send + Sync {
     fn render(
         &self,
-        model: NavigationSidebarRenderModel,
+        model: SidebarPanelEngineRenderModel,
         main_scroll: &ScrollContainer,
-        handlers: NavigationSidebarTemplateHandlers,
+        handlers: SidebarPanelTemplateHandlers,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div>;
 }
 
-pub struct ThemedNavigationSidebarTemplate {
-    theme: Arc<dyn NavigationSidebarTheme>,
+pub struct ThemedSidebarPanelTemplate {
+    theme: Arc<dyn SidebarTheme>,
     floating_menu_theme: Arc<dyn FloatingMenuTheme>,
-    modifiers: Vec<NavigationSidebarTemplateModifier>,
+    modifiers: Vec<SidebarPanelTemplateModifier>,
 }
 
-impl ThemedNavigationSidebarTemplate {
-    pub fn new(theme: Arc<dyn NavigationSidebarTheme>) -> Self {
+impl ThemedSidebarPanelTemplate {
+    pub fn new(theme: Arc<dyn SidebarTheme>) -> Self {
         Self { theme, floating_menu_theme: default_floating_menu_theme(), modifiers: Vec::new() }
     }
 
     pub fn new_with_floating_menu_theme(
-        theme: Arc<dyn NavigationSidebarTheme>,
+        theme: Arc<dyn SidebarTheme>,
         floating_menu_theme: Arc<dyn FloatingMenuTheme>,
     ) -> Self {
         Self { theme, floating_menu_theme, modifiers: Vec::new() }
@@ -109,17 +109,17 @@ impl ThemedNavigationSidebarTemplate {
     }
 }
 
-struct ModifiedNavigationSidebarTemplate {
-    base: Arc<dyn NavigationSidebarTemplate>,
-    modifiers: Vec<NavigationSidebarTemplateModifier>,
+struct ModifiedSidebarPanelTemplate {
+    base: Arc<dyn SidebarPanelTemplate>,
+    modifiers: Vec<SidebarPanelTemplateModifier>,
 }
 
-impl ModifiedNavigationSidebarTemplate {
-    fn new(base: Arc<dyn NavigationSidebarTemplate>) -> Self {
+impl ModifiedSidebarPanelTemplate {
+    fn new(base: Arc<dyn SidebarPanelTemplate>) -> Self {
         Self { base, modifiers: Vec::new() }
     }
 
-    fn with_modifier(mut self, modifier: NavigationSidebarTemplateModifier) -> Self {
+    fn with_modifier(mut self, modifier: SidebarPanelTemplateModifier) -> Self {
         self.modifiers.push(modifier);
         self
     }
@@ -132,34 +132,34 @@ impl ModifiedNavigationSidebarTemplate {
     }
 }
 
-impl Default for ThemedNavigationSidebarTemplate {
+impl Default for ThemedSidebarPanelTemplate {
     fn default() -> Self {
-        Self::new(default_navigation_sidebar_theme())
+        Self::new(default_sidebar_theme())
     }
 }
 
-pub fn default_navigation_sidebar_template() -> Arc<dyn NavigationSidebarTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn NavigationSidebarTemplate>> = OnceLock::new();
+pub fn default_sidebar_panel_template() -> Arc<dyn SidebarPanelTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn SidebarPanelTemplate>> = OnceLock::new();
 
-    TEMPLATE.get_or_init(|| Arc::new(ThemedNavigationSidebarTemplate::default())).clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedSidebarPanelTemplate::default())).clone()
 }
 
-pub(super) fn modified_navigation_sidebar_template<F>(
-    template: Arc<dyn NavigationSidebarTemplate>,
+pub(crate) fn modified_sidebar_panel_template<F>(
+    template: Arc<dyn SidebarPanelTemplate>,
     modifier: F,
-) -> Arc<dyn NavigationSidebarTemplate>
+) -> Arc<dyn SidebarPanelTemplate>
 where
     F: Fn(Stateful<Div>) -> Stateful<Div> + Send + Sync + 'static,
 {
-    Arc::new(ModifiedNavigationSidebarTemplate::new(template).with_modifier(Box::new(modifier)))
+    Arc::new(ModifiedSidebarPanelTemplate::new(template).with_modifier(Box::new(modifier)))
 }
 
-impl NavigationSidebarTemplate for ModifiedNavigationSidebarTemplate {
+impl SidebarPanelTemplate for ModifiedSidebarPanelTemplate {
     fn render(
         &self,
-        model: NavigationSidebarRenderModel,
+        model: SidebarPanelEngineRenderModel,
         main_scroll: &ScrollContainer,
-        handlers: NavigationSidebarTemplateHandlers,
+        handlers: SidebarPanelTemplateHandlers,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
@@ -168,17 +168,17 @@ impl NavigationSidebarTemplate for ModifiedNavigationSidebarTemplate {
     }
 }
 
-impl NavigationSidebarTemplate for ThemedNavigationSidebarTemplate {
+impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
     fn render(
         &self,
-        model: NavigationSidebarRenderModel,
+        model: SidebarPanelEngineRenderModel,
         main_scroll: &ScrollContainer,
-        handlers: NavigationSidebarTemplateHandlers,
+        handlers: SidebarPanelTemplateHandlers,
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
         let container = self.theme.resolve_container();
-        let NavigationSidebarTemplateHandlers {
+        let SidebarPanelTemplateHandlers {
             collapse_hover,
             collapse_mouse_down,
             collapse_mouse_up,
@@ -357,7 +357,7 @@ fn render_title(
     subtitle: Option<SharedString>,
     collapse_trigger: Option<RenderedCollapseTrigger>,
     collapse_handlers: RowHandlers,
-    theme: &Arc<dyn NavigationSidebarTheme>,
+    theme: &Arc<dyn SidebarTheme>,
 ) -> Div {
     let title_style = sidebar_title_style();
     let subtitle_style = sidebar_subtitle_style();
@@ -399,12 +399,12 @@ fn render_title(
 
 fn render_region(
     nodes: Vec<RenderedNavNode>,
-    theme: &Arc<dyn NavigationSidebarTheme>,
-    row_hovers: &mut impl Iterator<Item = NavigationSidebarHoverHandler>,
-    row_mouse_downs: &mut impl Iterator<Item = NavigationSidebarMouseDownHandler>,
-    row_mouse_ups: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
-    row_mouse_up_outs: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
-    row_clicks: &mut impl Iterator<Item = NavigationSidebarClickHandler>,
+    theme: &Arc<dyn SidebarTheme>,
+    row_hovers: &mut impl Iterator<Item = SidebarPanelHoverHandler>,
+    row_mouse_downs: &mut impl Iterator<Item = SidebarPanelMouseDownHandler>,
+    row_mouse_ups: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
+    row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
+    row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
 ) -> Div {
     let mut region = div().flex().flex_col().gap(px(REGION_GAP));
 
@@ -426,13 +426,13 @@ fn render_region(
 #[allow(clippy::too_many_arguments)]
 fn render_collapsed_rail_region(
     nodes: Vec<RenderedNavNode>,
-    theme: &Arc<dyn NavigationSidebarTheme>,
-    row_bounds: &mut impl Iterator<Item = NavigationSidebarBoundsHandler>,
-    row_hovers: &mut impl Iterator<Item = NavigationSidebarHoverHandler>,
-    row_mouse_downs: &mut impl Iterator<Item = NavigationSidebarMouseDownHandler>,
-    row_mouse_ups: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
-    row_mouse_up_outs: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
-    row_clicks: &mut impl Iterator<Item = NavigationSidebarClickHandler>,
+    theme: &Arc<dyn SidebarTheme>,
+    row_bounds: &mut impl Iterator<Item = SidebarPanelBoundsHandler>,
+    row_hovers: &mut impl Iterator<Item = SidebarPanelHoverHandler>,
+    row_mouse_downs: &mut impl Iterator<Item = SidebarPanelMouseDownHandler>,
+    row_mouse_ups: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
+    row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
+    row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
 ) -> Div {
     let mut region = div().flex().flex_col().items_center().gap(px(REGION_GAP));
 
@@ -456,12 +456,12 @@ fn render_collapsed_rail_region(
 
 fn render_node(
     node: RenderedNavNode,
-    theme: &Arc<dyn NavigationSidebarTheme>,
-    row_hovers: &mut impl Iterator<Item = NavigationSidebarHoverHandler>,
-    row_mouse_downs: &mut impl Iterator<Item = NavigationSidebarMouseDownHandler>,
-    row_mouse_ups: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
-    row_mouse_up_outs: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
-    row_clicks: &mut impl Iterator<Item = NavigationSidebarClickHandler>,
+    theme: &Arc<dyn SidebarTheme>,
+    row_hovers: &mut impl Iterator<Item = SidebarPanelHoverHandler>,
+    row_mouse_downs: &mut impl Iterator<Item = SidebarPanelMouseDownHandler>,
+    row_mouse_ups: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
+    row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
+    row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
 ) -> AnyElement {
     let RenderedNavNode { id, kind, label, icon, state, custom_element, focus_handle, has_children, children } = node;
     let expanded = state.expanded;
@@ -507,15 +507,15 @@ struct RowRenderInput {
 }
 
 struct RowHandlers {
-    bounds: Option<NavigationSidebarBoundsHandler>,
-    hover: Option<NavigationSidebarHoverHandler>,
-    mouse_down: Option<NavigationSidebarMouseDownHandler>,
-    mouse_up: Option<NavigationSidebarMouseUpHandler>,
-    mouse_up_out: Option<NavigationSidebarMouseUpHandler>,
-    click: Option<NavigationSidebarClickHandler>,
+    bounds: Option<SidebarPanelBoundsHandler>,
+    hover: Option<SidebarPanelHoverHandler>,
+    mouse_down: Option<SidebarPanelMouseDownHandler>,
+    mouse_up: Option<SidebarPanelMouseUpHandler>,
+    mouse_up_out: Option<SidebarPanelMouseUpHandler>,
+    click: Option<SidebarPanelClickHandler>,
 }
 
-fn render_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn NavigationSidebarTheme>) -> AnyElement {
+fn render_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn SidebarTheme>) -> AnyElement {
     if let Some(element) = input.custom_element {
         return div().w_full().child(element).into_any_element();
     }
@@ -526,7 +526,7 @@ fn render_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn Navi
     }
 }
 
-fn render_section_row(label: SharedString, theme: &Arc<dyn NavigationSidebarTheme>) -> Div {
+fn render_section_row(label: SharedString, theme: &Arc<dyn SidebarTheme>) -> Div {
     let look = theme.resolve_section();
 
     div()
@@ -540,11 +540,7 @@ fn render_section_row(label: SharedString, theme: &Arc<dyn NavigationSidebarThem
         .child(label)
 }
 
-fn render_item_row(
-    input: RowRenderInput,
-    handlers: RowHandlers,
-    theme: &Arc<dyn NavigationSidebarTheme>,
-) -> AnyElement {
+fn render_item_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn SidebarTheme>) -> AnyElement {
     let RowRenderInput { id, label, icon, state, focus_handle, has_children, .. } = input;
     let interaction = InteractionState {
         hovered: state.hovered,
@@ -628,7 +624,7 @@ fn render_item_row(
 fn render_collapsed_rail_node(
     node: RenderedNavNode,
     handlers: RowHandlers,
-    theme: &Arc<dyn NavigationSidebarTheme>,
+    theme: &Arc<dyn SidebarTheme>,
 ) -> AnyElement {
     let RenderedNavNode { id, icon, state, focus_handle, has_children, .. } = node;
     let interaction = InteractionState {
@@ -740,7 +736,7 @@ fn render_collapsed_rail_node(
 fn render_collapse_trigger(
     trigger: RenderedCollapseTrigger,
     handlers: RowHandlers,
-    theme: &Arc<dyn NavigationSidebarTheme>,
+    theme: &Arc<dyn SidebarTheme>,
 ) -> AnyElement {
     let interaction = InteractionState {
         hovered: trigger.hovered,

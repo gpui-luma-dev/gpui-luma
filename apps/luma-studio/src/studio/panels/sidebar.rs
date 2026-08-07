@@ -1,4 +1,8 @@
-use gpui_luma::controls::navigation_sidebar::NavNode;
+use std::sync::Arc;
+
+use gpui::SharedString;
+use gpui_luma::controls::sidebar::{SidebarBuilder, SidebarMenuItemBuilder};
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 pub(crate) const INITIAL_PROPERTY_SELECTION_ID: &str = "dimensions";
@@ -63,34 +67,53 @@ const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
     PropertyLeaf { id: "reset-overrides", label: "Reset Overrides", icon: Some(LucideIcon::RotateCcw), enabled: false },
 ];
 
-pub(crate) fn property_navigation_footer_nodes() -> Vec<NavNode> {
-    FOOTER_PROPERTIES.iter().map(property_leaf_node).collect()
-}
+pub(crate) fn property_sidebar(
+    look: &Arc<ShadcnLook>,
+    panel_id: impl Into<SharedString>,
+    title: impl Into<SharedString>,
+    subtitle: impl Into<SharedString>,
+) -> SidebarBuilder {
+    let panel_id = panel_id.into();
+    let pinned_menu_id = SharedString::from(format!("{panel_id}-pinned"));
+    let properties_menu_id = SharedString::from(format!("{panel_id}-properties"));
 
-pub(crate) fn property_navigation_nodes() -> Vec<NavNode> {
-    let mut nodes = Vec::new();
-
-    nodes.push(NavNode::section("pinned-label", "Pinned"));
-    nodes.extend(PINNED_PROPERTIES.iter().map(property_leaf_node));
-
-    nodes.push(NavNode::section("properties-label", "Properties"));
-    nodes.extend(PROPERTY_GROUPS.iter().map(|group| {
-        NavNode::new(group.id)
-            .label(group.label)
-            .icon(group.icon)
-            .expanded(group.expanded)
-            .children(group.leaves.iter().map(property_leaf_node))
-    }));
-
-    nodes
-}
-
-fn property_leaf_node(leaf: &PropertyLeaf) -> NavNode {
-    let mut node = NavNode::new(leaf.id).label(leaf.label).enabled(leaf.enabled);
-
-    if let Some(icon) = leaf.icon {
-        node = node.icon(icon);
+    let mut pinned_menu = look.sidebar_menu(pinned_menu_id);
+    for leaf in PINNED_PROPERTIES {
+        pinned_menu = pinned_menu.item(property_leaf_menu_item(look, leaf));
     }
 
-    node
+    let mut properties_menu = look.sidebar_menu(properties_menu_id);
+    for group in PROPERTY_GROUPS {
+        let mut sub = look.sidebar_menu_sub();
+        for leaf in group.leaves {
+            sub = sub.item(property_leaf_menu_item(look, leaf));
+        }
+        properties_menu = properties_menu
+            .item(look.sidebar_menu_item(group.id, group.label).icon(group.icon).expanded(group.expanded).sub(sub));
+    }
+
+    let mut footer = look.sidebar_footer();
+    for leaf in FOOTER_PROPERTIES {
+        footer = footer.child(property_leaf_menu_item(look, leaf));
+    }
+
+    look.sidebar(panel_id)
+        .header(look.sidebar_header().title(title).subtitle(subtitle))
+        .content(
+            look.sidebar_content()
+                .group(look.sidebar_group().label("Pinned").menu(pinned_menu))
+                .group(look.sidebar_group().label("Properties").menu(properties_menu)),
+        )
+        .footer(footer)
+}
+
+fn property_leaf_menu_item(look: &Arc<ShadcnLook>, leaf: &PropertyLeaf) -> SidebarMenuItemBuilder {
+    let mut item = look
+        .sidebar_menu_item(leaf.id, leaf.label)
+        .disabled(!leaf.enabled)
+        .active(leaf.id == INITIAL_PROPERTY_SELECTION_ID);
+    if let Some(icon) = leaf.icon {
+        item = item.icon(icon);
+    }
+    item
 }

@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
-use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar};
-use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
 use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
@@ -72,41 +71,57 @@ pub fn spawn_properties_sidebar(
     look: Arc<ShadcnLook>,
     id: impl Into<SharedString>,
     cx: &mut impl AppContext,
-) -> Entity<NavigationSidebar> {
-    look.navigation_sidebar(id)
-        .title("Properties")
-        .subtitle("Rectangle / Prominent card")
-        .collapsible(true)
-        .selected_id(INITIAL_PROPERTY_SELECTION_ID)
-        .items(property_nodes())
-        .footer_nodes(FOOTER_PROPERTIES.iter().map(property_leaf_node))
+) -> Entity<SidebarControl> {
+    let id = id.into();
+    let panel_id = SharedString::from(format!("{id}-panel"));
+
+    let mut pinned_menu = look.sidebar_menu(format!("{id}-pinned"));
+    for leaf in PINNED_PROPERTIES {
+        pinned_menu = pinned_menu.item(property_leaf_menu_item(&look, leaf));
+    }
+
+    let mut properties_menu = look.sidebar_menu(format!("{id}-properties"));
+    for group in PROPERTY_GROUPS {
+        let mut sub = look.sidebar_menu_sub();
+        for leaf in group.leaves {
+            sub = sub.item(property_leaf_menu_item(&look, leaf));
+        }
+        properties_menu = properties_menu
+            .item(look.sidebar_menu_item(group.id, group.label).icon(group.icon).expanded(group.expanded).sub(sub));
+    }
+
+    let mut footer = look.sidebar_footer();
+    for leaf in FOOTER_PROPERTIES {
+        footer = footer.child(property_leaf_menu_item(&look, leaf));
+    }
+
+    look.sidebar_control(id)
+        .default_open(true)
+        .collapsible(SidebarCollapsible::Icon)
+        .sidebar(
+            look.sidebar(panel_id)
+                .header(look.sidebar_header().title("Properties").subtitle("Rectangle / Prominent card"))
+                .content(
+                    look.sidebar_content()
+                        .group(look.sidebar_group().label("Pinned").menu(pinned_menu))
+                        .group(look.sidebar_group().label("Properties").menu(properties_menu)),
+                )
+                .footer(footer)
+                .rail(look.sidebar_rail()),
+        )
         .spawn(cx)
 }
 
-fn property_nodes() -> Vec<NavNode> {
-    let mut nodes = Vec::new();
-
-    nodes.push(NavNode::section("pinned-label", "Pinned"));
-    nodes.extend(PINNED_PROPERTIES.iter().map(property_leaf_node));
-
-    nodes.push(NavNode::section("properties-label", "Properties"));
-    nodes.extend(PROPERTY_GROUPS.iter().map(|group| {
-        NavNode::new(group.id)
-            .label(group.label)
-            .icon(group.icon)
-            .expanded(group.expanded)
-            .children(group.leaves.iter().map(property_leaf_node))
-    }));
-
-    nodes
-}
-
-fn property_leaf_node(leaf: &PropertyLeaf) -> NavNode {
-    let mut node = NavNode::new(leaf.id).label(leaf.label).enabled(leaf.enabled);
-
+fn property_leaf_menu_item(
+    look: &Arc<ShadcnLook>,
+    leaf: &PropertyLeaf,
+) -> gpui_luma::controls::sidebar::SidebarMenuItemBuilder {
+    let mut item = look
+        .sidebar_menu_item(leaf.id, leaf.label)
+        .disabled(!leaf.enabled)
+        .active(leaf.id == INITIAL_PROPERTY_SELECTION_ID);
     if let Some(icon) = leaf.icon {
-        node = node.icon(icon);
+        item = item.icon(icon);
     }
-
-    node
+    item
 }

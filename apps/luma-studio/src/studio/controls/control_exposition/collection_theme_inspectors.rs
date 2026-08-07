@@ -4,4 +4,4 @@ pub type ListBoxThemeInspector = ThemeInspector;
 pub type ListViewThemeInspector = ThemeInspector;
 pub type SelectionPanelThemeInspector = ThemeInspector;
 pub type TreeViewThemeInspector = ThemeInspector;
-pub type NavigationSidebarThemeInspector = ThemeInspector;
+pub type SidebarThemeInspector = ThemeInspector;

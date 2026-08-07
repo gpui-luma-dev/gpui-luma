@@ -416,11 +416,11 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         section_order: 311,
     },
     ControlDocEntry {
-        id: "navigation-sidebar",
-        title: "Navigation Sidebar",
-        description: "Hierarchical navigation sidebar with section headers, branch expand/collapse, collapsible icon rail, and footer rows. Emits Activate and CollapsedChanged for shell integration.",
+        id: "sidebar",
+        title: "Sidebar",
+        description: "Hierarchical sidebar composition via SidebarControl — header, grouped menus, footer, and optional icon rail. Emits SidebarEvent for selection, collapse, and hover.",
         category: ControlCategory::NavigationPanels,
-        snippet: "look.navigation_sidebar(\"nav\")\n    .title(\"Properties\")\n    .items(nav_nodes)\n    .collapsible(true)\n    .spawn(cx);",
+        snippet: "look.sidebar_control(\"nav\")\n    .default_open(true)\n    .collapsible(SidebarCollapsible::Icon)\n    .sidebar(look.sidebar(\"nav-panel\").header(...).content(...))\n    .spawn(cx);",
         section_order: 312,
     },
     ControlDocEntry {

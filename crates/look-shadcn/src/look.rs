@@ -635,16 +635,84 @@ impl ShadcnLook {
         gpui_luma::controls::split_view::SplitView::new(id).theme(self.split_view_theme())
     }
 
-    pub fn navigation_sidebar_template(
-        self: &Arc<Self>,
-    ) -> Arc<dyn gpui_luma::controls::navigation_sidebar::NavigationSidebarTemplate> {
-        templates::navigation_sidebar_template(Arc::clone(self))
+    pub fn sidebar_panel_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::sidebar::SidebarPanelTemplate> {
+        templates::sidebar_panel_template(Arc::clone(self))
     }
 
-    pub fn navigation_sidebar_theme(
+    pub fn sidebar_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::sidebar::SidebarTheme> {
+        templates::sidebar_theme(Arc::clone(self))
+    }
+
+    pub fn sidebar_metric_scale(&self) -> gpui_luma::controls::sidebar::SidebarMetricScale {
+        let stylesheet = self.stylesheet();
+        crate::stylesheet::resolve_sidebar_metrics(
+            crate::stylesheet::find_sidebar_metrics(stylesheet.as_ref()),
+            &self.mode_tokens().metrics,
+        )
+    }
+
+    pub fn sidebar_control(
         self: &Arc<Self>,
-    ) -> Arc<dyn gpui_luma::controls::navigation_sidebar::NavigationSidebarTheme> {
-        templates::navigation_sidebar_theme(Arc::clone(self))
+        id: impl Into<SharedString>,
+    ) -> gpui_luma::controls::sidebar::SidebarControlBuilder {
+        gpui_luma::controls::sidebar::SidebarControl::new(id)
+            .panel_template(self.sidebar_panel_template())
+            .scrollbar_template(self.scrollbar_template())
+    }
+
+    pub fn sidebar(self: &Arc<Self>, id: impl Into<SharedString>) -> gpui_luma::controls::sidebar::SidebarBuilder {
+        gpui_luma::controls::sidebar::sidebar(id)
+    }
+
+    pub fn sidebar_header(self: &Arc<Self>) -> gpui_luma::controls::sidebar::SidebarHeaderBuilder {
+        gpui_luma::controls::sidebar::sidebar_header()
+    }
+
+    pub fn sidebar_content(self: &Arc<Self>) -> gpui_luma::controls::sidebar::SidebarContentBuilder {
+        gpui_luma::controls::sidebar::sidebar_content()
+    }
+
+    pub fn sidebar_group(self: &Arc<Self>) -> gpui_luma::controls::sidebar::SidebarGroupBuilder {
+        gpui_luma::controls::sidebar::sidebar_group()
+    }
+
+    pub fn sidebar_menu(
+        self: &Arc<Self>,
+        id: impl Into<SharedString>,
+    ) -> gpui_luma::controls::sidebar::SidebarMenuBuilder {
+        gpui_luma::controls::sidebar::sidebar_menu(id)
+    }
+
+    pub fn sidebar_menu_item(
+        self: &Arc<Self>,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+    ) -> gpui_luma::controls::sidebar::SidebarMenuItemBuilder {
+        gpui_luma::controls::sidebar::sidebar_menu_item(id, label)
+    }
+
+    pub fn sidebar_menu_sub(self: &Arc<Self>) -> gpui_luma::controls::sidebar::SidebarMenuSubBuilder {
+        gpui_luma::controls::sidebar::sidebar_menu_sub()
+    }
+
+    pub fn sidebar_footer(self: &Arc<Self>) -> gpui_luma::controls::sidebar::SidebarFooterBuilder {
+        gpui_luma::controls::sidebar::sidebar_footer()
+    }
+
+    pub fn sidebar_rail(self: &Arc<Self>) -> gpui_luma::controls::sidebar::SidebarRailBuilder {
+        gpui_luma::controls::sidebar::sidebar_rail()
+    }
+
+    pub fn sidebar_inset(self: &Arc<Self>) -> gpui_luma::controls::sidebar::SidebarInsetBuilder {
+        gpui_luma::controls::sidebar::sidebar_inset()
+    }
+
+    pub fn sidebar_trigger(
+        self: &Arc<Self>,
+        id: impl Into<SharedString>,
+    ) -> gpui_luma::controls::command::button::ButtonBuilder<()> {
+        gpui_luma::controls::command::icon_button::new(id, lucide_icons::Icon::PanelLeft)
+            .template(self.button_template(ShadcnButtonStyle::Ghost))
     }
 
     pub fn control_group_template<T>(self: &Arc<Self>) -> gpui_luma::controls::control_group::ControlGroupTemplate<T>

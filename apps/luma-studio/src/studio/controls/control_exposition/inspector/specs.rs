@@ -458,7 +458,7 @@ pub static LIST_VIEW_ROW_VALUE_MODES: [InspectorValueMode; 2] = [
     InspectorValueMode { id: "selected", label: "selected" },
 ];
 
-pub static NAVIGATION_SIDEBAR_VARIANTS: [InspectorVariant; 4] = [
+pub static SIDEBAR_VARIANTS: [InspectorVariant; 4] = [
     InspectorVariant { id: "container", label: "Container" },
     InspectorVariant { id: "section", label: "Section" },
     InspectorVariant { id: "branch", label: "Parent Item" },
@@ -518,7 +518,7 @@ pub static TREE_VIEW_ROW_STATES: [InspectorStateSpec; 4] = [
     },
 ];
 
-pub static NAVIGATION_SIDEBAR_STATES: [InspectorStateSpec; 5] = [
+pub static SIDEBAR_STATES: [InspectorStateSpec; 5] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",

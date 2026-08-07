@@ -9,7 +9,7 @@ use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView};
 use gpui_luma::controls::pager::PagerStyle;
-use gpui_luma::controls::navigation_sidebar::NavigationSidebar;
+use gpui_luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent, SplitViewSeparatorVisibility, render_pane};
 use gpui_luma::theme::ControlSize;
 use gpui_luma::{column, column_emphasis, paging_list_view};
@@ -17,9 +17,7 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize, with_look};
 use lucide_icons::Icon as LucideIcon;
 
-use super::navigation_sidebar::{
-    property_navigation_footer_nodes, property_navigation_nodes, INITIAL_PROPERTY_SELECTION_ID,
-};
+use super::sidebar::{INITIAL_PROPERTY_SELECTION_ID, property_sidebar};
 use super::task_list::{Task, build_task_rows, email_column, status_cell, tag_pill};
 
 const DEFAULT_PAGE_SIZE: usize = 25;
@@ -33,7 +31,7 @@ const DASHBOARD_INNER_RADIUS_PX: f32 = DASHBOARD_CARD_RADIUS_PX - 1.0;
 pub struct DashboardPanel {
     look: Arc<ShadcnLook>,
     split_view: Entity<SplitView>,
-    navigation_sidebar: Entity<NavigationSidebar>,
+    sidebar: Entity<SidebarControl>,
     sidebar_toggle: IconButton,
     list_view: PagingListView<Task>,
     sidebar_collapsed: bool,
@@ -53,18 +51,16 @@ impl DashboardPanel {
             .separator_visibility(SplitViewSeparatorVisibility::Hover)
             .spawn(cx);
 
-        let navigation_sidebar = look
-            .navigation_sidebar("studio-dashboard-nav")
-            .title("Properties")
-            .subtitle("Task workspace")
-            .collapsible(false)
+        let sidebar = look
+            .sidebar_control("studio-dashboard-nav")
+            .default_open(true)
+            .collapsible(SidebarCollapsible::None)
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
-            .items(property_navigation_nodes())
-            .footer_nodes(property_navigation_footer_nodes())
-            .with_template_modifier(|root| {
+            .with_panel_template_modifier(|root| {
                 // Match card corners: overflow_hidden is rectangular, so the filled root needs radii.
                 root.rounded_tl(px(DASHBOARD_INNER_RADIUS_PX)).rounded_bl(px(DASHBOARD_INNER_RADIUS_PX))
             })
+            .sidebar(property_sidebar(&look, "studio-dashboard-nav-panel", "Properties", "Task workspace"))
             .spawn(cx);
 
         let sidebar_toggle = look
@@ -148,7 +144,7 @@ impl DashboardPanel {
         Self {
             look,
             split_view,
-            navigation_sidebar,
+            sidebar,
             sidebar_toggle,
             list_view,
             sidebar_collapsed: false,
@@ -192,7 +188,7 @@ impl Render for DashboardPanel {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.sync_sidebar_toggle_icon(cx);
 
-        let navigation_sidebar = self.navigation_sidebar.clone();
+        let sidebar = self.sidebar.clone();
         let list_view = self.list_view.clone();
         let sidebar_toggle = self.sidebar_toggle.clone();
         let look = self.look.clone();
@@ -201,7 +197,7 @@ impl Render for DashboardPanel {
 
         self.split_view.update(cx, |split_view, cx| {
             split_view.set_panes(
-                render_pane(move || navigation_sidebar.clone()),
+                render_pane(move || sidebar.clone()),
                 render_pane(move || {
                     let mut content = div()
                         .size_full()

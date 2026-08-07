@@ -1,8 +1,7 @@
 use gpui_luma_look_shadcn_inspect::{
     AccordionContentInspectPalette, AccordionTriggerInspectPalette, ListBoxListInspectPalette,
-    ListBoxRowInspectPalette, ListViewInspectPalette, ListViewRowInspectPalette,
-    NavigationSidebarContainerInspectPalette, NavigationSidebarItemInspectPalette,
-    NavigationSidebarSectionInspectPalette, PagerShellInspectPalette, ResizablePanelsInspectPalette,
+    ListBoxRowInspectPalette, ListViewInspectPalette, ListViewRowInspectPalette, SidebarContainerInspectPalette,
+    SidebarItemInspectPalette, SidebarSectionInspectPalette, PagerShellInspectPalette, ResizablePanelsInspectPalette,
     SplitViewInspectPalette, TabsNavigationItemInspectPalette, TabsNavigationListInspectPalette, ToolbarInspectPalette,
     TreeViewRowInspectPalette,
 };
@@ -51,9 +50,7 @@ pub fn tree_view_row_color_rows(palette: &TreeViewRowInspectPalette) -> Vec<Insp
     rows
 }
 
-pub fn navigation_sidebar_container_color_rows(
-    palette: &NavigationSidebarContainerInspectPalette,
-) -> Vec<InspectColorRow> {
+pub fn sidebar_container_color_rows(palette: &SidebarContainerInspectPalette) -> Vec<InspectColorRow> {
     vec![
         color_row("background", &palette.background),
         color_row("foreground", &palette.foreground),
@@ -61,11 +58,11 @@ pub fn navigation_sidebar_container_color_rows(
     ]
 }
 
-pub fn navigation_sidebar_section_color_rows(palette: &NavigationSidebarSectionInspectPalette) -> Vec<InspectColorRow> {
+pub fn sidebar_section_color_rows(palette: &SidebarSectionInspectPalette) -> Vec<InspectColorRow> {
     vec![color_row("label", &palette.label_color)]
 }
 
-pub fn navigation_sidebar_item_color_rows(palette: &NavigationSidebarItemInspectPalette) -> Vec<InspectColorRow> {
+pub fn sidebar_item_color_rows(palette: &SidebarItemInspectPalette) -> Vec<InspectColorRow> {
     let mut rows = Vec::new();
     if let Some(background) = &palette.background {
         rows.push(color_row("background", background));

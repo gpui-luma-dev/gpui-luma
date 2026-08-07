@@ -6,7 +6,7 @@ use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use gpui_luma_look_shadcn_inspect::{
     AccordionInspectMetrics, AutocompleteInspectMetrics, BadgeInspectMetrics, ButtonInspectMetrics,
     CheckboxInspectMetrics, ContextMenuInspectMetrics, FloatingMenuInspectMetrics, ListBoxInspectMetrics,
-    ListViewInspectMetrics, NavigationSidebarInspectMetrics, OverlayWindowInspectMetrics, ProgressInspectMetrics,
+    ListViewInspectMetrics, SidebarInspectMetrics, OverlayWindowInspectMetrics, ProgressInspectMetrics,
     RadioButtonInspectMetrics, ResizablePanelsInspectMetrics, ScrollbarInspectMetrics, ShadcnInspect,
     SliderInspectMetrics, SplitViewInspectMetrics, StepperInspectMetrics, SwitchInspectMetrics,
     TabsNavigationInspectMetrics, TextFieldInspectMetrics, PagerInspectMetrics, ToolbarInspectMetrics,
@@ -339,11 +339,11 @@ pub fn tree_view_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &s
     )
 }
 
-pub fn navigation_sidebar_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
-    navigation_sidebar_metrics_layout_section(
+pub fn sidebar_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+    sidebar_metrics_layout_section(
         look,
         diagram_id,
-        &ShadcnInspect::new(look).inspect_navigation_sidebar_metrics(control_size(size_id)),
+        &ShadcnInspect::new(look).inspect_sidebar_metrics(control_size(size_id)),
     )
 }
 
@@ -916,10 +916,10 @@ fn tree_view_metrics_layout_section(
     )
 }
 
-fn navigation_sidebar_metrics_layout_section(
+fn sidebar_metrics_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
-    metrics: &NavigationSidebarInspectMetrics,
+    metrics: &SidebarInspectMetrics,
 ) -> InspectLayoutSection {
     let box_model = InspectBoxModelSnapshot {
         height: metrics.item_height.value_px,

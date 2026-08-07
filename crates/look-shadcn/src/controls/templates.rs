@@ -16,9 +16,7 @@ use gpui_luma::controls::dock_splitter::DockSplitterTheme;
 use gpui_luma::controls::radio_group::{RadioGroupLayout, radio_group_buttons_template};
 use gpui_luma::controls::floating_menu::FloatingMenuTheme;
 use gpui_luma::controls::list_view::{ListViewTheme, list_view_template_with_theme};
-use gpui_luma::controls::navigation_sidebar::{
-    NavigationSidebarTemplate, NavigationSidebarTheme, ThemedNavigationSidebarTemplate,
-};
+use gpui_luma::controls::sidebar::{SidebarPanelTemplate, SidebarTheme, ThemedSidebarPanelTemplate};
 use gpui_luma::controls::listbox::{ListBoxTheme, listbox_template_with_theme};
 use gpui_luma::controls::pager::{PagerLook, PagerTemplate, PagerTheme, ThemedPagerTemplate};
 use gpui_luma::controls::popup_menu::{PopupMenuTheme, ThemedPopupMenuTemplate};
@@ -51,10 +49,7 @@ use super::context_menu::context_menu_look;
 use super::overlay_window::overlay_window_look;
 use super::floating_menu::floating_menu_look;
 use super::list_view::{list_view_look, list_view_row_palette};
-use super::navigation_sidebar::{
-    navigation_sidebar_branch_look, navigation_sidebar_container_look, navigation_sidebar_item_look,
-    navigation_sidebar_section_look,
-};
+use super::sidebar::{sidebar_branch_look, sidebar_container_look, sidebar_item_look, sidebar_section_look};
 use super::listbox::{listbox_list_look, listbox_row_palette};
 use super::pager::{pager_button_look, pager_look};
 use super::progress::progress_look;
@@ -974,26 +969,26 @@ impl TabsNavigationTheme for ShadcnTabsNavigationTheme {
     }
 }
 
-struct ShadcnNavigationSidebarTheme {
+struct ShadcnSidebarTheme {
     theme: ShadcnLook,
 }
 
-impl NavigationSidebarTheme for ShadcnNavigationSidebarTheme {
-    fn resolve_container(&self) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarContainerLook {
+impl SidebarTheme for ShadcnSidebarTheme {
+    fn resolve_container(&self) -> gpui_luma::controls::sidebar::SidebarContainerLook {
         let tokens = self.theme.mode_tokens();
-        navigation_sidebar_container_look(tokens.as_ref())
+        sidebar_container_look(tokens.as_ref())
     }
 
-    fn resolve_section(&self) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarSectionLook {
-        navigation_sidebar_section_look(&self.theme)
+    fn resolve_section(&self) -> gpui_luma::controls::sidebar::SidebarSectionLook {
+        sidebar_section_look(&self.theme)
     }
 
     fn resolve_branch(
         &self,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarItemLook {
-        navigation_sidebar_branch_look(&self.theme, state, size)
+    ) -> gpui_luma::controls::sidebar::SidebarItemLook {
+        sidebar_branch_look(&self.theme, state, size)
     }
 
     fn resolve_item(
@@ -1001,8 +996,8 @@ impl NavigationSidebarTheme for ShadcnNavigationSidebarTheme {
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarItemLook {
-        navigation_sidebar_item_look(&self.theme, selected, state, size)
+    ) -> gpui_luma::controls::sidebar::SidebarItemLook {
+        sidebar_item_look(&self.theme, selected, state, size)
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
@@ -1037,16 +1032,16 @@ pub fn tabs_navigation_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TabsNavigationTh
     Arc::new(ShadcnTabsNavigationTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn navigation_sidebar_template(theme: Arc<ShadcnLook>) -> Arc<dyn NavigationSidebarTemplate> {
+pub fn sidebar_panel_template(theme: Arc<ShadcnLook>) -> Arc<dyn SidebarPanelTemplate> {
     let menu_theme = floating_menu_theme(Arc::clone(&theme));
-    Arc::new(ThemedNavigationSidebarTemplate::new_with_floating_menu_theme(
-        Arc::new(ShadcnNavigationSidebarTheme { theme: theme.as_ref().clone() }),
+    Arc::new(ThemedSidebarPanelTemplate::new_with_floating_menu_theme(
+        Arc::new(ShadcnSidebarTheme { theme: theme.as_ref().clone() }),
         menu_theme,
     ))
 }
 
-pub fn navigation_sidebar_theme(theme: Arc<ShadcnLook>) -> Arc<dyn NavigationSidebarTheme> {
-    Arc::new(ShadcnNavigationSidebarTheme { theme: theme.as_ref().clone() })
+pub fn sidebar_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SidebarTheme> {
+    Arc::new(ShadcnSidebarTheme { theme: theme.as_ref().clone() })
 }
 
 struct ShadcnControlGroupTheme {

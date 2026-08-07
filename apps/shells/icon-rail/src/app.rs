@@ -7,7 +7,7 @@ use gpui::{
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::navigation_sidebar::NavigationSidebar;
+use gpui_luma::controls::sidebar::SidebarControl;
 use gpui_luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
 use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_shadcn::prelude::*;
@@ -30,7 +30,7 @@ pub struct IconRailShellApp {
     pane_focus: FocusHandle,
     look: Arc<ShadcnLook>,
     split_view: Entity<SplitView>,
-    navigation_sidebar: Entity<NavigationSidebar>,
+    sidebar: Entity<SidebarControl>,
     toggle_button: Entity<Button<()>>,
     theme_toggle_button: IconButton,
     _subscriptions: Vec<Subscription>,
@@ -45,7 +45,7 @@ impl IconRailShellApp {
         look.set_mode(ThemeMode::Dark);
         sync_color_control_theme(&look);
 
-        let navigation_sidebar = nav_sample::spawn_properties_sidebar(look.clone(), "shell-nav", cx);
+        let sidebar = nav_sample::spawn_properties_sidebar(look.clone(), "shell-nav", cx);
         let split_view = look
             .split_view("shell-icon-rail")
             .sidebar_width(px(560.0))
@@ -58,7 +58,7 @@ impl IconRailShellApp {
         let theme_toggle_button = spawn_theme_toggle_button("shell-titlebar-theme-toggle-icon-rail", &look, cx);
 
         let mut subscriptions = Vec::new();
-        wire_split_nav_sync(&mut subscriptions, split_view.clone(), navigation_sidebar.clone(), cx);
+        wire_split_nav_sync(&mut subscriptions, split_view.clone(), sidebar.clone(), cx);
         subscriptions.push(cx.subscribe(&theme_toggle_button, |this, _, event: &ButtonEvent, cx| {
             if matches!(event, ButtonEvent::Click) {
                 handle_theme_toggle(this, cx);
@@ -81,7 +81,7 @@ impl IconRailShellApp {
             pane_focus,
             look,
             split_view,
-            navigation_sidebar,
+            sidebar,
             toggle_button,
             theme_toggle_button,
             _subscriptions: subscriptions,
@@ -102,14 +102,14 @@ impl HasShellTheme for IconRailShellApp {
 impl Render for IconRailShellApp {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let pane_focus = self.pane_focus.clone();
-        let navigation_sidebar = self.navigation_sidebar.clone();
+        let sidebar = self.sidebar.clone();
         let look = self.look.clone();
         let sans_family = look.mode_tokens().typography.font.sans.family.clone();
         let toggle_button = self.toggle_button.clone();
 
         self.split_view.update(cx, |split_view, cx| {
             split_view.set_panes(
-                render_pane(move || navigation_sidebar.clone()),
+                render_pane(move || sidebar.clone()),
                 render_pane(move || {
                     wrap_content_pane(
                         icon_rail_content_pane(toggle_button.clone()),

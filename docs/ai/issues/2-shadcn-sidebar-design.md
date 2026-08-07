@@ -209,7 +209,20 @@ pub fn render_workbench(cx: &mut WindowContext) -> Entity<SidebarControl> {
 
 ## 6. Typed Look Metric Scale (`SidebarMetricScale`)
 
-Zero hardcoded pixel constants. All dimensions are resolved dynamically via `SidebarMetricScale` from `ShadcnLook`:
+Zero hardcoded pixel constants. All dimensions are resolved dynamically via `SidebarMetricScale` from `ShadcnLook` (`look.sidebar_metric_scale()`), backed by `[sidebar.metrics]` in `crates/look-shadcn/assets/style.toml`:
+
+```toml
+[sidebar.metrics]
+width_expanded = "16rem"       # 256px
+width_icon_rail = "3rem"       # 48px
+width_mobile = "18rem"         # 288px
+padding_expanded = "0.75rem"   # 12px
+padding_icon_rail = "0.375rem" # 6px
+item_height = "2rem"           # 32px
+icon_size = "1rem"             # 16px
+rail_hit_width = "0.375rem"    # 6px
+popover_offset = "0.5rem"      # 8px
+```
 
 ```rust
 pub struct SidebarMetricScale {
@@ -242,8 +255,6 @@ To guarantee visual correctness and allow direct verification, the legacy `Navig
 
 ### Step 3: Luma Studio Side-by-Side Old vs New Comparison
 * **Controls Exposition Tab** (`apps/luma-studio/src/studio/controls/control_exposition/navigation_sidebar.rs`): Update exposition to render **both Old (`NavigationSidebar`) and New (`SidebarControl`) side-by-side** (or via a side-by-side comparison toggle) for direct visual and behavioral verification.
-* **Dashboard Tab** (`apps/luma-studio/src/studio/panels/dashboard.rs`): Support side-by-side / toggle comparison mode between `NavigationSidebar` and `SidebarControl`.
-* Perform visual and functional verification ensuring 100% parity with the existing exposition (header, subtitle, section labels, chevrons, blue selection highlight, scrollbar, rail collapse).
 
 ### Step 4: Final Cleanup & Architecture Guide Update (Post-Verification Only)
 * Only after `SidebarControl` is verified and approved as 100% proper and working, remove legacy `NavigationSidebar` structs (`crates/sdk/src/controls/navigation_sidebar/`).

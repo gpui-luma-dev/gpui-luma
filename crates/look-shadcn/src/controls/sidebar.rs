@@ -13,9 +13,7 @@
 //! | Selected fg       | `sidebar-primary-foreground`       |
 //! | Focus ring        | `sidebar-ring`                     |
 
-use gpui_luma::controls::navigation_sidebar::{
-    NavigationSidebarContainerLook, NavigationSidebarItemLook, NavigationSidebarSectionLook,
-};
+use gpui_luma::controls::sidebar::{SidebarContainerLook, SidebarItemLook, SidebarSectionLook};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
@@ -23,22 +21,20 @@ use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::look::ShadcnLook;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_navigation_sidebar_branch_color_rule,
-    find_navigation_sidebar_container_color_rule, find_navigation_sidebar_item_color_rule,
-    find_navigation_sidebar_section_color_rule, resolve_navigation_sidebar_branch_color_rule,
-    resolve_navigation_sidebar_container_color_rule, resolve_navigation_sidebar_item_color_rule,
-    resolve_navigation_sidebar_section_color_rule,
+    StylesheetConfig, embedded_stylesheet, find_sidebar_branch_color_rule, find_sidebar_container_color_rule,
+    find_sidebar_item_color_rule, find_sidebar_section_color_rule, resolve_sidebar_branch_color_rule,
+    resolve_sidebar_container_color_rule, resolve_sidebar_item_color_rule, resolve_sidebar_section_color_rule,
 };
 use crate::tokens::ShadcnTextSize;
 
 #[derive(Clone, Debug)]
-pub struct NavigationSidebarContainerColorTable {
+pub struct SidebarContainerColorTable {
     pub background: ResolvedColor,
     pub foreground: ResolvedColor,
     pub border: ResolvedColor,
 }
 
-impl NavigationSidebarContainerColorTable {
+impl SidebarContainerColorTable {
     pub fn fallback() -> Self {
         Self {
             background: ResolvedColor::transparent(),
@@ -48,21 +44,21 @@ impl NavigationSidebarContainerColorTable {
     }
 }
 
-pub fn resolve_navigation_sidebar_container_colors(
+pub fn resolve_sidebar_container_colors(
     resolver: &LookResolver<'_>,
     _present: bool,
-) -> anyhow::Result<NavigationSidebarContainerColorTable> {
-    resolve_navigation_sidebar_container_colors_with_stylesheet(resolver, embedded_stylesheet())
+) -> anyhow::Result<SidebarContainerColorTable> {
+    resolve_sidebar_container_colors_with_stylesheet(resolver, embedded_stylesheet())
 }
 
-pub fn resolve_navigation_sidebar_container_colors_with_stylesheet(
+pub fn resolve_sidebar_container_colors_with_stylesheet(
     resolver: &LookResolver<'_>,
     stylesheet: &StylesheetConfig,
-) -> anyhow::Result<NavigationSidebarContainerColorTable> {
-    let rule = find_navigation_sidebar_container_color_rule(stylesheet)
+) -> anyhow::Result<SidebarContainerColorTable> {
+    let rule = find_sidebar_container_color_rule(stylesheet)
         .ok_or_else(|| anyhow::anyhow!("no matching navigation sidebar container color rule"))?;
-    let colors = resolve_navigation_sidebar_container_color_rule(resolver, rule)?;
-    Ok(NavigationSidebarContainerColorTable {
+    let colors = resolve_sidebar_container_color_rule(resolver, rule)?;
+    Ok(SidebarContainerColorTable {
         background: colors.background,
         foreground: colors.foreground,
         border: colors.border,
@@ -70,41 +66,41 @@ pub fn resolve_navigation_sidebar_container_colors_with_stylesheet(
 }
 
 #[derive(Clone, Debug)]
-pub struct NavigationSidebarSectionColorTable {
+pub struct SidebarSectionColorTable {
     pub label_color: ResolvedColor,
 }
 
-impl NavigationSidebarSectionColorTable {
+impl SidebarSectionColorTable {
     pub fn fallback() -> Self {
         Self { label_color: ResolvedColor::fallback_foreground() }
     }
 }
 
-pub fn resolve_navigation_sidebar_section_colors(
+pub fn resolve_sidebar_section_colors(
     resolver: &LookResolver<'_>,
     _present: bool,
-) -> anyhow::Result<NavigationSidebarSectionColorTable> {
-    resolve_navigation_sidebar_section_colors_with_stylesheet(resolver, embedded_stylesheet())
+) -> anyhow::Result<SidebarSectionColorTable> {
+    resolve_sidebar_section_colors_with_stylesheet(resolver, embedded_stylesheet())
 }
 
-pub fn resolve_navigation_sidebar_section_colors_with_stylesheet(
+pub fn resolve_sidebar_section_colors_with_stylesheet(
     resolver: &LookResolver<'_>,
     stylesheet: &StylesheetConfig,
-) -> anyhow::Result<NavigationSidebarSectionColorTable> {
-    let rule = find_navigation_sidebar_section_color_rule(stylesheet)
+) -> anyhow::Result<SidebarSectionColorTable> {
+    let rule = find_sidebar_section_color_rule(stylesheet)
         .ok_or_else(|| anyhow::anyhow!("no matching navigation sidebar section color rule"))?;
-    let colors = resolve_navigation_sidebar_section_color_rule(resolver, rule)?;
-    Ok(NavigationSidebarSectionColorTable { label_color: colors.label_color })
+    let colors = resolve_sidebar_section_color_rule(resolver, rule)?;
+    Ok(SidebarSectionColorTable { label_color: colors.label_color })
 }
 
 #[derive(Clone, Debug)]
-pub struct NavigationSidebarBranchColorTable {
+pub struct SidebarBranchColorTable {
     pub foreground: ResolvedColor,
     pub icon_color: ResolvedColor,
     pub background: Option<ResolvedColor>,
 }
 
-impl NavigationSidebarBranchColorTable {
+impl SidebarBranchColorTable {
     pub fn fallback() -> Self {
         Self {
             foreground: ResolvedColor::fallback_foreground(),
@@ -114,24 +110,24 @@ impl NavigationSidebarBranchColorTable {
     }
 }
 
-pub fn resolve_navigation_sidebar_branch_colors(
+pub fn resolve_sidebar_branch_colors(
     resolver: &LookResolver<'_>,
     disabled: bool,
     layer: InteractionLayer,
-) -> anyhow::Result<NavigationSidebarBranchColorTable> {
-    resolve_navigation_sidebar_branch_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
+) -> anyhow::Result<SidebarBranchColorTable> {
+    resolve_sidebar_branch_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
 }
 
-pub fn resolve_navigation_sidebar_branch_colors_with_stylesheet(
+pub fn resolve_sidebar_branch_colors_with_stylesheet(
     resolver: &LookResolver<'_>,
     stylesheet: &StylesheetConfig,
     disabled: bool,
     layer: InteractionLayer,
-) -> anyhow::Result<NavigationSidebarBranchColorTable> {
-    let rule = find_navigation_sidebar_branch_color_rule(stylesheet, disabled, layer)
+) -> anyhow::Result<SidebarBranchColorTable> {
+    let rule = find_sidebar_branch_color_rule(stylesheet, disabled, layer)
         .ok_or_else(|| anyhow::anyhow!("no matching navigation sidebar branch color rule"))?;
-    let colors = resolve_navigation_sidebar_branch_color_rule(resolver, rule, layer)?;
-    Ok(NavigationSidebarBranchColorTable {
+    let colors = resolve_sidebar_branch_color_rule(resolver, rule, layer)?;
+    Ok(SidebarBranchColorTable {
         foreground: colors.foreground,
         icon_color: colors.icon_color,
         background: colors.background,
@@ -139,13 +135,13 @@ pub fn resolve_navigation_sidebar_branch_colors_with_stylesheet(
 }
 
 #[derive(Clone, Debug)]
-pub struct NavigationSidebarItemColorTable {
+pub struct SidebarItemColorTable {
     pub foreground: ResolvedColor,
     pub icon_color: ResolvedColor,
     pub background: Option<ResolvedColor>,
 }
 
-impl NavigationSidebarItemColorTable {
+impl SidebarItemColorTable {
     pub fn fallback() -> Self {
         Self {
             foreground: ResolvedColor::fallback_foreground(),
@@ -155,67 +151,67 @@ impl NavigationSidebarItemColorTable {
     }
 }
 
-pub fn resolve_navigation_sidebar_item_colors(
+pub fn resolve_sidebar_item_colors(
     resolver: &LookResolver<'_>,
     selected: bool,
     disabled: bool,
     layer: InteractionLayer,
-) -> anyhow::Result<NavigationSidebarItemColorTable> {
-    resolve_navigation_sidebar_item_colors_with_stylesheet(resolver, embedded_stylesheet(), selected, disabled, layer)
+) -> anyhow::Result<SidebarItemColorTable> {
+    resolve_sidebar_item_colors_with_stylesheet(resolver, embedded_stylesheet(), selected, disabled, layer)
 }
 
-pub fn resolve_navigation_sidebar_item_colors_with_stylesheet(
+pub fn resolve_sidebar_item_colors_with_stylesheet(
     resolver: &LookResolver<'_>,
     stylesheet: &StylesheetConfig,
     selected: bool,
     disabled: bool,
     layer: InteractionLayer,
-) -> anyhow::Result<NavigationSidebarItemColorTable> {
-    let rule = find_navigation_sidebar_item_color_rule(stylesheet, selected, disabled, layer)
+) -> anyhow::Result<SidebarItemColorTable> {
+    let rule = find_sidebar_item_color_rule(stylesheet, selected, disabled, layer)
         .ok_or_else(|| anyhow::anyhow!("no matching navigation sidebar item color rule"))?;
-    let colors = resolve_navigation_sidebar_item_color_rule(resolver, rule, layer)?;
-    Ok(NavigationSidebarItemColorTable {
+    let colors = resolve_sidebar_item_color_rule(resolver, rule, layer)?;
+    Ok(SidebarItemColorTable {
         foreground: colors.foreground,
         icon_color: colors.icon_color,
         background: colors.background,
     })
 }
 
-pub fn navigation_sidebar_container_look(mode: &ShadcnModeTokens) -> NavigationSidebarContainerLook {
+pub fn sidebar_container_look(mode: &ShadcnModeTokens) -> SidebarContainerLook {
     let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_container");
-    let colors = resolve_navigation_sidebar_container_colors(&resolver, true)
-        .unwrap_or_else(|_| NavigationSidebarContainerColorTable::fallback());
-    NavigationSidebarContainerLook {
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_container");
+    let colors =
+        resolve_sidebar_container_colors(&resolver, true).unwrap_or_else(|_| SidebarContainerColorTable::fallback());
+    SidebarContainerLook {
         background: colors.background.hsla(),
         foreground: colors.foreground.hsla(),
         border: colors.border.hsla(),
     }
 }
 
-pub fn navigation_sidebar_section_look(theme: &ShadcnLook) -> NavigationSidebarSectionLook {
+pub fn sidebar_section_look(theme: &ShadcnLook) -> SidebarSectionLook {
     let tokens = theme.mode_tokens();
     let ctx = LookContext::new(tokens.as_ref(), theme.mode(), InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_section");
-    let colors = resolve_navigation_sidebar_section_colors(&resolver, true)
-        .unwrap_or_else(|_| NavigationSidebarSectionColorTable::fallback());
-    NavigationSidebarSectionLook {
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_section");
+    let colors =
+        resolve_sidebar_section_colors(&resolver, true).unwrap_or_else(|_| SidebarSectionColorTable::fallback());
+    SidebarSectionLook {
         label_color: colors.label_color.hsla(),
         typography: theme.typography_scale(ShadcnTextSize::Xs),
         height: 20.0,
     }
 }
 
-fn base_item_look(_theme: &ShadcnLook, ctx: &LookContext, size: ControlSize) -> NavigationSidebarItemLook {
+fn base_item_look(_theme: &ShadcnLook, ctx: &LookContext, size: ControlSize) -> SidebarItemLook {
     let state = ctx.state;
     let metrics = ctx.metrics();
     let typography = ctx.typography();
     let size_metrics = metrics.for_size(size);
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_item_base");
-    let colors = resolve_navigation_sidebar_branch_colors(&resolver, state.disabled, state.layer())
-        .unwrap_or_else(|_| NavigationSidebarBranchColorTable::fallback());
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_item_base");
+    let colors = resolve_sidebar_branch_colors(&resolver, state.disabled, state.layer())
+        .unwrap_or_else(|_| SidebarBranchColorTable::fallback());
 
-    NavigationSidebarItemLook {
+    SidebarItemLook {
         background: None,
         focus_border: (state.focused && !state.disabled).then(|| {
             crate::focus::focus_ring_color(ctx.catalog())
@@ -232,17 +228,13 @@ fn base_item_look(_theme: &ShadcnLook, ctx: &LookContext, size: ControlSize) -> 
     }
 }
 
-pub fn navigation_sidebar_branch_look(
-    theme: &ShadcnLook,
-    state: InteractionState,
-    size: ControlSize,
-) -> NavigationSidebarItemLook {
+pub fn sidebar_branch_look(theme: &ShadcnLook, state: InteractionState, size: ControlSize) -> SidebarItemLook {
     let tokens = theme.mode_tokens();
     let ctx = LookContext::new(tokens.as_ref(), theme.mode(), state);
     let mut look = base_item_look(theme, &ctx, size);
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_branch");
-    let colors = resolve_navigation_sidebar_branch_colors(&resolver, state.disabled, state.layer())
-        .unwrap_or_else(|_| NavigationSidebarBranchColorTable::fallback());
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_branch");
+    let colors = resolve_sidebar_branch_colors(&resolver, state.disabled, state.layer())
+        .unwrap_or_else(|_| SidebarBranchColorTable::fallback());
 
     look.background = colors.background.map(|color| color.hsla());
     look.foreground = colors.foreground.hsla();
@@ -251,18 +243,18 @@ pub fn navigation_sidebar_branch_look(
     look
 }
 
-pub fn navigation_sidebar_item_look(
+pub fn sidebar_item_look(
     theme: &ShadcnLook,
     selected: bool,
     state: InteractionState,
     size: ControlSize,
-) -> NavigationSidebarItemLook {
+) -> SidebarItemLook {
     let tokens = theme.mode_tokens();
     let ctx = LookContext::new(tokens.as_ref(), theme.mode(), state);
     let mut look = base_item_look(theme, &ctx, size);
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_item");
-    let colors = resolve_navigation_sidebar_item_colors(&resolver, selected, state.disabled, state.layer())
-        .unwrap_or_else(|_| NavigationSidebarItemColorTable::fallback());
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_item");
+    let colors = resolve_sidebar_item_colors(&resolver, selected, state.disabled, state.layer())
+        .unwrap_or_else(|_| SidebarItemColorTable::fallback());
 
     look.background = colors.background.map(|color| color.hsla());
     look.foreground = colors.foreground.hsla();
@@ -281,7 +273,7 @@ mod tests {
     use crate::catalog::CssTokenMap;
     use crate::look::ShadcnLook;
     use crate::mode::ShadcnModeTokens;
-    use super::{navigation_sidebar_container_look, navigation_sidebar_item_look, navigation_sidebar_section_look};
+    use super::{sidebar_container_look, sidebar_item_look, sidebar_section_look};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -311,15 +303,15 @@ mod tests {
     }
 
     #[test]
-    fn navigation_sidebar_uses_sidebar_tokens() {
+    fn sidebar_uses_sidebar_tokens() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let look = ShadcnLook::from_css_str(
             ":root { --background: oklch(0.9735 0.0261 90.0953); --foreground: oklch(0.3092 0.0518 219.6516); --card: oklch(0.9306 0.0260 92.4020); --card-foreground: oklch(0.3092 0.0518 219.6516); --primary: oklch(0.5924 0.2025 355.8943); --primary-foreground: oklch(1 0 0); --secondary: oklch(0.6437 0.1019 187.3840); --secondary-foreground: oklch(1 0 0); --accent: oklch(0.5808 0.1732 39.5003); --accent-foreground: oklch(1 0 0); --muted: oklch(0.6979 0.0159 196.7940); --muted-foreground: oklch(0.3092 0.0518 219.6516); --border: oklch(0.6537 0.0197 205.2618); --input: oklch(0.6537 0.0197 205.2618); --ring: oklch(0.5924 0.2025 355.8943); --sidebar: oklch(0.9306 0.0260 92.4020); --sidebar-foreground: oklch(0.3092 0.0518 219.6516); --sidebar-primary: oklch(0.5924 0.2025 355.8943); --sidebar-primary-foreground: oklch(1 0 0); --sidebar-accent: oklch(0.5808 0.1732 39.5003); --sidebar-accent-foreground: oklch(1 0 0); --sidebar-border: oklch(0.6537 0.0197 205.2618); --sidebar-ring: oklch(0.5924 0.2025 355.8943); } .dark { --background: oklch(0.9735 0.0261 90.0953); --foreground: oklch(0.3092 0.0518 219.6516); --card: oklch(0.9306 0.0260 92.4020); --card-foreground: oklch(0.3092 0.0518 219.6516); --primary: oklch(0.5924 0.2025 355.8943); --primary-foreground: oklch(1 0 0); --secondary: oklch(0.6437 0.1019 187.3840); --secondary-foreground: oklch(1 0 0); --accent: oklch(0.5808 0.1732 39.5003); --accent-foreground: oklch(1 0 0); --muted: oklch(0.6979 0.0159 196.7940); --muted-foreground: oklch(0.3092 0.0518 219.6516); --border: oklch(0.6537 0.0197 205.2618); --input: oklch(0.6537 0.0197 205.2618); --ring: oklch(0.5924 0.2025 355.8943); --sidebar: oklch(0.9306 0.0260 92.4020); --sidebar-foreground: oklch(0.3092 0.0518 219.6516); --sidebar-primary: oklch(0.5924 0.2025 355.8943); --sidebar-primary-foreground: oklch(1 0 0); --sidebar-accent: oklch(0.5808 0.1732 39.5003); --sidebar-accent-foreground: oklch(1 0 0); --sidebar-border: oklch(0.6537 0.0197 205.2618); --sidebar-ring: oklch(0.5924 0.2025 355.8943); }"
         ).expect("look");
-        let container = navigation_sidebar_container_look(&mode);
-        let section = navigation_sidebar_section_look(&look);
-        let selected = navigation_sidebar_item_look(&look, true, InteractionState::default(), ControlSize::Md);
+        let container = sidebar_container_look(&mode);
+        let section = sidebar_section_look(&look);
+        let selected = sidebar_item_look(&look, true, InteractionState::default(), ControlSize::Md);
 
         assert_eq!(container.background, catalog.color("sidebar").expect("sidebar"));
         assert_eq!(section.label_color, catalog.color("muted-foreground").expect("muted-foreground"));

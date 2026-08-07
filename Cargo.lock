@@ -2453,6 +2453,7 @@ dependencies = [
  "anyhow",
  "gpui-luma",
  "gpui-unofficial",
+ "lucide-icons",
  "palette",
  "serde",
  "toml 0.8.23",

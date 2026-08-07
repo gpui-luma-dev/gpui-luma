@@ -197,14 +197,14 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         ],
     },
     &ThemeUsage {
-        label: "Navigation Sidebar",
+        label: "Sidebar",
         parts: &[
-            part("surface", "sidebar", &["default"], &["NavigationSidebarContainerLook.background"]),
-            part("foreground", "sidebar-foreground", &["default"], &["NavigationSidebarItemLook.foreground"]),
-            part("active", "sidebar-primary", &["selected"], &["NavigationSidebarItemLook.foreground"]),
-            part("hover bg", "accent", &["hovered"], &["NavigationSidebarItemLook.background"]),
-            part("hover fg", "accent-foreground", &["hovered"], &["NavigationSidebarItemLook.foreground"]),
-            part("border", "sidebar-border", &["default"], &["NavigationSidebarContainerLook.border"]),
+            part("surface", "sidebar", &["default"], &["SidebarContainerLook.background"]),
+            part("foreground", "sidebar-foreground", &["default"], &["SidebarItemLook.foreground"]),
+            part("active", "sidebar-primary", &["selected"], &["SidebarItemLook.foreground"]),
+            part("hover bg", "accent", &["hovered"], &["SidebarItemLook.background"]),
+            part("hover fg", "accent-foreground", &["hovered"], &["SidebarItemLook.foreground"]),
+            part("border", "sidebar-border", &["default"], &["SidebarContainerLook.border"]),
         ],
     },
     &ThemeUsage {
