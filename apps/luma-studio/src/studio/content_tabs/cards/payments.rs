@@ -205,7 +205,7 @@ fn spawn_row_menus(look: Arc<ShadcnLook>, row_count: usize, cx: &mut Context<Pay
             look.popup_menu(format!("studio-payments-row-menu-{index}"))
                 .ghost()
                 .size(ControlSize::Sm)
-                .trigger_icon(LucideIcon::EllipsisVertical)
+                .icon(LucideIcon::EllipsisVertical)
                 .items(payment_action_items())
                 .spawn(cx)
         })

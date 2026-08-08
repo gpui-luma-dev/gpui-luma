@@ -206,6 +206,13 @@ impl ContentPaneHost {
         self.controls_panel.update(cx, |panel, cx| panel.request_layout_refresh(cx));
     }
 
+    pub fn sync_controls_host_content_width(&self, width: gpui::Pixels, cx: &mut Context<Self>) {
+        if self.active_tab != ContentTab::Controls {
+            return;
+        }
+        self.controls_panel.update(cx, |panel, cx| panel.set_host_content_width(width, cx));
+    }
+
     pub fn sync_board_snapshot(&mut self, board: BoardSnapshot, cx: &mut Context<Self>) {
         let look = board.look.clone();
         let overrides = board.overrides.clone();

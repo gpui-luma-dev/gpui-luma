@@ -7,8 +7,7 @@ use gpui::{
 
 use super::{
     NavNode, NavNodeKind, NavNodeState, SidebarPanelEngineBuilder, SidebarPanelEngineModel,
-    SidebarPanelEngineRenderModel, SidebarPanelTemplateHandlers, RenderedCollapseTrigger, RenderedNavNode,
-    RenderedRailSubmenu,
+    SidebarPanelEngineRenderModel, SidebarPanelTemplateHandlers, RenderedNavNode, RenderedRailSubmenu,
 };
 use crate::controls::menu_item::MenuItem;
 use crate::controls::scroll_container::ScrollContainer;
@@ -38,9 +37,6 @@ pub struct SidebarPanelEngine {
     main_scroll: ScrollContainer,
     hovered_node: Option<SharedString>,
     pressed_node: Option<SharedString>,
-    collapse_trigger_hovered: bool,
-    collapse_trigger_pressed: bool,
-    collapse_trigger_focus_handle: FocusHandle,
     row_focus_handles: HashMap<SharedString, FocusHandle>,
     rail_focus_handles: HashMap<SharedString, FocusHandle>,
     rail_node_bounds: HashMap<SharedString, Bounds<Pixels>>,
@@ -63,7 +59,6 @@ impl SidebarPanelEngine {
     }
 
     pub(crate) fn from_builder(builder: SidebarPanelEngineBuilder, cx: &mut Context<Self>) -> Self {
-        let collapse_tab_stop = builder.model.enabled && builder.model.collapsible;
         let main_scroll = ScrollContainer::new(
             format!("{}-main-scroll", builder.model.id),
             builder.model.scrollbar_template.clone(),
@@ -84,9 +79,6 @@ impl SidebarPanelEngine {
             main_scroll,
             hovered_node: None,
             pressed_node: None,
-            collapse_trigger_hovered: false,
-            collapse_trigger_pressed: false,
-            collapse_trigger_focus_handle: cx.focus_handle().tab_stop(collapse_tab_stop),
             row_focus_handles: HashMap::new(),
             rail_focus_handles: HashMap::new(),
             rail_node_bounds: HashMap::new(),
@@ -178,34 +170,15 @@ impl SidebarPanelEngine {
         }
 
         self.model.enabled = enabled;
-        self.collapse_trigger_focus_handle =
-            self.collapse_trigger_focus_handle.clone().tab_stop(enabled && self.model.collapsible);
         self.focus_subscriptions.clear();
         self.focus_subscription_keys.clear();
         if !enabled {
             self.clear_hovered_node(cx);
             self.pressed_node = None;
-            self.collapse_trigger_hovered = false;
-            self.collapse_trigger_pressed = false;
             self.close_rail_submenu(cx);
             self.emit_focus_changed(false, cx);
         }
         cx.emit(SidebarPanelEngineEvent::EnabledChanged { enabled });
-        cx.notify();
-    }
-
-    pub fn set_collapsible(&mut self, collapsible: bool, cx: &mut Context<Self>) {
-        if self.model.collapsible == collapsible {
-            return;
-        }
-
-        self.model.collapsible = collapsible;
-        self.collapse_trigger_focus_handle =
-            self.collapse_trigger_focus_handle.clone().tab_stop(self.model.enabled && collapsible);
-        if !collapsible && self.model.collapsed {
-            self.model.collapsed = false;
-            cx.emit(SidebarPanelEngineEvent::CollapsedChanged { collapsed: false });
-        }
         cx.notify();
     }
 
@@ -214,8 +187,6 @@ impl SidebarPanelEngine {
             self.model.collapsed = collapsed;
             self.clear_hovered_node(cx);
             self.pressed_node = None;
-            self.collapse_trigger_hovered = false;
-            self.collapse_trigger_pressed = false;
             self.close_rail_submenu(cx);
             cx.emit(SidebarPanelEngineEvent::CollapsedChanged { collapsed });
             cx.notify();
@@ -255,22 +226,6 @@ impl SidebarPanelEngine {
 
     fn render_model(&mut self, window: &mut Window, cx: &mut Context<Self>) -> SidebarPanelEngineRenderModel {
         let mut visible_focus_nodes = Vec::new();
-        let collapse_trigger = self.model.collapsible.then(|| {
-            let focus_handle = self.collapse_trigger_focus_handle.clone();
-            if self.model.enabled {
-                visible_focus_nodes.push((NavigationFocusTarget::CollapseTrigger, focus_handle.clone()));
-            }
-
-            RenderedCollapseTrigger {
-                id: format!("{}-collapse-trigger", self.model.id).into(),
-                collapsed: self.model.collapsed,
-                hovered: self.collapse_trigger_hovered,
-                pressed: self.collapse_trigger_pressed,
-                focused: focus_handle.is_focused(window),
-                enabled: self.model.enabled,
-                focus_handle,
-            }
-        });
 
         let rail_nodes = if self.model.collapsed {
             render_collapsed_rail_nodes(
@@ -317,9 +272,7 @@ impl SidebarPanelEngine {
                 rail_nodes,
                 rail_footer_nodes,
                 rail_submenu,
-                collapse_trigger,
                 selected_id: self.model.selected_id.clone(),
-                collapsible: self.model.collapsible,
                 collapsed: self.model.collapsed,
             };
         }
@@ -376,9 +329,7 @@ impl SidebarPanelEngine {
             rail_nodes,
             rail_footer_nodes,
             rail_submenu,
-            collapse_trigger,
             selected_id: self.model.selected_id.clone(),
-            collapsible: self.model.collapsible,
             collapsed: self.model.collapsed,
         }
     }
@@ -389,14 +340,6 @@ impl SidebarPanelEngine {
         cx: &mut Context<Self>,
     ) -> SidebarPanelTemplateHandlers {
         let mut handlers = SidebarPanelTemplateHandlers::default();
-
-        if model.collapsible {
-            handlers.collapse_hover = Some(Box::new(cx.listener(Self::handle_collapse_trigger_hover)));
-            handlers.collapse_mouse_down = Some(Box::new(cx.listener(Self::handle_collapse_trigger_mouse_down)));
-            handlers.collapse_mouse_up = Some(Box::new(cx.listener(Self::handle_collapse_trigger_mouse_up)));
-            handlers.collapse_mouse_up_out = Some(Box::new(cx.listener(Self::handle_collapse_trigger_mouse_up)));
-            handlers.collapse_click = Some(Box::new(cx.listener(Self::handle_collapse_trigger_click)));
-        }
 
         if model.collapsed {
             push_template_handlers(&model.rail_nodes, &mut handlers, cx, SidebarNodeInteraction::Rail);
@@ -509,59 +452,6 @@ impl SidebarPanelEngine {
         };
 
         nav_menu_click_node_ids(&parent.children, self.rail_submenu_open_submenu)
-    }
-
-    fn handle_collapse_trigger_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
-        if !self.model.enabled {
-            return;
-        }
-
-        if self.collapse_trigger_hovered != *hovered {
-            self.collapse_trigger_hovered = *hovered;
-            if !hovered {
-                self.collapse_trigger_pressed = false;
-            }
-            cx.notify();
-        }
-    }
-
-    fn handle_collapse_trigger_mouse_down(
-        &mut self,
-        _event: &MouseDownEvent,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if !self.model.enabled {
-            return;
-        }
-
-        self.collapse_trigger_focus_handle.focus(window, cx);
-        self.collapse_trigger_pressed = true;
-        cx.notify();
-    }
-
-    fn handle_collapse_trigger_mouse_up(
-        &mut self,
-        _event: &MouseUpEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if !self.model.enabled {
-            return;
-        }
-
-        if self.collapse_trigger_pressed {
-            self.collapse_trigger_pressed = false;
-            cx.notify();
-        }
-    }
-
-    fn handle_collapse_trigger_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if !self.model.enabled || event.is_keyboard() {
-            return;
-        }
-
-        self.toggle_collapsed(cx);
     }
 
     fn handle_node_hover(&mut self, node_id: SharedString, hovered: bool, cx: &mut Context<Self>) {
@@ -792,10 +682,7 @@ impl SidebarPanelEngine {
         };
 
         next_focus_handle.focus(window, cx);
-
-        if let NavigationFocusTarget::Node(node_id) = target {
-            self.activate_node(node_id, cx);
-        }
+        self.activate_node(target, cx);
     }
 
     fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, window: &mut Window, cx: &mut Context<Self>) {
@@ -815,7 +702,7 @@ impl SidebarPanelEngine {
     }
 
     fn handle_open_submenu(&mut self, _: &OpenSubmenu, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(NavigationFocusTarget::Node(node_id)) = self.focused_target(window) else {
+        let Some(node_id) = self.focused_target(window) else {
             return;
         };
 
@@ -827,11 +714,19 @@ impl SidebarPanelEngine {
     }
 
     fn handle_close_submenu(&mut self, _: &CloseSubmenu, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(NavigationFocusTarget::Node(node_id)) = self.focused_target(window) else {
+        if !self.model.enabled {
             return;
-        };
+        }
 
         if self.model.collapsed {
+            if self.open_rail_submenu.is_some() {
+                self.close_rail_submenu(cx);
+                cx.notify();
+            }
+            return;
+        }
+
+        let Some(node_id) = self.focused_target(window) else {
             return;
         };
 
@@ -843,27 +738,22 @@ impl SidebarPanelEngine {
             return;
         }
 
-        let Some(target) = self.focused_target(window) else {
+        let Some(node_id) = self.focused_target(window) else {
             return;
         };
 
-        match target {
-            NavigationFocusTarget::CollapseTrigger => self.toggle_collapsed(cx),
-            NavigationFocusTarget::Node(node_id) if self.model.collapsed => {
-                if self.find_top_level_main_node(&node_id).is_some_and(|node| node.children.is_empty()) {
-                    self.close_rail_submenu(cx);
-                    self.activate_node(node_id, cx);
-                } else {
-                    self.set_open_rail_submenu(node_id, cx);
-                    cx.notify();
-                }
+        if self.model.collapsed {
+            if self.find_top_level_main_node(&node_id).is_some_and(|node| node.children.is_empty()) {
+                self.close_rail_submenu(cx);
+                self.activate_node(node_id, cx);
+            } else {
+                self.set_open_rail_submenu(node_id, cx);
+                cx.notify();
             }
-            NavigationFocusTarget::Node(node_id)
-                if self.find_node(&node_id).is_some_and(|node| !node.children.is_empty()) =>
-            {
-                self.toggle_node_expanded(node_id, cx);
-            }
-            NavigationFocusTarget::Node(node_id) => self.activate_node(node_id, cx),
+        } else if self.find_node(&node_id).is_some_and(|node| !node.children.is_empty()) {
+            self.toggle_node_expanded(node_id, cx);
+        } else {
+            self.activate_node(node_id, cx);
         }
     }
 
@@ -877,15 +767,13 @@ impl SidebarPanelEngine {
 
         for (target, focus_handle) in self.focus_subscription_keys.clone() {
             self.focus_subscriptions.push(cx.on_focus_in(&focus_handle, window, {
-                let target = target.clone();
+                let node_id = target.clone();
                 move |this, _window, cx| {
                     let focus_changed = this.emit_focus_changed(true, cx);
-                    if let NavigationFocusTarget::Node(node_id) = &target {
-                        cx.emit(SidebarPanelEngineEvent::ItemFocused {
-                            node_id: node_id.clone(),
-                            label: this.node_label(node_id),
-                        });
-                    }
+                    cx.emit(SidebarPanelEngineEvent::ItemFocused {
+                        node_id: node_id.clone(),
+                        label: this.node_label(&node_id),
+                    });
                     if focus_changed {
                         cx.notify();
                     }
@@ -918,11 +806,7 @@ impl SidebarPanelEngine {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-enum NavigationFocusTarget {
-    CollapseTrigger,
-    Node(SharedString),
-}
+type NavigationFocusTarget = SharedString;
 
 impl Render for SidebarPanelEngine {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -975,7 +859,7 @@ fn render_nodes(
             let focus_handle = row_focus_handles.entry(node.id.clone()).or_insert_with(|| cx.focus_handle()).clone();
             let focus_handle = focus_handle.tab_stop(true);
             row_focus_handles.insert(node.id.clone(), focus_handle.clone());
-            visible_focus_nodes.push((NavigationFocusTarget::Node(node.id.clone()), focus_handle.clone()));
+            visible_focus_nodes.push((node.id.clone(), focus_handle.clone()));
             focus_handle
         });
 
@@ -999,7 +883,7 @@ fn render_nodes(
             && node.enabled
             && let Some(focus_handle) = custom_content.as_ref().and_then(|content| content.focus_handle.as_ref())
         {
-            visible_focus_nodes.push((NavigationFocusTarget::Node(node.id.clone()), focus_handle.clone()));
+            visible_focus_nodes.push((node.id.clone(), focus_handle.clone()));
         }
 
         let has_children = !node.children.is_empty();
@@ -1057,7 +941,7 @@ fn render_collapsed_rail_nodes(
             let focus_handle = rail_focus_handles.entry(node.id.clone()).or_insert_with(|| cx.focus_handle()).clone();
             let focus_handle = focus_handle.tab_stop(true);
             rail_focus_handles.insert(node.id.clone(), focus_handle.clone());
-            visible_focus_nodes.push((NavigationFocusTarget::Node(node.id.clone()), focus_handle.clone()));
+            visible_focus_nodes.push((node.id.clone(), focus_handle.clone()));
             focus_handle
         });
 

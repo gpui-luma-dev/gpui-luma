@@ -7,7 +7,7 @@ use gpui::{
 };
 use lucide_icons::Icon as LucideIcon;
 
-use super::{NavNodeKind, SidebarPanelEngineRenderModel, RenderedCollapseTrigger, RenderedNavNode, RenderedRailSubmenu};
+use super::{NavNodeKind, SidebarPanelEngineRenderModel, RenderedNavNode, RenderedRailSubmenu};
 use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler, render_floating_menu};
 use crate::controls::scroll_container::ScrollContainer;
 use crate::theme::{ControlSize, InteractionState, LumaTextStyle, LumaTypography};
@@ -27,8 +27,6 @@ const CHILD_DEPTH_INDENT_MULTIPLIER: f32 = 1.0;
 const DISCLOSURE_EXPANDED_ICON: LucideIcon = LucideIcon::ChevronDown;
 const DISCLOSURE_COLLAPSED_ICON: LucideIcon = LucideIcon::ChevronRight;
 const DISCLOSURE_ICON_SIZE: f32 = 14.0;
-const COLLAPSE_EXPANDED_ICON: LucideIcon = LucideIcon::PanelLeftClose;
-const COLLAPSE_COLLAPSED_ICON: LucideIcon = LucideIcon::PanelLeftOpen;
 const DISABLED_ROW_OPACITY: f32 = 0.56;
 const SCROLL_REGION_MIN_HEIGHT: f32 = 0.0;
 const RAIL_SUBMENU_OFFSET_X: f32 = 12.0;
@@ -46,11 +44,6 @@ pub type SidebarPanelMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mu
 
 #[derive(Default)]
 pub struct SidebarPanelTemplateHandlers {
-    pub collapse_hover: Option<SidebarPanelHoverHandler>,
-    pub collapse_mouse_down: Option<SidebarPanelMouseDownHandler>,
-    pub collapse_mouse_up: Option<SidebarPanelMouseUpHandler>,
-    pub collapse_mouse_up_out: Option<SidebarPanelMouseUpHandler>,
-    pub collapse_click: Option<SidebarPanelClickHandler>,
     pub row_bounds: Vec<SidebarPanelBoundsHandler>,
     pub row_hovers: Vec<SidebarPanelHoverHandler>,
     pub row_mouse_downs: Vec<SidebarPanelMouseDownHandler>,
@@ -179,11 +172,6 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
     ) -> Stateful<Div> {
         let container = self.theme.resolve_container();
         let SidebarPanelTemplateHandlers {
-            collapse_hover,
-            collapse_mouse_down,
-            collapse_mouse_up,
-            collapse_mouse_up_out,
-            collapse_click,
             mut row_bounds,
             mut row_hovers,
             mut row_mouse_downs,
@@ -211,21 +199,6 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
             .text_color(container.foreground);
 
         if model.collapsed {
-            if let Some(trigger) = model.collapse_trigger {
-                root = root.child(div().flex().justify_center().child(render_collapse_trigger(
-                    trigger,
-                    RowHandlers {
-                        bounds: None,
-                        hover: collapse_hover,
-                        mouse_down: collapse_mouse_down,
-                        mouse_up: collapse_mouse_up,
-                        mouse_up_out: collapse_mouse_up_out,
-                        click: collapse_click,
-                    },
-                    &self.theme,
-                )));
-            }
-
             root = root.child(
                 render_collapsed_rail_region(
                     model.rail_nodes,
@@ -275,21 +248,8 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
             return root;
         }
 
-        if model.title.is_some() || model.subtitle.is_some() || model.collapse_trigger.is_some() {
-            root = root.child(render_title(
-                model.title,
-                model.subtitle,
-                model.collapse_trigger,
-                RowHandlers {
-                    bounds: None,
-                    hover: collapse_hover,
-                    mouse_down: collapse_mouse_down,
-                    mouse_up: collapse_mouse_up,
-                    mouse_up_out: collapse_mouse_up_out,
-                    click: collapse_click,
-                },
-                &self.theme,
-            ));
+        if model.title.is_some() || model.subtitle.is_some() {
+            root = root.child(render_title(model.title, model.subtitle, &self.theme));
         }
 
         if !model.header_nodes.is_empty() {
@@ -352,36 +312,22 @@ fn sidebar_subtitle_style() -> LumaTextStyle {
     LumaTypography::default().text.scale.sm
 }
 
-fn render_title(
-    title: Option<SharedString>,
-    subtitle: Option<SharedString>,
-    collapse_trigger: Option<RenderedCollapseTrigger>,
-    collapse_handlers: RowHandlers,
-    theme: &Arc<dyn SidebarTheme>,
-) -> Div {
+fn render_title(title: Option<SharedString>, subtitle: Option<SharedString>, _theme: &Arc<dyn SidebarTheme>) -> Div {
     let title_style = sidebar_title_style();
     let subtitle_style = sidebar_subtitle_style();
     let mut header = div().flex().flex_col().gap(px(TITLE_GAP)).pb(px(TITLE_PADDING_BOTTOM));
-    let mut title_row = div().flex().items_center().gap(px(TITLE_GAP));
 
     if let Some(title) = title {
-        title_row = title_row.child(
+        header = header.child(
             div()
-                .flex_1()
+                .flex()
+                .items_center()
                 .text_size(px(title_style.size))
                 .line_height(px(title_style.line_height))
                 .font_weight(title_style.weight)
                 .child(title),
         );
-    } else {
-        title_row = title_row.child(div().flex_1());
     }
-
-    if let Some(trigger) = collapse_trigger {
-        title_row = title_row.child(render_collapse_trigger(trigger, collapse_handlers, theme));
-    }
-
-    header = header.child(title_row);
 
     if let Some(subtitle) = subtitle {
         header = header.child(
@@ -731,61 +677,6 @@ fn render_collapsed_rail_node(
     } else {
         row.into_any_element()
     }
-}
-
-fn render_collapse_trigger(
-    trigger: RenderedCollapseTrigger,
-    handlers: RowHandlers,
-    theme: &Arc<dyn SidebarTheme>,
-) -> AnyElement {
-    let interaction = InteractionState {
-        hovered: trigger.hovered,
-        pressed: trigger.pressed,
-        focused: trigger.focused,
-        disabled: !trigger.enabled,
-        invalid: false,
-    };
-    let look = theme.resolve_item(false, interaction, ControlSize::Md);
-    let icon = if trigger.collapsed {
-        COLLAPSE_COLLAPSED_ICON
-    } else {
-        COLLAPSE_EXPANDED_ICON
-    };
-    let mut row = div()
-        .id(trigger.id)
-        .size(px(look.height))
-        .flex_none()
-        .flex()
-        .items_center()
-        .justify_center()
-        .rounded(px(look.radius))
-        .text_color(look.foreground)
-        .when(trigger.enabled, |row| row.cursor_pointer())
-        .track_focus(&trigger.focus_handle)
-        .child(render_lucide_icon(icon, look.icon_color, look.icon_size));
-
-    if let Some(background) = look.background {
-        row = row.bg(background);
-    }
-
-    let RowHandlers { hover, mouse_down, mouse_up, mouse_up_out, click, .. } = handlers;
-    if let Some(hover) = hover {
-        row = row.on_hover(hover);
-    }
-    if let Some(mouse_down) = mouse_down {
-        row = row.on_mouse_down(MouseButton::Left, mouse_down);
-    }
-    if let Some(mouse_up) = mouse_up {
-        row = row.on_mouse_up(MouseButton::Left, mouse_up);
-    }
-    if let Some(mouse_up_out) = mouse_up_out {
-        row = row.on_mouse_up_out(MouseButton::Left, mouse_up_out);
-    }
-    if let Some(click) = click {
-        row = row.on_click(click);
-    }
-
-    row.into_any_element()
 }
 
 fn render_rail_submenu_overlay(

@@ -264,6 +264,9 @@ fn render_menu_trigger_state_cell(
     let model = PopupMenuRenderModel {
         id: &id,
         label: &label,
+        content: Arc::new(|model, _| {
+            gpui::div().flex_1().min_w(px(0.0)).truncate().child(model.label.clone()).into_any_element()
+        }),
         items: &items,
         open: false,
         trigger_bounds: None,
@@ -271,7 +274,9 @@ fn render_menu_trigger_state_cell(
         trigger_style,
         trigger_size: ButtonSize::Md,
         menu_size: ButtonSize::Md,
-        trigger_icon: None,
+        icon_only: false,
+        end_icon: None,
+        full_width: false,
         without_elevation: false,
         trigger_radius_override: None,
         open_submenu: None,
@@ -310,6 +315,9 @@ fn render_menu_trigger_size_radius_cell(
     let model = PopupMenuRenderModel {
         id: &id,
         label: &label,
+        content: Arc::new(|model, _| {
+            gpui::div().flex_1().min_w(px(0.0)).truncate().child(model.label.clone()).into_any_element()
+        }),
         items: &items,
         open: false,
         trigger_bounds: None,
@@ -317,7 +325,9 @@ fn render_menu_trigger_size_radius_cell(
         trigger_style,
         trigger_size: size,
         menu_size: ButtonSize::Md,
-        trigger_icon: None,
+        icon_only: false,
+        end_icon: None,
+        full_width: false,
         without_elevation: false,
         trigger_radius_override: Some(menu_trigger_radius_px(look, size, radius)),
         open_submenu: None,

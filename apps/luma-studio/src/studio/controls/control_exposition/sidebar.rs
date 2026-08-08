@@ -5,9 +5,15 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
+use gpui_luma::controls::command::icon_button::IconButton;
+use gpui_luma::controls::menu_item::MenuItem;
+use gpui_luma::controls::popup_menu::{HasPresenter, PopupMenu, PopupMenuEvent, PopupMenuPlacement};
+use gpui_luma::controls::presenter::ControlPresenter;
 use gpui_luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
+use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -76,10 +82,8 @@ const PROPERTY_GROUPS: &[PropertyGroup] = &[
     },
 ];
 
-const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
-    PropertyLeaf { id: "audit-log", label: "Audit Log", icon: Some(LucideIcon::FileText), enabled: true },
-    PropertyLeaf { id: "reset-overrides", label: "Reset Overrides", icon: Some(LucideIcon::RotateCcw), enabled: false },
-];
+const USER_MENU_NAME: &str = "shadcn";
+const USER_MENU_EMAIL: &str = "m@example.com";
 
 pub struct SidebarControlExposition {
     look: Arc<ShadcnLook>,
@@ -94,6 +98,8 @@ struct SidebarExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     sidebar_control: Entity<SidebarControl>,
+    sidebar_toggle: IconButton,
+    user_menu: Entity<PopupMenu>,
     control_open: Rc<Cell<bool>>,
     event_stream: Entity<ControlEventStream>,
 }
@@ -102,16 +108,44 @@ impl SidebarExpositionLeftPane {
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.sidebar_control.update(cx, |_, cx| cx.notify());
+        self.sidebar_toggle.update(cx, |_, cx| cx.notify());
+        self.user_menu.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
+    }
+
+    fn sync_sidebar_toggle_icon(&self, cx: &mut Context<Self>) {
+        let icon = if self.control_open.get() {
+            ControlIcon::Lucide(LucideIcon::PanelLeft)
+        } else {
+            ControlIcon::Lucide(LucideIcon::PanelLeftOpen)
+        };
+        self.sidebar_toggle.update(cx, |button, cx| {
+            button.set_presenter(sidebar_toggle_presenter(icon), cx);
+        });
+    }
+
+    fn sync_user_menu_trigger(&self, cx: &mut Context<Self>) {
+        let expanded = self.control_open.get();
+        self.user_menu.update(cx, |menu, cx| {
+            if expanded {
+                menu.set_presenter(user_menu_content(), cx);
+                menu.set_end_icon(Some(LucideIcon::EllipsisVertical), cx);
+            } else {
+                menu.set_icon(LucideIcon::CircleUser, cx);
+                menu.set_end_icon(None, cx);
+            }
+        });
     }
 }
 
 impl Render for SidebarExpositionLeftPane {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        self.sync_sidebar_toggle_icon(cx);
+        self.sync_user_menu_trigger(cx);
+
         with_look(&self.look, || {
             let look = &self.look;
-            let chrome = look.chrome();
             let metrics = look.sidebar_metric_scale();
             let control_width = if self.control_open.get() {
                 metrics.width_expanded
@@ -124,11 +158,13 @@ impl Render for SidebarExpositionLeftPane {
                 .flex()
                 .flex_col()
                 .gap(px(16.0))
-                .child(div().w_full().flex().flex_row().items_start().justify_center().child(preview_column(
-                    chrome.border,
+                .child(preview_shell(
+                    look,
                     control_width,
                     self.sidebar_control.clone().into_any_element(),
-                )))
+                    self.sidebar_toggle.clone(),
+                    self.user_menu.clone(),
+                ))
                 .child(self.event_stream.clone());
 
             div()
@@ -154,12 +190,19 @@ impl SidebarControlExposition {
 
         let sidebar_control = spawn_sidebar_control(&look, cx);
 
+        let sidebar_toggle = look
+            .content_only_icon_button("controls-doc-sidebar-toggle", LucideIcon::PanelLeft)
+            .size(ControlSize::Sm)
+            .spawn(cx);
+
+        let user_menu = spawn_user_menu(&look, cx);
+
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
                 look.clone(),
                 "controls-sidebar-event-log",
-                "Expand branches, select rows, and toggle collapse to inspect SidebarEvent output.",
+                "Expand branches, select rows, toggle collapse, or open the account menu to inspect events.",
             )
         });
 
@@ -168,6 +211,8 @@ impl SidebarControlExposition {
             look: look.clone(),
             entry,
             sidebar_control: sidebar_control.clone(),
+            sidebar_toggle: sidebar_toggle.clone(),
+            user_menu: user_menu.clone(),
             control_open: control_open.clone(),
             event_stream: event_stream.clone(),
         });
@@ -197,8 +242,30 @@ impl SidebarControlExposition {
                 }
             }
         });
+        let toggle_subscription = cx.subscribe(&sidebar_toggle, {
+            let sidebar_control = sidebar_control.clone();
+            move |_, _, event: &ButtonEvent, cx| {
+                if matches!(event, ButtonEvent::Click) {
+                    sidebar_control.update(cx, |sidebar, cx| sidebar.toggle_open(cx));
+                }
+            }
+        });
+        let user_menu_subscription = cx.subscribe(&user_menu, {
+            let event_stream = event_stream.clone();
+            move |_, _, event: &PopupMenuEvent, cx| {
+                let line = format_user_menu_event(event);
+                event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+            }
+        });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![control_subscription] }
+        Self {
+            look,
+            entry,
+            left_pane,
+            theme_inspector,
+            inspector_split,
+            _subscriptions: vec![control_subscription, toggle_subscription, user_menu_subscription],
+        }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
@@ -238,18 +305,129 @@ impl Render for SidebarControlExposition {
     }
 }
 
-fn preview_column(border: gpui::Hsla, width: gpui::Pixels, child: gpui::AnyElement) -> gpui::Div {
-    div().flex().flex_col().items_center().gap(px(8.0)).child(
-        div()
-            .flex_none()
-            .w(width)
-            .h(px(500.0))
-            .overflow_hidden()
-            .rounded(px(8.0))
-            .border_1()
-            .border_color(border)
-            .child(child),
-    )
+/// App-shell stage: outer canvas, left sidebar rail, inset content pane on the right.
+const PREVIEW_SHELL_HEIGHT_PX: f32 = 560.0;
+const PREVIEW_SHELL_RADIUS_PX: f32 = 12.0;
+const PREVIEW_CONTENT_INSET_PX: f32 = 10.0;
+const PREVIEW_CONTENT_RADIUS_PX: f32 = 12.0;
+
+fn preview_shell(
+    look: &ShadcnLook,
+    sidebar_width: gpui::Pixels,
+    sidebar: gpui::AnyElement,
+    sidebar_toggle: IconButton,
+    user_menu: Entity<PopupMenu>,
+) -> gpui::AnyElement {
+    let chrome = look.chrome();
+    let title_style = look.typography_scale(ShadcnTextSize::Lg);
+    let muted_style = look.typography_scale(ShadcnTextSize::Sm);
+    let muted = look.token_color("muted-foreground").unwrap_or(chrome.muted_text);
+    let sidebar_bg = look.token_color("sidebar").unwrap_or(chrome.panel_background);
+
+    div()
+        .id("controls-doc-sidebar-preview-shell")
+        .w_full()
+        .h(px(PREVIEW_SHELL_HEIGHT_PX))
+        .flex()
+        .flex_row()
+        .overflow_hidden()
+        .rounded(px(PREVIEW_SHELL_RADIUS_PX))
+        .border_1()
+        .border_color(chrome.border)
+        .bg(sidebar_bg)
+        .child(
+            div()
+                .id("controls-doc-sidebar-preview-rail")
+                .flex_none()
+                .w(sidebar_width)
+                .h_full()
+                .flex()
+                .flex_col()
+                .overflow_hidden()
+                .child(div().flex_1().min_h(px(0.0)).w_full().overflow_hidden().child(sidebar))
+                .child(
+                    div()
+                        .id("controls-doc-sidebar-user-menu")
+                        .flex_none()
+                        .w_full()
+                        .px(px(8.0))
+                        .pb(px(8.0))
+                        .child(user_menu),
+                ),
+        )
+        .child(
+            div()
+                .id("controls-doc-sidebar-preview-content")
+                .flex_1()
+                .min_w(px(0.0))
+                .h_full()
+                .p(px(PREVIEW_CONTENT_INSET_PX))
+                .child(
+                    div()
+                        .size_full()
+                        .min_h(px(0.0))
+                        .flex()
+                        .flex_col()
+                        .overflow_hidden()
+                        .rounded(px(PREVIEW_CONTENT_RADIUS_PX))
+                        .border_1()
+                        .border_color(chrome.border)
+                        .bg(chrome.content_background)
+                        .child(
+                            div()
+                                .id("controls-doc-sidebar-preview-content-header")
+                                .w_full()
+                                .flex_shrink_0()
+                                .flex()
+                                .items_center()
+                                .gap(px(8.0))
+                                .h(px(44.0))
+                                .px(px(12.0))
+                                .border_b_1()
+                                .border_color(chrome.border)
+                                .bg(chrome.content_background)
+                                .child(sidebar_toggle)
+                                .child(div().h(px(16.0)).w(px(1.0)).bg(chrome.border))
+                                .child(
+                                    div()
+                                        .typography_style(title_style)
+                                        .text_color(chrome.title_text)
+                                        .child("Documents"),
+                                ),
+                        )
+                        .child(
+                            div().flex_1().min_h(px(0.0)).w_full().p(px(16.0)).child(
+                                div()
+                                    .size_full()
+                                    .flex()
+                                    .items_center()
+                                    .justify_center()
+                                    .rounded(px(8.0))
+                                    .border_1()
+                                    .border_color(chrome.border)
+                                    .bg(chrome.panel_background)
+                                    .child(
+                                        div()
+                                            .typography_style(muted_style)
+                                            .text_color(muted)
+                                            .child("Main content area"),
+                                    ),
+                            ),
+                        ),
+                ),
+        )
+        .into_any_element()
+}
+
+fn sidebar_toggle_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {
+    Arc::new(move |_, _| match &icon {
+        ControlIcon::Lucide(lucide) => div()
+            .font_family("lucide")
+            .text_size(px(16.0))
+            .child(char::from(*lucide).to_string())
+            .into_any_element(),
+        ControlIcon::SvgPath(path) => gpui::svg().size(px(16.0)).path(path.clone()).into_any_element(),
+    })
 }
 
 fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControlExposition>) -> Entity<SidebarControl> {
@@ -268,11 +446,6 @@ fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControl
             .item(look.sidebar_menu_item(group.id, group.label).icon(group.icon).expanded(group.expanded).sub(sub));
     }
 
-    let mut footer = look.sidebar_footer();
-    for leaf in FOOTER_PROPERTIES {
-        footer = footer.child(property_leaf_menu_item(look, leaf));
-    }
-
     look.sidebar_control("controls-doc-sidebar-control")
         .default_open(true)
         .collapsible(SidebarCollapsible::Icon)
@@ -284,10 +457,66 @@ fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControl
                         .group(look.sidebar_group().label("Pinned").menu(pinned_menu))
                         .group(look.sidebar_group().label("Properties").menu(properties_menu)),
                 )
-                .footer(footer)
                 .rail(look.sidebar_rail()),
         )
         .spawn(cx)
+}
+
+fn user_menu_content() -> ControlPresenter<gpui_luma::controls::popup_menu::PopupMenuTriggerModel> {
+    Arc::new(|model, _| {
+        div()
+            .flex_1()
+            .min_w(px(0.0))
+            .flex()
+            .flex_col()
+            .gap(px(2.0))
+            .child(div().truncate().child(model.label.clone()))
+            .child(div().truncate().text_size(px(12.0)).opacity(0.65).child(USER_MENU_EMAIL))
+            .into_any_element()
+    })
+}
+
+fn spawn_user_menu(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControlExposition>) -> Entity<PopupMenu> {
+    let mut builder = look
+        .popup_menu("controls-doc-sidebar-user-menu")
+        .label(USER_MENU_NAME)
+        .end_icon(LucideIcon::EllipsisVertical)
+        .full_width(true)
+        .ghost()
+        .without_elevation()
+        .placement(PopupMenuPlacement::RightEnd)
+        .items(user_menu_items());
+    builder.set_presenter(user_menu_content());
+    builder.spawn(cx)
+}
+
+fn user_menu_items() -> [MenuItem; 4] {
+    [
+        MenuItem::new("account").label("Account").icon(LucideIcon::CircleUser),
+        MenuItem::new("billing").label("Billing").icon(LucideIcon::CreditCard),
+        MenuItem::new("notifications").label("Notifications").icon(LucideIcon::Bell),
+        MenuItem::new("log-out").label("Log out").icon(LucideIcon::LogOut),
+    ]
+}
+
+fn format_user_menu_event(event: &PopupMenuEvent) -> String {
+    match event {
+        PopupMenuEvent::Select { item_id, label } => {
+            format!("PopupMenuEvent::Select {{ item_id: \"{item_id}\", label: \"{label}\" }}")
+        }
+        PopupMenuEvent::OpenChanged { open } => format!("PopupMenuEvent::OpenChanged {{ open: {open} }}"),
+        PopupMenuEvent::Dismiss => "PopupMenuEvent::Dismiss".to_string(),
+        PopupMenuEvent::FocusChanged { focused } => {
+            format!("PopupMenuEvent::FocusChanged {{ focused: {focused} }}")
+        }
+        PopupMenuEvent::HoverChanged { hovered } => {
+            format!("PopupMenuEvent::HoverChanged {{ hovered: {hovered} }}")
+        }
+        PopupMenuEvent::EnabledChanged { enabled } => {
+            format!("PopupMenuEvent::EnabledChanged {{ enabled: {enabled} }}")
+        }
+        _ => "PopupMenuEvent::(unknown)".to_string(),
+    }
 }
 
 fn property_leaf_menu_item(

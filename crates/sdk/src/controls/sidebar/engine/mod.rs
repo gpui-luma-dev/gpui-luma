@@ -14,8 +14,7 @@ mod theme;
 pub(crate) use control::{SidebarPanelEngine, SidebarPanelEngineEvent};
 pub(crate) use model::{
     NavHostedContent, NavNode, NavNodeKind, NavNodeState, NavPresenter, SidebarPanelEngineBuilder,
-    SidebarPanelEngineModel, SidebarPanelEngineRenderModel, RenderedCollapseTrigger, RenderedNavNode,
-    RenderedRailSubmenu, entity_presenter,
+    SidebarPanelEngineModel, SidebarPanelEngineRenderModel, RenderedNavNode, RenderedRailSubmenu, entity_presenter,
 };
 pub use template::{
     SidebarPanelTemplate, SidebarPanelTemplateHandlers, SidebarPanelTemplateModifier, ThemedSidebarPanelTemplate,

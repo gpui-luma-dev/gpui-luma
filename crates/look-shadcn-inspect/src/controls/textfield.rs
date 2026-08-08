@@ -154,7 +154,7 @@ mod tests {
                 gpui_luma_look_shadcn::embedded_stylesheet()
             )
             .len(),
-            15
+            16
         );
     }
 }

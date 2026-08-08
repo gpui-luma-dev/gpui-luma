@@ -4,7 +4,10 @@ mod template;
 mod theme;
 
 pub use control::{PopupMenu, PopupMenuEvent};
-pub use model::{PopupMenuBuilder, PopupMenuModel, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTriggerStyle};
+pub use model::{
+    PopupMenuBuilder, PopupMenuModel, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTriggerModel,
+    PopupMenuTriggerStyle, icon_content,
+};
 pub use template::{
     PopupMenuTemplate, PopupMenuTemplateHandlers, PopupMenuTemplateModifier, ThemedPopupMenuTemplate,
     default_popup_menu_template,
@@ -15,4 +18,5 @@ pub use theme::{
 };
 
 pub use crate::theme::InteractionState as PopupMenuState;
+pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
 pub use crate::controls::state::{ControlFocusState, MenuPath};

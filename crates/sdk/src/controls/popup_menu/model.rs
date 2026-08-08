@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
-use gpui::{AppContext, Bounds, Entity, Pixels, SharedString};
+use gpui::{AppContext, Bounds, Entity, Pixels, SharedString, div, prelude::*, px};
 use lucide_icons::Icon as LucideIcon;
 
 use super::{ControlFocusState, MenuPath, PopupMenu, PopupMenuState, PopupMenuTemplate, default_popup_menu_template};
 use super::template::modified_popup_menu_template;
 use crate::controls::menu_item::MenuItem;
+use crate::controls::presenter::{ControlPresenter, HasPresenter};
 use crate::theme::ControlSize;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -14,6 +15,8 @@ pub enum PopupMenuPlacement {
     Smart,
     BelowStart,
     AboveStart,
+    /// Opens to the right of the trigger, bottom edges aligned (sidebar account menus).
+    RightEnd,
     CenteredOnTrigger,
 }
 
@@ -25,10 +28,30 @@ pub enum PopupMenuTriggerStyle {
     Ghost,
 }
 
+/// Owned snapshot passed to trigger face presenters.
+#[derive(Clone, Debug)]
+pub struct PopupMenuTriggerModel {
+    pub id: SharedString,
+    pub label: SharedString,
+    pub open: bool,
+    pub enabled: bool,
+    pub state: PopupMenuState,
+}
+
+fn default_trigger_content() -> ControlPresenter<PopupMenuTriggerModel> {
+    Arc::new(|model, _| div().flex_1().min_w(px(0.0)).truncate().child(model.label.clone()).into_any_element())
+}
+
+/// Presenter used by the icon-only face preset ([`PopupMenuBuilder::icon`] / [`PopupMenu::set_icon`](super::PopupMenu::set_icon)).
+pub fn icon_content(icon: LucideIcon) -> ControlPresenter<PopupMenuTriggerModel> {
+    Arc::new(move |_, _| div().font_family("lucide").child(char::from(icon).to_string()).into_any_element())
+}
+
 #[derive(Clone)]
 pub struct PopupMenuModel {
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
+    pub(crate) content: ControlPresenter<PopupMenuTriggerModel>,
     pub(crate) items: Vec<MenuItem>,
     pub(crate) enabled: bool,
     pub(crate) tab_stop: bool,
@@ -36,7 +59,10 @@ pub struct PopupMenuModel {
     pub(crate) trigger_style: PopupMenuTriggerStyle,
     pub(crate) trigger_size: ControlSize,
     pub(crate) menu_size: ControlSize,
-    pub(crate) trigger_icon: Option<LucideIcon>,
+    /// Square icon-button chrome (no trailing end icon). Set by the icon face preset.
+    pub(crate) icon_only: bool,
+    pub(crate) end_icon: Option<LucideIcon>,
+    pub(crate) full_width: bool,
     pub(crate) without_elevation: bool,
     pub(crate) template: Arc<dyn PopupMenuTemplate>,
 }
@@ -44,6 +70,7 @@ pub struct PopupMenuModel {
 pub struct PopupMenuRenderModel<'a> {
     pub id: &'a SharedString,
     pub label: &'a SharedString,
+    pub content: ControlPresenter<PopupMenuTriggerModel>,
     pub items: &'a [MenuItem],
     pub open: bool,
     pub trigger_bounds: Option<Bounds<Pixels>>,
@@ -51,7 +78,9 @@ pub struct PopupMenuRenderModel<'a> {
     pub trigger_style: PopupMenuTriggerStyle,
     pub trigger_size: ControlSize,
     pub menu_size: ControlSize,
-    pub trigger_icon: Option<LucideIcon>,
+    pub icon_only: bool,
+    pub end_icon: Option<LucideIcon>,
+    pub full_width: bool,
     pub without_elevation: bool,
     pub trigger_radius_override: Option<f32>,
     pub open_submenu: Option<usize>,
@@ -73,6 +102,7 @@ impl PopupMenuBuilder {
             model: PopupMenuModel {
                 label: id.clone(),
                 id,
+                content: default_trigger_content(),
                 items: Vec::new(),
                 enabled: true,
                 tab_stop: true,
@@ -80,7 +110,9 @@ impl PopupMenuBuilder {
                 trigger_style: PopupMenuTriggerStyle::default(),
                 trigger_size: ControlSize::Md,
                 menu_size: ControlSize::Md,
-                trigger_icon: None,
+                icon_only: false,
+                end_icon: None,
+                full_width: false,
                 without_elevation: false,
                 template: default_popup_menu_template(),
             },
@@ -89,6 +121,29 @@ impl PopupMenuBuilder {
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.model.label = label.into();
+        self.model.content = default_trigger_content();
+        self.model.icon_only = false;
+        self
+    }
+
+    /// Icon-only face preset: [`icon_content`] + square chrome (`icon_only`).
+    ///
+    /// Not a parallel field beside the presenter — use [`HasPresenter::content`] / [`PopupMenu::set_presenter`](super::PopupMenu::set_presenter)
+    /// for a custom face. Mirrors [`PopupMenu::set_icon`](super::PopupMenu::set_icon).
+    pub fn icon(mut self, icon: LucideIcon) -> Self {
+        self.model.content = icon_content(icon);
+        self.model.icon_only = true;
+        self
+    }
+
+    /// Trailing adornment on a labeled trigger (distinct from the icon face preset).
+    pub fn end_icon(mut self, icon: LucideIcon) -> Self {
+        self.model.end_icon = Some(icon);
+        self
+    }
+
+    pub fn full_width(mut self, full_width: bool) -> Self {
+        self.model.full_width = full_width;
         self
     }
 
@@ -136,11 +191,6 @@ impl PopupMenuBuilder {
         self
     }
 
-    pub fn trigger_icon(mut self, icon: LucideIcon) -> Self {
-        self.model.trigger_icon = Some(icon);
-        self
-    }
-
     pub fn without_elevation(mut self) -> Self {
         self.model.without_elevation = true;
         self
@@ -164,6 +214,13 @@ impl PopupMenuBuilder {
 
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<PopupMenu> {
         cx.new(|cx| PopupMenu::from_builder(self, cx))
+    }
+}
+
+impl HasPresenter<PopupMenuTriggerModel> for PopupMenuBuilder {
+    fn set_presenter(&mut self, content: ControlPresenter<PopupMenuTriggerModel>) {
+        self.model.content = content;
+        self.model.icon_only = false;
     }
 }
 

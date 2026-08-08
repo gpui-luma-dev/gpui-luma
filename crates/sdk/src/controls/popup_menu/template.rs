@@ -6,7 +6,7 @@ use gpui::{
 };
 use lucide_icons::Icon as LucideIcon;
 
-use super::{PopupMenuPlacement, PopupMenuRenderModel};
+use super::{PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTriggerModel};
 use crate::controls::button_family::button_family_effective_border;
 use crate::controls::floating_menu::render_floating_menu;
 use crate::controls::popup_menu::{PopupMenuLook, PopupMenuTheme, PopupMenuTriggerMetrics, default_popup_menu_theme};
@@ -144,11 +144,19 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             size: model.trigger_size,
             menu_size: model.menu_size,
             without_elevation: model.without_elevation,
-            icon_only: model.trigger_icon.is_some(),
+            icon_only: model.icon_only,
             trigger_radius_override: model.trigger_radius_override,
         };
         let look = self.theme.resolve_look(model.trigger_style, metrics, model.state, scale_factor, _cx);
         let border = button_family_effective_border(look.trigger_border);
+        let trigger_model = PopupMenuTriggerModel {
+            id: model.id.clone(),
+            label: model.label.clone(),
+            open: model.open,
+            enabled: model.enabled,
+            state: model.state,
+        };
+        let face = (model.content)(&trigger_model, _cx);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
             .relative()
@@ -159,39 +167,39 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             .on_mouse_down(MouseButton::Left, trigger_mouse_down)
             .on_mouse_up(MouseButton::Left, trigger_mouse_up)
             .on_mouse_up_out(MouseButton::Left, trigger_mouse_up_out)
-            .on_click(trigger_click);
+            .on_click(trigger_click)
+            .bg(look.trigger_background)
+            .text_color(look.trigger_foreground)
+            .rounded(px(look.trigger_radius));
 
-        if let Some(icon) = model.trigger_icon {
+        if model.icon_only {
             trigger = trigger
                 .justify_center()
                 .size(px(look.trigger_height))
-                .bg(look.trigger_background)
-                .text_color(look.trigger_foreground)
-                .rounded(px(look.trigger_radius))
-                .child(render_lucide_icon(icon, look.trigger_foreground, look.trigger_icon_size));
+                .text_size(px(look.trigger_icon_size))
+                .line_height(px(look.trigger_icon_size))
+                .child(face);
         } else {
+            let end_icon = model.end_icon.unwrap_or(if model.open {
+                LucideIcon::ChevronUp
+            } else {
+                LucideIcon::ChevronDown
+            });
             trigger = trigger
                 .justify_between()
                 .gap(px(look.trigger_gap))
                 .px(px(look.trigger_padding_x))
                 .py(px(look.trigger_padding_y))
-                .h(px(look.trigger_height))
-                .bg(look.trigger_background)
-                .text_color(look.trigger_foreground)
-                .rounded(px(look.trigger_radius))
+                .min_h(px(look.trigger_height))
                 .text_size(px(look.trigger_typography.size))
                 .line_height(px(look.trigger_typography.line_height))
                 .font_weight(look.trigger_typography.weight)
-                .child(model.label.clone())
-                .child(render_lucide_icon(
-                    if model.open {
-                        LucideIcon::ChevronUp
-                    } else {
-                        LucideIcon::ChevronDown
-                    },
-                    look.trigger_foreground,
-                    look.trigger_icon_size,
-                ));
+                .child(face)
+                .child(render_lucide_icon(end_icon, look.trigger_foreground, look.trigger_icon_size));
+
+            if model.full_width {
+                trigger = trigger.w_full();
+            }
         }
 
         if border.a > 0.0 {
@@ -292,6 +300,11 @@ fn resolve_popup_menu_placement(
             anchor: Anchor::BottomLeft,
             position: point(trigger_bounds.left(), trigger_bounds.top()),
             offset: point(px(0.0), -offset_y),
+        },
+        PopupMenuPlacement::RightEnd => ResolvedPopupMenuPlacement {
+            anchor: Anchor::BottomLeft,
+            position: point(trigger_bounds.right(), trigger_bounds.bottom()),
+            offset: point(offset_y, px(0.0)),
         },
         PopupMenuPlacement::CenteredOnTrigger => ResolvedPopupMenuPlacement {
             anchor: Anchor::TopLeft,
@@ -414,5 +427,22 @@ mod tests {
         assert_eq!(placement.anchor, Anchor::TopLeft);
         assert_eq!(placement.position, trigger.center());
         assert_eq!(placement.offset, point(-(menu_size.width * 0.5), -(menu_size.height * 0.5)));
+    }
+
+    #[test]
+    fn right_end_placement_opens_beside_trigger_bottom_aligned() {
+        let look = look();
+        let trigger = Bounds::new(point(px(12.0), px(280.0)), size(px(220.0), px(48.0)));
+        let placement = resolve_popup_menu_placement(
+            Some(trigger),
+            PopupMenuPlacement::RightEnd,
+            &look,
+            4,
+            size(px(800.0), px(600.0)),
+        );
+
+        assert_eq!(placement.anchor, Anchor::BottomLeft);
+        assert_eq!(placement.position, point(trigger.right(), trigger.bottom()));
+        assert_eq!(placement.offset, point(px(look.menu_offset_y), px(0.0)));
     }
 }

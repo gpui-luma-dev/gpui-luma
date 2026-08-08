@@ -130,20 +130,9 @@ pub struct SidebarPanelEngineModel {
     pub(crate) footer_nodes: Vec<NavNode>,
     pub(crate) selected_id: Option<SharedString>,
     pub(crate) enabled: bool,
-    pub(crate) collapsible: bool,
     pub(crate) collapsed: bool,
     pub(crate) template: Arc<dyn SidebarPanelTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
-}
-
-pub struct RenderedCollapseTrigger {
-    pub id: SharedString,
-    pub collapsed: bool,
-    pub hovered: bool,
-    pub pressed: bool,
-    pub focused: bool,
-    pub enabled: bool,
-    pub focus_handle: FocusHandle,
 }
 
 pub struct RenderedRailSubmenu {
@@ -165,9 +154,7 @@ pub struct SidebarPanelEngineRenderModel {
     pub rail_nodes: Vec<RenderedNavNode>,
     pub rail_footer_nodes: Vec<RenderedNavNode>,
     pub rail_submenu: Option<RenderedRailSubmenu>,
-    pub collapse_trigger: Option<RenderedCollapseTrigger>,
     pub selected_id: Option<SharedString>,
-    pub collapsible: bool,
     pub collapsed: bool,
 }
 
@@ -199,7 +186,6 @@ impl SidebarPanelEngineBuilder {
                 footer_nodes: Vec::new(),
                 selected_id: None,
                 enabled: true,
-                collapsible: false,
                 collapsed: false,
                 template: default_sidebar_panel_template(),
                 scrollbar_template: default_scrollbar_template(),
@@ -259,11 +245,6 @@ impl SidebarPanelEngineBuilder {
 
     pub fn collapsed(mut self, collapsed: bool) -> Self {
         self.model.collapsed = collapsed;
-        self
-    }
-
-    pub fn collapsible(mut self, collapsible: bool) -> Self {
-        self.model.collapsible = collapsible;
         self
     }
 

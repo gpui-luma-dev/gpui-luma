@@ -15,6 +15,9 @@ pub struct ControlsPanel {
     scroll_handle: ScrollHandle,
     selected_entry_id: &'static str,
     selected_viewport_size: Option<(&'static str, Size<Pixels>)>,
+    /// Workbench content-panel width applied until `on_prepaint` reports the same size.
+    /// Prevents one-frame stale bounds (sidebar open/close) from re-widening the inspector split.
+    host_content_width: Option<Pixels>,
 }
 
 impl ControlsPanel {
@@ -27,6 +30,7 @@ impl ControlsPanel {
             scroll_handle: ScrollHandle::new(),
             selected_entry_id: first_controls_exposition_id().unwrap_or("button"),
             selected_viewport_size: None,
+            host_content_width: None,
         }
     }
 
@@ -69,11 +73,50 @@ impl ControlsPanel {
         }
     }
 
-    fn update_selected_viewport_size(&mut self, size: Size<Pixels>, window: &mut Window, cx: &mut Context<Self>) {
-        if size.width.as_f32() < 64.0 || size.height.as_f32() < 64.0 {
+    /// Pin inspector-split width to the workbench content panel (source of truth on sidebar toggle).
+    pub fn set_host_content_width(&mut self, width: Pixels, cx: &mut Context<Self>) {
+        if width.as_f32() < 64.0 {
+            return;
+        }
+        self.host_content_width = Some(width);
+
+        let height = self
+            .selected_viewport_size
+            .filter(|(entry_id, _)| *entry_id == self.selected_entry_id)
+            .map(|(_, size)| size.height);
+        let Some(height) = height.filter(|height| height.as_f32() >= 64.0) else {
+            return;
+        };
+
+        self.apply_viewport_size(Size { width, height }, cx);
+    }
+
+    fn update_selected_viewport_size(&mut self, size: Size<Pixels>, _window: &mut Window, cx: &mut Context<Self>) {
+        if size.height.as_f32() < 64.0 {
             return;
         }
 
+        let width = if let Some(host_width) = self.host_content_width {
+            if (size.width.as_f32() - host_width.as_f32()).abs() < 1.0 {
+                self.host_content_width = None;
+                size.width
+            } else if size.width.as_f32() < 64.0 {
+                return;
+            } else {
+                // Ancestor bounds can lag one frame behind workbench panel sizes after sidebar
+                // show/hide; keep the host width until prepaint catches up.
+                host_width
+            }
+        } else if size.width.as_f32() < 64.0 {
+            return;
+        } else {
+            size.width
+        };
+
+        self.apply_viewport_size(Size { width, height: size.height }, cx);
+    }
+
+    fn apply_viewport_size(&mut self, size: Size<Pixels>, cx: &mut Context<Self>) {
         let entry_id = self.selected_entry_id;
         if self.selected_viewport_size == Some((entry_id, size)) {
             return;
@@ -83,9 +126,6 @@ impl ControlsPanel {
         if let Some(exposition) = ControlExposition::find(&self.expositions, entry_id, cx) {
             exposition.set_viewport_size(size, cx);
         }
-        cx.on_next_frame(window, |_, _, cx| {
-            cx.notify();
-        });
     }
 
     fn render_selected_page(&self, cx: &App) -> (AnyElement, bool) {

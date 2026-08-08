@@ -2,6 +2,7 @@ use gpui::{
     App, Bounds, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
     MouseUpEvent, Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
 };
+use lucide_icons::Icon as LucideIcon;
 
 use super::{PopupMenuBuilder, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, MenuPath};
 use crate::controls::popup_menu::model::PopupMenuModel;
@@ -66,6 +67,32 @@ impl PopupMenu {
         cx.notify();
     }
 
+    /// Replace the trigger face presenter and clear the icon-only preset.
+    pub fn set_presenter(
+        &mut self,
+        content: crate::controls::presenter::ControlPresenter<super::PopupMenuTriggerModel>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.content = content;
+        self.model.icon_only = false;
+        cx.notify();
+    }
+
+    /// Icon-only face preset: [`super::icon_content`] + square chrome (`icon_only`).
+    ///
+    /// Not a parallel field beside the presenter. Mirrors [`super::PopupMenuBuilder::icon`].
+    pub fn set_icon(&mut self, icon: LucideIcon, cx: &mut Context<Self>) {
+        self.model.content = super::icon_content(icon);
+        self.model.icon_only = true;
+        cx.notify();
+    }
+
+    /// Trailing adornment on a labeled trigger (distinct from the icon face preset).
+    pub fn set_end_icon(&mut self, icon: Option<LucideIcon>, cx: &mut Context<Self>) {
+        self.model.end_icon = icon;
+        cx.notify();
+    }
+
     pub fn set_items(
         &mut self,
         items: impl IntoIterator<Item = crate::controls::menu_item::MenuItem>,
@@ -119,6 +146,7 @@ impl PopupMenu {
         PopupMenuRenderModel {
             id: &self.model.id,
             label: &self.model.label,
+            content: self.model.content.clone(),
             items: &self.model.items,
             open: self.open,
             trigger_bounds: self.trigger_bounds,
@@ -126,7 +154,9 @@ impl PopupMenu {
             trigger_style: self.model.trigger_style,
             trigger_size: self.model.trigger_size,
             menu_size: self.model.menu_size,
-            trigger_icon: self.model.trigger_icon,
+            icon_only: self.model.icon_only,
+            end_icon: self.model.end_icon,
+            full_width: self.model.full_width,
             without_elevation: self.model.without_elevation,
             trigger_radius_override: None,
             open_submenu: self.menu_state.open_submenu(),

@@ -276,7 +276,6 @@ fn spawn_panel_engine(
 
     let (nodes, footer_nodes) = panel_model.as_ref().map(panel_to_nav_nodes).unwrap_or_default();
 
-    let collapsible = !matches!(model.collapsible, SidebarCollapsible::None);
     let collapsed = match model.collapsible {
         SidebarCollapsible::Icon | SidebarCollapsible::Responsive => !open,
         SidebarCollapsible::Offcanvas | SidebarCollapsible::None => false,
@@ -284,7 +283,6 @@ fn spawn_panel_engine(
 
     let mut builder = SidebarPanelEngine::new(panel_id)
         .enabled(model.enabled)
-        .collapsible(collapsible)
         .collapsed(collapsed)
         .template(model.panel_template.clone())
         .scrollbar_template(model.scrollbar_template.clone())

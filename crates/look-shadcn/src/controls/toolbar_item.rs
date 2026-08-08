@@ -159,7 +159,7 @@ impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
         let mut builder =
             self.popup_menu(format!("toolbar-menu-{id}")).label(label).ghost().tab_stop(false).items(items);
         if let ControlIcon::Lucide(lucide) = icon.into() {
-            builder = builder.trigger_icon(lucide);
+            builder = builder.icon(lucide);
         }
         let entity = builder.spawn(cx);
         ToolbarItem::menu_control(id, entity, cx)
