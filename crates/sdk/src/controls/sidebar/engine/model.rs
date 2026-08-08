@@ -8,6 +8,7 @@ use super::template::modified_sidebar_panel_template;
 use crate::controls::presenter::{Presenter, HostedContent, IntoPresenter};
 use crate::controls::menu_item::MenuItem;
 use crate::controls::state::MenuPath;
+use crate::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 
 pub type NavHostedContent = HostedContent;
@@ -133,6 +134,9 @@ pub struct SidebarPanelEngineModel {
     pub(crate) collapsed: bool,
     pub(crate) template: Arc<dyn SidebarPanelTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
+    pub(crate) scrollbar_placement: ScrollbarPlacement,
+    pub(crate) scrollbar_visibility: ScrollbarVisibility,
+    pub(crate) scrollbar_auto_hide_activate: ScrollbarAutoHideActivate,
 }
 
 pub struct RenderedRailSubmenu {
@@ -189,6 +193,9 @@ impl SidebarPanelEngineBuilder {
                 collapsed: false,
                 template: default_sidebar_panel_template(),
                 scrollbar_template: default_scrollbar_template(),
+                scrollbar_placement: ScrollbarPlacement::Inset,
+                scrollbar_visibility: ScrollbarVisibility::AlwaysVisible,
+                scrollbar_auto_hide_activate: ScrollbarAutoHideActivate::HoverOrMove,
             },
         }
     }
@@ -263,6 +270,21 @@ impl SidebarPanelEngineBuilder {
 
     pub fn scrollbar_template(mut self, template: Arc<dyn ScrollbarTemplate>) -> Self {
         self.model.scrollbar_template = template;
+        self
+    }
+
+    pub fn scrollbar_placement(mut self, placement: ScrollbarPlacement) -> Self {
+        self.model.scrollbar_placement = placement;
+        self
+    }
+
+    pub fn scrollbar_visibility(mut self, visibility: ScrollbarVisibility) -> Self {
+        self.model.scrollbar_visibility = visibility;
+        self
+    }
+
+    pub fn scrollbar_auto_hide_activate(mut self, activate: ScrollbarAutoHideActivate) -> Self {
+        self.model.scrollbar_auto_hide_activate = activate;
         self
     }
 

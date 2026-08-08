@@ -13,9 +13,7 @@ use lucide_icons::Icon as LucideIcon;
 use crate::theme::{LumaStudioLaunchOptions, LumaStudioThemeChoice};
 
 use super::content_tabs::{BoardSnapshot, ContentPaneHost};
-use super::controls::workbench_layout::{
-    CONTENT_PANEL_INDEX, LEFT_SIDEBAR_PANEL_INDEX, WorkbenchLayout, WorkbenchSidebar,
-};
+use super::controls::workbench_layout::{CONTENT_PANEL_INDEX, LEFT_SIDEBAR_PANEL_INDEX, WorkbenchLayout, WorkbenchSidebar};
 use super::demo_controls::DemoControls;
 use super::hs_mixer::{
     ThemePaletteHsOverride, clamp_palette_temperature_amount, clamp_palette_vividness_amount,
@@ -475,14 +473,7 @@ impl LumaStudioApp {
     }
 
     fn refresh_controls_layout(&self, cx: &mut Context<Self>) {
-        let content_width = self
-            .workbench
-            .panels()
-            .read(cx)
-            .panel_sizes_px()
-            .get(CONTENT_PANEL_INDEX)
-            .copied()
-            .map(px);
+        let content_width = self.workbench.panels().read(cx).panel_sizes_px().get(CONTENT_PANEL_INDEX).copied().map(px);
         if let Some(content_width) = content_width {
             self.content_pane.update(cx, |pane, cx| pane.sync_controls_host_content_width(content_width, cx));
         } else {

@@ -1,16 +1,13 @@
 use std::sync::Arc;
 
-use gpui_luma::controls::presenter::ControlPresenter;
-use gpui_luma::controls::command::button::ButtonRenderModel;
-
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{ButtonEvent, ControlIcon};
+use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
 use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView};
 use gpui_luma::controls::pager::PagerStyle;
-use gpui_luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
-use gpui_luma::controls::split_view::{SplitView, SplitViewEvent, SplitViewSeparatorVisibility, render_pane};
+use gpui_luma::controls::presenter::ControlPresenter;
+use gpui_luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
 use gpui_luma::theme::ControlSize;
 use gpui_luma::{column, column_emphasis, paging_list_view};
 use gpui_luma_look_shadcn::prelude::*;
@@ -23,44 +20,31 @@ use super::task_list::{Task, build_task_rows, email_column, status_cell, tag_pil
 const DEFAULT_PAGE_SIZE: usize = 25;
 const LIST_HEADER_TITLE: &str = "Documents";
 const LIST_VIEW_OUTER_PADDING_PX: f32 = 16.0;
-/// Outer card corner radius (matches `.rounded` on the dashboard shell).
-const DASHBOARD_CARD_RADIUS_PX: f32 = 12.0;
-/// Inner fill radius — card radius minus the 1px border (GPUI clips overflow as a rect).
-const DASHBOARD_INNER_RADIUS_PX: f32 = DASHBOARD_CARD_RADIUS_PX - 1.0;
+/// Matches controls → sidebar preview shell.
+const SHELL_RADIUS_PX: f32 = 12.0;
+const CONTENT_INSET_PX: f32 = 10.0;
+const CONTENT_RADIUS_PX: f32 = 12.0;
 
 pub struct DashboardPanel {
     look: Arc<ShadcnLook>,
-    split_view: Entity<SplitView>,
     sidebar: Entity<SidebarControl>,
     sidebar_toggle: IconButton,
     list_view: PagingListView<Task>,
-    sidebar_collapsed: bool,
+    sidebar_open: bool,
     _subscriptions: Vec<Subscription>,
 }
 
 impl DashboardPanel {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let split_view = look
-            .split_view("studio-dashboard-shell")
-            .sidebar_width(px(280.0))
-            .sidebar_min_width(px(220.0))
-            .sidebar_max_width(px(420.0))
-            .sidebar_collapsed_width(px(0.0))
-            .collapsed(false)
-            .resizable(true)
-            .separator_visibility(SplitViewSeparatorVisibility::Hover)
-            .spawn(cx);
-
         let sidebar = look
             .sidebar_control("studio-dashboard-nav")
             .default_open(true)
-            .collapsible(SidebarCollapsible::None)
+            .collapsible(SidebarCollapsible::Icon)
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
-            .with_panel_template_modifier(|root| {
-                // Match card corners: overflow_hidden is rectangular, so the filled root needs radii.
-                root.rounded_tl(px(DASHBOARD_INNER_RADIUS_PX)).rounded_bl(px(DASHBOARD_INNER_RADIUS_PX))
-            })
-            .sidebar(property_sidebar(&look, "studio-dashboard-nav-panel", "Properties", "Task workspace"))
+            .sidebar(
+                property_sidebar(&look, "studio-dashboard-nav-panel", "Properties", "Task workspace")
+                    .rail(look.sidebar_rail()),
+            )
             .spawn(cx);
 
         let sidebar_toggle = look
@@ -129,54 +113,29 @@ impl DashboardPanel {
         .spawn(cx);
 
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&split_view, |panel, _, event: &SplitViewEvent, cx| {
-            panel.handle_split_view_event(event, cx);
+        subscriptions.push(cx.subscribe(&sidebar, |panel, _, event: &SidebarEvent, cx| {
+            if let SidebarEvent::OpenChanged { open, .. } = event {
+                panel.sidebar_open = *open;
+                cx.notify();
+            }
         }));
         subscriptions.push(cx.subscribe(&sidebar_toggle, |panel, _, event, cx| {
             if matches!(event, ButtonEvent::Click) {
-                panel.toggle_sidebar(cx);
+                panel.sidebar.update(cx, |sidebar, cx| sidebar.toggle_open(cx));
             }
         }));
         subscriptions.push(cx.subscribe(&list_view, |_, _, _: &ListViewEvent, cx| {
             cx.notify();
         }));
 
-        Self {
-            look,
-            split_view,
-            sidebar,
-            sidebar_toggle,
-            list_view,
-            sidebar_collapsed: false,
-            _subscriptions: subscriptions,
-        }
-    }
-
-    fn toggle_sidebar(&mut self, cx: &mut Context<Self>) {
-        self.split_view.update(cx, |split_view, cx| {
-            split_view.toggle_collapsed(cx);
-        });
-    }
-
-    fn handle_split_view_event(&mut self, event: &SplitViewEvent, cx: &mut Context<Self>) {
-        match event {
-            SplitViewEvent::ResizeStart => {}
-            SplitViewEvent::SidebarWidthChanged { .. } | SplitViewEvent::ResizeEnd { .. } => {
-                cx.notify();
-            }
-            SplitViewEvent::CollapsedChanged { collapsed } => {
-                self.sidebar_collapsed = *collapsed;
-                cx.notify();
-            }
-            _ => {}
-        }
+        Self { look, sidebar, sidebar_toggle, list_view, sidebar_open: true, _subscriptions: subscriptions }
     }
 
     fn sync_sidebar_toggle_icon(&self, cx: &mut Context<Self>) {
-        let icon = if self.sidebar_collapsed {
-            ControlIcon::Lucide(LucideIcon::PanelLeftOpen)
-        } else {
+        let icon = if self.sidebar_open {
             ControlIcon::Lucide(LucideIcon::PanelLeft)
+        } else {
+            ControlIcon::Lucide(LucideIcon::PanelLeftOpen)
         };
         self.sidebar_toggle.update(cx, |button, cx| {
             button.set_presenter(sidebar_toggle_presenter(icon), cx);
@@ -188,97 +147,96 @@ impl Render for DashboardPanel {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.sync_sidebar_toggle_icon(cx);
 
-        let sidebar = self.sidebar.clone();
-        let list_view = self.list_view.clone();
-        let sidebar_toggle = self.sidebar_toggle.clone();
-        let look = self.look.clone();
-        let chrome = look.chrome();
-        let sidebar_collapsed = self.sidebar_collapsed;
-
-        self.split_view.update(cx, |split_view, cx| {
-            split_view.set_panes(
-                render_pane(move || sidebar.clone()),
-                render_pane(move || {
-                    let mut content = div()
-                        .size_full()
-                        .min_h_0()
-                        .flex()
-                        .flex_col()
-                        .rounded_tr(px(DASHBOARD_INNER_RADIUS_PX))
-                        .rounded_br(px(DASHBOARD_INNER_RADIUS_PX))
-                        .border_l_1()
-                        .border_color(chrome.border)
-                        .bg(chrome.content_background);
-                    if sidebar_collapsed {
-                        content =
-                            content.rounded_tl(px(DASHBOARD_INNER_RADIUS_PX)).rounded_bl(px(DASHBOARD_INNER_RADIUS_PX));
-                    }
-                    content
-                        .child(render_list_header(sidebar_toggle.clone(), &look, sidebar_collapsed))
-                        .child(render_list_header_divider(chrome.border))
-                        .child(
-                            div()
-                                .flex_1()
-                                .min_h_0()
-                                .w_full()
-                                .px(px(LIST_VIEW_OUTER_PADDING_PX))
-                                .pt(px(LIST_VIEW_OUTER_PADDING_PX))
-                                .child(div().size_full().min_h_0().child(list_view.clone())),
-                        )
-                        .into_any_element()
-                }),
-                cx,
-            );
-        });
-
-        let split_view = self.split_view.clone();
         with_look(&self.look, || {
+            let look = &self.look;
+            let chrome = look.chrome();
+            let metrics = look.sidebar_metric_scale();
+            let sidebar_width = if self.sidebar_open {
+                metrics.width_expanded
+            } else {
+                metrics.width_icon_rail
+            };
+            let sidebar_bg = look.token_color("sidebar").unwrap_or(chrome.panel_background);
+            let title_style = look.typography_scale(ShadcnTextSize::Lg);
+
             div().size_full().min_h_0().p(px(24.0)).child(
                 div()
+                    .id("studio-dashboard-shell")
                     .size_full()
                     .min_h_0()
                     .flex()
-                    .flex_col()
+                    .flex_row()
                     .overflow_hidden()
+                    .rounded(px(SHELL_RADIUS_PX))
                     .border_1()
                     .border_color(chrome.border)
-                    .rounded(px(DASHBOARD_CARD_RADIUS_PX))
-                    .bg(chrome.panel_background)
-                    .shadow_cn(ShadcnShadow::Default)
-                    .child(split_view),
+                    .bg(sidebar_bg)
+                    .child(
+                        div()
+                            .id("studio-dashboard-rail")
+                            .flex_none()
+                            .w(sidebar_width)
+                            .h_full()
+                            .flex()
+                            .flex_col()
+                            .overflow_hidden()
+                            .child(
+                                div().flex_1().min_h(px(0.0)).w_full().overflow_hidden().child(self.sidebar.clone()),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .id("studio-dashboard-content")
+                            .flex_1()
+                            .min_w(px(0.0))
+                            .h_full()
+                            .p(px(CONTENT_INSET_PX))
+                            .child(
+                                div()
+                                    .size_full()
+                                    .min_h(px(0.0))
+                                    .flex()
+                                    .flex_col()
+                                    .overflow_hidden()
+                                    .rounded(px(CONTENT_RADIUS_PX))
+                                    .border_1()
+                                    .border_color(chrome.border)
+                                    .bg(chrome.content_background)
+                                    .child(
+                                        div()
+                                            .id("studio-dashboard-list-header")
+                                            .w_full()
+                                            .flex_shrink_0()
+                                            .flex()
+                                            .items_center()
+                                            .gap(px(8.0))
+                                            .h(px(44.0))
+                                            .px(px(12.0))
+                                            .border_b_1()
+                                            .border_color(chrome.border)
+                                            .bg(chrome.content_background)
+                                            .child(self.sidebar_toggle.clone())
+                                            .child(div().h(px(16.0)).w(px(1.0)).bg(chrome.border))
+                                            .child(
+                                                div()
+                                                    .typography_style(title_style)
+                                                    .text_color(chrome.title_text)
+                                                    .child(LIST_HEADER_TITLE),
+                                            ),
+                                    )
+                                    .child(
+                                        div()
+                                            .flex_1()
+                                            .min_h(px(0.0))
+                                            .w_full()
+                                            .p(px(LIST_VIEW_OUTER_PADDING_PX))
+                                            .child(div().size_full().min_h_0().child(self.list_view.clone())),
+                                    ),
+                            ),
+                    ),
             )
         })
     }
-}
-
-fn render_list_header(sidebar_toggle: IconButton, look: &ShadcnLook, sidebar_collapsed: bool) -> gpui::AnyElement {
-    let chrome = look.chrome();
-    let title_style = look.typography_scale(ShadcnTextSize::Lg);
-
-    let mut header = div()
-        .id("studio-dashboard-list-header")
-        .w_full()
-        .flex_shrink_0()
-        .flex()
-        .items_center()
-        .gap(px(8.0))
-        .h(px(44.0))
-        .px(px(12.0))
-        .rounded_tr(px(DASHBOARD_INNER_RADIUS_PX))
-        .bg(chrome.panel_background);
-    if sidebar_collapsed {
-        header = header.rounded_tl(px(DASHBOARD_INNER_RADIUS_PX));
-    }
-
-    header
-        .child(sidebar_toggle)
-        .child(div().h(px(16.0)).w(px(1.0)).bg(chrome.border))
-        .child(div().typography_style(title_style).text_color(chrome.title_text).child(LIST_HEADER_TITLE))
-        .into_any_element()
-}
-
-fn render_list_header_divider(border: gpui::Hsla) -> gpui::AnyElement {
-    div().w_full().flex_shrink_0().h(px(1.0)).bg(border).into_any_element()
 }
 
 fn sidebar_toggle_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {

@@ -10,6 +10,7 @@ use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{HasPresenter, PopupMenu, PopupMenuEvent, PopupMenuPlacement};
 use gpui_luma::controls::presenter::ControlPresenter;
+use gpui_luma::controls::scroll_container::ScrollbarAutoHideActivate;
 use gpui_luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::prelude::*;
@@ -449,6 +450,8 @@ fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControl
     look.sidebar_control("controls-doc-sidebar-control")
         .default_open(true)
         .collapsible(SidebarCollapsible::Icon)
+        .auto_hide_scrollbar(true)
+        .auto_hide_scrollbar_activate(ScrollbarAutoHideActivate::Move)
         .sidebar(
             look.sidebar("workbench_sidebar")
                 .header(look.sidebar_header().title("Properties").subtitle("Rectangle / Prominent card"))

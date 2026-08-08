@@ -286,6 +286,9 @@ fn spawn_panel_engine(
         .collapsed(collapsed)
         .template(model.panel_template.clone())
         .scrollbar_template(model.scrollbar_template.clone())
+        .scrollbar_placement(model.scrollbar_placement)
+        .scrollbar_visibility(model.scrollbar_visibility)
+        .scrollbar_auto_hide_activate(model.scrollbar_auto_hide_activate)
         .items(nodes)
         .footer_nodes(footer_nodes);
 

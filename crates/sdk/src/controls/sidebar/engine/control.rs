@@ -63,7 +63,10 @@ impl SidebarPanelEngine {
             format!("{}-main-scroll", builder.model.id),
             builder.model.scrollbar_template.clone(),
             cx,
-        );
+        )
+        .placement(builder.model.scrollbar_placement)
+        .visibility(builder.model.scrollbar_visibility)
+        .auto_hide_activate(builder.model.scrollbar_auto_hide_activate);
         let scrollbar = main_scroll.scrollbar();
         let subscriptions = vec![
             cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {

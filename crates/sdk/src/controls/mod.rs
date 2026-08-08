@@ -39,6 +39,7 @@ pub mod radio_button;
 pub mod radio_group;
 pub mod scrollbar;
 pub mod scroll_container;
+pub use scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 pub mod resizable_panels;
 pub mod slide_panel;
 pub mod split_view;

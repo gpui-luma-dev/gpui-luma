@@ -1,15 +1,62 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use gpui::{
-    AnyElement, App, AppContext, Bounds, Context, Entity, Pixels, ScrollHandle, ScrollWheelEvent, SharedString,
-    Stateful, Window, div, point, prelude::*, px,
+    AnyElement, App, AppContext, Bounds, Context, Entity, EntityId, Pixels, ScrollHandle, ScrollWheelEvent,
+    SharedString, Stateful, Task, Window, div, point, prelude::*, px,
 };
 
 use crate::controls::scrollbar::{Scrollbar, ScrollbarTemplate};
 
 type ScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+
+/// Whether the scrollbar reserves layout space or floats over content.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ScrollbarPlacement {
+    /// Reserve a gutter beside the viewport (default).
+    #[default]
+    Inset,
+    /// Float the scrollbar over the viewport without reserving layout space.
+    Overlay,
+}
+
+/// When the scrollbar chrome is shown.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ScrollbarVisibility {
+    /// Always show the scrollbar while content is scrollable (default).
+    #[default]
+    AlwaysVisible,
+    /// Show according to [`ScrollbarAutoHideActivate`]; hide when idle / not hovered.
+    AutoHide,
+    /// Never show the scrollbar chrome.
+    Hidden,
+}
+
+/// What reveals an auto-hiding scrollbar.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ScrollbarAutoHideActivate {
+    /// Reveal while the pointer hovers the container.
+    Hover,
+    /// Reveal while scrolling (mouse wheel / trackpad); hide after motion stops.
+    Move,
+    /// Reveal on hover or scroll motion (default).
+    #[default]
+    HoverOrMove,
+}
+
+impl ScrollbarAutoHideActivate {
+    fn listens_to_hover(self) -> bool {
+        matches!(self, Self::Hover | Self::HoverOrMove)
+    }
+
+    fn listens_to_move(self) -> bool {
+        matches!(self, Self::Move | Self::HoverOrMove)
+    }
+}
+
+const AUTO_HIDE_TIMEOUT: Duration = Duration::from_millis(1250);
 
 #[derive(Clone)]
 pub struct ScrollContainer {
@@ -17,7 +64,14 @@ pub struct ScrollContainer {
     scroll_handle: ScrollHandle,
     scrollbar: Entity<Scrollbar>,
     scrollbar_width: Pixels,
+    placement: ScrollbarPlacement,
+    visibility: ScrollbarVisibility,
+    auto_hide_activate: ScrollbarAutoHideActivate,
     last_max_scroll: Rc<Cell<f32>>,
+    host_view: Rc<Cell<Option<EntityId>>>,
+    hovered: Rc<Cell<bool>>,
+    active_until: Rc<Cell<Option<Instant>>>,
+    hide_task: Rc<RefCell<Option<Task<()>>>>,
 }
 
 impl ScrollContainer {
@@ -34,8 +88,60 @@ impl ScrollContainer {
             scroll_handle: ScrollHandle::new(),
             scrollbar,
             scrollbar_width: px(12.0),
+            placement: ScrollbarPlacement::Inset,
+            visibility: ScrollbarVisibility::AlwaysVisible,
+            auto_hide_activate: ScrollbarAutoHideActivate::HoverOrMove,
             last_max_scroll: Rc::new(Cell::new(0.0)),
+            host_view: Rc::new(Cell::new(None)),
+            hovered: Rc::new(Cell::new(false)),
+            active_until: Rc::new(Cell::new(None)),
+            hide_task: Rc::new(RefCell::new(None)),
         }
+    }
+
+    pub fn placement(mut self, placement: ScrollbarPlacement) -> Self {
+        self.placement = placement;
+        self
+    }
+
+    pub fn overlay(mut self, overlay: bool) -> Self {
+        self.placement = if overlay {
+            ScrollbarPlacement::Overlay
+        } else {
+            ScrollbarPlacement::Inset
+        };
+        self
+    }
+
+    pub fn visibility(mut self, visibility: ScrollbarVisibility) -> Self {
+        self.visibility = visibility;
+        self
+    }
+
+    pub fn auto_hide(mut self, auto_hide: bool) -> Self {
+        self.visibility = if auto_hide {
+            ScrollbarVisibility::AutoHide
+        } else {
+            ScrollbarVisibility::AlwaysVisible
+        };
+        self
+    }
+
+    pub fn auto_hide_activate(mut self, activate: ScrollbarAutoHideActivate) -> Self {
+        self.auto_hide_activate = activate;
+        self
+    }
+
+    pub fn scrollbar_placement(&self) -> ScrollbarPlacement {
+        self.placement
+    }
+
+    pub fn scrollbar_visibility(&self) -> ScrollbarVisibility {
+        self.visibility
+    }
+
+    pub fn scrollbar_auto_hide_activate(&self) -> ScrollbarAutoHideActivate {
+        self.auto_hide_activate
     }
 
     pub fn scrollbar(&self) -> Entity<Scrollbar> {
@@ -122,16 +228,35 @@ impl ScrollContainer {
 
     fn render_internal(&self, content: AnyElement, on_scroll_wheel: Option<ScrollWheelHandler>) -> Stateful<gpui::Div> {
         let scrollable = self.scroll_handle.max_offset().y.as_f32() > 0.5;
-        let viewport_right = if scrollable { self.scrollbar_width } else { px(0.0) };
+        let viewport_right = viewport_right_inset(scrollable, self.placement, self.visibility, self.scrollbar_width);
         let scroll_handle = self.scroll_handle.clone();
         let last_max_scroll = self.last_max_scroll.clone();
+        let host_view = self.host_view.clone();
+        let auto_hide = self.visibility == ScrollbarVisibility::AutoHide;
+        let activate = self.auto_hide_activate;
+        let track_hover = auto_hide && activate.listens_to_hover();
+        let track_move = auto_hide && activate.listens_to_move();
+        let show_scrollbar = scrollable
+            && self.visibility != ScrollbarVisibility::Hidden
+            && scrollbar_chrome_visible(
+                self.visibility,
+                activate,
+                self.hovered.get(),
+                self.active_until.get(),
+                Instant::now(),
+            );
 
         let mut viewport = div()
-            .on_children_prepainted(move |_: Vec<Bounds<Pixels>>, window: &mut Window, cx: &mut App| {
-                let max_scroll = scroll_handle.max_offset().y.as_f32().max(0.0);
-                if (last_max_scroll.get() - max_scroll).abs() > 0.5 {
-                    last_max_scroll.set(max_scroll);
-                    cx.notify(window.current_view());
+            .on_children_prepainted({
+                let host_view = host_view.clone();
+                move |_: Vec<Bounds<Pixels>>, window: &mut Window, cx: &mut App| {
+                    // `current_view` is only valid during layout/prepaint/paint.
+                    host_view.set(Some(window.current_view()));
+                    let max_scroll = scroll_handle.max_offset().y.as_f32().max(0.0);
+                    if (last_max_scroll.get() - max_scroll).abs() > 0.5 {
+                        last_max_scroll.set(max_scroll);
+                        notify_host(&host_view, cx);
+                    }
                 }
             })
             .id(format!("{}-viewport", self.id))
@@ -145,11 +270,46 @@ impl ScrollContainer {
             .track_scroll(&self.scroll_handle)
             .child(content);
 
-        if let Some(on_scroll_wheel) = on_scroll_wheel {
-            viewport = viewport.on_scroll_wheel(on_scroll_wheel);
+        if track_move || on_scroll_wheel.is_some() {
+            let active_until = self.active_until.clone();
+            let hide_task = self.hide_task.clone();
+            let host_view = host_view.clone();
+            viewport = viewport.on_scroll_wheel(move |event, window, cx| {
+                if track_move {
+                    wake_on_move(&active_until, &hide_task, &host_view, cx);
+                }
+                if let Some(handler) = &on_scroll_wheel {
+                    handler(event, window, cx);
+                }
+            });
         }
 
-        div().id(self.id.clone()).relative().size_full().child(viewport).when(scrollable, |root| {
+        let mut root = div().id(self.id.clone()).relative().size_full();
+
+        if track_hover {
+            let hovered = self.hovered.clone();
+            let active_until = self.active_until.clone();
+            let hide_task = self.hide_task.clone();
+            let host_view = host_view.clone();
+            root = root.on_hover(move |is_hovered, _window, cx| {
+                let is_hovered = *is_hovered;
+                if hovered.get() == is_hovered {
+                    return;
+                }
+                hovered.set(is_hovered);
+                if is_hovered {
+                    // Hover keeps chrome visible; cancel a pending move-idle hide.
+                    *hide_task.borrow_mut() = None;
+                } else if activate == ScrollbarAutoHideActivate::Hover {
+                    // Hover-only: hide as soon as the pointer leaves.
+                    active_until.set(None);
+                    *hide_task.borrow_mut() = None;
+                }
+                notify_host(&host_view, cx);
+            });
+        }
+
+        root.child(viewport).when(show_scrollbar, |root| {
             root.child(
                 div()
                     .absolute()
@@ -162,5 +322,211 @@ impl ScrollContainer {
                     .child(self.scrollbar.clone()),
             )
         })
+    }
+}
+
+fn viewport_right_inset(
+    scrollable: bool,
+    placement: ScrollbarPlacement,
+    visibility: ScrollbarVisibility,
+    scrollbar_width: Pixels,
+) -> Pixels {
+    if scrollable && placement == ScrollbarPlacement::Inset && visibility != ScrollbarVisibility::Hidden {
+        scrollbar_width
+    } else {
+        px(0.0)
+    }
+}
+
+fn scrollbar_chrome_visible(
+    visibility: ScrollbarVisibility,
+    activate: ScrollbarAutoHideActivate,
+    hovered: bool,
+    active_until: Option<Instant>,
+    now: Instant,
+) -> bool {
+    match visibility {
+        ScrollbarVisibility::AlwaysVisible => true,
+        ScrollbarVisibility::Hidden => false,
+        ScrollbarVisibility::AutoHide => {
+            let hover_active = activate.listens_to_hover() && hovered;
+            let move_active = activate.listens_to_move() && active_until.is_some_and(|until| now < until);
+            hover_active || move_active
+        }
+    }
+}
+
+fn notify_host(host_view: &Rc<Cell<Option<EntityId>>>, cx: &mut App) {
+    if let Some(view) = host_view.get() {
+        cx.notify(view);
+    }
+}
+
+fn wake_on_move(
+    active_until: &Rc<Cell<Option<Instant>>>,
+    hide_task: &Rc<RefCell<Option<Task<()>>>>,
+    host_view: &Rc<Cell<Option<EntityId>>>,
+    cx: &mut App,
+) {
+    schedule_auto_hide(active_until, hide_task, host_view, cx);
+    notify_host(host_view, cx);
+}
+
+fn schedule_auto_hide(
+    active_until: &Rc<Cell<Option<Instant>>>,
+    hide_task: &Rc<RefCell<Option<Task<()>>>>,
+    host_view: &Rc<Cell<Option<EntityId>>>,
+    cx: &mut App,
+) {
+    let until = Instant::now() + AUTO_HIDE_TIMEOUT;
+    active_until.set(Some(until));
+    let active_until = active_until.clone();
+    let host_view = host_view.clone();
+    *hide_task.borrow_mut() = Some(cx.spawn(async move |cx| {
+        cx.background_executor().timer(AUTO_HIDE_TIMEOUT).await;
+        cx.update(|cx| {
+            if active_until.get().is_some_and(|deadline| Instant::now() >= deadline) {
+                active_until.set(None);
+                notify_host(&host_view, cx);
+            }
+        });
+    }));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn defaults_are_inset_always_visible_and_hover_or_move() {
+        assert_eq!(ScrollbarPlacement::default(), ScrollbarPlacement::Inset);
+        assert_eq!(ScrollbarVisibility::default(), ScrollbarVisibility::AlwaysVisible);
+        assert_eq!(ScrollbarAutoHideActivate::default(), ScrollbarAutoHideActivate::HoverOrMove);
+    }
+
+    #[test]
+    fn overlay_placement_never_reserves_gutter() {
+        assert_eq!(
+            viewport_right_inset(true, ScrollbarPlacement::Overlay, ScrollbarVisibility::AlwaysVisible, px(12.0)),
+            px(0.0)
+        );
+        assert_eq!(
+            viewport_right_inset(true, ScrollbarPlacement::Overlay, ScrollbarVisibility::AutoHide, px(12.0)),
+            px(0.0)
+        );
+    }
+
+    #[test]
+    fn inset_placement_reserves_gutter_when_scrollable() {
+        assert_eq!(
+            viewport_right_inset(true, ScrollbarPlacement::Inset, ScrollbarVisibility::AlwaysVisible, px(12.0)),
+            px(12.0)
+        );
+        assert_eq!(
+            viewport_right_inset(true, ScrollbarPlacement::Inset, ScrollbarVisibility::AutoHide, px(12.0)),
+            px(12.0)
+        );
+        assert_eq!(
+            viewport_right_inset(false, ScrollbarPlacement::Inset, ScrollbarVisibility::AlwaysVisible, px(12.0)),
+            px(0.0)
+        );
+    }
+
+    #[test]
+    fn hidden_visibility_never_reserves_gutter() {
+        assert_eq!(
+            viewport_right_inset(true, ScrollbarPlacement::Inset, ScrollbarVisibility::Hidden, px(12.0)),
+            px(0.0)
+        );
+    }
+
+    #[test]
+    fn hover_activate_ignores_move_deadline() {
+        let now = Instant::now();
+        assert!(scrollbar_chrome_visible(
+            ScrollbarVisibility::AutoHide,
+            ScrollbarAutoHideActivate::Hover,
+            true,
+            None,
+            now
+        ));
+        assert!(!scrollbar_chrome_visible(
+            ScrollbarVisibility::AutoHide,
+            ScrollbarAutoHideActivate::Hover,
+            false,
+            Some(now + Duration::from_millis(500)),
+            now
+        ));
+    }
+
+    #[test]
+    fn move_activate_ignores_hover() {
+        let now = Instant::now();
+        assert!(!scrollbar_chrome_visible(
+            ScrollbarVisibility::AutoHide,
+            ScrollbarAutoHideActivate::Move,
+            true,
+            None,
+            now
+        ));
+        assert!(scrollbar_chrome_visible(
+            ScrollbarVisibility::AutoHide,
+            ScrollbarAutoHideActivate::Move,
+            false,
+            Some(now + Duration::from_millis(500)),
+            now
+        ));
+        assert!(!scrollbar_chrome_visible(
+            ScrollbarVisibility::AutoHide,
+            ScrollbarAutoHideActivate::Move,
+            true,
+            Some(now - Duration::from_millis(1)),
+            now
+        ));
+    }
+
+    #[test]
+    fn hover_or_move_accepts_either_signal() {
+        let now = Instant::now();
+        assert!(scrollbar_chrome_visible(
+            ScrollbarVisibility::AutoHide,
+            ScrollbarAutoHideActivate::HoverOrMove,
+            true,
+            None,
+            now
+        ));
+        assert!(scrollbar_chrome_visible(
+            ScrollbarVisibility::AutoHide,
+            ScrollbarAutoHideActivate::HoverOrMove,
+            false,
+            Some(now + Duration::from_millis(500)),
+            now
+        ));
+        assert!(!scrollbar_chrome_visible(
+            ScrollbarVisibility::AutoHide,
+            ScrollbarAutoHideActivate::HoverOrMove,
+            false,
+            None,
+            now
+        ));
+    }
+
+    #[test]
+    fn always_visible_and_hidden_chrome_are_constant() {
+        let now = Instant::now();
+        assert!(scrollbar_chrome_visible(
+            ScrollbarVisibility::AlwaysVisible,
+            ScrollbarAutoHideActivate::Move,
+            false,
+            None,
+            now
+        ));
+        assert!(!scrollbar_chrome_visible(
+            ScrollbarVisibility::Hidden,
+            ScrollbarAutoHideActivate::HoverOrMove,
+            true,
+            Some(now + Duration::from_secs(1)),
+            now
+        ));
     }
 }

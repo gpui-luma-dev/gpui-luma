@@ -7,6 +7,7 @@ use lucide_icons::Icon as LucideIcon;
 use super::control::SidebarControl;
 use super::engine::{NavNode, SidebarPanelTemplate, default_sidebar_panel_template, modified_sidebar_panel_template};
 use super::theme::{SidebarCollapsible, SidebarVariant};
+use crate::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 
 pub type SidebarPaneRender = Rc<dyn Fn() -> AnyElement>;
@@ -87,6 +88,9 @@ pub struct SidebarControlModel {
     pub(crate) inset: Option<SidebarInsetModel>,
     pub(crate) panel_template: Arc<dyn SidebarPanelTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
+    pub(crate) scrollbar_placement: ScrollbarPlacement,
+    pub(crate) scrollbar_visibility: ScrollbarVisibility,
+    pub(crate) scrollbar_auto_hide_activate: ScrollbarAutoHideActivate,
 }
 
 pub struct SidebarMenuItemBuilder {
@@ -431,6 +435,9 @@ impl SidebarControlBuilder {
                 inset: None,
                 panel_template: default_sidebar_panel_template(),
                 scrollbar_template: default_scrollbar_template(),
+                scrollbar_placement: ScrollbarPlacement::Inset,
+                scrollbar_visibility: ScrollbarVisibility::AlwaysVisible,
+                scrollbar_auto_hide_activate: ScrollbarAutoHideActivate::HoverOrMove,
             },
         }
     }
@@ -485,6 +492,39 @@ impl SidebarControlBuilder {
 
     pub fn scrollbar_template(mut self, template: Arc<dyn ScrollbarTemplate>) -> Self {
         self.model.scrollbar_template = template;
+        self
+    }
+
+    pub fn scrollbar_placement(mut self, placement: ScrollbarPlacement) -> Self {
+        self.model.scrollbar_placement = placement;
+        self
+    }
+
+    pub fn overlay_scrollbar(mut self, overlay: bool) -> Self {
+        self.model.scrollbar_placement = if overlay {
+            ScrollbarPlacement::Overlay
+        } else {
+            ScrollbarPlacement::Inset
+        };
+        self
+    }
+
+    pub fn scrollbar_visibility(mut self, visibility: ScrollbarVisibility) -> Self {
+        self.model.scrollbar_visibility = visibility;
+        self
+    }
+
+    pub fn auto_hide_scrollbar(mut self, auto_hide: bool) -> Self {
+        self.model.scrollbar_visibility = if auto_hide {
+            ScrollbarVisibility::AutoHide
+        } else {
+            ScrollbarVisibility::AlwaysVisible
+        };
+        self
+    }
+
+    pub fn auto_hide_scrollbar_activate(mut self, activate: ScrollbarAutoHideActivate) -> Self {
+        self.model.scrollbar_auto_hide_activate = activate;
         self
     }
 
