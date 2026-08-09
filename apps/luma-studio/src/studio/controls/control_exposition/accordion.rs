@@ -61,7 +61,6 @@ impl Render for AccordionExpositionLeftPane {
                 .max_w(px(420.0))
                 .flex()
                 .flex_col()
-                .items_start()
                 .gap(px(16.0))
                 .child(demo_section("Single expansion", muted, self.single.clone()))
                 .child(demo_section("Multiple expansion", muted, self.multiple.clone()))
@@ -258,10 +257,9 @@ fn demo_section(title: &'static str, title_color: gpui::Hsla, content: impl Into
         .w_full()
         .flex()
         .flex_col()
-        .items_start()
         .gap(px(4.0))
         .child(section_label(title, title_color))
-        .child(content)
+        .child(div().w_full().child(content))
 }
 
 fn section_label(label: &'static str, color: gpui::Hsla) -> impl IntoElement {

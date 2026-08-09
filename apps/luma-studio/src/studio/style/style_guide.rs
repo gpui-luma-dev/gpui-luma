@@ -1123,6 +1123,7 @@ impl StyleGuidePanel {
                 self.look.clone(),
                 self.accordion_preview_tabs.clone().expect("accordion preview tabs"),
                 self.accordion_preview.clone().expect("accordion preview"),
+                window,
                 cx,
             ),
             StyleGuideSection::Toolbar => sections::toolbar::render_toolbar_template_section(

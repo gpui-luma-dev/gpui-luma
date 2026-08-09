@@ -352,6 +352,7 @@ impl Render for AccordionControl {
         let handlers = self.template_handlers(cx);
 
         div()
+            .w_full()
             .child(
                 self.model
                     .template
