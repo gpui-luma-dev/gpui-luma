@@ -12,6 +12,7 @@ pub type AccordionHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'sta
 pub type AccordionMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type AccordionMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 pub type AccordionClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
+pub type AccordionContentHeightHandler = Box<dyn Fn(f32, &mut Window, &mut App) + 'static>;
 pub type AccordionTemplateModifier =
     Box<dyn Fn(Stateful<Div>, &AccordionRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
 
@@ -21,6 +22,7 @@ pub struct AccordionTemplateHandlers {
     pub trigger_mouse_downs: Vec<AccordionMouseDownHandler>,
     pub trigger_mouse_ups: Vec<AccordionMouseUpHandler>,
     pub trigger_clicks: Vec<AccordionClickHandler>,
+    pub content_height_reports: Vec<AccordionContentHeightHandler>,
 }
 
 pub trait AccordionTemplate: Send + Sync {
@@ -130,13 +132,19 @@ impl AccordionTemplate for ThemedAccordionTemplate {
             |metrics| super::theme::AccordionScale::compute(model.size, metrics, scale_factor),
         );
 
-        let AccordionTemplateHandlers { trigger_hovers, trigger_mouse_downs, trigger_mouse_ups, trigger_clicks } =
-            handlers;
+        let AccordionTemplateHandlers {
+            trigger_hovers,
+            trigger_mouse_downs,
+            trigger_mouse_ups,
+            trigger_clicks,
+            content_height_reports,
+        } = handlers;
 
         let mut trigger_hovers = trigger_hovers.into_iter();
         let mut trigger_mouse_downs = trigger_mouse_downs.into_iter();
         let mut trigger_mouse_ups = trigger_mouse_ups.into_iter();
         let mut trigger_clicks = trigger_clicks.into_iter();
+        let mut content_height_reports = content_height_reports.into_iter();
 
         let mut root = div().id(model.id.clone()).flex().flex_col().w_full().gap(px(scale.item_gap));
 
@@ -153,9 +161,11 @@ impl AccordionTemplate for ThemedAccordionTemplate {
             let Some(click_handler) = trigger_clicks.next() else {
                 break;
             };
+            let height_report = content_height_reports.next();
 
+            let content_visible = item.expanded || item.progress > 0.0;
             let trigger_palette = self.theme.resolve_trigger(item.state.interaction_state(), model.size);
-            let content_palette = self.theme.resolve_content(item.expanded);
+            let content_palette = self.theme.resolve_content(content_visible);
             let trigger_min_height = model.trigger_min_height.unwrap_or(scale.trigger_height);
             let trigger_padding_y = model.trigger_padding_y.unwrap_or(scale.padding_y);
 
@@ -202,7 +212,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 }
             };
 
-            let chevron_icon = if item.expanded {
+            let chevron_icon = if item.progress >= 0.5 {
                 LucideIcon::ChevronDown
             } else {
                 LucideIcon::ChevronRight
@@ -215,8 +225,29 @@ impl AccordionTemplate for ThemedAccordionTemplate {
             let content_padding_top = model.content_padding_top.unwrap_or(content_padding_y);
             let content_padding_bottom = model.content_padding_bottom.unwrap_or(content_padding_y);
 
-            let content_el = if item.expanded {
-                let mut content = div()
+            let content_el = if content_visible {
+                // Clip host uses explicit `h` (not only `max_h`) so collapse shrinks layout
+                // height each frame and siblings below reflow smoothly.
+                let mut clip = div().w_full().overflow_hidden().opacity(item.progress).flex_shrink_0();
+
+                if item.content_height_px > f32::EPSILON {
+                    clip = clip.h(px(item.content_height_px * item.progress));
+                } else if item.progress < 1.0 - f32::EPSILON {
+                    clip = clip.h(px(0.0));
+                }
+
+                if let Some(height_report) = height_report {
+                    // Inner already includes vertical padding; do not add pad_y again.
+                    clip = clip.on_children_prepainted(move |bounds, window, cx| {
+                        let height =
+                            bounds.iter().map(|child| child.size.height.as_f32()).fold(0.0_f32, f32::max);
+                        if height > f32::EPSILON {
+                            height_report(height, window, cx);
+                        }
+                    });
+                }
+
+                let mut inner = div()
                     .id(format!("{}-content", item.id))
                     .w_full()
                     .px(px(scale.padding_x))
@@ -225,14 +256,14 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                     .text_color(content_palette.foreground);
 
                 if let Some(background) = content_palette.background {
-                    content = content.bg(background);
+                    inner = inner.bg(background);
                 }
 
                 if let Some(renderer) = &item.content.element {
-                    content = content.child(renderer(window, cx));
+                    inner = inner.child(renderer(window, cx));
                 }
 
-                Some(content)
+                Some(clip.child(inner))
             } else {
                 None
             };

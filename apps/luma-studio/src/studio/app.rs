@@ -501,10 +501,7 @@ impl LumaStudioApp {
 
         // Refresh only on settled events. SizesChanged also fires during live drag;
         // re-entering set_host_content_width there breaks the splitter grab.
-        if matches!(
-            event,
-            ResizablePanelsEvent::PanelHiddenChanged { .. } | ResizablePanelsEvent::ResizeEnd { .. }
-        ) {
+        if matches!(event, ResizablePanelsEvent::PanelHiddenChanged { .. } | ResizablePanelsEvent::ResizeEnd { .. }) {
             self.refresh_controls_layout(cx);
             dirty = true;
         }

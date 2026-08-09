@@ -90,6 +90,7 @@ pub struct AccordionModel {
     pub(crate) selection_mode: AccordionSelectionMode,
     pub(crate) collapsible: bool,
     pub(crate) enabled: bool,
+    pub(crate) animated: bool,
     pub(crate) size: ControlSize,
     pub(crate) item_dividers: bool,
     /// When set, overrides themed vertical padding inside expanded item panels (both edges).
@@ -110,6 +111,10 @@ pub struct AccordionItemRenderModel<'a> {
     pub trigger: &'a AccordionTrigger,
     pub content: &'a AccordionContent,
     pub expanded: bool,
+    /// Expand/collapse transition progress in range `0.0`..`1.0`.
+    pub progress: f32,
+    /// Cached natural content height in pixels (0.0 until measured).
+    pub content_height_px: f32,
     pub enabled: bool,
     pub state: crate::controls::state::CompositeItemState,
 }
@@ -143,6 +148,7 @@ impl AccordionBuilder {
                 selection_mode: AccordionSelectionMode::Single,
                 collapsible: true,
                 enabled: true,
+                animated: true,
                 size: ControlSize::Md,
                 item_dividers: true,
                 content_padding_y: None,
@@ -157,6 +163,12 @@ impl AccordionBuilder {
 
     pub fn mode(mut self, mode: AccordionSelectionMode) -> Self {
         self.model.selection_mode = mode;
+        self
+    }
+
+    /// Enables or disables expand/collapse animation (default `true`).
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.model.animated = animated;
         self
     }
 
@@ -238,5 +250,19 @@ impl AccordionBuilder {
 
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<AccordionControl> {
         cx.new(|cx| AccordionControl::from_builder(self, cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AccordionBuilder;
+
+    #[test]
+    fn test_accordion_builder_animated_option() {
+        let builder_default = AccordionBuilder::new("accordion");
+        assert!(builder_default.model.animated);
+
+        let builder_opt_out = AccordionBuilder::new("accordion").animated(false);
+        assert!(!builder_opt_out.model.animated);
     }
 }

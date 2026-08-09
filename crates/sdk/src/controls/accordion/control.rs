@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::time::Duration;
 
 use gpui::{
     App, Context, EventEmitter, FocusOutEvent, Focusable, FocusHandle, IntoElement, Render, SharedString, Subscription,
@@ -10,6 +11,7 @@ use super::{
     AccordionBuilder, AccordionItem, AccordionItemRenderModel, AccordionModel, AccordionRenderModel,
     AccordionSelectionMode, AccordionTemplateHandlers,
 };
+use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::state::{CompositeItemState, ControlFocusState};
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectNextRow,
@@ -39,6 +41,8 @@ pub struct AccordionControl {
     focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
     expanded_ids: HashSet<SharedString>,
+    transitions: Vec<VisualTransition>,
+    content_heights_px: Vec<f32>,
     focused_item_index: Option<usize>,
     hovered_item_index: Option<usize>,
     pressed_item_index: Option<usize>,
@@ -61,6 +65,22 @@ impl AccordionControl {
             }
         }
 
+        let duration = if builder.model.animated {
+            DEFAULT_TRANSITION_DURATION
+        } else {
+            Duration::ZERO
+        };
+        let transitions = builder
+            .model
+            .items
+            .iter()
+            .map(|item| {
+                let initial = if expanded_ids.contains(&item.id) { 1.0 } else { 0.0 };
+                VisualTransition::new(initial, duration)
+            })
+            .collect();
+        let content_heights_px = vec![0.0; builder.model.items.len()];
+
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
             model: builder.model,
@@ -68,6 +88,8 @@ impl AccordionControl {
             focus_in_subscription: None,
             focus_out_subscription: None,
             expanded_ids,
+            transitions,
+            content_heights_px,
             focused_item_index: None,
             hovered_item_index: None,
             pressed_item_index: None,
@@ -126,9 +148,39 @@ impl AccordionControl {
 
         let id = item.id.clone();
         for event in apply_toggle(&mut self.expanded_ids, self.model.selection_mode, self.model.collapsible, id) {
+            if let AccordionEvent::ExpandedChanged { item_id, expanded } = &event
+                && let Some(item_index) = self.model.items.iter().position(|item| item.id == *item_id)
+                && let Some(transition) = self.transitions.get_mut(item_index)
+            {
+                transition.set_target(if *expanded { 1.0 } else { 0.0 });
+            }
             cx.emit(event);
         }
 
+        cx.notify();
+    }
+
+    pub(crate) fn set_content_height(&mut self, index: usize, height: f32, cx: &mut Context<Self>) {
+        let Some(slot) = self.content_heights_px.get_mut(index) else {
+            return;
+        };
+        let height = height.max(0.0);
+        let settled_open = self
+            .transitions
+            .get(index)
+            .is_some_and(|transition| !transition.is_animating() && transition.progress() >= 1.0 - f32::EPSILON);
+
+        if settled_open {
+            // Fully open: accept the natural height (corrects oversized caches).
+            if (height - *slot).abs() <= 0.5 {
+                return;
+            }
+        } else if height <= *slot + 0.5 {
+            // Mid-animation: only grow so clipped frames cannot shrink the cache.
+            return;
+        }
+
+        *slot = height;
         cx.notify();
     }
 
@@ -144,12 +196,20 @@ impl AccordionControl {
                 let item_enabled = self.model.enabled && item.enabled;
                 let expanded = self.expanded_ids.contains(&item.id);
                 let has_keyboard_focus = focus.focused && self.focused_item_index == Some(index);
+                let progress =
+                    self.transitions
+                        .get(index)
+                        .map(|transition| transition.progress())
+                        .unwrap_or_else(|| if expanded { 1.0 } else { 0.0 });
+                let content_height_px = self.content_heights_px.get(index).copied().unwrap_or(0.0);
 
                 AccordionItemRenderModel {
                     id: &item.id,
                     trigger: &item.trigger,
                     content: &item.content,
                     expanded,
+                    progress,
+                    content_height_px,
                     enabled: item_enabled,
                     state: CompositeItemState {
                         hovered: item_enabled && self.hovered_item_index == Some(index),
@@ -240,6 +300,16 @@ impl AccordionControl {
                     Box::new(cx.listener(move |this, _, _, cx| {
                         this.toggle_item(idx, cx);
                     })) as _
+                })
+                .collect(),
+            content_height_reports: (0..self.model.items.len())
+                .map(|idx| {
+                    let entity = cx.entity().clone();
+                    Box::new(move |height: f32, _: &mut Window, cx: &mut App| {
+                        entity.update(cx, |this, cx| {
+                            this.set_content_height(idx, height, cx);
+                        });
+                    }) as _
                 })
                 .collect(),
         }
@@ -339,6 +409,18 @@ impl Focusable for AccordionControl {
 
 impl Render for AccordionControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let mut was_animating = false;
+        let mut is_animating = false;
+        for transition in &mut self.transitions {
+            was_animating |= transition.is_animating();
+            let animating = transition.sync();
+            is_animating |= animating || transition.is_animating();
+            transition.schedule_frame(window, cx);
+        }
+        if was_animating || is_animating {
+            cx.notify();
+        }
+
         if self.focus_in_subscription.is_none() {
             let focus_handle = self.focus_handle.clone();
             self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));

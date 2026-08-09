@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{
-    AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px,
-};
+use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::accordion::{
     Accordion, AccordionContent, AccordionItem, AccordionItemRenderModel, AccordionRenderModel, AccordionSelectionMode,
     AccordionTemplate, AccordionTemplateHandlers, AccordionTrigger,
@@ -117,13 +115,15 @@ fn render_template_preview_body(look: &Arc<ShadcnLook>, window: &mut Window, cx:
     )
     .row_group_label("EXPANSION")
     .column_headers(samples.iter().map(|sample| render_icon_button_state_header_cell(sample, chrome.muted_text)))
-    .rows(ACCORDION_TEMPLATE_ROWS.iter().map(|row| VariantStateTableRow {
-        label: SharedString::from(row.label),
-        description: SharedString::from(""),
-        cells: samples
-            .iter()
-            .map(|sample| render_accordion_state_cell(&template, row, sample, window, cx))
-            .collect(),
+    .rows(ACCORDION_TEMPLATE_ROWS.iter().map(|row| {
+        VariantStateTableRow {
+            label: SharedString::from(row.label),
+            description: SharedString::from(""),
+            cells: samples
+                .iter()
+                .map(|sample| render_accordion_state_cell(&template, row, sample, window, cx))
+                .collect(),
+        }
     }))
     .build()
 }
@@ -179,10 +179,8 @@ fn render_accordion_state_cell(
         active: enabled && sample.state.focused,
         focus_visible: enabled && sample.state.focused,
     };
-    let focus = ControlFocusState {
-        focused: enabled && sample.state.focused,
-        focus_visible: enabled && sample.state.focused,
-    };
+    let focus =
+        ControlFocusState { focused: enabled && sample.state.focused, focus_visible: enabled && sample.state.focused };
 
     let model = AccordionRenderModel {
         id: &root_id,
@@ -191,6 +189,8 @@ fn render_accordion_state_cell(
             trigger: &trigger,
             content: &content,
             expanded: row.expanded,
+            progress: if row.expanded { 1.0 } else { 0.0 },
+            content_height_px: 0.0,
             enabled,
             state: item_state,
         }],
@@ -221,16 +221,13 @@ fn noop_template_handlers(count: usize) -> AccordionTemplateHandlers {
         trigger_mouse_downs: (0..count).map(|_| Box::new(input_noop_mouse_down) as _).collect(),
         trigger_mouse_ups: (0..count).map(|_| Box::new(input_noop_mouse_up) as _).collect(),
         trigger_clicks: (0..count).map(|_| Box::new(input_noop_click) as _).collect(),
+        content_height_reports: Vec::new(),
     }
 }
 
 fn accordion_template_state_samples() -> [ButtonStateSample; 5] {
     [
-        ButtonStateSample {
-            id: "default",
-            header: "default",
-            state: gpui_luma::theme::InteractionState::default(),
-        },
+        ButtonStateSample { id: "default", header: "default", state: gpui_luma::theme::InteractionState::default() },
         ButtonStateSample {
             id: "hover",
             header: "hover",

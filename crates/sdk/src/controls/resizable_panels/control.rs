@@ -827,7 +827,7 @@ impl ResizablePanels {
             if p0 < 1.0 || self.transitions[0].is_animating() {
                 let full_w0 = if self.is_panel_hidden(0) {
                     self.panel_hide_restore
-                        .get(0)
+                        .first()
                         .and_then(|opt| opt.as_ref())
                         .map(|r| r.left_px)
                         .unwrap_or(raw_sizes[0])
