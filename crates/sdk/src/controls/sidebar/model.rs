@@ -83,6 +83,7 @@ pub struct SidebarControlModel {
     pub(crate) collapsible: SidebarCollapsible,
     pub(crate) variant: SidebarVariant,
     pub(crate) enabled: bool,
+    pub(crate) animated: bool,
     pub(crate) selected_id: Option<SharedString>,
     pub(crate) sidebar: Option<SidebarPanelModel>,
     pub(crate) inset: Option<SidebarInsetModel>,
@@ -430,6 +431,7 @@ impl SidebarControlBuilder {
                 collapsible: SidebarCollapsible::Icon,
                 variant: SidebarVariant::Sidebar,
                 enabled: true,
+                animated: true,
                 selected_id: None,
                 sidebar: None,
                 inset: None,
@@ -459,6 +461,11 @@ impl SidebarControlBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.model.animated = animated;
         self
     }
 
@@ -654,5 +661,14 @@ mod tests {
         assert!(nodes[3].is_expanded());
         assert_eq!(footer.len(), 1);
         assert_eq!(footer[0].id().as_ref(), "audit");
+    }
+
+    #[test]
+    fn test_sidebar_builder_animated_option() {
+        let builder_default = SidebarControlBuilder::new("sidebar");
+        assert!(builder_default.model.animated);
+
+        let builder_opt_out = SidebarControlBuilder::new("sidebar").animated(false);
+        assert!(!builder_opt_out.model.animated);
     }
 }

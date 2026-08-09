@@ -11,6 +11,7 @@ use super::{
         ResizablePanelsRenderModel,
     },
 };
+use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::theme::InteractionState;
 
 #[derive(Clone, Debug)]
@@ -43,6 +44,8 @@ struct CollapseRestoreState {
     target_index: usize,
     left_state: PanelLayoutState,
     right_state: PanelLayoutState,
+    left_px: f32,
+    right_px: f32,
     left_min_override: bool,
     right_min_override: bool,
     content_axis_px: f32,
@@ -76,6 +79,7 @@ pub struct ResizablePanels {
     /// Content-axis size at drag start; stabilizes weight panes during handle moves.
     drag_content_axis_px: Option<f32>,
     measured_size: Option<gpui::Size<Pixels>>,
+    transitions: Vec<VisualTransition>,
 }
 
 impl EventEmitter<ResizablePanelsEvent> for ResizablePanels {}
@@ -113,6 +117,13 @@ impl ResizablePanels {
         let panel_sizes_px =
             solve_layout_px_with_min_overrides(&builder.model.panels, &layout_states, &collapsed_min_overrides, 1.0);
 
+        let duration = if builder.model.animated {
+            DEFAULT_TRANSITION_DURATION
+        } else {
+            std::time::Duration::ZERO
+        };
+        let transitions = vec![VisualTransition::new(1.0, duration); builder.model.panels.len()];
+
         Self {
             model: builder.model,
             layout_states,
@@ -129,6 +140,7 @@ impl ResizablePanels {
             drag_start_states: Vec::new(),
             drag_content_axis_px: None,
             measured_size: None,
+            transitions,
         }
     }
 
@@ -305,6 +317,26 @@ impl ResizablePanels {
         self.model.enabled
     }
 
+    pub fn animated(&self) -> bool {
+        self.model.animated
+    }
+
+    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
+        if self.model.animated == animated {
+            return;
+        }
+        self.model.animated = animated;
+        let duration = if animated {
+            DEFAULT_TRANSITION_DURATION
+        } else {
+            std::time::Duration::ZERO
+        };
+        for transition in &mut self.transitions {
+            *transition = VisualTransition::new(transition.progress(), duration);
+        }
+        cx.notify();
+    }
+
     pub fn show_handle(&self) -> bool {
         self.model.handle_visibility == ResizeHandleVisibility::Always
     }
@@ -355,11 +387,14 @@ impl ResizablePanels {
         }
 
         self.panel_hide_restore[panel_index] = Some(restore);
+        self.transitions[panel_index].set_target(0.0);
         self.refresh_panel_sizes_px();
         let sizes_px = self.panel_sizes_px.clone();
         cx.emit(ResizablePanelsEvent::ResizeStart);
-        cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
-        cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+        if !self.model.animated {
+            cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
+            cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+        }
         cx.emit(ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden: true });
         cx.notify();
     }
@@ -369,11 +404,18 @@ impl ResizablePanels {
         let Some(restore) = self.panel_hide_restore.get(panel_index).and_then(Option::as_ref).cloned() else {
             return;
         };
-        if self.apply_restore_state(restore, cx) {
+        // When animated, suppress settle events here — render defers them when the transition ends.
+        if self.apply_restore_state(restore, !self.model.animated, cx) {
             if let Some(panel_restore) = self.panel_hide_restore.get_mut(panel_index) {
                 *panel_restore = None;
             }
+            self.transitions[panel_index].set_target(1.0);
+            self.refresh_panel_sizes_px();
+            if self.model.animated {
+                cx.emit(ResizablePanelsEvent::ResizeStart);
+            }
             cx.emit(ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden: false });
+            cx.notify();
         }
     }
 
@@ -492,13 +534,20 @@ impl ResizablePanels {
             target_index,
             left_state: self.layout_states[handle_index],
             right_state: self.layout_states[handle_index + 1],
+            left_px: self.panel_sizes_px.get(handle_index).copied().unwrap_or(0.0),
+            right_px: self.panel_sizes_px.get(handle_index + 1).copied().unwrap_or(0.0),
             left_min_override: self.collapsed_min_overrides.get(handle_index).copied().unwrap_or(false),
             right_min_override: self.collapsed_min_overrides.get(handle_index + 1).copied().unwrap_or(false),
             content_axis_px: self.content_axis_size_px(),
         }
     }
 
-    fn apply_restore_state(&mut self, restore: CollapseRestoreState, cx: &mut Context<Self>) -> bool {
+    fn apply_restore_state(
+        &mut self,
+        restore: CollapseRestoreState,
+        emit_resize_events: bool,
+        cx: &mut Context<Self>,
+    ) -> bool {
         if restore.handle_index + 1 >= self.layout_states.len() {
             return false;
         }
@@ -514,10 +563,12 @@ impl ResizablePanels {
         self.scale_restored_pair_to_current_axis(&restore);
         self.clear_collapse_restore_for_pair(restore.handle_index);
         self.refresh_panel_sizes_px();
-        let sizes_px = self.panel_sizes_px.clone();
-        cx.emit(ResizablePanelsEvent::ResizeStart);
-        cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
-        cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+        if emit_resize_events {
+            let sizes_px = self.panel_sizes_px.clone();
+            cx.emit(ResizablePanelsEvent::ResizeStart);
+            cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
+            cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+        }
         cx.notify();
         true
     }
@@ -554,7 +605,7 @@ impl ResizablePanels {
             .filter(|restore| restore.handle_index == index && restore.target_index == target_index)
             .cloned()
         {
-            return self.apply_restore_state(restore, cx);
+            return self.apply_restore_state(restore, true, cx);
         }
 
         self.clear_pair_restore_state(index, cx);
@@ -754,12 +805,55 @@ impl ResizablePanels {
     }
 
     fn refresh_panel_sizes_px(&mut self) {
-        self.panel_sizes_px = solve_layout_px_with_min_overrides(
+        let raw_sizes = solve_layout_px_with_min_overrides(
             &self.model.panels,
             &self.layout_states,
             &self.collapsed_min_overrides,
             self.content_axis_size_px(),
         );
+
+        if !self.model.animated || self.transitions.is_empty() {
+            self.panel_sizes_px = raw_sizes;
+            return;
+        }
+
+        let mut animated_sizes = raw_sizes.clone();
+        let total_axis = self.content_axis_size_px();
+
+        if self.model.panels.len() == 2 {
+            let p0 = self.transitions[0].progress();
+            let p1 = self.transitions[1].progress();
+
+            if p0 < 1.0 || self.transitions[0].is_animating() {
+                let full_w0 = if self.is_panel_hidden(0) {
+                    self.panel_hide_restore
+                        .get(0)
+                        .and_then(|opt| opt.as_ref())
+                        .map(|r| r.left_px)
+                        .unwrap_or(raw_sizes[0])
+                } else {
+                    raw_sizes[0]
+                };
+                let w0 = full_w0 * p0;
+                animated_sizes[0] = w0;
+                animated_sizes[1] = (total_axis - w0).max(0.0);
+            } else if p1 < 1.0 || self.transitions[1].is_animating() {
+                let full_w1 = if self.is_panel_hidden(1) {
+                    self.panel_hide_restore
+                        .get(1)
+                        .and_then(|opt| opt.as_ref())
+                        .map(|r| r.right_px)
+                        .unwrap_or(raw_sizes[1])
+                } else {
+                    raw_sizes[1]
+                };
+                let w1 = full_w1 * p1;
+                animated_sizes[1] = w1;
+                animated_sizes[0] = (total_axis - w1).max(0.0);
+            }
+        }
+
+        self.panel_sizes_px = animated_sizes;
     }
 
     fn render_model(&self) -> ResizablePanelsRenderModel<'_> {
@@ -806,8 +900,35 @@ impl ResizablePanels {
 
 impl Render for ResizablePanels {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let mut was_animating = false;
+        let mut now_animating = false;
+
+        for transition in &mut self.transitions {
+            if transition.is_animating() {
+                was_animating = true;
+            }
+            if transition.sync() {
+                now_animating = true;
+            }
+            transition.schedule_frame(window, cx);
+        }
+
         self.sync_handle_focus_subscriptions(window, cx);
         self.refresh_panel_sizes_px();
+
+        // Never emit from render — subscribers (e.g. studio layout refresh) must not re-enter
+        // layout while the element tree is being built. Defer settle events to the effect cycle.
+        if was_animating && !now_animating {
+            let sizes_px = self.panel_sizes_px.clone();
+            let entity = cx.entity();
+            cx.defer(move |cx| {
+                entity.update(cx, |_, cx| {
+                    cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
+                    cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+                });
+            });
+        }
+
         let look = self.model.theme.resolve(InteractionState { disabled: !self.model.enabled, ..Default::default() });
         let model = self.render_model();
         let template = self.model.template.clone();

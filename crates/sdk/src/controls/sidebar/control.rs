@@ -9,6 +9,7 @@ use super::model::{
 };
 use super::template::{SidebarRenderModel, SidebarTemplate, default_sidebar_template, render_inset_column};
 use super::theme::{SidebarCollapsible, SidebarVariant};
+use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::scrollbar::ScrollbarTemplate;
 use crate::theme::observe_theme_revision;
 
@@ -57,6 +58,7 @@ pub enum SidebarEvent {
 pub struct SidebarControl {
     model: SidebarControlModel,
     open: bool,
+    transition: VisualTransition,
     panel: Entity<SidebarPanelEngine>,
     inset: Option<SidebarInsetModel>,
     template: Arc<dyn SidebarTemplate>,
@@ -89,11 +91,36 @@ impl SidebarControl {
             this.handle_panel_engine_event(event, cx);
         }));
 
-        Self { model, open, panel, inset, template: default_sidebar_template(), _subscriptions: subscriptions }
+        let duration = if model.animated {
+            DEFAULT_TRANSITION_DURATION
+        } else {
+            std::time::Duration::ZERO
+        };
+        let transition = VisualTransition::new(if open { 1.0 } else { 0.0 }, duration);
+
+        Self {
+            model,
+            open,
+            transition,
+            panel,
+            inset,
+            template: default_sidebar_template(),
+            _subscriptions: subscriptions,
+        }
     }
 
     pub fn open(&self) -> bool {
         self.open
+    }
+
+    /// Returns current expand/collapse transition progress (range `0.0`..`1.0`).
+    pub fn transition_progress(&self) -> f32 {
+        self.transition.progress()
+    }
+
+    /// Returns interpolated sidebar width based on transition progress between `rail_width` and `expanded_width`.
+    pub fn animated_width(&self, expanded_width: Pixels, rail_width: Pixels) -> Pixels {
+        self.transition.interpolate_pixels(rail_width, expanded_width)
     }
 
     pub fn collapsible(&self) -> SidebarCollapsible {
@@ -109,6 +136,7 @@ impl SidebarControl {
             return;
         }
         self.open = open;
+        self.transition.set_target(if open { 1.0 } else { 0.0 });
         self.sync_panel_collapsed_state(cx);
         cx.emit(SidebarEvent::OpenChanged { open, collapsible: self.model.collapsible });
         if !open && matches!(self.model.collapsible, SidebarCollapsible::Offcanvas) {
@@ -210,6 +238,7 @@ impl SidebarControl {
                 let open = !*collapsed;
                 if self.open != open {
                     self.open = open;
+                    self.transition.set_target(if open { 1.0 } else { 0.0 });
                     cx.emit(SidebarEvent::OpenChanged { open, collapsible: self.model.collapsible });
                     cx.notify();
                 }
@@ -236,7 +265,14 @@ impl SidebarControl {
 }
 
 impl Render for SidebarControl {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let was_animating = self.transition.is_animating();
+        let _ = self.transition.sync();
+        self.transition.schedule_frame(window, cx);
+        if was_animating || self.transition.is_animating() {
+            cx.notify();
+        }
+
         let inset = self
             .inset
             .as_ref()

@@ -219,6 +219,7 @@ pub struct ResizablePanelsModel {
     pub(crate) frame_height: Option<Pixels>,
     pub(crate) show_border: bool,
     pub(crate) enabled: bool,
+    pub(crate) animated: bool,
     pub(crate) handle_visibility: ResizeHandleVisibility,
     pub(crate) double_click_collapse: Option<ResizeCollapseBehavior>,
     pub(crate) resize_handle: ResizeHandleSize,
@@ -275,6 +276,7 @@ impl ResizablePanelsBuilder {
                 frame_height: None,
                 show_border: true,
                 enabled: true,
+                animated: true,
                 handle_visibility: ResizeHandleVisibility::Hidden,
                 double_click_collapse: None,
                 resize_handle: ResizeHandleSize::Sm,
@@ -319,6 +321,11 @@ impl ResizablePanelsBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.model.animated = animated;
         self
     }
 
@@ -473,5 +480,14 @@ mod resize_handle_tests {
             .with_template_modifier(|element, _| element);
 
         assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn test_resizable_panels_builder_animated_option() {
+        let builder_default = ResizablePanelsBuilder::new("panels");
+        assert!(builder_default.model.animated);
+
+        let builder_opt_out = ResizablePanelsBuilder::new("panels").animated(false);
+        assert!(!builder_opt_out.model.animated);
     }
 }

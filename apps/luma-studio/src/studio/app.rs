@@ -482,6 +482,8 @@ impl LumaStudioApp {
     }
 
     fn handle_workbench_event(&mut self, event: &ResizablePanelsEvent, cx: &mut Context<Self>) {
+        let mut dirty = false;
+
         if let ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden } = event
             && *panel_index == LEFT_SIDEBAR_PANEL_INDEX
         {
@@ -494,12 +496,23 @@ impl LumaStudioApp {
             self.sidebar_toggle.update(cx, |button, cx| {
                 button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(icon)), cx);
             });
+            dirty = true;
         }
 
-        if matches!(event, ResizablePanelsEvent::PanelHiddenChanged { .. } | ResizablePanelsEvent::ResizeEnd { .. }) {
+        // Refresh only on settled events. SizesChanged also fires during live drag;
+        // re-entering set_host_content_width there breaks the splitter grab.
+        if matches!(
+            event,
+            ResizablePanelsEvent::PanelHiddenChanged { .. } | ResizablePanelsEvent::ResizeEnd { .. }
+        ) {
             self.refresh_controls_layout(cx);
+            dirty = true;
         }
-        cx.notify();
+
+        // Avoid full-app re-renders on hover/size churn — those disrupt handle hit-testing.
+        if dirty {
+            cx.notify();
+        }
     }
 
     fn toggle_sidebar(&mut self, cx: &mut Context<Self>) {

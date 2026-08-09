@@ -273,12 +273,15 @@ fn render_overlay_handle(
         ResizeHandleVisibility::Hover => handle_active,
         ResizeHandleVisibility::Hidden => false,
     };
-    let lane_px = if show_handle {
-        handle_metrics.lane_px.max(1.0)
+    let handle_hit_px = handle_hit_target_main_axis_px(handle_metrics);
+    // Shell must be at least as wide as the hit target. Nesting a 12px hit layer inside a
+    // 1px Hover-collapsed lane clips the grab area to a razor line (cursor flashes, drag fails).
+    let layout_lane_px = if show_handle {
+        handle_metrics.lane_px.max(handle_hit_px)
     } else {
-        1.0
+        handle_hit_px
     };
-    let (origin_px, lane_px, divider_local_px) = handle_overlay_geometry(split_px, lane_px);
+    let (origin_px, lane_px, divider_local_px) = handle_overlay_geometry(split_px, layout_lane_px);
 
     let mut handle = div()
         .id(handle_id)
@@ -304,7 +307,6 @@ fn render_overlay_handle(
     };
 
     let drag_payload = ResizablePanelsHandleDrag { id: model.id.clone(), handle_index: index };
-    let handle_hit_px = handle_hit_target_main_axis_px(handle_metrics);
     let interaction_layer = render_handle_interaction_layer(
         index,
         model.id.clone(),

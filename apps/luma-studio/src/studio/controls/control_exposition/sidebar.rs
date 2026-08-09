@@ -148,11 +148,8 @@ impl Render for SidebarExpositionLeftPane {
         with_look(&self.look, || {
             let look = &self.look;
             let metrics = look.sidebar_metric_scale();
-            let control_width = if self.control_open.get() {
-                metrics.width_expanded
-            } else {
-                metrics.width_icon_rail
-            };
+            let control_width =
+                self.sidebar_control.read(cx).animated_width(metrics.width_expanded, metrics.width_icon_rail);
 
             let preview = div()
                 .w_full()
@@ -230,6 +227,12 @@ impl SidebarControlExposition {
         );
 
         let control_open_cell = control_open.clone();
+        let observe_subscription = cx.observe(&sidebar_control, {
+            let left_pane = left_pane.clone();
+            move |_, _, cx| {
+                left_pane.update(cx, |_, cx| cx.notify());
+            }
+        });
         let control_subscription = cx.subscribe(&sidebar_control, {
             let event_stream = event_stream.clone();
             let left_pane = left_pane.clone();
@@ -265,7 +268,12 @@ impl SidebarControlExposition {
             left_pane,
             theme_inspector,
             inspector_split,
-            _subscriptions: vec![control_subscription, toggle_subscription, user_menu_subscription],
+            _subscriptions: vec![
+                observe_subscription,
+                control_subscription,
+                toggle_subscription,
+                user_menu_subscription,
+            ],
         }
     }
 

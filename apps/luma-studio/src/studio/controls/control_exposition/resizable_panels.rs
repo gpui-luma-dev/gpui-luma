@@ -41,11 +41,17 @@ struct ResizablePanelsExpositionLeftPane {
     horizontal: Entity<ResizablePanels>,
     vertical: Entity<ResizablePanels>,
     controlled: Entity<ResizablePanels>,
+    animated_panels: Entity<ResizablePanels>,
+    instant_panels: Entity<ResizablePanels>,
     reset_controlled_button: Entity<Button>,
+    toggle_animated_button: Entity<Button>,
+    toggle_instant_button: Entity<Button>,
     controlled_panel_sizes: Rc<Cell<[f32; 2]>>,
     horizontal_sizes: String,
     vertical_sizes: String,
     controlled_sizes: String,
+    animated_sizes: String,
+    instant_sizes: String,
     event_stream: Entity<ControlEventStream>,
 }
 
@@ -69,6 +75,10 @@ impl ResizablePanelsExpositionLeftPane {
         self.horizontal.update(cx, |_, cx| cx.notify());
         self.vertical.update(cx, |_, cx| cx.notify());
         self.controlled.update(cx, |_, cx| cx.notify());
+        self.animated_panels.update(cx, |_, cx| cx.notify());
+        self.instant_panels.update(cx, |_, cx| cx.notify());
+        self.toggle_animated_button.update(cx, |_, cx| cx.notify());
+        self.toggle_instant_button.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
     }
@@ -116,6 +126,34 @@ impl Render for ResizablePanelsExpositionLeftPane {
                         .gap(px(8.0))
                         .child(self.controlled.clone())
                         .child(self.reset_controlled_button.clone()),
+                ))
+                .child(demo_frame(
+                    look,
+                    "Animated transition (animated: true)",
+                    &self.animated_sizes,
+                    label_color,
+                    chrome.border,
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap(px(8.0))
+                        .child(self.animated_panels.clone())
+                        .child(self.toggle_animated_button.clone()),
+                ))
+                .child(demo_frame(
+                    look,
+                    "Instant / Non-animated (animated: false)",
+                    &self.instant_sizes,
+                    label_color,
+                    chrome.border,
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap(px(8.0))
+                        .child(self.instant_panels.clone())
+                        .child(self.toggle_instant_button.clone()),
                 ))
                 .child(self.event_stream.clone());
 
@@ -246,6 +284,62 @@ impl ResizablePanelsControlExposition {
         let reset_controlled_button =
             look.secondary_button("controls-doc-resizable-controlled-reset").label("Reset (30 / 70)").spawn(cx);
 
+        let animated_panels = resizable_panels! {
+            cx,
+            theme = look.resizable_panels_theme(),
+            id: "controls-doc-resizable-animated",
+            layout: Horizontal,
+            show_handle: true,
+            resize_handle: Sm,
+            handle_grip: true,
+            size: (px(DEMO_WIDTH), px(DEMO_HEIGHT)),
+            panels: [
+                {
+                    let theme = demo_theme.clone();
+                    move || demo_label("Left Sidebar", &theme)
+                } => weight(3.0), bg: PANEL_BG_TRANSPARENT;
+                |
+                {
+                    let theme = demo_theme.clone();
+                    move || demo_label("Main Area", &theme)
+                } => weight(7.0), bg: PANEL_BG_TRANSPARENT;
+            ]
+        };
+
+        let instant_panels = look
+            .resizable_panels("controls-doc-resizable-instant")
+            .orientation(ResizablePanelsOrientation::Horizontal)
+            .animated(false)
+            .show_handle(true)
+            .resize_handle(ResizeHandleSize::Sm)
+            .handle_grip(true)
+            .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
+            .panels([
+                ResizablePanelSpec::new_render({
+                    let theme = demo_theme.clone();
+                    move || demo_label("Left Sidebar", &theme)
+                })
+                .weight(3.0)
+                .bg(PANEL_BG_TRANSPARENT),
+                ResizablePanelSpec::new_render({
+                    let theme = demo_theme.clone();
+                    move || demo_label("Main Area", &theme)
+                })
+                .weight(7.0)
+                .bg(PANEL_BG_TRANSPARENT),
+            ])
+            .spawn(cx);
+
+        let toggle_animated_button = look
+            .secondary_button("controls-doc-resizable-animated-toggle")
+            .label("Toggle Left Panel (Animated)")
+            .spawn(cx);
+
+        let toggle_instant_button = look
+            .secondary_button("controls-doc-resizable-instant-toggle")
+            .label("Toggle Left Panel (Instant / Non-Animated)")
+            .spawn(cx);
+
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
@@ -261,11 +355,17 @@ impl ResizablePanelsControlExposition {
             horizontal: horizontal.clone(),
             vertical: vertical.clone(),
             controlled: controlled.clone(),
+            animated_panels: animated_panels.clone(),
+            instant_panels: instant_panels.clone(),
             reset_controlled_button: reset_controlled_button.clone(),
+            toggle_animated_button: toggle_animated_button.clone(),
+            toggle_instant_button: toggle_instant_button.clone(),
             controlled_panel_sizes: controlled_panel_sizes.clone(),
             horizontal_sizes: format_sizes(&[DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]),
             vertical_sizes: format_sizes(&[DEMO_HEIGHT * 0.3, DEMO_HEIGHT * 0.7]),
             controlled_sizes: format_sizes(&[DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]),
+            animated_sizes: format_sizes(&[DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]),
+            instant_sizes: format_sizes(&[DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]),
             event_stream: event_stream.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
@@ -329,6 +429,60 @@ impl ResizablePanelsControlExposition {
                     pane.controlled_sizes = format_sizes(&[DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]);
                     cx.notify();
                 });
+            }
+        }));
+        subscriptions.push(cx.subscribe(&toggle_animated_button, {
+            let left_pane = left_pane.clone();
+            move |_, _, event: &ButtonEvent, cx| {
+                if !event.is_click() {
+                    return;
+                }
+                left_pane.update(cx, |pane, cx| {
+                    pane.animated_panels.update(cx, |panels, cx| {
+                        panels.toggle_panel_hidden(
+                            0,
+                            gpui_luma::controls::resizable_panels::PanelHideMode::Completely,
+                            cx,
+                        );
+                    });
+                });
+            }
+        }));
+        subscriptions.push(cx.subscribe(&animated_panels, {
+            let event_stream = event_stream.clone();
+            let left_pane = left_pane.clone();
+            move |_, _, event, cx| {
+                left_pane.update(cx, |pane, cx| {
+                    pane.apply_sizes_event(event, |pane, sizes| pane.animated_sizes = sizes, cx);
+                });
+                append_resizable_event(&event_stream, event, cx);
+            }
+        }));
+        subscriptions.push(cx.subscribe(&toggle_instant_button, {
+            let left_pane = left_pane.clone();
+            move |_, _, event: &ButtonEvent, cx| {
+                if !event.is_click() {
+                    return;
+                }
+                left_pane.update(cx, |pane, cx| {
+                    pane.instant_panels.update(cx, |panels, cx| {
+                        panels.toggle_panel_hidden(
+                            0,
+                            gpui_luma::controls::resizable_panels::PanelHideMode::Completely,
+                            cx,
+                        );
+                    });
+                });
+            }
+        }));
+        subscriptions.push(cx.subscribe(&instant_panels, {
+            let event_stream = event_stream.clone();
+            let left_pane = left_pane.clone();
+            move |_, _, event, cx| {
+                left_pane.update(cx, |pane, cx| {
+                    pane.apply_sizes_event(event, |pane, sizes| pane.instant_sizes = sizes, cx);
+                });
+                append_resizable_event(&event_stream, event, cx);
             }
         }));
 
