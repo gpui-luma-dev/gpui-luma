@@ -22,6 +22,7 @@ pub struct FloatingMenuLook {
     pub item_gap: f32,
     pub item_icon_size: f32,
     pub item_radius: f32,
+    pub disabled_opacity: f32,
     pub submenu_offset_x: f32,
 }
 
@@ -76,6 +77,7 @@ pub(crate) fn default_floating_menu_look(tokens: &ThemeTokens, size: ControlSize
         item_gap: metrics.gap(size),
         item_icon_size: default_menu_item_icon_size(metrics, item_typography),
         item_radius: metrics.radius.sm,
+        disabled_opacity: 0.56,
         submenu_offset_x: metrics.gap(size) * 0.5,
     }
 }

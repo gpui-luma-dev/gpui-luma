@@ -1,9 +1,10 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{AnyElement, App, ClickEvent, Div, FontWeight, SharedString, Stateful, Window, div, px, prelude::*, svg};
+use gpui::{AnyElement, App, ClickEvent, Div, FontWeight, SharedString, Stateful, Window, div, px, relative, prelude::*, svg};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::choice_indicator_layout::shadow_extent_from_slice;
+use crate::controls::icon::LUCIDE_FONT_FAMILY;
 use crate::controls::menu_item::{MenuItem, MenuItemIcon};
 use crate::controls::state::MenuPath;
 use crate::controls::floating_menu::FloatingMenuLook;
@@ -127,6 +128,12 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                 .child(render_item_icon(item.icon_ref(), look.item_icon_size))
                 .child(div().flex_1().child(item.label_text().clone()));
 
+            let is_active = match model.active_path {
+                Some(MenuPath::Root(active)) => active == index,
+                Some(MenuPath::Submenu { parent, .. }) => parent == index,
+                None => model.open_submenu == Some(index),
+            };
+
             if enabled {
                 row = row
                     .cursor_pointer()
@@ -138,7 +145,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                     })
                     .child(render_submenu_affordance(!item.submenu_items().is_empty(), look.item_icon_size));
 
-                if model.active_path.is_some_and(|active_path| active_path.is_root(index)) {
+                if is_active {
                     row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
                 }
 
@@ -158,7 +165,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                 }
             } else {
                 row = row
-                    .opacity(0.56)
+                    .opacity(look.disabled_opacity)
                     .child(render_submenu_affordance(!item.submenu_items().is_empty(), look.item_icon_size));
             }
 
@@ -247,7 +254,8 @@ fn render_floating_submenu(
         .id(format!("{menu_id}-submenu-{}", item.id()))
         .absolute()
         .top(px(look.padding + (index as f32 * look.item_height)))
-        .left(px(look.min_width + look.submenu_offset_x))
+        .left(relative(1.0))
+        .ml(px(0.0))
         .min_w(px(look.min_width))
         .p(px(look.padding))
         .bg(look.background)
@@ -295,7 +303,7 @@ fn render_floating_submenu(
                 row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
             }
         } else if !enabled {
-            row = row.opacity(0.56);
+            row = row.opacity(look.disabled_opacity);
         }
 
         submenu = submenu.child(row);
@@ -340,7 +348,7 @@ fn render_lucide_icon(icon: LucideIcon, size: f32) -> AnyElement {
         .flex()
         .items_center()
         .justify_center()
-        .font_family("lucide")
+        .font_family(LUCIDE_FONT_FAMILY)
         .font_weight(FontWeight::NORMAL)
         .text_size(px(size))
         .line_height(px(size))

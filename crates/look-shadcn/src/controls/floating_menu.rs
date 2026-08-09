@@ -144,6 +144,7 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
             .map(|m| m.icon_size)
             .unwrap_or_else(|| metrics.control_height(size) * 0.44),
         item_radius: metrics.radius.sm,
+        disabled_opacity: 0.56,
         submenu_offset_x: metrics.gap(size) * 0.5,
     }
 }
