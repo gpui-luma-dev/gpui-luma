@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::toggle::ToggleData;
 use gpui_luma::controls::tabs_navigation::TabsNavigation;
 use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
@@ -56,7 +57,7 @@ pub(crate) fn render_toggle_template_matrix_section(
 
 fn render_toggle_preview_tabbed_content(
     look: &ShadcnLook,
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    template: &Arc<dyn ButtonTemplate<ToggleData>>,
     samples: &[ButtonStateSample],
     preview_tabs: Entity<TabsNavigation>,
     active_tab: SharedString,
@@ -82,7 +83,7 @@ fn render_toggle_preview_tabbed_content(
 
 fn render_toggle_template_preview(
     look: &ShadcnLook,
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    template: &Arc<dyn ButtonTemplate<ToggleData>>,
     samples: &[ButtonStateSample],
     window: &mut Window,
     cx: &mut App,
@@ -100,7 +101,7 @@ fn render_toggle_template_preview(
 
 fn render_toggle_text_template_matrix(
     look: &ShadcnLook,
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    template: &Arc<dyn ButtonTemplate<ToggleData>>,
     samples: &[ButtonStateSample],
     window: &mut Window,
     cx: &mut App,
@@ -126,7 +127,7 @@ fn render_toggle_text_template_matrix(
 
 fn render_toggle_icon_template_matrix(
     look: &ShadcnLook,
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    template: &Arc<dyn ButtonTemplate<ToggleData>>,
     samples: &[ButtonStateSample],
     window: &mut Window,
     cx: &mut App,
@@ -150,7 +151,7 @@ fn render_toggle_icon_template_matrix(
 
 fn render_toggle_sizes_preview(
     look: &ShadcnLook,
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    template: &Arc<dyn ButtonTemplate<ToggleData>>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -167,7 +168,7 @@ fn render_toggle_sizes_preview(
 
 fn render_toggle_text_size_matrix(
     look: &ShadcnLook,
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    template: &Arc<dyn ButtonTemplate<ToggleData>>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -176,7 +177,7 @@ fn render_toggle_text_size_matrix(
 
 fn render_toggle_icon_size_matrix(
     look: &ShadcnLook,
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    template: &Arc<dyn ButtonTemplate<ToggleData>>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -185,7 +186,7 @@ fn render_toggle_icon_size_matrix(
 
 fn render_toggle_size_radius_matrix(
     look: &ShadcnLook,
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    template: &Arc<dyn ButtonTemplate<ToggleData>>,
     style: ShadcnButtonStyle,
     icon_only: bool,
     window: &mut Window,
@@ -222,7 +223,7 @@ fn render_toggle_size_radius_matrix(
 }
 
 fn render_toggle_size_radius_cell(
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    template: &Arc<dyn ButtonTemplate<ToggleData>>,
     look: &ShadcnLook,
     style: ShadcnButtonStyle,
     size: ButtonSize,
@@ -239,9 +240,9 @@ fn render_toggle_size_radius_cell(
         radius_label_id(radius),
         if icon_only { "icon" } else { "text" }
     ));
-    let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<bool>> = if icon_only {
+    let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<ToggleData>> = if icon_only {
         Arc::new(move |model, _| {
-            let icon_size = button_preview_look_bool(model).map(|look| look.icon_size).unwrap_or(16.0);
+            let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
             render_lucide_icon(LucideIcon::Heart, icon_size)
         })
     } else {
@@ -255,7 +256,7 @@ fn render_toggle_size_radius_cell(
     };
     let model = ButtonRenderModel {
         id,
-        data: selected,
+        data: ToggleData::new(selected),
         content,
         role: ButtonFamilyRole::Toggle { selected },
         size,
@@ -283,7 +284,7 @@ fn toggle_selected_for_sample(sample: &ButtonStateSample) -> bool {
 }
 
 fn render_toggle_state_sample(
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    template: &Arc<dyn ButtonTemplate<ToggleData>>,
     look: &ShadcnLook,
     style: ShadcnButtonStyle,
     icon_only: bool,
@@ -298,7 +299,7 @@ fn render_toggle_state_sample(
         if icon_only { "icon" } else { "text" },
         sample.id
     ));
-    let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<bool>> = if icon_only {
+    let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<ToggleData>> = if icon_only {
         Arc::new(move |model, _| round_icon_glyph(model, selected))
     } else {
         let label = SharedString::from("Toggle");
@@ -306,7 +307,7 @@ fn render_toggle_state_sample(
     };
     let model = ButtonRenderModel {
         id,
-        data: selected,
+        data: ToggleData::new(selected),
         content,
         role: ButtonFamilyRole::Toggle { selected },
         size: ButtonSize::Md,
@@ -335,14 +336,14 @@ fn render_toggle_state_sample(
 fn toggle_icon_look_for_style(
     theme: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> gpui_luma::controls::command::button::ButtonLookSource<bool> {
+) -> gpui_luma::controls::command::button::ButtonLookSource<ToggleData> {
     Arc::new(move |model| {
         let tokens = theme.mode_tokens();
         gpui_luma_look_shadcn::paint::toggle_icon_look_semantic(
             tokens.as_ref(),
             theme.mode(),
             style,
-            model.data,
+            model.data.selected,
             model.size,
             Some(ButtonRadiusPreset::Full),
             model.state,
@@ -356,7 +357,7 @@ fn toggle_icon_look_for_semantic(
     size: ButtonSize,
     radius: ButtonRadiusPreset,
     selected: bool,
-) -> gpui_luma::controls::command::button::ButtonLookSource<bool> {
+) -> gpui_luma::controls::command::button::ButtonLookSource<ToggleData> {
     Arc::new(move |model| {
         let tokens = theme.mode_tokens();
         gpui_luma_look_shadcn::paint::toggle_icon_look_semantic(
@@ -377,7 +378,7 @@ fn toggle_look_for_semantic(
     size: ButtonSize,
     radius: ButtonRadiusPreset,
     selected: bool,
-) -> gpui_luma::controls::command::button::ButtonLookSource<bool> {
+) -> gpui_luma::controls::command::button::ButtonLookSource<ToggleData> {
     Arc::new(move |model| {
         let tokens = theme.mode_tokens();
         gpui_luma_look_shadcn::paint::toggle_look_semantic(
@@ -392,8 +393,8 @@ fn toggle_look_for_semantic(
     })
 }
 
-fn button_preview_look_bool(
-    model: &ButtonRenderModel<bool>,
+fn button_preview_look(
+    model: &ButtonRenderModel<ToggleData>,
 ) -> Option<gpui_luma::controls::button_family::ButtonFamilyLook> {
     model.look.as_ref().map(|resolve| resolve(model))
 }
@@ -401,9 +402,9 @@ fn button_preview_look_bool(
 fn toggle_button_look_for_style(
     theme: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> gpui_luma::controls::command::button::ButtonLookSource<bool> {
+) -> gpui_luma::controls::command::button::ButtonLookSource<ToggleData> {
     Arc::new(move |model| {
-        let role = ButtonFamilyRole::Toggle { selected: model.data };
+        let role = ButtonFamilyRole::Toggle { selected: model.data.selected };
         match style {
             ShadcnButtonStyle::Primary => theme.as_ref().resolve_primary_button(role, model.size, model.state),
             ShadcnButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(role, model.size, model.state),
@@ -414,7 +415,7 @@ fn toggle_button_look_for_style(
     })
 }
 
-pub(crate) fn round_icon_glyph(model: &ButtonRenderModel<bool>, selected: bool) -> AnyElement {
+pub(crate) fn round_icon_glyph(model: &ButtonRenderModel<ToggleData>, selected: bool) -> AnyElement {
     let icon = if selected { LucideIcon::Check } else { LucideIcon::Plus };
     let icon_size = model.look.as_ref().map(|resolve| resolve(model).icon_size).unwrap_or(16.0);
     render_lucide_icon(icon, icon_size)

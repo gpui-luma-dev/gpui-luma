@@ -79,17 +79,17 @@ impl ContentPaneHost {
         let speed_unit_toggle = look
             .secondary_toggle("graph-viz-speed-unit")
             .with_data(false)
-            .content(|model, _| speed_unit_toggle_label(model.data).into_any_element())
+            .content(|model, _| speed_unit_toggle_label(model.data.selected).into_any_element())
             .spawn(cx);
         let power_unit_toggle = look
             .secondary_toggle("graph-viz-power-unit")
             .with_data(false)
-            .content(|model, _| power_unit_toggle_label(model.data).into_any_element())
+            .content(|model, _| power_unit_toggle_label(model.data.selected).into_any_element())
             .spawn(cx);
         let x_axis_toggle = look
             .secondary_toggle("graph-viz-x-axis")
             .with_data(false)
-            .content(|model, _| x_axis_toggle_label(model.data).into_any_element())
+            .content(|model, _| x_axis_toggle_label(model.data.selected).into_any_element())
             .spawn(cx);
         let timeline_slider = look.slider("graph-viz-timeline").range(0..100).step(1).value(0.0).spawn(cx);
         let laps_list_view = spawn_laps_list_view(&look, &ride.laps, SpeedUnit::Mph, cx);

@@ -7,7 +7,7 @@ use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::controls::command::button::{Button, ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::control_group::{ControlGroupItemElementTemplate, ControlGroupItemRenderModel};
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::radio_button::ThemedRadioButtonTemplate;
+use gpui_luma::controls::radio_button::{RadioButtonData, ThemedRadioButtonTemplate};
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItemLike, horizontal as horizontal_radio_group};
 use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
@@ -194,7 +194,7 @@ fn plan_items() -> [PlanOptionItem; 2] {
     ]
 }
 
-fn plan_radio_indicator_template(look: Arc<ShadcnLook>) -> Arc<dyn ButtonTemplate<bool>> {
+fn plan_radio_indicator_template(look: Arc<ShadcnLook>) -> Arc<dyn ButtonTemplate<RadioButtonData>> {
     Arc::new(
         ThemedRadioButtonTemplate::new(look.radio_button_theme())
             .with_modifier(|element, _| element.min_h(px(0.0)).px(px(0.0)).py(px(0.0))),
@@ -219,7 +219,7 @@ fn plan_option_item_element_template(look: Arc<ShadcnLook>) -> ControlGroupItemE
         let interaction = item.state.interaction_state();
         let render_model = ButtonRenderModel {
             id: format!("{}-{}", item.group_id, item.item.id()).into(),
-            data: item.selected,
+            data: RadioButtonData::new(item.selected),
             content: Arc::new(|_, _| div().into_any_element()),
             role: ButtonFamilyRole::Icon,
             size: ButtonSize::Sm,

@@ -210,7 +210,7 @@ fn theme_aware_toggle_item_template(
     style: ShadcnButtonStyle,
 ) -> ControlGroupItemTemplate<IconGroupItem> {
     make_control_group_item_template(move |item, window, cx| {
-        let button_template = look.toggle_template(style);
+        let button_template = look.toggle_item_template(style);
         button_item_template(
             button_template,
             |selected| ButtonFamilyRole::Toggle { selected },

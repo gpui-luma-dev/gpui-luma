@@ -7,17 +7,41 @@ pub use theme::{DefaultSwitchTheme, SwitchLook, SwitchPalette, SwitchScale, Swit
 pub use crate::theme::InteractionState as SwitchState;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use gpui::{
     AnyElement, App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
     Render, SharedString, Subscription, Window, div,
 };
 
+use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::button_family::ButtonSize;
 use crate::controls::command::button::{Button, ButtonBuilder, ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use crate::controls::presenter::{ControlPresenter, HasPresenter};
 
 pub type Switch = Entity<SwitchControl>;
+
+/// Typed payload for [`Button<SwitchData>`] / [`ButtonTemplate<SwitchData>`].
+///
+/// `checked` is the settled semantic value; `progress` is the continuous visual factor
+/// (`0.0`..`1.0`) driven by [`VisualTransition`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SwitchData {
+    pub checked: bool,
+    pub progress: f32,
+}
+
+impl SwitchData {
+    pub fn new(checked: bool) -> Self {
+        Self { checked, progress: if checked { 1.0 } else { 0.0 } }
+    }
+}
+
+impl Default for SwitchData {
+    fn default() -> Self {
+        Self::new(false)
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
@@ -30,7 +54,9 @@ pub enum SwitchEvent {
 
 pub struct SwitchControl {
     on: bool,
-    button: Entity<Button<bool>>,
+    animated: bool,
+    transition: VisualTransition,
+    button: Entity<Button<SwitchData>>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -38,16 +64,41 @@ impl EventEmitter<SwitchEvent> for SwitchControl {}
 
 impl SwitchControl {
     fn from_builder(builder: SwitchBuilder, cx: &mut Context<Self>) -> Self {
-        let on = builder.0.model.data;
-        let button = builder.0.spawn(cx);
+        let on = builder.button.model.data.checked;
+        let animated = builder.animated;
+        let duration = if animated {
+            DEFAULT_TRANSITION_DURATION
+        } else {
+            Duration::ZERO
+        };
+        let progress = if on { 1.0 } else { 0.0 };
+        let transition = VisualTransition::new(progress, duration);
+
+        let mut button_builder = builder.button;
+        button_builder.model.data = SwitchData { checked: on, progress };
+        let button = button_builder.spawn(cx);
         let subscription = cx.subscribe(&button, Self::handle_button_event);
 
-        Self { on, button, _subscriptions: vec![subscription] }
+        Self { on, animated, transition, button, _subscriptions: vec![subscription] }
+    }
+
+    fn push_button_data(&mut self, cx: &mut Context<Self>) {
+        let data = SwitchData { checked: self.on, progress: self.transition.progress() };
+        self.button.update(cx, |button, cx| {
+            if button.data() == &data {
+                return;
+            }
+            button.set_data(data, cx);
+        });
     }
 
     pub fn set_data(&mut self, on: bool, cx: &mut Context<Self>) {
+        if self.on == on {
+            return;
+        }
         self.on = on;
-        self.button.update(cx, |button, cx| button.set_data(on, cx));
+        self.transition.set_target(if on { 1.0 } else { 0.0 });
+        self.push_button_data(cx);
         cx.notify();
     }
 
@@ -55,17 +106,37 @@ impl SwitchControl {
         &self.on
     }
 
+    pub fn animated(&self) -> bool {
+        self.animated
+    }
+
+    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
+        if self.animated == animated {
+            return;
+        }
+        self.animated = animated;
+        let duration = if animated {
+            DEFAULT_TRANSITION_DURATION
+        } else {
+            Duration::ZERO
+        };
+        self.transition = VisualTransition::new(self.transition.progress(), duration);
+        self.transition.set_target(if self.on { 1.0 } else { 0.0 });
+        self.push_button_data(cx);
+        cx.notify();
+    }
+
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.button.update(cx, |button, cx| button.set_enabled(enabled, cx));
         cx.notify();
     }
 
-    pub fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<bool>>, cx: &mut Context<Self>) {
+    pub fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<SwitchData>>, cx: &mut Context<Self>) {
         self.button.update(cx, |button, cx| button.set_presenter(content, cx));
         cx.notify();
     }
 
-    pub fn set_template(&mut self, template: Arc<dyn ButtonTemplate<bool>>, cx: &mut Context<Self>) {
+    pub fn set_template(&mut self, template: Arc<dyn ButtonTemplate<SwitchData>>, cx: &mut Context<Self>) {
         self.button.update(cx, |button, cx| button.set_template(template, cx));
         cx.notify();
     }
@@ -86,7 +157,7 @@ impl SwitchControl {
 
     pub fn set_switch_track_content<F, E>(&mut self, builder: F, cx: &mut Context<Self>)
     where
-        F: Fn(&ButtonRenderModel<bool>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.button.update(cx, |button, cx| button.set_switch_track_content(builder, cx));
@@ -95,19 +166,20 @@ impl SwitchControl {
 
     pub fn set_switch_thumb_content<F, E>(&mut self, builder: F, cx: &mut Context<Self>)
     where
-        F: Fn(&ButtonRenderModel<bool>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.button.update(cx, |button, cx| button.set_switch_thumb_content(builder, cx));
         cx.notify();
     }
 
-    fn handle_button_event(&mut self, _: Entity<Button<bool>>, event: &ButtonEvent, cx: &mut Context<Self>) {
+    fn handle_button_event(&mut self, _: Entity<Button<SwitchData>>, event: &ButtonEvent, cx: &mut Context<Self>) {
         match event {
             ButtonEvent::Click => {
                 let on = !self.on;
                 self.on = on;
-                self.button.update(cx, |button, cx| button.set_data(on, cx));
+                self.transition.set_target(if on { 1.0 } else { 0.0 });
+                self.push_button_data(cx);
                 cx.emit(SwitchEvent::Change { on });
                 cx.notify();
             }
@@ -125,7 +197,15 @@ impl Focusable for SwitchControl {
 }
 
 impl Render for SwitchControl {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let was_animating = self.transition.is_animating();
+        let _ = self.transition.sync();
+        self.push_button_data(cx);
+        self.transition.schedule_frame(window, cx);
+        if was_animating || self.transition.is_animating() {
+            cx.notify();
+        }
+
         div().child(self.button.clone()).into_any_element()
     }
 }
@@ -145,33 +225,42 @@ pub enum SwitchOrientation {
     Vertical,
 }
 
-/// Builder for [`Switch`] controls. Distinct from [`ButtonBuilder<bool>`] so Shadcn style
+/// Builder for [`Switch`] controls. Distinct from [`ButtonBuilder<SwitchData>`] so Shadcn style
 /// helpers apply the switch template rather than the checkbox template.
-pub struct SwitchBuilder(ButtonBuilder<bool>);
+pub struct SwitchBuilder {
+    button: ButtonBuilder<SwitchData>,
+    animated: bool,
+}
 
 impl SwitchBuilder {
-    pub fn with_data(self, data: bool) -> Self {
-        Self(self.0.with_data(data))
+    pub fn with_data(self, checked: bool) -> Self {
+        Self { button: self.button.with_data(SwitchData::new(checked)), ..self }
     }
 
     pub fn enabled(self, enabled: bool) -> Self {
-        Self(self.0.enabled(enabled))
+        Self { button: self.button.enabled(enabled), ..self }
     }
 
     pub fn tab_stop(self, tab_stop: bool) -> Self {
-        Self(self.0.tab_stop(tab_stop))
+        Self { button: self.button.tab_stop(tab_stop), ..self }
     }
 
     pub fn without_elevation(self) -> Self {
-        Self(self.0.without_elevation())
+        Self { button: self.button.without_elevation(), ..self }
     }
 
     pub fn compact(self) -> Self {
-        Self(self.0.compact())
+        Self { button: self.button.compact(), ..self }
+    }
+
+    /// Enables or disables the on/off visual transition (default `true`).
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.animated = animated;
+        self
     }
 
     pub fn orientation(mut self, orientation: SwitchOrientation) -> Self {
-        self.0.model.switch_orientation = orientation;
+        self.button.model.switch_orientation = orientation;
         self
     }
 
@@ -185,7 +274,7 @@ impl SwitchBuilder {
 
     /// Adds extra length along the switch track's movement axis.
     pub fn track_length_extra(mut self, extra_length: f32) -> Self {
-        self.0.model.switch_track_width_extra = extra_length.max(0.0);
+        self.button.model.switch_track_width_extra = extra_length.max(0.0);
         self
     }
 
@@ -197,29 +286,29 @@ impl SwitchBuilder {
     /// Renders content inside the switch track behind the thumb.
     pub fn track_content<F, E>(mut self, builder: F) -> Self
     where
-        F: Fn(&ButtonRenderModel<bool>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
-        self.0.model.switch_track_content = Some(Arc::new(move |model, cx| builder(model, cx).into_any_element()));
+        self.button.model.switch_track_content = Some(Arc::new(move |model, cx| builder(model, cx).into_any_element()));
         self
     }
 
     /// Renders content inside the moving switch thumb.
     pub fn thumb_content<F, E>(mut self, builder: F) -> Self
     where
-        F: Fn(&ButtonRenderModel<bool>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
-        self.0.model.switch_thumb_content = Some(Arc::new(move |model, cx| builder(model, cx).into_any_element()));
+        self.button.model.switch_thumb_content = Some(Arc::new(move |model, cx| builder(model, cx).into_any_element()));
         self
     }
 
     pub fn size(self, size: ButtonSize) -> Self {
-        Self(self.0.size(size))
+        Self { button: self.button.size(size), ..self }
     }
 
-    pub fn template(self, template: Arc<dyn ButtonTemplate<bool>>) -> Self {
-        Self(self.0.template(template))
+    pub fn template(self, template: Arc<dyn ButtonTemplate<SwitchData>>) -> Self {
+        Self { button: self.button.template(template), ..self }
     }
 
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Switch {
@@ -227,13 +316,13 @@ impl SwitchBuilder {
     }
 }
 
-impl HasPresenter<ButtonRenderModel<bool>> for SwitchBuilder {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<bool>>) {
-        self.0.set_presenter(content);
+impl HasPresenter<ButtonRenderModel<SwitchData>> for SwitchBuilder {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<SwitchData>>) {
+        self.button.set_presenter(content);
     }
 }
 
-impl Button<bool> {
+impl Button<SwitchData> {
     pub fn set_switch_orientation(&mut self, orientation: SwitchOrientation, cx: &mut Context<Self>) {
         self.model.switch_orientation = orientation;
         cx.notify();
@@ -250,7 +339,7 @@ impl Button<bool> {
 
     pub fn set_switch_track_content<F, E>(&mut self, builder: F, cx: &mut Context<Self>)
     where
-        F: Fn(&ButtonRenderModel<bool>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.model.switch_track_content = Some(Arc::new(move |model, cx| builder(model, cx).into_any_element()));
@@ -259,7 +348,7 @@ impl Button<bool> {
 
     pub fn set_switch_thumb_content<F, E>(&mut self, builder: F, cx: &mut Context<Self>)
     where
-        F: Fn(&ButtonRenderModel<bool>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.model.switch_thumb_content = Some(Arc::new(move |model, cx| builder(model, cx).into_any_element()));
@@ -268,7 +357,10 @@ impl Button<bool> {
 }
 
 pub fn new(id: impl Into<SharedString>) -> SwitchBuilder {
-    SwitchBuilder(ButtonBuilder::new(id).typed(false).template(default_switch_template()))
+    SwitchBuilder {
+        button: ButtonBuilder::new(id).typed(SwitchData::default()).template(default_switch_template()),
+        animated: true,
+    }
 }
 
 #[cfg(test)]
@@ -285,9 +377,21 @@ mod tests {
             .track_content(|_, _| div())
             .thumb_content(|_, _| div());
 
-        assert_eq!(builder.0.model.switch_track_width_extra, 12.0);
-        assert_eq!(builder.0.model.switch_orientation, SwitchOrientation::Vertical);
-        assert!(builder.0.model.switch_track_content.is_some());
-        assert!(builder.0.model.switch_thumb_content.is_some());
+        assert_eq!(builder.button.model.switch_track_width_extra, 12.0);
+        assert_eq!(builder.button.model.switch_orientation, SwitchOrientation::Vertical);
+        assert!(builder.button.model.switch_track_content.is_some());
+        assert!(builder.button.model.switch_thumb_content.is_some());
+    }
+
+    #[test]
+    fn switch_builder_animated_option() {
+        assert!(new("animated-default").animated);
+        assert!(!new("animated-off").animated(false).animated);
+    }
+
+    #[test]
+    fn switch_data_seeds_progress_from_checked() {
+        assert_eq!(SwitchData::new(true).progress, 1.0);
+        assert_eq!(SwitchData::new(false).progress, 0.0);
     }
 }

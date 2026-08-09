@@ -418,21 +418,23 @@ impl ShadcnLook {
     pub fn switch_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,
-    ) -> Arc<dyn gpui_luma::controls::command::button::ButtonTemplate<bool>> {
+    ) -> Arc<dyn gpui_luma::controls::command::button::ButtonTemplate<gpui_luma::controls::switch::SwitchData>> {
         templates::switch_template(Arc::clone(self), style)
     }
 
     pub fn checkbox_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,
-    ) -> Arc<dyn gpui_luma::controls::command::button::ButtonTemplate<bool>> {
+    ) -> Arc<dyn gpui_luma::controls::command::button::ButtonTemplate<gpui_luma::controls::checkbox::CheckboxData>>
+    {
         templates::checkbox_template(Arc::clone(self), style)
     }
 
     pub fn radio_button_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,
-    ) -> Arc<dyn gpui_luma::controls::command::button::ButtonTemplate<bool>> {
+    ) -> Arc<dyn gpui_luma::controls::command::button::ButtonTemplate<gpui_luma::controls::radio_button::RadioButtonData>>
+    {
         templates::radio_button_template(Arc::clone(self), style)
     }
 
@@ -839,8 +841,17 @@ impl ShadcnLook {
     pub fn toggle_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,
-    ) -> Arc<dyn gpui_luma::controls::command::button::ButtonTemplate<bool>> {
+    ) -> Arc<dyn gpui_luma::controls::command::button::ButtonTemplate<gpui_luma::controls::toggle::ToggleData>> {
         templates::toggle_template(Arc::clone(self), style)
+    }
+
+    /// Toggle-looking chrome for control-group / toolbar items that use a `bool` selected payload.
+    /// Prefer [`Self::toggle_template`] for the animated [`gpui_luma::controls::toggle::Toggle`] control.
+    pub fn toggle_item_template(
+        self: &Arc<Self>,
+        style: ShadcnButtonStyle,
+    ) -> Arc<dyn gpui_luma::controls::command::button::ButtonTemplate<bool>> {
+        templates::toggle_item_template(Arc::clone(self), style)
     }
 
     pub fn button_family_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::button_family::ButtonFamilyTheme> {

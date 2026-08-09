@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::button_family::ButtonSize;
-use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::command::button::ButtonRenderModel;
+use gpui_luma::controls::checkbox::CheckboxData;
+use gpui_luma::controls::radio_button::RadioButtonData;
+use gpui_luma::controls::switch::SwitchData;
 use gpui_luma::controls::tabs_navigation::TabsNavigation;
 use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
@@ -33,10 +36,21 @@ impl ChoiceTemplateControl {
         }
     }
 
-    pub(crate) fn content(
+    pub(crate) fn radio_content(
         self,
-        _active: bool,
-    ) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<bool>> {
+    ) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<RadioButtonData>> {
+        Arc::new(move |_, _| div().into_any_element())
+    }
+
+    pub(crate) fn checkbox_content(
+        self,
+    ) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<CheckboxData>> {
+        Arc::new(move |_, _| div().into_any_element())
+    }
+
+    pub(crate) fn switch_content(
+        self,
+    ) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<SwitchData>> {
         Arc::new(move |_, _| div().into_any_element())
     }
 
@@ -198,29 +212,81 @@ fn render_choice_size_cell(
         let scale = gpui_luma_look_shadcn::paint::switch_scale(tokens.as_ref(), look.mode(), style, size, 1.0);
         gpui_luma_look_shadcn::paint::resolve_switch_radius_preset(preset, &tokens.metrics, scale.track_height)
     });
-    let model = ButtonRenderModel {
-        id,
-        data: active,
-        content: control.content(active),
-        role: control.role(),
-        size,
-        state: InteractionState::default(),
-        round: false,
-        radius_override: std::cell::Cell::new(radius_override),
-        elevation: style != ShadcnButtonStyle::ContentOnly,
-        compact: false,
-        look: None,
-        ..Default::default()
-    };
 
-    div()
-        .w_full()
-        .h_full()
-        .flex()
-        .items_center()
-        .justify_center()
-        .child(choice_template_for_control(look, control, style).render(&model, window, cx))
-        .into_any_element()
+    match control {
+        ChoiceTemplateControl::Switch => {
+            let model = ButtonRenderModel {
+                id,
+                data: SwitchData::new(active),
+                content: control.switch_content(),
+                role: control.role(),
+                size,
+                state: InteractionState::default(),
+                round: false,
+                radius_override: std::cell::Cell::new(radius_override),
+                elevation: style != ShadcnButtonStyle::ContentOnly,
+                compact: false,
+                look: None,
+                ..Default::default()
+            };
+            div()
+                .w_full()
+                .h_full()
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(look.switch_template(style).render(&model, window, cx))
+                .into_any_element()
+        }
+        ChoiceTemplateControl::Checkbox => {
+            let model = ButtonRenderModel {
+                id,
+                data: CheckboxData::new(active),
+                content: control.checkbox_content(),
+                role: control.role(),
+                size,
+                state: InteractionState::default(),
+                round: false,
+                radius_override: std::cell::Cell::new(radius_override),
+                elevation: style != ShadcnButtonStyle::ContentOnly,
+                compact: false,
+                look: None,
+                ..Default::default()
+            };
+            div()
+                .w_full()
+                .h_full()
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(look.checkbox_template(style).render(&model, window, cx))
+                .into_any_element()
+        }
+        ChoiceTemplateControl::Radio => {
+            let model = ButtonRenderModel {
+                id,
+                data: RadioButtonData::new(active),
+                content: control.radio_content(),
+                role: control.role(),
+                size,
+                state: InteractionState::default(),
+                round: false,
+                radius_override: std::cell::Cell::new(radius_override),
+                elevation: style != ShadcnButtonStyle::ContentOnly,
+                compact: false,
+                look: None,
+                ..Default::default()
+            };
+            div()
+                .w_full()
+                .h_full()
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(look.radio_button_template(style).render(&model, window, cx))
+                .into_any_element()
+        }
+    }
 }
 
 pub(crate) fn render_choice_control_template_preview_body(
@@ -284,38 +350,76 @@ fn render_choice_variant_state_cell(
         shadcn_style_id(style),
         sample.id
     ));
-    let model = ButtonRenderModel {
-        id,
-        data: active,
-        content: control.content(active),
-        role: control.role(),
-        size: ButtonSize::Md,
-        state: sample.state,
-        round: false,
-        radius_override: std::cell::Cell::new(None),
-        elevation: style != ShadcnButtonStyle::ContentOnly,
-        compact: false,
-        look: None,
-        ..Default::default()
-    };
 
-    div()
-        .w_full()
-        .flex()
-        .justify_center()
-        .items_center()
-        .child(choice_template_for_control(look, control, style).render(&model, window, cx))
-        .into_any_element()
-}
-
-fn choice_template_for_control(
-    look: &Arc<ShadcnLook>,
-    control: ChoiceTemplateControl,
-    style: ShadcnButtonStyle,
-) -> Arc<dyn ButtonTemplate<bool>> {
     match control {
-        ChoiceTemplateControl::Radio => look.radio_button_template(style),
-        ChoiceTemplateControl::Checkbox => look.checkbox_template(style),
-        ChoiceTemplateControl::Switch => look.switch_template(style),
+        ChoiceTemplateControl::Switch => {
+            let model = ButtonRenderModel {
+                id,
+                data: SwitchData::new(active),
+                content: control.switch_content(),
+                role: control.role(),
+                size: ButtonSize::Md,
+                state: sample.state,
+                round: false,
+                radius_override: std::cell::Cell::new(None),
+                elevation: style != ShadcnButtonStyle::ContentOnly,
+                compact: false,
+                look: None,
+                ..Default::default()
+            };
+            div()
+                .w_full()
+                .flex()
+                .justify_center()
+                .items_center()
+                .child(look.switch_template(style).render(&model, window, cx))
+                .into_any_element()
+        }
+        ChoiceTemplateControl::Checkbox => {
+            let model = ButtonRenderModel {
+                id,
+                data: CheckboxData::new(active),
+                content: control.checkbox_content(),
+                role: control.role(),
+                size: ButtonSize::Md,
+                state: sample.state,
+                round: false,
+                radius_override: std::cell::Cell::new(None),
+                elevation: style != ShadcnButtonStyle::ContentOnly,
+                compact: false,
+                look: None,
+                ..Default::default()
+            };
+            div()
+                .w_full()
+                .flex()
+                .justify_center()
+                .items_center()
+                .child(look.checkbox_template(style).render(&model, window, cx))
+                .into_any_element()
+        }
+        ChoiceTemplateControl::Radio => {
+            let model = ButtonRenderModel {
+                id,
+                data: RadioButtonData::new(active),
+                content: control.radio_content(),
+                role: control.role(),
+                size: ButtonSize::Md,
+                state: sample.state,
+                round: false,
+                radius_override: std::cell::Cell::new(None),
+                elevation: style != ShadcnButtonStyle::ContentOnly,
+                compact: false,
+                look: None,
+                ..Default::default()
+            };
+            div()
+                .w_full()
+                .flex()
+                .justify_center()
+                .items_center()
+                .child(look.radio_button_template(style).render(&model, window, cx))
+                .into_any_element()
+        }
     }
 }

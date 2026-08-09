@@ -6,10 +6,11 @@ use gpui::{AnyElement, App, Window, div, prelude::*};
 use crate::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::control_group::{
-    ControlGroupItemHandlerExt, ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupItemTemplate,
-    ControlGroupLayout, ControlGroupItemElementTemplate, ControlGroupRenderModel, ControlGroupTemplate,
+    ControlGroupItemElementTemplate, ControlGroupItemHandlerExt, ControlGroupItemLike, ControlGroupItemRenderModel,
+    ControlGroupItemTemplate, ControlGroupLayout, ControlGroupRenderModel, ControlGroupTemplate,
     ControlGroupTemplateHandlers,
 };
+use crate::controls::radio_button::RadioButtonData;
 
 const DISABLED_OPACITY: f32 = 0.56;
 
@@ -20,7 +21,7 @@ pub enum RadioGroupLayout {
 }
 
 pub fn radio_group_buttons_template<T>(
-    button_template: Arc<dyn ButtonTemplate<bool>>,
+    button_template: Arc<dyn ButtonTemplate<RadioButtonData>>,
     layout: RadioGroupLayout,
 ) -> ControlGroupTemplate<T>
 where
@@ -39,7 +40,7 @@ where
 }
 
 pub fn radio_group_button_item_element_template<T>(
-    button_template: Arc<dyn ButtonTemplate<bool>>,
+    button_template: Arc<dyn ButtonTemplate<RadioButtonData>>,
 ) -> ControlGroupItemElementTemplate<T>
 where
     T: ControlGroupItemLike + 'static,
@@ -52,7 +53,7 @@ where
 pub fn render_radio_button_option<T>(
     item: &ControlGroupItemRenderModel<'_, T>,
     item_template: Option<&ControlGroupItemTemplate<T>>,
-    button_template: &Arc<dyn ButtonTemplate<bool>>,
+    button_template: &Arc<dyn ButtonTemplate<RadioButtonData>>,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::Stateful<gpui::Div>
@@ -62,7 +63,7 @@ where
     if let Some(item_template) = item_template {
         let indicator_render_model = ButtonRenderModel {
             id: format!("{}-{}-indicator", item.group_id, item.item.id()).into(),
-            data: item.selected,
+            data: RadioButtonData::new(item.selected),
             content: Arc::new(|_, _| div().into_any_element()),
             role: ButtonFamilyRole::Icon,
             size: ButtonSize::Md,
@@ -87,7 +88,7 @@ where
     } else {
         let render_model = ButtonRenderModel {
             id: format!("{}-{}", item.group_id, item.item.id()).into(),
-            data: item.selected,
+            data: RadioButtonData::new(item.selected),
             content: Arc::new({
                 let label = item.item.label().clone();
                 move |_, _| div().child(label.clone()).into_any_element()
@@ -110,7 +111,7 @@ where
 pub fn render_radio_button_rows<T>(
     model: &ControlGroupRenderModel<'_, T>,
     handlers: ControlGroupTemplateHandlers,
-    button_template: &Arc<dyn ButtonTemplate<bool>>,
+    button_template: &Arc<dyn ButtonTemplate<RadioButtonData>>,
     window: &mut Window,
     cx: &mut App,
 ) -> Vec<AnyElement>

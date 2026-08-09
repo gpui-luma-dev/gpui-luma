@@ -1,9 +1,9 @@
-use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
+use gpui::{App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
 use crate::controls::choice_indicator_layout::{reserve_shadow_extent_from_slice, should_paint_shadow};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
-use crate::controls::switch::{SwitchOrientation, SwitchTheme, default_switch_theme};
+use crate::controls::switch::{SwitchData, SwitchOrientation, SwitchPalette, SwitchTheme, default_switch_theme};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::snap_to_pixel;
@@ -11,17 +11,62 @@ use crate::theme::snap_to_pixel;
 define_control_template!(
     ThemedSwitchTemplate,
     dyn SwitchTheme,
-    ButtonRenderModel<bool>,
-    ButtonTemplate<bool>,
+    ButtonRenderModel<SwitchData>,
+    ButtonTemplate<SwitchData>,
     default_switch_theme()
 );
 
-impl ButtonTemplate<bool> for ThemedSwitchTemplate {
-    fn render(&self, model: &ButtonRenderModel<bool>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let palette = self.theme.resolve(model.data, model.state, model.size);
+fn lerp_f32(start: f32, end: f32, t: f32) -> f32 {
+    start + ((end - start) * t)
+}
+
+fn lerp_hsla(start: Hsla, end: Hsla, t: f32) -> Hsla {
+    hsla(
+        lerp_f32(start.h, end.h, t),
+        lerp_f32(start.s, end.s, t),
+        lerp_f32(start.l, end.l, t),
+        lerp_f32(start.a, end.a, t),
+    )
+}
+
+fn lerp_switch_palette(off: &SwitchPalette, on: &SwitchPalette, progress: f32) -> SwitchPalette {
+    let t = progress.clamp(0.0, 1.0);
+    SwitchPalette {
+        track_background: lerp_hsla(off.track_background, on.track_background, t),
+        track_border: lerp_hsla(off.track_border, on.track_border, t),
+        thumb_background: lerp_hsla(off.thumb_background, on.thumb_background, t),
+        thumb_border: lerp_hsla(off.thumb_border, on.thumb_border, t),
+        // Shadows and label stay on the settled endpoint (discrete).
+        thumb_shadow: if t >= 0.5 {
+            on.thumb_shadow.clone()
+        } else {
+            off.thumb_shadow.clone()
+        },
+        label_color: if t >= 0.5 { on.label_color } else { off.label_color },
+        label_typography: if t >= 0.5 {
+            on.label_typography
+        } else {
+            off.label_typography
+        },
+        label_font_family: if t >= 0.5 {
+            on.label_font_family.clone()
+        } else {
+            off.label_font_family.clone()
+        },
+    }
+}
+
+impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
+    fn render(&self, model: &ButtonRenderModel<SwitchData>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let progress = model.data.progress.clamp(0.0, 1.0);
+        let checked = model.data.checked;
+        let off_palette = self.theme.resolve(false, model.state, model.size);
+        let on_palette = self.theme.resolve(true, model.state, model.size);
+        let palette = lerp_switch_palette(&off_palette, &on_palette, progress);
+        let settled_palette = if checked { &on_palette } else { &off_palette };
         let elevation_probe_palette = if model.elevation && model.state.disabled {
             Some(self.theme.resolve(
-                model.data,
+                checked,
                 crate::theme::InteractionState { disabled: false, ..model.state },
                 model.size,
             ))
@@ -42,11 +87,9 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
 
         let (thumb_left, thumb_top) = match model.switch_orientation {
             SwitchOrientation::Horizontal => {
-                let thumb_left = if model.data {
-                    scale.track_width - scale.thumb_size - scale.track_padding
-                } else {
-                    scale.track_padding
-                };
+                let thumb_left_off = scale.track_padding;
+                let thumb_left_on = scale.track_width - scale.thumb_size - scale.track_padding;
+                let thumb_left = snap_to_pixel(lerp_f32(thumb_left_off, thumb_left_on, progress), scale_factor);
                 let thumb_top =
                     snap_to_pixel(((scale.track_height - scale.thumb_size) * 0.5 - 1.0).max(0.0), scale_factor);
                 (thumb_left, thumb_top)
@@ -54,11 +97,9 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             SwitchOrientation::Vertical => {
                 let thumb_left =
                     snap_to_pixel(((scale.track_width - scale.thumb_size) * 0.5 - 1.0).max(0.0), scale_factor);
-                let thumb_top = if model.data {
-                    scale.track_padding
-                } else {
-                    scale.track_height - scale.thumb_size - scale.track_padding
-                };
+                let thumb_top_on = scale.track_padding;
+                let thumb_top_off = scale.track_height - scale.thumb_size - scale.track_padding;
+                let thumb_top = snap_to_pixel(lerp_f32(thumb_top_off, thumb_top_on, progress), scale_factor);
                 (thumb_left, thumb_top)
             }
         };
@@ -82,7 +123,7 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
         }
 
         let shadow_extent = reserve_shadow_extent_from_slice(
-            &palette.thumb_shadow,
+            &settled_palette.thumb_shadow,
             elevation_probe_palette.as_ref().map(|probe| probe.thumb_shadow.as_slice()),
             scale_factor,
             model.elevation,
@@ -115,8 +156,8 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
 
         track_visual = track_visual.child(thumb);
 
-        if should_paint_shadow(model.elevation, model.state.disabled, !palette.thumb_shadow.is_empty()) {
-            track_visual = track_visual.shadow(palette.thumb_shadow.clone());
+        if should_paint_shadow(model.elevation, model.state.disabled, !settled_palette.thumb_shadow.is_empty()) {
+            track_visual = track_visual.shadow(settled_palette.thumb_shadow.clone());
         }
 
         let track = div().relative().child(track_visual);
@@ -143,11 +184,11 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .flex()
             .items_center()
             .gap(px(scale.gap))
-            .text_color(palette.label_color)
-            .text_size(px(palette.label_typography.size))
-            .line_height(px(palette.label_typography.line_height))
-            .font_family(palette.label_font_family.clone())
-            .font_weight(palette.label_typography.weight)
+            .text_color(settled_palette.label_color)
+            .text_size(px(settled_palette.label_typography.size))
+            .line_height(px(settled_palette.label_typography.line_height))
+            .font_family(settled_palette.label_font_family.clone())
+            .font_weight(settled_palette.label_typography.weight)
             .rounded(px(track_radius))
             .child(track)
             .child(label);

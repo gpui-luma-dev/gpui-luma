@@ -8,18 +8,42 @@ pub use theme::{CheckboxLook, CheckboxPalette, CheckboxScale, CheckboxTheme, Def
 pub use crate::theme::InteractionState as CheckboxState;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use gpui::{
     AnyElement, App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
     Render, SharedString, Subscription, Window, div,
 };
 
+use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::controls::command::button::{Button, ButtonBuilder, ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use crate::controls::presenter::{ControlPresenter, HasPresenter};
 use crate::theme::ControlSize;
 
 pub type Checkbox = Entity<CheckboxControl>;
+
+/// Typed payload for [`Button<CheckboxData>`] / [`ButtonTemplate<CheckboxData>`].
+///
+/// `checked` is the settled semantic value; `progress` is the continuous visual factor
+/// (`0.0`..`1.0`) driven by [`VisualTransition`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CheckboxData {
+    pub checked: bool,
+    pub progress: f32,
+}
+
+impl CheckboxData {
+    pub fn new(checked: bool) -> Self {
+        Self { checked, progress: if checked { 1.0 } else { 0.0 } }
+    }
+}
+
+impl Default for CheckboxData {
+    fn default() -> Self {
+        Self::new(false)
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
@@ -32,7 +56,9 @@ pub enum CheckboxEvent {
 
 pub struct CheckboxControl {
     checked: bool,
-    button: Entity<Button<bool>>,
+    animated: bool,
+    transition: VisualTransition,
+    button: Entity<Button<CheckboxData>>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -40,16 +66,41 @@ impl EventEmitter<CheckboxEvent> for CheckboxControl {}
 
 impl CheckboxControl {
     fn from_builder(builder: CheckboxBuilder, cx: &mut Context<Self>) -> Self {
-        let checked = builder.0.model.data;
-        let button = builder.0.spawn(cx);
+        let checked = builder.button.model.data.checked;
+        let animated = builder.animated;
+        let duration = if animated {
+            DEFAULT_TRANSITION_DURATION
+        } else {
+            Duration::ZERO
+        };
+        let progress = if checked { 1.0 } else { 0.0 };
+        let transition = VisualTransition::new(progress, duration);
+
+        let mut button_builder = builder.button;
+        button_builder.model.data = CheckboxData { checked, progress };
+        let button = button_builder.spawn(cx);
         let subscription = cx.subscribe(&button, Self::handle_button_event);
 
-        Self { checked, button, _subscriptions: vec![subscription] }
+        Self { checked, animated, transition, button, _subscriptions: vec![subscription] }
+    }
+
+    fn push_button_data(&mut self, cx: &mut Context<Self>) {
+        let data = CheckboxData { checked: self.checked, progress: self.transition.progress() };
+        self.button.update(cx, |button, cx| {
+            if button.data() == &data {
+                return;
+            }
+            button.set_data(data, cx);
+        });
     }
 
     pub fn set_data(&mut self, checked: bool, cx: &mut Context<Self>) {
+        if self.checked == checked {
+            return;
+        }
         self.checked = checked;
-        self.button.update(cx, |button, cx| button.set_data(checked, cx));
+        self.transition.set_target(if checked { 1.0 } else { 0.0 });
+        self.push_button_data(cx);
         cx.notify();
     }
 
@@ -57,27 +108,52 @@ impl CheckboxControl {
         &self.checked
     }
 
+    pub fn animated(&self) -> bool {
+        self.animated
+    }
+
+    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
+        if self.animated == animated {
+            return;
+        }
+        self.animated = animated;
+        let duration = if animated {
+            DEFAULT_TRANSITION_DURATION
+        } else {
+            Duration::ZERO
+        };
+        self.transition = VisualTransition::new(self.transition.progress(), duration);
+        self.transition.set_target(if self.checked { 1.0 } else { 0.0 });
+        self.push_button_data(cx);
+        cx.notify();
+    }
+
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.button.update(cx, |button, cx| button.set_enabled(enabled, cx));
         cx.notify();
     }
 
-    pub fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<bool>>, cx: &mut Context<Self>) {
+    pub fn set_presenter(
+        &mut self,
+        content: ControlPresenter<ButtonRenderModel<CheckboxData>>,
+        cx: &mut Context<Self>,
+    ) {
         self.button.update(cx, |button, cx| button.set_presenter(content, cx));
         cx.notify();
     }
 
-    pub fn set_template(&mut self, template: Arc<dyn ButtonTemplate<bool>>, cx: &mut Context<Self>) {
+    pub fn set_template(&mut self, template: Arc<dyn ButtonTemplate<CheckboxData>>, cx: &mut Context<Self>) {
         self.button.update(cx, |button, cx| button.set_template(template, cx));
         cx.notify();
     }
 
-    fn handle_button_event(&mut self, _: Entity<Button<bool>>, event: &ButtonEvent, cx: &mut Context<Self>) {
+    fn handle_button_event(&mut self, _: Entity<Button<CheckboxData>>, event: &ButtonEvent, cx: &mut Context<Self>) {
         match event {
             ButtonEvent::Click => {
                 let checked = !self.checked;
                 self.checked = checked;
-                self.button.update(cx, |button, cx| button.set_data(checked, cx));
+                self.transition.set_target(if checked { 1.0 } else { 0.0 });
+                self.push_button_data(cx);
                 cx.emit(CheckboxEvent::Change { checked });
                 cx.notify();
             }
@@ -95,7 +171,15 @@ impl Focusable for CheckboxControl {
 }
 
 impl Render for CheckboxControl {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let was_animating = self.transition.is_animating();
+        let _ = self.transition.sync();
+        self.push_button_data(cx);
+        self.transition.schedule_frame(window, cx);
+        if was_animating || self.transition.is_animating() {
+            cx.notify();
+        }
+
         div().child(self.button.clone()).into_any_element()
     }
 }
@@ -108,42 +192,51 @@ impl IntoElement for CheckboxControl {
     }
 }
 
-/// Builder for [`Checkbox`] controls. Distinct from [`ButtonBuilder<bool>`] so Shadcn style
+/// Builder for [`Checkbox`] controls. Distinct from [`ButtonBuilder<CheckboxData>`] so Shadcn style
 /// helpers apply the checkbox template rather than the switch template.
-pub struct CheckboxBuilder(ButtonBuilder<bool>);
+pub struct CheckboxBuilder {
+    button: ButtonBuilder<CheckboxData>,
+    animated: bool,
+}
 
 impl CheckboxBuilder {
-    pub fn with_data(self, data: bool) -> Self {
-        Self(self.0.with_data(data))
+    pub fn with_data(self, checked: bool) -> Self {
+        Self { button: self.button.with_data(CheckboxData::new(checked)), ..self }
     }
 
     pub fn enabled(self, enabled: bool) -> Self {
-        Self(self.0.enabled(enabled))
+        Self { button: self.button.enabled(enabled), ..self }
     }
 
     pub fn tab_stop(self, tab_stop: bool) -> Self {
-        Self(self.0.tab_stop(tab_stop))
+        Self { button: self.button.tab_stop(tab_stop), ..self }
     }
 
     pub fn size(self, size: ControlSize) -> Self {
-        Self(self.0.size(size))
+        Self { button: self.button.size(size), ..self }
     }
 
     /// Renders only the checkbox indicator (no label slot). Use in tables and list rows.
     pub fn indicator_only(self) -> Self {
-        Self(self.0.role(ButtonFamilyRole::Icon))
+        Self { button: self.button.role(ButtonFamilyRole::Icon), ..self }
     }
 
     pub fn without_elevation(self) -> Self {
-        Self(self.0.without_elevation())
+        Self { button: self.button.without_elevation(), ..self }
     }
 
     pub fn compact(self) -> Self {
-        Self(self.0.compact())
+        Self { button: self.button.compact(), ..self }
     }
 
-    pub fn template(self, template: Arc<dyn ButtonTemplate<bool>>) -> Self {
-        Self(self.0.template(template))
+    /// Enables or disables the checked/unchecked visual transition (default `true`).
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.animated = animated;
+        self
+    }
+
+    pub fn template(self, template: Arc<dyn ButtonTemplate<CheckboxData>>) -> Self {
+        Self { button: self.button.template(template), ..self }
     }
 
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Checkbox {
@@ -151,12 +244,32 @@ impl CheckboxBuilder {
     }
 }
 
-impl HasPresenter<ButtonRenderModel<bool>> for CheckboxBuilder {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<bool>>) {
-        self.0.set_presenter(content);
+impl HasPresenter<ButtonRenderModel<CheckboxData>> for CheckboxBuilder {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<CheckboxData>>) {
+        self.button.set_presenter(content);
     }
 }
 
 pub fn new(id: impl Into<SharedString>) -> CheckboxBuilder {
-    CheckboxBuilder(ButtonBuilder::new(id).typed(false).template(default_checkbox_template()))
+    CheckboxBuilder {
+        button: ButtonBuilder::new(id).typed(CheckboxData::default()).template(default_checkbox_template()),
+        animated: true,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn checkbox_builder_animated_option() {
+        assert!(new("animated-default").animated);
+        assert!(!new("animated-off").animated(false).animated);
+    }
+
+    #[test]
+    fn checkbox_data_seeds_progress_from_checked() {
+        assert_eq!(CheckboxData::new(true).progress, 1.0);
+        assert_eq!(CheckboxData::new(false).progress, 0.0);
+    }
 }

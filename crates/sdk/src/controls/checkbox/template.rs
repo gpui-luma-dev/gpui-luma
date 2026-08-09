@@ -1,10 +1,10 @@
-use gpui::{AnyElement, App, Div, FontWeight, Stateful, Window, div, px, prelude::*};
+use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::controls::choice_indicator_layout::{reserve_shadow_extent, should_paint_shadow};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use crate::controls::checkbox::{CheckboxScale, CheckboxTheme, default_checkbox_theme};
+use crate::controls::checkbox::{CheckboxData, CheckboxPalette, CheckboxScale, CheckboxTheme, default_checkbox_theme};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::{InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
@@ -12,16 +12,59 @@ use crate::theme::{InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
 define_control_template!(
     ThemedCheckboxTemplate,
     dyn CheckboxTheme,
-    ButtonRenderModel<bool>,
-    ButtonTemplate<bool>,
+    ButtonRenderModel<CheckboxData>,
+    ButtonTemplate<CheckboxData>,
     default_checkbox_theme()
 );
 
-impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
-    fn render(&self, model: &ButtonRenderModel<bool>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let palette = self.theme.resolve(model.data, model.state, model.size);
+fn lerp_f32(start: f32, end: f32, t: f32) -> f32 {
+    start + ((end - start) * t)
+}
+
+fn lerp_hsla(start: Hsla, end: Hsla, t: f32) -> Hsla {
+    hsla(
+        lerp_f32(start.h, end.h, t),
+        lerp_f32(start.s, end.s, t),
+        lerp_f32(start.l, end.l, t),
+        lerp_f32(start.a, end.a, t),
+    )
+}
+
+fn lerp_optional_hsla(start: Option<Hsla>, end: Option<Hsla>, t: f32) -> Option<Hsla> {
+    match (start, end) {
+        (Some(a), Some(b)) => Some(lerp_hsla(a, b, t)),
+        (Some(a), None) if t < 0.5 => Some(a),
+        (None, Some(b)) if t >= 0.5 => Some(b),
+        _ => None,
+    }
+}
+
+fn lerp_checkbox_palette(off: &CheckboxPalette, on: &CheckboxPalette, progress: f32) -> CheckboxPalette {
+    let t = progress.clamp(0.0, 1.0);
+    let settled = if t >= 0.5 { on } else { off };
+    CheckboxPalette {
+        control_background: lerp_optional_hsla(off.control_background, on.control_background, t),
+        control_border: lerp_optional_hsla(off.control_border, on.control_border, t),
+        indicator_background: lerp_hsla(off.indicator_background, on.indicator_background, t),
+        indicator_border: lerp_hsla(off.indicator_border, on.indicator_border, t),
+        checkmark_color: lerp_hsla(off.checkmark_color, on.checkmark_color, t),
+        label_color: settled.label_color,
+        label_typography: settled.label_typography,
+        label_font_family: settled.label_font_family.clone(),
+        indicator_shadow: settled.indicator_shadow.clone(),
+    }
+}
+
+impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
+    fn render(&self, model: &ButtonRenderModel<CheckboxData>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let progress = model.data.progress.clamp(0.0, 1.0);
+        let checked = model.data.checked;
+        let off_palette = self.theme.resolve(false, model.state, model.size);
+        let on_palette = self.theme.resolve(true, model.state, model.size);
+        let palette = lerp_checkbox_palette(&off_palette, &on_palette, progress);
+        let settled_palette = if checked { &on_palette } else { &off_palette };
         let elevation_probe_look = if model.elevation && model.state.disabled {
-            Some(self.theme.resolve(model.data, InteractionState { disabled: false, ..model.state }, model.size))
+            Some(self.theme.resolve(checked, InteractionState { disabled: false, ..model.state }, model.size))
         } else {
             None
         };
@@ -33,7 +76,7 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
         );
 
         let shadow_extent = reserve_shadow_extent(
-            palette.indicator_shadow.as_ref(),
+            settled_palette.indicator_shadow.as_ref(),
             elevation_probe_look.as_ref().and_then(|probe| probe.indicator_shadow.as_ref()),
             scale_factor,
             model.elevation,
@@ -50,13 +93,13 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
                 .border_1()
                 .border_color(palette.indicator_border)
                 .rounded(px(scale.indicator_radius))
-                .child(render_checkmark(model.data, scale.glyph_size, palette.checkmark_color));
+                .child(render_checkmark(progress, scale.glyph_size, palette.checkmark_color));
 
             if should_paint_shadow(
                 model.elevation,
                 model.state.disabled,
-                palette.indicator_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),
-            ) && let Some(shadows) = palette.indicator_shadow.as_ref()
+                settled_palette.indicator_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),
+            ) && let Some(shadows) = settled_palette.indicator_shadow.as_ref()
             {
                 indicator = indicator.shadow(shadows.clone());
             }
@@ -85,11 +128,11 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
             .relative()
             .flex()
             .items_center()
-            .text_color(palette.label_color)
-            .text_size(px(palette.label_typography.size))
-            .line_height(px(palette.label_typography.line_height))
-            .font_family(palette.label_font_family.clone())
-            .font_weight(palette.label_typography.weight)
+            .text_color(settled_palette.label_color)
+            .text_size(px(settled_palette.label_typography.size))
+            .line_height(px(settled_palette.label_typography.line_height))
+            .font_family(settled_palette.label_font_family.clone())
+            .font_weight(settled_palette.label_typography.weight)
             .rounded(px(scale.control_radius))
             .cursor_pointer();
 
@@ -122,21 +165,23 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
     }
 }
 
-fn render_checkmark(checked: bool, size: f32, color: gpui::Hsla) -> AnyElement {
-    if checked {
-        div()
-            .size(px(size))
-            .flex()
-            .items_center()
-            .justify_center()
-            .font_family("lucide")
-            .font_weight(FontWeight::NORMAL)
-            .text_size(px(size))
-            .line_height(px(size))
-            .text_color(color)
-            .child(char::from(LucideIcon::Check).to_string())
-            .into_any_element()
-    } else {
-        div().size(px(size)).into_any_element()
+fn render_checkmark(progress: f32, size: f32, color: gpui::Hsla) -> AnyElement {
+    let progress = progress.clamp(0.0, 1.0);
+    if progress <= f32::EPSILON {
+        return div().size(px(size)).into_any_element();
     }
+
+    div()
+        .size(px(size))
+        .flex()
+        .items_center()
+        .justify_center()
+        .font_family("lucide")
+        .font_weight(FontWeight::NORMAL)
+        .text_size(px(size))
+        .line_height(px(size))
+        .text_color(color)
+        .opacity(progress)
+        .child(char::from(LucideIcon::Check).to_string())
+        .into_any_element()
 }

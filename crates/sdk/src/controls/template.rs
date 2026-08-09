@@ -52,12 +52,12 @@ where
 /// ```rust
 /// # use gpui_luma::define_control_template;
 /// # use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-/// # use gpui_luma::controls::checkbox::{CheckboxTheme, default_checkbox_theme};
+/// # use gpui_luma::controls::checkbox::{CheckboxData, CheckboxTheme, default_checkbox_theme};
 /// define_control_template!(
 ///     ThemedCheckboxTemplate,
 ///     dyn CheckboxTheme,
-///     ButtonRenderModel<bool>,
-///     ButtonTemplate<bool>,
+///     ButtonRenderModel<CheckboxData>,
+///     ButtonTemplate<CheckboxData>,
 ///     default_checkbox_theme()
 /// );
 /// ```

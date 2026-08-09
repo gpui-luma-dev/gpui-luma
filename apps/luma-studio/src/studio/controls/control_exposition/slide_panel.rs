@@ -158,7 +158,7 @@ impl SlidePanelDemo {
             .secondary_toggle("controls-doc-slide-backdrop-toggle")
             .with_data(true)
             .content(|model, _| {
-                let label = if model.data {
+                let label = if model.data.selected {
                     "Backdrop click closes: On"
                 } else {
                     "Backdrop click closes: Off"

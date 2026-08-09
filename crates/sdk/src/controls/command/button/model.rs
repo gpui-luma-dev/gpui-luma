@@ -264,7 +264,10 @@ mod tests {
     #[test]
     fn with_data_preserves_specialized_template() {
         let template = default_checkbox_template();
-        let builder = ButtonBuilder::new("checkbox-test").typed(false).template(template.clone()).with_data(true);
+        let builder = ButtonBuilder::new("checkbox-test")
+            .typed(crate::controls::checkbox::CheckboxData::default())
+            .template(template.clone())
+            .with_data(crate::controls::checkbox::CheckboxData::new(true));
 
         assert!(std::sync::Arc::ptr_eq(&builder.model.template, &template));
     }
@@ -273,7 +276,7 @@ mod tests {
     fn with_template_modifier_wraps_template() {
         let template = default_checkbox_template();
         let builder = ButtonBuilder::new("checkbox-test")
-            .typed(false)
+            .typed(crate::controls::checkbox::CheckboxData::default())
             .template(template.clone())
             .with_template_modifier(|element, _| element);
 

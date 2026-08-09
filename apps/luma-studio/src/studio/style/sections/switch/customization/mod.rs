@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::ButtonRenderModel;
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::switch::{Switch, SwitchBuilder, SwitchEvent, SwitchOrientation};
+use gpui_luma::controls::switch::{Switch, SwitchBuilder, SwitchData, SwitchEvent, SwitchOrientation};
 use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::paint::switch_look;
 use gpui_luma_look_shadcn::prelude::*;
@@ -101,14 +101,15 @@ fn labeled_switch(builder: SwitchBuilder, look: Arc<ShadcnLook>, style: ShadcnBu
 fn labeled_track_content(
     look: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> impl Fn(&ButtonRenderModel<bool>, &mut App) -> AnyElement + Send + Sync + 'static {
+) -> impl Fn(&ButtonRenderModel<SwitchData>, &mut App) -> AnyElement + Send + Sync + 'static {
     move |model, _| {
+        let checked = model.data.checked;
         let tokens = look.mode_tokens();
-        let palette = switch_look(tokens.as_ref(), look.mode(), style, model.data, model.state, model.size);
+        let palette = switch_look(tokens.as_ref(), look.mode(), style, checked, model.state, model.size);
         let on_palette =
             switch_look(tokens.as_ref(), look.mode(), style, true, InteractionState::default(), model.size);
-        let state_label = if model.data { "ON" } else { "OFF" };
-        let state_label_color = if model.data && !model.state.disabled {
+        let state_label = if checked { "ON" } else { "OFF" };
+        let state_label_color = if checked && !model.state.disabled {
             on_palette.thumb_background
         } else {
             palette.label_color
@@ -119,8 +120,8 @@ fn labeled_track_content(
             .flex()
             .items_center()
             .px(px(LABEL_TRACK_PADDING_X))
-            .when(model.data, |label_row| label_row.justify_start())
-            .when(!model.data, |label_row| label_row.justify_end())
+            .when(checked, |label_row| label_row.justify_start())
+            .when(!checked, |label_row| label_row.justify_end())
             .text_size(px((palette.label_typography.size * 0.85).max(10.0)))
             .line_height(px((palette.label_typography.line_height * 0.85).max(12.0)))
             .font_family(palette.label_font_family.clone())
@@ -134,11 +135,12 @@ fn labeled_track_content(
 fn icon_thumb_content(
     look: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> impl Fn(&ButtonRenderModel<bool>, &mut App) -> AnyElement + Send + Sync + 'static {
+) -> impl Fn(&ButtonRenderModel<SwitchData>, &mut App) -> AnyElement + Send + Sync + 'static {
     move |model, _| {
+        let checked = model.data.checked;
         let tokens = look.mode_tokens();
-        let palette = switch_look(tokens.as_ref(), look.mode(), style, model.data, model.state, model.size);
-        let icon = if model.data { LucideIcon::Check } else { LucideIcon::X };
+        let palette = switch_look(tokens.as_ref(), look.mode(), style, checked, model.state, model.size);
+        let icon = if checked { LucideIcon::Check } else { LucideIcon::X };
         div().text_color(palette.track_background).child(render_lucide_icon(icon, 11.0)).into_any_element()
     }
 }

@@ -2,18 +2,19 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{App, Div, Stateful, Window, div, hsla, point, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::toggle::ToggleData;
 
-pub fn neumorphic_power_toggle_template() -> Arc<dyn ButtonTemplate<bool>> {
-    static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate<bool>>> = OnceLock::new();
+pub fn neumorphic_power_toggle_template() -> Arc<dyn ButtonTemplate<ToggleData>> {
+    static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate<ToggleData>>> = OnceLock::new();
 
     TEMPLATE.get_or_init(|| Arc::new(NeumorphicPowerToggleTemplate)).clone()
 }
 
 struct NeumorphicPowerToggleTemplate;
 
-impl ButtonTemplate<bool> for NeumorphicPowerToggleTemplate {
-    fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let is_on = model.data;
+impl ButtonTemplate<ToggleData> for NeumorphicPowerToggleTemplate {
+    fn render(&self, model: &ButtonRenderModel<ToggleData>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let is_on = model.data.selected;
         let state = model.state;
 
         let background = if state.disabled {

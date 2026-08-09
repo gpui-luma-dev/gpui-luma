@@ -239,8 +239,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 if let Some(height_report) = height_report {
                     // Inner already includes vertical padding; do not add pad_y again.
                     clip = clip.on_children_prepainted(move |bounds, window, cx| {
-                        let height =
-                            bounds.iter().map(|child| child.size.height.as_f32()).fold(0.0_f32, f32::max);
+                        let height = bounds.iter().map(|child| child.size.height.as_f32()).fold(0.0_f32, f32::max);
                         if height > f32::EPSILON {
                             height_report(height, window, cx);
                         }

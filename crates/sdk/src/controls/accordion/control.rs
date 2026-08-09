@@ -196,11 +196,11 @@ impl AccordionControl {
                 let item_enabled = self.model.enabled && item.enabled;
                 let expanded = self.expanded_ids.contains(&item.id);
                 let has_keyboard_focus = focus.focused && self.focused_item_index == Some(index);
-                let progress =
-                    self.transitions
-                        .get(index)
-                        .map(|transition| transition.progress())
-                        .unwrap_or_else(|| if expanded { 1.0 } else { 0.0 });
+                let progress = self
+                    .transitions
+                    .get(index)
+                    .map(|transition| transition.progress())
+                    .unwrap_or_else(|| if expanded { 1.0 } else { 0.0 });
                 let content_height_px = self.content_heights_px.get(index).copied().unwrap_or(0.0);
 
                 AccordionItemRenderModel {

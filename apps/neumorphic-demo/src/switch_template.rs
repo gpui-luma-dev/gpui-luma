@@ -2,18 +2,20 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{App, Div, Stateful, Window, div, hsla, px, prelude::*};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::switch::SwitchData;
 
-pub fn neumorphic_switch_template() -> Arc<dyn ButtonTemplate<bool>> {
-    static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate<bool>>> = OnceLock::new();
+pub fn neumorphic_switch_template() -> Arc<dyn ButtonTemplate<SwitchData>> {
+    static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate<SwitchData>>> = OnceLock::new();
 
     TEMPLATE.get_or_init(|| Arc::new(NeumorphicSwitchTemplate)).clone()
 }
 
 struct NeumorphicSwitchTemplate;
 
-impl ButtonTemplate<bool> for NeumorphicSwitchTemplate {
-    fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let is_on = model.data;
+impl ButtonTemplate<SwitchData> for NeumorphicSwitchTemplate {
+    fn render(&self, model: &ButtonRenderModel<SwitchData>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+        let progress = model.data.progress.clamp(0.0, 1.0);
+        let is_on = model.data.checked;
         let state = model.state;
 
         let track_background = if state.disabled {
@@ -58,11 +60,13 @@ impl ButtonTemplate<bool> for NeumorphicSwitchTemplate {
             ]
         };
 
+        let thumb_left = 3.0 + ((31.0 - 3.0) * progress);
+
         let thumb = div()
             .id(format!("{}-thumb", model.id))
             .absolute()
             .top(px(2.0))
-            .left(if is_on { px(31.0) } else { px(3.0) })
+            .left(px(thumb_left))
             .size(px(24.0))
             .bg(hsla(0.0, 0.0, 0.985, 0.98))
             .border_1()

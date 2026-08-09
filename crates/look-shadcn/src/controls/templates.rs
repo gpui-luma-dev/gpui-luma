@@ -5,7 +5,7 @@ use gpui_luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyPalette, 
 use gpui_luma::controls::overlay_window::{
     OverlayWindowLook, OverlayWindowMode, OverlayWindowTemplate, OverlayWindowTheme, ThemedOverlayWindowTemplate,
 };
-use gpui_luma::controls::checkbox::{CheckboxTheme, ThemedCheckboxTemplate};
+use gpui_luma::controls::checkbox::{CheckboxData, CheckboxTheme, ThemedCheckboxTemplate};
 use gpui_luma::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
 use gpui_luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
 use gpui_luma::controls::control_group::{
@@ -22,7 +22,7 @@ use gpui_luma::controls::pager::{PagerLook, PagerTemplate, PagerTheme, ThemedPag
 use gpui_luma::controls::popup_menu::{PopupMenuTheme, ThemedPopupMenuTemplate};
 use gpui_luma::controls::progress::{ProgressTheme, ThemedLinearProgressTemplate, ThemedProgressTemplate};
 use gpui_luma::controls::stepper::{StepperTheme, ThemedStepperTemplate};
-use gpui_luma::controls::radio_button::{RadioButtonTheme, ThemedRadioButtonTemplate};
+use gpui_luma::controls::radio_button::{RadioButtonData, RadioButtonTheme, ThemedRadioButtonTemplate};
 use gpui_luma::controls::scrollbar::{ScrollbarTheme, ThemedScrollbarTemplate};
 use gpui_luma::controls::selector::{SelectorTheme, SelectorVisualState, ThemedSelectorTemplate};
 use gpui_luma::controls::selector_panel::default_selector_items_template;
@@ -32,7 +32,8 @@ use gpui_luma::controls::split_view::SplitViewTheme;
 use gpui_luma::controls::slider::{
     SliderTemplate, SliderTheme, ThemedAngularDialTemplate, ThemedCircularRingTemplate, ThemedSliderTemplate,
 };
-use gpui_luma::controls::switch::{SwitchTheme, ThemedSwitchTemplate};
+use gpui_luma::controls::switch::{SwitchData, SwitchTheme, ThemedSwitchTemplate};
+use gpui_luma::controls::toggle::{ToggleData, apply_toggle_progress_chrome};
 use gpui_luma::controls::accordion::{AccordionTemplate, AccordionTheme, ThemedAccordionTemplate};
 use gpui_luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTreeViewTemplate};
 use gpui_luma::controls::tabs_navigation::{TabsNavigationTemplate, TabsNavigationTheme, ThemedTabsNavigationTemplate};
@@ -203,15 +204,18 @@ pub fn radio_button_theme_with_style(theme: Arc<ShadcnLook>, style: ShadcnButton
     Arc::new(ShadcnStyledRadioButtonTheme { theme: theme.as_ref().clone(), style })
 }
 
-pub fn switch_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
+pub fn switch_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<SwitchData>> {
     Arc::new(ThemedSwitchTemplate::new(switch_theme_with_style(theme, style)))
 }
 
-pub fn checkbox_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
+pub fn checkbox_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<CheckboxData>> {
     Arc::new(ThemedCheckboxTemplate::new(checkbox_theme_with_style(theme, style)))
 }
 
-pub fn radio_button_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
+pub fn radio_button_template(
+    theme: Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
+) -> Arc<dyn ButtonTemplate<RadioButtonData>> {
     Arc::new(ThemedRadioButtonTemplate::new(radio_button_theme_with_style(theme, style)))
 }
 
@@ -1349,6 +1353,21 @@ impl OverlayWindowTheme for ShadcnOverlayWindowTheme {
     }
 }
 
-pub fn toggle_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
+pub fn toggle_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<ToggleData>> {
+    let button_family_theme = styled_button_family_theme(theme, style);
+    let theme_for_mod = Arc::clone(&button_family_theme);
+    Arc::new(DefaultButtonTemplate::<ToggleData>::new(button_family_theme).with_modifier(move |element, model| {
+        if model.look.is_some() {
+            return element;
+        }
+
+        let off = theme_for_mod.resolve(ButtonFamilyRole::Toggle { selected: false }, model.size, model.state);
+        let on = theme_for_mod.resolve(ButtonFamilyRole::Toggle { selected: true }, model.size, model.state);
+        apply_toggle_progress_chrome(element, &off, &on, model.data.progress)
+    }))
+}
+
+/// Non-animated toggle chrome for control-group items (`ButtonTemplate<bool>`).
+pub fn toggle_item_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
     Arc::new(DefaultButtonTemplate::new(styled_button_family_theme(theme, style)))
 }
