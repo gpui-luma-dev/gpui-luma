@@ -238,6 +238,8 @@ fn render_feedback_progress_sample(
         enabled: sample.enabled,
         direction,
         show_thumb,
+        indeterminate: false,
+        phase: 0.0,
     };
 
     div()
@@ -293,6 +295,8 @@ fn render_feedback_linear_sample_with_label(
         enabled: true,
         direction,
         show_thumb,
+        indeterminate: false,
+        phase: 0.0,
     };
 
     div()
@@ -347,6 +351,8 @@ fn render_feedback_linear_vertical_sample_with_label(
         enabled: true,
         direction,
         show_thumb,
+        indeterminate: false,
+        phase: 0.0,
     };
 
     div()

@@ -204,12 +204,14 @@ pub struct SliderRenderModel<'a> {
 
 pub struct SliderBuilder {
     pub(crate) model: SliderModel,
+    pub(crate) animated: bool,
 }
 
 impl SliderBuilder {
     pub fn new(id: impl Into<SharedString>) -> Self {
         let thumb_id = ThumbId::next();
         Self {
+            animated: true,
             model: SliderModel {
                 id: id.into(),
                 strategy: SliderInputStrategy::Horizontal,
@@ -340,6 +342,11 @@ impl SliderBuilder {
 
     pub fn reversed(mut self, reversed: bool) -> Self {
         self.model.reversed = reversed;
+        self
+    }
+
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.animated = animated;
         self
     }
 
@@ -479,15 +486,25 @@ pub(crate) fn constrain_primary_value(value: f32, model: &SliderModel) -> f32 {
     }
 }
 
-pub(crate) fn build_render_segments(model: &SliderModel) -> Vec<TrackSegment> {
+pub(crate) fn build_render_segments_at(model: &SliderModel, thumb_position: f32) -> Vec<TrackSegment> {
     let presentation = if model.thumb_policy.is_multi_thumb() {
         TrackPresentation::Domain
     } else {
         model.presentation
     };
-    let thumb_position = model.thumbs.first().map(|thumb| thumb.position).unwrap_or(0.0);
     let track_intervals = model.track_intervals.as_ref().unwrap_or(&model.allowed_intervals);
     build_track_segments(presentation, thumb_position, track_intervals, model.range)
+}
+
+#[cfg(test)]
+mod animated_tests {
+    use super::*;
+
+    #[test]
+    fn animated_defaults_true() {
+        assert!(SliderBuilder::new("slider-animated").animated);
+        assert!(!SliderBuilder::new("slider-animated-off").animated(false).animated);
+    }
 }
 
 #[cfg(test)]

@@ -1,11 +1,13 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{App, Div, Stateful, Window, div, px, relative, prelude::*};
+use gpui::{App, Div, Hsla, Stateful, Window, div, hsla, px, relative, prelude::*};
 
 use super::{ProgressTemplate, ProgressTemplateModifier, apply_template_modifiers};
 use super::super::direction::{ProgressDirection, ProgressOrientation};
 use super::super::ProgressRenderModel;
 use crate::controls::progress::{ProgressTheme, default_progress_theme};
+
+const SHIMMER_BAND_FRACTION: f32 = 0.28;
 
 pub struct LinearProgressTemplate {
     theme: Arc<dyn ProgressTheme>,
@@ -44,7 +46,7 @@ impl ProgressTemplate for LinearProgressTemplate {
         let thumb_radius = thumb_size / 2.0;
         let thumb_offset = -(thumb_size / 2.0);
 
-        let cross_extent = if model.show_thumb {
+        let cross_extent = if model.show_thumb && !model.indeterminate {
             thumb_size.max(track_height)
         } else {
             track_height
@@ -62,24 +64,35 @@ impl ProgressTemplate for LinearProgressTemplate {
                     .top(px(track_inset))
                     .h(px(track_height));
 
-                let fill_node = match model.direction {
-                    ProgressDirection::LeftToRight => div()
-                        .absolute()
-                        .rounded(track_radius)
-                        .bg(look.progress_color)
-                        .left_0()
-                        .top(px(track_inset))
-                        .h(px(track_height))
-                        .w(relative(percentage)),
-                    ProgressDirection::RightToLeft => div()
-                        .absolute()
-                        .rounded(track_radius)
-                        .bg(look.progress_color)
-                        .right_0()
-                        .top(px(track_inset))
-                        .h(px(track_height))
-                        .w(relative(percentage)),
-                    _ => div(),
+                let fill_node = if model.indeterminate {
+                    render_horizontal_shimmer(
+                        model.direction,
+                        model.phase,
+                        track_inset,
+                        track_height,
+                        track_radius,
+                        look.progress_color,
+                    )
+                } else {
+                    match model.direction {
+                        ProgressDirection::LeftToRight => div()
+                            .absolute()
+                            .rounded(track_radius)
+                            .bg(look.progress_color)
+                            .left_0()
+                            .top(px(track_inset))
+                            .h(px(track_height))
+                            .w(relative(percentage)),
+                        ProgressDirection::RightToLeft => div()
+                            .absolute()
+                            .rounded(track_radius)
+                            .bg(look.progress_color)
+                            .right_0()
+                            .top(px(track_inset))
+                            .h(px(track_height))
+                            .w(relative(percentage)),
+                        _ => div(),
+                    }
                 };
 
                 let mut root = div()
@@ -90,7 +103,7 @@ impl ProgressTemplate for LinearProgressTemplate {
                     .child(track_node)
                     .child(fill_node);
 
-                if model.show_thumb {
+                if model.show_thumb && !model.indeterminate {
                     let thumb_node =
                         div().absolute().size(px(thumb_size)).rounded(px(thumb_radius)).bg(look.thumb_color);
                     let thumb_node = match model.direction {
@@ -113,24 +126,35 @@ impl ProgressTemplate for LinearProgressTemplate {
                     .left(px(track_inset))
                     .w(px(track_height));
 
-                let fill_node = match model.direction {
-                    ProgressDirection::BottomToTop => div()
-                        .absolute()
-                        .rounded(track_radius)
-                        .bg(look.progress_color)
-                        .left(px(track_inset))
-                        .bottom_0()
-                        .w(px(track_height))
-                        .h(relative(percentage)),
-                    ProgressDirection::TopToBottom => div()
-                        .absolute()
-                        .rounded(track_radius)
-                        .bg(look.progress_color)
-                        .left(px(track_inset))
-                        .top_0()
-                        .w(px(track_height))
-                        .h(relative(percentage)),
-                    _ => div(),
+                let fill_node = if model.indeterminate {
+                    render_vertical_shimmer(
+                        model.direction,
+                        model.phase,
+                        track_inset,
+                        track_height,
+                        track_radius,
+                        look.progress_color,
+                    )
+                } else {
+                    match model.direction {
+                        ProgressDirection::BottomToTop => div()
+                            .absolute()
+                            .rounded(track_radius)
+                            .bg(look.progress_color)
+                            .left(px(track_inset))
+                            .bottom_0()
+                            .w(px(track_height))
+                            .h(relative(percentage)),
+                        ProgressDirection::TopToBottom => div()
+                            .absolute()
+                            .rounded(track_radius)
+                            .bg(look.progress_color)
+                            .left(px(track_inset))
+                            .top_0()
+                            .w(px(track_height))
+                            .h(relative(percentage)),
+                        _ => div(),
+                    }
                 };
 
                 let mut root = div()
@@ -141,7 +165,7 @@ impl ProgressTemplate for LinearProgressTemplate {
                     .child(track_node)
                     .child(fill_node);
 
-                if model.show_thumb {
+                if model.show_thumb && !model.indeterminate {
                     let thumb_node =
                         div().absolute().size(px(thumb_size)).rounded(px(thumb_radius)).bg(look.thumb_color);
                     let thumb_node = match model.direction {
@@ -158,4 +182,89 @@ impl ProgressTemplate for LinearProgressTemplate {
 
         apply_template_modifiers(&self.modifiers, root, model)
     }
+}
+
+fn shimmer_band_start(phase: f32) -> f32 {
+    let travel = 1.0 + SHIMMER_BAND_FRACTION;
+    (phase.clamp(0.0, 1.0) * travel) - SHIMMER_BAND_FRACTION
+}
+
+fn with_alpha(color: Hsla, alpha: f32) -> Hsla {
+    hsla(color.h, color.s, color.l, (color.a * alpha).clamp(0.0, 1.0))
+}
+
+fn render_horizontal_shimmer(
+    direction: ProgressDirection,
+    phase: f32,
+    track_inset: f32,
+    track_height: f32,
+    track_radius: gpui::Pixels,
+    color: Hsla,
+) -> Div {
+    let start = shimmer_band_start(phase);
+    let soft = with_alpha(color, 0.35);
+    let mid = with_alpha(color, 0.85);
+
+    let band = |offset: f32, width: f32, fill: Hsla| {
+        let node = div()
+            .absolute()
+            .rounded(track_radius)
+            .bg(fill)
+            .top(px(track_inset))
+            .h(px(track_height))
+            .w(relative(width.max(0.0)));
+        match direction {
+            ProgressDirection::RightToLeft => node.right(relative(offset)),
+            _ => node.left(relative(offset)),
+        }
+    };
+
+    div()
+        .absolute()
+        .left_0()
+        .right_0()
+        .top(px(track_inset))
+        .h(px(track_height))
+        .overflow_hidden()
+        .child(band(start, SHIMMER_BAND_FRACTION, soft))
+        .child(band(start + SHIMMER_BAND_FRACTION * 0.2, SHIMMER_BAND_FRACTION * 0.6, mid))
+        .child(band(start + SHIMMER_BAND_FRACTION * 0.35, SHIMMER_BAND_FRACTION * 0.3, color))
+}
+
+fn render_vertical_shimmer(
+    direction: ProgressDirection,
+    phase: f32,
+    track_inset: f32,
+    track_height: f32,
+    track_radius: gpui::Pixels,
+    color: Hsla,
+) -> Div {
+    let start = shimmer_band_start(phase);
+    let soft = with_alpha(color, 0.35);
+    let mid = with_alpha(color, 0.85);
+
+    let band = |offset: f32, height: f32, fill: Hsla| {
+        let node = div()
+            .absolute()
+            .rounded(track_radius)
+            .bg(fill)
+            .left(px(track_inset))
+            .w(px(track_height))
+            .h(relative(height.max(0.0)));
+        match direction {
+            ProgressDirection::TopToBottom => node.top(relative(offset)),
+            _ => node.bottom(relative(offset)),
+        }
+    };
+
+    div()
+        .absolute()
+        .top_0()
+        .bottom_0()
+        .left(px(track_inset))
+        .w(px(track_height))
+        .overflow_hidden()
+        .child(band(start, SHIMMER_BAND_FRACTION, soft))
+        .child(band(start + SHIMMER_BAND_FRACTION * 0.2, SHIMMER_BAND_FRACTION * 0.6, mid))
+        .child(band(start + SHIMMER_BAND_FRACTION * 0.35, SHIMMER_BAND_FRACTION * 0.3, color))
 }

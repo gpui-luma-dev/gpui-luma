@@ -2,7 +2,8 @@
 
 use std::sync::Arc;
 
-use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
 use gpui_luma::controls::progress::{Progress, ProgressDirection, ProgressRenderModel, ProgressTemplate};
 use gpui_luma::controls::value::ControlRange;
 use gpui_luma::theme::ControlSize;
@@ -30,12 +31,16 @@ pub struct ProgressControlExposition {
     left_pane: Entity<ProgressExpositionLeftPane>,
     theme_inspector: Entity<ProgressThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
 }
 
 struct ProgressExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     linear_progress: Progress,
+    indeterminate_linear: Progress,
+    indeterminate_circular: Progress,
+    animate_button: Entity<Button<()>>,
 }
 
 impl ProgressExpositionLeftPane {
@@ -44,7 +49,20 @@ impl ProgressExpositionLeftPane {
         self.linear_progress.update(cx, |progress, cx| {
             progress.set_template(look.linear_progress_template(), cx);
         });
+        self.indeterminate_linear.update(cx, |progress, cx| {
+            progress.set_template(look.linear_progress_template(), cx);
+        });
+        self.indeterminate_circular.update(cx, |progress, cx| {
+            progress.set_template(look.progress_template(), cx);
+        });
         cx.notify();
+    }
+
+    fn toggle_animated_value(&mut self, cx: &mut Context<Self>) {
+        self.linear_progress.update(cx, |progress, cx| {
+            let next = if progress.value() < 50.0 { 88.0 } else { 18.0 };
+            progress.set_value(next, cx);
+        });
     }
 }
 
@@ -84,6 +102,17 @@ impl Render for ProgressExpositionLeftPane {
                                         .items_stretch()
                                         .gap(px(14.0))
                                         .child(div().w(px(LINEAR_DEMO_WIDTH)).child(self.linear_progress.clone()))
+                                        .child(self.animate_button.clone())
+                                        .child(section_label("Indeterminate", chrome.muted_text))
+                                        .child(div().w(px(LINEAR_DEMO_WIDTH)).child(self.indeterminate_linear.clone()))
+                                        .child(
+                                            div()
+                                                .flex()
+                                                .flex_row()
+                                                .items_center()
+                                                .gap(px(12.0))
+                                                .child(self.indeterminate_circular.clone()),
+                                        )
                                         .child(render_linear_direction_sample(
                                             &linear_template,
                                             "rtl",
@@ -172,7 +201,31 @@ impl ProgressControlExposition {
             .size(LINEAR_DEMO_SIZE)
             .show_thumb(true)
             .spawn(cx);
-        let left_pane = cx.new(|_| ProgressExpositionLeftPane { look: look.clone(), entry, linear_progress });
+        let indeterminate_linear = look
+            .linear_progress("controls-doc-progress-indeterminate-linear")
+            .size(LINEAR_DEMO_SIZE)
+            .indeterminate(true)
+            .spawn(cx);
+        let indeterminate_circular =
+            look.progress("controls-doc-progress-indeterminate-circular").indeterminate(true).spawn(cx);
+        let animate_button = look.secondary_button("controls-doc-progress-animate").label("Animate value").spawn(cx);
+        let left_pane = cx.new(|_| ProgressExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            linear_progress,
+            indeterminate_linear,
+            indeterminate_circular,
+            animate_button: animate_button.clone(),
+        });
+        let mut subscriptions = Vec::new();
+        subscriptions.push(cx.subscribe(&animate_button, {
+            let left_pane = left_pane.clone();
+            move |_, _, event, cx| {
+                if matches!(event, ButtonEvent::Click) {
+                    left_pane.update(cx, |pane, cx| pane.toggle_animated_value(cx));
+                }
+            }
+        }));
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
             look.clone(),
@@ -185,7 +238,7 @@ impl ProgressControlExposition {
             ProgressInspectorAdapter::shared(),
         );
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
@@ -258,6 +311,8 @@ fn render_progress_sample(sample: ProgressSample<'_>, window: &mut Window, cx: &
         enabled,
         direction,
         show_thumb,
+        indeterminate: false,
+        phase: 0.0,
     };
 
     div()
@@ -323,6 +378,8 @@ fn render_linear_direction_sample_with_label(
         enabled: true,
         direction,
         show_thumb,
+        indeterminate: false,
+        phase: 0.0,
     };
 
     let track = if direction.orientation() == gpui_luma::controls::progress::ProgressOrientation::Vertical {

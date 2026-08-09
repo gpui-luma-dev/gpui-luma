@@ -7,6 +7,9 @@ use super::{ProgressTemplate, ProgressTemplateModifier, apply_template_modifiers
 use super::super::ProgressRenderModel;
 use crate::controls::progress::{ProgressTheme, default_progress_theme};
 
+/// Sweep length for indeterminate circular progress (fraction of full ring).
+const INDETERMINATE_SWEEP: f32 = 0.28;
+
 pub struct CircularProgressTemplate {
     theme: Arc<dyn ProgressTheme>,
     modifiers: Vec<ProgressTemplateModifier>,
@@ -38,6 +41,8 @@ impl ProgressTemplate for CircularProgressTemplate {
     fn render(&self, model: &ProgressRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let look = self.theme.resolve(model.enabled, model.size);
         let percentage = model.percentage.clamp(0.0, 1.0);
+        let indeterminate = model.indeterminate;
+        let phase = model.phase.clamp(0.0, 1.0);
         let size = px(look.size);
         let stroke_width = px(look.stroke_width);
         let track_color = look.track_color;
@@ -51,7 +56,20 @@ impl ProgressTemplate for CircularProgressTemplate {
                 let radius = (size / 2.0) - stroke_width;
 
                 paint_circle(center_x, center_y, radius, stroke_width, track_color, window);
-                paint_progress_arc(center_x, center_y, radius, stroke_width, percentage, progress_color, window);
+                if indeterminate {
+                    paint_sweep_arc(
+                        center_x,
+                        center_y,
+                        radius,
+                        stroke_width,
+                        phase,
+                        INDETERMINATE_SWEEP,
+                        progress_color,
+                        window,
+                    );
+                } else {
+                    paint_progress_arc(center_x, center_y, radius, stroke_width, percentage, progress_color, window);
+                }
             },
         )
         .size_full();
@@ -108,6 +126,35 @@ fn paint_progress_arc(
 
     builder.move_to(point(start_x, start_y));
     builder.arc_to(point(radius, radius), px(0.0), percentage > 0.5, true, point(end_x, end_y));
+
+    if let Ok(path) = builder.build() {
+        window.paint_path(path, color);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn paint_sweep_arc(
+    center_x: gpui::Pixels,
+    center_y: gpui::Pixels,
+    radius: gpui::Pixels,
+    stroke_width: gpui::Pixels,
+    phase: f32,
+    sweep: f32,
+    color: gpui::Hsla,
+    window: &mut Window,
+) {
+    let sweep = sweep.clamp(0.05, 0.95);
+    let start_angle = -PI / 2.0 + phase * 2.0 * PI;
+    let end_angle = start_angle + sweep * 2.0 * PI;
+
+    let start_x = center_x + radius * start_angle.cos();
+    let start_y = center_y + radius * start_angle.sin();
+    let end_x = center_x + radius * end_angle.cos();
+    let end_y = center_y + radius * end_angle.sin();
+
+    let mut builder = PathBuilder::stroke(stroke_width);
+    builder.move_to(point(start_x, start_y));
+    builder.arc_to(point(radius, radius), px(0.0), sweep > 0.5, true, point(end_x, end_y));
 
     if let Ok(path) = builder.build() {
         window.paint_path(path, color);

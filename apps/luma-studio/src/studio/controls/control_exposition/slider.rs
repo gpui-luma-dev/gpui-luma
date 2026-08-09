@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
 use gpui_luma::controls::slider::{Slider, SliderEvent, SliderThumbPolicy};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -33,6 +34,7 @@ struct SliderExpositionLeftPane {
     angular_slider: Slider,
     wrapping_slider: Slider,
     stops_slider: Slider,
+    animate_button: Entity<Button<()>>,
     event_stream: Entity<ControlEventStream>,
     fill_value: f32,
     blocked_value: f32,
@@ -64,6 +66,16 @@ impl SliderExpositionLeftPane {
 
     fn handle_stops_event(&mut self, _event: &SliderEvent, cx: &mut Context<Self>) {
         self.sync_stop_summary(cx);
+        cx.notify();
+    }
+
+    fn toggle_animated_value(&mut self, cx: &mut Context<Self>) {
+        let next = self.fill_slider.update(cx, |slider, cx| {
+            let next = if slider.value() < 50.0 { 85.0 } else { 15.0 };
+            slider.set_value(next, cx);
+            next
+        });
+        self.fill_value = next;
         cx.notify();
     }
 
@@ -103,6 +115,7 @@ impl Render for SliderExpositionLeftPane {
                         .items_center()
                         .gap(px(8.0))
                         .child(div().w(px(320.0)).child(self.fill_slider.clone()))
+                        .child(self.animate_button.clone())
                         .child(value_label(self.fill_value, chrome.body_text)),
                 ))
                 .child(demo_section(
@@ -257,6 +270,7 @@ impl SliderControlExposition {
                 "Drag sliders; SliderEvent variants from the fill track appear below.",
             )
         });
+        let animate_button = look.secondary_button("controls-doc-slider-animate").label("Animate value").spawn(cx);
 
         let mut subscriptions = Vec::new();
         let left_pane = cx.new(|cx| {
@@ -269,6 +283,7 @@ impl SliderControlExposition {
                 angular_slider: angular_slider.clone(),
                 wrapping_slider: wrapping_slider.clone(),
                 stops_slider: stops_slider.clone(),
+                animate_button: animate_button.clone(),
                 event_stream: event_stream.clone(),
                 fill_value: 41.0,
                 blocked_value: 100.0,
@@ -281,6 +296,14 @@ impl SliderControlExposition {
             pane.sync_stop_summary(cx);
             pane
         });
+        subscriptions.push(cx.subscribe(&animate_button, {
+            let left_pane = left_pane.clone();
+            move |_, _, event, cx| {
+                if matches!(event, ButtonEvent::Click) {
+                    left_pane.update(cx, |pane, cx| pane.toggle_animated_value(cx));
+                }
+            }
+        }));
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
             look.clone(),

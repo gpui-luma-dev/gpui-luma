@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use gpui::{
     App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
@@ -10,12 +11,13 @@ use super::input::{
     unwrap_angle_near,
 };
 use super::model::{
-    build_render_segments, constrain_primary_value, position_for_value, primary_value, value_for_position,
-    SliderBuilder, SliderOrientation, SliderRenderModel, SliderThumbSize, ThumbId, TrackPresentation,
+    build_render_segments_at, constrain_primary_value, position_for_value, primary_value, value_for_position,
+    SliderBuilder, SliderOrientation, SliderRenderModel, SliderThumbSize, SliderThumbValue, ThumbId, TrackPresentation,
 };
 use super::domain::DomainTrackRenderer;
 use super::thumbs::{insert_thumb, nearest_thumb, normalized_hit_radius, remove_thumb, set_thumb_position, thumb_value};
 use super::{SliderTemplateHandlers, step_allowed_value};
+use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::interaction::ControlInteraction;
 use super::constraints::normalize_intervals;
 use super::model::SliderModel;
@@ -69,6 +71,9 @@ pub struct SliderControl {
     focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
     emitted_focused: bool,
+    animated: bool,
+    thumb_transitions: Vec<VisualTransition>,
+    display_thumbs: Vec<SliderThumbValue>,
 }
 
 impl EventEmitter<SliderEvent> for SliderControl {}
@@ -81,9 +86,14 @@ impl SliderControl {
 
     pub(crate) fn from_builder(builder: SliderBuilder, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
+        let animated = builder.animated;
         let active_thumb_id = builder.model.thumbs.first().map(|thumb| thumb.id);
         let mut model = builder.model;
         sync_thumb_previews(&mut model);
+        let duration = transition_duration(animated);
+        let thumb_transitions =
+            model.thumbs.iter().map(|thumb| VisualTransition::new(thumb.position, duration)).collect();
+        let display_thumbs = model.thumbs.clone();
 
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
@@ -96,6 +106,9 @@ impl SliderControl {
             focus_in_subscription: None,
             focus_out_subscription: None,
             emitted_focused: false,
+            animated,
+            thumb_transitions,
+            display_thumbs,
         }
     }
 
@@ -143,11 +156,38 @@ impl SliderControl {
         self.model.strategy.orientation()
     }
 
+    pub fn animated(&self) -> bool {
+        self.animated
+    }
+
+    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
+        if self.animated == animated {
+            return;
+        }
+        self.animated = animated;
+        let duration = transition_duration(animated);
+        self.thumb_transitions = self
+            .model
+            .thumbs
+            .iter()
+            .zip(self.thumb_transitions.iter())
+            .map(|(thumb, transition)| {
+                let mut next = VisualTransition::new(transition.progress(), duration);
+                next.set_target(thumb.position);
+                next
+            })
+            .collect();
+        if self.thumb_transitions.len() != self.model.thumbs.len() {
+            self.rebuild_thumb_transitions();
+        }
+        cx.notify();
+    }
+
     pub fn set_value(&mut self, value: impl Into<f64>, cx: &mut Context<Self>) {
         let value = value_from_input(value);
         let thumb_id = self.active_thumb_id.or_else(|| self.model.thumbs.first().map(|thumb| thumb.id));
         if let Some(thumb_id) = thumb_id {
-            self.set_thumb_value_internal(thumb_id, value, false, cx);
+            self.set_thumb_value_internal(thumb_id, value, false, true, cx);
         }
     }
 
@@ -224,7 +264,7 @@ impl SliderControl {
     }
 
     pub fn set_thumb_position(&mut self, thumb_id: ThumbId, percentage: f32, cx: &mut Context<Self>) -> bool {
-        self.set_thumb_position_internal(thumb_id, percentage.clamp(0.0, 1.0), true, cx)
+        self.set_thumb_position_internal(thumb_id, percentage.clamp(0.0, 1.0), true, true, cx)
     }
 
     pub fn select_thumb_id(&mut self, thumb_id: ThumbId, cx: &mut Context<Self>) -> bool {
@@ -239,6 +279,10 @@ impl SliderControl {
         let percentage = percentage.clamp(0.0, 1.0);
         let thumb_id = insert_thumb(&mut self.model, percentage)?;
         sync_thumb_preview(&mut self.model, thumb_id);
+        self.sync_transitions_with_thumbs();
+        if let Some(transition) = self.transition_for_thumb_mut(thumb_id) {
+            transition.snap_to(percentage);
+        }
         self.select_thumb(thumb_id, true, cx);
         let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
         cx.emit(SliderEvent::ThumbAdded { thumb_id, value });
@@ -261,6 +305,7 @@ impl SliderControl {
         } else {
             self.model.presentation
         };
+        let display_thumb_position = self.display_thumbs.first().map(|thumb| thumb.position).unwrap_or(0.0);
 
         SliderRenderModel {
             id: &self.model.id,
@@ -271,8 +316,8 @@ impl SliderControl {
             thumb_size: self.model.thumb_size,
             range: self.model.range,
             step: self.model.step,
-            thumbs: &self.model.thumbs,
-            track_segments: build_render_segments(&self.model),
+            thumbs: &self.display_thumbs,
+            track_segments: build_render_segments_at(&self.model, display_thumb_position),
             reversed: self.model.reversed,
             wrapping: self.model.wrapping,
             enabled: self.model.enabled,
@@ -317,10 +362,17 @@ impl SliderControl {
         true
     }
 
-    fn set_thumb_value_internal(&mut self, thumb_id: ThumbId, value: f32, emit: bool, cx: &mut Context<Self>) -> bool {
+    fn set_thumb_value_internal(
+        &mut self,
+        thumb_id: ThumbId,
+        value: f32,
+        emit: bool,
+        animate: bool,
+        cx: &mut Context<Self>,
+    ) -> bool {
         let value = constrain_primary_value(value, &self.model);
         let position = position_for_value(&self.model, value);
-        self.set_thumb_position_internal(thumb_id, position, emit, cx)
+        self.set_thumb_position_internal(thumb_id, position, emit, animate, cx)
     }
 
     fn set_thumb_position_internal(
@@ -328,6 +380,7 @@ impl SliderControl {
         thumb_id: ThumbId,
         percentage: f32,
         emit: bool,
+        animate: bool,
         cx: &mut Context<Self>,
     ) -> bool {
         if !set_thumb_position(&mut self.model, thumb_id, percentage) {
@@ -335,6 +388,7 @@ impl SliderControl {
         }
 
         sync_thumb_preview(&mut self.model, thumb_id);
+        self.apply_thumb_motion(thumb_id, percentage, animate);
 
         if emit {
             let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
@@ -343,6 +397,57 @@ impl SliderControl {
 
         cx.notify();
         true
+    }
+
+    fn apply_thumb_motion(&mut self, thumb_id: ThumbId, percentage: f32, animate: bool) {
+        self.sync_transitions_with_thumbs();
+        let should_animate = animate && self.animated;
+        let Some(transition) = self.transition_for_thumb_mut(thumb_id) else {
+            return;
+        };
+        if should_animate {
+            transition.set_target(percentage);
+        } else {
+            transition.snap_to(percentage);
+        }
+    }
+
+    fn transition_for_thumb_mut(&mut self, thumb_id: ThumbId) -> Option<&mut VisualTransition> {
+        let index = self.model.thumbs.iter().position(|thumb| thumb.id == thumb_id)?;
+        self.thumb_transitions.get_mut(index)
+    }
+
+    fn sync_transitions_with_thumbs(&mut self) {
+        let duration = transition_duration(self.animated);
+        while self.thumb_transitions.len() < self.model.thumbs.len() {
+            let index = self.thumb_transitions.len();
+            let position = self.model.thumbs[index].position;
+            self.thumb_transitions.push(VisualTransition::new(position, duration));
+        }
+        if self.thumb_transitions.len() > self.model.thumbs.len() {
+            self.thumb_transitions.truncate(self.model.thumbs.len());
+        }
+    }
+
+    fn rebuild_thumb_transitions(&mut self) {
+        let duration = transition_duration(self.animated);
+        self.thumb_transitions =
+            self.model.thumbs.iter().map(|thumb| VisualTransition::new(thumb.position, duration)).collect();
+    }
+
+    fn refresh_display_thumbs(&mut self) {
+        self.display_thumbs = self
+            .model
+            .thumbs
+            .iter()
+            .enumerate()
+            .map(|(index, thumb)| {
+                let mut display = thumb.clone();
+                display.position =
+                    self.thumb_transitions.get(index).map(|transition| transition.progress()).unwrap_or(thumb.position);
+                display
+            })
+            .collect();
     }
 
     fn set_value_from_position(&mut self, position: Point<Pixels>, emit: bool, cx: &mut Context<Self>) -> bool {
@@ -376,10 +481,14 @@ impl SliderControl {
         if let Some(thumb_id) = nearest_hit {
             let constrained = self.constrained_position_for_raw_position(percentage);
             changed |= self.select_thumb(thumb_id, true, cx);
-            changed |= self.set_thumb_position_internal(thumb_id, constrained, emit, cx);
+            changed |= self.set_thumb_position_internal(thumb_id, constrained, emit, false, cx);
         } else if self.model.thumb_policy.allow_insert && insert_thumb(&mut self.model, percentage).is_some() {
             let thumb_id = self.model.thumbs.last().map(|thumb| thumb.id).expect("inserted thumb");
             changed = true;
+            self.sync_transitions_with_thumbs();
+            if let Some(transition) = self.transition_for_thumb_mut(thumb_id) {
+                transition.snap_to(percentage);
+            }
             self.select_thumb(thumb_id, true, cx);
             let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
             if emit {
@@ -391,7 +500,7 @@ impl SliderControl {
             let thumb_id = thumb.id;
             let constrained = self.constrained_position_for_raw_position(percentage);
             changed |= self.select_thumb(thumb_id, true, cx);
-            changed |= self.set_thumb_position_internal(thumb_id, constrained, emit, cx);
+            changed |= self.set_thumb_position_internal(thumb_id, constrained, emit, false, cx);
         }
 
         changed
@@ -474,7 +583,7 @@ impl SliderControl {
                         percentage_from_position(self.model.strategy, self.model.reversed, bounds, event.position)
                     {
                         let constrained = self.constrained_position_for_raw_position(percentage);
-                        changed |= self.set_thumb_position_internal(thumb_id, constrained, true, cx);
+                        changed |= self.set_thumb_position_internal(thumb_id, constrained, true, false, cx);
                     }
 
                     let handle_position = self
@@ -558,7 +667,7 @@ impl SliderControl {
                 .map(|raw| if self.model.reversed { 1.0 - raw } else { raw })
             {
                 let constrained = self.constrained_position_for_raw_position(raw_percentage);
-                if self.set_thumb_position_internal(thumb_id, constrained, true, cx) {
+                if self.set_thumb_position_internal(thumb_id, constrained, true, false, cx) {
                     cx.stop_propagation();
                 }
             }
@@ -588,7 +697,7 @@ impl SliderControl {
                         .map(|raw| if self.model.reversed { 1.0 - raw } else { raw })
                     {
                         let constrained = self.constrained_position_for_raw_position(raw_percentage);
-                        self.set_thumb_position_internal(thumb_id, constrained, true, cx);
+                        self.set_thumb_position_internal(thumb_id, constrained, true, false, cx);
                     }
                 }
             }
@@ -603,16 +712,23 @@ impl SliderControl {
                     percentage_from_position(self.model.strategy, self.model.reversed, bounds, event.event.position)
                 {
                     let constrained = self.constrained_position_for_raw_position(percentage);
-                    self.set_thumb_position_internal(thumb_id, constrained, true, cx);
+                    self.set_thumb_position_internal(thumb_id, constrained, true, false, cx);
                 }
             }
         }
     }
 
     fn remove_thumb(&mut self, thumb_id: ThumbId, cx: &mut Context<Self>) -> bool {
+        let index = self.model.thumbs.iter().position(|thumb| thumb.id == thumb_id);
         if !remove_thumb(&mut self.model, thumb_id) {
             return false;
         }
+        if let Some(index) = index
+            && index < self.thumb_transitions.len()
+        {
+            self.thumb_transitions.remove(index);
+        }
+        self.sync_transitions_with_thumbs();
 
         cx.emit(SliderEvent::ThumbRemoved { thumb_id });
         self.active_thumb_id = self.model.thumbs.first().map(|thumb| thumb.id);
@@ -672,7 +788,7 @@ impl SliderControl {
             )
         };
 
-        if self.set_thumb_value_internal(thumb_id, next, true, cx) {
+        if self.set_thumb_value_internal(thumb_id, next, true, true, cx) {
             cx.emit(SliderEvent::Release { thumb_id, value: next });
         }
     }
@@ -686,7 +802,7 @@ impl SliderControl {
             return;
         };
 
-        if self.set_thumb_value_internal(thumb_id, value, true, cx) {
+        if self.set_thumb_value_internal(thumb_id, value, true, true, cx) {
             let value = self.thumb_value(thumb_id).unwrap_or(value);
             cx.emit(SliderEvent::Release { thumb_id, value });
         }
@@ -764,6 +880,21 @@ impl Render for SliderControl {
             self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
         }
 
+        self.sync_transitions_with_thumbs();
+        let mut was_animating = false;
+        let mut is_animating = false;
+        for transition in &mut self.thumb_transitions {
+            was_animating |= transition.is_animating();
+            is_animating |= transition.sync();
+        }
+        self.refresh_display_thumbs();
+        for transition in &self.thumb_transitions {
+            transition.schedule_frame(window, cx);
+        }
+        if was_animating || is_animating {
+            cx.notify();
+        }
+
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);
         let active_thumb_id = self
@@ -787,6 +918,14 @@ impl Render for SliderControl {
                     .on_action(cx.listener(Self::handle_remove_value)),
             )
             .into_any_element()
+    }
+}
+
+fn transition_duration(animated: bool) -> Duration {
+    if animated {
+        DEFAULT_TRANSITION_DURATION
+    } else {
+        Duration::ZERO
     }
 }
 

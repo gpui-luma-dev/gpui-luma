@@ -12,6 +12,6 @@ pub mod layout;
 pub mod shell;
 pub mod theme;
 
-pub use animation::VisualTransition;
+pub use animation::{ContinuousPhase, VisualTransition};
 pub use init::init;
 pub use layout::{DockPanel, GridLayout, GridTrack};

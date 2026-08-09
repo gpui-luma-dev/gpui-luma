@@ -18,6 +18,7 @@ pub struct ProgressModel {
     pub(crate) enabled: bool,
     pub(crate) direction: ProgressDirection,
     pub(crate) show_thumb: bool,
+    pub(crate) indeterminate: bool,
     pub(crate) template: Arc<dyn ProgressTemplate>,
 }
 
@@ -30,10 +31,13 @@ pub struct ProgressRenderModel<'a> {
     pub enabled: bool,
     pub direction: ProgressDirection,
     pub show_thumb: bool,
+    pub indeterminate: bool,
+    pub phase: f32,
 }
 
 pub struct ProgressBuilder {
     pub(crate) model: ProgressModel,
+    pub(crate) animated: bool,
 }
 
 impl ProgressBuilder {
@@ -47,8 +51,10 @@ impl ProgressBuilder {
                 enabled: true,
                 direction: ProgressDirection::default(),
                 show_thumb: false,
+                indeterminate: false,
                 template: default_progress_template(),
             },
+            animated: true,
         }
     }
 
@@ -101,6 +107,16 @@ impl ProgressBuilder {
 
     pub fn show_thumb(mut self, show_thumb: bool) -> Self {
         self.model.show_thumb = show_thumb;
+        self
+    }
+
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.animated = animated;
+        self
+    }
+
+    pub fn indeterminate(mut self, indeterminate: bool) -> Self {
+        self.model.indeterminate = indeterminate;
         self
     }
 
@@ -157,5 +173,17 @@ mod tests {
     fn value_clamps_to_range() {
         let builder = ProgressBuilder::new("progress-clamp").range(0..100).value(150);
         assert_eq!(builder.model.value, 100.0);
+    }
+
+    #[test]
+    fn animated_defaults_true() {
+        assert!(ProgressBuilder::new("progress-animated").animated);
+        assert!(!ProgressBuilder::new("progress-animated-off").animated(false).animated);
+    }
+
+    #[test]
+    fn indeterminate_builder_flag() {
+        assert!(!ProgressBuilder::new("progress-det").model.indeterminate);
+        assert!(ProgressBuilder::new("progress-indet").indeterminate(true).model.indeterminate);
     }
 }
