@@ -1,9 +1,14 @@
 mod control;
+mod indicator;
 mod model;
 mod template;
 mod theme;
 
 pub use control::{TabsNavigation, TabsNavigationEvent};
+pub use indicator::{
+    TabsNavigationIndicatorMotion, TabsNavigationIndicatorPaint, TabsNavigationIndicatorRect,
+    indicator_rect_from_bounds,
+};
 pub use model::{
     TabsNavigationBuilder, TabsNavigationItem, TabsNavigationItemAccessory, TabsNavigationModel,
     TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTriggerKind, TabsNavigationWidthMode,

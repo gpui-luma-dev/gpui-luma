@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AppContext, Entity, SharedString};
+use gpui::{AnyElement, App, AppContext, Entity, SharedString, Window};
 
 use super::control::StepperControl;
 use super::template::{default_stepper_template, template_with_modifier};
@@ -27,6 +27,8 @@ pub enum StepperLabelPlacement {
     End,
 }
 
+pub type StepperContentRenderer = Arc<dyn Fn(&mut Window, &mut App) -> AnyElement + Send + Sync>;
+
 #[derive(Clone, Debug)]
 pub struct StepperItem {
     pub index: usize,
@@ -46,6 +48,9 @@ pub struct StepperModel {
     pub(crate) size: ControlSize,
     pub(crate) enabled: bool,
     pub(crate) workflow_complete: bool,
+    pub(crate) animated: bool,
+    pub(crate) step_contents: Vec<Option<StepperContentRenderer>>,
+    pub(crate) content_height: Option<f32>,
     pub(crate) template: Arc<dyn StepperTemplate>,
 }
 
@@ -53,12 +58,26 @@ pub struct StepperRenderModel<'a> {
     pub id: &'a SharedString,
     pub step_count: usize,
     pub current_step: usize,
+    /// Interpolated step position for track fill / panel slide (`0 .. step_count-1`).
+    pub display_step: f32,
+    /// Transition progress for the active from→to hop (`0..1`).
+    pub transition_progress: f32,
+    pub from_step: f32,
+    pub to_step: usize,
     pub step_states: &'a [StepState],
     pub labels: &'a [SharedString],
     pub label_placement: StepperLabelPlacement,
     pub direction: ProgressDirection,
     pub size: ControlSize,
     pub enabled: bool,
+    pub step_contents: &'a [Option<StepperContentRenderer>],
+    pub content_height: Option<f32>,
+}
+
+impl StepperRenderModel<'_> {
+    pub fn has_content_panel(&self) -> bool {
+        self.step_contents.iter().any(|slot| slot.is_some())
+    }
 }
 
 pub struct StepperBuilder {
@@ -80,6 +99,9 @@ impl StepperBuilder {
                 size: ControlSize::Md,
                 enabled: true,
                 workflow_complete: false,
+                animated: true,
+                step_contents: vec![None; step_count],
+                content_height: None,
                 template: default_stepper_template(),
             },
         }
@@ -128,6 +150,26 @@ impl StepperBuilder {
         self
     }
 
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.model.animated = animated;
+        self
+    }
+
+    pub fn content_height(mut self, height: f32) -> Self {
+        self.model.content_height = Some(height.max(0.0));
+        self
+    }
+
+    pub fn step_content<F>(mut self, step_index: usize, content: F) -> Self
+    where
+        F: Fn(&mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
+    {
+        if step_index < self.model.step_count {
+            self.model.step_contents[step_index] = Some(Arc::new(content));
+        }
+        self
+    }
+
     pub fn template(mut self, template: Arc<dyn StepperTemplate>) -> Self {
         self.model.template = template;
         self
@@ -166,6 +208,25 @@ pub(crate) fn derive_step_states(model: &StepperModel) -> Vec<StepState> {
             }
         })
         .collect()
+}
+
+/// Badge visual state from interpolated `display_step` (snaps at half-step thresholds).
+pub(crate) fn visual_step_state(model: &StepperModel, display_step: f32, index: usize) -> StepState {
+    if let Some(state) = model.step_state_overrides.get(index).copied().flatten() {
+        return state;
+    }
+    if model.workflow_complete {
+        return StepState::Complete;
+    }
+
+    let index_f = index as f32;
+    if display_step >= index_f + 0.5 {
+        StepState::Complete
+    } else if (display_step - index_f).abs() < 0.5 {
+        StepState::InProgress
+    } else {
+        StepState::Incomplete
+    }
 }
 
 #[cfg(test)]
@@ -207,5 +268,11 @@ mod tests {
         let model = StepperBuilder::new("stepper", 3).current_step(0).step_state(2, StepState::Complete).model;
         let states = derive_step_states(&model);
         assert_eq!(states[2], StepState::Complete);
+    }
+
+    #[test]
+    fn builder_animated_defaults_true() {
+        assert!(StepperBuilder::new("stepper", 3).model.animated);
+        assert!(!StepperBuilder::new("stepper", 3).animated(false).model.animated);
     }
 }

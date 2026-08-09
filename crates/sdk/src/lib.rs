@@ -13,5 +13,6 @@ pub mod shell;
 pub mod theme;
 
 pub use animation::{ContinuousPhase, VisualTransition};
+pub use controls::overlay_presence::{OVERLAY_ENTER_SCALE_MIN, OverlayPresence, overlay_enter_offset, overlay_enter_scale};
 pub use init::init;
 pub use layout::{DockPanel, GridLayout, GridTrack};

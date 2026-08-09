@@ -7,11 +7,13 @@ use gpui::{
 };
 use lucide_icons::Icon as LucideIcon;
 
+use super::indicator::TabsNavigationIndicatorMotion;
 use super::{
     TabsNavigationItem, TabsNavigationItemAccessory, TabsNavigationRenderItem, TabsNavigationRenderModel,
     model::TabsNavigationWidthMode,
 };
 use crate::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole, default_button_family_theme};
+use crate::controls::color::style::ElementExt;
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate};
 use crate::controls::control_group::{
     ControlGroupBoundsHandler, ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemHandlerExt,
@@ -19,8 +21,9 @@ use crate::controls::control_group::{
     ControlGroupTemplateHandlers,
 };
 use crate::controls::icon::{IconSource, lucide_icon};
+use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::tabs_navigation::{TabsNavigationItemLook, TabsNavigationTheme, default_tabs_navigation_theme};
-use crate::theme::ControlSize;
+use crate::theme::{ControlSize, InteractionState};
 
 const TAB_ACCESSORY_SIZE: f32 = 12.0;
 const TAB_ACCESSORY_GAP: f32 = 4.0;
@@ -35,9 +38,29 @@ pub type TabsNavigationTemplateHandlers = ControlGroupTemplateHandlers;
 pub type TabsNavigationTemplateModifier =
     Box<dyn Fn(Stateful<Div>, &TabsNavigationRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct TabsNavigationOverlayState {
     trigger_bounds: Arc<Mutex<Option<Bounds<Pixels>>>>,
+    presence: Arc<Mutex<OverlayPresence>>,
+    last_overlay: Arc<Mutex<Option<TabsNavigationCachedOverlay>>>,
+}
+
+#[derive(Clone)]
+struct TabsNavigationCachedOverlay {
+    content_size: Size<Pixels>,
+    placement: TabsNavigationOverlayPlacement,
+    offset_y: Pixels,
+    window_margin: Pixels,
+}
+
+impl Default for TabsNavigationOverlayState {
+    fn default() -> Self {
+        Self {
+            trigger_bounds: Arc::new(Mutex::new(None)),
+            presence: Arc::new(Mutex::new(OverlayPresence::new(false, true))),
+            last_overlay: Arc::new(Mutex::new(None)),
+        }
+    }
 }
 
 impl TabsNavigationOverlayState {
@@ -47,6 +70,32 @@ impl TabsNavigationOverlayState {
 
     pub fn trigger_bounds(&self) -> Option<Bounds<Pixels>> {
         *self.trigger_bounds.lock().expect("tabs navigation overlay trigger bounds lock")
+    }
+
+    pub fn set_animated(&self, animated: bool) {
+        self.presence.lock().expect("tabs navigation overlay presence lock").set_animated(animated);
+    }
+
+    /// Sync presence for the current frame. Returns `true` while animating.
+    /// Hosting controls should call this from `Render` and `cx.notify()` while it returns true.
+    pub fn sync_for_frame(&self) -> bool {
+        self.presence.lock().expect("tabs navigation overlay presence lock").sync()
+    }
+
+    pub fn is_animating(&self) -> bool {
+        self.presence.lock().expect("tabs navigation overlay presence lock").is_animating()
+    }
+
+    pub fn should_paint(&self) -> bool {
+        self.presence.lock().expect("tabs navigation overlay presence lock").should_paint()
+    }
+
+    fn set_overlay_open(&self, open: bool) {
+        self.presence.lock().expect("tabs navigation overlay presence lock").set_open(open);
+    }
+
+    fn presence_snapshot(&self) -> OverlayPresence {
+        *self.presence.lock().expect("tabs navigation overlay presence lock")
     }
 }
 
@@ -190,6 +239,15 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
         let list_look = self.theme.resolve_list(model.enabled, model.size);
         let uniform_width = resolve_tabs_navigation_uniform_item_width(model, self.theme.as_ref(), model.size, window);
 
+        let active_item = model.items.iter().find(|item| item.active);
+        let active_look =
+            active_item.map(|item| self.theme.resolve_item(true, item.state.interaction_state(), model.size));
+        if let Some(motion) = model.indicator_motion {
+            let look =
+                active_look.unwrap_or_else(|| self.theme.resolve_item(true, InteractionState::default(), model.size));
+            motion.set_metrics(look.padding_x, look.indicator_height, look.indicator);
+        }
+
         let mut root = div()
             .id(model.id.clone())
             .relative()
@@ -199,6 +257,12 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
             .gap(px(list_look.gap))
             .p(px(list_look.padding))
             .rounded(px(list_look.radius));
+
+        if let Some(motion) = model.indicator_motion.cloned() {
+            root = root.on_prepaint(move |bounds, _, _| {
+                motion.set_list_bounds(bounds);
+            });
+        }
 
         if let Some(background) = list_look.background {
             root = root.bg(background);
@@ -230,6 +294,21 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
             }
 
             root = root.child(tab);
+        }
+
+        if let Some(indicator) =
+            model.indicator.or_else(|| model.indicator_motion.and_then(TabsNavigationIndicatorMotion::paint))
+        {
+            root = root.child(
+                div()
+                    .absolute()
+                    .left(px(indicator.left))
+                    .bottom(px(0.0))
+                    .w(px(indicator.width))
+                    .h(px(indicator.height))
+                    .rounded(px(indicator.height))
+                    .bg(indicator.color),
+            );
         }
 
         self.apply_modifiers(root, model)
@@ -311,15 +390,59 @@ where
 
     root = root.child(trigger);
 
-    if let Some(overlay) = overlay {
-        let placement = resolve_tabs_navigation_overlay_placement(overlay_state.trigger_bounds(), &overlay);
-        let overlay = anchored()
-            .snap_to_window_with_margin(overlay.window_margin)
-            .anchor(placement.anchor)
-            .position(placement.position)
-            .offset(placement.offset)
-            .child(overlay.content);
-        root = root.child(deferred(overlay).with_priority(1));
+    match overlay {
+        Some(overlay) => {
+            *overlay_state.last_overlay.lock().expect("tabs navigation overlay cache lock") =
+                Some(TabsNavigationCachedOverlay {
+                    content_size: overlay.content_size,
+                    placement: overlay.placement,
+                    offset_y: overlay.offset_y,
+                    window_margin: overlay.window_margin,
+                });
+            overlay_state.set_overlay_open(true);
+            let presence = overlay_state.presence_snapshot();
+            let placement = resolve_tabs_navigation_overlay_placement(
+                overlay_state.trigger_bounds(),
+                overlay.placement,
+                overlay.content_size,
+                overlay.offset_y,
+            );
+            let offset = presence.adjust_offset(placement.offset, overlay.content_size);
+            let content = div().opacity(presence.opacity()).child(overlay.content);
+            let anchored_overlay = anchored()
+                .snap_to_window_with_margin(overlay.window_margin)
+                .anchor(placement.anchor)
+                .position(placement.position)
+                .offset(offset)
+                .child(content);
+            root = root.child(deferred(anchored_overlay).with_priority(1));
+        }
+        None => {
+            overlay_state.set_overlay_open(false);
+            let presence = overlay_state.presence_snapshot();
+            if presence.should_paint()
+                && let Some(cached) =
+                    overlay_state.last_overlay.lock().expect("tabs navigation overlay cache lock").clone()
+            {
+                let placement = resolve_tabs_navigation_overlay_placement(
+                    overlay_state.trigger_bounds(),
+                    cached.placement,
+                    cached.content_size,
+                    cached.offset_y,
+                );
+                let offset = presence.adjust_offset(placement.offset, cached.content_size);
+                // Exit keeps a sized shell while content is unavailable (`AnyElement` is not cloneable).
+                let content =
+                    div().w(cached.content_size.width).h(cached.content_size.height).opacity(presence.opacity());
+                let anchored_overlay = anchored()
+                    .snap_to_window_with_margin(cached.window_margin)
+                    .anchor(placement.anchor)
+                    .position(placement.position)
+                    .offset(offset)
+                    .child(content);
+                root = root.child(deferred(anchored_overlay).with_priority(1));
+            }
+        }
     }
 
     root.into_any_element()
@@ -327,21 +450,23 @@ where
 
 fn resolve_tabs_navigation_overlay_placement(
     trigger_bounds: Option<Bounds<Pixels>>,
-    overlay: &TabsNavigationItemOverlay,
+    placement: TabsNavigationOverlayPlacement,
+    content_size: Size<Pixels>,
+    offset_y: Pixels,
 ) -> ResolvedTabsNavigationOverlayPlacement {
     let trigger_bounds = trigger_bounds
         .unwrap_or_else(|| Bounds::new(point(px(0.0), px(0.0)), Size { width: px(0.0), height: px(0.0) }));
 
-    match overlay.placement {
+    match placement {
         TabsNavigationOverlayPlacement::BelowStart => ResolvedTabsNavigationOverlayPlacement {
             anchor: Anchor::TopLeft,
             position: point(trigger_bounds.left(), trigger_bounds.bottom()),
-            offset: point(px(0.0), overlay.offset_y),
+            offset: point(px(0.0), offset_y),
         },
         TabsNavigationOverlayPlacement::BelowCenter => ResolvedTabsNavigationOverlayPlacement {
             anchor: Anchor::TopLeft,
             position: point(trigger_bounds.center().x, trigger_bounds.bottom()),
-            offset: point(-(overlay.content_size.width * 0.5), overlay.offset_y),
+            offset: point(-(content_size.width * 0.5), offset_y),
         },
     }
 }
@@ -350,28 +475,7 @@ fn tabs_navigation_item_button_template() -> Arc<dyn ButtonTemplate<TabsNavigati
     static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate<TabsNavigationButtonData>>> = OnceLock::new();
 
     TEMPLATE
-        .get_or_init(|| {
-            Arc::new(
-                DefaultButtonTemplate::<TabsNavigationButtonData>::new(default_button_family_theme()).with_modifier(
-                    |mut control, model| {
-                        let look = model.data.look;
-                        if let Some(indicator) = look.indicator {
-                            control = control.relative().child(
-                                div()
-                                    .absolute()
-                                    .left(px(look.padding_x))
-                                    .right(px(look.padding_x))
-                                    .bottom(px(0.0))
-                                    .h(px(look.indicator_height))
-                                    .rounded(px(look.indicator_height))
-                                    .bg(indicator),
-                            );
-                        }
-                        control
-                    },
-                ),
-            )
-        })
+        .get_or_init(|| Arc::new(DefaultButtonTemplate::<TabsNavigationButtonData>::new(default_button_family_theme())))
         .clone()
 }
 
@@ -490,9 +594,10 @@ pub(crate) fn tabs_navigation_control_group_template(
     size: crate::theme::ControlSize,
     width_mode: TabsNavigationWidthMode,
     template: Arc<dyn TabsNavigationTemplate>,
+    indicator_motion: TabsNavigationIndicatorMotion,
 ) -> ControlGroupTemplate<TabsNavigationItem> {
     Arc::new(move |model, handlers, window, cx| {
-        let tabs_model = tabs_navigation_render_model(model, size, width_mode);
+        let tabs_model = tabs_navigation_render_model(model, size, width_mode, &indicator_motion);
         template.render(&tabs_model, handlers, window, cx)
     })
 }
@@ -501,6 +606,7 @@ fn tabs_navigation_render_model<'a>(
     model: &'a ControlGroupRenderModel<'a, TabsNavigationItem>,
     size: crate::theme::ControlSize,
     width_mode: TabsNavigationWidthMode,
+    indicator_motion: &'a TabsNavigationIndicatorMotion,
 ) -> TabsNavigationRenderModel<'a> {
     TabsNavigationRenderModel {
         id: model.id,
@@ -523,6 +629,8 @@ fn tabs_navigation_render_model<'a>(
         active_id: model.selected_ids.first(),
         enabled: model.enabled,
         focus: model.focus,
+        indicator: indicator_motion.paint(),
+        indicator_motion: Some(indicator_motion),
     }
 }
 
@@ -532,21 +640,13 @@ mod tests {
 
     use super::*;
 
-    fn overlay(placement: TabsNavigationOverlayPlacement) -> TabsNavigationItemOverlay {
-        TabsNavigationItemOverlay {
-            content: div().into_any_element(),
-            content_size: size(px(200.0), px(120.0)),
-            placement,
-            offset_y: px(6.0),
-            window_margin: px(8.0),
-        }
-    }
-
     #[test]
     fn overlay_below_start_anchors_to_trigger_bottom_left() {
         let placement = resolve_tabs_navigation_overlay_placement(
             Some(Bounds::new(point(px(40.0), px(10.0)), size(px(80.0), px(32.0)))),
-            &overlay(TabsNavigationOverlayPlacement::BelowStart),
+            TabsNavigationOverlayPlacement::BelowStart,
+            size(px(200.0), px(120.0)),
+            px(6.0),
         );
 
         assert_eq!(placement.anchor, Anchor::TopLeft);
@@ -558,7 +658,9 @@ mod tests {
     fn overlay_below_center_anchors_to_trigger_center_with_content_offset() {
         let placement = resolve_tabs_navigation_overlay_placement(
             Some(Bounds::new(point(px(40.0), px(10.0)), size(px(80.0), px(32.0)))),
-            &overlay(TabsNavigationOverlayPlacement::BelowCenter),
+            TabsNavigationOverlayPlacement::BelowCenter,
+            size(px(200.0), px(120.0)),
+            px(6.0),
         );
 
         assert_eq!(placement.anchor, Anchor::TopLeft);

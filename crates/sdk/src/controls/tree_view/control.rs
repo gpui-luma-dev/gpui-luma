@@ -1,4 +1,5 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+use std::time::Duration;
 
 use gpui::{
     App, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, FocusHandle, IntoElement, ListAlignment,
@@ -9,11 +10,14 @@ use super::{
     FlatTreeNode, TreeNode, TreeViewBuilder, TreeViewModel, TreeViewRenderModel, TreeViewSelectionMode,
     TreeViewTemplateHandlers,
 };
+use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::state::{CompositeItemState, ControlFocusState};
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
 use crate::theme::observe_theme_revision;
+
+const EXPAND_VISIBLE_EPSILON: f32 = 0.001;
 
 gpui::actions!(tree_view, [ExpandNode, CollapseNode]);
 
@@ -46,6 +50,8 @@ pub(crate) struct FlatNodeWrapper<T> {
     depth: usize,
     has_children: bool,
     enabled: bool,
+    expand_progress: f32,
+    row_height_factor: f32,
     data: T,
 }
 
@@ -59,6 +65,7 @@ where
     focus_out_subscription: Option<Subscription>,
     list_state: ListState,
     expanded_ids: HashSet<SharedString>,
+    expand_transitions: HashMap<SharedString, VisualTransition>,
     selected_ids: HashSet<SharedString>,
     active_node_id: Option<SharedString>,
     hovered_index: Option<usize>,
@@ -85,6 +92,7 @@ where
             focus_out_subscription: None,
             list_state: ListState::new(0, ListAlignment::Top, px(480.0)),
             expanded_ids: HashSet::new(),
+            expand_transitions: HashMap::new(),
             selected_ids: HashSet::new(),
             active_node_id: None,
             hovered_index: None,
@@ -95,6 +103,7 @@ where
         };
 
         control.populate_initial_expands();
+        control.sync_expand_transitions_for_tree();
         control.rebuild_flat_cache(None, cx);
 
         control
@@ -123,8 +132,23 @@ where
         self.hovered_index = None;
         self.pressed_index = None;
         self.expanded_ids.clear();
+        self.expand_transitions.clear();
         self.populate_initial_expands();
+        self.sync_expand_transitions_for_tree();
         self.rebuild_flat_cache(None, cx);
+    }
+
+    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
+        if self.model.animated == animated {
+            return;
+        }
+        self.model.animated = animated;
+        let duration = self.transition_duration();
+        for transition in self.expand_transitions.values_mut() {
+            let progress = transition.progress();
+            *transition = VisualTransition::new(progress, duration);
+        }
+        cx.notify();
     }
 
     pub fn set_size(&mut self, size: crate::theme::ControlSize, cx: &mut Context<Self>) {
@@ -160,22 +184,42 @@ where
     pub fn expand(&mut self, node_id: impl Into<SharedString>, cx: &mut Context<Self>) {
         let node_id = node_id.into();
         let splice_anchor = self.flat_index_for_id(&node_id);
-        if self.expanded_ids.insert(node_id.clone()) {
+        let already_expanded = self.expanded_ids.contains(&node_id);
+        if !already_expanded {
+            self.expanded_ids.insert(node_id.clone());
             if let Some(data) = self.data_for_id(&node_id) {
-                cx.emit(TreeViewEvent::NodeExpanded { node_id, data });
+                cx.emit(TreeViewEvent::NodeExpanded { node_id: node_id.clone(), data });
             }
+        }
+
+        let was_visible = self.branch_children_visible(&node_id);
+        self.set_expand_target(&node_id, 1.0);
+
+        if !was_visible {
             self.rebuild_flat_cache(splice_anchor, cx);
+        } else {
+            cx.notify();
         }
     }
 
     pub fn collapse(&mut self, node_id: impl Into<SharedString>, cx: &mut Context<Self>) {
         let node_id = node_id.into();
-        let splice_anchor = self.flat_index_for_id(&node_id);
-        if self.expanded_ids.remove(&node_id) {
-            if let Some(data) = self.data_for_id(&node_id) {
-                cx.emit(TreeViewEvent::NodeCollapsed { node_id, data });
-            }
+        let was_expanded = self.expanded_ids.remove(&node_id);
+        if !was_expanded && !self.branch_children_visible(&node_id) {
+            return;
+        }
+
+        if was_expanded && let Some(data) = self.data_for_id(&node_id) {
+            cx.emit(TreeViewEvent::NodeCollapsed { node_id: node_id.clone(), data });
+        }
+
+        self.set_expand_target(&node_id, 0.0);
+
+        if !self.model.animated {
+            let splice_anchor = self.flat_index_for_id(&node_id);
             self.rebuild_flat_cache(splice_anchor, cx);
+        } else {
+            cx.notify();
         }
     }
 
@@ -222,6 +266,111 @@ where
         }
     }
 
+    fn transition_duration(&self) -> Duration {
+        if self.model.animated {
+            DEFAULT_TRANSITION_DURATION
+        } else {
+            Duration::ZERO
+        }
+    }
+
+    fn sync_expand_transitions_for_tree(&mut self) {
+        let duration = self.transition_duration();
+        let mut branch_ids = HashSet::new();
+
+        fn collect_branches<T>(node: &TreeNode<T>, branch_ids: &mut HashSet<SharedString>) {
+            if !node.children.is_empty() || node.is_branch {
+                branch_ids.insert(node.id.clone());
+            }
+            for child in &node.children {
+                collect_branches(child, branch_ids);
+            }
+        }
+
+        for item in &self.model.items {
+            collect_branches(item, &mut branch_ids);
+        }
+
+        self.expand_transitions.retain(|id, _| branch_ids.contains(id));
+        for id in branch_ids {
+            let target = if self.expanded_ids.contains(&id) { 1.0 } else { 0.0 };
+            self.expand_transitions
+                .entry(id)
+                .and_modify(|transition| {
+                    if !transition.is_animating() {
+                        *transition = VisualTransition::new(target, duration);
+                    }
+                })
+                .or_insert_with(|| VisualTransition::new(target, duration));
+        }
+    }
+
+    fn expand_progress_for(&self, node_id: &SharedString) -> f32 {
+        self.expand_transitions
+            .get(node_id)
+            .map(VisualTransition::progress)
+            .unwrap_or_else(|| if self.expanded_ids.contains(node_id) { 1.0 } else { 0.0 })
+    }
+
+    fn branch_children_visible(&self, node_id: &SharedString) -> bool {
+        self.expand_progress_for(node_id) > EXPAND_VISIBLE_EPSILON
+            || self.expand_transitions.get(node_id).is_some_and(VisualTransition::is_animating)
+    }
+
+    fn set_expand_target(&mut self, node_id: &SharedString, target: f32) {
+        let duration = self.transition_duration();
+        let transition = self
+            .expand_transitions
+            .entry(node_id.clone())
+            .or_insert_with(|| VisualTransition::new(if target > 0.5 { 0.0 } else { 1.0 }, duration));
+        if self.model.animated {
+            transition.set_target(target);
+        } else {
+            transition.snap_to(target);
+        }
+    }
+
+    fn sync_expand_transitions(&mut self) -> (bool, bool) {
+        let mut was_animating = false;
+        let mut is_animating = false;
+
+        for transition in self.expand_transitions.values_mut() {
+            was_animating |= transition.is_animating();
+            is_animating |= transition.sync();
+        }
+
+        (was_animating, is_animating)
+    }
+
+    fn desired_flat_count(&self) -> usize {
+        fn count_visible<T>(
+            node: &TreeNode<T>,
+            expanded: &HashSet<SharedString>,
+            transitions: &HashMap<SharedString, VisualTransition>,
+        ) -> usize {
+            let expand_progress = transitions
+                .get(&node.id)
+                .map(VisualTransition::progress)
+                .unwrap_or_else(|| if expanded.contains(&node.id) { 1.0 } else { 0.0 });
+            let show_children = expand_progress > EXPAND_VISIBLE_EPSILON
+                || transitions.get(&node.id).is_some_and(VisualTransition::is_animating);
+
+            let mut total = 1;
+            if show_children {
+                for child in &node.children {
+                    total += count_visible(child, expanded, transitions);
+                }
+            }
+            total
+        }
+
+        self.model
+            .items
+            .iter()
+            .map(|item| count_visible(item, &self.expanded_ids, &self.expand_transitions))
+            .sum()
+    }
+
     /// Rebuilds the flattened row list. When `splice_anchor` is the flat index of an
     /// expanded/collapsed branch, list scroll position is preserved via [`ListState::splice`]
     /// instead of [`ListState::reset`].
@@ -234,9 +383,15 @@ where
             node: &TreeNode<T>,
             depth: usize,
             expanded: &HashSet<SharedString>,
+            transitions: &HashMap<SharedString, VisualTransition>,
+            ancestor_height_factor: f32,
             flat: &mut Vec<FlatNodeWrapper<T>>,
         ) {
             let has_children = !node.children.is_empty() || node.is_branch;
+            let expand_progress = transitions
+                .get(&node.id)
+                .map(VisualTransition::progress)
+                .unwrap_or_else(|| if expanded.contains(&node.id) { 1.0 } else { 0.0 });
 
             flat.push(FlatNodeWrapper {
                 id: node.id.clone(),
@@ -245,18 +400,23 @@ where
                 depth,
                 has_children,
                 enabled: node.enabled,
+                expand_progress,
+                row_height_factor: ancestor_height_factor,
                 data: node.data.clone(),
             });
 
-            if expanded.contains(&node.id) {
+            let show_children = expand_progress > EXPAND_VISIBLE_EPSILON
+                || transitions.get(&node.id).is_some_and(VisualTransition::is_animating);
+            if show_children {
+                let child_factor = (ancestor_height_factor * expand_progress).clamp(0.0, 1.0);
                 for child in &node.children {
-                    flatten(child, depth + 1, expanded, flat);
+                    flatten(child, depth + 1, expanded, transitions, child_factor, flat);
                 }
             }
         }
 
         for item in &self.model.items {
-            flatten(item, 0, &self.expanded_ids, &mut flat);
+            flatten(item, 0, &self.expanded_ids, &self.expand_transitions, 1.0, &mut flat);
         }
 
         self.flat_cache = flat;
@@ -270,6 +430,44 @@ where
 
         self.sync_list_state_after_flat_change(old_count, splice_anchor);
         cx.notify();
+    }
+
+    fn refresh_flat_motion_factors(&mut self) {
+        fn walk<T: Clone>(
+            node: &TreeNode<T>,
+            expanded: &HashSet<SharedString>,
+            transitions: &HashMap<SharedString, VisualTransition>,
+            ancestor_height_factor: f32,
+            flat: &mut [FlatNodeWrapper<T>],
+            index: &mut usize,
+        ) {
+            if *index >= flat.len() {
+                return;
+            }
+
+            let expand_progress = transitions
+                .get(&node.id)
+                .map(VisualTransition::progress)
+                .unwrap_or_else(|| if expanded.contains(&node.id) { 1.0 } else { 0.0 });
+
+            flat[*index].expand_progress = expand_progress;
+            flat[*index].row_height_factor = ancestor_height_factor;
+            *index += 1;
+
+            let show_children = expand_progress > EXPAND_VISIBLE_EPSILON
+                || transitions.get(&node.id).is_some_and(VisualTransition::is_animating);
+            if show_children {
+                let child_factor = (ancestor_height_factor * expand_progress).clamp(0.0, 1.0);
+                for child in &node.children {
+                    walk(child, expanded, transitions, child_factor, flat, index);
+                }
+            }
+        }
+
+        let mut index = 0;
+        for item in &self.model.items {
+            walk(item, &self.expanded_ids, &self.expand_transitions, 1.0, &mut self.flat_cache, &mut index);
+        }
     }
 
     fn sync_list_state_after_flat_change(&mut self, old_count: usize, splice_anchor: Option<usize>) {
@@ -345,16 +543,11 @@ where
         }
 
         let id = wrapper.id.clone();
-        let data = wrapper.data.clone();
         if self.expanded_ids.contains(&id) {
-            self.expanded_ids.remove(&id);
-            cx.emit(TreeViewEvent::NodeCollapsed { node_id: id, data });
+            self.collapse(id, cx);
         } else {
-            self.expanded_ids.insert(id.clone());
-            cx.emit(TreeViewEvent::NodeExpanded { node_id: id, data });
+            self.expand(id, cx);
         }
-
-        self.rebuild_flat_cache(Some(index), cx);
     }
 
     fn render_row(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) -> gpui::AnyElement {
@@ -385,6 +578,8 @@ where
             depth: node.depth,
             has_children: node.has_children,
             expanded: self.expanded_ids.contains(&node.id),
+            expand_progress: node.expand_progress,
+            row_height_factor: node.row_height_factor,
             enabled: item_enabled,
             size: self.model.size,
             state,
@@ -659,6 +854,20 @@ where
             self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
         }
 
+        let (was_animating, is_animating) = self.sync_expand_transitions();
+        if self.desired_flat_count() != self.flat_cache.len() {
+            self.rebuild_flat_cache(None, cx);
+        } else if was_animating || is_animating {
+            self.refresh_flat_motion_factors();
+        }
+
+        for transition in self.expand_transitions.values() {
+            transition.schedule_frame(window, cx);
+        }
+        if was_animating || is_animating {
+            cx.notify();
+        }
+
         let render_model = TreeViewRenderModel {
             id: &self.model.id,
             selection_mode: self.model.selection_mode,
@@ -737,6 +946,8 @@ mod tests {
                 depth: 0,
                 has_children: true,
                 enabled: true,
+                expand_progress: 1.0,
+                row_height_factor: 1.0,
                 data: "a",
             },
             super::FlatNodeWrapper {
@@ -746,6 +957,8 @@ mod tests {
                 depth: 1,
                 has_children: false,
                 enabled: false,
+                expand_progress: 0.0,
+                row_height_factor: 1.0,
                 data: "b",
             },
             super::FlatNodeWrapper {
@@ -755,6 +968,8 @@ mod tests {
                 depth: 0,
                 has_children: false,
                 enabled: true,
+                expand_progress: 0.0,
+                row_height_factor: 1.0,
                 data: "c",
             },
         ]

@@ -110,6 +110,8 @@ fn render_tabs_navigation_state_sample(
             focused: sample.target_state.active,
             focus_visible: sample.target_state.focus_visible,
         },
+        indicator: None,
+        indicator_motion: None,
     };
 
     div()

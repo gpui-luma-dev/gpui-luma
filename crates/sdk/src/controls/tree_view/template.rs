@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, FontWeight, MouseDownEvent, MouseUpEvent, Stateful, Window, div, px, prelude::*,
+    AnyElement, App, ClickEvent, Div, FontWeight, Hsla, MouseDownEvent, MouseUpEvent, PathBuilder, Stateful, Window,
+    canvas, div, point, px, prelude::*,
 };
 use lucide_icons::Icon as LucideIcon;
 
@@ -162,12 +163,17 @@ where
         let chevron_size = snap_to_pixel(label_size * 0.65, scale_factor);
         let left_padding = scale.base_padding_x + (node.depth as f32 * scale.indentation_width);
 
+        let height_factor = node.row_height_factor.clamp(0.0, 1.0);
+        let row_height = scale.row_height * height_factor;
+
         let mut row = div()
             .id(format!("{}-row", node.id))
             .flex()
             .items_center()
             .w_full()
-            .h(px(scale.row_height))
+            .h(px(row_height))
+            .overflow_hidden()
+            .opacity(height_factor.max(0.0))
             .pl(px(left_padding))
             .pr(px(scale.base_padding_x))
             .rounded(px(scale.radius))
@@ -189,22 +195,21 @@ where
                 .on_mouse_up(gpui::MouseButton::Left, handlers.mouse_up)
                 .on_click(handlers.click);
         } else {
-            row = row.opacity(0.40);
+            row = row.opacity(0.40 * height_factor.max(0.0));
         }
 
         if node.has_children {
-            let chevron_icon = if node.expanded {
-                LucideIcon::ChevronDown
-            } else {
-                LucideIcon::ChevronRight
-            };
             let chevron = div()
                 .id(format!("{}-chevron", node.id))
                 .size(px(chevron_size))
                 .flex()
                 .items_center()
                 .justify_center()
-                .child(render_icon(chevron_icon, palette.chevron_color, chevron_size));
+                .child(render_rotating_chevron(
+                    node.expand_progress.clamp(0.0, 1.0),
+                    palette.chevron_color,
+                    chevron_size,
+                ));
 
             row = row.child(chevron);
         } else {
@@ -243,4 +248,34 @@ fn render_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
         .text_color(color)
         .child(char::from(icon).to_string())
         .into_any_element()
+}
+
+/// Chevron-right glyph painted with PathBuilder and rotated `0° → 90°` by expand progress.
+fn render_rotating_chevron(expand_progress: f32, color: Hsla, size: f32) -> AnyElement {
+    let angle_degrees = expand_progress * 90.0;
+    canvas(move |_, _, _| (), {
+        move |bounds, _, window, _| {
+            let center = bounds.center();
+            let extent = bounds.size.width.min(bounds.size.height).as_f32();
+            if extent <= f32::EPSILON {
+                return;
+            }
+
+            // Lucide-like chevron tip pointing right, centered in the icon box.
+            let half = extent * 0.22;
+            let mut builder = PathBuilder::stroke(px((extent * 0.12).max(1.0)));
+            builder.move_to(point(px(-half), px(-half * 1.35)));
+            builder.line_to(point(px(half), px(0.0)));
+            builder.line_to(point(px(-half), px(half * 1.35)));
+            // PathBuilder::rotate expects degrees.
+            builder.rotate(angle_degrees);
+            builder.translate(center);
+
+            if let Ok(path) = builder.build() {
+                window.paint_path(path, color);
+            }
+        }
+    })
+    .size(px(size))
+    .into_any_element()
 }

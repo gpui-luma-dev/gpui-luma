@@ -3,7 +3,10 @@ mod model;
 mod template;
 mod theme;
 
-pub use model::{StepState, StepperBuilder, StepperItem, StepperLabelPlacement, StepperModel, StepperRenderModel};
+pub use model::{
+    StepState, StepperBuilder, StepperContentRenderer, StepperItem, StepperLabelPlacement, StepperModel,
+    StepperRenderModel,
+};
 pub use template::{StepperTemplate, ThemedStepperTemplate, default_stepper_template};
 pub use theme::{DefaultStepperTheme, StepperLook, StepperTheme, default_stepper_theme};
 

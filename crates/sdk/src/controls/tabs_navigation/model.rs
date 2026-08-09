@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
+use super::indicator::{TabsNavigationIndicatorMotion, TabsNavigationIndicatorPaint};
 use super::template::{tabs_navigation_control_group_template, template_with_modifier};
 use super::{TabsNavigation, TabsNavigationTemplate, default_tabs_navigation_template};
 use crate::controls::control_group::ControlGroupItemLike;
@@ -177,6 +178,7 @@ pub struct TabsNavigationModel {
     pub(crate) items: Vec<TabsNavigationItem>,
     pub(crate) active_id: Option<SharedString>,
     pub(crate) enabled: bool,
+    pub(crate) animated: bool,
     pub(crate) template: Arc<dyn TabsNavigationTemplate>,
 }
 
@@ -199,6 +201,8 @@ pub struct TabsNavigationRenderModel<'a> {
     pub active_id: Option<&'a SharedString>,
     pub enabled: bool,
     pub focus: ControlFocusState,
+    pub indicator: Option<TabsNavigationIndicatorPaint>,
+    pub indicator_motion: Option<&'a TabsNavigationIndicatorMotion>,
 }
 
 pub struct TabsNavigationBuilder {
@@ -215,6 +219,7 @@ impl TabsNavigationBuilder {
                 items: Vec::new(),
                 active_id: None,
                 enabled: true,
+                animated: true,
                 template: default_tabs_navigation_template(),
             },
         }
@@ -250,6 +255,11 @@ impl TabsNavigationBuilder {
         self
     }
 
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.model.animated = animated;
+        self
+    }
+
     pub fn template(mut self, template: Arc<dyn TabsNavigationTemplate>) -> Self {
         self.model.template = template;
         self
@@ -272,8 +282,14 @@ impl TabsNavigationBuilder {
 
     pub(crate) fn control_group_template(
         &self,
+        indicator_motion: TabsNavigationIndicatorMotion,
     ) -> crate::controls::control_group::ControlGroupTemplate<TabsNavigationItem> {
-        tabs_navigation_control_group_template(self.model.size, self.model.width_mode, Arc::clone(&self.model.template))
+        tabs_navigation_control_group_template(
+            self.model.size,
+            self.model.width_mode,
+            Arc::clone(&self.model.template),
+            indicator_motion,
+        )
     }
 }
 

@@ -57,7 +57,7 @@ impl ContentPaneHost {
             .content(move |_, _, cx| picker_host.update(cx, |host, cx| host.render_catalog_picker(cx)))
             .placement(AnchoredPanelPlacement::BelowCenter)
             .dismiss_policy(AnchoredPanelDismissPolicy::CloseOnClickAwayOrFocusLoss)
-            .offset_y(px(4.0))
+            .offset_y(px(-36.0))
             .window_margin(px(8.0))
             .spawn(cx);
         let tabs = board
@@ -143,10 +143,6 @@ impl ContentPaneHost {
             self.controls_panel.update(cx, |panel, cx| {
                 panel.sync_snapshot(look, cx);
                 panel.request_layout_refresh(cx);
-            });
-            let opener = self.tabs.read(cx).focus_handle(cx);
-            self.catalog_picker.update(cx, |picker, cx| {
-                picker.open_from(Some(opener), cx);
             });
         }
 

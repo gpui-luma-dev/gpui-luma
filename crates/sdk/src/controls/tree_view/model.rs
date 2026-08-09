@@ -78,6 +78,10 @@ pub struct FlatTreeNode<'a, T> {
     pub depth: usize,
     pub has_children: bool,
     pub expanded: bool,
+    /// Branch expand progress (`0..1`) for chevron rotation.
+    pub expand_progress: f32,
+    /// Layout height factor (`0..1`) for clipped expand/collapse of descendant rows.
+    pub row_height_factor: f32,
     pub enabled: bool,
     pub size: ControlSize,
     pub state: crate::controls::state::CompositeItemState,
@@ -94,6 +98,7 @@ where
     pub(crate) selection_mode: TreeViewSelectionMode,
     pub(crate) enabled: bool,
     pub(crate) size: ControlSize,
+    pub(crate) animated: bool,
     pub(crate) template: Arc<dyn TreeViewTemplate<T>>,
 }
 
@@ -124,6 +129,7 @@ where
                 selection_mode: TreeViewSelectionMode::Single,
                 enabled: true,
                 size: ControlSize::Md,
+                animated: true,
                 template: default_tree_view_template::<T>(),
             },
         }
@@ -146,6 +152,11 @@ where
 
     pub fn size(mut self, size: ControlSize) -> Self {
         self.model.size = size;
+        self
+    }
+
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.model.animated = animated;
         self
     }
 

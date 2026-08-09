@@ -6,6 +6,7 @@ use gpui::{
 
 use super::{AnchoredPanelBuilder, AnchoredPanelDismissPolicy, AnchoredPanelPlacement, AnchoredPanelRenderModel};
 use crate::controls::color::style::ElementExt;
+use crate::controls::overlay_presence::OverlayPresence;
 use crate::focus::EscapeFocus;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -26,14 +27,17 @@ pub struct AnchoredPanel {
     restore_focus: Option<FocusHandle>,
     pending_focus_restore: bool,
     dismiss_guard: bool,
+    presence: OverlayPresence,
 }
 
 impl EventEmitter<AnchoredPanelEvent> for AnchoredPanel {}
 
 impl AnchoredPanel {
     pub(crate) fn from_builder(builder: AnchoredPanelBuilder, cx: &mut Context<Self>) -> Self {
+        let presence = OverlayPresence::new(builder.model.open, builder.model.animated);
         Self {
             pending_focus: builder.model.open && builder.model.focus_on_open,
+            presence,
             model: builder.model,
             focus_handle: cx.focus_handle().tab_stop(true),
             content_bounds: None,
@@ -109,6 +113,15 @@ impl AnchoredPanel {
         cx.notify();
     }
 
+    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
+        if self.model.animated == animated {
+            return;
+        }
+        self.model.animated = animated;
+        self.presence.set_animated(animated);
+        cx.notify();
+    }
+
     pub fn set_anchor_bounds(&mut self, bounds: Bounds<Pixels>, cx: &mut Context<Self>) {
         if self.model.anchor_bounds == Some(bounds) {
             return;
@@ -164,6 +177,7 @@ impl AnchoredPanel {
         let was_open = self.model.open;
         self.model.open = true;
         self.pending_focus_restore = false;
+        self.presence.set_open(true);
         if self.model.focus_on_open {
             self.pending_focus = true;
         }
@@ -179,6 +193,7 @@ impl AnchoredPanel {
         self.pending_focus = false;
         self.pending_focus_restore = self.restore_focus.is_some();
         self.dismiss_guard = false;
+        self.presence.set_open(false);
         if was_open {
             cx.emit(AnchoredPanelEvent::OpenChanged { open: false });
         }
@@ -273,7 +288,8 @@ impl AnchoredPanel {
             self.dismiss_guard = false;
         }
 
-        if self.pending_focus_restore && !self.model.open {
+        // Restore opener focus only after the close presence has finished painting.
+        if self.pending_focus_restore && !self.presence.should_paint() {
             self.pending_focus_restore = false;
             if let Some(focus) = self.restore_focus.clone() {
                 cx.on_next_frame(window, move |_this, window, cx| {
@@ -297,10 +313,17 @@ impl Render for AnchoredPanel {
             self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
         }
 
+        let was_animating = self.presence.is_animating();
+        let is_animating = self.presence.sync();
+        self.presence.schedule_frame(window, cx);
+        if was_animating || is_animating {
+            cx.notify();
+        }
+
         self.sync_focus(window, cx);
 
         let model = self.render_model(window);
-        if !model.open {
+        if !self.presence.should_paint() {
             return div().into_any_element();
         }
 
@@ -310,12 +333,6 @@ impl Render for AnchoredPanel {
 
         let panel = cx.entity();
         let content = (self.model.content)(&model, window, cx);
-        let content = div()
-            .on_prepaint(move |bounds, _, cx| {
-                panel.update(cx, |panel, cx| panel.handle_content_bounds(bounds, cx));
-            })
-            .child(content)
-            .into_any_element();
         let content_size = self.content_bounds.map(|bounds| bounds.size).or(self.model.initial_content_size);
         let placement = resolve_anchored_panel_placement(
             anchor_bounds,
@@ -325,11 +342,23 @@ impl Render for AnchoredPanel {
             window.viewport_size(),
             self.model.window_margin,
         );
+        let scale_size = content_size.unwrap_or(Size { width: px(0.0), height: px(0.0) });
+        let offset = self.presence.adjust_offset(placement.offset, scale_size);
+        let opacity = self.presence.opacity();
+
+        let content = div()
+            .on_prepaint(move |bounds, _, cx| {
+                panel.update(cx, |panel, cx| panel.handle_content_bounds(bounds, cx));
+            })
+            .opacity(opacity)
+            .child(content)
+            .into_any_element();
+
         let overlay = anchored()
             .snap_to_window_with_margin(self.model.window_margin)
             .anchor(placement.anchor)
             .position(placement.position)
-            .offset(placement.offset)
+            .offset(offset)
             .child(content);
 
         div()

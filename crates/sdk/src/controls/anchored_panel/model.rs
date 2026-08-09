@@ -29,6 +29,7 @@ pub struct AnchoredPanelModel {
     pub(crate) id: SharedString,
     pub(crate) content: AnchoredPanelContent,
     pub(crate) open: bool,
+    pub(crate) animated: bool,
     pub(crate) anchor_bounds: Option<Bounds<Pixels>>,
     pub(crate) placement: AnchoredPanelPlacement,
     pub(crate) dismiss_policy: AnchoredPanelDismissPolicy,
@@ -65,6 +66,7 @@ impl AnchoredPanelBuilder {
                 id: id.into(),
                 content: Arc::new(|_, _, _| gpui::div().into_any_element()),
                 open: false,
+                animated: true,
                 anchor_bounds: None,
                 placement: AnchoredPanelPlacement::BelowStart,
                 dismiss_policy: AnchoredPanelDismissPolicy::KeepOpen,
@@ -87,6 +89,11 @@ impl AnchoredPanelBuilder {
 
     pub fn open(mut self, open: bool) -> Self {
         self.model.open = open;
+        self
+    }
+
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.model.animated = animated;
         self
     }
 

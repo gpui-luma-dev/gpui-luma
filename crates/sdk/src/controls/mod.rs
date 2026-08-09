@@ -11,6 +11,7 @@ pub mod checkbox;
 pub mod color;
 pub mod control_group;
 pub mod dock_splitter;
+pub mod overlay_presence;
 pub mod overlay_window;
 pub mod presenter;
 pub mod rounded_shell;

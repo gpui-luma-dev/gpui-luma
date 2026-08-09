@@ -21,9 +21,16 @@ use super::template::render_control_exposition_card;
 
 const DEMO_STEP_COUNT: usize = 4;
 const DEMO_LABELS: [&str; 4] = ["Account", "Shipping", "Payment", "Review"];
+const DEMO_STEP_BODIES: [&str; 4] = [
+    "Create your account credentials and profile basics.",
+    "Choose a shipping address and delivery preferences.",
+    "Enter payment details to continue the checkout.",
+    "Confirm your order summary before finishing.",
+];
 const SECTION_WIDTH: f32 = 520.0;
 const VERTICAL_DEMO_HEIGHT: f32 = 260.0;
 const VERTICAL_DEMO_WIDTH: f32 = 200.0;
+const DEMO_CONTENT_HEIGHT: f32 = 96.0;
 const DEMO_SIZE: ControlSize = ControlSize::Md;
 
 pub struct StepperControlExposition {
@@ -206,12 +213,29 @@ impl Render for StepperExpositionLeftPane {
 impl StepperControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("stepper").expect("stepper catalog entry");
-        let stepper = look
+        let mut stepper_builder = look
             .stepper("controls-doc-stepper", DEMO_STEP_COUNT)
             .current_step(1)
             .labels(DEMO_LABELS.to_vec())
             .size(DEMO_SIZE)
-            .spawn(cx);
+            .content_height(DEMO_CONTENT_HEIGHT);
+        for (index, body) in DEMO_STEP_BODIES.iter().enumerate() {
+            let body = *body;
+            let title = DEMO_LABELS[index];
+            stepper_builder = stepper_builder.step_content(index, move |_, _| {
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .justify_center()
+                    .gap(px(4.0))
+                    .px(px(12.0))
+                    .child(div().text_size(px(14.0)).font_weight(gpui::FontWeight::SEMIBOLD).child(title))
+                    .child(div().text_size(px(12.0)).opacity(0.72).child(body))
+                    .into_any_element()
+            });
+        }
+        let stepper = stepper_builder.spawn(cx);
         let start_button = look.secondary_button("controls-doc-stepper-start").label("Start").spawn(cx);
         let previous_button = look.secondary_button("controls-doc-stepper-previous").label("Previous").spawn(cx);
         let next_button = look.button("controls-doc-stepper-next").label("Next").spawn(cx);
@@ -400,16 +424,23 @@ fn render_stepper_sample(
     } else {
         Vec::new()
     };
+    let empty_contents = Vec::new();
     let model = StepperRenderModel {
         id: &sample_id,
         step_count: DEMO_STEP_COUNT,
         current_step,
+        display_step: current_step as f32,
+        transition_progress: 1.0,
+        from_step: current_step as f32,
+        to_step: current_step,
         step_states: &step_states,
         labels: &labels,
         label_placement,
         direction,
         size: DEMO_SIZE,
         enabled,
+        step_contents: &empty_contents,
+        content_height: None,
     };
 
     template.render(&model, window, cx).into_any_element()

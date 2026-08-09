@@ -3,6 +3,7 @@ use gpui::{
     prelude::*,
 };
 
+use super::indicator::TabsNavigationIndicatorMotion;
 use super::{TabsNavigationBuilder, TabsNavigationItem};
 use crate::controls::control_group::{ControlGroupControl, ControlGroupEvent, ControlGroupLayout, ControlSelectionMode};
 use crate::controls::tabs_navigation::model::TabsNavigationWidthMode;
@@ -28,6 +29,8 @@ pub struct TabsNavigation {
     item_bounds: Vec<Option<Bounds<Pixels>>>,
     size: ControlSize,
     width_mode: TabsNavigationWidthMode,
+    animated: bool,
+    indicator_motion: TabsNavigationIndicatorMotion,
     template: std::sync::Arc<dyn super::TabsNavigationTemplate>,
 }
 
@@ -41,13 +44,14 @@ impl TabsNavigation {
 
     pub(crate) fn from_builder(builder: TabsNavigationBuilder, cx: &mut Context<Self>) -> Self {
         let model = builder.model.clone();
+        let indicator_motion = TabsNavigationIndicatorMotion::new(model.animated);
         let mut group_builder = ControlGroupControl::new(model.id)
             .items(model.items)
             .selection_mode(ControlSelectionMode::SingleRequired)
             .layout(ControlGroupLayout::Horizontal)
             .selection_follows_active(true)
             .enabled(model.enabled)
-            .template(builder.control_group_template());
+            .template(builder.control_group_template(indicator_motion.clone()));
 
         if let Some(active_id) = model.active_id {
             group_builder = group_builder.selected(active_id);
@@ -68,6 +72,8 @@ impl TabsNavigation {
             item_bounds: Vec::new(),
             size: builder.model.size,
             width_mode: builder.model.width_mode,
+            animated: builder.model.animated,
+            indicator_motion,
             template: builder.model.template,
         }
     }
@@ -82,11 +88,14 @@ impl TabsNavigation {
             return;
         }
 
+        let previous_id = self.active_id.clone();
         self.active_id = Some(active_id.clone());
         self.pending_changed_id = None;
+        self.retarget_indicator_for_active(previous_id.as_ref() != Some(&active_id));
         self.group.update(cx, |group, cx| {
             group.set_selected_ids([active_id], cx);
         });
+        cx.notify();
     }
 
     pub fn set_items(&mut self, items: impl IntoIterator<Item = TabsNavigationItem>, cx: &mut Context<Self>) {
@@ -100,9 +109,11 @@ impl TabsNavigation {
         }
         self.pending_changed_id = None;
         self.item_bounds.clear();
+        self.indicator_motion.clear_geometry();
         self.group.update(cx, |group, cx| {
             group.set_items(self.items.clone(), cx);
         });
+        cx.notify();
     }
 
     pub fn set_item_disclosure_open(&mut self, item_id: impl AsRef<str>, open: bool, cx: &mut Context<Self>) -> bool {
@@ -121,18 +132,23 @@ impl TabsNavigation {
         true
     }
 
+    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
+        if self.animated == animated {
+            return;
+        }
+        self.animated = animated;
+        self.indicator_motion.set_animated(animated);
+        self.refresh_group_template(cx);
+        cx.notify();
+    }
+
     pub fn set_template(
         &mut self,
         template: std::sync::Arc<dyn super::TabsNavigationTemplate>,
         cx: &mut Context<Self>,
     ) {
         self.template = template;
-        let size = self.size;
-        let width_mode = self.width_mode;
-        let template = self.template.clone();
-        self.group.update(cx, |group, cx| {
-            group.set_template(super::template::tabs_navigation_control_group_template(size, width_mode, template), cx);
-        });
+        self.refresh_group_template(cx);
     }
 
     pub fn set_size(&mut self, size: ControlSize, cx: &mut Context<Self>) {
@@ -140,11 +156,7 @@ impl TabsNavigation {
             return;
         }
         self.size = size;
-        let width_mode = self.width_mode;
-        let template = self.template.clone();
-        self.group.update(cx, |group, cx| {
-            group.set_template(super::template::tabs_navigation_control_group_template(size, width_mode, template), cx);
-        });
+        self.refresh_group_template(cx);
     }
 
     pub fn set_width_mode(&mut self, width_mode: TabsNavigationWidthMode, cx: &mut Context<Self>) {
@@ -152,11 +164,7 @@ impl TabsNavigation {
             return;
         }
         self.width_mode = width_mode;
-        let size = self.size;
-        let template = self.template.clone();
-        self.group.update(cx, |group, cx| {
-            group.set_template(super::template::tabs_navigation_control_group_template(size, width_mode, template), cx);
-        });
+        self.refresh_group_template(cx);
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
@@ -165,7 +173,31 @@ impl TabsNavigation {
         });
     }
 
+    fn refresh_group_template(&mut self, cx: &mut Context<Self>) {
+        let size = self.size;
+        let width_mode = self.width_mode;
+        let template = self.template.clone();
+        let indicator_motion = self.indicator_motion.clone();
+        self.group.update(cx, |group, cx| {
+            group.set_template(
+                super::template::tabs_navigation_control_group_template(size, width_mode, template, indicator_motion),
+                cx,
+            );
+        });
+    }
+
+    fn retarget_indicator_for_active(&mut self, animate: bool) {
+        let Some(active_id) = self.active_id.clone() else {
+            return;
+        };
+        let Some(bounds) = item_bounds_for_id(&self.items, &self.item_bounds, &active_id) else {
+            return;
+        };
+        self.indicator_motion.apply_item_bounds(bounds, animate && self.animated);
+    }
+
     fn handle_group_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<Self>) {
+        let previous_active = self.active_id.clone();
         let events = translate_group_event(
             &self.items,
             &mut self.active_id,
@@ -173,9 +205,22 @@ impl TabsNavigation {
             &mut self.item_bounds,
             event,
         );
+
+        match event {
+            ControlGroupEvent::Change { selected: true, .. } => {
+                self.retarget_indicator_for_active(previous_active != self.active_id);
+            }
+            ControlGroupEvent::ItemBoundsChanged { item_id, .. } if self.active_id.as_ref() == Some(item_id) => {
+                let animate = self.indicator_motion.is_animating();
+                self.retarget_indicator_for_active(animate);
+            }
+            _ => {}
+        }
+
         for event in events {
             cx.emit(event);
         }
+        cx.notify();
     }
 }
 
@@ -282,7 +327,14 @@ impl Focusable for TabsNavigation {
 }
 
 impl Render for TabsNavigation {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let was_animating = self.indicator_motion.is_animating();
+        let is_animating = self.indicator_motion.sync();
+        self.indicator_motion.schedule_frame(window, cx);
+        if was_animating || is_animating {
+            self.group.update(cx, |_, cx| cx.notify());
+            cx.notify();
+        }
         div().child(self.group.clone()).into_any_element()
     }
 }

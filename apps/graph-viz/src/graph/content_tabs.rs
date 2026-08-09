@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
 use gpui::{App, Div, Hsla, Stateful, Window, div, prelude::*, px};
+use gpui_luma::controls::color::style::ElementExt;
 use gpui_luma::controls::control_group::ControlGroupItemHandlerExt;
 use gpui_luma::controls::tabs_navigation::{
-    TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers, TabsNavigationTheme,
-    render_tabs_navigation_item_button, resolve_tabs_navigation_uniform_item_width,
+    TabsNavigationIndicatorMotion, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
+    TabsNavigationTheme, render_tabs_navigation_item_button, resolve_tabs_navigation_uniform_item_width,
 };
-use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 pub fn graph_viz_tabs_navigation_template(
@@ -35,6 +36,15 @@ impl TabsNavigationTemplate for GraphVizTabsNavigationTemplate {
         let uniform_width =
             resolve_tabs_navigation_uniform_item_width(model, self.theme.as_ref(), self.tab_size, window);
 
+        let active_item = model.items.iter().find(|item| item.active);
+        let active_look =
+            active_item.map(|item| self.theme.resolve_item(true, item.state.interaction_state(), self.tab_size));
+        if let Some(motion) = model.indicator_motion {
+            let look = active_look
+                .unwrap_or_else(|| self.theme.resolve_item(true, InteractionState::default(), self.tab_size));
+            motion.set_metrics(look.padding_x, look.indicator_height, look.indicator);
+        }
+
         let mut root = div()
             .id(model.id.clone())
             .relative()
@@ -47,6 +57,12 @@ impl TabsNavigationTemplate for GraphVizTabsNavigationTemplate {
             .p(px(list_look.padding))
             .rounded(px(list_look.radius))
             .child(div().absolute().left(px(0.0)).right(px(0.0)).bottom(px(0.0)).h(px(1.0)).bg(self.full_bar_color));
+
+        if let Some(motion) = model.indicator_motion.cloned() {
+            root = root.on_prepaint(move |bounds, _, _| {
+                motion.set_list_bounds(bounds);
+            });
+        }
 
         if let Some(background) = list_look.background {
             root = root.bg(background);
@@ -78,6 +94,21 @@ impl TabsNavigationTemplate for GraphVizTabsNavigationTemplate {
             }
 
             root = root.child(tab);
+        }
+
+        if let Some(indicator) =
+            model.indicator.or_else(|| model.indicator_motion.and_then(TabsNavigationIndicatorMotion::paint))
+        {
+            root = root.child(
+                div()
+                    .absolute()
+                    .left(px(indicator.left))
+                    .bottom(px(0.0))
+                    .w(px(indicator.width))
+                    .h(px(indicator.height))
+                    .rounded(px(indicator.height))
+                    .bg(indicator.color),
+            );
         }
 
         root
