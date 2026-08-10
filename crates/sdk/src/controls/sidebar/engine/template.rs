@@ -12,6 +12,7 @@ use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHover
 use crate::controls::scroll_container::ScrollContainer;
 use crate::theme::{ControlSize, InteractionState, LumaTextStyle, LumaTypography};
 use crate::controls::floating_menu::{FloatingMenuLook, FloatingMenuTheme, default_floating_menu_theme};
+use crate::controls::color::style::ElementExt;
 use super::{SidebarTheme, default_sidebar_theme};
 
 const CONTAINER_GAP: f32 = 8.0;
@@ -41,6 +42,7 @@ pub type SidebarPanelClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut Ap
 pub type SidebarPanelHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type SidebarPanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type SidebarPanelMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+pub type SidebarPanelChildrenHeightHandler = Box<dyn Fn(&f32, &mut Window, &mut App) + 'static>;
 
 #[derive(Default)]
 pub struct SidebarPanelTemplateHandlers {
@@ -50,9 +52,11 @@ pub struct SidebarPanelTemplateHandlers {
     pub row_mouse_ups: Vec<SidebarPanelMouseUpHandler>,
     pub row_mouse_up_outs: Vec<SidebarPanelMouseUpHandler>,
     pub row_clicks: Vec<SidebarPanelClickHandler>,
+    pub children_height_reports: std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
     pub rail_submenu_mouse_down_out: Option<SidebarPanelMouseDownHandler>,
     pub rail_submenu_item_hovers: Vec<FloatingMenuHoverHandler>,
     pub rail_submenu_item_clicks: Vec<FloatingMenuClickHandler>,
+    pub rail_submenu_bounds: Option<SidebarPanelBoundsHandler>,
 }
 
 pub type SidebarPanelTemplateModifier = Box<dyn Fn(Stateful<Div>) -> Stateful<Div> + Send + Sync + 'static>;
@@ -178,9 +182,11 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
             mut row_mouse_ups,
             mut row_mouse_up_outs,
             mut row_clicks,
+            mut children_height_reports,
             rail_submenu_mouse_down_out,
             rail_submenu_item_hovers,
             rail_submenu_item_clicks,
+            rail_submenu_bounds,
         } = handlers;
         let mut row_bounds = row_bounds.drain(..);
         let mut row_hovers = row_hovers.drain(..);
@@ -240,6 +246,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                             self.floating_menu_theme.resolve(),
                             rail_submenu_item_hovers,
                             rail_submenu_item_clicks,
+                            rail_submenu_bounds,
                         ))
                         .with_priority(1),
                     );
@@ -262,6 +269,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &mut row_mouse_ups,
                     &mut row_mouse_up_outs,
                     &mut row_clicks,
+                    &mut children_height_reports,
                 )
                 .pb(px(HEADER_REGION_PADDING_BOTTOM)),
             );
@@ -278,6 +286,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                         &mut row_mouse_ups,
                         &mut row_mouse_up_outs,
                         &mut row_clicks,
+                        &mut children_height_reports,
                     )
                     .into_any_element(),
                 )
@@ -295,6 +304,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &mut row_mouse_ups,
                     &mut row_mouse_up_outs,
                     &mut row_clicks,
+                    &mut children_height_reports,
                 )
                 .pt(px(FOOTER_REGION_PADDING_TOP)),
             );
@@ -343,6 +353,7 @@ fn render_title(title: Option<SharedString>, subtitle: Option<SharedString>, _th
     header
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_region(
     nodes: Vec<RenderedNavNode>,
     theme: &Arc<dyn SidebarTheme>,
@@ -351,6 +362,7 @@ fn render_region(
     row_mouse_ups: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
+    children_height_reports: &mut std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
 ) -> Div {
     let mut region = div().flex().flex_col().gap(px(REGION_GAP));
 
@@ -363,6 +375,7 @@ fn render_region(
             row_mouse_ups,
             row_mouse_up_outs,
             row_clicks,
+            children_height_reports,
         ));
     }
 
@@ -400,6 +413,7 @@ fn render_collapsed_rail_region(
     region
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_node(
     node: RenderedNavNode,
     theme: &Arc<dyn SidebarTheme>,
@@ -408,11 +422,23 @@ fn render_node(
     row_mouse_ups: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
+    children_height_reports: &mut std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
 ) -> AnyElement {
-    let RenderedNavNode { id, kind, label, icon, state, custom_element, focus_handle, has_children, children } = node;
-    let expanded = state.expanded;
+    let RenderedNavNode {
+        id,
+        kind,
+        label,
+        icon,
+        state,
+        custom_element,
+        focus_handle,
+        has_children,
+        expansion_progress,
+        children_height_px,
+        children,
+    } = node;
     let mut root = div().id(id.clone()).flex().flex_col().gap(px(REGION_GAP)).child(render_row(
-        RowRenderInput { id, kind, label, icon, state, custom_element, focus_handle, has_children },
+        RowRenderInput { id: id.clone(), kind, label, icon, state, custom_element, focus_handle, has_children },
         RowHandlers {
             bounds: None,
             hover: row_hovers.next(),
@@ -424,9 +450,11 @@ fn render_node(
         theme,
     ));
 
-    if expanded {
+    if !children.is_empty() {
+        let height_report = children_height_reports.remove(&id);
+        let mut children_region = div().flex().flex_col().gap(px(REGION_GAP));
         for child in children {
-            root = root.child(render_node(
+            children_region = children_region.child(render_node(
                 child,
                 theme,
                 row_hovers,
@@ -434,7 +462,26 @@ fn render_node(
                 row_mouse_ups,
                 row_mouse_up_outs,
                 row_clicks,
+                children_height_reports,
             ));
+        }
+
+        let mut clip = div().w_full().overflow_hidden().opacity(expansion_progress).flex_shrink_0();
+        if children_height_px > f32::EPSILON {
+            clip = clip.h(px(children_height_px * expansion_progress));
+        } else if expansion_progress < 1.0 - f32::EPSILON {
+            clip = clip.h(px(0.0));
+        }
+        if let Some(height_report) = height_report {
+            let clip = clip.on_children_prepainted(move |bounds, window, cx| {
+                let height = bounds.iter().map(|child| child.size.height.as_f32()).fold(0.0_f32, f32::max);
+                if height > f32::EPSILON {
+                    height_report(&height, window, cx);
+                }
+            });
+            root = root.child(clip.child(children_region));
+        } else {
+            root = root.child(clip.child(children_region));
         }
     }
 
@@ -684,6 +731,7 @@ fn render_rail_submenu_overlay(
     look: FloatingMenuLook,
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
+    bounds_handler: Option<SidebarPanelBoundsHandler>,
 ) -> impl IntoElement {
     let menu = render_floating_menu(
         &submenu.id,
@@ -695,12 +743,25 @@ fn render_rail_submenu_overlay(
         item_clicks,
     );
 
+    let content_size = submenu.content_size.unwrap_or_default();
+    let offset = submenu.presence.adjust_offset(point(px(RAIL_SUBMENU_OFFSET_X), px(0.0)), content_size);
+    let content = if let Some(bounds_handler) = bounds_handler {
+        div()
+            .on_prepaint(move |bounds, window, cx| {
+                bounds_handler(&bounds, window, cx);
+            })
+            .opacity(submenu.presence.opacity())
+            .child(menu)
+    } else {
+        div().opacity(submenu.presence.opacity()).child(menu)
+    };
+
     anchored()
         .snap_to_window_with_margin(px(8.0))
         .anchor(Anchor::TopLeft)
         .position(point(submenu.parent_bounds.right(), submenu.parent_bounds.top()))
-        .offset(point(px(RAIL_SUBMENU_OFFSET_X), px(0.0)))
-        .child(menu)
+        .offset(offset)
+        .child(content)
 }
 
 fn rail_branch_indicator_left(button_height: f32) -> f32 {

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, AppContext, Bounds, Entity, FocusHandle, IntoElement, Pixels, SharedString, div, prelude::*};
+use gpui::{AnyElement, AppContext, Bounds, Entity, FocusHandle, IntoElement, Pixels, SharedString, Size, div, prelude::*};
 use lucide_icons::Icon as LucideIcon;
 
 use super::{SidebarPanelEngine, SidebarPanelTemplate, default_sidebar_panel_template};
@@ -10,6 +10,7 @@ use crate::controls::menu_item::MenuItem;
 use crate::controls::state::MenuPath;
 use crate::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
+use crate::controls::overlay_presence::OverlayPresence;
 
 pub type NavHostedContent = HostedContent;
 pub type NavPresenter = Presenter<NavNodeState>;
@@ -132,6 +133,7 @@ pub struct SidebarPanelEngineModel {
     pub(crate) selected_id: Option<SharedString>,
     pub(crate) enabled: bool,
     pub(crate) collapsed: bool,
+    pub(crate) animated: bool,
     pub(crate) template: Arc<dyn SidebarPanelTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) scrollbar_placement: ScrollbarPlacement,
@@ -139,6 +141,7 @@ pub struct SidebarPanelEngineModel {
     pub(crate) scrollbar_auto_hide_activate: ScrollbarAutoHideActivate,
 }
 
+#[derive(Clone)]
 pub struct RenderedRailSubmenu {
     pub id: SharedString,
     pub parent_node_id: SharedString,
@@ -146,6 +149,8 @@ pub struct RenderedRailSubmenu {
     pub items: Vec<MenuItem>,
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
+    pub presence: OverlayPresence,
+    pub content_size: Option<Size<Pixels>>,
 }
 
 pub struct SidebarPanelEngineRenderModel {
@@ -171,6 +176,8 @@ pub struct RenderedNavNode {
     pub custom_element: Option<AnyElement>,
     pub focus_handle: Option<FocusHandle>,
     pub has_children: bool,
+    pub expansion_progress: f32,
+    pub children_height_px: f32,
     pub children: Vec<RenderedNavNode>,
 }
 
@@ -191,6 +198,7 @@ impl SidebarPanelEngineBuilder {
                 selected_id: None,
                 enabled: true,
                 collapsed: false,
+                animated: true,
                 template: default_sidebar_panel_template(),
                 scrollbar_template: default_scrollbar_template(),
                 scrollbar_placement: ScrollbarPlacement::Inset,
@@ -252,6 +260,11 @@ impl SidebarPanelEngineBuilder {
 
     pub fn collapsed(mut self, collapsed: bool) -> Self {
         self.model.collapsed = collapsed;
+        self
+    }
+
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.model.animated = animated;
         self
     }
 

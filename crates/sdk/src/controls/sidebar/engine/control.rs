@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::time::Duration;
 
 use gpui::{
     Bounds, ClickEvent, Context, EventEmitter, FocusHandle, FocusOutEvent, IntoElement, MouseDownEvent, MouseUpEvent,
-    Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
+    Pixels, Render, SharedString, Size, Subscription, Window, div, prelude::*,
 };
 
 use super::{
@@ -13,6 +14,8 @@ use crate::controls::menu_item::MenuItem;
 use crate::controls::scroll_container::ScrollContainer;
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::state::MenuPath;
+use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::controls::overlay_presence::OverlayPresence;
 use crate::keyhandling::{
     ActivateControl, CloseSubmenu, ControlKeyProfile, OpenSubmenu, SelectFirstItem, SelectLastItem, SelectNextItem,
     SelectPreviousItem,
@@ -43,11 +46,16 @@ pub struct SidebarPanelEngine {
     open_rail_submenu: Option<SharedString>,
     rail_submenu_open_submenu: Option<usize>,
     rail_submenu_active_path: Option<MenuPath>,
+    rail_submenu_presence: OverlayPresence,
+    rail_submenu_content: Option<RenderedRailSubmenu>,
+    rail_submenu_content_size: Option<Size<Pixels>>,
     visible_focus_nodes: Vec<(NavigationFocusTarget, FocusHandle)>,
     focus_subscriptions: Vec<Subscription>,
     focus_subscription_keys: Vec<(NavigationFocusTarget, FocusHandle)>,
     emitted_focused: bool,
     _subscriptions: Vec<Subscription>,
+    branch_transitions: HashMap<SharedString, VisualTransition>,
+    branch_heights_px: HashMap<SharedString, f32>,
 }
 
 impl EventEmitter<SidebarPanelEngineEvent> for SidebarPanelEngine {}
@@ -59,6 +67,7 @@ impl SidebarPanelEngine {
     }
 
     pub(crate) fn from_builder(builder: SidebarPanelEngineBuilder, cx: &mut Context<Self>) -> Self {
+        let animated = builder.model.animated;
         let main_scroll = ScrollContainer::new(
             format!("{}-main-scroll", builder.model.id),
             builder.model.scrollbar_template.clone(),
@@ -77,7 +86,7 @@ impl SidebarPanelEngine {
             observe_theme_revision(cx, |_, cx| cx.notify()),
         ];
 
-        Self {
+        let mut engine = Self {
             model: builder.model,
             main_scroll,
             hovered_node: None,
@@ -88,28 +97,38 @@ impl SidebarPanelEngine {
             open_rail_submenu: None,
             rail_submenu_open_submenu: None,
             rail_submenu_active_path: None,
+            rail_submenu_presence: OverlayPresence::new(false, animated),
+            rail_submenu_content: None,
+            rail_submenu_content_size: None,
             visible_focus_nodes: Vec::new(),
             focus_subscriptions: Vec::new(),
             focus_subscription_keys: Vec::new(),
             emitted_focused: false,
             _subscriptions: subscriptions,
-        }
+            branch_transitions: HashMap::new(),
+            branch_heights_px: HashMap::new(),
+        };
+        engine.sync_branch_state();
+        engine
     }
 
     pub fn set_header_nodes(&mut self, nodes: impl IntoIterator<Item = NavNode>, cx: &mut Context<Self>) {
         self.model.header_nodes = nodes.into_iter().collect();
+        self.sync_branch_state();
         self.close_rail_submenu(cx);
         cx.notify();
     }
 
     pub fn set_items(&mut self, nodes: impl IntoIterator<Item = NavNode>, cx: &mut Context<Self>) {
         self.model.nodes = nodes.into_iter().collect();
+        self.sync_branch_state();
         self.close_rail_submenu(cx);
         cx.notify();
     }
 
     pub fn set_footer_nodes(&mut self, nodes: impl IntoIterator<Item = NavNode>, cx: &mut Context<Self>) {
         self.model.footer_nodes = nodes.into_iter().collect();
+        self.sync_branch_state();
         self.close_rail_submenu(cx);
         cx.notify();
     }
@@ -209,6 +228,7 @@ impl SidebarPanelEngine {
             || set_expanded_in_nodes(&mut self.model.header_nodes, &node_id, expanded)
             || set_expanded_in_nodes(&mut self.model.footer_nodes, &node_id, expanded)
         {
+            self.set_branch_target(&node_id, expanded);
             cx.emit(SidebarPanelEngineEvent::BranchExpandedChanged { node_id, expanded });
             cx.notify();
         }
@@ -223,8 +243,78 @@ impl SidebarPanelEngine {
             return;
         };
 
+        self.set_branch_target(&node_id, expanded);
         cx.emit(SidebarPanelEngineEvent::BranchExpandedChanged { node_id, expanded });
         cx.notify();
+    }
+
+    fn transition_duration(&self) -> Duration {
+        if self.model.animated {
+            DEFAULT_TRANSITION_DURATION
+        } else {
+            Duration::ZERO
+        }
+    }
+
+    fn sync_branch_state(&mut self) {
+        let mut branch_ids = HashSet::new();
+        fn collect(nodes: &[NavNode], ids: &mut HashSet<SharedString>) {
+            for node in nodes {
+                if !node.children.is_empty() {
+                    ids.insert(node.id.clone());
+                }
+                collect(&node.children, ids);
+            }
+        }
+        collect(&self.model.header_nodes, &mut branch_ids);
+        collect(&self.model.nodes, &mut branch_ids);
+        collect(&self.model.footer_nodes, &mut branch_ids);
+        self.branch_transitions.retain(|id, _| branch_ids.contains(id));
+        self.branch_heights_px.retain(|id, _| branch_ids.contains(id));
+        let duration = self.transition_duration();
+        for id in branch_ids {
+            let expanded = self.find_node(&id).is_some_and(|node| node.expanded);
+            self.branch_transitions
+                .entry(id)
+                .or_insert_with(|| VisualTransition::new(if expanded { 1.0 } else { 0.0 }, duration));
+        }
+    }
+
+    fn set_branch_target(&mut self, node_id: &SharedString, expanded: bool) {
+        let duration = self.transition_duration();
+        let transition = self
+            .branch_transitions
+            .entry(node_id.clone())
+            .or_insert_with(|| VisualTransition::new(if expanded { 0.0 } else { 1.0 }, duration));
+        if self.model.animated {
+            transition.set_target(if expanded { 1.0 } else { 0.0 });
+        } else {
+            transition.snap_to(if expanded { 1.0 } else { 0.0 });
+        }
+    }
+
+    fn sync_branch_transitions(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let mut animating = false;
+        for transition in self.branch_transitions.values_mut() {
+            transition.sync();
+            animating |= transition.is_animating();
+        }
+        if animating {
+            cx.on_next_frame(window, |_, _, cx| cx.notify());
+        }
+    }
+
+    fn set_branch_height(&mut self, node_id: SharedString, height: f32, cx: &mut Context<Self>) {
+        let height = height.max(0.0);
+        let settled_open = self
+            .branch_transitions
+            .get(&node_id)
+            .is_some_and(|transition| !transition.is_animating() && transition.progress() >= 1.0 - f32::EPSILON);
+        let cached = self.branch_heights_px.entry(node_id).or_insert(0.0);
+        if (settled_open || height > *cached + 0.5) && (height - *cached).abs() > 0.5 {
+            *cached = height;
+            cx.notify();
+        }
     }
 
     fn render_model(&mut self, window: &mut Window, cx: &mut Context<Self>) -> SidebarPanelEngineRenderModel {
@@ -260,7 +350,15 @@ impl SidebarPanelEngine {
         } else {
             Vec::new()
         };
-        let rail_submenu = self.rendered_rail_submenu();
+        if let Some(current) = self.rendered_rail_submenu() {
+            self.rail_submenu_content = Some(current);
+        }
+        if let Some(content) = &mut self.rail_submenu_content {
+            content.presence = self.rail_submenu_presence;
+            content.content_size = self.rail_submenu_content_size;
+        }
+        let rail_submenu =
+            self.rail_submenu_presence.should_paint().then(|| self.rail_submenu_content.clone()).flatten();
 
         if self.model.collapsed {
             self.visible_focus_nodes = visible_focus_nodes;
@@ -292,6 +390,8 @@ impl SidebarPanelEngine {
             &mut visible_focus_nodes,
             window,
             cx,
+            &self.branch_transitions,
+            &self.branch_heights_px,
         );
         let nodes = render_nodes(
             &self.model.nodes,
@@ -305,6 +405,8 @@ impl SidebarPanelEngine {
             &mut visible_focus_nodes,
             window,
             cx,
+            &self.branch_transitions,
+            &self.branch_heights_px,
         );
         let footer_nodes = render_nodes(
             &self.model.footer_nodes,
@@ -318,6 +420,8 @@ impl SidebarPanelEngine {
             &mut visible_focus_nodes,
             window,
             cx,
+            &self.branch_transitions,
+            &self.branch_heights_px,
         );
 
         self.visible_focus_nodes = visible_focus_nodes;
@@ -349,6 +453,13 @@ impl SidebarPanelEngine {
             push_template_handlers(&model.rail_footer_nodes, &mut handlers, cx, SidebarNodeInteraction::Rail);
 
             if let Some(rail_submenu) = &model.rail_submenu {
+                handlers.rail_submenu_bounds =
+                    Some(Box::new(cx.listener(|this, bounds: &Bounds<Pixels>, _window, cx| {
+                        if this.rail_submenu_content_size != Some(bounds.size) {
+                            this.rail_submenu_content_size = Some(bounds.size);
+                            cx.notify();
+                        }
+                    })));
                 let parent_node_id = rail_submenu.parent_node_id.clone();
                 handlers.rail_submenu_mouse_down_out =
                     Some(Box::new(cx.listener(Self::handle_rail_submenu_mouse_down_out)));
@@ -371,6 +482,9 @@ impl SidebarPanelEngine {
                     .collect();
             }
         } else {
+            push_children_height_handlers(&model.header_nodes, &mut handlers, cx);
+            push_children_height_handlers(&model.nodes, &mut handlers, cx);
+            push_children_height_handlers(&model.footer_nodes, &mut handlers, cx);
             push_template_handlers(&model.header_nodes, &mut handlers, cx, SidebarNodeInteraction::Default);
             push_template_handlers(&model.nodes, &mut handlers, cx, SidebarNodeInteraction::Default);
             push_template_handlers(&model.footer_nodes, &mut handlers, cx, SidebarNodeInteraction::Default);
@@ -407,6 +521,7 @@ impl SidebarPanelEngine {
         if self.open_rail_submenu.is_none()
             && self.rail_submenu_open_submenu.is_none()
             && self.rail_submenu_active_path.is_none()
+            && !self.rail_submenu_presence.is_animating()
         {
             return false;
         }
@@ -414,6 +529,7 @@ impl SidebarPanelEngine {
         self.open_rail_submenu = None;
         self.rail_submenu_open_submenu = None;
         self.rail_submenu_active_path = None;
+        self.rail_submenu_presence.set_open(false);
         cx.emit(SidebarPanelEngineEvent::RailSubmenuOpenChanged { node_id: None });
         true
     }
@@ -425,6 +541,7 @@ impl SidebarPanelEngine {
             self.open_rail_submenu = Some(node_id.clone());
             self.rail_submenu_open_submenu = None;
             self.rail_submenu_active_path = None;
+            self.rail_submenu_presence.set_open(true);
             cx.emit(SidebarPanelEngineEvent::RailSubmenuOpenChanged { node_id: Some(node_id) });
         }
     }
@@ -446,6 +563,8 @@ impl SidebarPanelEngine {
             items,
             open_submenu: self.rail_submenu_open_submenu,
             active_path: self.rail_submenu_active_path,
+            presence: self.rail_submenu_presence,
+            content_size: self.rail_submenu_content_size,
         })
     }
 
@@ -813,6 +932,16 @@ type NavigationFocusTarget = SharedString;
 
 impl Render for SidebarPanelEngine {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let was_rail_submenu_animating = self.rail_submenu_presence.is_animating();
+        let is_rail_submenu_animating = self.rail_submenu_presence.sync();
+        self.rail_submenu_presence.schedule_frame(window, cx);
+        if was_rail_submenu_animating || is_rail_submenu_animating {
+            cx.notify();
+        }
+        if !self.rail_submenu_presence.should_paint() {
+            self.rail_submenu_content = None;
+        }
+        self.sync_branch_transitions(window, cx);
         let model = self.render_model(window, cx);
         self.sync_focus_subscriptions(window, cx);
         let handlers = self.template_handlers(&model, cx);
@@ -833,6 +962,23 @@ impl Render for SidebarPanelEngine {
     }
 }
 
+fn branch_progress_for(
+    transitions: &HashMap<SharedString, VisualTransition>,
+    node_id: &SharedString,
+    expanded: bool,
+) -> f32 {
+    transitions.get(node_id).map(VisualTransition::progress).unwrap_or(if expanded { 1.0 } else { 0.0 })
+}
+
+fn branch_visible_for(
+    transitions: &HashMap<SharedString, VisualTransition>,
+    node_id: &SharedString,
+    expanded: bool,
+) -> bool {
+    branch_progress_for(transitions, node_id, expanded) > f32::EPSILON
+        || transitions.get(node_id).is_some_and(VisualTransition::is_animating)
+}
+
 #[allow(clippy::too_many_arguments)]
 fn render_nodes(
     nodes: &[NavNode],
@@ -846,6 +992,8 @@ fn render_nodes(
     visible_focus_nodes: &mut Vec<(NavigationFocusTarget, FocusHandle)>,
     window: &mut Window,
     cx: &mut Context<SidebarPanelEngine>,
+    branch_transitions: &HashMap<SharedString, VisualTransition>,
+    branch_heights_px: &HashMap<SharedString, f32>,
 ) -> Vec<RenderedNavNode> {
     let sibling_count = nodes.iter().filter(|node| node.visible).count();
     let mut visible_index = 0;
@@ -890,7 +1038,7 @@ fn render_nodes(
         }
 
         let has_children = !node.children.is_empty();
-        let children = if node.expanded {
+        let children = if branch_visible_for(branch_transitions, &node.id, node.expanded) {
             render_nodes(
                 &node.children,
                 depth + 1,
@@ -903,6 +1051,8 @@ fn render_nodes(
                 visible_focus_nodes,
                 window,
                 cx,
+                branch_transitions,
+                branch_heights_px,
             )
         } else {
             Vec::new()
@@ -917,6 +1067,8 @@ fn render_nodes(
             custom_element: custom_content.map(|content| content.element),
             focus_handle,
             has_children,
+            expansion_progress: branch_progress_for(branch_transitions, &node.id, node.expanded),
+            children_height_px: branch_heights_px.get(&node.id).copied().unwrap_or(0.0),
             children,
         });
     }
@@ -971,6 +1123,8 @@ fn render_collapsed_rail_nodes(
             custom_element: None,
             focus_handle,
             has_children: !node.children.is_empty(),
+            expansion_progress: 0.0,
+            children_height_px: 0.0,
             children: Vec::new(),
         });
     }
@@ -1095,6 +1249,25 @@ fn push_template_handlers(
     }
 }
 
+fn push_children_height_handlers(
+    nodes: &[RenderedNavNode],
+    handlers: &mut SidebarPanelTemplateHandlers,
+    cx: &mut Context<SidebarPanelEngine>,
+) {
+    for node in nodes {
+        if node.has_children {
+            let node_id = node.id.clone();
+            handlers.children_height_reports.insert(
+                node_id.clone(),
+                Box::new(cx.listener(move |this, height, _window, cx| {
+                    this.set_branch_height(node_id.clone(), *height, cx);
+                })),
+            );
+        }
+        push_children_height_handlers(&node.children, handlers, cx);
+    }
+}
+
 #[derive(Clone, Copy)]
 enum FocusDirection {
     Previous,
@@ -1176,10 +1349,18 @@ fn toggle_expanded_in_nodes(nodes: &mut [NavNode], node_id: &SharedString) -> Op
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+    use std::time::Duration;
+
     use gpui::SharedString;
     use lucide_icons::Icon as LucideIcon;
 
-    use super::{collapsed_rail_node_count, set_expanded_in_nodes, toggle_expanded_in_nodes};
+    use crate::animation::VisualTransition;
+
+    use super::{
+        branch_progress_for, branch_visible_for, collapsed_rail_node_count, set_expanded_in_nodes,
+        toggle_expanded_in_nodes,
+    };
     use super::NavNode;
 
     #[test]
@@ -1213,5 +1394,16 @@ mod tests {
         ];
 
         assert_eq!(collapsed_rail_node_count(&nodes), 2);
+    }
+
+    #[test]
+    fn closing_branch_remains_visible_while_transition_is_active() {
+        let branch_id: SharedString = "inputs".into();
+        let mut transitions =
+            HashMap::from([(branch_id.clone(), VisualTransition::new(1.0, Duration::from_millis(200)))]);
+        transitions.get_mut(&branch_id).unwrap().set_target(0.0);
+
+        assert!(branch_visible_for(&transitions, &branch_id, false));
+        assert!(branch_progress_for(&transitions, &branch_id, false) > 0.0);
     }
 }

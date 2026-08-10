@@ -119,6 +119,7 @@ impl DashboardPanel {
                 cx.notify();
             }
         }));
+        subscriptions.push(cx.observe(&sidebar, |_, _, cx| cx.notify()));
         subscriptions.push(cx.subscribe(&sidebar_toggle, |panel, _, event, cx| {
             if matches!(event, ButtonEvent::Click) {
                 panel.sidebar.update(cx, |sidebar, cx| sidebar.toggle_open(cx));
@@ -151,11 +152,7 @@ impl Render for DashboardPanel {
             let look = &self.look;
             let chrome = look.chrome();
             let metrics = look.sidebar_metric_scale();
-            let sidebar_width = if self.sidebar_open {
-                metrics.width_expanded
-            } else {
-                metrics.width_icon_rail
-            };
+            let sidebar_width = self.sidebar.read(cx).animated_width(metrics.width_expanded, metrics.width_icon_rail);
             let sidebar_bg = look.token_color("sidebar").unwrap_or(chrome.panel_background);
             let title_style = look.typography_scale(ShadcnTextSize::Lg);
 

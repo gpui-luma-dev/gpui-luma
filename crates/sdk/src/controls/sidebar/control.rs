@@ -319,6 +319,7 @@ fn spawn_panel_engine(
 
     let mut builder = SidebarPanelEngine::new(panel_id)
         .enabled(model.enabled)
+        .animated(model.animated)
         .collapsed(collapsed)
         .template(model.panel_template.clone())
         .scrollbar_template(model.scrollbar_template.clone())
