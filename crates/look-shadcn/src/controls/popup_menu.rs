@@ -13,7 +13,7 @@ use crate::look_context::LookContext;
 use super::button::{ShadcnButtonStyle, button_box_scale, button_elevation_shadow, button_palette};
 use super::floating_menu::floating_menu_look;
 use crate::mode::ShadcnModeTokens;
-use crate::stylesheet::embedded_stylesheet;
+use crate::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};
 
 fn shadcn_button_style(trigger_style: PopupMenuTriggerStyle) -> ShadcnButtonStyle {
     match trigger_style {
@@ -81,6 +81,9 @@ pub fn popup_menu_look(
     );
     let mut look =
         compose_popup_menu_look(&popup_menu_palette(mode, theme_mode, trigger_style, metrics, state), &scale);
+    if let Some(rule) = embedded_stylesheet().button.metrics_for_size(metrics.size) {
+        look.trigger_icon_size = resolve_button_metrics_rule(rule, &mode.metrics, metrics.size).icon_size;
+    }
     if let Some(radius) = metrics.trigger_radius_override {
         look.trigger_radius = radius;
     }

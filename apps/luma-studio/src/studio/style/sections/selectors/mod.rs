@@ -177,7 +177,6 @@ fn apply_selector_preview_textfield_size(
     size: ControlSize,
 ) -> TextFieldLook {
     textfield_look.typography = selector_preview_typography_for_size(look, textfield_look.typography, size);
-    textfield_look.icon_size = textfield_look.typography.size + 2.0;
     textfield_look
 }
 

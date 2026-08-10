@@ -43,6 +43,7 @@ pub fn inspect_button_color_palette(
 #[derive(Clone, Debug)]
 pub struct ButtonInspectMetrics {
     pub height: ResolvedMetric,
+    pub icon_size: ResolvedMetric,
     pub padding_x: ResolvedMetric,
     pub padding_y: ResolvedMetric,
     pub gap: ResolvedMetric,
@@ -69,6 +70,10 @@ pub fn inspect_button_metrics(
 
     ButtonInspectMetrics {
         height: scaffold_control_metric(size_key, "control_height", look.height),
+        icon_size: ResolvedMetric {
+            value_px: look.icon_size,
+            source: MetricSource::Constant { label: format!("style.toml [button.metrics.{size_key}].icon_size") },
+        },
         padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, look.padding_x),
         padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, look.padding_y),
         gap: spacing_control_metric(catalog, size, SpacingField::Gap, look.gap),

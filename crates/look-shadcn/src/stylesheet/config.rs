@@ -915,7 +915,6 @@ pub struct FloatingMenuMetricsRule {
     pub radius: String,
     pub item_height_factor: f32,
     pub item_padding_x_factor: f32,
-    pub item_icon_size_factor: f32,
     pub item_radius: String,
     pub submenu_offset_x_factor: f32,
 }

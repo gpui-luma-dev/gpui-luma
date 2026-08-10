@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use crate::theme::{ControlSize, LumaTextStyle, MetricTokens, ThemeTokens};
+use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct FloatingMenuLook {
@@ -75,7 +75,7 @@ pub(crate) fn default_floating_menu_look(tokens: &ThemeTokens, size: ControlSize
         item_height: metrics.control_height(size) * 0.9,
         item_padding_x: metrics.padding_x(size) * 0.75,
         item_gap: metrics.gap(size),
-        item_icon_size: default_menu_item_icon_size(metrics, item_typography),
+        item_icon_size: metrics.icon_size(size),
         item_radius: metrics.radius.sm,
         disabled_opacity: 0.56,
         submenu_offset_x: metrics.gap(size) * 0.5,
@@ -88,10 +88,6 @@ fn scaled_menu_item_typography(typography: &crate::theme::LumaTypography, size: 
         ControlSize::Md => typography.text.body,
         ControlSize::Lg => typography.text.scale.lg,
     }
-}
-
-fn default_menu_item_icon_size(metrics: &MetricTokens, item_typography: LumaTextStyle) -> f32 {
-    (item_typography.size + metrics.border_width.strong).floor()
 }
 
 #[cfg(test)]
@@ -115,13 +111,13 @@ mod tests {
     }
 
     #[test]
-    fn default_floating_menu_icon_size_tracks_typography_and_border_width() {
+    fn default_floating_menu_icon_size_uses_control_metric() {
         let mut tokens = ThemeTokens::default();
         tokens.typography.text.body.size = 15.5;
-        tokens.metrics.border_width.strong = 2.5;
+        tokens.metrics.control.md.icon_size = 17.0;
 
         let look = default_floating_menu_look(&tokens, ControlSize::Md);
 
-        assert_eq!(look.item_icon_size, 18.0);
+        assert_eq!(look.item_icon_size, 17.0);
     }
 }

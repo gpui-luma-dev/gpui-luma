@@ -198,6 +198,7 @@ pub struct ControlMetricTokens {
     pub padding_x: f32,
     pub padding_y: f32,
     pub gap: f32,
+    pub icon_size: f32,
 }
 
 #[derive(Clone, Debug)]
@@ -503,9 +504,9 @@ impl LumaPalette {
 
 impl Default for MetricTokens {
     fn default() -> Self {
-        let sm = ControlMetricTokens::new(28.0, 10.0, 5.0, 6.0, 5.0);
-        let md = ControlMetricTokens::new(36.0, 14.0, 8.0, 8.0, 6.0);
-        let lg = ControlMetricTokens::new(44.0, 18.0, 10.0, 10.0, 8.0);
+        let sm = ControlMetricTokens::new(28.0, 10.0, 5.0, 6.0, 5.0, 14.0);
+        let md = ControlMetricTokens::new(36.0, 14.0, 8.0, 8.0, 6.0, 16.0);
+        let lg = ControlMetricTokens::new(44.0, 18.0, 10.0, 10.0, 8.0, 18.0);
 
         Self {
             spacing: SpacingTokens { s0: 0.0, s1: 4.0, s2: 6.0, s3: 8.0, s4: 12.0, s5: 16.0, s6: 24.0 },
@@ -518,8 +519,8 @@ impl Default for MetricTokens {
 }
 
 impl ControlMetricTokens {
-    pub fn new(height: f32, padding_x: f32, padding_y: f32, gap: f32, radius: f32) -> Self {
-        Self { radius, height, control_height: height, padding_x, padding_y, gap }
+    pub fn new(height: f32, padding_x: f32, padding_y: f32, gap: f32, radius: f32, icon_size: f32) -> Self {
+        Self { radius, height, control_height: height, padding_x, padding_y, gap, icon_size }
     }
 }
 
@@ -550,6 +551,10 @@ impl MetricTokens {
 
     pub fn gap(&self, size: ControlSize) -> f32 {
         self.for_size(size).gap
+    }
+
+    pub fn icon_size(&self, size: ControlSize) -> f32 {
+        self.for_size(size).icon_size
     }
 }
 

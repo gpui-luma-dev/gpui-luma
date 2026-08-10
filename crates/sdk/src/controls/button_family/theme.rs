@@ -161,7 +161,7 @@ pub fn compose_button_family_look(
 
 fn default_button_icon_size(role: ButtonFamilyRole, scale: &StandardBoxScale, typography: &LumaTextStyle) -> f32 {
     if matches!(role, ButtonFamilyRole::Icon) {
-        scale.height * 0.44
+        scale.icon_size
     } else {
         typography.size
     }

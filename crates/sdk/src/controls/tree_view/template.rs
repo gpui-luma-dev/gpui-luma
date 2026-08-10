@@ -7,7 +7,6 @@ use gpui::{
 use lucide_icons::Icon as LucideIcon;
 
 use super::{FlatTreeNode, TreeViewRenderModel, TreeViewTheme, default_tree_view_theme};
-use crate::theme::layout::snap_to_pixel;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
 pub type TreeViewHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -158,9 +157,8 @@ where
         );
 
         let palette = self.theme.resolve_row(node.state.interaction_state(), node.state.selected, node.size);
-        let label_size = palette.typography.size;
-        let icon_size = snap_to_pixel(label_size * 0.85, scale_factor);
-        let chevron_size = snap_to_pixel(label_size * 0.65, scale_factor);
+        let icon_size = scale.icon_size;
+        let chevron_size = scale.chevron_size;
         let left_padding = scale.base_padding_x + (node.depth as f32 * scale.indentation_width);
 
         let height_factor = node.row_height_factor.clamp(0.0, 1.0);

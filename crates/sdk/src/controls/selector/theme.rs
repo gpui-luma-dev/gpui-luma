@@ -205,7 +205,7 @@ pub(crate) fn compose_selector_look(palette: &SelectorPalette, scale: &StandardB
         trigger_padding_y: scale.padding_y,
         trigger_gap: scale.gap,
         trigger_height: scale.height,
-        trigger_icon_size: scale.height / 3.0,
+        trigger_icon_size: scale.icon_size,
         trigger_focus_border: None,
         menu_offset_y: scale.gap * 0.5,
         items_panel: palette.items_panel.clone(),

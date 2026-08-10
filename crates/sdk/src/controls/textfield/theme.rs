@@ -194,7 +194,7 @@ pub fn compose_textfield_look(
         gap: scale.gap,
         radius: scale.radius,
         border_width,
-        icon_size: palette.typography.size + 2.0,
+        icon_size: scale.icon_size,
     }
 }
 
@@ -219,6 +219,6 @@ mod tests {
         assert!((md.typography.size - theme.tokens.typography.text.body.size).abs() < f32::EPSILON);
         assert!(sm.typography.size < md.typography.size);
         assert!(lg.typography.size > md.typography.size);
-        assert!((sm.icon_size - (sm.typography.size + 2.0)).abs() < f32::EPSILON);
+        assert_eq!(sm.icon_size, theme.metrics().control.sm.icon_size);
     }
 }

@@ -57,7 +57,7 @@ pub fn default_selector_items_panel_look(tokens: &ThemeTokens, size: ControlSize
         item_height: metrics.control_height(size) * 0.9,
         item_padding_x: metrics.padding_x(size) * 0.75,
         item_gap: metrics.gap(size),
-        item_icon_size: metrics.control_height(size) * 0.44,
+        item_icon_size: metrics.icon_size(size),
         item_radius: metrics.radius.sm,
     }
 }

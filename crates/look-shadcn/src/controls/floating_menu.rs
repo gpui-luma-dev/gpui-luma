@@ -139,10 +139,7 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
         item_height: metrics.control_height(size) * 0.9,
         item_padding_x: metrics.padding_x(size) * 0.75,
         item_gap: metrics.gap(size),
-        item_icon_size: button_metrics
-            .as_ref()
-            .map(|m| m.icon_size)
-            .unwrap_or_else(|| metrics.control_height(size) * 0.44),
+        item_icon_size: button_metrics.as_ref().map(|m| m.icon_size).unwrap_or_else(|| metrics.icon_size(size)),
         item_radius: metrics.radius.sm,
         disabled_opacity: 0.56,
         submenu_offset_x: metrics.gap(size) * 0.5,

@@ -82,7 +82,11 @@ pub fn selector_look(
         trigger_padding_y: scale.padding_y,
         trigger_gap: scale.gap,
         trigger_height: scale.height,
-        trigger_icon_size: scale.height / 3.0,
+        trigger_icon_size: embedded_stylesheet()
+            .button
+            .metrics_for_size(size)
+            .map(|rule| resolve_button_metrics_rule(rule, &mode.metrics, size).icon_size)
+            .unwrap_or_else(|| mode.metrics.icon_size(size)),
         trigger_focus_border: None,
         menu_offset_y: scale.gap * 0.5,
         items_panel: selector_items_panel_look(mode, theme_mode, size),

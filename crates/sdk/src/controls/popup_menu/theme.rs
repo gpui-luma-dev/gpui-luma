@@ -175,7 +175,7 @@ pub fn compose_popup_menu_look(palette: &PopupMenuPalette, scale: &StandardBoxSc
         trigger_padding_y: scale.padding_y,
         trigger_gap: scale.gap,
         trigger_height: scale.height,
-        trigger_icon_size: scale.height * 0.44,
+        trigger_icon_size: scale.icon_size,
         menu_offset_y: scale.gap * 0.5,
         floating_menu: palette.floating_menu.clone(),
     }

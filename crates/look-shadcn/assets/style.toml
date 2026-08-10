@@ -1187,7 +1187,6 @@ min_width = 180.0
 radius = "radius.lg"
 item_height_factor = 0.9
 item_padding_x_factor = 0.75
-item_icon_size_factor = 0.44
 item_radius = "radius.sm"
 submenu_offset_x_factor = 0.5
 

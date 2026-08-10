@@ -139,7 +139,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
         let mut trigger_look = model.trigger_look;
         if let Some(typography) = model.trigger_typography_override {
             trigger_look.trigger_typography = typography;
-            trigger_look.trigger_icon_size = typography.size + 2.0;
+            trigger_look.trigger_icon_size = typography.size;
         }
         let border = button_family_effective_border(trigger_look.trigger_border);
         let label_color = if model.trigger_label_is_placeholder {

@@ -327,7 +327,8 @@ mod tests {
             ..Default::default()
         };
 
-        let scale = StandardBoxScale { height: 32.0, padding_x: 12.0, padding_y: 6.0, gap: 6.0, radius: 8.0 };
+        let scale =
+            StandardBoxScale { height: 32.0, padding_x: 12.0, padding_y: 6.0, gap: 6.0, radius: 8.0, icon_size: 14.0 };
         let look = resolve_look(&template.theme, &model, &scale);
         assert_eq!(look.background, lime_look().background);
     }
@@ -341,7 +342,8 @@ mod tests {
             typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
             font_family: "test".into(),
         };
-        let scale = StandardBoxScale { height: 36.0, padding_x: 14.0, padding_y: 8.0, gap: 8.0, radius: 6.0 };
+        let scale =
+            StandardBoxScale { height: 36.0, padding_x: 14.0, padding_y: 8.0, gap: 8.0, radius: 6.0, icon_size: 16.0 };
 
         let look = compose_button_family_look(&palette, ButtonFamilyRole::Text, &scale, 999.0);
         assert_eq!(look.height, 36.0);

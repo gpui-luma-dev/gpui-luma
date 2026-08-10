@@ -49,7 +49,7 @@ pub fn inspect_floating_menu_metrics(
     theme_mode: ThemeMode,
     size: ControlSize,
 ) -> FloatingMenuInspectMetrics {
-    use crate::metrics::{derived_metric, scaffold_control_metric, spacing_control_metric};
+    use crate::metrics::{control_size_key, derived_metric, scaffold_control_metric, spacing_control_metric};
     use gpui_luma_look_shadcn::catalog::SpacingField;
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
@@ -63,7 +63,12 @@ pub fn inspect_floating_menu_metrics(
         item_height: derived_metric("control_height × 0.9", look.item_height),
         item_padding_x: derived_metric("padding_x × 0.75", look.item_padding_x),
         item_gap: spacing_control_metric(catalog, size, SpacingField::Gap, look.item_gap),
-        item_icon_size: derived_metric("control_height × 0.44", look.item_icon_size),
+        item_icon_size: gpui_luma_look_shadcn::ResolvedMetric {
+            value_px: look.item_icon_size,
+            source: gpui_luma_look_shadcn::MetricSource::Constant {
+                label: format!("style.toml [button.metrics.{}].icon_size", control_size_key(size)),
+            },
+        },
         item_radius: scaffold_control_metric("sm", "radius", look.item_radius),
         submenu_offset_x: derived_metric("gap × 0.5", look.submenu_offset_x),
     }

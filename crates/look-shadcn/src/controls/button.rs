@@ -184,6 +184,7 @@ pub fn button_box_scale(
         padding_y: fallback.padding_y,
         gap: fallback.gap,
         radius: metrics.corner_radius,
+        icon_size: snap_to_pixel(metrics.icon_size, scale_factor),
     }
 }
 

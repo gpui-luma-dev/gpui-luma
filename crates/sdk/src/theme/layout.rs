@@ -12,6 +12,7 @@ pub struct StandardBoxScale {
     pub padding_y: f32,
     pub gap: f32,
     pub radius: f32,
+    pub icon_size: f32,
 }
 
 impl StandardBoxScale {
@@ -24,6 +25,7 @@ impl StandardBoxScale {
             padding_y: snap_to_pixel(metrics.padding_y(size), scale_factor),
             gap: snap_to_pixel(metrics.gap(size), scale_factor),
             radius: metrics.radius(size),
+            icon_size: snap_to_pixel(metrics.icon_size(size), scale_factor),
         }
     }
 }

@@ -50,6 +50,7 @@ pub fn inspect_textfield_color_palette(
 #[derive(Clone, Debug)]
 pub struct TextFieldInspectMetrics {
     pub min_height: ResolvedMetric,
+    pub icon_size: ResolvedMetric,
     pub padding_x: ResolvedMetric,
     pub padding_y: ResolvedMetric,
     pub radius: ResolvedMetric,
@@ -78,6 +79,7 @@ pub fn inspect_textfield_metrics(
 
     TextFieldInspectMetrics {
         min_height: scaffold_control_metric(control_size_key(size), "control_height", scale.height),
+        icon_size: scaffold_control_metric(control_size_key(size), "icon_size", scale.icon_size),
         padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, scale.padding_x),
         padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, scale.padding_y),
         radius: radius_metric(catalog, size, scale.radius),

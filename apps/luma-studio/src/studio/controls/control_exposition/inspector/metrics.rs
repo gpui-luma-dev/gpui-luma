@@ -534,6 +534,7 @@ fn selector_metrics_layout_section(
     let trigger_box = InspectBoxModelSnapshot::from_button_metrics(&metrics.trigger);
     let rows = metric_properties(&[
         ("trigger height", &metrics.trigger.height),
+        ("trigger icon size", &metrics.trigger.icon_size),
         ("trigger padding x", &metrics.trigger.padding_x),
         ("trigger padding y", &metrics.trigger.padding_y),
         ("trigger radius", &metrics.trigger.radius),
@@ -562,6 +563,7 @@ fn textfield_and_menu_metrics_layout_section(
     let box_model = InspectBoxModelSnapshot::from_textfield_metrics(textfield);
     let rows = metric_properties(&[
         ("textfield min height", &textfield.min_height),
+        ("textfield icon size", &textfield.icon_size),
         ("textfield padding x", &textfield.padding_x),
         ("textfield padding y", &textfield.padding_y),
         ("textfield radius", &textfield.radius),

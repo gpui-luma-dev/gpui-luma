@@ -17,7 +17,7 @@ use crate::controls::selector_panel::{
     SelectorItem, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
     default_selector_items_template,
 };
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, snap_to_pixel};
 
 use super::theme::{SelectorLook, SelectorTheme, default_selector_theme};
 
@@ -228,6 +228,7 @@ where
         } = handlers;
         let scale_factor = window.scale_factor();
         let look = self.resolve_look(model, window, cx);
+        let trigger_icon_size = snap_to_pixel(look.trigger_icon_size, scale_factor);
         let border = button_family_effective_border(look.trigger_border);
         let trigger_content = render_item_content(model, &look, cx);
         let mut root = div()
@@ -266,17 +267,15 @@ where
                     .font_weight(look.trigger_typography.weight)
                     .child(trigger_content),
             )
-            .child(div().flex().items_center().justify_center().flex_shrink_0().text_color(look.trigger_icon).child(
-                lucide_icon(
-                    if model.open {
-                        LucideIcon::ChevronUp
-                    } else {
-                        LucideIcon::ChevronDown
-                    },
-                    look.trigger_icon,
-                    look.trigger_icon_size,
-                ),
-            ));
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .flex_shrink_0()
+                    .text_color(look.trigger_icon)
+                    .child(lucide_icon(LucideIcon::ChevronsUpDown, look.trigger_icon, trigger_icon_size)),
+            );
 
         if border.a > 0.0 {
             root = root.border_1().border_color(border);
