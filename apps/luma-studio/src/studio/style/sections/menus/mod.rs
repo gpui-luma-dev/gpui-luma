@@ -269,6 +269,8 @@ fn render_menu_trigger_state_cell(
         }),
         items: &items,
         open: false,
+        presence: gpui_luma::OverlayPresence::new(false, false),
+        highlight: None,
         trigger_bounds: None,
         placement: PopupMenuPlacement::BelowStart,
         trigger_style,
@@ -320,6 +322,8 @@ fn render_menu_trigger_size_radius_cell(
         }),
         items: &items,
         open: false,
+        presence: gpui_luma::OverlayPresence::new(false, false),
+        highlight: None,
         trigger_bounds: None,
         placement: PopupMenuPlacement::BelowStart,
         trigger_style,
@@ -451,6 +455,7 @@ fn popup_menu_preview_handlers(root_count: usize, submenu_click_count: usize) ->
         trigger_mouse_up_out: Box::new(input_noop_mouse_up),
         root_mouse_down_out: Box::new(input_noop_mouse_down),
         item_hovers: (0..root_count).map(|_| Box::new(input_noop_hover) as _).collect(),
+        submenu_hovers: Vec::new(),
         item_clicks: (0..click_count).map(|_| Box::new(input_noop_click) as _).collect(),
     }
 }

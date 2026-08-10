@@ -82,6 +82,23 @@ impl FloatingMenuState {
         changed
     }
 
+    pub fn hover_submenu_item(&mut self, items: &[MenuItem], parent: usize, child: usize) -> bool {
+        let Some(item) = items.get(parent).and_then(|item| item.submenu_items().get(child)) else {
+            return false;
+        };
+        if !item.is_enabled() || !item.submenu_items().is_empty() {
+            return false;
+        }
+
+        let next_path = Some(MenuPath::Submenu { parent, child });
+        let changed = self.open_submenu != Some(parent) || self.active_path != next_path;
+        if changed {
+            self.open_submenu = Some(parent);
+            self.active_path = next_path;
+        }
+        changed
+    }
+
     pub fn select_at_path(&self, items: &[MenuItem], path: &[usize]) -> Option<(SharedString, SharedString)> {
         let item = match path {
             [index] => items.get(*index),

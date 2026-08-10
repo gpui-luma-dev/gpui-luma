@@ -3,12 +3,16 @@ use gpui::{
     MouseUpEvent, Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
 };
 use lucide_icons::Icon as LucideIcon;
+use std::time::Duration;
 
 use super::{PopupMenuBuilder, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, MenuPath};
 use crate::controls::popup_menu::model::PopupMenuModel;
 use crate::controls::floating_menu::{FloatingMenuActivateResult, FloatingMenuState, FloatingMenuStepDirection};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::menu_navigation::MenuNavigator;
+use crate::controls::overlay_presence::OverlayPresence;
+use crate::animation::VisualTransition;
+use crate::controls::floating_menu::FloatingMenuHighlight;
 use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
 use crate::keyhandling::{
@@ -30,8 +34,12 @@ pub enum PopupMenuEvent {
 pub struct PopupMenu {
     model: PopupMenuModel,
     open: bool,
+    presence: OverlayPresence,
     trigger_bounds: Option<Bounds<Pixels>>,
     menu_state: FloatingMenuState,
+    highlight_from: Option<MenuPath>,
+    highlight_to: Option<MenuPath>,
+    highlight_transition: VisualTransition,
     interaction: ControlInteraction,
     emitted_focused: bool,
     focus_in_subscription: Option<Subscription>,
@@ -53,8 +61,12 @@ impl PopupMenu {
         Self {
             model: builder.model,
             open: false,
+            presence: OverlayPresence::new(false, true),
             trigger_bounds: None,
             menu_state: FloatingMenuState::default(),
+            highlight_from: None,
+            highlight_to: None,
+            highlight_transition: VisualTransition::new(1.0, Duration::from_millis(180)),
             interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx),
             emitted_focused: false,
             focus_in_subscription: None,
@@ -149,6 +161,7 @@ impl PopupMenu {
             content: self.model.content.clone(),
             items: &self.model.items,
             open: self.open,
+            presence: self.presence,
             trigger_bounds: self.trigger_bounds,
             placement: self.model.placement,
             trigger_style: self.model.trigger_style,
@@ -161,9 +174,41 @@ impl PopupMenu {
             trigger_radius_override: None,
             open_submenu: self.menu_state.open_submenu(),
             active_path: self.menu_state.active_path(),
+            highlight: self.highlight_model(),
             enabled: self.model.enabled,
             focus: ControlFocusState::from_focus_handle(self.model.enabled, self.interaction.focus_handle(), window),
             state: self.interaction.render_state(self.model.enabled, window),
+        }
+    }
+
+    fn highlight_model(&self) -> Option<FloatingMenuHighlight> {
+        Some(FloatingMenuHighlight {
+            from: self.highlight_from?,
+            to: self.highlight_to?,
+            progress: self.highlight_transition.progress(),
+        })
+    }
+
+    fn sync_highlight(&mut self, previous: Option<MenuPath>) {
+        let next = self.menu_state.active_path();
+        if previous == next {
+            return;
+        }
+
+        let same_surface = matches!(
+            (previous, next),
+            (Some(MenuPath::Root(_)), Some(MenuPath::Root(_)))
+                | (Some(MenuPath::Submenu { .. }), Some(MenuPath::Submenu { .. }))
+        );
+        if same_surface {
+            self.highlight_from = previous;
+            self.highlight_to = next;
+            self.highlight_transition = VisualTransition::new(0.0, Duration::from_millis(180));
+            self.highlight_transition.set_target(1.0);
+        } else {
+            self.highlight_from = next;
+            self.highlight_to = next;
+            self.highlight_transition.snap_to(1.0);
         }
     }
 
@@ -185,6 +230,29 @@ impl PopupMenu {
                     })) as _
                 })
                 .collect(),
+            submenu_hovers: self
+                .model
+                .items
+                .iter()
+                .enumerate()
+                .map(|(parent, item)| {
+                    item.submenu_items()
+                        .iter()
+                        .enumerate()
+                        .map(|(child, _)| {
+                            Box::new(cx.listener(move |this, hovered, _window, cx| {
+                                if *hovered {
+                                    let previous = this.menu_state.active_path();
+                                    if this.menu_state.hover_submenu_item(&this.model.items, parent, child) {
+                                        this.sync_highlight(previous);
+                                        cx.notify();
+                                    }
+                                }
+                            })) as _
+                        })
+                        .collect()
+                })
+                .collect(),
             item_clicks: item_paths
                 .into_iter()
                 .map(|path| {
@@ -198,8 +266,11 @@ impl PopupMenu {
 
     fn close_menu(&mut self, cx: &mut Context<Self>) -> bool {
         let was_open = self.open;
+        let previous = self.menu_state.active_path();
         self.open = false;
+        self.presence.set_open(false);
         self.menu_state.clear();
+        self.sync_highlight(previous);
         if was_open {
             cx.emit(PopupMenuEvent::OpenChanged { open: false });
         }
@@ -223,8 +294,11 @@ impl PopupMenu {
 
     fn open_menu_with(&mut self, active_path: Option<MenuPath>, cx: &mut Context<Self>) -> bool {
         let was_open = self.open;
+        let previous = self.menu_state.active_path();
         let changed = !self.open || self.menu_state.open_with(active_path);
         self.open = true;
+        self.presence.set_open(true);
+        self.sync_highlight(previous);
         if !was_open {
             cx.emit(PopupMenuEvent::OpenChanged { open: true });
         }
@@ -288,7 +362,9 @@ impl PopupMenu {
             return;
         }
 
+        let previous = self.menu_state.active_path();
         if self.menu_state.hover_root_item(&self.model.items, index) {
+            self.sync_highlight(previous);
             cx.notify();
         }
     }
@@ -341,7 +417,9 @@ impl PopupMenu {
             return;
         }
 
+        let previous = self.menu_state.active_path();
         if self.menu_state.step(&self.model.items, direction) {
+            self.sync_highlight(previous);
             cx.notify();
         }
     }
@@ -351,7 +429,9 @@ impl PopupMenu {
             return;
         }
 
+        let previous = self.menu_state.active_path();
         if self.menu_state.move_to_boundary(&self.model.items, first) {
+            self.sync_highlight(previous);
             cx.notify();
         }
     }
@@ -361,7 +441,9 @@ impl PopupMenu {
             return;
         }
 
+        let previous = self.menu_state.active_path();
         if self.menu_state.open_active_submenu(&self.model.items) {
+            self.sync_highlight(previous);
             cx.notify();
         }
     }
@@ -371,7 +453,9 @@ impl PopupMenu {
             return;
         }
 
+        let previous = self.menu_state.active_path();
         if self.menu_state.close_active_submenu() {
+            self.sync_highlight(previous);
             cx.notify();
         }
     }
@@ -391,9 +475,13 @@ impl PopupMenu {
             return;
         }
 
+        let previous = self.menu_state.active_path();
         match self.menu_state.activate(&self.model.items) {
             FloatingMenuActivateResult::None => {}
-            FloatingMenuActivateResult::OpenedSubmenu => cx.notify(),
+            FloatingMenuActivateResult::OpenedSubmenu => {
+                self.sync_highlight(previous);
+                cx.notify();
+            }
             FloatingMenuActivateResult::Select { item_id, label } => {
                 self.close_menu(cx);
                 cx.emit(PopupMenuEvent::Select { item_id, label });
@@ -497,6 +585,14 @@ impl Render for PopupMenu {
         if self.focus_out_subscription.is_none() {
             let focus_handle = self.interaction.focus_handle().clone();
             self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
+        }
+
+        if self.presence.sync() {
+            self.presence.schedule_frame(window, cx);
+        }
+
+        if self.highlight_transition.sync() {
+            self.highlight_transition.schedule_frame(window, cx);
         }
 
         let model = self.render_model(window);

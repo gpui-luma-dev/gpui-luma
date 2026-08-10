@@ -8,7 +8,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use super::{PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTriggerModel};
 use crate::controls::button_family::button_family_effective_border;
-use crate::controls::floating_menu::render_floating_menu;
+use crate::controls::floating_menu::render_floating_menu_with_submenu_hovers;
 use crate::controls::popup_menu::{PopupMenuLook, PopupMenuTheme, PopupMenuTriggerMetrics, default_popup_menu_theme};
 
 pub type PopupMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
@@ -26,6 +26,7 @@ pub struct PopupMenuTemplateHandlers {
     pub trigger_mouse_up_out: PopupMenuMouseUpHandler,
     pub root_mouse_down_out: PopupMenuMouseDownHandler,
     pub item_hovers: Vec<PopupMenuHoverHandler>,
+    pub submenu_hovers: Vec<Vec<PopupMenuHoverHandler>>,
     pub item_clicks: Vec<PopupMenuClickHandler>,
 }
 
@@ -137,6 +138,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             trigger_mouse_up_out,
             root_mouse_down_out,
             item_hovers,
+            submenu_hovers,
             item_clicks,
         } = handlers;
         let scale_factor = window.scale_factor();
@@ -228,7 +230,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             .on_mouse_down_out(root_mouse_down_out)
             .child(trigger);
 
-        if model.open {
+        if model.presence.should_paint() {
             let placement = resolve_popup_menu_placement(
                 model.trigger_bounds,
                 model.placement,
@@ -236,20 +238,28 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 model.items.len(),
                 window.viewport_size(),
             );
-            let menu = render_floating_menu(
+            let content_size = estimated_menu_size(
+                &look,
+                model.items.len(),
+                model.trigger_bounds.map(|bounds| bounds.size.width).unwrap_or(px(look.trigger_height)),
+            );
+            let offset = model.presence.adjust_offset(placement.offset, content_size);
+            let menu = div().opacity(model.presence.opacity()).child(render_floating_menu_with_submenu_hovers(
                 model.id,
                 model.items,
                 model.open_submenu,
                 model.active_path,
                 look.floating_menu,
                 item_hovers,
+                submenu_hovers,
                 item_clicks,
-            );
+                model.highlight,
+            ));
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
                 .anchor(placement.anchor)
                 .position(placement.position)
-                .offset(placement.offset)
+                .offset(offset)
                 .child(menu);
 
             root = root.child(deferred(overlay).with_priority(1));
@@ -264,6 +274,18 @@ struct ResolvedPopupMenuPlacement {
     anchor: Anchor,
     position: Point<Pixels>,
     offset: Point<Pixels>,
+}
+
+fn estimated_menu_size(look: &PopupMenuLook, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
+    let menu_min_width = px(look.floating_menu.min_width);
+    Size {
+        width: if trigger_width > menu_min_width {
+            trigger_width
+        } else {
+            menu_min_width
+        },
+        height: px(look.floating_menu.padding * 2.0) + px(look.floating_menu.item_height) * item_count as f32,
+    }
 }
 
 fn resolve_popup_menu_placement(
@@ -311,18 +333,6 @@ fn resolve_popup_menu_placement(
             position: trigger_bounds.center(),
             offset: point(-(menu_size.width * 0.5), -(menu_size.height * 0.5)),
         },
-    }
-}
-
-fn estimated_menu_size(look: &PopupMenuLook, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
-    let menu_min_width = px(look.floating_menu.min_width);
-    Size {
-        width: if trigger_width > menu_min_width {
-            trigger_width
-        } else {
-            menu_min_width
-        },
-        height: px(look.floating_menu.padding * 2.0) + px(look.floating_menu.item_height) * item_count,
     }
 }
 

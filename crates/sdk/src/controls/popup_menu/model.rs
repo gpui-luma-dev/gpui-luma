@@ -6,6 +6,8 @@ use lucide_icons::Icon as LucideIcon;
 use super::{ControlFocusState, MenuPath, PopupMenu, PopupMenuState, PopupMenuTemplate, default_popup_menu_template};
 use super::template::modified_popup_menu_template;
 use crate::controls::menu_item::MenuItem;
+use crate::controls::floating_menu::FloatingMenuHighlight;
+use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::presenter::{ControlPresenter, HasPresenter};
 use crate::theme::ControlSize;
 
@@ -73,6 +75,7 @@ pub struct PopupMenuRenderModel<'a> {
     pub content: ControlPresenter<PopupMenuTriggerModel>,
     pub items: &'a [MenuItem],
     pub open: bool,
+    pub presence: OverlayPresence,
     pub trigger_bounds: Option<Bounds<Pixels>>,
     pub placement: PopupMenuPlacement,
     pub trigger_style: PopupMenuTriggerStyle,
@@ -85,6 +88,7 @@ pub struct PopupMenuRenderModel<'a> {
     pub trigger_radius_override: Option<f32>,
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
+    pub highlight: Option<FloatingMenuHighlight>,
     pub enabled: bool,
     pub focus: ControlFocusState,
     pub state: PopupMenuState,
