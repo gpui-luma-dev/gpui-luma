@@ -7,6 +7,7 @@ use crate::controls::selector_panel::{SelectorPanelClickHandler, SelectorPanelHo
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::textfield::{TextFieldState, TextFieldVariant};
 use crate::theme::observe_theme_revision;
+use crate::controls::overlay_presence::OverlayPresence;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::item_template::ComboBoxItemTemplate;
@@ -43,6 +44,7 @@ pub struct ComboBoxControl {
     last_keyboard_event: SharedString,
     committed_selection: Option<usize>,
     open_popup_on_next_focus: bool,
+    presence: OverlayPresence,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -100,6 +102,7 @@ impl ComboBoxControl {
             last_keyboard_event: SharedString::from("none"),
             committed_selection: None,
             open_popup_on_next_focus: false,
+            presence: OverlayPresence::new(false, true),
             _subscriptions: subscriptions,
         }
     }
@@ -539,6 +542,8 @@ impl ComboBoxControl {
             return false;
         }
 
+        self.presence.set_open_with_animation(self.behavior.state.open, self.behavior.state.open);
+
         cx.emit(ComboBoxEvent::OpenChanged { open: self.behavior.state.open });
         if dismissed && !self.behavior.state.open {
             cx.emit(ComboBoxEvent::Dismiss);
@@ -558,6 +563,8 @@ impl ComboBoxControl {
 
 impl Render for ComboBoxControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.presence.sync();
+        self.presence.schedule_frame(window, cx);
         let autocomplete_look = self.model.autocomplete_theme.resolve(self.model.size);
         let look = (self.model.popup_look_provider)(self.model.size);
         let selected_label = self
@@ -626,7 +633,7 @@ impl Render for ComboBoxControl {
             self.last_keyboard_event
         ));
 
-        let popup_content = if self.model.enabled && self.behavior.state.open && !visible_indices.is_empty() {
+        let popup_content = if self.model.enabled && self.presence.should_paint() && !visible_indices.is_empty() {
             let menu_id = SharedString::from("combobox-menu");
             let row_height = px(look.item_height);
             let content_top_padding = px(look.padding);
@@ -649,7 +656,7 @@ impl Render for ComboBoxControl {
                     visible_indices: &visible_indices,
                     selected_source_index: self.behavior.state.selected_item,
                     active_visible_index: self.behavior.state.highlighted_filtered,
-                    open: self.behavior.state.open,
+                    open: self.presence.should_paint(),
                     enabled: self.model.enabled,
                     item_template: self.model.item_template.as_ref(),
                     look: look.clone(),
@@ -665,7 +672,7 @@ impl Render for ComboBoxControl {
                     visible_indices: &visible_indices,
                     selected_source_index: self.behavior.state.selected_item,
                     active_visible_index: self.behavior.state.highlighted_filtered,
-                    open: self.behavior.state.open,
+                    open: self.presence.should_paint(),
                     enabled: self.model.enabled,
                     item_template: self.model.item_template.as_ref(),
                     popup_bounds: self.trigger_bounds,
@@ -703,6 +710,7 @@ impl Render for ComboBoxControl {
             popup_bounds: self.trigger_bounds,
             popup_look: look,
             popup_content,
+            presence: self.presence,
         };
 
         self.model.template.render(render_model, handlers, window, cx)

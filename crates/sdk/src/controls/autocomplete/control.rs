@@ -8,6 +8,7 @@ use crate::controls::scrollbar::ScrollbarEvent;
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::model::AutocompleteTextBoxBuilder;
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
+use crate::controls::overlay_presence::OverlayPresence;
 use super::template::{
     AutocompleteItemsRenderModel, AutocompleteItemsTemplate, AutocompleteItemsTemplateHandlers,
     AutocompleteTextBoxRenderModel, AutocompleteTextBoxTemplate, AutocompleteTextBoxTemplateHandlers,
@@ -34,6 +35,7 @@ pub struct AutocompleteTextBoxControl {
     model: super::model::AutocompleteTextBoxModel,
     behavior: SelectionBehavior,
     trigger_bounds: Option<Bounds<Pixels>>,
+    presence: OverlayPresence,
     last_event: SharedString,
     last_keyboard_event: SharedString,
     _subscriptions: Vec<Subscription>,
@@ -88,6 +90,7 @@ impl AutocompleteTextBoxControl {
             model,
             behavior: SelectionBehavior::new(),
             trigger_bounds: None,
+            presence: OverlayPresence::new(false, true),
             last_event: SharedString::from("none"),
             last_keyboard_event: SharedString::from("none"),
             _subscriptions: subscriptions,
@@ -345,6 +348,8 @@ impl AutocompleteTextBoxControl {
             return false;
         }
 
+        self.presence.set_open_with_animation(self.behavior.state.open, self.behavior.state.open);
+
         cx.emit(AutocompleteTextBoxEvent::OpenChanged { open: self.behavior.state.open });
         if dismissed && !self.behavior.state.open {
             cx.emit(AutocompleteTextBoxEvent::Dismiss);
@@ -364,6 +369,8 @@ impl AutocompleteTextBoxControl {
 
 impl Render for AutocompleteTextBoxControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.presence.sync();
+        self.presence.schedule_frame(window, cx);
         let autocomplete_look = self.model.autocomplete_theme.resolve(self.model.size);
         let look = (self.model.popup_look_provider)(self.model.size);
         let selected_label = self
@@ -436,7 +443,7 @@ impl Render for AutocompleteTextBoxControl {
             trigger_width.max(max_label_width + horizontal_chrome)
         };
 
-        let popup_content = if self.model.enabled && self.behavior.state.open && !menu_items.is_empty() {
+        let popup_content = if self.model.enabled && self.presence.should_paint() && !menu_items.is_empty() {
             let menu_id = SharedString::from("autocomplete-menu");
             let row_height = px(look.item_height);
             let content_top_padding = px(look.padding);
@@ -482,6 +489,7 @@ impl Render for AutocompleteTextBoxControl {
             popup_bounds: self.trigger_bounds,
             popup_look: look,
             popup_content,
+            presence: self.presence,
         };
 
         self.model.template.render(render_model, handlers, window, cx)

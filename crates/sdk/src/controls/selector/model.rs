@@ -13,6 +13,7 @@ pub use crate::controls::selector_panel::{
 };
 use crate::controls::selector_panel::items_template_with_modifier;
 use crate::theme::ControlSize;
+use crate::controls::overlay_presence::OverlayPresence;
 
 /// Trigger chrome aligned with command button variants (read-only select).
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -59,6 +60,7 @@ where
     pub selected_index: Option<usize>,
     pub items: &'a [T],
     pub open: bool,
+    pub presence: OverlayPresence,
     pub trigger_bounds: Option<Bounds<Pixels>>,
     pub placement: SelectorPlacement,
     pub active_path: Option<SelectorPath>,

@@ -307,7 +307,7 @@ where
             root = div().id(format!("{}-elevation", model.id)).relative().w_full().p(px(shadow_extent)).child(root);
         }
 
-        if model.open {
+        if model.presence.should_paint() {
             let popup_metrics = resolve_selector_popup_metrics(
                 model.trigger_bounds,
                 model.placement,
@@ -363,7 +363,7 @@ where
                 .anchor(popup_metrics.anchor)
                 .position(popup_metrics.position)
                 .offset(popup_metrics.offset)
-                .child(menu);
+                .child(div().opacity(model.presence.opacity()).child(menu));
 
             root = root.child(deferred(overlay).with_priority(1));
         }

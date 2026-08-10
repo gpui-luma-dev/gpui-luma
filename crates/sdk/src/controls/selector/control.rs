@@ -17,6 +17,7 @@ use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
 use crate::theme::observe_theme_revision;
+use crate::controls::overlay_presence::OverlayPresence;
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
@@ -33,6 +34,7 @@ where
 {
     model: SelectorModel<T>,
     open: bool,
+    presence: OverlayPresence,
     trigger_bounds: Option<Bounds<Pixels>>,
     selected_index: Option<usize>,
     active_index: Option<usize>,
@@ -76,6 +78,7 @@ where
         Self {
             model: builder.model,
             open: false,
+            presence: OverlayPresence::new(false, true),
             trigger_bounds: None,
             selected_index,
             active_index: None,
@@ -184,6 +187,7 @@ where
             selected_index: self.selected_index,
             items: &self.model.items,
             open: self.open,
+            presence: self.presence,
             trigger_bounds: self.trigger_bounds,
             placement: self.model.placement,
             active_path: self.active_index.map(crate::controls::selector_panel::SelectorPath::Item),
@@ -294,6 +298,7 @@ where
 
     fn close_menu(&mut self) {
         self.open = false;
+        self.presence.set_open_with_animation(false, false);
         self.active_index = None;
     }
 
@@ -315,6 +320,7 @@ where
         let changed = !self.open || self.active_index != next_active;
         let open_changed = !self.open;
         self.open = true;
+        self.presence.set_open_with_animation(true, true);
         self.active_index = next_active;
         if open_changed {
             cx.emit(SelectorEvent::OpenChanged { open: true });
@@ -567,6 +573,8 @@ where
     T: SelectorItemLike + 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.presence.sync();
+        self.presence.schedule_frame(window, cx);
         if self.focus_in_subscription.is_none() {
             let focus_handle = self.interaction.focus_handle().clone();
             self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));

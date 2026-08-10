@@ -62,6 +62,11 @@ impl OverlayPresence {
         }
     }
 
+    pub fn set_open_with_animation(&mut self, open: bool, animated: bool) {
+        self.set_animated(animated);
+        self.set_open(open);
+    }
+
     pub fn snap_open(&mut self, open: bool) {
         self.logical_open = open;
         self.transition.snap_to(if open { 1.0 } else { 0.0 });

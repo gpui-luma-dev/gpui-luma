@@ -9,6 +9,7 @@ use crate::controls::selector::SelectorVisualState;
 use crate::controls::interaction::ControlInteraction;
 
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
+use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::textfield::{TextFieldState, TextFieldVariant};
 use crate::theme::observe_theme_revision;
@@ -44,6 +45,7 @@ pub struct SearchSelectorControl {
     behavior: SelectionBehavior,
     interaction: ControlInteraction,
     trigger_bounds: Option<Bounds<Pixels>>,
+    presence: OverlayPresence,
     last_event: SharedString,
     last_keyboard_event: SharedString,
     committed_selection: Option<usize>,
@@ -113,6 +115,7 @@ impl SearchSelectorControl {
             behavior: SelectionBehavior::new(),
             interaction: ControlInteraction::new(enabled, cx),
             trigger_bounds: None,
+            presence: OverlayPresence::new(false, true),
             last_event: SharedString::from("none"),
             last_keyboard_event: SharedString::from("none"),
             committed_selection,
@@ -581,6 +584,8 @@ impl SearchSelectorControl {
             return false;
         }
 
+        self.presence.set_open_with_animation(self.behavior.state.open, self.behavior.state.open);
+
         cx.emit(SearchSelectorEvent::OpenChanged { open: self.behavior.state.open });
         if dismissed && !self.behavior.state.open {
             cx.emit(SearchSelectorEvent::Dismiss);
@@ -611,6 +616,8 @@ impl Focusable for SearchSelectorControl {
 
 impl Render for SearchSelectorControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.presence.sync();
+        self.presence.schedule_frame(window, cx);
         self.sync_disabled_state(cx);
 
         let trigger_focused = self.interaction.focus_handle().is_focused(window);
@@ -680,7 +687,7 @@ impl Render for SearchSelectorControl {
             self.last_keyboard_event
         ));
 
-        let popup_content = if self.model.enabled && self.behavior.state.open {
+        let popup_content = if self.model.enabled && self.presence.should_paint() {
             let list_id = SharedString::from("search-selector-menu");
             let row_height = px(look.item_height);
             let content_top_padding = px(look.padding);
@@ -728,7 +735,7 @@ impl Render for SearchSelectorControl {
                             visible_indices: &visible_indices,
                             selected_source_index: self.behavior.state.selected_item,
                             active_visible_index: self.behavior.state.highlighted_filtered,
-                            open: self.behavior.state.open,
+                            open: self.presence.should_paint(),
                             enabled: self.model.enabled,
                             item_template: self.model.item_template.as_ref(),
                             look: look.clone(),
@@ -746,7 +753,7 @@ impl Render for SearchSelectorControl {
                     visible_indices: &visible_indices,
                     selected_source_index: self.behavior.state.selected_item,
                     active_visible_index: self.behavior.state.highlighted_filtered,
-                    open: self.behavior.state.open,
+                    open: self.presence.should_paint(),
                     enabled: self.model.enabled,
                     item_template: self.model.item_template.as_ref(),
                     popup_bounds: self.trigger_bounds,
@@ -812,6 +819,7 @@ impl Render for SearchSelectorControl {
             status_color: autocomplete_look.status_color,
             muted_text_color: autocomplete_look.muted_text_color,
             popup_content,
+            presence: self.presence,
         };
 
         div()

@@ -22,6 +22,7 @@ use gpui_luma::controls::selector::{
     ControlFocusState, SelectorItem, SelectorPath, SelectorPlacement, SelectorRenderModel, SelectorTemplateHandlers,
     SelectorVisualState,
 };
+use gpui_luma::controls::overlay_presence::OverlayPresence;
 use gpui_luma::controls::selector_panel::{
     SelectorItem as SelectorPanelItem, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplateHandlers,
     SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_template,
@@ -466,6 +467,7 @@ fn render_selector_autocomplete_trigger(
         popup_bounds: None,
         popup_look,
         popup_content: None,
+        presence: OverlayPresence::new(state.selector_open, true),
     };
 
     div()
@@ -502,6 +504,7 @@ fn render_selector_combobox_trigger(
     let popup_look = look.selector_items_panel_look(size);
     let popup_bounds = (state.id == "pressed" || state.selector_open)
         .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(SELECTOR_TRIGGER_WIDTH), px(32.0))));
+    let popup_open = popup_bounds.is_some();
 
     let model = ComboBoxRenderModel {
         textfield: render_selector_preview_textfield(
@@ -530,6 +533,7 @@ fn render_selector_combobox_trigger(
         popup_bounds,
         popup_look,
         popup_content: None,
+        presence: OverlayPresence::new(popup_open, true),
     };
 
     div()
@@ -601,6 +605,7 @@ fn render_selector_search_selector_trigger(
         status_color: look.chrome().muted_text,
         muted_text_color: look.chrome().muted_text,
         popup_content: None,
+        presence: OverlayPresence::new(state.selector_open, true),
     };
 
     div()
@@ -654,6 +659,7 @@ fn render_selector_selector_trigger(
             selected: state.selector_selected,
             invalid: state.selector_state.invalid,
         },
+        presence: OverlayPresence::new(false, true),
     };
 
     selector_template

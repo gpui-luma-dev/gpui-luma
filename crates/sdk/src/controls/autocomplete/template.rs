@@ -9,6 +9,7 @@ use crate::controls::icon::lucide_icon;
 use crate::controls::selector_panel::{
     SelectorItem, SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler,
 };
+use crate::controls::overlay_presence::OverlayPresence;
 use crate::theme::LumaTypography;
 
 pub type AutocompleteTextBoxKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
@@ -53,6 +54,7 @@ pub struct AutocompleteTextBoxRenderModel {
     pub popup_bounds: Option<Bounds<Pixels>>,
     pub popup_look: SelectorItemsPanelLook,
     pub popup_content: Option<AnyElement>,
+    pub presence: OverlayPresence,
 }
 
 pub trait AutocompleteTextBoxTemplate: Send + Sync {
@@ -241,7 +243,7 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
                                         .shadow(model.popup_look.shadow.clone())
                                         .overflow_hidden()
                                         .occlude()
-                                        .child(popup_content),
+                                        .child(div().opacity(model.presence.opacity()).child(popup_content)),
                                 ),
                         )
                         .with_priority(1),

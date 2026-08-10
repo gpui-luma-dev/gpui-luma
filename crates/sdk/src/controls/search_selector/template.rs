@@ -10,6 +10,7 @@ use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::icon::lucide_icon;
 use crate::controls::selector::SelectorLook;
 use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
+use crate::controls::overlay_presence::OverlayPresence;
 
 use super::behavior::SelectionItem;
 use super::item_template::{SearchSelectorItemRenderModel, SearchSelectorItemTemplate};
@@ -76,6 +77,7 @@ pub struct SearchSelectorRenderModel {
     pub status_color: Hsla,
     pub muted_text_color: Hsla,
     pub popup_content: Option<AnyElement>,
+    pub presence: OverlayPresence,
 }
 
 pub trait SearchSelectorTemplate: Send + Sync {
@@ -228,7 +230,9 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                     .relative()
                     .child(trigger_chrome),
             )
-            .when_some(model.popup_content, |root, popup_content| root.child(popup_content))
+            .when_some(model.popup_content, |root, popup_content| {
+                root.child(div().opacity(model.presence.opacity()).child(popup_content))
+            })
     }
 }
 

@@ -7,6 +7,7 @@ use gpui::{
 
 use crate::controls::icon::lucide_icon;
 use crate::controls::selector_panel::SelectorItemsPanelLook;
+use crate::controls::overlay_presence::OverlayPresence;
 
 pub type ComboBoxKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type ComboBoxScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -58,6 +59,7 @@ pub struct ComboBoxRenderModel {
     pub popup_bounds: Option<Bounds<Pixels>>,
     pub popup_look: SelectorItemsPanelLook,
     pub popup_content: Option<AnyElement>,
+    pub presence: OverlayPresence,
 }
 
 pub trait ComboBoxTemplate: Send + Sync {
@@ -170,7 +172,9 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                         )
                     }),
             )
-            .when_some(model.popup_content, |root, popup_content| root.child(popup_content))
+            .when_some(model.popup_content, |root, popup_content| {
+                root.child(div().opacity(model.presence.opacity()).child(popup_content))
+            })
             .into_any_element()
     }
 }
