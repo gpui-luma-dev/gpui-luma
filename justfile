@@ -50,3 +50,9 @@ loc:
 
 clippy:
     cargo clippy --all-targets
+
+format-check:
+    cargo fmt --all --check
+
+format:
+    cargo fmt --all
