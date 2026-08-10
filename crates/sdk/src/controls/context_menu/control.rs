@@ -8,6 +8,7 @@ use crate::controls::context_menu::model::ContextMenuModel;
 use crate::controls::floating_menu::{FloatingMenuActivateResult, FloatingMenuState, FloatingMenuStepDirection};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::menu_navigation::MenuNavigator;
+use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::state::{ControlFocusState, MenuPath};
 use crate::focus::EscapeFocus;
 use crate::keyhandling::{
@@ -31,6 +32,9 @@ pub struct ContextMenu {
     menu_position: Option<Point<Pixels>>,
     target_bounds: Option<Bounds<Pixels>>,
     menu_state: FloatingMenuState,
+    presence: OverlayPresence,
+    submenu_presence: OverlayPresence,
+    submenu_parent: Option<usize>,
     interaction: ControlInteraction,
     emitted_focused: bool,
     focus_in_subscription: Option<Subscription>,
@@ -53,6 +57,9 @@ impl ContextMenu {
             menu_position: None,
             target_bounds: None,
             menu_state: FloatingMenuState::default(),
+            presence: OverlayPresence::new(false, true),
+            submenu_presence: OverlayPresence::new(false, true),
+            submenu_parent: None,
             interaction: ControlInteraction::new(enabled, cx),
             emitted_focused: false,
             focus_in_subscription: None,
@@ -102,8 +109,10 @@ impl ContextMenu {
             label: &self.model.label,
             items: &self.model.items,
             menu_position: self.menu_position,
+            presence: self.presence,
             open_submenu: self.menu_state.open_submenu(),
             active_path: self.menu_state.active_path(),
+            submenu_presence: self.submenu_presence,
             enabled: self.model.enabled,
             focus: ControlFocusState::from_focus_handle(self.model.enabled, self.interaction.focus_handle(), window),
             state: self.interaction.render_state(self.model.enabled, window),
@@ -141,9 +150,12 @@ impl ContextMenu {
 
     fn open_menu_at(&mut self, position: Point<Pixels>, active_path: Option<MenuPath>, cx: &mut Context<Self>) -> bool {
         let was_open = self.menu_position.is_some();
-        let changed = self.menu_position != Some(position) || self.menu_state.open_with(active_path);
+        let state_changed = self.menu_state.open_with(active_path);
+        let changed = self.menu_position != Some(position) || state_changed;
 
         self.menu_position = Some(position);
+        self.presence.set_open_with_animation(true, true);
+        self.sync_submenu_presence();
         if !was_open {
             cx.emit(ContextMenuEvent::OpenChanged { open: true });
         }
@@ -155,10 +167,23 @@ impl ContextMenu {
         let was_open = self.menu_position.is_some();
         self.menu_position = None;
         self.menu_state.clear();
+        self.presence.set_open_with_animation(false, false);
+        self.sync_submenu_presence();
         if was_open {
             cx.emit(ContextMenuEvent::OpenChanged { open: false });
         }
         was_open
+    }
+
+    fn sync_submenu_presence(&mut self) {
+        let next_parent = self.menu_state.open_submenu();
+        if next_parent != self.submenu_parent {
+            if next_parent.is_some() && self.submenu_parent.is_some() {
+                self.submenu_presence.snap_open(false);
+            }
+            self.submenu_parent = next_parent;
+        }
+        self.submenu_presence.set_open_with_animation(next_parent.is_some(), next_parent.is_some());
     }
 
     fn dismiss_menu(&mut self, cx: &mut Context<Self>) -> bool {
@@ -229,6 +254,7 @@ impl ContextMenu {
         }
 
         if self.menu_state.hover_root_item(&self.model.items, index) {
+            self.sync_submenu_presence();
             cx.notify();
         }
     }
@@ -277,6 +303,7 @@ impl ContextMenu {
         }
 
         if self.menu_state.step(&self.model.items, direction) {
+            self.sync_submenu_presence();
             cx.notify();
         }
     }
@@ -287,6 +314,7 @@ impl ContextMenu {
         }
 
         if self.menu_state.move_to_boundary(&self.model.items, first) {
+            self.sync_submenu_presence();
             cx.notify();
         }
     }
@@ -297,6 +325,7 @@ impl ContextMenu {
         }
 
         if self.menu_state.open_active_submenu(&self.model.items) {
+            self.sync_submenu_presence();
             cx.notify();
         }
     }
@@ -307,6 +336,7 @@ impl ContextMenu {
         }
 
         if self.menu_state.close_active_submenu() {
+            self.sync_submenu_presence();
             cx.notify();
         }
     }
@@ -318,7 +348,10 @@ impl ContextMenu {
 
         match self.menu_state.activate(&self.model.items) {
             FloatingMenuActivateResult::None => {}
-            FloatingMenuActivateResult::OpenedSubmenu => cx.notify(),
+            FloatingMenuActivateResult::OpenedSubmenu => {
+                self.sync_submenu_presence();
+                cx.notify();
+            }
             FloatingMenuActivateResult::Select { item_id, label } => {
                 self.close_menu(cx);
                 cx.emit(ContextMenuEvent::Select { item_id, label });
@@ -427,6 +460,11 @@ impl Render for ContextMenu {
             let focus_handle = self.interaction.focus_handle().clone();
             self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
         }
+
+        self.presence.sync();
+        self.presence.schedule_frame(window, cx);
+        self.submenu_presence.sync();
+        self.submenu_presence.schedule_frame(window, cx);
 
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);

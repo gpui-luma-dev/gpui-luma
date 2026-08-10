@@ -8,6 +8,7 @@ use lucide_icons::Icon as LucideIcon;
 use crate::controls::choice_indicator_layout::shadow_extent_from_slice;
 use crate::controls::icon::LUCIDE_FONT_FAMILY;
 use crate::controls::menu_item::{MenuItem, MenuItemIcon};
+use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::state::MenuPath;
 use crate::controls::floating_menu::FloatingMenuLook;
 
@@ -27,6 +28,7 @@ pub struct FloatingMenuRenderModel<'a> {
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
     pub highlight: Option<FloatingMenuHighlight>,
+    pub submenu_presence: OverlayPresence,
     pub look: FloatingMenuLook,
 }
 
@@ -191,6 +193,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                         (index < submenu_hovers.len()).then(|| std::mem::take(&mut submenu_hovers[index])),
                         controlled_hover,
                         model.highlight,
+                        model.submenu_presence.opacity(),
                     ));
                 }
             } else {
@@ -256,6 +259,30 @@ pub fn render_floating_menu(
 }
 
 #[allow(clippy::too_many_arguments)]
+pub fn render_floating_menu_with_submenu_presence(
+    id: &SharedString,
+    items: &[MenuItem],
+    open_submenu: Option<usize>,
+    active_path: Option<MenuPath>,
+    look: FloatingMenuLook,
+    item_hovers: Vec<FloatingMenuHoverHandler>,
+    item_clicks: Vec<FloatingMenuClickHandler>,
+    submenu_presence: OverlayPresence,
+) -> Stateful<Div> {
+    render_floating_menu_with_template_and_submenu_presence(
+        default_floating_menu_template(),
+        id,
+        items,
+        open_submenu,
+        active_path,
+        look,
+        item_hovers,
+        item_clicks,
+        submenu_presence,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
 pub fn render_floating_menu_with_template(
     template: Arc<dyn FloatingMenuTemplate>,
     id: &SharedString,
@@ -267,7 +294,33 @@ pub fn render_floating_menu_with_template(
     item_clicks: Vec<FloatingMenuClickHandler>,
 ) -> Stateful<Div> {
     template.render(
-        &FloatingMenuRenderModel { id, items, open_submenu, active_path, highlight: None, look },
+        &FloatingMenuRenderModel {
+            id,
+            items,
+            open_submenu,
+            active_path,
+            highlight: None,
+            submenu_presence: OverlayPresence::new(true, false),
+            look,
+        },
+        FloatingMenuTemplateHandlers { item_hovers, submenu_hovers: Vec::new(), controlled_hover: false, item_clicks },
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_floating_menu_with_template_and_submenu_presence(
+    template: Arc<dyn FloatingMenuTemplate>,
+    id: &SharedString,
+    items: &[MenuItem],
+    open_submenu: Option<usize>,
+    active_path: Option<MenuPath>,
+    look: FloatingMenuLook,
+    item_hovers: Vec<FloatingMenuHoverHandler>,
+    item_clicks: Vec<FloatingMenuClickHandler>,
+    submenu_presence: OverlayPresence,
+) -> Stateful<Div> {
+    template.render(
+        &FloatingMenuRenderModel { id, items, open_submenu, active_path, highlight: None, submenu_presence, look },
         FloatingMenuTemplateHandlers { item_hovers, submenu_hovers: Vec::new(), controlled_hover: false, item_clicks },
     )
 }
@@ -285,7 +338,15 @@ pub fn render_floating_menu_with_submenu_hovers(
     highlight: Option<FloatingMenuHighlight>,
 ) -> Stateful<Div> {
     default_floating_menu_template().render(
-        &FloatingMenuRenderModel { id, items, open_submenu, active_path, highlight, look },
+        &FloatingMenuRenderModel {
+            id,
+            items,
+            open_submenu,
+            active_path,
+            highlight,
+            submenu_presence: OverlayPresence::new(true, false),
+            look,
+        },
         FloatingMenuTemplateHandlers { item_hovers, submenu_hovers, controlled_hover: true, item_clicks },
     )
 }
@@ -301,6 +362,7 @@ fn render_floating_submenu(
     submenu_hovers: Option<Vec<FloatingMenuHoverHandler>>,
     controlled_hover: bool,
     highlight: Option<FloatingMenuHighlight>,
+    submenu_opacity: f32,
 ) -> Stateful<Div> {
     let mut submenu = div()
         .id(format!("{menu_id}-submenu-{}", item.id()))
@@ -383,7 +445,7 @@ fn render_floating_submenu(
         submenu = submenu.child(row);
     }
 
-    submenu
+    submenu.opacity(submenu_opacity)
 }
 
 fn highlight_rect(

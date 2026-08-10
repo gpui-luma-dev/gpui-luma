@@ -7,6 +7,7 @@ use super::{
 };
 use super::template::modified_context_menu_template;
 use crate::controls::menu_item::MenuItem;
+use crate::controls::overlay_presence::OverlayPresence;
 
 #[derive(Clone)]
 pub struct ContextMenuModel {
@@ -22,8 +23,10 @@ pub struct ContextMenuRenderModel<'a> {
     pub label: &'a SharedString,
     pub items: &'a [MenuItem],
     pub menu_position: Option<Point<Pixels>>,
+    pub presence: OverlayPresence,
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
+    pub submenu_presence: OverlayPresence,
     pub enabled: bool,
     pub focus: ControlFocusState,
     pub state: ContextMenuState,
