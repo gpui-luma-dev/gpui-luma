@@ -23,7 +23,7 @@ use gpui_luma_shell_common::{
 };
 
 /// Collapsed sidebar width that leaves an icon rail visible.
-const ICON_RAIL_COLLAPSED_WIDTH: f32 = 128.0;
+const ICON_RAIL_COLLAPSED_WIDTH: f32 = 56.0;
 
 pub struct IconRailShellApp {
     focus_scope: FocusHandle,

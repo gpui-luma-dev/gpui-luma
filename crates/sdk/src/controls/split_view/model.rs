@@ -23,6 +23,7 @@ pub struct SplitViewModel {
     pub(crate) sidebar_max_width: Pixels,
     pub(crate) sidebar_collapsed_width: Pixels,
     pub(crate) collapsed: bool,
+    pub(crate) animated: bool,
     pub(crate) resizable: bool,
     pub(crate) enabled: bool,
     pub(crate) separator_visibility: SplitViewSeparatorVisibility,
@@ -63,6 +64,7 @@ impl SplitViewBuilder {
                 sidebar_max_width: px(420.0),
                 sidebar_collapsed_width: px(0.0),
                 collapsed: false,
+                animated: true,
                 resizable: true,
                 enabled: true,
                 separator_visibility: SplitViewSeparatorVisibility::Always,
@@ -104,6 +106,12 @@ impl SplitViewBuilder {
 
     pub fn collapsed(mut self, collapsed: bool) -> Self {
         self.model.collapsed = collapsed;
+        self
+    }
+
+    /// Enables or disables the sidebar expand/collapse transition.
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.model.animated = animated;
         self
     }
 
@@ -227,5 +235,11 @@ mod tests {
             .with_template_modifier(|element, _| element);
 
         assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn animated_defaults_true() {
+        assert!(SplitViewBuilder::new("split-animated").model.animated);
+        assert!(!SplitViewBuilder::new("split-animated-off").animated(false).model.animated);
     }
 }

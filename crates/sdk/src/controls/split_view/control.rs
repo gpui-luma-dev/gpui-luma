@@ -8,6 +8,7 @@ use super::{
     template::SplitViewTemplateHandlers,
     SplitViewBuilder, SplitViewRenderModel,
 };
+use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
@@ -45,6 +46,7 @@ pub struct SplitView {
     suppress_next_separator_click: bool,
     drag_start_axis_px: f32,
     drag_start_width: Pixels,
+    transition: VisualTransition,
 }
 
 impl EventEmitter<SplitViewEvent> for SplitView {}
@@ -58,6 +60,7 @@ impl SplitView {
     }
 
     pub(crate) fn from_builder(builder: SplitViewBuilder, _cx: &mut Context<Self>) -> Self {
+        let initial_progress = if builder.model.collapsed { 0.0 } else { 1.0 };
         Self {
             model: builder.model,
             separator_hovered: false,
@@ -66,6 +69,7 @@ impl SplitView {
             suppress_next_separator_click: false,
             drag_start_axis_px: 0.0,
             drag_start_width: px(0.0),
+            transition: VisualTransition::new(initial_progress, DEFAULT_TRANSITION_DURATION),
         }
     }
 
@@ -136,6 +140,11 @@ impl SplitView {
         }
 
         self.model.collapsed = collapsed;
+        if self.model.animated {
+            self.transition.set_target(if collapsed { 0.0 } else { 1.0 });
+        } else {
+            self.transition.snap_to(if collapsed { 0.0 } else { 1.0 });
+        }
         self.separator_hovered = false;
         self.dragging_separator = false;
         self.drag_moved = false;
@@ -146,6 +155,24 @@ impl SplitView {
 
     pub fn toggle_collapsed(&mut self, cx: &mut Context<Self>) {
         self.set_collapsed(!self.model.collapsed, cx);
+    }
+
+    pub fn animated(&self) -> bool {
+        self.model.animated
+    }
+
+    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
+        if self.model.animated == animated {
+            return;
+        }
+
+        self.model.animated = animated;
+        if animated {
+            self.transition.set_target(if self.model.collapsed { 0.0 } else { 1.0 });
+        } else {
+            self.transition.snap_to(if self.model.collapsed { 0.0 } else { 1.0 });
+        }
+        cx.notify();
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
@@ -175,7 +202,9 @@ impl SplitView {
             id: &self.model.id,
             sidebar_width: self.model.sidebar_width,
             sidebar_collapsed_width: self.model.sidebar_collapsed_width,
-            effective_sidebar_width: self.effective_sidebar_width(),
+            effective_sidebar_width: self
+                .transition
+                .interpolate_pixels(self.model.sidebar_collapsed_width, self.model.sidebar_width),
             collapsed: self.model.collapsed,
             resizable: self.model.resizable,
             enabled: self.model.enabled,
@@ -288,6 +317,12 @@ impl SplitView {
 
 impl Render for SplitView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let was_animating = self.transition.is_animating();
+        self.transition.sync();
+        self.transition.schedule_frame(window, cx);
+        if was_animating || self.transition.is_animating() {
+            cx.notify();
+        }
         let sidebar = (self.model.sidebar)();
         let content = (self.model.content)();
         let template = self.model.template.clone();

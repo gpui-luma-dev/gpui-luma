@@ -48,7 +48,7 @@ impl DetachedShellApp {
         let split_view = look
             .split_view("shell-detached")
             .sidebar_width(px(560.0))
-            .sidebar_min_width(px(440.0))
+            .sidebar_min_width(px(200.0))
             .sidebar_max_width(px(840.0))
             .separator_visibility(SplitViewSeparatorVisibility::Hover)
             .spawn(cx);
