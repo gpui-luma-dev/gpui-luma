@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use gpui::{
     App, Bounds, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
     MouseUpEvent, Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
@@ -9,6 +11,7 @@ use super::model::{
     ControlGroupStateMode, ControlSelectionMode,
 };
 use super::template::ControlGroupTemplateHandlers;
+use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::state::{CompositeItemState, ControlFocusState};
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectNextRow,
@@ -40,6 +43,7 @@ where
     hovered_item: Option<usize>,
     pressed_item: Option<usize>,
     item_bounds: Vec<Option<Bounds<Pixels>>>,
+    selection_transitions: HashMap<SharedString, VisualTransition>,
 }
 
 impl<T> EventEmitter<ControlGroupEvent> for ControlGroupControl<T> where T: ControlGroupItemLike + 'static {}
@@ -55,6 +59,18 @@ where
 
     pub(crate) fn from_builder(mut builder: ControlGroupBuilder<T>, cx: &mut Context<Self>) -> Self {
         normalize_model(&mut builder.model);
+        let selection_transitions = builder
+            .model
+            .items
+            .iter()
+            .map(|item| {
+                let selected = selected_ids_contain(builder.model.effective_selected_ids(), item.id());
+                (
+                    item.id().clone(),
+                    VisualTransition::new(if selected { 1.0 } else { 0.0 }, DEFAULT_TRANSITION_DURATION),
+                )
+            })
+            .collect();
         let tab_stop = builder.model.enabled && builder.model.tab_stop;
 
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
@@ -69,6 +85,7 @@ where
             hovered_item: None,
             pressed_item: None,
             item_bounds: Vec::new(),
+            selection_transitions,
         }
     }
 
@@ -95,6 +112,7 @@ where
     pub fn set_state_mode(&mut self, mode: ControlGroupStateMode, cx: &mut Context<Self>) {
         self.model.state_mode = mode;
         normalize_model(&mut self.model);
+        self.sync_selection_transitions();
         cx.notify();
     }
 
@@ -105,12 +123,14 @@ where
     {
         self.model.default_selected_ids = selected_ids.into_iter().map(Into::into).collect();
         normalize_model(&mut self.model);
+        self.sync_selection_transitions();
         cx.notify();
     }
 
     pub fn set_selection_mode(&mut self, selection_mode: ControlSelectionMode, cx: &mut Context<Self>) {
         self.model.selection_mode = selection_mode;
         normalize_model(&mut self.model);
+        self.sync_selection_transitions();
         cx.notify();
     }
 
@@ -135,6 +155,7 @@ where
         self.item_bounds.clear();
         self.clear_item_focus_subscriptions();
         normalize_model(&mut self.model);
+        self.sync_selection_transitions();
         cx.notify();
     }
 
@@ -181,12 +202,33 @@ where
     {
         self.model.set_managed_selected_ids(selected_ids);
         normalize_model(&mut self.model);
+        self.sync_selection_transitions();
         cx.notify();
     }
 
     pub fn clear_managed_selected_ids(&mut self, cx: &mut Context<Self>) {
         self.model.clear_managed_selected_ids();
         normalize_model(&mut self.model);
+        self.sync_selection_transitions();
+        cx.notify();
+    }
+
+    pub fn set_animated_selection(&mut self, animated: bool, cx: &mut Context<Self>) {
+        if self.model.animated_selection == animated {
+            return;
+        }
+
+        self.model.animated_selection = animated;
+        if !animated {
+            let selected_ids = self.model.effective_selected_ids();
+            for (id, transition) in &mut self.selection_transitions {
+                transition.snap_to(if selected_ids_contain(selected_ids, id) {
+                    1.0
+                } else {
+                    0.0
+                });
+            }
+        }
         cx.notify();
     }
 
@@ -251,6 +293,15 @@ where
                     index,
                     sibling_count: item_count,
                     selected,
+                    selection_progress: if self.model.animated_selection {
+                        self.selection_transitions
+                            .get(item.id())
+                            .map_or(if selected { 1.0 } else { 0.0 }, VisualTransition::progress)
+                    } else if selected {
+                        1.0
+                    } else {
+                        0.0
+                    },
                     active,
                     enabled,
                     state: CompositeItemState {
@@ -352,6 +403,8 @@ where
             self.model.default_selected_ids = next_selected_ids.clone();
             normalize_model(&mut self.model);
         }
+
+        self.sync_selection_transitions_to(&next_selected_ids);
 
         cx.emit(ControlGroupEvent::Change { changed_id: item_id.clone(), selected, selected_ids: next_selected_ids });
         cx.emit(ControlGroupEvent::Activate { activated_id: item_id });
@@ -690,6 +743,16 @@ where
     T: ControlGroupItemLike + 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.model.animated_selection {
+            let mut animating = false;
+            for transition in self.selection_transitions.values_mut() {
+                animating |= transition.sync();
+            }
+            if animating {
+                cx.on_next_frame(window, |_, _, cx| cx.notify());
+            }
+        }
+
         if self.focus_in_subscription.is_none() {
             self.focus_in_subscription = Some(cx.on_focus(&self.focus_handle, window, Self::handle_group_focus_entry));
         }
@@ -725,6 +788,48 @@ where
                     .on_action(cx.listener(Self::handle_group_prev_focus)),
             )
             .into_any_element()
+    }
+}
+
+impl<T> ControlGroupControl<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    fn sync_selection_transitions(&mut self) {
+        let selected_ids = self.model.effective_selected_ids().to_vec();
+        self.selection_transitions.retain(|id, _| self.model.items.iter().any(|item| item.id() == id));
+
+        for item in &self.model.items {
+            self.selection_transitions.entry(item.id().clone()).or_insert_with(|| {
+                VisualTransition::new(
+                    if selected_ids_contain(&selected_ids, item.id()) {
+                        1.0
+                    } else {
+                        0.0
+                    },
+                    DEFAULT_TRANSITION_DURATION,
+                )
+            });
+        }
+
+        self.sync_selection_transitions_to(&selected_ids);
+    }
+
+    fn sync_selection_transitions_to(&mut self, selected_ids: &[SharedString]) {
+        for item in &self.model.items {
+            if let Some(transition) = self.selection_transitions.get_mut(item.id()) {
+                let target = if selected_ids_contain(selected_ids, item.id()) {
+                    1.0
+                } else {
+                    0.0
+                };
+                if self.model.animated_selection {
+                    transition.set_target(target);
+                } else {
+                    transition.snap_to(target);
+                }
+            }
+        }
     }
 }
 
@@ -1135,6 +1240,7 @@ mod tests {
             selection_mode,
             state_mode,
             selection_follows_active: false,
+            animated_selection: false,
             focus_strategy: ControlGroupFocusStrategy::ActiveDescendant,
             focus_target_provider: None,
             enabled: true,

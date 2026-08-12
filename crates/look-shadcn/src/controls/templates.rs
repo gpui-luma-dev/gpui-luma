@@ -1371,3 +1371,17 @@ pub fn toggle_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<
 pub fn toggle_item_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
     Arc::new(DefaultButtonTemplate::new(styled_button_family_theme(theme, style)))
 }
+
+/// Animated toggle chrome for control-group items carrying [`ToggleData`].
+pub fn animated_toggle_item_template(
+    theme: Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
+) -> Arc<dyn ButtonTemplate<ToggleData>> {
+    let button_family_theme = styled_button_family_theme(theme, style);
+    let theme_for_mod = Arc::clone(&button_family_theme);
+    Arc::new(DefaultButtonTemplate::<ToggleData>::new(button_family_theme).with_modifier(move |element, model| {
+        let off = theme_for_mod.resolve(ButtonFamilyRole::Toggle { selected: false }, model.size, model.state);
+        let on = theme_for_mod.resolve(ButtonFamilyRole::Toggle { selected: true }, model.size, model.state);
+        apply_toggle_progress_chrome(element, &off, &on, model.data.progress)
+    }))
+}

@@ -172,6 +172,7 @@ where
     pub(crate) selection_mode: ControlSelectionMode,
     pub(crate) state_mode: ControlGroupStateMode,
     pub(crate) selection_follows_active: bool,
+    pub(crate) animated_selection: bool,
     pub(crate) focus_strategy: ControlGroupFocusStrategy,
     pub(crate) focus_target_provider: Option<ControlGroupFocusTargetProvider<T>>,
     pub(crate) enabled: bool,
@@ -218,6 +219,7 @@ where
     pub index: usize,
     pub sibling_count: usize,
     pub selected: bool,
+    pub selection_progress: f32,
     pub active: bool,
     pub enabled: bool,
     pub state: CompositeItemState,
@@ -264,6 +266,7 @@ where
                 selection_mode: ControlSelectionMode::SingleAllowNone,
                 state_mode: ControlGroupStateMode::Unmanaged,
                 selection_follows_active: false,
+                animated_selection: false,
                 focus_strategy: ControlGroupFocusStrategy::default(),
                 focus_target_provider: None,
                 enabled: true,
@@ -310,6 +313,12 @@ where
 
     pub fn selection_follows_active(mut self, selection_follows_active: bool) -> Self {
         self.model.selection_follows_active = selection_follows_active;
+        self
+    }
+
+    /// Animates selection progress for item templates that support it.
+    pub fn animated_selection(mut self, animated_selection: bool) -> Self {
+        self.model.animated_selection = animated_selection;
         self
     }
 
@@ -622,6 +631,16 @@ mod tests {
 
         let builder = ControlGroupBuilder::<ControlGroupItem>::new("control-group-test").tab_stop(false);
         assert!(!builder.model.tab_stop);
+    }
+
+    #[test]
+    fn animated_selection_is_opt_in() {
+        let default_builder = ControlGroupBuilder::<ControlGroupItem>::new("control-group-test");
+        assert!(!default_builder.model.animated_selection);
+
+        let animated_builder =
+            ControlGroupBuilder::<ControlGroupItem>::new("control-group-test").animated_selection(true);
+        assert!(animated_builder.model.animated_selection);
     }
 
     #[test]

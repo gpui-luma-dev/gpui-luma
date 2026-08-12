@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
-use gpui::AnyElement;
+use gpui::{AnyElement, IntoElement};
 
 use super::button_item_template::button_item_template;
-use super::model::ControlGroupItemLike;
-use super::template::ControlGroupItemTemplate;
+use super::model::{ControlGroupItemLike, ControlGroupItemRenderModel};
+use super::template::{ControlGroupItemTemplate, make_control_group_item_template};
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::controls::command::button::ButtonTemplate;
+use crate::controls::toggle::ToggleData;
 
 /// Icon/control-group items with [`ButtonFamilyRole::Toggle`].
 ///
@@ -21,4 +22,38 @@ where
     T: ControlGroupItemLike + Clone + Send + Sync + 'static,
 {
     button_item_template(button_template, |selected| ButtonFamilyRole::Toggle { selected }, round, content_fn)
+}
+
+/// Toggle items backed by the ControlGroup selection transition.
+pub fn animated_toggle_button_item_template<T>(
+    button_template: Arc<dyn ButtonTemplate<ToggleData>>,
+    round: bool,
+    content_fn: impl Fn(&T) -> AnyElement + Send + Sync + 'static,
+) -> ControlGroupItemTemplate<T>
+where
+    T: ControlGroupItemLike + Clone + Send + Sync + 'static,
+{
+    let content_fn = Arc::new(content_fn);
+    make_control_group_item_template(move |item: &ControlGroupItemRenderModel<'_, T>, window, cx| {
+        let item_data = item.item.clone();
+        let render_model = crate::controls::command::button::ButtonRenderModel {
+            id: format!("{}-{}", item.group_id, item.item.id()).into(),
+            data: ToggleData { selected: item.selected, progress: item.selection_progress },
+            content: Arc::new({
+                let content_fn = Arc::clone(&content_fn);
+                move |_, _| content_fn(&item_data)
+            }),
+            role: ButtonFamilyRole::Toggle { selected: item.selected },
+            size: crate::controls::button_family::ButtonSize::Sm,
+            state: item.state.interaction_state(),
+            round,
+            radius_override: std::cell::Cell::new(None),
+            elevation: true,
+            compact: false,
+            look: None,
+            ..Default::default()
+        };
+
+        button_template.render(&render_model, window, cx).into_any_element()
+    })
 }

@@ -64,9 +64,10 @@ pub fn toggle_look_semantic(
     look
 }
 
-/// Outline/ghost toggles keep variant chrome (same color path as icon buttons).
+/// Content-only toggles have no selected color chrome; styled toggles use their
+/// selected stylesheet state, including outline and ghost variants.
 fn toggle_color_selected(style: ShadcnButtonStyle, selected: bool) -> bool {
-    selected && matches!(style, ShadcnButtonStyle::Primary | ShadcnButtonStyle::Secondary)
+    selected && !matches!(style, ShadcnButtonStyle::ContentOnly)
 }
 
 fn toggle_shadow(
@@ -262,7 +263,7 @@ mod tests {
     }
 
     #[test]
-    fn outline_toggle_selected_matches_outline_icon_button() {
+    fn outline_toggle_selected_uses_selected_button_colors() {
         let catalog = retro_arcade_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let icon = button_look(
@@ -282,14 +283,13 @@ mod tests {
             InteractionState::default(),
         );
 
-        assert_eq!(toggle.background, icon.background);
-        assert_eq!(toggle.foreground, icon.foreground);
-        assert_eq!(toggle.border, icon.border);
+        assert_ne!(toggle.background, icon.background);
+        assert_ne!(toggle.foreground, icon.foreground);
         assert_eq!(toggle.shadow, icon.shadow);
     }
 
     #[test]
-    fn ghost_toggle_selected_matches_ghost_icon_button() {
+    fn ghost_toggle_selected_uses_selected_button_colors() {
         let catalog = retro_arcade_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let icon = button_look(
@@ -309,8 +309,8 @@ mod tests {
             InteractionState::default(),
         );
 
-        assert_eq!(toggle.background, icon.background);
-        assert_eq!(toggle.foreground, icon.foreground);
+        assert_ne!(toggle.background, icon.background);
+        assert_ne!(toggle.foreground, icon.foreground);
         assert_eq!(toggle.border, icon.border);
         assert!(toggle.shadow.is_none());
         assert!(icon.shadow.is_none());
