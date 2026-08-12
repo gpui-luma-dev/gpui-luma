@@ -11,11 +11,11 @@ use gpui_luma::vstack;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::super::model::TOKEN_CATEGORIES;
-use super::super::parsing::{effective_token_color, token_hex_value};
+use super::super::parsing::effective_token_color;
 use super::{category_item_id, expanded_category_ids, spawn_compact_textfield};
 use crate::studio::app::LumaStudioApp;
+use crate::studio::color_format::{format_compact_hsla, parse_compact_hsla};
 use crate::studio::overrides::StudioOverrides;
-use crate::studio::content_tabs::cards::parse_hex_color;
 use crate::studio::token_color_row::token_color_row;
 
 pub struct ColorsPanel {
@@ -63,7 +63,7 @@ impl ColorsPanel {
                 let token_key = token.to_string();
                 subscriptions.push(cx.subscribe(&field, move |app, _, event: &TextFieldEvent, cx| {
                     if let TextFieldEvent::Change { value } = event {
-                        let Some(color) = parse_hex_color(value) else {
+                        let Some(color) = parse_compact_hsla(value) else {
                             return;
                         };
                         app.set_global_color(&token_key, color, cx);
@@ -88,7 +88,7 @@ impl ColorsPanel {
                 let Some(field) = self.token_fields.get(*token) else {
                     continue;
                 };
-                let value = token_hex_value(look, &overrides.global_color_overrides, token);
+                let value = format_compact_hsla(effective_token_color(look, &overrides.global_color_overrides, token));
                 field.update(cx, |field, cx| field.set_value(value, cx));
             }
         }
@@ -162,7 +162,13 @@ impl ColorsPanel {
             rows = vstack! {
                 gap=6;
                 rows,
-                token_color_row(label, color, field, &chrome, &row_label_typography),
+                token_color_row(
+                    label,
+                    color,
+                    field,
+                    &chrome,
+                    &row_label_typography,
+                ),
             };
         }
 
@@ -237,7 +243,7 @@ fn build_token_fields(
     let mut token_fields = HashMap::new();
     for (_, tokens) in TOKEN_CATEGORIES {
         for (token, _) in *tokens {
-            let initial = token_hex_value(look, global_overrides, token);
+            let initial = format_compact_hsla(effective_token_color(look, global_overrides, token));
             let field = spawn_compact_textfield(look, &format!("token-{token}"), initial, cx);
             token_fields.insert(token.to_string(), field);
         }

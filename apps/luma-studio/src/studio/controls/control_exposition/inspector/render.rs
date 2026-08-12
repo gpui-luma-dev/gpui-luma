@@ -10,7 +10,7 @@ use super::box_model::{MetricFieldHighlight, render_box_model_diagram};
 use super::schema::{
     InspectColorRow, InspectElevationSnapshot, InspectLayoutSection, InspectPropertyRow, InspectorCategoryContent,
 };
-use crate::studio::controls::control_exposition::color_exposition_common::format_hex_color;
+use crate::studio::color_format::format_compact_hsla;
 use crate::studio::controls::control_exposition::template::controls_mono_font;
 
 pub mod layout {
@@ -250,58 +250,81 @@ fn render_color_row(row: InspectColorRow, look: &Arc<ShadcnLook>, show_separator
     let body = &look.mode_tokens().typography.text.body;
     let caption = &look.mode_tokens().typography.text.caption;
     let mono_font = controls_mono_font();
+    let source = row.detail.unwrap_or(row.source);
 
     div()
         .min_h(px(34.0))
         .min_w(px(0.0))
         .flex()
-        .items_center()
-        .gap(px(8.0))
+        .flex_wrap()
+        .items_start()
+        .gap(px(4.0))
         .when(show_separator, |row| row.border_t_1().border_color(chrome.border))
+        .px(px(9.0))
         .py(px(6.0))
-        .pl(px(9.0))
-        .pr(px(8.0))
         .child(
             div()
-                .w(px(18.0))
-                .h(px(12.0))
+                .w(relative(0.28))
+                .min_w(px(180.0))
                 .flex_shrink_0()
-                .rounded(px(3.0))
-                .border_1()
-                .border_color(chrome.border)
-                .bg(row.value),
+                .mr(px(6.0))
+                .flex()
+                .items_center()
+                .gap(px(8.0))
+                .child(
+                    div()
+                        .w(px(18.0))
+                        .h(px(12.0))
+                        .flex_shrink_0()
+                        .rounded(px(3.0))
+                        .border_1()
+                        .border_color(chrome.border)
+                        .bg(row.value),
+                )
+                .child(
+                    div()
+                        .min_w(px(0.0))
+                        .truncate()
+                        .text_size(px(body.size))
+                        .line_height(px(body.line_height))
+                        .text_color(chrome.body_text)
+                        .child(row.label),
+                ),
         )
-        .child(
-            div()
-                .w(px(94.0))
-                .flex_shrink_0()
-                .truncate()
-                .text_size(px(body.size))
-                .line_height(px(body.line_height))
-                .text_color(chrome.body_text)
-                .child(row.label),
-        )
-        .child(
-            div()
-                .w(px(74.0))
-                .flex_shrink_0()
-                .font_family(mono_font.clone())
-                .text_size(px(caption.size))
-                .line_height(px(caption.line_height))
-                .text_color(chrome.muted_text)
-                .child(format_hex_color(row.value)),
-        )
+        .child(div().w(px(180.0)).flex_shrink_0().mr(px(6.0)).child(render_hsla_value(
+            format_compact_hsla(row.value),
+            &mono_font,
+            caption,
+            chrome.muted_text,
+        )))
         .child(
             div()
                 .flex_1()
-                .min_w(px(0.0))
-                .truncate()
+                .min_w(px(260.0))
                 .font_family(mono_font)
                 .text_size(px(caption.size))
                 .line_height(px(caption.line_height))
                 .text_color(chrome.muted_text)
-                .child(row.detail.unwrap_or(row.source)),
+                .child(source),
         )
+        .into_any_element()
+}
+
+fn render_hsla_value(
+    value: String,
+    mono_font: &gpui::SharedString,
+    caption: &gpui_luma::theme::LumaTextStyle,
+    color: gpui::Hsla,
+) -> AnyElement {
+    div()
+        .w(px(180.0))
+        .flex_shrink_0()
+        .whitespace_normal()
+        .font_family(mono_font.clone())
+        .text_size(px(caption.size))
+        .line_height(px(caption.line_height))
+        .text_color(color)
+        .child(value)
         .into_any_element()
 }
 
@@ -345,8 +368,8 @@ fn render_property_row(row: InspectPropertyRow, look: &Arc<ShadcnLook>, show_sep
         )
         .child(
             div()
-                .flex_1()
-                .min_w(px(260.0))
+                .flex_none()
+                .whitespace_nowrap()
                 .font_family(mono_font)
                 .text_size(px(caption.size))
                 .line_height(px(caption.line_height))

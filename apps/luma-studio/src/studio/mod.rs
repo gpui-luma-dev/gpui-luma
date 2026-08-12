@@ -1,6 +1,7 @@
 mod app;
 mod components;
 mod content_tabs;
+mod color_format;
 mod controls;
 mod demo_controls;
 mod doc_shell;
