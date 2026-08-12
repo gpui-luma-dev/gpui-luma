@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Hsla, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::button_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
-use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::controls::control_group::{
-    ControlGroupBuilder, ControlGroupItemTemplate, button_item_template, make_control_group_item_template,
+    ControlGroupBuilder, ControlGroupItemTemplate, animated_toggle_button_item_template,
+    make_control_group_item_template,
 };
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma_look_shadcn::prelude::*;
@@ -182,6 +182,9 @@ fn icon_group(
     let mut builder = look
         .button_group(id)
         .items(items(&PLACEMENT))
+        // Ghost's hover/pressed fill is intentionally the same accent treatment
+        // as its selected state, so selection animation reads as a flash.
+        .animated_selection(!matches!(style, ShadcnButtonStyle::Ghost))
         .item_template(theme_aware_toggle_item_template(look.clone(), style))
         .with_item_layout(move |mut items, _, _, _| {
             let group_look = look.control_group_theme().resolve_list(true);
@@ -210,13 +213,10 @@ fn theme_aware_toggle_item_template(
     style: ShadcnButtonStyle,
 ) -> ControlGroupItemTemplate<IconGroupItem> {
     make_control_group_item_template(move |item, window, cx| {
-        let button_template = look.toggle_item_template(style);
-        button_item_template(
-            button_template,
-            |selected| ButtonFamilyRole::Toggle { selected },
-            true,
-            |item: &IconGroupItem| lucide_glyph(placement_icon(item.id().as_ref())),
-        )(item, window, cx)
+        let button_template = look.animated_toggle_item_template(style);
+        animated_toggle_button_item_template(button_template, true, |item: &IconGroupItem| {
+            lucide_glyph(placement_icon(item.id().as_ref()))
+        })(item, window, cx)
     })
 }
 

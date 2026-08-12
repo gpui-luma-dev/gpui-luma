@@ -19,7 +19,7 @@ pub use menu_choice_template::{
     MenuChoiceRowContentFn, configure_menu_choice_group, menu_choice_group_template,
     menu_choice_row_item_element_template,
 };
-pub use toggle_button_item_template::toggle_button_item_template;
+pub use toggle_button_item_template::{animated_toggle_button_item_template, toggle_button_item_template};
 pub use template::{
     ControlGroupBoundsHandler, ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemElement,
     ControlGroupItemElementTemplate, ControlGroupItemElements, ControlGroupItemHandlerExt, ControlGroupItemHandlers,

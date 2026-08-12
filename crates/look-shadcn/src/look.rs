@@ -854,6 +854,13 @@ impl ShadcnLook {
         templates::toggle_item_template(Arc::clone(self), style)
     }
 
+    pub fn animated_toggle_item_template(
+        self: &Arc<Self>,
+        style: ShadcnButtonStyle,
+    ) -> Arc<dyn gpui_luma::controls::command::button::ButtonTemplate<gpui_luma::controls::toggle::ToggleData>> {
+        templates::animated_toggle_item_template(Arc::clone(self), style)
+    }
+
     pub fn button_family_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::button_family::ButtonFamilyTheme> {
         templates::button_family_theme(Arc::clone(self))
     }
