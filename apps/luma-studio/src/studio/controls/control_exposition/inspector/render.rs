@@ -2,11 +2,12 @@
 
 use std::sync::Arc;
 
-use gpui::{AnyElement, FontWeight, IntoElement, div, px, relative};
+use gpui::{AnyElement, FontWeight, IntoElement, div, px};
 use gpui::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::box_model::{MetricFieldHighlight, render_box_model_diagram};
+use super::components::{InspectorRow, InspectorSection};
 use super::schema::{
     InspectColorRow, InspectElevationSnapshot, InspectLayoutSection, InspectPropertyRow, InspectorCategoryContent,
 };
@@ -28,10 +29,11 @@ pub fn render_category_content(look: &Arc<ShadcnLook>, content: InspectorCategor
 }
 
 pub fn render_color_category(look: &Arc<ShadcnLook>, rows: Vec<InspectColorRow>) -> AnyElement {
-    render_rows_panel(
+    InspectorSection::new(
         look,
         rows.into_iter().enumerate().map(|(index, row)| render_color_row(row, look, index > 0)).collect(),
     )
+    .into_any_element()
 }
 
 pub fn render_layout_category(look: &Arc<ShadcnLook>, section: InspectLayoutSection) -> AnyElement {
@@ -226,155 +228,61 @@ fn render_elevation_layers(look: &Arc<ShadcnLook>, layers: &[super::schema::Insp
 }
 
 pub fn render_property_rows_panel(look: &Arc<ShadcnLook>, rows: Vec<InspectPropertyRow>) -> AnyElement {
-    render_rows_panel(
+    InspectorSection::new(
         look,
         rows.into_iter().enumerate().map(|(index, row)| render_property_row(row, look, index > 0)).collect(),
     )
-}
-
-fn render_rows_panel(look: &Arc<ShadcnLook>, rows: Vec<AnyElement>) -> AnyElement {
-    let chrome = look.chrome();
-    div()
-        .w_full()
-        .min_w(px(0.0))
-        .border_1()
-        .border_color(chrome.border)
-        .rounded(px(6.0))
-        .overflow_hidden()
-        .children(rows)
-        .into_any_element()
+    .into_any_element()
 }
 
 fn render_color_row(row: InspectColorRow, look: &Arc<ShadcnLook>, show_separator: bool) -> AnyElement {
     let chrome = look.chrome();
     let body = &look.mode_tokens().typography.text.body;
-    let caption = &look.mode_tokens().typography.text.caption;
-    let mono_font = controls_mono_font();
     let source = row.detail.unwrap_or(row.source);
 
-    div()
-        .min_h(px(34.0))
-        .min_w(px(0.0))
+    let label = div()
         .flex()
-        .flex_wrap()
-        .items_start()
-        .gap(px(4.0))
-        .when(show_separator, |row| row.border_t_1().border_color(chrome.border))
-        .px(px(9.0))
-        .py(px(6.0))
+        .items_center()
+        .gap(px(8.0))
         .child(
             div()
-                .w(relative(0.28))
-                .min_w(px(180.0))
+                .w(px(18.0))
+                .h(px(12.0))
                 .flex_shrink_0()
-                .mr(px(6.0))
-                .flex()
-                .items_center()
-                .gap(px(8.0))
-                .child(
-                    div()
-                        .w(px(18.0))
-                        .h(px(12.0))
-                        .flex_shrink_0()
-                        .rounded(px(3.0))
-                        .border_1()
-                        .border_color(chrome.border)
-                        .bg(row.value),
-                )
-                .child(
-                    div()
-                        .min_w(px(0.0))
-                        .truncate()
-                        .text_size(px(body.size))
-                        .line_height(px(body.line_height))
-                        .text_color(chrome.body_text)
-                        .child(row.label),
-                ),
+                .rounded(px(3.0))
+                .border_1()
+                .border_color(chrome.border)
+                .bg(row.value),
         )
-        .child(div().w(px(180.0)).flex_shrink_0().mr(px(6.0)).child(render_hsla_value(
-            format_compact_hsla(row.value),
-            &mono_font,
-            caption,
-            chrome.muted_text,
-        )))
         .child(
             div()
-                .flex_1()
-                .min_w(px(260.0))
-                .font_family(mono_font)
-                .text_size(px(caption.size))
-                .line_height(px(caption.line_height))
-                .text_color(chrome.muted_text)
-                .child(source),
-        )
-        .into_any_element()
-}
-
-fn render_hsla_value(
-    value: String,
-    mono_font: &gpui::SharedString,
-    caption: &gpui_luma::theme::LumaTextStyle,
-    color: gpui::Hsla,
-) -> AnyElement {
-    div()
-        .w(px(180.0))
-        .flex_shrink_0()
-        .whitespace_normal()
-        .font_family(mono_font.clone())
-        .text_size(px(caption.size))
-        .line_height(px(caption.line_height))
-        .text_color(color)
-        .child(value)
-        .into_any_element()
-}
-
-fn render_property_row(row: InspectPropertyRow, look: &Arc<ShadcnLook>, show_separator: bool) -> AnyElement {
-    let chrome = look.chrome();
-    let body = &look.mode_tokens().typography.text.body;
-    let caption = &look.mode_tokens().typography.text.caption;
-    let mono_font = controls_mono_font();
-
-    div()
-        .min_h(px(34.0))
-        .min_w(px(0.0))
-        .flex()
-        .flex_wrap()
-        .items_start()
-        .gap(px(4.0))
-        .when(show_separator, |row| row.border_t_1().border_color(chrome.border))
-        .px(px(9.0))
-        .py(px(6.0))
-        .child(
-            div()
-                .w(relative(0.28))
-                .min_w(px(180.0))
-                .flex_shrink_0()
-                .mr(px(6.0))
+                .min_w(px(0.0))
+                .truncate()
                 .text_size(px(body.size))
                 .line_height(px(body.line_height))
                 .text_color(chrome.body_text)
                 .child(row.label),
         )
-        .child(
-            div()
-                .w(px(54.0))
-                .flex_shrink_0()
-                .mr(px(6.0))
-                .font_family(mono_font.clone())
-                .text_size(px(caption.size))
-                .line_height(px(caption.line_height))
-                .text_color(chrome.title_text)
-                .child(row.value),
-        )
-        .child(
-            div()
-                .flex_none()
-                .whitespace_nowrap()
-                .font_family(mono_font)
-                .text_size(px(caption.size))
-                .line_height(px(caption.line_height))
-                .text_color(chrome.muted_text)
-                .child(row.detail.unwrap_or(row.source)),
-        )
-        .into_any_element()
+        .into_any_element();
+
+    let value = div().child(format_compact_hsla(row.value)).into_any_element();
+
+    InspectorRow::new(look, label, value, source, 180.0, show_separator).into_any_element()
+}
+
+fn render_property_row(row: InspectPropertyRow, look: &Arc<ShadcnLook>, show_separator: bool) -> AnyElement {
+    let chrome = look.chrome();
+    let body = &look.mode_tokens().typography.text.body;
+
+    let label = div()
+        .text_size(px(body.size))
+        .line_height(px(body.line_height))
+        .text_color(chrome.body_text)
+        .child(row.label)
+        .into_any_element();
+
+    let value = div().text_color(chrome.title_text).child(row.value).into_any_element();
+    let source = row.detail.unwrap_or(row.source);
+
+    InspectorRow::new(look, label, value, source, 54.0, show_separator).into_any_element()
 }
