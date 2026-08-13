@@ -4,13 +4,13 @@ mod state;
 mod template;
 mod theme;
 
-pub use control::TextFieldEvent;
+pub use control::{TextFieldDrag, TextFieldEvent};
 pub use model::{TextFieldLookOverride, TextFieldBuilder, TextFieldModel, TextFieldRenderModel, Validator};
 pub use state::TextFieldState;
 pub use template::{
     TextFieldClickHandler, TextFieldHoverHandler, TextFieldKeyDownHandler, TextFieldMouseDownHandler,
     TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldTemplate, TextFieldTemplateHandlers,
-    ThemedTextFieldTemplate, default_textfield_template,
+    TextFieldDragMoveHandler, ThemedTextFieldTemplate, default_textfield_template,
 };
 pub use theme::{
     DefaultTextFieldTheme, TextFieldLook, TextFieldPalette, TextFieldTheme, TextFieldVariant,

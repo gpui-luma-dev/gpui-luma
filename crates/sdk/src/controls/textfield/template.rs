@@ -1,11 +1,11 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, Div, FontWeight, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Stateful, Window, div, px, svg,
-    prelude::*,
+    AnyElement, App, Div, DragMoveEvent, FontWeight, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Stateful, Window,
+    div, px, svg, prelude::*,
 };
 
-use super::{TextFieldLook, TextFieldRenderModel, TextFieldState, TextFieldVariant};
+use super::{TextFieldDrag, TextFieldLook, TextFieldRenderModel, TextFieldState, TextFieldVariant};
 use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::command::button::ControlIcon;
 use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
@@ -22,6 +22,7 @@ pub type TextFieldMouseMoveHandler = Box<dyn Fn(&MouseMoveEvent, &mut Window, &m
 pub type TextFieldMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 pub type TextFieldKeyDownHandler = Box<dyn Fn(&gpui::KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type TextFieldClickHandler = Box<dyn Fn(&gpui::ClickEvent, &mut Window, &mut App) + 'static>;
+pub type TextFieldDragMoveHandler = Box<dyn Fn(&DragMoveEvent<TextFieldDrag>, &mut Window, &mut App) + 'static>;
 
 pub struct TextFieldTemplateHandlers {
     pub hover: TextFieldHoverHandler,
@@ -31,6 +32,7 @@ pub struct TextFieldTemplateHandlers {
     pub mouse_up_out: TextFieldMouseUpHandler,
     pub click: TextFieldClickHandler,
     pub key_down: TextFieldKeyDownHandler,
+    pub drag_move: TextFieldDragMoveHandler,
 }
 
 pub type TextFieldTemplateModifier =
@@ -278,7 +280,10 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                             .flex()
                             .items_center()
                             .h(px(caret_height))
-                            .text_color(char_color)
+                            .when(in_selection, |cell| {
+                                cell.bg(look.selection_background).text_color(look.selection_foreground)
+                            })
+                            .when(!in_selection, |cell| cell.text_color(char_color))
                             .child(ch.to_string())
                             .when(
                                 model.enabled && model.caret_visible && cursor == caret_ix && selection.is_none(),
@@ -315,30 +320,11 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 }
             }
 
-            let selection_overlay = selection.and_then(|(start, end)| {
-                let start_x = model.character_offsets.get(start).copied().unwrap_or(0.0);
-                let end_x = model.character_offsets.get(end).copied().unwrap_or(start_x);
-                let width = (end_x - start_x).max(0.0);
-                (width > 0.0).then(|| {
-                    div()
-                        .absolute()
-                        .left(px(start_x))
-                        .top(px(0.0))
-                        .w(px(width))
-                        .h(px(caret_height))
-                        .bg(look.selection_background)
-                })
-            });
-
-            div().min_w(px(0.0)).flex_1().overflow_hidden().child(
-                div()
-                    .relative()
-                    .left(px(-model.horizontal_scroll))
-                    .flex()
-                    .items_center()
-                    .when_some(selection_overlay, |text, overlay| text.child(overlay))
-                    .child(row),
-            )
+            div()
+                .min_w(px(0.0))
+                .flex_1()
+                .overflow_hidden()
+                .child(div().relative().left(px(-model.horizontal_scroll)).flex().items_center().child(row))
         };
 
         if let Some(icon) = model.prefix_icon {
@@ -401,7 +387,12 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             .on_mouse_up(gpui::MouseButton::Left, handlers.mouse_up)
             .on_mouse_up_out(gpui::MouseButton::Left, handlers.mouse_up_out)
             .on_click(handlers.click)
-            .on_key_down(handlers.key_down);
+            .on_key_down(handlers.key_down)
+            .on_drag(TextFieldDrag::new(model.id.clone()), |drag, _, _, cx| {
+                cx.stop_propagation();
+                cx.new(|_| drag.clone())
+            })
+            .on_drag_move(handlers.drag_move);
 
         self.apply_modifiers(root, model)
     }

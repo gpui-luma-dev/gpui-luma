@@ -17,8 +17,8 @@ use gpui_luma::controls::textarea::{
     TextAreaMouseMoveHandler, TextAreaMouseUpHandler, TextAreaTemplateHandlers,
 };
 use gpui_luma::controls::textfield::{
-    TextFieldClickHandler, TextFieldHoverHandler, TextFieldKeyDownHandler, TextFieldMouseDownHandler,
-    TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldTemplateHandlers,
+    TextFieldClickHandler, TextFieldDrag, TextFieldDragMoveHandler, TextFieldHoverHandler, TextFieldKeyDownHandler,
+    TextFieldMouseDownHandler, TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldTemplateHandlers,
 };
 
 pub(crate) fn input_noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
@@ -45,6 +45,8 @@ pub(crate) fn input_noop_thumb_mouse_down(_: &ThumbId, _: &MouseDownEvent, _: &m
 
 pub(crate) fn input_noop_textarea_drag_move(_: &DragMoveEvent<TextAreaDrag>, _: &mut Window, _: &mut App) {}
 
+pub(crate) fn input_noop_textfield_drag_move(_: &DragMoveEvent<TextFieldDrag>, _: &mut Window, _: &mut App) {}
+
 pub(crate) fn input_textfield_handlers() -> TextFieldTemplateHandlers {
     TextFieldTemplateHandlers {
         hover: Box::new(input_noop_hover) as TextFieldHoverHandler,
@@ -54,6 +56,7 @@ pub(crate) fn input_textfield_handlers() -> TextFieldTemplateHandlers {
         mouse_up_out: Box::new(input_noop_mouse_up) as TextFieldMouseUpHandler,
         click: Box::new(input_noop_click) as TextFieldClickHandler,
         key_down: Box::new(input_noop_key_down) as TextFieldKeyDownHandler,
+        drag_move: Box::new(input_noop_textfield_drag_move) as TextFieldDragMoveHandler,
     }
 }
 

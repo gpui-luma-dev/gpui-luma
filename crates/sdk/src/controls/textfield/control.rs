@@ -2,9 +2,9 @@ use std::sync::Arc;
 use std::{ops::Range, time::Duration};
 
 use gpui::{
-    App, Bounds, ClipboardItem, Context, ElementInputHandler, EntityInputHandler, EventEmitter, FocusHandle, Focusable,
-    IntoElement, KeyDownEvent, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Render, SharedString,
-    ShapedLine, Task, TextRun, UTF16Selection, Window, canvas, div, font, point, px, prelude::*,
+    App, Bounds, ClipboardItem, Context, DragMoveEvent, ElementInputHandler, Empty, EntityInputHandler, EventEmitter,
+    FocusHandle, Focusable, IntoElement, KeyDownEvent, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point,
+    Render, SharedString, ShapedLine, Task, TextRun, UTF16Selection, Window, canvas, div, font, point, px, prelude::*,
 };
 
 use super::{
@@ -39,6 +39,23 @@ pub enum TextFieldEvent {
     Submit { value: String },
     FocusChanged { focused: bool },
     EnabledChanged { enabled: bool },
+}
+
+#[derive(Clone, Debug)]
+pub struct TextFieldDrag {
+    id: SharedString,
+}
+
+impl TextFieldDrag {
+    pub(crate) fn new(id: SharedString) -> Self {
+        Self { id }
+    }
+}
+
+impl Render for TextFieldDrag {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        Empty
+    }
 }
 
 pub struct TextFieldControl {
@@ -291,6 +308,7 @@ impl TextFieldControl {
             mouse_up_out: Box::new(cx.listener(Self::handle_mouse_up)),
             click: Box::new(cx.listener(Self::handle_click)),
             key_down: Box::new(cx.listener(Self::handle_key_down)),
+            drag_move: Box::new(cx.listener(Self::handle_drag_move)),
         }
     }
 
@@ -476,6 +494,19 @@ impl TextFieldControl {
         }
 
         let index = self.char_offset_for_point(event.position).min(self.model.value.chars().count());
+        self.state.set_cursor(index, true);
+        self.state.preferred_column = None;
+        self.pause_caret_blink(cx);
+        cx.notify();
+    }
+
+    fn handle_drag_move(&mut self, event: &DragMoveEvent<TextFieldDrag>, _window: &mut Window, cx: &mut Context<Self>) {
+        if event.drag(cx).id != self.model.id || !self.model.enabled {
+            return;
+        }
+
+        self.mouse_selecting = true;
+        let index = self.char_offset_for_point(event.event.position).min(self.model.value.chars().count());
         self.state.set_cursor(index, true);
         self.state.preferred_column = None;
         self.pause_caret_blink(cx);
