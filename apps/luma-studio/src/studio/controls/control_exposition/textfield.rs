@@ -2,7 +2,9 @@
 
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::command::button::{Button, ButtonEvent};
+use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -33,6 +35,7 @@ struct TextFieldExpositionLeftPane {
     preview: TextField,
     required_preview: TextField,
     event_stream: Entity<ControlEventStream>,
+    set_sample_button: Entity<Button>,
 }
 
 impl TextFieldExpositionLeftPane {
@@ -40,6 +43,7 @@ impl TextFieldExpositionLeftPane {
         self.look = look.clone();
         self.preview.update(cx, |_, cx| cx.notify());
         self.required_preview.update(cx, |_, cx| cx.notify());
+        self.set_sample_button.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
     }
@@ -48,18 +52,27 @@ impl TextFieldExpositionLeftPane {
 impl Render for TextFieldExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
+            let foreground = self.look.token_color("foreground").unwrap_or_else(|_| self.look.chrome().body_text);
+            let section_heading = self.look.typography_scale(ShadcnTextSize::Sm);
+            let field_subheading = self.look.typography_scale(ShadcnTextSize::Xs);
             let preview = div()
                 .w_full()
                 .flex()
                 .flex_col()
                 .gap(px(16.0))
+                .text_color(foreground)
                 .child(
                     div()
                         .w_full()
                         .flex()
                         .flex_col()
                         .gap(px(6.0))
-                        .child(div().child("Default / Focusable"))
+                        .child(
+                            div()
+                                .typography_style(section_heading)
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .child("Default / Focusable"),
+                        )
                         .child(self.preview.clone()),
                 )
                 .child(
@@ -68,8 +81,15 @@ impl Render for TextFieldExpositionLeftPane {
                         .flex()
                         .flex_col()
                         .gap(px(6.0))
-                        .child(div().child("Required / Invalid"))
-                        .child(div().child("Email *"))
+                        .child(
+                            div()
+                                .typography_style(section_heading)
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .child("Required / Invalid"),
+                        )
+                        .child(
+                            div().typography_style(field_subheading).font_weight(FontWeight::MEDIUM).child("Email *"),
+                        )
                         .child(self.required_preview.clone())
                         .child(
                             div()
@@ -77,6 +97,7 @@ impl Render for TextFieldExpositionLeftPane {
                                 .child("Please enter an email address."),
                         ),
                 )
+                .child(self.set_sample_button.clone())
                 .child(self.event_stream.clone());
 
             div()
@@ -110,6 +131,7 @@ impl TextFieldControlExposition {
             .full_width(true)
             .validator(Arc::new(|value: &str| !value.is_empty()))
             .spawn(cx);
+        let set_sample_button = look.secondary_button("controls-textfield-set-sample").label("Set Sample").spawn(cx);
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
@@ -124,6 +146,7 @@ impl TextFieldControlExposition {
             preview: preview.clone(),
             required_preview,
             event_stream: event_stream.clone(),
+            set_sample_button: set_sample_button.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
@@ -137,7 +160,7 @@ impl TextFieldControlExposition {
             TextFieldInspectorAdapter::shared(),
         );
 
-        let subscription = cx.subscribe(&preview, {
+        let mut subscriptions = vec![cx.subscribe(&preview, {
             let event_stream = event_stream.clone();
             move |_, _, event: &TextFieldEvent, cx| {
                 let line = format_textfield_event(event);
@@ -146,7 +169,22 @@ impl TextFieldControlExposition {
                     cx.notify();
                 });
             }
-        });
+        })];
+        subscriptions.push(cx.subscribe(&set_sample_button, {
+            let preview = preview.clone();
+            move |_, _, event: &ButtonEvent, cx| {
+                if !event.is_click() {
+                    return;
+                }
+
+                let value = SharedString::from(
+                    "TextField drag-selection sample: left edge and right edge. \
+Whitespace and punctuation:   / .,;:!? (parentheses) [brackets] {braces}. \
+This line is intentionally long enough to overflow a compact single-line field so dragging past either boundary is easy to reproduce.",
+                );
+                preview.update(cx, |field, cx| field.set_value(value.as_ref(), cx));
+            }
+        }));
 
         Self {
             look,
@@ -156,7 +194,7 @@ impl TextFieldControlExposition {
             left_pane,
             theme_inspector,
             inspector_split,
-            _subscriptions: vec![subscription],
+            _subscriptions: subscriptions,
         }
     }
 

@@ -1,11 +1,11 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, Div, FontWeight, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Stateful, Window, div, px, svg,
-    prelude::*,
+    AnyElement, App, Bounds, Div, DragMoveEvent, FontWeight, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Stateful,
+    TextAlign, TextRun, Window, canvas, div, fill, font, point, px, prelude::*, size, svg,
 };
 
-use super::{TextFieldLook, TextFieldRenderModel, TextFieldState, TextFieldVariant};
+use super::{TextFieldDrag, TextFieldLook, TextFieldRenderModel, TextFieldState, TextFieldVariant};
 use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::command::button::ControlIcon;
 use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
@@ -13,8 +13,69 @@ use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxS
 
 const TEXTFIELD_CARET_WIDTH: f32 = 1.5;
 const TEXTFIELD_CARET_HEIGHT_EXTRA: f32 = 2.0;
-const TEXTFIELD_TRAILING_HITBOX_WIDTH: f32 = 4.0;
 const CARET_EDGE_OFFSET: f32 = 0.0;
+
+fn colored_runs_for_text(text: &str, selection: Option<(usize, usize)>, look: &TextFieldLook) -> Vec<TextRun> {
+    let mut base_font = font(look.font_family.clone());
+    base_font.weight = look.typography.weight;
+    let run = |value: &str, color| TextRun {
+        len: value.len(),
+        font: base_font.clone(),
+        color,
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+
+    let Some((selection_start, selection_end)) = selection else {
+        return vec![run(text, look.foreground)];
+    };
+
+    let mut runs = Vec::new();
+    let mut chunk = String::new();
+    let mut chunk_selected = None::<bool>;
+
+    for (char_ix, ch) in text.chars().enumerate() {
+        let selected = char_ix >= selection_start && char_ix < selection_end;
+        match chunk_selected {
+            None => {
+                chunk_selected = Some(selected);
+                chunk.push(ch);
+            }
+            Some(current) if current == selected => chunk.push(ch),
+            Some(current) => {
+                runs.push(run(
+                    &chunk,
+                    if current {
+                        look.selection_foreground
+                    } else {
+                        look.foreground
+                    },
+                ));
+                chunk.clear();
+                chunk_selected = Some(selected);
+                chunk.push(ch);
+            }
+        }
+    }
+
+    if let Some(selected) = chunk_selected {
+        runs.push(run(
+            &chunk,
+            if selected {
+                look.selection_foreground
+            } else {
+                look.foreground
+            },
+        ));
+    }
+
+    runs
+}
+
+fn char_to_byte_offset(text: &str, char_offset: usize) -> usize {
+    text.chars().take(char_offset).map(char::len_utf8).sum()
+}
 
 pub type TextFieldHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type TextFieldMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -22,6 +83,7 @@ pub type TextFieldMouseMoveHandler = Box<dyn Fn(&MouseMoveEvent, &mut Window, &m
 pub type TextFieldMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 pub type TextFieldKeyDownHandler = Box<dyn Fn(&gpui::KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type TextFieldClickHandler = Box<dyn Fn(&gpui::ClickEvent, &mut Window, &mut App) + 'static>;
+pub type TextFieldDragMoveHandler = Box<dyn Fn(&DragMoveEvent<TextFieldDrag>, &mut Window, &mut App) + 'static>;
 
 pub struct TextFieldTemplateHandlers {
     pub hover: TextFieldHoverHandler,
@@ -31,6 +93,7 @@ pub struct TextFieldTemplateHandlers {
     pub mouse_up_out: TextFieldMouseUpHandler,
     pub click: TextFieldClickHandler,
     pub key_down: TextFieldKeyDownHandler,
+    pub drag_move: TextFieldDragMoveHandler,
 }
 
 pub type TextFieldTemplateModifier =
@@ -244,100 +307,69 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                         .child(model.placeholder.clone()),
                 )
         } else {
-            let mut row = div()
-                .min_w(px(0.0))
-                .flex()
-                .items_center()
-                .text_color(look.foreground)
-                .text_size(px(look.typography.size))
-                .line_height(px(look.typography.line_height))
-                .font_family(look.font_family.clone())
-                .font_weight(look.typography.weight);
+            let value = model.value.clone();
+            let horizontal_scroll = model.horizontal_scroll;
+            let enabled = model.enabled;
+            let caret_visible = model.caret_visible;
+            let caret = cursor;
+            let line_height = px(look.typography.line_height);
+            let canvas_look = look.clone();
 
-            for caret_ix in 0..=chars.len() {
-                let in_selection = selection.map(|(start, end)| caret_ix >= start && caret_ix < end).unwrap_or(false);
-                let char_color = if in_selection {
-                    look.selection_foreground
-                } else {
-                    look.foreground
-                };
-
-                if let Some(ch) = chars.get(caret_ix) {
-                    let width = model
-                        .character_offsets
-                        .get(caret_ix + 1)
-                        .zip(model.character_offsets.get(caret_ix))
-                        .map(|(next, current)| (next - current).max(0.0))
-                        .unwrap_or(0.0);
-
-                    row = row.child(
-                        div()
-                            .relative()
-                            .flex_none()
-                            .w(px(width))
-                            .flex()
-                            .items_center()
-                            .h(px(caret_height))
-                            .text_color(char_color)
-                            .child(ch.to_string())
-                            .when(
-                                model.enabled && model.caret_visible && cursor == caret_ix && selection.is_none(),
-                                |cell| {
-                                    cell.child(
-                                        div()
-                                            .absolute()
-                                            .left(px(CARET_EDGE_OFFSET))
-                                            .top(px(CARET_EDGE_OFFSET))
-                                            .w(px(TEXTFIELD_CARET_WIDTH))
-                                            .h(px(caret_height))
-                                            .bg(look.caret),
-                                    )
-                                },
-                            ),
-                    );
-                } else {
-                    row = row.child(
-                        div().relative().flex_none().w(px(TEXTFIELD_TRAILING_HITBOX_WIDTH)).h(px(caret_height)).when(
-                            model.enabled && model.caret_visible && cursor == caret_ix && selection.is_none(),
-                            |cell| {
-                                cell.child(
-                                    div()
-                                        .absolute()
-                                        .left(px(CARET_EDGE_OFFSET))
-                                        .top(px(CARET_EDGE_OFFSET))
-                                        .w(px(TEXTFIELD_CARET_WIDTH))
-                                        .h(px(caret_height))
-                                        .bg(look.caret),
+            div().min_w(px(0.0)).flex_1().h(px(look.typography.line_height)).overflow_hidden().child(
+                canvas(
+                    move |bounds, window, _| {
+                        let line = window.text_system().shape_line(
+                            value.clone(),
+                            px(canvas_look.typography.size),
+                            &colored_runs_for_text(value.as_ref(), selection, &canvas_look),
+                            None,
+                        );
+                        let selection_quad = selection.and_then(|(start, end)| {
+                            let start_x = line.x_for_index(char_to_byte_offset(value.as_ref(), start));
+                            let end_x = line.x_for_index(char_to_byte_offset(value.as_ref(), end));
+                            (end_x > start_x).then(|| {
+                                fill(
+                                    Bounds::from_corners(
+                                        point(bounds.left() + start_x - px(horizontal_scroll), bounds.top()),
+                                        point(bounds.left() + end_x - px(horizontal_scroll), bounds.bottom()),
+                                    ),
+                                    canvas_look.selection_background,
                                 )
-                            },
-                        ),
-                    );
-                }
-            }
-
-            let selection_overlay = selection.and_then(|(start, end)| {
-                let start_x = model.character_offsets.get(start).copied().unwrap_or(0.0);
-                let end_x = model.character_offsets.get(end).copied().unwrap_or(start_x);
-                let width = (end_x - start_x).max(0.0);
-                (width > 0.0).then(|| {
-                    div()
-                        .absolute()
-                        .left(px(start_x))
-                        .top(px(0.0))
-                        .w(px(width))
-                        .h(px(caret_height))
-                        .bg(look.selection_background)
-                })
-            });
-
-            div().min_w(px(0.0)).flex_1().overflow_hidden().child(
-                div()
-                    .relative()
-                    .left(px(-model.horizontal_scroll))
-                    .flex()
-                    .items_center()
-                    .when_some(selection_overlay, |text, overlay| text.child(overlay))
-                    .child(row),
+                            })
+                        });
+                        let caret_quad = if enabled && caret_visible && selection.is_none() {
+                            let x = line.x_for_index(char_to_byte_offset(value.as_ref(), caret));
+                            Some(fill(
+                                Bounds::new(
+                                    point(bounds.left() + x - px(horizontal_scroll + CARET_EDGE_OFFSET), bounds.top()),
+                                    size(px(TEXTFIELD_CARET_WIDTH), bounds.size.height),
+                                ),
+                                canvas_look.caret,
+                            ))
+                        } else {
+                            None
+                        };
+                        (line, selection_quad, caret_quad)
+                    },
+                    move |bounds, (line, selection_quad, caret_quad), window, cx| {
+                        if let Some(selection_quad) = selection_quad {
+                            window.paint_quad(selection_quad);
+                        }
+                        line.paint(
+                            point(bounds.left() - px(horizontal_scroll), bounds.top()),
+                            line_height,
+                            TextAlign::Left,
+                            None,
+                            window,
+                            cx,
+                        )
+                        .ok();
+                        if let Some(caret_quad) = caret_quad {
+                            window.paint_quad(caret_quad);
+                        }
+                    },
+                )
+                .size_full(),
             )
         };
 
@@ -401,7 +433,12 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             .on_mouse_up(gpui::MouseButton::Left, handlers.mouse_up)
             .on_mouse_up_out(gpui::MouseButton::Left, handlers.mouse_up_out)
             .on_click(handlers.click)
-            .on_key_down(handlers.key_down);
+            .on_key_down(handlers.key_down)
+            .on_drag(TextFieldDrag::new(model.id.clone()), |drag, _, _, cx| {
+                cx.stop_propagation();
+                cx.new(|_| drag.clone())
+            })
+            .on_drag_move(handlers.drag_move);
 
         self.apply_modifiers(root, model)
     }
