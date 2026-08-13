@@ -7,6 +7,8 @@ use gpui_luma::theme::{ThemePartUsage, ThemeUsage};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextRole, ShadcnTextSize, all_shadcn_theme_usages};
 
+use crate::studio::color_format::format_compact_hsla;
+
 type UsageRef = (&'static str, &'static ThemePartUsage);
 
 #[derive(Clone)]
@@ -472,27 +474,4 @@ fn token_status(used_by_sdk: bool) -> &'static str {
 
 fn token_label(token: &CatalogToken) -> String {
     format!("--{}", token.token)
-}
-
-fn format_compact_hsla(color: gpui::Hsla) -> String {
-    format!(
-        "hsla({} {}% {}% / {})",
-        rounded_channel(color.h * 360.0),
-        rounded_channel(color.s * 100.0),
-        rounded_channel(color.l * 100.0),
-        compact_alpha(color.a)
-    )
-}
-
-fn rounded_channel(value: f32) -> i32 {
-    value.round() as i32
-}
-
-fn compact_alpha(alpha: f32) -> String {
-    let rounded = (alpha * 100.0).round() / 100.0;
-    if (rounded - rounded.round()).abs() <= f32::EPSILON {
-        format!("{}", rounded.round() as i32)
-    } else {
-        format!("{rounded:.2}").trim_end_matches('0').trim_end_matches('.').to_string()
-    }
 }

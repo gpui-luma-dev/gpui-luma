@@ -918,7 +918,13 @@ fn apply_string_overrides_to_catalog(mut catalog: CssTokenMap, overrides: &HashM
 }
 
 fn hsla_to_css_value(color: Hsla) -> String {
-    format!("hsl({} {}% {}%)", (color.h * 360.0).round(), (color.s * 100.0).round(), (color.l * 100.0).round())
+    format!(
+        "hsla({} {}% {}% / {:.3})",
+        (color.h * 360.0).round(),
+        (color.s * 100.0).round(),
+        (color.l * 100.0).round(),
+        color.a.clamp(0.0, 1.0)
+    )
 }
 
 fn mode_to_u8(mode: ThemeMode) -> u8 {
@@ -983,5 +989,16 @@ mod tests {
     fn radius_scales_from_base_token() {
         let look = ShadcnLook::native();
         assert!(look.radius(ShadcnRadius::Lg) >= look.radius(ShadcnRadius::Sm));
+    }
+
+    #[test]
+    fn color_overrides_preserve_alpha_in_catalog() {
+        let color = gpui::hsla(120.0 / 360.0, 1.0, 0.5, 0.0);
+        let css = hsla_to_css_value(color);
+        assert_eq!(css, "hsla(120 100% 50% / 0.000)");
+
+        let look = ShadcnLook::native();
+        let overridden = look.with_color_overrides(&HashMap::from([(String::from("--accent"), color)]));
+        assert_eq!(overridden.color(ShadcnToken::Accent).a, 0.0);
     }
 }

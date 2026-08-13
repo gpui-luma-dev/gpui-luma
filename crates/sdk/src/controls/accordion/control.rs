@@ -3,8 +3,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use gpui::{
-    App, Context, EventEmitter, FocusOutEvent, Focusable, FocusHandle, IntoElement, Render, SharedString, Subscription,
-    Window, div, prelude::*,
+    App, Context, EventEmitter, FocusOutEvent, Focusable, FocusHandle, IntoElement, KeyDownEvent, Render, SharedString,
+    Subscription, Window, div, prelude::*,
 };
 
 use super::{
@@ -13,10 +13,7 @@ use super::{
 };
 use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::state::{CompositeItemState, ControlFocusState};
-use crate::keyhandling::{
-    ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectNextRow,
-    SelectPreviousItem, SelectPreviousRow,
-};
+use crate::keyhandling::{ActivateControl, SelectFirstItem, SelectLastItem};
 use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
@@ -33,6 +30,15 @@ pub enum AccordionEvent {
 pub(crate) enum AccordionDirection {
     Previous,
     Next,
+}
+
+#[derive(Clone, Copy)]
+enum AccordionKeyAction {
+    Previous,
+    Next,
+    First,
+    Last,
+    Activate,
 }
 
 pub struct AccordionControl {
@@ -315,20 +321,37 @@ impl AccordionControl {
         }
     }
 
-    fn handle_previous(&mut self, _: &SelectPreviousItem, _: &mut Window, cx: &mut Context<Self>) {
-        self.move_focus(AccordionDirection::Previous, cx);
-    }
+    fn handle_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        let key = event.keystroke.key.as_str();
+        let modifiers = event.keystroke.modifiers;
+        let shortcut = modifiers.platform || modifiers.control;
 
-    fn handle_next(&mut self, _: &SelectNextItem, _: &mut Window, cx: &mut Context<Self>) {
-        self.move_focus(AccordionDirection::Next, cx);
-    }
+        let action = match (key, shortcut) {
+            ("left", false) => Some(AccordionKeyAction::Previous),
+            ("right", false) => Some(AccordionKeyAction::Next),
+            ("up", false) => Some(AccordionKeyAction::Previous),
+            ("down", false) => Some(AccordionKeyAction::Next),
+            ("left", true) | ("a", true) => Some(AccordionKeyAction::First),
+            ("right", true) | ("e", true) => Some(AccordionKeyAction::Last),
+            ("home", false) => Some(AccordionKeyAction::First),
+            ("end", false) => Some(AccordionKeyAction::Last),
+            ("enter", false) | ("space", false) => Some(AccordionKeyAction::Activate),
+            _ => None,
+        };
 
-    fn handle_previous_row(&mut self, _: &SelectPreviousRow, _: &mut Window, cx: &mut Context<Self>) {
-        self.move_focus(AccordionDirection::Previous, cx);
-    }
+        let Some(action) = action else {
+            return;
+        };
 
-    fn handle_next_row(&mut self, _: &SelectNextRow, _: &mut Window, cx: &mut Context<Self>) {
-        self.move_focus(AccordionDirection::Next, cx);
+        match action {
+            AccordionKeyAction::Previous => self.move_focus(AccordionDirection::Previous, cx),
+            AccordionKeyAction::Next => self.move_focus(AccordionDirection::Next, cx),
+            AccordionKeyAction::First => self.handle_first(&crate::keyhandling::SelectFirstItem, window, cx),
+            AccordionKeyAction::Last => self.handle_last(&crate::keyhandling::SelectLastItem, window, cx),
+            AccordionKeyAction::Activate => self.handle_activate(&ActivateControl, window, cx),
+        }
+        window.prevent_default();
+        cx.stop_propagation();
     }
 
     fn move_focus(&mut self, direction: AccordionDirection, cx: &mut Context<Self>) {
@@ -440,14 +463,7 @@ impl Render for AccordionControl {
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(&self.focus_handle)
-                    .key_context(ControlKeyProfile::TabList.context())
-                    .on_action(cx.listener(Self::handle_previous))
-                    .on_action(cx.listener(Self::handle_next))
-                    .on_action(cx.listener(Self::handle_previous_row))
-                    .on_action(cx.listener(Self::handle_next_row))
-                    .on_action(cx.listener(Self::handle_first))
-                    .on_action(cx.listener(Self::handle_last))
-                    .on_action(cx.listener(Self::handle_activate)),
+                    .on_key_down(cx.listener(Self::handle_key_down)),
             )
             .into_any_element()
     }

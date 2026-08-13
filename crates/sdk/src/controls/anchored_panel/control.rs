@@ -244,8 +244,16 @@ impl AnchoredPanel {
         cx.stop_propagation();
     }
 
+    fn handle_mouse_move(&mut self, _: &gpui::MouseMoveEvent, _: &mut Window, cx: &mut Context<Self>) {
+        // An open anchored panel owns hover tracking while the pointer is over
+        // its content. Do not let underlying controls react to the same move.
+        cx.stop_propagation();
+    }
+
     fn handle_mouse_down_out(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
-        if self.model.anchor_bounds.is_some_and(|bounds| bounds.contains(&event.position)) {
+        let inside_anchor = self.model.anchor_bounds.is_some_and(|bounds| bounds.contains(&event.position));
+        let inside_content = self.content_bounds.is_some_and(|bounds| bounds.contains(&event.position));
+        if inside_anchor || inside_content {
             return;
         }
         if self.dismiss_guard {
@@ -347,6 +355,10 @@ impl Render for AnchoredPanel {
         let opacity = self.presence.opacity();
 
         let content = div()
+            // The overlay owns pointer hit-testing while open. Without this,
+            // deferred anchored content can still leave underlying controls
+            // hovered as the pointer moves across the popup.
+            .block_mouse_except_scroll()
             .on_prepaint(move |bounds, _, cx| {
                 panel.update(cx, |panel, cx| panel.handle_content_bounds(bounds, cx));
             })
@@ -367,6 +379,7 @@ impl Render for AnchoredPanel {
             .key_context("LumaFocus")
             .occlude()
             .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_shell_mouse_down))
+            .on_mouse_move(cx.listener(Self::handle_mouse_move))
             .on_mouse_down_out(cx.listener(Self::handle_mouse_down_out))
             .on_action(cx.listener(Self::handle_escape_focus))
             .child(deferred(overlay).with_priority(1))

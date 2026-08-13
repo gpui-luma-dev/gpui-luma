@@ -10,6 +10,7 @@ pub mod schema;
 pub mod specs;
 
 pub mod color_chrome;
+mod components;
 
 pub use render::{layout, render_category_content};
 pub use schema::{

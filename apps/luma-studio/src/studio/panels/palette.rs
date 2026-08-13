@@ -9,7 +9,7 @@ use gpui_luma_look_shadcn::{ShadcnLook, ShadcnModeTokens, ShadcnTextRole, Shadcn
 
 use crate::studio::export::token_css_name;
 use crate::studio::overrides::StudioOverrides;
-use crate::studio::content_tabs::cards::format_hex_color;
+use crate::studio::color_format::format_compact_hsla;
 
 const PALETTE_SWATCH_SIZE: f32 = 40.0;
 const PALETTE_ITEM_GAP: f32 = 12.0;
@@ -262,7 +262,7 @@ fn render_token_cell(
                 .font_family("Monaco")
                 .typography_style(code_style)
                 .text_color(muted_text)
-                .child(format_hex_color(row.color)),
+                .child(format_compact_hsla(row.color)),
         }
         .w(px(PALETTE_CELL_TEXT_WIDTH))
         .flex_shrink_0(),
