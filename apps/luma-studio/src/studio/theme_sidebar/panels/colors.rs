@@ -2,10 +2,21 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Context, Entity, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*,
-    px,
+    AnyElement, App, Context, Entity, EventEmitter, Hsla, IntoElement, Render, SharedString, Subscription, Window, div,
+    prelude::*, px,
 };
+use gpui_luma::controls::anchored_panel::{AnchoredPanel, AnchoredPanelDismissPolicy, AnchoredPanelPlacement};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
+use gpui_luma::controls::color::ColorSwatch;
+use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
+use gpui_luma::controls::color::color_slider::color_spec::Hsv;
+use gpui_luma::controls::color::color_slider::{
+    AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing,
+};
+use gpui_luma::controls::color::composition::ColorCompositionSync;
+use gpui_luma::controls::color::style::ElementExt;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
+use gpui_luma::theme::ControlSize;
 use gpui_luma::controls::textfield::{TextField, TextFieldBuilder, TextFieldEvent, TextFieldLook, TextFieldLookOverride};
 use gpui_luma::vstack;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -22,6 +33,7 @@ pub struct ColorsPanel {
     look: Arc<ShadcnLook>,
     global_overrides: HashMap<String, Hsla>,
     token_fields: HashMap<String, TextField>,
+    token_pickers: HashMap<String, Entity<ColorPickerPopover>>,
     token_accordion: Entity<AccordionControl>,
 }
 
@@ -29,9 +41,10 @@ impl ColorsPanel {
     pub fn new(look: Arc<ShadcnLook>, overrides: &StudioOverrides, cx: &mut Context<Self>) -> Self {
         let global_overrides = overrides.global_color_overrides.clone();
         let token_fields = build_token_fields(&look, &global_overrides, cx);
+        let token_pickers = build_token_pickers(&look, &global_overrides, cx);
         let token_accordion = Self::build_token_accordion(cx.entity(), look.clone(), &HashSet::new(), cx);
 
-        Self { look, global_overrides, token_fields, token_accordion }
+        Self { look, global_overrides, token_fields, token_pickers, token_accordion }
     }
 
     pub fn apply_theme_snapshot(&mut self, look: Arc<ShadcnLook>, overrides: &StudioOverrides, cx: &mut Context<Self>) {
@@ -41,6 +54,7 @@ impl ColorsPanel {
         let theme = self.look.clone();
         self.sync_templates(&theme, cx);
         self.sync_values(theme.as_ref(), overrides, cx);
+        self.sync_pickers(theme.as_ref(), overrides, cx);
         self.token_accordion = Self::build_token_accordion(cx.entity(), theme, &expanded, cx);
         cx.notify();
     }
@@ -49,6 +63,7 @@ impl ColorsPanel {
         self.global_overrides = overrides.global_color_overrides.clone();
         let theme = self.look.clone();
         self.sync_values(theme.as_ref(), overrides, cx);
+        self.sync_pickers(theme.as_ref(), overrides, cx);
         cx.notify();
     }
 
@@ -68,6 +83,12 @@ impl ColorsPanel {
                         };
                         app.set_global_color(&token_key, color, cx);
                     }
+                }));
+                let picker = panel.read(cx).token_pickers.get(*token).expect("token picker").clone();
+                let token_key = token.to_string();
+                subscriptions.push(cx.subscribe(&picker, move |app, _, event: &ColorPickerEvent, cx| {
+                    let ColorPickerEvent::Change(color) = event;
+                    app.set_global_color(&token_key, *color, cx);
                 }));
             }
         }
@@ -91,6 +112,13 @@ impl ColorsPanel {
                 let value = format_compact_hsla(effective_token_color(look, &overrides.global_color_overrides, token));
                 field.update(cx, |field, cx| field.set_value(value, cx));
             }
+        }
+    }
+
+    fn sync_pickers(&self, look: &ShadcnLook, overrides: &StudioOverrides, cx: &mut Context<Self>) {
+        for (token, picker) in &self.token_pickers {
+            let color = effective_token_color(look, &overrides.global_color_overrides, token);
+            picker.update(cx, |picker, cx| picker.set_color(color, cx));
         }
     }
 
@@ -143,7 +171,6 @@ impl ColorsPanel {
 
     fn category_token_content(&self, tokens: &[(&str, &str)]) -> AnyElement {
         let theme = &self.look;
-        let overrides = &self.global_overrides;
         let chrome = theme.chrome();
         let row_label_typography = theme.mode_tokens().typography.text.label;
 
@@ -155,16 +182,18 @@ impl ColorsPanel {
             let Some(field) = self.token_fields.get(*token) else {
                 continue;
             };
-            let color = effective_token_color(theme, overrides, token);
             let label = label.to_string();
             let field = field.clone();
+            let Some(picker) = self.token_pickers.get(*token) else {
+                continue;
+            };
 
             rows = vstack! {
                 gap=6;
                 rows,
                 token_color_row(
                     label,
-                    color,
+                    picker.clone(),
                     field,
                     &chrome,
                     &row_label_typography,
@@ -174,6 +203,181 @@ impl ColorsPanel {
 
         rows.into_any_element()
     }
+}
+
+#[derive(Clone, Debug)]
+pub enum ColorPickerEvent {
+    Change(Hsla),
+}
+
+struct ColorPickerPopover {
+    look: Arc<ShadcnLook>,
+    color: Hsla,
+    hsv: Hsv,
+    sync: ColorCompositionSync,
+    field: Entity<ColorFieldState>,
+    hue_slider: Entity<SliderControl>,
+    alpha_slider: Entity<SliderControl>,
+    alpha_domain: Arc<ColorSliderDomainRenderer>,
+    panel: Entity<AnchoredPanel>,
+    _subscriptions: Vec<Subscription>,
+}
+
+impl EventEmitter<ColorPickerEvent> for ColorPickerPopover {}
+
+impl ColorPickerPopover {
+    fn new(look: Arc<ShadcnLook>, color: Hsla, cx: &mut Context<Self>) -> Self {
+        let hsv = Hsv::from_hsla_ext(color);
+        let field = cx.new(|_| {
+            ColorFieldState::saturation_value("colors-picker-field", hsv, sizing::THUMB_SIZE_MEDIUM)
+                .vector()
+                .rounded(px(4.0))
+        });
+        let hue_slider = ColorSliderBuilder::hue("colors-picker-hue", hsv.h)
+            .size(ControlSize::Sm)
+            .thumb_medium()
+            .edge_to_edge()
+            .spawn(cx);
+        let alpha_builder = ColorSliderBuilder::alpha("colors-picker-alpha", hsv.a, hsv)
+            .size(ControlSize::Sm)
+            .thumb_medium()
+            .edge_to_edge();
+        let alpha_domain = alpha_builder.domain_renderer();
+        let alpha_slider = alpha_builder.spawn(cx);
+
+        let entity = cx.entity().clone();
+        let panel = AnchoredPanel::new("colors-picker-popup")
+            .content(move |_, _, cx| entity.update(cx, |picker, _| picker.render_popup()))
+            .placement(AnchoredPanelPlacement::SmartStart)
+            .dismiss_policy(AnchoredPanelDismissPolicy::CloseOnClickAway)
+            .spawn(cx);
+
+        let subscriptions = vec![
+            cx.subscribe(&field, |picker, _, event: &ColorFieldEvent, cx| {
+                let (ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv)) = event else {
+                    return;
+                };
+                // The SV field owns H/S/V only. Keep the alpha selected by the
+                // alpha slider; field events must never reset it.
+                picker.hsv.a = picker.color.a;
+                picker.hsv.s = hsv.s;
+                picker.hsv.v = hsv.v;
+                picker.sync_controls(cx, false);
+                picker.emit_change(cx);
+            }),
+            cx.subscribe(&hue_slider, |picker, _, event: &SliderEvent, cx| {
+                let Some(value) = primary_slider_value(event) else {
+                    return;
+                };
+                picker.hsv.h = value;
+                picker.sync_controls(cx, true);
+                picker.emit_change(cx);
+            }),
+            cx.subscribe(&alpha_slider, |picker, _, event: &SliderEvent, cx| {
+                let Some(value) = primary_slider_value(event) else {
+                    return;
+                };
+                picker.hsv.a = value;
+                picker.sync_controls(cx, true);
+                picker.emit_change(cx);
+            }),
+        ];
+
+        Self {
+            look,
+            color,
+            hsv,
+            sync: ColorCompositionSync::new(),
+            field,
+            hue_slider,
+            alpha_slider,
+            alpha_domain,
+            panel,
+            _subscriptions: subscriptions,
+        }
+    }
+
+    fn set_color(&mut self, color: Hsla, cx: &mut Context<Self>) {
+        self.color = color;
+        self.hsv = Hsv::from_hsla_ext(color);
+        self.sync_controls(cx, true);
+        cx.notify();
+    }
+
+    fn sync_controls(&self, cx: &mut Context<Self>, sync_field: bool) {
+        if sync_field {
+            self.field.update(cx, |field, cx| field.set_hsv(self.hsv, cx));
+        }
+        self.sync.sync_slider_value(&self.hue_slider, self.hsv.h, cx);
+        self.sync.sync_color_slider(
+            &self.alpha_slider,
+            &self.alpha_domain,
+            Arc::new(AlphaDelegate { spec: self.hsv }),
+            self.alpha_domain.context(),
+            self.hsv.a,
+            cx,
+        );
+    }
+
+    fn emit_change(&mut self, cx: &mut Context<Self>) {
+        self.color = self.hsv.to_hsla_ext();
+        cx.emit(ColorPickerEvent::Change(self.color));
+        cx.notify();
+    }
+
+    fn render_popup(&self) -> AnyElement {
+        div()
+            .w(px(260.0))
+            .p(px(12.0))
+            .gap(px(10.0))
+            .flex()
+            .flex_col()
+            .bg(self.look.chrome().content_background)
+            .border_1()
+            .border_color(self.look.chrome().border)
+            .rounded(px(6.0))
+            .child(div().w(px(236.0)).h(px(180.0)).child(self.field.clone()))
+            .child(div().w(px(236.0)).child(self.hue_slider.clone()))
+            .child(div().w(px(236.0)).child(self.alpha_slider.clone()))
+            .into_any_element()
+    }
+}
+
+impl Render for ColorPickerPopover {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        let panel = self.panel.clone();
+        let color = self.color;
+        let mut swatch = div()
+            .id("colors-picker-swatch")
+            .size(px(30.0))
+            .rounded(px(4.0))
+            .on_click(move |_, window, cx| {
+                panel.update(cx, |panel, cx| panel.toggle_guarded_from(None, cx));
+                window.prevent_default();
+            })
+            .child(ColorSwatch::new(color).height(px(30.0)).rounded(px(4.0)).checkerboard(true));
+        let panel_for_bounds = self.panel.clone();
+        swatch = swatch.on_prepaint(move |bounds, _, cx| {
+            panel_for_bounds.update(cx, |panel, cx| panel.set_anchor_bounds(bounds, cx));
+        });
+        div().size(px(30.0)).relative().child(swatch).child(self.panel.clone())
+    }
+}
+
+fn build_token_pickers(
+    look: &Arc<ShadcnLook>,
+    overrides: &HashMap<String, Hsla>,
+    cx: &mut Context<ColorsPanel>,
+) -> HashMap<String, Entity<ColorPickerPopover>> {
+    let mut pickers = HashMap::new();
+    for (_, tokens) in TOKEN_CATEGORIES {
+        for (token, _) in *tokens {
+            let color = effective_token_color(look, overrides, token);
+            let picker = cx.new(|cx| ColorPickerPopover::new(look.clone(), color, cx));
+            pickers.insert(token.to_string(), picker);
+        }
+    }
+    pickers
 }
 
 impl Render for ColorsPanel {

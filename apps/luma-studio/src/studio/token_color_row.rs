@@ -1,4 +1,4 @@
-use gpui::{Hsla, IntoElement, SharedString, div, prelude::*, px};
+use gpui::{IntoElement, SharedString, div, prelude::*, px};
 use gpui_luma::theme::{LumaChrome, LumaTextStyle};
 
 pub(crate) const TOKEN_SWATCH_SIZE: f32 = 30.0;
@@ -14,7 +14,7 @@ const TOKEN_EDITOR_WIDTH: f32 = 320.0;
 /// Single-row token editor: swatch, label, and HSLA field.
 pub(crate) fn token_color_row(
     label: impl Into<SharedString>,
-    swatch_color: Hsla,
+    swatch: impl IntoElement,
     control: impl IntoElement,
     chrome: &LumaChrome,
     label_typography: &LumaTextStyle,
@@ -25,15 +25,7 @@ pub(crate) fn token_color_row(
         .w_full()
         .gap(px(8.0))
         .items_center()
-        .child(
-            div()
-                .size(px(TOKEN_SWATCH_SIZE))
-                .flex_shrink_0()
-                .rounded(px(TOKEN_SWATCH_RADIUS))
-                .bg(swatch_color)
-                .border_1()
-                .border_color(chrome.border),
-        )
+        .child(div().size(px(TOKEN_SWATCH_SIZE)).flex_shrink_0().rounded(px(TOKEN_SWATCH_RADIUS)).child(swatch))
         .child(
             div()
                 .flex_shrink_0()
