@@ -42,7 +42,11 @@ impl Render for ColorVizApp {
         let chrome = self.look.chrome();
         let sans_family = self.look.mode_tokens().typography.font.sans.family.clone();
 
-        let title_bar = TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
+        let title_bar = TitleBar::new()
+            .background_color(chrome.panel_background)
+            .border_color(chrome.border)
+            .text_color(chrome.title_text)
+            .child(
             div()
                 .id("color-viz-titlebar")
                 .h_full()

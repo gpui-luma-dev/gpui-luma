@@ -64,7 +64,11 @@ pub fn render_title_bar<T: Render + HasShellTheme>(title: &str, app: &T, _cx: &m
     let chrome = look.chrome();
     let sans_family = look.mode_tokens().typography.font.sans.family.clone();
 
-    TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
+    TitleBar::new()
+        .background_color(chrome.panel_background)
+        .border_color(chrome.border)
+        .text_color(chrome.title_text)
+        .child(
         div()
             .id("shell-titlebar")
             .h_full()

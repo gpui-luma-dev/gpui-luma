@@ -206,7 +206,11 @@ impl Render for GraphVizApp {
 
         let main_shell = self.workbench.render_body();
 
-        let title_bar = TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
+        let title_bar = TitleBar::new()
+            .background_color(chrome.panel_background)
+            .border_color(chrome.border)
+            .text_color(chrome.title_text)
+            .child(
             div()
                 .id("graph-viz-titlebar")
                 .h_full()

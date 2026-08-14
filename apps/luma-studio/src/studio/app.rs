@@ -567,7 +567,11 @@ impl Render for LumaStudioApp {
         let title_style = self.look.typography_role(ShadcnTextRole::H4);
         let main_shell = self.workbench.render_body();
 
-        let title_bar = TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
+        let title_bar = TitleBar::new()
+            .background_color(chrome.panel_background)
+            .border_color(chrome.border)
+            .text_color(chrome.title_text)
+            .child(
             div()
                 .id("luma-studio-titlebar")
                 .h_full()

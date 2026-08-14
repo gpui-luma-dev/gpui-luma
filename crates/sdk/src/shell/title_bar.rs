@@ -28,6 +28,7 @@ pub struct TitleBar {
     on_close_window: Option<CloseWindowHandler>,
     background_color: Option<Hsla>,
     border_color: Option<Hsla>,
+    text_color: Option<Hsla>,
 }
 
 impl TitleBar {
@@ -39,6 +40,7 @@ impl TitleBar {
             on_close_window: None,
             background_color: None,
             border_color: None,
+            text_color: None,
         }
     }
 
@@ -70,6 +72,12 @@ impl TitleBar {
     /// Set a custom title bar bottom border color.
     pub fn border_color(mut self, color: Hsla) -> Self {
         self.border_color = Some(color);
+        self
+    }
+
+    /// Set a custom title bar text color (used for window control icons on Windows/Linux).
+    pub fn text_color(mut self, color: Hsla) -> Self {
+        self.text_color = Some(color);
         self
     }
 }
@@ -163,11 +171,15 @@ impl ControlIcon {
     }
 }
 
-fn render_control_icon(icon: ControlIcon) -> AnyElement {
+fn render_control_icon(icon: ControlIcon, text_color: Hsla) -> AnyElement {
     let is_linux = cfg!(target_os = "linux");
     let is_windows = cfg!(target_os = "windows");
 
-    let hover_fg = icon.hover_fg();
+    let hover_fg = if icon.is_close() {
+        hsla(0.0, 0.0, 1.0, 1.0)
+    } else {
+        text_color
+    };
     let hover_bg = icon.hover_bg();
     let active_bg = icon.active_bg();
     let icon_for_click = icon.clone();
@@ -184,7 +196,7 @@ fn render_control_icon(icon: ControlIcon) -> AnyElement {
         .flex_shrink_0()
         .justify_center()
         .items_center()
-        .text_color(hsla(0.0, 0.0, 1.0, 0.85))
+        .text_color(text_color)
         .hover(|style| style.bg(hover_bg).text_color(hover_fg))
         .active(|style| style.bg(active_bg).text_color(hover_fg))
         .when(is_windows, |this| this.window_control_area(icon.window_control_area()))
@@ -212,7 +224,11 @@ fn render_control_icon(icon: ControlIcon) -> AnyElement {
         .into_any_element()
 }
 
-fn render_window_controls(window: &mut Window, on_close_window: Option<CloseWindowHandler>) -> AnyElement {
+fn render_window_controls(
+    window: &mut Window,
+    on_close_window: Option<CloseWindowHandler>,
+    text_color: Hsla,
+) -> AnyElement {
     if cfg!(target_os = "macos") {
         return div().id("window-controls").into_any_element();
     }
@@ -224,13 +240,16 @@ fn render_window_controls(window: &mut Window, on_close_window: Option<CloseWind
         .items_center()
         .flex_shrink_0()
         .h_full()
-        .child(render_control_icon(ControlIcon::minimize()))
-        .child(render_control_icon(if window.is_maximized() {
-            ControlIcon::restore()
-        } else {
-            ControlIcon::maximize()
-        }))
-        .child(render_control_icon(ControlIcon::close(on_close_window)))
+        .child(render_control_icon(ControlIcon::minimize(), text_color))
+        .child(render_control_icon(
+            if window.is_maximized() {
+                ControlIcon::restore()
+            } else {
+                ControlIcon::maximize()
+            },
+            text_color,
+        ))
+        .child(render_control_icon(ControlIcon::close(on_close_window), text_color))
         .into_any_element()
 }
 
@@ -263,6 +282,7 @@ impl RenderOnce for TitleBar {
         let is_linux = cfg!(target_os = "linux");
         let border_color = self.border_color.unwrap_or(hsla(0.0, 0.0, 1.0, 0.1));
         let background_color = self.background_color.unwrap_or(hsla(0.0, 0.0, 0.11, 1.0));
+        let text_color = self.text_color.unwrap_or(hsla(0.0, 0.0, 1.0, 0.85));
 
         let state = window.use_state(cx, |_, _| TitleBarState { drag_start_position: None });
 
@@ -304,9 +324,7 @@ impl RenderOnce for TitleBar {
                 .on_mouse_down(MouseButton::Left, move |ev, window, cx| {
                     if ev.click_count >= 2 {
                         cx.stop_propagation();
-                        if !window.is_fullscreen() {
-                            window.zoom_window();
-                        }
+                        window.zoom_window();
                     }
                 })
                 .child(
@@ -336,7 +354,7 @@ impl RenderOnce for TitleBar {
                         })
                         .children(self.children),
                 )
-                .child(render_window_controls(window, self.on_close_window)),
+                .child(render_window_controls(window, self.on_close_window, text_color)),
         )
     }
 }

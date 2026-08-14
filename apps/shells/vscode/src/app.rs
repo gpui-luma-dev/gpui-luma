@@ -295,7 +295,11 @@ impl Render for VscodeShellApp {
             layout.set_frame_size(viewport.width, workspace_height, cx);
         });
 
-        let title_bar = TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
+        let title_bar = TitleBar::new()
+            .background_color(chrome.panel_background)
+            .border_color(chrome.border)
+            .text_color(chrome.title_text)
+            .child(
             div()
                 .id("shell-vscode-titlebar")
                 .h_full()
