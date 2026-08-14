@@ -10,6 +10,7 @@ use crate::controls::button_family::{
 use crate::theme::InteractionState;
 
 const DISABLED_OPACITY: f32 = 0.56;
+const FOCUS_RING_GAP: f32 = 1.0;
 
 use crate::controls::template::{Modifier, TemplateWithModifiers};
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
@@ -183,8 +184,21 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
         );
         let look = resolve_look(&self.theme, model, &scale);
+        let focused = model.state.focused && !model.state.disabled;
+        let control_look = if focused {
+            resolve_probe_look(&self.theme, model, &scale, InteractionState { focused: false, ..model.state })
+        } else {
+            look.clone()
+        };
         let elevation_probe_look = resolve_elevation_probe_look(&self.theme, model, &scale);
-        let border = button_family_effective_border(look.border);
+        let border = button_family_effective_border(control_look.border);
+        let focus_border = button_family_effective_border(look.border);
+        let focus_metrics = self.theme.metrics().focus;
+        let focus_extent = if focused && focus_border.a > 0.0 {
+            FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+        } else {
+            0.0
+        };
 
         let mut control = div()
             .id(format!("{}-control", model.id))
@@ -261,7 +275,15 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             scale_factor,
             model.elevation,
         );
-        let oversize_extent = shadow_extent;
+        let oversize_extent = shadow_extent.max(focus_extent);
+
+        let radius = if let Some(radius) = model.radius_override.get() {
+            radius
+        } else if model.round {
+            look.height / 2.0
+        } else {
+            look.radius
+        };
 
         let adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
 
@@ -271,6 +293,21 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         } else {
             root.child(adorned)
         };
+
+        if focus_extent > 0.0 {
+            let ring_inset = (oversize_extent - focus_extent).max(0.0);
+            root = root.child(
+                div()
+                    .absolute()
+                    .top(px(ring_inset))
+                    .right(px(ring_inset))
+                    .bottom(px(ring_inset))
+                    .left(px(ring_inset))
+                    .border(px(focus_metrics.width))
+                    .border_color(focus_border)
+                    .rounded(px(radius + FOCUS_RING_GAP + focus_metrics.width)),
+            );
+        }
 
         if model.state.disabled {
             root = root.opacity(DISABLED_OPACITY);

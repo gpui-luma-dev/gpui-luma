@@ -150,7 +150,7 @@ impl Render for UpgradePanel {
                         hstack! {
                             gap=8;
                             div().flex_1().child(card_field.clone()),
-                            div().w(px(72.0)).child(expiry_field.clone()),
+                            div().w(px(80.0)).child(expiry_field.clone()),
                             div().w(px(64.0)).child(cvc_field.clone()),
                         }
                     ),
@@ -174,7 +174,7 @@ impl Render for UpgradePanel {
                         email_checkbox.clone(),
                     },
                     hstack! {
-                        gap=8 justify=end;
+                        gap=8 align=center justify=end;
                         cancel_button.clone(),
                         upgrade_button.clone(),
                     },

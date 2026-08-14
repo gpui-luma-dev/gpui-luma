@@ -15,9 +15,12 @@ use crate::studio::style::shared::preview_handlers::input_textfield_handlers;
 use crate::studio::style::shared::shell::section_shell_with_width;
 use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
 
-// Six state columns must fit inside the 960px style-guide section.
-const TEXTFIELD_TABLE_STATE_COLUMN_WIDTH: f32 = 142.0;
-const TEXTFIELD_TABLE_SIZE_COLUMN_WIDTH: f32 = 168.0;
+// Six state columns stay inside the 960px style-guide section.
+// Preview width fits prefix icon + "Text" through Lg, including Primary elevation.
+const TEXTFIELD_SAMPLE_TEXT: &str = "Text";
+const TEXTFIELD_PREVIEW_WIDTH: f32 = 120.0;
+const TEXTFIELD_TABLE_STATE_COLUMN_WIDTH: f32 = 132.0;
+const TEXTFIELD_TABLE_SIZE_COLUMN_WIDTH: f32 = 136.0;
 const TEXTFIELD_TABLE_VARIANT_COLUMN_WIDTH: f32 = 108.0;
 const TEXTFIELD_TABLE_HEADER_HEIGHT: f32 = 28.0;
 /// Extra height so Primary (`shadow-xs`) is not clipped by the row cell.
@@ -210,7 +213,7 @@ fn render_textfield_cell(
         button_size_id(size)
     ));
     let placeholder = SharedString::from("Placeholder");
-    let value = SharedString::from("Preview");
+    let value = SharedString::from(TEXTFIELD_SAMPLE_TEXT);
     let look = input_textfield_look(&theme, sample.state, sample.enabled, size, window);
     let character_offsets =
         input_textfield_character_offsets(value.as_ref(), theme, sample.state, sample.enabled, size, window);
@@ -222,7 +225,7 @@ fn render_textfield_cell(
         prefix_icon: Some(&prefix_icon),
         variant: TextFieldVariant::Standard,
         enabled: sample.enabled,
-        full_width: false,
+        full_width: true,
         state: sample.state,
         caret_visible: sample.state.focused && sample.enabled,
         horizontal_scroll: 0.0,
@@ -231,7 +234,7 @@ fn render_textfield_cell(
     };
 
     div()
-        .w(px(152.0))
+        .w(px(TEXTFIELD_PREVIEW_WIDTH))
         .flex()
         .items_center()
         .justify_center()
@@ -251,7 +254,12 @@ fn input_textfield_samples() -> [InputTextFieldSample; 6] {
         InputTextFieldSample {
             id: "focus",
             label: "Focus",
-            state: TextFieldState { focused: true, focus_visible: true, cursor: 7, ..TextFieldState::default() },
+            state: TextFieldState {
+                focused: true,
+                focus_visible: true,
+                cursor: TEXTFIELD_SAMPLE_TEXT.chars().count(),
+                ..TextFieldState::default()
+            },
             enabled: true,
         },
         InputTextFieldSample {
@@ -261,7 +269,7 @@ fn input_textfield_samples() -> [InputTextFieldSample; 6] {
                 hovered: true,
                 focused: true,
                 focus_visible: true,
-                cursor: 7,
+                cursor: TEXTFIELD_SAMPLE_TEXT.chars().count(),
                 selection_anchor: Some(0),
                 ..TextFieldState::default()
             },

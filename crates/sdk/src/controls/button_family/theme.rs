@@ -92,11 +92,17 @@ fn native_button_palette(tokens: &ThemeTokens, role: ButtonFamilyRole, state: In
     let typography = &tokens.typography;
     let layer = state.layer();
 
-    let (base_background, base_foreground, border) = match role {
+    let (base_background, base_foreground, default_border) = match role {
         ButtonFamilyRole::Toggle { selected: true } => {
             (palette.state.selected.background, palette.state.selected.foreground, palette.border.default)
         }
         _ => (palette.surface.subtle.background, palette.app.foreground, palette.border.default),
+    };
+
+    let border = if state.focused && !state.disabled {
+        palette.focus.ring
+    } else {
+        default_border
     };
 
     let foreground = if state.disabled {

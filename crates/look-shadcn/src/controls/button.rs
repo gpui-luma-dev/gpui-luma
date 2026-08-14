@@ -201,8 +201,13 @@ pub fn button_palette(
     let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "button_resolver");
-    let colors = resolve_button_colors_with_stylesheet(&resolver, stylesheet, style, layer, theme_mode, selected)
+    let mut colors = resolve_button_colors_with_stylesheet(&resolver, stylesheet, style, layer, theme_mode, selected)
         .unwrap_or_else(|_| ButtonColorPalette::fallback());
+    if ctx.state.focused && !ctx.state.disabled {
+        if let Ok(focus_border) = resolver.resolve_decl("ring") {
+            colors.border = Some(focus_border);
+        }
+    }
 
     let size_metrics = stylesheet
         .button
@@ -305,6 +310,22 @@ mod tests {
         );
 
         assert_ne!(default.background, hovered.background);
+    }
+
+    #[test]
+    fn focused_button_uses_ring_border() {
+        let catalog = retro_arcade_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let focused = button_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Ghost,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
+            InteractionState { focused: true, ..InteractionState::default() },
+        );
+
+        assert_eq!(focused.border, Some(catalog.color("ring").expect("ring")));
     }
 
     #[test]
