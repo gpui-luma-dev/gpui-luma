@@ -25,6 +25,8 @@ pub enum PopupMenuPlacement {
 /// Trigger chrome aligned with command button variants.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum PopupMenuTriggerStyle {
+    Primary,
+    Secondary,
     #[default]
     Outline,
     Ghost,
@@ -64,8 +66,11 @@ pub struct PopupMenuModel {
     /// Square icon-button chrome (no trailing end icon). Set by the icon face preset.
     pub(crate) icon_only: bool,
     pub(crate) end_icon: Option<LucideIcon>,
+    pub(crate) open_trigger_icon: LucideIcon,
+    pub(crate) close_trigger_icon: LucideIcon,
     pub(crate) full_width: bool,
     pub(crate) without_elevation: bool,
+    pub(crate) split: bool,
     pub(crate) template: Arc<dyn PopupMenuTemplate>,
 }
 
@@ -83,8 +88,11 @@ pub struct PopupMenuRenderModel<'a> {
     pub menu_size: ControlSize,
     pub icon_only: bool,
     pub end_icon: Option<LucideIcon>,
+    pub open_trigger_icon: LucideIcon,
+    pub close_trigger_icon: LucideIcon,
     pub full_width: bool,
     pub without_elevation: bool,
+    pub split: bool,
     pub trigger_radius_override: Option<f32>,
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
@@ -116,8 +124,11 @@ impl PopupMenuBuilder {
                 menu_size: ControlSize::Md,
                 icon_only: false,
                 end_icon: None,
+                open_trigger_icon: LucideIcon::ChevronUp,
+                close_trigger_icon: LucideIcon::ChevronDown,
                 full_width: false,
                 without_elevation: false,
+                split: false,
                 template: default_popup_menu_template(),
             },
         }
@@ -143,6 +154,18 @@ impl PopupMenuBuilder {
     /// Trailing adornment on a labeled trigger (distinct from the icon face preset).
     pub fn end_icon(mut self, icon: LucideIcon) -> Self {
         self.model.end_icon = Some(icon);
+        self
+    }
+
+    /// Sets the icon shown by a split-button trigger while its menu is open.
+    pub fn open_trigger_icon(mut self, icon: LucideIcon) -> Self {
+        self.model.open_trigger_icon = icon;
+        self
+    }
+
+    /// Sets the icon shown by a split-button trigger while its menu is closed.
+    pub fn close_trigger_icon(mut self, icon: LucideIcon) -> Self {
+        self.model.close_trigger_icon = icon;
         self
     }
 
@@ -183,6 +206,12 @@ impl PopupMenuBuilder {
 
     pub fn ghost(self) -> Self {
         self.trigger_style(PopupMenuTriggerStyle::Ghost)
+    }
+
+    /// Uses the trigger as the secondary face of a single-focus split button.
+    pub fn split(mut self) -> Self {
+        self.model.split = true;
+        self
     }
 
     pub fn size(mut self, size: ControlSize) -> Self {

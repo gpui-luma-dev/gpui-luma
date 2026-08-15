@@ -23,6 +23,7 @@ use crate::keyhandling::{
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum PopupMenuEvent {
+    PrimaryClick,
     Select { item_id: SharedString, label: SharedString },
     OpenChanged { open: bool },
     Dismiss,
@@ -169,8 +170,11 @@ impl PopupMenu {
             menu_size: self.model.menu_size,
             icon_only: self.model.icon_only,
             end_icon: self.model.end_icon,
+            open_trigger_icon: self.model.open_trigger_icon,
+            close_trigger_icon: self.model.close_trigger_icon,
             full_width: self.model.full_width,
             without_elevation: self.model.without_elevation,
+            split: self.model.split,
             trigger_radius_override: None,
             open_submenu: self.menu_state.open_submenu(),
             active_path: self.menu_state.active_path(),
@@ -217,6 +221,7 @@ impl PopupMenu {
 
         PopupMenuTemplateHandlers {
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
+            primary_click: Box::new(cx.listener(Self::handle_primary_click)),
             trigger_click: Box::new(cx.listener(Self::handle_trigger_click)),
             trigger_hover: Box::new(cx.listener(Self::handle_hover)),
             trigger_mouse_down: Box::new(cx.listener(Self::handle_mouse_down)),
@@ -345,6 +350,21 @@ impl PopupMenu {
             }
             cx.notify();
         }
+    }
+
+    fn handle_primary_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if !event.is_keyboard() && self.model.enabled {
+            self.activate_primary(cx);
+        }
+    }
+
+    fn activate_primary(&mut self, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+        self.dismiss_menu(cx);
+        cx.emit(PopupMenuEvent::PrimaryClick);
+        cx.notify();
     }
 
     fn handle_item_click(&mut self, path: &[usize], event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
@@ -543,7 +563,11 @@ impl PopupMenu {
     }
 
     fn handle_activate_control(&mut self, _: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
-        self.activate_active_item(cx);
+        if self.model.split && !self.open {
+            self.activate_primary(cx);
+        } else {
+            self.activate_active_item(cx);
+        }
     }
 
     fn handle_escape_focus(&mut self, _: &EscapeFocus, _window: &mut Window, cx: &mut Context<Self>) {

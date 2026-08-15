@@ -211,27 +211,27 @@ impl Render for GraphVizApp {
             .border_color(chrome.border)
             .text_color(chrome.title_text)
             .child(
-            div()
-                .id("graph-viz-titlebar")
-                .h_full()
-                .w_full()
-                .flex()
-                .flex_row()
-                .items_center()
-                .justify_between()
-                .px_2()
-                .text_color(chrome.title_text)
-                .font_family(sans.clone())
-                .child(div().typography_style(title_style).child("Graph Viz"))
-                .child(
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap(px(6.0))
-                        .child(self.sidebar_toggle.clone())
-                        .child(self.mode_toggle.clone()),
-                ),
-        );
+                div()
+                    .id("graph-viz-titlebar")
+                    .h_full()
+                    .w_full()
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .justify_between()
+                    .px_2()
+                    .text_color(chrome.title_text)
+                    .font_family(sans.clone())
+                    .child(div().typography_style(title_style).child("Graph Viz"))
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap(px(6.0))
+                            .child(self.sidebar_toggle.clone())
+                            .child(self.mode_toggle.clone()),
+                    ),
+            );
 
         WorkbenchLayout::render_shell(
             &self.focus_scope,

@@ -1,5 +1,5 @@
-mod variant_state_table;
-mod shared;
+pub(crate) mod variant_state_table;
+pub(crate) mod shared;
 mod sections;
 mod style_guide;
 

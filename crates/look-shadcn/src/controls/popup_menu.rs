@@ -17,6 +17,8 @@ use crate::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};
 
 fn shadcn_button_style(trigger_style: PopupMenuTriggerStyle) -> ShadcnButtonStyle {
     match trigger_style {
+        PopupMenuTriggerStyle::Primary => ShadcnButtonStyle::Primary,
+        PopupMenuTriggerStyle::Secondary => ShadcnButtonStyle::Secondary,
         PopupMenuTriggerStyle::Outline => ShadcnButtonStyle::Outline,
         PopupMenuTriggerStyle::Ghost => ShadcnButtonStyle::Ghost,
     }

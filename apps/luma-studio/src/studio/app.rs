@@ -572,28 +572,28 @@ impl Render for LumaStudioApp {
             .border_color(chrome.border)
             .text_color(chrome.title_text)
             .child(
-            div()
-                .id("luma-studio-titlebar")
-                .h_full()
-                .w_full()
-                .flex()
-                .flex_row()
-                .items_center()
-                .justify_between()
-                .px_2()
-                .text_color(chrome.title_text)
-                .font_family(sans.clone())
-                .child(div().typography_style(title_style).child("Luma Studio"))
-                .child(
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap(px(6.0))
-                        .child(self.sidebar_toggle.clone())
-                        .child(self.reset_theme_button.clone())
-                        .child(self.mode_toggle.clone()),
-                ),
-        );
+                div()
+                    .id("luma-studio-titlebar")
+                    .h_full()
+                    .w_full()
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .justify_between()
+                    .px_2()
+                    .text_color(chrome.title_text)
+                    .font_family(sans.clone())
+                    .child(div().typography_style(title_style).child("Luma Studio"))
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap(px(6.0))
+                            .child(self.sidebar_toggle.clone())
+                            .child(self.reset_theme_button.clone())
+                            .child(self.mode_toggle.clone()),
+                    ),
+            );
 
         WorkbenchLayout::render_shell(
             &self.focus_scope,

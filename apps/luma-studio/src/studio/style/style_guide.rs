@@ -47,10 +47,11 @@ enum StyleGuideSection {
     TreeView,
     Accordion,
     Typography,
+    Prototypes,
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 22] = [
+    const ALL: [Self; 23] = [
         Self::Accordion,
         Self::Buttons,
         Self::Checkbox,
@@ -73,6 +74,7 @@ impl StyleGuideSection {
         Self::Toolbar,
         Self::TreeView,
         Self::Typography,
+        Self::Prototypes,
     ];
 
     fn label(self) -> &'static str {
@@ -99,6 +101,7 @@ impl StyleGuideSection {
             Self::Toolbar => "Toolbar",
             Self::TreeView => "Tree View",
             Self::Typography => "Typography",
+            Self::Prototypes => "Prototypes",
         }
     }
 }
@@ -117,6 +120,7 @@ declare_form! {
             last_max_scroll: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
             sidebar_preview: Option<Entity<SidebarControl>> = None,
             buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            split_button_preview: Option<Entity<sections::buttons::SplitButtonPreview>> = None,
             icon_buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
             checkbox_preview_tabs: Option<Entity<TabsNavigation>> = None,
             radio_preview_tabs: Option<Entity<TabsNavigation>> = None,
@@ -151,6 +155,7 @@ impl StyleGuidePanel {
         self.look = look;
         self.sync_sidebar_preview(cx);
         self.sync_buttons_preview_tabs(cx);
+        self.sync_split_button_preview(cx);
         self.sync_icon_buttons_preview_tabs(cx);
         self.sync_checkbox_preview_tabs(cx);
         self.sync_radio_preview_tabs(cx);
@@ -249,6 +254,22 @@ impl StyleGuidePanel {
                 tabs.set_template(look.tabs_navigation_template(), cx);
             });
         }
+    }
+
+    fn sync_split_button_preview(&mut self, cx: &mut Context<Self>) {
+        if let Some(preview) = self.split_button_preview.clone() {
+            let look = self.look.clone();
+            preview.update(cx, move |preview, cx| preview.sync_look(look, cx));
+        }
+    }
+
+    fn split_button_preview(&mut self, cx: &mut Context<Self>) -> Entity<sections::buttons::SplitButtonPreview> {
+        if let Some(preview) = self.split_button_preview.clone() {
+            return preview;
+        }
+        let preview = cx.new(|cx| sections::buttons::SplitButtonPreview::new(cx, self.look.clone()));
+        self.split_button_preview = Some(preview.clone());
+        preview
     }
 
     fn buttons_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
@@ -836,6 +857,7 @@ impl Render for StyleGuidePanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let _ = self.sidebar_preview(cx);
         let _ = self.buttons_preview_tabs(cx);
+        let _ = self.split_button_preview(cx);
         let _ = self.icon_buttons_preview_tabs(cx);
         let _ = self.checkbox_preview_tabs(cx);
         let _ = self.radio_preview_tabs(cx);
@@ -1009,6 +1031,7 @@ impl StyleGuidePanel {
                 | StyleGuideSection::TreeView
                 | StyleGuideSection::Accordion
                 | StyleGuideSection::Toolbar
+                | StyleGuideSection::Prototypes
         )
     }
 
@@ -1026,6 +1049,10 @@ impl StyleGuidePanel {
                 self.buttons_preview_tabs.clone().expect("buttons preview tabs"),
                 window,
                 cx,
+            ),
+            StyleGuideSection::Prototypes => sections::buttons::render_split_button_prototype_section(
+                self.look.clone(),
+                self.split_button_preview.clone().expect("split button preview"),
             ),
             StyleGuideSection::IconButtons => sections::icon_buttons::render_icon_button_template_matrix_section(
                 self.look.clone(),

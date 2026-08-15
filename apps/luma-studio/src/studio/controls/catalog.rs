@@ -32,12 +32,20 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         section_order: 100,
     },
     ControlDocEntry {
+        id: "split-button",
+        title: "Split Button (Prototype)",
+        description: "Issue #17 prototype for a cohesive command button with a separate menu trigger. The primary face executes immediately while the adjacent face opens alternate actions; this Studio surface is validating focus, seams, menu ownership, and event semantics before SDK promotion.",
+        category: ControlCategory::Command,
+        snippet: "use gpui_luma::controls::menu_item::MenuItem;\nuse gpui_luma::controls::split_button::SplitButtonEvent;\n\nlet save = look\n    .primary_split_button(\"save\")\n    .label(\"Save\")\n    .items([\n        MenuItem::new(\"save-as\").label(\"Save as\"),\n        MenuItem::new(\"duplicate\").label(\"Duplicate\"),\n    ])\n    .spawn(cx);\n\ncx.subscribe(&save, |_, _, event: &SplitButtonEvent, _| {\n    match event {\n        SplitButtonEvent::PrimaryClick => { /* save immediately */ }\n        SplitButtonEvent::Select { item_id, .. } => { let _ = item_id; }\n        _ => {}\n    }\n});",
+        section_order: 101,
+    },
+    ControlDocEntry {
         id: "toolbar",
         title: "Toolbar",
         description: "Horizontal control_group hosting buttons, toggles, selectors, menus, and text fields. ShadcnToolbarItemExt factories compose editing toolbars with roving or sequential keyboard focus.",
         category: ControlCategory::Command,
         snippet: "look\n    .toolbar(\"editor\")\n    .item(look.toolbar_toggle(\"bold\", LucideIcon::Bold, cx))\n    .item(look.toolbar_button(\"link\", LucideIcon::Link, cx))\n    .spawn(cx);",
-        section_order: 101,
+        section_order: 102,
     },
     ControlDocEntry {
         id: "custom-button",

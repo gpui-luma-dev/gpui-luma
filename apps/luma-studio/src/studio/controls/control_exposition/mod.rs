@@ -85,6 +85,8 @@ mod slider;
 mod slider_inspector_adapter;
 mod shell_theme_inspectors;
 mod shadow_button;
+mod split_button;
+mod split_button_inspector_adapter;
 mod slide_panel;
 mod standalone_theme_inspectors;
 mod split_view_inspector_adapter;

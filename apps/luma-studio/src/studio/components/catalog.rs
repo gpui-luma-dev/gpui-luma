@@ -97,8 +97,10 @@ const SELECTION_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "selection-panel", label: "Selection Panel" },
 ];
 
-const PROTOTYPES_ENTRIES: &[ComponentCatalogEntry] =
-    &[ComponentCatalogEntry { id: "shadow-button", label: "Shadow Button" }];
+const PROTOTYPES_ENTRIES: &[ComponentCatalogEntry] = &[
+    ComponentCatalogEntry { id: "shadow-button", label: "Shadow Button" },
+    ComponentCatalogEntry { id: "split-button", label: "Split Button" },
+];
 
 /// Control catalog for the Controls tab (grouped SDK families and exposition ids).
 pub const COMPONENT_CATALOG: &[ComponentCatalogGroup] = &[
@@ -168,6 +170,7 @@ pub fn controls_exposition_id(gallery_id: &str) -> Option<&'static str> {
         "accordion" => Some("accordion"),
         "custom-button" => Some("custom-button"),
         "shadow-button" => Some("shadow-button"),
+        "split-button" => Some("split-button"),
         "toolbar" => Some("toolbar"),
         "checkbox" => Some("checkbox"),
         "listbox" => Some("listbox"),
