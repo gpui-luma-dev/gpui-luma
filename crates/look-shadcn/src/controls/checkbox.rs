@@ -88,7 +88,7 @@ pub fn checkbox_look(
     let colors = resolve_checkbox_colors(&resolver, indicator_style, checked, layer)
         .unwrap_or_else(|_| CheckboxColorTable::fallback());
 
-    let indicator_border = if state.focused && !state.disabled {
+    let indicator_border = if !content_only && state.focused && !state.disabled {
         crate::focus::focus_ring_color(catalog).unwrap_or_else(|err| panic!("checkbox focus ring: {err}"))
     } else if checked && !state.disabled {
         colors.indicator_background.hsla()

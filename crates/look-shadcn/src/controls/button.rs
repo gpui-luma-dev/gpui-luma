@@ -203,7 +203,7 @@ pub fn button_palette(
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "button_resolver");
     let mut colors = resolve_button_colors_with_stylesheet(&resolver, stylesheet, style, layer, theme_mode, selected)
         .unwrap_or_else(|_| ButtonColorPalette::fallback());
-    if ctx.state.focused && !ctx.state.disabled {
+    if style != ShadcnButtonStyle::ContentOnly && ctx.state.focused && !ctx.state.disabled {
         if let Ok(focus_border) = resolver.resolve_decl("ring") {
             colors.border = Some(focus_border);
         }
@@ -667,6 +667,7 @@ mod tests {
             InteractionState::default(),
             InteractionState { hovered: true, ..InteractionState::default() },
             InteractionState { pressed: true, ..InteractionState::default() },
+            InteractionState { focused: true, ..InteractionState::default() },
             InteractionState { disabled: true, ..InteractionState::default() },
         ] {
             let look = button_look(

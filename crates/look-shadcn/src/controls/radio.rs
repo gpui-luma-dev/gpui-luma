@@ -93,7 +93,7 @@ pub fn radio_button_look(
     let colors = resolve_radio_colors(&resolver, indicator_style, selected, layer)
         .unwrap_or_else(|_| RadioColorTable::fallback());
 
-    let indicator_border = if state.focused && !state.disabled {
+    let indicator_border = if !content_only && state.focused && !state.disabled {
         crate::focus::focus_ring_color(catalog).unwrap_or_else(|err| panic!("radio focus ring: {err}"))
     } else if selected && !state.disabled {
         colors.selection_ring.hsla()
