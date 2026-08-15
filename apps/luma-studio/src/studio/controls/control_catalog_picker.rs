@@ -210,10 +210,6 @@ fn render_catalog_item<M: 'static>(
 fn render_category_icon(icon: lucide_icons::Icon, color: gpui::Hsla) -> AnyElement {
     div()
         .flex_shrink_0()
-        .font_family("lucide")
-        .text_size(px(CATEGORY_ICON_SIZE))
-        .line_height(px(CATEGORY_ICON_SIZE))
-        .text_color(color)
-        .child(char::from(icon).to_string())
+        .child(gpui_luma::controls::icon::lucide_icon(icon, color, CATEGORY_ICON_SIZE))
         .into_any_element()
 }

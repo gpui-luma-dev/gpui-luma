@@ -1,13 +1,12 @@
 use std::sync::OnceLock;
 
-use gpui::{AnyElement, FontWeight, div, px, prelude::*};
+use gpui::{AnyElement, div, px, prelude::*};
 use lucide_icons::Icon as LucideIcon;
 
 use super::ListBoxItem;
 use crate::controls::control_group::{
     ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupItemTemplate, make_control_group_item_template,
 };
-use crate::controls::icon::LUCIDE_FONT_FAMILY;
 
 const SELECTION_CHECKMARK_SIZE: f32 = 14.0;
 
@@ -36,11 +35,9 @@ fn render_selection_checkmark(selected: bool, size: f32) -> AnyElement {
             .flex()
             .items_center()
             .justify_center()
-            .font_family(LUCIDE_FONT_FAMILY)
-            .font_weight(FontWeight::NORMAL)
             .text_size(px(size))
             .line_height(px(size))
-            .child(char::from(LucideIcon::Check).to_string())
+            .child(crate::controls::icon::lucide_glyph(LucideIcon::Check))
             .into_any_element()
     } else {
         div().size(px(size)).into_any_element()

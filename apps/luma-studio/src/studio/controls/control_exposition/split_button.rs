@@ -97,7 +97,7 @@ impl SplitButtonControlExposition {
             .content(|model: &PopupMenuTriggerModel, _| {
                 hstack! {
                     gap=6 align=center;
-                    div().font_family("lucide").child(char::from(LucideIcon::Pencil).to_string()),
+                    gpui_luma::controls::icon::lucide_glyph(LucideIcon::Pencil),
                     div().child(model.label.clone()),
                 }
             })
@@ -271,7 +271,7 @@ fn render_split_button_content_code(look: &ShadcnLook) -> AnyElement {
                 .font_family(controls_mono_font())
                 .text_color(chrome.muted_text)
                 .child(
-                    "use gpui_luma::controls::popup_menu::PopupMenuTriggerModel;\nuse gpui_luma::controls::presenter::HasPresenter;\n\nlet open = look\n    .primary_split_button(\"open\")\n    .label(\"Label\")\n    .content(|model: &PopupMenuTriggerModel, _| {\n        hstack! {\n            gap = 6.0;\n            align = center;\n            div().font_family(\"lucide\").child(char::from(LucideIcon::Pencil).to_string()),\n            div().child(model.label.clone()),\n        }\n    })\n    .items(items)\n    .spawn(cx);",
+                    "use gpui_luma::controls::icon::lucide_glyph;\nuse gpui_luma::controls::popup_menu::PopupMenuTriggerModel;\nuse gpui_luma::controls::presenter::HasPresenter;\n\nlet open = look\n    .primary_split_button(\"open\")\n    .label(\"Label\")\n    .content(|model: &PopupMenuTriggerModel, _| {\n        hstack! {\n            gap = 6.0;\n            align = center;\n            lucide_glyph(LucideIcon::Pencil),\n            div().child(model.label.clone()),\n        }\n    })\n    .items(items)\n    .spawn(cx);",
                 ),
         )
         .into_any_element()

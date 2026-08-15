@@ -430,11 +430,9 @@ fn preview_shell(
 
 fn sidebar_toggle_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| match &icon {
-        ControlIcon::Lucide(lucide) => div()
-            .font_family("lucide")
-            .text_size(px(16.0))
-            .child(char::from(*lucide).to_string())
-            .into_any_element(),
+        ControlIcon::Lucide(lucide) => {
+            div().text_size(px(16.0)).child(gpui_luma::controls::icon::lucide_glyph(*lucide)).into_any_element()
+        }
         ControlIcon::SvgPath(path) => gpui::svg().size(px(16.0)).path(path.clone()).into_any_element(),
     })
 }

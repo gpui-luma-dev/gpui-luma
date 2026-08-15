@@ -6,7 +6,7 @@ use lucide_icons::Icon as LucideIcon;
 use super::model::{StepperLabelPlacement, StepperRenderModel};
 use super::theme::{StepperLook, StepperTheme, default_stepper_theme};
 use super::StepState;
-use crate::controls::icon::{LUCIDE_FONT_FAMILY, lucide_glyph};
+use crate::controls::icon::lucide_glyph;
 use crate::controls::progress::{ProgressDirection, ProgressOrientation};
 
 pub type StepperTemplateModifier =
@@ -501,7 +501,6 @@ fn render_checkmark(color: gpui::Hsla, size: f32) -> AnyElement {
 
 fn render_step_number(step_number: usize, color: gpui::Hsla, size: f32) -> AnyElement {
     div()
-        .font_family(LUCIDE_FONT_FAMILY)
         .font_weight(FontWeight::MEDIUM)
         .text_color(color)
         .text_size(px(size))

@@ -752,11 +752,10 @@ fn render_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
         .flex()
         .items_center()
         .justify_center()
-        .font_family("lucide")
         .text_size(px(size))
         .line_height(px(size))
         .text_color(color)
-        .child(char::from(icon).to_string())
+        .child(lucide_glyph(icon))
         .into_any_element()
 }
 ```

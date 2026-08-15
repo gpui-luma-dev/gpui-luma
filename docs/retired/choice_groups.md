@@ -63,8 +63,7 @@ ChoiceGroup::single("editor-toolbar")
         };
 
         div()
-            .font_family("lucide")
-            .child(char::from(icon).to_string())
+            .child(lucide_glyph(icon))
             .into_any_element()
     })
     .spawn(cx);

@@ -3,9 +3,8 @@ use lucide_icons::Icon as LucideIcon;
 
 pub(crate) fn render_lucide_icon(icon: LucideIcon, size: f32) -> AnyElement {
     div()
-        .font_family("lucide")
         .text_size(px(size))
         .line_height(px(size))
-        .child(char::from(icon).to_string())
+        .child(gpui_luma::controls::icon::lucide_glyph(icon))
         .into_any_element()
 }

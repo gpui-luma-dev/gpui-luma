@@ -94,11 +94,7 @@ fn theme_toggle_icon(mode: ThemeMode) -> LucideIcon {
 
 fn theme_toggle_presenter(icon: LucideIcon) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| {
-        div()
-            .font_family("lucide")
-            .text_size(px(14.0))
-            .child(char::from(icon).to_string())
-            .into_any_element()
+        div().text_size(px(14.0)).child(gpui_luma::controls::icon::lucide_glyph(icon)).into_any_element()
     })
 }
 

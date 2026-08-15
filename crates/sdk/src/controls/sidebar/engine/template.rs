@@ -34,7 +34,6 @@ const RAIL_SUBMENU_OFFSET_X: f32 = 12.0;
 const RAIL_BRANCH_INDICATOR_ICON: LucideIcon = LucideIcon::ChevronRight;
 const RAIL_BRANCH_INDICATOR_SIZE: f32 = 18.0;
 const RAIL_BRANCH_INDICATOR_RIGHT: f32 = -10.0;
-const LUCIDE_FONT_FAMILY: &str = "lucide";
 const ICON_FONT_WEIGHT: FontWeight = FontWeight::NORMAL;
 
 pub type SidebarPanelBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
@@ -792,11 +791,10 @@ fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElem
         .flex()
         .items_center()
         .justify_center()
-        .font_family(LUCIDE_FONT_FAMILY)
         .font_weight(ICON_FONT_WEIGHT)
         .text_size(px(size))
         .line_height(px(size))
         .text_color(color)
-        .child(char::from(icon).to_string())
+        .child(crate::controls::icon::lucide_glyph(icon))
         .into_any_element()
 }

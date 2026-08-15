@@ -1,12 +1,10 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{
-    AnyElement, App, ClickEvent, Div, FontWeight, SharedString, Stateful, Window, div, px, relative, prelude::*, svg,
-};
+use gpui::{AnyElement, App, ClickEvent, Div, SharedString, Stateful, Window, div, px, relative, prelude::*, svg};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::choice_indicator_layout::shadow_extent_from_slice;
-use crate::controls::icon::LUCIDE_FONT_FAMILY;
+use crate::controls::icon::lucide_glyph;
 use crate::controls::menu_item::{MenuItem, MenuItemIcon};
 use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::state::MenuPath;
@@ -508,10 +506,8 @@ fn render_lucide_icon(icon: LucideIcon, size: f32) -> AnyElement {
         .flex()
         .items_center()
         .justify_center()
-        .font_family(LUCIDE_FONT_FAMILY)
-        .font_weight(FontWeight::NORMAL)
         .text_size(px(size))
         .line_height(px(size))
-        .child(char::from(icon).to_string())
+        .child(lucide_glyph(icon))
         .into_any_element()
 }

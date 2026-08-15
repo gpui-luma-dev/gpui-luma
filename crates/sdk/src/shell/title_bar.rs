@@ -369,9 +369,8 @@ fn render_lucide_icon(icon: LucideIcon, size: f32) -> AnyElement {
         .flex()
         .items_center()
         .justify_center()
-        .font_family("lucide")
         .text_size(px(size))
         .line_height(px(size))
-        .child(char::from(icon).to_string())
+        .child(crate::controls::icon::lucide_glyph(icon))
         .into_any_element()
 }

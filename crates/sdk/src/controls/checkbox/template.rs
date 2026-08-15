@@ -176,12 +176,11 @@ fn render_checkmark(progress: f32, size: f32, color: gpui::Hsla) -> AnyElement {
         .flex()
         .items_center()
         .justify_center()
-        .font_family("lucide")
         .font_weight(FontWeight::NORMAL)
         .text_size(px(size))
         .line_height(px(size))
         .text_color(color)
         .opacity(progress)
-        .child(char::from(LucideIcon::Check).to_string())
+        .child(crate::controls::icon::lucide_glyph(LucideIcon::Check))
         .into_any_element()
 }

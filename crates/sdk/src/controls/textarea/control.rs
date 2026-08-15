@@ -1289,11 +1289,10 @@ impl Render for TextArea {
                     .flex()
                     .items_center()
                     .justify_center()
-                    .font_family("lucide")
                     .text_size(px(TEXTAREA_RESIZE_ICON_SIZE))
                     .line_height(px(TEXTAREA_RESIZE_ICON_SIZE))
                     .text_color(look.border.opacity(0.75))
-                    .child(char::from(LucideIcon::Scaling).to_string()),
+                    .child(crate::controls::icon::lucide_glyph(LucideIcon::Scaling)),
             );
 
         // Keep overflow on an inner clip host so elevation shadows on the chrome are not clipped.

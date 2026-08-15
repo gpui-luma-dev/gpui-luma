@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    Anchor, AnyElement, App, Bounds, ClickEvent, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
-    Point, Size, Stateful, Window, anchored, deferred, div, point, px, prelude::*, transparent_black,
+    Anchor, AnyElement, App, Bounds, ClickEvent, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Point, Size,
+    Stateful, Window, anchored, deferred, div, point, px, prelude::*, transparent_black,
 };
 use lucide_icons::Icon as LucideIcon;
 
@@ -422,18 +422,7 @@ fn resolve_popup_menu_placement(
 }
 
 fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
-    div()
-        .size(px(size))
-        .flex()
-        .items_center()
-        .justify_center()
-        .font_family("lucide")
-        .font_weight(FontWeight::NORMAL)
-        .text_size(px(size))
-        .line_height(px(size))
-        .text_color(color)
-        .child(char::from(icon).to_string())
-        .into_any_element()
+    crate::controls::icon::lucide_icon(icon, color, size)
 }
 
 #[cfg(test)]
