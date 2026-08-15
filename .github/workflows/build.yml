@@ -20,10 +20,16 @@ jobs:
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: luma-studio-macos-arm64
+
           # Windows x64 (MSVC Win32)
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: luma-studio-windows-x64
+
+          # Windows ARM64 (Native for Parallels / Windows on ARM)
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            artifact_name: luma-studio-windows-arm64
 
     steps:
       - name: Checkout repository
