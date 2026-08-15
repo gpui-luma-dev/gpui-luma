@@ -33,6 +33,9 @@ impl Render for SplitColumn {
         let traffic_light_inset = self.traffic_light_inset;
         let state = window.use_state(cx, |_, _| TitleBarDragState { drag_start_position: None });
 
+        let is_linux = cfg!(target_os = "linux");
+        let is_macos = cfg!(target_os = "macos");
+
         div()
             .size_full()
             .flex()
@@ -74,13 +77,23 @@ impl Render for SplitColumn {
                             window.start_window_move();
                         }
                     }))
-                    .on_mouse_down(MouseButton::Left, move |ev, window, cx| {
-                        if ev.click_count >= 2 {
-                            cx.stop_propagation();
-                            if cfg!(target_os = "windows") || !window.is_fullscreen() {
+                    .when(is_macos, |this| {
+                        this.on_mouse_down(MouseButton::Left, move |ev, window, cx| {
+                            if ev.click_count >= 2 {
+                                cx.stop_propagation();
+                                if !window.is_fullscreen() {
+                                    window.zoom_window();
+                                }
+                            }
+                        })
+                    })
+                    .when(is_linux, |this| {
+                        this.on_mouse_down(MouseButton::Left, move |ev, window, cx| {
+                            if ev.click_count >= 2 {
+                                cx.stop_propagation();
                                 window.zoom_window();
                             }
-                        }
+                        })
                     }),
             )
             .child(div().flex_1().min_h(px(0.0)).bg(background))

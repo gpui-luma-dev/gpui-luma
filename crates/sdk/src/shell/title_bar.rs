@@ -271,6 +271,7 @@ impl RenderOnce for TitleBar {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let is_client_decorated = matches!(window.window_decorations(), Decorations::Client { .. });
         let is_linux = cfg!(target_os = "linux");
+        let is_macos = cfg!(target_os = "macos");
         let border_color = self.border_color.unwrap_or(hsla(0.0, 0.0, 1.0, 0.1));
         let background_color = self.background_color.unwrap_or(hsla(0.0, 0.0, 0.11, 1.0));
         let text_color = self.text_color.unwrap_or(hsla(0.0, 0.0, 1.0, 0.85));
@@ -312,13 +313,23 @@ impl RenderOnce for TitleBar {
                         window.start_window_move();
                     }
                 }))
-                .on_mouse_down(MouseButton::Left, move |ev, window, cx| {
-                    if ev.click_count >= 2 {
-                        cx.stop_propagation();
-                        if cfg!(target_os = "windows") || !window.is_fullscreen() {
+                .when(is_macos, |this| {
+                    this.on_mouse_down(MouseButton::Left, move |ev, window, cx| {
+                        if ev.click_count >= 2 {
+                            cx.stop_propagation();
+                            if !window.is_fullscreen() {
+                                window.zoom_window();
+                            }
+                        }
+                    })
+                })
+                .when(is_linux, |this| {
+                    this.on_mouse_down(MouseButton::Left, move |ev, window, cx| {
+                        if ev.click_count >= 2 {
+                            cx.stop_propagation();
                             window.zoom_window();
                         }
-                    }
+                    })
                 })
                 .child(
                     div()
