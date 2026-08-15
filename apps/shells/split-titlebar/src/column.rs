@@ -77,7 +77,9 @@ impl Render for SplitColumn {
                     .on_mouse_down(MouseButton::Left, move |ev, window, cx| {
                         if ev.click_count >= 2 {
                             cx.stop_propagation();
-                            window.zoom_window();
+                            if cfg!(target_os = "windows") || !window.is_fullscreen() {
+                                window.zoom_window();
+                            }
                         }
                     }),
             )

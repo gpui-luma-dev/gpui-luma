@@ -144,15 +144,6 @@ impl ControlIcon {
     }
 
     #[inline]
-    fn hover_fg(&self) -> Hsla {
-        if self.is_close() {
-            hsla(0.0, 0.0, 1.0, 1.0)
-        } else {
-            hsla(0.0, 0.0, 1.0, 0.95)
-        }
-    }
-
-    #[inline]
     fn hover_bg(&self) -> Hsla {
         if self.is_close() {
             hsla(0.0, 0.78, 0.56, 1.0)
@@ -324,7 +315,9 @@ impl RenderOnce for TitleBar {
                 .on_mouse_down(MouseButton::Left, move |ev, window, cx| {
                     if ev.click_count >= 2 {
                         cx.stop_propagation();
-                        window.zoom_window();
+                        if cfg!(target_os = "windows") || !window.is_fullscreen() {
+                            window.zoom_window();
+                        }
                     }
                 })
                 .child(
