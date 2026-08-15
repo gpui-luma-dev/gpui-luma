@@ -108,7 +108,7 @@ pub(crate) fn render_split_button_prototype_section(
     section_shell_with_width(
         960.0,
         "Split Button Prototype",
-        "Issue #17 prototype: a primary action face joined to an adjacent menu trigger.",
+        "Issue #17 prototype: an action face joined to an adjacent menu trigger.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,

@@ -456,7 +456,7 @@ fn popup_menu_preview_handlers(root_count: usize, submenu_click_count: usize) ->
 
     PopupMenuTemplateHandlers {
         trigger_bounds: Box::new(input_noop_bounds),
-        primary_click: Box::new(input_noop_click),
+        action_click: Box::new(input_noop_click),
         trigger_click: Box::new(input_noop_click),
         trigger_hover: Box::new(input_noop_hover),
         trigger_mouse_down: Box::new(input_noop_mouse_down),

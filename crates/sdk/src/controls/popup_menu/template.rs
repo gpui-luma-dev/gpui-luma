@@ -22,7 +22,7 @@ pub type PopupMenuMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut A
 
 pub struct PopupMenuTemplateHandlers {
     pub trigger_bounds: PopupMenuBoundsHandler,
-    pub primary_click: PopupMenuClickHandler,
+    pub action_click: PopupMenuClickHandler,
     pub trigger_click: PopupMenuClickHandler,
     pub trigger_hover: PopupMenuHoverHandler,
     pub trigger_mouse_down: PopupMenuMouseDownHandler,
@@ -135,7 +135,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
     ) -> Stateful<Div> {
         let PopupMenuTemplateHandlers {
             trigger_bounds,
-            primary_click,
+            action_click,
             trigger_click,
             trigger_hover,
             trigger_mouse_down,
@@ -201,8 +201,8 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             .rounded(px(control_look.trigger_radius));
 
         if model.split {
-            let primary_face = div()
-                .id(format!("{}-primary-face", model.id))
+            let action_face = div()
+                .id(format!("{}-action-face", model.id))
                 .flex()
                 .flex_1()
                 .min_w(px(0.0))
@@ -213,7 +213,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .text_size(px(control_look.trigger_typography.size))
                 .line_height(px(control_look.trigger_typography.line_height))
                 .font_weight(control_look.trigger_typography.weight)
-                .on_click(primary_click)
+                .on_click(action_click)
                 .child(face);
             let secondary = div()
                 .id(format!("{}-secondary-face", model.id))
@@ -239,7 +239,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .border_1()
                 .border_color(border)
                 .h(px(look.trigger_height))
-                .child(primary_face)
+                .child(action_face)
                 .child(div().border_l_1().border_color(control_look.trigger_foreground).child(secondary));
         } else if model.icon_only {
             trigger = trigger

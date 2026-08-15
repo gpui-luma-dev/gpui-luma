@@ -57,7 +57,7 @@ impl SplitButtonControlExposition {
                 cx,
                 look.clone(),
                 "controls-split-button-event-log",
-                "Activate the primary face or open the menu face; prototype events appear below.",
+                "Activate the action face or open the menu face; prototype events appear below.",
             )
         });
         let variants = [
@@ -76,7 +76,7 @@ impl SplitButtonControlExposition {
             let variant_label = label.to_string();
             subscriptions.push(cx.subscribe(&control, move |_, _, event: &SplitButtonEvent, cx| {
                 let line = match event {
-                    SplitButtonEvent::PrimaryClick => format!("{variant_label}: PrimaryClick"),
+                    SplitButtonEvent::ActionClick => format!("{variant_label}: ActionClick"),
                     SplitButtonEvent::Select { item_id, label } => {
                         format!("{variant_label}: Select {{ item_id: \"{item_id}\", label: \"{label}\" }}")
                     }
@@ -379,7 +379,7 @@ fn render_split_button_template_cell(
 fn split_button_template_handlers(item_count: usize) -> PopupMenuTemplateHandlers {
     PopupMenuTemplateHandlers {
         trigger_bounds: Box::new(input_noop_bounds),
-        primary_click: Box::new(input_noop_click),
+        action_click: Box::new(input_noop_click),
         trigger_click: Box::new(input_noop_click),
         trigger_hover: Box::new(input_noop_hover),
         trigger_mouse_down: Box::new(input_noop_mouse_down),

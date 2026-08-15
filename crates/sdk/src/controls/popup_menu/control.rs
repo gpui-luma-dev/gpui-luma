@@ -23,7 +23,7 @@ use crate::keyhandling::{
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum PopupMenuEvent {
-    PrimaryClick,
+    ActionClick,
     Select { item_id: SharedString, label: SharedString },
     OpenChanged { open: bool },
     Dismiss,
@@ -221,7 +221,7 @@ impl PopupMenu {
 
         PopupMenuTemplateHandlers {
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
-            primary_click: Box::new(cx.listener(Self::handle_primary_click)),
+            action_click: Box::new(cx.listener(Self::handle_action_click)),
             trigger_click: Box::new(cx.listener(Self::handle_trigger_click)),
             trigger_hover: Box::new(cx.listener(Self::handle_hover)),
             trigger_mouse_down: Box::new(cx.listener(Self::handle_mouse_down)),
@@ -352,7 +352,7 @@ impl PopupMenu {
         }
     }
 
-    fn handle_primary_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_action_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if !event.is_keyboard() && self.model.enabled {
             self.activate_primary(cx);
         }
@@ -363,7 +363,7 @@ impl PopupMenu {
             return;
         }
         self.dismiss_menu(cx);
-        cx.emit(PopupMenuEvent::PrimaryClick);
+        cx.emit(PopupMenuEvent::ActionClick);
         cx.notify();
     }
 
