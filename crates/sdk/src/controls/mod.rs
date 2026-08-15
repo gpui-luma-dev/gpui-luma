@@ -26,6 +26,7 @@ pub(crate) mod menu_navigation;
 
 pub mod sidebar;
 pub mod popup_menu;
+pub mod split_button;
 pub mod popup_scroll_surface;
 pub mod selector;
 pub mod selector_item_template;

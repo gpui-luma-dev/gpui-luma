@@ -19,6 +19,7 @@ members = [
 default-members = ["crates/sdk", "apps/luma-studio", "apps/neumorphic-demo", "apps/color-viz", "apps/graph-viz"]
 
 [workspace.package]
+version = "0.9.0-alpha.1"
 edition = "2024"
 license = "Apache-2.0"
 publish = false

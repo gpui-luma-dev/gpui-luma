@@ -278,8 +278,11 @@ fn render_menu_trigger_state_cell(
         menu_size: ButtonSize::Md,
         icon_only: false,
         end_icon: None,
+        open_trigger_icon: LucideIcon::ChevronUp,
+        close_trigger_icon: LucideIcon::ChevronDown,
         full_width: false,
         without_elevation: false,
+        split: false,
         trigger_radius_override: None,
         open_submenu: None,
         active_path: None,
@@ -331,8 +334,11 @@ fn render_menu_trigger_size_radius_cell(
         menu_size: ButtonSize::Md,
         icon_only: false,
         end_icon: None,
+        open_trigger_icon: LucideIcon::ChevronUp,
+        close_trigger_icon: LucideIcon::ChevronDown,
         full_width: false,
         without_elevation: false,
+        split: false,
         trigger_radius_override: Some(menu_trigger_radius_px(look, size, radius)),
         open_submenu: None,
         active_path: None,
@@ -373,6 +379,8 @@ fn menu_trigger_radius_px(look: &ShadcnLook, size: ButtonSize, radius: ButtonRad
 
 fn menu_trigger_style_id(style: PopupMenuTriggerStyle) -> &'static str {
     match style {
+        PopupMenuTriggerStyle::Primary => "primary",
+        PopupMenuTriggerStyle::Secondary => "secondary",
         PopupMenuTriggerStyle::Outline => "outline",
         PopupMenuTriggerStyle::Ghost => "ghost",
     }
@@ -448,6 +456,7 @@ fn popup_menu_preview_handlers(root_count: usize, submenu_click_count: usize) ->
 
     PopupMenuTemplateHandlers {
         trigger_bounds: Box::new(input_noop_bounds),
+        primary_click: Box::new(input_noop_click),
         trigger_click: Box::new(input_noop_click),
         trigger_hover: Box::new(input_noop_hover),
         trigger_mouse_down: Box::new(input_noop_mouse_down),

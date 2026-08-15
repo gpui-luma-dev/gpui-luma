@@ -23,6 +23,8 @@ pub struct PopupMenuInspectMetrics {
 
 fn button_style(trigger_style: PopupMenuTriggerStyle) -> ShadcnButtonStyle {
     match trigger_style {
+        PopupMenuTriggerStyle::Primary => ShadcnButtonStyle::Primary,
+        PopupMenuTriggerStyle::Secondary => ShadcnButtonStyle::Secondary,
         PopupMenuTriggerStyle::Outline => ShadcnButtonStyle::Outline,
         PopupMenuTriggerStyle::Ghost => ShadcnButtonStyle::Ghost,
     }

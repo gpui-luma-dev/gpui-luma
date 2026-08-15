@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{
     Anchor, AnyElement, App, Bounds, ClickEvent, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
-    Point, Size, Stateful, Window, anchored, deferred, div, point, px, prelude::*,
+    Point, Size, Stateful, Window, anchored, deferred, div, point, px, prelude::*, transparent_black,
 };
 use lucide_icons::Icon as LucideIcon;
 
@@ -10,6 +10,9 @@ use super::{PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTriggerModel};
 use crate::controls::button_family::button_family_effective_border;
 use crate::controls::floating_menu::render_floating_menu_with_submenu_hovers;
 use crate::controls::popup_menu::{PopupMenuLook, PopupMenuTheme, PopupMenuTriggerMetrics, default_popup_menu_theme};
+use crate::theme::InteractionState;
+
+const FOCUS_RING_GAP: f32 = 1.0;
 
 pub type PopupMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type PopupMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -19,6 +22,7 @@ pub type PopupMenuMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut A
 
 pub struct PopupMenuTemplateHandlers {
     pub trigger_bounds: PopupMenuBoundsHandler,
+    pub primary_click: PopupMenuClickHandler,
     pub trigger_click: PopupMenuClickHandler,
     pub trigger_hover: PopupMenuHoverHandler,
     pub trigger_mouse_down: PopupMenuMouseDownHandler,
@@ -131,6 +135,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
     ) -> Stateful<Div> {
         let PopupMenuTemplateHandlers {
             trigger_bounds,
+            primary_click,
             trigger_click,
             trigger_hover,
             trigger_mouse_down,
@@ -150,7 +155,29 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             trigger_radius_override: model.trigger_radius_override,
         };
         let look = self.theme.resolve_look(model.trigger_style, metrics, model.state, scale_factor, _cx);
-        let border = button_family_effective_border(look.trigger_border);
+        let focused = model.split && model.state.focused && !model.state.disabled;
+        let control_look = if focused {
+            self.theme.resolve_look(
+                model.trigger_style,
+                metrics,
+                InteractionState { focused: false, ..model.state },
+                scale_factor,
+                _cx,
+            )
+        } else {
+            look.clone()
+        };
+        let border = button_family_effective_border(control_look.trigger_border);
+        let focus_border = button_family_effective_border(look.trigger_border);
+        let focus_metrics = self.theme.metrics().focus;
+        // Reserve the focus ring geometry in every state. Painting it only when focused
+        // would change the control's outer bounds and shift surrounding layout.
+        let focus_extent = if focus_border.a > 0.0 {
+            FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+        } else {
+            0.0
+        };
+        let focus_ring_color = if focused { focus_border } else { transparent_black() };
         let trigger_model = PopupMenuTriggerModel {
             id: model.id.clone(),
             label: model.label.clone(),
@@ -169,18 +196,59 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             .on_mouse_down(MouseButton::Left, trigger_mouse_down)
             .on_mouse_up(MouseButton::Left, trigger_mouse_up)
             .on_mouse_up_out(MouseButton::Left, trigger_mouse_up_out)
-            .on_click(trigger_click)
-            .bg(look.trigger_background)
-            .text_color(look.trigger_foreground)
-            .rounded(px(look.trigger_radius));
+            .bg(control_look.trigger_background)
+            .text_color(control_look.trigger_foreground)
+            .rounded(px(control_look.trigger_radius));
 
-        if model.icon_only {
+        if model.split {
+            let primary_face = div()
+                .id(format!("{}-primary-face", model.id))
+                .flex()
+                .flex_1()
+                .min_w(px(0.0))
+                .items_center()
+                .px(px(control_look.trigger_padding_x))
+                .py(px(control_look.trigger_padding_y))
+                .text_color(control_look.trigger_foreground)
+                .text_size(px(control_look.trigger_typography.size))
+                .line_height(px(control_look.trigger_typography.line_height))
+                .font_weight(control_look.trigger_typography.weight)
+                .on_click(primary_click)
+                .child(face);
+            let secondary = div()
+                .id(format!("{}-secondary-face", model.id))
+                .flex()
+                .items_center()
+                .justify_center()
+                .size(px(look.trigger_height))
+                .flex_shrink_0()
+                .text_size(px(look.trigger_icon_size))
+                .line_height(px(look.trigger_icon_size))
+                .child(render_lucide_icon(
+                    if model.open {
+                        model.open_trigger_icon
+                    } else {
+                        model.close_trigger_icon
+                    },
+                    control_look.trigger_foreground,
+                    look.trigger_icon_size,
+                ))
+                .on_click(trigger_click);
+            trigger = trigger
+                .overflow_hidden()
+                .border_1()
+                .border_color(border)
+                .h(px(look.trigger_height))
+                .child(primary_face)
+                .child(div().border_l_1().border_color(control_look.trigger_foreground).child(secondary));
+        } else if model.icon_only {
             trigger = trigger
                 .justify_center()
                 .size(px(look.trigger_height))
                 .text_size(px(look.trigger_icon_size))
                 .line_height(px(look.trigger_icon_size))
-                .child(face);
+                .child(face)
+                .on_click(trigger_click);
         } else {
             let end_icon = model.end_icon.unwrap_or(if model.open {
                 LucideIcon::ChevronUp
@@ -197,14 +265,15 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .line_height(px(look.trigger_typography.line_height))
                 .font_weight(look.trigger_typography.weight)
                 .child(face)
-                .child(render_lucide_icon(end_icon, look.trigger_foreground, look.trigger_icon_size));
+                .child(render_lucide_icon(end_icon, look.trigger_foreground, look.trigger_icon_size))
+                .on_click(trigger_click);
 
             if model.full_width {
                 trigger = trigger.w_full();
             }
         }
 
-        if border.a > 0.0 {
+        if border.a > 0.0 && !model.split {
             trigger = trigger.border_1().border_color(border);
         }
 
@@ -227,8 +296,24 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             .flex_col()
             .items_stretch()
             .relative()
-            .on_mouse_down_out(root_mouse_down_out)
-            .child(trigger);
+            .on_mouse_down_out(root_mouse_down_out);
+
+        let oversize_extent = focus_extent;
+        if oversize_extent > 0.0 {
+            root = root.p(px(oversize_extent)).child(trigger).child(
+                div()
+                    .absolute()
+                    .top(px(0.0))
+                    .right(px(0.0))
+                    .bottom(px(0.0))
+                    .left(px(0.0))
+                    .border(px(focus_metrics.width))
+                    .border_color(focus_ring_color)
+                    .rounded(px(look.trigger_radius + FOCUS_RING_GAP + focus_metrics.width)),
+            );
+        } else {
+            root = root.child(trigger);
+        }
 
         if model.presence.should_paint() {
             let placement = resolve_popup_menu_placement(

@@ -69,20 +69,20 @@ pub fn render_title_bar<T: Render + HasShellTheme>(title: &str, app: &T, _cx: &m
         .border_color(chrome.border)
         .text_color(chrome.title_text)
         .child(
-        div()
-            .id("shell-titlebar")
-            .h_full()
-            .w_full()
-            .flex()
-            .flex_row()
-            .items_center()
-            .justify_between()
-            .px_2()
-            .text_color(chrome.title_text)
-            .font_family(sans_family)
-            .child(div().child(title.to_string()))
-            .child(app.theme_toggle_button()),
-    )
+            div()
+                .id("shell-titlebar")
+                .h_full()
+                .w_full()
+                .flex()
+                .flex_row()
+                .items_center()
+                .justify_between()
+                .px_2()
+                .text_color(chrome.title_text)
+                .font_family(sans_family)
+                .child(div().child(title.to_string()))
+                .child(app.theme_toggle_button()),
+        )
 }
 
 fn theme_toggle_icon(mode: ThemeMode) -> LucideIcon {

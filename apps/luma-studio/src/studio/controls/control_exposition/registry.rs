@@ -45,6 +45,7 @@ use super::search_selector::SearchSelectorControlExposition;
 use super::selection_panel::SelectionPanelControlExposition;
 use super::slider::SliderControlExposition;
 use super::shadow_button::ShadowButtonControlExposition;
+use super::split_button::SplitButtonControlExposition;
 use super::slide_panel::SlidePanelControlExposition;
 use super::switch::SwitchControlExposition;
 use super::tabs_navigation::TabsNavigationControlExposition;
@@ -108,6 +109,7 @@ pub enum ControlExposition {
     OverlayPositioning(Entity<OverlayPositioningControlExposition>),
     DraggableOverlay(Entity<DraggableOverlayControlExposition>),
     ShadowButton(Entity<ShadowButtonControlExposition>),
+    SplitButton(Entity<SplitButtonControlExposition>),
     SlidePanel(Entity<SlidePanelControlExposition>),
 }
 
@@ -165,6 +167,7 @@ impl ControlExposition {
             Self::OverlayPositioning(cx.new(|cx| OverlayPositioningControlExposition::new(cx, look.clone()))),
             Self::DraggableOverlay(cx.new(|cx| DraggableOverlayControlExposition::new(cx, look.clone()))),
             Self::ShadowButton(cx.new(|cx| ShadowButtonControlExposition::new(cx, look.clone()))),
+            Self::SplitButton(cx.new(|cx| SplitButtonControlExposition::new(cx, look.clone()))),
             Self::SlidePanel(cx.new(|cx| SlidePanelControlExposition::new(cx, look.clone()))),
         ]
     }
@@ -226,6 +229,7 @@ impl ControlExposition {
             Self::OverlayPositioning(entity) => entity.read(cx).entry(),
             Self::DraggableOverlay(entity) => entity.read(cx).entry(),
             Self::ShadowButton(entity) => entity.read(cx).entry(),
+            Self::SplitButton(entity) => entity.read(cx).entry(),
             Self::SlidePanel(entity) => entity.read(cx).entry(),
         }
     }
@@ -246,6 +250,7 @@ impl ControlExposition {
             Self::Scrollbar(entity) => entity.read(cx).fills_viewport(),
             Self::FloatingMenu(entity) => entity.read(cx).fills_viewport(),
             Self::PopupMenu(entity) => entity.read(cx).fills_viewport(),
+            Self::SplitButton(entity) => entity.read(cx).fills_viewport(),
             Self::ContextMenu(entity) => entity.read(cx).fills_viewport(),
             Self::PopupSelector(entity) => entity.read(cx).fills_viewport(),
             Self::ComboBox(entity) => entity.read(cx).fills_viewport(),
@@ -291,6 +296,7 @@ impl ControlExposition {
             Self::Scrollbar(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::FloatingMenu(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::PopupMenu(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::SplitButton(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::ContextMenu(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::PopupSelector(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::ComboBox(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
@@ -350,6 +356,7 @@ impl ControlExposition {
             Self::Scrollbar(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::FloatingMenu(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::PopupMenu(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::SplitButton(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::ContextMenu(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::PopupSelector(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::ComboBox(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
@@ -440,6 +447,7 @@ impl ControlExposition {
             Self::OverlayPositioning(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::DraggableOverlay(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::ShadowButton(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::SplitButton(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::SlidePanel(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
         }
     }
@@ -497,6 +505,7 @@ impl ControlExposition {
             Self::OverlayPositioning(entity) => entity.clone().into_any_element(),
             Self::DraggableOverlay(entity) => entity.clone().into_any_element(),
             Self::ShadowButton(entity) => entity.clone().into_any_element(),
+            Self::SplitButton(entity) => entity.clone().into_any_element(),
             Self::SlidePanel(entity) => entity.clone().into_any_element(),
         }
     }

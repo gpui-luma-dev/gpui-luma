@@ -28,6 +28,7 @@ use gpui_luma::controls::context_menu::ContextMenu;
 use gpui_luma::controls::overlay_window::OverlayWindowBuilder;
 use gpui_luma::controls::pager::{self, PagerBuilder};
 use gpui_luma::controls::popup_menu::PopupMenu;
+use gpui_luma::controls::split_button::SplitButtonBuilder;
 use gpui_luma::controls::progress::{self, ProgressBuilder};
 use gpui_luma::controls::stepper::{self, StepperBuilder};
 use gpui_luma::controls::resizable_panels::ResizablePanelsBuilder;
@@ -96,6 +97,10 @@ pub trait ShadcnLookControlExt {
     fn content_only_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder;
 
     fn popup_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::popup_menu::PopupMenuBuilder;
+    fn primary_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder;
+    fn secondary_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder;
+    fn outline_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder;
+    fn ghost_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder;
     fn context_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::context_menu::ContextMenuBuilder;
     fn listbox(&self, id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem>;
     fn listbox_multiple(&self, id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem>;
@@ -328,6 +333,34 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn popup_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::popup_menu::PopupMenuBuilder {
         PopupMenu::new(id).template(self.popup_menu_template())
+    }
+
+    fn primary_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder {
+        PopupMenu::new(id)
+            .split()
+            .trigger_style(gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Primary)
+            .template(self.popup_menu_template())
+    }
+
+    fn secondary_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder {
+        PopupMenu::new(id)
+            .split()
+            .trigger_style(gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Secondary)
+            .template(self.popup_menu_template())
+    }
+
+    fn outline_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder {
+        PopupMenu::new(id)
+            .split()
+            .trigger_style(gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Outline)
+            .template(self.popup_menu_template())
+    }
+
+    fn ghost_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder {
+        PopupMenu::new(id)
+            .split()
+            .trigger_style(gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Ghost)
+            .template(self.popup_menu_template())
     }
 
     fn context_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::context_menu::ContextMenuBuilder {

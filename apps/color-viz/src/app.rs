@@ -47,17 +47,17 @@ impl Render for ColorVizApp {
             .border_color(chrome.border)
             .text_color(chrome.title_text)
             .child(
-            div()
-                .id("color-viz-titlebar")
-                .h_full()
-                .w_full()
-                .flex()
-                .items_center()
-                .px_2()
-                .text_color(chrome.title_text)
-                .font_family(sans_family.clone())
-                .child(div().child("Color Viz - Gradients")),
-        );
+                div()
+                    .id("color-viz-titlebar")
+                    .h_full()
+                    .w_full()
+                    .flex()
+                    .items_center()
+                    .px_2()
+                    .text_color(chrome.title_text)
+                    .font_family(sans_family.clone())
+                    .child(div().child("Color Viz - Gradients")),
+            );
 
         div()
             .luma_focus_scope(&self.focus_scope)

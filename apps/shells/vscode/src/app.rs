@@ -300,29 +300,29 @@ impl Render for VscodeShellApp {
             .border_color(chrome.border)
             .text_color(chrome.title_text)
             .child(
-            div()
-                .id("shell-vscode-titlebar")
-                .h_full()
-                .w_full()
-                .flex()
-                .flex_row()
-                .items_center()
-                .justify_between()
-                .px_2()
-                .text_color(chrome.title_text)
-                .font_family(sans.clone())
-                .child(div().typography_style(title_style).child("Shell: VS Code"))
-                .child(
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap(px(4.0))
-                        .child(self.customize_layout_toggle.clone())
-                        .child(self.primary_side_bar_toggle.clone())
-                        .child(self.secondary_side_bar_toggle.clone())
-                        .child(self.theme_toggle_button.clone()),
-                ),
-        );
+                div()
+                    .id("shell-vscode-titlebar")
+                    .h_full()
+                    .w_full()
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .justify_between()
+                    .px_2()
+                    .text_color(chrome.title_text)
+                    .font_family(sans.clone())
+                    .child(div().typography_style(title_style).child("Shell: VS Code"))
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap(px(4.0))
+                            .child(self.customize_layout_toggle.clone())
+                            .child(self.primary_side_bar_toggle.clone())
+                            .child(self.secondary_side_bar_toggle.clone())
+                            .child(self.theme_toggle_button.clone()),
+                    ),
+            );
 
         div()
             .luma_focus_scope(&self.focus_scope)

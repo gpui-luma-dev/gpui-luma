@@ -190,6 +190,8 @@ pub fn pager_button_role(variant_id: &str, value_id: &str) -> gpui_luma::control
 
 pub fn popup_menu_trigger_style(variant_id: &str) -> gpui_luma::controls::popup_menu::PopupMenuTriggerStyle {
     match variant_id {
+        "primary" => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Primary,
+        "secondary" => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Secondary,
         "ghost" => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Ghost,
         _ => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Outline,
     }

@@ -278,6 +278,23 @@ pub static POPUP_MENU_TRIGGER_VARIANTS: [InspectorVariant; 2] = [
     InspectorVariant { id: "ghost", label: "Ghost" },
 ];
 
+pub static SPLIT_BUTTON_VARIANTS: [InspectorVariant; 4] = [
+    InspectorVariant { id: "primary", label: "Primary" },
+    InspectorVariant { id: "secondary", label: "Secondary" },
+    InspectorVariant { id: "outline", label: "Outline" },
+    InspectorVariant { id: "ghost", label: "Ghost" },
+];
+
+pub static SPLIT_BUTTON_PARTS: [InspectorPart; 2] = [
+    InspectorPart {
+        id: "trigger",
+        label: "Split Button",
+        variants: &SPLIT_BUTTON_VARIANTS,
+        default_variant_id: "outline",
+    },
+    InspectorPart { id: "panel", label: "Panel", variants: &[], default_variant_id: "" },
+];
+
 pub static TOOLBAR_VARIANTS: [InspectorVariant; 2] = [
     InspectorVariant { id: "outline", label: "Outline" },
     InspectorVariant { id: "ghost", label: "Ghost" },

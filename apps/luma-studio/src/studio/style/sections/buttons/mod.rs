@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
+use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, default_button_template};
+use gpui_luma::controls::menu_item::MenuItem;
+use gpui_luma::controls::split_button::SplitButton;
 use gpui_luma::controls::tabs_navigation::TabsNavigation;
 use gpui_luma::theme::InteractionState;
-use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnLookControlExt};
 
 use crate::studio::style::shared::button_matrix::{
     BUTTON_STYLE_VARIANTS, BUTTON_TABLE_STATE_COLUMN_WIDTH, SIZE_PREVIEW_STYLE, button_look_for_style,
@@ -96,6 +98,80 @@ fn render_button_preview_tabbed_content(
         .child(div().w_full().h(px(1.0)).bg(border))
         .child(div().w_full().flex().justify_center().mt(px(16.0)).child(body))
         .into_any_element()
+}
+
+pub(crate) fn render_split_button_prototype_section(
+    look: Arc<ShadcnLook>,
+    preview: Entity<SplitButtonPreview>,
+) -> AnyElement {
+    let chrome = look.chrome();
+    section_shell_with_width(
+        960.0,
+        "Split Button Prototype",
+        "Issue #17 prototype: a primary action face joined to an adjacent menu trigger.",
+        chrome.title_text,
+        chrome.muted_text,
+        chrome.border,
+        chrome.panel_background,
+        div().w_full().flex().justify_center().child(preview).into_any_element(),
+    )
+}
+
+pub(crate) struct SplitButtonPreview {
+    look: Arc<ShadcnLook>,
+    pairs: Vec<(Entity<SplitButton>, &'static str)>,
+}
+
+impl SplitButtonPreview {
+    pub(crate) fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let variants = [
+            ("Primary", look.primary_split_button("style-split-primary")),
+            ("Secondary", look.secondary_split_button("style-split-secondary")),
+            ("Outline", look.outline_split_button("style-split-outline")),
+            ("Ghost", look.ghost_split_button("style-split-ghost")),
+        ];
+        let pairs = variants
+            .into_iter()
+            .map(|(label, builder)| {
+                let control = builder
+                    .label(label)
+                    .items([
+                        MenuItem::new("save-as").label("Save as"),
+                        MenuItem::new("duplicate").label("Duplicate"),
+                        MenuItem::new("export").label("Export"),
+                    ])
+                    .spawn(cx);
+                (control, label)
+            })
+            .collect();
+        Self { look, pairs }
+    }
+
+    pub(crate) fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look;
+        for (control, _) in &self.pairs {
+            control.update(cx, |_, cx| cx.notify());
+        }
+        cx.notify();
+    }
+}
+
+impl Render for SplitButtonPreview {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap(px(8.0))
+            .child(div().text_sm().text_color(self.look.chrome().muted_text).child("Split Button Prototype"))
+            .child(
+                div().flex().flex_wrap().items_center().gap(px(16.0)).children(
+                    self.pairs.iter().map(|(control, label)| {
+                        div().id(format!("style-split-preview-{label}")).child(control.clone())
+                    }),
+                ),
+            )
+    }
 }
 
 fn render_button_template_matrix(

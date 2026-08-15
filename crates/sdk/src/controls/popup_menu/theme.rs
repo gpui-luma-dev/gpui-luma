@@ -105,6 +105,24 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
         let layer = state.layer();
 
         let (trigger_background, trigger_foreground, trigger_border, trigger_shadow) = match trigger_style {
+            PopupMenuTriggerStyle::Primary | PopupMenuTriggerStyle::Secondary => {
+                let background = match layer {
+                    InteractionLayer::Disabled => palette.state.disabled.background,
+                    InteractionLayer::Pressed => palette.state.pressed.background,
+                    InteractionLayer::Hovered => palette.state.hover.background,
+                    InteractionLayer::Default => palette.surface.subtle.background,
+                };
+                (
+                    background,
+                    if state.disabled {
+                        palette.state.disabled.foreground
+                    } else {
+                        palette.app.foreground
+                    },
+                    Some(palette.border.default),
+                    Some(self.tokens.elevation.control.to_box_shadows()),
+                )
+            }
             PopupMenuTriggerStyle::Outline => {
                 let background = match layer {
                     InteractionLayer::Disabled => palette.state.disabled.background,
