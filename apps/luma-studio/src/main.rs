@@ -1,4 +1,5 @@
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
+#![windows_subsystem = "windows"]
 
 mod app_shell;
 #[path = "assets/assets.rs"]

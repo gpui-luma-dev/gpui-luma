@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 mod app_shell;
 #[path = "assets/assets.rs"]
 mod assets;

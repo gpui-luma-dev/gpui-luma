@@ -1,4 +1,7 @@
+#![windows_subsystem = "windows"]
+
 mod app;
+
 mod app_shell;
 mod gradient_builder;
 mod theme;
