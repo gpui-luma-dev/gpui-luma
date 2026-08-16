@@ -8,6 +8,7 @@ use super::control::SidebarControl;
 use super::engine::{NavNode, SidebarPanelTemplate, default_sidebar_panel_template, modified_sidebar_panel_template};
 use super::theme::{SidebarCollapsible, SidebarVariant};
 use crate::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
+use crate::controls::icon::DisclosureIcons;
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 
 pub type SidebarPaneRender = Rc<dyn Fn() -> AnyElement>;
@@ -67,6 +68,7 @@ pub struct SidebarPanelModel {
     pub(crate) content: Option<SidebarContentModel>,
     pub(crate) footer: Option<SidebarFooterModel>,
     pub(crate) rail: Option<SidebarRailModel>,
+    pub(crate) disclosure_icons: DisclosureIcons,
 }
 
 #[derive(Clone)]
@@ -343,7 +345,16 @@ pub struct SidebarBuilder {
 
 impl SidebarBuilder {
     pub fn new(id: impl Into<SharedString>) -> Self {
-        Self { model: SidebarPanelModel { id: id.into(), header: None, content: None, footer: None, rail: None } }
+        Self {
+            model: SidebarPanelModel {
+                id: id.into(),
+                header: None,
+                content: None,
+                footer: None,
+                rail: None,
+                disclosure_icons: DisclosureIcons::default(),
+            },
+        }
     }
 
     pub fn header(mut self, header: SidebarHeaderBuilder) -> Self {
@@ -363,6 +374,12 @@ impl SidebarBuilder {
 
     pub fn rail(mut self, rail: SidebarRailBuilder) -> Self {
         self.model.rail = Some(rail.build());
+        self
+    }
+
+    /// Sets the expanded and collapsed disclosure icons for nested menu rows.
+    pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
+        self.model.disclosure_icons = icons;
         self
     }
 

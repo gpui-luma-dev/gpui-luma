@@ -353,8 +353,10 @@ fn render_split_button_template_cell(
         menu_size: ControlSize::Md,
         icon_only: false,
         end_icon: None,
-        open_trigger_icon: LucideIcon::ChevronUp,
-        close_trigger_icon: LucideIcon::ChevronDown,
+        disclosure_icons: &gpui_luma::controls::icon::DisclosureIcons::new(
+            LucideIcon::ChevronUp,
+            LucideIcon::ChevronDown,
+        ),
         full_width: false,
         without_elevation: false,
         split: true,

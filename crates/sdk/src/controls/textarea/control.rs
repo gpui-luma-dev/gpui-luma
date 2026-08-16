@@ -8,8 +8,6 @@ use gpui::{
     size,
 };
 
-use lucide_icons::Icon as LucideIcon;
-
 use super::{TextAreaBuilder, TextAreaState, TextAreaTemplateHandlers, model::TextAreaModel};
 use crate::controls::scrollbar::{Scrollbar, ScrollbarEvent, ScrollbarOrientation};
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
@@ -1292,7 +1290,11 @@ impl Render for TextArea {
                     .text_size(px(TEXTAREA_RESIZE_ICON_SIZE))
                     .line_height(px(TEXTAREA_RESIZE_ICON_SIZE))
                     .text_color(look.border.opacity(0.75))
-                    .child(crate::controls::icon::lucide_glyph(LucideIcon::Scaling)),
+                    .child(crate::controls::icon::render_icon_source(
+                        &self.model.resize_handle_icon,
+                        look.border.opacity(0.75),
+                        TEXTAREA_RESIZE_ICON_SIZE,
+                    )),
             );
 
         // Keep overflow on an inner clip host so elevation shadows on the chrome are not clipped.

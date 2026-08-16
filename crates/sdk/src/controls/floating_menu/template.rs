@@ -9,6 +9,7 @@ use crate::controls::menu_item::{MenuItem, MenuItemIcon};
 use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::state::MenuPath;
 use crate::controls::floating_menu::FloatingMenuLook;
+use crate::controls::icon::{DisclosureIcons, render_icon_source};
 
 pub type FloatingMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type FloatingMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -28,6 +29,7 @@ pub struct FloatingMenuRenderModel<'a> {
     pub highlight: Option<FloatingMenuHighlight>,
     pub submenu_presence: OverlayPresence,
     pub look: FloatingMenuLook,
+    pub disclosure_icons: &'a DisclosureIcons,
 }
 
 pub struct FloatingMenuTemplateHandlers {
@@ -159,10 +161,11 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
             let is_active = matches!(model.active_path, Some(MenuPath::Root(active)) if active == index);
 
             if enabled {
-                row = row
-                    .cursor_pointer()
-                    .on_hover(item_hover)
-                    .child(render_submenu_affordance(!item.submenu_items().is_empty(), look.item_icon_size));
+                row = row.cursor_pointer().on_hover(item_hover).child(render_submenu_affordance(
+                    !item.submenu_items().is_empty(),
+                    look.item_icon_size,
+                    model.disclosure_icons,
+                ));
 
                 if !controlled_hover {
                     row = row.hover({
@@ -192,12 +195,15 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                         controlled_hover,
                         model.highlight,
                         model.submenu_presence.opacity(),
+                        model.disclosure_icons,
                     ));
                 }
             } else {
-                row = row
-                    .opacity(look.disabled_opacity)
-                    .child(render_submenu_affordance(!item.submenu_items().is_empty(), look.item_icon_size));
+                row = row.opacity(look.disabled_opacity).child(render_submenu_affordance(
+                    !item.submenu_items().is_empty(),
+                    look.item_icon_size,
+                    model.disclosure_icons,
+                ));
             }
 
             menu = menu.child(row);
@@ -291,6 +297,7 @@ pub fn render_floating_menu_with_template(
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
 ) -> Stateful<Div> {
+    let disclosure_icons = DisclosureIcons::default();
     template.render(
         &FloatingMenuRenderModel {
             id,
@@ -300,6 +307,7 @@ pub fn render_floating_menu_with_template(
             highlight: None,
             submenu_presence: OverlayPresence::new(true, false),
             look,
+            disclosure_icons: &disclosure_icons,
         },
         FloatingMenuTemplateHandlers { item_hovers, submenu_hovers: Vec::new(), controlled_hover: false, item_clicks },
     )
@@ -318,7 +326,16 @@ fn render_floating_menu_with_template_and_submenu_presence(
     submenu_presence: OverlayPresence,
 ) -> Stateful<Div> {
     template.render(
-        &FloatingMenuRenderModel { id, items, open_submenu, active_path, highlight: None, submenu_presence, look },
+        &FloatingMenuRenderModel {
+            id,
+            items,
+            open_submenu,
+            active_path,
+            highlight: None,
+            submenu_presence,
+            look,
+            disclosure_icons: &DisclosureIcons::default(),
+        },
         FloatingMenuTemplateHandlers { item_hovers, submenu_hovers: Vec::new(), controlled_hover: false, item_clicks },
     )
 }
@@ -335,6 +352,33 @@ pub fn render_floating_menu_with_submenu_hovers(
     item_clicks: Vec<FloatingMenuClickHandler>,
     highlight: Option<FloatingMenuHighlight>,
 ) -> Stateful<Div> {
+    render_floating_menu_with_submenu_hovers_and_icons(
+        id,
+        items,
+        open_submenu,
+        active_path,
+        look,
+        item_hovers,
+        submenu_hovers,
+        item_clicks,
+        highlight,
+        DisclosureIcons::default(),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn render_floating_menu_with_submenu_hovers_and_icons(
+    id: &SharedString,
+    items: &[MenuItem],
+    open_submenu: Option<usize>,
+    active_path: Option<MenuPath>,
+    look: FloatingMenuLook,
+    item_hovers: Vec<FloatingMenuHoverHandler>,
+    submenu_hovers: Vec<Vec<FloatingMenuHoverHandler>>,
+    item_clicks: Vec<FloatingMenuClickHandler>,
+    highlight: Option<FloatingMenuHighlight>,
+    disclosure_icons: DisclosureIcons,
+) -> Stateful<Div> {
     default_floating_menu_template().render(
         &FloatingMenuRenderModel {
             id,
@@ -344,6 +388,7 @@ pub fn render_floating_menu_with_submenu_hovers(
             highlight,
             submenu_presence: OverlayPresence::new(true, false),
             look,
+            disclosure_icons: &disclosure_icons,
         },
         FloatingMenuTemplateHandlers { item_hovers, submenu_hovers, controlled_hover: true, item_clicks },
     )
@@ -361,6 +406,7 @@ fn render_floating_submenu(
     controlled_hover: bool,
     highlight: Option<FloatingMenuHighlight>,
     submenu_opacity: f32,
+    disclosure_icons: &DisclosureIcons,
 ) -> Stateful<Div> {
     let mut submenu = div()
         .id(format!("{menu_id}-submenu-{}", item.id()))
@@ -414,7 +460,12 @@ fn render_floating_submenu(
             .line_height(px(look.item_typography.line_height))
             .font_weight(look.item_typography.weight)
             .child(render_item_icon(submenu_item.icon_ref(), look.item_icon_size))
-            .child(div().flex_1().child(submenu_item.label_text().clone()));
+            .child(div().flex_1().child(submenu_item.label_text().clone()))
+            .child(render_submenu_affordance(
+                !submenu_item.submenu_items().is_empty(),
+                look.item_icon_size,
+                disclosure_icons,
+            ));
 
         if enabled && submenu_item.submenu_items().is_empty() {
             if let Some(hover) = submenu_hovers.as_mut().and_then(Iterator::next) {
@@ -492,9 +543,9 @@ fn render_item_icon(icon: Option<&MenuItemIcon>, size: f32) -> AnyElement {
     }
 }
 
-fn render_submenu_affordance(has_submenu: bool, size: f32) -> AnyElement {
+fn render_submenu_affordance(has_submenu: bool, size: f32, icons: &DisclosureIcons) -> AnyElement {
     if has_submenu {
-        render_lucide_icon(LucideIcon::ChevronRight, size)
+        render_icon_source(&icons.collapsed, gpui::Hsla::default(), size)
     } else {
         div().size(px(size)).into_any_element()
     }

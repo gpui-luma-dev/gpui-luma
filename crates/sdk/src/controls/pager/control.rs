@@ -172,6 +172,7 @@ impl PagerControl {
             info_text: self.model.info_text.as_ref(),
             info_slot: self.model.info_slot.as_ref(),
             template_parameters: &self.model.template_parameters,
+            icons: &self.model.icons,
         }
     }
 

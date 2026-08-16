@@ -242,6 +242,7 @@ impl AccordionControl {
             content_padding_bottom: self.model.content_padding_bottom,
             trigger_min_height: self.model.trigger_min_height,
             trigger_padding_y: self.model.trigger_padding_y,
+            disclosure_icons: &self.model.disclosure_icons,
             focus,
         }
     }

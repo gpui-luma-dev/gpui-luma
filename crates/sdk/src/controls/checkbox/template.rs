@@ -1,5 +1,4 @@
 use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
-use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::controls::choice_indicator_layout::{reserve_shadow_extent, should_paint_shadow};
@@ -93,7 +92,12 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
                 .border_1()
                 .border_color(palette.indicator_border)
                 .rounded(px(scale.indicator_radius))
-                .child(render_checkmark(progress, scale.glyph_size, palette.checkmark_color));
+                .child(render_checkmark(
+                    progress,
+                    scale.glyph_size,
+                    palette.checkmark_color,
+                    &model.data.icons.selected,
+                ));
 
             if should_paint_shadow(
                 model.elevation,
@@ -165,7 +169,12 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
     }
 }
 
-fn render_checkmark(progress: f32, size: f32, color: gpui::Hsla) -> AnyElement {
+fn render_checkmark(
+    progress: f32,
+    size: f32,
+    color: gpui::Hsla,
+    icon: &crate::controls::icon::IconSource,
+) -> AnyElement {
     let progress = progress.clamp(0.0, 1.0);
     if progress <= f32::EPSILON {
         return div().size(px(size)).into_any_element();
@@ -181,6 +190,6 @@ fn render_checkmark(progress: f32, size: f32, color: gpui::Hsla) -> AnyElement {
         .line_height(px(size))
         .text_color(color)
         .opacity(progress)
-        .child(crate::controls::icon::lucide_glyph(LucideIcon::Check))
+        .child(crate::controls::icon::render_icon_source(icon, color, size))
         .into_any_element()
 }

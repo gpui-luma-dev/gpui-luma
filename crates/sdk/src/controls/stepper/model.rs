@@ -7,6 +7,7 @@ use super::template::{default_stepper_template, template_with_modifier};
 use super::StepperTemplate;
 use crate::controls::progress::ProgressDirection;
 use crate::theme::ControlSize;
+use crate::controls::icon::SelectionStatusIcons;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum StepState {
@@ -49,6 +50,7 @@ pub struct StepperModel {
     pub(crate) enabled: bool,
     pub(crate) workflow_complete: bool,
     pub(crate) animated: bool,
+    pub(crate) icons: SelectionStatusIcons,
     pub(crate) step_contents: Vec<Option<StepperContentRenderer>>,
     pub(crate) content_height: Option<f32>,
     pub(crate) template: Arc<dyn StepperTemplate>,
@@ -72,6 +74,7 @@ pub struct StepperRenderModel<'a> {
     pub enabled: bool,
     pub step_contents: &'a [Option<StepperContentRenderer>],
     pub content_height: Option<f32>,
+    pub icons: &'a SelectionStatusIcons,
 }
 
 impl StepperRenderModel<'_> {
@@ -100,6 +103,7 @@ impl StepperBuilder {
                 enabled: true,
                 workflow_complete: false,
                 animated: true,
+                icons: SelectionStatusIcons::default(),
                 step_contents: vec![None; step_count],
                 content_height: None,
                 template: default_stepper_template(),
@@ -109,6 +113,11 @@ impl StepperBuilder {
 
     pub fn current_step(mut self, current: usize) -> Self {
         self.model.current_step = current.min(self.model.step_count.saturating_sub(1));
+        self
+    }
+
+    pub fn icons(mut self, icons: SelectionStatusIcons) -> Self {
+        self.model.icons = icons;
         self
     }
 

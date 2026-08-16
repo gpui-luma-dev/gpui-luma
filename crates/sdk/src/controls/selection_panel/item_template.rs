@@ -4,9 +4,9 @@ use gpui::{
     AnyElement, App, ClickEvent, Div, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful,
     Window, div, prelude::*, px,
 };
-use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::icon::lucide_icon;
+use crate::controls::icon::{SelectionStatusIcons, render_icon_source};
 use crate::controls::selection_panel::model::SelectionPanelItemLike;
 use crate::controls::selection_panel::theme::SelectionPanelLook;
 
@@ -130,6 +130,7 @@ where
     pub item_template: Option<&'a SelectionPanelItemTemplate<T>>,
     pub look: &'a SelectionPanelLook,
     pub show_selection_marker: bool,
+    pub icons: SelectionStatusIcons,
 }
 
 pub(crate) fn render_selection_panel_item_row<T>(
@@ -196,7 +197,7 @@ where
 
     if model.show_selection_marker {
         if model.selected {
-            row = row.child(lucide_icon(LucideIcon::Check, color, model.look.item_icon_size));
+            row = row.child(render_icon_source(&model.icons.selected, color, model.look.item_icon_size));
         } else {
             row = row.child(div().size(px(model.look.item_icon_size)));
         }

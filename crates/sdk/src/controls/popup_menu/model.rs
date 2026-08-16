@@ -7,6 +7,7 @@ use super::{ControlFocusState, MenuPath, PopupMenu, PopupMenuState, PopupMenuTem
 use super::template::modified_popup_menu_template;
 use crate::controls::menu_item::MenuItem;
 use crate::controls::floating_menu::FloatingMenuHighlight;
+use crate::controls::icon::DisclosureIcons;
 use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::presenter::{ControlPresenter, HasPresenter};
 use crate::theme::ControlSize;
@@ -66,8 +67,7 @@ pub struct PopupMenuModel {
     /// Square icon-button chrome (no trailing end icon). Set by the icon face preset.
     pub(crate) icon_only: bool,
     pub(crate) end_icon: Option<LucideIcon>,
-    pub(crate) open_trigger_icon: LucideIcon,
-    pub(crate) close_trigger_icon: LucideIcon,
+    pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) full_width: bool,
     pub(crate) without_elevation: bool,
     pub(crate) split: bool,
@@ -88,8 +88,7 @@ pub struct PopupMenuRenderModel<'a> {
     pub menu_size: ControlSize,
     pub icon_only: bool,
     pub end_icon: Option<LucideIcon>,
-    pub open_trigger_icon: LucideIcon,
-    pub close_trigger_icon: LucideIcon,
+    pub disclosure_icons: &'a DisclosureIcons,
     pub full_width: bool,
     pub without_elevation: bool,
     pub split: bool,
@@ -124,8 +123,7 @@ impl PopupMenuBuilder {
                 menu_size: ControlSize::Md,
                 icon_only: false,
                 end_icon: None,
-                open_trigger_icon: LucideIcon::ChevronUp,
-                close_trigger_icon: LucideIcon::ChevronDown,
+                disclosure_icons: DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
                 full_width: false,
                 without_elevation: false,
                 split: false,
@@ -157,15 +155,9 @@ impl PopupMenuBuilder {
         self
     }
 
-    /// Sets the icon shown by a split-button trigger while its menu is open.
-    pub fn open_trigger_icon(mut self, icon: LucideIcon) -> Self {
-        self.model.open_trigger_icon = icon;
-        self
-    }
-
-    /// Sets the icon shown by a split-button trigger while its menu is closed.
-    pub fn close_trigger_icon(mut self, icon: LucideIcon) -> Self {
-        self.model.close_trigger_icon = icon;
+    /// Sets the open and closed trigger icons, including SVG-path sources.
+    pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
+        self.model.disclosure_icons = icons;
         self
     }
 

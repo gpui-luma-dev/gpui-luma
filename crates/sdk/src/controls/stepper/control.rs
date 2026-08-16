@@ -238,6 +238,7 @@ impl StepperControl {
             enabled: self.model.enabled,
             step_contents: &self.model.step_contents,
             content_height: self.model.content_height,
+            icons: &self.model.icons,
         }
     }
 }

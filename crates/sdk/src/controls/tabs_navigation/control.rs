@@ -30,6 +30,7 @@ pub struct TabsNavigation {
     size: ControlSize,
     width_mode: TabsNavigationWidthMode,
     animated: bool,
+    disclosure_icons: crate::controls::icon::DisclosureIcons,
     indicator_motion: TabsNavigationIndicatorMotion,
     template: std::sync::Arc<dyn super::TabsNavigationTemplate>,
 }
@@ -73,6 +74,7 @@ impl TabsNavigation {
             size: builder.model.size,
             width_mode: builder.model.width_mode,
             animated: builder.model.animated,
+            disclosure_icons: builder.model.disclosure_icons.clone(),
             indicator_motion,
             template: builder.model.template,
         }
@@ -178,9 +180,16 @@ impl TabsNavigation {
         let width_mode = self.width_mode;
         let template = self.template.clone();
         let indicator_motion = self.indicator_motion.clone();
+        let disclosure_icons = self.disclosure_icons.clone();
         self.group.update(cx, |group, cx| {
             group.set_template(
-                super::template::tabs_navigation_control_group_template(size, width_mode, template, indicator_motion),
+                super::template::tabs_navigation_control_group_template(
+                    size,
+                    width_mode,
+                    template,
+                    indicator_motion,
+                    disclosure_icons,
+                ),
                 cx,
             );
         });

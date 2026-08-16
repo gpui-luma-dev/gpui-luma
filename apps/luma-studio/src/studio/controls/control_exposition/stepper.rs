@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
+use gpui_luma::controls::icon::SelectionStatusIcons;
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::progress::ProgressDirection;
 use gpui_luma::controls::stepper::{StepState, Stepper, StepperLabelPlacement, StepperRenderModel, StepperTemplate};
@@ -441,6 +442,7 @@ fn render_stepper_sample(
         enabled,
         step_contents: &empty_contents,
         content_height: None,
+        icons: &SelectionStatusIcons::default(),
     };
 
     template.render(&model, window, cx).into_any_element()

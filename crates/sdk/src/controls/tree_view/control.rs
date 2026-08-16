@@ -579,6 +579,7 @@ where
             has_children: node.has_children,
             expanded: self.expanded_ids.contains(&node.id),
             expand_progress: node.expand_progress,
+            disclosure_icons: &self.model.disclosure_icons,
             row_height_factor: node.row_height_factor,
             enabled: item_enabled,
             size: self.model.size,

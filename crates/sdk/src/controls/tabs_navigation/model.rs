@@ -7,6 +7,7 @@ use super::template::{tabs_navigation_control_group_template, template_with_modi
 use super::{TabsNavigation, TabsNavigationTemplate, default_tabs_navigation_template};
 use crate::controls::control_group::ControlGroupItemLike;
 use crate::controls::icon::IconSource;
+use crate::controls::icon::DisclosureIcons;
 use crate::controls::tabs_navigation::{ControlFocusState, TabsNavigationItemState};
 use crate::theme::ControlSize;
 
@@ -179,6 +180,7 @@ pub struct TabsNavigationModel {
     pub(crate) active_id: Option<SharedString>,
     pub(crate) enabled: bool,
     pub(crate) animated: bool,
+    pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) template: Arc<dyn TabsNavigationTemplate>,
 }
 
@@ -203,6 +205,7 @@ pub struct TabsNavigationRenderModel<'a> {
     pub focus: ControlFocusState,
     pub indicator: Option<TabsNavigationIndicatorPaint>,
     pub indicator_motion: Option<&'a TabsNavigationIndicatorMotion>,
+    pub disclosure_icons: &'a DisclosureIcons,
 }
 
 pub struct TabsNavigationBuilder {
@@ -220,6 +223,7 @@ impl TabsNavigationBuilder {
                 active_id: None,
                 enabled: true,
                 animated: true,
+                disclosure_icons: DisclosureIcons::new(lucide_icons::Icon::ChevronUp, lucide_icons::Icon::ChevronDown),
                 template: default_tabs_navigation_template(),
             },
         }
@@ -260,6 +264,11 @@ impl TabsNavigationBuilder {
         self
     }
 
+    pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
+        self.model.disclosure_icons = icons;
+        self
+    }
+
     pub fn template(mut self, template: Arc<dyn TabsNavigationTemplate>) -> Self {
         self.model.template = template;
         self
@@ -289,6 +298,7 @@ impl TabsNavigationBuilder {
             self.model.width_mode,
             Arc::clone(&self.model.template),
             indicator_motion,
+            self.model.disclosure_icons.clone(),
         )
     }
 }

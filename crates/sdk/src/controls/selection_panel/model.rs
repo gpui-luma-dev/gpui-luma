@@ -9,6 +9,7 @@ use super::item_template::{
 };
 use super::template::{SelectionPanelRenderModel, template_with_modifier};
 use crate::controls::icon::IconSource;
+use crate::controls::icon::SelectionStatusIcons;
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 
 use crate::controls::selection_panel::template::{SelectionPanelTemplate, default_selection_panel_template};
@@ -123,6 +124,7 @@ where
     pub(crate) open: bool,
     pub(crate) enabled: bool,
     pub(crate) show_selection_marker: bool,
+    pub(crate) icons: SelectionStatusIcons,
     pub(crate) scrolling: bool,
     pub(crate) min_visible_rows: usize,
     pub(crate) max_visible_rows: usize,
@@ -193,6 +195,11 @@ where
 
     pub fn show_selection_marker(mut self, show_selection_marker: bool) -> Self {
         self.model.show_selection_marker = show_selection_marker;
+        self
+    }
+
+    pub fn icons(mut self, icons: SelectionStatusIcons) -> Self {
+        self.model.icons = icons;
         self
     }
 
@@ -307,6 +314,7 @@ where
         open: true,
         enabled: true,
         show_selection_marker: true,
+        icons: SelectionStatusIcons::default(),
         scrolling: true,
         min_visible_rows: 1,
         max_visible_rows: 7,

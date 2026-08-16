@@ -1,12 +1,10 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{AnyElement, App, Div, FontWeight, SharedString, Stateful, Window, div, px, relative, prelude::*};
-use lucide_icons::Icon as LucideIcon;
 
 use super::model::{StepperLabelPlacement, StepperRenderModel};
 use super::theme::{StepperLook, StepperTheme, default_stepper_theme};
 use super::StepState;
-use crate::controls::icon::lucide_glyph;
 use crate::controls::progress::{ProgressDirection, ProgressOrientation};
 
 pub type StepperTemplateModifier =
@@ -183,7 +181,7 @@ fn render_horizontal_stepper(
                             look.track_muted_color,
                             step_index * 2,
                         ))
-                        .child(render_badge(step_index, state, badge_size, look))
+                        .child(render_badge(step_index, state, badge_size, look, model.icons))
                         .child(render_horizontal_track(
                             is_last,
                             right_fill,
@@ -255,7 +253,7 @@ fn render_vertical_stepper(
                 look.track_muted_color,
                 step_index * 2,
             ))
-            .child(render_badge(step_index, state, badge_size, look))
+            .child(render_badge(step_index, state, badge_size, look, model.icons))
             .child(render_vertical_track(
                 is_last,
                 below_fill,
@@ -461,7 +459,13 @@ fn render_vertical_track(
         )
 }
 
-fn render_badge(step_index: usize, state: StepState, badge_size: f32, look: &StepperLook) -> AnyElement {
+fn render_badge(
+    step_index: usize,
+    state: StepState,
+    badge_size: f32,
+    look: &StepperLook,
+    icons: &crate::controls::icon::SelectionStatusIcons,
+) -> AnyElement {
     let badge_radius = badge_size / 2.0;
     let (background, foreground, border) = match state {
         StepState::Complete => (look.complete_bg, look.complete_fg, look.complete_bg),
@@ -480,7 +484,7 @@ fn render_badge(step_index: usize, state: StepState, badge_size: f32, look: &Ste
         .border_1()
         .border_color(border)
         .child(match state {
-            StepState::Complete => render_checkmark(foreground, badge_size * 0.45),
+            StepState::Complete => render_checkmark(foreground, badge_size * 0.45, &icons.completed),
             StepState::InProgress | StepState::Incomplete => {
                 render_step_number(step_index + 1, foreground, badge_size * 0.38)
             }
@@ -488,14 +492,14 @@ fn render_badge(step_index: usize, state: StepState, badge_size: f32, look: &Ste
         .into_any_element()
 }
 
-fn render_checkmark(color: gpui::Hsla, size: f32) -> AnyElement {
+fn render_checkmark(color: gpui::Hsla, size: f32, icon: &crate::controls::icon::IconSource) -> AnyElement {
     div()
         .flex()
         .items_center()
         .justify_center()
         .text_color(color)
         .text_size(px(size))
-        .child(lucide_glyph(LucideIcon::Check))
+        .child(crate::controls::icon::render_icon_source(icon, color, size))
         .into_any_element()
 }
 

@@ -12,6 +12,7 @@ use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHover
 use crate::controls::scroll_container::ScrollContainer;
 use crate::theme::{ControlSize, InteractionState, LumaTextStyle, LumaTypography};
 use crate::controls::floating_menu::{FloatingMenuLook, FloatingMenuTheme, default_floating_menu_theme};
+use crate::controls::icon::{DisclosureIcons, render_icon_source};
 use crate::controls::color::style::ElementExt;
 use super::{SidebarTheme, default_sidebar_theme};
 
@@ -214,6 +215,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &mut row_mouse_ups,
                     &mut row_mouse_up_outs,
                     &mut row_clicks,
+                    &model.disclosure_icons,
                 )
                 .flex_1(),
             );
@@ -229,6 +231,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                         &mut row_mouse_ups,
                         &mut row_mouse_up_outs,
                         &mut row_clicks,
+                        &model.disclosure_icons,
                     )
                     .pt(px(FOOTER_REGION_PADDING_TOP)),
                 );
@@ -269,6 +272,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &mut row_mouse_up_outs,
                     &mut row_clicks,
                     &mut children_height_reports,
+                    &model.disclosure_icons,
                 )
                 .pb(px(HEADER_REGION_PADDING_BOTTOM)),
             );
@@ -286,6 +290,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                         &mut row_mouse_up_outs,
                         &mut row_clicks,
                         &mut children_height_reports,
+                        &model.disclosure_icons,
                     )
                     .into_any_element(),
                 )
@@ -304,6 +309,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &mut row_mouse_up_outs,
                     &mut row_clicks,
                     &mut children_height_reports,
+                    &model.disclosure_icons,
                 )
                 .pt(px(FOOTER_REGION_PADDING_TOP)),
             );
@@ -362,6 +368,7 @@ fn render_region(
     row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
     children_height_reports: &mut std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
+    disclosure_icons: &DisclosureIcons,
 ) -> Div {
     let mut region = div().flex().flex_col().gap(px(REGION_GAP));
 
@@ -375,6 +382,7 @@ fn render_region(
             row_mouse_up_outs,
             row_clicks,
             children_height_reports,
+            disclosure_icons,
         ));
     }
 
@@ -391,6 +399,7 @@ fn render_collapsed_rail_region(
     row_mouse_ups: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
+    disclosure_icons: &DisclosureIcons,
 ) -> Div {
     let mut region = div().flex().flex_col().items_center().gap(px(REGION_GAP));
 
@@ -406,6 +415,7 @@ fn render_collapsed_rail_region(
                 click: row_clicks.next(),
             },
             theme,
+            disclosure_icons,
         ));
     }
 
@@ -422,6 +432,7 @@ fn render_node(
     row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
     children_height_reports: &mut std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
+    disclosure_icons: &DisclosureIcons,
 ) -> AnyElement {
     let RenderedNavNode {
         id,
@@ -437,7 +448,17 @@ fn render_node(
         children,
     } = node;
     let mut root = div().id(id.clone()).flex().flex_col().gap(px(REGION_GAP)).child(render_row(
-        RowRenderInput { id: id.clone(), kind, label, icon, state, custom_element, focus_handle, has_children },
+        RowRenderInput {
+            id: id.clone(),
+            kind,
+            label,
+            icon,
+            state,
+            custom_element,
+            focus_handle,
+            has_children,
+            disclosure_icons: disclosure_icons.clone(),
+        },
         RowHandlers {
             bounds: None,
             hover: row_hovers.next(),
@@ -462,6 +483,7 @@ fn render_node(
                 row_mouse_up_outs,
                 row_clicks,
                 children_height_reports,
+                disclosure_icons,
             ));
         }
 
@@ -496,6 +518,7 @@ struct RowRenderInput {
     custom_element: Option<AnyElement>,
     focus_handle: Option<FocusHandle>,
     has_children: bool,
+    disclosure_icons: DisclosureIcons,
 }
 
 struct RowHandlers {
@@ -533,7 +556,7 @@ fn render_section_row(label: SharedString, theme: &Arc<dyn SidebarTheme>) -> Div
 }
 
 fn render_item_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn SidebarTheme>) -> AnyElement {
-    let RowRenderInput { id, label, icon, state, focus_handle, has_children, .. } = input;
+    let RowRenderInput { id, label, icon, state, focus_handle, has_children, disclosure_icons, .. } = input;
     let interaction = InteractionState {
         hovered: state.hovered,
         pressed: state.pressed,
@@ -570,7 +593,7 @@ fn render_item_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn
     row = row.child(div().flex_1().child(label.unwrap_or(id)));
 
     if has_children {
-        row = row.child(render_disclosure_icon(state.expanded, look.icon_color));
+        row = row.child(render_disclosure_icon(state.expanded, look.icon_color, &disclosure_icons));
     }
 
     if let Some(background) = look.background {
@@ -617,6 +640,7 @@ fn render_collapsed_rail_node(
     node: RenderedNavNode,
     handlers: RowHandlers,
     theme: &Arc<dyn SidebarTheme>,
+    disclosure_icons: &DisclosureIcons,
 ) -> AnyElement {
     let RenderedNavNode { id, icon, state, focus_handle, has_children, .. } = node;
     let interaction = InteractionState {
@@ -665,7 +689,7 @@ fn render_collapsed_rail_node(
                 .absolute()
                 .left(px(rail_branch_indicator_left(look.height)))
                 .top(px(centered_icon_left(look.height, RAIL_BRANCH_INDICATOR_SIZE)))
-                .child(render_lucide_icon(RAIL_BRANCH_INDICATOR_ICON, look.icon_color, RAIL_BRANCH_INDICATOR_SIZE)),
+                .child(render_icon_source(&disclosure_icons.collapsed, look.icon_color, RAIL_BRANCH_INDICATOR_SIZE)),
         );
     } else {
         row = row.child(render_lucide_icon(
@@ -775,14 +799,9 @@ fn centered_icon_left(button_height: f32, icon_size: f32) -> f32 {
     (button_height - icon_size) * 0.5
 }
 
-fn render_disclosure_icon(expanded: bool, color: gpui::Hsla) -> AnyElement {
-    let icon = if expanded {
-        DISCLOSURE_EXPANDED_ICON
-    } else {
-        DISCLOSURE_COLLAPSED_ICON
-    };
-
-    render_lucide_icon(icon, color, DISCLOSURE_ICON_SIZE)
+fn render_disclosure_icon(expanded: bool, color: gpui::Hsla, icons: &DisclosureIcons) -> AnyElement {
+    let icon = if expanded { &icons.expanded } else { &icons.collapsed };
+    render_icon_source(icon, color, DISCLOSURE_ICON_SIZE)
 }
 
 fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {

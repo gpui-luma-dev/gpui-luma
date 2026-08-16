@@ -4,7 +4,7 @@ mod template;
 mod theme;
 
 pub use model::ListBoxItem;
-pub use item_template::default_listbox_item_template;
+pub use item_template::{default_listbox_item_template, default_listbox_item_template_with_icons};
 pub use template::{
     ThemedListBoxTemplate, default_listbox_row_item_element_template, default_listbox_template,
     listbox_row_item_element_template_with_theme, listbox_template_with_theme, listbox_template_with_theme_and_size,
@@ -20,6 +20,7 @@ pub use crate::controls::control_group::{
 };
 
 use gpui::{Entity, SharedString};
+use crate::controls::icon::SelectionStatusIcons;
 
 pub type ListBox = Entity<ControlGroupControl<ListBoxItem>>;
 
@@ -40,4 +41,8 @@ pub fn single(id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem> {
 
 pub fn multiple(id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem> {
     listbox_builder(id).multiple()
+}
+
+pub fn with_icons(id: impl Into<SharedString>, icons: SelectionStatusIcons) -> ControlGroupBuilder<ListBoxItem> {
+    listbox_builder(id).single_required().item_template(default_listbox_item_template_with_icons(icons))
 }

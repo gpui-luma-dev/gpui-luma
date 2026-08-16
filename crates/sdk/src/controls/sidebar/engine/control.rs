@@ -375,6 +375,7 @@ impl SidebarPanelEngine {
                 rail_submenu,
                 selected_id: self.model.selected_id.clone(),
                 collapsed: self.model.collapsed,
+                disclosure_icons: self.model.disclosure_icons.clone(),
             };
         }
 
@@ -438,6 +439,7 @@ impl SidebarPanelEngine {
             rail_submenu,
             selected_id: self.model.selected_id.clone(),
             collapsed: self.model.collapsed,
+            disclosure_icons: self.model.disclosure_icons.clone(),
         }
     }
 
