@@ -56,11 +56,12 @@ where
 #[derive(Clone, Debug)]
 pub struct SelectorIcons {
     pub trigger: IconSource,
+    pub selected: IconSource,
 }
 
 impl Default for SelectorIcons {
     fn default() -> Self {
-        Self { trigger: lucide_icons::Icon::ChevronsUpDown.into() }
+        Self { trigger: lucide_icons::Icon::ChevronsUpDown.into(), selected: lucide_icons::Icon::Check.into() }
     }
 }
 

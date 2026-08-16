@@ -345,6 +345,7 @@ where
                     look: look.items_panel.clone(),
                     max_height: popup_metrics.max_height,
                     scrolling: popup_metrics.scrolling,
+                    selection_icon: &model.icons.selected,
                 },
                 SelectorItemsTemplateHandlers { item_hovers, item_mouse_downs, item_clicks },
                 cx,

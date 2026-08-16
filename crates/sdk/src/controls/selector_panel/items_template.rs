@@ -4,9 +4,7 @@ use gpui::{
     AnyElement, App, ClickEvent, Div, MouseButton, MouseDownEvent, Pixels, SharedString, Stateful, Window, div,
     prelude::*, px,
 };
-use lucide_icons::Icon as LucideIcon;
-
-use crate::controls::icon::lucide_icon;
+use crate::controls::icon::{IconSource, render_icon_source};
 use crate::controls::selector_panel::{SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorPath};
 use crate::controls::state::ControlFocusState;
 use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
@@ -89,6 +87,7 @@ where
     pub look: SelectorItemsPanelLook,
     pub max_height: Pixels,
     pub scrolling: bool,
+    pub selection_icon: &'a IconSource,
 }
 
 pub trait SelectorItemsTemplate<T>: Send + Sync
@@ -242,7 +241,7 @@ where
                 .line_height(px(look.item_typography.line_height))
                 .font_weight(look.item_typography.weight)
                 .child(div().flex_1().child(content))
-                .child(render_selection_checkmark(selected, color, look.item_icon_size));
+                .child(render_selection_checkmark(selected, color, look.item_icon_size, model.selection_icon));
 
             if enabled_item {
                 row = row.cursor_pointer().on_hover(hover).hover({
@@ -327,14 +326,10 @@ where
     Arc::new(ModifiedSelectorItemsTemplate::new(template).with_modifier(modifier))
 }
 
-fn render_selection_checkmark(selected: bool, color: gpui::Hsla, size: f32) -> AnyElement {
+fn render_selection_checkmark(selected: bool, color: gpui::Hsla, size: f32, icon: &IconSource) -> AnyElement {
     if selected {
-        render_lucide_icon(LucideIcon::Check, color, size)
+        render_icon_source(icon, color, size)
     } else {
         div().size(px(size)).into_any_element()
     }
-}
-
-fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
-    lucide_icon(icon, color, size)
 }

@@ -768,6 +768,7 @@ fn render_selector_popup_preview(
                     look: popup_look.clone(),
                     max_height: px(240.0),
                     scrolling: true,
+                    selection_icon: &SelectorIcons::default().selected,
                 },
                 SelectorItemsTemplateHandlers { item_hovers, item_clicks, ..Default::default() },
                 cx,
