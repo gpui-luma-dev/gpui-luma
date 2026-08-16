@@ -1,7 +1,7 @@
 use std::cell::Cell;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FontWeight, Render, SharedString, Window, div, prelude::*, px};
+use gpui::{Context, Entity, FontWeight, Render, SharedString, Window, div, prelude::*, px, transparent_black};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::controls::command::button::{Button, ButtonRenderModel, ButtonTemplate};
@@ -263,23 +263,27 @@ fn plan_option_item_element_template(look: Arc<ShadcnLook>) -> ControlGroupItemE
         .w_full()
         .overflow_hidden();
 
+        // Always reserve the focus-ring width so focusing a plan does not reflow the row.
+        let focus_border_color = if item.state.active { focus_ring } else { transparent_black() };
         let mut card = div()
             .id(format!("{}-card", render_model.id))
             .flex_1()
             .min_w_0()
             .overflow_hidden()
-            .rounded(px(PLAN_CARD_RADIUS))
-            .border_1()
-            .border_color(border)
-            .when(item.selected, |card| card.bg(selected_surface))
-            .p(px(PLAN_CARD_PADDING))
-            .child(body);
-
-        if item.state.active {
-            card = card.border(px(PLAN_FOCUS_BORDER_WIDTH)).border_color(focus_ring);
-        } else if item.selected {
-            card = card.border(px(PLAN_SELECTED_BORDER_WIDTH));
-        }
+            .rounded(px(PLAN_CARD_RADIUS + PLAN_FOCUS_BORDER_WIDTH))
+            .border(px(PLAN_FOCUS_BORDER_WIDTH))
+            .border_color(focus_border_color)
+            .child(
+                div()
+                    .w_full()
+                    .overflow_hidden()
+                    .rounded(px(PLAN_CARD_RADIUS))
+                    .border(px(PLAN_SELECTED_BORDER_WIDTH))
+                    .border_color(border)
+                    .when(item.selected, |inner| inner.bg(selected_surface))
+                    .p(px(PLAN_CARD_PADDING))
+                    .child(body),
+            );
 
         if item.enabled {
             card
