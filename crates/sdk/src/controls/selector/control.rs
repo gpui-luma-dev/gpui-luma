@@ -194,6 +194,7 @@ where
             enabled: self.model.enabled,
             size: self.model.size,
             trigger_style: self.model.trigger_style,
+            icons: &self.model.icons,
             without_elevation: self.model.without_elevation,
             item_template: self.model.item_template.as_ref(),
             panel_template: Some(self.model.panel_template.as_ref()),

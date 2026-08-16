@@ -19,8 +19,8 @@ use gpui_luma::controls::search_selector::{
     default_search_selector_items_template, default_search_selector_panel_template, default_search_selector_template,
 };
 use gpui_luma::controls::selector::{
-    ControlFocusState, SelectorItem, SelectorPath, SelectorPlacement, SelectorRenderModel, SelectorTemplateHandlers,
-    SelectorVisualState,
+    ControlFocusState, SelectorIcons, SelectorItem, SelectorPath, SelectorPlacement, SelectorRenderModel,
+    SelectorTemplateHandlers, SelectorVisualState,
 };
 use gpui_luma::controls::overlay_presence::OverlayPresence;
 use gpui_luma::controls::selector_panel::{
@@ -371,16 +371,9 @@ fn render_selector_control_cell(
             window,
             cx,
         ),
-        SelectorTemplateControl::ComboBox => render_selector_combobox_trigger(
-            look,
-            &id,
-            "Strict mode (exact match only)...",
-            state,
-            size,
-            scroll_wheel.clone(),
-            window,
-            cx,
-        ),
+        SelectorTemplateControl::ComboBox => {
+            render_selector_combobox_trigger(look, &id, "Select state", state, size, scroll_wheel.clone(), window, cx)
+        }
         SelectorTemplateControl::SearchSelector => render_selector_search_selector_trigger(
             look,
             &id,
@@ -630,7 +623,7 @@ fn render_selector_selector_trigger(
     cx: &mut App,
 ) -> AnyElement {
     let selector_template = look.selector_template();
-    let label = SharedString::from("Select status");
+    let label = SharedString::from("Select state");
     let items = selector_trigger_items().into_iter().collect::<Vec<_>>();
     let model = SelectorRenderModel {
         id,
@@ -647,6 +640,7 @@ fn render_selector_selector_trigger(
         enabled: state.selector_enabled,
         size,
         trigger_style: Default::default(),
+        icons: &SelectorIcons::default(),
         without_elevation: false,
         item_template: None,
         panel_template: None,

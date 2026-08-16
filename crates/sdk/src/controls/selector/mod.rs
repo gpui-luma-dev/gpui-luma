@@ -42,8 +42,8 @@ mod theme;
 pub use control::{Selector, SelectorEvent};
 
 pub use model::{
-    SelectorBuilder, SelectorItemRenderModel, SelectorItemTemplate, SelectorModel, SelectorPath, SelectorPlacement,
-    SelectorRenderModel, SelectorItem, SelectorItemLike, SelectorTriggerStyle,
+    SelectorBuilder, SelectorIcons, SelectorItemRenderModel, SelectorItemTemplate, SelectorModel, SelectorPath,
+    SelectorPlacement, SelectorRenderModel, SelectorItem, SelectorItemLike, SelectorTriggerStyle,
 };
 pub use template::{
     SelectorTemplate, SelectorTemplateHandlers, SelectorTemplateModifier, ThemedSelectorTemplate,

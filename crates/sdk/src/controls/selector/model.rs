@@ -14,6 +14,7 @@ pub use crate::controls::selector_panel::{
 use crate::controls::selector_panel::items_template_with_modifier;
 use crate::theme::ControlSize;
 use crate::controls::overlay_presence::OverlayPresence;
+use crate::controls::icon::IconSource;
 
 /// Trigger chrome aligned with command button variants (read-only select).
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -45,10 +46,22 @@ where
     pub(crate) size: ControlSize,
     pub(crate) placement: SelectorPlacement,
     pub(crate) trigger_style: SelectorTriggerStyle,
+    pub(crate) icons: SelectorIcons,
     pub(crate) without_elevation: bool,
     pub(crate) item_template: Option<SelectorItemTemplate<T>>,
     pub(crate) panel_template: Arc<dyn SelectorItemsTemplate<T>>,
     pub(crate) template: Arc<dyn SelectorTemplate<T>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct SelectorIcons {
+    pub trigger: IconSource,
+}
+
+impl Default for SelectorIcons {
+    fn default() -> Self {
+        Self { trigger: lucide_icons::Icon::ChevronsUpDown.into() }
+    }
 }
 
 pub struct SelectorRenderModel<'a, T>
@@ -67,6 +80,7 @@ where
     pub enabled: bool,
     pub size: ControlSize,
     pub trigger_style: SelectorTriggerStyle,
+    pub icons: &'a SelectorIcons,
     pub without_elevation: bool,
     pub item_template: Option<&'a SelectorItemTemplate<T>>,
     pub panel_template: Option<&'a dyn SelectorItemsTemplate<T>>,
@@ -101,6 +115,7 @@ where
                 size: ControlSize::Md,
                 placement: SelectorPlacement::Smart,
                 trigger_style: SelectorTriggerStyle::default(),
+                icons: SelectorIcons::default(),
                 without_elevation: false,
                 item_template: None,
                 panel_template: default_selector_items_template(),
@@ -122,6 +137,11 @@ where
 
     pub fn ghost(mut self) -> Self {
         self.model.trigger_style = SelectorTriggerStyle::Ghost;
+        self
+    }
+
+    pub fn icons(mut self, icons: SelectorIcons) -> Self {
+        self.model.icons = icons;
         self
     }
 

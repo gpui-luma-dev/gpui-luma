@@ -7,7 +7,7 @@ use super::model::{PagerPageItem, PagerRenderModel, PagerStyle};
 use super::theme::{PagerLook, PagerTheme, default_pager_theme};
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::controls::command::button::{ButtonRenderModel, ControlPresenter};
-use crate::controls::icon::lucide_glyph;
+use crate::controls::icon::{IconSource, lucide_glyph, render_icon_source};
 use crate::theme::InteractionState;
 
 pub type PagerOutsideMouseDownHandler = Arc<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + Send + Sync + 'static>;
@@ -290,11 +290,15 @@ pub(crate) fn render_page_size_select(
                 .line_height(px(look.typography.line_height))
                 .when(model.enabled, |slot| slot.cursor_pointer())
                 .child(format!("{}", model.page_size))
-                .child(div().text_color(look.muted_text).child(lucide_glyph(if model.page_size_open {
-                    LucideIcon::ChevronUp
-                } else {
-                    LucideIcon::ChevronDown
-                })))
+                .child(div().text_color(look.muted_text).child(render_icon_source(
+                    if model.page_size_open {
+                        &model.icons.page_size_open
+                    } else {
+                        &model.icons.page_size_closed
+                    },
+                    look.muted_text,
+                    look.typography.size,
+                )))
                 .when(model.enabled, |slot| {
                     slot.on_click({
                         let toggle_page_size = handlers.toggle_page_size.clone();
@@ -379,7 +383,7 @@ fn render_nav_group_leading(
             theme,
             NavButtonSpec {
                 id_suffix: "nav-first-0".to_string(),
-                icon: LucideIcon::ChevronsLeft,
+                icon: model.icons.first.clone(),
                 label: model.first_label(),
                 label_position: NavLabelPosition::AfterIcon,
                 target: 0,
@@ -396,7 +400,7 @@ fn render_nav_group_leading(
         theme,
         NavButtonSpec {
             id_suffix: format!("nav-prev-{}", model.current_page.saturating_sub(1)),
-            icon: LucideIcon::ChevronLeft,
+            icon: model.icons.previous.clone(),
             label: model.previous_label(),
             label_position: NavLabelPosition::AfterIcon,
             target: model.current_page.saturating_sub(1),
@@ -424,7 +428,7 @@ fn render_nav_group_trailing(
         theme,
         NavButtonSpec {
             id_suffix: format!("nav-next-{}", (model.current_page + 1).min(last_page)),
-            icon: LucideIcon::ChevronRight,
+            icon: model.icons.next.clone(),
             label: model.next_label(),
             label_position: NavLabelPosition::BeforeIcon,
             target: (model.current_page + 1).min(last_page),
@@ -441,7 +445,7 @@ fn render_nav_group_trailing(
             theme,
             NavButtonSpec {
                 id_suffix: format!("nav-last-{last_page}"),
-                icon: LucideIcon::ChevronsRight,
+                icon: model.icons.last.clone(),
                 label: model.last_label(),
                 label_position: NavLabelPosition::BeforeIcon,
                 target: last_page,
@@ -463,7 +467,7 @@ enum NavLabelPosition {
 
 struct NavButtonSpec<'a> {
     id_suffix: String,
-    icon: LucideIcon,
+    icon: IconSource,
     label: Option<&'a SharedString>,
     label_position: NavLabelPosition,
     target: usize,
@@ -487,11 +491,13 @@ fn render_nav_button(
 ) -> AnyElement {
     let has_label = spec.label.is_some();
     let gap = look.gap;
+    let icon_color = look.body_text;
+    let icon_size = look.typography.size;
     let icon = spec.icon;
     let label_position = spec.label_position;
     let label = spec.label.cloned();
     let content: ControlPresenter<ButtonRenderModel<()>> = Arc::new(move |_, _| {
-        let icon_element = lucide_glyph(icon).into_any_element();
+        let icon_element = render_icon_source(&icon, icon_color, icon_size);
         let label_element = label.as_ref().map(|label| div().child(label.clone()).into_any_element());
         match (label_position, label_element) {
             (NavLabelPosition::BeforeIcon, Some(label_element)) => {

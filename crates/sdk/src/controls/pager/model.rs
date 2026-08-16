@@ -5,6 +5,7 @@ use gpui::{AnyElement, App, AppContext, SharedString, Window};
 use super::control::PagerControl;
 use super::template::{PagerTemplate, ThemedPagerTemplate, default_pager_template, template_with_modifier};
 use super::theme::PagerTheme;
+use crate::controls::icon::IconSource;
 
 pub type PagerInfoSlot =
     Arc<dyn for<'a> Fn(&PagerRenderModel<'a>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static>;
@@ -122,8 +123,32 @@ pub struct PagerModel {
     pub(crate) info_text: Option<SharedString>,
     pub(crate) info_slot: Option<PagerInfoSlot>,
     pub(crate) template_parameters: PagerTemplateParameters,
+    pub(crate) icons: PagerIcons,
     pub(crate) theme: Option<Arc<dyn PagerTheme>>,
     pub(crate) template: Arc<dyn PagerTemplate>,
+}
+
+#[derive(Clone, Debug)]
+pub struct PagerIcons {
+    pub page_size_open: IconSource,
+    pub page_size_closed: IconSource,
+    pub first: IconSource,
+    pub previous: IconSource,
+    pub next: IconSource,
+    pub last: IconSource,
+}
+
+impl Default for PagerIcons {
+    fn default() -> Self {
+        Self {
+            page_size_open: lucide_icons::Icon::ChevronUp.into(),
+            page_size_closed: lucide_icons::Icon::ChevronDown.into(),
+            first: lucide_icons::Icon::ChevronsLeft.into(),
+            previous: lucide_icons::Icon::ChevronLeft.into(),
+            next: lucide_icons::Icon::ChevronRight.into(),
+            last: lucide_icons::Icon::ChevronsRight.into(),
+        }
+    }
 }
 
 pub struct PagerRenderModel<'a> {
@@ -138,6 +163,7 @@ pub struct PagerRenderModel<'a> {
     pub info_text: Option<&'a SharedString>,
     pub info_slot: Option<&'a PagerInfoSlot>,
     pub template_parameters: &'a PagerTemplateParameters,
+    pub icons: &'a PagerIcons,
 }
 
 impl PagerRenderModel<'_> {
@@ -217,6 +243,7 @@ impl PagerBuilder {
                 info_text: None,
                 info_slot: None,
                 template_parameters: PagerTemplateParameters::default(),
+                icons: PagerIcons::default(),
                 theme: None,
                 template: default_pager_template(),
             },
@@ -245,6 +272,11 @@ impl PagerBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn icons(mut self, icons: PagerIcons) -> Self {
+        self.model.icons = icons;
         self
     }
 
@@ -356,7 +388,7 @@ pub fn new(id: impl Into<SharedString>) -> PagerBuilder {
 
 #[cfg(test)]
 mod tests {
-    use super::{PagerBuilder, PagerRenderModel, PagerTemplateParameters, default_pager_template};
+    use super::{PagerBuilder, PagerIcons, PagerRenderModel, PagerTemplateParameters, default_pager_template};
     use gpui::SharedString;
 
     #[test]
@@ -376,6 +408,7 @@ mod tests {
             info_text: None,
             info_slot: None,
             template_parameters: &params,
+            icons: &PagerIcons::default(),
         };
 
         assert_eq!(model.page_indicator(), SharedString::from("3/12"));
@@ -401,6 +434,7 @@ mod tests {
             info_text: None,
             info_slot: None,
             template_parameters: &params,
+            icons: &PagerIcons::default(),
         };
 
         assert_eq!(model.first_label(), Some(&SharedString::from("First")));
@@ -425,6 +459,7 @@ mod tests {
             info_text: None,
             info_slot: None,
             template_parameters: &params,
+            icons: &PagerIcons::default(),
         };
 
         assert_eq!(model.numeric_slot_count(), 5);

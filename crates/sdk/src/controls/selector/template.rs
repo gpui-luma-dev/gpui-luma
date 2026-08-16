@@ -4,7 +4,6 @@ use gpui::{
     Anchor, App, Bounds, ClickEvent, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Point, Size, Stateful,
     Window, anchored, deferred, div, point, px, prelude::*,
 };
-use lucide_icons::Icon as LucideIcon;
 
 use super::{SelectorPlacement, SelectorRenderModel};
 use super::item_template::render_item_content;
@@ -12,7 +11,6 @@ use super::item_template::render_item_content;
 use crate::controls::button_family::button_family_effective_border;
 use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::color::style::ElementExt;
-use crate::controls::icon::lucide_icon;
 use crate::controls::selector_panel::{
     SelectorItem, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
     default_selector_items_template,
@@ -267,15 +265,9 @@ where
                     .font_weight(look.trigger_typography.weight)
                     .child(trigger_content),
             )
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .flex_shrink_0()
-                    .text_color(look.trigger_icon)
-                    .child(lucide_icon(LucideIcon::ChevronsUpDown, look.trigger_icon, trigger_icon_size)),
-            );
+            .child(div().flex().items_center().justify_center().flex_shrink_0().text_color(look.trigger_icon).child(
+                crate::controls::icon::render_icon_source(&model.icons.trigger, look.trigger_icon, trigger_icon_size),
+            ));
 
         if border.a > 0.0 {
             root = root.border_1().border_color(border);
