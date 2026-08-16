@@ -269,7 +269,7 @@ fn plan_option_item_element_template(look: Arc<ShadcnLook>) -> ControlGroupItemE
         } else {
             transparent_black()
         };
-        let mut card = div()
+        let card = div()
             .id(format!("{}-card", render_model.id))
             .flex_1()
             .min_w_0()

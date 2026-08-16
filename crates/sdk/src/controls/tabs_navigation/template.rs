@@ -5,7 +5,6 @@ use gpui::{
     Anchor, AnyElement, App, Bounds, Div, MouseDownEvent, Pixels, Point, SharedString, Size, Stateful, TextRun, Window,
     anchored, deferred, div, font, hsla, point, px, prelude::*,
 };
-use lucide_icons::Icon as LucideIcon;
 
 use super::indicator::TabsNavigationIndicatorMotion;
 use super::{
@@ -20,7 +19,7 @@ use crate::controls::control_group::{
     ControlGroupMouseDownHandler, ControlGroupMouseUpHandler, ControlGroupRenderModel, ControlGroupTemplate,
     ControlGroupTemplateHandlers,
 };
-use crate::controls::icon::{IconSource, lucide_icon};
+use crate::controls::icon::{DisclosureIcons, IconSource, lucide_icon, render_icon_source};
 use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::tabs_navigation::{TabsNavigationItemLook, TabsNavigationTheme, default_tabs_navigation_theme};
 use crate::theme::{ControlSize, InteractionState};
@@ -120,9 +119,10 @@ struct ResolvedTabsNavigationOverlayPlacement {
     offset: Point<Pixels>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct TabsNavigationButtonData {
     look: TabsNavigationItemLook,
+    disclosure_icons: DisclosureIcons,
 }
 
 #[derive(Clone)]
@@ -130,11 +130,22 @@ pub struct TabsNavigationItemButtonStyle {
     pub look: TabsNavigationItemLook,
     pub font_family: SharedString,
     pub size: ControlSize,
+    pub disclosure_icons: DisclosureIcons,
 }
 
 impl TabsNavigationItemButtonStyle {
     pub fn new(look: TabsNavigationItemLook, font_family: SharedString, size: ControlSize) -> Self {
-        Self { look, font_family, size }
+        Self {
+            look,
+            font_family,
+            size,
+            disclosure_icons: DisclosureIcons::new(lucide_icons::Icon::ChevronUp, lucide_icons::Icon::ChevronDown),
+        }
+    }
+
+    pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
+        self.disclosure_icons = icons;
+        self
     }
 }
 
@@ -274,12 +285,11 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
 
         for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
             let look = self.theme.resolve_item(item.active, item.state.interaction_state(), model.size);
-            let mut tab = render_tabs_navigation_item_button(
+            let mut tab = render_tabs_navigation_item_button_with_style(
                 model.id,
                 item,
-                look,
-                self.theme.font_family(),
-                model.size,
+                TabsNavigationItemButtonStyle::new(look, self.theme.font_family(), model.size)
+                    .disclosure_icons(model.disclosure_icons.clone()),
                 window,
                 cx,
             )
@@ -505,7 +515,14 @@ pub fn render_tabs_navigation_item_button_with_style(
     cx: &mut App,
 ) -> Stateful<Div> {
     tabs_navigation_item_button_template().render(
-        &tabs_navigation_button_model(navigation_id, item, style.look, style.font_family, style.size),
+        &tabs_navigation_button_model(
+            navigation_id,
+            item,
+            style.look,
+            style.font_family,
+            style.size,
+            style.disclosure_icons,
+        ),
         window,
         cx,
     )
@@ -517,6 +534,7 @@ fn tabs_navigation_button_model(
     look: TabsNavigationItemLook,
     font_family: SharedString,
     size: ControlSize,
+    disclosure_icons: DisclosureIcons,
 ) -> ButtonRenderModel<TabsNavigationButtonData> {
     let label = item.label.clone();
     let leading_accessory = item.leading_accessory.cloned();
@@ -524,15 +542,23 @@ fn tabs_navigation_button_model(
 
     ButtonRenderModel {
         id: format!("{}-tab-{}", navigation_id, item.id).into(),
-        data: TabsNavigationButtonData { look },
+        data: TabsNavigationButtonData { look, disclosure_icons },
         content: Arc::new(move |model, _| {
             let mut label_content = div().flex().items_center().gap(px(TAB_ACCESSORY_GAP));
             if let Some(accessory) = &leading_accessory {
-                label_content = label_content.child(render_accessory(accessory, model.data.look.label_color));
+                label_content = label_content.child(render_accessory(
+                    accessory,
+                    model.data.look.label_color,
+                    &model.data.disclosure_icons,
+                ));
             }
             label_content = label_content.child(label.clone());
             if let Some(accessory) = &trailing_accessory {
-                label_content = label_content.child(render_accessory(accessory, model.data.look.label_color));
+                label_content = label_content.child(render_accessory(
+                    accessory,
+                    model.data.look.label_color,
+                    &model.data.disclosure_icons,
+                ));
             }
             label_content.into_any_element()
         }),
@@ -568,14 +594,18 @@ fn tabs_navigation_button_look(look: TabsNavigationItemLook, font_family: Shared
     }
 }
 
-fn render_accessory(accessory: &TabsNavigationItemAccessory, color: gpui::Hsla) -> gpui::AnyElement {
+fn render_accessory(
+    accessory: &TabsNavigationItemAccessory,
+    color: gpui::Hsla,
+    disclosure_icons: &crate::controls::icon::DisclosureIcons,
+) -> gpui::AnyElement {
     match accessory {
-        TabsNavigationItemAccessory::Icon(icon) => render_icon_source(icon, color),
-        TabsNavigationItemAccessory::Disclosure { open } => lucide_icon(
+        TabsNavigationItemAccessory::Icon(icon) => render_tab_icon_source(icon, color),
+        TabsNavigationItemAccessory::Disclosure { open } => render_icon_source(
             if *open {
-                LucideIcon::ChevronUp
+                &disclosure_icons.expanded
             } else {
-                LucideIcon::ChevronDown
+                &disclosure_icons.collapsed
             },
             color,
             TAB_ACCESSORY_SIZE,
@@ -583,7 +613,7 @@ fn render_accessory(accessory: &TabsNavigationItemAccessory, color: gpui::Hsla) 
     }
 }
 
-fn render_icon_source(icon: &IconSource, color: gpui::Hsla) -> gpui::AnyElement {
+fn render_tab_icon_source(icon: &IconSource, color: gpui::Hsla) -> gpui::AnyElement {
     match icon {
         IconSource::Lucide(icon) => lucide_icon(*icon, color, TAB_ACCESSORY_SIZE),
         IconSource::SvgPath(_) => div().size(px(TAB_ACCESSORY_SIZE)).into_any_element(),
@@ -595,9 +625,10 @@ pub(crate) fn tabs_navigation_control_group_template(
     width_mode: TabsNavigationWidthMode,
     template: Arc<dyn TabsNavigationTemplate>,
     indicator_motion: TabsNavigationIndicatorMotion,
+    disclosure_icons: crate::controls::icon::DisclosureIcons,
 ) -> ControlGroupTemplate<TabsNavigationItem> {
     Arc::new(move |model, handlers, window, cx| {
-        let tabs_model = tabs_navigation_render_model(model, size, width_mode, &indicator_motion);
+        let tabs_model = tabs_navigation_render_model(model, size, width_mode, &indicator_motion, &disclosure_icons);
         template.render(&tabs_model, handlers, window, cx)
     })
 }
@@ -607,6 +638,7 @@ fn tabs_navigation_render_model<'a>(
     size: crate::theme::ControlSize,
     width_mode: TabsNavigationWidthMode,
     indicator_motion: &'a TabsNavigationIndicatorMotion,
+    disclosure_icons: &'a crate::controls::icon::DisclosureIcons,
 ) -> TabsNavigationRenderModel<'a> {
     TabsNavigationRenderModel {
         id: model.id,
@@ -631,6 +663,7 @@ fn tabs_navigation_render_model<'a>(
         focus: model.focus,
         indicator: indicator_motion.paint(),
         indicator_motion: Some(indicator_motion),
+        disclosure_icons,
     }
 }
 

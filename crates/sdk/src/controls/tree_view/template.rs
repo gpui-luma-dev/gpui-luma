@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, FontWeight, Hsla, MouseDownEvent, MouseUpEvent, PathBuilder, Stateful, Window,
-    canvas, div, point, px, prelude::*,
+    AnyElement, App, ClickEvent, Div, FontWeight, Hsla, MouseDownEvent, MouseUpEvent, PathBuilder, Stateful,
+    Transformation, Window, canvas, div, point, prelude::*, px, radians, svg,
 };
 use lucide_icons::Icon as LucideIcon;
 
@@ -204,6 +204,7 @@ where
                 .items_center()
                 .justify_center()
                 .child(render_rotating_chevron(
+                    node.disclosure_icons,
                     node.expand_progress.clamp(0.0, 1.0),
                     palette.chevron_color,
                     chevron_size,
@@ -248,7 +249,25 @@ fn render_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
 }
 
 /// Chevron-right glyph painted with PathBuilder and rotated `0° → 90°` by expand progress.
-fn render_rotating_chevron(expand_progress: f32, color: Hsla, size: f32) -> AnyElement {
+fn render_rotating_chevron(
+    icons: &crate::controls::icon::DisclosureIcons,
+    expand_progress: f32,
+    color: Hsla,
+    size: f32,
+) -> AnyElement {
+    let icon = if expand_progress >= 0.5 {
+        &icons.expanded
+    } else {
+        &icons.collapsed
+    };
+    if let crate::controls::icon::IconSource::SvgPath(path) = icon {
+        return svg()
+            .size(px(size))
+            .text_color(color)
+            .external_path(path.clone())
+            .with_transformation(Transformation::rotate(radians(expand_progress * std::f32::consts::FRAC_PI_2)))
+            .into_any_element();
+    }
     let angle_degrees = expand_progress * 90.0;
     canvas(move |_, _, _| (), {
         move |bounds, _, window, _| {

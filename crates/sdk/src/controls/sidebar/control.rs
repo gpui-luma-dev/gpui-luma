@@ -320,6 +320,7 @@ fn spawn_panel_engine(
     let mut builder = SidebarPanelEngine::new(panel_id)
         .enabled(model.enabled)
         .animated(model.animated)
+        .disclosure_icons(panel_model.as_ref().map(|panel| panel.disclosure_icons.clone()).unwrap_or_default())
         .collapsed(collapsed)
         .template(model.panel_template.clone())
         .scrollbar_template(model.scrollbar_template.clone())

@@ -6,6 +6,7 @@ use lucide_icons::Icon as LucideIcon;
 use super::{TreeViewControl, TreeViewTemplate, default_tree_view_template};
 use super::template::modified_tree_view_template;
 use crate::theme::ControlSize;
+use crate::controls::icon::DisclosureIcons;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum TreeViewSelectionMode {
@@ -80,6 +81,7 @@ pub struct FlatTreeNode<'a, T> {
     pub expanded: bool,
     /// Branch expand progress (`0..1`) for chevron rotation.
     pub expand_progress: f32,
+    pub disclosure_icons: &'a DisclosureIcons,
     /// Layout height factor (`0..1`) for clipped expand/collapse of descendant rows.
     pub row_height_factor: f32,
     pub enabled: bool,
@@ -99,6 +101,7 @@ where
     pub(crate) enabled: bool,
     pub(crate) size: ControlSize,
     pub(crate) animated: bool,
+    pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) template: Arc<dyn TreeViewTemplate<T>>,
 }
 
@@ -130,6 +133,7 @@ where
                 enabled: true,
                 size: ControlSize::Md,
                 animated: true,
+                disclosure_icons: DisclosureIcons::default(),
                 template: default_tree_view_template::<T>(),
             },
         }
@@ -157,6 +161,12 @@ where
 
     pub fn animated(mut self, animated: bool) -> Self {
         self.model.animated = animated;
+        self
+    }
+
+    /// Sets the expanded and collapsed disclosure icons used by branch rows.
+    pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
+        self.model.disclosure_icons = icons;
         self
     }
 

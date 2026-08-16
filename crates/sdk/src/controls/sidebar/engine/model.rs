@@ -11,6 +11,7 @@ use crate::controls::state::MenuPath;
 use crate::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 use crate::controls::overlay_presence::OverlayPresence;
+use crate::controls::icon::DisclosureIcons;
 
 pub type NavHostedContent = HostedContent;
 pub type NavPresenter = Presenter<NavNodeState>;
@@ -134,6 +135,7 @@ pub struct SidebarPanelEngineModel {
     pub(crate) enabled: bool,
     pub(crate) collapsed: bool,
     pub(crate) animated: bool,
+    pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) template: Arc<dyn SidebarPanelTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) scrollbar_placement: ScrollbarPlacement,
@@ -165,6 +167,7 @@ pub struct SidebarPanelEngineRenderModel {
     pub rail_submenu: Option<RenderedRailSubmenu>,
     pub selected_id: Option<SharedString>,
     pub collapsed: bool,
+    pub disclosure_icons: DisclosureIcons,
 }
 
 pub struct RenderedNavNode {
@@ -199,6 +202,7 @@ impl SidebarPanelEngineBuilder {
                 enabled: true,
                 collapsed: false,
                 animated: true,
+                disclosure_icons: DisclosureIcons::default(),
                 template: default_sidebar_panel_template(),
                 scrollbar_template: default_scrollbar_template(),
                 scrollbar_placement: ScrollbarPlacement::Inset,
@@ -265,6 +269,11 @@ impl SidebarPanelEngineBuilder {
 
     pub fn animated(mut self, animated: bool) -> Self {
         self.model.animated = animated;
+        self
+    }
+
+    pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
+        self.model.disclosure_icons = icons;
         self
     }
 

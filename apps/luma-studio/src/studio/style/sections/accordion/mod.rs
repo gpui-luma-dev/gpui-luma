@@ -203,6 +203,7 @@ fn render_accordion_state_cell(
         content_padding_top: None,
         content_padding_bottom: None,
         trigger_min_height: None,
+        disclosure_icons: &gpui_luma::controls::icon::DisclosureIcons::default(),
         trigger_padding_y: None,
         focus,
     };

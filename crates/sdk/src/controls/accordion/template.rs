@@ -6,6 +6,7 @@ use gpui::{
 use lucide_icons::Icon as LucideIcon;
 
 use super::{AccordionRenderModel, AccordionTheme, default_accordion_theme};
+use crate::controls::icon::render_icon_source;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
 pub type AccordionHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -213,11 +214,11 @@ impl AccordionTemplate for ThemedAccordionTemplate {
             };
 
             let chevron_icon = if item.progress >= 0.5 {
-                LucideIcon::ChevronDown
+                &model.disclosure_icons.expanded
             } else {
-                LucideIcon::ChevronRight
+                &model.disclosure_icons.collapsed
             };
-            let chevron = render_icon(chevron_icon, trigger_palette.chevron_color, scale.chevron_size);
+            let chevron = render_icon_source(chevron_icon, trigger_palette.chevron_color, scale.chevron_size);
 
             let trigger_el = trigger.child(trigger_content).child(chevron);
 

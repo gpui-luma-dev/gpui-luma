@@ -5,6 +5,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use super::{AccordionControl, AccordionTemplate, default_accordion_template};
 use super::template::modified_accordion_template;
+use crate::controls::icon::DisclosureIcons;
 use crate::theme::ControlSize;
 
 pub type AccordionElementRenderer = Arc<dyn Fn(&mut Window, &mut App) -> AnyElement + Send + Sync>;
@@ -103,6 +104,7 @@ pub struct AccordionModel {
     pub(crate) trigger_min_height: Option<f32>,
     /// When set, overrides themed vertical padding on item triggers.
     pub(crate) trigger_padding_y: Option<f32>,
+    pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) template: Arc<dyn AccordionTemplate>,
 }
 
@@ -132,6 +134,7 @@ pub struct AccordionRenderModel<'a> {
     pub content_padding_bottom: Option<f32>,
     pub trigger_min_height: Option<f32>,
     pub trigger_padding_y: Option<f32>,
+    pub disclosure_icons: &'a DisclosureIcons,
     pub focus: crate::controls::state::ControlFocusState,
 }
 
@@ -156,6 +159,7 @@ impl AccordionBuilder {
                 content_padding_bottom: None,
                 trigger_min_height: None,
                 trigger_padding_y: None,
+                disclosure_icons: DisclosureIcons::default(),
                 template: default_accordion_template(),
             },
         }
@@ -232,6 +236,12 @@ impl AccordionBuilder {
 
     pub fn trigger_padding_y(mut self, padding_y: f32) -> Self {
         self.model.trigger_padding_y = Some(padding_y);
+        self
+    }
+
+    /// Sets the expanded and collapsed disclosure icons used by item triggers.
+    pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
+        self.model.disclosure_icons = icons;
         self
     }
 
