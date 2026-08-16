@@ -29,6 +29,19 @@ impl Default for DisclosureIcons {
     }
 }
 
+/// Selection and completion affordances shared by choice and progress controls.
+#[derive(Clone, Debug)]
+pub struct SelectionStatusIcons {
+    pub selected: IconSource,
+    pub completed: IconSource,
+}
+
+impl Default for SelectionStatusIcons {
+    fn default() -> Self {
+        Self { selected: LucideIcon::Check.into(), completed: LucideIcon::Check.into() }
+    }
+}
+
 impl IconSource {
     pub fn lucide(&self) -> Option<LucideIcon> {
         match self {
@@ -100,5 +113,13 @@ pub fn render_icon_source(icon: &IconSource, color: Hsla, size: f32) -> AnyEleme
         IconSource::SvgPath(path) => {
             svg().size(px(size)).text_color(color).external_path(path.clone()).into_any_element()
         }
+    }
+}
+
+/// Renders an icon while inheriting the surrounding text color.
+pub fn render_icon_source_inherit(icon: &IconSource, size: f32) -> AnyElement {
+    match icon {
+        IconSource::Lucide(icon) => lucide_glyph(*icon),
+        IconSource::SvgPath(path) => svg().size(px(size)).external_path(path.clone()).into_any_element(),
     }
 }

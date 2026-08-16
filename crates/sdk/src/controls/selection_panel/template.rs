@@ -13,6 +13,7 @@ use crate::controls::selection_panel::item_template::{
 use crate::controls::selection_panel::model::SelectionPanelItemLike;
 use crate::controls::selection_panel::theme::SelectionPanelLook;
 use crate::controls::state::ControlFocusState;
+use crate::controls::icon::SelectionStatusIcons;
 
 pub struct SelectionPanelTemplateHandlers {
     pub item_hovers: Vec<SelectionPanelHoverHandler>,
@@ -43,6 +44,7 @@ where
     pub item_template: Option<&'a SelectionPanelItemTemplate<T>>,
     pub look: SelectionPanelLook,
     pub show_selection_marker: bool,
+    pub icons: &'a SelectionStatusIcons,
     pub show_panel_chrome: bool,
 }
 
@@ -186,6 +188,7 @@ where
                     item_template: model.item_template,
                     look: &look,
                     show_selection_marker: model.show_selection_marker,
+                    icons: model.icons.clone(),
                 },
                 SelectionPanelItemRowHandlers {
                     hover,

@@ -637,6 +637,7 @@ where
                 item_template: self.model.item_template.as_ref(),
                 look: look.clone(),
                 show_selection_marker: self.model.show_selection_marker,
+                icons: &self.model.icons,
                 show_panel_chrome: false,
             },
             item_hovers,

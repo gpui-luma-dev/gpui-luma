@@ -19,6 +19,7 @@ use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::controls::command::button::{Button, ButtonBuilder, ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use crate::controls::presenter::{ControlPresenter, HasPresenter};
+use crate::controls::icon::SelectionStatusIcons;
 use crate::theme::ControlSize;
 
 pub type Checkbox = Entity<CheckboxControl>;
@@ -27,15 +28,22 @@ pub type Checkbox = Entity<CheckboxControl>;
 ///
 /// `checked` is the settled semantic value; `progress` is the continuous visual factor
 /// (`0.0`..`1.0`) driven by [`VisualTransition`].
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct CheckboxData {
     pub checked: bool,
     pub progress: f32,
+    pub icons: SelectionStatusIcons,
+}
+
+impl PartialEq for CheckboxData {
+    fn eq(&self, other: &Self) -> bool {
+        self.checked == other.checked && self.progress == other.progress
+    }
 }
 
 impl CheckboxData {
     pub fn new(checked: bool) -> Self {
-        Self { checked, progress: if checked { 1.0 } else { 0.0 } }
+        Self { checked, progress: if checked { 1.0 } else { 0.0 }, icons: SelectionStatusIcons::default() }
     }
 }
 
@@ -77,7 +85,7 @@ impl CheckboxControl {
         let transition = VisualTransition::new(progress, duration);
 
         let mut button_builder = builder.button;
-        button_builder.model.data = CheckboxData { checked, progress };
+        button_builder.model.data = CheckboxData { checked, progress, icons: button_builder.model.data.icons.clone() };
         let button = button_builder.spawn(cx);
         let subscription = cx.subscribe(&button, Self::handle_button_event);
 
@@ -85,7 +93,8 @@ impl CheckboxControl {
     }
 
     fn push_button_data(&mut self, cx: &mut Context<Self>) {
-        let data = CheckboxData { checked: self.checked, progress: self.transition.progress() };
+        let icons = self.button.read(cx).data().icons.clone();
+        let data = CheckboxData { checked: self.checked, progress: self.transition.progress(), icons };
         self.button.update(cx, |button, cx| {
             if button.data() == &data {
                 return;
@@ -197,6 +206,7 @@ impl IntoElement for CheckboxControl {
 pub struct CheckboxBuilder {
     button: ButtonBuilder<CheckboxData>,
     animated: bool,
+    icons: SelectionStatusIcons,
 }
 
 impl CheckboxBuilder {
@@ -235,6 +245,12 @@ impl CheckboxBuilder {
         self
     }
 
+    pub fn icons(mut self, icons: SelectionStatusIcons) -> Self {
+        self.icons = icons.clone();
+        self.button.model.data.icons = icons;
+        self
+    }
+
     pub fn template(self, template: Arc<dyn ButtonTemplate<CheckboxData>>) -> Self {
         Self { button: self.button.template(template), ..self }
     }
@@ -254,6 +270,7 @@ pub fn new(id: impl Into<SharedString>) -> CheckboxBuilder {
     CheckboxBuilder {
         button: ButtonBuilder::new(id).typed(CheckboxData::default()).template(default_checkbox_template()),
         animated: true,
+        icons: SelectionStatusIcons::default(),
     }
 }
 
