@@ -5,6 +5,7 @@ use gpui::{AppContext, Entity, SharedString};
 use super::template::template_with_modifier;
 use super::{TextArea, TextAreaLook, TextAreaState, TextAreaTemplate, default_textarea_template};
 use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
+use crate::controls::icon::IconSource;
 use crate::theme::ControlSize;
 
 pub type Validator = Arc<dyn Fn(&str) -> bool + Send + Sync>;
@@ -21,6 +22,7 @@ pub struct TextAreaModel {
     pub(crate) rows: usize,
     pub(crate) clean_on_escape: bool,
     pub(crate) select_all_on_tab_focus: bool,
+    pub(crate) resize_handle_icon: IconSource,
     pub(crate) validator: Option<Validator>,
     pub(crate) look_override: Option<TextAreaLookOverride>,
     pub(crate) template: Arc<dyn TextAreaTemplate>,
@@ -68,6 +70,7 @@ impl TextAreaBuilder {
                 rows: 4,
                 clean_on_escape: false,
                 select_all_on_tab_focus: false,
+                resize_handle_icon: lucide_icons::Icon::Scaling.into(),
                 validator: None,
                 look_override: None,
                 template: default_textarea_template(),
@@ -113,6 +116,12 @@ impl TextAreaBuilder {
 
     pub fn select_all_on_tab_focus(mut self, select_all: bool) -> Self {
         self.model.select_all_on_tab_focus = select_all;
+        self
+    }
+
+    /// Set the icon displayed by the draggable resize handle.
+    pub fn resize_handle_icon(mut self, icon: impl Into<IconSource>) -> Self {
+        self.model.resize_handle_icon = icon.into();
         self
     }
 
