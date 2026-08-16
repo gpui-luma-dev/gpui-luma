@@ -264,7 +264,11 @@ fn plan_option_item_element_template(look: Arc<ShadcnLook>) -> ControlGroupItemE
         .overflow_hidden();
 
         // Always reserve the focus-ring width so focusing a plan does not reflow the row.
-        let focus_border_color = if item.state.active { focus_ring } else { transparent_black() };
+        let focus_border_color = if item.state.active {
+            focus_ring
+        } else {
+            transparent_black()
+        };
         let mut card = div()
             .id(format!("{}-card", render_model.id))
             .flex_1()
