@@ -193,7 +193,7 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         label: "Tabs Navigation",
         parts: &[
             part("inactive label", "foreground", &["inactive"], &["TabsNavigationItemLook.foreground"]),
-            part("active label", "primary", &["active"], &["TabsNavigationItemLook.foreground"]),
+            part("active label", "foreground", &["active"], &["TabsNavigationItemLook.foreground"]),
         ],
     },
     &ThemeUsage {

@@ -3,7 +3,7 @@
 //! | Part              | Token                         |
 //! |-------------------|-------------------------------|
 //! | Inactive label    | `foreground`                  |
-//! | Active label      | `primary` (interaction layers)|
+//! | Active label      | `foreground`                 |
 //! | Active indicator  | `primary` / `ring` on focus   |
 //! | Disabled label    | `muted-foreground`            |
 //! | Disabled list bg  | `muted`                       |
@@ -160,13 +160,13 @@ mod tests {
     }
 
     #[test]
-    fn active_tab_uses_primary_and_inactive_uses_foreground() {
+    fn active_and_inactive_tabs_use_foreground() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let active = tabs_navigation_item_look(&mode, true, InteractionState::default(), ControlSize::Md);
         let inactive = tabs_navigation_item_look(&mode, false, InteractionState::default(), ControlSize::Md);
 
-        assert_eq!(active.label_color, catalog.color("primary").expect("primary"));
+        assert_eq!(active.label_color, catalog.color("foreground").expect("foreground"));
         assert_eq!(inactive.label_color, catalog.color("foreground").expect("foreground"));
         assert_eq!(active.indicator, Some(catalog.color("primary").expect("primary")));
     }

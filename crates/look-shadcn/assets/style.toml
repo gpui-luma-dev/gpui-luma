@@ -1327,42 +1327,42 @@ label_color = "foreground"
 active = true
 layer = "default"
 focused = false
-label_color = "@primary_default"
+label_color = "foreground"
 indicator = "@primary_default"
 
 [[tabs_navigation.item.color_rules]]
 active = true
 layer = "hover"
 focused = false
-label_color = "@primary_layer"
+label_color = "foreground"
 indicator = "@primary_layer"
 
 [[tabs_navigation.item.color_rules]]
 active = true
 layer = "pressed"
 focused = false
-label_color = "@primary_layer"
+label_color = "foreground"
 indicator = "@primary_layer"
 
 [[tabs_navigation.item.color_rules]]
 active = true
 layer = "default"
 focused = true
-label_color = "@primary_default"
+label_color = "foreground"
 indicator = "ring"
 
 [[tabs_navigation.item.color_rules]]
 active = true
 layer = "hover"
 focused = true
-label_color = "@primary_layer"
+label_color = "foreground"
 indicator = "ring"
 
 [[tabs_navigation.item.color_rules]]
 active = true
 layer = "pressed"
 focused = true
-label_color = "@primary_layer"
+label_color = "foreground"
 indicator = "ring"
 
 

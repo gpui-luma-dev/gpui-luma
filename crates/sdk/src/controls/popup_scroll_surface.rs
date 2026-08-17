@@ -111,7 +111,7 @@ impl PopupScrollSurface {
 
     pub fn render(&self, content: AnyElement) -> AnyElement {
         if !self.scrolling_enabled {
-            return div().h(self.viewport_height).w_full().overflow_hidden().child(content).into_any_element();
+            return div().w_full().child(content).into_any_element();
         }
 
         div().h(self.viewport_height).w_full().child(self.container.render(content)).into_any_element()
