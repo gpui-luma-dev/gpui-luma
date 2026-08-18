@@ -518,7 +518,7 @@ impl LumaStudioApp {
         });
     }
 
-    fn toggle_mode(&mut self, cx: &mut Context<Self>) {
+    pub(crate) fn toggle_mode(&mut self, cx: &mut Context<Self>) {
         let mode = match self.look.mode() {
             ThemeMode::Light => ThemeMode::Dark,
             ThemeMode::Dark => ThemeMode::Light,

@@ -5,8 +5,9 @@ mod typography;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use gpui::{App, Context, Entity, SharedString};
+use gpui::{relative, App, Context, Entity, IntoElement, ParentElement, Render, SharedString, Styled, Window};
 use gpui_luma::controls::accordion::AccordionControl;
+use gpui_luma::controls::context_menu::{ContextMenu, MenuItem};
 use gpui_luma::controls::slider::Slider;
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
@@ -14,6 +15,51 @@ use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 pub(super) use colors::ColorsPanel;
 pub(super) use other::OtherPanel;
 pub(super) use typography::TypographyPanel;
+
+pub(super) struct PanelContextMenuHost {
+    context_menu: Entity<ContextMenu>,
+}
+
+impl PanelContextMenuHost {
+    pub(super) fn new<F, E>(
+        id: impl Into<SharedString>,
+        target_content: F,
+        items: impl IntoIterator<Item = MenuItem>,
+        look: Arc<ShadcnLook>,
+        cx: &mut Context<Self>,
+    ) -> Self
+    where
+        F: Fn(&mut App) -> E + Send + Sync + 'static,
+        E: IntoElement + 'static,
+    {
+        let context_menu = look.context_menu(id).target_content(target_content).items(items).spawn(cx);
+
+        Self { context_menu }
+    }
+
+    pub(super) fn context_menu(&self) -> Entity<ContextMenu> {
+        self.context_menu.clone()
+    }
+}
+
+impl Render for PanelContextMenuHost {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        gpui::div().w_full().min_h(relative(1.0)).child(self.context_menu.clone())
+    }
+}
+
+pub(super) fn colors_context_menu_items() -> [MenuItem; 4] {
+    [
+        MenuItem::new("expand-all").label("Expand All"),
+        MenuItem::new("collapse-all").label("Collapse All"),
+        MenuItem::new("reset").label("Reset"),
+        MenuItem::new("toggle-mode").label("Toggle Light/Dark"),
+    ]
+}
+
+pub(super) fn other_context_menu_items() -> [MenuItem; 1] {
+    [MenuItem::new("reset").label("Reset")]
+}
 
 pub(super) fn category_item_id(prefix: &str, category: &str) -> String {
     format!("{prefix}-{}", category.to_lowercase().replace(' ', "-").replace('&', "and"))

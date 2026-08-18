@@ -169,6 +169,15 @@ impl ColorsPanel {
         )
     }
 
+    pub(crate) fn set_all_categories_expanded(&mut self, expanded: bool, cx: &mut Context<Self>) {
+        for (index, (category, _)) in TOKEN_CATEGORIES.iter().enumerate() {
+            let id = category_item_id("token", category);
+            if self.token_accordion.read(cx).is_expanded(&id.clone().into()) != expanded {
+                self.token_accordion.update(cx, |accordion, cx| accordion.toggle_item(index, cx));
+            }
+        }
+    }
+
     fn category_token_content(&self, tokens: &[(&str, &str)]) -> AnyElement {
         let theme = &self.look;
         let chrome = theme.chrome();

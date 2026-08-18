@@ -1,6 +1,6 @@
 use gpui::{
     App, Bounds, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
-    MouseUpEvent, Pixels, Point, Render, SharedString, Subscription, Window, div, point, prelude::*, px,
+    MouseUpEvent, Pixels, Point, Render, SharedString, Subscription, Window, div, point, prelude::*, px, relative,
 };
 
 use super::{ContextMenuBuilder, ContextMenuRenderModel, ContextMenuTemplateHandlers};
@@ -107,6 +107,7 @@ impl ContextMenu {
         ContextMenuRenderModel {
             id: &self.model.id,
             label: &self.model.label,
+            target_content: self.model.target_content.as_ref(),
             items: &self.model.items,
             menu_position: self.menu_position,
             presence: self.presence,
@@ -469,23 +470,27 @@ impl Render for ContextMenu {
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);
 
-        div()
-            .child(
-                self.model
-                    .template
-                    .render(&model, handlers, window, cx)
-                    .track_focus(self.interaction.focus_handle())
-                    .key_context(ControlKeyProfile::ContextMenu.context())
-                    .on_action(cx.listener(Self::handle_escape_focus))
-                    .on_action(cx.listener(Self::handle_open_context_menu))
-                    .on_action(cx.listener(Self::handle_select_previous_item))
-                    .on_action(cx.listener(Self::handle_select_next_item))
-                    .on_action(cx.listener(Self::handle_select_first_item))
-                    .on_action(cx.listener(Self::handle_select_last_item))
-                    .on_action(cx.listener(Self::handle_open_submenu))
-                    .on_action(cx.listener(Self::handle_close_submenu))
-                    .on_action(cx.listener(Self::handle_activate_control)),
-            )
-            .into_any_element()
+        let mut root = div();
+        if self.model.target_content.is_some() {
+            root = root.w_full().min_h(relative(1.0));
+        }
+
+        root.child(
+            self.model
+                .template
+                .render(&model, handlers, window, cx)
+                .track_focus(self.interaction.focus_handle())
+                .key_context(ControlKeyProfile::ContextMenu.context())
+                .on_action(cx.listener(Self::handle_escape_focus))
+                .on_action(cx.listener(Self::handle_open_context_menu))
+                .on_action(cx.listener(Self::handle_select_previous_item))
+                .on_action(cx.listener(Self::handle_select_next_item))
+                .on_action(cx.listener(Self::handle_select_first_item))
+                .on_action(cx.listener(Self::handle_select_last_item))
+                .on_action(cx.listener(Self::handle_open_submenu))
+                .on_action(cx.listener(Self::handle_close_submenu))
+                .on_action(cx.listener(Self::handle_activate_control)),
+        )
+        .into_any_element()
     }
 }

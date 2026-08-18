@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{
     Anchor, App, Bounds, ClickEvent, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Stateful, Window,
-    anchored, deferred, div, px, prelude::*,
+    anchored, deferred, div, px, prelude::*, relative,
 };
 
 use super::ContextMenuRenderModel;
@@ -126,7 +126,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
         model: &ContextMenuRenderModel<'_>,
         handlers: ContextMenuTemplateHandlers,
         _window: &mut Window,
-        _cx: &mut App,
+        cx: &mut App,
     ) -> Stateful<Div> {
         let ContextMenuTemplateHandlers {
             target_bounds,
@@ -140,30 +140,36 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             item_clicks,
         } = handlers;
         let look = self.theme.resolve(model.state);
+        let custom_content = model.target_content.map(|content| content(cx));
+        let has_custom_content = custom_content.is_some();
         let mut target = div()
             .id(format!("{}-target", model.id))
             .relative()
             .flex()
-            .items_center()
-            .justify_center()
-            .min_w(px(look.target_min_width))
-            .px(px(look.target_padding_x))
-            .py(px(look.target_padding_y))
-            .bg(look.target_background)
-            .text_color(look.target_foreground)
-            .border_1()
-            .border_color(look.target_border)
-            .rounded(px(look.target_radius))
-            .text_size(px(look.target_typography.size))
-            .line_height(px(look.target_typography.line_height))
-            .font_weight(look.target_typography.weight)
             .cursor_pointer()
             .on_hover(target_hover)
             .on_mouse_down(MouseButton::Right, target_mouse_down)
             .on_mouse_up(MouseButton::Right, target_mouse_up)
             .on_mouse_up_out(MouseButton::Right, target_mouse_up_out)
-            .on_aux_click(target_aux_click)
-            .child(model.label.clone());
+            .on_aux_click(target_aux_click);
+
+        if let Some(content) = custom_content {
+            target = target.items_start().justify_start().w_full().min_h(relative(1.0)).child(content);
+        } else {
+            target = target
+                .min_w(px(look.target_min_width))
+                .px(px(look.target_padding_x))
+                .py(px(look.target_padding_y))
+                .bg(look.target_background)
+                .text_color(look.target_foreground)
+                .border_1()
+                .border_color(look.target_border)
+                .rounded(px(look.target_radius))
+                .text_size(px(look.target_typography.size))
+                .line_height(px(look.target_typography.line_height))
+                .font_weight(look.target_typography.weight)
+                .child(model.label.clone());
+        }
 
         if !model.enabled {
             target = target.opacity(0.56);
@@ -179,6 +185,9 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             .relative()
             .on_mouse_down_out(root_mouse_down_out)
             .child(target);
+        if has_custom_content {
+            root = root.w_full().min_h(relative(1.0));
+        }
 
         if let Some(position) = model.menu_position {
             let menu = render_floating_menu_with_submenu_presence(

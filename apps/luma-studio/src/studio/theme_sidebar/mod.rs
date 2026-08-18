@@ -17,7 +17,7 @@ use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
 use self::model::{SidebarTab, TOKEN_CATEGORIES};
-use self::panels::{ColorsPanel, OtherPanel, TypographyPanel};
+use self::panels::{ColorsPanel, OtherPanel, PanelContextMenuHost, TypographyPanel};
 use self::parsing::token_color_with_fallback;
 use self::theme_selector::{
     ThemeSelectorSwatchCache, render_theme_search_selector_item, theme_search_selector_panel_template,
@@ -36,6 +36,8 @@ pub struct ThemeSidebar {
     tabs: Entity<TabsNavigation>,
     active_tab: SidebarTab,
     colors_panel: Entity<ColorsPanel>,
+    colors_host: Entity<PanelContextMenuHost>,
+    other_host: Entity<PanelContextMenuHost>,
     typography_panel: Entity<TypographyPanel>,
     other_panel: Entity<OtherPanel>,
     _subscriptions: Vec<Subscription>,
@@ -52,8 +54,28 @@ impl ThemeSidebar {
         let active_theme_id = active_theme_id.into();
         let global_overrides = overrides.global_color_overrides.clone();
         let colors_panel = cx.new(|cx| ColorsPanel::new(look.clone(), overrides, cx));
+        let colors_target = colors_panel.clone();
+        let colors_host = cx.new(|cx| {
+            PanelContextMenuHost::new(
+                "luma-studio-colors-context-menu",
+                move |_| colors_target.clone(),
+                panels::colors_context_menu_items(),
+                look.clone(),
+                cx,
+            )
+        });
         let typography_panel = cx.new(|cx| TypographyPanel::new(look.clone(), cx));
         let other_panel = cx.new(|cx| OtherPanel::new(look.clone(), overrides, cx));
+        let other_target = other_panel.clone();
+        let other_host = cx.new(|cx| {
+            PanelContextMenuHost::new(
+                "luma-studio-other-context-menu",
+                move |_| other_target.clone(),
+                panels::other_context_menu_items(),
+                look.clone(),
+                cx,
+            )
+        });
         let theme_selector_swatches = Arc::new(RwLock::new(ThemeSelectorSwatchCache::empty()));
         let theme_selector_selected_id = Arc::new(RwLock::new(active_theme_id.clone()));
         let (theme_items, swatch_cache) = theme_selector_state(look.as_ref());
@@ -108,6 +130,8 @@ impl ThemeSidebar {
             tabs,
             active_tab: SidebarTab::Colors,
             colors_panel,
+            colors_host,
+            other_host,
             typography_panel,
             other_panel,
             _subscriptions: subscriptions,
@@ -126,9 +150,9 @@ impl Render for ThemeSidebar {
             token_color_with_fallback(&self.look, &self.global_overrides, "sidebar", chrome.panel_background);
 
         let tab_body = match self.active_tab {
-            SidebarTab::Colors => self.colors_panel.clone().into_any_element(),
+            SidebarTab::Colors => self.colors_host.clone().into_any_element(),
             SidebarTab::Typography => self.typography_panel.clone().into_any_element(),
-            SidebarTab::Other => self.other_panel.clone().into_any_element(),
+            SidebarTab::Other => self.other_host.clone().into_any_element(),
         };
 
         div()

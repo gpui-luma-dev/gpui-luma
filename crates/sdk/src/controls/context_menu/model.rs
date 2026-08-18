@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AppContext, Entity, Pixels, Point, SharedString};
+use gpui::{AnyElement, App, AppContext, Entity, IntoElement, Pixels, Point, SharedString};
 
 use super::{
     ContextMenu, ContextMenuState, ContextMenuTemplate, ControlFocusState, MenuPath, default_context_menu_template,
@@ -13,14 +13,18 @@ use crate::controls::overlay_presence::OverlayPresence;
 pub struct ContextMenuModel {
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
+    pub(crate) target_content: Option<ContextMenuTargetContent>,
     pub(crate) items: Vec<MenuItem>,
     pub(crate) enabled: bool,
     pub(crate) template: Arc<dyn ContextMenuTemplate>,
 }
 
+pub type ContextMenuTargetContent = Arc<dyn Fn(&mut App) -> AnyElement + Send + Sync + 'static>;
+
 pub struct ContextMenuRenderModel<'a> {
     pub id: &'a SharedString,
     pub label: &'a SharedString,
+    pub target_content: Option<&'a ContextMenuTargetContent>,
     pub items: &'a [MenuItem],
     pub menu_position: Option<Point<Pixels>>,
     pub presence: OverlayPresence,
@@ -44,6 +48,7 @@ impl ContextMenuBuilder {
             model: ContextMenuModel {
                 label: id.clone(),
                 id,
+                target_content: None,
                 items: Vec::new(),
                 enabled: true,
                 template: default_context_menu_template(),
@@ -53,6 +58,15 @@ impl ContextMenuBuilder {
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.model.label = label.into();
+        self
+    }
+
+    pub fn target_content<F, E>(mut self, content: F) -> Self
+    where
+        F: Fn(&mut App) -> E + Send + Sync + 'static,
+        E: IntoElement + 'static,
+    {
+        self.model.target_content = Some(Arc::new(move |cx| content(cx).into_any_element()));
         self
     }
 
