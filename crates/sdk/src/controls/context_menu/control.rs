@@ -267,8 +267,8 @@ impl ContextMenu {
         }
     }
 
-    fn handle_mouse_down(&mut self, _event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
-        if self.interaction.handle_mouse_down(self.model.enabled, window, cx) {
+    fn handle_mouse_down(&mut self, _event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.interaction.handle_secondary_mouse_down(self.model.enabled) {
             cx.notify();
         }
     }

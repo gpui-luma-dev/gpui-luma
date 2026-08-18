@@ -191,6 +191,60 @@ impl TextFieldControl {
         cx.notify();
     }
 
+    pub fn select_all(&mut self, cx: &mut Context<Self>) {
+        select_all(&mut self.state, self.model.value.chars().count());
+        self.state.preferred_column = None;
+        cx.notify();
+    }
+
+    pub fn copy_selection(&self, cx: &mut Context<Self>) {
+        let range = self.selected_range();
+        if range.start < range.end {
+            let text = self.model.value.chars().skip(range.start).take(range.len()).collect::<String>();
+            cx.write_to_clipboard(ClipboardItem::new_string(text));
+        }
+    }
+
+    pub fn cut_selection(&mut self, cx: &mut Context<Self>) {
+        let range = self.selected_range();
+        if range.start >= range.end {
+            return;
+        }
+
+        let mut chars = self.model.value.chars().collect::<Vec<_>>();
+        let text = chars[range.clone()].iter().collect::<String>();
+        cx.write_to_clipboard(ClipboardItem::new_string(text));
+        chars.drain(range.clone());
+        self.model.value = chars.into_iter().collect::<String>().into();
+        self.state.cursor = range.start;
+        self.state.clear_selection();
+        self.state.preferred_column = None;
+        self.marked_range = None;
+        self.emit_change(cx);
+        cx.notify();
+    }
+
+    pub fn paste(&mut self, cx: &mut Context<Self>) {
+        let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) else {
+            return;
+        };
+        let text = text.replace(['\n', '\r'], "");
+        if text.is_empty() {
+            return;
+        }
+
+        let range = self.selected_range();
+        let mut chars = self.model.value.chars().collect::<Vec<_>>();
+        chars.splice(range.clone(), text.chars());
+        self.model.value = chars.into_iter().collect::<String>().into();
+        self.state.cursor = range.start + text.chars().count();
+        self.state.clear_selection();
+        self.state.preferred_column = None;
+        self.marked_range = None;
+        self.emit_change(cx);
+        cx.notify();
+    }
+
     pub fn set_placeholder(&mut self, placeholder: impl Into<String>, cx: &mut Context<Self>) {
         self.model.placeholder = placeholder.into().into();
         cx.notify();

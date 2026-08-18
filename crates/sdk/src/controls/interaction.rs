@@ -71,6 +71,15 @@ impl ControlInteraction {
         true
     }
 
+    pub fn handle_secondary_mouse_down(&mut self, enabled: bool) -> bool {
+        if !enabled {
+            return false;
+        }
+
+        self.state.pressed = true;
+        true
+    }
+
     pub fn handle_mouse_up(&mut self) -> bool {
         if !self.state.pressed {
             return false;

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::context_menu::{ContextMenu, ContextMenuEvent};
+use gpui_luma::controls::textfield::TextField;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -29,6 +30,8 @@ struct ContextMenuExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     preview: Entity<ContextMenu>,
+    textfield: TextField,
+    textfield_context_menu: Entity<ContextMenu>,
     event_stream: Entity<ControlEventStream>,
 }
 
@@ -51,6 +54,7 @@ impl Render for ContextMenuExpositionLeftPane {
                 .items_center()
                 .gap(px(16.0))
                 .child(div().min_h(px(160.0)).flex().items_center().justify_center().child(self.preview.clone()))
+                .child(div().w(px(200.0)).child(self.textfield_context_menu.clone()))
                 .child(self.event_stream.clone());
 
             div()
@@ -78,6 +82,17 @@ impl ContextMenuControlExposition {
             .label("Right-click me")
             .items(context_menu_items())
             .spawn(cx);
+        let textfield = look
+            .textfield("controls-doc-context-menu-textfield")
+            .value("Sample text for context actions")
+            .full_width(true)
+            .spawn(cx);
+        let textfield_target = textfield.clone();
+        let textfield_context_menu = look
+            .context_menu("controls-doc-context-menu-textfield-menu")
+            .target_content(move |_| div().w(px(200.0)).child(textfield_target.clone()))
+            .items(textfield_context_menu_items())
+            .spawn(cx);
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
@@ -90,6 +105,8 @@ impl ContextMenuControlExposition {
             look: look.clone(),
             entry,
             preview: preview.clone(),
+            textfield,
+            textfield_context_menu: textfield_context_menu.clone(),
             event_stream: event_stream.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
@@ -114,7 +131,34 @@ impl ContextMenuControlExposition {
             }
         });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![subscription] }
+        let textfield_subscription = cx.subscribe(&textfield_context_menu, {
+            let event_stream = event_stream.clone();
+            let textfield = left_pane.read(cx).textfield.clone();
+            move |_, _, event: &ContextMenuEvent, cx| {
+                let ContextMenuEvent::Select { item_id, .. } = event else {
+                    return;
+                };
+                match item_id.as_ref() {
+                    "select-all" => textfield.update(cx, |field, cx| field.select_all(cx)),
+                    "copy" => textfield.update(cx, |field, cx| field.copy_selection(cx)),
+                    "cut" => textfield.update(cx, |field, cx| field.cut_selection(cx)),
+                    "paste" => textfield.update(cx, |field, cx| field.paste(cx)),
+                    _ => {}
+                }
+                event_stream.update(cx, |stream, cx| {
+                    stream.append_line(&format!("TextField context action: {item_id}"), cx);
+                });
+            }
+        });
+
+        Self {
+            look,
+            entry,
+            left_pane,
+            theme_inspector,
+            inspector_split,
+            _subscriptions: vec![subscription, textfield_subscription],
+        }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
@@ -163,6 +207,15 @@ fn context_menu_items() -> [MenuItem; 4] {
             MenuItem::new("download").label("Download").icon(LucideIcon::Download),
             MenuItem::new("external").label("Open externally").icon(LucideIcon::ExternalLink),
         ]),
+    ]
+}
+
+fn textfield_context_menu_items() -> [MenuItem; 4] {
+    [
+        MenuItem::new("select-all").label("Select All").icon(LucideIcon::ListChecks),
+        MenuItem::new("copy").label("Copy").icon(LucideIcon::Copy),
+        MenuItem::new("cut").label("Cut").icon(LucideIcon::Scissors),
+        MenuItem::new("paste").label("Paste").icon(LucideIcon::Clipboard),
     ]
 }
 
