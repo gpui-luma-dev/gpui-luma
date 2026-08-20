@@ -318,5 +318,9 @@ fn format_toggle_event(source: &str, event: &ToggleEvent) -> Option<String> {
 
 fn round_icon_glyph(selected: bool) -> impl IntoElement {
     let icon = if selected { LucideIcon::Check } else { LucideIcon::Plus };
-    div().text_size(px(16.0)).line_height(px(16.0)).child(gpui_luma::controls::icon::lucide_glyph(icon))
+    div().text_size(px(16.0)).line_height(px(16.0)).child(gpui_luma::controls::icon::lucide_icon(
+        icon,
+        gpui::Hsla { h: 0.0, s: 0.0, l: 0.5, a: 1.0 },
+        16.0,
+    ))
 }

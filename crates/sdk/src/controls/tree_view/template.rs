@@ -244,7 +244,7 @@ fn render_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
         .text_size(px(size))
         .line_height(px(size))
         .text_color(color)
-        .child(crate::controls::icon::lucide_glyph(icon))
+        .child(crate::controls::icon::lucide_icon(icon, color, size))
         .into_any_element()
 }
 

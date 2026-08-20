@@ -243,7 +243,11 @@ fn render_toggle_size_radius_cell(
     let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<ToggleData>> = if icon_only {
         Arc::new(move |model, _| {
             let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
-            render_lucide_icon(LucideIcon::Heart, icon_size)
+            render_lucide_icon(
+                LucideIcon::Heart,
+                button_preview_look(model).map(|look| look.foreground).unwrap_or_default(),
+                icon_size,
+            )
         })
     } else {
         let label = SharedString::from("Toggle");
@@ -418,5 +422,6 @@ fn toggle_button_look_for_style(
 pub(crate) fn round_icon_glyph(model: &ButtonRenderModel<ToggleData>, selected: bool) -> AnyElement {
     let icon = if selected { LucideIcon::Check } else { LucideIcon::Plus };
     let icon_size = model.look.as_ref().map(|resolve| resolve(model).icon_size).unwrap_or(16.0);
-    render_lucide_icon(icon, icon_size)
+    let color = model.look.as_ref().map(|resolve| resolve(model).foreground).unwrap_or_default();
+    render_lucide_icon(icon, color, icon_size)
 }

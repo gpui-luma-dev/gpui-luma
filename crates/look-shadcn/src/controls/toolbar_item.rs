@@ -5,11 +5,9 @@
 
 use std::sync::Arc;
 
-use gpui::{Context, Focusable, IntoElement, Pixels, SharedString, div, px, prelude::*};
+use gpui::{Context, Focusable, Pixels, SharedString, div, px, prelude::*};
 use gpui_luma::controls::command::button::ControlIcon;
-use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::selector::SelectorItem;
 use gpui_luma::controls::toolbar::{ToolbarItem, ToolbarItemSource, horizontal_arrow_policy};
 use gpui_luma::focus::EscapeFocus;
@@ -136,14 +134,7 @@ impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
     ) -> ToolbarItem {
         let id = id.into();
         let icon = icon.into();
-        let entity = self
-            .ghost_toggle(format!("toolbar-toggle-{id}"))
-            .content(move |_, _| match &icon {
-                ControlIcon::Lucide(lucide) => lucide_glyph(*lucide).into_any_element(),
-                ControlIcon::SvgPath(path) => gpui::svg().path(path.clone()).size_full().into_any_element(),
-            })
-            .tab_stop(false)
-            .spawn(cx);
+        let entity = self.ghost_toggle(format!("toolbar-toggle-{id}")).icon(icon).tab_stop(false).spawn(cx);
         ToolbarItem::toggle_button(id, entity, cx)
     }
 

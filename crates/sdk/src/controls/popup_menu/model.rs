@@ -49,7 +49,7 @@ fn default_trigger_content() -> ControlPresenter<PopupMenuTriggerModel> {
 
 /// Presenter used by the icon-only face preset ([`PopupMenuBuilder::icon`] / [`PopupMenu::set_icon`](super::PopupMenu::set_icon)).
 pub fn icon_content(icon: LucideIcon) -> ControlPresenter<PopupMenuTriggerModel> {
-    Arc::new(move |_, _| crate::controls::icon::lucide_glyph(icon))
+    Arc::new(move |_, _| crate::controls::icon::lucide_icon(icon, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0))
 }
 
 #[derive(Clone)]

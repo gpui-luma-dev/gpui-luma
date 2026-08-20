@@ -486,7 +486,7 @@ fn selected_check(selected: bool, color: Hsla) -> impl IntoElement {
         .text_size(px(15.0))
         .text_color(color)
         .child(if selected {
-            gpui_luma::controls::icon::lucide_glyph(LucideIcon::Check)
+            gpui_luma::controls::icon::lucide_icon(LucideIcon::Check, color, 15.0)
         } else {
             div().into_any_element()
         })
@@ -503,7 +503,7 @@ fn visibility_eye(visible: bool, muted_text: Hsla) -> impl IntoElement {
         .justify_center()
         .text_size(px(13.0))
         .text_color(muted_text)
-        .child(gpui_luma::controls::icon::lucide_glyph(eye_icon))
+        .child(gpui_luma::controls::icon::lucide_icon(eye_icon, muted_text, 13.0))
 }
 
 fn shortcut_column(

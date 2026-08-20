@@ -1,5 +1,4 @@
 use gpui::{Context, Render, Subscription, Window, div, hsla, prelude::*, px};
-use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::radio_group::{self, RadioGroup, RadioGroupItem};
 use gpui_luma::controls::slider::{self, Slider, SliderOrientation};
@@ -44,17 +43,23 @@ impl NeumorphicDemoApp {
         let left_power = toggle::new("panel-left-power")
             .with_data(false)
             .template(power_template.clone())
-            .content(|_, _| lucide_glyph(LucideIcon::Power))
+            .content(|_, _| {
+                gpui_luma::controls::icon::lucide_icon(LucideIcon::Power, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0)
+            })
             .spawn(cx);
         let middle_power = toggle::new("panel-middle-power")
             .with_data(false)
             .template(power_template.clone())
-            .content(|_, _| lucide_glyph(LucideIcon::Power))
+            .content(|_, _| {
+                gpui_luma::controls::icon::lucide_icon(LucideIcon::Power, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0)
+            })
             .spawn(cx);
         let right_power = toggle::new("panel-right-power")
             .with_data(false)
             .template(power_template)
-            .content(|_, _| lucide_glyph(LucideIcon::Power))
+            .content(|_, _| {
+                gpui_luma::controls::icon::lucide_icon(LucideIcon::Power, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0)
+            })
             .spawn(cx);
         let left_switch = switch::new("panel-left-adv")
             .with_data(true)

@@ -211,7 +211,7 @@ fn render_control_icon(icon: ControlIcon, text_color: Hsla) -> AnyElement {
                 }
             })
         })
-        .child(render_lucide_icon(icon.icon(), 16.0))
+        .child(render_lucide_icon(icon.icon(), text_color, 16.0))
         .into_any_element()
 }
 
@@ -363,7 +363,7 @@ impl RenderOnce for TitleBar {
     }
 }
 
-fn render_lucide_icon(icon: LucideIcon, size: f32) -> AnyElement {
+fn render_lucide_icon(icon: LucideIcon, color: Hsla, size: f32) -> AnyElement {
     div()
         .size(px(size))
         .flex()
@@ -371,6 +371,6 @@ fn render_lucide_icon(icon: LucideIcon, size: f32) -> AnyElement {
         .justify_center()
         .text_size(px(size))
         .line_height(px(size))
-        .child(crate::controls::icon::lucide_glyph(icon))
+        .child(crate::controls::icon::lucide_icon(icon, color, size))
         .into_any_element()
 }

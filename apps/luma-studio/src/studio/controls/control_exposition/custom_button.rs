@@ -54,7 +54,11 @@ impl CustomButtonControlExposition {
                     .flex()
                     .items_center()
                     .gap(px(8.0))
-                    .child(gpui_luma::controls::icon::lucide_glyph(LucideIcon::Check))
+                    .child(gpui_luma::controls::icon::lucide_icon(
+                        LucideIcon::Check,
+                        gpui::hsla(0.0, 0.0, 1.0, 1.0),
+                        16.0,
+                    ))
                     .child("Custom Layout")
                     .text_color(color)
             })
@@ -190,7 +194,11 @@ impl CustomButtonControlExposition {
                                 .flex()
                                 .items_center()
                                 .gap(px(8.0))
-                                .child(gpui_luma::controls::icon::lucide_glyph(LucideIcon::Check))
+                                .child(gpui_luma::controls::icon::lucide_icon(
+                                    LucideIcon::Check,
+                                    gpui::hsla(0.0, 0.0, 1.0, 1.0),
+                                    16.0,
+                                ))
                                 .child(format!("Customized {clicks}"))
                                 .text_color(color)
                                 .into_any_element()
@@ -337,7 +345,10 @@ fn append_button_event(
 }
 
 fn render_lucide_icon(icon: LucideIcon) -> AnyElement {
-    div().text_size(px(16.0)).child(gpui_luma::controls::icon::lucide_glyph(icon)).into_any_element()
+    div()
+        .text_size(px(16.0))
+        .child(gpui_luma::controls::icon::lucide_icon(icon, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0))
+        .into_any_element()
 }
 
 fn render_example_card(

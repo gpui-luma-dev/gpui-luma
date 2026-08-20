@@ -141,7 +141,10 @@ fn icon_thumb_content(
         let tokens = look.mode_tokens();
         let palette = switch_look(tokens.as_ref(), look.mode(), style, checked, model.state, model.size);
         let icon = if checked { LucideIcon::Check } else { LucideIcon::X };
-        div().text_color(palette.track_background).child(render_lucide_icon(icon, 11.0)).into_any_element()
+        div()
+            .text_color(palette.track_background)
+            .child(render_lucide_icon(icon, palette.track_background, 11.0))
+            .into_any_element()
     }
 }
 

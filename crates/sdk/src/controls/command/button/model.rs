@@ -30,6 +30,7 @@ pub struct ButtonModel<D = ()> {
     pub(crate) id: SharedString,
     pub(crate) data: D,
     pub(crate) content: ControlPresenter<ButtonRenderModel<D>>,
+    pub(crate) icon: Option<ControlIcon>,
     pub(crate) role: ButtonFamilyRole,
     pub(crate) size: ButtonSize,
     pub(crate) enabled: bool,
@@ -49,6 +50,7 @@ pub struct ButtonRenderModel<D> {
     pub id: SharedString,
     pub data: D,
     pub content: ControlPresenter<ButtonRenderModel<D>>,
+    pub icon: Option<ControlIcon>,
     pub role: ButtonFamilyRole,
     pub size: ButtonSize,
     pub state: ButtonState,
@@ -69,6 +71,7 @@ impl<D: Default> Default for ButtonRenderModel<D> {
             id: SharedString::default(),
             data: D::default(),
             content: Arc::new(|_, _| div().into_any_element()),
+            icon: None,
             role: ButtonFamilyRole::default(),
             size: ButtonSize::default(),
             state: ButtonState::default(),
@@ -98,6 +101,7 @@ impl ButtonBuilder<()> {
                 id: id.clone(),
                 data: (),
                 content: Arc::new(move |_, _| div().child(id.clone()).into_any_element()),
+                icon: None,
                 role: ButtonFamilyRole::Text,
                 size: ButtonSize::Md,
                 enabled: true,
@@ -145,6 +149,7 @@ impl ButtonBuilder<()> {
                 id: old.id,
                 data: data.clone(),
                 content: Arc::new(move |_, _| div().child(id.clone()).into_any_element()),
+                icon: old.icon,
                 role: old.role,
                 size: old.size,
                 enabled: old.enabled,
@@ -164,6 +169,12 @@ impl ButtonBuilder<()> {
 }
 
 impl<D: Clone + 'static> ButtonBuilder<D> {
+    /// Sets a semantic icon rendered by the button template with resolved theme color.
+    pub fn icon(mut self, icon: impl Into<ControlIcon>) -> Self {
+        self.model.icon = Some(icon.into());
+        self
+    }
+
     /// Sets the control payload without changing template, content, or other builder config.
     ///
     /// Prefer this over [`ButtonBuilder::typed`] when the builder is already specialized — for

@@ -455,7 +455,7 @@ fn render_prefix_icon(icon: &ControlIcon, color: gpui::Hsla, size: f32) -> AnyEl
             .text_size(px(size))
             .line_height(px(size))
             .text_color(color)
-            .child(crate::controls::icon::lucide_glyph(*icon))
+            .child(crate::controls::icon::lucide_icon(*icon, color, size))
             .into_any_element(),
         ControlIcon::SvgPath(path) => svg().size(px(size)).text_color(color).path(path.clone()).into_any_element(),
     }

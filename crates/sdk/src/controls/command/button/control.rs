@@ -31,13 +31,9 @@ impl Button<()> {
 
     pub fn icon(id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()> {
         let icon = icon.into();
-        ButtonBuilder::new(id).role(ButtonFamilyRole::Icon).round(true).content(move |_, _| match &icon {
-            ControlIcon::Lucide(lucide) => {
-                use crate::controls::icon::lucide_glyph;
-                lucide_glyph(*lucide)
-            }
-            ControlIcon::SvgPath(path) => gpui::svg().path(path.clone()).size_full().into_any_element(),
-        })
+        let mut builder = ButtonBuilder::new(id).role(ButtonFamilyRole::Icon).round(true);
+        builder.model.icon = Some(icon.clone());
+        builder.content(|_, _| gpui::div().into_any_element())
     }
 }
 
@@ -94,6 +90,7 @@ impl<D: Clone + 'static> Button<D> {
             id: self.model.id.clone(),
             data: self.model.data.clone(),
             content: self.model.content.clone(),
+            icon: self.model.icon.clone(),
             role: self.model.role,
             size: self.model.size,
             state: self.command.render_state(self.model.enabled, window),

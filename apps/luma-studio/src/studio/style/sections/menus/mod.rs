@@ -417,11 +417,11 @@ fn render_menu_trigger_state_header_cell(sample: &ButtonStateSample, muted_text:
         .items_center()
         .justify_center()
         .gap(px(4.0))
-        .child(
-            div()
-                .text_color(muted_text)
-                .child(render_lucide_icon(menu_trigger_state_header_icon(sample.id), 16.0)),
-        )
+        .child(div().text_color(muted_text).child(render_lucide_icon(
+            menu_trigger_state_header_icon(sample.id),
+            muted_text,
+            16.0,
+        )))
         .child(
             div()
                 .text_xs()

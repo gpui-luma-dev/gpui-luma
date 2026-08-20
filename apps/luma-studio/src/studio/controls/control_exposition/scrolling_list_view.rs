@@ -3,7 +3,6 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, ScrollingListView};
 use gpui_luma::{column, column_emphasis, scrolling_list_view};
 use gpui_luma_look_shadcn::prelude::*;
@@ -154,7 +153,11 @@ impl ScrollingListViewControlExposition {
                         .flex()
                         .items_center()
                         .justify_center()
-                        .child(lucide_glyph(LucideIcon::EllipsisVertical))
+                        .child(gpui_luma::controls::icon::lucide_icon(
+                            LucideIcon::EllipsisVertical,
+                            gpui::hsla(0.0, 0.0, 0.5, 1.0),
+                            16.0,
+                        ))
                 }),
             };
             row_template = |model, cells, _window, _cx| {

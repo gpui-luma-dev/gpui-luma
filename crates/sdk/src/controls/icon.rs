@@ -82,10 +82,6 @@ impl From<SharedString> for IconSource {
     }
 }
 
-pub fn lucide_glyph(icon: LucideIcon) -> AnyElement {
-    svg().path(icon.asset_path()).size_full().into_any_element()
-}
-
 pub fn lucide_icon(icon: LucideIcon, color: Hsla, size: f32) -> AnyElement {
     svg().size(px(size)).path(icon.asset_path()).text_color(color).into_any_element()
 }

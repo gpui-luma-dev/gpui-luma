@@ -3,7 +3,6 @@ use std::sync::Arc;
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
 use gpui_luma::controls::command::icon_button::IconButton;
-use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView};
 use gpui_luma::controls::pager::PagerStyle;
 use gpui_luma::controls::presenter::ControlPresenter;
@@ -59,6 +58,7 @@ impl DashboardPanel {
         });
 
         let tasks = build_task_rows();
+        let dashboard_muted_text = look.chrome().muted_text;
         let list_view = paging_list_view! {
             list_view_theme = look.list_view_theme();
             id = "studio-dashboard-tasks";
@@ -93,13 +93,17 @@ impl DashboardPanel {
                 }),
                 column!("Status", width = 132 => |row: &Task| status_cell(row.status)),
                 email_column(),
-                column!("", width = 44 => |_row: &Task| {
+                column!("", width = 44 => move |_row: &Task| {
                     div()
                         .w_full()
                         .flex()
                         .items_center()
                         .justify_center()
-                        .child(lucide_glyph(LucideIcon::EllipsisVertical))
+                        .child(gpui_luma::controls::icon::lucide_icon(
+                            LucideIcon::EllipsisVertical,
+                            dashboard_muted_text,
+                            16.0,
+                        ))
                 }),
             };
             row_template = |model, cells, _window, _cx| {

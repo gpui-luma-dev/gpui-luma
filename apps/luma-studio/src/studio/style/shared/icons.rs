@@ -1,10 +1,10 @@
-use gpui::{AnyElement, IntoElement, div, prelude::*, px};
+use gpui::{AnyElement, Hsla, IntoElement, div, prelude::*, px};
 use lucide_svg_static::Icon as LucideIcon;
 
-pub(crate) fn render_lucide_icon(icon: LucideIcon, size: f32) -> AnyElement {
+pub(crate) fn render_lucide_icon(icon: LucideIcon, color: Hsla, size: f32) -> AnyElement {
     div()
         .text_size(px(size))
         .line_height(px(size))
-        .child(gpui_luma::controls::icon::lucide_glyph(icon))
+        .child(gpui_luma::controls::icon::lucide_icon(icon, color, size))
         .into_any_element()
 }

@@ -7,7 +7,7 @@ use super::model::{PagerPageItem, PagerRenderModel, PagerStyle};
 use super::theme::{PagerLook, PagerTheme, default_pager_theme};
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::controls::command::button::{ButtonRenderModel, ControlPresenter};
-use crate::controls::icon::{IconSource, lucide_glyph, render_icon_source};
+use crate::controls::icon::{IconSource, render_icon_source};
 use crate::theme::InteractionState;
 
 pub type PagerOutsideMouseDownHandler = Arc<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + Send + Sync + 'static>;
@@ -585,8 +585,9 @@ fn render_gap_button(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let content: ControlPresenter<ButtonRenderModel<()>> =
-        Arc::new(move |_, _| lucide_glyph(LucideIcon::Ellipsis).into_any_element());
+    let content: ControlPresenter<ButtonRenderModel<()>> = Arc::new(move |_, _| {
+        crate::controls::icon::lucide_icon(LucideIcon::Ellipsis, gpui::hsla(0.0, 0.0, 0.5, 1.0), 16.0)
+    });
 
     let click = model.enabled.then(|| {
         let set_page = handlers.set_page.clone();

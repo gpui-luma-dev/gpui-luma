@@ -47,6 +47,7 @@ fn clone_model_with_state<D: Clone>(model: &ButtonRenderModel<D>, state: Interac
         id: model.id.clone(),
         data: model.data.clone(),
         content: model.content.clone(),
+        icon: model.icon.clone(),
         role: model.role,
         size: model.size,
         state,
@@ -241,7 +242,20 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             control = control.px(px(look.padding_x)).py(px(look.padding_y)).rounded(px(corner_radius));
         }
 
-        let content = (model.content)(model, cx);
+        let content = if let Some(icon) = &model.icon {
+            match icon {
+                super::model::ControlIcon::Lucide(icon) => {
+                    crate::controls::icon::lucide_icon(*icon, look.foreground, look.icon_size)
+                }
+                super::model::ControlIcon::SvgPath(path) => gpui::svg()
+                    .size(px(look.icon_size))
+                    .text_color(look.foreground)
+                    .path(path.clone())
+                    .into_any_element(),
+            }
+        } else {
+            (model.content)(model, cx)
+        };
         let content = if matches!(model.role, ButtonFamilyRole::Icon) || square_icon_toggle {
             div()
                 .size(px(look.icon_size))

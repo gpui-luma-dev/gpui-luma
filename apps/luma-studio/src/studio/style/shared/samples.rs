@@ -44,7 +44,11 @@ impl ButtonTemplateVariant {
             Self::TextButton => Arc::new(move |_, _| div().child(label.clone()).into_any_element()),
             Self::IconButton => Arc::new(move |model, _| {
                 let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
-                render_lucide_icon(LucideIcon::Heart, icon_size)
+                render_lucide_icon(
+                    LucideIcon::Heart,
+                    button_preview_look(model).map(|look| look.foreground).unwrap_or_default(),
+                    icon_size,
+                )
             }),
         }
     }

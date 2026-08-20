@@ -170,7 +170,11 @@ fn render_button_size_radius_cell(
     let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<()>> = if icon_only {
         Arc::new(move |model, _| {
             let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
-            render_lucide_icon(LucideIcon::Heart, icon_size)
+            render_lucide_icon(
+                LucideIcon::Heart,
+                button_preview_look(model).map(|look| look.foreground).unwrap_or_default(),
+                icon_size,
+            )
         })
     } else {
         let label = SharedString::from("Button");
@@ -285,7 +289,11 @@ pub(crate) fn render_interaction_state_header_cell(
         .items_center()
         .justify_center()
         .gap(px(4.0))
-        .child(div().text_color(muted_text).child(render_lucide_icon(icon_button_state_header_icon(id), 16.0)))
+        .child(div().text_color(muted_text).child(render_lucide_icon(
+            icon_button_state_header_icon(id),
+            muted_text,
+            16.0,
+        )))
         .child(
             div()
                 .text_xs()

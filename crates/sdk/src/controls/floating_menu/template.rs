@@ -4,7 +4,6 @@ use gpui::{AnyElement, App, ClickEvent, Div, SharedString, Stateful, Window, div
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::controls::choice_indicator_layout::shadow_extent_from_slice;
-use crate::controls::icon::lucide_glyph;
 use crate::controls::menu_item::{MenuItem, MenuItemIcon};
 use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::state::MenuPath;
@@ -559,6 +558,6 @@ fn render_lucide_icon(icon: LucideIcon, size: f32) -> AnyElement {
         .justify_center()
         .text_size(px(size))
         .line_height(px(size))
-        .child(lucide_glyph(icon))
+        .child(crate::controls::icon::lucide_icon(icon, gpui::hsla(0.0, 0.0, 1.0, 1.0), size))
         .into_any_element()
 }

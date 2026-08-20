@@ -194,6 +194,10 @@ pub struct ToggleBuilder {
 }
 
 impl ToggleBuilder {
+    pub fn icon(self, icon: impl Into<crate::controls::command::button::ControlIcon>) -> Self {
+        Self { button: self.button.icon(icon), ..self }
+    }
+
     pub fn with_data(self, selected: bool) -> Self {
         Self { button: self.button.with_data(ToggleData::new(selected)), ..self }
     }

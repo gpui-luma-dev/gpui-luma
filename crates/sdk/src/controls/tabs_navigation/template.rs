@@ -546,6 +546,7 @@ fn tabs_navigation_button_model(
     ButtonRenderModel {
         id: format!("{}-tab-{}", navigation_id, item.id).into(),
         data: TabsNavigationButtonData { look, disclosure_icons },
+        icon: None,
         content: Arc::new(move |model, _| {
             let mut label_content = div().flex().items_center().gap(px(TAB_ACCESSORY_GAP));
             if let Some(accessory) = &leading_accessory {

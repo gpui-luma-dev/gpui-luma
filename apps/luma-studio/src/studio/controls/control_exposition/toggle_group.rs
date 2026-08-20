@@ -8,7 +8,6 @@ use gpui_luma::controls::control_group::{
     ControlGroupBuilder, ControlGroupItemTemplate, animated_toggle_button_item_template,
     make_control_group_item_template,
 };
-use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
@@ -215,7 +214,11 @@ fn theme_aware_toggle_item_template(
     make_control_group_item_template(move |item, window, cx| {
         let button_template = look.animated_toggle_item_template(style);
         animated_toggle_button_item_template(button_template, true, |item: &IconGroupItem| {
-            lucide_glyph(placement_icon(item.id().as_ref()))
+            gpui_luma::controls::icon::lucide_icon(
+                placement_icon(item.id().as_ref()),
+                gpui::hsla(0.0, 0.0, 1.0, 1.0),
+                16.0,
+            )
         })(item, window, cx)
     })
 }
