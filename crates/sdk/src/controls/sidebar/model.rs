@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{AnyElement, AppContext, Entity, IntoElement, SharedString};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::control::SidebarControl;
 use super::engine::{NavNode, SidebarPanelTemplate, default_sidebar_panel_template, modified_sidebar_panel_template};

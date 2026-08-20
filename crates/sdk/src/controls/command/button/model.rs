@@ -9,7 +9,7 @@ pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
 use crate::controls::button_family::{
     ButtonFamilyLook, ButtonFamilyRole, ButtonInteractionState as ButtonState, ButtonSize,
 };
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 #[derive(Clone)]
 pub enum ControlIcon {

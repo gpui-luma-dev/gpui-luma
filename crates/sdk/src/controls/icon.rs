@@ -1,5 +1,5 @@
-use gpui::{AnyElement, FontWeight, Hsla, SharedString, div, px, prelude::*, svg};
-use lucide_icons::Icon as LucideIcon;
+use gpui::{AnyElement, Hsla, SharedString, px, prelude::*, svg};
+use lucide_svg_static::Icon as LucideIcon;
 
 #[derive(Clone, Debug)]
 pub enum IconSource {
@@ -82,29 +82,12 @@ impl From<SharedString> for IconSource {
     }
 }
 
-pub const LUCIDE_FONT_FAMILY: &str = "lucide";
-
 pub fn lucide_glyph(icon: LucideIcon) -> AnyElement {
-    div()
-        .font_family(LUCIDE_FONT_FAMILY)
-        .font_weight(FontWeight::NORMAL)
-        .child(char::from(icon).to_string())
-        .into_any_element()
+    svg().path(icon.asset_path()).size_full().into_any_element()
 }
 
 pub fn lucide_icon(icon: LucideIcon, color: Hsla, size: f32) -> AnyElement {
-    div()
-        .size(px(size))
-        .flex()
-        .items_center()
-        .justify_center()
-        .font_family(LUCIDE_FONT_FAMILY)
-        .font_weight(FontWeight::NORMAL)
-        .text_size(px(size))
-        .line_height(px(size))
-        .text_color(color)
-        .child(char::from(icon).to_string())
-        .into_any_element()
+    svg().size(px(size)).path(icon.asset_path()).text_color(color).into_any_element()
 }
 
 pub fn render_icon_source(icon: &IconSource, color: Hsla, size: f32) -> AnyElement {
@@ -119,7 +102,7 @@ pub fn render_icon_source(icon: &IconSource, color: Hsla, size: f32) -> AnyEleme
 /// Renders an icon while inheriting the surrounding text color.
 pub fn render_icon_source_inherit(icon: &IconSource, size: f32) -> AnyElement {
     match icon {
-        IconSource::Lucide(icon) => lucide_glyph(*icon),
+        IconSource::Lucide(icon) => svg().size(px(size)).path(icon.asset_path()).into_any_element(),
         IconSource::SvgPath(path) => svg().size(px(size)).external_path(path.clone()).into_any_element(),
     }
 }

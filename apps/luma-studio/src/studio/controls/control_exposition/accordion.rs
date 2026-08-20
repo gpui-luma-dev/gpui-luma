@@ -8,7 +8,7 @@ use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma::vstack;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::accordion_inspector_adapter::{AccordionInspectorAdapter, ACCORDION_INSPECTOR_SPEC};

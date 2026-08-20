@@ -7,7 +7,7 @@ use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent}
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, LumaThemeSyncExt, ThemeMode};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::theme::GraphVizThemeChoice;
 
@@ -61,6 +61,12 @@ impl GraphVizApp {
             .content_only_icon_button("graph-viz-mode-toggle", toggle_mode_icon(look.mode()))
             .size(ControlSize::Sm)
             .spawn(cx);
+        for (button, icon) in [(&sidebar_toggle, LucideIcon::PanelLeft), (&mode_toggle, toggle_mode_icon(look.mode()))]
+        {
+            button.update(cx, |button, cx| {
+                button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(icon), look.chrome().title_text), cx);
+            });
+        }
 
         let mut subscriptions = Vec::new();
         let theme_selector = theme_sidebar.read(cx).theme_selector();
@@ -145,7 +151,10 @@ impl GraphVizApp {
                 LucideIcon::PanelLeft
             };
             self.sidebar_toggle.update(cx, |button, cx| {
-                button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(icon)), cx);
+                button.set_presenter(
+                    titlebar_icon_presenter(ControlIcon::Lucide(icon), self.look.chrome().title_text),
+                    cx,
+                );
             });
         }
         cx.notify();
@@ -164,7 +173,10 @@ impl GraphVizApp {
         };
         self.look.set_mode(mode);
         self.mode_toggle.update(cx, |button, cx| {
-            button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(toggle_mode_icon(mode))), cx);
+            button.set_presenter(
+                titlebar_icon_presenter(ControlIcon::Lucide(toggle_mode_icon(mode)), self.look.chrome().title_text),
+                cx,
+            );
         });
         cx.bump_luma_theme_revision();
         let look = self.look.clone();
@@ -187,10 +199,10 @@ fn toggle_mode_icon(mode: ThemeMode) -> LucideIcon {
     }
 }
 
-fn titlebar_icon_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {
+fn titlebar_icon_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(lucide) => {
-            div().text_size(px(14.0)).child(gpui_luma::controls::icon::lucide_glyph(*lucide)).into_any_element()
+            div().child(gpui_luma::controls::icon::lucide_icon(*lucide, color, 14.0)).into_any_element()
         }
         ControlIcon::SvgPath(path) => gpui::svg().size(px(14.0)).path(path.clone()).into_any_element(),
     })

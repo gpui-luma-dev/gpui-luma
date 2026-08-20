@@ -139,7 +139,10 @@ impl TabsNavigationItemButtonStyle {
             look,
             font_family,
             size,
-            disclosure_icons: DisclosureIcons::new(lucide_icons::Icon::ChevronUp, lucide_icons::Icon::ChevronDown),
+            disclosure_icons: DisclosureIcons::new(
+                lucide_svg_static::Icon::ChevronUp,
+                lucide_svg_static::Icon::ChevronDown,
+            ),
         }
     }
 

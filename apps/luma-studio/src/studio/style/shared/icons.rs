@@ -1,5 +1,5 @@
 use gpui::{AnyElement, IntoElement, div, prelude::*, px};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 pub(crate) fn render_lucide_icon(icon: LucideIcon, size: f32) -> AnyElement {
     div()

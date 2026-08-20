@@ -7,7 +7,7 @@ use gpui_luma::controls::button_family::default_button_family_theme;
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonTemplate, DefaultButtonTemplate, HasPresenter};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
@@ -81,32 +81,52 @@ impl CustomButtonControlExposition {
             .spawn(cx);
 
         let standard_icon_only =
-            look.secondary_icon_button("controls-doc-custom-std-icon-only", LucideIcon::Smile).spawn(cx);
+            look.secondary_icon_button("controls-doc-custom-std-icon-only", LucideIcon::FaceGrinning).spawn(cx);
         let standard_text_icon = look
             .secondary_button("controls-doc-custom-std-text-icon")
             .content(|_, _| {
-                div().flex().items_center().gap_2().child("Label").child(render_lucide_icon(LucideIcon::Smile))
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .child("Label")
+                    .child(render_lucide_icon(LucideIcon::FaceGrinning))
             })
             .spawn(cx);
         let standard_icon_text = look
             .secondary_button("controls-doc-custom-std-icon-text")
             .content(|_, _| {
-                div().flex().items_center().gap_2().child(render_lucide_icon(LucideIcon::Smile)).child("Label")
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .child(render_lucide_icon(LucideIcon::FaceGrinning))
+                    .child("Label")
             })
             .spawn(cx);
 
         let prominent_icon_only =
-            look.primary_icon_button("controls-doc-custom-prom-icon-only", LucideIcon::Smile).spawn(cx);
+            look.primary_icon_button("controls-doc-custom-prom-icon-only", LucideIcon::FaceGrinning).spawn(cx);
         let prominent_text_icon = look
             .primary_button("controls-doc-custom-prom-text-icon")
             .content(|_, _| {
-                div().flex().items_center().gap_2().child("Label").child(render_lucide_icon(LucideIcon::Smile))
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .child("Label")
+                    .child(render_lucide_icon(LucideIcon::FaceGrinning))
             })
             .spawn(cx);
         let prominent_icon_text = look
             .primary_button("controls-doc-custom-prom-icon-text")
             .content(|_, _| {
-                div().flex().items_center().gap_2().child(render_lucide_icon(LucideIcon::Smile)).child("Label")
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .child(render_lucide_icon(LucideIcon::FaceGrinning))
+                    .child("Label")
             })
             .spawn(cx);
 

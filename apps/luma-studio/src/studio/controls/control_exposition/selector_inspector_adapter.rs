@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 use gpui_luma::theme::InteractionState;
 
 use super::inspector::common::{control_size, interaction_state};

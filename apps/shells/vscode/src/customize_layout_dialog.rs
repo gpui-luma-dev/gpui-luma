@@ -5,6 +5,8 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::command::icon_button::IconButton;
+use gpui_luma::controls::command::button::{ButtonRenderModel, ControlIcon, ControlPresenter};
+use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::controls::overlay_window::{
     OverlayWindow, OverlayWindowDismissPolicy, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition,
     OverlayWindowRenderModel,
@@ -12,10 +14,10 @@ use gpui_luma::controls::overlay_window::{
 use gpui_luma::controls::control_group::{
     ControlGroup, ControlGroupItem, ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupItemVisualContext,
 };
-use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle};
+use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle, observe_theme_revision};
 use gpui_luma::{GridTrack, grid_layout, hstack, vstack};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::layout_config::{LayoutConfig, LayoutRegion, PanelAlignment, PrimarySideBarPosition};
 
@@ -54,6 +56,7 @@ impl CustomizeLayoutDialog {
             .ghost_icon_button("customize-layout-reset", LucideIcon::RotateCcw)
             .size(ControlSize::Sm)
             .spawn(cx);
+        sync_header_icon_presenters(&close_button, &reset_button, &look, cx);
 
         let visibility_group = look
             .menu_choice_group("customize-layout-visibility")
@@ -134,7 +137,7 @@ impl CustomizeLayoutDialog {
         })
         .detach();
 
-        Self {
+        let this = Self {
             look,
             overlay,
             close_button,
@@ -142,7 +145,13 @@ impl CustomizeLayoutDialog {
             visibility_group,
             primary_side_bar_position_group,
             panel_alignment_group,
-        }
+        };
+        observe_theme_revision(cx, |this, cx| {
+            sync_header_icon_presenters(&this.close_button, &this.reset_button, &this.look, cx);
+            cx.notify();
+        })
+        .detach();
+        this
     }
 
     pub fn close_button(&self) -> IconButton {
@@ -283,6 +292,25 @@ fn dialog_header(look: &ShadcnLook, reset_button: IconButton, close_button: Icon
             .right(px(10.0))
             .top(px(5.0)),
         )
+}
+
+fn sync_header_icon_presenters(close_button: &IconButton, reset_button: &IconButton, look: &ShadcnLook, cx: &mut App) {
+    let color = look
+        .resolve_ghost_button(ButtonFamilyRole::Icon, ControlSize::Sm, InteractionState::default())
+        .foreground;
+    close_button.update(cx, |button, cx| {
+        button.set_presenter(header_icon_presenter(ControlIcon::Lucide(LucideIcon::X), color), cx);
+    });
+    reset_button.update(cx, |button, cx| {
+        button.set_presenter(header_icon_presenter(ControlIcon::Lucide(LucideIcon::RotateCcw), color), cx);
+    });
+}
+
+fn header_icon_presenter(icon: ControlIcon, color: Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
+    Arc::new(move |_, _| match &icon {
+        ControlIcon::Lucide(icon) => gpui_luma::controls::icon::lucide_icon(*icon, color, 14.0),
+        ControlIcon::SvgPath(path) => gpui::svg().size(px(14.0)).path(path.clone()).into_any_element(),
+    })
 }
 
 fn visibility_section(group: ControlGroup<ControlGroupItem>) -> impl IntoElement {

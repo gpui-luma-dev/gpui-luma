@@ -4,11 +4,12 @@ use std::sync::Arc;
 use gpui::{Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter};
 use gpui_luma::controls::command::icon_button::IconButton;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
 use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::{ControlSize, LumaThemeSyncExt, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, LumaThemeSyncExt, ThemeMode};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole, sync_color_control_theme};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::theme::{LumaStudioLaunchOptions, LumaStudioThemeChoice};
 
@@ -87,6 +88,15 @@ impl LumaStudioApp {
             .content_only_icon_button("luma-studio-mode-toggle", toggle_mode_icon(mode))
             .size(ControlSize::Sm)
             .spawn(cx);
+        for (button, icon) in [
+            (&sidebar_toggle, LucideIcon::PanelLeft),
+            (&reset_theme_button, LucideIcon::RefreshCcw),
+            (&mode_toggle, toggle_mode_icon(mode)),
+        ] {
+            button.update(cx, |button, cx| {
+                button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(icon), app_bar_icon_color(&look)), cx);
+            });
+        }
 
         let mut subscriptions = Vec::new();
         ThemeSidebar::wire_subscriptions(&theme_sidebar, cx, &mut subscriptions);
@@ -164,6 +174,7 @@ impl LumaStudioApp {
             tracing::warn!("failed to apply studio token overrides: {err:?}");
         }
         sync_color_control_theme(self.look.as_ref());
+        self.sync_titlebar_icon_button_presenters(cx);
         cx.bump_luma_theme_revision();
         self.sync_split_themes(cx);
         self.refresh_content_pane(cx);
@@ -488,14 +499,7 @@ impl LumaStudioApp {
             && *panel_index == LEFT_SIDEBAR_PANEL_INDEX
         {
             self.sidebar_hidden = *hidden;
-            let icon = if *hidden {
-                LucideIcon::PanelLeftOpen
-            } else {
-                LucideIcon::PanelLeft
-            };
-            self.sidebar_toggle.update(cx, |button, cx| {
-                button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(icon)), cx);
-            });
+            self.sync_titlebar_icon_button_presenters(cx);
             dirty = true;
         }
 
@@ -525,9 +529,7 @@ impl LumaStudioApp {
         };
         self.look.set_mode(mode);
         sync_color_control_theme(self.look.as_ref());
-        self.mode_toggle.update(cx, |button, cx| {
-            button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(toggle_mode_icon(mode))), cx);
-        });
+        self.sync_titlebar_icon_button_presenters(cx);
         cx.bump_luma_theme_revision();
         let theme = self.look.clone();
         let overrides = self.overrides.clone();
@@ -538,6 +540,25 @@ impl LumaStudioApp {
         self.refresh_content_pane(cx);
         cx.notify();
     }
+
+    fn sync_titlebar_icon_button_presenters(&self, cx: &mut Context<Self>) {
+        let color = app_bar_icon_color(&self.look);
+        let sidebar_icon = if self.sidebar_hidden {
+            LucideIcon::PanelLeftOpen
+        } else {
+            LucideIcon::PanelLeft
+        };
+        let presenters = [
+            (&self.sidebar_toggle, ControlIcon::Lucide(sidebar_icon)),
+            (&self.reset_theme_button, ControlIcon::Lucide(LucideIcon::RefreshCcw)),
+            (&self.mode_toggle, ControlIcon::Lucide(toggle_mode_icon(self.look.mode()))),
+        ];
+        for (button, icon) in presenters {
+            button.update(cx, |button, cx| {
+                button.set_presenter(titlebar_icon_presenter(icon.clone(), color), cx);
+            });
+        }
+    }
 }
 
 fn toggle_mode_icon(mode: ThemeMode) -> LucideIcon {
@@ -547,13 +568,18 @@ fn toggle_mode_icon(mode: ThemeMode) -> LucideIcon {
     }
 }
 
-fn titlebar_icon_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {
+fn titlebar_icon_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(lucide) => {
-            div().text_size(px(14.0)).child(gpui_luma::controls::icon::lucide_glyph(*lucide)).into_any_element()
+            div().child(gpui_luma::controls::icon::lucide_icon(*lucide, color, 14.0)).into_any_element()
         }
         ControlIcon::SvgPath(path) => gpui::svg().size(px(14.0)).path(path.clone()).into_any_element(),
     })
+}
+
+fn app_bar_icon_color(look: &ShadcnLook) -> gpui::Hsla {
+    look.resolve_content_only_button(ButtonFamilyRole::Icon, ControlSize::Sm, InteractionState::default())
+        .foreground
 }
 
 use super::export::token_css_name;

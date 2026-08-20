@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{BoxShadow, Hsla, SharedString};
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::box_model::{BoxModelLayerColors, InspectBoxModelSnapshot, InspectOccupationSnapshot};
 

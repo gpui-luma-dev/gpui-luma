@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{SharedString, div, prelude::*};
 use gpui_luma::controls::command::button::ButtonRenderModel;
 use gpui_luma::theme::InteractionState;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::icons::render_lucide_icon;
 

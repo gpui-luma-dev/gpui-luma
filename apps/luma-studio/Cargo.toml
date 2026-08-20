@@ -11,10 +11,10 @@ gpui = { workspace = true }
 gpui-luma = { path = "../../crates/sdk" }
 gpui-luma-look-shadcn = { path = "../../crates/look-shadcn" }
 gpui-luma-look-shadcn-inspect = { path = "../../crates/look-shadcn-inspect" }
+lucide-svg-static.workspace = true
 gpui_platform = { workspace = true }
 font-kit.workspace = true
 thiserror.workspace = true
-lucide-icons = { workspace = true }
 palette = { workspace = true }
 serde = { workspace = true }
 tracing = "0.1"

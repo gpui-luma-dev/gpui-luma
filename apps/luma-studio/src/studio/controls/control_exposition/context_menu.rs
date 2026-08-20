@@ -6,7 +6,7 @@ use gpui_luma::controls::textfield::TextField;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::context_menu_inspector_adapter::{ContextMenuInspectorAdapter, CONTEXT_MENU_INSPECTOR_SPEC};

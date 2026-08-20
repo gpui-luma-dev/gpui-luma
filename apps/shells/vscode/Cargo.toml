@@ -12,7 +12,7 @@ gpui-luma = { path = "../../../crates/sdk" }
 gpui_platform = { workspace = true }
 gpui-luma-look-shadcn = { path = "../../../crates/look-shadcn" }
 gpui-luma-shell-common = { path = "../common" }
-lucide-icons = { workspace = true }
+lucide-svg-static.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = { version = "0.18" }

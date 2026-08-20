@@ -5,7 +5,7 @@ use gpui_luma::controls::radio_group::{self, RadioGroup, RadioGroupItem};
 use gpui_luma::controls::slider::{self, Slider, SliderOrientation};
 use gpui_luma::controls::switch::{self, Switch, SwitchEvent};
 use gpui_luma::controls::toggle::{self, Toggle, ToggleEvent};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::background::deck_background;
 use crate::components::{DialSize, dial, fake_analyzer_display};

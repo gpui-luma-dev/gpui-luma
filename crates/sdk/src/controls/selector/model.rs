@@ -61,7 +61,10 @@ pub struct SelectorIcons {
 
 impl Default for SelectorIcons {
     fn default() -> Self {
-        Self { trigger: lucide_icons::Icon::ChevronsUpDown.into(), selected: lucide_icons::Icon::Check.into() }
+        Self {
+            trigger: lucide_svg_static::Icon::ChevronsUpDown.into(),
+            selected: lucide_svg_static::Icon::Check.into(),
+        }
     }
 }
 

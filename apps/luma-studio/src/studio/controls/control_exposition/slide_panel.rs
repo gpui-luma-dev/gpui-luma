@@ -15,7 +15,7 @@ use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma::{flow, hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, slide_panel_background, slide_panel_panels_look};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;

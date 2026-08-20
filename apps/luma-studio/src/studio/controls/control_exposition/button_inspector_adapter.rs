@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::inspector::common::{button_variant_style, control_size, interaction_state};
 use super::inspector::metrics::button_layout_section;
@@ -36,7 +36,7 @@ static BUTTON_CATEGORIES: [InspectorCategory; 4] = [
     InspectorCategory { id: "color", label: "Color", icon: LucideIcon::Palette, expanded_default: true },
     InspectorCategory { id: "layout", label: "Layout", icon: LucideIcon::Ruler, expanded_default: true },
     InspectorCategory { id: "elevation", label: "Elevation", icon: LucideIcon::Layers, expanded_default: true },
-    InspectorCategory { id: "typography", label: "Typography", icon: LucideIcon::Type, expanded_default: true },
+    InspectorCategory { id: "typography", label: "Typography", icon: LucideIcon::TypeIcon, expanded_default: true },
 ];
 
 static BUTTON_STATES: [InspectorStateSpec; 4] = [

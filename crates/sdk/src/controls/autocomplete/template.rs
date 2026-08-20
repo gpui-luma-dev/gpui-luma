@@ -219,7 +219,7 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
                                 .text_color(model.muted_text_color)
                                 .hover(|style| style.text_color(model.status_color))
                                 .on_click(clear_click)
-                                .child(lucide_icon(lucide_icons::Icon::X, model.muted_text_color, 12.0)),
+                                .child(lucide_icon(lucide_svg_static::Icon::X, model.muted_text_color, 12.0)),
                         )
                     }),
             )

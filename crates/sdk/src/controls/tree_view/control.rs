@@ -46,7 +46,7 @@ enum TreeDirection {
 pub(crate) struct FlatNodeWrapper<T> {
     id: SharedString,
     label: SharedString,
-    icon: Option<lucide_icons::Icon>,
+    icon: Option<lucide_svg_static::Icon>,
     depth: usize,
     has_children: bool,
     enabled: bool,

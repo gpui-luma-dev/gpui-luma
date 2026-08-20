@@ -11,8 +11,8 @@ gpui = { workspace = true }
 gpui-luma = { path = "../../crates/sdk" }
 gpui_platform = { workspace = true }
 image = { workspace = true }
-lucide-icons = { workspace = true }
 gpui-luma-look-shadcn = { path = "../../crates/look-shadcn" }
+lucide-svg-static.workspace = true
 palette = { workspace = true }
 smallvec = { workspace = true }
 tiny-skia = { workspace = true }

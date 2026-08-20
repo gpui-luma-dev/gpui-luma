@@ -149,7 +149,7 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                                 .text_color(model.muted_text_color)
                                 .hover(|style| style.text_color(model.status_color))
                                 .on_click(trigger_click)
-                                .child(lucide_icon(lucide_icons::Icon::ChevronDown, model.muted_text_color, 12.0)),
+                                .child(lucide_icon(lucide_svg_static::Icon::ChevronDown, model.muted_text_color, 12.0)),
                         )
                     })
                     .when(model.show_clear_button && !model.query_is_empty, |row| {
@@ -168,7 +168,7 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                                 .text_color(model.muted_text_color)
                                 .hover(|style| style.text_color(model.status_color))
                                 .on_click(clear_click)
-                                .child(lucide_icon(lucide_icons::Icon::X, model.muted_text_color, 12.0)),
+                                .child(lucide_icon(lucide_svg_static::Icon::X, model.muted_text_color, 12.0)),
                         )
                     }),
             )

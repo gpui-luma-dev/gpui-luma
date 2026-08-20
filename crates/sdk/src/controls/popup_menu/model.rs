@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AppContext, Bounds, Entity, Pixels, SharedString, div, prelude::*, px};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::{ControlFocusState, MenuPath, PopupMenu, PopupMenuState, PopupMenuTemplate, default_popup_menu_template};
 use super::template::modified_popup_menu_template;

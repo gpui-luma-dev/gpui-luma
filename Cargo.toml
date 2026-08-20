@@ -27,13 +27,13 @@ publish = false
 [workspace.dependencies]
 anyhow = "1"
 gpui = { package = "gpui-unofficial", version = "1.13.1" }
+lucide-svg-static = { package = "lucide-static-svg", path = "vendor/lucide-static-svg" }
 gpui_platform = {
   package = "gpui-platform-gpui-unofficial",
   version = "1.13.1",
   features = ["font-kit"],
 }
 image = "0.25"
-lucide-icons = "0.575.0"
 serde = "1"
 smallvec = "1"
 tiny-skia = "0.11"

@@ -12,7 +12,7 @@ anyhow.workspace = true
 serde = { workspace = true, features = ["derive"] }
 toml.workspace = true
 palette.workspace = true
-lucide-icons.workspace = true
+lucide-svg-static.workspace = true
 
 [lints]
 workspace = true

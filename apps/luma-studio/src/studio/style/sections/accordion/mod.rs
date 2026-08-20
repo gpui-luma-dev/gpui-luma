@@ -9,7 +9,7 @@ use gpui_luma::controls::state::{CompositeItemState, ControlFocusState};
 use gpui_luma::controls::tabs_navigation::TabsNavigation;
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::button_matrix::render_icon_button_state_header_cell;
 use crate::studio::style::shared::preview_handlers::{

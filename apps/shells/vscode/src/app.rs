@@ -4,17 +4,18 @@ use gpui::{Context, Entity, FocusHandle, Focusable, Render, Subscription, Window
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter};
 use gpui_luma::controls::control_group::ControlGroupEvent;
 use gpui_luma::controls::command::icon_button::IconButton;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::controls::overlay_window::OverlayWindowEvent;
 use gpui_luma::controls::resizable_panels::ResizablePanelsEvent;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::{TITLE_BAR_HEIGHT, TitleBar};
-use gpui_luma::theme::{ControlSize, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole};
 use gpui_luma_shell_common::{
     chrome::{HasShellTheme, handle_theme_toggle, spawn_theme_toggle_button},
     theme::{ShellThemeChoice, sync_color_control_theme},
 };
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 gpui::actions!(vscode_layout, [TogglePrimarySideBar, TogglePanel]);
 
@@ -72,6 +73,15 @@ impl VscodeShellApp {
             .content_only_icon_button("shell-vscode-secondary-side-bar-toggle", LucideIcon::PanelRight)
             .size(ControlSize::Sm)
             .spawn(cx);
+        for (button, icon) in [
+            (&customize_layout_toggle, LucideIcon::LayoutPanelLeft),
+            (&primary_side_bar_toggle, LucideIcon::PanelLeft),
+            (&secondary_side_bar_toggle, LucideIcon::PanelRight),
+        ] {
+            button.update(cx, |button, cx| {
+                button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(icon), app_bar_icon_color(&look)), cx);
+            });
+        }
         let theme_toggle_button = spawn_theme_toggle_button("shell-vscode-theme-toggle", &look, cx);
 
         let customize_layout_dialog = cx.new(|cx| CustomizeLayoutDialog::new(look.clone(), cx));
@@ -106,6 +116,7 @@ impl VscodeShellApp {
         subscriptions.push(cx.subscribe(&theme_toggle_button, |this, _, event, cx| {
             if matches!(event, ButtonEvent::Click) {
                 handle_theme_toggle(this, cx);
+                this.sync_titlebar_icon_button_presenters(cx);
                 this.sync_workbench_theme(cx);
             }
         }));
@@ -247,6 +258,10 @@ impl VscodeShellApp {
     }
 
     fn sync_side_bar_toggle_icons(&mut self, cx: &mut Context<Self>) {
+        self.sync_titlebar_icon_button_presenters(cx);
+    }
+
+    fn sync_titlebar_icon_button_presenters(&self, cx: &mut Context<Self>) {
         let primary_icon =
             match (self.layout_config.primary_side_bar_position, self.layout_config.primary_side_bar_visible) {
                 (PrimarySideBarPosition::Left, true) => LucideIcon::PanelLeft,
@@ -261,14 +276,23 @@ impl VscodeShellApp {
                 (PrimarySideBarPosition::Right, true) => LucideIcon::PanelLeft,
                 (PrimarySideBarPosition::Right, false) => LucideIcon::PanelLeftOpen,
             };
-
-        self.primary_side_bar_toggle.update(cx, |button, cx| {
-            button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(primary_icon)), cx);
-        });
-        self.secondary_side_bar_toggle.update(cx, |button, cx| {
-            button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(secondary_icon)), cx);
-        });
+        let color = app_bar_icon_color(&self.look);
+        for (button, icon) in [
+            (&self.customize_layout_toggle, LucideIcon::LayoutPanelLeft),
+            (&self.primary_side_bar_toggle, primary_icon),
+            (&self.secondary_side_bar_toggle, secondary_icon),
+        ] {
+            button.update(cx, |button, cx| {
+                button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(icon), color), cx);
+            });
+        }
+        gpui_luma_shell_common::chrome::sync_theme_toggle_button(&self.theme_toggle_button, &self.look, cx);
     }
+}
+
+fn app_bar_icon_color(look: &ShadcnLook) -> gpui::Hsla {
+    look.resolve_content_only_button(ButtonFamilyRole::Icon, ControlSize::Sm, InteractionState::default())
+        .foreground
 }
 
 impl HasShellTheme for VscodeShellApp {
@@ -430,10 +454,10 @@ fn wire_customize_layout_subscriptions(
     }));
 }
 
-fn titlebar_icon_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {
+fn titlebar_icon_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(lucide) => {
-            div().text_size(px(14.0)).child(gpui_luma::controls::icon::lucide_glyph(*lucide)).into_any_element()
+            div().child(gpui_luma::controls::icon::lucide_icon(*lucide, color, 14.0)).into_any_element()
         }
         ControlIcon::SvgPath(path) => gpui::svg().size(px(14.0)).path(path.clone()).into_any_element(),
     })

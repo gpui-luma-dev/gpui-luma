@@ -6,7 +6,7 @@ use gpui_luma::controls::overlay_window::{OverlayWindow, OverlayWindowEvent, Ove
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};

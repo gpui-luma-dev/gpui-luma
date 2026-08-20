@@ -20,7 +20,7 @@ use gpui_luma_shell_common::{
     split_sync::wire_split_nav_sync,
     theme::{ShellThemeChoice, sync_color_control_theme},
 };
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 pub struct DetachedShellApp {
     focus_scope: FocusHandle,

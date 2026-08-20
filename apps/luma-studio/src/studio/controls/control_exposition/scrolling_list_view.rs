@@ -8,7 +8,7 @@ use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, Scrolling
 use gpui_luma::{column, column_emphasis, scrolling_list_view};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::collection_theme_inspectors::ListViewThemeInspector;

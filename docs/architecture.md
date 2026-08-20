@@ -11,6 +11,7 @@ This document defines the core architecture, crate layout, module mapping, and d
 ### Workspace Crates
 
 *   **`crates/sdk` (`gpui-luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels).
+*   **`crates/lucide-svg-static`**: Experimental generated-style, renderer-neutral Lucide SVG asset crate. It currently packages the three chevrons used by the SVG rotation spike; the intended follow-up is automated generation from pinned upstream Lucide releases.
 *   **`crates/look-shadcn` (`gpui-luma-look-shadcn`)**: The CSS-first product runtime theme (Shadcn/CSS look crate). It defines styling catalogs, stylesheet config matching, and look-specific extensions.
 *   **`crates/look-shadcn-inspect`**: Support utilities for theme visual inspection and palette debugging.
 *   **`apps/luma-studio` (`luma-studio`)**: The theme customization dashboard, control documentation studio, and visual design testing app. System font classification for typography pickers lives in `studio/font_catalog/`.
@@ -23,6 +24,7 @@ This document defines the core architecture, crate layout, module mapping, and d
 ```mermaid
 graph TD
     Studio[apps/luma-studio] --> SDK[crates/sdk]
+    SDK --> Lucide[Lucide SVG assets]
     Studio --> Look[crates/look-shadcn]
     ColorViz[apps/color-viz] --> SDK
     ColorViz --> Look
@@ -58,7 +60,7 @@ The SDK core (`crates/sdk`) is lookless. It does not hardcode theme colors (like
 ### 2.4 Typed Boundaries
 APIs utilize strongly typed contracts rather than strings:
 *   Use `ControlSize::Md` instead of `"medium"`.
-*   Pass typed icon markers (e.g. `lucide_icons::Icon` or explicit SVG paths) instead of magic string names.
+*   Pass typed icon markers (e.g. `lucide_svg_static::Icon` from the `lucide-static-svg` package or explicit SVG paths) instead of magic string names.
 *   Avoid arbitrary string-to-token parsing within the SDK core.
 
 ### 2.5 SDK/App Boundary
@@ -71,7 +73,7 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
 ## 3. Crate & Module Map
 
 ### `crates/sdk` Module Architecture
-*   [`init.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/init.rs): Global SDK initialization (registers Lucide icon font bytes).
+*   [`init.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/init.rs): Global SDK initialization hook.
 *   [`focus.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/focus.rs): Focus scopes, key binders, and focus-traversal helpers.
 *   [`keyhandling.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/keyhandling.rs): Core key profile definitions and action bindings.
 *   [`layout.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/layout.rs): Re-export surface for SDK layout primitives.

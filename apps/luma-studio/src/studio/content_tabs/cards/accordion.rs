@@ -4,7 +4,7 @@ use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Win
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionEvent, AccordionItem, AccordionTrigger};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 use gpui_luma::{vstack};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::common::titled_card;
 

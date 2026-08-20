@@ -10,7 +10,7 @@ use gpui_luma::controls::selector::SelectorItem;
 use gpui_luma::controls::toolbar::{ToolbarControl, ToolbarEvent, ToolbarValue};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
@@ -127,7 +127,7 @@ impl ToolbarControlExposition {
                 "Paragraph",
                 [
                     SelectorItem::new("paragraph").label("Paragraph").icon(LucideIcon::Pilcrow),
-                    SelectorItem::new("heading").label("Heading").icon(LucideIcon::Type),
+                    SelectorItem::new("heading").label("Heading").icon(LucideIcon::TypeIcon),
                     SelectorItem::new("quote").label("Quote").icon(LucideIcon::BookType),
                 ],
                 "paragraph",

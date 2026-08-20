@@ -8,7 +8,7 @@ use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::paint::switch_look;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::icons::render_lucide_icon;
 

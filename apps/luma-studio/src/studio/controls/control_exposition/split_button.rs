@@ -16,7 +16,7 @@ use gpui_luma::{hstack, vstack};
 use gpui_luma::controls::split_button::{SplitButton, SplitButtonEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};

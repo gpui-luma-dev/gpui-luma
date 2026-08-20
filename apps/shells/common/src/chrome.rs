@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, FocusHandle, IntoElement, MouseButton, ParentElement, Render, div, prelude::*, px};
+use gpui::{AnyElement, Context, FocusHandle, IntoElement, MouseButton, ParentElement, Render, div, prelude::*};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ControlPresenter};
 use gpui_luma::controls::command::icon_button::IconButton;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::ThemeMode;
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::theme::toggle_shell_theme;
 
@@ -44,12 +45,14 @@ pub fn spawn_theme_toggle_button<T: 'static>(
     look: &Arc<ShadcnLook>,
     cx: &mut Context<T>,
 ) -> IconButton {
-    look.content_only_icon_button(id, theme_toggle_icon(look.mode())).spawn(cx)
+    let button = look.content_only_icon_button(id, theme_toggle_icon(look.mode())).spawn(cx);
+    sync_theme_toggle_button(&button, look, cx);
+    button
 }
 
 pub fn sync_theme_toggle_button<T: 'static>(button: &IconButton, look: &ShadcnLook, cx: &mut Context<T>) {
     button.update(cx, |button, cx| {
-        button.set_presenter(theme_toggle_presenter(theme_toggle_icon(look.mode())), cx);
+        button.set_presenter(theme_toggle_presenter(theme_toggle_icon(look.mode()), shell_icon_color(look)), cx);
     });
 }
 
@@ -92,10 +95,13 @@ fn theme_toggle_icon(mode: ThemeMode) -> LucideIcon {
     }
 }
 
-fn theme_toggle_presenter(icon: LucideIcon) -> ControlPresenter<ButtonRenderModel<()>> {
-    Arc::new(move |_, _| {
-        div().text_size(px(14.0)).child(gpui_luma::controls::icon::lucide_glyph(icon)).into_any_element()
-    })
+fn theme_toggle_presenter(icon: LucideIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
+    Arc::new(move |_, _| div().child(gpui_luma::controls::icon::lucide_icon(icon, color, 14.0)).into_any_element())
+}
+
+fn shell_icon_color(look: &ShadcnLook) -> gpui::Hsla {
+    look.resolve_content_only_button(ButtonFamilyRole::Icon, ControlSize::Sm, InteractionState::default())
+        .foreground
 }
 
 pub fn render_app_root(

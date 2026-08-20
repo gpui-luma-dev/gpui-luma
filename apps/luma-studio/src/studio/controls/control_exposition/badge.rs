@@ -7,7 +7,7 @@ use gpui_luma::{flow, hstack};
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::badge_inspector_adapter::{BadgeInspectorAdapter, BADGE_INSPECTOR_SPEC};

@@ -1,4 +1,4 @@
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::schema::{
     InspectorCategory, InspectorPart, InspectorSize, InspectorStateSpec, InspectorValueMode, InspectorVariant,

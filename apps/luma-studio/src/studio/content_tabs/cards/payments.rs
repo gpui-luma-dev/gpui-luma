@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 use gpui_luma::column_numeric;
 use gpui_luma::column_text;
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};

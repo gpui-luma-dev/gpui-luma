@@ -1,9 +1,11 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, FontWeight, MouseDownEvent, MouseUpEvent, Stateful, Window, div, px, prelude::*,
+    AnyElement, App, ClickEvent, Div, FontWeight, Hsla, MouseDownEvent, MouseUpEvent, Stateful, Transformation, Window,
+    div, px, prelude::*, radians, svg,
 };
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
+use lucide_svg_static::Icon as SvgIcon;
 
 use super::{AccordionRenderModel, AccordionTheme, default_accordion_theme};
 use crate::controls::icon::render_icon_source;
@@ -213,12 +215,12 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 }
             };
 
-            let chevron_icon = if item.progress >= 0.5 {
-                &model.disclosure_icons.expanded
-            } else {
-                &model.disclosure_icons.collapsed
-            };
-            let chevron = render_icon_source(chevron_icon, trigger_palette.chevron_color, scale.chevron_size);
+            let chevron = render_disclosure_icon(
+                model.disclosure_icons,
+                item.progress,
+                trigger_palette.chevron_color,
+                scale.chevron_size,
+            );
 
             let trigger_el = trigger.child(trigger_content).child(chevron);
 
@@ -297,4 +299,35 @@ fn render_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
         .text_color(color)
         .child(crate::controls::icon::lucide_glyph(icon))
         .into_any_element()
+}
+
+fn render_disclosure_icon(
+    icons: &crate::controls::icon::DisclosureIcons,
+    progress: f32,
+    color: Hsla,
+    size: f32,
+) -> AnyElement {
+    if matches!(
+        (&icons.collapsed, &icons.expanded),
+        (
+            crate::controls::icon::IconSource::Lucide(LucideIcon::ChevronRight),
+            crate::controls::icon::IconSource::Lucide(LucideIcon::ChevronDown),
+        )
+    ) {
+        return svg()
+            .path(SvgIcon::ChevronRight.asset_path())
+            .size(px(size))
+            .text_color(color)
+            .with_transformation(Transformation::rotate(radians(
+                progress.clamp(0.0, 1.0) * std::f32::consts::FRAC_PI_2,
+            )))
+            .into_any_element();
+    }
+
+    let icon = if progress >= 0.5 {
+        &icons.expanded
+    } else {
+        &icons.collapsed
+    };
+    render_icon_source(icon, color, size)
 }

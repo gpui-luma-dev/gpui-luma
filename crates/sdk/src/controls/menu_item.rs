@@ -1,5 +1,5 @@
 use gpui::SharedString;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 #[derive(Clone, Debug)]
 pub enum MenuItemIcon {

@@ -9,7 +9,7 @@ use gpui_luma::controls::pager::PagerStyle;
 use gpui_luma::{column, column_emphasis, paging_list_view};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::collection_theme_inspectors::ListViewThemeInspector;

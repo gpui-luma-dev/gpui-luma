@@ -4,7 +4,7 @@ use gpui::{
     AnyElement, App, ClickEvent, Div, FontWeight, Hsla, MouseDownEvent, MouseUpEvent, PathBuilder, Stateful,
     Transformation, Window, canvas, div, point, prelude::*, px, radians, svg,
 };
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::{FlatTreeNode, TreeViewRenderModel, TreeViewTheme, default_tree_view_theme};
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};

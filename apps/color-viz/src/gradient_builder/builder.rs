@@ -11,7 +11,7 @@ use gpui_luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy,
 use gpui_luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationWidthMode};
 use gpui_luma::theme::{ControlSize, ThemeMode};
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 mod actions;
 mod mesh;

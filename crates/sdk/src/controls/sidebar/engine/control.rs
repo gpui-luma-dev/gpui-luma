@@ -1355,7 +1355,7 @@ mod tests {
     use std::time::Duration;
 
     use gpui::SharedString;
-    use lucide_icons::Icon as LucideIcon;
+    use lucide_svg_static::Icon as LucideIcon;
 
     use crate::animation::VisualTransition;
 

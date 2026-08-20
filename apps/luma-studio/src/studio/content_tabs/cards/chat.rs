@@ -7,7 +7,7 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 use gpui_luma::{declare_form, hstack, vstack};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::common::{avatar, AvatarSize, card, message_bubble};
 

@@ -141,12 +141,12 @@ pub struct PagerIcons {
 impl Default for PagerIcons {
     fn default() -> Self {
         Self {
-            page_size_open: lucide_icons::Icon::ChevronUp.into(),
-            page_size_closed: lucide_icons::Icon::ChevronDown.into(),
-            first: lucide_icons::Icon::ChevronsLeft.into(),
-            previous: lucide_icons::Icon::ChevronLeft.into(),
-            next: lucide_icons::Icon::ChevronRight.into(),
-            last: lucide_icons::Icon::ChevronsRight.into(),
+            page_size_open: lucide_svg_static::Icon::ChevronUp.into(),
+            page_size_closed: lucide_svg_static::Icon::ChevronDown.into(),
+            first: lucide_svg_static::Icon::ChevronsLeft.into(),
+            previous: lucide_svg_static::Icon::ChevronLeft.into(),
+            next: lucide_svg_static::Icon::ChevronRight.into(),
+            last: lucide_svg_static::Icon::ChevronsRight.into(),
         }
     }
 }

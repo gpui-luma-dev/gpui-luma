@@ -3,7 +3,7 @@
 use gpui::{FontWeight, SharedString, div, prelude::*, px};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::list_view::{ListViewColumn, column_template_with_modifier, default_text_column_template};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 #[derive(Clone)]
 pub(super) struct Task {

@@ -6,7 +6,7 @@ use gpui_luma::controls::tabs_navigation::TabsNavigation;
 use gpui_luma::controls::toolbar::{ToolbarControl, ToolbarVariant};
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt, ShadcnToolbarItemExt};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::shell::section_shell_with_width;
 use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
@@ -236,7 +236,7 @@ fn spawn_stripped_toolbar(
             "Paragraph",
             [
                 SelectorItem::new("paragraph").label("Paragraph").icon(LucideIcon::Pilcrow),
-                SelectorItem::new("heading").label("Heading").icon(LucideIcon::Type),
+                SelectorItem::new("heading").label("Heading").icon(LucideIcon::TypeIcon),
             ],
             "paragraph",
             cx,

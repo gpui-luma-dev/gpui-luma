@@ -35,7 +35,7 @@ use gpui_luma::controls::textfield::TextFieldLook;
 use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale};
 use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::preview_handlers::{input_noop_click, input_noop_hover, input_textfield_handlers};
 use crate::studio::style::shared::shell::section_shell_with_width;

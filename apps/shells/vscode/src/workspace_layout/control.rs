@@ -7,7 +7,7 @@ use gpui_luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, Splitt
 use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanels, ResizablePanelsTheme};
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::layout_config::{LayoutConfig, PanelAlignment, PrimarySideBarPosition};
 use crate::workbench_layout::{

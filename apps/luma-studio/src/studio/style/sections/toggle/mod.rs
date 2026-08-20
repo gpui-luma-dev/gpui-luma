@@ -7,7 +7,7 @@ use gpui_luma::controls::toggle::ToggleData;
 use gpui_luma::controls::tabs_navigation::TabsNavigation;
 use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::button_matrix::{
     BUTTON_SIZES, BUTTON_STYLE_VARIANTS, BUTTON_TABLE_RADIUS_COLUMN_WIDTH, BUTTON_TABLE_SIZE_HEADER_HEIGHT,

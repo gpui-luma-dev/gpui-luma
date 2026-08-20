@@ -8,7 +8,7 @@ use gpui_luma::controls::textfield::{
 };
 use gpui_luma::theme::{ControlSize, StandardBoxScale};
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::button_matrix::button_size_id;
 use crate::studio::style::shared::preview_handlers::input_textfield_handlers;

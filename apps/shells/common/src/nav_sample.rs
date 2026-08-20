@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AppContext, Entity, SharedString};
 use gpui_luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
 use gpui_luma_look_shadcn::ShadcnLook;
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 #[derive(Clone, Copy)]
 struct PropertyLeaf {

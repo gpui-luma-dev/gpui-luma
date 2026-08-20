@@ -70,7 +70,7 @@ impl TextAreaBuilder {
                 rows: 4,
                 clean_on_escape: false,
                 select_all_on_tab_focus: false,
-                resize_handle_icon: lucide_icons::Icon::Scaling.into(),
+                resize_handle_icon: lucide_svg_static::Icon::Scaling.into(),
                 validator: None,
                 look_override: None,
                 template: default_textarea_template(),

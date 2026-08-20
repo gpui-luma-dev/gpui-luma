@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, AppContext, Bounds, Entity, FocusHandle, IntoElement, Pixels, SharedString, Size, div, prelude::*};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::{SidebarPanelEngine, SidebarPanelTemplate, default_sidebar_panel_template};
 use super::template::modified_sidebar_panel_template;

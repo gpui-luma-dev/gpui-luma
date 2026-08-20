@@ -12,7 +12,7 @@ use gpui_luma::theme::ControlSize;
 use gpui_luma::{column, column_emphasis, paging_list_view};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize, with_look};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::sidebar::{INITIAL_PROPERTY_SELECTION_ID, property_sidebar};
 use super::task_list::{Task, build_task_rows, email_column, status_cell, tag_pill};
@@ -51,6 +51,12 @@ impl DashboardPanel {
             .content_only_icon_button("studio-dashboard-sidebar-toggle", LucideIcon::PanelLeft)
             .size(ControlSize::Sm)
             .spawn(cx);
+        sidebar_toggle.update(cx, |button, cx| {
+            button.set_presenter(
+                sidebar_toggle_presenter(ControlIcon::Lucide(LucideIcon::PanelLeft), look.chrome().title_text),
+                cx,
+            );
+        });
 
         let tasks = build_task_rows();
         let list_view = paging_list_view! {
@@ -139,7 +145,7 @@ impl DashboardPanel {
             ControlIcon::Lucide(LucideIcon::PanelLeftOpen)
         };
         self.sidebar_toggle.update(cx, |button, cx| {
-            button.set_presenter(sidebar_toggle_presenter(icon), cx);
+            button.set_presenter(sidebar_toggle_presenter(icon, self.look.chrome().title_text), cx);
         });
     }
 }
@@ -236,10 +242,10 @@ impl Render for DashboardPanel {
     }
 }
 
-fn sidebar_toggle_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {
+fn sidebar_toggle_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(lucide) => {
-            div().text_size(px(16.0)).child(gpui_luma::controls::icon::lucide_glyph(*lucide)).into_any_element()
+            div().child(gpui_luma::controls::icon::lucide_icon(*lucide, color, 16.0)).into_any_element()
         }
         ControlIcon::SvgPath(path) => gpui::svg().size(px(16.0)).path(path.clone()).into_any_element(),
     })

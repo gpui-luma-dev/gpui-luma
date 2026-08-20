@@ -5,7 +5,7 @@ use gpui::{
     MouseDownEvent, MouseMoveEvent, ParentElement, Pixels, Point, Render, RenderOnce, StatefulInteractiveElement as _,
     StyleRefinement, Styled, TitlebarOptions, Window, WindowControlArea, div, hsla, point, prelude::*, px,
 };
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 pub const TITLE_BAR_HEIGHT: Pixels = px(34.0);
 const TITLE_BAR_DRAG_THRESHOLD_PX: f64 = 4.0;

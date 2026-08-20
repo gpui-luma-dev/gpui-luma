@@ -1,11 +1,16 @@
 use anyhow::Result;
 use gpui::{AssetSource, SharedString};
+use lucide_svg_static::asset_bytes;
 use std::{borrow::Cow, fs, path::PathBuf};
 
 pub struct Assets;
 
 impl AssetSource for Assets {
     fn load(&self, path: &str) -> Result<Option<Cow<'static, [u8]>>> {
+        if let Some(bytes) = asset_bytes(path) {
+            return Ok(Some(Cow::Borrowed(bytes)));
+        }
+
         let Some(asset_path) = resolve_asset_path(path) else {
             return Ok(None);
         };

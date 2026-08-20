@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
-use lucide_icons::Icon as LucideIcon;
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::{TreeViewControl, TreeViewTemplate, default_tree_view_template};
 use super::template::modified_tree_view_template;

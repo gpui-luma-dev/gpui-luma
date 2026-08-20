@@ -223,7 +223,10 @@ impl TabsNavigationBuilder {
                 active_id: None,
                 enabled: true,
                 animated: true,
-                disclosure_icons: DisclosureIcons::new(lucide_icons::Icon::ChevronUp, lucide_icons::Icon::ChevronDown),
+                disclosure_icons: DisclosureIcons::new(
+                    lucide_svg_static::Icon::ChevronUp,
+                    lucide_svg_static::Icon::ChevronDown,
+                ),
                 template: default_tabs_navigation_template(),
             },
         }
@@ -320,7 +323,7 @@ mod tests {
     #[test]
     fn item_accessories_are_configurable() {
         let item = TabsNavigationItem::new("controls")
-            .leading_icon(lucide_icons::Icon::Settings)
+            .leading_icon(lucide_svg_static::Icon::Settings)
             .trailing_disclosure(true);
 
         assert!(item.leading_accessory_ref().is_some());

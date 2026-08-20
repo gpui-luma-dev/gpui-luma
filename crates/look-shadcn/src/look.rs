@@ -713,7 +713,7 @@ impl ShadcnLook {
         self: &Arc<Self>,
         id: impl Into<SharedString>,
     ) -> gpui_luma::controls::command::button::ButtonBuilder<()> {
-        gpui_luma::controls::command::icon_button::new(id, lucide_icons::Icon::PanelLeft)
+        gpui_luma::controls::command::icon_button::new(id, lucide_svg_static::Icon::PanelLeft)
             .template(self.button_template(ShadcnButtonStyle::Ghost))
     }
 

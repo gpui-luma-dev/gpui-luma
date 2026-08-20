@@ -49,6 +49,7 @@ pub struct SearchSelectorControl {
     last_event: SharedString,
     last_keyboard_event: SharedString,
     committed_selection: Option<usize>,
+    trigger_toggle_pending: bool,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -119,6 +120,7 @@ impl SearchSelectorControl {
             last_event: SharedString::from("none"),
             last_keyboard_event: SharedString::from("none"),
             committed_selection,
+            trigger_toggle_pending: false,
             _subscriptions: subscriptions,
         }
     }
@@ -210,9 +212,16 @@ impl SearchSelectorControl {
             TextSelectionEvent::FocusLeave => {
                 let was_focused = self.behavior.state.focused;
                 let was_open = self.behavior.state.open;
-                self.behavior.apply(SelectionEvent::Blur, &self.model.items);
+                if self.trigger_toggle_pending && was_open {
+                    // Trigger mouse-down moves focus away from the popup before the
+                    // trigger click arrives. Preserve the open state so that click
+                    // can perform the intended close instead of reopening it.
+                    self.behavior.state.focused = false;
+                } else {
+                    self.behavior.apply(SelectionEvent::Blur, &self.model.items);
+                }
                 self.emit_focus_changed_if_needed(was_focused, cx);
-                if was_open {
+                if was_open && !self.trigger_toggle_pending {
                     self.emit_open_changed_if_needed(was_open, true, cx);
                 }
                 cx.notify();
@@ -439,6 +448,7 @@ impl SearchSelectorControl {
     }
 
     fn handle_trigger_click(&mut self, event: &ClickEvent, window: &mut Window, cx: &mut Context<Self>) {
+        self.trigger_toggle_pending = false;
         if !self.model.enabled || event.is_keyboard() {
             return;
         }
@@ -461,12 +471,25 @@ impl SearchSelectorControl {
     }
 
     fn handle_trigger_mouse_down(&mut self, _event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        self.trigger_toggle_pending = self.behavior.state.open;
         if self.interaction.handle_mouse_down(self.model.enabled, window, cx) {
             cx.notify();
         }
     }
 
     fn handle_trigger_mouse_up(&mut self, _event: &gpui::MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.interaction.handle_mouse_up() {
+            cx.notify();
+        }
+    }
+
+    fn handle_trigger_mouse_up_out(
+        &mut self,
+        _event: &gpui::MouseUpEvent,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.trigger_toggle_pending = false;
         if self.interaction.handle_mouse_up() {
             cx.notify();
         }
@@ -776,7 +799,7 @@ impl Render for SearchSelectorControl {
             trigger_hover: Box::new(cx.listener(Self::handle_trigger_hover)),
             trigger_mouse_down: Box::new(cx.listener(Self::handle_trigger_mouse_down)),
             trigger_mouse_up: Box::new(cx.listener(Self::handle_trigger_mouse_up)),
-            trigger_mouse_up_out: Box::new(cx.listener(Self::handle_trigger_mouse_up)),
+            trigger_mouse_up_out: Box::new(cx.listener(Self::handle_trigger_mouse_up_out)),
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
         };
 

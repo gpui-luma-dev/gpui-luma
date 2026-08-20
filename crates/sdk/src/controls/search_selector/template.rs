@@ -183,7 +183,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                             .items_center()
                             .justify_center()
                             .text_color(trigger_look.trigger_icon)
-                            .child(lucide_icon(lucide_icons::Icon::Search, trigger_look.trigger_icon, 12.0)),
+                            .child(lucide_icon(lucide_svg_static::Icon::Search, trigger_look.trigger_icon, 12.0)),
                     ),
             );
 

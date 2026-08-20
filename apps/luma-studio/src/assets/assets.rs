@@ -1,5 +1,6 @@
 use anyhow::Result;
 use gpui::{AssetSource, SharedString};
+use lucide_svg_static::asset_bytes;
 use std::borrow::Cow;
 
 pub struct Assets;
@@ -25,7 +26,7 @@ impl AssetSource for Assets {
             "assets/labels/invalid-label.svg" => Some(include_bytes!("labels/invalid-label.svg").as_slice()),
             "assets/labels/pressed-label.svg" => Some(include_bytes!("labels/pressed-label.svg").as_slice()),
             "assets/labels/disabled-label.svg" => Some(include_bytes!("labels/disabled-label.svg").as_slice()),
-            _ => None,
+            _ => asset_bytes(path),
         };
 
         Ok(bytes.map(Cow::Borrowed))
@@ -36,7 +37,7 @@ impl AssetSource for Assets {
 
         let entries: Vec<SharedString> = match path {
             "" => vec![SharedString::from("assets")],
-            "assets" => vec![SharedString::from("assets/labels")],
+            "assets" => vec![SharedString::from("assets/labels"), SharedString::from("assets/lucide")],
             "assets/labels" => vec![
                 SharedString::from("assets/labels/prominent-label.svg"),
                 SharedString::from("assets/labels/primary-label.svg"),
@@ -54,6 +55,11 @@ impl AssetSource for Assets {
                 SharedString::from("assets/labels/invalid-label.svg"),
                 SharedString::from("assets/labels/pressed-label.svg"),
                 SharedString::from("assets/labels/disabled-label.svg"),
+            ],
+            "assets/lucide" => vec![
+                SharedString::from("assets/lucide/chevron-down.svg"),
+                SharedString::from("assets/lucide/chevron-right.svg"),
+                SharedString::from("assets/lucide/chevron-up.svg"),
             ],
             _ => Vec::new(),
         };
