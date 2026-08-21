@@ -195,11 +195,15 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         let border = button_family_effective_border(control_look.border);
         let focus_border = button_family_effective_border(look.border);
         let focus_metrics = self.theme.metrics().focus;
-        let focus_extent = if focused && focus_border.a > 0.0 {
+        let focus_ring_extent = if focus_border.a > 0.0 {
             FOCUS_RING_GAP + focus_metrics.width.max(0.0)
         } else {
             0.0
         };
+        // Reserve focus geometry for normal buttons in every state so focus paint
+        // cannot change the measured bounds. Compact buttons keep their dense
+        // footprint and paint the ring inside that footprint when focused.
+        let focus_extent = if model.compact { 0.0 } else { focus_ring_extent };
 
         let mut control = div()
             .id(format!("{}-control", model.id))
@@ -308,8 +312,8 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             root.child(adorned)
         };
 
-        if focus_extent > 0.0 {
-            let ring_inset = (oversize_extent - focus_extent).max(0.0);
+        if focused && focus_ring_extent > 0.0 {
+            let ring_inset = (oversize_extent - focus_ring_extent).max(0.0);
             root = root.child(
                 div()
                     .absolute()
