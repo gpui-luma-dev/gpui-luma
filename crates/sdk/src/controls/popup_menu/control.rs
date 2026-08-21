@@ -6,12 +6,12 @@ use lucide_svg_static::Icon as LucideIcon;
 use std::time::Duration;
 
 use super::{PopupMenuBuilder, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, MenuPath};
+use crate::animation::{DisclosureMotion, VisualTransition};
 use crate::controls::popup_menu::model::PopupMenuModel;
 use crate::controls::floating_menu::{FloatingMenuActivateResult, FloatingMenuState, FloatingMenuStepDirection};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::menu_navigation::MenuNavigator;
 use crate::controls::overlay_presence::OverlayPresence;
-use crate::animation::VisualTransition;
 use crate::controls::floating_menu::FloatingMenuHighlight;
 use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
@@ -41,6 +41,10 @@ pub struct PopupMenu {
     highlight_from: Option<MenuPath>,
     highlight_to: Option<MenuPath>,
     highlight_transition: VisualTransition,
+    disclosure_transition: DisclosureMotion,
+    submenu_transition: DisclosureMotion,
+    submenu_transition_index: Option<usize>,
+    submenu_target_open: bool,
     interaction: ControlInteraction,
     emitted_focused: bool,
     focus_in_subscription: Option<Subscription>,
@@ -68,6 +72,10 @@ impl PopupMenu {
             highlight_from: None,
             highlight_to: None,
             highlight_transition: VisualTransition::new(1.0, Duration::from_millis(180)),
+            disclosure_transition: DisclosureMotion::new(0.0, true),
+            submenu_transition: DisclosureMotion::new(0.0, true),
+            submenu_transition_index: None,
+            submenu_target_open: false,
             interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx),
             emitted_focused: false,
             focus_in_subscription: None,
@@ -162,7 +170,9 @@ impl PopupMenu {
             content: self.model.content.clone(),
             items: &self.model.items,
             open: self.open,
+            disclosure_progress: self.disclosure_transition.progress(),
             presence: self.presence,
+            submenu_transition: self.submenu_transition_index.map(|index| (index, self.submenu_transition.progress())),
             trigger_bounds: self.trigger_bounds,
             placement: self.model.placement,
             trigger_style: self.model.trigger_style,
@@ -190,6 +200,18 @@ impl PopupMenu {
             to: self.highlight_to?,
             progress: self.highlight_transition.progress(),
         })
+    }
+
+    fn sync_submenu_transition_target(&mut self) {
+        let next = self.menu_state.open_submenu();
+        let next_open = next.is_some();
+        if next_open != self.submenu_target_open {
+            self.submenu_target_open = next_open;
+            self.submenu_transition.set_target(if next_open { 1.0 } else { 0.0 });
+        }
+        if let Some(index) = next {
+            self.submenu_transition_index = Some(index);
+        }
     }
 
     fn sync_highlight(&mut self, previous: Option<MenuPath>) {
@@ -273,6 +295,7 @@ impl PopupMenu {
         let previous = self.menu_state.active_path();
         self.open = false;
         self.presence.set_open(false);
+        self.disclosure_transition.set_target(0.0);
         self.menu_state.clear();
         self.sync_highlight(previous);
         if was_open {
@@ -302,6 +325,7 @@ impl PopupMenu {
         let changed = !self.open || self.menu_state.open_with(active_path);
         self.open = true;
         self.presence.set_open(true);
+        self.disclosure_transition.set_target(1.0);
         self.sync_highlight(previous);
         if !was_open {
             cx.emit(PopupMenuEvent::OpenChanged { open: true });
@@ -601,6 +625,7 @@ impl Focusable for PopupMenu {
 
 impl Render for PopupMenu {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.sync_submenu_transition_target();
         if self.focus_in_subscription.is_none() {
             let focus_handle = self.interaction.focus_handle().clone();
             self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
@@ -612,6 +637,14 @@ impl Render for PopupMenu {
 
         if self.presence.sync() {
             self.presence.schedule_frame(window, cx);
+        }
+
+        if self.disclosure_transition.sync() {
+            self.disclosure_transition.schedule_frame(window, cx);
+        }
+
+        if self.submenu_transition.sync() {
+            self.submenu_transition.schedule_frame(window, cx);
         }
 
         if self.highlight_transition.sync() {

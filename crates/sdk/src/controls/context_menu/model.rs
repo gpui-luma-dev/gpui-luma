@@ -31,6 +31,7 @@ pub struct ContextMenuRenderModel<'a> {
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
     pub submenu_presence: OverlayPresence,
+    pub submenu_transition: Option<(usize, f32)>,
     pub enabled: bool,
     pub focus: ControlFocusState,
     pub state: ContextMenuState,

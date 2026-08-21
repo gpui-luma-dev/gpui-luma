@@ -10,6 +10,7 @@ use crate::controls::interaction::ControlInteraction;
 use crate::controls::menu_navigation::MenuNavigator;
 use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::state::{ControlFocusState, MenuPath};
+use crate::animation::DisclosureMotion;
 use crate::focus::EscapeFocus;
 use crate::keyhandling::{
     ActivateControl, CloseSubmenu, ControlKeyProfile, OpenContextMenu, OpenSubmenu, SelectFirstItem, SelectLastItem,
@@ -35,6 +36,9 @@ pub struct ContextMenu {
     presence: OverlayPresence,
     submenu_presence: OverlayPresence,
     submenu_parent: Option<usize>,
+    submenu_transition: DisclosureMotion,
+    submenu_transition_index: Option<usize>,
+    submenu_target_open: bool,
     interaction: ControlInteraction,
     emitted_focused: bool,
     focus_in_subscription: Option<Subscription>,
@@ -60,6 +64,9 @@ impl ContextMenu {
             presence: OverlayPresence::new(false, true),
             submenu_presence: OverlayPresence::new(false, true),
             submenu_parent: None,
+            submenu_transition: DisclosureMotion::new(0.0, true),
+            submenu_transition_index: None,
+            submenu_target_open: false,
             interaction: ControlInteraction::new(enabled, cx),
             emitted_focused: false,
             focus_in_subscription: None,
@@ -114,6 +121,7 @@ impl ContextMenu {
             open_submenu: self.menu_state.open_submenu(),
             active_path: self.menu_state.active_path(),
             submenu_presence: self.submenu_presence,
+            submenu_transition: self.submenu_transition_index.map(|index| (index, self.submenu_transition.progress())),
             enabled: self.model.enabled,
             focus: ControlFocusState::from_focus_handle(self.model.enabled, self.interaction.focus_handle(), window),
             state: self.interaction.render_state(self.model.enabled, window),
@@ -185,6 +193,18 @@ impl ContextMenu {
             self.submenu_parent = next_parent;
         }
         self.submenu_presence.set_open_with_animation(next_parent.is_some(), next_parent.is_some());
+    }
+
+    fn sync_submenu_transition_target(&mut self) {
+        let next = self.menu_state.open_submenu();
+        let next_open = next.is_some();
+        if next_open != self.submenu_target_open {
+            self.submenu_target_open = next_open;
+            self.submenu_transition.set_target(if next_open { 1.0 } else { 0.0 });
+        }
+        if let Some(index) = next {
+            self.submenu_transition_index = Some(index);
+        }
     }
 
     fn dismiss_menu(&mut self, cx: &mut Context<Self>) -> bool {
@@ -453,6 +473,7 @@ impl Focusable for ContextMenu {
 
 impl Render for ContextMenu {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.sync_submenu_transition_target();
         if self.focus_in_subscription.is_none() {
             let focus_handle = self.interaction.focus_handle().clone();
             self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
@@ -466,6 +487,9 @@ impl Render for ContextMenu {
         self.presence.schedule_frame(window, cx);
         self.submenu_presence.sync();
         self.submenu_presence.schedule_frame(window, cx);
+        if self.submenu_transition.sync() {
+            self.submenu_transition.schedule_frame(window, cx);
+        }
 
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);

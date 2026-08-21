@@ -153,6 +153,7 @@ impl Render for SidebarExpositionLeftPane {
 
             let preview = div()
                 .w_full()
+                .min_w(px(0.0))
                 .flex()
                 .flex_col()
                 .gap(px(16.0))
@@ -336,6 +337,7 @@ fn preview_shell(
     div()
         .id("controls-doc-sidebar-preview-shell")
         .w_full()
+        .min_w(px(0.0))
         .h(px(PREVIEW_SHELL_HEIGHT_PX))
         .flex()
         .flex_row()
@@ -469,6 +471,7 @@ fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControl
                 )
                 .rail(look.sidebar_rail()),
         )
+        .overlay_scrollbar(true)
         .spawn(cx)
 }
 

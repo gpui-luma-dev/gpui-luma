@@ -12,7 +12,7 @@ use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHover
 use crate::controls::scroll_container::ScrollContainer;
 use crate::theme::{ControlSize, InteractionState, LumaTextStyle, LumaTypography};
 use crate::controls::floating_menu::{FloatingMenuLook, FloatingMenuTheme, default_floating_menu_theme};
-use crate::controls::icon::{DisclosureIcons, render_icon_source};
+use crate::controls::icon::{DisclosureIcons, render_disclosure_icon, render_icon_source};
 use crate::controls::color::style::ElementExt;
 use super::{SidebarTheme, default_sidebar_theme};
 
@@ -238,20 +238,17 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
             }
 
             if let Some(rail_submenu) = model.rail_submenu {
-                root = root
-                    .on_mouse_down_out(
+                root = root.child(
+                    deferred(render_rail_submenu_overlay(
+                        rail_submenu,
+                        self.floating_menu_theme.resolve(),
+                        rail_submenu_item_hovers,
+                        rail_submenu_item_clicks,
+                        rail_submenu_bounds,
                         rail_submenu_mouse_down_out.expect("rail submenu should have outside click handler"),
-                    )
-                    .child(
-                        deferred(render_rail_submenu_overlay(
-                            rail_submenu,
-                            self.floating_menu_theme.resolve(),
-                            rail_submenu_item_hovers,
-                            rail_submenu_item_clicks,
-                            rail_submenu_bounds,
-                        ))
-                        .with_priority(1),
-                    );
+                    ))
+                    .with_priority(1),
+                );
             }
 
             return root;
@@ -370,7 +367,7 @@ fn render_region(
     children_height_reports: &mut std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
     disclosure_icons: &DisclosureIcons,
 ) -> Div {
-    let mut region = div().flex().flex_col().gap(px(REGION_GAP));
+    let mut region = div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP));
 
     for node in nodes {
         region = region.child(render_node(
@@ -447,32 +444,34 @@ fn render_node(
         children_height_px,
         children,
     } = node;
-    let mut root = div().id(id.clone()).flex().flex_col().gap(px(REGION_GAP)).child(render_row(
-        RowRenderInput {
-            id: id.clone(),
-            kind,
-            label,
-            icon,
-            state,
-            custom_element,
-            focus_handle,
-            has_children,
-            disclosure_icons: disclosure_icons.clone(),
-        },
-        RowHandlers {
-            bounds: None,
-            hover: row_hovers.next(),
-            mouse_down: row_mouse_downs.next(),
-            mouse_up: row_mouse_ups.next(),
-            mouse_up_out: row_mouse_up_outs.next(),
-            click: row_clicks.next(),
-        },
-        theme,
-    ));
+    let mut root =
+        div().id(id.clone()).w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP)).child(render_row(
+            RowRenderInput {
+                id: id.clone(),
+                kind,
+                label,
+                icon,
+                state,
+                custom_element,
+                focus_handle,
+                has_children,
+                expansion_progress,
+                disclosure_icons: disclosure_icons.clone(),
+            },
+            RowHandlers {
+                bounds: None,
+                hover: row_hovers.next(),
+                mouse_down: row_mouse_downs.next(),
+                mouse_up: row_mouse_ups.next(),
+                mouse_up_out: row_mouse_up_outs.next(),
+                click: row_clicks.next(),
+            },
+            theme,
+        ));
 
     if !children.is_empty() {
         let height_report = children_height_reports.remove(&id);
-        let mut children_region = div().flex().flex_col().gap(px(REGION_GAP));
+        let mut children_region = div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP));
         for child in children {
             children_region = children_region.child(render_node(
                 child,
@@ -518,6 +517,7 @@ struct RowRenderInput {
     custom_element: Option<AnyElement>,
     focus_handle: Option<FocusHandle>,
     has_children: bool,
+    expansion_progress: f32,
     disclosure_icons: DisclosureIcons,
 }
 
@@ -556,7 +556,9 @@ fn render_section_row(label: SharedString, theme: &Arc<dyn SidebarTheme>) -> Div
 }
 
 fn render_item_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn SidebarTheme>) -> AnyElement {
-    let RowRenderInput { id, label, icon, state, focus_handle, has_children, disclosure_icons, .. } = input;
+    let RowRenderInput {
+        id, label, icon, state, focus_handle, has_children, expansion_progress, disclosure_icons, ..
+    } = input;
     let interaction = InteractionState {
         hovered: state.hovered,
         pressed: state.pressed,
@@ -593,7 +595,12 @@ fn render_item_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn
     row = row.child(div().flex_1().child(label.unwrap_or(id)));
 
     if has_children {
-        row = row.child(render_disclosure_icon(state.expanded, look.icon_color, &disclosure_icons));
+        row = row.child(render_disclosure_icon(
+            &disclosure_icons,
+            expansion_progress,
+            look.icon_color,
+            DISCLOSURE_ICON_SIZE,
+        ));
     }
 
     if let Some(background) = look.background {
@@ -755,6 +762,7 @@ fn render_rail_submenu_overlay(
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
     bounds_handler: Option<SidebarPanelBoundsHandler>,
+    mouse_down_out: SidebarPanelMouseDownHandler,
 ) -> impl IntoElement {
     let menu = render_floating_menu(
         &submenu.id,
@@ -770,6 +778,7 @@ fn render_rail_submenu_overlay(
     let offset = submenu.presence.adjust_offset(point(px(RAIL_SUBMENU_OFFSET_X), px(0.0)), content_size);
     let content = if let Some(bounds_handler) = bounds_handler {
         div()
+            .on_mouse_down_out(mouse_down_out)
             .on_prepaint(move |bounds, window, cx| {
                 bounds_handler(&bounds, window, cx);
             })
@@ -797,11 +806,6 @@ fn rail_branch_button_width(button_height: f32) -> f32 {
 
 fn centered_icon_left(button_height: f32, icon_size: f32) -> f32 {
     (button_height - icon_size) * 0.5
-}
-
-fn render_disclosure_icon(expanded: bool, color: gpui::Hsla, icons: &DisclosureIcons) -> AnyElement {
-    let icon = if expanded { &icons.expanded } else { &icons.collapsed };
-    render_icon_source(icon, color, DISCLOSURE_ICON_SIZE)
 }
 
 fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {

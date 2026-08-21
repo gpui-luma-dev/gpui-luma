@@ -16,6 +16,7 @@ use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::state::MenuPath;
 use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::overlay_presence::OverlayPresence;
+use crate::focus::EscapeFocus;
 use crate::keyhandling::{
     ActivateControl, CloseSubmenu, ControlKeyProfile, OpenSubmenu, SelectFirstItem, SelectLastItem, SelectNextItem,
     SelectPreviousItem,
@@ -719,6 +720,15 @@ impl SidebarPanelEngine {
         }
     }
 
+    fn handle_escape_focus(&mut self, _: &EscapeFocus, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.open_rail_submenu.is_some() {
+            self.close_rail_submenu(cx);
+            cx.notify();
+        } else {
+            cx.propagate();
+        }
+    }
+
     fn handle_rail_submenu_item_hover(
         &mut self,
         parent_node_id: SharedString,
@@ -952,6 +962,7 @@ impl Render for SidebarPanelEngine {
         div()
             .size_full()
             .key_context(ControlKeyProfile::Navigation.context())
+            .on_action(cx.listener(Self::handle_escape_focus))
             .on_action(cx.listener(Self::handle_select_previous_item))
             .on_action(cx.listener(Self::handle_select_next_item))
             .on_action(cx.listener(Self::handle_select_first_item))

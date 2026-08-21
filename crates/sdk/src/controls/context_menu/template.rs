@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use super::ContextMenuRenderModel;
-use crate::controls::floating_menu::render_floating_menu_with_submenu_presence;
+use crate::controls::floating_menu::render_floating_menu_with_submenu_presence_and_transition;
 use crate::controls::context_menu::{ContextMenuTheme, default_context_menu_theme};
 
 pub type ContextMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
@@ -190,7 +190,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
         }
 
         if let Some(position) = model.menu_position {
-            let menu = render_floating_menu_with_submenu_presence(
+            let menu = render_floating_menu_with_submenu_presence_and_transition(
                 model.id,
                 model.items,
                 model.open_submenu,
@@ -199,6 +199,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
                 item_hovers,
                 item_clicks,
                 model.submenu_presence,
+                model.submenu_transition,
             );
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))

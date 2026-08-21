@@ -1,14 +1,12 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{AnyElement, App, ClickEvent, Div, SharedString, Stateful, Window, div, px, relative, prelude::*, svg};
-use lucide_svg_static::Icon as LucideIcon;
-
 use crate::controls::choice_indicator_layout::shadow_extent_from_slice;
 use crate::controls::menu_item::{MenuItem, MenuItemIcon};
 use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::state::MenuPath;
 use crate::controls::floating_menu::FloatingMenuLook;
-use crate::controls::icon::{DisclosureIcons, render_icon_source};
+use crate::controls::icon::DisclosureIcons;
 
 pub type FloatingMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type FloatingMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -29,6 +27,7 @@ pub struct FloatingMenuRenderModel<'a> {
     pub submenu_presence: OverlayPresence,
     pub look: FloatingMenuLook,
     pub disclosure_icons: &'a DisclosureIcons,
+    pub submenu_transition: Option<(usize, f32)>,
 }
 
 pub struct FloatingMenuTemplateHandlers {
@@ -154,7 +153,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                 .text_size(px(look.item_typography.size))
                 .line_height(px(look.item_typography.line_height))
                 .font_weight(look.item_typography.weight)
-                .child(render_item_icon(item.icon_ref(), look.item_icon_size))
+                .child(render_item_icon(item.icon_ref(), color, look.item_icon_size))
                 .child(div().flex_1().child(item.label_text().clone()));
 
             let is_active = matches!(model.active_path, Some(MenuPath::Root(active)) if active == index);
@@ -162,8 +161,10 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
             if enabled {
                 row = row.cursor_pointer().on_hover(item_hover).child(render_submenu_affordance(
                     !item.submenu_items().is_empty(),
+                    color,
                     look.item_icon_size,
                     model.disclosure_icons,
+                    submenu_transition_progress(index, model.open_submenu, model.submenu_transition),
                 ));
 
                 if !controlled_hover {
@@ -200,8 +201,10 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
             } else {
                 row = row.opacity(look.disabled_opacity).child(render_submenu_affordance(
                     !item.submenu_items().is_empty(),
+                    color,
                     look.item_icon_size,
                     model.disclosure_icons,
+                    submenu_transition_progress(index, model.open_submenu, model.submenu_transition),
                 ));
             }
 
@@ -272,6 +275,31 @@ pub fn render_floating_menu_with_submenu_presence(
     item_clicks: Vec<FloatingMenuClickHandler>,
     submenu_presence: OverlayPresence,
 ) -> Stateful<Div> {
+    render_floating_menu_with_submenu_presence_and_transition(
+        id,
+        items,
+        open_submenu,
+        active_path,
+        look,
+        item_hovers,
+        item_clicks,
+        submenu_presence,
+        None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn render_floating_menu_with_submenu_presence_and_transition(
+    id: &SharedString,
+    items: &[MenuItem],
+    open_submenu: Option<usize>,
+    active_path: Option<MenuPath>,
+    look: FloatingMenuLook,
+    item_hovers: Vec<FloatingMenuHoverHandler>,
+    item_clicks: Vec<FloatingMenuClickHandler>,
+    submenu_presence: OverlayPresence,
+    submenu_transition: Option<(usize, f32)>,
+) -> Stateful<Div> {
     render_floating_menu_with_template_and_submenu_presence(
         default_floating_menu_template(),
         id,
@@ -282,6 +310,7 @@ pub fn render_floating_menu_with_submenu_presence(
         item_hovers,
         item_clicks,
         submenu_presence,
+        submenu_transition,
     )
 }
 
@@ -307,6 +336,7 @@ pub fn render_floating_menu_with_template(
             submenu_presence: OverlayPresence::new(true, false),
             look,
             disclosure_icons: &disclosure_icons,
+            submenu_transition: None,
         },
         FloatingMenuTemplateHandlers { item_hovers, submenu_hovers: Vec::new(), controlled_hover: false, item_clicks },
     )
@@ -323,6 +353,7 @@ fn render_floating_menu_with_template_and_submenu_presence(
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
     submenu_presence: OverlayPresence,
+    submenu_transition: Option<(usize, f32)>,
 ) -> Stateful<Div> {
     template.render(
         &FloatingMenuRenderModel {
@@ -334,6 +365,7 @@ fn render_floating_menu_with_template_and_submenu_presence(
             submenu_presence,
             look,
             disclosure_icons: &DisclosureIcons::default(),
+            submenu_transition,
         },
         FloatingMenuTemplateHandlers { item_hovers, submenu_hovers: Vec::new(), controlled_hover: false, item_clicks },
     )
@@ -378,6 +410,35 @@ pub fn render_floating_menu_with_submenu_hovers_and_icons(
     highlight: Option<FloatingMenuHighlight>,
     disclosure_icons: DisclosureIcons,
 ) -> Stateful<Div> {
+    render_floating_menu_with_submenu_hovers_and_icons_and_transition(
+        id,
+        items,
+        open_submenu,
+        active_path,
+        look,
+        item_hovers,
+        submenu_hovers,
+        item_clicks,
+        highlight,
+        disclosure_icons,
+        None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn render_floating_menu_with_submenu_hovers_and_icons_and_transition(
+    id: &SharedString,
+    items: &[MenuItem],
+    open_submenu: Option<usize>,
+    active_path: Option<MenuPath>,
+    look: FloatingMenuLook,
+    item_hovers: Vec<FloatingMenuHoverHandler>,
+    submenu_hovers: Vec<Vec<FloatingMenuHoverHandler>>,
+    item_clicks: Vec<FloatingMenuClickHandler>,
+    highlight: Option<FloatingMenuHighlight>,
+    disclosure_icons: DisclosureIcons,
+    submenu_transition: Option<(usize, f32)>,
+) -> Stateful<Div> {
     default_floating_menu_template().render(
         &FloatingMenuRenderModel {
             id,
@@ -388,6 +449,7 @@ pub fn render_floating_menu_with_submenu_hovers_and_icons(
             submenu_presence: OverlayPresence::new(true, false),
             look,
             disclosure_icons: &disclosure_icons,
+            submenu_transition,
         },
         FloatingMenuTemplateHandlers { item_hovers, submenu_hovers, controlled_hover: true, item_clicks },
     )
@@ -458,12 +520,14 @@ fn render_floating_submenu(
             .text_size(px(look.item_typography.size))
             .line_height(px(look.item_typography.line_height))
             .font_weight(look.item_typography.weight)
-            .child(render_item_icon(submenu_item.icon_ref(), look.item_icon_size))
+            .child(render_item_icon(submenu_item.icon_ref(), color, look.item_icon_size))
             .child(div().flex_1().child(submenu_item.label_text().clone()))
             .child(render_submenu_affordance(
                 !submenu_item.submenu_items().is_empty(),
+                color,
                 look.item_icon_size,
                 disclosure_icons,
+                0.0,
             ));
 
         if enabled && submenu_item.submenu_items().is_empty() {
@@ -532,32 +596,36 @@ fn with_elevation_slot(
     div().id(format!("{}-elevation", id.into())).relative().p(px(extent)).child(surface)
 }
 
-fn render_item_icon(icon: Option<&MenuItemIcon>, size: f32) -> AnyElement {
+fn render_item_icon(icon: Option<&MenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
     if let Some(icon) = icon.and_then(MenuItemIcon::lucide) {
-        render_lucide_icon(icon, size)
+        svg().path(icon.asset_path()).size(px(size)).text_color(color).into_any_element()
     } else if let Some(path) = icon.and_then(MenuItemIcon::svg_path) {
-        svg().external_path(path.clone()).size(px(size)).into_any_element()
+        svg().external_path(path.clone()).size(px(size)).text_color(color).into_any_element()
     } else {
         div().size(px(size)).into_any_element()
     }
 }
 
-fn render_submenu_affordance(has_submenu: bool, size: f32, icons: &DisclosureIcons) -> AnyElement {
+fn render_submenu_affordance(
+    has_submenu: bool,
+    color: gpui::Hsla,
+    size: f32,
+    icons: &DisclosureIcons,
+    progress: f32,
+) -> AnyElement {
     if has_submenu {
-        render_icon_source(&icons.collapsed, gpui::Hsla::default(), size)
+        crate::controls::icon::render_disclosure_icon(icons, progress, color, size)
     } else {
         div().size(px(size)).into_any_element()
     }
 }
 
-fn render_lucide_icon(icon: LucideIcon, size: f32) -> AnyElement {
-    div()
-        .size(px(size))
-        .flex()
-        .items_center()
-        .justify_center()
-        .text_size(px(size))
-        .line_height(px(size))
-        .child(crate::controls::icon::lucide_icon(icon, gpui::hsla(0.0, 0.0, 1.0, 1.0), size))
-        .into_any_element()
+fn submenu_transition_progress(index: usize, open_submenu: Option<usize>, transition: Option<(usize, f32)>) -> f32 {
+    if let Some((transition_index, progress)) = transition
+        && transition_index == index
+    {
+        return progress;
+    }
+
+    if open_submenu == Some(index) { 1.0 } else { 0.0 }
 }

@@ -8,8 +8,8 @@ use lucide_svg_static::Icon as LucideIcon;
 
 use super::{PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTriggerModel};
 use crate::controls::button_family::button_family_effective_border;
-use crate::controls::floating_menu::render_floating_menu_with_submenu_hovers_and_icons;
-use crate::controls::icon::render_icon_source;
+use crate::controls::floating_menu::render_floating_menu_with_submenu_hovers_and_icons_and_transition;
+use crate::controls::icon::render_disclosure_icon;
 use crate::controls::popup_menu::{PopupMenuLook, PopupMenuTheme, PopupMenuTriggerMetrics, default_popup_menu_theme};
 use crate::theme::InteractionState;
 
@@ -225,12 +225,9 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .flex_shrink_0()
                 .text_size(px(look.trigger_icon_size))
                 .line_height(px(look.trigger_icon_size))
-                .child(render_icon_source(
-                    if model.open {
-                        &model.disclosure_icons.expanded
-                    } else {
-                        &model.disclosure_icons.collapsed
-                    },
+                .child(render_disclosure_icon(
+                    model.disclosure_icons,
+                    model.disclosure_progress,
                     control_look.trigger_foreground,
                     look.trigger_icon_size,
                 ))
@@ -266,7 +263,16 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .line_height(px(look.trigger_typography.line_height))
                 .font_weight(look.trigger_typography.weight)
                 .child(face)
-                .child(render_lucide_icon(end_icon, look.trigger_foreground, look.trigger_icon_size))
+                .child(if model.end_icon.is_some() {
+                    render_lucide_icon(end_icon, look.trigger_foreground, look.trigger_icon_size)
+                } else {
+                    render_disclosure_icon(
+                        model.disclosure_icons,
+                        model.disclosure_progress,
+                        look.trigger_foreground,
+                        look.trigger_icon_size,
+                    )
+                })
                 .on_click(trigger_click);
 
             if model.full_width {
@@ -330,8 +336,8 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 model.trigger_bounds.map(|bounds| bounds.size.width).unwrap_or(px(look.trigger_height)),
             );
             let offset = model.presence.adjust_offset(placement.offset, content_size);
-            let menu =
-                div().opacity(model.presence.opacity()).child(render_floating_menu_with_submenu_hovers_and_icons(
+            let menu = div().opacity(model.presence.opacity()).child(
+                render_floating_menu_with_submenu_hovers_and_icons_and_transition(
                     model.id,
                     model.items,
                     model.open_submenu,
@@ -341,8 +347,10 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                     submenu_hovers,
                     item_clicks,
                     model.highlight,
-                    (*model.disclosure_icons).clone(),
-                ));
+                    crate::controls::icon::DisclosureIcons::default(),
+                    model.submenu_transition,
+                ),
+            );
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
                 .anchor(placement.anchor)

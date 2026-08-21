@@ -39,7 +39,7 @@ pub(crate) fn render_control_exposition_card(
     let card_id = entry.id;
     let borderless = layout.borderless;
 
-    let mut card = div().id(format!("controls-doc-card-{card_id}")).w_full().flex().flex_col();
+    let mut card = div().id(format!("controls-doc-card-{card_id}")).w_full().min_w(px(0.0)).flex().flex_col();
 
     if borderless {
         card = card.overflow_hidden();
@@ -76,7 +76,15 @@ fn render_card_section(
     pad: f32,
 ) -> gpui::Div {
     if borderless {
-        div().w_full().px(px(16.0)).pb(px(12.0)).flex().flex_col().items_start().child(content)
+        div()
+            .w_full()
+            .min_w(px(0.0))
+            .px(px(16.0))
+            .pb(px(12.0))
+            .flex()
+            .flex_col()
+            .items_stretch()
+            .child(content)
     } else {
         div()
             .w_full()
