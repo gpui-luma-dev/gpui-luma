@@ -7,6 +7,72 @@ pub const DEFAULT_TRANSITION_DURATION: Duration = Duration::from_millis(200);
 /// Default period for continuous looping motion such as indeterminate shimmer.
 pub const DEFAULT_CONTINUOUS_PERIOD: Duration = Duration::from_millis(1200);
 
+/// Shared open/closed motion for disclosure affordances and expandable content.
+#[derive(Clone, Copy, Debug)]
+pub struct DisclosureMotion {
+    transition: VisualTransition,
+    animated: bool,
+}
+
+impl DisclosureMotion {
+    pub fn new(initial_progress: f32, animated: bool) -> Self {
+        Self {
+            transition: VisualTransition::new(
+                initial_progress,
+                if animated {
+                    DEFAULT_TRANSITION_DURATION
+                } else {
+                    Duration::ZERO
+                },
+            ),
+            animated,
+        }
+    }
+
+    pub fn set_target(&mut self, target: f32) {
+        if self.animated {
+            self.transition.set_target(target);
+        } else {
+            self.transition.snap_to(target);
+        }
+    }
+
+    pub fn set_animated(&mut self, animated: bool) {
+        if self.animated == animated {
+            return;
+        }
+        let progress = self.progress();
+        self.animated = animated;
+        self.transition = VisualTransition::new(
+            progress,
+            if animated {
+                DEFAULT_TRANSITION_DURATION
+            } else {
+                Duration::ZERO
+            },
+        );
+    }
+
+    pub fn sync(&mut self) -> bool {
+        self.transition.sync()
+    }
+
+    pub fn progress(&self) -> f32 {
+        self.transition.progress()
+    }
+
+    pub fn is_animating(&self) -> bool {
+        self.transition.is_animating()
+    }
+
+    pub fn schedule_frame<T>(&self, window: &mut Window, cx: &mut Context<T>)
+    where
+        T: 'static,
+    {
+        self.transition.schedule_frame(window, cx);
+    }
+}
+
 /// Lightweight frame-driven state transition primitive for GPUI controls.
 ///
 /// `VisualTransition` manages progress interpolation (`0.0`..`1.0`), cubic ease-out curve
@@ -249,5 +315,20 @@ mod tests {
         phase.stop();
         assert!(!phase.is_active());
         assert_eq!(phase.phase(), 0.0);
+    }
+
+    #[test]
+    fn disclosure_motion_snaps_when_animation_is_disabled() {
+        let mut motion = DisclosureMotion::new(0.0, false);
+        motion.set_target(1.0);
+        assert_eq!(motion.progress(), 1.0);
+        assert!(!motion.is_animating());
+    }
+
+    #[test]
+    fn disclosure_motion_animates_when_enabled() {
+        let mut motion = DisclosureMotion::new(0.0, true);
+        motion.set_target(1.0);
+        assert!(motion.is_animating());
     }
 }

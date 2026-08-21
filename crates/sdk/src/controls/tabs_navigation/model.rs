@@ -67,6 +67,7 @@ pub struct TabsNavigationItem {
     pub(crate) trigger_kind: TabsNavigationTriggerKind,
     pub(crate) leading_accessory: Option<TabsNavigationItemAccessory>,
     pub(crate) trailing_accessory: Option<TabsNavigationItemAccessory>,
+    pub(crate) disclosure_progress: f32,
 }
 
 impl TabsNavigationItem {
@@ -80,6 +81,7 @@ impl TabsNavigationItem {
             trigger_kind: TabsNavigationTriggerKind::Select,
             leading_accessory: None,
             trailing_accessory: None,
+            disclosure_progress: 0.0,
         }
     }
 
@@ -103,6 +105,7 @@ impl TabsNavigationItem {
         if self.trailing_accessory.is_none() {
             self.trailing_accessory = Some(TabsNavigationItemAccessory::disclosure(false));
         }
+        self.disclosure_progress = 0.0;
         self
     }
 
@@ -125,7 +128,10 @@ impl TabsNavigationItem {
     }
 
     pub fn trailing_disclosure(self, open: bool) -> Self {
-        self.trailing_accessory(TabsNavigationItemAccessory::disclosure(open))
+        let mut item = self;
+        item.trailing_accessory = Some(TabsNavigationItemAccessory::disclosure(open));
+        item.disclosure_progress = if open { 1.0 } else { 0.0 };
+        item
     }
 
     pub fn id(&self) -> &SharedString {
@@ -154,6 +160,10 @@ impl TabsNavigationItem {
 
     pub fn trailing_accessory_ref(&self) -> Option<&TabsNavigationItemAccessory> {
         self.trailing_accessory.as_ref()
+    }
+
+    pub fn disclosure_progress(&self) -> f32 {
+        self.disclosure_progress
     }
 }
 
@@ -193,6 +203,7 @@ pub struct TabsNavigationRenderItem<'a> {
     pub active: bool,
     pub enabled: bool,
     pub state: TabsNavigationItemState,
+    pub disclosure_progress: f32,
 }
 
 pub struct TabsNavigationRenderModel<'a> {
@@ -295,6 +306,7 @@ impl TabsNavigationBuilder {
     pub(crate) fn control_group_template(
         &self,
         indicator_motion: TabsNavigationIndicatorMotion,
+        disclosure_progress: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<SharedString, f32>>>,
     ) -> crate::controls::control_group::ControlGroupTemplate<TabsNavigationItem> {
         tabs_navigation_control_group_template(
             self.model.size,
@@ -302,6 +314,7 @@ impl TabsNavigationBuilder {
             Arc::clone(&self.model.template),
             indicator_motion,
             self.model.disclosure_icons.clone(),
+            disclosure_progress,
         )
     }
 }

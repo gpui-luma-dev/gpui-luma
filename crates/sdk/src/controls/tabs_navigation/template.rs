@@ -19,7 +19,7 @@ use crate::controls::control_group::{
     ControlGroupMouseDownHandler, ControlGroupMouseUpHandler, ControlGroupRenderModel, ControlGroupTemplate,
     ControlGroupTemplateHandlers,
 };
-use crate::controls::icon::{DisclosureIcons, IconSource, lucide_icon, render_icon_source};
+use crate::controls::icon::{DisclosureIcons, IconSource, lucide_icon, render_disclosure_icon};
 use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::tabs_navigation::{TabsNavigationItemLook, TabsNavigationTheme, default_tabs_navigation_theme};
 use crate::theme::{ControlSize, InteractionState};
@@ -542,6 +542,7 @@ fn tabs_navigation_button_model(
     let label = item.label.clone();
     let leading_accessory = item.leading_accessory.cloned();
     let trailing_accessory = item.trailing_accessory.cloned();
+    let disclosure_progress = item.disclosure_progress;
 
     ButtonRenderModel {
         id: format!("{}-tab-{}", navigation_id, item.id).into(),
@@ -554,6 +555,7 @@ fn tabs_navigation_button_model(
                     accessory,
                     model.data.look.label_color,
                     &model.data.disclosure_icons,
+                    disclosure_progress,
                 ));
             }
             label_content = label_content.child(label.clone());
@@ -562,6 +564,7 @@ fn tabs_navigation_button_model(
                     accessory,
                     model.data.look.label_color,
                     &model.data.disclosure_icons,
+                    disclosure_progress,
                 ));
             }
             label_content.into_any_element()
@@ -602,18 +605,13 @@ fn render_accessory(
     accessory: &TabsNavigationItemAccessory,
     color: gpui::Hsla,
     disclosure_icons: &crate::controls::icon::DisclosureIcons,
+    disclosure_progress: f32,
 ) -> gpui::AnyElement {
     match accessory {
         TabsNavigationItemAccessory::Icon(icon) => render_tab_icon_source(icon, color),
-        TabsNavigationItemAccessory::Disclosure { open } => render_icon_source(
-            if *open {
-                &disclosure_icons.expanded
-            } else {
-                &disclosure_icons.collapsed
-            },
-            color,
-            TAB_ACCESSORY_SIZE,
-        ),
+        TabsNavigationItemAccessory::Disclosure { .. } => {
+            render_disclosure_icon(disclosure_icons, disclosure_progress, color, TAB_ACCESSORY_SIZE)
+        }
     }
 }
 
@@ -630,9 +628,17 @@ pub(crate) fn tabs_navigation_control_group_template(
     template: Arc<dyn TabsNavigationTemplate>,
     indicator_motion: TabsNavigationIndicatorMotion,
     disclosure_icons: crate::controls::icon::DisclosureIcons,
+    disclosure_progress: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<SharedString, f32>>>,
 ) -> ControlGroupTemplate<TabsNavigationItem> {
     Arc::new(move |model, handlers, window, cx| {
-        let tabs_model = tabs_navigation_render_model(model, size, width_mode, &indicator_motion, &disclosure_icons);
+        let tabs_model = tabs_navigation_render_model(
+            model,
+            size,
+            width_mode,
+            &indicator_motion,
+            &disclosure_icons,
+            &disclosure_progress,
+        );
         template.render(&tabs_model, handlers, window, cx)
     })
 }
@@ -643,7 +649,9 @@ fn tabs_navigation_render_model<'a>(
     width_mode: TabsNavigationWidthMode,
     indicator_motion: &'a TabsNavigationIndicatorMotion,
     disclosure_icons: &'a crate::controls::icon::DisclosureIcons,
+    disclosure_progress: &std::sync::Arc<std::sync::Mutex<std::collections::HashMap<SharedString, f32>>>,
 ) -> TabsNavigationRenderModel<'a> {
+    let progress = disclosure_progress.lock().expect("tabs disclosure progress lock");
     TabsNavigationRenderModel {
         id: model.id,
         size,
@@ -660,6 +668,7 @@ fn tabs_navigation_render_model<'a>(
                 active: item.selected,
                 enabled: item.enabled,
                 state: item.state,
+                disclosure_progress: progress.get(item.item.id()).copied().unwrap_or(item.item.disclosure_progress),
             })
             .collect(),
         active_id: model.selected_ids.first(),

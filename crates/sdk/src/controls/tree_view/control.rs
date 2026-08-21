@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::time::Duration;
 
 use gpui::{
     App, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, FocusHandle, IntoElement, ListAlignment,
@@ -10,7 +9,7 @@ use super::{
     FlatTreeNode, TreeNode, TreeViewBuilder, TreeViewModel, TreeViewRenderModel, TreeViewSelectionMode,
     TreeViewTemplateHandlers,
 };
-use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::animation::DisclosureMotion;
 use crate::controls::state::{CompositeItemState, ControlFocusState};
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
@@ -65,7 +64,7 @@ where
     focus_out_subscription: Option<Subscription>,
     list_state: ListState,
     expanded_ids: HashSet<SharedString>,
-    expand_transitions: HashMap<SharedString, VisualTransition>,
+    expand_transitions: HashMap<SharedString, DisclosureMotion>,
     selected_ids: HashSet<SharedString>,
     active_node_id: Option<SharedString>,
     hovered_index: Option<usize>,
@@ -143,10 +142,8 @@ where
             return;
         }
         self.model.animated = animated;
-        let duration = self.transition_duration();
         for transition in self.expand_transitions.values_mut() {
-            let progress = transition.progress();
-            *transition = VisualTransition::new(progress, duration);
+            transition.set_animated(animated);
         }
         cx.notify();
     }
@@ -266,16 +263,7 @@ where
         }
     }
 
-    fn transition_duration(&self) -> Duration {
-        if self.model.animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        }
-    }
-
     fn sync_expand_transitions_for_tree(&mut self) {
-        let duration = self.transition_duration();
         let mut branch_ids = HashSet::new();
 
         fn collect_branches<T>(node: &TreeNode<T>, branch_ids: &mut HashSet<SharedString>) {
@@ -298,36 +286,31 @@ where
                 .entry(id)
                 .and_modify(|transition| {
                     if !transition.is_animating() {
-                        *transition = VisualTransition::new(target, duration);
+                        *transition = DisclosureMotion::new(target, self.model.animated);
                     }
                 })
-                .or_insert_with(|| VisualTransition::new(target, duration));
+                .or_insert_with(|| DisclosureMotion::new(target, self.model.animated));
         }
     }
 
     fn expand_progress_for(&self, node_id: &SharedString) -> f32 {
         self.expand_transitions
             .get(node_id)
-            .map(VisualTransition::progress)
+            .map(DisclosureMotion::progress)
             .unwrap_or_else(|| if self.expanded_ids.contains(node_id) { 1.0 } else { 0.0 })
     }
 
     fn branch_children_visible(&self, node_id: &SharedString) -> bool {
         self.expand_progress_for(node_id) > EXPAND_VISIBLE_EPSILON
-            || self.expand_transitions.get(node_id).is_some_and(VisualTransition::is_animating)
+            || self.expand_transitions.get(node_id).is_some_and(DisclosureMotion::is_animating)
     }
 
     fn set_expand_target(&mut self, node_id: &SharedString, target: f32) {
-        let duration = self.transition_duration();
         let transition = self
             .expand_transitions
             .entry(node_id.clone())
-            .or_insert_with(|| VisualTransition::new(if target > 0.5 { 0.0 } else { 1.0 }, duration));
-        if self.model.animated {
-            transition.set_target(target);
-        } else {
-            transition.snap_to(target);
-        }
+            .or_insert_with(|| DisclosureMotion::new(if target > 0.5 { 0.0 } else { 1.0 }, self.model.animated));
+        transition.set_target(target);
     }
 
     fn sync_expand_transitions(&mut self) -> (bool, bool) {
@@ -346,14 +329,14 @@ where
         fn count_visible<T>(
             node: &TreeNode<T>,
             expanded: &HashSet<SharedString>,
-            transitions: &HashMap<SharedString, VisualTransition>,
+            transitions: &HashMap<SharedString, DisclosureMotion>,
         ) -> usize {
             let expand_progress = transitions
                 .get(&node.id)
-                .map(VisualTransition::progress)
+                .map(DisclosureMotion::progress)
                 .unwrap_or_else(|| if expanded.contains(&node.id) { 1.0 } else { 0.0 });
             let show_children = expand_progress > EXPAND_VISIBLE_EPSILON
-                || transitions.get(&node.id).is_some_and(VisualTransition::is_animating);
+                || transitions.get(&node.id).is_some_and(DisclosureMotion::is_animating);
 
             let mut total = 1;
             if show_children {
@@ -383,14 +366,14 @@ where
             node: &TreeNode<T>,
             depth: usize,
             expanded: &HashSet<SharedString>,
-            transitions: &HashMap<SharedString, VisualTransition>,
+            transitions: &HashMap<SharedString, DisclosureMotion>,
             ancestor_height_factor: f32,
             flat: &mut Vec<FlatNodeWrapper<T>>,
         ) {
             let has_children = !node.children.is_empty() || node.is_branch;
             let expand_progress = transitions
                 .get(&node.id)
-                .map(VisualTransition::progress)
+                .map(DisclosureMotion::progress)
                 .unwrap_or_else(|| if expanded.contains(&node.id) { 1.0 } else { 0.0 });
 
             flat.push(FlatNodeWrapper {
@@ -406,7 +389,7 @@ where
             });
 
             let show_children = expand_progress > EXPAND_VISIBLE_EPSILON
-                || transitions.get(&node.id).is_some_and(VisualTransition::is_animating);
+                || transitions.get(&node.id).is_some_and(DisclosureMotion::is_animating);
             if show_children {
                 let child_factor = (ancestor_height_factor * expand_progress).clamp(0.0, 1.0);
                 for child in &node.children {
@@ -436,7 +419,7 @@ where
         fn walk<T: Clone>(
             node: &TreeNode<T>,
             expanded: &HashSet<SharedString>,
-            transitions: &HashMap<SharedString, VisualTransition>,
+            transitions: &HashMap<SharedString, DisclosureMotion>,
             ancestor_height_factor: f32,
             flat: &mut [FlatNodeWrapper<T>],
             index: &mut usize,
@@ -447,7 +430,7 @@ where
 
             let expand_progress = transitions
                 .get(&node.id)
-                .map(VisualTransition::progress)
+                .map(DisclosureMotion::progress)
                 .unwrap_or_else(|| if expanded.contains(&node.id) { 1.0 } else { 0.0 });
 
             flat[*index].expand_progress = expand_progress;
@@ -455,7 +438,7 @@ where
             *index += 1;
 
             let show_children = expand_progress > EXPAND_VISIBLE_EPSILON
-                || transitions.get(&node.id).is_some_and(VisualTransition::is_animating);
+                || transitions.get(&node.id).is_some_and(DisclosureMotion::is_animating);
             if show_children {
                 let child_factor = (ancestor_height_factor * expand_progress).clamp(0.0, 1.0);
                 for child in &node.children {

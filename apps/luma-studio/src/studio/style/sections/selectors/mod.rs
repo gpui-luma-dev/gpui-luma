@@ -598,6 +598,7 @@ fn render_selector_search_selector_trigger(
         muted_text_color: look.chrome().muted_text,
         popup_content: None,
         presence: OverlayPresence::new(state.selector_open, true),
+        disclosure_progress: if state.selector_open { 1.0 } else { 0.0 },
     };
 
     div()

@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, FontWeight, Hsla, MouseDownEvent, MouseUpEvent, PathBuilder, Stateful,
-    Transformation, Window, canvas, div, point, prelude::*, px, radians, svg,
+    AnyElement, App, ClickEvent, Div, FontWeight, MouseDownEvent, MouseUpEvent, Stateful, Window, div, prelude::*, px,
 };
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::{FlatTreeNode, TreeViewRenderModel, TreeViewTheme, default_tree_view_theme};
+use crate::controls::icon::render_disclosure_icon;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
 pub type TreeViewHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -203,7 +203,7 @@ where
                 .flex()
                 .items_center()
                 .justify_center()
-                .child(render_rotating_chevron(
+                .child(render_disclosure_icon(
                     node.disclosure_icons,
                     node.expand_progress.clamp(0.0, 1.0),
                     palette.chevron_color,
@@ -246,52 +246,4 @@ fn render_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
         .text_color(color)
         .child(crate::controls::icon::lucide_icon(icon, color, size))
         .into_any_element()
-}
-
-/// Chevron-right glyph painted with PathBuilder and rotated `0° → 90°` by expand progress.
-fn render_rotating_chevron(
-    icons: &crate::controls::icon::DisclosureIcons,
-    expand_progress: f32,
-    color: Hsla,
-    size: f32,
-) -> AnyElement {
-    let icon = if expand_progress >= 0.5 {
-        &icons.expanded
-    } else {
-        &icons.collapsed
-    };
-    if let crate::controls::icon::IconSource::SvgPath(path) = icon {
-        return svg()
-            .size(px(size))
-            .text_color(color)
-            .external_path(path.clone())
-            .with_transformation(Transformation::rotate(radians(expand_progress * std::f32::consts::FRAC_PI_2)))
-            .into_any_element();
-    }
-    let angle_degrees = expand_progress * 90.0;
-    canvas(move |_, _, _| (), {
-        move |bounds, _, window, _| {
-            let center = bounds.center();
-            let extent = bounds.size.width.min(bounds.size.height).as_f32();
-            if extent <= f32::EPSILON {
-                return;
-            }
-
-            // Lucide-like chevron tip pointing right, centered in the icon box.
-            let half = extent * 0.22;
-            let mut builder = PathBuilder::stroke(px((extent * 0.12).max(1.0)));
-            builder.move_to(point(px(-half), px(-half * 1.35)));
-            builder.line_to(point(px(half), px(0.0)));
-            builder.line_to(point(px(-half), px(half * 1.35)));
-            // PathBuilder::rotate expects degrees.
-            builder.rotate(angle_degrees);
-            builder.translate(center);
-
-            if let Ok(path) = builder.build() {
-                window.paint_path(path, color);
-            }
-        }
-    })
-    .size(px(size))
-    .into_any_element()
 }

@@ -5,6 +5,7 @@ use gpui::{
 };
 
 use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
+use crate::animation::DisclosureMotion;
 use crate::controls::selector::SelectorVisualState;
 use crate::controls::interaction::ControlInteraction;
 
@@ -50,6 +51,7 @@ pub struct SearchSelectorControl {
     last_keyboard_event: SharedString,
     committed_selection: Option<usize>,
     trigger_toggle_pending: bool,
+    disclosure_transition: DisclosureMotion,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -121,6 +123,7 @@ impl SearchSelectorControl {
             last_keyboard_event: SharedString::from("none"),
             committed_selection,
             trigger_toggle_pending: false,
+            disclosure_transition: DisclosureMotion::new(0.0, true),
             _subscriptions: subscriptions,
         }
     }
@@ -608,6 +611,7 @@ impl SearchSelectorControl {
         }
 
         self.presence.set_open_with_animation(self.behavior.state.open, self.behavior.state.open);
+        self.disclosure_transition.set_target(if self.behavior.state.open { 1.0 } else { 0.0 });
 
         cx.emit(SearchSelectorEvent::OpenChanged { open: self.behavior.state.open });
         if dismissed && !self.behavior.state.open {
@@ -639,6 +643,8 @@ impl Focusable for SearchSelectorControl {
 
 impl Render for SearchSelectorControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.disclosure_transition.sync();
+        self.disclosure_transition.schedule_frame(window, cx);
         self.presence.sync();
         self.presence.schedule_frame(window, cx);
         self.sync_disabled_state(cx);
@@ -843,6 +849,7 @@ impl Render for SearchSelectorControl {
             muted_text_color: autocomplete_look.muted_text_color,
             popup_content,
             presence: self.presence,
+            disclosure_progress: self.disclosure_transition.progress(),
         };
 
         div()

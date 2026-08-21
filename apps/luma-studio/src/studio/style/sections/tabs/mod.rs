@@ -97,6 +97,7 @@ fn render_tabs_navigation_state_sample(
                 active,
                 enabled: item_enabled,
                 state,
+                disclosure_progress: item.disclosure_progress(),
             }
         })
         .collect::<Vec<_>>();

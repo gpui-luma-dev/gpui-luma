@@ -78,6 +78,7 @@ pub struct SearchSelectorRenderModel {
     pub muted_text_color: Hsla,
     pub popup_content: Option<AnyElement>,
     pub presence: OverlayPresence,
+    pub disclosure_progress: f32,
 }
 
 pub trait SearchSelectorTemplate: Send + Sync {

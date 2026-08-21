@@ -5,7 +5,7 @@ use gpui::{
     AnyElement, App, Hsla, MouseButton, Pixels, SharedString, Stateful, Window, anchored, deferred, div, point,
     prelude::*, px, transparent_black,
 };
-use gpui_luma::controls::icon::lucide_icon;
+use gpui_luma::controls::icon::{DisclosureIcons, render_disclosure_icon};
 use gpui_luma::controls::search_selector::{
     SearchSelectorItemRenderModel, SearchSelectorPanelRenderModel, SearchSelectorPanelTemplate,
     SearchSelectorRenderModel, SearchSelectorTemplate, SearchSelectorTemplateHandlers, SelectionItem,
@@ -129,7 +129,6 @@ impl SearchSelectorTemplate for ThemeSearchSelectorTemplate {
             &StandardBoxScale::compute(model.size, &self.selector_theme.metrics(), window.scale_factor()),
             false,
         );
-        let open = model.popup_content.is_some();
         let selected_id = self.selected_id.read().expect("theme selector selected id lock").clone();
         let selected_swatches = self.swatches.read().expect("theme selector swatches lock").get(&selected_id);
 
@@ -160,12 +159,9 @@ impl SearchSelectorTemplate for ThemeSearchSelectorTemplate {
             .on_click(trigger_click)
             .child(trigger_content)
             .child(div().flex().items_center().justify_end().flex_shrink_0().text_color(look.trigger_icon).child(
-                lucide_icon(
-                    if open {
-                        LucideIcon::ChevronUp
-                    } else {
-                        LucideIcon::ChevronDown
-                    },
+                render_disclosure_icon(
+                    &DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
+                    model.disclosure_progress,
                     look.trigger_icon,
                     look.trigger_icon_size,
                 ),

@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
 use gpui::{
     App, Bounds, Context, Entity, EventEmitter, Focusable, IntoElement, Pixels, Render, SharedString, Window, div,
     prelude::*,
@@ -7,6 +10,7 @@ use super::indicator::TabsNavigationIndicatorMotion;
 use super::{TabsNavigationBuilder, TabsNavigationItem};
 use crate::controls::control_group::{ControlGroupControl, ControlGroupEvent, ControlGroupLayout, ControlSelectionMode};
 use crate::controls::tabs_navigation::model::TabsNavigationWidthMode;
+use crate::animation::DisclosureMotion;
 use crate::theme::ControlSize;
 
 #[derive(Clone, Debug)]
@@ -33,6 +37,8 @@ pub struct TabsNavigation {
     disclosure_icons: crate::controls::icon::DisclosureIcons,
     indicator_motion: TabsNavigationIndicatorMotion,
     template: std::sync::Arc<dyn super::TabsNavigationTemplate>,
+    disclosure_transitions: HashMap<SharedString, DisclosureMotion>,
+    disclosure_progress: Arc<Mutex<HashMap<SharedString, f32>>>,
 }
 
 impl EventEmitter<TabsNavigationEvent> for TabsNavigation {}
@@ -46,13 +52,21 @@ impl TabsNavigation {
     pub(crate) fn from_builder(builder: TabsNavigationBuilder, cx: &mut Context<Self>) -> Self {
         let model = builder.model.clone();
         let indicator_motion = TabsNavigationIndicatorMotion::new(model.animated);
+        let disclosure_progress = Arc::new(Mutex::new(
+            builder
+                .model
+                .items
+                .iter()
+                .filter_map(|item| item.trailing_accessory_ref().map(|_| (item.id().clone(), item.disclosure_progress)))
+                .collect(),
+        ));
         let mut group_builder = ControlGroupControl::new(model.id)
             .items(model.items)
             .selection_mode(ControlSelectionMode::SingleRequired)
             .layout(ControlGroupLayout::Horizontal)
             .selection_follows_active(true)
             .enabled(model.enabled)
-            .template(builder.control_group_template(indicator_motion.clone()));
+            .template(builder.control_group_template(indicator_motion.clone(), disclosure_progress.clone()));
 
         if let Some(active_id) = model.active_id {
             group_builder = group_builder.selected(active_id);
@@ -65,6 +79,16 @@ impl TabsNavigation {
         .detach();
 
         let active_id = group.read(cx).selected_id().cloned();
+        let disclosure_transitions = builder
+            .model
+            .items
+            .iter()
+            .filter_map(|item| {
+                item.trailing_accessory_ref().map(|_| {
+                    (item.id().clone(), DisclosureMotion::new(item.disclosure_progress, builder.model.animated))
+                })
+            })
+            .collect();
         Self {
             group,
             items: builder.model.items,
@@ -77,6 +101,8 @@ impl TabsNavigation {
             disclosure_icons: builder.model.disclosure_icons.clone(),
             indicator_motion,
             template: builder.model.template,
+            disclosure_transitions,
+            disclosure_progress,
         }
     }
 
@@ -111,6 +137,23 @@ impl TabsNavigation {
         }
         self.pending_changed_id = None;
         self.item_bounds.clear();
+        {
+            let mut progress = self.disclosure_progress.lock().expect("tabs disclosure progress lock");
+            progress.clear();
+            for item in &self.items {
+                if item.trailing_accessory_ref().is_some() {
+                    progress.insert(item.id().clone(), item.disclosure_progress);
+                }
+            }
+        }
+        self.disclosure_transitions.retain(|id, _| self.items.iter().any(|item| item.id() == id));
+        for item in &self.items {
+            if item.trailing_accessory_ref().is_some() {
+                self.disclosure_transitions
+                    .entry(item.id().clone())
+                    .or_insert_with(|| DisclosureMotion::new(item.disclosure_progress, self.animated));
+            }
+        }
         self.indicator_motion.clear_geometry();
         self.group.update(cx, |group, cx| {
             group.set_items(self.items.clone(), cx);
@@ -127,6 +170,14 @@ impl TabsNavigation {
         if !changed {
             return false;
         }
+        if let Some(transition) = self.disclosure_transitions.get_mut(item.id()) {
+            transition.set_target(if open { 1.0 } else { 0.0 });
+        }
+        self.disclosure_progress
+            .lock()
+            .expect("tabs disclosure progress lock")
+            .entry(item.id().clone())
+            .or_insert(item.disclosure_progress);
         self.group.update(cx, |group, cx| {
             group.set_items(self.items.clone(), cx);
         });
@@ -140,6 +191,9 @@ impl TabsNavigation {
         }
         self.animated = animated;
         self.indicator_motion.set_animated(animated);
+        for transition in self.disclosure_transitions.values_mut() {
+            transition.set_animated(animated);
+        }
         self.refresh_group_template(cx);
         cx.notify();
     }
@@ -181,6 +235,7 @@ impl TabsNavigation {
         let template = self.template.clone();
         let indicator_motion = self.indicator_motion.clone();
         let disclosure_icons = self.disclosure_icons.clone();
+        let disclosure_progress = self.disclosure_progress.clone();
         self.group.update(cx, |group, cx| {
             group.set_template(
                 super::template::tabs_navigation_control_group_template(
@@ -189,10 +244,29 @@ impl TabsNavigation {
                     template,
                     indicator_motion,
                     disclosure_icons,
+                    disclosure_progress,
                 ),
                 cx,
             );
         });
+    }
+
+    fn sync_disclosure_transitions(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let mut animating = false;
+        for (id, transition) in &mut self.disclosure_transitions {
+            animating |= transition.sync();
+            if let Some(item) = self.items.iter_mut().find(|item| item.id() == id) {
+                item.disclosure_progress = transition.progress();
+                self.disclosure_progress
+                    .lock()
+                    .expect("tabs disclosure progress lock")
+                    .insert(id.clone(), transition.progress());
+            }
+        }
+        if animating {
+            self.group.update(cx, |_, cx| cx.notify());
+            cx.on_next_frame(window, |_, _, cx| cx.notify());
+        }
     }
 
     fn retarget_indicator_for_active(&mut self, animate: bool) {
@@ -337,6 +411,7 @@ impl Focusable for TabsNavigation {
 
 impl Render for TabsNavigation {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.sync_disclosure_transitions(window, cx);
         let was_animating = self.indicator_motion.is_animating();
         let is_animating = self.indicator_motion.sync();
         self.indicator_motion.schedule_frame(window, cx);

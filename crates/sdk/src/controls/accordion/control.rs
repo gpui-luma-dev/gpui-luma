@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 use std::sync::Arc;
-use std::time::Duration;
 
 use gpui::{
     App, Context, EventEmitter, FocusOutEvent, Focusable, FocusHandle, IntoElement, KeyDownEvent, Render, SharedString,
@@ -11,7 +10,7 @@ use super::{
     AccordionBuilder, AccordionItem, AccordionItemRenderModel, AccordionModel, AccordionRenderModel,
     AccordionSelectionMode, AccordionTemplateHandlers,
 };
-use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::animation::DisclosureMotion;
 use crate::controls::state::{CompositeItemState, ControlFocusState};
 use crate::keyhandling::{ActivateControl, SelectFirstItem, SelectLastItem};
 use crate::theme::observe_theme_revision;
@@ -47,7 +46,7 @@ pub struct AccordionControl {
     focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
     expanded_ids: HashSet<SharedString>,
-    transitions: Vec<VisualTransition>,
+    transitions: Vec<DisclosureMotion>,
     content_heights_px: Vec<f32>,
     focused_item_index: Option<usize>,
     hovered_item_index: Option<usize>,
@@ -71,18 +70,13 @@ impl AccordionControl {
             }
         }
 
-        let duration = if builder.model.animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        };
         let transitions = builder
             .model
             .items
             .iter()
             .map(|item| {
                 let initial = if expanded_ids.contains(&item.id) { 1.0 } else { 0.0 };
-                VisualTransition::new(initial, duration)
+                DisclosureMotion::new(initial, builder.model.animated)
             })
             .collect();
         let content_heights_px = vec![0.0; builder.model.items.len()];

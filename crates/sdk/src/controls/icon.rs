@@ -1,5 +1,6 @@
-use gpui::{AnyElement, Hsla, SharedString, px, prelude::*, svg};
+use gpui::{AnyElement, Hsla, SharedString, Transformation, px, prelude::*, radians, svg};
 use lucide_svg_static::Icon as LucideIcon;
+use lucide_svg_static::Icon as SvgIcon;
 
 #[derive(Clone, Debug)]
 pub enum IconSource {
@@ -15,6 +16,40 @@ pub enum IconSource {
 pub struct DisclosureIcons {
     pub expanded: IconSource,
     pub collapsed: IconSource,
+}
+
+/// Renders a disclosure affordance with a continuous rotation for the standard
+/// chevron pairs, while preserving icon swapping for custom icon combinations.
+pub fn render_disclosure_icon(icons: &DisclosureIcons, progress: f32, color: Hsla, size: f32) -> AnyElement {
+    let progress = progress.clamp(0.0, 1.0);
+    let animated_pair = match (&icons.collapsed, &icons.expanded) {
+        (IconSource::Lucide(LucideIcon::ChevronRight), IconSource::Lucide(LucideIcon::ChevronDown)) => {
+            Some((SvgIcon::ChevronRight, std::f32::consts::FRAC_PI_2))
+        }
+        (IconSource::Lucide(LucideIcon::ChevronDown), IconSource::Lucide(LucideIcon::ChevronUp)) => {
+            Some((SvgIcon::ChevronDown, std::f32::consts::PI))
+        }
+        _ => None,
+    };
+
+    if let Some((asset, angle)) = animated_pair {
+        return svg()
+            .path(asset.asset_path())
+            .size(px(size))
+            .text_color(color)
+            .with_transformation(Transformation::rotate(radians(progress * angle)))
+            .into_any_element();
+    }
+
+    render_icon_source(
+        if progress >= 0.5 {
+            &icons.expanded
+        } else {
+            &icons.collapsed
+        },
+        color,
+        size,
+    )
 }
 
 impl DisclosureIcons {
