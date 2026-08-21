@@ -59,7 +59,7 @@ pub(crate) fn render_tree_view_template_section(
     section_shell_with_width(
         960.0,
         "Tree View",
-        "Hierarchical rows. Sizes tab: Sm/Md/Lg node label typography.",
+        "Hierarchical rows. Sizes tab: Sm/Md/Lg row, icon, chevron, and label sizing.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,

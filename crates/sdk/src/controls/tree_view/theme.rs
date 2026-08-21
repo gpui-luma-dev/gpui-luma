@@ -26,9 +26,10 @@ impl TreeViewScale {
             indentation_width: snap_to_pixel(16.0, scale_factor),
             inner_gap: snap_to_pixel(metrics.gap(size), scale_factor),
             radius: metrics.radius(size),
-            // Icon metrics are derived from label typography in the template; these are fallbacks only.
-            icon_size: snap_to_pixel(11.0, scale_factor),
-            chevron_size: snap_to_pixel(9.0, scale_factor),
+            // Keep tree affordances aligned with the shared control-size icon scale while
+            // giving the chevron a slightly lighter visual weight than the content icon.
+            icon_size: snap_to_pixel(metrics.icon_size(size), scale_factor),
+            chevron_size: snap_to_pixel((metrics.icon_size(size) - 2.0).max(0.0), scale_factor),
         }
     }
 }
@@ -98,5 +99,23 @@ impl TreeViewTheme for DefaultTreeViewTheme {
 
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TreeViewScale;
+    use crate::theme::{ControlSize, MetricTokens};
+
+    #[test]
+    fn affordance_sizes_follow_control_size_scale() {
+        let metrics = MetricTokens::default();
+
+        assert_eq!(TreeViewScale::compute(ControlSize::Sm, &metrics, 1.0).icon_size, 14.0);
+        assert_eq!(TreeViewScale::compute(ControlSize::Sm, &metrics, 1.0).chevron_size, 12.0);
+        assert_eq!(TreeViewScale::compute(ControlSize::Md, &metrics, 1.0).icon_size, 16.0);
+        assert_eq!(TreeViewScale::compute(ControlSize::Md, &metrics, 1.0).chevron_size, 14.0);
+        assert_eq!(TreeViewScale::compute(ControlSize::Lg, &metrics, 1.0).icon_size, 18.0);
+        assert_eq!(TreeViewScale::compute(ControlSize::Lg, &metrics, 1.0).chevron_size, 16.0);
     }
 }
