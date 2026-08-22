@@ -15,7 +15,7 @@ use crate::controls::scroll_container::ScrollContainer;
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::state::MenuPath;
 use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
-use crate::controls::overlay_presence::OverlayPresence;
+use crate::controls::popup_lifecycle::PopupLifecycle;
 use crate::focus::EscapeFocus;
 use crate::keyhandling::{
     ActivateControl, CloseSubmenu, ControlKeyProfile, OpenSubmenu, SelectFirstItem, SelectLastItem, SelectNextItem,
@@ -47,7 +47,7 @@ pub struct SidebarPanelEngine {
     open_rail_submenu: Option<SharedString>,
     rail_submenu_open_submenu: Option<usize>,
     rail_submenu_active_path: Option<MenuPath>,
-    rail_submenu_presence: OverlayPresence,
+    rail_submenu_lifecycle: PopupLifecycle,
     rail_submenu_content: Option<RenderedRailSubmenu>,
     rail_submenu_content_size: Option<Size<Pixels>>,
     visible_focus_nodes: Vec<(NavigationFocusTarget, FocusHandle)>,
@@ -98,7 +98,7 @@ impl SidebarPanelEngine {
             open_rail_submenu: None,
             rail_submenu_open_submenu: None,
             rail_submenu_active_path: None,
-            rail_submenu_presence: OverlayPresence::new(false, animated),
+            rail_submenu_lifecycle: PopupLifecycle::new(animated),
             rail_submenu_content: None,
             rail_submenu_content_size: None,
             visible_focus_nodes: Vec::new(),
@@ -355,11 +355,15 @@ impl SidebarPanelEngine {
             self.rail_submenu_content = Some(current);
         }
         if let Some(content) = &mut self.rail_submenu_content {
-            content.presence = self.rail_submenu_presence;
+            content.presence = self.rail_submenu_lifecycle.presence();
             content.content_size = self.rail_submenu_content_size;
         }
-        let rail_submenu =
-            self.rail_submenu_presence.should_paint().then(|| self.rail_submenu_content.clone()).flatten();
+        let rail_submenu = self
+            .rail_submenu_lifecycle
+            .presence()
+            .should_paint()
+            .then(|| self.rail_submenu_content.clone())
+            .flatten();
 
         if self.model.collapsed {
             self.visible_focus_nodes = visible_focus_nodes;
@@ -524,7 +528,8 @@ impl SidebarPanelEngine {
         if self.open_rail_submenu.is_none()
             && self.rail_submenu_open_submenu.is_none()
             && self.rail_submenu_active_path.is_none()
-            && !self.rail_submenu_presence.is_animating()
+            && !self.rail_submenu_lifecycle.is_open()
+            && !self.rail_submenu_lifecycle.presence().is_animating()
         {
             return false;
         }
@@ -532,7 +537,7 @@ impl SidebarPanelEngine {
         self.open_rail_submenu = None;
         self.rail_submenu_open_submenu = None;
         self.rail_submenu_active_path = None;
-        self.rail_submenu_presence.set_open(false);
+        self.rail_submenu_lifecycle.close();
         cx.emit(SidebarPanelEngineEvent::RailSubmenuOpenChanged { node_id: None });
         true
     }
@@ -544,7 +549,7 @@ impl SidebarPanelEngine {
             self.open_rail_submenu = Some(node_id.clone());
             self.rail_submenu_open_submenu = None;
             self.rail_submenu_active_path = None;
-            self.rail_submenu_presence.set_open(true);
+            self.rail_submenu_lifecycle.open();
             cx.emit(SidebarPanelEngineEvent::RailSubmenuOpenChanged { node_id: Some(node_id) });
         }
     }
@@ -566,7 +571,7 @@ impl SidebarPanelEngine {
             items,
             open_submenu: self.rail_submenu_open_submenu,
             active_path: self.rail_submenu_active_path,
-            presence: self.rail_submenu_presence,
+            presence: self.rail_submenu_lifecycle.presence(),
             content_size: self.rail_submenu_content_size,
         })
     }
@@ -705,16 +710,19 @@ impl SidebarPanelEngine {
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) {
-        self.rail_node_bounds.insert(node_id, *bounds);
+        self.rail_node_bounds.insert(node_id.clone(), *bounds);
+        if self.open_rail_submenu.as_ref() == Some(&node_id) {
+            self.rail_submenu_lifecycle.set_trigger_bounds(*bounds);
+        }
     }
 
     fn handle_rail_submenu_mouse_down_out(
         &mut self,
-        _event: &MouseDownEvent,
+        event: &MouseDownEvent,
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.open_rail_submenu.is_some() {
+        if self.rail_submenu_lifecycle.dismiss_from_outside_click(event.position) {
             self.close_rail_submenu(cx);
             cx.notify();
         }
@@ -944,13 +952,13 @@ type NavigationFocusTarget = SharedString;
 
 impl Render for SidebarPanelEngine {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let was_rail_submenu_animating = self.rail_submenu_presence.is_animating();
-        let is_rail_submenu_animating = self.rail_submenu_presence.sync();
-        self.rail_submenu_presence.schedule_frame(window, cx);
+        let was_rail_submenu_animating = self.rail_submenu_lifecycle.presence().is_animating();
+        let is_rail_submenu_animating = self.rail_submenu_lifecycle.sync();
+        self.rail_submenu_lifecycle.schedule_frame(window, cx);
         if was_rail_submenu_animating || is_rail_submenu_animating {
             cx.notify();
         }
-        if !self.rail_submenu_presence.should_paint() {
+        if !self.rail_submenu_lifecycle.presence().should_paint() {
             self.rail_submenu_content = None;
         }
         self.sync_branch_transitions(window, cx);

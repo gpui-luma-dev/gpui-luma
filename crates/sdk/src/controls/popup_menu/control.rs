@@ -11,7 +11,7 @@ use crate::controls::popup_menu::model::PopupMenuModel;
 use crate::controls::floating_menu::{FloatingMenuActivateResult, FloatingMenuState, FloatingMenuStepDirection};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::menu_navigation::MenuNavigator;
-use crate::controls::overlay_presence::OverlayPresence;
+use crate::controls::popup_lifecycle::PopupLifecycle;
 use crate::controls::floating_menu::FloatingMenuHighlight;
 use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
@@ -34,9 +34,7 @@ pub enum PopupMenuEvent {
 
 pub struct PopupMenu {
     model: PopupMenuModel,
-    open: bool,
-    presence: OverlayPresence,
-    trigger_bounds: Option<Bounds<Pixels>>,
+    lifecycle: PopupLifecycle,
     menu_state: FloatingMenuState,
     highlight_from: Option<MenuPath>,
     highlight_to: Option<MenuPath>,
@@ -65,9 +63,7 @@ impl PopupMenu {
 
         Self {
             model: builder.model,
-            open: false,
-            presence: OverlayPresence::new(false, true),
-            trigger_bounds: None,
+            lifecycle: PopupLifecycle::new(true),
             menu_state: FloatingMenuState::default(),
             highlight_from: None,
             highlight_to: None,
@@ -169,11 +165,11 @@ impl PopupMenu {
             label: &self.model.label,
             content: self.model.content.clone(),
             items: &self.model.items,
-            open: self.open,
+            open: self.lifecycle.is_open(),
             disclosure_progress: self.disclosure_transition.progress(),
-            presence: self.presence,
+            presence: self.lifecycle.presence(),
             submenu_transition: self.submenu_transition_index.map(|index| (index, self.submenu_transition.progress())),
-            trigger_bounds: self.trigger_bounds,
+            trigger_bounds: self.lifecycle.trigger_bounds(),
             placement: self.model.placement,
             trigger_style: self.model.trigger_style,
             trigger_size: self.model.trigger_size,
@@ -291,10 +287,9 @@ impl PopupMenu {
     }
 
     fn close_menu(&mut self, cx: &mut Context<Self>) -> bool {
-        let was_open = self.open;
+        let was_open = self.lifecycle.is_open();
         let previous = self.menu_state.active_path();
-        self.open = false;
-        self.presence.set_open(false);
+        self.lifecycle.close();
         self.disclosure_transition.set_target(0.0);
         self.menu_state.clear();
         self.sync_highlight(previous);
@@ -320,11 +315,10 @@ impl PopupMenu {
     }
 
     fn open_menu_with(&mut self, active_path: Option<MenuPath>, cx: &mut Context<Self>) -> bool {
-        let was_open = self.open;
+        let was_open = self.lifecycle.is_open();
         let previous = self.menu_state.active_path();
-        let changed = !self.open || self.menu_state.open_with(active_path);
-        self.open = true;
-        self.presence.set_open(true);
+        let changed = !self.lifecycle.is_open() || self.menu_state.open_with(active_path);
+        self.lifecycle.open();
         self.disclosure_transition.set_target(1.0);
         self.sync_highlight(previous);
         if !was_open {
@@ -357,7 +351,7 @@ impl PopupMenu {
     }
 
     fn handle_trigger_bounds(&mut self, bounds: &Bounds<Pixels>, _window: &mut Window, _cx: &mut Context<Self>) {
-        self.trigger_bounds = Some(*bounds);
+        self.lifecycle.set_trigger_bounds(*bounds);
     }
 
     fn handle_trigger_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
@@ -366,7 +360,7 @@ impl PopupMenu {
         }
 
         if self.model.enabled {
-            if self.open {
+            if self.lifecycle.is_open() {
                 self.dismiss_menu(cx);
             } else {
                 self.open_menu_with(None, cx);
@@ -401,7 +395,7 @@ impl PopupMenu {
     }
 
     fn handle_item_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
-        if !hovered || !self.open {
+        if !hovered || !self.lifecycle.is_open() {
             return;
         }
 
@@ -431,8 +425,9 @@ impl PopupMenu {
         }
     }
 
-    fn handle_mouse_down_out(&mut self, _event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.dismiss_menu(cx) {
+    fn handle_mouse_down_out(&mut self, event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.lifecycle.is_open() && !self.lifecycle.is_inside_trigger(event.position) {
+            self.dismiss_menu(cx);
             cx.notify();
         }
     }
@@ -456,7 +451,7 @@ impl PopupMenu {
     }
 
     fn step_active_item(&mut self, direction: FloatingMenuStepDirection, cx: &mut Context<Self>) {
-        if !self.model.enabled || !self.open {
+        if !self.model.enabled || !self.lifecycle.is_open() {
             return;
         }
 
@@ -468,7 +463,7 @@ impl PopupMenu {
     }
 
     fn move_active_to_boundary(&mut self, first: bool, cx: &mut Context<Self>) {
-        if !self.model.enabled || !self.open {
+        if !self.model.enabled || !self.lifecycle.is_open() {
             return;
         }
 
@@ -480,7 +475,7 @@ impl PopupMenu {
     }
 
     fn open_active_submenu(&mut self, cx: &mut Context<Self>) {
-        if !self.model.enabled || !self.open {
+        if !self.model.enabled || !self.lifecycle.is_open() {
             return;
         }
 
@@ -492,7 +487,7 @@ impl PopupMenu {
     }
 
     fn close_active_submenu(&mut self, cx: &mut Context<Self>) {
-        if !self.model.enabled || !self.open {
+        if !self.model.enabled || !self.lifecycle.is_open() {
             return;
         }
 
@@ -508,12 +503,12 @@ impl PopupMenu {
             return;
         }
 
-        if !self.open {
+        if !self.lifecycle.is_open() {
             self.open_menu_at_boundary(true, cx);
             return;
         }
 
-        if !self.open {
+        if !self.lifecycle.is_open() {
             self.open_menu_at_boundary(true, cx);
             return;
         }
@@ -534,7 +529,7 @@ impl PopupMenu {
     }
 
     fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.open {
+        if self.lifecycle.is_open() {
             self.step_active_item(FloatingMenuStepDirection::Previous, cx);
         } else if self.model.tab_stop {
             self.open_menu_at_boundary(false, cx);
@@ -544,7 +539,7 @@ impl PopupMenu {
     }
 
     fn handle_select_next_item(&mut self, _: &SelectNextItem, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.open {
+        if self.lifecycle.is_open() {
             self.step_active_item(FloatingMenuStepDirection::Next, cx);
         } else if self.model.tab_stop {
             self.open_menu_at_boundary(true, cx);
@@ -554,7 +549,7 @@ impl PopupMenu {
     }
 
     fn handle_select_first_item(&mut self, _: &SelectFirstItem, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.open {
+        if self.lifecycle.is_open() {
             self.move_active_to_boundary(true, cx);
         } else if self.model.enabled {
             cx.propagate();
@@ -562,7 +557,7 @@ impl PopupMenu {
     }
 
     fn handle_select_last_item(&mut self, _: &SelectLastItem, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.open {
+        if self.lifecycle.is_open() {
             self.move_active_to_boundary(false, cx);
         } else if self.model.enabled {
             cx.propagate();
@@ -570,7 +565,7 @@ impl PopupMenu {
     }
 
     fn handle_open_submenu(&mut self, _: &OpenSubmenu, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.open {
+        if self.lifecycle.is_open() {
             self.open_active_submenu(cx);
         } else if self.model.enabled {
             cx.propagate();
@@ -578,7 +573,7 @@ impl PopupMenu {
     }
 
     fn handle_close_submenu(&mut self, _: &CloseSubmenu, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.open {
+        if self.lifecycle.is_open() {
             self.close_active_submenu(cx);
         } else if self.model.enabled {
             cx.propagate();
@@ -586,7 +581,7 @@ impl PopupMenu {
     }
 
     fn handle_activate_control(&mut self, _: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.model.split && !self.open {
+        if self.model.split && !self.lifecycle.is_open() {
             self.activate_primary(cx);
         } else {
             self.activate_active_item(cx);
@@ -594,7 +589,7 @@ impl PopupMenu {
     }
 
     fn handle_escape_focus(&mut self, _: &EscapeFocus, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.open {
+        if self.lifecycle.is_open() {
             self.dismiss_menu(cx);
             cx.notify();
         } else {
@@ -635,8 +630,8 @@ impl Render for PopupMenu {
             self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
         }
 
-        if self.presence.sync() {
-            self.presence.schedule_frame(window, cx);
+        if self.lifecycle.sync() {
+            self.lifecycle.schedule_frame(window, cx);
         }
 
         if self.disclosure_transition.sync() {
