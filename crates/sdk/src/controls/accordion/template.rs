@@ -147,7 +147,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
         let mut trigger_clicks = trigger_clicks.into_iter();
         let mut content_height_reports = content_height_reports.into_iter();
 
-        let mut root = div().id(model.id.clone()).flex().flex_col().w_full().gap(px(scale.item_gap));
+        let mut root = div().id(model.id.clone()).flex().flex_col().w_full().gap(px(scale.item_gap)).cursor_default();
 
         for item in &model.items {
             let Some(hover_handler) = trigger_hovers.next() else {

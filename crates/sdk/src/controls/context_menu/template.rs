@@ -146,7 +146,6 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             .id(format!("{}-target", model.id))
             .relative()
             .flex()
-            .cursor_pointer()
             .on_hover(target_hover)
             .on_mouse_down(MouseButton::Right, target_mouse_down)
             .on_mouse_up(MouseButton::Right, target_mouse_up)
@@ -157,6 +156,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             target = target.items_start().justify_start().w_full().min_h(relative(1.0)).child(content);
         } else {
             target = target
+                .cursor_pointer()
                 .min_w(px(look.target_min_width))
                 .px(px(look.target_padding_x))
                 .py(px(look.target_padding_y))
