@@ -1,5 +1,5 @@
 mod model;
-mod panels;
+pub(crate) mod panels;
 mod parsing;
 mod subscriptions;
 mod sync;

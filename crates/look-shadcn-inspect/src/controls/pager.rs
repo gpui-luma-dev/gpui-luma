@@ -1,7 +1,7 @@
 //! Inspect metadata for `pager`.
 
-use gpui_luma::controls::pager::PagerStyle;
-use gpui_luma_look_shadcn::{ColorSource, ResolvedColor, ResolvedMetric, ShadcnLook};
+use gpui_luma::controls::{button_family::ButtonFamilyRole, choice_indicator_layout::shadow_extent_from, pager::PagerStyle};
+use gpui_luma_look_shadcn::{ColorSource, ResolvedColor, ResolvedMetric, ResolvedTypography, ShadcnLook, TypographySource};
 
 #[derive(Clone, Debug)]
 pub struct PagerShellInspectPalette {
@@ -23,6 +23,8 @@ pub struct PagerInspectMetrics {
     pub padding_y: ResolvedMetric,
     pub gap: ResolvedMetric,
     pub group_gap: ResolvedMetric,
+    pub font_family: ResolvedTypography,
+    pub reserved_shadow_extent: ResolvedMetric,
 }
 
 pub fn inspect_pager_shell_color_palette(
@@ -53,6 +55,12 @@ pub fn inspect_pager_metrics(look: &ShadcnLook, style: PagerStyle) -> PagerInspe
 
     let pager = gpui_luma_look_shadcn::paint::pager_look(look, true, style);
     let style_label = pager_style_label(style);
+    let button = look.resolve_outline_button(
+        ButtonFamilyRole::Toggle { selected: false },
+        gpui_luma::theme::ControlSize::Sm,
+        gpui_luma::theme::InteractionState::default(),
+    );
+    let reserved_shadow_extent = shadow_extent_from(button.shadow.as_ref(), 1.0, true);
 
     PagerInspectMetrics {
         control_height: derived_metric(format!("{style_label} page-size trigger height"), pager.control_height),
@@ -63,6 +71,25 @@ pub fn inspect_pager_metrics(look: &ShadcnLook, style: PagerStyle) -> PagerInspe
         padding_y: derived_metric(format!("{style_label} shell padding y"), pager.padding_y),
         gap: derived_metric(format!("{style_label} item gap"), pager.gap),
         group_gap: derived_metric(format!("{style_label} group gap"), pager.group_gap),
+        font_family: pager_font_family(look),
+        reserved_shadow_extent: ResolvedMetric {
+            value_px: reserved_shadow_extent,
+            source: gpui_luma_look_shadcn::MetricSource::Derived {
+                note: "button outline shadow projection reservation".into(),
+            },
+        },
+    }
+}
+
+fn pager_font_family(look: &ShadcnLook) -> ResolvedTypography {
+    let family = look.mode_tokens().typography.font.sans.family.clone();
+    if look.mode_tokens().catalog.get("font-sans").is_some() {
+        ResolvedTypography { value: family, source: TypographySource::CssVar { token: "font-sans".into() } }
+    } else {
+        ResolvedTypography {
+            value: family,
+            source: TypographySource::Scaffold { path: "LumaTypography.font.sans.family".into() },
+        }
     }
 }
 

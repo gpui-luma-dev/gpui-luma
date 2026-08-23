@@ -27,6 +27,17 @@ pub const PALETTE_SATURATION_MULTIPLIER_MAX: f32 = 2.0;
 pub const PALETTE_LIGHTNESS_MULTIPLIER_MIN: f32 = 0.0;
 pub const PALETTE_LIGHTNESS_MULTIPLIER_MAX: f32 = 2.0;
 
+const SHADOW_LADDER_TOKENS: [&str; 8] = [
+    "shadow-2xs",
+    "shadow-xs",
+    "shadow-sm",
+    "shadow",
+    "shadow-md",
+    "shadow-lg",
+    "shadow-xl",
+    "shadow-2xl",
+];
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThemePaletteHslOverride {
     pub hue_deg: f32,
@@ -214,7 +225,10 @@ impl StudioOverrides {
             overrides.insert("spacing".to_string(), rem_css_value(spacing_rem));
         }
         if let Some(shadow) = &self.shadow {
-            overrides.insert("shadow".to_string(), shadow.to_css_value());
+            let shadow = shadow.to_css_value();
+            for token in SHADOW_LADDER_TOKENS {
+                overrides.insert(token.to_string(), shadow.clone());
+            }
         }
         if let Some(font_sans) = &self.font_sans {
             overrides.insert("font-sans".to_string(), font_sans.clone());
@@ -377,5 +391,23 @@ mod tests {
         let tokens = overrides.token_overrides();
         assert_eq!(tokens.get("font-sans").map(String::as_str), Some("Poppins, sans-serif"));
         assert_eq!(tokens.get("font-mono").map(String::as_str), Some("'IBM Plex Mono', monospace"));
+    }
+
+    #[test]
+    fn shadow_override_updates_the_complete_ladder() {
+        let mut overrides = StudioOverrides::default();
+        overrides.set_shadow_override(ThemeShadowOverride {
+            color: Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.2 },
+            blur_px: 10.0,
+            spread_px: -2.0,
+            offset_x_px: 0.0,
+            offset_y_px: 4.0,
+        });
+
+        let tokens = overrides.token_overrides();
+        let shadow = tokens.get("shadow").expect("base shadow override");
+        for token in SHADOW_LADDER_TOKENS {
+            assert_eq!(tokens.get(token), Some(shadow));
+        }
     }
 }

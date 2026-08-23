@@ -1,15 +1,17 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, FontWeight, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::theme::{LumaChrome, ThemeMode};
-use gpui_luma::{declare_form, hstack, vstack};
+use gpui_luma::{hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnModeTokens, ShadcnTextRole, ShadcnTextSize};
 
 use crate::studio::export::token_css_name;
 use crate::studio::overrides::StudioOverrides;
 use crate::studio::color_format::format_compact_hsla;
+use crate::studio::app::LumaStudioApp;
+use crate::studio::controls::color_picker::{ColorPickerEvent, ColorPickerPopover};
 
 const PALETTE_SWATCH_SIZE: f32 = 40.0;
 const PALETTE_ITEM_GAP: f32 = 12.0;
@@ -81,6 +83,7 @@ const PALETTE_CATEGORIES: &[(&str, &[(&str, &str)])] = &[
 struct TokenSwatchRow {
     label: &'static str,
     color: gpui::Hsla,
+    picker: Entity<ColorPickerPopover>,
 }
 
 struct PaletteSection {
@@ -94,14 +97,17 @@ struct ModePalette {
     sections: Vec<PaletteSection>,
 }
 
-declare_form! {
-    pub struct PalettePanel {
-        controls: {},
-        args: {
-            look: Arc<ShadcnLook>,
-            overrides: StudioOverrides,
-        },
-        fields: {}
+pub struct PalettePanel {
+    look: Arc<ShadcnLook>,
+    overrides: StudioOverrides,
+    pickers: HashMap<String, Entity<ColorPickerPopover>>,
+    _subscriptions: Vec<Subscription>,
+}
+
+impl PalettePanel {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>, overrides: StudioOverrides) -> Self {
+        let pickers = build_palette_pickers(&look, &overrides, cx);
+        Self { look, overrides, pickers, _subscriptions: Vec::new() }
     }
 }
 
@@ -109,7 +115,46 @@ impl PalettePanel {
     pub fn sync_snapshot(&mut self, look: Arc<ShadcnLook>, overrides: StudioOverrides, cx: &mut Context<Self>) {
         self.look = look;
         self.overrides = overrides;
+        let mode_tokens = match self.look.mode() {
+            ThemeMode::Light => self.look.light_tokens(),
+            ThemeMode::Dark => self.look.dark_tokens(),
+        };
+        for (token, picker) in &self.pickers {
+            let color = token_color_for_mode(
+                &mode_tokens,
+                &self.overrides.global_color_overrides,
+                token,
+                gpui::hsla(0.0, 0.0, 0.5, 1.0),
+            );
+            picker.update(cx, |picker, cx| picker.set_color(color, cx));
+        }
         cx.notify();
+    }
+
+    pub fn wire_subscriptions<T: 'static>(
+        panel: &Entity<Self>,
+        app: Entity<LumaStudioApp>,
+        cx: &mut Context<T>,
+        subscriptions: &mut Vec<Subscription>,
+    ) {
+        for (_, tokens) in PALETTE_CATEGORIES {
+            for (token, _) in *tokens {
+                let Some(picker) = panel.read(cx).pickers.get(*token).cloned() else {
+                    continue;
+                };
+                let token = token_css_name(token);
+                let app = app.clone();
+                subscriptions.push(cx.subscribe(&picker, move |_, _, event: &ColorPickerEvent, cx| {
+                    let ColorPickerEvent::Change(color) = event;
+                    let color = *color;
+                    let token = token.clone();
+                    let app = app.clone();
+                    cx.defer(move |cx| {
+                        app.update(cx, |app, cx| app.set_global_color(&token, color, cx));
+                    });
+                }));
+            }
+        }
     }
 }
 
@@ -121,7 +166,7 @@ impl Render for PalettePanel {
                 ThemeMode::Light => self.look.light_tokens(),
                 ThemeMode::Dark => self.look.dark_tokens(),
             };
-            let palette = mode_palette(&mode_tokens, &self.overrides.global_color_overrides);
+            let palette = mode_palette(&mode_tokens, &self.overrides.global_color_overrides, &self.pickers);
             let heading_style = self.look.typography_role(ShadcnTextRole::H3);
             let body_style = self.look.typography_scale(ShadcnTextSize::Sm);
             let section_style = self.look.typography_scale(ShadcnTextSize::Lg);
@@ -155,7 +200,32 @@ impl Render for PalettePanel {
     }
 }
 
-fn mode_palette(mode_tokens: &ShadcnModeTokens, global_overrides: &HashMap<String, gpui::Hsla>) -> ModePalette {
+fn build_palette_pickers(
+    look: &Arc<ShadcnLook>,
+    overrides: &StudioOverrides,
+    cx: &mut Context<PalettePanel>,
+) -> HashMap<String, Entity<ColorPickerPopover>> {
+    let mode_tokens = match look.mode() {
+        ThemeMode::Light => look.light_tokens(),
+        ThemeMode::Dark => look.dark_tokens(),
+    };
+    let fallback = gpui::hsla(0.0, 0.0, 0.5, 1.0);
+    PALETTE_CATEGORIES
+        .iter()
+        .flat_map(|(_, tokens)| tokens.iter())
+        .map(|(token, _)| {
+            let color = token_color_for_mode(&mode_tokens, &overrides.global_color_overrides, token, fallback);
+            let picker = cx.new(|cx| ColorPickerPopover::new_transparent(look.clone(), color, cx));
+            ((*token).to_string(), picker)
+        })
+        .collect()
+}
+
+fn mode_palette(
+    mode_tokens: &ShadcnModeTokens,
+    global_overrides: &HashMap<String, gpui::Hsla>,
+    pickers: &HashMap<String, Entity<ColorPickerPopover>>,
+) -> ModePalette {
     let palette = mode_tokens.palette;
     let fallback = gpui::hsla(0.0, 0.0, 0.5, 1.0);
 
@@ -171,6 +241,7 @@ fn mode_palette(mode_tokens: &ShadcnModeTokens, global_overrides: &HashMap<Strin
                     .map(|(token, token_label)| TokenSwatchRow {
                         label: token_label,
                         color: token_color_for_mode(mode_tokens, global_overrides, token, fallback),
+                        picker: pickers.get(*token).expect("palette picker").clone(),
                     })
                     .collect(),
             })
@@ -247,10 +318,12 @@ fn render_token_cell(
         div()
             .size(px(PALETTE_SWATCH_SIZE))
             .flex_shrink_0()
+            .relative()
             .rounded_cn(ShadcnRadius::Md)
             .bg(row.color)
             .border_1()
-            .border_color(chrome.border),
+            .border_color(chrome.border)
+            .child(div().absolute().top(px(5.0)).left(px(5.0)).child(row.picker)),
         vstack! {
             gap=2;
             div()

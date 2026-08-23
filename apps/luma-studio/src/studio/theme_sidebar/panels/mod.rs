@@ -1,4 +1,4 @@
-mod colors;
+pub(crate) mod colors;
 mod other;
 mod typography;
 

@@ -49,7 +49,7 @@ pub struct ContentPaneHost {
 }
 
 impl ContentPaneHost {
-    pub fn new(_app: Entity<LumaStudioApp>, board: BoardSnapshot, cx: &mut Context<Self>) -> Self {
+    pub fn new(app: Entity<LumaStudioApp>, board: BoardSnapshot, cx: &mut Context<Self>) -> Self {
         let host = cx.entity();
         let controls_panel = cx.new(|cx| ControlsPanel::new(cx, board.look.clone()));
         let picker_host = host.clone();
@@ -108,6 +108,7 @@ impl ContentPaneHost {
 
         let style_guide_panel = cx.new(|cx| StyleGuidePanel::new(cx, board.look.clone()));
         let palette_panel = cx.new(|cx| PalettePanel::new(cx, board.look.clone(), board.overrides.clone()));
+        PalettePanel::wire_subscriptions(&palette_panel, app, cx, &mut subscriptions);
         let theme_usage_panel = cx.new(|cx| ThemeUsagePanel::new(cx, board.look.clone()));
 
         Self {

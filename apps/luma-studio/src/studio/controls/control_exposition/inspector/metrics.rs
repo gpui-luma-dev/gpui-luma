@@ -1026,20 +1026,22 @@ fn pager_shell_metrics_layout_section(
         focus_ring_width: 0.0,
         focus_ring_offset: 0.0,
     };
-    layout_section(
-        look,
-        diagram_id,
-        box_model,
-        None,
-        metric_properties(&[
-            ("control height", &metrics.control_height),
-            ("padding x", &metrics.padding_x),
-            ("padding y", &metrics.padding_y),
-            ("item gap", &metrics.gap),
-            ("group gap", &metrics.group_gap),
-            ("radius", &metrics.radius),
-        ]),
-    )
+    let mut rows = metric_properties(&[
+        ("control height", &metrics.control_height),
+        ("padding x", &metrics.padding_x),
+        ("padding y", &metrics.padding_y),
+        ("item gap", &metrics.gap),
+        ("group gap", &metrics.group_gap),
+        ("radius", &metrics.radius),
+    ]);
+    rows.push(InspectPropertyRow::new(
+        "requested font family",
+        metrics.font_family.value.as_str(),
+        gpui_luma_look_shadcn_inspect::format_inspect_typography_source(&metrics.font_family.source),
+    ));
+    rows.push(super::provenance::metric_row("reserved shadow extent", &metrics.reserved_shadow_extent));
+
+    layout_section(look, diagram_id, box_model, None, rows)
 }
 
 fn pager_button_metrics_layout_section(
@@ -1057,19 +1059,26 @@ fn pager_button_metrics_layout_section(
         focus_ring_width: 0.0,
         focus_ring_offset: 0.0,
     };
-    layout_section(
-        look,
-        diagram_id,
-        box_model,
-        None,
-        metric_properties(&[
-            ("button size", &metrics.button_size),
-            ("button min width", &metrics.button_min_width),
-            ("padding x", &metrics.padding_x),
-            ("gap", &metrics.gap),
-            ("radius", &metrics.radius),
-        ]),
-    )
+    let mut rows = metric_properties(&[
+        ("button size", &metrics.button_size),
+        ("button min width", &metrics.button_min_width),
+        ("padding x", &metrics.padding_x),
+        ("gap", &metrics.gap),
+        ("radius", &metrics.radius),
+    ]);
+    rows.push(InspectPropertyRow::new(
+        "requested font family",
+        metrics.font_family.value.as_str(),
+        gpui_luma_look_shadcn_inspect::format_inspect_typography_source(&metrics.font_family.source),
+    ));
+    rows.push(super::provenance::metric_row("reserved shadow extent", &metrics.reserved_shadow_extent));
+    rows.push(InspectPropertyRow::new(
+        "width policy",
+        "min-width + content",
+        "pager/template.rs · page and labeled buttons",
+    ));
+
+    layout_section(look, diagram_id, box_model, None, rows)
 }
 
 fn accordion_metrics_layout_section(

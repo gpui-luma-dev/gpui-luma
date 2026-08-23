@@ -9,6 +9,7 @@ use gpui_luma_look_shadcn::{
 use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, find_button_elevation_rule, resolve_stylesheet_shadow_token};
 
 use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::choice_indicator_layout::shadow_extent_from;
 use gpui_luma_look_shadcn::catalog::SpacingField;
 
 pub struct ButtonInspectPalette {
@@ -120,6 +121,7 @@ pub struct ButtonInspectElevation {
     pub catalog_value: Option<String>,
     pub layers: Vec<ButtonInspectElevationLayer>,
     pub shadows: Option<Vec<BoxShadow>>,
+    pub reserved_shadow_extent: ResolvedMetric,
 }
 
 pub fn inspect_button_elevation(
@@ -144,6 +146,7 @@ pub fn inspect_button_elevation(
         .map(|shadows| shadows.iter().enumerate().map(|(index, shadow)| elevation_layer(index, shadow)).collect())
         .unwrap_or_default();
     let applied = !state.disabled && !layers.is_empty();
+    let reserved_shadow_extent = resolved_shadow_extent(look.shadow.as_ref());
 
     ButtonInspectElevation {
         applied,
@@ -153,6 +156,7 @@ pub fn inspect_button_elevation(
         catalog_value,
         layers,
         shadows: look.shadow.clone(),
+        reserved_shadow_extent,
     }
 }
 
@@ -171,6 +175,7 @@ pub fn inspect_layered_elevation(
         .map(|shadows| shadows.iter().enumerate().map(|(index, shadow)| elevation_layer(index, shadow)).collect())
         .unwrap_or_default();
     let applied = !state.disabled && !layers.is_empty();
+    let reserved_shadow_extent = resolved_shadow_extent(shadows);
 
     ButtonInspectElevation {
         applied,
@@ -180,6 +185,14 @@ pub fn inspect_layered_elevation(
         catalog_value,
         layers,
         shadows: shadows.cloned(),
+        reserved_shadow_extent,
+    }
+}
+
+fn resolved_shadow_extent(shadows: Option<&Vec<BoxShadow>>) -> ResolvedMetric {
+    ResolvedMetric {
+        value_px: shadow_extent_from(shadows, 1.0, true),
+        source: MetricSource::Derived { note: "shadow projection reservation at scale 1.0".into() },
     }
 }
 
@@ -449,6 +462,7 @@ mod tests {
         assert!(elevation.catalog_value.as_ref().is_some_and(|value| !value.is_empty()));
         assert!(elevation.layers.len() >= 1);
         assert!(elevation.shadows.as_ref().is_some_and(|shadows| !shadows.is_empty()));
+        assert!(elevation.reserved_shadow_extent.value_px > 0.0);
     }
 
     #[test]
@@ -466,6 +480,7 @@ mod tests {
         assert_eq!(elevation.rule_shadow, "none");
         assert!(elevation.token.is_none());
         assert!(elevation.layers.is_empty());
+        assert_eq!(elevation.reserved_shadow_extent.value_px, 0.0);
     }
 
     #[test]
