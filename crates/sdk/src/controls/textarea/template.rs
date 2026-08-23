@@ -6,7 +6,6 @@ use gpui::{
 };
 
 use super::{TextAreaDrag, TextAreaRenderModel};
-use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
@@ -265,19 +264,13 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
             .when(!model.enabled, |root| root.cursor_not_allowed().opacity(TEXTAREA_DISABLED_OPACITY))
             .child(text_viewport);
 
-        let has_elevation = look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty());
         if model.enabled
             && let Some(shadows) = look.shadow.as_ref().filter(|shadows| !shadows.is_empty())
         {
             control = control.shadow(shadows.clone());
         }
 
-        let shadow_extent = reserve_shadow_extent(look.shadow.as_ref(), None, scale_factor, has_elevation);
-        let oversize_extent = shadow_extent;
         let mut root = div().id(model.id.clone()).relative().child(control);
-        if oversize_extent > 0.0 {
-            root = div().id(format!("{}-elevation", model.id)).relative().p(px(oversize_extent)).child(root);
-        }
 
         if model.full_width {
             root = root.w_full();

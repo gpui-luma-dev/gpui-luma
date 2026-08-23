@@ -1,12 +1,12 @@
 use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
 use crate::controls::button_family::ButtonFamilyRole;
-use crate::controls::choice_indicator_layout::{reserve_shadow_extent, should_paint_shadow};
+use crate::controls::choice_indicator_layout::should_paint_shadow;
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::checkbox::{CheckboxData, CheckboxPalette, CheckboxScale, CheckboxTheme, default_checkbox_theme};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
-use crate::theme::{InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
+use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
 define_control_template!(
     ThemedCheckboxTemplate,
@@ -62,11 +62,6 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
         let on_palette = self.theme.resolve(true, model.state, model.size);
         let palette = lerp_checkbox_palette(&off_palette, &on_palette, progress);
         let settled_palette = if checked { &on_palette } else { &off_palette };
-        let elevation_probe_look = if model.elevation && model.state.disabled {
-            Some(self.theme.resolve(checked, InteractionState { disabled: false, ..model.state }, model.size))
-        } else {
-            None
-        };
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
@@ -74,13 +69,7 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
             |metrics| CheckboxScale::compute(model.size, metrics, scale_factor),
         );
 
-        let shadow_extent = reserve_shadow_extent(
-            settled_palette.indicator_shadow.as_ref(),
-            elevation_probe_look.as_ref().and_then(|probe| probe.indicator_shadow.as_ref()),
-            scale_factor,
-            model.elevation,
-        );
-        let oversize_extent = shadow_extent;
+        let oversize_extent = 0.0;
 
         let indicator_visual = {
             let mut indicator = div()

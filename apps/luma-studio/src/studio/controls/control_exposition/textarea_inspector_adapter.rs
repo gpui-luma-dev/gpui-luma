@@ -24,7 +24,7 @@ pub static TEXTAREA_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec 
     sizes: &CHOICE_SIZES,
     value_modes: &[],
     default_part_id: "",
-    default_variant_id: "outline",
+    default_variant_id: "primary",
     default_size_id: "md",
     default_value_id: "",
 };

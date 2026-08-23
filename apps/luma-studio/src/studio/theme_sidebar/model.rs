@@ -36,7 +36,6 @@ pub(super) const TOKEN_CATEGORIES: &[(&str, &[(&str, &str)])] = &[
 pub(super) const OTHER_CATEGORIES: &[&str] = &["HSL ADJUSTMENTS", "HS MIXER", "RADIUS", "SPACING", "SHADOW"];
 pub(super) const TYPOGRAPHY_CATEGORIES: &[&str] = &["FONT FAMILY"];
 pub(super) const METRIC_FIELD_WIDTH: f32 = 70.0;
-pub(super) const SHADOW_COLOR_SWATCH_SIZE: f32 = 28.0;
 pub(super) const SHADOW_COLOR_FIELD_WIDTH: f32 = 250.0;
 pub(super) const SHADOW_SECTION_GAP: f32 = 4.0;
 pub(super) const DEFAULT_RADIUS_REM: f32 = 0.5;

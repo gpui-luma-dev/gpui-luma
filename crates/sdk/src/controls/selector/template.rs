@@ -9,7 +9,6 @@ use super::{SelectorPlacement, SelectorRenderModel};
 use super::item_template::render_item_content;
 
 use crate::controls::button_family::button_family_effective_border;
-use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::color::style::ElementExt;
 use crate::controls::selector_panel::{
     SelectorItem, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
@@ -290,12 +289,6 @@ where
 
         if model.state.disabled {
             root = root.opacity(0.56);
-        }
-
-        let has_elevation = !model.without_elevation && look.trigger_shadow.as_ref().is_some_and(|s| !s.is_empty());
-        let shadow_extent = reserve_shadow_extent(look.trigger_shadow.as_ref(), None, scale_factor, has_elevation);
-        if shadow_extent > 0.0 {
-            root = div().id(format!("{}-elevation", model.id)).relative().w_full().p(px(shadow_extent)).child(root);
         }
 
         if model.presence.should_paint() {

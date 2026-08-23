@@ -122,11 +122,13 @@ impl TextFieldControlExposition {
         let entry = *catalog_entry("textfield").expect("textfield catalog entry");
         let preview = look
             .textfield("controls-doc-textfield-preview")
+            .primary(&look)
             .placeholder("Email address")
             .full_width(true)
             .spawn(cx);
         let required_preview = look
             .textfield("controls-doc-textfield-required-preview")
+            .primary(&look)
             .placeholder("Required input")
             .full_width(true)
             .validator(Arc::new(|value: &str| !value.is_empty()))

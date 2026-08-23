@@ -152,6 +152,7 @@ impl TextAreaControlExposition {
         let entry = *catalog_entry("textarea").expect("textarea catalog entry");
         let text_area = look
             .textarea("controls-doc-textarea")
+            .primary(&look)
             .placeholder("Write a multiline message")
             .full_width(true)
             .rows(6)
@@ -160,6 +161,7 @@ impl TextAreaControlExposition {
             .spawn(cx);
         let required_preview = look
             .textarea("controls-doc-textarea-required-preview")
+            .primary(&look)
             .placeholder("Required message")
             .full_width(true)
             .rows(3)

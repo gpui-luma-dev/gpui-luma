@@ -2,8 +2,8 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Context, Entity, Hsla, IntoElement, Render, SharedString, Subscription, TextRun, Window, div,
-    font, prelude::*, px,
+    AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, TextRun, Window, div, font,
+    prelude::*, px,
 };
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::slider::{Slider, SliderEvent};
@@ -12,15 +12,14 @@ use gpui_luma::{GridTrack, grid_layout, hstack, vstack};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use super::colors::token_field_look_override_arc;
-use super::super::model::{
-    METRIC_FIELD_WIDTH, OTHER_CATEGORIES, SHADOW_COLOR_FIELD_WIDTH, SHADOW_COLOR_SWATCH_SIZE, SHADOW_SECTION_GAP,
-};
+use super::super::model::{METRIC_FIELD_WIDTH, OTHER_CATEGORIES, SHADOW_COLOR_FIELD_WIDTH, SHADOW_SECTION_GAP};
 use super::super::parsing::{
     effective_radius_rem, effective_spacing_rem, format_metric_rem, format_palette_hsl_multiplier,
     format_palette_hue_deg, format_shadow_color_input, format_shadow_number, parse_metric_rem,
     parse_palette_hsl_number, parse_shadow_color_input,
 };
 use crate::studio::app::LumaStudioApp;
+use crate::studio::controls::color_picker::{ColorPickerEvent, ColorPickerPopover};
 use crate::studio::hs_mixer::{ThemePaletteHsOverride, clamp_palette_temperature_amount, clamp_palette_vividness_amount};
 use crate::studio::overrides::{
     PALETTE_HUE_DEG_MAX, PALETTE_HUE_DEG_MIN, PALETTE_LIGHTNESS_MULTIPLIER_MAX, PALETTE_LIGHTNESS_MULTIPLIER_MIN,
@@ -60,6 +59,7 @@ pub struct OtherPanel {
     radius_slider: Slider,
     spacing_slider: Slider,
     shadow_color_field: TextField,
+    shadow_color_picker: Entity<ColorPickerPopover>,
     shadow_opacity_field: TextField,
     shadow_blur_field: TextField,
     shadow_spread_field: TextField,
@@ -171,6 +171,7 @@ impl OtherPanel {
                 format_shadow_color_input(shadow_override.color),
                 cx,
             ),
+            shadow_color_picker: cx.new(|cx| ColorPickerPopover::new(look.clone(), shadow_override.color, cx)),
             shadow_opacity_field: build_number_field(
                 &look,
                 "shadow-opacity",
@@ -410,6 +411,12 @@ impl OtherPanel {
             }
         }));
 
+        let shadow_color_picker = panel.read(cx).shadow_color_picker.clone();
+        subscriptions.push(cx.subscribe(&shadow_color_picker, |app, _, event: &ColorPickerEvent, cx| {
+            let ColorPickerEvent::Change(color) = event;
+            app.set_shadow_color(*color, cx);
+        }));
+
         let shadow_opacity_field = panel.read(cx).shadow_opacity_field.clone();
         subscriptions.push(cx.subscribe(&shadow_opacity_field, |app, _, event: &TextFieldEvent, cx| {
             if let TextFieldEvent::Change { value } = event {
@@ -596,6 +603,7 @@ impl OtherPanel {
         self.shadow_override = shadow.clone();
         self.shadow_color_field
             .update(cx, |field, cx| field.set_value(format_shadow_color_input(shadow.color), cx));
+        self.shadow_color_picker.update(cx, |picker, cx| picker.set_color(shadow.color, cx));
         self.shadow_opacity_field
             .update(cx, |field, cx| field.set_value(format_metric_rem(shadow.opacity()), cx));
         self.shadow_blur_field
@@ -744,20 +752,11 @@ impl OtherPanel {
     }
 
     fn shadow_category_content(&self, window: &mut Window) -> AnyElement {
-        let chrome = self.look.chrome();
-        let swatch_color = Hsla { a: 1.0, ..self.shadow_override.color };
-
         vstack! {
             gap=SHADOW_SECTION_GAP;
             hstack! {
                 gap=10 align=center;
-                div()
-                    .size(px(SHADOW_COLOR_SWATCH_SIZE))
-                    .flex_shrink_0()
-                    .rounded(px(8.0))
-                    .bg(swatch_color)
-                    .border_1()
-                    .border_color(chrome.border),
+                self.shadow_color_picker.clone(),
                 div()
                     .w(px(SHADOW_COLOR_FIELD_WIDTH))
                     .max_w_full()

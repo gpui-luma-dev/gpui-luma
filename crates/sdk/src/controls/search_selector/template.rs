@@ -6,7 +6,6 @@ use gpui::{
 };
 
 use crate::controls::button_family::button_family_effective_border;
-use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::icon::lucide_icon;
 use crate::controls::selector::SelectorLook;
 use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
@@ -122,7 +121,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
         &self,
         model: SearchSelectorRenderModel,
         handlers: SearchSelectorTemplateHandlers,
-        window: &mut Window,
+        _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<gpui::Div> {
         let SearchSelectorTemplateHandlers {
@@ -136,7 +135,6 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             trigger_bounds,
         } = handlers;
 
-        let scale_factor = window.scale_factor();
         let mut trigger_look = model.trigger_look;
         if let Some(typography) = model.trigger_typography_override {
             trigger_look.trigger_typography = typography;
@@ -200,17 +198,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             trigger = trigger.shadow(shadows.clone());
         }
 
-        let shadow_extent =
-            reserve_shadow_extent(trigger_look.trigger_shadow.as_ref(), None, scale_factor, has_elevation);
-        let mut trigger_chrome = div().id(format!("{}-trigger", model.id)).relative().w_full().child(trigger);
-        if shadow_extent > 0.0 {
-            trigger_chrome = div()
-                .id(format!("{}-elevation", model.id))
-                .relative()
-                .w_full()
-                .p(px(shadow_extent))
-                .child(trigger_chrome);
-        }
+        let trigger_chrome = div().id(format!("{}-trigger", model.id)).relative().w_full().child(trigger);
 
         div()
             .id(format!("{}-root", model.id))

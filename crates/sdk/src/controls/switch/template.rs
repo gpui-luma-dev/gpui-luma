@@ -1,6 +1,6 @@
 use gpui::{App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
-use crate::controls::choice_indicator_layout::{reserve_shadow_extent_from_slice, should_paint_shadow};
+use crate::controls::choice_indicator_layout::should_paint_shadow;
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
 use crate::controls::switch::{SwitchData, SwitchOrientation, SwitchPalette, SwitchTheme, default_switch_theme};
@@ -64,15 +64,6 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
         let on_palette = self.theme.resolve(true, model.state, model.size);
         let palette = lerp_switch_palette(&off_palette, &on_palette, progress);
         let settled_palette = if checked { &on_palette } else { &off_palette };
-        let elevation_probe_palette = if model.elevation && model.state.disabled {
-            Some(self.theme.resolve(
-                checked,
-                crate::theme::InteractionState { disabled: false, ..model.state },
-                model.size,
-            ))
-        } else {
-            None
-        };
         let scale_factor = window.scale_factor();
         let mut scale = self.theme.scale(model.size, scale_factor);
         let track_length = snap_to_pixel(scale.track_width + model.switch_track_width_extra, scale_factor);
@@ -122,13 +113,7 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
             thumb = thumb.child(content(model, cx));
         }
 
-        let shadow_extent = reserve_shadow_extent_from_slice(
-            &settled_palette.thumb_shadow,
-            elevation_probe_palette.as_ref().map(|probe| probe.thumb_shadow.as_slice()),
-            scale_factor,
-            model.elevation,
-        );
-        let oversize_extent = shadow_extent;
+        let oversize_extent = 0.0;
 
         let mut track_visual = div()
             .id(format!("{}-track", model.id))

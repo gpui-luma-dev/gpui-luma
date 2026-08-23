@@ -11,7 +11,6 @@ use gpui::{
 use super::{TextAreaBuilder, TextAreaState, TextAreaTemplateHandlers, model::TextAreaModel};
 use crate::controls::scrollbar::{Scrollbar, ScrollbarEvent, ScrollbarOrientation};
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
-use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, observe_theme_revision};
 
 const TEXTAREA_RESIZE_ICON_SIZE: f32 = 10.0;
@@ -1341,19 +1340,13 @@ impl Render for TextArea {
             })
             .when(self.model.enabled, |root| root.child(resize_handle));
 
-        let has_elevation = look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty());
         if self.model.enabled
             && let Some(shadows) = look.shadow.as_ref().filter(|shadows| !shadows.is_empty())
         {
             control = control.shadow(shadows.clone());
         }
 
-        let shadow_extent = reserve_shadow_extent(look.shadow.as_ref(), None, scale_factor, has_elevation);
-        let oversize_extent = shadow_extent;
         let mut root = div().id(self.model.id.clone()).relative().child(control);
-        if oversize_extent > 0.0 {
-            root = div().id(format!("{}-elevation", self.model.id)).relative().p(px(oversize_extent)).child(root);
-        }
         if self.model.full_width {
             root = root.w_full();
         }

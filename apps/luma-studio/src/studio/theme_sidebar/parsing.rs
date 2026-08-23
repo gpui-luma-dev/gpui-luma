@@ -62,7 +62,13 @@ pub(super) fn effective_spacing_rem(look: &ShadcnLook, overrides: &StudioOverrid
 }
 
 pub(super) fn format_shadow_color_input(color: Hsla) -> String {
-    format!("hsl({} {}% {}%)", (color.h * 360.0).round(), (color.s * 100.0).round(), (color.l * 100.0).round(),)
+    format!(
+        "hsla({} {}% {}% / {})",
+        (color.h * 360.0).round(),
+        (color.s * 100.0).round(),
+        (color.l * 100.0).round(),
+        format_number(color.a, 100.0, 2),
+    )
 }
 
 pub(super) fn format_shadow_number(value: f32) -> String {

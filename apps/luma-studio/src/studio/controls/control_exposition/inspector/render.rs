@@ -2,9 +2,10 @@
 
 use std::sync::Arc;
 
-use gpui::{AnyElement, FontWeight, IntoElement, div, px};
+use gpui::{AnyElement, Div, FontWeight, IntoElement, div, px};
 use gpui::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma::theme::shadow_projection_insets;
 
 use super::box_model::{MetricFieldHighlight, render_box_model_diagram};
 use super::components::{InspectorRow, InspectorSection};
@@ -84,6 +85,9 @@ pub fn render_elevation_category(look: &Arc<ShadcnLook>, elevation: InspectEleva
         preview_chip = preview_chip.shadow(shadows.clone());
     }
 
+    let shadow_insets = elevation.preview_shadows.as_deref().map(|shadows| shadow_projection_insets(shadows, 1.0));
+    let preview = render_shadow_preview(preview_chip, shadow_insets, chrome.muted_text);
+
     div()
         .w_full()
         .min_w(px(0.0))
@@ -96,7 +100,7 @@ pub fn render_elevation_category(look: &Arc<ShadcnLook>, elevation: InspectEleva
                 .border_1()
                 .border_color(chrome.border)
                 .rounded(px(6.0))
-                .bg(chrome.content_background)
+                .bg(chrome.panel_background)
                 .p(px(10.0))
                 .flex()
                 .flex_col()
@@ -107,9 +111,9 @@ pub fn render_elevation_category(look: &Arc<ShadcnLook>, elevation: InspectEleva
                         .line_height(px(body.line_height))
                         .font_weight(FontWeight::MEDIUM)
                         .text_color(chrome.title_text)
-                        .child("Shadow preview"),
+                        .child("shadow preview"),
                 )
-                .child(div().w_full().h(px(78.0)).flex().items_center().justify_center().child(preview_chip)),
+                .child(div().w_full().h(px(78.0)).flex().items_center().justify_center().child(preview)),
         )
         .child(render_property_rows_panel(look, elevation.property_rows))
         .when_some(elevation.catalog_value.clone(), |stack, catalog_value| {
@@ -119,7 +123,7 @@ pub fn render_elevation_category(look: &Arc<ShadcnLook>, elevation: InspectEleva
                     .border_1()
                     .border_color(chrome.border)
                     .rounded(px(6.0))
-                    .bg(chrome.content_background)
+                    .bg(chrome.panel_background)
                     .p(px(10.0))
                     .flex()
                     .flex_col()
@@ -130,7 +134,7 @@ pub fn render_elevation_category(look: &Arc<ShadcnLook>, elevation: InspectEleva
                             .line_height(px(body.line_height))
                             .font_weight(FontWeight::MEDIUM)
                             .text_color(chrome.title_text)
-                            .child("Catalog value"),
+                            .child("provenance"),
                     )
                     .child(
                         div()
@@ -146,6 +150,52 @@ pub fn render_elevation_category(look: &Arc<ShadcnLook>, elevation: InspectEleva
         .into_any_element()
 }
 
+fn render_shadow_preview(
+    preview_chip: Div,
+    shadow_insets: Option<gpui_luma::theme::ShadowProjectionInsets>,
+    annotation_color: gpui::Hsla,
+) -> AnyElement {
+    let Some(insets) = shadow_insets else {
+        return div().child(preview_chip).into_any_element();
+    };
+
+    let width = 120.0 + insets.left + insets.right;
+    let height = 36.0 + insets.top + insets.bottom;
+    let annotation = format!(
+        "projection: top {} · right {} · bottom {} · left {}",
+        format_extent(insets.top),
+        format_extent(insets.right),
+        format_extent(insets.bottom),
+        format_extent(insets.left),
+    );
+
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(6.0))
+        .child(
+            div()
+                .relative()
+                .w(px(width))
+                .h(px(height))
+                .border_1()
+                .border_dashed()
+                .border_color(annotation_color.opacity(0.55))
+                .child(preview_chip.absolute().left(px(insets.left)).top(px(insets.top))),
+        )
+        .child(div().text_size(px(11.0)).text_color(annotation_color).child(annotation))
+        .into_any_element()
+}
+
+fn format_extent(value: f32) -> String {
+    if (value - value.round()).abs() < f32::EPSILON {
+        format!("{}px", value.round() as i32)
+    } else {
+        format!("{value:.1}px")
+    }
+}
+
 fn render_elevation_layers(look: &Arc<ShadcnLook>, layers: &[super::schema::InspectElevationLayer]) -> AnyElement {
     let chrome = look.chrome();
     let body = &look.mode_tokens().typography.text.body;
@@ -158,7 +208,7 @@ fn render_elevation_layers(look: &Arc<ShadcnLook>, layers: &[super::schema::Insp
         .border_1()
         .border_color(chrome.border)
         .rounded(px(6.0))
-        .bg(chrome.content_background)
+        .bg(chrome.panel_background)
         .p(px(10.0))
         .flex()
         .flex_col()
@@ -169,7 +219,7 @@ fn render_elevation_layers(look: &Arc<ShadcnLook>, layers: &[super::schema::Insp
                 .line_height(px(body.line_height))
                 .font_weight(FontWeight::MEDIUM)
                 .text_color(chrome.title_text)
-                .child("Shadow layers"),
+                .child("shadow layers"),
         );
 
     if layers.is_empty() {
@@ -178,7 +228,7 @@ fn render_elevation_layers(look: &Arc<ShadcnLook>, layers: &[super::schema::Insp
                 .text_size(px(body.size))
                 .line_height(px(body.line_height))
                 .text_color(chrome.muted_text)
-                .child("No shadow layers resolved for this state."),
+                .child("no shadow layers resolved for this state."),
         );
     } else {
         for (index, layer) in layers.iter().enumerate() {

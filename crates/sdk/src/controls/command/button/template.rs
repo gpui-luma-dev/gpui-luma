@@ -81,20 +81,6 @@ fn resolve_probe_look<D: Clone>(
     compose_button_family_look(&palette, model.role, scale, theme.metrics().radius.pill)
 }
 
-/// Enabled-state look used only for elevation layout reservation when disabled clears paint shadows.
-fn resolve_elevation_probe_look<D: Clone>(
-    theme: &Arc<dyn ButtonFamilyTheme>,
-    model: &ButtonRenderModel<D>,
-    scale: &StandardBoxScale,
-) -> Option<ButtonFamilyLook> {
-    if !model.elevation || !model.state.disabled {
-        return None;
-    }
-
-    let enabled_state = InteractionState { disabled: false, ..model.state };
-    Some(resolve_probe_look(theme, model, scale, enabled_state))
-}
-
 pub trait ButtonTemplate<D = ()>: Send + Sync {
     fn render(&self, model: &ButtonRenderModel<D>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
@@ -191,7 +177,6 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         } else {
             look.clone()
         };
-        let elevation_probe_look = resolve_elevation_probe_look(&self.theme, model, &scale);
         let border = button_family_effective_border(control_look.border);
         let focus_border = button_family_effective_border(look.border);
         let focus_metrics = self.theme.metrics().focus;
@@ -287,13 +272,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             control = control.shadow(shadows.clone());
         }
 
-        let shadow_extent = crate::controls::choice_indicator_layout::reserve_shadow_extent(
-            look.shadow.as_ref(),
-            elevation_probe_look.as_ref().and_then(|probe| probe.shadow.as_ref()),
-            scale_factor,
-            model.elevation,
-        );
-        let oversize_extent = shadow_extent.max(focus_extent);
+        let oversize_extent = focus_extent;
 
         let radius = if let Some(radius) = model.radius_override.get() {
             radius

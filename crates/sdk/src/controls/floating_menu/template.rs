@@ -1,7 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{AnyElement, App, ClickEvent, Div, SharedString, Stateful, Window, div, px, relative, prelude::*, svg};
-use crate::controls::choice_indicator_layout::shadow_extent_from_slice;
 use crate::controls::menu_item::{MenuItem, MenuItemIcon};
 use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::state::MenuPath;
@@ -215,7 +214,6 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
             menu = menu.child(submenu);
         }
 
-        let menu = with_elevation_slot(format!("{}-menu", model.id), menu, &look.shadow);
         self.apply_modifiers(menu, model)
     }
 }
@@ -582,18 +580,6 @@ fn highlight_rect(
         (look.min_width - look.padding * 2.0).max(0.0),
         look.item_height,
     ))
-}
-
-fn with_elevation_slot(
-    id: impl Into<SharedString>,
-    surface: Stateful<Div>,
-    shadows: &[gpui::BoxShadow],
-) -> Stateful<Div> {
-    let extent = shadow_extent_from_slice(shadows, 1.0, true);
-    if extent <= 0.0 {
-        return surface;
-    }
-    div().id(format!("{}-elevation", id.into())).relative().p(px(extent)).child(surface)
 }
 
 fn render_item_icon(icon: Option<&MenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {

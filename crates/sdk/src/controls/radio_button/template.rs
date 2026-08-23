@@ -1,14 +1,14 @@
 use gpui::{AnyElement, App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
 use crate::controls::button_family::ButtonFamilyRole;
-use crate::controls::choice_indicator_layout::{reserve_shadow_extent, should_paint_shadow};
+use crate::controls::choice_indicator_layout::should_paint_shadow;
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::radio_button::{
     RadioButtonData, RadioButtonPalette, RadioButtonTheme, RadioScale, default_radio_button_theme,
 };
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
-use crate::theme::{InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
+use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
 define_control_template!(
     ThemedRadioButtonTemplate,
@@ -65,11 +65,6 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         let palette = lerp_radio_palette(&off_palette, &on_palette, progress);
         let settled_palette = if selected { &on_palette } else { &off_palette };
 
-        let elevation_probe_look = if model.elevation && model.state.disabled {
-            Some(self.theme.resolve(selected, InteractionState { disabled: false, ..model.state }, model.size))
-        } else {
-            None
-        };
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
@@ -78,13 +73,7 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         );
 
         let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
-        let shadow_extent = reserve_shadow_extent(
-            settled_palette.indicator_shadow.as_ref(),
-            elevation_probe_look.as_ref().and_then(|probe| probe.indicator_shadow.as_ref()),
-            scale_factor,
-            model.elevation,
-        );
-        let oversize_extent = if indicator_only { 0.0 } else { shadow_extent };
+        let oversize_extent = 0.0;
 
         let indicator_visual = {
             let mut indicator = div()

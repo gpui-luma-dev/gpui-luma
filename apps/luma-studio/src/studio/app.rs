@@ -383,14 +383,7 @@ impl LumaStudioApp {
     }
 
     pub fn set_shadow_color(&mut self, color: gpui::Hsla, cx: &mut Context<Self>) {
-        self.update_shadow_override(
-            |shadow| {
-                shadow.color.h = color.h;
-                shadow.color.s = color.s;
-                shadow.color.l = color.l;
-            },
-            cx,
-        );
+        self.update_shadow_override(|shadow| shadow.color = color, cx);
     }
 
     pub fn set_shadow_opacity(&mut self, opacity: f32, cx: &mut Context<Self>) {
