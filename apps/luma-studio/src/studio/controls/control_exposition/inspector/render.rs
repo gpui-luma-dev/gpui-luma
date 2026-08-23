@@ -20,6 +20,21 @@ pub mod layout {
     pub const DETAIL_GAP: f32 = 8.0;
 }
 
+const SHADOW_PREVIEW_WIDTH: f32 = 120.0;
+const SHADOW_PREVIEW_HEIGHT: f32 = 36.0;
+
+fn inspector_card<E: IntoElement>(look: &Arc<ShadcnLook>, content: E) -> Div {
+    let chrome = look.chrome();
+    div()
+        .w_full()
+        .border_1()
+        .border_color(chrome.border)
+        .rounded(px(6.0))
+        .bg(chrome.panel_background)
+        .p(px(10.0))
+        .child(content)
+}
+
 pub fn render_category_content(look: &Arc<ShadcnLook>, content: InspectorCategoryContent) -> AnyElement {
     match content {
         InspectorCategoryContent::Colors(rows) => render_color_category(look, rows),
@@ -74,8 +89,8 @@ pub fn render_elevation_category(look: &Arc<ShadcnLook>, elevation: InspectEleva
     let mono_font = controls_mono_font();
 
     let mut preview_chip = div()
-        .w(px(120.0))
-        .h(px(36.0))
+        .w(px(SHADOW_PREVIEW_WIDTH))
+        .h(px(SHADOW_PREVIEW_HEIGHT))
         .rounded(px(6.0))
         .bg(chrome.panel_background)
         .border_1()
@@ -94,14 +109,9 @@ pub fn render_elevation_category(look: &Arc<ShadcnLook>, elevation: InspectEleva
         .flex()
         .flex_col()
         .gap(px(layout::DETAIL_GAP))
-        .child(
+        .child(inspector_card(
+            look,
             div()
-                .w_full()
-                .border_1()
-                .border_color(chrome.border)
-                .rounded(px(6.0))
-                .bg(chrome.panel_background)
-                .p(px(10.0))
                 .flex()
                 .flex_col()
                 .gap(px(8.0))
@@ -114,17 +124,12 @@ pub fn render_elevation_category(look: &Arc<ShadcnLook>, elevation: InspectEleva
                         .child("shadow preview"),
                 )
                 .child(div().w_full().h(px(78.0)).flex().items_center().justify_center().child(preview)),
-        )
+        ))
         .child(render_property_rows_panel(look, elevation.property_rows))
         .when_some(elevation.catalog_value.clone(), |stack, catalog_value| {
-            stack.child(
+            stack.child(inspector_card(
+                look,
                 div()
-                    .w_full()
-                    .border_1()
-                    .border_color(chrome.border)
-                    .rounded(px(6.0))
-                    .bg(chrome.panel_background)
-                    .p(px(10.0))
                     .flex()
                     .flex_col()
                     .gap(px(4.0))
@@ -144,7 +149,7 @@ pub fn render_elevation_category(look: &Arc<ShadcnLook>, elevation: InspectEleva
                             .text_color(chrome.muted_text)
                             .child(catalog_value),
                     ),
-            )
+            ))
         })
         .child(render_elevation_layers(look, &elevation.layers))
         .into_any_element()
@@ -159,8 +164,8 @@ fn render_shadow_preview(
         return div().child(preview_chip).into_any_element();
     };
 
-    let width = 120.0 + insets.left + insets.right;
-    let height = 36.0 + insets.top + insets.bottom;
+    let width = SHADOW_PREVIEW_WIDTH + insets.left + insets.right;
+    let height = SHADOW_PREVIEW_HEIGHT + insets.top + insets.bottom;
     let annotation = format!(
         "projection: top {} · right {} · bottom {} · left {}",
         format_extent(insets.top),
@@ -202,25 +207,17 @@ fn render_elevation_layers(look: &Arc<ShadcnLook>, layers: &[super::schema::Insp
     let caption = &look.mode_tokens().typography.text.caption;
     let mono_font = controls_mono_font();
 
-    let mut stack = div()
-        .w_full()
-        .min_w(px(0.0))
-        .border_1()
-        .border_color(chrome.border)
-        .rounded(px(6.0))
-        .bg(chrome.panel_background)
-        .p(px(10.0))
-        .flex()
-        .flex_col()
-        .gap(px(8.0))
-        .child(
+    let mut stack = inspector_card(
+        look,
+        div().flex().flex_col().gap(px(8.0)).child(
             div()
                 .text_size(px(body.size))
                 .line_height(px(body.line_height))
                 .font_weight(FontWeight::MEDIUM)
                 .text_color(chrome.title_text)
                 .child("shadow layers"),
-        );
+        ),
+    );
 
     if layers.is_empty() {
         stack = stack.child(

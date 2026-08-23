@@ -9,7 +9,7 @@ use gpui_luma_look_shadcn::{
 use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, find_button_elevation_rule, resolve_stylesheet_shadow_token};
 
 use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::controls::choice_indicator_layout::shadow_extent_from;
+use gpui_luma::controls::choice_indicator_layout::shadow_projection_extent;
 use gpui_luma_look_shadcn::catalog::SpacingField;
 
 pub struct ButtonInspectPalette {
@@ -191,8 +191,8 @@ pub fn inspect_layered_elevation(
 
 fn resolved_shadow_extent(shadows: Option<&Vec<BoxShadow>>) -> ResolvedMetric {
     ResolvedMetric {
-        value_px: shadow_extent_from(shadows, 1.0, true),
-        source: MetricSource::Derived { note: "shadow projection reservation at scale 1.0".into() },
+        value_px: shadow_projection_extent(shadows.map(Vec::as_slice), 1.0, true),
+        source: MetricSource::Derived { note: "shadow projection extent at scale 1.0".into() },
     }
 }
 
@@ -262,7 +262,7 @@ fn elevation_layer(_index: usize, shadow: &BoxShadow) -> ButtonInspectElevationL
     let spread = shadow.spread_radius.as_f32();
     let color = shadow.color;
     let css = format!(
-        "{}px {}px {}px {}px hsla({}, {}, {}, {})",
+        "{}px {}px {}px {}px hsl({} {}% {}% / {})",
         format_shadow_number(offset_x),
         format_shadow_number(offset_y),
         format_shadow_number(blur),

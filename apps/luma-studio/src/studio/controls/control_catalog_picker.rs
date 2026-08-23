@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, FontFeatures, FontWeight, MouseButton, Window, div, prelude::*, px};
-use gpui_luma::controls::choice_indicator_layout::shadow_extent_from_slice;
 use gpui_luma::controls::floating_menu::FloatingMenuLook;
 use gpui_luma::theme::LumaTextStyle;
 
@@ -29,47 +28,31 @@ pub(crate) fn render_control_catalog_picker<M: 'static>(
     let category_style = menu_look.item_typography;
     let item_style = menu_look.item_typography;
 
-    with_menu_elevation(
-        "controls-catalog-picker",
-        div()
-            .id("controls-catalog-picker")
-            .flex_shrink_0()
-            .occlude()
-            .p(px(CONTAINER_INNER_PADDING))
-            .bg(menu_look.background)
-            .border_1()
-            .border_color(menu_look.border)
-            .rounded(px(menu_look.radius))
-            .shadow(menu_look.shadow.clone())
-            .child(div().flex_shrink_0().flex().items_start().gap(px(column_gap(menu_look))).children(
-                (0..COLUMN_COUNT).map(|column| {
-                    render_column(
-                        menu_look,
-                        column,
-                        selected_exposition_id,
-                        interactive,
-                        category_style,
-                        item_style,
-                        cx,
-                        on_select.clone(),
-                    )
-                }),
-            )),
-        &menu_look.shadow,
-    )
-    .into_any_element()
-}
-
-fn with_menu_elevation(
-    id: impl Into<gpui::SharedString>,
-    surface: gpui::Stateful<gpui::Div>,
-    shadows: &[gpui::BoxShadow],
-) -> gpui::Stateful<gpui::Div> {
-    let extent = shadow_extent_from_slice(shadows, 1.0, true);
-    if extent <= 0.0 {
-        return surface;
-    }
-    div().id(format!("{}-elevation", id.into())).relative().p(px(extent)).child(surface)
+    div()
+        .id("controls-catalog-picker")
+        .flex_shrink_0()
+        .occlude()
+        .p(px(CONTAINER_INNER_PADDING))
+        .bg(menu_look.background)
+        .border_1()
+        .border_color(menu_look.border)
+        .rounded(px(menu_look.radius))
+        .shadow(menu_look.shadow.clone())
+        .child(div().flex_shrink_0().flex().items_start().gap(px(column_gap(menu_look))).children(
+            (0..COLUMN_COUNT).map(|column| {
+                render_column(
+                    menu_look,
+                    column,
+                    selected_exposition_id,
+                    interactive,
+                    category_style,
+                    item_style,
+                    cx,
+                    on_select.clone(),
+                )
+            }),
+        ))
+        .into_any_element()
 }
 
 fn render_column<M: 'static>(

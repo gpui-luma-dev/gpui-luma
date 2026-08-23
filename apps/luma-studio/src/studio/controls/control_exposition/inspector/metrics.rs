@@ -1039,7 +1039,7 @@ fn pager_shell_metrics_layout_section(
         metrics.font_family.value.as_str(),
         gpui_luma_look_shadcn_inspect::format_inspect_typography_source(&metrics.font_family.source),
     ));
-    rows.push(super::provenance::metric_row("reserved shadow extent", &metrics.reserved_shadow_extent));
+    rows.push(super::provenance::metric_row("shadow projection extent", &metrics.reserved_shadow_extent));
 
     layout_section(look, diagram_id, box_model, None, rows)
 }
@@ -1071,7 +1071,7 @@ fn pager_button_metrics_layout_section(
         metrics.font_family.value.as_str(),
         gpui_luma_look_shadcn_inspect::format_inspect_typography_source(&metrics.font_family.source),
     ));
-    rows.push(super::provenance::metric_row("reserved shadow extent", &metrics.reserved_shadow_extent));
+    rows.push(super::provenance::metric_row("shadow projection extent", &metrics.reserved_shadow_extent));
     rows.push(InspectPropertyRow::new(
         "width policy",
         "min-width + content",

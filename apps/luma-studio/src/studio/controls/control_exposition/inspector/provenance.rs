@@ -54,7 +54,7 @@ pub fn elevation_snapshot(
                 elevation.token.as_deref().unwrap_or("none"),
                 elevation.catalog_value.as_deref().unwrap_or("catalog token"),
             ),
-            metric_row("reserved shadow extent", &elevation.reserved_shadow_extent),
+            metric_row("shadow projection extent", &elevation.reserved_shadow_extent),
         ],
         catalog_value: elevation.catalog_value.clone(),
         layers: elevation

@@ -1,6 +1,8 @@
 //! Inspect metadata for `pager`.
 
-use gpui_luma::controls::{button_family::ButtonFamilyRole, choice_indicator_layout::shadow_extent_from, pager::PagerStyle};
+use gpui_luma::controls::{
+    button_family::ButtonFamilyRole, choice_indicator_layout::shadow_projection_extent, pager::PagerStyle,
+};
 use gpui_luma_look_shadcn::{ColorSource, ResolvedColor, ResolvedMetric, ResolvedTypography, ShadcnLook, TypographySource};
 
 #[derive(Clone, Debug)]
@@ -60,7 +62,7 @@ pub fn inspect_pager_metrics(look: &ShadcnLook, style: PagerStyle) -> PagerInspe
         gpui_luma::theme::ControlSize::Sm,
         gpui_luma::theme::InteractionState::default(),
     );
-    let reserved_shadow_extent = shadow_extent_from(button.shadow.as_ref(), 1.0, true);
+    let reserved_shadow_extent = shadow_projection_extent(button.shadow.as_deref(), 1.0, true);
 
     PagerInspectMetrics {
         control_height: derived_metric(format!("{style_label} page-size trigger height"), pager.control_height),
@@ -75,7 +77,7 @@ pub fn inspect_pager_metrics(look: &ShadcnLook, style: PagerStyle) -> PagerInspe
         reserved_shadow_extent: ResolvedMetric {
             value_px: reserved_shadow_extent,
             source: gpui_luma_look_shadcn::MetricSource::Derived {
-                note: "button outline shadow projection reservation".into(),
+                note: "button outline shadow projection extent".into(),
             },
         },
     }

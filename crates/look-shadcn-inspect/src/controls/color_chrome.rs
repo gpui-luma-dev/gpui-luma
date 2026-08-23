@@ -154,9 +154,9 @@ fn slider_track_section(
             ),
             property_row(
                 "runtime check",
-                format_hsla(enabled.blocked_overlay),
+                format_hsl(enabled.blocked_overlay),
                 "default_color_slider_visual(true)",
-                Some(format!("disabled overlay = {}", format_hsla(disabled.disabled_overlay))),
+                Some(format!("disabled overlay = {}", format_hsl(disabled.disabled_overlay))),
             ),
         ],
     }
@@ -177,7 +177,7 @@ fn ring_section(
         ],
         property_rows: vec![property_row(
             "runtime check",
-            format_hsla(disabled.disabled_overlay),
+            format_hsl(disabled.disabled_overlay),
             "default_color_ring_visual(false)",
             None,
         )],
@@ -198,7 +198,7 @@ fn arc_section(
         ],
         property_rows: vec![property_row(
             "runtime check",
-            format_hsla(disabled.disabled_overlay),
+            format_hsl(disabled.disabled_overlay),
             "default_color_arc_visual(false)",
             None,
         )],
@@ -330,8 +330,8 @@ fn fallback_background() -> ResolvedColor {
     }
 }
 
-fn format_hsla(value: Hsla) -> String {
-    format!("hsla({:.0}, {:.0}%, {:.0}%, {:.2})", value.h, value.s * 100.0, value.l * 100.0, value.a)
+fn format_hsl(value: Hsla) -> String {
+    format!("hsl({:.0} {:.0}% {:.0}% / {:.2})", value.h, value.s * 100.0, value.l * 100.0, value.a)
 }
 
 #[cfg(test)]

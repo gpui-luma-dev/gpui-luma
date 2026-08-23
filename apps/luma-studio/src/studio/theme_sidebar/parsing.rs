@@ -130,3 +130,21 @@ pub(super) fn token_color_with_fallback(
         .or_else(|| catalog_color_for_token(look, token))
         .unwrap_or(fallback)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{format_shadow_color_input, parse_shadow_color_input};
+    use gpui::hsla;
+
+    #[test]
+    fn shadow_color_input_round_trips_hsla_alpha() {
+        let original = hsla(0.625, 0.42, 0.31, 0.37);
+        let formatted = format_shadow_color_input(original);
+        let parsed = parse_shadow_color_input(&formatted).expect("formatted HSLA should parse");
+
+        assert!((parsed.h - original.h).abs() < 0.002);
+        assert!((parsed.s - original.s).abs() < 0.005);
+        assert!((parsed.l - original.l).abs() < 0.005);
+        assert!((parsed.a - original.a).abs() < 0.005);
+    }
+}
