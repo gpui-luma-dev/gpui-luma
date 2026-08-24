@@ -13,7 +13,7 @@ use crate::studio::color_format::format_compact_hsla;
 use crate::studio::app::LumaStudioApp;
 use crate::studio::controls::color_picker::{ColorPickerEvent, ColorPickerPopover};
 
-const PALETTE_SWATCH_SIZE: f32 = 40.0;
+const PALETTE_SWATCH_SIZE: f32 = 55.0;
 const PALETTE_ITEM_GAP: f32 = 12.0;
 const PALETTE_CELL_INNER_GAP: f32 = 10.0;
 /// Fits longest label ("Sidebar Primary Foreground") beside the swatch at 13px.
@@ -314,7 +314,7 @@ fn render_token_cell(
     code_style: gpui_luma::theme::LumaTextStyle,
 ) -> AnyElement {
     hstack! {
-        gap=PALETTE_CELL_INNER_GAP align=start;
+        gap=PALETTE_CELL_INNER_GAP align=center;
         div()
             .size(px(PALETTE_SWATCH_SIZE))
             .flex_shrink_0()

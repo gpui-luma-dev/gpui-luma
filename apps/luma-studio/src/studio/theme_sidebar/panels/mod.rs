@@ -87,7 +87,7 @@ pub(super) fn spawn_compact_textfield<T>(
     value: impl Into<SharedString>,
     cx: &mut Context<T>,
 ) -> TextField {
-    colors::apply_token_field_style(look.textfield(format!("luma-studio-{id}-field")))
+    colors::apply_token_field_style(look, look.textfield(format!("luma-studio-{id}-field")))
         .value(value)
         .full_width(true)
         .spawn(cx)

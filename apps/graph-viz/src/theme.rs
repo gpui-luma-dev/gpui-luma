@@ -54,13 +54,6 @@ impl GraphVizThemeChoice {
         format!("usage: {program} [{}]", options.join("|"))
     }
 
-    pub fn loads_rajdhani_font(&self) -> bool {
-        match self {
-            Self::Default => false,
-            Self::Named(stem) => built_in_theme(stem).is_some_and(|theme| theme.requires_rajdhani_font),
-        }
-    }
-
     pub fn id(&self) -> String {
         match self {
             Self::Default => "default".to_string(),

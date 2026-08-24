@@ -526,13 +526,13 @@ impl OtherPanel {
         for field in [&self.palette_hue_field, &self.palette_saturation_field, &self.palette_lightness_field] {
             field.update(cx, |field, cx| {
                 field.set_template(theme.textfield_template(), cx);
-                field.set_look_override(Some(token_field_look_override_arc()), cx);
+                field.set_look_override(Some(token_field_look_override_arc(theme)), cx);
             });
         }
         for field in [&self.radius_field, &self.spacing_field] {
             field.update(cx, |field, cx| {
                 field.set_template(theme.textfield_template(), cx);
-                field.set_look_override(Some(token_field_look_override_arc()), cx);
+                field.set_look_override(Some(token_field_look_override_arc(theme)), cx);
             });
         }
         for field in [
@@ -545,7 +545,7 @@ impl OtherPanel {
         ] {
             field.update(cx, |field, cx| {
                 field.set_template(theme.textfield_template(), cx);
-                field.set_look_override(Some(token_field_look_override_arc()), cx);
+                field.set_look_override(Some(token_field_look_override_arc(theme)), cx);
             });
         }
         for slider in [

@@ -11,6 +11,7 @@ This document defines the core architecture, crate layout, module mapping, and d
 ### Workspace Crates
 
 *   **`crates/sdk` (`gpui-luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels).
+*   **`crates/font-assets` (`gpui-luma-fonts`)**: Shared embedded font assets and GPUI text-system registration helpers. Applications register bundled fonts at startup; the SDK remains font-file agnostic.
 *   **`crates/lucide-svg-static`**: Experimental generated-style, renderer-neutral Lucide SVG asset crate. It currently packages the three chevrons used by the SVG rotation spike; the intended follow-up is automated generation from pinned upstream Lucide releases.
 *   **`crates/look-shadcn` (`gpui-luma-look-shadcn`)**: The CSS-first product runtime theme (Shadcn/CSS look crate). It defines styling catalogs, stylesheet config matching, and look-specific extensions.
 *   **`crates/look-shadcn-inspect`**: Support utilities for theme visual inspection and palette debugging.

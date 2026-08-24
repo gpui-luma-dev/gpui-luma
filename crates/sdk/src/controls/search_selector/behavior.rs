@@ -1,19 +1,26 @@
 use gpui::SharedString;
+use lucide_svg_static::Icon as LucideIcon;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SelectionItem {
     pub id: SharedString,
     pub label: SharedString,
     pub enabled: bool,
+    pub trailing_icon: Option<LucideIcon>,
 }
 
 impl SelectionItem {
     pub fn new(id: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
-        Self { id: id.into(), label: label.into(), enabled: true }
+        Self { id: id.into(), label: label.into(), enabled: true, trailing_icon: None }
     }
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        self
+    }
+
+    pub fn trailing_icon(mut self, icon: LucideIcon) -> Self {
+        self.trailing_icon = Some(icon);
         self
     }
 }

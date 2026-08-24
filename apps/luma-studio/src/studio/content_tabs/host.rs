@@ -71,7 +71,7 @@ impl ContentPaneHost {
                 TabsNavigationItem::new("dashboard").label("Dashboard"),
                 TabsNavigationItem::new("typography").label("Style Guide"),
                 TabsNavigationItem::new("controls").label("Controls").dropdown_trigger(),
-                TabsNavigationItem::new("palette").label("Palette"),
+                TabsNavigationItem::new("palette").label("Color Palette"),
                 TabsNavigationItem::new("theme-usage").label("Theme Usage"),
             ])
             .active("cards")

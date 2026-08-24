@@ -3,11 +3,15 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
-use gpui_luma::controls::search_selector::{SearchSelector, SearchSelectorEvent, SelectionItem};
+use gpui_luma::controls::search_selector::{
+    SearchSelector, SearchSelectorEvent, SearchSelectorItemRenderModel, SearchSelectorItemTemplate, SelectionItem,
+    make_search_selector_item_template,
+};
 use gpui_luma::vstack;
 use crate::studio::font_catalog::{FontCatalog, FontSlot};
 use crate::studio::font_family_match::{clean_css_family_name, match_css_named_family};
 use gpui_luma_look_shadcn::{ShadcnFont, ShadcnLook, ShadcnLookControlExt};
+use lucide_svg_static::Icon as LucideIcon;
 
 use super::super::model::TYPOGRAPHY_CATEGORIES;
 use super::{category_item_id, expanded_category_ids};
@@ -317,6 +321,7 @@ fn sync_font_role_control(
         search_selector.set_placeholder(fallback_label, cx);
         search_selector.set_items(items, cx);
         search_selector.set_selected_id(selected.clone(), cx);
+        search_selector.set_item_template(Some(font_item_template(font_names)), cx);
         search_selector.set_enabled(true, cx);
     });
     control.preview_font = selected;
@@ -340,6 +345,7 @@ fn build_font_search_selector(
         .selected_id(selected)
         .enabled(true)
         .full_width(true)
+        .with_item_template(font_item_template_builder(font_names))
         .spawn(cx);
     (search_selector, preview_font)
 }
@@ -405,11 +411,47 @@ fn font_item(name: &str, primary_label: Option<&SharedString>, selected_id: &Sha
         && let Some(primary) = primary_label
         && primary.as_ref() != name
     {
-        primary.clone()
+        SharedString::from(format!("{} → {} ✓", primary.as_ref(), name))
+    } else if name == selected_id.as_ref() {
+        SharedString::from(format!("{} ✓", name))
     } else {
         id.clone()
     };
-    SelectionItem::new(id, label)
+    SelectionItem::new(id, label).trailing_icon(LucideIcon::Check)
+}
+
+fn font_item_template(font_names: &[String]) -> SearchSelectorItemTemplate<SelectionItem> {
+    let loaded = loaded_font_names(font_names);
+    make_search_selector_item_template(move |item: &SearchSelectorItemRenderModel<'_, SelectionItem>, _cx| {
+        font_item_template_element_with_loaded(item, &loaded)
+    })
+}
+
+fn font_item_template_builder(
+    font_names: &[String],
+) -> impl for<'a> Fn(&SearchSelectorItemRenderModel<'a, SelectionItem>, &mut App) -> gpui::Div + Send + Sync + 'static {
+    let loaded = loaded_font_names(font_names);
+    move |item, _cx| font_item_template_element_with_loaded(item, &loaded)
+}
+
+fn font_item_template_element_with_loaded(
+    item: &SearchSelectorItemRenderModel<'_, SelectionItem>,
+    loaded: &HashSet<String>,
+) -> gpui::Div {
+    let is_loaded = loaded.contains(&item.item.id.to_string().to_ascii_lowercase());
+    let mut content = div().flex().items_center().justify_between().flex_1().child(item.item.label.clone());
+    if is_loaded {
+        content = content.child(div().ml_2().child(gpui_luma::controls::icon::lucide_icon(
+            LucideIcon::Check,
+            gpui::hsla(0.38, 0.65, 0.48, 1.0),
+            14.0,
+        )));
+    }
+    content
+}
+
+fn loaded_font_names(font_names: &[String]) -> HashSet<String> {
+    font_names.iter().map(|name| name.to_ascii_lowercase()).collect()
 }
 
 fn picker_font_names(font_names: &[String]) -> Vec<&String> {

@@ -1,14 +1,11 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use gpui::{
-    AnyElement, App, Context, Entity, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*,
-    px,
-};
+use gpui::{AnyElement, App, Context, Entity, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::textfield::{TextField, TextFieldBuilder, TextFieldEvent, TextFieldLook, TextFieldLookOverride};
 use gpui_luma::vstack;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{ShadcnFont, ShadcnLook};
 
 use super::super::model::TOKEN_CATEGORIES;
 use super::super::parsing::effective_token_color;
@@ -88,7 +85,7 @@ impl ColorsPanel {
         for field in self.token_fields.values() {
             field.update(cx, |field, cx| {
                 field.set_template(theme.textfield_template(), cx);
-                field.set_look_override(Some(token_field_look_override_arc()), cx);
+                field.set_look_override(Some(token_field_look_override_arc(&self.look)), cx);
             });
         }
     }
@@ -240,43 +237,22 @@ impl Render for ColorsPanel {
     }
 }
 
-/// System monospace face for hex values. Theme CSS `font-mono` families (e.g. Fira Code) are not
-/// registered with GPUI unless explicitly loaded, so token fields use a native face per platform.
-fn token_field_mono_font() -> SharedString {
-    #[cfg(target_os = "macos")]
-    {
-        "Menlo".into()
-    }
-    #[cfg(target_os = "windows")]
-    {
-        return "Consolas".into();
-    }
-    #[cfg(target_os = "linux")]
-    {
-        return "DejaVu Sans Mono".into();
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
-    {
-        "monospace".into()
-    }
-}
-
 const TOKEN_FIELD_FONT_SIZE: f32 = 12.0;
 const TOKEN_FIELD_LINE_HEIGHT: f32 = 16.0;
 
-fn apply_token_field_look(mut look: TextFieldLook) -> TextFieldLook {
-    look.font_family = token_field_mono_font();
-    look.typography.size = TOKEN_FIELD_FONT_SIZE;
-    look.typography.line_height = TOKEN_FIELD_LINE_HEIGHT;
-    look
+pub(super) fn token_field_look_override_arc(theme: &ShadcnLook) -> TextFieldLookOverride {
+    let font_family = theme.font(ShadcnFont::Mono);
+    Arc::new(move |mut look: TextFieldLook| {
+        look.font_family = font_family.clone();
+        look.typography.size = TOKEN_FIELD_FONT_SIZE;
+        look.typography.line_height = TOKEN_FIELD_LINE_HEIGHT;
+        look
+    })
 }
 
-pub(super) fn token_field_look_override_arc() -> TextFieldLookOverride {
-    Arc::new(apply_token_field_look)
-}
-
-pub(super) fn apply_token_field_style(builder: TextFieldBuilder) -> TextFieldBuilder {
-    builder.compact().look_override(apply_token_field_look)
+pub(super) fn apply_token_field_style(theme: &ShadcnLook, builder: TextFieldBuilder) -> TextFieldBuilder {
+    let override_fn = token_field_look_override_arc(theme);
+    builder.compact().look_override(move |look| override_fn(look))
 }
 
 fn build_token_fields(

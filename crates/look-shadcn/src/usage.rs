@@ -39,6 +39,7 @@ const TEXTFIELD_PARTS: &[ThemePartUsage] = &[
         &["surface focused", "soft focused"],
         &["TextFieldPalette.selection_foreground"],
     ),
+    part("primary elevation", "shadow-xs", &["primary default"], &["TextFieldPalette.shadow"]),
 ];
 
 const BUTTON_PARTS: &[ThemePartUsage] = &[
@@ -52,6 +53,7 @@ const BUTTON_PARTS: &[ThemePartUsage] = &[
         &["ButtonFamilyLook.foreground"],
     ),
     part("outline border", "border", &["subtle default"], &["ButtonFamilyLook.border"]),
+    part("outline elevation", "shadow-xs", &["outline default"], &["ButtonFamilyLook.shadow"]),
     part("ghost hover", "accent", &["ghost hovered"], &["ButtonFamilyLook.background"]),
     part("disabled", "muted", &["disabled"], &["ButtonFamilyLook.background"]),
 ];
@@ -63,6 +65,7 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Checkbox",
         parts: &[
+            part("indicator elevation", "shadow-sm", &["default", "checked"], &["CheckboxPalette.indicator_shadow"]),
             part("checked fill", "primary", &["checked"], &["CheckboxPalette.indicator_background"]),
             part("checkmark", "primary-foreground", &["checked"], &["CheckboxPalette.checkmark_color"]),
             part("border", "input", &["unchecked"], &["CheckboxPalette.indicator_border"]),
@@ -71,6 +74,12 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Radio Button",
         parts: &[
+            part(
+                "indicator elevation",
+                "shadow-sm",
+                &["default", "selected"],
+                &["RadioButtonPalette.indicator_shadow"],
+            ),
             part("selected fill", "primary", &["selected"], &["RadioButtonPalette.indicator_border"]),
             part("dot", "primary-foreground", &["selected"], &["RadioButtonPalette.dot_color"]),
             part("border", "input", &["unselected"], &["RadioButtonPalette.indicator_border"]),
@@ -79,6 +88,7 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Switch",
         parts: &[
+            part("thumb elevation", "shadow-sm", &["default", "on"], &["SwitchPalette.thumb_shadow"]),
             part("off track", "input", &["off"], &["SwitchPalette.track_background"]),
             part("track border", "border", &["off", "disabled"], &["SwitchPalette.track_border"]),
             part("on track", "primary", &["on"], &["SwitchPalette.track_background", "SwitchPalette.track_border"]),
@@ -97,6 +107,7 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Slider",
         parts: &[
+            part("thumb elevation", "shadow-sm", &["default"], &["SliderLook.thumb_shadow"]),
             part("track", "border", &["default"], &["SliderLook.track_background"]),
             part("fill", "primary", &["default"], &["SliderLook.fill_background"]),
             part("thumb border", "primary", &["default"], &["SliderLook.thumb_border"]),
@@ -144,6 +155,7 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Floating Menu",
         parts: &[
+            part("surface elevation", "shadow-md", &["default"], &["FloatingMenuLook.shadow"]),
             part("surface", "popover", &["default"], &["FloatingMenuLook.background"]),
             part("foreground", "popover-foreground", &["default"], &["FloatingMenuLook.foreground"]),
             part("item hover bg", "accent", &["hovered"], &["FloatingMenuLook.item_hover_background"]),
@@ -154,6 +166,7 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Popup Menu",
         parts: &[
+            part("menu elevation", "shadow-md", &["open"], &["FloatingMenuLook.shadow"]),
             part("trigger hover fg", "accent-foreground", &["hovered"], &["PopupMenuPalette.trigger_foreground"]),
             part("item hover bg", "accent", &["hovered"], &["FloatingMenuLook.item_hover_background"]),
             part("menu surface", "popover", &["open"], &["FloatingMenuLook.background"]),
@@ -285,6 +298,7 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
             part("item hover", "accent", &["hovered"], &["SelectionPanelLook.item_hover_background"]),
         ],
     },
+    &ThemeUsage { label: "Card", parts: &[part("surface elevation", "shadow", &["default"], &["CardLook.shadow"])] },
 ];
 
 const fn part(

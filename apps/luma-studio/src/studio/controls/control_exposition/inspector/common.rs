@@ -86,7 +86,7 @@ pub fn choice_elevation_applies(variant_id: &str, state_id: &str) -> bool {
 }
 
 pub fn button_elevation_applies(variant_id: &str, state_id: &str) -> bool {
-    variant_id == "outline" && inspector_elevation_applies(state_id)
+    variant_id != "content-only" && inspector_elevation_applies(state_id)
 }
 
 pub fn textfield_variant_style(variant_id: &str) -> ShadcnTextFieldStyle {
@@ -140,7 +140,7 @@ pub fn textarea_state(state_id: &str) -> gpui_luma::controls::textarea::TextArea
 }
 
 pub fn textfield_elevation_applies(variant_id: &str, state_id: &str) -> bool {
-    variant_id == "primary" && textfield_enabled(state_id)
+    !variant_id.is_empty() && textfield_enabled(state_id)
 }
 
 pub fn badge_variant(variant_id: &str) -> gpui_luma_look_shadcn::BadgeVariant {
@@ -240,5 +240,26 @@ pub fn resize_handle_size(size_id: &str) -> gpui_luma::controls::resizable_panel
         "sm" => gpui_luma::controls::resizable_panels::ResizeHandleSize::Sm,
         "lg" => gpui_luma::controls::resizable_panels::ResizeHandleSize::Lg,
         _ => gpui_luma::controls::resizable_panels::ResizeHandleSize::Md,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{button_elevation_applies, textfield_elevation_applies};
+
+    #[test]
+    fn button_elevation_inspection_is_not_limited_to_outline() {
+        assert!(button_elevation_applies("primary", "default"));
+        assert!(button_elevation_applies("secondary", "default"));
+        assert!(button_elevation_applies("outline", "default"));
+        assert!(!button_elevation_applies("content-only", "default"));
+    }
+
+    #[test]
+    fn textfield_elevation_inspection_is_not_limited_to_primary() {
+        assert!(textfield_elevation_applies("outline", "default"));
+        assert!(textfield_elevation_applies("primary", "default"));
+        assert!(textfield_elevation_applies("surface", "default"));
+        assert!(!textfield_elevation_applies("outline", "disabled"));
     }
 }

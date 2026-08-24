@@ -51,10 +51,6 @@ impl LumaStudioLaunchOptions {
 
         Self { theme_choice, initial_mode }
     }
-
-    pub fn loads_rajdhani_font(&self) -> bool {
-        self.theme_choice.loads_rajdhani_font()
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -82,14 +78,6 @@ impl LumaStudioThemeChoice {
         };
 
         Err(format!("unknown luma studio theme {arg:?} ({hint})\n{}", usage_line()))
-    }
-
-    /// Jarvis bundles Rajdhani; load the embedded font when that theme is selected.
-    pub fn loads_rajdhani_font(&self) -> bool {
-        match self {
-            Self::Default => false,
-            Self::Named(stem) => built_in_theme(stem).is_some_and(|theme| theme.requires_rajdhani_font),
-        }
     }
 
     pub fn id(&self) -> String {

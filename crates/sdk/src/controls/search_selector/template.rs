@@ -410,7 +410,15 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
                     cx,
                 )
             } else {
-                div().flex_1().child(item.label.clone()).into_any_element()
+                let mut content = div().flex().items_center().justify_between().flex_1().child(item.label.clone());
+                if let Some(icon) = item.trailing_icon {
+                    content = content.child(crate::controls::icon::lucide_icon(
+                        icon,
+                        gpui::hsla(0.38, 0.65, 0.48, 1.0),
+                        14.0,
+                    ));
+                }
+                content.into_any_element()
             };
 
             let mut row = div()

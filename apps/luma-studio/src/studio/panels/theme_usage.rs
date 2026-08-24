@@ -130,7 +130,8 @@ impl Render for ThemeUsagePanel {
                             caption_style,
                             detail_style,
                             section_style,
-                        )),
+                        ))
+                        .child(render_shadow_usage(usages, self.look.as_ref(), detail_style, caption_style)),
                 )
         })
     }
@@ -240,6 +241,83 @@ fn render_by_component(
                         .child(usage.label),
                 )
                 .children(usage.parts.iter().map(|part| render_component_part(part, look, detail_style, caption_style)))
+        }))
+        .into_any_element()
+}
+
+fn render_shadow_usage(
+    usages: &'static [&'static ThemeUsage],
+    look: &ShadcnLook,
+    detail_style: gpui_luma::theme::LumaTextStyle,
+    caption_style: gpui_luma::theme::LumaTextStyle,
+) -> AnyElement {
+    let chrome = look.chrome();
+    let by_token = usage_by_token(usages);
+    let catalog = look.mode_tokens();
+    let shadow_tokens = catalog
+        .catalog
+        .tokens
+        .keys()
+        .filter(|token| token.starts_with("shadow") && look.parse_shadow_token(token).is_ok())
+        .cloned()
+        .collect::<Vec<_>>();
+
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(10.0))
+        .child(section_title("Shadow Tokens", look, detail_style))
+        .children(shadow_tokens.into_iter().map(|token| {
+            let raw = catalog.catalog.get(token.as_str()).unwrap_or("unresolved").to_string();
+            let consumers = by_token.get(token.as_str());
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(7.0))
+                .border_1()
+                .border_color(chrome.border)
+                .rounded(px(6.0))
+                .p(px(10.0))
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(10.0))
+                        .child(
+                            div()
+                                .min_w(px(0.0))
+                                .flex_1()
+                                .flex()
+                                .flex_col()
+                                .gap(px(1.0))
+                                .child(
+                                    div()
+                                        .truncate()
+                                        .font_family("Monaco")
+                                        .typography_style(detail_style)
+                                        .text_color(chrome.title_text)
+                                        .child(format!("--{token}")),
+                                )
+                                .child(
+                                    div()
+                                        .truncate()
+                                        .font_family("Monaco")
+                                        .typography_style(caption_style)
+                                        .text_color(chrome.muted_text)
+                                        .child(raw),
+                                ),
+                        )
+                        .child(render_status_badge(token_status(consumers.is_some()), look)),
+                )
+                .children(consumers.into_iter().flat_map(|parts| {
+                    parts.iter().map(|(component, part)| {
+                        div()
+                            .pl(px(44.0))
+                            .typography_style(caption_style)
+                            .text_color(chrome.body_text)
+                            .child(format!("{component} {}", part.part))
+                    })
+                }))
         }))
         .into_any_element()
 }
