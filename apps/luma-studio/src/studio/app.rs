@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter};
+use gpui::{AnyElement, App, Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter, HasPresenter};
 use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
+use gpui_luma::controls::switch::{Switch, SwitchData, SwitchEvent};
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, InteractionState, LumaThemeSyncExt, ThemeMode};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole, sync_color_control_theme};
@@ -39,7 +40,7 @@ pub struct LumaStudioApp {
     workbench: WorkbenchLayout,
     sidebar_toggle: IconButton,
     reset_theme_button: IconButton,
-    mode_toggle: IconButton,
+    mode_toggle: Switch,
     sidebar_hidden: bool,
     /// Suppresses sidebar `Change` handlers while programmatically syncing sidebar values.
     syncing_sidebar_tokens: bool,
@@ -84,19 +85,26 @@ impl LumaStudioApp {
             .content_only_icon_button("luma-studio-reset-theme", LucideIcon::RefreshCcw)
             .size(ControlSize::Sm)
             .spawn(cx);
-        let mode_toggle = look
-            .content_only_icon_button("luma-studio-mode-toggle", toggle_mode_icon(mode))
-            .size(ControlSize::Sm)
-            .spawn(cx);
-        for (button, icon) in [
-            (&sidebar_toggle, LucideIcon::PanelLeft),
-            (&reset_theme_button, LucideIcon::RefreshCcw),
-            (&mode_toggle, toggle_mode_icon(mode)),
-        ] {
+        let mut mode_toggle = look
+            .content_only_switch("mode-toggle")
+            .with_data(matches!(mode, ThemeMode::Dark))
+            .size(ControlSize::Sm);
+        mode_toggle.set_presenter(Arc::new(|_, _| div().into_any_element()));
+        let mode_toggle = mode_toggle.spawn(cx);
+        for (button, icon) in [(&sidebar_toggle, LucideIcon::PanelLeft), (&reset_theme_button, LucideIcon::RefreshCcw)]
+        {
             button.update(cx, |button, cx| {
                 button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(icon), app_bar_icon_color(&look)), cx);
             });
         }
+        mode_toggle.update(cx, |switch, cx| {
+            let icon_color = if mode == ThemeMode::Dark {
+                gpui::hsla(0.0, 0.0, 1.0, 1.0)
+            } else {
+                gpui::hsla(0.0, 0.0, 0.0, 1.0)
+            };
+            switch.set_switch_thumb_content(mode_switch_thumb_content(icon_color), cx);
+        });
 
         let mut subscriptions = Vec::new();
         ThemeSidebar::wire_subscriptions(&theme_sidebar, cx, &mut subscriptions);
@@ -114,9 +122,9 @@ impl LumaStudioApp {
                 this.reload_active_theme(cx);
             }
         }));
-        subscriptions.push(cx.subscribe(&mode_toggle, |this, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                this.toggle_mode(cx);
+        subscriptions.push(cx.subscribe(&mode_toggle, |this, _, event: &SwitchEvent, cx| {
+            if let SwitchEvent::Change { on } = event {
+                this.set_mode(*on, cx);
             }
         }));
         Self {
@@ -174,7 +182,7 @@ impl LumaStudioApp {
             tracing::warn!("failed to apply studio token overrides: {err:?}");
         }
         sync_color_control_theme(self.look.as_ref());
-        self.sync_titlebar_icon_button_presenters(cx);
+        self.sync_titlebar_controls(cx);
         cx.bump_luma_theme_revision();
         self.sync_split_themes(cx);
         self.refresh_content_pane(cx);
@@ -492,7 +500,7 @@ impl LumaStudioApp {
             && *panel_index == LEFT_SIDEBAR_PANEL_INDEX
         {
             self.sidebar_hidden = *hidden;
-            self.sync_titlebar_icon_button_presenters(cx);
+            self.sync_titlebar_controls(cx);
             dirty = true;
         }
 
@@ -516,13 +524,21 @@ impl LumaStudioApp {
     }
 
     pub(crate) fn toggle_mode(&mut self, cx: &mut Context<Self>) {
-        let mode = match self.look.mode() {
+        let dark = match self.look.mode() {
             ThemeMode::Light => ThemeMode::Dark,
             ThemeMode::Dark => ThemeMode::Light,
         };
+        self.set_mode(matches!(dark, ThemeMode::Dark), cx);
+    }
+
+    fn set_mode(&mut self, dark: bool, cx: &mut Context<Self>) {
+        let mode = if dark { ThemeMode::Dark } else { ThemeMode::Light };
+        if self.look.mode() == mode {
+            return;
+        }
         self.look.set_mode(mode);
         sync_color_control_theme(self.look.as_ref());
-        self.sync_titlebar_icon_button_presenters(cx);
+        self.sync_titlebar_controls(cx);
         cx.bump_luma_theme_revision();
         let theme = self.look.clone();
         let overrides = self.overrides.clone();
@@ -534,30 +550,49 @@ impl LumaStudioApp {
         cx.notify();
     }
 
-    fn sync_titlebar_icon_button_presenters(&self, cx: &mut Context<Self>) {
+    fn sync_titlebar_controls(&self, cx: &mut Context<Self>) {
         let color = app_bar_icon_color(&self.look);
         let sidebar_icon = if self.sidebar_hidden {
             LucideIcon::PanelLeftOpen
         } else {
             LucideIcon::PanelLeft
         };
-        let presenters = [
+        for (button, icon) in [
             (&self.sidebar_toggle, ControlIcon::Lucide(sidebar_icon)),
             (&self.reset_theme_button, ControlIcon::Lucide(LucideIcon::RefreshCcw)),
-            (&self.mode_toggle, ControlIcon::Lucide(toggle_mode_icon(self.look.mode()))),
-        ];
-        for (button, icon) in presenters {
+        ] {
             button.update(cx, |button, cx| {
                 button.set_presenter(titlebar_icon_presenter(icon.clone(), color), cx);
             });
         }
+        self.mode_toggle.update(cx, |switch, cx| {
+            switch.set_data(matches!(self.look.mode(), ThemeMode::Dark), cx);
+            let icon_color = if self.look.mode() == ThemeMode::Dark {
+                gpui::hsla(0.0, 0.0, 1.0, 1.0)
+            } else {
+                gpui::hsla(0.0, 0.0, 0.0, 1.0)
+            };
+            switch.set_switch_thumb_content(mode_switch_thumb_content(icon_color), cx);
+        });
     }
 }
 
-fn toggle_mode_icon(mode: ThemeMode) -> LucideIcon {
-    match mode {
-        ThemeMode::Light => LucideIcon::Moon,
-        ThemeMode::Dark => LucideIcon::Sun,
+fn mode_switch_thumb_content(
+    color: gpui::Hsla,
+) -> impl Fn(&ButtonRenderModel<SwitchData>, &mut App) -> AnyElement + Send + Sync + 'static {
+    move |model, _| {
+        let icon = if model.data.checked {
+            LucideIcon::Moon
+        } else {
+            LucideIcon::Sun
+        };
+        div()
+            .size(px(16.0))
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(gpui_luma::controls::icon::lucide_icon(icon, color, 13.0))
+            .into_any_element()
     }
 }
 

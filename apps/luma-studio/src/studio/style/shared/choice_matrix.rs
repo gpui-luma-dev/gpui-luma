@@ -18,6 +18,7 @@ use crate::studio::style::shared::button_matrix::{
 };
 use crate::studio::style::shared::samples::ButtonStateSample;
 use crate::studio::style::shared::shell::section_shell_with_width;
+use crate::studio::style::shared::shadow_matrix::{ShadowPreviewShape, render_shadow_token_matrix};
 use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
 
 #[derive(Clone, Copy)]
@@ -98,6 +99,8 @@ fn render_choice_preview_tabbed_content(
 ) -> AnyElement {
     let body = if active_tab.as_ref() == "sizes" {
         render_choice_size_matrix(look.clone(), control, window, cx)
+    } else if active_tab.as_ref() == "shadows" {
+        render_shadow_token_matrix(look.as_ref(), ShadowPreviewShape::Choice)
     } else {
         render_choice_variant_state_matrix(look.clone(), control, &toggle_interaction_state_samples(), window, cx)
     };

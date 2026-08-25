@@ -39,6 +39,7 @@ use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::preview_handlers::{input_noop_click, input_noop_hover, input_textfield_handlers};
 use crate::studio::style::shared::shell::section_shell_with_width;
+use crate::studio::style::shared::shadow_matrix::{ShadowPreviewShape, render_shadow_token_matrix};
 
 type SelectorPreviewScrollWheelHandler = Arc<dyn Fn(&gpui::ScrollWheelEvent, &mut Window, &mut App) + 'static>;
 
@@ -191,6 +192,7 @@ fn render_selector_preview_tabbed_content(
 ) -> AnyElement {
     let body = match active_tab.as_ref() {
         "sizes" => render_selector_sizes_body(&look, scroll_wheel, window, cx),
+        "shadows" => render_shadow_token_matrix(&look, ShadowPreviewShape::Selector),
         _ => render_selector_template_preview_body(&look, scroll_wheel, window, cx),
     };
 

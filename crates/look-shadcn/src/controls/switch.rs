@@ -160,12 +160,20 @@ pub fn switch_look(
     } else {
         resolve_color(catalog, "border").unwrap_or_else(|err| panic!("switch properties: {err}"))
     };
-    let thumb_background = colors.thumb_background.hsla();
-    let thumb_border = if on && !state.disabled {
+    let mut thumb_background = colors.thumb_background.hsla();
+    let mut thumb_border = if on && !state.disabled {
         thumb_background
     } else {
         colors.thumb_border.hsla()
     };
+    if content_only {
+        thumb_background = if theme_mode == ThemeMode::Dark {
+            gpui::hsla(0.0, 0.0, 0.0, 1.0)
+        } else {
+            gpui::hsla(0.0, 0.0, 1.0, 1.0)
+        };
+        thumb_border = thumb_background;
+    }
     SwitchPalette {
         track_background,
         track_border,
@@ -488,7 +496,7 @@ mod tests {
     }
 
     #[test]
-    fn content_only_switch_keeps_primary_track_without_shadow() {
+    fn content_only_switch_keeps_primary_track_and_explicit_light_thumb_without_shadow() {
         let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
         let primary = switch_look(
             &mode,
@@ -509,7 +517,8 @@ mod tests {
 
         assert_eq!(content_only.track_background, primary.track_background);
         assert_eq!(content_only.track_border, primary.track_border);
-        assert_eq!(content_only.thumb_background, primary.thumb_background);
+        assert_eq!(content_only.thumb_background, gpui::hsla(0.0, 0.0, 1.0, 1.0));
+        assert_eq!(content_only.thumb_border, gpui::hsla(0.0, 0.0, 1.0, 1.0));
         assert!(content_only.thumb_shadow.is_empty());
     }
 }

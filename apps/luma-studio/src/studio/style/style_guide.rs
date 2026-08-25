@@ -47,11 +47,10 @@ enum StyleGuideSection {
     TreeView,
     Accordion,
     Typography,
-    Prototypes,
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 23] = [
+    const ALL: [Self; 22] = [
         Self::Accordion,
         Self::Buttons,
         Self::Checkbox,
@@ -74,7 +73,6 @@ impl StyleGuideSection {
         Self::Toolbar,
         Self::TreeView,
         Self::Typography,
-        Self::Prototypes,
     ];
 
     fn label(self) -> &'static str {
@@ -101,7 +99,6 @@ impl StyleGuideSection {
             Self::Toolbar => "Toolbar",
             Self::TreeView => "Tree View",
             Self::Typography => "Typography",
-            Self::Prototypes => "Prototypes",
         }
     }
 }
@@ -120,7 +117,6 @@ declare_form! {
             last_max_scroll: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
             sidebar_preview: Option<Entity<SidebarControl>> = None,
             buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
-            split_button_preview: Option<Entity<sections::buttons::SplitButtonPreview>> = None,
             icon_buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
             checkbox_preview_tabs: Option<Entity<TabsNavigation>> = None,
             radio_preview_tabs: Option<Entity<TabsNavigation>> = None,
@@ -133,6 +129,7 @@ declare_form! {
             selectors_preview_tabs: Option<Entity<TabsNavigation>> = None,
             scrollbar_preview_tabs: Option<Entity<TabsNavigation>> = None,
             textfield_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            textarea_preview_tabs: Option<Entity<TabsNavigation>> = None,
             slider_preview_tabs: Option<Entity<TabsNavigation>> = None,
             slider_customization_preview: Option<Entity<sections::slider::customization::SliderCustomizationPreview>> =
                 None,
@@ -155,7 +152,6 @@ impl StyleGuidePanel {
         self.look = look;
         self.sync_sidebar_preview(cx);
         self.sync_buttons_preview_tabs(cx);
-        self.sync_split_button_preview(cx);
         self.sync_icon_buttons_preview_tabs(cx);
         self.sync_checkbox_preview_tabs(cx);
         self.sync_radio_preview_tabs(cx);
@@ -167,6 +163,7 @@ impl StyleGuidePanel {
         self.sync_selectors_preview_tabs(cx);
         self.sync_scrollbar_preview_tabs(cx);
         self.sync_textfield_preview_tabs(cx);
+        self.sync_textarea_preview_tabs(cx);
         self.sync_listbox_preview_tabs(cx);
         self.sync_listbox_preview(cx);
         self.sync_list_view_preview_tabs(cx);
@@ -254,22 +251,6 @@ impl StyleGuidePanel {
                 tabs.set_template(look.tabs_navigation_template(), cx);
             });
         }
-    }
-
-    fn sync_split_button_preview(&mut self, cx: &mut Context<Self>) {
-        if let Some(preview) = self.split_button_preview.clone() {
-            let look = self.look.clone();
-            preview.update(cx, move |preview, cx| preview.sync_look(look, cx));
-        }
-    }
-
-    fn split_button_preview(&mut self, cx: &mut Context<Self>) -> Entity<sections::buttons::SplitButtonPreview> {
-        if let Some(preview) = self.split_button_preview.clone() {
-            return preview;
-        }
-        let preview = cx.new(|cx| sections::buttons::SplitButtonPreview::new(cx, self.look.clone()));
-        self.split_button_preview = Some(preview.clone());
-        preview
     }
 
     fn buttons_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
@@ -383,6 +364,7 @@ impl StyleGuidePanel {
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
+                TabsNavigationItem::new("shadows").label("Shadows"),
             ])
             .active("template-preview")
             .width_mode(TabsNavigationWidthMode::Intrinsic)
@@ -413,6 +395,7 @@ impl StyleGuidePanel {
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
+                TabsNavigationItem::new("shadows").label("Shadows"),
             ])
             .active("template-preview")
             .width_mode(TabsNavigationWidthMode::Intrinsic)
@@ -541,6 +524,36 @@ impl StyleGuidePanel {
         self.sync_preview_tabs(self.textfield_preview_tabs.clone(), cx);
     }
 
+    fn sync_textarea_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        self.sync_preview_tabs(self.textarea_preview_tabs.clone(), cx);
+    }
+
+    fn textarea_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.textarea_preview_tabs.clone() {
+            return tabs;
+        }
+
+        let tabs = self
+            .look
+            .tabs_navigation("luma-studio-textarea-style-preview-tabs")
+            .items([
+                TabsNavigationItem::new("template-preview").label("Template Preview"),
+                TabsNavigationItem::new("textarea-shadows").label("Shadows"),
+            ])
+            .active("template-preview")
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
+            .template(self.look.tabs_navigation_template())
+            .spawn(cx);
+
+        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+            cx.notify();
+        })
+        .detach();
+
+        self.textarea_preview_tabs = Some(tabs.clone());
+        tabs
+    }
+
     fn sync_selectors_preview_tabs(&mut self, cx: &mut Context<Self>) {
         self.sync_preview_tabs(self.selectors_preview_tabs.clone(), cx);
     }
@@ -556,6 +569,7 @@ impl StyleGuidePanel {
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
+                TabsNavigationItem::new("shadows").label("Shadows"),
             ])
             .active("template-preview")
             .width_mode(TabsNavigationWidthMode::Intrinsic)
@@ -582,6 +596,7 @@ impl StyleGuidePanel {
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
+                TabsNavigationItem::new("shadows").label("Shadows"),
             ])
             .active("template-preview")
             .width_mode(TabsNavigationWidthMode::Intrinsic)
@@ -608,6 +623,7 @@ impl StyleGuidePanel {
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
+                TabsNavigationItem::new("shadows").label("Shadows"),
             ])
             .active("template-preview")
             .width_mode(TabsNavigationWidthMode::Intrinsic)
@@ -857,7 +873,6 @@ impl Render for StyleGuidePanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let _ = self.sidebar_preview(cx);
         let _ = self.buttons_preview_tabs(cx);
-        let _ = self.split_button_preview(cx);
         let _ = self.icon_buttons_preview_tabs(cx);
         let _ = self.checkbox_preview_tabs(cx);
         let _ = self.radio_preview_tabs(cx);
@@ -869,6 +884,7 @@ impl Render for StyleGuidePanel {
         let _ = self.selectors_preview_tabs(cx);
         let _ = self.scrollbar_preview_tabs(cx);
         let _ = self.textfield_preview_tabs(cx);
+        let _ = self.textarea_preview_tabs(cx);
         let _ = self.slider_preview_tabs(cx);
         let _ = self.slider_customization_preview(cx);
         let _ = self.listbox_preview_tabs(cx);
@@ -1031,7 +1047,6 @@ impl StyleGuidePanel {
                 | StyleGuideSection::TreeView
                 | StyleGuideSection::Accordion
                 | StyleGuideSection::Toolbar
-                | StyleGuideSection::Prototypes
         )
     }
 
@@ -1049,10 +1064,6 @@ impl StyleGuidePanel {
                 self.buttons_preview_tabs.clone().expect("buttons preview tabs"),
                 window,
                 cx,
-            ),
-            StyleGuideSection::Prototypes => sections::buttons::render_split_button_prototype_section(
-                self.look.clone(),
-                self.split_button_preview.clone().expect("split button preview"),
             ),
             StyleGuideSection::IconButtons => sections::icon_buttons::render_icon_button_template_matrix_section(
                 self.look.clone(),
@@ -1125,9 +1136,12 @@ impl StyleGuidePanel {
                 window,
                 cx,
             ),
-            StyleGuideSection::TextArea => {
-                sections::textarea::render_textarea_template_section(self.look.clone(), window, cx)
-            }
+            StyleGuideSection::TextArea => sections::textarea::render_textarea_template_section(
+                self.look.clone(),
+                self.textarea_preview_tabs.clone().expect("textarea preview tabs"),
+                window,
+                cx,
+            ),
             StyleGuideSection::Listbox => sections::listbox::render_listbox_template_section(
                 self.look.clone(),
                 self.listbox_preview_tabs.clone().expect("listbox preview tabs"),

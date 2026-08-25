@@ -192,7 +192,6 @@ fn spawn_row_checkboxes(look: Arc<ShadcnLook>, row_count: usize, cx: &mut Contex
                 .with_data(false)
                 .size(ControlSize::Sm)
                 .indicator_only()
-                .compact()
                 .tab_stop(false)
                 .spawn(cx)
         })

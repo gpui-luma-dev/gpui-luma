@@ -1,13 +1,15 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px};
+use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px};
 use gpui_luma::controls::textarea::{
     TextAreaLineMetric, TextAreaRenderModel, TextAreaState, TextAreaTemplate, TextAreaTheme, ThemedTextAreaTemplate,
 };
+use gpui_luma::controls::tabs_navigation::TabsNavigation;
 use gpui_luma::theme::{ControlSize, StandardBoxScale};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::shared::preview_handlers::input_textarea_handlers;
+use crate::studio::style::shared::shadow_matrix::{ShadowPreviewShape, render_shadow_token_matrix};
 use crate::studio::style::shared::shell::section_shell_with_width;
 use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
 
@@ -39,8 +41,15 @@ const TEXTAREA_STYLE_VARIANTS: [TextAreaStyleVariant; 3] = [
     TextAreaStyleVariant { id: "surface", label: "Surface" },
 ];
 
-pub(crate) fn render_textarea_template_section(look: Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+pub(crate) fn render_textarea_template_section(
+    look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
     let chrome = look.chrome();
+    let active_tab =
+        preview_tabs.read(cx).active_id().cloned().unwrap_or_else(|| SharedString::from("template-preview"));
 
     section_shell_with_width(
         960.0,
@@ -50,8 +59,32 @@ pub(crate) fn render_textarea_template_section(look: Arc<ShadcnLook>, window: &m
         chrome.muted_text,
         chrome.border,
         chrome.panel_background,
-        render_textarea_template_body(&look, window, cx),
+        render_textarea_preview_tabbed_content(look, preview_tabs, active_tab, chrome.border, window, cx),
     )
+}
+
+fn render_textarea_preview_tabbed_content(
+    look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
+    active_tab: SharedString,
+    border: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let body = if matches!(active_tab.as_ref(), "shadows" | "textarea-shadows") {
+        render_shadow_token_matrix(&look, ShadowPreviewShape::TextControl)
+    } else {
+        render_textarea_template_body(&look, window, cx)
+    };
+
+    div()
+        .w_full()
+        .flex()
+        .flex_col()
+        .child(div().w_full().flex().justify_start().child(preview_tabs))
+        .child(div().w_full().h(px(1.0)).bg(border))
+        .child(div().w_full().flex().justify_center().mt(px(16.0)).child(body))
+        .into_any_element()
 }
 
 fn render_textarea_template_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {

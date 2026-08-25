@@ -841,6 +841,58 @@ struct ShadcnPrimaryTextAreaTheme {
     theme: ShadcnLook,
 }
 
+struct ShadcnInputTextAreaTheme {
+    theme: ShadcnLook,
+}
+
+impl TextAreaTheme for ShadcnInputTextAreaTheme {
+    fn resolve(
+        &self,
+        state: gpui_luma::controls::textarea::TextAreaState,
+        enabled: bool,
+    ) -> gpui_luma::controls::textarea::TextAreaPalette {
+        let tokens = self.theme.mode_tokens();
+        super::textarea::textarea_palette(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Input,
+            state,
+            enabled,
+        )
+    }
+
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
+    }
+
+    fn resolve_look(
+        &self,
+        state: gpui_luma::controls::textarea::TextAreaState,
+        enabled: bool,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> gpui_luma::controls::textarea::TextAreaLook {
+        let tokens = self.theme.mode_tokens();
+        super::textarea::textarea_look(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Input,
+            state,
+            enabled,
+            size,
+            scale,
+        )
+    }
+}
+
+pub fn input_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
+    Arc::new(ShadcnInputTextAreaTheme { theme: theme.as_ref().clone() })
+}
+
+pub fn input_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
+    Arc::new(ThemedTextAreaTemplate::new(input_textarea_theme(Arc::clone(&theme))))
+}
+
 impl TextAreaTheme for ShadcnPrimaryTextAreaTheme {
     fn resolve(
         &self,

@@ -478,9 +478,9 @@ foreground = "foreground"
 # =====================================================================
 # 2. CHECKBOX
 # =====================================================================
-# shadcn/ui uses shadow-xs on indicators; shadow-sm reads better at GPUI scale.
+# shadcn/ui uses shadow-xs on indicators.
 [[checkbox.elevation_rules]]
-shadow = "shadow-sm"
+shadow = "shadow-xs"
 
 [[checkbox.elevation_rules]]
 layer = "disabled"
@@ -514,9 +514,9 @@ secondary = "ring"
 outline = "ring"
 ghost = "ring"
 
-# shadcn/ui uses shadow-xs on indicators; shadow-sm reads better at GPUI scale.
+# shadcn/ui uses shadow-xs on indicators.
 [[radio.elevation_rules]]
-shadow = "shadow-sm"
+shadow = "shadow-xs"
 
 [[radio.elevation_rules]]
 layer = "disabled"
@@ -722,11 +722,11 @@ shadow = "none"
 
 [[textfield.elevation_rules]]
 style = "surface"
-shadow = "none"
+shadow = "shadow-xs"
 
 [[textfield.elevation_rules]]
 style = "input"
-shadow = "none"
+shadow = "shadow-xs"
 
 [[textfield.color_rules]]
 style = "input"
@@ -745,7 +745,7 @@ style = "input"
 enabled = true
 invalid = false
 mode = "light"
-background = "transparent"
+background = "input"
 foreground = "foreground"
 border = "border"
 placeholder = "muted-foreground"
@@ -759,7 +759,7 @@ style = "input"
 enabled = true
 invalid = false
 mode = "dark"
-background = "input/30"
+background = "input"
 foreground = "foreground"
 border = "border"
 placeholder = "muted-foreground"
@@ -773,7 +773,7 @@ style = "input"
 enabled = true
 invalid = true
 mode = "light"
-background = "transparent"
+background = "input"
 foreground = "foreground"
 border = "destructive"
 placeholder = "muted-foreground"
@@ -787,7 +787,7 @@ style = "input"
 enabled = true
 invalid = true
 mode = "dark"
-background = "input/30"
+background = "input"
 foreground = "foreground"
 border = "destructive"
 placeholder = "muted-foreground"

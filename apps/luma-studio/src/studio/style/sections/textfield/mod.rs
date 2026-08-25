@@ -13,6 +13,7 @@ use lucide_svg_static::Icon as LucideIcon;
 use crate::studio::style::shared::button_matrix::button_size_id;
 use crate::studio::style::shared::preview_handlers::input_textfield_handlers;
 use crate::studio::style::shared::shell::section_shell_with_width;
+use crate::studio::style::shared::shadow_matrix::{ShadowPreviewShape, render_shadow_token_matrix};
 use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
 
 // Six state columns stay inside the 960px style-guide section.
@@ -79,6 +80,7 @@ fn render_textfield_preview_tabbed_content(
 ) -> AnyElement {
     let body = match active_tab.as_ref() {
         "sizes" => render_textfield_sizes_body(&look, window, cx),
+        "shadows" => render_shadow_token_matrix(&look, ShadowPreviewShape::TextControl),
         _ => render_textfield_template_body(&look, window, cx),
     };
 

@@ -532,6 +532,14 @@ impl ShadcnLook {
         templates::primary_textarea_theme(Arc::clone(self))
     }
 
+    pub fn input_textarea_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTheme> {
+        templates::input_textarea_theme(Arc::clone(self))
+    }
+
+    pub fn input_textarea_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
+        templates::input_textarea_template(Arc::clone(self))
+    }
+
     pub fn primary_textarea_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
         templates::primary_textarea_template(Arc::clone(self))
     }

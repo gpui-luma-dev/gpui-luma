@@ -66,6 +66,7 @@ pub struct PopupMenuModel {
     pub(crate) menu_size: ControlSize,
     /// Square icon-button chrome (no trailing end icon). Set by the icon face preset.
     pub(crate) icon_only: bool,
+    pub(crate) icon: Option<LucideIcon>,
     pub(crate) end_icon: Option<LucideIcon>,
     pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) full_width: bool,
@@ -89,6 +90,7 @@ pub struct PopupMenuRenderModel<'a> {
     pub trigger_size: ControlSize,
     pub menu_size: ControlSize,
     pub icon_only: bool,
+    pub icon: Option<LucideIcon>,
     pub end_icon: Option<LucideIcon>,
     pub disclosure_icons: &'a DisclosureIcons,
     pub full_width: bool,
@@ -124,6 +126,7 @@ impl PopupMenuBuilder {
                 trigger_size: ControlSize::Md,
                 menu_size: ControlSize::Md,
                 icon_only: false,
+                icon: None,
                 end_icon: None,
                 disclosure_icons: DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
                 full_width: false,
@@ -138,6 +141,7 @@ impl PopupMenuBuilder {
         self.model.label = label.into();
         self.model.content = default_trigger_content();
         self.model.icon_only = false;
+        self.model.icon = None;
         self
     }
 
@@ -148,6 +152,7 @@ impl PopupMenuBuilder {
     pub fn icon(mut self, icon: LucideIcon) -> Self {
         self.model.content = icon_content(icon);
         self.model.icon_only = true;
+        self.model.icon = Some(icon);
         self
     }
 

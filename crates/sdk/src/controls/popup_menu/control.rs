@@ -92,6 +92,7 @@ impl PopupMenu {
     ) {
         self.model.content = content;
         self.model.icon_only = false;
+        self.model.icon = None;
         cx.notify();
     }
 
@@ -101,6 +102,7 @@ impl PopupMenu {
     pub fn set_icon(&mut self, icon: LucideIcon, cx: &mut Context<Self>) {
         self.model.content = super::icon_content(icon);
         self.model.icon_only = true;
+        self.model.icon = Some(icon);
         cx.notify();
     }
 
@@ -175,6 +177,7 @@ impl PopupMenu {
             trigger_size: self.model.trigger_size,
             menu_size: self.model.menu_size,
             icon_only: self.model.icon_only,
+            icon: self.model.icon,
             end_icon: self.model.end_icon,
             disclosure_icons: &self.model.disclosure_icons,
             full_width: self.model.full_width,

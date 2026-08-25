@@ -157,7 +157,14 @@ fn parse_alpha(alpha: &str) -> Result<f32> {
     if let Some(percent) = alpha.strip_suffix('%') {
         return percent.parse::<f32>().context("invalid alpha percentage").map(|v| v / 100.0);
     }
-    alpha.parse::<f32>().context("invalid alpha")
+    let value = alpha.parse::<f32>().context("invalid alpha")?;
+    // Some tweakcn exports omit the `%` suffix while retaining percentage
+    // values, such as `/ 50.00`. Accept those values as percentages.
+    Ok(if value > 1.0 {
+        (value / 100.0).clamp(0.0, 1.0)
+    } else {
+        value
+    })
 }
 
 #[cfg(test)]
@@ -174,5 +181,11 @@ mod tests {
     fn oklch_alpha_accepts_decimal() {
         let color = parse_css_color("oklch(1 0 0 / 0.15)").expect("parse");
         assert!((color.a - 0.15).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn hsl_alpha_accepts_unmarked_percentage_value() {
+        let color = parse_css_color("hsl(32.7273 26.8293% 8.0392% / 50.00)").expect("alpha");
+        assert!((color.a - 0.5).abs() < f32::EPSILON);
     }
 }

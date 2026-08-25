@@ -240,12 +240,16 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .child(action_face)
                 .child(div().border_l_1().border_color(control_look.trigger_foreground).child(secondary));
         } else if model.icon_only {
+            let icon_face = model
+                .icon
+                .map(|icon| render_lucide_icon(icon, control_look.trigger_foreground, look.trigger_icon_size))
+                .unwrap_or(face);
             trigger = trigger
                 .justify_center()
                 .size(px(look.trigger_height))
                 .text_size(px(look.trigger_icon_size))
                 .line_height(px(look.trigger_icon_size))
-                .child(face)
+                .child(icon_face)
                 .on_click(trigger_click);
         } else {
             let end_icon = model.end_icon.unwrap_or(if model.open {

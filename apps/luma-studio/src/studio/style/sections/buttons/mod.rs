@@ -7,7 +7,7 @@ use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::split_button::SplitButton;
 use gpui_luma::controls::tabs_navigation::TabsNavigation;
 use gpui_luma::theme::InteractionState;
-use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnLookControlExt};
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnLookControlExt, ShadcnShadow};
 
 use crate::studio::style::shared::button_matrix::{
     BUTTON_STYLE_VARIANTS, BUTTON_TABLE_STATE_COLUMN_WIDTH, SIZE_PREVIEW_STYLE, button_look_for_style,
@@ -86,6 +86,8 @@ fn render_button_preview_tabbed_content(
 ) -> AnyElement {
     let body = if active_tab.as_ref() == "sizes" {
         render_button_size_matrix(look, template, window, cx)
+    } else if active_tab.as_ref() == "shadows" {
+        render_button_shadow_matrix(look, template, window, cx)
     } else {
         render_button_template_matrix(look, template, samples, window, cx)
     };
@@ -208,6 +210,64 @@ fn render_button_size_matrix(
     cx: &mut App,
 ) -> AnyElement {
     render_button_size_radius_matrix(look, template, SIZE_PREVIEW_STYLE, false, window, cx)
+}
+
+fn render_button_shadow_matrix(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<()>>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    const SHADOWS: [(ShadcnShadow, &str); 9] = [
+        (ShadcnShadow::None, "none"),
+        (ShadcnShadow::TwoXs, "2xs"),
+        (ShadcnShadow::Xs, "xs"),
+        (ShadcnShadow::Sm, "sm"),
+        (ShadcnShadow::Default, "default"),
+        (ShadcnShadow::Md, "md"),
+        (ShadcnShadow::Lg, "lg"),
+        (ShadcnShadow::Xl, "xl"),
+        (ShadcnShadow::TwoXl, "2xl"),
+    ];
+
+    let chrome = look.chrome();
+    div()
+        .w_full()
+        .flex()
+        .flex_col()
+        .gap(px(12.0))
+        .children(SHADOWS.into_iter().map(|(shadow, label)| {
+            let source = button_look_for_style(Arc::new(look.clone()), ShadcnButtonStyle::Primary);
+            let shadows = look.shadow(shadow);
+            let model = ButtonRenderModel {
+                id: SharedString::from(format!("luma-studio-button-shadow-{label}")),
+                data: (),
+                content: ButtonTemplateVariant::TextButton.content(),
+                role: ButtonFamilyRole::Text,
+                size: ButtonSize::Md,
+                state: InteractionState::default(),
+                round: false,
+                radius_override: std::cell::Cell::new(None),
+                elevation: true,
+                compact: false,
+                look: Some(Arc::new(move |model| {
+                    let mut resolved = source(model);
+                    resolved.shadow = (!shadows.is_empty()).then(|| shadows.clone());
+                    resolved
+                })),
+                ..Default::default()
+            };
+
+            div()
+                .w_full()
+                .flex()
+                .items_center()
+                .gap(px(24.0))
+                .child(div().w(px(100.0)).text_sm().text_color(chrome.muted_text).child(format!("shadow-{label}")))
+                .child(template.render(&model, window, cx))
+                .into_any_element()
+        }))
+        .into_any_element()
 }
 
 pub(crate) fn render_button_state_sample(

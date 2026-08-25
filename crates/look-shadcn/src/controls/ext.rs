@@ -690,6 +690,7 @@ impl ShadcnTextFieldExt for TextFieldBuilder {
 pub trait ShadcnTextAreaExt {
     fn look_theme(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
     fn outline(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
+    fn input(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
     fn surface(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
     fn primary(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
 }
@@ -701,6 +702,10 @@ impl ShadcnTextAreaExt for TextAreaBuilder {
 
     fn outline(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder {
         self.look_theme(theme)
+    }
+
+    fn input(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder {
+        self.template(theme.input_textarea_template()).theme(theme.input_textarea_theme())
     }
 
     fn surface(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder {

@@ -279,6 +279,7 @@ fn render_menu_trigger_state_cell(
         trigger_size: ButtonSize::Md,
         menu_size: ButtonSize::Md,
         icon_only: false,
+        icon: None,
         end_icon: None,
         disclosure_icons: &gpui_luma::controls::icon::DisclosureIcons::new(
             LucideIcon::ChevronUp,
@@ -339,6 +340,7 @@ fn render_menu_trigger_size_radius_cell(
         trigger_size: size,
         menu_size: ButtonSize::Md,
         icon_only: false,
+        icon: None,
         end_icon: None,
         disclosure_icons: &gpui_luma::controls::icon::DisclosureIcons::new(
             LucideIcon::ChevronUp,

@@ -147,6 +147,7 @@ mod tests {
             ("popover-foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
             ("accent".into(), "oklch(0.5808 0.1732 39.5003)".into()),
             ("shadow-xs".into(), "0 1px 2px 0px hsl(0 0% 0% / 0.05)".into()),
+            ("shadow-sm".into(), "0 1px 2px 0px hsl(0 0% 0% / 0.10)".into()),
         ]))
     }
 

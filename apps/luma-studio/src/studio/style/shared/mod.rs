@@ -6,3 +6,4 @@ pub(crate) mod input_samples;
 pub(crate) mod preview_handlers;
 pub(crate) mod samples;
 pub(crate) mod shell;
+pub(crate) mod shadow_matrix;
