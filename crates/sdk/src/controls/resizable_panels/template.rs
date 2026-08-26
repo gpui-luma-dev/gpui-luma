@@ -334,11 +334,12 @@ fn render_overlay_handle(
         }
     };
 
+    handle = handle.child(divider);
     if show_handle {
         handle = handle.child(render_handle_grip(orientation, grip_color, handle_metrics));
     }
 
-    handle.child(divider).child(interaction_layer).into_any_element()
+    handle.child(interaction_layer).into_any_element()
 }
 
 fn render_handle_grip(orientation: ResizablePanelsOrientation, grip_color: Hsla, metrics: &ResizeHandleMetrics) -> Div {
