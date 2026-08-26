@@ -10,6 +10,7 @@ pub(crate) mod pager;
 pub(crate) mod radio;
 pub(crate) mod scrollbar;
 pub(crate) mod selectors;
+pub(crate) mod shadows;
 pub(crate) mod sidebar;
 pub(crate) mod slider;
 pub(crate) mod switch;

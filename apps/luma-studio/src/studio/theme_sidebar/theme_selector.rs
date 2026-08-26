@@ -198,7 +198,9 @@ impl SearchSelectorTemplate for ThemeSearchSelectorTemplate {
 
 fn selector_interaction(model: &SearchSelectorRenderModel) -> InteractionState {
     InteractionState {
-        hovered: model.trigger_state.hovered,
+        // The theme picker keeps its trigger visually neutral while retaining
+        // hover events for the selector interaction lifecycle.
+        hovered: false,
         pressed: false,
         focused: model.trigger_state.focused || model.trigger_state.focus_visible,
         disabled: !model.enabled,

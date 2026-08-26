@@ -37,16 +37,6 @@ const HSL_GRID_LABELS: [&str; 3] = ["Hue", "Saturation", "Lightness"];
 const HS_ADJUSTMENT_LEFT_LABELS: [&str; 2] = ["Neutral", "Warmer"];
 const HS_ADJUSTMENT_RIGHT_LABELS: [&str; 2] = ["Vivid", "Cooler"];
 const SHADOW_GRID_LABELS: [&str; 5] = ["Opacity", "Blur", "Spread", "Offset X", "Offset Y"];
-const SHADOW_TOKEN_KEYS: [&str; 8] = [
-    "shadow",
-    "shadow-2xs",
-    "shadow-xs",
-    "shadow-sm",
-    "shadow-md",
-    "shadow-lg",
-    "shadow-xl",
-    "shadow-2xl",
-];
 const SHADOW_GRID_UNIT_WIDTH: f32 = 24.0;
 const SLIDER_FIELD_GRID_GAP_X: f32 = 10.0;
 const PANEL_SLIDER_STEP: f32 = 0.01;
@@ -773,92 +763,10 @@ impl OtherPanel {
                     .child(self.shadow_color_field.clone()),
             },
             shadow_slider_grid(self, window),
-            shadow_token_breakdown(&self.look),
         }
         .w_full()
         .into_any_element()
     }
-}
-
-fn shadow_token_breakdown(look: &ShadcnLook) -> AnyElement {
-    let chrome = look.chrome();
-    let caption_style = look.typography_scale(ShadcnTextSize::Xs);
-    let detail_style = look.typography_scale(ShadcnTextSize::Sm);
-    let mode_tokens = look.mode_tokens();
-    let catalog = &mode_tokens.catalog;
-
-    vstack! {
-        gap=8;
-        div()
-            .typography_style(detail_style)
-            .text_color(chrome.title_text)
-            .child("Shadow Tokens"),
-        div()
-            .flex()
-            .flex_col()
-            .gap(px(6.0))
-            .children(SHADOW_TOKEN_KEYS.into_iter().map(|token| {
-                let raw = catalog.get(token).unwrap_or("unresolved");
-                let parsed = look.parse_shadow_token(token);
-                let detail = match &parsed {
-                    Ok(layers) => format!("{} layer{}", layers.len(), if layers.len() == 1 { "" } else { "s" }),
-                    Err(error) => format!("parse error: {error}"),
-                };
-                let mut preview = div()
-                    .flex_none()
-                    .size(px(72.0))
-                    .bg(chrome.panel_background)
-                    .border_1()
-                    .border_color(chrome.border)
-                    .rounded(px(4.0));
-                if let Ok(layers) = &parsed
-                    && !layers.is_empty()
-                {
-                    preview = preview.shadow(layers.clone());
-                }
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(12.0))
-                    .border_1()
-                    .border_color(chrome.border)
-                    .rounded(px(6.0))
-                    .p(px(8.0))
-                    .child(preview)
-                    .child(
-                        div()
-                            .min_w(px(0.0))
-                            .flex_1()
-                            .flex()
-                            .flex_col()
-                            .gap(px(2.0))
-                            .child(
-                                div()
-                                    .font_family("Monaco")
-                                    .typography_style(detail_style)
-                                    .text_color(chrome.title_text)
-                                    .child(format!("--{token}")),
-                            )
-                            .child(
-                                div()
-                                    .font_family("Monaco")
-                                    .typography_style(caption_style)
-                                    .text_color(chrome.body_text)
-                                    .child(detail),
-                            )
-                            .child(
-                                div()
-                                    .font_family("Monaco")
-                                    .typography_style(caption_style)
-                                    .text_color(chrome.muted_text)
-                                    .child(raw.to_string()),
-                            ),
-                    )
-                    .into_any_element()
-            }))
-    }
-    .w_full()
-    .into_any_element()
 }
 
 impl Render for OtherPanel {

@@ -302,8 +302,10 @@ fn style_guide_section_order_for_title(title: &str) -> usize {
         "Text Area" => 16,
         "Text Field" => 17,
         "Toggles" => 18,
-        "Tree View" => 19,
-        "Typography" => 20,
+        "Toolbar" => 19,
+        "Tree View" => 20,
+        "Typography" => 21,
+        "Shadow Tokens" => 22,
         _ => usize::MAX,
     }
 }

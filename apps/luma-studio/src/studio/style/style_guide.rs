@@ -47,10 +47,11 @@ enum StyleGuideSection {
     TreeView,
     Accordion,
     Typography,
+    ShadowTokens,
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 22] = [
+    const ALL: [Self; 23] = [
         Self::Accordion,
         Self::Buttons,
         Self::Checkbox,
@@ -73,6 +74,7 @@ impl StyleGuideSection {
         Self::Toolbar,
         Self::TreeView,
         Self::Typography,
+        Self::ShadowTokens,
     ];
 
     fn label(self) -> &'static str {
@@ -99,6 +101,7 @@ impl StyleGuideSection {
             Self::Toolbar => "Toolbar",
             Self::TreeView => "Tree View",
             Self::Typography => "Typography",
+            Self::ShadowTokens => "Shadow Tokens",
         }
     }
 }
@@ -1174,6 +1177,7 @@ impl StyleGuidePanel {
                 cx,
             ),
             StyleGuideSection::Typography => sections::typography::render_typography_section(self.look.as_ref()),
+            StyleGuideSection::ShadowTokens => sections::shadows::render_shadow_tokens_section(self.look.as_ref()),
         }
     }
 

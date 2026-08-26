@@ -149,7 +149,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
 
         let mut root = div().id(model.id.clone()).flex().flex_col().w_full().gap(px(scale.item_gap)).cursor_default();
 
-        for item in &model.items {
+        for (index, item) in model.items.iter().enumerate() {
             let Some(hover_handler) = trigger_hovers.next() else {
                 break;
             };
@@ -270,7 +270,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
 
             let mut item_container = div().id(format!("{}-item", item.id)).flex().flex_col().w_full().child(trigger_el);
 
-            if model.item_dividers {
+            if model.item_dividers && index + 1 < model.items.len() {
                 item_container = item_container.border_b_1().border_color(trigger_palette.border_color);
             }
 
