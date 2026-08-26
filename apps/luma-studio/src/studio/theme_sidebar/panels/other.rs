@@ -811,10 +811,10 @@ fn shadow_token_breakdown(look: &ShadcnLook) -> AnyElement {
                     .border_1()
                     .border_color(chrome.border)
                     .rounded(px(4.0));
-                if let Ok(layers) = &parsed {
-                    if !layers.is_empty() {
-                        preview = preview.shadow(layers.clone());
-                    }
+                if let Ok(layers) = &parsed
+                    && !layers.is_empty()
+                {
+                    preview = preview.shadow(layers.clone());
                 }
                 div()
                     .flex()

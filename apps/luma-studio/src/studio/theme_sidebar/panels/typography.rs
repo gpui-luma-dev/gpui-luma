@@ -1,11 +1,15 @@
 use std::collections::HashSet;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
-use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{
+    AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Stateful, Subscription, Window, div,
+    prelude::*, px,
+};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::search_selector::{
-    SearchSelector, SearchSelectorEvent, SearchSelectorItemRenderModel, SearchSelectorItemTemplate, SelectionItem,
-    make_search_selector_item_template,
+    SearchSelector, SearchSelectorEvent, SearchSelectorItemRenderModel, SearchSelectorItemTemplate,
+    SearchSelectorRenderModel, SearchSelectorTemplate, SearchSelectorTemplateHandlers, SelectionItem,
+    default_search_selector_template, make_search_selector_item_template,
 };
 use gpui_luma::vstack;
 use crate::studio::font_catalog::{FontCatalog, FontSlot};
@@ -51,6 +55,7 @@ const ALL_FONTS_DIVIDER_ID: &str = "__all_fonts_divider__";
 struct FontRoleControl {
     search_selector: SearchSelector,
     preview_font: SharedString,
+    selected_font: Arc<RwLock<SharedString>>,
 }
 
 pub struct TypographyPanel {
@@ -304,8 +309,9 @@ fn spawn_font_role_control(
     font_names: &[String],
     cx: &mut Context<TypographyPanel>,
 ) -> FontRoleControl {
-    let (search_selector, preview_font) = build_font_search_selector(look, font_catalog, id, role, font_names, cx);
-    FontRoleControl { search_selector, preview_font }
+    let (search_selector, preview_font, selected_font) =
+        build_font_search_selector(look, font_catalog, id, role, font_names, cx);
+    FontRoleControl { search_selector, preview_font, selected_font }
 }
 
 fn sync_font_role_control(
@@ -317,6 +323,9 @@ fn sync_font_role_control(
     cx: &mut Context<TypographyPanel>,
 ) {
     let (selected, items, fallback_label) = font_search_selector_state(look, font_catalog, role, font_names);
+    if let Ok(mut selected_font) = control.selected_font.write() {
+        *selected_font = selected.clone();
+    }
     control.search_selector.update(cx, |search_selector, cx| {
         search_selector.set_placeholder(fallback_label, cx);
         search_selector.set_items(items, cx);
@@ -334,10 +343,11 @@ fn build_font_search_selector(
     role: FontFamilyRole,
     font_names: &[String],
     cx: &mut Context<TypographyPanel>,
-) -> (SearchSelector, SharedString) {
+) -> (SearchSelector, SharedString, Arc<RwLock<SharedString>>) {
     let id = id.into();
     let (selected, items, fallback_label) = font_search_selector_state(look, font_catalog, role, font_names);
     let preview_font = selected.clone();
+    let selected_font = Arc::new(RwLock::new(selected.clone()));
     let search_selector = look
         .search_selector(id, items)
         .placeholder(fallback_label)
@@ -345,9 +355,10 @@ fn build_font_search_selector(
         .selected_id(selected)
         .enabled(true)
         .full_width(true)
+        .template(font_search_selector_template(selected_font.clone()))
         .with_item_template(font_item_template_builder(font_names))
         .spawn(cx);
-    (search_selector, preview_font)
+    (search_selector, preview_font, selected_font)
 }
 
 fn font_search_selector_state(
@@ -439,7 +450,10 @@ fn font_item_template_element_with_loaded(
     loaded: &HashSet<String>,
 ) -> gpui::Div {
     let is_loaded = loaded.contains(&item.item.id.to_string().to_ascii_lowercase());
-    let mut content = div().flex().items_center().justify_between().flex_1().child(item.item.label.clone());
+    let label = div()
+        .when(item.item.id.as_ref() != ALL_FONTS_DIVIDER_ID, |label| label.font_family(item.item.id.clone()))
+        .child(item.item.label.clone());
+    let mut content = div().flex().items_center().justify_between().flex_1().child(label);
     if is_loaded {
         content = content.child(div().ml_2().child(gpui_luma::controls::icon::lucide_icon(
             LucideIcon::Check,
@@ -448,6 +462,34 @@ fn font_item_template_element_with_loaded(
         )));
     }
     content
+}
+
+/// TypographyPanel-only trigger customization. The SDK's template modifier can
+/// style the trigger root, but it cannot observe the selector's current item;
+/// keep the resolved, already-registered family in shared app state instead.
+fn font_search_selector_template(selected_font: Arc<RwLock<SharedString>>) -> Arc<dyn SearchSelectorTemplate> {
+    Arc::new(FontSearchSelectorTemplate { base: default_search_selector_template(), selected_font })
+}
+
+struct FontSearchSelectorTemplate {
+    base: Arc<dyn SearchSelectorTemplate>,
+    selected_font: Arc<RwLock<SharedString>>,
+}
+
+impl SearchSelectorTemplate for FontSearchSelectorTemplate {
+    fn render(
+        &self,
+        model: SearchSelectorRenderModel,
+        handlers: SearchSelectorTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<gpui::Div> {
+        let mut element = self.base.render(model, handlers, window, cx);
+        if let Ok(selected_font) = self.selected_font.read() {
+            element = element.font_family(selected_font.clone());
+        }
+        element
+    }
 }
 
 fn loaded_font_names(font_names: &[String]) -> HashSet<String> {

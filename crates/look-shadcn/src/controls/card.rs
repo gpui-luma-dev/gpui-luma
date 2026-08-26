@@ -369,6 +369,7 @@ mod tests {
                 --border: oklch(0.6537 0.0197 205.2618); \
                 --input: oklch(0.6537 0.0197 205.2618); \
                 --ring: oklch(0.5924 0.2025 355.8943); \
+                --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05); \
                 --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10); \
             } \
             .dark { \
@@ -387,6 +388,7 @@ mod tests {
                 --border: oklch(0.40 0 0); \
                 --input: oklch(0.40 0 0); \
                 --ring: oklch(0.5924 0.2025 355.8943); \
+                --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05); \
                 --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10); \
             }",
         )

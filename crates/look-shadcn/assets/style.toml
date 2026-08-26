@@ -1284,7 +1284,7 @@ track_thickness = 3.0
 # 13. CARD
 # =====================================================================
 [[card.elevation_rules]]
-shadow = "shadow"
+shadow = "shadow-xs"
 
 [card.color_rule]
 background = "card"
