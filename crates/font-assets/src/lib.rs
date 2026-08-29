@@ -12,9 +12,14 @@ use gpui::App;
 pub const RAJDHANI_FAMILY: &str = "Rajdhani Variable";
 /// Typographic family name registered by the bundled JetBrains Mono variable font.
 pub const JETBRAINS_MONO_FAMILY: &str = "JetBrains Mono";
+/// Typographic family name registered by the bundled Geist Mono variable font.
+pub const GEIST_MONO_FAMILY: &str = "Geist Mono";
 
 const RAJDHANI_VARIABLE: &[u8] = include_bytes!("../assets/Rajdhani/Rajdhani-Variable.ttf");
 const JETBRAINS_MONO_VARIABLE: &[u8] = include_bytes!("../assets/google/jetbrains-mono/JetBrainsMono-Variable.ttf");
+const GEIST_MONO_VARIABLE: &[u8] = include_bytes!("../assets/google/geist-mono/GeistMono-VariableFont_wght.ttf");
+const GEIST_MONO_ITALIC_VARIABLE: &[u8] =
+    include_bytes!("../assets/google/geist-mono/GeistMono-Italic-VariableFont_wght.ttf");
 const ANTIC: &[u8] = include_bytes!("../assets/google/antic/Antic-Regular.ttf");
 const ARCHITECTS_DAUGHTER: &[u8] =
     include_bytes!("../assets/google/architects-daughter/ArchitectsDaughter-ArchitectsDaughterRegular.ttf");
@@ -55,6 +60,8 @@ pub fn register(cx: &mut App) -> anyhow::Result<()> {
             Cow::Borrowed(IBM_PLEX_MONO),
             Cow::Borrowed(INTER),
             Cow::Borrowed(JETBRAINS_MONO_VARIABLE),
+            Cow::Borrowed(GEIST_MONO_VARIABLE),
+            Cow::Borrowed(GEIST_MONO_ITALIC_VARIABLE),
             Cow::Borrowed(LIBRE_BASKERVILLE),
             Cow::Borrowed(MERRIWEATHER),
             Cow::Borrowed(MONTSERRAT),

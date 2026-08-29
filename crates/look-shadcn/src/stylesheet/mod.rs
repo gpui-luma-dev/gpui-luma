@@ -18,7 +18,7 @@ pub use resolve::{
     resolve_progress_metrics, resolve_color_ref, resolve_stepper_metrics, resolve_radio_color_rule,
     resolve_resizable_panels_color_rule, resolve_scrollbar_color_rule, resolve_scrollbar_metrics,
     resolve_slider_color_rule, resolve_slider_metrics, resolve_split_view_color_rule, resolve_stylesheet_shadow_token,
-    resolve_layered_elevation_shadow, resolve_switch_color_rule, resolve_switch_metrics,
+    resolve_layered_elevation_shadow, resolve_switch_color_rule, resolve_switch_metrics, resolve_stylesheet_metric,
     resolve_tabs_navigation_item_color_rule, resolve_tabs_navigation_list_color_rule, resolve_textfield_color_rule,
     resolve_tree_view_row_color_rule, resolve_typography_rule, ResolvedFields,
 };

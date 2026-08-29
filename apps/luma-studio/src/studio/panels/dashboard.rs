@@ -19,10 +19,7 @@ use super::task_list::{Task, build_task_rows, email_column, status_cell, tag_pil
 const DEFAULT_PAGE_SIZE: usize = 25;
 const LIST_HEADER_TITLE: &str = "Documents";
 const LIST_VIEW_OUTER_PADDING_PX: f32 = 16.0;
-/// Matches controls → sidebar preview shell.
-const SHELL_RADIUS_PX: f32 = 12.0;
 const CONTENT_INSET_PX: f32 = 10.0;
-const CONTENT_RADIUS_PX: f32 = 12.0;
 
 pub struct DashboardPanel {
     look: Arc<ShadcnLook>,
@@ -162,6 +159,8 @@ impl Render for DashboardPanel {
             let look = &self.look;
             let chrome = look.chrome();
             let metrics = look.sidebar_metric_scale();
+            let shell_radius = look.radius(ShadcnRadius::Lg);
+            let content_radius = (shell_radius - CONTENT_INSET_PX).max(0.0);
             let sidebar_width = self.sidebar.read(cx).animated_width(metrics.width_expanded, metrics.width_icon_rail);
             let sidebar_bg = look.token_color("sidebar").unwrap_or(chrome.panel_background);
             let title_style = look.typography_scale(ShadcnTextSize::Lg);
@@ -173,10 +172,9 @@ impl Render for DashboardPanel {
                     .min_h_0()
                     .flex()
                     .flex_row()
+                    .relative()
                     .overflow_hidden()
-                    .rounded(px(SHELL_RADIUS_PX))
-                    .border_1()
-                    .border_color(chrome.border)
+                    .rounded(px(shell_radius))
                     .bg(sidebar_bg)
                     .child(
                         div()
@@ -205,7 +203,7 @@ impl Render for DashboardPanel {
                                     .flex()
                                     .flex_col()
                                     .overflow_hidden()
-                                    .rounded(px(CONTENT_RADIUS_PX))
+                                    .rounded(px(content_radius))
                                     .border_1()
                                     .border_color(chrome.border)
                                     .bg(chrome.content_background)

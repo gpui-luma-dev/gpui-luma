@@ -9,6 +9,7 @@ pub struct SidebarContainerLook {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
+    pub radius: f32,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -93,6 +94,7 @@ impl SidebarTheme for DefaultSidebarTheme {
             background: navigation.background,
             foreground: navigation.foreground,
             border: navigation.border,
+            radius: self.tokens.metrics.radius.lg,
         }
     }
 

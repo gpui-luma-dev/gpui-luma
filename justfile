@@ -2,7 +2,9 @@ set shell := ["bash", "-cu"]
 
 luma-studio:
     cargo run -p luma-studio -- modern-minimal --light
-    #cargo run -p luma-studio -- elegent-luxury
+
+luma-studio-trace:
+    RUST_BACKTRACE=1 cargo run -p luma-studio
 
 luma-studio-rel:
     cargo run -p luma-studio --release

@@ -15,7 +15,7 @@ use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
     StylesheetConfig, embedded_stylesheet, find_list_view_row_color_rule, find_list_view_surface_color_rule,
-    resolve_list_view_row_color_rule, resolve_list_view_surface_color_rule,
+    resolve_list_view_row_color_rule, resolve_list_view_surface_color_rule, resolve_stylesheet_metric,
 };
 
 #[derive(Clone, Debug)]
@@ -111,6 +111,14 @@ pub fn list_view_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, si
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "list_view");
     let colors =
         resolve_list_view_surface_colors(&resolver, enabled).unwrap_or_else(|_| ListViewSurfaceColorTable::fallback());
+    let surface_metrics = embedded_stylesheet().list_view.surface.metrics_for_size(size);
+    let radius = surface_metrics
+        .and_then(|rule| resolve_stylesheet_metric(&rule.radius, metrics, size))
+        .unwrap_or(metrics.radius(size));
+    let radius = surface_metrics
+        .and_then(|rule| rule.max_radius.as_deref())
+        .and_then(|max| resolve_stylesheet_metric(max, metrics, size))
+        .map_or(radius, |max| radius.min(max));
 
     ListViewLook {
         background: colors.background.hsla(),
@@ -118,7 +126,7 @@ pub fn list_view_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, si
         header_background: colors.header_background.hsla(),
         header_label_color: colors.header_label_color.hsla(),
         header_typography: ctx.typography().text.caption,
-        radius: metrics.radius(size),
+        radius,
         padding_x: 0.0,
         padding_y: metrics.padding_y(size) * 0.5,
     }

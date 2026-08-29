@@ -836,6 +836,8 @@ impl ListViewSurfaceStylesheet {
 pub struct ListViewSurfaceMetricsRule {
     pub padding_y_factor: f32,
     pub radius: String,
+    #[serde(default)]
+    pub max_radius: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -956,6 +956,7 @@ clear_icon_hover_color = "foreground"
 [list_view.surface.metrics.md]
 padding_y_factor = 0.5
 radius = "radius.md"
+max_radius = "1rem"
 
 [[list_view.surface.color_rules]]
 enabled = true

@@ -3,14 +3,14 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use gpui::{App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div, px};
+use gpui::{App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, px};
 use gpui::prelude::*;
 use gpui_luma::controls::accordion::{
     AccordionContent, AccordionControl, AccordionItem, AccordionSelectionMode, AccordionTrigger,
 };
 use gpui_luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem};
 use gpui_luma::theme::ThemeMode;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt};
 
 use super::inspector::{
     ControlInspectorSpec, InspectorCategory, InspectorPart, InspectorSelection, InspectorStateSpec, InspectorVariant,
@@ -343,7 +343,6 @@ impl Render for ThemeInspector {
         self.sync_if_needed(cx);
 
         let chrome = self.look.chrome();
-        let body = &self.look.mode_tokens().typography.text.body;
         let caption = &self.look.mode_tokens().typography.text.caption;
 
         let mut root = div()
@@ -368,20 +367,14 @@ impl Render for ThemeInspector {
             .border_b_1()
             .border_color(chrome.border)
             .p(px(layout::PANEL_PADDING))
+            .pt(px(layout::PANEL_PADDING + 8.0))
             .child(
                 div().flex().items_center().gap(px(12.0)).child(
                     div()
                         .flex()
                         .items_baseline()
                         .gap(px(12.0))
-                        .child(
-                            div()
-                                .text_size(px(body.size + 3.0))
-                                .line_height(px(body.line_height + 3.0))
-                                .font_weight(FontWeight::MEDIUM)
-                                .text_color(chrome.title_text)
-                                .child("Theme Inspector"),
-                        )
+                        .child(div().text_h3().text_color(chrome.title_text).child("Theme Inspector"))
                         .when(!self.embedded, |row| {
                             row.child(
                                 div()

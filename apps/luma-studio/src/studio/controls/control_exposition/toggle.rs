@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::icon::lucide_icon;
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma_look_shadcn::prelude::*;
@@ -151,13 +152,25 @@ impl ToggleControlExposition {
             .secondary_toggle("controls-doc-toggle-secondary-round-icon")
             .with_data(false)
             .round(true)
-            .content(|_, _| round_icon_glyph(false).into_any_element())
+            .content({
+                let look = look.clone();
+                move |model, _| {
+                    let foreground = look.resolve_secondary_button(model.role, model.size, model.state).foreground;
+                    round_icon_glyph(false, foreground).into_any_element()
+                }
+            })
             .spawn(cx);
         let primary_round_icon_toggle = look
             .primary_toggle("controls-doc-toggle-primary-round-icon")
             .with_data(true)
             .round(true)
-            .content(|_, _| round_icon_glyph(true).into_any_element())
+            .content({
+                let look = look.clone();
+                move |model, _| {
+                    let foreground = look.resolve_primary_button(model.role, model.size, model.state).foreground;
+                    round_icon_glyph(true, foreground).into_any_element()
+                }
+            })
             .spawn(cx);
 
         let event_stream = cx.new(|cx| {
@@ -265,15 +278,31 @@ fn wire_toggle(
                 ToggleTarget::Primary => this.primary_selected = *selected,
                 ToggleTarget::SecondaryRoundIcon => {
                     let selected = *selected;
+                    let look = this.look.clone();
                     this.secondary_round_icon_toggle.update(cx, |toggle, cx| {
-                        toggle.set_presenter(Arc::new(move |_, _| round_icon_glyph(selected).into_any_element()), cx);
+                        toggle.set_presenter(
+                            Arc::new(move |model, _| {
+                                let foreground =
+                                    look.resolve_secondary_button(model.role, model.size, model.state).foreground;
+                                round_icon_glyph(selected, foreground).into_any_element()
+                            }),
+                            cx,
+                        );
                     });
                     this.secondary_round_icon_selected = selected;
                 }
                 ToggleTarget::PrimaryRoundIcon => {
                     let selected = *selected;
+                    let look = this.look.clone();
                     this.primary_round_icon_toggle.update(cx, |toggle, cx| {
-                        toggle.set_presenter(Arc::new(move |_, _| round_icon_glyph(selected).into_any_element()), cx);
+                        toggle.set_presenter(
+                            Arc::new(move |model, _| {
+                                let foreground =
+                                    look.resolve_primary_button(model.role, model.size, model.state).foreground;
+                                round_icon_glyph(selected, foreground).into_any_element()
+                            }),
+                            cx,
+                        );
                     });
                     this.primary_round_icon_selected = selected;
                 }
@@ -316,11 +345,7 @@ fn format_toggle_event(source: &str, event: &ToggleEvent) -> Option<String> {
     }
 }
 
-fn round_icon_glyph(selected: bool) -> impl IntoElement {
+fn round_icon_glyph(selected: bool, foreground: gpui::Hsla) -> impl IntoElement {
     let icon = if selected { LucideIcon::Check } else { LucideIcon::Plus };
-    div().text_size(px(16.0)).line_height(px(16.0)).child(gpui_luma::controls::icon::lucide_icon(
-        icon,
-        gpui::Hsla { h: 0.0, s: 0.0, l: 0.5, a: 1.0 },
-        16.0,
-    ))
+    div().text_size(px(16.0)).line_height(px(16.0)).child(lucide_icon(icon, foreground, 16.0))
 }

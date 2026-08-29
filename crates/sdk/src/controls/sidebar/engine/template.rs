@@ -201,6 +201,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
             .flex_col()
             .gap(px(CONTAINER_GAP))
             .p(px(CONTAINER_PADDING))
+            .rounded(px(container.radius))
             .bg(container.background)
             .text_color(container.foreground);
 

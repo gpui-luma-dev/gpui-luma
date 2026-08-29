@@ -15,6 +15,7 @@ use lucide_svg_static::Icon as LucideIcon;
 use crate::theme::{LumaStudioLaunchOptions, LumaStudioThemeChoice};
 
 use super::content_tabs::{BoardSnapshot, ContentPaneHost};
+use super::controls::LumaStudioAppHandle;
 use super::controls::workbench_layout::{CONTENT_PANEL_INDEX, LEFT_SIDEBAR_PANEL_INDEX, WorkbenchLayout, WorkbenchSidebar};
 use super::demo_controls::DemoControls;
 use super::hs_mixer::{
@@ -37,6 +38,7 @@ pub struct LumaStudioApp {
     active_theme_id: String,
     theme_sidebar: Entity<ThemeSidebar>,
     content_pane: Entity<ContentPaneHost>,
+    inspector_open: bool,
     workbench: WorkbenchLayout,
     sidebar_toggle: IconButton,
     reset_theme_button: IconButton,
@@ -59,6 +61,7 @@ impl LumaStudioApp {
         let demos = DemoControls::spawn(cx, look.clone(), ControlSize::Md);
 
         let overrides = StudioOverrides::default();
+        cx.set_global(LumaStudioAppHandle { entity: app.clone() });
         let theme_sidebar =
             cx.new(|cx| ThemeSidebar::new(app.clone(), look.clone(), active_theme_id.clone(), &overrides, cx));
 
@@ -135,6 +138,7 @@ impl LumaStudioApp {
             active_theme_id,
             theme_sidebar,
             content_pane,
+            inspector_open: true,
             workbench,
             sidebar_toggle,
             reset_theme_button,
@@ -143,6 +147,18 @@ impl LumaStudioApp {
             syncing_sidebar_tokens: false,
             _subscriptions: subscriptions,
         }
+    }
+
+    pub(crate) fn set_inspector_open(&mut self, open: bool, cx: &mut Context<Self>) {
+        if self.inspector_open == open {
+            return;
+        }
+        self.inspector_open = open;
+        cx.notify();
+    }
+
+    pub(crate) fn inspector_open(&self) -> bool {
+        self.inspector_open
     }
 
     fn sync_sidebar(&mut self, sync_tokens: bool, cx: &mut Context<Self>) {

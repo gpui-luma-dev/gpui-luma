@@ -29,6 +29,7 @@ impl DefaultListViewShellTemplate {
     pub fn paint_shell(model: &ListViewRenderModel<'_>, header: Option<AnyElement>, body: AnyElement) -> Stateful<Div> {
         let list = &model.look;
         let inner_radius = list.inner_radius(SHELL_BORDER_WIDTH);
+        let has_header = header.is_some();
 
         let mut root = div()
             .id(model.id.clone())
@@ -39,7 +40,12 @@ impl DefaultListViewShellTemplate {
             .overflow_hidden()
             .rounded(px(list.radius))
             .border_1()
-            .border_color(list.border);
+            .border_color(list.border)
+            .bg(if has_header {
+                list.header_background
+            } else {
+                list.background
+            });
 
         if let Some(height) = model.shell_height {
             root = root.h(px(height));
@@ -48,27 +54,22 @@ impl DefaultListViewShellTemplate {
         }
 
         let mut column = div().w_full().flex_1().min_h(px(0.0)).flex().flex_col();
-        let has_header = header.is_some();
 
         if let Some(header) = header {
-            column = column.child(
-                div()
-                    .w_full()
-                    .flex_none()
-                    .rounded_tl(px(inner_radius))
-                    .rounded_tr(px(inner_radius))
-                    .bg(list.header_background)
-                    .px(px(list.padding_x))
-                    .pt(px(list.padding_y))
-                    .pb(px(list.padding_y * 0.75))
-                    .border_b_1()
-                    .border_color(list.border)
-                    .text_color(list.header_label_color)
-                    .text_size(px(list.header_typography.size))
-                    .line_height(px(list.header_typography.line_height))
-                    .font_weight(list.header_typography.weight)
-                    .child(header),
-            );
+            let header_content = div()
+                .w_full()
+                .flex_none()
+                .px(px(list.padding_x))
+                .pt(px(list.padding_y))
+                .pb(px(list.padding_y * 0.75))
+                .border_b_1()
+                .border_color(list.border)
+                .text_color(list.header_label_color)
+                .text_size(px(list.header_typography.size))
+                .line_height(px(list.header_typography.line_height))
+                .font_weight(list.header_typography.weight)
+                .child(header);
+            column = column.child(div().w_full().flex_none().child(header_content));
         }
 
         let mut body_slot = if let Some(body_rows_height) = model.body_rows_height {

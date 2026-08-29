@@ -38,7 +38,7 @@ mod context_menu_inspector_adapter;
 mod custom_button;
 mod dock_panel;
 mod inspector;
-mod inspector_split;
+pub(crate) mod inspector_split;
 mod list_view_demo;
 mod listbox;
 mod listbox_inspector_adapter;

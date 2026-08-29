@@ -21,8 +21,14 @@ pub struct ListViewLook {
 }
 
 impl ListViewLook {
-    pub fn inner_radius(&self, border_width: f32) -> f32 {
-        (self.radius - border_width).max(0.0)
+    /// Returns the shared radius for all painted ListView surface layers.
+    ///
+    /// The shell border is inset by GPUI during paint, but independently
+    /// subtracting that width from child layers produces divergent corner
+    /// paths at large theme radii. Layer roots must use the same resolved
+    /// radius; the shell's clip/border handles the inset.
+    pub fn inner_radius(&self, _border_width: f32) -> f32 {
+        self.radius.max(0.0)
     }
 }
 
