@@ -309,7 +309,9 @@ fn sync_header_icon_presenters(close_button: &IconButton, reset_button: &IconBut
 fn header_icon_presenter(icon: ControlIcon, color: Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(icon) => gpui_luma::controls::icon::lucide_icon(*icon, color, 14.0),
-        ControlIcon::SvgPath(path) => gpui::svg().size(px(14.0)).path(path.clone()).into_any_element(),
+        ControlIcon::SvgPath(path) => {
+            gpui::svg().size(px(14.0)).text_color(color).path(path.clone()).into_any_element()
+        }
     })
 }
 

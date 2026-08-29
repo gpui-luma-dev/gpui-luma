@@ -313,6 +313,7 @@ where
                         focus_visible: item_focus_visible,
                     },
                     selection_mode: self.model.selection_mode,
+                    foreground: None,
                 }
             })
             .collect();

@@ -431,12 +431,17 @@ fn preview_shell(
 }
 
 fn sidebar_toggle_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {
-    Arc::new(move |_, _| match &icon {
-        ControlIcon::Lucide(lucide) => div()
-            .text_size(px(16.0))
-            .child(gpui_luma::controls::icon::lucide_icon(*lucide, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0))
-            .into_any_element(),
-        ControlIcon::SvgPath(path) => gpui::svg().size(px(16.0)).path(path.clone()).into_any_element(),
+    Arc::new(move |model, _| {
+        let color = model.resolved_look.as_ref().map_or(gpui::Hsla::default(), |look| look.foreground);
+        match &icon {
+            ControlIcon::Lucide(lucide) => div()
+                .text_size(px(16.0))
+                .child(gpui_luma::controls::icon::lucide_icon(*lucide, color, 16.0))
+                .into_any_element(),
+            ControlIcon::SvgPath(path) => {
+                gpui::svg().size(px(16.0)).text_color(color).path(path.clone()).into_any_element()
+            }
+        }
     })
 }
 

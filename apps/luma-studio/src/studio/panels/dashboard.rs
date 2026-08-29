@@ -249,6 +249,8 @@ fn sidebar_toggle_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPres
         ControlIcon::Lucide(lucide) => {
             div().child(gpui_luma::controls::icon::lucide_icon(*lucide, color, 16.0)).into_any_element()
         }
-        ControlIcon::SvgPath(path) => gpui::svg().size(px(16.0)).path(path.clone()).into_any_element(),
+        ControlIcon::SvgPath(path) => {
+            gpui::svg().size(px(16.0)).text_color(color).path(path.clone()).into_any_element()
+        }
     })
 }

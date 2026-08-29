@@ -152,24 +152,24 @@ impl ToggleControlExposition {
             .secondary_toggle("controls-doc-toggle-secondary-round-icon")
             .with_data(false)
             .round(true)
-            .content({
-                let look = look.clone();
-                move |model, _| {
-                    let foreground = look.resolve_secondary_button(model.role, model.size, model.state).foreground;
-                    round_icon_glyph(false, foreground).into_any_element()
-                }
+            .content(|model, _| {
+                round_icon_glyph(
+                    false,
+                    model.resolved_look.as_ref().map_or(gpui::Hsla::default(), |look| look.foreground),
+                )
+                .into_any_element()
             })
             .spawn(cx);
         let primary_round_icon_toggle = look
             .primary_toggle("controls-doc-toggle-primary-round-icon")
             .with_data(true)
             .round(true)
-            .content({
-                let look = look.clone();
-                move |model, _| {
-                    let foreground = look.resolve_primary_button(model.role, model.size, model.state).foreground;
-                    round_icon_glyph(true, foreground).into_any_element()
-                }
+            .content(|model, _| {
+                round_icon_glyph(
+                    true,
+                    model.resolved_look.as_ref().map_or(gpui::Hsla::default(), |look| look.foreground),
+                )
+                .into_any_element()
             })
             .spawn(cx);
 
@@ -278,12 +278,11 @@ fn wire_toggle(
                 ToggleTarget::Primary => this.primary_selected = *selected,
                 ToggleTarget::SecondaryRoundIcon => {
                     let selected = *selected;
-                    let look = this.look.clone();
                     this.secondary_round_icon_toggle.update(cx, |toggle, cx| {
                         toggle.set_presenter(
                             Arc::new(move |model, _| {
                                 let foreground =
-                                    look.resolve_secondary_button(model.role, model.size, model.state).foreground;
+                                    model.resolved_look.as_ref().map_or(gpui::Hsla::default(), |look| look.foreground);
                                 round_icon_glyph(selected, foreground).into_any_element()
                             }),
                             cx,
@@ -293,12 +292,11 @@ fn wire_toggle(
                 }
                 ToggleTarget::PrimaryRoundIcon => {
                     let selected = *selected;
-                    let look = this.look.clone();
                     this.primary_round_icon_toggle.update(cx, |toggle, cx| {
                         toggle.set_presenter(
                             Arc::new(move |model, _| {
                                 let foreground =
-                                    look.resolve_primary_button(model.role, model.size, model.state).foreground;
+                                    model.resolved_look.as_ref().map_or(gpui::Hsla::default(), |look| look.foreground);
                                 round_icon_glyph(selected, foreground).into_any_element()
                             }),
                             cx,

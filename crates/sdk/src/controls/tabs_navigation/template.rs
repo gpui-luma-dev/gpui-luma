@@ -572,6 +572,7 @@ fn tabs_navigation_button_model(
         role: ButtonFamilyRole::Toggle { selected: item.active },
         size,
         state: item.state.interaction_state(),
+        resolved_look: None,
         round: false,
         radius_override: Cell::new(Some(look.radius)),
         elevation: false,

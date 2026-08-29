@@ -63,6 +63,9 @@ pub struct ButtonRenderModel<D> {
     pub switch_track_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
     pub switch_thumb_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
     pub look: Option<ButtonLookSource<D>>,
+    /// The look resolved by the active button template for this render pass.
+    /// Presenters can use this for custom content that needs themed colors.
+    pub resolved_look: Option<ButtonFamilyLook>,
 }
 
 impl<D: Default> Default for ButtonRenderModel<D> {
@@ -84,6 +87,7 @@ impl<D: Default> Default for ButtonRenderModel<D> {
             switch_track_content: None,
             switch_thumb_content: None,
             look: None,
+            resolved_look: None,
         }
     }
 }

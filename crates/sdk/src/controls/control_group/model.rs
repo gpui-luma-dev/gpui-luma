@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, AppContext, Div, Entity, FocusHandle, IntoElement, ParentElement, SharedString, Stateful, Window,
-    div,
+    AnyElement, App, AppContext, Div, Entity, FocusHandle, Hsla, IntoElement, ParentElement, SharedString, Stateful,
+    Window, div,
 };
 
 use super::control::ControlGroupControl;
@@ -224,6 +224,8 @@ where
     pub enabled: bool,
     pub state: CompositeItemState,
     pub selection_mode: ControlSelectionMode,
+    /// Optional color supplied by a themed parent container for item-owned SVG content.
+    pub foreground: Option<Hsla>,
 }
 
 pub struct ControlGroupRenderModel<'a, T>

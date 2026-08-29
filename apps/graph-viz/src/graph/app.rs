@@ -204,7 +204,9 @@ fn titlebar_icon_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPrese
         ControlIcon::Lucide(lucide) => {
             div().child(gpui_luma::controls::icon::lucide_icon(*lucide, color, 14.0)).into_any_element()
         }
-        ControlIcon::SvgPath(path) => gpui::svg().size(px(14.0)).path(path.clone()).into_any_element(),
+        ControlIcon::SvgPath(path) => {
+            gpui::svg().size(px(14.0)).text_color(color).path(path.clone()).into_any_element()
+        }
     })
 }
 

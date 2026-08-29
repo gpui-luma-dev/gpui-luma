@@ -60,7 +60,14 @@ fn clone_model_with_state<D: Clone>(model: &ButtonRenderModel<D>, state: Interac
         switch_track_content: model.switch_track_content.clone(),
         switch_thumb_content: model.switch_thumb_content.clone(),
         look: model.look.clone(),
+        resolved_look: None,
     }
+}
+
+fn presenter_model<D: Clone>(model: &ButtonRenderModel<D>, look: &ButtonFamilyLook) -> ButtonRenderModel<D> {
+    let mut model = clone_model_with_state(model, model.state);
+    model.resolved_look = Some(look.clone());
+    model
 }
 
 fn resolve_probe_look<D: Clone>(
@@ -171,6 +178,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
         );
         let look = resolve_look(&self.theme, model, &scale);
+        let presenter_model = presenter_model(model, &look);
         let focused = model.state.focused && !model.state.disabled;
         let control_look = if focused {
             resolve_probe_look(&self.theme, model, &scale, InteractionState { focused: false, ..model.state })
@@ -243,7 +251,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
                     .into_any_element(),
             }
         } else {
-            (model.content)(model, cx)
+            (model.content)(&presenter_model, cx)
         };
         let content = if matches!(model.role, ButtonFamilyRole::Icon) || square_icon_toggle {
             div()
@@ -365,6 +373,15 @@ mod tests {
             StandardBoxScale { height: 32.0, padding_x: 12.0, padding_y: 6.0, gap: 6.0, radius: 8.0, icon_size: 14.0 };
         let look = resolve_look(&template.theme, &model, &scale);
         assert_eq!(look.background, lime_look().background);
+    }
+
+    #[test]
+    fn presenter_model_exposes_resolved_look() {
+        let model = ButtonRenderModel::<()>::default();
+        let look = lime_look();
+        let presented = presenter_model(&model, &look);
+
+        assert_eq!(presented.resolved_look.as_ref().map(|look| look.foreground), Some(look.foreground));
     }
 
     #[test]

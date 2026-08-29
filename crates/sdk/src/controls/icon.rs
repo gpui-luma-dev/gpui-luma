@@ -129,11 +129,3 @@ pub fn render_icon_source(icon: &IconSource, color: Hsla, size: f32) -> AnyEleme
         }
     }
 }
-
-/// Renders an icon while inheriting the surrounding text color.
-pub fn render_icon_source_inherit(icon: &IconSource, size: f32) -> AnyElement {
-    match icon {
-        IconSource::Lucide(icon) => svg().size(px(size)).path(icon.asset_path()).into_any_element(),
-        IconSource::SvgPath(path) => svg().size(px(size)).external_path(path.clone()).into_any_element(),
-    }
-}

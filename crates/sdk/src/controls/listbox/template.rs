@@ -140,7 +140,11 @@ fn listbox_row_item_element_template_with_size(
         let row_oversize_extent = 0.0;
 
         let content = if let Some(item_template) = item_template {
-            item_template(item, window, cx)
+            let item_with_foreground = crate::controls::control_group::ControlGroupItemRenderModel {
+                foreground: Some(row_look.label_color),
+                ..*item
+            };
+            item_template(&item_with_foreground, window, cx)
         } else {
             div().child(ControlGroupItemLike::label(item.item).to_string()).into_any_element()
         };
