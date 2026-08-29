@@ -17,7 +17,6 @@ This document defines the core architecture, crate layout, module mapping, and d
 *   **`crates/look-shadcn-inspect`**: Support utilities for theme visual inspection and palette debugging.
 *   **`apps/luma-studio` (`luma-studio`)**: The theme customization dashboard, control documentation studio, and visual design testing app. System font classification for typography pickers lives in `studio/font_catalog/`.
 *   **`apps/color-viz` (`gpui-luma-color-viz`)**: Color visualization workspace (Shadcn look, shared theme CLI).
-*   **`apps/graph-viz` (`gpui-luma-graph-viz`)**: Graph visualization workspace with luma-studio workbench shell (theme sidebar + tabbed content).
 *   **`apps/shells/`**: Full-window shell reference apps — `SplitView` recipes (unified, inset, icon-rail, detached, split-titlebar) plus `vscode` (Luma Studio `ResizablePanels` workbench shell) — with shared theme and, where applicable, the Properties `SidebarControl` sample from `apps/shells/common`.
 
 ### Crate Dependencies
@@ -29,7 +28,6 @@ graph TD
     Studio --> Look[crates/look-shadcn]
     ColorViz[apps/color-viz] --> SDK
     ColorViz --> Look
-    GraphViz[apps/graph-viz] --> SDK
     GraphViz --> Look
     Shells[apps/shells] --> SDK
     Shells --> Look
