@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Bounds, Context, Entity, Focusable, Pixels, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::anchored_panel::{
-    AnchoredPanel, AnchoredPanelDismissPolicy, AnchoredPanelEvent, AnchoredPanelPlacement,
-};
+use gpui_luma::controls::popover_button::{PopoverButton, PopoverButtonEvent, PopoverDismissPolicy, PopoverPlacement};
 use gpui_luma::controls::tabs_navigation::{
     TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
 };
@@ -44,7 +42,7 @@ pub struct ContentPaneHost {
     theme_usage_panel: Entity<ThemeUsagePanel>,
     board: BoardSnapshot,
     active_tab: ContentTab,
-    catalog_picker: Entity<AnchoredPanel>,
+    catalog_picker: Entity<PopoverButton>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -53,12 +51,14 @@ impl ContentPaneHost {
         let host = cx.entity();
         let controls_panel = cx.new(|cx| ControlsPanel::new(cx, board.look.clone()));
         let picker_host = host.clone();
-        let catalog_picker = AnchoredPanel::new("luma-studio-controls-picker")
+        let catalog_picker = PopoverButton::new("luma-studio-controls-picker")
+            .trigger(|_, _| div().w(px(0.0)).h(px(0.0)).into_any_element())
             .content(move |_, _, cx| picker_host.update(cx, |host, cx| host.render_catalog_picker(cx)))
-            .placement(AnchoredPanelPlacement::BelowCenter)
-            .dismiss_policy(AnchoredPanelDismissPolicy::CloseOnClickAwayOrFocusLoss)
+            .placement(PopoverPlacement::BelowCenter)
+            .dismiss_policy(PopoverDismissPolicy::CloseOnClickAwayOrFocusLoss)
             .offset_y(px(-36.0))
             .window_margin(px(8.0))
+            .measure_trigger(false)
             .spawn(cx);
         let tabs = board
             .look
@@ -98,12 +98,11 @@ impl ContentPaneHost {
             }
             _ => {}
         }));
-        subscriptions.push(cx.subscribe(&picker_for_sub, |host, _, event: &AnchoredPanelEvent, cx| {
-            if let AnchoredPanelEvent::OpenChanged { open } = event {
-                host.tabs.update(cx, |tabs, cx| {
-                    tabs.set_item_disclosure_open("controls", *open, cx);
-                });
-            }
+        subscriptions.push(cx.subscribe(&picker_for_sub, |host, _, event: &PopoverButtonEvent, cx| {
+            let PopoverButtonEvent::OpenChanged { open } = event;
+            host.tabs.update(cx, |tabs, cx| {
+                tabs.set_item_disclosure_open("controls", *open, cx);
+            });
         }));
 
         let style_guide_panel = cx.new(|cx| StyleGuidePanel::new(cx, board.look.clone()));

@@ -193,7 +193,7 @@ pub trait ShadcnLookControlExt {
 
 ## Migration Strategy
 
-1. **SDK Primitive Restriction**: Mark `AnchoredPanel` as `pub(crate)` within `crates/sdk/src/controls/anchored_panel/`, restricting its use to SDK-internal advanced primitives.
+1. **SDK Primitive Restriction**: Keep the legacy anchored-panel implementation private to `PopoverButton`; it is not a public SDK control.
 2. **Implement `PopoverButton`**: Add `crates/sdk/src/controls/popover_button/` backed by `PopupLifecycle` with full template and presenter support.
 3. **Migrate `ColorPickerPopover`**: Update `apps/luma-studio/src/studio/controls/color_picker.rs` to use `PopoverButton`.
 4. **Migrate `ContentPaneHost`**: Update `apps/luma-studio/src/studio/content_tabs/host.rs` to use `PopoverButton` for the catalog picker dropdown, removing the manual `catalog_picker` entity and `AnchoredPanel` subscriptions.

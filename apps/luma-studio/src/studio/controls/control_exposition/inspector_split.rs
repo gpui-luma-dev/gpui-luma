@@ -165,7 +165,10 @@ fn inspector_toggle_presenter(color: gpui::Hsla) -> ControlPresenter<ButtonRende
 }
 
 impl Render for InspectorSplitShell {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        let inspector_open = cx.global::<LumaStudioAppHandle>().entity.read(cx).inspector_open();
+        self.sync_inspector_panel(inspector_open, cx);
+
         let split_panels = self.split_panels.clone();
         let id = self.id.clone();
         with_look(&self.look, || div().id(id).size_full().min_h(px(0.0)).min_w(px(0.0)).child(split_panels))

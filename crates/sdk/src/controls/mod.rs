@@ -1,5 +1,4 @@
 pub mod accordion;
-pub mod anchored_panel;
 pub mod tree_view;
 pub mod autocomplete;
 pub mod combobox;
