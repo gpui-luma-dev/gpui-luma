@@ -10,7 +10,78 @@ use gpui::{prelude::*, *};
 use crate::controls::color::checkerboard_paint::{DEFAULT_CHECKERBOARD_SQUARE_SIZE, paint_masked_checkerboard};
 use crate::controls::color::chrome_tokens::swatch_checkerboard_colors;
 use crate::controls::color::style::ActiveTheme;
+use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::theme::ControlSize;
+
+/// Typed payload for a button-backed color swatch.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ColorSwatchData {
+    pub color: Hsla,
+    pub size: f32,
+    pub radius: f32,
+    pub open: bool,
+    pub checkerboard: bool,
+}
+
+impl Default for ColorSwatchData {
+    fn default() -> Self {
+        Self { color: hsla(0.0, 0.0, 0.0, 1.0), size: 30.0, radius: 4.0, open: false, checkerboard: true }
+    }
+}
+
+/// Static button template for color swatches.
+pub struct ColorSwatchButtonTemplate;
+
+impl ButtonTemplate<ColorSwatchData> for ColorSwatchButtonTemplate {
+    fn render(&self, model: &ButtonRenderModel<ColorSwatchData>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let size = px(model.data.size);
+        let radius = px(model.data.radius);
+        let color = model.data.color;
+        let is_dark = cx.theme().is_dark();
+        let border_color = cx.theme().border;
+        let checkerboard = model.data.checkerboard;
+
+        div().id(model.id.clone()).size(size).relative().cursor_pointer().child(
+            canvas(
+                move |_, _, _| (),
+                move |bounds, _, window, _| {
+                    let border_width = px(1.0);
+                    let inner_bounds = bounds.inset(border_width);
+                    let inner_radius = (radius - border_width).max(px(0.0));
+                    if checkerboard && color.a < 0.999 && inner_bounds.size.width.as_f32() > 0.0 {
+                        let (checker_light, checker_dark) = swatch_checkerboard_colors(is_dark);
+                        window.paint_quad(PaintQuad {
+                            bounds: inner_bounds,
+                            corner_radii: Corners::all(inner_radius),
+                            background: checker_light.into(),
+                            border_widths: Edges::default(),
+                            border_color: transparent_black(),
+                            border_style: BorderStyle::default(),
+                        });
+                        paint_masked_checkerboard(
+                            window,
+                            inner_bounds,
+                            inner_radius,
+                            checker_dark,
+                            false,
+                            DEFAULT_CHECKERBOARD_SQUARE_SIZE,
+                        );
+                    }
+                    window.paint_quad(PaintQuad {
+                        bounds,
+                        corner_radii: Corners::all(radius),
+                        background: color.into(),
+                        border_widths: Edges::all(border_width),
+                        border_color,
+                        border_style: BorderStyle::default(),
+                    });
+                },
+            )
+            .absolute()
+            .size_full(),
+        )
+    }
+}
 
 /// A reusable color preview swatch.
 ///
