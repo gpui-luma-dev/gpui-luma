@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, FontWeight, IntoElement, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::theme::{LumaChrome, ThemeMode};
+use gpui_luma::theme::ThemeMode;
 use gpui_luma::{hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnModeTokens, ShadcnTextRole, ShadcnTextSize};
@@ -189,7 +189,7 @@ impl Render for PalettePanel {
                             },
                         ),
                 },
-                render_palette_sections(palette, &chrome, section_style, row_label_style, code_style),
+                render_palette_sections(palette, section_style, row_label_style, code_style),
             }
             .id("luma-studio-palette")
             .size_full()
@@ -215,7 +215,8 @@ fn build_palette_pickers(
         .flat_map(|(_, tokens)| tokens.iter())
         .map(|(token, _)| {
             let color = token_color_for_mode(&mode_tokens, &overrides.global_color_overrides, token, fallback);
-            let picker = cx.new(|cx| ColorPickerPopover::new_transparent(look.clone(), color, cx));
+            let picker =
+                cx.new(|cx| ColorPickerPopover::new_palette(look.clone(), color, format!("palette-{token}"), cx));
             ((*token).to_string(), picker)
         })
         .collect()
@@ -265,7 +266,6 @@ fn token_color_for_mode(
 
 fn render_palette_sections(
     palette: ModePalette,
-    chrome: &LumaChrome,
     section_style: gpui_luma::theme::LumaTextStyle,
     row_label_style: gpui_luma::theme::LumaTextStyle,
     code_style: gpui_luma::theme::LumaTextStyle,
@@ -276,9 +276,11 @@ fn render_palette_sections(
         .flex()
         .flex_col()
         .gap(px(20.0))
-        .children(sections.into_iter().map(|section| {
-            render_section(section, title_text, muted_text, chrome, section_style, row_label_style, code_style)
-        }))
+        .children(
+            sections.into_iter().map(|section| {
+                render_section(section, title_text, muted_text, section_style, row_label_style, code_style)
+            }),
+        )
         .into_any_element()
 }
 
@@ -286,7 +288,6 @@ fn render_section(
     section: PaletteSection,
     title_text: gpui::Hsla,
     muted_text: gpui::Hsla,
-    chrome: &LumaChrome,
     section_style: gpui_luma::theme::LumaTextStyle,
     row_label_style: gpui_luma::theme::LumaTextStyle,
     code_style: gpui_luma::theme::LumaTextStyle,
@@ -300,7 +301,7 @@ fn render_section(
             .flex_row()
             .flex_wrap()
             .gap(px(PALETTE_ITEM_GAP))
-            .children(section.rows.into_iter().map(|row| render_token_cell(row, title_text, muted_text, chrome, row_label_style, code_style))),
+            .children(section.rows.into_iter().map(|row| render_token_cell(row, title_text, muted_text, row_label_style, code_style))),
     }
     .into_any_element()
 }
@@ -309,7 +310,6 @@ fn render_token_cell(
     row: TokenSwatchRow,
     title_text: gpui::Hsla,
     muted_text: gpui::Hsla,
-    chrome: &LumaChrome,
     row_label_style: gpui_luma::theme::LumaTextStyle,
     code_style: gpui_luma::theme::LumaTextStyle,
 ) -> AnyElement {
@@ -318,12 +318,7 @@ fn render_token_cell(
         div()
             .size(px(PALETTE_SWATCH_SIZE))
             .flex_shrink_0()
-            .relative()
-            .rounded_cn(ShadcnRadius::Md)
-            .bg(row.color)
-            .border_1()
-            .border_color(chrome.border)
-            .child(div().absolute().top(px(5.0)).left(px(5.0)).child(row.picker)),
+            .child(row.picker),
         vstack! {
             gap=2;
             div()

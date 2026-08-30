@@ -171,7 +171,8 @@ impl OtherPanel {
                 format_shadow_color_input(shadow_override.color),
                 cx,
             ),
-            shadow_color_picker: cx.new(|cx| ColorPickerPopover::new(look.clone(), shadow_override.color, cx)),
+            shadow_color_picker: cx
+                .new(|cx| ColorPickerPopover::new(look.clone(), shadow_override.color, "shadow-color", cx)),
             shadow_opacity_field: build_number_field(
                 &look,
                 "shadow-opacity",

@@ -210,7 +210,7 @@ fn build_token_pickers(
     for (_, tokens) in TOKEN_CATEGORIES {
         for (token, _) in *tokens {
             let color = effective_token_color(look, overrides, token);
-            let picker = cx.new(|cx| ColorPickerPopover::new(look.clone(), color, cx));
+            let picker = cx.new(|cx| ColorPickerPopover::new(look.clone(), color, format!("colors-{token}"), cx));
             pickers.insert(token.to_string(), picker);
         }
     }
