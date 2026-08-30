@@ -66,8 +66,6 @@ impl Render for AccordionPanel {
                     div()
                         .w_full()
                         .rounded(px(8.0))
-                        .border_1()
-                        .border_color(chrome.border)
                         .overflow_hidden()
                         .child(accordion.clone()),
                     div()

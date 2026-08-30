@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use gpui::prelude::*;
 use gpui_luma::controls::autocomplete::AutocompleteTextBoxTheme;
 use gpui_luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme};
 use gpui_luma::controls::overlay_window::{
@@ -16,7 +17,10 @@ use gpui_luma::controls::dock_splitter::DockSplitterTheme;
 use gpui_luma::controls::radio_group::{RadioGroupLayout, radio_group_buttons_template};
 use gpui_luma::controls::floating_menu::FloatingMenuTheme;
 use gpui_luma::controls::list_view::{ListViewTheme, list_view_template_with_theme};
-use gpui_luma::controls::sidebar::{SidebarPanelTemplate, SidebarTheme, ThemedSidebarPanelTemplate};
+use gpui_luma::controls::sidebar::{
+    DefaultSidebarTemplate, SidebarPanelTemplate, SidebarRenderModel, SidebarTemplate, SidebarTheme,
+    ThemedSidebarPanelTemplate,
+};
 use gpui_luma::controls::listbox::{ListBoxTheme, listbox_template_with_theme};
 use gpui_luma::controls::pager::{PagerLook, PagerTemplate, PagerTheme, ThemedPagerTemplate};
 use gpui_luma::controls::popup_menu::{PopupMenuTheme, ThemedPopupMenuTemplate};
@@ -1094,6 +1098,68 @@ pub fn sidebar_panel_template(theme: Arc<ShadcnLook>) -> Arc<dyn SidebarPanelTem
         Arc::new(ShadcnSidebarTheme { theme: theme.as_ref().clone() }),
         menu_theme,
     ))
+}
+
+pub fn sidebar_template(theme: Arc<ShadcnLook>) -> Arc<dyn SidebarTemplate> {
+    Arc::new(ThemedSidebarTemplate { theme: theme.as_ref().clone() })
+}
+
+struct ThemedSidebarTemplate {
+    theme: ShadcnLook,
+}
+
+impl SidebarTemplate for ThemedSidebarTemplate {
+    fn render(
+        &self,
+        model: SidebarRenderModel<'_>,
+        panel: gpui::AnyElement,
+        inset: Option<gpui::AnyElement>,
+    ) -> gpui::Stateful<gpui::Div> {
+        if inset.is_none() {
+            return DefaultSidebarTemplate.render(model, panel, None);
+        }
+
+        let show_panel = match model.collapsible {
+            gpui_luma::controls::sidebar::SidebarCollapsible::Offcanvas => model.open,
+            gpui_luma::controls::sidebar::SidebarCollapsible::None
+            | gpui_luma::controls::sidebar::SidebarCollapsible::Icon
+            | gpui_luma::controls::sidebar::SidebarCollapsible::Responsive => true,
+        };
+        let mut root = gpui::div()
+            .id(gpui::SharedString::from(format!("{}-shell", model.id)))
+            .flex()
+            .flex_row()
+            .size_full()
+            .min_w(gpui::px(0.0))
+            .min_h(gpui::px(0.0));
+        if show_panel {
+            root = root.child(
+                gpui::div()
+                    .id(gpui::SharedString::from(format!("{}-panel", model.id)))
+                    .flex_none()
+                    .h_full()
+                    .child(panel),
+            );
+        }
+        if let Some(inset) = inset {
+            let radius = self.theme.mode_tokens().metrics.radius.lg;
+            root = root.child(
+                gpui::div()
+                    .id(gpui::SharedString::from(format!("{}-inset", model.id)))
+                    .flex()
+                    .flex_col()
+                    .flex_1()
+                    .min_w(gpui::px(0.0))
+                    .min_h(gpui::px(0.0))
+                    .h_full()
+                    .rounded(gpui::px(radius))
+                    .overflow_hidden()
+                    .bg(self.theme.chrome().content_background)
+                    .child(inset),
+            );
+        }
+        root
+    }
 }
 
 pub fn sidebar_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SidebarTheme> {

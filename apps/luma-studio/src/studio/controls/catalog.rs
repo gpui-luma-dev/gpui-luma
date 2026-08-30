@@ -428,7 +428,59 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Sidebar",
         description: "Hierarchical sidebar composition via SidebarControl — header, grouped menus, footer, and optional icon rail. Emits SidebarEvent for selection, collapse, and hover.",
         category: ControlCategory::NavigationPanels,
-        snippet: "look.sidebar_control(\"nav\")\n    .default_open(true)\n    .collapsible(SidebarCollapsible::Icon)\n    .sidebar(look.sidebar(\"nav-panel\").header(...).content(...))\n    .spawn(cx);",
+        snippet: r#"fn spawn_sidebar_control(
+    look: &Arc<ShadcnLook>,
+    cx: &mut Context<SidebarControlExposition>,
+) -> Entity<SidebarControl> {
+    let mut pinned_menu = look.sidebar_menu("pinned_menu");
+
+    for leaf in PINNED_PROPERTIES {
+        pinned_menu = pinned_menu.item(property_leaf_menu_item(look, leaf));
+    }
+
+    let mut properties_menu = look.sidebar_menu("properties_menu");
+
+    for group in PROPERTY_GROUPS {
+        let mut sub = look.sidebar_menu_sub();
+
+        for leaf in group.leaves {
+            sub = sub.item(property_leaf_menu_item(look, leaf));
+        }
+
+        properties_menu = properties_menu.item(
+            look.sidebar_menu_item(group.id, group.label)
+                .icon(group.icon)
+                .expanded(group.expanded)
+                .sub(sub),
+        );
+    }
+
+    look.sidebar_control("controls-doc-sidebar-control")
+        .default_open(true)
+        .collapsible(SidebarCollapsible::Icon)
+        .auto_hide_scrollbar(true)
+        .auto_hide_scrollbar_activate(ScrollbarAutoHideActivate::Move)
+        .sidebar(
+            look.sidebar("workbench_sidebar")
+                .header(
+                    look.sidebar_header()
+                        .title("Properties")
+                        .subtitle("Rectangle / Prominent card"),
+                )
+                .content(
+                    look.sidebar_content()
+                        .group(look.sidebar_group().label("Pinned").menu(pinned_menu))
+                        .group(
+                            look.sidebar_group()
+                                .label("Properties")
+                                .menu(properties_menu),
+                        ),
+                )
+                .rail(look.sidebar_rail()),
+        )
+        .overlay_scrollbar(true)
+        .spawn(cx)
+}"#,
         section_order: 312,
     },
     ControlDocEntry {

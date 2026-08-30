@@ -7,7 +7,7 @@ use super::model::{
     SidebarBuilder, SidebarControlBuilder, SidebarControlModel, SidebarInsetModel, SidebarPanelModel, find_active_id,
     panel_to_nav_nodes,
 };
-use super::template::{SidebarRenderModel, SidebarTemplate, default_sidebar_template, render_inset_column};
+use super::template::{SidebarRenderModel, SidebarTemplate, render_inset_column};
 use super::theme::{SidebarCollapsible, SidebarVariant};
 use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::scrollbar::ScrollbarTemplate;
@@ -97,16 +97,9 @@ impl SidebarControl {
             std::time::Duration::ZERO
         };
         let transition = VisualTransition::new(if open { 1.0 } else { 0.0 }, duration);
+        let template = model.template.clone();
 
-        Self {
-            model,
-            open,
-            transition,
-            panel,
-            inset,
-            template: default_sidebar_template(),
-            _subscriptions: subscriptions,
-        }
+        Self { model, open, transition, panel, inset, template, _subscriptions: subscriptions }
     }
 
     pub fn open(&self) -> bool {

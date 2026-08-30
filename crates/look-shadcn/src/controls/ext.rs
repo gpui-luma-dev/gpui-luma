@@ -616,11 +616,13 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     }
 
     fn textfield(&self, id: impl Into<SharedString>) -> TextFieldBuilder {
-        textfield::new(id).template(self.textfield_template())
+        textfield::new(id).template(self.primary_textfield_template())
     }
 
     fn textarea(&self, id: impl Into<SharedString>) -> TextAreaBuilder {
-        textarea::TextArea::new(id).template(self.textarea_template()).theme(self.textarea_theme())
+        textarea::TextArea::new(id)
+            .template(self.primary_textarea_template())
+            .theme(self.primary_textarea_theme())
     }
 }
 
@@ -659,7 +661,6 @@ impl ShadcnButtonStyleExt for ButtonBuilder<()> {
 pub trait ShadcnTextFieldExt {
     fn look_theme(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
     fn outline(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
-    fn input(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
     fn surface(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
     fn primary(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
 }
@@ -671,10 +672,6 @@ impl ShadcnTextFieldExt for TextFieldBuilder {
 
     fn outline(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder {
         self.look_theme(theme)
-    }
-
-    fn input(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder {
-        self.template(theme.input_textfield_template())
     }
 
     fn surface(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder {
@@ -690,7 +687,6 @@ impl ShadcnTextFieldExt for TextFieldBuilder {
 pub trait ShadcnTextAreaExt {
     fn look_theme(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
     fn outline(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
-    fn input(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
     fn surface(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
     fn primary(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
 }
@@ -702,10 +698,6 @@ impl ShadcnTextAreaExt for TextAreaBuilder {
 
     fn outline(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder {
         self.look_theme(theme)
-    }
-
-    fn input(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder {
-        self.template(theme.input_textarea_template()).theme(theme.input_textarea_theme())
     }
 
     fn surface(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder {

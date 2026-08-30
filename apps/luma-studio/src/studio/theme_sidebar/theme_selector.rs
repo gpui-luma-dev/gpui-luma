@@ -226,15 +226,11 @@ fn render_theme_trigger_content(swatches: Option<ThemeSwatches>, label: &SharedS
     let label_gap = px(LABEL_GAP);
 
     let swatch_row = swatches.map(|swatches| {
-        div()
-            .flex()
-            .flex_shrink_0()
-            .items_center()
-            .gap(swatch_gap)
-            .child(render_theme_swatch(swatches.primary_background, swatch_size, swatch_radius))
-            .child(render_theme_swatch(swatches.accent_background, swatch_size, swatch_radius))
-            .child(render_theme_swatch(swatches.secondary_background, swatch_size, swatch_radius))
-            .child(render_theme_swatch(swatches.border, swatch_size, swatch_radius))
+        div().flex().flex_shrink_0().items_center().gap(swatch_gap).children(
+            theme_swatch_colors(swatches)
+                .into_iter()
+                .map(|color| render_theme_swatch(color, swatch_size, swatch_radius)),
+        )
     });
 
     div()
@@ -257,15 +253,11 @@ fn render_theme_selector_row(swatches: Option<ThemeSwatches>, label: &SharedStri
     let label_gap = px(LABEL_GAP);
 
     let swatch_row = swatches.map(|swatches| {
-        div()
-            .flex()
-            .flex_shrink_0()
-            .items_center()
-            .gap(swatch_gap)
-            .child(render_theme_swatch(swatches.primary_background, swatch_size, swatch_radius))
-            .child(render_theme_swatch(swatches.accent_background, swatch_size, swatch_radius))
-            .child(render_theme_swatch(swatches.secondary_background, swatch_size, swatch_radius))
-            .child(render_theme_swatch(swatches.border, swatch_size, swatch_radius))
+        div().flex().flex_shrink_0().items_center().gap(swatch_gap).children(
+            theme_swatch_colors(swatches)
+                .into_iter()
+                .map(|color| render_theme_swatch(color, swatch_size, swatch_radius)),
+        )
     });
 
     div()
@@ -276,6 +268,16 @@ fn render_theme_selector_row(swatches: Option<ThemeSwatches>, label: &SharedStri
         .when_some(swatch_row, |row, swatches| row.child(swatches))
         .child(div().flex_1().min_w(px(0.0)).overflow_hidden().child(label.clone()))
         .into_any_element()
+}
+
+/// Theme picker order: primary background, accent background, secondary background, border.
+fn theme_swatch_colors(swatches: ThemeSwatches) -> [Hsla; 4] {
+    [
+        swatches.primary_background,
+        swatches.accent_background,
+        swatches.secondary_background,
+        swatches.border,
+    ]
 }
 
 fn render_theme_swatch(color: Hsla, size: Pixels, radius: Pixels) -> impl IntoElement {

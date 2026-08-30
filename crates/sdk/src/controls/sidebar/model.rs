@@ -6,6 +6,7 @@ use lucide_svg_static::Icon as LucideIcon;
 
 use super::control::SidebarControl;
 use super::engine::{NavNode, SidebarPanelTemplate, default_sidebar_panel_template, modified_sidebar_panel_template};
+use super::template::{SidebarTemplate, default_sidebar_template};
 use super::theme::{SidebarCollapsible, SidebarVariant};
 use crate::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 use crate::controls::icon::DisclosureIcons;
@@ -89,6 +90,7 @@ pub struct SidebarControlModel {
     pub(crate) selected_id: Option<SharedString>,
     pub(crate) sidebar: Option<SidebarPanelModel>,
     pub(crate) inset: Option<SidebarInsetModel>,
+    pub(crate) template: Arc<dyn SidebarTemplate>,
     pub(crate) panel_template: Arc<dyn SidebarPanelTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) scrollbar_placement: ScrollbarPlacement,
@@ -452,6 +454,7 @@ impl SidebarControlBuilder {
                 selected_id: None,
                 sidebar: None,
                 inset: None,
+                template: default_sidebar_template(),
                 panel_template: default_sidebar_panel_template(),
                 scrollbar_template: default_scrollbar_template(),
                 scrollbar_placement: ScrollbarPlacement::Inset,
@@ -498,6 +501,11 @@ impl SidebarControlBuilder {
 
     pub fn inset(mut self, inset: SidebarInsetBuilder) -> Self {
         self.model.inset = Some(inset.build());
+        self
+    }
+
+    pub fn template(mut self, template: Arc<dyn SidebarTemplate>) -> Self {
+        self.model.template = template;
         self
     }
 

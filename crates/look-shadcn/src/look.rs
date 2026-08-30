@@ -649,6 +649,10 @@ impl ShadcnLook {
         templates::sidebar_panel_template(Arc::clone(self))
     }
 
+    pub fn sidebar_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::sidebar::SidebarTemplate> {
+        templates::sidebar_template(Arc::clone(self))
+    }
+
     pub fn sidebar_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::sidebar::SidebarTheme> {
         templates::sidebar_theme(Arc::clone(self))
     }
@@ -666,6 +670,7 @@ impl ShadcnLook {
         id: impl Into<SharedString>,
     ) -> gpui_luma::controls::sidebar::SidebarControlBuilder {
         gpui_luma::controls::sidebar::SidebarControl::new(id)
+            .template(self.sidebar_template())
             .panel_template(self.sidebar_panel_template())
             .scrollbar_template(self.scrollbar_template())
     }

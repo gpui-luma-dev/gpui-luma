@@ -319,7 +319,6 @@ impl Render for SidebarControlExposition {
 const PREVIEW_SHELL_HEIGHT_PX: f32 = 560.0;
 const PREVIEW_SHELL_RADIUS_PX: f32 = 12.0;
 const PREVIEW_CONTENT_INSET_PX: f32 = 10.0;
-const PREVIEW_CONTENT_RADIUS_PX: f32 = 12.0;
 
 fn preview_shell(
     look: &ShadcnLook,
@@ -333,6 +332,7 @@ fn preview_shell(
     let muted_style = look.typography_scale(ShadcnTextSize::Sm);
     let muted = look.token_color("muted-foreground").unwrap_or(chrome.muted_text);
     let sidebar_bg = look.token_color("sidebar").unwrap_or(chrome.panel_background);
+    let content_radius = look.mode_tokens().metrics.radius.lg;
 
     div()
         .id("controls-doc-sidebar-preview-shell")
@@ -380,7 +380,7 @@ fn preview_shell(
                         .flex()
                         .flex_col()
                         .overflow_hidden()
-                        .rounded(px(PREVIEW_CONTENT_RADIUS_PX))
+                        .rounded(px(content_radius))
                         .border_1()
                         .border_color(chrome.border)
                         .bg(chrome.content_background)
@@ -396,7 +396,6 @@ fn preview_shell(
                                 .px(px(12.0))
                                 .border_b_1()
                                 .border_color(chrome.border)
-                                .bg(chrome.content_background)
                                 .child(sidebar_toggle)
                                 .child(div().h(px(16.0)).w(px(1.0)).bg(chrome.border))
                                 .child(

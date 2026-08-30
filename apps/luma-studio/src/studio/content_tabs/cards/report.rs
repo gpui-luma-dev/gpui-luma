@@ -24,10 +24,10 @@ declare_form! {
                 .selector("report-security")
                 .label("Severity 2")
                 .items(security_items()),
-            subject_field: TextField = look.textfield("report-subject").input(&look).placeholder("Subject").full_width(true),
+            subject_field: TextField = look.textfield("report-subject").primary(&look).placeholder("Subject").full_width(true),
             description_area: Entity<TextArea> = look
                 .textarea("report-description")
-                .input(&look)
+                .primary(&look)
                 .placeholder("Description")
                 .full_width(true)
                 .rows(4),

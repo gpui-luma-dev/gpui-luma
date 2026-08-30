@@ -16,10 +16,10 @@ declare_form! {
         controls: {
             github_button: Entity<Button> = look.outline_button("account-github").label("GitHub").size(size),
             google_button: Entity<Button> = look.outline_button("account-google").label("Google").size(size),
-            email_field: TextField = look.textfield("account-email").input(&look).placeholder("Email").full_width(true),
+            email_field: TextField = look.textfield("account-email").primary(&look).placeholder("Email").full_width(true),
             password_field: TextField = look
                 .textfield("account-password")
-                .input(&look)
+                .primary(&look)
                 .placeholder("Password")
                 .full_width(true),
             create_button: Entity<Button> = look.primary_button("account-create").label("Create account").size(size),

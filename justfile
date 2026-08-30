@@ -20,7 +20,7 @@ neumorphic-demo-rel:
     cargo run -p gpui-luma-neumorphic-demo --release
 
 color-viz:
-    cargo run -p gpui-luma-color-viz -- elegent-luxury
+    cargo run -p gpui-luma-color-viz --release -- elegent-luxury
 
 color-viz-rel:
     MTL_HUD_ENABLED=1 cargo run -p gpui-luma-color-viz --release -- retro-arcade

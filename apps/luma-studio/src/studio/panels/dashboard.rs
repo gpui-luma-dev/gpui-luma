@@ -160,7 +160,7 @@ impl Render for DashboardPanel {
             let chrome = look.chrome();
             let metrics = look.sidebar_metric_scale();
             let shell_radius = look.radius(ShadcnRadius::Lg);
-            let content_radius = (shell_radius - CONTENT_INSET_PX).max(0.0);
+            let content_radius = look.mode_tokens().metrics.radius.lg;
             let sidebar_width = self.sidebar.read(cx).animated_width(metrics.width_expanded, metrics.width_icon_rail);
             let sidebar_bg = look.token_color("sidebar").unwrap_or(chrome.panel_background);
             let title_style = look.typography_scale(ShadcnTextSize::Lg);
@@ -219,7 +219,6 @@ impl Render for DashboardPanel {
                                             .px(px(12.0))
                                             .border_b_1()
                                             .border_color(chrome.border)
-                                            .bg(chrome.content_background)
                                             .child(self.sidebar_toggle.clone())
                                             .child(div().h(px(16.0)).w(px(1.0)).bg(chrome.border))
                                             .child(
@@ -234,8 +233,17 @@ impl Render for DashboardPanel {
                                             .flex_1()
                                             .min_h(px(0.0))
                                             .w_full()
+                                            .flex()
+                                            .flex_col()
                                             .p(px(LIST_VIEW_OUTER_PADDING_PX))
-                                            .child(div().size_full().min_h_0().child(self.list_view.clone())),
+                                            .child(
+                                                div()
+                                                    .flex_1()
+                                                    .min_w(px(0.0))
+                                                    .min_h(px(0.0))
+                                                    .w_full()
+                                                    .child(self.list_view.clone()),
+                                            ),
                                     ),
                             ),
                     ),

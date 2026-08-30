@@ -57,12 +57,12 @@ struct PlanOptionTemplateSpec {
 declare_form! {
     pub struct UpgradePanel {
         controls: {
-            name_field: TextField = look.textfield("upgrade-name").input(&look).placeholder("Name").full_width(true),
-            email_field: TextField = look.textfield("upgrade-email").input(&look).placeholder("Email").full_width(true),
-            card_field: TextField = look.textfield("upgrade-card").input(&look).placeholder("Card Number").full_width(true),
+            name_field: TextField = look.textfield("upgrade-name").primary(&look).placeholder("Name").full_width(true),
+            email_field: TextField = look.textfield("upgrade-email").primary(&look).placeholder("Email").full_width(true),
+            card_field: TextField = look.textfield("upgrade-card").primary(&look).placeholder("Card Number").full_width(true),
             // full_width fills the fixed host (72/64px below); it does not grow with typed content.
-            expiry_field: TextField = look.textfield("upgrade-expiry").input(&look).placeholder("MM/YY").full_width(true),
-            cvc_field: TextField = look.textfield("upgrade-cvc").input(&look).placeholder("CVC").full_width(true),
+            expiry_field: TextField = look.textfield("upgrade-expiry").primary(&look).placeholder("MM/YY").full_width(true),
+            cvc_field: TextField = look.textfield("upgrade-cvc").primary(&look).placeholder("CVC").full_width(true),
             plan_group: RadioGroup<PlanOptionItem> = horizontal_radio_group("upgrade-plan")
                 .item_element_template(plan_option_item_element_template(look.clone()))
                 .with_item_layout(|items, _, _, _| {
@@ -76,7 +76,7 @@ declare_form! {
                 .selected("starter"),
             notes_area: Entity<TextArea> = look
                 .textarea("upgrade-notes")
-                .input(&look)
+                .primary(&look)
                 .placeholder("Notes")
                 .full_width(true)
                 .rows(3),
