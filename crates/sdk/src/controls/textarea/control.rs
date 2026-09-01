@@ -14,6 +14,7 @@ use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, observe_theme_revision};
 
 const TEXTAREA_RESIZE_ICON_SIZE: f32 = 10.0;
+const FOCUS_RING_GAP: f32 = 1.0;
 
 #[derive(Clone)]
 struct TextAreaCachedLine {
@@ -337,12 +338,17 @@ impl TextArea {
     }
 
     fn resolved_look(&self, scale: &StandardBoxScale) -> crate::controls::textarea::TextAreaLook {
-        let look = self.model.theme.resolve_look(self.state, self.model.enabled, self.model.size, scale);
+        let base_state = TextAreaState { focused: false, focus_visible: false, ..self.state };
+        let mut look = self.model.theme.resolve_look(base_state, self.model.enabled, self.model.size, scale);
+        let focus_state = TextAreaState { focused: true, focus_visible: true, ..self.state };
+        let focus_look = self.model.theme.resolve_look(focus_state, self.model.enabled, self.model.size, scale);
         if let Some(override_fn) = &self.model.look_override {
-            override_fn(look)
-        } else {
-            look
+            look = override_fn(look);
+            look.focus_border = Some(override_fn(focus_look).border);
+        } else if self.model.enabled && !self.state.invalid {
+            look.focus_border = Some(focus_look.border);
         }
+        look
     }
 
     fn logical_lines(value: &str) -> Vec<(usize, usize, String)> {
@@ -1262,6 +1268,12 @@ impl Render for TextArea {
             |metrics| StandardBoxScale::compute(control_size, metrics, scale_factor),
         );
         let look = self.resolved_look(&scale);
+        let focused = self.state.focused && self.state.focus_visible && self.model.enabled;
+        let focus_extent = if look.focus_border.is_some() {
+            FOCUS_RING_GAP + look.border_width.max(0.0)
+        } else {
+            0.0
+        };
         let show_scrollbar = self.is_scrollable();
         let scrollbar_width = px(12.0);
         let resize_handle = div()
@@ -1346,9 +1358,29 @@ impl Render for TextArea {
             control = control.shadow(shadows.clone());
         }
 
-        let mut root = div().id(self.model.id.clone()).relative().child(control);
+        let adorned = div().id(format!("{}-adorned", self.model.id)).relative().child(control);
+        let mut root = div().id(self.model.id.clone()).relative();
+        if focus_extent > 0.0 {
+            root = root.p(px(focus_extent)).child(adorned);
+        } else {
+            root = root.child(adorned);
+        }
         if self.model.full_width {
             root = root.w_full();
+        }
+
+        if focused {
+            root = root.child(
+                div()
+                    .absolute()
+                    .top(px(0.0))
+                    .right(px(0.0))
+                    .bottom(px(0.0))
+                    .left(px(0.0))
+                    .border(px(look.border_width))
+                    .border_color(look.focus_border.unwrap_or(look.border))
+                    .rounded(px(look.radius + FOCUS_RING_GAP + look.border_width)),
+            );
         }
 
         root.track_focus(&self.focus_handle)

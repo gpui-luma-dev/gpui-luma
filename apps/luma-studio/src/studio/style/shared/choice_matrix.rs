@@ -313,7 +313,7 @@ pub(crate) fn render_choice_control_sizes_body(
 fn render_choice_variant_state_matrix(
     look: Arc<ShadcnLook>,
     control: ChoiceTemplateControl,
-    samples: &[ButtonStateSample; 6],
+    samples: &[ButtonStateSample; 7],
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -335,7 +335,7 @@ fn render_choice_variant_state_matrix(
 }
 
 fn choice_active_for_sample(sample: &ButtonStateSample) -> bool {
-    matches!(sample.id, "pressed" | "disabled-pressed")
+    matches!(sample.id, "focus-pressed" | "pressed" | "disabled-pressed")
 }
 
 fn render_choice_variant_state_cell(

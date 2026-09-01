@@ -288,9 +288,19 @@ impl TextFieldControl {
     }
 
     fn resolved_look(&self, window: &Window, cx: &mut Context<Self>) -> TextFieldLook {
+        let base_state = TextFieldState { focused: false, focus_visible: false, ..self.state };
         let mut look = self.model.template.resolve_look_with_scale(
             self.model.variant,
-            self.state,
+            base_state,
+            self.model.enabled,
+            self.model.size,
+            window.scale_factor(),
+            cx,
+        );
+        let focus_state = TextFieldState { focused: true, focus_visible: true, ..self.state };
+        let mut focus_look = self.model.template.resolve_look_with_scale(
+            self.model.variant,
+            focus_state,
             self.model.enabled,
             self.model.size,
             window.scale_factor(),
@@ -301,10 +311,13 @@ impl TextFieldControl {
             look.min_height = 22.0;
         }
         if let Some(override_fn) = &self.model.look_override {
-            override_fn(look)
-        } else {
-            look
+            look = override_fn(look);
+            focus_look = override_fn(focus_look);
         }
+        if self.model.enabled && !self.state.invalid {
+            look.focus_border = Some(focus_look.border);
+        }
+        look
     }
 
     fn render_model_with_offsets<'a>(
@@ -318,6 +331,7 @@ impl TextFieldControl {
             value: &self.model.value,
             prefix_icon: self.model.prefix_icon.as_ref(),
             variant: self.model.variant,
+            size: self.model.size,
             enabled: self.model.enabled,
             full_width: self.model.full_width,
             state: self.state,

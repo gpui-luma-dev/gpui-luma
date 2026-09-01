@@ -5,7 +5,7 @@ use gpui::{
     prelude::*,
 };
 
-use super::{TextAreaDrag, TextAreaRenderModel};
+use super::{TextAreaDrag, TextAreaRenderModel, TextAreaState};
 use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
@@ -15,6 +15,7 @@ const TEXTAREA_TRAILING_HITBOX_WIDTH: f32 = 4.0;
 const TEXTAREA_CARET_EDGE_OFFSET: f32 = 0.0;
 const TEXTAREA_MIN_WIDTH: f32 = 0.0;
 const TEXTAREA_DISABLED_OPACITY: f32 = 0.6;
+const FOCUS_RING_GAP: f32 = 1.0;
 
 pub type TextAreaHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type TextAreaMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -150,7 +151,13 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
             LayoutCacheKey { size, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(size, metrics, scale_factor),
         );
-        let look = self.theme.resolve_look(model.state, model.enabled, size, &scale);
+        let base_state = TextAreaState { focused: false, focus_visible: false, ..model.state };
+        let mut look = self.theme.resolve_look(base_state, model.enabled, size, &scale);
+        if model.enabled && !model.state.invalid {
+            let focus_state = TextAreaState { focused: true, focus_visible: true, ..model.state };
+            let focus_look = self.theme.resolve_look(focus_state, model.enabled, size, &scale);
+            look.focus_border = Some(focus_look.border);
+        }
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let selection = model.state.selection_range();
         let cursor = model.state.cursor.min(model.value.chars().count());
@@ -270,10 +277,36 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
             control = control.shadow(shadows.clone());
         }
 
-        let mut root = div().id(model.id.clone()).relative().child(control);
+        let focused = model.state.focused && model.state.focus_visible && model.enabled;
+        let focus_extent = if look.focus_border.is_some() {
+            FOCUS_RING_GAP + look.border_width.max(0.0)
+        } else {
+            0.0
+        };
+        let adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
+        let mut root = div().id(model.id.clone()).relative();
+        if focus_extent > 0.0 {
+            root = root.p(px(focus_extent)).child(adorned);
+        } else {
+            root = root.child(adorned);
+        }
 
         if model.full_width {
             root = root.w_full();
+        }
+
+        if focused {
+            root = root.child(
+                div()
+                    .absolute()
+                    .top(px(0.0))
+                    .right(px(0.0))
+                    .bottom(px(0.0))
+                    .left(px(0.0))
+                    .border(px(look.border_width))
+                    .border_color(look.focus_border.unwrap_or(look.border))
+                    .rounded(px(look.radius + FOCUS_RING_GAP + look.border_width)),
+            );
         }
 
         self.apply_modifiers(root, model)

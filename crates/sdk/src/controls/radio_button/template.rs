@@ -10,6 +10,8 @@ use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
+const FOCUS_RING_GAP: f32 = 1.0;
+
 define_control_template!(
     ThemedRadioButtonTemplate,
     dyn RadioButtonTheme,
@@ -60,10 +62,28 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
     fn render(&self, model: &ButtonRenderModel<RadioButtonData>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let progress = model.data.progress.clamp(0.0, 1.0);
         let selected = model.data.selected;
-        let off_palette = self.theme.resolve(false, model.state, model.size);
-        let on_palette = self.theme.resolve(true, model.state, model.size);
+        let focused = model.state.focused && !model.state.disabled;
+        let control_state = if focused {
+            crate::theme::InteractionState { focused: false, ..model.state }
+        } else {
+            model.state
+        };
+        let off_palette = self.theme.resolve(false, control_state, model.size);
+        let on_palette = self.theme.resolve(true, control_state, model.size);
         let palette = lerp_radio_palette(&off_palette, &on_palette, progress);
         let settled_palette = if selected { &on_palette } else { &off_palette };
+        let focus_state = crate::theme::InteractionState { focused: true, ..model.state };
+        let focus_palette = if selected {
+            self.theme.resolve(true, focus_state, model.size)
+        } else {
+            self.theme.resolve(false, focus_state, model.size)
+        };
+        let focus_metrics = self.theme.metrics().focus;
+        let focus_ring_extent = if focus_palette.indicator_border.a > 0.0 {
+            FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+        } else {
+            0.0
+        };
 
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
@@ -73,8 +93,6 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         );
 
         let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
-        let oversize_extent = 0.0;
-
         let indicator_visual = {
             let mut indicator = div()
                 .id(format!("{}-indicator", model.id))
@@ -101,24 +119,39 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         };
 
         let indicator = div().relative().child(indicator_visual);
-
-        let indicator = if oversize_extent > 0.0 {
-            div()
+        let indicator = if focus_ring_extent > 0.0 {
+            let mut slot = div()
                 .id(format!("{}-indicator-slot", model.id))
+                .relative()
                 .flex()
                 .items_center()
                 .justify_center()
-                .size(px(scale.indicator_size + (oversize_extent * 2.0)))
-                .child(indicator)
-                .into_any_element()
+                .size(px(scale.indicator_size + (focus_ring_extent * 2.0)))
+                .child(indicator);
+
+            if focused {
+                slot = slot.child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .right_0()
+                        .bottom_0()
+                        .left_0()
+                        .border(px(focus_metrics.width))
+                        .border_color(focus_palette.indicator_border)
+                        .rounded(px(scale.indicator_size + FOCUS_RING_GAP + focus_metrics.width)),
+                );
+            }
+
+            slot.into_any_element()
         } else {
             indicator.into_any_element()
         };
 
         let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(model, cx));
 
-        let mut root = div()
-            .id(model.id.clone())
+        let mut control = div()
+            .id(format!("{}-control", model.id))
             .relative()
             .flex()
             .items_center()
@@ -129,9 +162,9 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
             .rounded(px(scale.control_radius));
 
         if indicator_only {
-            root = root.child(indicator);
+            control = control.child(indicator);
         } else {
-            root = root
+            control = control
                 .text_color(settled_palette.label_color)
                 .text_size(px(settled_palette.label_typography.size))
                 .line_height(px(settled_palette.label_typography.line_height))
@@ -142,12 +175,14 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         }
 
         if let Some(background) = palette.control_background {
-            root = root.bg(background);
+            control = control.bg(background);
         }
 
         if let Some(border) = palette.control_border {
-            root = root.border_1().border_color(border);
+            control = control.border_1().border_color(border);
         }
+
+        let mut root = self.apply_modifiers(control, model);
 
         if model.state.disabled {
             root = root.opacity(0.56);
@@ -155,7 +190,7 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
             root = root.cursor_pointer();
         }
 
-        self.apply_modifiers(root, model)
+        root
     }
 }
 

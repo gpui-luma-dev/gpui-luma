@@ -37,6 +37,7 @@ pub struct TextFieldRenderModel<'a> {
     pub value: &'a SharedString,
     pub prefix_icon: Option<&'a ControlIcon>,
     pub variant: TextFieldVariant,
+    pub size: ControlSize,
     pub enabled: bool,
     pub full_width: bool,
     pub state: TextFieldState,

@@ -40,7 +40,7 @@ pub(crate) fn render_menu_template_state_section(
     section_shell_with_width(
         960.0,
         "Menus",
-        "Menu triggers and floating menu panels.",
+        "Menu triggers and floating menu panels. Includes the combined Focus+Pressed trigger state.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
@@ -101,7 +101,7 @@ const MENU_TRIGGER_STYLE_VARIANTS: [MenuTriggerStyleDef; 2] = [
     MenuTriggerStyleDef { label: "Ghost", description: "Quiet menu trigger", style: PopupMenuTriggerStyle::Ghost },
 ];
 
-fn menu_trigger_state_samples() -> [ButtonStateSample; 5] {
+fn menu_trigger_state_samples() -> [ButtonStateSample; 6] {
     [
         ButtonStateSample { id: "default", header: "default", state: InteractionState::default() },
         ButtonStateSample {
@@ -113,6 +113,11 @@ fn menu_trigger_state_samples() -> [ButtonStateSample; 5] {
             id: "focused",
             header: "focused",
             state: InteractionState { focused: true, ..InteractionState::default() },
+        },
+        ButtonStateSample {
+            id: "focus-pressed",
+            header: "focus-pressed",
+            state: InteractionState { hovered: true, focused: true, pressed: true, ..InteractionState::default() },
         },
         ButtonStateSample {
             id: "pressed",
@@ -369,7 +374,7 @@ fn render_menu_trigger_size_radius_cell(
 
 fn menu_trigger_focus_for_sample(sample: &ButtonStateSample) -> PopupMenuControlFocusState {
     match sample.id {
-        "focused" | "pressed" => PopupMenuControlFocusState { focused: true, focus_visible: true },
+        "focused" | "focus-pressed" | "pressed" => PopupMenuControlFocusState { focused: true, focus_visible: true },
         _ => PopupMenuControlFocusState::default(),
     }
 }
@@ -444,6 +449,7 @@ fn menu_trigger_state_header_icon(state_id: &'static str) -> LucideIcon {
         "default" => LucideIcon::House,
         "hover" => LucideIcon::MousePointer2,
         "focused" => LucideIcon::SquareDashed,
+        "focus-pressed" => LucideIcon::ArrowDown,
         "pressed" => LucideIcon::ArrowDown,
         "disabled" => LucideIcon::CircleMinus,
         _ => LucideIcon::House,
@@ -455,6 +461,7 @@ fn menu_trigger_state_display_label(header: &'static str) -> &'static str {
         "default" => "Default",
         "hover" => "Hover",
         "focused" => "Focused",
+        "focus-pressed" => "Focus+Pressed",
         "pressed" => "Pressed",
         "disabled" => "Disabled",
         _ => header,

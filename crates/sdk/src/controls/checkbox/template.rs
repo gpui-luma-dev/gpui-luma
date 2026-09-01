@@ -8,6 +8,8 @@ use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
+const FOCUS_RING_GAP: f32 = 1.0;
+
 define_control_template!(
     ThemedCheckboxTemplate,
     dyn CheckboxTheme,
@@ -58,18 +60,34 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
     fn render(&self, model: &ButtonRenderModel<CheckboxData>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let progress = model.data.progress.clamp(0.0, 1.0);
         let checked = model.data.checked;
-        let off_palette = self.theme.resolve(false, model.state, model.size);
-        let on_palette = self.theme.resolve(true, model.state, model.size);
+        let focused = model.state.focused && !model.state.disabled;
+        let control_state = if focused {
+            crate::theme::InteractionState { focused: false, ..model.state }
+        } else {
+            model.state
+        };
+        let off_palette = self.theme.resolve(false, control_state, model.size);
+        let on_palette = self.theme.resolve(true, control_state, model.size);
         let palette = lerp_checkbox_palette(&off_palette, &on_palette, progress);
         let settled_palette = if checked { &on_palette } else { &off_palette };
+        let focus_state = crate::theme::InteractionState { focused: true, ..model.state };
+        let focus_palette = if checked {
+            self.theme.resolve(true, focus_state, model.size)
+        } else {
+            self.theme.resolve(false, focus_state, model.size)
+        };
+        let focus_metrics = self.theme.metrics().focus;
+        let focus_ring_extent = if focus_palette.indicator_border.a > 0.0 {
+            FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+        } else {
+            0.0
+        };
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
             LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
             |metrics| CheckboxScale::compute(model.size, metrics, scale_factor),
         );
-
-        let oversize_extent = 0.0;
 
         let indicator_visual = {
             let mut indicator = div()
@@ -102,21 +120,36 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
 
         let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
         let indicator = div().relative().child(indicator_visual);
-
-        let indicator = if oversize_extent > 0.0 {
-            div()
+        let indicator = if focus_ring_extent > 0.0 {
+            let mut slot = div()
                 .id(format!("{}-indicator-slot", model.id))
+                .relative()
                 .flex()
                 .items_center()
                 .justify_center()
-                .size(px(scale.indicator_size + (oversize_extent * 2.0)))
-                .child(indicator)
-                .into_any_element()
+                .size(px(scale.indicator_size + (focus_ring_extent * 2.0)))
+                .child(indicator);
+
+            if focused {
+                slot = slot.child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .right_0()
+                        .bottom_0()
+                        .left_0()
+                        .border(px(focus_metrics.width))
+                        .border_color(focus_palette.indicator_border)
+                        .rounded(px(scale.indicator_radius + FOCUS_RING_GAP + focus_metrics.width)),
+                );
+            }
+
+            slot.into_any_element()
         } else {
             indicator.into_any_element()
         };
 
-        let mut root = div()
+        let mut control = div()
             .id(model.id.clone())
             .relative()
             .flex()
@@ -130,10 +163,10 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
             .cursor_pointer();
 
         if indicator_only {
-            root = root.child(indicator);
+            control = control.child(indicator);
         } else {
             let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(model, cx));
-            root = root
+            control = control
                 .gap(px(scale.gap))
                 .min_h(px(scale.height))
                 .px(px(scale.control_padding_x))
@@ -143,18 +176,22 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
         }
 
         if let Some(background) = palette.control_background {
-            root = root.bg(background);
+            control = control.bg(background);
         }
 
         if let Some(border) = palette.control_border {
-            root = root.border_1().border_color(border);
+            control = control.border_1().border_color(border);
         }
+
+        let mut root = self.apply_modifiers(control, model);
 
         if model.state.disabled {
             root = root.opacity(0.56);
+        } else {
+            root = root.cursor_pointer();
         }
 
-        self.apply_modifiers(root, model)
+        root
     }
 }
 

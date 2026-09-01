@@ -8,6 +8,8 @@ use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::snap_to_pixel;
 
+const FOCUS_RING_GAP: f32 = 1.0;
+
 define_control_template!(
     ThemedSwitchTemplate,
     dyn SwitchTheme,
@@ -60,10 +62,28 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
     fn render(&self, model: &ButtonRenderModel<SwitchData>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let progress = model.data.progress.clamp(0.0, 1.0);
         let checked = model.data.checked;
-        let off_palette = self.theme.resolve(false, model.state, model.size);
-        let on_palette = self.theme.resolve(true, model.state, model.size);
+        let focused = model.state.focused && !model.state.disabled;
+        let control_state = if focused {
+            crate::theme::InteractionState { focused: false, ..model.state }
+        } else {
+            model.state
+        };
+        let off_palette = self.theme.resolve(false, control_state, model.size);
+        let on_palette = self.theme.resolve(true, control_state, model.size);
         let palette = lerp_switch_palette(&off_palette, &on_palette, progress);
         let settled_palette = if checked { &on_palette } else { &off_palette };
+        let focus_state = crate::theme::InteractionState { focused: true, ..model.state };
+        let focus_palette = if checked {
+            self.theme.resolve(true, focus_state, model.size)
+        } else {
+            self.theme.resolve(false, focus_state, model.size)
+        };
+        let focus_metrics = self.theme.metrics().focus;
+        let focus_ring_extent = if focus_palette.track_border.a > 0.0 {
+            FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+        } else {
+            0.0
+        };
         let scale_factor = window.scale_factor();
         let mut scale = self.theme.scale(model.size, scale_factor);
         let track_length = snap_to_pixel(scale.track_width + model.switch_track_width_extra, scale_factor);
@@ -113,8 +133,6 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
             thumb = thumb.child(content(model, cx));
         }
 
-        let oversize_extent = 0.0;
-
         let mut track_visual = div()
             .id(format!("{}-track", model.id))
             .relative()
@@ -146,25 +164,40 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
         }
 
         let track = div().relative().child(track_visual);
-
-        let track = if oversize_extent > 0.0 {
-            div()
+        let track = if focus_ring_extent > 0.0 {
+            let mut slot = div()
                 .id(format!("{}-track-slot", model.id))
+                .relative()
                 .flex()
                 .items_center()
                 .justify_center()
-                .w(px(scale.track_width + (oversize_extent * 2.0)))
-                .h(px(scale.track_height + (oversize_extent * 2.0)))
-                .child(track)
-                .into_any_element()
+                .w(px(scale.track_width + (focus_ring_extent * 2.0)))
+                .h(px(scale.track_height + (focus_ring_extent * 2.0)))
+                .child(track);
+
+            if focused {
+                slot = slot.child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .right_0()
+                        .bottom_0()
+                        .left_0()
+                        .border(px(focus_metrics.width))
+                        .border_color(focus_palette.track_border)
+                        .rounded(px(track_radius + FOCUS_RING_GAP + focus_metrics.width)),
+                );
+            }
+
+            slot.into_any_element()
         } else {
             track.into_any_element()
         };
 
         let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(model, cx));
 
-        let mut root = div()
-            .id(model.id.clone())
+        let control = div()
+            .id(format!("{}-control", model.id))
             .relative()
             .flex()
             .items_center()
@@ -178,12 +211,14 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
             .child(track)
             .child(label);
 
+        let mut root = self.apply_modifiers(control, model);
+
         if model.state.disabled {
             root = root.opacity(0.56);
         } else {
             root = root.cursor_pointer();
         }
 
-        self.apply_modifiers(root, model)
+        root
     }
 }

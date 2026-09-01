@@ -226,6 +226,7 @@ fn render_textfield_cell(
         value: &value,
         prefix_icon: Some(&prefix_icon),
         variant: TextFieldVariant::Standard,
+        size,
         enabled: sample.enabled,
         full_width: true,
         state: sample.state,

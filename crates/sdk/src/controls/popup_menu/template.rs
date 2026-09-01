@@ -156,7 +156,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             trigger_radius_override: model.trigger_radius_override,
         };
         let look = self.theme.resolve_look(model.trigger_style, metrics, model.state, scale_factor, _cx);
-        let focused = model.split && model.state.focused && !model.state.disabled;
+        let focused = model.state.focused && !model.state.disabled;
         let control_look = if focused {
             self.theme.resolve_look(
                 model.trigger_style,

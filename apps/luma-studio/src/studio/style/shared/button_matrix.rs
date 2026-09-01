@@ -310,6 +310,7 @@ fn icon_button_state_header_icon(state_id: &'static str) -> LucideIcon {
         "default" => LucideIcon::House,
         "hover" => LucideIcon::MousePointer2,
         "focused" => LucideIcon::SquareDashed,
+        "focus-pressed" => LucideIcon::ArrowDown,
         "pressed" => LucideIcon::ArrowDown,
         "selected" => LucideIcon::Check,
         "disabled" => LucideIcon::CircleMinus,
@@ -323,6 +324,7 @@ fn icon_button_state_display_label(header: &'static str) -> &'static str {
         "default" => "Default",
         "hover" => "Hover",
         "focused" => "Focused",
+        "focus-pressed" => "Focus/Pressed",
         "pressed" => "Pressed",
         "selected" => "Selected",
         "disabled" => "Disabled",
@@ -332,7 +334,7 @@ fn icon_button_state_display_label(header: &'static str) -> &'static str {
     }
 }
 
-pub(crate) fn toggle_interaction_state_samples() -> [ButtonStateSample; 6] {
+pub(crate) fn toggle_interaction_state_samples() -> [ButtonStateSample; 7] {
     [
         ButtonStateSample { id: "default", header: "default", state: InteractionState::default() },
         ButtonStateSample {
@@ -344,6 +346,11 @@ pub(crate) fn toggle_interaction_state_samples() -> [ButtonStateSample; 6] {
             id: "focused",
             header: "focused",
             state: InteractionState { focused: true, ..InteractionState::default() },
+        },
+        ButtonStateSample {
+            id: "focus-pressed",
+            header: "focus-pressed",
+            state: InteractionState { hovered: true, focused: true, pressed: true, ..InteractionState::default() },
         },
         ButtonStateSample {
             id: "pressed",

@@ -13,6 +13,7 @@ use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxS
 const TEXTFIELD_CARET_WIDTH: f32 = 1.5;
 const TEXTFIELD_CARET_HEIGHT_EXTRA: f32 = 2.0;
 const CARET_EDGE_OFFSET: f32 = 0.0;
+const FOCUS_RING_GAP: f32 = 1.0;
 
 fn colored_runs_for_text(text: &str, selection: Option<(usize, usize)>, look: &TextFieldLook) -> Vec<TextRun> {
     let mut base_font = font(look.font_family.clone());
@@ -131,7 +132,7 @@ pub trait TextFieldTemplate: Send + Sync {
         &self,
         model: &TextFieldRenderModel<'_>,
         handlers: TextFieldTemplateHandlers,
-        _window: &mut Window,
+        window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div>;
 }
@@ -271,10 +272,24 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         &self,
         model: &TextFieldRenderModel<'_>,
         handlers: TextFieldTemplateHandlers,
-        _window: &mut Window,
-        _cx: &mut App,
+        window: &mut Window,
+        cx: &mut App,
     ) -> Stateful<Div> {
-        let look = model.look.clone();
+        let mut look = model.look.clone();
+        if look.focus_border.is_none() && model.enabled && !model.state.invalid {
+            let scale_factor = window.scale_factor();
+            let scale = cx.use_cached_layout(
+                self.theme.metrics(),
+                LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
+                |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
+            );
+            let base_state = TextFieldState { focused: false, focus_visible: false, ..model.state };
+            let base_look = self.theme.resolve_look(model.variant, base_state, model.enabled, model.size, &scale);
+            let focus_state = TextFieldState { focused: true, focus_visible: true, ..model.state };
+            let focus_look = self.theme.resolve_look(model.variant, focus_state, model.enabled, model.size, &scale);
+            look.border = base_look.border;
+            look.focus_border = Some(focus_look.border);
+        }
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let chars = model.value.chars().collect::<Vec<_>>();
         let cursor = model.state.cursor.min(chars.len());
@@ -384,6 +399,14 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
 
         // Always fill the focus-ring root so a stretched ring cannot leave a content-sized
         // entry box centered inside it (e.g. fixed-width hosts without full_width).
+        let focused = model.state.focused && model.state.focus_visible && model.enabled;
+        let focus_border = look.focus_border.unwrap_or(look.border);
+        let focus_extent = if look.focus_border.is_some() {
+            FOCUS_RING_GAP + look.border_width.max(0.0)
+        } else {
+            0.0
+        };
+
         let mut control = div()
             .id(format!("{}-control", model.id))
             .relative()
@@ -412,7 +435,13 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             control = control.shadow(shadows.clone());
         }
 
-        let mut root = div().id(model.id.clone()).relative().child(control);
+        let adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
+        let mut root = div().id(model.id.clone()).relative();
+        if focus_extent > 0.0 {
+            root = root.p(px(focus_extent)).child(adorned);
+        } else {
+            root = root.child(adorned);
+        }
 
         if model.full_width {
             root = root.w_full();
@@ -431,6 +460,20 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 cx.new(|_| drag.clone())
             })
             .on_drag_move(handlers.drag_move);
+
+        if focused {
+            root = root.child(
+                div()
+                    .absolute()
+                    .top(px(0.0))
+                    .right(px(0.0))
+                    .bottom(px(0.0))
+                    .left(px(0.0))
+                    .border(px(look.border_width))
+                    .border_color(focus_border)
+                    .rounded(px(look.radius + FOCUS_RING_GAP + look.border_width)),
+            );
+        }
 
         self.apply_modifiers(root, model)
     }

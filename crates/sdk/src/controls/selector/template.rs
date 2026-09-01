@@ -18,6 +18,8 @@ use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, snap_to
 
 use super::theme::{SelectorLook, SelectorTheme, default_selector_theme};
 
+const FOCUS_RING_GAP: f32 = 1.0;
+
 pub type SelectorBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type SelectorClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type SelectorHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -224,22 +226,66 @@ where
             on_item_click,
         } = handlers;
         let scale_factor = window.scale_factor();
-        let look = self.resolve_look(model, window, cx);
+        let scale = cx.use_cached_layout(
+            self.theme.metrics(),
+            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
+        );
+        let look = self.theme.resolve_visual_look(
+            model.trigger_style,
+            model.visual_state,
+            model.size,
+            &scale,
+            model.without_elevation,
+        );
+        let focused = model.visual_state.interaction.focused
+            && !model.visual_state.interaction.disabled
+            && !model.visual_state.invalid;
+        let control_look = if focused {
+            self.theme.resolve_visual_look(
+                model.trigger_style,
+                super::theme::SelectorVisualState {
+                    interaction: crate::theme::InteractionState { focused: false, ..model.visual_state.interaction },
+                    ..model.visual_state
+                },
+                model.size,
+                &scale,
+                model.without_elevation,
+            )
+        } else {
+            look.clone()
+        };
+        let focus_look = self.theme.resolve_visual_look(
+            model.trigger_style,
+            super::theme::SelectorVisualState {
+                interaction: crate::theme::InteractionState { focused: true, ..model.visual_state.interaction },
+                ..model.visual_state
+            },
+            model.size,
+            &scale,
+            model.without_elevation,
+        );
         let trigger_icon_size = snap_to_pixel(look.trigger_icon_size, scale_factor);
-        let border = button_family_effective_border(look.trigger_border);
-        let trigger_content = render_item_content(model, &look, cx);
-        let mut root = div()
-            .id(model.id.clone())
+        let border = button_family_effective_border(control_look.trigger_border);
+        let focus_border = focus_look.trigger_focus_border;
+        let focus_metrics = self.theme.metrics().focus;
+        let focus_extent = focus_border
+            .filter(|border| border.a > 0.0)
+            .map(|_| FOCUS_RING_GAP + focus_metrics.width.max(0.0))
+            .unwrap_or(0.0);
+        let trigger_content = render_item_content(model, &control_look, cx);
+        let mut trigger = div()
+            .id(format!("{}-trigger", model.id))
             .flex()
             .items_center()
             .justify_between()
-            .gap(px(look.trigger_gap))
-            .px(px(look.trigger_padding_x))
-            .py(px(look.trigger_padding_y))
-            .h(px(look.trigger_height))
+            .gap(px(control_look.trigger_gap))
+            .px(px(control_look.trigger_padding_x))
+            .py(px(control_look.trigger_padding_y))
+            .h(px(control_look.trigger_height))
             .w_full()
-            .bg(look.trigger_background)
-            .rounded(px(look.trigger_radius))
+            .bg(control_look.trigger_background)
+            .rounded(px(control_look.trigger_radius))
             .cursor_pointer()
             .relative()
             .on_prepaint(move |bounds, window, cx| {
@@ -250,45 +296,65 @@ where
             .on_mouse_up(MouseButton::Left, trigger_mouse_up)
             .on_mouse_up_out(MouseButton::Left, trigger_mouse_up_out)
             .on_click(trigger_click)
-            .on_mouse_down_out(root_mouse_down_out)
             .child(
                 div()
                     .flex()
                     .items_center()
-                    .gap(px(look.trigger_gap))
+                    .gap(px(control_look.trigger_gap))
                     .min_w(px(0.0))
                     .flex_1()
-                    .text_color(look.trigger_foreground)
-                    .text_size(px(look.trigger_typography.size))
-                    .line_height(px(look.trigger_typography.line_height))
-                    .font_weight(look.trigger_typography.weight)
+                    .text_color(control_look.trigger_foreground)
+                    .text_size(px(control_look.trigger_typography.size))
+                    .line_height(px(control_look.trigger_typography.line_height))
+                    .font_weight(control_look.trigger_typography.weight)
                     .child(trigger_content),
             )
-            .child(div().flex().items_center().justify_center().flex_shrink_0().text_color(look.trigger_icon).child(
-                crate::controls::icon::render_icon_source(&model.icons.trigger, look.trigger_icon, trigger_icon_size),
-            ));
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .flex_shrink_0()
+                    .text_color(control_look.trigger_icon)
+                    .child(crate::controls::icon::render_icon_source(
+                        &model.icons.trigger,
+                        control_look.trigger_icon,
+                        trigger_icon_size,
+                    )),
+            );
 
         if border.a > 0.0 {
-            root = root.border_1().border_color(border);
+            trigger = trigger.border_1().border_color(border);
         }
 
-        if model.visual_state.interaction.focused
-            && !model.visual_state.interaction.disabled
-            && !model.visual_state.invalid
-            && let Some(focus_border) = look.trigger_focus_border
-        {
-            root = root.border_color(focus_border);
-        }
-
-        let paint_shadow = !model.state.disabled
+        if !model.state.disabled
             && !model.without_elevation
-            && look.trigger_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty());
-        if paint_shadow && let Some(shadows) = look.trigger_shadow.as_ref() {
-            root = root.shadow(shadows.clone());
+            && control_look.trigger_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty())
+            && let Some(shadows) = control_look.trigger_shadow.as_ref()
+        {
+            trigger = trigger.shadow(shadows.clone());
         }
 
-        if model.state.disabled {
-            root = root.opacity(0.56);
+        let trigger = self.apply_modifiers(trigger, model);
+        let mut root = div().id(model.id.clone()).w_full().relative().on_mouse_down_out(root_mouse_down_out);
+        if focus_extent > 0.0 {
+            root = root.p(px(focus_extent)).child(trigger);
+        } else {
+            root = root.child(trigger);
+        }
+
+        if focused && let Some(focus_border) = focus_border {
+            root = root.child(
+                div()
+                    .absolute()
+                    .top_0()
+                    .right_0()
+                    .bottom_0()
+                    .left_0()
+                    .border(px(focus_metrics.width))
+                    .border_color(focus_border)
+                    .rounded(px(look.trigger_radius + FOCUS_RING_GAP + focus_metrics.width)),
+            );
         }
 
         if model.presence.should_paint() {
