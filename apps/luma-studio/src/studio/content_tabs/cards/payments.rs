@@ -190,7 +190,7 @@ fn spawn_row_checkboxes(look: Arc<ShadcnLook>, row_count: usize, cx: &mut Contex
         .map(|index| {
             look.primary_checkbox(format!("studio-payments-row-{index}"))
                 .with_data(false)
-                .size(ControlSize::Sm)
+                .size(ControlSize::Md)
                 .indicator_only()
                 .tab_stop(false)
                 .spawn(cx)
@@ -260,5 +260,15 @@ fn sample_payments() -> Vec<PaymentRow> {
         PaymentRow { status: "Success", email: "ashain@example.com".into(), amount: "$410.00".into() },
         PaymentRow { status: "Success", email: "noah12@example.com".into(), amount: "$529.00".into() },
         PaymentRow { status: "Processing", email: "ava88@example.com".into(), amount: "$198.00".into() },
+        PaymentRow { status: "Pending", email: "mia27@example.com".into(), amount: "$364.00".into() },
+        PaymentRow { status: "Failed", email: "liam63@example.com".into(), amount: "$912.00".into() },
+        PaymentRow { status: "Success", email: "emma14@example.com".into(), amount: "$275.00".into() },
+        PaymentRow { status: "Processing", email: "oliver52@example.com".into(), amount: "$648.00".into() },
+        PaymentRow { status: "Success", email: "sophia31@example.com".into(), amount: "$483.00".into() },
+        PaymentRow { status: "Pending", email: "james76@example.com".into(), amount: "$207.00".into() },
+        PaymentRow { status: "Failed", email: "amelia08@example.com".into(), amount: "$756.00".into() },
+        PaymentRow { status: "Success", email: "henry45@example.com".into(), amount: "$331.00".into() },
+        PaymentRow { status: "Processing", email: "isla19@example.com".into(), amount: "$584.00".into() },
+        PaymentRow { status: "Success", email: "charlie67@example.com".into(), amount: "$429.00".into() },
     ]
 }

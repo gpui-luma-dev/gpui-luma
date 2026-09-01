@@ -641,6 +641,7 @@ where
             cells
         };
 
+        let row_height = self.fill_row_height.or(self.model.visible_row_height);
         let row = render_list_view_row(
             format!("{}-row-{}", self.model.id, index),
             content,
@@ -648,7 +649,7 @@ where
             enabled,
             local_index > 0,
             is_custom,
-            self.fill_row_height,
+            row_height,
         )
         .on_hover(cx.listener(move |this, hovered, _window, cx| {
             this.handle_item_hover(index, *hovered, cx);
