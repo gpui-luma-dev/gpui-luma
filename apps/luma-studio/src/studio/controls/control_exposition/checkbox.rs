@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, FontWeight, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma_look_shadcn::prelude::*;
@@ -20,6 +20,7 @@ use super::template::render_control_exposition_card;
 enum CheckboxVariant {
     Primary,
     Secondary,
+    IndicatorOnly,
 }
 
 impl CheckboxVariant {
@@ -27,6 +28,7 @@ impl CheckboxVariant {
         match self {
             Self::Primary => "Primary",
             Self::Secondary => "Secondary",
+            Self::IndicatorOnly => "Indicator Only",
         }
     }
 }
@@ -36,6 +38,8 @@ pub struct CheckboxControlExposition {
     entry: ControlDocEntry,
     secondary_checkbox: Checkbox,
     primary_checkbox: Checkbox,
+    indicator_only_checked: Checkbox,
+    indicator_only_unchecked: Checkbox,
     event_stream: Entity<ControlEventStream>,
     left_pane: Entity<CheckboxExpositionLeftPane>,
     theme_inspector: Entity<CheckboxThemeInspector>,
@@ -48,13 +52,20 @@ struct CheckboxExpositionLeftPane {
     entry: ControlDocEntry,
     secondary_checkbox: Checkbox,
     primary_checkbox: Checkbox,
+    indicator_only_checked: Checkbox,
+    indicator_only_unchecked: Checkbox,
     event_stream: Entity<ControlEventStream>,
 }
 
 impl CheckboxExpositionLeftPane {
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        for checkbox in [&self.secondary_checkbox, &self.primary_checkbox] {
+        for checkbox in [
+            &self.secondary_checkbox,
+            &self.primary_checkbox,
+            &self.indicator_only_checked,
+            &self.indicator_only_unchecked,
+        ] {
             checkbox.update(cx, |_, cx| cx.notify());
         }
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
@@ -80,6 +91,29 @@ impl Render for CheckboxExpositionLeftPane {
                         .gap(px(12.0))
                         .child(self.secondary_checkbox.clone())
                         .child(self.primary_checkbox.clone()),
+                )
+                .child(
+                    div()
+                        .w_full()
+                        .flex()
+                        .flex_col()
+                        .gap(px(8.0))
+                        .child(
+                            div()
+                                .text_sm()
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .text_color(self.look.chrome().title_text)
+                                .child("Indicator-only Checkbox"),
+                        )
+                        .child(
+                            div()
+                                .w_full()
+                                .flex()
+                                .items_center()
+                                .gap(px(12.0))
+                                .child(self.indicator_only_checked.clone())
+                                .child(self.indicator_only_unchecked.clone()),
+                        ),
                 )
                 .child(self.event_stream.clone());
 
@@ -113,6 +147,18 @@ impl CheckboxControlExposition {
             .with_data(false)
             .content(|_, _| div().child("Primary").into_any_element())
             .spawn(cx);
+        let indicator_only_checked = look
+            .primary_checkbox("controls-doc-checkbox-indicator-only-checked")
+            .with_data(true)
+            .indicator_only()
+            .compact()
+            .spawn(cx);
+        let indicator_only_unchecked = look
+            .primary_checkbox("controls-doc-checkbox-indicator-only-unchecked")
+            .with_data(false)
+            .indicator_only()
+            .compact()
+            .spawn(cx);
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
@@ -127,6 +173,8 @@ impl CheckboxControlExposition {
             entry,
             secondary_checkbox: secondary_checkbox.clone(),
             primary_checkbox: primary_checkbox.clone(),
+            indicator_only_checked: indicator_only_checked.clone(),
+            indicator_only_unchecked: indicator_only_unchecked.clone(),
             event_stream: event_stream.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
@@ -150,6 +198,20 @@ impl CheckboxControlExposition {
             cx,
         ));
         subscriptions.extend(subscribe_checkbox(
+            &indicator_only_checked,
+            CheckboxVariant::IndicatorOnly,
+            "controls-doc-checkbox-indicator-only-checked",
+            event_stream.clone(),
+            cx,
+        ));
+        subscriptions.extend(subscribe_checkbox(
+            &indicator_only_unchecked,
+            CheckboxVariant::IndicatorOnly,
+            "controls-doc-checkbox-indicator-only-unchecked",
+            event_stream.clone(),
+            cx,
+        ));
+        subscriptions.extend(subscribe_checkbox(
             &primary_checkbox,
             CheckboxVariant::Primary,
             "controls-doc-checkbox-primary",
@@ -162,6 +224,8 @@ impl CheckboxControlExposition {
             entry,
             secondary_checkbox,
             primary_checkbox,
+            indicator_only_checked,
+            indicator_only_unchecked,
             event_stream,
             left_pane,
             theme_inspector,
@@ -188,7 +252,12 @@ impl CheckboxControlExposition {
 
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        for checkbox in [&self.secondary_checkbox, &self.primary_checkbox] {
+        for checkbox in [
+            &self.secondary_checkbox,
+            &self.primary_checkbox,
+            &self.indicator_only_checked,
+            &self.indicator_only_unchecked,
+        ] {
             checkbox.update(cx, |_, cx| cx.notify());
         }
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look.clone(), cx));
