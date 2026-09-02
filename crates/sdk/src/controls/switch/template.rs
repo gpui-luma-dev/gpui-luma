@@ -86,6 +86,15 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
         };
         let scale_factor = window.scale_factor();
         let mut scale = self.theme.scale(model.size, scale_factor);
+        if let Some(track_width) = model.switch_track_width {
+            scale.track_width = snap_to_pixel(track_width, scale_factor);
+        }
+        if let Some(track_height) = model.switch_track_height {
+            scale.track_height = snap_to_pixel(track_height, scale_factor);
+        }
+        if let Some(thumb_size) = model.switch_thumb_size {
+            scale.thumb_size = snap_to_pixel(thumb_size, scale_factor);
+        }
         let track_length = snap_to_pixel(scale.track_width + model.switch_track_width_extra, scale_factor);
         let (track_width, track_height) = match model.switch_orientation {
             SwitchOrientation::Horizontal => (track_length, scale.track_height),

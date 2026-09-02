@@ -91,7 +91,8 @@ impl LumaStudioApp {
         let mut mode_toggle = look
             .content_only_switch("mode-toggle")
             .with_data(matches!(mode, ThemeMode::Dark))
-            .size(ControlSize::Sm);
+            .size(ControlSize::Sm)
+            .fixed_geometry(px(32.0), px(17.0), px(14.0));
         mode_toggle.set_presenter(Arc::new(|_, _| div().into_any_element()));
         let mode_toggle = mode_toggle.spawn(cx);
         for (button, icon) in [(&sidebar_toggle, LucideIcon::PanelLeft), (&reset_theme_button, LucideIcon::RefreshCcw)]

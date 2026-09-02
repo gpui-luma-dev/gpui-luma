@@ -19,12 +19,19 @@ pub struct SwitchScale {
 impl SwitchScale {
     pub fn compute(size: ControlSize, metrics: &MetricTokens, scale_factor: f32) -> Self {
         let control_height = metrics.control_height(size);
+        // Keep the switch cross-axis aligned with checkbox/radio indicators while
+        // preserving a longer movement axis for the thumb.
+        let (track_length_ratio, track_thickness_ratio, thumb_ratio) = match size {
+            ControlSize::Sm => (32.0 / 28.0, 13.0 / 28.0, 9.0 / 28.0),
+            ControlSize::Md => (40.0 / 36.0, 18.0 / 36.0, 14.0 / 36.0),
+            ControlSize::Lg => (48.0 / 44.0, 24.0 / 44.0, 20.0 / 44.0),
+        };
 
         Self {
-            track_width: snap_to_pixel(control_height * (42.0 / 36.0), scale_factor),
-            track_height: snap_to_pixel(control_height * (22.0 / 36.0), scale_factor),
-            track_padding: snap_to_pixel((control_height * (2.0 / 36.0)).max(1.0), scale_factor),
-            thumb_size: snap_to_pixel(control_height * 0.5, scale_factor),
+            track_width: snap_to_pixel(control_height * track_length_ratio, scale_factor),
+            track_height: snap_to_pixel(control_height * track_thickness_ratio, scale_factor),
+            track_padding: snap_to_pixel(2.0, scale_factor),
+            thumb_size: snap_to_pixel(control_height * thumb_ratio, scale_factor),
             track_radius: metrics.radius.pill,
             gap: snap_to_pixel(metrics.gap(size), scale_factor),
             label_baseline_shift: label_baseline_shift(size),

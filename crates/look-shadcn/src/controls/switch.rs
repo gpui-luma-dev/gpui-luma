@@ -105,7 +105,7 @@ pub fn switch_scale_with_radius(
     };
     let resolved = resolve_switch_metrics(rule);
     let track_height = snap_to_pixel(resolved.height, scale_factor);
-    let track_padding = snap_to_pixel((resolved.height * (2.0 / 22.0)).max(1.0), scale_factor);
+    let track_padding = snap_to_pixel(2.0, scale_factor);
     let scale = SwitchScale {
         track_width: snap_to_pixel(resolved.width, scale_factor),
         track_height,

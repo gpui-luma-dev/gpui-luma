@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use gpui::{
     AnyElement, App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
-    Render, SharedString, Subscription, Window, div,
+    Pixels, Render, SharedString, Subscription, Window, div,
 };
 
 use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
@@ -281,6 +281,20 @@ impl SwitchBuilder {
     /// Adds extra width to a horizontal switch track for interior content such as ON/OFF labels.
     pub fn track_width_extra(self, extra_width: f32) -> Self {
         self.track_length_extra(extra_width)
+    }
+
+    /// Sets fixed logical-pixel geometry for a special-purpose switch composition.
+    /// Semantic switch sizes remain the preferred API for ordinary controls.
+    pub fn fixed_geometry(
+        mut self,
+        track_length: impl Into<Pixels>,
+        track_thickness: impl Into<Pixels>,
+        thumb_size: impl Into<Pixels>,
+    ) -> Self {
+        self.button.model.switch_track_width = Some(f32::from(track_length.into()).max(0.0));
+        self.button.model.switch_track_height = Some(f32::from(track_thickness.into()).max(0.0));
+        self.button.model.switch_thumb_size = Some(f32::from(thumb_size.into()).max(0.0));
+        self
     }
 
     /// Renders content inside the switch track behind the thumb.
