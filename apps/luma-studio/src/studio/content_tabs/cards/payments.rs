@@ -54,14 +54,15 @@ impl PaymentsPanel {
         let payments = sample_payments();
         let row_checkboxes = Arc::new(spawn_row_checkboxes(look.clone(), payments.len(), cx));
         let row_menus = Arc::new(spawn_row_menus(look.clone(), payments.len(), cx));
+        let list_size = ControlSize::Sm;
         let list_view = look
             .list_view("studio-payments")
             .items(payments)
             .multiple()
             .select_on_row_click(false)
-            .size(size)
+            .size(list_size)
             .visible_rows(PAYMENTS_VISIBLE_ROWS)
-            .visible_row_height(payments_row_height(size))
+            .visible_row_height(payments_row_height(list_size))
             .paged(PAYMENTS_PAGE_SIZE)
             .row_label(|row| row.email.clone())
             .grid_view(payment_columns(Arc::clone(&row_checkboxes), Arc::clone(&row_menus)))
@@ -190,7 +191,7 @@ fn spawn_row_checkboxes(look: Arc<ShadcnLook>, row_count: usize, cx: &mut Contex
         .map(|index| {
             look.primary_checkbox(format!("studio-payments-row-{index}"))
                 .with_data(false)
-                .size(ControlSize::Md)
+                .size(ControlSize::Sm)
                 .indicator_only()
                 .tab_stop(false)
                 .spawn(cx)
@@ -225,11 +226,28 @@ fn payment_columns(
 ) -> Vec<ListViewColumn<PaymentRow>> {
     vec![
         ListViewColumn::fixed_control("", 48.0, selection_checkbox_column(row_checkboxes)),
-        column_text!("Status", width = 108 => |row: &PaymentRow| row.status),
+        ListViewColumn::fixed_control("Status", 72.0, |row: &PaymentRow| status_icon_cell(row.status)),
         column_text!("Email" => |row: &PaymentRow| row.email.clone()),
         column_numeric!("Amount", width = 96 => |row: &PaymentRow| row.amount.clone()),
         ListViewColumn::fixed_control("", 40.0, row_menu_column(row_menus)),
     ]
+}
+
+fn status_icon_cell(status: &'static str) -> impl IntoElement {
+    let (icon, color) = match status {
+        "Success" => (LucideIcon::CircleCheck, gpui::hsla(0.35, 0.7, 0.45, 1.0)),
+        "Failed" => (LucideIcon::CircleX, gpui::hsla(0.0, 0.7, 0.55, 1.0)),
+        "Processing" => (LucideIcon::LoaderCircle, gpui::hsla(0.58, 0.75, 0.5, 1.0)),
+        _ => (LucideIcon::Circle, gpui::hsla(0.0, 0.0, 0.55, 1.0)),
+    };
+
+    div()
+        .w_full()
+        .h_full()
+        .flex()
+        .items_center()
+        .justify_center()
+        .child(gpui_luma::controls::icon::lucide_icon(icon, color, 16.0))
 }
 
 fn selection_checkbox_column(row_checkboxes: Arc<Vec<Checkbox>>) -> ListViewColumnCellTemplate<PaymentRow> {

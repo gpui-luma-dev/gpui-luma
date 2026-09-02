@@ -612,6 +612,11 @@ where
         if let Some(fill_height) = self.fill_row_height {
             look.min_height = fill_height;
         }
+        if !self.model.columns.is_empty() {
+            // Grid column slots own their horizontal alignment and padding. Keep the
+            // body grid on the same column geometry as the header grid.
+            look.padding_x = 0.0;
+        }
 
         let row_model = ListViewRowRenderModel {
             list_id: &self.model.id,
