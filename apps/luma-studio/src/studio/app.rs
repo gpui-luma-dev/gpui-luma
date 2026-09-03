@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter, HasPresenter};
-use luma::controls::command::icon_button::IconButton;
+use luma::controls::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter, HasPresenter};
+use luma::controls::icon_button::IconButton;
 use luma::controls::button_family::ButtonFamilyRole;
 use luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
 use luma::controls::switch::{Switch, SwitchData, SwitchEvent};
@@ -608,7 +608,7 @@ fn mode_switch_thumb_content(
             .flex()
             .items_center()
             .justify_center()
-            .child(luma::controls::icon::lucide_icon(icon, color, 13.0))
+            .child(luma::infra::icon::lucide_icon(icon, color, 13.0))
             .into_any_element()
     }
 }
@@ -616,7 +616,7 @@ fn mode_switch_thumb_content(
 fn titlebar_icon_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(lucide) => {
-            div().child(luma::controls::icon::lucide_icon(*lucide, color, 14.0)).into_any_element()
+            div().child(luma::infra::icon::lucide_icon(*lucide, color, 14.0)).into_any_element()
         }
         ControlIcon::SvgPath(path) => {
             gpui::svg().size(px(14.0)).text_color(color).path(path.clone()).into_any_element()

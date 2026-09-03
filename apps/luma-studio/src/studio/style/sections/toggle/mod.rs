@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
 use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
 use luma::controls::toggle::ToggleData;
-use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::tabs::TabsNavigation;
 use luma::theme::InteractionState;
 use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
@@ -240,7 +240,7 @@ fn render_toggle_size_radius_cell(
         radius_label_id(radius),
         if icon_only { "icon" } else { "text" }
     ));
-    let content: luma::controls::command::button::ControlPresenter<ButtonRenderModel<ToggleData>> = if icon_only {
+    let content: luma::controls::button::ControlPresenter<ButtonRenderModel<ToggleData>> = if icon_only {
         Arc::new(move |model, _| {
             let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
             render_lucide_icon(
@@ -303,7 +303,7 @@ fn render_toggle_state_sample(
         if icon_only { "icon" } else { "text" },
         sample.id
     ));
-    let content: luma::controls::command::button::ControlPresenter<ButtonRenderModel<ToggleData>> = if icon_only {
+    let content: luma::controls::button::ControlPresenter<ButtonRenderModel<ToggleData>> = if icon_only {
         Arc::new(move |model, _| round_icon_glyph(model, selected))
     } else {
         let label = SharedString::from("Toggle");
@@ -340,7 +340,7 @@ fn render_toggle_state_sample(
 fn toggle_icon_look_for_style(
     theme: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> luma::controls::command::button::ButtonLookSource<ToggleData> {
+) -> luma::controls::button::ButtonLookSource<ToggleData> {
     Arc::new(move |model| {
         let tokens = theme.mode_tokens();
         luma_look_shadcn::paint::toggle_icon_look_semantic(
@@ -361,7 +361,7 @@ fn toggle_icon_look_for_semantic(
     size: ButtonSize,
     radius: ButtonRadiusPreset,
     selected: bool,
-) -> luma::controls::command::button::ButtonLookSource<ToggleData> {
+) -> luma::controls::button::ButtonLookSource<ToggleData> {
     Arc::new(move |model| {
         let tokens = theme.mode_tokens();
         luma_look_shadcn::paint::toggle_icon_look_semantic(
@@ -382,7 +382,7 @@ fn toggle_look_for_semantic(
     size: ButtonSize,
     radius: ButtonRadiusPreset,
     selected: bool,
-) -> luma::controls::command::button::ButtonLookSource<ToggleData> {
+) -> luma::controls::button::ButtonLookSource<ToggleData> {
     Arc::new(move |model| {
         let tokens = theme.mode_tokens();
         luma_look_shadcn::paint::toggle_look_semantic(
@@ -406,7 +406,7 @@ fn button_preview_look(
 fn toggle_button_look_for_style(
     theme: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> luma::controls::command::button::ButtonLookSource<ToggleData> {
+) -> luma::controls::button::ButtonLookSource<ToggleData> {
     Arc::new(move |model| {
         let role = ButtonFamilyRole::Toggle { selected: model.data.selected };
         match style {

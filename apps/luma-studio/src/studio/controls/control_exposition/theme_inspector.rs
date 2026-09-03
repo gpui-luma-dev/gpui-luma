@@ -8,7 +8,7 @@ use gpui::prelude::*;
 use luma::controls::accordion::{
     AccordionContent, AccordionControl, AccordionItem, AccordionSelectionMode, AccordionTrigger,
 };
-use luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem};
+use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem};
 use luma::theme::ThemeMode;
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt};
 
@@ -97,7 +97,7 @@ impl ThemeInspector {
         } else {
             let active_part_id = default_active_part_id(&applicable, spec);
             let tabs = look
-                .tabs_navigation(format!("{}-part-tabs", spec.id_prefix))
+                .tabs(format!("{}-part-tabs", spec.id_prefix))
                 .items(part_tab_items(&applicable))
                 .active(active_part_id.as_ref())
                 .spawn(cx);
@@ -277,7 +277,7 @@ impl ThemeInspector {
         } else {
             let tabs = self
                 .look
-                .tabs_navigation(format!("{}-part-tabs", self.spec.id_prefix))
+                .tabs(format!("{}-part-tabs", self.spec.id_prefix))
                 .items(part_tab_items(&applicable))
                 .active(active_part_id.as_ref())
                 .spawn(cx);
@@ -549,7 +549,7 @@ fn spawn_variant_tabs(
     };
 
     let tabs = look
-        .tabs_navigation(format!("{}-{}-variant-tabs", spec.id_prefix, part_id))
+        .tabs(format!("{}-{}-variant-tabs", spec.id_prefix, part_id))
         .items(variant_tab_items(variants))
         .active(active_variant_id)
         .spawn(cx);
@@ -918,7 +918,7 @@ impl LayoutSizeInspector {
             .unwrap_or_else(|| SharedString::from(spec.default_size_id));
 
         let size_tabs = look
-            .tabs_navigation(format!("{}-{}-{}-size-tabs", spec.id_prefix, part_id, variant_id))
+            .tabs(format!("{}-{}-{}-size-tabs", spec.id_prefix, part_id, variant_id))
             .items(size_tab_items(spec))
             .active(active_size_id.as_ref())
             .spawn(cx);
@@ -987,7 +987,7 @@ impl ColorValueInspector {
             .unwrap_or_else(|| SharedString::from(spec.default_value_id));
 
         let value_tabs = look
-            .tabs_navigation(format!("{}-{}-{}-value-tabs", spec.id_prefix, part_id, variant_id))
+            .tabs(format!("{}-{}-{}-value-tabs", spec.id_prefix, part_id, variant_id))
             .items(value_tab_items(spec))
             .active(active_value_id.as_ref())
             .spawn(cx);

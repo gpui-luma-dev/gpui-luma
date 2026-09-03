@@ -140,8 +140,8 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         label: "AutocompleteTextField",
         parts: &[
             part("textbox fill", "background", &["default"], &["TextFieldLook.background"]),
-            part("status", "primary", &["default"], &["AutocompleteTextBoxLook.status_color"]),
-            part("muted text", "muted-foreground", &["default"], &["AutocompleteTextBoxLook.muted_text_color"]),
+            part("status", "primary", &["default"], &["AutocompleteLook.status_color"]),
+            part("muted text", "muted-foreground", &["default"], &["AutocompleteLook.muted_text_color"]),
             part("panel surface", "popover", &["open"], &["FloatingMenuLook.background"]),
         ],
     },

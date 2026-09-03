@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{Context, FontWeight, IntoElement, Render, Window, div, prelude::*};
 use luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use luma::controls::presenter::HasPresenter;
+use luma::infra::presenter::HasPresenter;
 use luma::controls::progress::Progress;
 use luma::controls::slider::{Slider, SliderEvent};
 use luma::controls::switch::{Switch, SwitchEvent};

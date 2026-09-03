@@ -11,7 +11,7 @@ use luma::controls::textfield::{TextField, TextFieldEvent};
 use luma::{GridTrack, grid_layout, hstack, vstack};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
-use super::colors::token_field_look_override_arc;
+use super::colors::sync_token_field_template;
 use super::super::model::{METRIC_FIELD_WIDTH, OTHER_CATEGORIES, SHADOW_COLOR_FIELD_WIDTH, SHADOW_SECTION_GAP};
 use super::super::parsing::{
     effective_radius_rem, effective_spacing_rem, format_metric_rem, format_palette_hsl_multiplier,
@@ -525,16 +525,10 @@ impl OtherPanel {
 
     fn sync_templates(&self, theme: &Arc<ShadcnLook>, cx: &mut Context<Self>) {
         for field in [&self.palette_hue_field, &self.palette_saturation_field, &self.palette_lightness_field] {
-            field.update(cx, |field, cx| {
-                field.set_template(theme.textfield_template(), cx);
-                field.set_look_override(Some(token_field_look_override_arc(theme)), cx);
-            });
+            sync_token_field_template(theme, field, cx);
         }
         for field in [&self.radius_field, &self.spacing_field] {
-            field.update(cx, |field, cx| {
-                field.set_template(theme.textfield_template(), cx);
-                field.set_look_override(Some(token_field_look_override_arc(theme)), cx);
-            });
+            sync_token_field_template(theme, field, cx);
         }
         for field in [
             &self.shadow_color_field,
@@ -544,10 +538,7 @@ impl OtherPanel {
             &self.shadow_offset_x_field,
             &self.shadow_offset_y_field,
         ] {
-            field.update(cx, |field, cx| {
-                field.set_template(theme.textfield_template(), cx);
-                field.set_look_override(Some(token_field_look_override_arc(theme)), cx);
-            });
+            sync_token_field_template(theme, field, cx);
         }
         for slider in [
             &self.palette_hue_slider,

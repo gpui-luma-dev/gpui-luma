@@ -193,6 +193,6 @@ fn render_catalog_item<M: 'static>(
 fn render_category_icon(icon: lucide_svg_static::Icon, color: gpui::Hsla) -> AnyElement {
     div()
         .flex_shrink_0()
-        .child(luma::controls::icon::lucide_icon(icon, color, CATEGORY_ICON_SIZE))
+        .child(luma::infra::icon::lucide_icon(icon, color, CATEGORY_ICON_SIZE))
         .into_any_element()
 }

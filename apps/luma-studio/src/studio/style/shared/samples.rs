@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{SharedString, div, prelude::*};
-use luma::controls::command::button::ButtonRenderModel;
+use luma::controls::button::ButtonRenderModel;
 use luma::theme::InteractionState;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -38,7 +38,7 @@ impl ButtonTemplateVariant {
         matches!(self, Self::IconButton)
     }
 
-    pub(crate) fn content(self) -> luma::controls::command::button::ControlPresenter<ButtonRenderModel<()>> {
+    pub(crate) fn content(self) -> luma::controls::button::ControlPresenter<ButtonRenderModel<()>> {
         let label = SharedString::from("Button");
         match self {
             Self::TextButton => Arc::new(move |_, _| div().child(label.clone()).into_any_element()),

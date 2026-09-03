@@ -3,7 +3,7 @@ mod model;
 mod template;
 
 pub use control::{Button, ButtonEvent};
-pub use crate::controls::template::{ControlTemplate, Modifier, TemplateWithModifiers};
+pub use crate::infra::template::{ControlTemplate, Modifier, TemplateWithModifiers};
 pub use model::{
     ButtonLookSource, ButtonBuilder, ButtonModel, ButtonRenderModel, ControlPresenter, HasPresenter, ControlIcon,
 };

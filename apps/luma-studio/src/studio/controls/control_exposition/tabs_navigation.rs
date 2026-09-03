@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
+use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;
 
@@ -95,9 +95,9 @@ impl TabsNavigationControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("tabs-navigation").expect("tabs-navigation catalog entry");
 
-        let tabs = look.tabs_navigation("controls-doc-tabs").items(project_tabs()).active("activity").spawn(cx);
+        let tabs = look.tabs("controls-doc-tabs").items(project_tabs()).active("activity").spawn(cx);
         let uniform_tabs = look
-            .tabs_navigation("controls-doc-tabs-uniform")
+            .tabs("controls-doc-tabs-uniform")
             .items(uniform_width_tabs())
             .active("recent-activity")
             .width_mode(TabsNavigationWidthMode::Uniform)

@@ -7,7 +7,7 @@ use gpui::{
     ScrollWheelEvent, Window, div, point, prelude::*, px,
 };
 use luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
-use luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
+use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
 use luma::controls::color::style::ElementExt;
 use luma::{declare_form};
 use luma_look_shadcn::prelude::*;
@@ -261,7 +261,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-buttons-preview-tabs")
+            .tabs("luma-studio-buttons-preview-tabs")
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
@@ -296,7 +296,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-icon-buttons-preview-tabs")
+            .tabs("luma-studio-icon-buttons-preview-tabs")
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
@@ -331,7 +331,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-toggles-preview-tabs")
+            .tabs("luma-studio-toggles-preview-tabs")
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
@@ -361,7 +361,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-checkbox-preview-tabs")
+            .tabs("luma-studio-checkbox-preview-tabs")
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
@@ -392,7 +392,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-radio-preview-tabs")
+            .tabs("luma-studio-radio-preview-tabs")
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
@@ -423,7 +423,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-switch-preview-tabs")
+            .tabs("luma-studio-switch-preview-tabs")
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
@@ -477,7 +477,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-menus-preview-tabs")
+            .tabs("luma-studio-menus-preview-tabs")
             .items([
                 TabsNavigationItem::new("menu-trigger").label("Menu Trigger"),
                 TabsNavigationItem::new("trigger-sizes").label("Trigger Sizes"),
@@ -536,7 +536,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-textarea-style-preview-tabs")
+            .tabs("luma-studio-textarea-style-preview-tabs")
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("textarea-shadows").label("Shadows"),
@@ -566,7 +566,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-selectors-preview-tabs")
+            .tabs("luma-studio-selectors-preview-tabs")
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
@@ -593,7 +593,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-scrollbar-preview-tabs")
+            .tabs("luma-studio-scrollbar-preview-tabs")
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
@@ -620,7 +620,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-textfield-preview-tabs")
+            .tabs("luma-studio-textfield-preview-tabs")
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
@@ -651,7 +651,7 @@ impl StyleGuidePanel {
 
         let tabs = self
             .look
-            .tabs_navigation("luma-studio-slider-preview-tabs")
+            .tabs("luma-studio-slider-preview-tabs")
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
@@ -706,7 +706,7 @@ impl StyleGuidePanel {
     fn spawn_template_sizes_tabs(&self, id: &'static str, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
         let tabs = self
             .look
-            .tabs_navigation(id)
+            .tabs(id)
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),

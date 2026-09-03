@@ -5,11 +5,11 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
-use luma::controls::command::icon_button::IconButton;
-use luma::controls::menu_item::MenuItem;
+use luma::controls::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
+use luma::controls::icon_button::IconButton;
+use luma::infra::menu_item::MenuItem;
 use luma::controls::popup_menu::{HasPresenter, PopupMenu, PopupMenuEvent, PopupMenuPlacement};
-use luma::controls::presenter::ControlPresenter;
+use luma::infra::presenter::ControlPresenter;
 use luma::controls::scroll_container::ScrollbarAutoHideActivate;
 use luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
 use luma::theme::ControlSize;
@@ -435,7 +435,7 @@ fn sidebar_toggle_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderM
         match &icon {
             ControlIcon::Lucide(lucide) => div()
                 .text_size(px(16.0))
-                .child(luma::controls::icon::lucide_icon(*lucide, color, 16.0))
+                .child(luma::infra::icon::lucide_icon(*lucide, color, 16.0))
                 .into_any_element(),
             ControlIcon::SvgPath(path) => {
                 gpui::svg().size(px(16.0)).text_color(color).path(path.clone()).into_any_element()

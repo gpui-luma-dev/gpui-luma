@@ -3,9 +3,9 @@ use std::sync::Arc;
 use gpui::{
     AnyElement, Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px, transparent_black,
 };
-use luma::controls::command::button::{ButtonEvent, ButtonRenderModel};
-use luma::controls::command::icon_button::IconButton;
-use luma::controls::presenter::ControlPresenter;
+use luma::controls::button::{ButtonEvent, ButtonRenderModel};
+use luma::controls::icon_button::IconButton;
+use luma::infra::presenter::ControlPresenter;
 use luma::controls::resizable_panels::{
     PanelHideMode, ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation,
     ResizeHandleSize, ResizeHandleVisibility,
@@ -159,7 +159,7 @@ impl InspectorSplitShell {
 fn inspector_toggle_presenter(color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     std::sync::Arc::new(move |_, _| {
         div()
-            .child(luma::controls::icon::lucide_icon(LucideIcon::InspectionPanel, color, 16.0))
+            .child(luma::infra::icon::lucide_icon(LucideIcon::InspectionPanel, color, 16.0))
             .into_any_element()
     })
 }

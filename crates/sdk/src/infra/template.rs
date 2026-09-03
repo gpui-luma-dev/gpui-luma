@@ -51,7 +51,7 @@ where
 /// Usage:
 /// ```rust
 /// # use luma::define_control_template;
-/// # use luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+/// # use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
 /// # use luma::controls::checkbox::{CheckboxData, CheckboxTheme, default_checkbox_theme};
 /// define_control_template!(
 ///     ThemedCheckboxTemplate,
@@ -64,7 +64,7 @@ where
 #[macro_export]
 macro_rules! define_control_template {
     ($name:ident, $theme:ty, $model:ty, $trait:path, $default_theme:expr) => {
-        pub type $name = $crate::controls::template::ControlTemplate<$theme, $model>;
+        pub type $name = $crate::infra::template::ControlTemplate<$theme, $model>;
 
         pub fn default_template() -> std::sync::Arc<dyn $trait> {
             static TEMPLATE: std::sync::OnceLock<std::sync::Arc<dyn $trait>> = std::sync::OnceLock::new();

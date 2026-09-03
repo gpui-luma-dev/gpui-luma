@@ -455,7 +455,7 @@ fn font_item_template_element_with_loaded(
         .child(item.item.label.clone());
     let mut content = div().flex().items_center().justify_between().flex_1().child(label);
     if is_loaded {
-        content = content.child(div().ml_2().child(luma::controls::icon::lucide_icon(
+        content = content.child(div().ml_2().child(luma::infra::icon::lucide_icon(
             LucideIcon::Check,
             gpui::hsla(0.38, 0.65, 0.48, 1.0),
             14.0,

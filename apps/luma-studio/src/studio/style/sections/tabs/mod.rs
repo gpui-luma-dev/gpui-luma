@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Bounds, IntoElement, Pixels, SharedString, Window, div, prelude::*, px};
 use lucide_svg_static::Icon as LucideIcon;
-use luma::controls::tabs_navigation::{
+use luma::controls::tabs::{
     ControlFocusState as TabsControlFocusState, TabsNavigationBoundsHandler, TabsNavigationClickHandler,
     TabsNavigationHoverHandler, TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler,
     TabsNavigationMouseUpHandler, TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate,
@@ -114,7 +114,7 @@ fn render_tabs_navigation_state_sample(
         },
         indicator: None,
         indicator_motion: None,
-        disclosure_icons: &luma::controls::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
+        disclosure_icons: &luma::infra::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
     };
 
     div()

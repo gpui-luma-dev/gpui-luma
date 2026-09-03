@@ -1,7 +1,7 @@
 //! Selection panel — same popover list surface as selector items panel.
 
 use luma::controls::selection_panel::SelectionPanelLook;
-use luma::controls::selector_panel::SelectorItemsPanelLook;
+use luma::controls::selector_list::SelectorItemsPanelLook;
 use luma::theme::{ControlSize, ThemeMode};
 
 use super::selector_items_panel::selector_items_panel_look;

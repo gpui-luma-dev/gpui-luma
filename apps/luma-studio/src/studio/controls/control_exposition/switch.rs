@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::presenter::HasPresenter;
+use luma::infra::presenter::HasPresenter;
 use luma::controls::switch::{Switch, SwitchEvent};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;

@@ -1,0 +1,18 @@
+//! Shared menu renderer and highlight state. Not a spawnable LMTP entity —
+//! `popup_menu` / `context_menu` own the entity and call these templates.
+
+mod model;
+mod template;
+mod theme;
+
+pub use model::{FloatingMenuActivateResult, FloatingMenuState, FloatingMenuStepDirection};
+pub use template::{
+    FloatingMenuClickHandler, FloatingMenuHighlight, FloatingMenuHoverHandler, FloatingMenuRenderModel,
+    FloatingMenuTemplate, FloatingMenuTemplateHandlers, FloatingMenuTemplateModifier, ThemedFloatingMenuTemplate,
+    default_floating_menu_template, floating_menu_template_with_modifier, render_floating_menu,
+    render_floating_menu_with_submenu_hovers_and_icons, render_floating_menu_with_submenu_hovers,
+    render_floating_menu_with_submenu_hovers_and_icons_and_transition, render_floating_menu_with_submenu_presence,
+    render_floating_menu_with_submenu_presence_and_transition, render_floating_menu_with_template,
+};
+pub use theme::{DefaultFloatingMenuTheme, FloatingMenuLook, FloatingMenuTheme, default_floating_menu_theme};
+pub(crate) use theme::default_floating_menu_look;

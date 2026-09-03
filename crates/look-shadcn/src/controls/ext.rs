@@ -9,13 +9,13 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use luma::controls::autocomplete::{self, AutocompleteTextBoxBuilder};
-use luma::controls::button_group::{self, IconGroupBuilder};
+use luma::controls::autocomplete::{self, AutocompleteBuilder};
+use luma::controls::icon_group::{self, IconGroupBuilder};
 use super::card::ShadcnCardBuilder;
 use luma::controls::checkbox::{self, CheckboxBuilder};
 use luma::controls::combobox::{self, ComboBoxBuilder};
-use luma::controls::command::button::{Button, ButtonBuilder, ControlIcon};
-use luma::controls::command::icon_button;
+use luma::controls::button::{Button, ButtonBuilder, ControlIcon};
+use luma::controls::icon_button;
 use luma::controls::control_group::{ControlGroupBuilder, ControlGroupItemLike};
 use luma::controls::list_view::{self, ListViewBuilder};
 use luma::controls::listbox::{self, ListBoxItem};
@@ -44,7 +44,7 @@ use luma::controls::slider::{self, SliderBuilder};
 use luma::controls::switch::{self, SwitchBuilder};
 use luma::controls::accordion::AccordionBuilder;
 use luma::controls::tree_view::TreeViewBuilder;
-use luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationBuilder};
+use luma::controls::tabs::{TabsNavigation, TabsNavigationBuilder};
 use luma::controls::textarea::{self, TextAreaBuilder, ThemedTextAreaTemplate};
 use luma::controls::textfield::{self, TextFieldBuilder, ThemedTextFieldTemplate};
 use luma::controls::toggle::{self, ToggleBuilder};
@@ -129,9 +129,9 @@ pub trait ShadcnLookControlExt {
     fn resizable_panels(&self, id: impl Into<SharedString>) -> ResizablePanelsBuilder;
     fn scrollbar(&self, id: impl Into<SharedString>) -> ScrollbarBuilder;
     fn selector(&self, id: impl Into<SharedString>) -> SelectorBuilder<SelectorItem>;
-    fn tabs_navigation(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder;
-    fn tabs(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder {
-        self.tabs_navigation(id)
+    fn tabs(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder;
+    fn tabs_navigation(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder {
+        self.tabs(id)
     }
     fn accordion(&self, id: impl Into<SharedString>) -> AccordionBuilder;
     fn tree_view<T>(&self, id: impl Into<SharedString>) -> TreeViewBuilder<T>
@@ -154,7 +154,7 @@ pub trait ShadcnLookControlExt {
         &self,
         id: impl Into<SharedString>,
         items: impl IntoIterator<Item = luma::controls::autocomplete::SelectionItem>,
-    ) -> AutocompleteTextBoxBuilder;
+    ) -> AutocompleteBuilder;
     fn combobox(
         &self,
         id: impl Into<SharedString>,
@@ -166,15 +166,9 @@ pub trait ShadcnLookControlExt {
         items: impl IntoIterator<Item = luma::controls::search_selector::SelectionItem>,
     ) -> SearchSelectorBuilder;
 
-    fn button_group<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
-    where
-        T: ControlGroupItemLike + Clone + Send + Sync + 'static;
     fn icon_group<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
     where
-        T: ControlGroupItemLike + Clone + Send + Sync + 'static,
-    {
-        self.button_group(id)
-    }
+        T: ControlGroupItemLike + Clone + Send + Sync + 'static;
     fn icon_toolbar<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static;
@@ -478,7 +472,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         Selector::new(id).template(self.selector_template())
     }
 
-    fn tabs_navigation(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder {
+    fn tabs(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder {
         TabsNavigation::new(id).template(self.tabs_navigation_template())
     }
 
@@ -545,12 +539,12 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         &self,
         id: impl Into<SharedString>,
         items: impl IntoIterator<Item = luma::controls::autocomplete::SelectionItem>,
-    ) -> AutocompleteTextBoxBuilder {
+    ) -> AutocompleteBuilder {
         let theme = Arc::clone(self);
         autocomplete::new(id, items)
             // Editable trigger: Primary textfield elevation (`shadow-xs`), not transparent Input.
             .textfield_template(self.primary_textfield_template())
-            .autocomplete_theme(self.autocomplete_textbox_theme())
+            .autocomplete_theme(self.autocomplete_theme())
             .scrollbar_template(self.scrollbar_template())
             .popup_look_provider(Arc::new(move |size| theme.selector_items_panel_look(size)))
     }
@@ -564,7 +558,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         combobox::new(id, items)
             // Editable trigger: Primary textfield elevation (`shadow-xs`), not transparent Input.
             .textfield_template(self.primary_textfield_template())
-            .autocomplete_theme(self.autocomplete_textbox_theme())
+            .autocomplete_theme(self.autocomplete_theme())
             .scrollbar_template(self.scrollbar_template())
             .popup_look_provider(Arc::new(move |size| theme.selector_items_panel_look(size)))
     }
@@ -578,31 +572,31 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         search_selector::new(id, items)
             // Popup search field stays Input; display trigger uses selector Outline chrome.
             .textfield_template(self.input_textfield_template())
-            .autocomplete_theme(self.autocomplete_textbox_theme())
+            .autocomplete_theme(self.autocomplete_theme())
             .selector_theme(self.selector_theme())
             .scrollbar_template(self.scrollbar_template())
             .popup_look_provider(Arc::new(move |size| theme.selector_items_panel_look(size)))
     }
 
-    fn button_group<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
+    fn icon_group<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static,
     {
-        button_group::new(id).template(self.control_group_template())
+        icon_group::new(id).template(self.control_group_template())
     }
 
     fn icon_toolbar<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static,
     {
-        button_group::icon_toolbar(id, self.control_group_theme())
+        icon_group::icon_toolbar(id, self.control_group_theme())
     }
 
     fn icon_toolbar_multiple<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static,
     {
-        button_group::icon_toolbar_multiple(id, self.control_group_theme())
+        icon_group::icon_toolbar_multiple(id, self.control_group_theme())
     }
 
     fn toolbar(&self, id: impl Into<SharedString>) -> ToolbarBuilder {

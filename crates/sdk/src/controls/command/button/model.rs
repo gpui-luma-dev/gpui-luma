@@ -5,7 +5,7 @@ use gpui::{Context, Entity, IntoElement, SharedString, div, prelude::*};
 
 use super::control::Button;
 use super::template::{ButtonTemplate, modified_button_template};
-pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
+pub use crate::infra::presenter::{ControlPresenter, HasPresenter};
 use crate::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole, ButtonSize};
 use crate::theme::InteractionState;
 use lucide_svg_static::Icon as LucideIcon;

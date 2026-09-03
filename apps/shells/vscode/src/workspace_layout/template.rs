@@ -1,5 +1,5 @@
 use gpui::{Div, IntoElement, Pixels, Stateful, div, prelude::*, px};
-use luma::controls::command::icon_button::IconButton;
+use luma::controls::icon_button::IconButton;
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole};
 
 use crate::layout_config::PanelAlignment;

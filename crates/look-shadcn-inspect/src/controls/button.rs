@@ -9,7 +9,7 @@ use luma_look_shadcn::{
 use luma_look_shadcn::stylesheet::{embedded_stylesheet, find_button_elevation_rule, resolve_stylesheet_shadow_token};
 
 use luma::controls::button_family::ButtonFamilyRole;
-use luma::controls::choice_indicator_layout::shadow_projection_extent;
+use luma::infra::shadow_layout::shadow_projection_extent;
 use luma_look_shadcn::catalog::SpacingField;
 
 pub struct ButtonInspectPalette {

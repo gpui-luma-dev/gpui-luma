@@ -1,0 +1,497 @@
+use std::sync::{Arc, OnceLock};
+
+use gpui::{
+    AnyElement, App, Bounds, Div, DragMoveEvent, FontWeight, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Stateful,
+    TextAlign, TextRun, Window, canvas, div, fill, font, point, px, prelude::*, size, svg,
+};
+
+use super::{TextFieldDrag, TextFieldLook, TextFieldRenderModel, TextFieldState, TextFieldVariant};
+use crate::controls::command::button::ControlIcon;
+use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
+use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+
+const TEXTFIELD_CARET_WIDTH: f32 = 1.5;
+const TEXTFIELD_CARET_HEIGHT_EXTRA: f32 = 2.0;
+const CARET_EDGE_OFFSET: f32 = 0.0;
+const FOCUS_RING_GAP: f32 = 1.0;
+
+fn colored_runs_for_text(text: &str, selection: Option<(usize, usize)>, look: &TextFieldLook) -> Vec<TextRun> {
+    let mut base_font = font(look.font_family.clone());
+    base_font.weight = look.typography.weight;
+    let run = |value: &str, color| TextRun {
+        len: value.len(),
+        font: base_font.clone(),
+        color,
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+
+    let Some((selection_start, selection_end)) = selection else {
+        return vec![run(text, look.foreground)];
+    };
+
+    let mut runs = Vec::new();
+    let mut chunk = String::new();
+    let mut chunk_selected = None::<bool>;
+
+    for (char_ix, ch) in text.chars().enumerate() {
+        let selected = char_ix >= selection_start && char_ix < selection_end;
+        match chunk_selected {
+            None => {
+                chunk_selected = Some(selected);
+                chunk.push(ch);
+            }
+            Some(current) if current == selected => chunk.push(ch),
+            Some(current) => {
+                runs.push(run(
+                    &chunk,
+                    if current {
+                        look.selection_foreground
+                    } else {
+                        look.foreground
+                    },
+                ));
+                chunk.clear();
+                chunk_selected = Some(selected);
+                chunk.push(ch);
+            }
+        }
+    }
+
+    if let Some(selected) = chunk_selected {
+        runs.push(run(
+            &chunk,
+            if selected {
+                look.selection_foreground
+            } else {
+                look.foreground
+            },
+        ));
+    }
+
+    runs
+}
+
+fn char_to_byte_offset(text: &str, char_offset: usize) -> usize {
+    text.chars().take(char_offset).map(char::len_utf8).sum()
+}
+
+pub type TextFieldHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
+pub type TextFieldMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+pub type TextFieldMouseMoveHandler = Box<dyn Fn(&MouseMoveEvent, &mut Window, &mut App) + 'static>;
+pub type TextFieldMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+pub type TextFieldKeyDownHandler = Box<dyn Fn(&gpui::KeyDownEvent, &mut Window, &mut App) + 'static>;
+pub type TextFieldClickHandler = Box<dyn Fn(&gpui::ClickEvent, &mut Window, &mut App) + 'static>;
+pub type TextFieldDragMoveHandler = Box<dyn Fn(&DragMoveEvent<TextFieldDrag>, &mut Window, &mut App) + 'static>;
+
+pub struct TextFieldTemplateHandlers {
+    pub hover: TextFieldHoverHandler,
+    pub mouse_down: TextFieldMouseDownHandler,
+    pub mouse_move: TextFieldMouseMoveHandler,
+    pub mouse_up: TextFieldMouseUpHandler,
+    pub mouse_up_out: TextFieldMouseUpHandler,
+    pub click: TextFieldClickHandler,
+    pub key_down: TextFieldKeyDownHandler,
+    pub drag_move: TextFieldDragMoveHandler,
+}
+
+pub type TextFieldTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &TextFieldRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
+pub trait TextFieldTemplate: Send + Sync {
+    fn resolve_look(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        size: ControlSize,
+    ) -> TextFieldLook {
+        default_textfield_theme().resolve_look(
+            variant,
+            state,
+            enabled,
+            size,
+            &StandardBoxScale::compute(size, &default_textfield_theme().metrics(), 1.0),
+        )
+    }
+
+    fn resolve_look_with_scale(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        size: ControlSize,
+        _scale_factor: f32,
+        _cx: &mut App,
+    ) -> TextFieldLook {
+        self.resolve_look(variant, state, enabled, size)
+    }
+
+    fn render(
+        &self,
+        model: &TextFieldRenderModel<'_>,
+        handlers: TextFieldTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div>;
+}
+
+pub struct ThemedTextFieldTemplate {
+    theme: Arc<dyn TextFieldTheme>,
+    modifiers: Vec<TextFieldTemplateModifier>,
+}
+
+impl ThemedTextFieldTemplate {
+    pub fn new(theme: Arc<dyn TextFieldTheme>) -> Self {
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &TextFieldRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TextFieldRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+}
+
+struct ModifiedTextFieldTemplate {
+    base: Arc<dyn TextFieldTemplate>,
+    modifiers: Vec<TextFieldTemplateModifier>,
+}
+
+impl ModifiedTextFieldTemplate {
+    fn new(base: Arc<dyn TextFieldTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: TextFieldTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TextFieldRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+}
+
+pub fn default_textfield_template() -> Arc<dyn TextFieldTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn TextFieldTemplate>> = OnceLock::new();
+
+    TEMPLATE.get_or_init(|| Arc::new(ThemedTextFieldTemplate::new(default_textfield_theme()))).clone()
+}
+
+pub(super) fn template_with_modifier<F>(template: Arc<dyn TextFieldTemplate>, modifier: F) -> Arc<dyn TextFieldTemplate>
+where
+    F: Fn(Stateful<Div>, &TextFieldRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedTextFieldTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl TextFieldTemplate for ModifiedTextFieldTemplate {
+    fn resolve_look(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        size: ControlSize,
+    ) -> TextFieldLook {
+        self.base.resolve_look(variant, state, enabled, size)
+    }
+
+    fn resolve_look_with_scale(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        size: ControlSize,
+        scale_factor: f32,
+        cx: &mut App,
+    ) -> TextFieldLook {
+        self.base.resolve_look_with_scale(variant, state, enabled, size, scale_factor, cx)
+    }
+
+    fn render(
+        &self,
+        model: &TextFieldRenderModel<'_>,
+        handlers: TextFieldTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, handlers, window, cx);
+        self.apply_modifiers(root, model)
+    }
+}
+
+impl TextFieldTemplate for ThemedTextFieldTemplate {
+    fn resolve_look(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        size: ControlSize,
+    ) -> TextFieldLook {
+        self.theme.resolve_look(
+            variant,
+            state,
+            enabled,
+            size,
+            &StandardBoxScale::compute(size, &self.theme.metrics(), 1.0),
+        )
+    }
+
+    fn resolve_look_with_scale(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        size: ControlSize,
+        scale_factor: f32,
+        cx: &mut App,
+    ) -> TextFieldLook {
+        let scale = cx.use_cached_layout(
+            self.theme.metrics(),
+            LayoutCacheKey { size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(size, metrics, scale_factor),
+        );
+        self.theme.resolve_look(variant, state, enabled, size, &scale)
+    }
+
+    fn render(
+        &self,
+        model: &TextFieldRenderModel<'_>,
+        handlers: TextFieldTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let mut look = model.look.clone();
+        if look.focus_border.is_none() && model.enabled && !model.state.invalid {
+            let scale_factor = window.scale_factor();
+            let scale = cx.use_cached_layout(
+                self.theme.metrics(),
+                LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
+                |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
+            );
+            let base_state = TextFieldState { focused: false, focus_visible: false, ..model.state };
+            let base_look = self.theme.resolve_look(model.variant, base_state, model.enabled, model.size, &scale);
+            let focus_state = TextFieldState { focused: true, focus_visible: true, ..model.state };
+            let focus_look = self.theme.resolve_look(model.variant, focus_state, model.enabled, model.size, &scale);
+            look.border = base_look.border;
+            look.focus_border = Some(focus_look.border);
+        }
+        let show_placeholder = model.value.is_empty() && !model.state.focused;
+        let chars = model.value.chars().collect::<Vec<_>>();
+        let cursor = model.state.cursor.min(chars.len());
+        let selection = model.state.selection_range();
+        let caret_height = look.typography.size + TEXTFIELD_CARET_HEIGHT_EXTRA;
+
+        let mut text_viewport = if show_placeholder {
+            div()
+                .min_w(px(0.0))
+                .flex_1()
+                .flex()
+                .items_center()
+                .overflow_hidden()
+                .text_color(look.placeholder)
+                .text_size(px(look.typography.size))
+                .line_height(px(look.typography.line_height))
+                .font_family(look.font_family.clone())
+                .font_weight(look.typography.weight)
+                .child(
+                    div()
+                        .h(px(caret_height))
+                        .flex()
+                        .items_center()
+                        .text_size(px(look.typography.size))
+                        .line_height(px(look.typography.line_height))
+                        .font_family(look.font_family.clone())
+                        .font_weight(look.typography.weight)
+                        .child(model.placeholder.clone()),
+                )
+        } else {
+            let value = model.value.clone();
+            let horizontal_scroll = model.horizontal_scroll;
+            let enabled = model.enabled;
+            let caret_visible = model.caret_visible;
+            let caret = cursor;
+            let line_height = px(look.typography.line_height);
+            let canvas_look = look.clone();
+
+            div().min_w(px(0.0)).flex_1().h(px(look.typography.line_height)).overflow_hidden().child(
+                canvas(
+                    move |bounds, window, _| {
+                        let line = window.text_system().shape_line(
+                            value.clone(),
+                            px(canvas_look.typography.size),
+                            &colored_runs_for_text(value.as_ref(), selection, &canvas_look),
+                            None,
+                        );
+                        let selection_quad = selection.and_then(|(start, end)| {
+                            let start_x = line.x_for_index(char_to_byte_offset(value.as_ref(), start));
+                            let end_x = line.x_for_index(char_to_byte_offset(value.as_ref(), end));
+                            (end_x > start_x).then(|| {
+                                fill(
+                                    Bounds::from_corners(
+                                        point(bounds.left() + start_x - px(horizontal_scroll), bounds.top()),
+                                        point(bounds.left() + end_x - px(horizontal_scroll), bounds.bottom()),
+                                    ),
+                                    canvas_look.selection_background,
+                                )
+                            })
+                        });
+                        let caret_quad = if enabled && caret_visible && selection.is_none() {
+                            let x = line.x_for_index(char_to_byte_offset(value.as_ref(), caret));
+                            Some(fill(
+                                Bounds::new(
+                                    point(bounds.left() + x - px(horizontal_scroll + CARET_EDGE_OFFSET), bounds.top()),
+                                    size(px(TEXTFIELD_CARET_WIDTH), bounds.size.height),
+                                ),
+                                canvas_look.caret,
+                            ))
+                        } else {
+                            None
+                        };
+                        (line, selection_quad, caret_quad)
+                    },
+                    move |bounds, (line, selection_quad, caret_quad), window, cx| {
+                        if let Some(selection_quad) = selection_quad {
+                            window.paint_quad(selection_quad);
+                        }
+                        line.paint(
+                            point(bounds.left() - px(horizontal_scroll), bounds.top()),
+                            line_height,
+                            TextAlign::Left,
+                            None,
+                            window,
+                            cx,
+                        )
+                        .ok();
+                        if let Some(caret_quad) = caret_quad {
+                            window.paint_quad(caret_quad);
+                        }
+                    },
+                )
+                .size_full(),
+            )
+        };
+
+        if let Some(icon) = model.prefix_icon {
+            text_viewport = div()
+                .min_w(px(0.0))
+                .flex_1()
+                .flex()
+                .items_center()
+                .gap(px(look.gap))
+                .child(render_prefix_icon(icon, look.icon, look.icon_size))
+                .child(text_viewport);
+        }
+
+        // Always fill the focus-ring root so a stretched ring cannot leave a content-sized
+        // entry box centered inside it (e.g. fixed-width hosts without full_width).
+        let focused = model.state.focused && model.state.focus_visible && model.enabled;
+        let focus_border = look.focus_border.unwrap_or(look.border);
+        let focus_extent = if look.focus_border.is_some() {
+            FOCUS_RING_GAP + look.border_width.max(0.0)
+        } else {
+            0.0
+        };
+
+        let mut control = div()
+            .id(format!("{}-control", model.id))
+            .relative()
+            .w_full()
+            .min_w(px(0.0))
+            .h(px(look.min_height))
+            .flex()
+            .items_center()
+            .px(px(look.padding_x))
+            .py(px(look.padding_y))
+            .bg(look.background)
+            .border(px(look.border_width))
+            .border_color(look.border)
+            .rounded(px(look.radius))
+            .text_size(px(look.typography.size))
+            .line_height(px(look.typography.line_height))
+            .font_family(look.font_family.clone())
+            .font_weight(look.typography.weight)
+            .when(model.enabled, |root| root.cursor_text())
+            .when(!model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
+            .child(text_viewport);
+
+        if model.enabled
+            && let Some(shadows) = look.shadow.as_ref().filter(|shadows| !shadows.is_empty())
+        {
+            control = control.shadow(shadows.clone());
+        }
+
+        let adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
+        let mut root = div().id(model.id.clone()).relative();
+        if focus_extent > 0.0 {
+            root = root.p(px(focus_extent)).child(adorned);
+        } else {
+            root = root.child(adorned);
+        }
+
+        if model.full_width {
+            root = root.w_full();
+        }
+
+        root = root
+            .on_hover(handlers.hover)
+            .on_mouse_down(gpui::MouseButton::Left, handlers.mouse_down)
+            .on_mouse_move(handlers.mouse_move)
+            .on_mouse_up(gpui::MouseButton::Left, handlers.mouse_up)
+            .on_mouse_up_out(gpui::MouseButton::Left, handlers.mouse_up_out)
+            .on_click(handlers.click)
+            .on_key_down(handlers.key_down)
+            .on_drag(TextFieldDrag::new(model.id.clone()), |drag, _, _, cx| {
+                cx.stop_propagation();
+                cx.new(|_| drag.clone())
+            })
+            .on_drag_move(handlers.drag_move);
+
+        if focused {
+            root = root.child(
+                div()
+                    .absolute()
+                    .top(px(0.0))
+                    .right(px(0.0))
+                    .bottom(px(0.0))
+                    .left(px(0.0))
+                    .border(px(look.border_width))
+                    .border_color(focus_border)
+                    .rounded(px(look.radius + FOCUS_RING_GAP + look.border_width)),
+            );
+        }
+
+        self.apply_modifiers(root, model)
+    }
+}
+
+fn render_prefix_icon(icon: &ControlIcon, color: gpui::Hsla, size: f32) -> AnyElement {
+    match icon {
+        ControlIcon::Lucide(icon) => div()
+            .size(px(size))
+            .flex()
+            .items_center()
+            .justify_center()
+            .font_weight(FontWeight::NORMAL)
+            .text_size(px(size))
+            .line_height(px(size))
+            .text_color(color)
+            .child(crate::infra::icon::lucide_icon(*icon, color, size))
+            .into_any_element(),
+        ControlIcon::SvgPath(path) => svg().size(px(size)).text_color(color).path(path.clone()).into_any_element(),
+    }
+}

@@ -1,6 +1,6 @@
 //! Selector / combobox dropdown panel — same surface as floating menu (`popover` + accent item hover).
 
-use luma::controls::selector_panel::SelectorItemsPanelLook;
+use luma::controls::selector_list::SelectorItemsPanelLook;
 use luma::theme::{ControlSize, ThemeMode};
 
 use super::floating_menu::floating_menu_look;

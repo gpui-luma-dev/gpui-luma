@@ -5,7 +5,7 @@ use gpui::{
     MouseDownEvent, MouseUpEvent, Render, SharedString, Subscription, Window, div, prelude::*,
 };
 
-pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
+pub use crate::infra::presenter::{ControlPresenter, HasPresenter};
 
 use super::{ButtonBuilder, ButtonRenderModel};
 pub use crate::controls::command::{CommandCore, CommandEvent as ButtonEvent};

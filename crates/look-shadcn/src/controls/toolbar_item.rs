@@ -6,8 +6,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Focusable, Pixels, SharedString, div, px, prelude::*};
-use luma::controls::command::button::ControlIcon;
-use luma::controls::menu_item::MenuItem;
+use luma::controls::button::ControlIcon;
+use luma::infra::menu_item::MenuItem;
 use luma::controls::selector::SelectorItem;
 use luma::controls::toolbar::{ToolbarItem, ToolbarItemSource, horizontal_arrow_policy};
 use luma::focus::EscapeFocus;

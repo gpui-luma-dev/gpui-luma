@@ -1,0 +1,380 @@
+use std::sync::Arc;
+
+use gpui::{App, AppContext, Entity, IntoElement, ParentElement, SharedString, Styled};
+
+use super::control::SelectionPanelControl;
+use super::item_template::{
+    SelectionPanelItemRenderModel, SelectionPanelItemTemplate, item_template_with_modifier,
+    make_selection_panel_item_template,
+};
+use super::template::{SelectionPanelRenderModel, template_with_modifier};
+use crate::infra::icon::IconSource;
+use crate::infra::icon::SelectionStatusIcons;
+use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
+
+use crate::controls::selection_panel::template::{SelectionPanelTemplate, default_selection_panel_template};
+use crate::controls::selection_panel::theme::{SelectionPanelLook, default_selection_panel_look};
+use crate::theme::{ControlSize, ThemeTokens};
+
+pub trait SelectionPanelItemLike {
+    fn id(&self) -> &SharedString;
+
+    fn label(&self) -> &SharedString {
+        self.id()
+    }
+
+    fn is_enabled(&self) -> bool {
+        true
+    }
+
+    fn icon(&self) -> Option<&IconSource> {
+        None
+    }
+
+    fn is_selected(&self) -> bool {
+        false
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct SelectionPanelItem {
+    pub(crate) id: SharedString,
+    pub(crate) label: SharedString,
+    pub(crate) icon: Option<IconSource>,
+    pub(crate) enabled: bool,
+    pub(crate) selected: bool,
+}
+
+impl SelectionPanelItem {
+    pub fn new(id: impl Into<SharedString>) -> Self {
+        let id = id.into();
+        Self { label: id.clone(), id, icon: None, enabled: true, selected: false }
+    }
+
+    pub fn label(mut self, label: impl Into<SharedString>) -> Self {
+        self.label = label.into();
+        self
+    }
+
+    pub fn icon(mut self, icon: impl Into<IconSource>) -> Self {
+        self.icon = Some(icon.into());
+        self
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
+    pub fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
+        self
+    }
+
+    pub fn label_text(&self) -> &SharedString {
+        &self.label
+    }
+}
+
+impl SelectionPanelItemLike for SelectionPanelItem {
+    fn id(&self) -> &SharedString {
+        &self.id
+    }
+
+    fn label(&self) -> &SharedString {
+        &self.label
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    fn icon(&self) -> Option<&IconSource> {
+        self.icon.as_ref()
+    }
+
+    fn is_selected(&self) -> bool {
+        self.selected
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SelectionPanelPath {
+    Item(usize),
+}
+
+impl SelectionPanelPath {
+    pub fn is_item(self, index: usize) -> bool {
+        matches!(self, Self::Item(active) if active == index)
+    }
+}
+
+pub type SelectionPanelLookProvider = Arc<dyn Fn(ControlSize) -> SelectionPanelLook + Send + Sync + 'static>;
+
+#[derive(Clone)]
+pub struct SelectionPanelModel<T>
+where
+    T: SelectionPanelItemLike + 'static,
+{
+    pub(crate) id: SharedString,
+    pub(crate) panel_id: SharedString,
+    pub(crate) items: Vec<T>,
+    pub(crate) visible_indices: Vec<usize>,
+    pub(crate) selected_source_index: Option<usize>,
+    pub(crate) open: bool,
+    pub(crate) enabled: bool,
+    pub(crate) show_selection_marker: bool,
+    pub(crate) icons: SelectionStatusIcons,
+    pub(crate) scrolling: bool,
+    pub(crate) min_visible_rows: usize,
+    pub(crate) max_visible_rows: usize,
+    pub(crate) size: ControlSize,
+    pub(crate) item_template: Option<SelectionPanelItemTemplate<T>>,
+    pub(crate) template: Arc<dyn SelectionPanelTemplate<T>>,
+    pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
+    pub(crate) look_provider: SelectionPanelLookProvider,
+}
+
+pub struct SelectionPanelBuilder<T = SelectionPanelItem>
+where
+    T: SelectionPanelItemLike + 'static,
+{
+    pub(crate) model: SelectionPanelModel<T>,
+    pub(crate) initial_active_visible_index: Option<usize>,
+}
+
+impl<T> SelectionPanelBuilder<T>
+where
+    T: SelectionPanelItemLike + 'static,
+{
+    pub fn new(id: impl Into<SharedString>) -> Self {
+        Self { model: default_selection_panel_model(id), initial_active_visible_index: None }
+    }
+
+    pub fn panel_id(mut self, panel_id: impl Into<SharedString>) -> Self {
+        self.model.panel_id = panel_id.into();
+        self
+    }
+
+    pub fn item(mut self, item: T) -> Self {
+        self.model.items.push(item);
+        self.model.visible_indices = (0..self.model.items.len()).collect();
+        self
+    }
+
+    pub fn items(mut self, items: impl IntoIterator<Item = T>) -> Self {
+        self.model.items = items.into_iter().collect();
+        self.model.visible_indices = (0..self.model.items.len()).collect();
+        self
+    }
+
+    pub fn visible_indices(mut self, visible_indices: impl IntoIterator<Item = usize>) -> Self {
+        self.model.visible_indices = visible_indices.into_iter().collect();
+        self
+    }
+
+    pub fn selected_source_index(mut self, selected_source_index: Option<usize>) -> Self {
+        self.model.selected_source_index = selected_source_index;
+        self
+    }
+
+    pub fn active_visible_index(mut self, active_visible_index: Option<usize>) -> Self {
+        self.initial_active_visible_index = active_visible_index;
+        self
+    }
+
+    pub fn open(mut self, open: bool) -> Self {
+        self.model.open = open;
+        self
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.model.enabled = enabled;
+        self
+    }
+
+    pub fn show_selection_marker(mut self, show_selection_marker: bool) -> Self {
+        self.model.show_selection_marker = show_selection_marker;
+        self
+    }
+
+    pub fn icons(mut self, icons: SelectionStatusIcons) -> Self {
+        self.model.icons = icons;
+        self
+    }
+
+    pub fn scrolling(mut self, scrolling: bool) -> Self {
+        self.model.scrolling = scrolling;
+        self
+    }
+
+    pub fn min_visible_rows(mut self, min_visible_rows: usize) -> Self {
+        self.model.min_visible_rows = min_visible_rows.max(1);
+        if self.model.max_visible_rows < self.model.min_visible_rows {
+            self.model.max_visible_rows = self.model.min_visible_rows;
+        }
+        self
+    }
+
+    pub fn max_visible_rows(mut self, max_visible_rows: usize) -> Self {
+        self.model.max_visible_rows = max_visible_rows.max(1);
+        if self.model.min_visible_rows > self.model.max_visible_rows {
+            self.model.min_visible_rows = self.model.max_visible_rows;
+        }
+        self
+    }
+
+    pub fn visible_row_limits(mut self, min_visible_rows: usize, max_visible_rows: usize) -> Self {
+        self = self.min_visible_rows(min_visible_rows);
+        self.max_visible_rows(max_visible_rows)
+    }
+
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.model.size = size;
+        self
+    }
+
+    pub fn item_template(mut self, item_template: SelectionPanelItemTemplate<T>) -> Self {
+        self.model.item_template = Some(item_template);
+        self
+    }
+
+    pub fn with_item_template<F, E>(mut self, template: F) -> Self
+    where
+        F: for<'a> Fn(&SelectionPanelItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
+        E: IntoElement + 'static,
+    {
+        self.model.item_template = Some(make_selection_panel_item_template(template));
+        self
+    }
+
+    pub fn with_item_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(gpui::AnyElement, &SelectionPanelItemRenderModel<'a, T>, &mut App) -> gpui::AnyElement
+            + Send
+            + Sync
+            + 'static,
+    {
+        let base = self.model.item_template.take().unwrap_or_else(|| {
+            make_selection_panel_item_template(|item: &SelectionPanelItemRenderModel<'_, T>, _cx| {
+                gpui::div().min_w(gpui::px(0.0)).truncate().child(item.item.label().clone())
+            })
+        });
+        self.model.item_template = Some(item_template_with_modifier(base, modifier));
+        self
+    }
+
+    pub fn template(mut self, template: Arc<dyn SelectionPanelTemplate<T>>) -> Self {
+        self.model.template = template;
+        self
+    }
+
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(gpui::Stateful<gpui::Div>, &SelectionPanelRenderModel<'a, T>) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.model.template = template_with_modifier(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
+    pub fn scrollbar_template(mut self, template: Arc<dyn ScrollbarTemplate>) -> Self {
+        self.model.scrollbar_template = template;
+        self
+    }
+
+    pub fn look_provider(mut self, provider: SelectionPanelLookProvider) -> Self {
+        self.model.look_provider = provider;
+        self
+    }
+
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<SelectionPanelControl<T>> {
+        cx.new(|cx| SelectionPanelControl::from_builder(self, cx))
+    }
+}
+
+pub fn new(id: impl Into<SharedString>) -> SelectionPanelBuilder<SelectionPanelItem> {
+    SelectionPanelBuilder::new(id)
+}
+
+pub(crate) fn default_selection_panel_model<T>(id: impl Into<SharedString>) -> SelectionPanelModel<T>
+where
+    T: SelectionPanelItemLike + 'static,
+{
+    let id = id.into();
+
+    SelectionPanelModel {
+        panel_id: format!("{}-panel", id).into(),
+        id,
+        items: Vec::new(),
+        visible_indices: Vec::new(),
+        selected_source_index: None,
+        open: true,
+        enabled: true,
+        show_selection_marker: true,
+        icons: SelectionStatusIcons::default(),
+        scrolling: true,
+        min_visible_rows: 1,
+        max_visible_rows: 7,
+        size: ControlSize::Md,
+        item_template: None,
+        template: default_selection_panel_template(),
+        scrollbar_template: default_scrollbar_template(),
+        look_provider: Arc::new(|size| default_selection_panel_look(&ThemeTokens::default(), size)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_selection_panel_template::<SelectionPanelItem>();
+        let builder = SelectionPanelBuilder::new("selection-panel-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn with_item_template_modifier_creates_template_from_default_content() {
+        let builder = SelectionPanelBuilder::<SelectionPanelItem>::new("selection-panel-test")
+            .with_item_template_modifier(|content, _, _| content);
+
+        assert!(builder.model.item_template.is_some());
+    }
+
+    #[test]
+    fn with_item_template_modifier_wraps_existing_item_template() {
+        let item_template =
+            make_selection_panel_item_template(|_item: &SelectionPanelItemRenderModel<'_, SelectionPanelItem>, _cx| {
+                gpui::div()
+            });
+        let builder = SelectionPanelBuilder::new("selection-panel-test")
+            .item_template(item_template.clone())
+            .with_item_template_modifier(|content, _, _| content);
+
+        assert!(!Arc::ptr_eq(builder.model.item_template.as_ref().unwrap(), &item_template));
+    }
+
+    #[test]
+    fn template_and_item_modifiers_compose_on_builder() {
+        let template = default_selection_panel_template::<SelectionPanelItem>();
+        let item_template =
+            make_selection_panel_item_template(|_item: &SelectionPanelItemRenderModel<'_, SelectionPanelItem>, _cx| {
+                gpui::div()
+            });
+        let builder = SelectionPanelBuilder::new("selection-panel-test")
+            .template(template.clone())
+            .item_template(item_template.clone())
+            .with_template_modifier(|element, _| element)
+            .with_item_template_modifier(|content, _, _| content);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+        assert!(!Arc::ptr_eq(builder.model.item_template.as_ref().unwrap(), &item_template));
+    }
+}

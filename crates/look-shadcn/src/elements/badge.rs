@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{Div, FontWeight, IntoElement, SharedString, div, px, prelude::*};
-use luma::controls::icon::{IconSource, lucide_icon};
+use luma::infra::icon::{IconSource, lucide_icon};
 use luma::theme::{ControlSize, LumaTextStyle};
 
 use crate::look::ShadcnLook;

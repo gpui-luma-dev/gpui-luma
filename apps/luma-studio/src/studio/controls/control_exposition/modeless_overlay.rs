@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Focusable, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use luma::controls::overlay_window::{OverlayWindow, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;

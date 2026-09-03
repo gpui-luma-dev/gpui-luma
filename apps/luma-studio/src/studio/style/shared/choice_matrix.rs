@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
 use luma::controls::button_family::ButtonSize;
-use luma::controls::command::button::ButtonRenderModel;
+use luma::controls::button::ButtonRenderModel;
 use luma::controls::checkbox::CheckboxData;
 use luma::controls::radio_button::RadioButtonData;
 use luma::controls::switch::SwitchData;
-use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::tabs::TabsNavigation;
 use luma::theme::InteractionState;
 use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 
@@ -37,21 +37,15 @@ impl ChoiceTemplateControl {
         }
     }
 
-    pub(crate) fn radio_content(
-        self,
-    ) -> luma::controls::command::button::ControlPresenter<ButtonRenderModel<RadioButtonData>> {
+    pub(crate) fn radio_content(self) -> luma::controls::button::ControlPresenter<ButtonRenderModel<RadioButtonData>> {
         Arc::new(move |_, _| div().into_any_element())
     }
 
-    pub(crate) fn checkbox_content(
-        self,
-    ) -> luma::controls::command::button::ControlPresenter<ButtonRenderModel<CheckboxData>> {
+    pub(crate) fn checkbox_content(self) -> luma::controls::button::ControlPresenter<ButtonRenderModel<CheckboxData>> {
         Arc::new(move |_, _| div().into_any_element())
     }
 
-    pub(crate) fn switch_content(
-        self,
-    ) -> luma::controls::command::button::ControlPresenter<ButtonRenderModel<SwitchData>> {
+    pub(crate) fn switch_content(self) -> luma::controls::button::ControlPresenter<ButtonRenderModel<SwitchData>> {
         Arc::new(move |_, _| div().into_any_element())
     }
 

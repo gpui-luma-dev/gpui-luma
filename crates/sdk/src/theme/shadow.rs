@@ -1,6 +1,6 @@
 use gpui::{BoxShadow, Div, SharedString, Stateful, div, px, prelude::*};
 
-use crate::theme::layout::{ShadowProjectionInsets, snap_to_pixel};
+use crate::theme::scales::{ShadowProjectionInsets, snap_to_pixel};
 
 pub fn shadow_projection_insets(shadows: &[BoxShadow], scale_factor: f32) -> ShadowProjectionInsets {
     shadows.iter().fold(ShadowProjectionInsets::default(), |acc, shadow| {

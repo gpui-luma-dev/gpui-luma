@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use gpui::{AbsoluteLength, AppContext, CornersRefinement, Entity, SharedString};
 
 use crate::controls::slider::{SliderBuilder, SliderControl, SliderThumbSize, new as new_slider};
-use crate::controls::value::{ControlRange, value_from_input};
+use crate::infra::value::{ControlRange, value_from_input};
 use crate::theme::ControlSize;
 
 use super::color_spec::{ColorSpecification, slider_step_for_channel};

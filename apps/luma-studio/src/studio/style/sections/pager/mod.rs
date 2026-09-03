@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::command::button::{Button, ButtonEvent};
+use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::pager::{Pager, PagerEvent, PagerStyle};
-use luma::controls::presenter::HasPresenter;
+use luma::infra::presenter::HasPresenter;
 use luma::{vstack, wrappanel};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnTextSize};

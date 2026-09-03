@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use luma::controls::list_view::ListView;
-use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::tabs::TabsNavigation;
 use luma::theme::ControlSize;
 use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 

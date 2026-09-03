@@ -392,7 +392,7 @@ fn delivery_window_items() -> [DeliveryWindowItem; DELIVERY_OPTION_COUNT] {
 fn delivery_window_card(
     item: &DeliveryWindowItem,
     selected: bool,
-    state: luma::controls::state::CompositeItemState,
+    state: luma::infra::state::CompositeItemState,
     theme: &DeliveryWindowTheme,
 ) -> Div {
     let day = &item.day;

@@ -83,10 +83,7 @@ impl ColorsPanel {
 
     fn sync_templates(&self, theme: &Arc<ShadcnLook>, cx: &mut Context<Self>) {
         for field in self.token_fields.values() {
-            field.update(cx, |field, cx| {
-                field.set_template(theme.textfield_template(), cx);
-                field.set_look_override(Some(token_field_look_override_arc(&self.look)), cx);
-            });
+            sync_token_field_template(theme, field, cx);
         }
     }
 
@@ -253,6 +250,14 @@ pub(super) fn token_field_look_override_arc(theme: &ShadcnLook) -> TextFieldLook
 pub(super) fn apply_token_field_style(theme: &ShadcnLook, builder: TextFieldBuilder) -> TextFieldBuilder {
     let override_fn = token_field_look_override_arc(theme);
     builder.compact().look_override(move |look| override_fn(look))
+}
+
+/// Keep compact token fields on the same Primary template used by `look.textfield()`.
+pub(super) fn sync_token_field_template<T>(theme: &Arc<ShadcnLook>, field: &TextField, cx: &mut Context<T>) {
+    field.update(cx, |field, cx| {
+        field.set_template(theme.primary_textfield_template(), cx);
+        field.set_look_override(Some(token_field_look_override_arc(theme)), cx);
+    });
 }
 
 fn build_token_fields(

@@ -5,6 +5,6 @@ pub(crate) fn render_lucide_icon(icon: LucideIcon, color: Hsla, size: f32) -> An
     div()
         .text_size(px(size))
         .line_height(px(size))
-        .child(luma::controls::icon::lucide_icon(icon, color, size))
+        .child(luma::infra::icon::lucide_icon(icon, color, size))
         .into_any_element()
 }

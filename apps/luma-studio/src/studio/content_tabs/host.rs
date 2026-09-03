@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Bounds, Context, Entity, Focusable, Pixels, Render, Subscription, Window, div, prelude::*, px};
 use luma::controls::popover_button::{PopoverButton, PopoverButtonEvent, PopoverDismissPolicy, PopoverPlacement};
-use luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
+use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
 use luma::theme::ControlSize;
 use luma_look_shadcn::paint::floating_menu_look;
 use luma_look_shadcn::ShadcnLook;
@@ -60,7 +60,7 @@ impl ContentPaneHost {
             .spawn(cx);
         let tabs = board
             .look
-            .tabs_navigation("luma-studio-content-tabs")
+            .tabs("luma-studio-content-tabs")
             .size(ControlSize::Lg)
             .width_mode(TabsNavigationWidthMode::Uniform)
             .template(luma_studio_tabs_navigation_template(board.look.clone(), ControlSize::Lg))

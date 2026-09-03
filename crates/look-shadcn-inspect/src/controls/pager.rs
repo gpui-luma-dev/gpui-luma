@@ -1,8 +1,7 @@
 //! Inspect metadata for `pager`.
 
-use luma::controls::{
-    button_family::ButtonFamilyRole, choice_indicator_layout::shadow_projection_extent, pager::PagerStyle,
-};
+use luma::controls::{button_family::ButtonFamilyRole, pager::PagerStyle};
+use luma::infra::shadow_layout::shadow_projection_extent;
 use luma_look_shadcn::{ColorSource, ResolvedColor, ResolvedMetric, ResolvedTypography, ShadcnLook, TypographySource};
 
 #[derive(Clone, Debug)]

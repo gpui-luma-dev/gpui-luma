@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::autocomplete::{AutocompleteTextBox, AutocompleteTextBoxEvent, SelectionItem};
-use luma::controls::presenter::HasPresenter;
+use luma::controls::autocomplete::{Autocomplete, AutocompleteEvent, SelectionItem};
+use luma::infra::presenter::HasPresenter;
 use luma::controls::toggle::{Toggle, ToggleEvent};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;
@@ -19,7 +19,7 @@ use super::template::render_control_exposition_card;
 pub struct AutocompleteTextFieldControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    preview: AutocompleteTextBox,
+    preview: Autocomplete,
     event_stream: Entity<ControlEventStream>,
     left_pane: Entity<AutocompleteExpositionLeftPane>,
     selection_required: bool,
@@ -32,7 +32,7 @@ pub struct AutocompleteTextFieldControlExposition {
 struct AutocompleteExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    preview: AutocompleteTextBox,
+    preview: Autocomplete,
     event_stream: Entity<ControlEventStream>,
     selection_required_toggle: Toggle,
 }
@@ -106,7 +106,7 @@ impl AutocompleteTextFieldControlExposition {
                 cx,
                 look.clone(),
                 "controls-autocomplete-event-log",
-                "Type in the field and pick items; AutocompleteTextBoxEvent variants appear below.",
+                "Type in the field and pick items; AutocompleteEvent variants appear below.",
             )
         });
         let left_pane = cx.new(|_| AutocompleteExpositionLeftPane {
@@ -130,16 +130,16 @@ impl AutocompleteTextFieldControlExposition {
 
         let subscription = cx.subscribe(&preview, {
             let event_stream = event_stream.clone();
-            move |this, _, event: &AutocompleteTextBoxEvent, cx| {
+            move |this, _, event: &AutocompleteEvent, cx| {
                 let line = format_autocomplete_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
                 });
                 match event {
-                    AutocompleteTextBoxEvent::Select { .. } | AutocompleteTextBoxEvent::Complete { .. } => {
+                    AutocompleteEvent::Select { .. } | AutocompleteEvent::Complete { .. } => {
                         this.has_selection = true;
                     }
-                    AutocompleteTextBoxEvent::Clear => this.has_selection = false,
+                    AutocompleteEvent::Clear => this.has_selection = false,
                     _ => {}
                 }
                 this.sync_required_validation(cx);
@@ -225,25 +225,25 @@ fn autocomplete_demo_items() -> Vec<SelectionItem> {
     ]
 }
 
-fn format_autocomplete_event(event: &AutocompleteTextBoxEvent) -> String {
+fn format_autocomplete_event(event: &AutocompleteEvent) -> String {
     match event {
-        AutocompleteTextBoxEvent::Change { query } => {
-            format!("AutocompleteTextBoxEvent::Change {{ query: \"{query}\" }}")
+        AutocompleteEvent::Change { query } => {
+            format!("AutocompleteEvent::Change {{ query: \"{query}\" }}")
         }
-        AutocompleteTextBoxEvent::Select { item_id, label } => {
-            format!("AutocompleteTextBoxEvent::Select {{ item_id: \"{item_id}\", label: \"{label}\" }}")
+        AutocompleteEvent::Select { item_id, label } => {
+            format!("AutocompleteEvent::Select {{ item_id: \"{item_id}\", label: \"{label}\" }}")
         }
-        AutocompleteTextBoxEvent::Complete { item_id, label } => {
-            format!("AutocompleteTextBoxEvent::Complete {{ item_id: \"{item_id}\", label: \"{label}\" }}")
+        AutocompleteEvent::Complete { item_id, label } => {
+            format!("AutocompleteEvent::Complete {{ item_id: \"{item_id}\", label: \"{label}\" }}")
         }
-        AutocompleteTextBoxEvent::Clear => "AutocompleteTextBoxEvent::Clear".to_string(),
-        AutocompleteTextBoxEvent::OpenChanged { open } => {
-            format!("AutocompleteTextBoxEvent::OpenChanged {{ open: {open} }}")
+        AutocompleteEvent::Clear => "AutocompleteEvent::Clear".to_string(),
+        AutocompleteEvent::OpenChanged { open } => {
+            format!("AutocompleteEvent::OpenChanged {{ open: {open} }}")
         }
-        AutocompleteTextBoxEvent::Dismiss => "AutocompleteTextBoxEvent::Dismiss".to_string(),
-        AutocompleteTextBoxEvent::FocusChanged { focused } => {
-            format!("AutocompleteTextBoxEvent::FocusChanged {{ focused: {focused} }}")
+        AutocompleteEvent::Dismiss => "AutocompleteEvent::Dismiss".to_string(),
+        AutocompleteEvent::FocusChanged { focused } => {
+            format!("AutocompleteEvent::FocusChanged {{ focused: {focused} }}")
         }
-        _ => "AutocompleteTextBoxEvent::(unknown)".to_string(),
+        _ => "AutocompleteEvent::(unknown)".to_string(),
     }
 }

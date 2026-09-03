@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, prelude::*};
-use luma::controls::menu_item::MenuItem;
+use luma::infra::menu_item::MenuItem;
 use luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
 use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;

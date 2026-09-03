@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use luma::controls::presenter::HasPresenter;
-use luma::controls::command::button::Button;
+use luma::infra::presenter::HasPresenter;
+use luma::controls::button::Button;
 use luma::controls::switch::{Switch, SwitchEvent};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;

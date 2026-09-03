@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::command::button::{Button, ButtonEvent};
-use luma::controls::presenter::HasPresenter;
+use luma::controls::button::{Button, ButtonEvent};
+use luma::infra::presenter::HasPresenter;
 use luma::controls::textfield::{TextField, TextFieldEvent};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;

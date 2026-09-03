@@ -3,7 +3,7 @@ pub(crate) mod customization;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
-use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::tabs::TabsNavigation;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::sections::switch::customization::SwitchCustomizationPreview;

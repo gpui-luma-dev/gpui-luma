@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use gpui::prelude::*;
-use luma::controls::autocomplete::AutocompleteTextBoxTheme;
+use luma::controls::autocomplete::AutocompleteTheme;
 use luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme};
 use luma::controls::overlay_window::{
     OverlayWindowLook, OverlayWindowMode, OverlayWindowTemplate, OverlayWindowTheme, ThemedOverlayWindowTemplate,
 };
 use luma::controls::checkbox::{CheckboxData, CheckboxTheme, ThemedCheckboxTemplate};
-use luma::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
+use luma::controls::button::{ButtonTemplate, DefaultButtonTemplate};
 use luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
 use luma::controls::control_group::{
     ControlGroupBuilder, ControlGroupItemLike, ControlGroupItemPalette, ControlGroupTemplate, ControlGroupTheme,
@@ -29,7 +29,7 @@ use luma::controls::stepper::{StepperTheme, ThemedStepperTemplate};
 use luma::controls::radio_button::{RadioButtonData, RadioButtonTheme, ThemedRadioButtonTemplate};
 use luma::controls::scrollbar::{ScrollbarTheme, ThemedScrollbarTemplate};
 use luma::controls::selector::{SelectorTheme, SelectorVisualState, ThemedSelectorTemplate};
-use luma::controls::selector_panel::default_selector_items_template;
+use luma::controls::selector_list::default_selector_items_template;
 use luma::controls::selection_panel::SelectionPanelLookProvider;
 use luma::controls::resizable_panels::ResizablePanelsTheme;
 use luma::controls::split_view::SplitViewTheme;
@@ -40,7 +40,7 @@ use luma::controls::switch::{SwitchData, SwitchTheme, ThemedSwitchTemplate};
 use luma::controls::toggle::{ToggleData, apply_toggle_progress_chrome};
 use luma::controls::accordion::{AccordionTemplate, AccordionTheme, ThemedAccordionTemplate};
 use luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTreeViewTemplate};
-use luma::controls::tabs_navigation::{TabsNavigationTemplate, TabsNavigationTheme, ThemedTabsNavigationTemplate};
+use luma::controls::tabs::{TabsNavigationTemplate, TabsNavigationTheme, ThemedTabsNavigationTemplate};
 use luma::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
 use luma::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate};
 use luma::controls::toolbar::{ThemedToolbarTemplate, ToolbarLook, ToolbarTemplate, ToolbarTheme, ToolbarVariant};
@@ -546,12 +546,12 @@ impl TextFieldTheme for ShadcnTextFieldTheme {
     }
 }
 
-struct ShadcnAutocompleteTextBoxTheme {
+struct ShadcnAutocompleteTheme {
     theme: ShadcnLook,
 }
 
-impl AutocompleteTextBoxTheme for ShadcnAutocompleteTextBoxTheme {
-    fn resolve(&self, size: ControlSize) -> luma::controls::autocomplete::AutocompleteTextBoxLook {
+impl AutocompleteTheme for ShadcnAutocompleteTheme {
+    fn resolve(&self, size: ControlSize) -> luma::controls::autocomplete::AutocompleteLook {
         let tokens = self.theme.mode_tokens();
         autocomplete_textbox_look(tokens.as_ref(), self.theme.mode(), size)
     }
@@ -936,8 +936,8 @@ pub fn primary_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::contro
     Arc::new(ThemedTextAreaTemplate::new(primary_textarea_theme(Arc::clone(&theme))))
 }
 
-pub fn autocomplete_textbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn AutocompleteTextBoxTheme> {
-    Arc::new(ShadcnAutocompleteTextBoxTheme { theme: theme.as_ref().clone() })
+pub fn autocomplete_theme(theme: Arc<ShadcnLook>) -> Arc<dyn AutocompleteTheme> {
+    Arc::new(ShadcnAutocompleteTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn selection_panel_look_provider(theme: Arc<ShadcnLook>) -> SelectionPanelLookProvider {
@@ -996,11 +996,7 @@ struct ShadcnTabsNavigationTheme {
 }
 
 impl TabsNavigationTheme for ShadcnTabsNavigationTheme {
-    fn resolve_list(
-        &self,
-        enabled: bool,
-        size: ControlSize,
-    ) -> luma::controls::tabs_navigation::TabsNavigationListLook {
+    fn resolve_list(&self, enabled: bool, size: ControlSize) -> luma::controls::tabs::TabsNavigationListLook {
         let tokens = self.theme.mode_tokens();
         tabs_navigation_list_look(tokens.as_ref(), enabled, size)
     }
@@ -1010,7 +1006,7 @@ impl TabsNavigationTheme for ShadcnTabsNavigationTheme {
         active: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> luma::controls::tabs_navigation::TabsNavigationItemLook {
+    ) -> luma::controls::tabs::TabsNavigationItemLook {
         let tokens = self.theme.mode_tokens();
         tabs_navigation_item_look(tokens.as_ref(), active, state, size)
     }

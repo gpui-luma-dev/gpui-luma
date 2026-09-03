@@ -5,13 +5,13 @@ use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use luma::controls::floating_menu::{
     FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuLook, render_floating_menu,
 };
-use luma::controls::menu_item::MenuItem;
+use luma::infra::menu_item::MenuItem;
 use luma::controls::popup_menu::{
     ControlFocusState as PopupMenuControlFocusState, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate,
     PopupMenuTemplateHandlers, PopupMenuTriggerStyle,
 };
-use luma::controls::state::MenuPath;
-use luma::controls::tabs_navigation::TabsNavigation;
+use luma::infra::state::MenuPath;
+use luma::controls::tabs::TabsNavigation;
 use luma::theme::InteractionState;
 use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
@@ -286,7 +286,7 @@ fn render_menu_trigger_state_cell(
         icon_only: false,
         icon: None,
         end_icon: None,
-        disclosure_icons: &luma::controls::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
+        disclosure_icons: &luma::infra::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
         full_width: false,
         without_elevation: false,
         split: false,
@@ -344,7 +344,7 @@ fn render_menu_trigger_size_radius_cell(
         icon_only: false,
         icon: None,
         end_icon: None,
-        disclosure_icons: &luma::controls::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
+        disclosure_icons: &luma::infra::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
         full_width: false,
         without_elevation: false,
         split: false,

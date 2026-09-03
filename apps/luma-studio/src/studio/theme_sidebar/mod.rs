@@ -9,7 +9,7 @@ use std::sync::{Arc, RwLock};
 
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use luma::controls::search_selector::SearchSelector;
-use luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
+use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
 
 use luma::theme::ControlSize;
 use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
@@ -96,7 +96,7 @@ impl ThemeSidebar {
             .spawn(cx);
 
         let tabs = look
-            .tabs_navigation("luma-studio-sidebar-tabs")
+            .tabs("luma-studio-sidebar-tabs")
             .size(ControlSize::Lg)
             .width_mode(TabsNavigationWidthMode::Uniform)
             .template(luma_studio_tabs_navigation_template(look.clone(), ControlSize::Lg))

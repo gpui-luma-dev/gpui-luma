@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, Render, Subscription, Window, div, prelude::*, px, transparent_black};
-use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use luma::controls::resizable_panels::{
     ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation, ResizeHandleSize,
 };

@@ -1,7 +1,7 @@
 use gpui::{ClickEvent, Context, EventEmitter, MouseDownEvent, MouseUpEvent, Window};
 
 use crate::controls::button_family::ButtonInteractionState;
-use crate::controls::interaction::ControlInteraction;
+use crate::infra::interaction::ControlInteraction;
 use crate::key_handling::ActivateControl;
 
 /// Semantic command event emitted by command-like controls.
@@ -34,11 +34,6 @@ pub struct CommandCore {
 }
 
 impl CommandCore {
-    /// Create a new command behavior core.
-    pub fn new<T>(enabled: bool, cx: &mut Context<T>) -> Self {
-        Self { interaction: ControlInteraction::new(enabled, cx), emitted_focused: false }
-    }
-
     /// Create a new command behavior core with explicit tab-stop participation.
     pub fn new_with_tab_stop<T>(enabled: bool, tab_stop: bool, cx: &mut Context<T>) -> Self {
         Self { interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx), emitted_focused: false }

@@ -5,10 +5,10 @@ use std::time::Instant;
 use gpui::{AppContext, Bounds, Context, Entity, Pixels, RenderImage, Size, Subscription, px, size};
 use luma::controls::color::color_slider::{ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext};
 use luma::controls::color::composition::CompositionSize;
-use luma::controls::command::button::{Button, ButtonEvent};
+use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::selector::{Selector, SelectorEvent};
 use luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy, ThumbId};
-use luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationWidthMode};
+use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationWidthMode};
 use luma::theme::{ControlSize, ThemeMode};
 use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 use lucide_svg_static::Icon as LucideIcon;
@@ -103,7 +103,7 @@ impl GradientBuilder {
         let rotation_slider =
             look.slider("color-viz-gradient-rotation").range(0.0..360.0).step(1.0).value(90.0).spawn(cx);
         let top_tabs = look
-            .tabs_navigation("color-viz-builder-tabs")
+            .tabs("color-viz-builder-tabs")
             .items(builder_tab_items())
             .active("gradients")
             .width_mode(TabsNavigationWidthMode::Uniform)

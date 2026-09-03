@@ -1,6 +1,6 @@
 use gpui::Context;
 use luma::theme::ControlSize;
-use luma::controls::tabs_navigation::TabsNavigationWidthMode;
+use luma::controls::tabs::TabsNavigationWidthMode;
 
 use super::ThemeSidebar;
 use super::theme_selector::theme_selector_state;

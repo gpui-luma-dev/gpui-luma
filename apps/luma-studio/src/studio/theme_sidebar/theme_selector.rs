@@ -5,7 +5,7 @@ use gpui::{
     AnyElement, App, Hsla, MouseButton, Pixels, SharedString, Stateful, Window, anchored, deferred, div, point,
     prelude::*, px, transparent_black,
 };
-use luma::controls::icon::{DisclosureIcons, render_disclosure_icon};
+use luma::infra::icon::{DisclosureIcons, render_disclosure_icon};
 use luma::controls::search_selector::{
     SearchSelectorItemRenderModel, SearchSelectorPanelRenderModel, SearchSelectorPanelTemplate,
     SearchSelectorRenderModel, SearchSelectorTemplate, SearchSelectorTemplateHandlers, SelectionItem,

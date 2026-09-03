@@ -1,60 +1,31 @@
 //! Spawnable control families. Shared seams live in [`crate::infra`] and [`crate::motion`].
 
-pub mod accordion;
-pub mod autocomplete;
+pub(crate) mod command;
 pub mod button;
-pub mod button_family;
-pub mod button_group;
-pub use button_group as icon_group;
-pub mod checkbox;
+pub mod choice;
 pub mod color;
-pub mod combobox;
-pub mod command;
-pub use command::icon_button;
-pub mod context_menu;
-pub mod control_group;
-pub mod dock_splitter;
-pub mod floating_menu;
-pub mod list_view;
-pub mod listbox;
-pub mod overlay_window;
-pub mod pager;
-pub mod popover_button;
-pub mod popup_menu;
-pub mod popup_scroll_surface;
-pub mod progress;
-pub mod radio_button;
-pub mod radio_group;
-pub mod resizable_panels;
-pub mod scroll_container;
-pub use scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
-pub mod scrollbar;
-pub mod search_selector;
-pub mod selection_panel;
-pub mod selector;
-pub mod selector_list;
-pub use selector_list as selector_panel;
-pub mod selector_item_template;
-pub mod sidebar;
-pub mod slide_panel;
-pub mod slider;
-pub mod split_button;
-pub mod split_view;
-pub mod stepper;
-pub mod switch;
-pub mod tabs_navigation;
-pub use tabs_navigation as tabs;
-pub(crate) mod text;
-pub mod textarea;
-pub mod textfield;
-pub mod toggle;
-pub mod toolbar;
-pub mod tree_view;
+pub mod layout;
+pub mod navigation;
+pub mod overlay;
+pub mod range;
+pub mod selection;
+pub mod text;
 
-// Compatibility re-exports — prefer `luma::infra` / `luma::motion`.
-pub use crate::infra::{field_label, icon, menu_item, presenter, rounded_shell, shadow_layout, state, template, value};
-pub use crate::infra::field_label as label;
-pub use crate::infra::shadow_layout as choice_indicator_layout;
-pub(crate) use crate::infra::interaction;
-pub(crate) use crate::infra::menu_navigation;
-pub use crate::motion::{overlay_presence, popup_lifecycle};
+pub use command::icon_button;
+pub use button::family as button_family;
+pub use button::split_button;
+
+pub use choice::{checkbox, control_group, icon_group, listbox, radio_button, radio_group, switch, toggle, toolbar};
+
+pub use text::{textarea, textfield};
+
+pub use overlay::{context_menu, floating_menu, overlay_window, popover_button, popup_menu, slide_panel};
+
+pub use selection::{autocomplete, combobox, list_view, search_selector, selection_panel, selector, selector_list};
+
+pub use navigation::{accordion, pager, sidebar, stepper, tabs, tree_view};
+
+pub use layout::{dock_splitter, popup_scroll_surface, resizable_panels, scroll_container, scrollbar, split_view};
+pub use layout::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
+
+pub use range::{progress, slider};

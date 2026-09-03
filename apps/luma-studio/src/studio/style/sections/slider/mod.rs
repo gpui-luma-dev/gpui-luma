@@ -7,8 +7,8 @@ use luma::controls::slider::{
     SliderInputStrategy, SliderRenderModel, SliderTemplate, SliderThumbPolicy, SliderThumbRole, SliderThumbValue,
     ThumbId, TrackPresentation, build_track_segments,
 };
-use luma::controls::tabs_navigation::TabsNavigation;
-use luma::controls::value::ControlRange;
+use luma::controls::tabs::TabsNavigation;
+use luma::infra::value::ControlRange;
 use luma::theme::{ControlSize, InteractionState};
 use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 

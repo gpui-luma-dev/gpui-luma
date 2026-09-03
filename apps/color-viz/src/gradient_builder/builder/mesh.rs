@@ -1,6 +1,6 @@
 use gpui::{Corners, Pixels, SharedString, Size, div, prelude::*, px, size};
 use luma::controls::selector::SelectorItem;
-use luma::controls::tabs_navigation::TabsNavigationItem;
+use luma::controls::tabs::TabsNavigationItem;
 use luma::theme::LumaTextStyle;
 use luma_look_shadcn::LumaTypographyExt;
 

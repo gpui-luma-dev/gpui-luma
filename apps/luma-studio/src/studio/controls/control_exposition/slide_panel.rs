@@ -6,7 +6,7 @@ use gpui::{
     AnyElement, App, Context, Entity, FocusHandle, Focusable, FontWeight, Hsla, IntoElement, MouseDownEvent,
     MouseUpEvent, Overflow, Render, Subscription, Window, div, prelude::*, px,
 };
-use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use luma::controls::slide_panel::{
     SlidePanelEdge, SlidePanelOverlayHandlers, SlidePanelResizeDrag, SlidePanelResizeHandlers, SlidePanelSizeConfig,
     SlidePanelState, SlidePanelTopAnchor, render_slide_panel_overlay,

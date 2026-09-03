@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FocusHandle, IntoElement, Render, Subscription, Window, px};
-use luma::controls::command::button::ButtonEvent;
-use luma::controls::command::icon_button::IconButton;
+use luma::controls::button::ButtonEvent;
+use luma::controls::icon_button::IconButton;
 use luma::controls::sidebar::SidebarControl;
 use luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
 use luma::theme::ThemeMode;

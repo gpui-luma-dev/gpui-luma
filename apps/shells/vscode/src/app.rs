@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FocusHandle, Focusable, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter};
+use luma::controls::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter};
 use luma::controls::control_group::ControlGroupEvent;
-use luma::controls::command::icon_button::IconButton;
+use luma::controls::icon_button::IconButton;
 use luma::controls::button_family::ButtonFamilyRole;
 use luma::controls::overlay_window::OverlayWindowEvent;
 use luma::controls::resizable_panels::ResizablePanelsEvent;
@@ -457,7 +457,7 @@ fn wire_customize_layout_subscriptions(
 fn titlebar_icon_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(lucide) => {
-            div().child(luma::controls::icon::lucide_icon(*lucide, color, 14.0)).into_any_element()
+            div().child(luma::infra::icon::lucide_icon(*lucide, color, 14.0)).into_any_element()
         }
         ControlIcon::SvgPath(path) => {
             gpui::svg().size(px(14.0)).text_color(color).path(path.clone()).into_any_element()

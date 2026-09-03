@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
 use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, default_button_template};
-use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::button::{ButtonRenderModel, ButtonTemplate, default_button_template};
+use luma::controls::tabs::TabsNavigation;
 use luma::theme::InteractionState;
 use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnShadow};
 

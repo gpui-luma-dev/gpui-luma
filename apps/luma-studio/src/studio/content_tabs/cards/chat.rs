@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use luma::controls::command::button::{Button, ControlIcon};
+use luma::controls::button::{Button, ControlIcon};
 use luma::controls::textfield::TextField;
 use luma_look_shadcn::prelude::*;
 use luma::theme::ControlSize;

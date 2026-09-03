@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{App, Div, Hsla, Stateful, Window, div, prelude::*, px};
 use luma::controls::color::style::ElementExt;
 use luma::controls::control_group::ControlGroupItemHandlerExt;
-use luma::controls::tabs_navigation::{
+use luma::controls::tabs::{
     TabsNavigationIndicatorMotion, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
     TabsNavigationTheme, render_tabs_navigation_item_button, resolve_tabs_navigation_uniform_item_width,
 };

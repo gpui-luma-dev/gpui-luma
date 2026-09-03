@@ -371,6 +371,6 @@ fn render_lucide_icon(icon: LucideIcon, color: Hsla, size: f32) -> AnyElement {
         .justify_center()
         .text_size(px(size))
         .line_height(px(size))
-        .child(crate::controls::icon::lucide_icon(icon, color, size))
+        .child(crate::infra::icon::lucide_icon(icon, color, size))
         .into_any_element()
 }

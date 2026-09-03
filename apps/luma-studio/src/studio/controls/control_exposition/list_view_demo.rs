@@ -76,7 +76,7 @@ pub(super) fn status_cell(status: &'static str) -> impl IntoElement {
         .flex()
         .items_center()
         .gap(px(6.0))
-        .child(div().text_color(color).child(luma::controls::icon::lucide_icon(icon, color, 16.0)))
+        .child(div().text_color(color).child(luma::infra::icon::lucide_icon(icon, color, 16.0)))
         .child(div().flex_1().min_w(px(0.0)).truncate().child(status))
 }
 

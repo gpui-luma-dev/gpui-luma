@@ -5,8 +5,8 @@ use luma::controls::accordion::{
     Accordion, AccordionContent, AccordionItem, AccordionItemRenderModel, AccordionRenderModel, AccordionSelectionMode,
     AccordionTemplate, AccordionTemplateHandlers, AccordionTrigger,
 };
-use luma::controls::state::{CompositeItemState, ControlFocusState};
-use luma::controls::tabs_navigation::TabsNavigation;
+use luma::infra::state::{CompositeItemState, ControlFocusState};
+use luma::controls::tabs::TabsNavigation;
 use luma::theme::ControlSize;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
@@ -203,7 +203,7 @@ fn render_accordion_state_cell(
         content_padding_top: None,
         content_padding_bottom: None,
         trigger_min_height: None,
-        disclosure_icons: &luma::controls::icon::DisclosureIcons::default(),
+        disclosure_icons: &luma::infra::icon::DisclosureIcons::default(),
         trigger_padding_y: None,
         focus,
     };

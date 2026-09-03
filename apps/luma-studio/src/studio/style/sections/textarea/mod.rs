@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, TextR
 use luma::controls::textarea::{
     TextAreaLineMetric, TextAreaRenderModel, TextAreaState, TextAreaTemplate, TextAreaTheme, ThemedTextAreaTemplate,
 };
-use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::tabs::TabsNavigation;
 use luma::theme::{ControlSize, StandardBoxScale};
 use luma_look_shadcn::ShadcnLook;
 

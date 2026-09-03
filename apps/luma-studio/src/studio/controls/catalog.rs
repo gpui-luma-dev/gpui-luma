@@ -36,7 +36,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Split Button (Prototype)",
         description: "Issue #17 prototype for a cohesive command button with a separate menu trigger. The action face executes immediately while the adjacent face opens alternate actions; this Studio surface is validating focus, seams, menu ownership, and event semantics before SDK promotion.",
         category: ControlCategory::Command,
-        snippet: "use luma::controls::menu_item::MenuItem;\nuse luma::controls::split_button::SplitButtonEvent;\n\nlet save = look\n    .primary_split_button(\"save\")\n    .label(\"Save\")\n    .items([\n        MenuItem::new(\"save-as\").label(\"Save as\"),\n        MenuItem::new(\"duplicate\").label(\"Duplicate\"),\n    ])\n    .spawn(cx);\n\ncx.subscribe(&save, |_, _, event: &SplitButtonEvent, _| {\n    match event {\n        SplitButtonEvent::ActionClick => { /* save immediately */ }\n        SplitButtonEvent::Select { item_id, .. } => { let _ = item_id; }\n        _ => {}\n    }\n});",
+        snippet: "use luma::infra::menu_item::MenuItem;\nuse luma::controls::split_button::SplitButtonEvent;\n\nlet save = look\n    .primary_split_button(\"save\")\n    .label(\"Save\")\n    .items([\n        MenuItem::new(\"save-as\").label(\"Save as\"),\n        MenuItem::new(\"duplicate\").label(\"Duplicate\"),\n    ])\n    .spawn(cx);\n\ncx.subscribe(&save, |_, _, event: &SplitButtonEvent, _| {\n    match event {\n        SplitButtonEvent::ActionClick => { /* save immediately */ }\n        SplitButtonEvent::Select { item_id, .. } => { let _ = item_id; }\n        _ => {}\n    }\n});",
         section_order: 101,
     },
     ControlDocEntry {
@@ -108,7 +108,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Toggle Group",
         description: "Icon toggle button clusters for toolbar-style single or multi selection. Uses control_group with toggle_button_item_template and custom pill shell layouts.",
         category: ControlCategory::Choice,
-        snippet: "look\n    .button_group(\"placement\")\n    .items(items)\n    .selected(\"bottom\")\n    .spawn(cx);",
+        snippet: "look\n    .icon_group(\"placement\")\n    .items(items)\n    .selected(\"bottom\")\n    .spawn(cx);",
         section_order: 132,
     },
     ControlDocEntry {
@@ -488,7 +488,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Tabs Navigation",
         description: "Horizontal tab strip with intrinsic or uniform width modes, keyboard roving focus, and template overrides. Emits Activate and Change for tab selection binding.",
         category: ControlCategory::NavigationPanels,
-        snippet: "look.tabs_navigation(\"project\")\n    .items(tabs)\n    .active(\"overview\")\n    .spawn(cx);",
+        snippet: "look.tabs(\"project\")\n    .items(tabs)\n    .active(\"overview\")\n    .spawn(cx);",
         section_order: 313,
     },
     ControlDocEntry {

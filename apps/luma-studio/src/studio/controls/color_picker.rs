@@ -5,7 +5,7 @@ use gpui::{
     px, size,
 };
 use luma::controls::color::{ColorSwatchButtonTemplate, ColorSwatchData};
-use luma::controls::command::button::{Button, ButtonEvent};
+use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use luma::controls::color::color_slider::color_spec::Hsv;
 use luma::controls::color::color_slider::{

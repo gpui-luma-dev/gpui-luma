@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{App, BoxShadow, Div, Hsla, SharedString, Stateful, Window, div, point, prelude::*, px};
 use luma::controls::button_family::{ButtonFamilyLook, button_family_effective_border};
-use luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
 use luma::theme::InteractionState;
 use luma_look_shadcn::ShadcnLook;
 

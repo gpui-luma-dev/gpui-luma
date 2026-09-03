@@ -157,7 +157,7 @@ impl PagingListViewControlExposition {
                         .flex()
                         .items_center()
                         .justify_center()
-                        .child(luma::controls::icon::lucide_icon(
+                        .child(luma::infra::icon::lucide_icon(
                             LucideIcon::EllipsisVertical,
                             gpui::hsla(0.0, 0.0, 0.5, 1.0),
                             16.0,

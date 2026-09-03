@@ -12,7 +12,7 @@ use crate::theme::InteractionState;
 const DISABLED_OPACITY: f32 = 0.56;
 const FOCUS_RING_GAP: f32 = 1.0;
 
-use crate::controls::template::{Modifier, TemplateWithModifiers};
+use crate::infra::template::{Modifier, TemplateWithModifiers};
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 pub type ButtonTemplateModifier<D> = Modifier<ButtonRenderModel<D>>;
@@ -245,7 +245,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         let content = if let Some(icon) = &model.icon {
             match icon {
                 super::model::ControlIcon::Lucide(icon) => {
-                    crate::controls::icon::lucide_icon(*icon, look.foreground, look.icon_size)
+                    crate::infra::icon::lucide_icon(*icon, look.foreground, look.icon_size)
                 }
                 super::model::ControlIcon::SvgPath(path) => gpui::svg()
                     .size(px(look.icon_size))
@@ -274,7 +274,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
 
         control = self.apply_modifiers(control, model);
 
-        if crate::controls::shadow_layout::should_paint_shadow(
+        if crate::infra::shadow_layout::should_paint_shadow(
             model.elevation,
             model.state.disabled,
             look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),

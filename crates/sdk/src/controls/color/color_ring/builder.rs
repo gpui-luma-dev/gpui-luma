@@ -4,7 +4,7 @@ use gpui::{AppContext, Entity, Hsla, SharedString};
 
 use crate::controls::color::style::Size;
 use crate::controls::slider::{SliderBuilder, SliderControl, SliderValueMapping, new as new_slider};
-use crate::controls::value::{ControlRange, value_from_input};
+use crate::infra::value::{ControlRange, value_from_input};
 
 use super::delegates::{HueRingDelegate, LightnessRingDelegate, SaturationRingDelegate};
 use super::domain_renderer::ColorRingDomainRenderer;

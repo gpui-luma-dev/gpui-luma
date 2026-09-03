@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma::controls::search_selector::{SearchSelector, SearchSelectorEvent, SelectionItem};
-use luma::controls::presenter::HasPresenter;
+use luma::infra::presenter::HasPresenter;
 use luma::controls::toggle::{Toggle, ToggleEvent};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;

@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
-use luma::controls::command::icon_button::IconButton;
+use luma::controls::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
+use luma::controls::icon_button::IconButton;
 use luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView};
 use luma::controls::pager::PagerStyle;
-use luma::controls::presenter::ControlPresenter;
+use luma::infra::presenter::ControlPresenter;
 use luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
 use luma::theme::ControlSize;
 use luma::{column, column_emphasis, paging_list_view};
@@ -96,7 +96,7 @@ impl DashboardPanel {
                         .flex()
                         .items_center()
                         .justify_center()
-                        .child(luma::controls::icon::lucide_icon(
+                        .child(luma::infra::icon::lucide_icon(
                             LucideIcon::EllipsisVertical,
                             dashboard_muted_text,
                             16.0,
@@ -255,7 +255,7 @@ impl Render for DashboardPanel {
 fn sidebar_toggle_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(lucide) => {
-            div().child(luma::controls::icon::lucide_icon(*lucide, color, 16.0)).into_any_element()
+            div().child(luma::infra::icon::lucide_icon(*lucide, color, 16.0)).into_any_element()
         }
         ControlIcon::SvgPath(path) => {
             gpui::svg().size(px(16.0)).text_color(color).path(path.clone()).into_any_element()

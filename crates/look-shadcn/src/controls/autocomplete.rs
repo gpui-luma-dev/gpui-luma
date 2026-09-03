@@ -1,6 +1,6 @@
 //! Autocomplete / combobox chrome — textfield + floating menu tokens.
 
-use luma::controls::autocomplete::AutocompleteTextBoxLook;
+use luma::controls::autocomplete::AutocompleteLook;
 use luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
@@ -57,13 +57,13 @@ pub fn autocomplete_textbox_look(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     size: ControlSize,
-) -> AutocompleteTextBoxLook {
+) -> AutocompleteLook {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "autocomplete_chrome");
     let colors = resolve_autocomplete_chrome_colors(&resolver, true)
         .unwrap_or_else(|_| AutocompleteChromeColorTable::fallback());
 
-    AutocompleteTextBoxLook {
+    AutocompleteLook {
         status_color: colors.status_color.hsla(),
         muted_text_color: colors.muted_text_color.hsla(),
         clear_icon_color: colors.clear_icon_color.hsla(),

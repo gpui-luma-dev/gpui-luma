@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use gpui::{AppContext, Entity, Hsla, SharedString};
 
 use crate::controls::slider::{SliderBuilder, SliderControl, SliderInputStrategy, new as new_slider};
-use crate::controls::value::{ControlRange, value_from_input};
+use crate::infra::value::{ControlRange, value_from_input};
 use crate::controls::color::style::Size;
 
 use super::delegates::{HueArcDelegate, LightnessArcDelegate, SaturationArcDelegate};

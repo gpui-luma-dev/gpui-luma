@@ -4,8 +4,8 @@ use gpui::{
     AnyElement, App, Context, EventEmitter, FocusHandle, Hsla, IntoElement, Render, SharedString, Window, div,
     prelude::*, px,
 };
-use luma::controls::command::icon_button::IconButton;
-use luma::controls::command::button::{ButtonRenderModel, ControlIcon, ControlPresenter};
+use luma::controls::icon_button::IconButton;
+use luma::controls::button::{ButtonRenderModel, ControlIcon, ControlPresenter};
 use luma::controls::button_family::ButtonFamilyRole;
 use luma::controls::overlay_window::{
     OverlayWindow, OverlayWindowDismissPolicy, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition,
@@ -308,7 +308,7 @@ fn sync_header_icon_presenters(close_button: &IconButton, reset_button: &IconBut
 
 fn header_icon_presenter(icon: ControlIcon, color: Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| match &icon {
-        ControlIcon::Lucide(icon) => luma::controls::icon::lucide_icon(*icon, color, 14.0),
+        ControlIcon::Lucide(icon) => luma::infra::icon::lucide_icon(*icon, color, 14.0),
         ControlIcon::SvgPath(path) => {
             gpui::svg().size(px(14.0)).text_color(color).path(path.clone()).into_any_element()
         }
@@ -488,7 +488,7 @@ fn selected_check(selected: bool, color: Hsla) -> impl IntoElement {
         .text_size(px(15.0))
         .text_color(color)
         .child(if selected {
-            luma::controls::icon::lucide_icon(LucideIcon::Check, color, 15.0)
+            luma::infra::icon::lucide_icon(LucideIcon::Check, color, 15.0)
         } else {
             div().into_any_element()
         })
@@ -505,7 +505,7 @@ fn visibility_eye(visible: bool, muted_text: Hsla) -> impl IntoElement {
         .justify_center()
         .text_size(px(13.0))
         .text_color(muted_text)
-        .child(luma::controls::icon::lucide_icon(eye_icon, muted_text, 13.0))
+        .child(luma::infra::icon::lucide_icon(eye_icon, muted_text, 13.0))
 }
 
 fn shortcut_column(

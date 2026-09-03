@@ -8,7 +8,7 @@
 //! | Disabled label    | `muted-foreground`            |
 //! | Disabled list bg  | `muted`                       |
 
-use luma::controls::tabs_navigation::{TabsNavigationItemLook, TabsNavigationListLook};
+use luma::controls::tabs::{TabsNavigationItemLook, TabsNavigationListLook};
 use luma::theme::{ControlSize, InteractionLayer, InteractionState};
 
 use crate::look_context::LookContext;

@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use luma::controls::pager::{Pager, PagerEvent, PagerStyle};
 use luma::{vstack, wrappanel};
 use luma_look_shadcn::prelude::*;

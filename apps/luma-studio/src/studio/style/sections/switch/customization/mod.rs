@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
-use luma::controls::command::button::ButtonRenderModel;
-use luma::controls::presenter::HasPresenter;
+use luma::controls::button::ButtonRenderModel;
+use luma::infra::presenter::HasPresenter;
 use luma::controls::switch::{Switch, SwitchBuilder, SwitchData, SwitchEvent, SwitchOrientation};
 use luma::theme::InteractionState;
 use luma_look_shadcn::paint::switch_look;

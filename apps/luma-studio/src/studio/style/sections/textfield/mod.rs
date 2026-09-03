@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px};
-use luma::controls::command::button::ControlIcon;
-use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::button::ControlIcon;
+use luma::controls::tabs::TabsNavigation;
 use luma::controls::textfield::{
     TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate,
 };

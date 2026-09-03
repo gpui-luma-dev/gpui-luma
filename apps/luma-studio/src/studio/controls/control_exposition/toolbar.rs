@@ -3,9 +3,9 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use luma::controls::control_group::ControlGroupFocusStrategy;
-use luma::controls::menu_item::MenuItem;
+use luma::infra::menu_item::MenuItem;
 use luma::controls::selector::SelectorItem;
 use luma::controls::toolbar::{Toolbar, ToolbarEvent, ToolbarValue};
 use luma_look_shadcn::prelude::*;

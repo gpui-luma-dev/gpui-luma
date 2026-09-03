@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
 use luma::controls::progress::{ProgressDirection, ProgressRenderModel, ProgressTemplate};
-use luma::controls::value::ControlRange;
+use luma::infra::value::ControlRange;
 use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};

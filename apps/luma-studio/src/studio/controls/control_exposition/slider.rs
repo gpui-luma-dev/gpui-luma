@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use luma::controls::slider::{Slider, SliderEvent, SliderThumbPolicy};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;

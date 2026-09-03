@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, EventEmitter, Pixels, Render, SharedString, Window, div, prelude::*, px};
-use luma::controls::command::icon_button::IconButton;
+use luma::controls::icon_button::IconButton;
 use luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
 use luma::controls::resizable_panels::{PanelHideMode, ResizablePanels, ResizablePanelsTheme};
 use luma::theme::ControlSize;

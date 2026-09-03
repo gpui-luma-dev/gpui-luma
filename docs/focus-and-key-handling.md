@@ -80,6 +80,6 @@ fn handle_escape_focus(&mut self, _: &EscapeFocus, _window: &mut Window, cx: &mu
 Default keys are registered explicitly at startup in `main.rs`:
 ```rust
 luma::focus::bind_default_focus_keys(cx);
-luma::keyhandling::bind_default_control_keys(cx);
+luma::key_handling::bind_default_control_keys(cx);
 ```
 Binding focus and control keys are separate steps so applications can define when to load default SDK bindings or use custom ones.

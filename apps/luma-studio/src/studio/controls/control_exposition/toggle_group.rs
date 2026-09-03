@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Hsla, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::button_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
+use luma::controls::icon_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
 use luma::controls::control_group::{
     ControlGroupBuilder, ControlGroupItemTemplate, animated_toggle_button_item_template,
     make_control_group_item_template,
@@ -179,7 +179,7 @@ fn icon_group(
     cx: &mut Context<ToggleGroupControlExposition>,
 ) -> IconGroup<IconGroupItem> {
     let mut builder = look
-        .button_group(id)
+        .icon_group(id)
         .items(items(&PLACEMENT))
         // Ghost's hover/pressed fill is intentionally the same accent treatment
         // as its selected state, so selection animation reads as a flash.
@@ -214,7 +214,7 @@ fn theme_aware_toggle_item_template(
     make_control_group_item_template(move |item, window, cx| {
         let button_template = look.animated_toggle_item_template(style);
         animated_toggle_button_item_template(button_template, true, |item: &IconGroupItem| {
-            luma::controls::icon::lucide_icon(placement_icon(item.id().as_ref()), gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0)
+            luma::infra::icon::lucide_icon(placement_icon(item.id().as_ref()), gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0)
         })(item, window, cx)
     })
 }

@@ -4,9 +4,9 @@ use gpui::{
     AnyElement, Context, Entity, FocusHandle, IntoElement, ParentElement, Render, Subscription, Window, div,
     prelude::*, px,
 };
-use luma::controls::command::button::{Button, ButtonEvent};
-use luma::controls::command::icon_button::IconButton;
-use luma::controls::presenter::HasPresenter;
+use luma::controls::button::{Button, ButtonEvent};
+use luma::controls::icon_button::IconButton;
+use luma::infra::presenter::HasPresenter;
 use luma::controls::sidebar::SidebarControl;
 use luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
 use luma::theme::ThemeMode;

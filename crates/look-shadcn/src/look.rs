@@ -418,28 +418,28 @@ impl ShadcnLook {
     pub fn switch_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,
-    ) -> Arc<dyn luma::controls::command::button::ButtonTemplate<luma::controls::switch::SwitchData>> {
+    ) -> Arc<dyn luma::controls::button::ButtonTemplate<luma::controls::switch::SwitchData>> {
         templates::switch_template(Arc::clone(self), style)
     }
 
     pub fn checkbox_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,
-    ) -> Arc<dyn luma::controls::command::button::ButtonTemplate<luma::controls::checkbox::CheckboxData>> {
+    ) -> Arc<dyn luma::controls::button::ButtonTemplate<luma::controls::checkbox::CheckboxData>> {
         templates::checkbox_template(Arc::clone(self), style)
     }
 
     pub fn radio_button_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,
-    ) -> Arc<dyn luma::controls::command::button::ButtonTemplate<luma::controls::radio_button::RadioButtonData>> {
+    ) -> Arc<dyn luma::controls::button::ButtonTemplate<luma::controls::radio_button::RadioButtonData>> {
         templates::radio_button_template(Arc::clone(self), style)
     }
 
     pub fn button_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,
-    ) -> Arc<dyn luma::controls::command::button::ButtonTemplate<()>> {
+    ) -> Arc<dyn luma::controls::button::ButtonTemplate<()>> {
         templates::button_template(Arc::clone(self), style)
     }
 
@@ -542,16 +542,14 @@ impl ShadcnLook {
         templates::primary_textarea_template(Arc::clone(self))
     }
 
-    pub fn autocomplete_textbox_theme(
-        self: &Arc<Self>,
-    ) -> Arc<dyn luma::controls::autocomplete::AutocompleteTextBoxTheme> {
-        templates::autocomplete_textbox_theme(Arc::clone(self))
+    pub fn autocomplete_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::autocomplete::AutocompleteTheme> {
+        templates::autocomplete_theme(Arc::clone(self))
     }
 
     pub fn selector_items_panel_look(
         &self,
         size: ControlSize,
-    ) -> luma::controls::selector_panel::SelectorItemsPanelLook {
+    ) -> luma::controls::selector_list::SelectorItemsPanelLook {
         let tokens = self.mode_tokens();
         selector_items_panel_look(tokens.as_ref(), self.mode(), size)
     }
@@ -567,13 +565,11 @@ impl ShadcnLook {
         templates::selection_panel_look_provider(Arc::clone(self))
     }
 
-    pub fn tabs_navigation_template(
-        self: &Arc<Self>,
-    ) -> Arc<dyn luma::controls::tabs_navigation::TabsNavigationTemplate> {
+    pub fn tabs_navigation_template(self: &Arc<Self>) -> Arc<dyn luma::controls::tabs::TabsNavigationTemplate> {
         templates::tabs_navigation_template(Arc::clone(self))
     }
 
-    pub fn tabs_navigation_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::tabs_navigation::TabsNavigationTheme> {
+    pub fn tabs_navigation_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::tabs::TabsNavigationTheme> {
         templates::tabs_navigation_theme(Arc::clone(self))
     }
 
@@ -704,11 +700,8 @@ impl ShadcnLook {
         luma::controls::sidebar::sidebar_inset()
     }
 
-    pub fn sidebar_trigger(
-        self: &Arc<Self>,
-        id: impl Into<SharedString>,
-    ) -> luma::controls::command::button::ButtonBuilder<()> {
-        luma::controls::command::icon_button::new(id, lucide_svg_static::Icon::PanelLeft)
+    pub fn sidebar_trigger(self: &Arc<Self>, id: impl Into<SharedString>) -> luma::controls::button::ButtonBuilder<()> {
+        luma::controls::icon_button::new(id, lucide_svg_static::Icon::PanelLeft)
             .template(self.button_template(ShadcnButtonStyle::Ghost))
     }
 
@@ -834,7 +827,7 @@ impl ShadcnLook {
     pub fn toggle_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,
-    ) -> Arc<dyn luma::controls::command::button::ButtonTemplate<luma::controls::toggle::ToggleData>> {
+    ) -> Arc<dyn luma::controls::button::ButtonTemplate<luma::controls::toggle::ToggleData>> {
         templates::toggle_template(Arc::clone(self), style)
     }
 
@@ -843,14 +836,14 @@ impl ShadcnLook {
     pub fn toggle_item_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,
-    ) -> Arc<dyn luma::controls::command::button::ButtonTemplate<bool>> {
+    ) -> Arc<dyn luma::controls::button::ButtonTemplate<bool>> {
         templates::toggle_item_template(Arc::clone(self), style)
     }
 
     pub fn animated_toggle_item_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,
-    ) -> Arc<dyn luma::controls::command::button::ButtonTemplate<luma::controls::toggle::ToggleData>> {
+    ) -> Arc<dyn luma::controls::button::ButtonTemplate<luma::controls::toggle::ToggleData>> {
         templates::animated_toggle_item_template(Arc::clone(self), style)
     }
 

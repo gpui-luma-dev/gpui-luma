@@ -3,9 +3,9 @@
 use std::sync::Arc;
 
 use gpui::{App, Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use luma::controls::progress::{Progress, ProgressDirection, ProgressRenderModel, ProgressTemplate};
-use luma::controls::value::ControlRange;
+use luma::infra::value::ControlRange;
 use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;

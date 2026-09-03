@@ -4,8 +4,8 @@ use gpui::{
     AnyElement, App, Entity, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px, svg,
 };
 use luma::controls::autocomplete::{
-    AutocompleteItemsRenderModel, AutocompleteItemsTemplateHandlers, AutocompleteTextBoxRenderModel,
-    AutocompleteTextBoxTemplateHandlers, default_autocomplete_items_template, default_autocomplete_textbox_template,
+    AutocompleteItemsRenderModel, AutocompleteItemsTemplateHandlers, AutocompleteRenderModel,
+    AutocompleteTemplateHandlers, default_autocomplete_items_template, default_autocomplete_template,
 };
 use luma::controls::combobox::{
     ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers, ComboBoxPanelRenderModel,
@@ -22,12 +22,12 @@ use luma::controls::selector::{
     ControlFocusState, SelectorIcons, SelectorItem, SelectorPath, SelectorPlacement, SelectorRenderModel,
     SelectorTemplateHandlers, SelectorVisualState,
 };
-use luma::controls::overlay_presence::OverlayPresence;
-use luma::controls::selector_panel::{
+use luma::motion::overlay_presence::OverlayPresence;
+use luma::controls::selector_list::{
     SelectorItem as SelectorPanelItem, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplateHandlers,
     SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_template,
 };
-use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::tabs::TabsNavigation;
 use luma::controls::textfield::{TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant};
 use luma::controls::textfield::TextFieldLook;
 use luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale};
@@ -56,7 +56,7 @@ struct SelectorTemplateStateSample {
 
 #[derive(Clone, Copy)]
 enum SelectorTemplateControl {
-    AutocompleteTextBox,
+    Autocomplete,
     ComboBox,
     Selector,
     SearchSelector,
@@ -65,7 +65,7 @@ enum SelectorTemplateControl {
 impl SelectorTemplateControl {
     fn header(self) -> &'static str {
         match self {
-            Self::AutocompleteTextBox => "AutocompleteTextBox",
+            Self::Autocomplete => "Autocomplete",
             Self::ComboBox => "ComboBox",
             Self::Selector => "Selector",
             Self::SearchSelector => "SearchSelector",
@@ -206,7 +206,7 @@ fn render_selector_preview_tabbed_content(
 
 fn selector_template_controls() -> [SelectorTemplateControl; 4] {
     [
-        SelectorTemplateControl::AutocompleteTextBox,
+        SelectorTemplateControl::Autocomplete,
         SelectorTemplateControl::ComboBox,
         SelectorTemplateControl::Selector,
         SelectorTemplateControl::SearchSelector,
@@ -361,7 +361,7 @@ fn render_selector_control_cell(
     ));
 
     let trigger = match control {
-        SelectorTemplateControl::AutocompleteTextBox => render_selector_autocomplete_trigger(
+        SelectorTemplateControl::Autocomplete => render_selector_autocomplete_trigger(
             look,
             &id,
             "Type to filter...",
@@ -428,13 +428,13 @@ fn render_selector_autocomplete_trigger(
 ) -> AnyElement {
     let textfield_template = look.primary_textfield_template();
     let textfield_theme = look.primary_textfield_theme();
-    let autocomplete_template = default_autocomplete_textbox_template();
+    let autocomplete_template = default_autocomplete_template();
     let value = SharedString::from(if state.selector_selected { "California" } else { "" });
     let placeholder = SharedString::from(placeholder);
-    let status_theme = look.autocomplete_textbox_theme().resolve(size);
+    let status_theme = look.autocomplete_theme().resolve(size);
     let popup_look = look.selector_items_panel_look(size);
 
-    let model = AutocompleteTextBoxRenderModel {
+    let model = AutocompleteRenderModel {
         id: id.clone(),
         textfield: render_selector_preview_textfield(
             SelectorPreviewTextfieldRequest {
@@ -466,7 +466,7 @@ fn render_selector_autocomplete_trigger(
         .w(px(SELECTOR_TRIGGER_WIDTH))
         .child(autocomplete_template.render(
             model,
-            AutocompleteTextBoxTemplateHandlers {
+            AutocompleteTemplateHandlers {
                 scroll_wheel: Box::new(move |event, window, cx| scroll_wheel(event, window, cx)),
                 ..Default::default()
             },
@@ -492,7 +492,7 @@ fn render_selector_combobox_trigger(
     let combobox_template = default_combobox_template();
     let value = SharedString::from(if state.selector_selected { "California" } else { "" });
     let placeholder = SharedString::from(placeholder);
-    let status_theme = look.autocomplete_textbox_theme().resolve(size);
+    let status_theme = look.autocomplete_theme().resolve(size);
     let popup_look = look.selector_items_panel_look(size);
     let popup_bounds = (state.id == "pressed" || state.selector_open)
         .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(SELECTOR_TRIGGER_WIDTH), px(32.0))));
@@ -728,7 +728,7 @@ fn render_selector_popup_preview(
         .collect::<Vec<_>>();
 
     let rows: AnyElement = match control {
-        SelectorTemplateControl::AutocompleteTextBox => default_autocomplete_items_template()
+        SelectorTemplateControl::Autocomplete => default_autocomplete_items_template()
             .render(
                 &AutocompleteItemsRenderModel {
                     id: &popup_id,
@@ -960,7 +960,7 @@ fn selector_trigger_items() -> [SelectorItem; 4] {
 
 fn selector_popup_items_for_control(control: SelectorTemplateControl) -> Vec<SelectorPanelItem> {
     match control {
-        SelectorTemplateControl::AutocompleteTextBox => vec![
+        SelectorTemplateControl::Autocomplete => vec![
             SelectorPanelItem::new("autocomplete-preview-item-1").label("Alabama"),
             SelectorPanelItem::new("autocomplete-preview-item-2").label("Alaska"),
             SelectorPanelItem::new("autocomplete-preview-item-3").label("Arizona"),

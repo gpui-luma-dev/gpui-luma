@@ -4,8 +4,8 @@ use gpui::{App, ClickEvent, Context, Entity, Render, SharedString, Window, div, 
 use luma::controls::floating_menu::{
     FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuLook, render_floating_menu,
 };
-use luma::controls::menu_item::MenuItem;
-use luma::controls::state::MenuPath;
+use luma::infra::menu_item::MenuItem;
+use luma::infra::state::MenuPath;
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
