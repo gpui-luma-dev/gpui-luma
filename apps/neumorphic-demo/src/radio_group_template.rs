@@ -2,11 +2,11 @@ use std::cell::Cell;
 use std::sync::{Arc, OnceLock};
 
 use gpui::{App, MouseButton, Stateful, Window, div, hsla, px, prelude::*};
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma::controls::color::style::ElementExt;
-use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use gpui_luma::controls::control_group::{ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplateHandlers};
-use gpui_luma::controls::radio_group::RadioGroupTemplate;
+use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use luma::controls::color::style::ElementExt;
+use luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use luma::controls::control_group::{ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplateHandlers};
+use luma::controls::radio_group::RadioGroupTemplate;
 
 pub fn neumorphic_radio_group_template<T>() -> RadioGroupTemplate<T>
 where

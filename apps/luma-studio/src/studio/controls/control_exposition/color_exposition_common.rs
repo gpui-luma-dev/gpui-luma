@@ -1,12 +1,12 @@
 //! Shared layout and readout helpers for color control expositions.
 
 use gpui::{FontWeight, Hsla, div, prelude::*, px};
-use gpui_luma::controls::color::ColorSwatch;
-use gpui_luma::controls::color::CompositionSize;
-use gpui_luma::controls::color::color_field::ColorFieldEvent;
-use gpui_luma::controls::slider::SliderEvent;
-use gpui_luma::{GridLayout, GridTrack};
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnRadius, ShadcnTextRole, ShadcnTextSize};
+use luma::controls::color::ColorSwatch;
+use luma::controls::color::CompositionSize;
+use luma::controls::color::color_field::ColorFieldEvent;
+use luma::controls::slider::SliderEvent;
+use luma::{GridLayout, GridTrack};
+use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnRadius, ShadcnTextRole, ShadcnTextSize};
 
 /// Fixed label column for compact slider rows (gallery color-slider-revealed layout).
 const SLIDER_LABEL_WIDTH: f32 = 74.0;
@@ -338,12 +338,12 @@ pub(super) fn centered_field(content: impl gpui::IntoElement) -> gpui::AnyElemen
     div().w_full().flex().items_center().justify_center().child(content).into_any_element()
 }
 
-pub(super) fn composition_size_label(size: gpui_luma::controls::color::CompositionSize) -> &'static str {
+pub(super) fn composition_size_label(size: luma::controls::color::CompositionSize) -> &'static str {
     match size {
-        gpui_luma::controls::color::CompositionSize::Sm => "sm",
-        gpui_luma::controls::color::CompositionSize::Md => "md",
-        gpui_luma::controls::color::CompositionSize::Lg => "lg",
-        gpui_luma::controls::color::CompositionSize::Custom(_) => "custom",
+        luma::controls::color::CompositionSize::Sm => "sm",
+        luma::controls::color::CompositionSize::Md => "md",
+        luma::controls::color::CompositionSize::Lg => "lg",
+        luma::controls::color::CompositionSize::Custom(_) => "custom",
     }
 }
 
@@ -359,7 +359,7 @@ pub(super) fn format_hsl_label(color: Hsla) -> String {
 pub(super) fn slider_labeled_row(
     look: &ShadcnLook,
     label: &'static str,
-    slider: gpui::Entity<gpui_luma::controls::slider::SliderControl>,
+    slider: gpui::Entity<luma::controls::slider::SliderControl>,
 ) -> gpui::AnyElement {
     slider_labeled_row_with_width(look, label, slider, SLIDER_LABEL_WIDTH)
 }
@@ -367,7 +367,7 @@ pub(super) fn slider_labeled_row(
 pub(super) fn slider_labeled_row_wide(
     look: &ShadcnLook,
     label: &'static str,
-    slider: gpui::Entity<gpui_luma::controls::slider::SliderControl>,
+    slider: gpui::Entity<luma::controls::slider::SliderControl>,
 ) -> gpui::AnyElement {
     slider_labeled_row_with_width(look, label, slider, SLIDER_LABEL_WIDTH_WIDE)
 }
@@ -375,7 +375,7 @@ pub(super) fn slider_labeled_row_wide(
 pub(super) fn slider_labeled_row_compact_sized(
     look: &ShadcnLook,
     label: &'static str,
-    slider: gpui::Entity<gpui_luma::controls::slider::SliderControl>,
+    slider: gpui::Entity<luma::controls::slider::SliderControl>,
     label_text_size: ShadcnTextSize,
 ) -> gpui::AnyElement {
     div()
@@ -391,7 +391,7 @@ pub(super) fn slider_labeled_row_compact_sized(
 fn slider_labeled_row_with_width(
     look: &ShadcnLook,
     label: &'static str,
-    slider: gpui::Entity<gpui_luma::controls::slider::SliderControl>,
+    slider: gpui::Entity<luma::controls::slider::SliderControl>,
     label_width: f32,
 ) -> gpui::AnyElement {
     div()
@@ -406,7 +406,7 @@ fn slider_labeled_row_with_width(
 
 pub(super) fn slider_grid_stack<const N: usize>(
     look: &ShadcnLook,
-    rows: [(&'static str, gpui::Entity<gpui_luma::controls::slider::SliderControl>); N],
+    rows: [(&'static str, gpui::Entity<luma::controls::slider::SliderControl>); N],
 ) -> gpui::AnyElement {
     let mut grid = GridLayout::new()
         .rows(N)

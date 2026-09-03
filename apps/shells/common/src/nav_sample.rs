@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
-use gpui_luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
+use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 #[derive(Clone, Copy)]
@@ -115,7 +115,7 @@ pub fn spawn_properties_sidebar(
 fn property_leaf_menu_item(
     look: &Arc<ShadcnLook>,
     leaf: &PropertyLeaf,
-) -> gpui_luma::controls::sidebar::SidebarMenuItemBuilder {
+) -> luma::controls::sidebar::SidebarMenuItemBuilder {
     let mut item = look
         .sidebar_menu_item(leaf.id, leaf.label)
         .disabled(!leaf.enabled)

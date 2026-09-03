@@ -1,8 +1,8 @@
 //! Inspect metadata for `toolbar`.
 
-use gpui_luma::controls::toolbar::ToolbarVariant;
-use gpui_luma::theme::{ControlSize, ThemeMode};
-use gpui_luma_look_shadcn::{ColorSource, LookContext, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use luma::controls::toolbar::ToolbarVariant;
+use luma::theme::{ControlSize, ThemeMode};
+use luma_look_shadcn::{ColorSource, LookContext, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]
 pub struct ToolbarInspectPalette {

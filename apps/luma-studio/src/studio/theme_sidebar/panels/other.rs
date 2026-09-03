@@ -5,11 +5,11 @@ use gpui::{
     AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, TextRun, Window, div, font,
     prelude::*, px,
 };
-use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
-use gpui_luma::controls::slider::{Slider, SliderEvent};
-use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
-use gpui_luma::{GridTrack, grid_layout, hstack, vstack};
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
+use luma::controls::slider::{Slider, SliderEvent};
+use luma::controls::textfield::{TextField, TextFieldEvent};
+use luma::{GridTrack, grid_layout, hstack, vstack};
+use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use super::colors::token_field_look_override_arc;
 use super::super::model::{METRIC_FIELD_WIDTH, OTHER_CATEGORIES, SHADOW_COLOR_FIELD_WIDTH, SHADOW_SECTION_GAP};

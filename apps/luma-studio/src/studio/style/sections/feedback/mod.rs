@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::progress::{ProgressDirection, ProgressRenderModel, ProgressTemplate};
-use gpui_luma::controls::value::ControlRange;
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma::controls::progress::{ProgressDirection, ProgressRenderModel, ProgressTemplate};
+use luma::controls::value::ControlRange;
+use luma::theme::ControlSize;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::shell::section_shell_with_width;

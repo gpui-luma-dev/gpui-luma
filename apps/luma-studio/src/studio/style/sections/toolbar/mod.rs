@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::selector::SelectorItem;
-use gpui_luma::controls::tabs_navigation::TabsNavigation;
-use gpui_luma::controls::toolbar::{ToolbarControl, ToolbarVariant};
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt, ShadcnToolbarItemExt};
+use luma::controls::selector::SelectorItem;
+use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::toolbar::{ToolbarControl, ToolbarVariant};
+use luma::theme::ControlSize;
+use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt, ShadcnToolbarItemExt};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::shell::section_shell_with_width;
@@ -134,7 +134,7 @@ pub(crate) fn render_toolbar_template_section(
     )
 }
 
-fn render_template_body(preview: &ToolbarPreview, chrome: &gpui_luma::theme::LumaChrome) -> AnyElement {
+fn render_template_body(preview: &ToolbarPreview, chrome: &luma::theme::LumaChrome) -> AnyElement {
     div()
         .flex()
         .flex_col()

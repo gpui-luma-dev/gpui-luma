@@ -2,20 +2,20 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use lucide_svg_static::Icon as LucideIcon;
-use gpui_luma::column_numeric;
-use gpui_luma::column_text;
-use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::list_view::{
+use luma::column_numeric;
+use luma::column_text;
+use luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use luma::controls::command::button::{Button, ButtonEvent};
+use luma::controls::list_view::{
     ListViewColumn, ListViewColumnCellTemplate, ListViewControl, ListViewEvent, ListViewRowRenderModel,
 };
-use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::popup_menu::PopupMenu;
-use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma::theme::{ControlSize};
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma::{hstack, vstack};
+use luma::controls::menu_item::MenuItem;
+use luma::controls::popup_menu::PopupMenu;
+use luma::controls::presenter::HasPresenter;
+use luma_look_shadcn::prelude::*;
+use luma::theme::{ControlSize};
+use luma_look_shadcn::ShadcnLook;
+use luma::{hstack, vstack};
 
 use super::common::titled_card;
 
@@ -247,7 +247,7 @@ fn status_icon_cell(status: &'static str) -> impl IntoElement {
         .flex()
         .items_center()
         .justify_center()
-        .child(gpui_luma::controls::icon::lucide_icon(icon, color, 16.0))
+        .child(luma::controls::icon::lucide_icon(icon, color, 16.0))
 }
 
 fn selection_checkbox_column(row_checkboxes: Arc<Vec<Checkbox>>) -> ListViewColumnCellTemplate<PaymentRow> {

@@ -1,7 +1,7 @@
 //! Inspect metadata for `badge`.
 
-use gpui_luma::theme::{ControlSize, ThemeMode};
-use gpui_luma_look_shadcn::{BadgeVariant, ResolvedColor, ResolvedMetric, ShadcnLook, ShadcnModeTokens};
+use luma::theme::{ControlSize, ThemeMode};
+use luma_look_shadcn::{BadgeVariant, ResolvedColor, ResolvedMetric, ShadcnLook, ShadcnModeTokens};
 
 use crate::metrics::{derived_metric, pill_radius_metric, spacing_control_metric};
 
@@ -22,8 +22,8 @@ pub struct BadgeInspectMetrics {
 }
 
 pub fn inspect_badge_color_palette(look: &ShadcnLook, variant: BadgeVariant) -> BadgeInspectPalette {
-    let colors = gpui_luma_look_shadcn::tables::resolve_badge_colors(look, variant)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::BadgeColorTable::fallback(look, variant));
+    let colors = luma_look_shadcn::tables::resolve_badge_colors(look, variant)
+        .unwrap_or_else(|_| luma_look_shadcn::BadgeColorTable::fallback(look, variant));
     BadgeInspectPalette { background: colors.background, foreground: colors.foreground, border: colors.border }
 }
 
@@ -34,31 +34,31 @@ pub fn inspect_badge_metrics(
     size: ControlSize,
     _theme_mode: ThemeMode,
 ) -> BadgeInspectMetrics {
-    let look = gpui_luma_look_shadcn::badge_look(look, variant, size);
+    let look = luma_look_shadcn::badge_look(look, variant, size);
 
     BadgeInspectMetrics {
         min_height: derived_metric("badge min height", look.min_height),
         padding_x: spacing_control_metric(
             &mode.catalog,
             size,
-            gpui_luma_look_shadcn::catalog::SpacingField::PaddingX,
+            luma_look_shadcn::catalog::SpacingField::PaddingX,
             look.padding_x,
         ),
         padding_y: derived_metric("badge vertical inset from typography", look.padding_y),
-        gap: spacing_control_metric(&mode.catalog, size, gpui_luma_look_shadcn::catalog::SpacingField::Gap, look.gap),
+        gap: spacing_control_metric(&mode.catalog, size, luma_look_shadcn::catalog::SpacingField::Gap, look.gap),
         icon_size: derived_metric("badge icon size follows typography size", look.icon_size),
         radius: pill_radius_metric(metrics_catalog(mode), look.radius),
     }
 }
 
-fn metrics_catalog(mode: &ShadcnModeTokens) -> &gpui_luma_look_shadcn::catalog::CssTokenMap {
+fn metrics_catalog(mode: &ShadcnModeTokens) -> &luma_look_shadcn::catalog::CssTokenMap {
     &mode.catalog
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gpui_luma_look_shadcn::{ColorSource, ShadcnToken};
+    use luma_look_shadcn::{ColorSource, ShadcnToken};
 
     #[test]
     fn inspect_default_badge_uses_primary_fill() {

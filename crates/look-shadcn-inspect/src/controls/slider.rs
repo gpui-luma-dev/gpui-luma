@@ -1,7 +1,7 @@
 //! Inspect metadata for `slider`.
 
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnButtonStyle, ShadcnModeTokens};
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnButtonStyle, ShadcnModeTokens};
 
 pub struct SliderInspectPalette {
     pub track_background: ResolvedColor,
@@ -12,11 +12,11 @@ pub struct SliderInspectPalette {
 
 #[derive(Clone, Debug)]
 pub struct SliderInspectMetrics {
-    pub width: gpui_luma_look_shadcn::ResolvedMetric,
-    pub height: gpui_luma_look_shadcn::ResolvedMetric,
-    pub track_height: gpui_luma_look_shadcn::ResolvedMetric,
-    pub thumb_size: gpui_luma_look_shadcn::ResolvedMetric,
-    pub radius: gpui_luma_look_shadcn::ResolvedMetric,
+    pub width: luma_look_shadcn::ResolvedMetric,
+    pub height: luma_look_shadcn::ResolvedMetric,
+    pub track_height: luma_look_shadcn::ResolvedMetric,
+    pub thumb_size: luma_look_shadcn::ResolvedMetric,
+    pub radius: luma_look_shadcn::ResolvedMetric,
 }
 
 pub fn inspect_slider_color_palette(
@@ -27,8 +27,8 @@ pub fn inspect_slider_color_palette(
     let ctx = LookContext::new(mode, theme_mode, state);
     let layer = state.layer();
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "slider_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_slider_colors(&resolver, ShadcnButtonStyle::Primary, layer)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SliderColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_slider_colors(&resolver, ShadcnButtonStyle::Primary, layer)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::SliderColorTable::fallback());
 
     SliderInspectPalette {
         track_background: colors.track_background,
@@ -42,7 +42,7 @@ pub fn inspect_slider_metrics(mode: &ShadcnModeTokens, theme_mode: ThemeMode) ->
     use crate::metrics::{derived_metric, pill_radius_metric};
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let look = gpui_luma_look_shadcn::paint::slider_look(
+    let look = luma_look_shadcn::paint::slider_look(
         mode,
         theme_mode,
         ShadcnButtonStyle::Primary,

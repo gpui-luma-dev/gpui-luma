@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use gpui_luma::theme::{InteractionLayer, LumaTypography, MetricTokens, ThemeMode};
+use luma::theme::{InteractionLayer, LumaTypography, MetricTokens, ThemeMode};
 
 use crate::catalog::{CssTokenMap, metrics_from_catalog, typography_from_catalog};
 use crate::palette::ShadcnPalette;
@@ -9,6 +9,7 @@ use crate::tokens::ShadcnToken;
 
 #[derive(Clone, Debug)]
 pub struct ShadcnModeTokens {
+    pub(crate) theme_mode: ThemeMode,
     pub catalog: CssTokenMap,
     pub palette: ShadcnPalette,
     pub metrics: MetricTokens,
@@ -21,6 +22,7 @@ impl ShadcnModeTokens {
         let palette = ShadcnPalette::from_catalog(&catalog, theme_mode)?;
         let state_colors = StateColorTable::from_catalog(&catalog, &palette, theme_mode);
         Ok(Self {
+            theme_mode,
             metrics: metrics_from_catalog(&catalog, MetricTokens::default()),
             typography: typography_from_catalog(&catalog, LumaTypography::default()),
             state_colors,

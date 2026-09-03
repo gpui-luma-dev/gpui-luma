@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::command::button::{Button, ButtonEvent};
+use luma::controls::presenter::HasPresenter;
+use luma::controls::textfield::{TextField, TextFieldEvent};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
@@ -54,7 +54,6 @@ impl Render for TextFieldExpositionLeftPane {
         with_look(&self.look, || {
             let foreground = self.look.token_color("foreground").unwrap_or_else(|_| self.look.chrome().body_text);
             let section_heading = self.look.typography_scale(ShadcnTextSize::Sm);
-            let field_subheading = self.look.typography_scale(ShadcnTextSize::Xs);
             let preview = div()
                 .w_full()
                 .flex()
@@ -87,15 +86,7 @@ impl Render for TextFieldExpositionLeftPane {
                                 .font_weight(FontWeight::SEMIBOLD)
                                 .child("Required / Invalid"),
                         )
-                        .child(
-                            div().typography_style(field_subheading).font_weight(FontWeight::MEDIUM).child("Email *"),
-                        )
-                        .child(self.required_preview.clone())
-                        .child(
-                            div()
-                                .text_color(self.look.mode_tokens().palette.destructive_background)
-                                .child("Please enter an email address."),
-                        ),
+                        .child(self.required_preview.clone()),
                 )
                 .child(self.set_sample_button.clone())
                 .child(self.event_stream.clone());

@@ -1,7 +1,7 @@
 //! Inspect metadata for `list_view`.
 
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct ListViewInspectPalette {
     pub background: ResolvedColor,
@@ -34,8 +34,8 @@ pub fn inspect_list_view_color_palette(
 ) -> ListViewInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "list_view_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_list_view_surface_colors(&resolver, enabled)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListViewSurfaceColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_list_view_surface_colors(&resolver, enabled)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::ListViewSurfaceColorTable::fallback());
     ListViewInspectPalette {
         background: colors.background,
         border: colors.border,
@@ -52,14 +52,14 @@ pub fn inspect_list_view_row_color_palette(
 ) -> ListViewRowInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "list_view_row_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_list_view_row_colors(
+    let colors = luma_look_shadcn::tables::resolve_list_view_row_colors(
         &resolver,
         selected,
         state.focused,
         state.disabled,
         state.layer(),
     )
-    .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListViewRowColorTable::fallback());
+    .unwrap_or_else(|_| luma_look_shadcn::tables::ListViewRowColorTable::fallback());
     ListViewRowInspectPalette {
         background: colors.background,
         label_color: colors.label_color,
@@ -72,15 +72,15 @@ pub fn inspect_list_view_metrics(
     theme_mode: ThemeMode,
     size: ControlSize,
 ) -> ListViewInspectMetrics {
-    use gpui_luma::theme::ListRowScale;
+    use luma::theme::ListRowScale;
 
-    use gpui_luma_look_shadcn::catalog::SpacingField;
+    use luma_look_shadcn::catalog::SpacingField;
     use crate::metrics::{control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
-    let look = gpui_luma_look_shadcn::paint::list_view_look(mode, true, false, size);
+    let look = luma_look_shadcn::paint::list_view_look(mode, true, false, size);
     let row_scale = ListRowScale::compute(size, metrics, 1.0);
     let size_key = control_size_key(size);
 

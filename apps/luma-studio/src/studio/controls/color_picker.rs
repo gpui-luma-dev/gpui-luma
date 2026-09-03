@@ -4,18 +4,18 @@ use gpui::{
     AnyElement, App, Context, Entity, EventEmitter, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*,
     px, size,
 };
-use gpui_luma::controls::color::{ColorSwatchButtonTemplate, ColorSwatchData};
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
-use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::color_slider::{
+use luma::controls::color::{ColorSwatchButtonTemplate, ColorSwatchData};
+use luma::controls::command::button::{Button, ButtonEvent};
+use luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
+use luma::controls::color::color_slider::color_spec::Hsv;
+use luma::controls::color::color_slider::{
     AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing,
 };
-use gpui_luma::controls::color::composition::ColorCompositionSync;
-use gpui_luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
-use gpui_luma::controls::slider::{SliderControl, SliderEvent};
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::color::composition::ColorCompositionSync;
+use luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
+use luma::controls::slider::{SliderControl, SliderEvent};
+use luma::theme::ControlSize;
+use luma_look_shadcn::ShadcnLook;
 
 #[derive(Clone, Debug)]
 pub(crate) enum ColorPickerEvent {

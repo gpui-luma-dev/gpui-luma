@@ -1,6 +1,6 @@
 use gpui::{Context, Entity, Subscription};
-use gpui_luma::controls::sidebar::{SidebarControl, SidebarEvent};
-use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
+use luma::controls::sidebar::{SidebarControl, SidebarEvent};
+use luma::controls::split_view::{SplitView, SplitViewEvent};
 
 pub fn wire_split_nav_sync<T: 'static>(
     subscriptions: &mut Vec<Subscription>,

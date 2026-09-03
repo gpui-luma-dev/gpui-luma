@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 use lucide_svg_static::Icon as LucideIcon;
-use gpui_luma::theme::InteractionState;
+use luma::theme::InteractionState;
 
 use super::inspector::common::{control_size, interaction_state};
 use super::inspector::input::floating_menu_palette_rows;

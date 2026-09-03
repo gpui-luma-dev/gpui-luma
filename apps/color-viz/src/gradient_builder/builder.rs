@@ -3,14 +3,14 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use gpui::{AppContext, Bounds, Context, Entity, Pixels, RenderImage, Size, Subscription, px, size};
-use gpui_luma::controls::color::color_slider::{ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext};
-use gpui_luma::controls::color::composition::CompositionSize;
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::selector::{Selector, SelectorEvent};
-use gpui_luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy, ThumbId};
-use gpui_luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationWidthMode};
-use gpui_luma::theme::{ControlSize, ThemeMode};
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma::controls::color::color_slider::{ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext};
+use luma::controls::color::composition::CompositionSize;
+use luma::controls::command::button::{Button, ButtonEvent};
+use luma::controls::selector::{Selector, SelectorEvent};
+use luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy, ThumbId};
+use luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationWidthMode};
+use luma::theme::{ControlSize, ThemeMode};
+use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 use lucide_svg_static::Icon as LucideIcon;
 
 mod actions;

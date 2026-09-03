@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui_luma_look_shadcn::{ShadcnLook, built_in_theme, built_in_themes};
+use luma_look_shadcn::{ShadcnLook, built_in_theme, built_in_themes};
 
 fn available_theme_names() -> Vec<String> {
     built_in_themes().iter().map(|theme| theme.id.to_string()).collect()
@@ -45,7 +45,7 @@ impl ColorVizThemeChoice {
     }
 
     fn usage_line() -> String {
-        let program = std::env::args().next().unwrap_or_else(|| "gpui-luma-color-viz".into());
+        let program = std::env::args().next().unwrap_or_else(|| "luma-color-viz".into());
         let mut options = vec!["default".to_string()];
         options.extend(available_theme_names());
         format!("usage: {program} [{}]", options.join("|"))

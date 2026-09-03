@@ -52,34 +52,34 @@ codegen-units = 16
 debug = "limited"
 split-debuginfo = "unpacked"
 
-[profile.dev.package.gpui-luma]
+[profile.dev.package.luma]
 opt-level = 2
 
 [profile.dev.package.luma-studio]
 opt-level = 1
 
-[profile.dev.package.gpui-luma-neumorphic-demo]
+[profile.dev.package.luma-neumorphic-demo]
 opt-level = 1
 
-[profile.dev.package.gpui-luma-color-viz]
+[profile.dev.package.luma-color-viz]
 opt-level = 1
 
-[profile.dev.package.gpui-luma-shell-unified]
+[profile.dev.package.luma-shell-unified]
 opt-level = 1
 
-[profile.dev.package.gpui-luma-shell-inset]
+[profile.dev.package.luma-shell-inset]
 opt-level = 1
 
-[profile.dev.package.gpui-luma-shell-icon-rail]
+[profile.dev.package.luma-shell-icon-rail]
 opt-level = 1
 
-[profile.dev.package.gpui-luma-shell-detached]
+[profile.dev.package.luma-shell-detached]
 opt-level = 1
 
-[profile.dev.package.gpui-luma-shell-split-titlebar]
+[profile.dev.package.luma-shell-split-titlebar]
 opt-level = 1
 
-[profile.dev.package.gpui-luma-shell-vscode]
+[profile.dev.package.luma-shell-vscode]
 opt-level = 1
 
 [profile.dev.package.gpui-unofficial]

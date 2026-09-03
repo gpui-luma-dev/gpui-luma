@@ -1,5 +1,5 @@
 [package]
-name = "gpui-luma-color-viz"
+name = "luma-color-viz"
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
@@ -8,11 +8,11 @@ publish = false
 [dependencies]
 anyhow = { workspace = true }
 gpui = { workspace = true }
-gpui-luma = { path = "../../crates/sdk" }
-gpui-luma-fonts = { path = "../../crates/font-assets" }
+luma = { path = "../../crates/sdk" }
+luma-fonts = { path = "../../crates/font-assets" }
 gpui_platform = { workspace = true }
 image = { workspace = true }
-gpui-luma-look-shadcn = { path = "../../crates/look-shadcn" }
+luma-look-shadcn = { path = "../../crates/look-shadcn" }
 lucide-svg-static.workspace = true
 palette = { workspace = true }
 smallvec = { workspace = true }

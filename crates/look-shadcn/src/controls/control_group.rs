@@ -6,8 +6,8 @@
 //! | Disabled bg     | `muted-foreground`   |
 //! | Border          | `border`             |
 
-use gpui_luma::controls::control_group::ControlGroupListLook;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma::controls::control_group::ControlGroupListLook;
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -68,7 +68,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::ThemeMode;
+    use luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;

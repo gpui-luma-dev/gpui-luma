@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 
 use super::inspector::common::control_size;
 use super::inspector::metrics::floating_menu_layout_section;

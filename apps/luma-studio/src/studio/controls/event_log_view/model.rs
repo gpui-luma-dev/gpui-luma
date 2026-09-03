@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use gpui_luma::controls::scrollbar::ScrollbarTemplate;
+use luma::controls::scrollbar::ScrollbarTemplate;
 
 use super::control::EventLogView;
 use super::theme::EventLogTheme;

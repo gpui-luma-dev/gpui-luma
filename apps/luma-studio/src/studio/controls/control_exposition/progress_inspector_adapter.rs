@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 
 use super::inspector::common::progress_enabled;
 use super::inspector::metrics::{progress_circular_layout_section, progress_linear_layout_section};

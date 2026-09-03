@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::scroll_container::ScrollContainer;
-use gpui_luma::controls::scrollbar::ScrollbarEvent;
-use gpui_luma::controls::tree_view::{TreeNode, TreeView, TreeViewEvent, TreeViewSelectionMode};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::scroll_container::ScrollContainer;
+use luma::controls::scrollbar::ScrollbarEvent;
+use luma::controls::tree_view::{TreeNode, TreeView, TreeViewEvent, TreeViewSelectionMode};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};

@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView};
-use gpui_luma::controls::pager::PagerStyle;
-use gpui_luma::{column, column_emphasis, paging_list_view};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView};
+use luma::controls::pager::PagerStyle;
+use luma::{column, column_emphasis, paging_list_view};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -157,7 +157,7 @@ impl PagingListViewControlExposition {
                         .flex()
                         .items_center()
                         .justify_center()
-                        .child(gpui_luma::controls::icon::lucide_icon(
+                        .child(luma::controls::icon::lucide_icon(
                             LucideIcon::EllipsisVertical,
                             gpui::hsla(0.0, 0.0, 0.5, 1.0),
                             16.0,

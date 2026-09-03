@@ -1,7 +1,7 @@
 //! Inspect metadata for `control_group`.
 
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct ControlGroupListInspectPalette {
     pub background: ResolvedColor,
@@ -23,8 +23,8 @@ pub fn inspect_control_group_list_color_palette(
 ) -> ControlGroupListInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "control_group_list_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_control_group_list_colors(&resolver, enabled)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ControlGroupListColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_control_group_list_colors(&resolver, enabled)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::ControlGroupListColorTable::fallback());
     ControlGroupListInspectPalette { background: colors.background, border: colors.border }
 }
 
@@ -37,7 +37,7 @@ pub fn inspect_control_group_metrics(
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
-    let look = gpui_luma_look_shadcn::paint::control_group_list_look(mode, true);
+    let look = luma_look_shadcn::paint::control_group_list_look(mode, true);
 
     ControlGroupInspectMetrics {
         radius: radius_metric(catalog, size, look.radius),
@@ -55,8 +55,8 @@ mod tests {
     #[test]
     fn control_group_metadata_covers_enabled_and_disabled() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_control_group_list_colors_metadata(
-                gpui_luma_look_shadcn::embedded_stylesheet()
+            luma_look_shadcn::stylesheet::resolve_control_group_list_colors_metadata(
+                luma_look_shadcn::embedded_stylesheet()
             )
             .len(),
             2

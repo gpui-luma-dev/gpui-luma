@@ -1,7 +1,7 @@
 use gpui::hsla;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::ShadcnButtonStyle;
-use gpui_luma_look_shadcn::ShadcnTextFieldStyle;
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma_look_shadcn::ShadcnButtonStyle;
+use luma_look_shadcn::ShadcnTextFieldStyle;
 
 use super::box_model::BoxModelLayerColors;
 
@@ -101,41 +101,41 @@ pub fn textfield_enabled(state_id: &str) -> bool {
     state_id != "disabled"
 }
 
-pub fn textfield_state(state_id: &str) -> gpui_luma::controls::textfield::TextFieldState {
+pub fn textfield_state(state_id: &str) -> luma::controls::textfield::TextFieldState {
     match state_id {
-        "hover" => gpui_luma::controls::textfield::TextFieldState {
+        "hover" => luma::controls::textfield::TextFieldState {
             hovered: true,
-            ..gpui_luma::controls::textfield::TextFieldState::default()
+            ..luma::controls::textfield::TextFieldState::default()
         },
-        "focus" => gpui_luma::controls::textfield::TextFieldState {
+        "focus" => luma::controls::textfield::TextFieldState {
             focused: true,
             focus_visible: true,
-            ..gpui_luma::controls::textfield::TextFieldState::default()
+            ..luma::controls::textfield::TextFieldState::default()
         },
-        "invalid" => gpui_luma::controls::textfield::TextFieldState {
+        "invalid" => luma::controls::textfield::TextFieldState {
             invalid: true,
-            ..gpui_luma::controls::textfield::TextFieldState::default()
+            ..luma::controls::textfield::TextFieldState::default()
         },
-        _ => gpui_luma::controls::textfield::TextFieldState::default(),
+        _ => luma::controls::textfield::TextFieldState::default(),
     }
 }
 
-pub fn textarea_state(state_id: &str) -> gpui_luma::controls::textarea::TextAreaState {
+pub fn textarea_state(state_id: &str) -> luma::controls::textarea::TextAreaState {
     match state_id {
-        "hover" => gpui_luma::controls::textarea::TextAreaState {
+        "hover" => luma::controls::textarea::TextAreaState {
             hovered: true,
-            ..gpui_luma::controls::textarea::TextAreaState::default()
+            ..luma::controls::textarea::TextAreaState::default()
         },
-        "focus" => gpui_luma::controls::textarea::TextAreaState {
+        "focus" => luma::controls::textarea::TextAreaState {
             focused: true,
             focus_visible: true,
-            ..gpui_luma::controls::textarea::TextAreaState::default()
+            ..luma::controls::textarea::TextAreaState::default()
         },
-        "invalid" => gpui_luma::controls::textarea::TextAreaState {
+        "invalid" => luma::controls::textarea::TextAreaState {
             invalid: true,
-            ..gpui_luma::controls::textarea::TextAreaState::default()
+            ..luma::controls::textarea::TextAreaState::default()
         },
-        _ => gpui_luma::controls::textarea::TextAreaState::default(),
+        _ => luma::controls::textarea::TextAreaState::default(),
     }
 }
 
@@ -143,12 +143,12 @@ pub fn textfield_elevation_applies(variant_id: &str, state_id: &str) -> bool {
     !variant_id.is_empty() && textfield_enabled(state_id)
 }
 
-pub fn badge_variant(variant_id: &str) -> gpui_luma_look_shadcn::BadgeVariant {
+pub fn badge_variant(variant_id: &str) -> luma_look_shadcn::BadgeVariant {
     match variant_id {
-        "secondary" => gpui_luma_look_shadcn::BadgeVariant::Secondary,
-        "outline" => gpui_luma_look_shadcn::BadgeVariant::Outline,
-        "ghost" => gpui_luma_look_shadcn::BadgeVariant::Ghost,
-        _ => gpui_luma_look_shadcn::BadgeVariant::Default,
+        "secondary" => luma_look_shadcn::BadgeVariant::Secondary,
+        "outline" => luma_look_shadcn::BadgeVariant::Outline,
+        "ghost" => luma_look_shadcn::BadgeVariant::Ghost,
+        _ => luma_look_shadcn::BadgeVariant::Default,
     }
 }
 
@@ -160,18 +160,18 @@ pub fn stepper_enabled(state_id: &str) -> bool {
     state_id != "disabled"
 }
 
-pub fn scrollbar_style(variant_id: &str) -> gpui_luma::controls::scrollbar::ScrollbarStyle {
+pub fn scrollbar_style(variant_id: &str) -> luma::controls::scrollbar::ScrollbarStyle {
     match variant_id {
-        "soft" => gpui_luma::controls::scrollbar::ScrollbarStyle::Soft,
-        _ => gpui_luma::controls::scrollbar::ScrollbarStyle::Ghost,
+        "soft" => luma::controls::scrollbar::ScrollbarStyle::Soft,
+        _ => luma::controls::scrollbar::ScrollbarStyle::Ghost,
     }
 }
 
-pub fn pager_style(variant_id: &str) -> gpui_luma::controls::pager::PagerStyle {
+pub fn pager_style(variant_id: &str) -> luma::controls::pager::PagerStyle {
     match variant_id {
-        "minimal" => gpui_luma::controls::pager::PagerStyle::Minimal,
-        "minimal-edge" => gpui_luma::controls::pager::PagerStyle::MinimalEdge,
-        _ => gpui_luma::controls::pager::PagerStyle::Numeric,
+        "minimal" => luma::controls::pager::PagerStyle::Minimal,
+        "minimal-edge" => luma::controls::pager::PagerStyle::MinimalEdge,
+        _ => luma::controls::pager::PagerStyle::Numeric,
     }
 }
 
@@ -179,28 +179,28 @@ pub fn pager_shell_enabled(state_id: &str) -> bool {
     state_id != "disabled"
 }
 
-pub fn pager_button_role(variant_id: &str, value_id: &str) -> gpui_luma::controls::button_family::ButtonFamilyRole {
+pub fn pager_button_role(variant_id: &str, value_id: &str) -> luma::controls::button_family::ButtonFamilyRole {
     match variant_id {
         "page" => {
-            gpui_luma::controls::button_family::ButtonFamilyRole::Toggle { selected: value_flag(value_id, "selected") }
+            luma::controls::button_family::ButtonFamilyRole::Toggle { selected: value_flag(value_id, "selected") }
         }
-        _ => gpui_luma::controls::button_family::ButtonFamilyRole::Icon,
+        _ => luma::controls::button_family::ButtonFamilyRole::Icon,
     }
 }
 
-pub fn popup_menu_trigger_style(variant_id: &str) -> gpui_luma::controls::popup_menu::PopupMenuTriggerStyle {
+pub fn popup_menu_trigger_style(variant_id: &str) -> luma::controls::popup_menu::PopupMenuTriggerStyle {
     match variant_id {
-        "primary" => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Primary,
-        "secondary" => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Secondary,
-        "ghost" => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Ghost,
-        _ => gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Outline,
+        "primary" => luma::controls::popup_menu::PopupMenuTriggerStyle::Primary,
+        "secondary" => luma::controls::popup_menu::PopupMenuTriggerStyle::Secondary,
+        "ghost" => luma::controls::popup_menu::PopupMenuTriggerStyle::Ghost,
+        _ => luma::controls::popup_menu::PopupMenuTriggerStyle::Outline,
     }
 }
 
-pub fn toolbar_variant(variant_id: &str) -> gpui_luma::controls::toolbar::ToolbarVariant {
+pub fn toolbar_variant(variant_id: &str) -> luma::controls::toolbar::ToolbarVariant {
     match variant_id {
-        "ghost" => gpui_luma::controls::toolbar::ToolbarVariant::Ghost,
-        _ => gpui_luma::controls::toolbar::ToolbarVariant::Outline,
+        "ghost" => luma::controls::toolbar::ToolbarVariant::Ghost,
+        _ => luma::controls::toolbar::ToolbarVariant::Outline,
     }
 }
 
@@ -235,11 +235,11 @@ pub fn sidebar_item_selected(value_id: &str) -> bool {
     value_id == "selected"
 }
 
-pub fn resize_handle_size(size_id: &str) -> gpui_luma::controls::resizable_panels::ResizeHandleSize {
+pub fn resize_handle_size(size_id: &str) -> luma::controls::resizable_panels::ResizeHandleSize {
     match size_id {
-        "sm" => gpui_luma::controls::resizable_panels::ResizeHandleSize::Sm,
-        "lg" => gpui_luma::controls::resizable_panels::ResizeHandleSize::Lg,
-        _ => gpui_luma::controls::resizable_panels::ResizeHandleSize::Md,
+        "sm" => luma::controls::resizable_panels::ResizeHandleSize::Sm,
+        "lg" => luma::controls::resizable_panels::ResizeHandleSize::Lg,
+        _ => luma::controls::resizable_panels::ResizeHandleSize::Md,
     }
 }
 

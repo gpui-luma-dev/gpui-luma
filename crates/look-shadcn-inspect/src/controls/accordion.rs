@@ -1,7 +1,7 @@
 //! Inspect metadata for `accordion`.
 
-use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use luma::theme::{InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct AccordionTriggerInspectPalette {
     pub background: Option<ResolvedColor>,
@@ -36,9 +36,8 @@ pub fn inspect_accordion_trigger_color_palette(
 ) -> AccordionTriggerInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "accordion_trigger_inspect");
-    let colors =
-        gpui_luma_look_shadcn::tables::resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::AccordionTriggerColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
+        .unwrap_or_else(|_| luma_look_shadcn::tables::AccordionTriggerColorTable::fallback());
     AccordionTriggerInspectPalette {
         background: colors.background,
         foreground: colors.foreground,
@@ -55,19 +54,19 @@ pub fn inspect_accordion_content_color_palette(
 ) -> AccordionContentInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "accordion_content_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_accordion_content_colors(&resolver, expanded)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::AccordionContentColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_accordion_content_colors(&resolver, expanded)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::AccordionContentColorTable::fallback());
     AccordionContentInspectPalette { background: colors.background, foreground: colors.foreground }
 }
 
 pub fn inspect_accordion_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    size: gpui_luma::theme::ControlSize,
+    size: luma::theme::ControlSize,
 ) -> AccordionInspectMetrics {
-    use gpui_luma::controls::accordion::AccordionScale;
+    use luma::controls::accordion::AccordionScale;
 
-    use gpui_luma_look_shadcn::catalog::SpacingField;
+    use luma_look_shadcn::catalog::SpacingField;
     use crate::metrics::{control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
@@ -95,20 +94,20 @@ pub fn inspect_accordion_metrics(
 mod tests {
     use super::*;
     use crate::test_support::sample_catalog;
-    use gpui_luma_look_shadcn::ColorSource;
+    use luma_look_shadcn::ColorSource;
 
     #[test]
     fn accordion_metadata_covers_trigger_and_content_tables() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_accordion_trigger_colors_metadata(
-                gpui_luma_look_shadcn::embedded_stylesheet()
+            luma_look_shadcn::stylesheet::resolve_accordion_trigger_colors_metadata(
+                luma_look_shadcn::embedded_stylesheet()
             )
             .len(),
             5
         );
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_accordion_content_colors_metadata(
-                gpui_luma_look_shadcn::embedded_stylesheet()
+            luma_look_shadcn::stylesheet::resolve_accordion_content_colors_metadata(
+                luma_look_shadcn::embedded_stylesheet()
             )
             .len(),
             2

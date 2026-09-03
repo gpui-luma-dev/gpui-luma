@@ -1,4 +1,4 @@
-//! Look-bound fluent factories for [`ToolbarItem`](gpui_luma::controls::toolbar::ToolbarItem).
+//! Look-bound fluent factories for [`ToolbarItem`](luma::controls::toolbar::ToolbarItem).
 //!
 //! SDK toolbar items are lookless hosted wrappers. These helpers spawn Shadcn-styled child
 //! controls and return ready-to-use [`ToolbarItem`] values for declarative toolbar composition.
@@ -6,11 +6,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Focusable, Pixels, SharedString, div, px, prelude::*};
-use gpui_luma::controls::command::button::ControlIcon;
-use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::selector::SelectorItem;
-use gpui_luma::controls::toolbar::{ToolbarItem, ToolbarItemSource, horizontal_arrow_policy};
-use gpui_luma::focus::EscapeFocus;
+use luma::controls::command::button::ControlIcon;
+use luma::controls::menu_item::MenuItem;
+use luma::controls::selector::SelectorItem;
+use luma::controls::toolbar::{ToolbarItem, ToolbarItemSource, horizontal_arrow_policy};
+use luma::focus::EscapeFocus;
 
 use super::ext::ShadcnLookControlExt;
 use crate::look::ShadcnLook;

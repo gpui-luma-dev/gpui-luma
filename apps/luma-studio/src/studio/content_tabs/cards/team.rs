@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextRole, ShadcnTextSize};
-use gpui_luma::{declare_form, hstack, vstack};
+use luma::controls::menu_item::MenuItem;
+use luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
+use luma::theme::ControlSize;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::{ShadcnLook, ShadcnTextRole, ShadcnTextSize};
+use luma::{declare_form, hstack, vstack};
 
 use super::common::{avatar, AvatarSize, card};
 
@@ -107,9 +107,9 @@ fn member_row(
     name: &'static str,
     email: &'static str,
     menu: &Entity<PopupMenu>,
-    chrome: gpui_luma::theme::LumaChrome,
-    body_style: gpui_luma::theme::LumaTextStyle,
-    caption_style: gpui_luma::theme::LumaTextStyle,
+    chrome: luma::theme::LumaChrome,
+    body_style: luma::theme::LumaTextStyle,
+    caption_style: luma::theme::LumaTextStyle,
 ) -> impl IntoElement {
     hstack! {
         gap=10 align=center;

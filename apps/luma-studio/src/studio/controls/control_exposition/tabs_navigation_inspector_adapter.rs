@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 
 use super::inspector::collection::{tabs_navigation_item_color_rows, tabs_navigation_list_color_rows};
 use super::inspector::common::{interaction_state, progress_enabled, tabs_navigation_active};

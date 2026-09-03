@@ -1,8 +1,8 @@
 //! Selector property mappings — outline/ghost command-button trigger + accent item panel.
 
-use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::controls::selector::{SelectorLook, SelectorPalette, SelectorTriggerStyle, SelectorVisualState};
-use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale, ThemeMode};
+use luma::controls::button_family::ButtonFamilyRole;
+use luma::controls::selector::{SelectorLook, SelectorPalette, SelectorTriggerStyle, SelectorVisualState};
+use luma::theme::{ControlSize, InteractionState, StandardBoxScale, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -117,9 +117,9 @@ pub fn selector_look_with_visual_state(
 mod tests {
     use std::collections::BTreeMap;
 
-    use gpui_luma::controls::button_family::ButtonFamilyRole;
-    use gpui_luma::controls::selector::{SelectorTriggerStyle, SelectorVisualState};
-    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+    use luma::controls::button_family::ButtonFamilyRole;
+    use luma::controls::selector::{SelectorTriggerStyle, SelectorVisualState};
+    use luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::controls::button::{ShadcnButtonStyle, button_palette};
@@ -206,7 +206,7 @@ mod tests {
     fn open_trigger_uses_hover_palette_but_disabled_still_wins() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
-        let scale = gpui_luma::theme::StandardBoxScale::compute(ControlSize::Md, &mode.metrics, 1.0);
+        let scale = luma::theme::StandardBoxScale::compute(ControlSize::Md, &mode.metrics, 1.0);
         let open = selector_look_with_visual_state(
             &mode,
             ThemeMode::Light,
@@ -268,8 +268,8 @@ mod tests {
     fn selector_trigger_typography_uses_stylesheet_font_size() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
-        let sm_scale = gpui_luma::theme::StandardBoxScale::compute(ControlSize::Sm, &mode.metrics, 1.0);
-        let lg_scale = gpui_luma::theme::StandardBoxScale::compute(ControlSize::Lg, &mode.metrics, 1.0);
+        let sm_scale = luma::theme::StandardBoxScale::compute(ControlSize::Sm, &mode.metrics, 1.0);
+        let lg_scale = luma::theme::StandardBoxScale::compute(ControlSize::Lg, &mode.metrics, 1.0);
 
         let sm = selector_look(
             &mode,

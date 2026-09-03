@@ -26,10 +26,10 @@ fn main() {
         cx.on_action(quit);
         cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
         cx.set_menus([Menu::new("Color Viz").items([MenuItem::action("Quit", Quit)])]);
-        if let Err(error) = gpui_luma::init(cx).and_then(|_| {
-            gpui_luma::focus::bind_default_focus_keys(cx);
-            gpui_luma::keyhandling::bind_default_control_keys(cx);
-            gpui_luma_fonts::register_all(cx)?;
+        if let Err(error) = luma::init(cx).and_then(|_| {
+            luma::focus::bind_default_focus_keys(cx);
+            luma::keyhandling::bind_default_control_keys(cx);
+            luma_fonts::register_all(cx)?;
             app_shell::open(cx, theme_choice)
         }) {
             eprintln!("failed to open Color Viz: {error:?}");

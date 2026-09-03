@@ -1,6 +1,6 @@
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::{
+use luma::theme::ControlSize;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::{
     AutocompleteChromeInspectPalette, FloatingMenuInspectPalette, OverlayWindowInspectPalette, ShadcnInspect,
     TextFieldInspectPalette,
 };
@@ -83,9 +83,9 @@ pub fn autocomplete_chrome_color_rows(palette: &AutocompleteChromeInspectPalette
 }
 
 pub fn trigger_color_rows(
-    background: &gpui_luma_look_shadcn::ResolvedColor,
-    foreground: &gpui_luma_look_shadcn::ResolvedColor,
-    border: &gpui_luma_look_shadcn::ResolvedColor,
+    background: &luma_look_shadcn::ResolvedColor,
+    foreground: &luma_look_shadcn::ResolvedColor,
+    border: &luma_look_shadcn::ResolvedColor,
 ) -> Vec<InspectColorRow> {
     let rows = vec![
         color_row("trigger background", background),

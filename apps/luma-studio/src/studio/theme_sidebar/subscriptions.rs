@@ -1,5 +1,5 @@
 use gpui::{Context, Entity, Subscription};
-use gpui_luma::controls::{context_menu::ContextMenuEvent, search_selector::SearchSelectorEvent};
+use luma::controls::{context_menu::ContextMenuEvent, search_selector::SearchSelectorEvent};
 
 use super::panels::{ColorsPanel, OtherPanel, TypographyPanel};
 use super::ThemeSidebar;

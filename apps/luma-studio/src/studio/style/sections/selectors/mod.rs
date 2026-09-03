@@ -3,38 +3,36 @@ use std::sync::Arc;
 use gpui::{
     AnyElement, App, Entity, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px, svg,
 };
-use gpui_luma::controls::autocomplete::{
+use luma::controls::autocomplete::{
     AutocompleteItemsRenderModel, AutocompleteItemsTemplateHandlers, AutocompleteTextBoxRenderModel,
     AutocompleteTextBoxTemplateHandlers, default_autocomplete_items_template, default_autocomplete_textbox_template,
 };
-use gpui_luma::controls::combobox::{
+use luma::controls::combobox::{
     ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers, ComboBoxPanelRenderModel,
     ComboBoxPanelTemplate, ComboBoxRenderModel, ComboBoxTemplateHandlers, SelectionItem as ComboBoxSelectionItem,
     default_combobox_items_template, default_combobox_panel_template, default_combobox_template,
 };
-use gpui_luma::controls::search_selector::{
+use luma::controls::search_selector::{
     SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
     SearchSelectorPanelRenderModel, SearchSelectorPanelTemplate, SearchSelectorRenderModel,
     SearchSelectorTemplateHandlers, SelectionItem as SearchSelectorSelectionItem,
     default_search_selector_items_template, default_search_selector_panel_template, default_search_selector_template,
 };
-use gpui_luma::controls::selector::{
+use luma::controls::selector::{
     ControlFocusState, SelectorIcons, SelectorItem, SelectorPath, SelectorPlacement, SelectorRenderModel,
     SelectorTemplateHandlers, SelectorVisualState,
 };
-use gpui_luma::controls::overlay_presence::OverlayPresence;
-use gpui_luma::controls::selector_panel::{
+use luma::controls::overlay_presence::OverlayPresence;
+use luma::controls::selector_panel::{
     SelectorItem as SelectorPanelItem, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplateHandlers,
     SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_template,
 };
-use gpui_luma::controls::tabs_navigation::TabsNavigation;
-use gpui_luma::controls::textfield::{
-    TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant,
-};
-use gpui_luma::controls::textfield::TextFieldLook;
-use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale};
-use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::textfield::{TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant};
+use luma::controls::textfield::TextFieldLook;
+use luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale};
+use luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};
+use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::preview_handlers::{input_noop_click, input_noop_hover, input_textfield_handlers};
@@ -649,7 +647,7 @@ fn render_selector_selector_trigger(
         panel_template: None,
         focus: state.selector_focus,
         state: state.selector_state,
-        visual_state: gpui_luma::controls::selector::SelectorVisualState {
+        visual_state: luma::controls::selector::SelectorVisualState {
             interaction: state.selector_state,
             open: state.selector_open,
             selected: state.selector_selected,
@@ -1037,7 +1035,7 @@ fn selector_preview_textfield_look(
     enabled: bool,
     size: ControlSize,
     window: &Window,
-) -> gpui_luma::controls::textfield::TextFieldLook {
+) -> luma::controls::textfield::TextFieldLook {
     let scale = StandardBoxScale::compute(size, &theme.metrics(), window.scale_factor());
     apply_selector_preview_textfield_size(look, theme.resolve_look(variant, state, enabled, size, &scale), size)
 }

@@ -10,8 +10,8 @@
 //! Track uses `border` rather than `muted` because many tweakcn light themes
 //! set `--muted` near white (e.g. 98% lightness), which disappears on card panels.
 
-use gpui_luma::controls::slider::{SliderLook, SliderThumbSize};
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use luma::controls::slider::{SliderLook, SliderThumbSize};
+use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::controls::button::{ButtonRadiusPreset, ShadcnButtonStyle};
 use crate::look_context::LookContext;
@@ -33,7 +33,7 @@ const DEFAULT_SLIDER_THUMB_SIZE: f32 = 18.0;
 /// Medium/large/full resolve to a pill/circle for the given cross-axis size.
 fn resolve_slider_part_radius_preset(
     preset: ButtonRadiusPreset,
-    metrics: &gpui_luma::theme::MetricTokens,
+    metrics: &luma::theme::MetricTokens,
     cross_axis_size: f32,
 ) -> f32 {
     match preset {
@@ -46,7 +46,7 @@ fn resolve_slider_part_radius_preset(
 /// Thumb corner radius presets for slider controls.
 pub fn resolve_slider_thumb_radius_preset(
     preset: ButtonRadiusPreset,
-    metrics: &gpui_luma::theme::MetricTokens,
+    metrics: &luma::theme::MetricTokens,
     thumb_size: f32,
 ) -> f32 {
     resolve_slider_part_radius_preset(preset, metrics, thumb_size)
@@ -55,7 +55,7 @@ pub fn resolve_slider_thumb_radius_preset(
 /// Track end-cap radius presets for slider controls.
 pub fn resolve_slider_track_radius_preset(
     preset: ButtonRadiusPreset,
-    metrics: &gpui_luma::theme::MetricTokens,
+    metrics: &luma::theme::MetricTokens,
     track_height: f32,
 ) -> f32 {
     resolve_slider_part_radius_preset(preset, metrics, track_height)
@@ -182,13 +182,13 @@ fn slider_elevation_shadow(
 mod tests {
 
     use std::collections::BTreeMap;
-    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+    use luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use super::slider_look;
     use crate::catalog::CssTokenMap;
     use crate::controls::button::{ButtonRadiusPreset, ShadcnButtonStyle};
     use crate::mode::ShadcnModeTokens;
-    use gpui_luma::controls::slider::SliderThumbSize;
+    use luma::controls::slider::SliderThumbSize;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -387,7 +387,7 @@ mod tests {
     #[test]
     fn slider_radius_presets_use_square_and_pill_shapes() {
         use super::{resolve_slider_thumb_radius_preset, resolve_slider_track_radius_preset};
-        use gpui_luma::theme::MetricTokens;
+        use luma::theme::MetricTokens;
 
         let metrics = MetricTokens::default();
         let thumb_size = 16.0;

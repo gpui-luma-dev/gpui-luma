@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
-use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::color_slider::sizing;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
+use luma::controls::color::color_slider::color_spec::Hsv;
+use luma::controls::color::color_slider::sizing;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::color_chrome_exposition::{

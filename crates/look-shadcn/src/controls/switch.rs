@@ -9,8 +9,8 @@
 //! Hover and pressed do not recolor the track or thumb (shadcn Switch has no hover
 //! surface).
 
-use gpui_luma::controls::switch::{SwitchPalette, SwitchScale};
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeMode, snap_to_pixel};
+use luma::controls::switch::{SwitchPalette, SwitchScale};
+use luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeMode, snap_to_pixel};
 
 use super::apply_button_metrics_typography;
 
@@ -210,7 +210,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+    use luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::controls::button::ShadcnButtonStyle;
     use crate::catalog::CssTokenMap;
@@ -417,7 +417,7 @@ mod tests {
 
     #[test]
     fn switch_variants_share_geometry() {
-        use gpui_luma::theme::ControlSize;
+        use luma::theme::ControlSize;
         use super::switch_scale;
 
         let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
@@ -463,7 +463,7 @@ mod tests {
 
     #[test]
     fn switch_radius_presets_match_button_scale() {
-        use gpui_luma::theme::ControlSize;
+        use luma::theme::ControlSize;
         use super::{resolve_switch_radius_preset, switch_scale};
 
         let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");

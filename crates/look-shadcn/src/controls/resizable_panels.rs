@@ -8,8 +8,8 @@
 //! | Grip emphasis | `accent` (layer)   |
 //! | Disabled      | `muted-foreground` |
 
-use gpui_luma::controls::resizable_panels::ResizablePanelsLook;
-use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
+use luma::controls::resizable_panels::ResizablePanelsLook;
+use luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -87,7 +87,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::ThemeMode;
+    use luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;

@@ -2,7 +2,7 @@ use gpui::{
     Context, Hsla, MouseButton, MouseDownEvent, MouseMoveEvent, Pixels, Point, Render, Window, WindowControlArea, div,
     prelude::*, px,
 };
-use gpui_luma::shell::{TITLE_BAR_HEIGHT, TITLE_BAR_LEFT_PADDING};
+use luma::shell::{TITLE_BAR_HEIGHT, TITLE_BAR_LEFT_PADDING};
 
 const TITLE_BAR_DRAG_THRESHOLD_PX: f64 = 4.0;
 

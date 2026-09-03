@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::scroll_container::ScrollContainer;
-use gpui_luma::controls::scrollbar::ScrollbarEvent;
-use gpui_luma::controls::tree_view::{TreeNode, TreeViewControl, TreeViewEvent, TreeViewSelectionMode};
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
-use gpui_luma::{vstack};
+use luma::controls::scroll_container::ScrollContainer;
+use luma::controls::scrollbar::ScrollbarEvent;
+use luma::controls::tree_view::{TreeNode, TreeViewControl, TreeViewEvent, TreeViewSelectionMode};
+use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use luma::{vstack};
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::common::titled_card;

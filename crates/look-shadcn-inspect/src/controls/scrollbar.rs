@@ -1,9 +1,9 @@
 //! Inspect metadata for `scrollbar`.
 
-use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
+use luma::theme::{InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
-use gpui_luma::controls::scrollbar::{ScrollbarOrientation, ScrollbarStyle};
+use luma::controls::scrollbar::{ScrollbarOrientation, ScrollbarStyle};
 
 pub struct ScrollbarInspectPalette {
     pub track_background: ResolvedColor,
@@ -12,12 +12,12 @@ pub struct ScrollbarInspectPalette {
 
 #[derive(Clone, Debug)]
 pub struct ScrollbarInspectMetrics {
-    pub length: gpui_luma_look_shadcn::ResolvedMetric,
-    pub thickness: gpui_luma_look_shadcn::ResolvedMetric,
-    pub track_thickness: gpui_luma_look_shadcn::ResolvedMetric,
-    pub thumb_thickness: gpui_luma_look_shadcn::ResolvedMetric,
-    pub min_thumb_length: gpui_luma_look_shadcn::ResolvedMetric,
-    pub radius: gpui_luma_look_shadcn::ResolvedMetric,
+    pub length: luma_look_shadcn::ResolvedMetric,
+    pub thickness: luma_look_shadcn::ResolvedMetric,
+    pub track_thickness: luma_look_shadcn::ResolvedMetric,
+    pub thumb_thickness: luma_look_shadcn::ResolvedMetric,
+    pub min_thumb_length: luma_look_shadcn::ResolvedMetric,
+    pub radius: luma_look_shadcn::ResolvedMetric,
 }
 
 pub fn inspect_scrollbar_color_palette(
@@ -28,9 +28,8 @@ pub fn inspect_scrollbar_color_palette(
 ) -> ScrollbarInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "scrollbar_inspect");
-    let colors =
-        gpui_luma_look_shadcn::tables::resolve_scrollbar_colors(&resolver, style, state.disabled, state.layer())
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ScrollbarColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_scrollbar_colors(&resolver, style, state.disabled, state.layer())
+        .unwrap_or_else(|_| luma_look_shadcn::tables::ScrollbarColorTable::fallback());
 
     ScrollbarInspectPalette { track_background: colors.track_background, thumb_background: colors.thumb_background }
 }
@@ -44,11 +43,11 @@ pub fn inspect_scrollbar_metrics(
     use crate::metrics::{derived_metric, pill_radius_metric};
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let look = gpui_luma_look_shadcn::paint::scrollbar_look(
+    let look = luma_look_shadcn::paint::scrollbar_look(
         mode,
         InteractionState::default(),
         orientation,
-        gpui_luma::theme::ControlSize::Md,
+        luma::theme::ControlSize::Md,
         style,
     );
     let catalog = ctx.catalog();

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma::controls::button_family::ButtonFamilyRole;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 
 use super::inspector::common::{choice_variant_style, interaction_state, value_flag};
 use super::inspector::metrics::toggle_layout_section;

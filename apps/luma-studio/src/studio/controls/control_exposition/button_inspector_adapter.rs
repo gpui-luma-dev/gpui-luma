@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma::controls::button_family::ButtonFamilyRole;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::inspector::common::{button_variant_style, control_size, interaction_state};

@@ -1,5 +1,5 @@
 [package]
-name = "gpui-luma-look-shadcn"
+name = "luma-look-shadcn"
 version.workspace = true
 edition = "2024"
 license = "Apache-2.0"
@@ -7,7 +7,7 @@ publish = false
 
 [dependencies]
 gpui.workspace = true
-gpui-luma = { path = "../sdk" }
+luma = { path = "../sdk" }
 anyhow.workspace = true
 serde = { workspace = true, features = ["derive"] }
 toml.workspace = true

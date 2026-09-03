@@ -2,7 +2,7 @@
 
 use gpui::{Hsla, hsla};
 
-use gpui_luma::theme::{InteractionLayer, ThemeMode};
+use luma::theme::{InteractionLayer, ThemeMode};
 
 use crate::catalog::CssTokenMap;
 use crate::color::with_alpha;
@@ -398,7 +398,7 @@ fn is_filled_token(base: &str) -> bool {
 mod tests {
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::ThemeMode;
+    use luma::theme::ThemeMode;
 
     use super::*;
     use crate::catalog::CssTokenMap;

@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{App, Div, Stateful, Window, div, hsla, px, prelude::*};
-use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use gpui_luma::controls::switch::SwitchData;
+use luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use luma::controls::switch::SwitchData;
 
 pub fn neumorphic_switch_template() -> Arc<dyn ButtonTemplate<SwitchData>> {
     static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate<SwitchData>>> = OnceLock::new();

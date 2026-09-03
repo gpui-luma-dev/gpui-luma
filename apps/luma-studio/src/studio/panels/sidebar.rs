@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::SharedString;
-use gpui_luma::controls::sidebar::{SidebarBuilder, SidebarMenuItemBuilder};
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::sidebar::{SidebarBuilder, SidebarMenuItemBuilder};
+use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 pub(crate) const INITIAL_PROPERTY_SELECTION_ID: &str = "dimensions";

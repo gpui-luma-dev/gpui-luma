@@ -7,10 +7,10 @@
 //! | Hover | `border` (no change) |
 //! | Press | `border` (darkened)  |
 
-use gpui_luma::controls::scrollbar::ScrollbarLook;
-use gpui_luma::controls::scrollbar::ScrollbarOrientation;
-use gpui_luma::controls::scrollbar::ScrollbarStyle;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use luma::controls::scrollbar::ScrollbarLook;
+use luma::controls::scrollbar::ScrollbarOrientation;
+use luma::controls::scrollbar::ScrollbarStyle;
+use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -118,11 +118,11 @@ fn scrollbar_style_key(style: ScrollbarStyle) -> &'static str {
 mod tests {
 
     use std::collections::BTreeMap;
-    use gpui_luma::theme::ThemeMode;
+    use luma::theme::ThemeMode;
 
-    use gpui_luma::controls::scrollbar::ScrollbarOrientation;
-    use gpui_luma::controls::scrollbar::ScrollbarStyle;
-    use gpui_luma::theme::InteractionState;
+    use luma::controls::scrollbar::ScrollbarOrientation;
+    use luma::controls::scrollbar::ScrollbarStyle;
+    use luma::theme::InteractionState;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -154,7 +154,7 @@ mod tests {
             &mode,
             InteractionState::default(),
             ScrollbarOrientation::Vertical,
-            gpui_luma::theme::ControlSize::Md,
+            luma::theme::ControlSize::Md,
             ScrollbarStyle::Ghost,
         );
 
@@ -169,21 +169,21 @@ mod tests {
             &mode,
             InteractionState::default(),
             ScrollbarOrientation::Vertical,
-            gpui_luma::theme::ControlSize::Sm,
+            luma::theme::ControlSize::Sm,
             ScrollbarStyle::Ghost,
         );
         let medium = scrollbar_look(
             &mode,
             InteractionState::default(),
             ScrollbarOrientation::Vertical,
-            gpui_luma::theme::ControlSize::Md,
+            luma::theme::ControlSize::Md,
             ScrollbarStyle::Ghost,
         );
         let large = scrollbar_look(
             &mode,
             InteractionState::default(),
             ScrollbarOrientation::Vertical,
-            gpui_luma::theme::ControlSize::Lg,
+            luma::theme::ControlSize::Lg,
             ScrollbarStyle::Ghost,
         );
 
@@ -203,14 +203,14 @@ mod tests {
             &mode,
             InteractionState { hovered: true, ..InteractionState::default() },
             ScrollbarOrientation::Vertical,
-            gpui_luma::theme::ControlSize::Md,
+            luma::theme::ControlSize::Md,
             ScrollbarStyle::Ghost,
         );
         let focused = scrollbar_look(
             &mode,
             InteractionState { focused: true, ..InteractionState::default() },
             ScrollbarOrientation::Vertical,
-            gpui_luma::theme::ControlSize::Md,
+            luma::theme::ControlSize::Md,
             ScrollbarStyle::Ghost,
         );
 
@@ -226,7 +226,7 @@ mod tests {
             &mode,
             InteractionState::default(),
             ScrollbarOrientation::Vertical,
-            gpui_luma::theme::ControlSize::Md,
+            luma::theme::ControlSize::Md,
             ScrollbarStyle::Soft,
         );
 

@@ -1,9 +1,9 @@
 //! Inspect metadata for `pager`.
 
-use gpui_luma::controls::{
+use luma::controls::{
     button_family::ButtonFamilyRole, choice_indicator_layout::shadow_projection_extent, pager::PagerStyle,
 };
-use gpui_luma_look_shadcn::{ColorSource, ResolvedColor, ResolvedMetric, ResolvedTypography, ShadcnLook, TypographySource};
+use luma_look_shadcn::{ColorSource, ResolvedColor, ResolvedMetric, ResolvedTypography, ShadcnLook, TypographySource};
 
 #[derive(Clone, Debug)]
 pub struct PagerShellInspectPalette {
@@ -34,7 +34,7 @@ pub fn inspect_pager_shell_color_palette(
     enabled: bool,
     style: PagerStyle,
 ) -> PagerShellInspectPalette {
-    let pager = gpui_luma_look_shadcn::paint::pager_look(look, enabled, style);
+    let pager = luma_look_shadcn::paint::pager_look(look, enabled, style);
 
     PagerShellInspectPalette {
         panel_background: resolved_shell_background(enabled, pager.panel_background),
@@ -55,12 +55,12 @@ pub fn inspect_pager_shell_color_palette(
 pub fn inspect_pager_metrics(look: &ShadcnLook, style: PagerStyle) -> PagerInspectMetrics {
     use crate::metrics::derived_metric;
 
-    let pager = gpui_luma_look_shadcn::paint::pager_look(look, true, style);
+    let pager = luma_look_shadcn::paint::pager_look(look, true, style);
     let style_label = pager_style_label(style);
     let button = look.resolve_outline_button(
         ButtonFamilyRole::Toggle { selected: false },
-        gpui_luma::theme::ControlSize::Sm,
-        gpui_luma::theme::InteractionState::default(),
+        luma::theme::ControlSize::Sm,
+        luma::theme::InteractionState::default(),
     );
     let reserved_shadow_extent = shadow_projection_extent(button.shadow.as_deref(), 1.0, true);
 
@@ -76,9 +76,7 @@ pub fn inspect_pager_metrics(look: &ShadcnLook, style: PagerStyle) -> PagerInspe
         font_family: pager_font_family(look),
         reserved_shadow_extent: ResolvedMetric {
             value_px: reserved_shadow_extent,
-            source: gpui_luma_look_shadcn::MetricSource::Derived {
-                note: "button outline shadow projection extent".into(),
-            },
+            source: luma_look_shadcn::MetricSource::Derived { note: "button outline shadow projection extent".into() },
         },
     }
 }

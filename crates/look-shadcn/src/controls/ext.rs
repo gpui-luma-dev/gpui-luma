@@ -9,46 +9,46 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use gpui_luma::controls::autocomplete::{self, AutocompleteTextBoxBuilder};
-use gpui_luma::controls::button_group::{self, IconGroupBuilder};
+use luma::controls::autocomplete::{self, AutocompleteTextBoxBuilder};
+use luma::controls::button_group::{self, IconGroupBuilder};
 use super::card::ShadcnCardBuilder;
-use gpui_luma::controls::checkbox::{self, CheckboxBuilder};
-use gpui_luma::controls::combobox::{self, ComboBoxBuilder};
-use gpui_luma::controls::command::button::{Button, ButtonBuilder, ControlIcon};
-use gpui_luma::controls::command::icon_button;
-use gpui_luma::controls::control_group::{ControlGroupBuilder, ControlGroupItemLike};
-use gpui_luma::controls::list_view::{self, ListViewBuilder};
-use gpui_luma::controls::listbox::{self, ListBoxItem};
-use gpui_luma::controls::sidebar::{
+use luma::controls::checkbox::{self, CheckboxBuilder};
+use luma::controls::combobox::{self, ComboBoxBuilder};
+use luma::controls::command::button::{Button, ButtonBuilder, ControlIcon};
+use luma::controls::command::icon_button;
+use luma::controls::control_group::{ControlGroupBuilder, ControlGroupItemLike};
+use luma::controls::list_view::{self, ListViewBuilder};
+use luma::controls::listbox::{self, ListBoxItem};
+use luma::controls::sidebar::{
     SidebarBuilder, SidebarContentBuilder, SidebarControlBuilder, SidebarFooterBuilder, SidebarGroupBuilder,
     SidebarHeaderBuilder, SidebarInsetBuilder, SidebarMenuBuilder, SidebarMenuItemBuilder, SidebarMenuSubBuilder,
     SidebarRailBuilder,
 };
-use gpui_luma::controls::context_menu::ContextMenu;
-use gpui_luma::controls::overlay_window::OverlayWindowBuilder;
-use gpui_luma::controls::pager::{self, PagerBuilder};
-use gpui_luma::controls::popup_menu::PopupMenu;
-use gpui_luma::controls::split_button::SplitButtonBuilder;
-use gpui_luma::controls::progress::{self, ProgressBuilder};
-use gpui_luma::controls::stepper::{self, StepperBuilder};
-use gpui_luma::controls::resizable_panels::ResizablePanelsBuilder;
-use gpui_luma::controls::radio_button::{self, RadioButtonBuilder};
-use gpui_luma::controls::radio_group::{
+use luma::controls::context_menu::ContextMenu;
+use luma::controls::overlay_window::OverlayWindowBuilder;
+use luma::controls::pager::{self, PagerBuilder};
+use luma::controls::popup_menu::PopupMenu;
+use luma::controls::split_button::SplitButtonBuilder;
+use luma::controls::progress::{self, ProgressBuilder};
+use luma::controls::stepper::{self, StepperBuilder};
+use luma::controls::resizable_panels::ResizablePanelsBuilder;
+use luma::controls::radio_button::{self, RadioButtonBuilder};
+use luma::controls::radio_group::{
     self, RadioGroupBuilder, RadioGroupLayout, radio_group_button_item_element_template, radio_group_buttons_template,
 };
-use gpui_luma::controls::scrollbar::{self, ScrollbarBuilder};
-use gpui_luma::controls::selector::{Selector, SelectorBuilder, SelectorItem};
-use gpui_luma::controls::selection_panel::{SelectionPanelBuilder, SelectionPanelControl, SelectionPanelItem};
-use gpui_luma::controls::search_selector::{self, SearchSelectorBuilder};
-use gpui_luma::controls::slider::{self, SliderBuilder};
-use gpui_luma::controls::switch::{self, SwitchBuilder};
-use gpui_luma::controls::accordion::AccordionBuilder;
-use gpui_luma::controls::tree_view::TreeViewBuilder;
-use gpui_luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationBuilder};
-use gpui_luma::controls::textarea::{self, TextAreaBuilder, ThemedTextAreaTemplate};
-use gpui_luma::controls::textfield::{self, TextFieldBuilder, ThemedTextFieldTemplate};
-use gpui_luma::controls::toggle::{self, ToggleBuilder};
-use gpui_luma::controls::toolbar::{self, ToolbarBuilder};
+use luma::controls::scrollbar::{self, ScrollbarBuilder};
+use luma::controls::selector::{Selector, SelectorBuilder, SelectorItem};
+use luma::controls::selection_panel::{SelectionPanelBuilder, SelectionPanelControl, SelectionPanelItem};
+use luma::controls::search_selector::{self, SearchSelectorBuilder};
+use luma::controls::slider::{self, SliderBuilder};
+use luma::controls::switch::{self, SwitchBuilder};
+use luma::controls::accordion::AccordionBuilder;
+use luma::controls::tree_view::TreeViewBuilder;
+use luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationBuilder};
+use luma::controls::textarea::{self, TextAreaBuilder, ThemedTextAreaTemplate};
+use luma::controls::textfield::{self, TextFieldBuilder, ThemedTextFieldTemplate};
+use luma::controls::toggle::{self, ToggleBuilder};
+use luma::controls::toolbar::{self, ToolbarBuilder};
 use super::button::ShadcnButtonStyle;
 use crate::elements::Badge;
 use crate::look::ShadcnLook;
@@ -96,12 +96,12 @@ pub trait ShadcnLookControlExt {
     fn ghost_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder;
     fn content_only_toggle(&self, id: impl Into<SharedString>) -> ToggleBuilder;
 
-    fn popup_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::popup_menu::PopupMenuBuilder;
+    fn popup_menu(&self, id: impl Into<SharedString>) -> luma::controls::popup_menu::PopupMenuBuilder;
     fn primary_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder;
     fn secondary_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder;
     fn outline_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder;
     fn ghost_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder;
-    fn context_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::context_menu::ContextMenuBuilder;
+    fn context_menu(&self, id: impl Into<SharedString>) -> luma::controls::context_menu::ContextMenuBuilder;
     fn listbox(&self, id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem>;
     fn listbox_multiple(&self, id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem>;
     fn list_view<T>(&self, id: impl Into<SharedString>) -> ListViewBuilder<T>
@@ -150,17 +150,17 @@ pub trait ShadcnLookControlExt {
     fn autocomplete(
         &self,
         id: impl Into<SharedString>,
-        items: impl IntoIterator<Item = gpui_luma::controls::autocomplete::SelectionItem>,
+        items: impl IntoIterator<Item = luma::controls::autocomplete::SelectionItem>,
     ) -> AutocompleteTextBoxBuilder;
     fn combobox(
         &self,
         id: impl Into<SharedString>,
-        items: impl IntoIterator<Item = gpui_luma::controls::combobox::SelectionItem>,
+        items: impl IntoIterator<Item = luma::controls::combobox::SelectionItem>,
     ) -> ComboBoxBuilder;
     fn search_selector(
         &self,
         id: impl Into<SharedString>,
-        items: impl IntoIterator<Item = gpui_luma::controls::search_selector::SelectionItem>,
+        items: impl IntoIterator<Item = luma::controls::search_selector::SelectionItem>,
     ) -> SearchSelectorBuilder;
 
     fn button_group<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
@@ -331,39 +331,39 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         toggle::new(id).template(self.toggle_template(ShadcnButtonStyle::ContentOnly)).without_elevation()
     }
 
-    fn popup_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::popup_menu::PopupMenuBuilder {
+    fn popup_menu(&self, id: impl Into<SharedString>) -> luma::controls::popup_menu::PopupMenuBuilder {
         PopupMenu::new(id).template(self.popup_menu_template())
     }
 
     fn primary_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder {
         PopupMenu::new(id)
             .split()
-            .trigger_style(gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Primary)
+            .trigger_style(luma::controls::popup_menu::PopupMenuTriggerStyle::Primary)
             .template(self.popup_menu_template())
     }
 
     fn secondary_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder {
         PopupMenu::new(id)
             .split()
-            .trigger_style(gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Secondary)
+            .trigger_style(luma::controls::popup_menu::PopupMenuTriggerStyle::Secondary)
             .template(self.popup_menu_template())
     }
 
     fn outline_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder {
         PopupMenu::new(id)
             .split()
-            .trigger_style(gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Outline)
+            .trigger_style(luma::controls::popup_menu::PopupMenuTriggerStyle::Outline)
             .template(self.popup_menu_template())
     }
 
     fn ghost_split_button(&self, id: impl Into<SharedString>) -> SplitButtonBuilder {
         PopupMenu::new(id)
             .split()
-            .trigger_style(gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Ghost)
+            .trigger_style(luma::controls::popup_menu::PopupMenuTriggerStyle::Ghost)
             .template(self.popup_menu_template())
     }
 
-    fn context_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::context_menu::ContextMenuBuilder {
+    fn context_menu(&self, id: impl Into<SharedString>) -> luma::controls::context_menu::ContextMenuBuilder {
         ContextMenu::new(id).template(self.context_menu_template())
     }
 
@@ -535,7 +535,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     fn autocomplete(
         &self,
         id: impl Into<SharedString>,
-        items: impl IntoIterator<Item = gpui_luma::controls::autocomplete::SelectionItem>,
+        items: impl IntoIterator<Item = luma::controls::autocomplete::SelectionItem>,
     ) -> AutocompleteTextBoxBuilder {
         let theme = Arc::clone(self);
         autocomplete::new(id, items)
@@ -549,7 +549,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     fn combobox(
         &self,
         id: impl Into<SharedString>,
-        items: impl IntoIterator<Item = gpui_luma::controls::combobox::SelectionItem>,
+        items: impl IntoIterator<Item = luma::controls::combobox::SelectionItem>,
     ) -> ComboBoxBuilder {
         let theme = Arc::clone(self);
         combobox::new(id, items)
@@ -563,7 +563,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     fn search_selector(
         &self,
         id: impl Into<SharedString>,
-        items: impl IntoIterator<Item = gpui_luma::controls::search_selector::SelectionItem>,
+        items: impl IntoIterator<Item = luma::controls::search_selector::SelectionItem>,
     ) -> SearchSelectorBuilder {
         let theme = Arc::clone(self);
         search_selector::new(id, items)
@@ -610,7 +610,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn selection_panel_builder(&self, id: impl Into<SharedString>) -> SelectionPanelBuilder<SelectionPanelItem> {
         let theme = Arc::clone(self);
-        gpui_luma::controls::selection_panel::new(id)
+        luma::controls::selection_panel::new(id)
             .scrollbar_template(theme.scrollbar_template())
             .look_provider(Arc::new(move |size| theme.selection_panel_look(size)))
     }

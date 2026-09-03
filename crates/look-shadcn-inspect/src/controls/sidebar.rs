@@ -1,9 +1,9 @@
 //! Inspect metadata for sidebar flush theme tokens.
 
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
-use gpui_luma_look_shadcn::catalog::SpacingField;
+use luma_look_shadcn::catalog::SpacingField;
 
 pub struct SidebarContainerInspectPalette {
     pub background: ResolvedColor,
@@ -40,8 +40,8 @@ pub fn inspect_sidebar_container_color_palette(
 ) -> SidebarContainerInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_container_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_sidebar_container_colors(&resolver, true)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SidebarContainerColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_sidebar_container_colors(&resolver, true)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::SidebarContainerColorTable::fallback());
     SidebarContainerInspectPalette {
         background: colors.background,
         foreground: colors.foreground,
@@ -55,8 +55,8 @@ pub fn inspect_sidebar_section_color_palette(
 ) -> SidebarSectionInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_section_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_sidebar_section_colors(&resolver, true)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SidebarSectionColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_sidebar_section_colors(&resolver, true)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::SidebarSectionColorTable::fallback());
     SidebarSectionInspectPalette { label_color: colors.label_color }
 }
 
@@ -67,8 +67,8 @@ pub fn inspect_sidebar_branch_color_palette(
 ) -> SidebarItemInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_branch_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_sidebar_branch_colors(&resolver, state.disabled, state.layer())
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SidebarBranchColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_sidebar_branch_colors(&resolver, state.disabled, state.layer())
+        .unwrap_or_else(|_| luma_look_shadcn::tables::SidebarBranchColorTable::fallback());
     SidebarItemInspectPalette {
         background: colors.background,
         focus_border: state.focused.then(|| resolver.resolve_decl("ring").ok()).flatten(),
@@ -86,8 +86,8 @@ pub fn inspect_sidebar_item_color_palette(
     let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_item_inspect");
     let colors =
-        gpui_luma_look_shadcn::tables::resolve_sidebar_item_colors(&resolver, selected, state.disabled, state.layer())
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SidebarItemColorTable::fallback());
+        luma_look_shadcn::tables::resolve_sidebar_item_colors(&resolver, selected, state.disabled, state.layer())
+            .unwrap_or_else(|_| luma_look_shadcn::tables::SidebarItemColorTable::fallback());
     SidebarItemInspectPalette {
         background: colors.background,
         focus_border: state.focused.then(|| resolver.resolve_decl("ring").ok()).flatten(),
@@ -126,8 +126,8 @@ mod tests {
     #[test]
     fn sidebar_container_metadata_matches_table() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_sidebar_container_colors_metadata(
-                gpui_luma_look_shadcn::embedded_stylesheet()
+            luma_look_shadcn::stylesheet::resolve_sidebar_container_colors_metadata(
+                luma_look_shadcn::embedded_stylesheet()
             )
             .len(),
             1
@@ -137,10 +137,8 @@ mod tests {
     #[test]
     fn sidebar_item_metadata_matches_table() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_sidebar_item_colors_metadata(
-                gpui_luma_look_shadcn::embedded_stylesheet()
-            )
-            .len(),
+            luma_look_shadcn::stylesheet::resolve_sidebar_item_colors_metadata(luma_look_shadcn::embedded_stylesheet())
+                .len(),
             10
         );
     }

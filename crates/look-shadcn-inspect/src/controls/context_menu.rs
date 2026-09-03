@@ -1,21 +1,21 @@
 //! Inspect metadata for `context_menu`.
 
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, ShadcnModeTokens};
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, ShadcnModeTokens};
 
 pub struct ContextMenuInspectPalette {
-    pub target_background: gpui_luma_look_shadcn::ResolvedColor,
-    pub target_foreground: gpui_luma_look_shadcn::ResolvedColor,
-    pub target_border: gpui_luma_look_shadcn::ResolvedColor,
+    pub target_background: luma_look_shadcn::ResolvedColor,
+    pub target_foreground: luma_look_shadcn::ResolvedColor,
+    pub target_border: luma_look_shadcn::ResolvedColor,
     pub menu: crate::controls::floating_menu::FloatingMenuInspectPalette,
 }
 
 #[derive(Clone, Debug)]
 pub struct ContextMenuInspectMetrics {
-    pub target_padding_x: gpui_luma_look_shadcn::ResolvedMetric,
-    pub target_padding_y: gpui_luma_look_shadcn::ResolvedMetric,
-    pub target_radius: gpui_luma_look_shadcn::ResolvedMetric,
-    pub target_min_width: gpui_luma_look_shadcn::ResolvedMetric,
+    pub target_padding_x: luma_look_shadcn::ResolvedMetric,
+    pub target_padding_y: luma_look_shadcn::ResolvedMetric,
+    pub target_radius: luma_look_shadcn::ResolvedMetric,
+    pub target_min_width: luma_look_shadcn::ResolvedMetric,
     pub menu: crate::controls::floating_menu::FloatingMenuInspectMetrics,
 }
 
@@ -25,15 +25,15 @@ pub fn inspect_context_menu_color_palette(
     state: InteractionState,
     size: ControlSize,
 ) -> ContextMenuInspectPalette {
-    use gpui_luma_look_shadcn::{ColorSource, LookResolver, ResolvedColor};
+    use luma_look_shadcn::{ColorSource, LookResolver, ResolvedColor};
 
     let ctx = LookContext::new(mode, theme_mode, state);
     let menu = crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size);
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "context_menu_inspect");
     let trigger_colors =
-        gpui_luma_look_shadcn::tables::resolve_ghost_trigger_colors(&resolver, state.layer(), state.disabled)
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::GhostTriggerColorTable::fallback());
+        luma_look_shadcn::tables::resolve_ghost_trigger_colors(&resolver, state.layer(), state.disabled)
+            .unwrap_or_else(|_| luma_look_shadcn::tables::GhostTriggerColorTable::fallback());
     let target_background = trigger_colors.background;
     let target_foreground = trigger_colors.foreground;
     let target_border = resolver.resolve_decl("border").unwrap_or_else(|_| ResolvedColor {
@@ -49,10 +49,10 @@ pub fn inspect_context_menu_metrics(
     size: ControlSize,
 ) -> ContextMenuInspectMetrics {
     use crate::metrics::{derived_metric, radius_metric, spacing_control_metric};
-    use gpui_luma_look_shadcn::catalog::SpacingField;
+    use luma_look_shadcn::catalog::SpacingField;
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let look = gpui_luma_look_shadcn::paint::context_menu_look(mode, theme_mode, InteractionState::default());
+    let look = luma_look_shadcn::paint::context_menu_look(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
 
     ContextMenuInspectMetrics {

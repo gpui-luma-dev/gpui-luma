@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use gpui::{App, Div, Hsla, Stateful, Window, div, prelude::*, px};
-use gpui_luma::controls::color::style::ElementExt;
-use gpui_luma::controls::control_group::ControlGroupItemHandlerExt;
-use gpui_luma::controls::tabs_navigation::{
+use luma::controls::color::style::ElementExt;
+use luma::controls::control_group::ControlGroupItemHandlerExt;
+use luma::controls::tabs_navigation::{
     TabsNavigationIndicatorMotion, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
     TabsNavigationTheme, render_tabs_navigation_item_button, resolve_tabs_navigation_uniform_item_width,
 };
-use gpui_luma::theme::{ControlSize, InteractionState};
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::theme::{ControlSize, InteractionState};
+use luma_look_shadcn::ShadcnLook;
 
 pub fn luma_studio_tabs_navigation_template(
     look: Arc<ShadcnLook>,

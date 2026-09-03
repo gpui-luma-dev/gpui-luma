@@ -8,8 +8,8 @@
 //! | Disabled label | `muted-foreground`                 |
 //! | Icon / chevron | `sidebar-foreground`               |
 
-use gpui_luma::controls::tree_view::TreeViewPalette;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use luma::controls::tree_view::TreeViewPalette;
+use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use super::apply_button_metrics_typography;
 
@@ -94,7 +94,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::{ControlSize, InteractionLayer, ThemeMode};
+    use luma::theme::{ControlSize, InteractionLayer, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -128,7 +128,7 @@ mod tests {
         let palette = tree_view_row_palette(
             &mode,
             false,
-            gpui_luma::theme::InteractionState { hovered: true, ..Default::default() },
+            luma::theme::InteractionState { hovered: true, ..Default::default() },
             ControlSize::Md,
         );
         let resolver = LookResolver::new(&catalog, ThemeMode::Light, "test");

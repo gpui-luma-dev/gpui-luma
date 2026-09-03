@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use gpui_luma::controls::color::style::{ColorControlTheme, set_active_color_control_theme};
-use gpui_luma::theme::{LumaThemeSyncExt, ThemeMode};
-use gpui_luma_look_shadcn::{ShadcnLook, built_in_theme, built_in_themes};
+use luma::controls::color::style::{ColorControlTheme, set_active_color_control_theme};
+use luma::theme::{LumaThemeSyncExt, ThemeMode};
+use luma_look_shadcn::{ShadcnLook, built_in_theme, built_in_themes};
 
 fn available_theme_names() -> Vec<String> {
     built_in_themes().iter().map(|theme| theme.id.to_string()).collect()
@@ -47,7 +47,7 @@ impl ShellThemeChoice {
     }
 
     fn usage_line() -> String {
-        let program = std::env::args().next().unwrap_or_else(|| "gpui-luma-shell".into());
+        let program = std::env::args().next().unwrap_or_else(|| "luma-shell".into());
         let mut options = vec!["default".to_string()];
         options.extend(available_theme_names());
         format!("usage: {program} [{}]", options.join("|"))

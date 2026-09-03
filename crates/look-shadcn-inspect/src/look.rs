@@ -1,12 +1,12 @@
-use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::controls::resizable_panels::ResizeHandleSize;
-use gpui_luma::controls::scrollbar::{ScrollbarOrientation, ScrollbarStyle};
-use gpui_luma::controls::textarea::TextAreaState;
-use gpui_luma::controls::textfield::TextFieldState;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma::controls::button_family::ButtonFamilyRole;
+use luma::controls::resizable_panels::ResizeHandleSize;
+use luma::controls::scrollbar::{ScrollbarOrientation, ScrollbarStyle};
+use luma::controls::textarea::TextAreaState;
+use luma::controls::textfield::TextFieldState;
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
 
-use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnTextFieldStyle};
-use gpui_luma_look_shadcn::BadgeVariant;
+use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnTextFieldStyle};
+use luma_look_shadcn::BadgeVariant;
 
 use crate::controls::{
     AccordionContentInspectPalette, AccordionInspectMetrics, AccordionTriggerInspectPalette,
@@ -65,7 +65,7 @@ impl<'a> ShadcnInspect<'a> {
         self.look
     }
 
-    fn mode_tokens(&self) -> std::sync::Arc<gpui_luma_look_shadcn::ShadcnModeTokens> {
+    fn mode_tokens(&self) -> std::sync::Arc<luma_look_shadcn::ShadcnModeTokens> {
         self.look.mode_tokens()
     }
 
@@ -272,7 +272,7 @@ impl<'a> ShadcnInspect<'a> {
     pub fn inspect_overlay_window_color_palette(
         &self,
         size: ControlSize,
-        mode: gpui_luma::controls::overlay_window::OverlayWindowMode,
+        mode: luma::controls::overlay_window::OverlayWindowMode,
     ) -> OverlayWindowInspectPalette {
         inspect_overlay_window_color_palette(self.look(), size, mode)
     }
@@ -280,7 +280,7 @@ impl<'a> ShadcnInspect<'a> {
     pub fn inspect_overlay_window_metrics(
         &self,
         size: ControlSize,
-        mode: gpui_luma::controls::overlay_window::OverlayWindowMode,
+        mode: luma::controls::overlay_window::OverlayWindowMode,
     ) -> OverlayWindowInspectMetrics {
         inspect_overlay_window_metrics(self.look(), size, mode)
     }
@@ -299,7 +299,7 @@ impl<'a> ShadcnInspect<'a> {
 
     pub fn inspect_popup_menu_color_palette(
         &self,
-        trigger_style: gpui_luma::controls::popup_menu::PopupMenuTriggerStyle,
+        trigger_style: luma::controls::popup_menu::PopupMenuTriggerStyle,
         state: InteractionState,
         size: ControlSize,
     ) -> PopupMenuInspectPalette {
@@ -308,7 +308,7 @@ impl<'a> ShadcnInspect<'a> {
 
     pub fn inspect_popup_menu_metrics(
         &self,
-        trigger_style: gpui_luma::controls::popup_menu::PopupMenuTriggerStyle,
+        trigger_style: luma::controls::popup_menu::PopupMenuTriggerStyle,
         size: ControlSize,
     ) -> PopupMenuInspectMetrics {
         inspect_popup_menu_metrics(&self.mode_tokens(), self.theme_mode(), trigger_style, size)
@@ -333,7 +333,7 @@ impl<'a> ShadcnInspect<'a> {
     pub fn inspect_toolbar_color_palette(
         &self,
         enabled: bool,
-        variant: gpui_luma::controls::toolbar::ToolbarVariant,
+        variant: luma::controls::toolbar::ToolbarVariant,
     ) -> ToolbarInspectPalette {
         inspect_toolbar_color_palette(&self.mode_tokens(), self.theme_mode(), enabled, variant)
     }
@@ -345,12 +345,12 @@ impl<'a> ShadcnInspect<'a> {
     pub fn inspect_pager_shell_color_palette(
         &self,
         enabled: bool,
-        style: gpui_luma::controls::pager::PagerStyle,
+        style: luma::controls::pager::PagerStyle,
     ) -> PagerShellInspectPalette {
         inspect_pager_shell_color_palette(self.look, enabled, style)
     }
 
-    pub fn inspect_pager_metrics(&self, style: gpui_luma::controls::pager::PagerStyle) -> PagerInspectMetrics {
+    pub fn inspect_pager_metrics(&self, style: luma::controls::pager::PagerStyle) -> PagerInspectMetrics {
         inspect_pager_metrics(self.look, style)
     }
 
@@ -458,7 +458,7 @@ impl<'a> ShadcnInspect<'a> {
         inspect_selector_color_palette(
             &self.mode_tokens(),
             self.theme_mode(),
-            gpui_luma::controls::selector::SelectorTriggerStyle::Outline,
+            luma::controls::selector::SelectorTriggerStyle::Outline,
             state,
             size,
         )
@@ -468,7 +468,7 @@ impl<'a> ShadcnInspect<'a> {
         inspect_selector_metrics(
             &self.mode_tokens(),
             self.theme_mode(),
-            gpui_luma::controls::selector::SelectorTriggerStyle::Outline,
+            luma::controls::selector::SelectorTriggerStyle::Outline,
             size,
         )
     }

@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::overlay_window::{OverlayWindow, OverlayWindowMode};
-use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::command::button::{Button, ButtonEvent};
+use luma::controls::overlay_window::{OverlayWindow, OverlayWindowMode};
+use luma::controls::presenter::HasPresenter;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};

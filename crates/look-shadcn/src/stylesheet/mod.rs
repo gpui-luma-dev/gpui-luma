@@ -25,7 +25,7 @@ pub use resolve::{
 
 use std::sync::OnceLock;
 
-use gpui_luma::theme::{InteractionLayer, ThemeMode};
+use luma::theme::{InteractionLayer, ThemeMode};
 
 use crate::controls::ShadcnButtonStyle;
 use crate::elements::BadgeVariant;

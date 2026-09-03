@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::ButtonRenderModel;
-use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::switch::{Switch, SwitchBuilder, SwitchData, SwitchEvent, SwitchOrientation};
-use gpui_luma::theme::InteractionState;
-use gpui_luma_look_shadcn::paint::switch_look;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
+use luma::controls::command::button::ButtonRenderModel;
+use luma::controls::presenter::HasPresenter;
+use luma::controls::switch::{Switch, SwitchBuilder, SwitchData, SwitchEvent, SwitchOrientation};
+use luma::theme::InteractionState;
+use luma_look_shadcn::paint::switch_look;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::icons::render_lucide_icon;

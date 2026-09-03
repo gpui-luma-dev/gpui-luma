@@ -3,14 +3,14 @@ pub(crate) mod customization;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::slider::{
+use luma::controls::slider::{
     SliderInputStrategy, SliderRenderModel, SliderTemplate, SliderThumbPolicy, SliderThumbRole, SliderThumbValue,
     ThumbId, TrackPresentation, build_track_segments,
 };
-use gpui_luma::controls::tabs_navigation::TabsNavigation;
-use gpui_luma::controls::value::ControlRange;
-use gpui_luma::theme::{ControlSize, InteractionState};
-use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
+use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::value::ControlRange;
+use luma::theme::{ControlSize, InteractionState};
+use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 
 use crate::studio::style::sections::slider::customization::SliderCustomizationPreview;
 use crate::studio::style::shared::button_matrix::{
@@ -361,19 +361,19 @@ fn slider_radius_id(radius: ButtonRadiusPreset) -> &'static str {
 
 fn slider_thumb_radius_px(look: &ShadcnLook, size: ControlSize, preset: ButtonRadiusPreset) -> f32 {
     let (metrics, look) = slider_size_metrics(look, size);
-    gpui_luma_look_shadcn::paint::resolve_slider_thumb_radius_preset(preset, &metrics, look.thumb_size)
+    luma_look_shadcn::paint::resolve_slider_thumb_radius_preset(preset, &metrics, look.thumb_size)
 }
 
 fn slider_track_radius_px(look: &ShadcnLook, size: ControlSize, preset: ButtonRadiusPreset) -> f32 {
     let (metrics, look) = slider_size_metrics(look, size);
-    gpui_luma_look_shadcn::paint::resolve_slider_track_radius_preset(preset, &metrics, look.track_height)
+    luma_look_shadcn::paint::resolve_slider_track_radius_preset(preset, &metrics, look.track_height)
 }
 
 fn slider_size_metrics(
     look: &ShadcnLook,
     size: ControlSize,
-) -> (gpui_luma::theme::MetricTokens, gpui_luma::controls::slider::SliderLook) {
-    use gpui_luma_look_shadcn::paint::slider_look;
+) -> (luma::theme::MetricTokens, luma::controls::slider::SliderLook) {
+    use luma_look_shadcn::paint::slider_look;
 
     let tokens = look.mode_tokens();
     let slider_look =

@@ -1,51 +1,51 @@
 use std::sync::Arc;
 
 use gpui::prelude::*;
-use gpui_luma::controls::autocomplete::AutocompleteTextBoxTheme;
-use gpui_luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme};
-use gpui_luma::controls::overlay_window::{
+use luma::controls::autocomplete::AutocompleteTextBoxTheme;
+use luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme};
+use luma::controls::overlay_window::{
     OverlayWindowLook, OverlayWindowMode, OverlayWindowTemplate, OverlayWindowTheme, ThemedOverlayWindowTemplate,
 };
-use gpui_luma::controls::checkbox::{CheckboxData, CheckboxTheme, ThemedCheckboxTemplate};
-use gpui_luma::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
-use gpui_luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
-use gpui_luma::controls::control_group::{
+use luma::controls::checkbox::{CheckboxData, CheckboxTheme, ThemedCheckboxTemplate};
+use luma::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
+use luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
+use luma::controls::control_group::{
     ControlGroupBuilder, ControlGroupItemLike, ControlGroupItemPalette, ControlGroupTemplate, ControlGroupTheme,
     control_group_template_with_theme,
 };
-use gpui_luma::controls::dock_splitter::DockSplitterTheme;
-use gpui_luma::controls::radio_group::{RadioGroupLayout, radio_group_buttons_template};
-use gpui_luma::controls::floating_menu::FloatingMenuTheme;
-use gpui_luma::controls::list_view::{ListViewTheme, list_view_template_with_theme};
-use gpui_luma::controls::sidebar::{
+use luma::controls::dock_splitter::DockSplitterTheme;
+use luma::controls::radio_group::{RadioGroupLayout, radio_group_buttons_template};
+use luma::controls::floating_menu::FloatingMenuTheme;
+use luma::controls::list_view::{ListViewTheme, list_view_template_with_theme};
+use luma::controls::sidebar::{
     DefaultSidebarTemplate, SidebarPanelTemplate, SidebarRenderModel, SidebarTemplate, SidebarTheme,
     ThemedSidebarPanelTemplate,
 };
-use gpui_luma::controls::listbox::{ListBoxTheme, listbox_template_with_theme};
-use gpui_luma::controls::pager::{PagerLook, PagerTemplate, PagerTheme, ThemedPagerTemplate};
-use gpui_luma::controls::popup_menu::{PopupMenuTheme, ThemedPopupMenuTemplate};
-use gpui_luma::controls::progress::{ProgressTheme, ThemedLinearProgressTemplate, ThemedProgressTemplate};
-use gpui_luma::controls::stepper::{StepperTheme, ThemedStepperTemplate};
-use gpui_luma::controls::radio_button::{RadioButtonData, RadioButtonTheme, ThemedRadioButtonTemplate};
-use gpui_luma::controls::scrollbar::{ScrollbarTheme, ThemedScrollbarTemplate};
-use gpui_luma::controls::selector::{SelectorTheme, SelectorVisualState, ThemedSelectorTemplate};
-use gpui_luma::controls::selector_panel::default_selector_items_template;
-use gpui_luma::controls::selection_panel::SelectionPanelLookProvider;
-use gpui_luma::controls::resizable_panels::ResizablePanelsTheme;
-use gpui_luma::controls::split_view::SplitViewTheme;
-use gpui_luma::controls::slider::{
+use luma::controls::listbox::{ListBoxTheme, listbox_template_with_theme};
+use luma::controls::pager::{PagerLook, PagerTemplate, PagerTheme, ThemedPagerTemplate};
+use luma::controls::popup_menu::{PopupMenuTheme, ThemedPopupMenuTemplate};
+use luma::controls::progress::{ProgressTheme, ThemedLinearProgressTemplate, ThemedProgressTemplate};
+use luma::controls::stepper::{StepperTheme, ThemedStepperTemplate};
+use luma::controls::radio_button::{RadioButtonData, RadioButtonTheme, ThemedRadioButtonTemplate};
+use luma::controls::scrollbar::{ScrollbarTheme, ThemedScrollbarTemplate};
+use luma::controls::selector::{SelectorTheme, SelectorVisualState, ThemedSelectorTemplate};
+use luma::controls::selector_panel::default_selector_items_template;
+use luma::controls::selection_panel::SelectionPanelLookProvider;
+use luma::controls::resizable_panels::ResizablePanelsTheme;
+use luma::controls::split_view::SplitViewTheme;
+use luma::controls::slider::{
     SliderTemplate, SliderTheme, ThemedAngularDialTemplate, ThemedCircularRingTemplate, ThemedSliderTemplate,
 };
-use gpui_luma::controls::switch::{SwitchData, SwitchTheme, ThemedSwitchTemplate};
-use gpui_luma::controls::toggle::{ToggleData, apply_toggle_progress_chrome};
-use gpui_luma::controls::accordion::{AccordionTemplate, AccordionTheme, ThemedAccordionTemplate};
-use gpui_luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTreeViewTemplate};
-use gpui_luma::controls::tabs_navigation::{TabsNavigationTemplate, TabsNavigationTheme, ThemedTabsNavigationTemplate};
-use gpui_luma::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
-use gpui_luma::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate};
-use gpui_luma::controls::toolbar::{ThemedToolbarTemplate, ToolbarLook, ToolbarTemplate, ToolbarTheme, ToolbarVariant};
+use luma::controls::switch::{SwitchData, SwitchTheme, ThemedSwitchTemplate};
+use luma::controls::toggle::{ToggleData, apply_toggle_progress_chrome};
+use luma::controls::accordion::{AccordionTemplate, AccordionTheme, ThemedAccordionTemplate};
+use luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTreeViewTemplate};
+use luma::controls::tabs_navigation::{TabsNavigationTemplate, TabsNavigationTheme, ThemedTabsNavigationTemplate};
+use luma::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
+use luma::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate};
+use luma::controls::toolbar::{ThemedToolbarTemplate, ToolbarLook, ToolbarTemplate, ToolbarTheme, ToolbarVariant};
 
-use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
+use luma::theme::{ControlSize, InteractionState, StandardBoxScale};
 
 use super::autocomplete::autocomplete_textbox_look;
 use super::checkbox::checkbox_look;
@@ -92,14 +92,14 @@ impl ButtonFamilyTheme for ShadcnStyledButtonFamilyTheme {
         role: ButtonFamilyRole,
         size: ControlSize,
         state: InteractionState,
-        _scale: &gpui_luma::theme::StandardBoxScale,
+        _scale: &luma::theme::StandardBoxScale,
         _pill_radius: f32,
-    ) -> Option<gpui_luma::controls::button_family::ButtonFamilyLook> {
+    ) -> Option<luma::controls::button_family::ButtonFamilyLook> {
         let tokens = self.theme.mode_tokens();
         Some(button_look(tokens.as_ref(), self.theme.mode(), self.style, role, size, state))
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
@@ -122,21 +122,16 @@ struct ShadcnStyledSwitchTheme {
 }
 
 impl SwitchTheme for ShadcnStyledSwitchTheme {
-    fn resolve(
-        &self,
-        on: bool,
-        state: InteractionState,
-        size: ControlSize,
-    ) -> gpui_luma::controls::switch::SwitchPalette {
+    fn resolve(&self, on: bool, state: InteractionState, size: ControlSize) -> luma::controls::switch::SwitchPalette {
         let tokens = self.theme.mode_tokens();
         switch_look(tokens.as_ref(), self.theme.mode(), self.style, on, state, size)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
-    fn scale(&self, size: ControlSize, scale_factor: f32) -> gpui_luma::controls::switch::SwitchScale {
+    fn scale(&self, size: ControlSize, scale_factor: f32) -> luma::controls::switch::SwitchScale {
         let tokens = self.theme.mode_tokens();
         switch_scale(tokens.as_ref(), self.theme.mode(), self.style, size, scale_factor)
     }
@@ -153,12 +148,12 @@ impl CheckboxTheme for ShadcnStyledCheckboxTheme {
         checked: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::checkbox::CheckboxPalette {
+    ) -> luma::controls::checkbox::CheckboxPalette {
         let tokens = self.theme.mode_tokens();
         checkbox_look(tokens.as_ref(), self.style, checked, state, size)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
@@ -174,12 +169,12 @@ impl RadioButtonTheme for ShadcnStyledRadioButtonTheme {
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::radio_button::RadioButtonPalette {
+    ) -> luma::controls::radio_button::RadioButtonPalette {
         let tokens = self.theme.mode_tokens();
         radio_button_look(tokens.as_ref(), self.style, selected, state, size)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
@@ -260,12 +255,12 @@ struct ShadcnDockSplitterTheme {
 }
 
 impl DockSplitterTheme for ShadcnDockSplitterTheme {
-    fn resolve(&self, enabled: bool) -> gpui_luma::controls::dock_splitter::DockSplitterLook {
+    fn resolve(&self, enabled: bool) -> luma::controls::dock_splitter::DockSplitterLook {
         let tokens = self.theme.mode_tokens();
         let border = tokens.palette.border_default;
         let disabled = tokens.palette.disabled_foreground;
 
-        gpui_luma::controls::dock_splitter::DockSplitterLook {
+        luma::controls::dock_splitter::DockSplitterLook {
             line_color: if enabled { border } else { disabled },
             hover_color: if enabled { border } else { disabled },
             thumb_color: if enabled {
@@ -284,7 +279,7 @@ struct ShadcnResizablePanelsTheme {
 }
 
 impl ResizablePanelsTheme for ShadcnResizablePanelsTheme {
-    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::resizable_panels::ResizablePanelsLook {
+    fn resolve(&self, state: InteractionState) -> luma::controls::resizable_panels::ResizablePanelsLook {
         let tokens = self.theme.mode_tokens();
         resizable_panels_look(tokens.as_ref(), self.theme.mode(), state)
     }
@@ -295,7 +290,7 @@ struct ShadcnSplitViewTheme {
 }
 
 impl SplitViewTheme for ShadcnSplitViewTheme {
-    fn resolve(&self, hovered: bool, enabled: bool) -> gpui_luma::controls::split_view::SplitViewLook {
+    fn resolve(&self, hovered: bool, enabled: bool) -> luma::controls::split_view::SplitViewLook {
         let tokens = self.theme.mode_tokens();
         split_view_look(tokens.as_ref(), self.theme.mode(), hovered, enabled)
     }
@@ -309,10 +304,10 @@ struct ShadcnSliderTheme {
 impl SliderTheme for ShadcnSliderTheme {
     fn resolve(
         &self,
-        size: gpui_luma::theme::ControlSize,
-        thumb_size: Option<gpui_luma::controls::slider::SliderThumbSize>,
+        size: luma::theme::ControlSize,
+        thumb_size: Option<luma::controls::slider::SliderThumbSize>,
         state: InteractionState,
-    ) -> gpui_luma::controls::slider::SliderLook {
+    ) -> luma::controls::slider::SliderLook {
         let tokens = self.theme.mode_tokens();
         slider_look(tokens.as_ref(), self.theme.mode(), self.style, size, thumb_size, state)
     }
@@ -326,27 +321,27 @@ impl ScrollbarTheme for ShadcnScrollbarTheme {
     fn resolve(
         &self,
         state: InteractionState,
-        orientation: gpui_luma::controls::scrollbar::ScrollbarOrientation,
-        size: gpui_luma::theme::ControlSize,
-        style: gpui_luma::controls::scrollbar::ScrollbarStyle,
-    ) -> gpui_luma::controls::scrollbar::ScrollbarLook {
+        orientation: luma::controls::scrollbar::ScrollbarOrientation,
+        size: luma::theme::ControlSize,
+        style: luma::controls::scrollbar::ScrollbarStyle,
+    ) -> luma::controls::scrollbar::ScrollbarLook {
         let tokens = self.theme.mode_tokens();
         scrollbar_look(tokens.as_ref(), state, orientation, size, style)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
 
-pub fn slider_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::slider::SliderTemplate> {
+pub fn slider_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::slider::SliderTemplate> {
     slider_template_with_style(theme, ShadcnButtonStyle::Primary)
 }
 
 pub fn slider_template_with_style(
     theme: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> Arc<dyn gpui_luma::controls::slider::SliderTemplate> {
+) -> Arc<dyn luma::controls::slider::SliderTemplate> {
     Arc::new(ThemedSliderTemplate::new(slider_theme_with_style(theme, style)))
 }
 
@@ -358,7 +353,7 @@ pub fn slider_circular_ring_template(theme: Arc<ShadcnLook>) -> Arc<dyn SliderTe
     Arc::new(ThemedCircularRingTemplate::new(slider_theme(theme)))
 }
 
-pub fn scrollbar_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::scrollbar::ScrollbarTemplate> {
+pub fn scrollbar_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::scrollbar::ScrollbarTemplate> {
     Arc::new(ThemedScrollbarTemplate::new(Arc::new(ShadcnScrollbarTheme { theme: theme.as_ref().clone() })))
 }
 
@@ -367,9 +362,9 @@ struct ShadcnFloatingMenuTheme {
 }
 
 impl FloatingMenuTheme for ShadcnFloatingMenuTheme {
-    fn resolve(&self) -> gpui_luma::controls::floating_menu::FloatingMenuLook {
+    fn resolve(&self) -> luma::controls::floating_menu::FloatingMenuLook {
         let tokens = self.theme.mode_tokens();
-        floating_menu_look(tokens.as_ref(), self.theme.mode(), gpui_luma::theme::ControlSize::Md)
+        floating_menu_look(tokens.as_ref(), self.theme.mode(), luma::theme::ControlSize::Md)
     }
 }
 
@@ -380,22 +375,22 @@ struct ShadcnPopupMenuTheme {
 impl PopupMenuTheme for ShadcnPopupMenuTheme {
     fn resolve(
         &self,
-        trigger_style: gpui_luma::controls::popup_menu::PopupMenuTriggerStyle,
-        metrics: gpui_luma::controls::popup_menu::PopupMenuTriggerMetrics,
+        trigger_style: luma::controls::popup_menu::PopupMenuTriggerStyle,
+        metrics: luma::controls::popup_menu::PopupMenuTriggerMetrics,
         state: InteractionState,
-    ) -> gpui_luma::controls::popup_menu::PopupMenuPalette {
+    ) -> luma::controls::popup_menu::PopupMenuPalette {
         let tokens = self.theme.mode_tokens();
         super::popup_menu::popup_menu_palette(tokens.as_ref(), self.theme.mode(), trigger_style, metrics, state)
     }
 
     fn resolve_look(
         &self,
-        trigger_style: gpui_luma::controls::popup_menu::PopupMenuTriggerStyle,
-        metrics: gpui_luma::controls::popup_menu::PopupMenuTriggerMetrics,
+        trigger_style: luma::controls::popup_menu::PopupMenuTriggerStyle,
+        metrics: luma::controls::popup_menu::PopupMenuTriggerMetrics,
         state: InteractionState,
         scale_factor: f32,
         cx: &mut gpui::App,
-    ) -> gpui_luma::controls::popup_menu::PopupMenuLook {
+    ) -> luma::controls::popup_menu::PopupMenuLook {
         let tokens = self.theme.mode_tokens();
         super::popup_menu::popup_menu_look(
             tokens.as_ref(),
@@ -408,7 +403,7 @@ impl PopupMenuTheme for ShadcnPopupMenuTheme {
         )
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
@@ -418,12 +413,12 @@ struct ShadcnContextMenuTheme {
 }
 
 impl ContextMenuTheme for ShadcnContextMenuTheme {
-    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::context_menu::ContextMenuLook {
+    fn resolve(&self, state: InteractionState) -> luma::controls::context_menu::ContextMenuLook {
         let tokens = self.theme.mode_tokens();
         context_menu_look(tokens.as_ref(), self.theme.mode(), state)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
@@ -432,7 +427,7 @@ pub fn floating_menu_theme(theme: Arc<ShadcnLook>) -> Arc<dyn FloatingMenuTheme>
     Arc::new(ShadcnFloatingMenuTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn popup_menu_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::popup_menu::PopupMenuTemplate> {
+pub fn popup_menu_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::popup_menu::PopupMenuTemplate> {
     Arc::new(ThemedPopupMenuTemplate::new(Arc::new(ShadcnPopupMenuTheme { theme: theme.as_ref().clone() })))
 }
 
@@ -440,9 +435,7 @@ pub fn context_menu_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ContextMenuTheme> {
     Arc::new(ShadcnContextMenuTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn context_menu_template(
-    theme: Arc<ShadcnLook>,
-) -> Arc<dyn gpui_luma::controls::context_menu::ContextMenuTemplate> {
+pub fn context_menu_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::context_menu::ContextMenuTemplate> {
     Arc::new(ThemedContextMenuTemplate::new(context_menu_theme(Arc::clone(&theme))))
 }
 
@@ -453,26 +446,26 @@ struct ShadcnSelectorTheme {
 impl SelectorTheme for ShadcnSelectorTheme {
     fn resolve(
         &self,
-        trigger_style: gpui_luma::controls::selector::SelectorTriggerStyle,
+        trigger_style: luma::controls::selector::SelectorTriggerStyle,
         state: InteractionState,
         without_elevation: bool,
-    ) -> gpui_luma::controls::selector::SelectorPalette {
+    ) -> luma::controls::selector::SelectorPalette {
         let tokens = self.theme.mode_tokens();
         super::selector::selector_palette(tokens.as_ref(), self.theme.mode(), trigger_style, state, without_elevation)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
     fn resolve_look(
         &self,
-        trigger_style: gpui_luma::controls::selector::SelectorTriggerStyle,
+        trigger_style: luma::controls::selector::SelectorTriggerStyle,
         state: InteractionState,
         size: ControlSize,
-        scale: &gpui_luma::theme::StandardBoxScale,
+        scale: &luma::theme::StandardBoxScale,
         without_elevation: bool,
-    ) -> gpui_luma::controls::selector::SelectorLook {
+    ) -> luma::controls::selector::SelectorLook {
         let tokens = self.theme.mode_tokens();
         super::selector::selector_look(
             tokens.as_ref(),
@@ -487,12 +480,12 @@ impl SelectorTheme for ShadcnSelectorTheme {
 
     fn resolve_visual_look(
         &self,
-        trigger_style: gpui_luma::controls::selector::SelectorTriggerStyle,
+        trigger_style: luma::controls::selector::SelectorTriggerStyle,
         visual_state: SelectorVisualState,
         size: ControlSize,
-        scale: &gpui_luma::theme::StandardBoxScale,
+        scale: &luma::theme::StandardBoxScale,
         without_elevation: bool,
-    ) -> gpui_luma::controls::selector::SelectorLook {
+    ) -> luma::controls::selector::SelectorLook {
         let tokens = self.theme.mode_tokens();
         let look = super::selector::selector_look_with_visual_state(
             tokens.as_ref(),
@@ -517,7 +510,7 @@ impl TextFieldTheme for ShadcnTextFieldTheme {
         _variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
-    ) -> gpui_luma::controls::textfield::TextFieldPalette {
+    ) -> luma::controls::textfield::TextFieldPalette {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_palette(
             tokens.as_ref(),
@@ -528,7 +521,7 @@ impl TextFieldTheme for ShadcnTextFieldTheme {
         )
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
@@ -539,7 +532,7 @@ impl TextFieldTheme for ShadcnTextFieldTheme {
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> gpui_luma::controls::textfield::TextFieldLook {
+    ) -> luma::controls::textfield::TextFieldLook {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_look(
             tokens.as_ref(),
@@ -558,20 +551,20 @@ struct ShadcnAutocompleteTextBoxTheme {
 }
 
 impl AutocompleteTextBoxTheme for ShadcnAutocompleteTextBoxTheme {
-    fn resolve(&self, size: ControlSize) -> gpui_luma::controls::autocomplete::AutocompleteTextBoxLook {
+    fn resolve(&self, size: ControlSize) -> luma::controls::autocomplete::AutocompleteTextBoxLook {
         let tokens = self.theme.mode_tokens();
         autocomplete_textbox_look(tokens.as_ref(), self.theme.mode(), size)
     }
 }
 
-pub fn selector_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::selector::SelectorTemplate> {
+pub fn selector_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::selector::SelectorTemplate> {
     Arc::new(ThemedSelectorTemplate::new(
         Arc::new(ShadcnSelectorTheme { theme: theme.as_ref().clone() }),
-        default_selector_items_template::<gpui_luma::controls::selector::SelectorItem>(),
+        default_selector_items_template::<luma::controls::selector::SelectorItem>(),
     ))
 }
 
-pub fn textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
+pub fn textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
     Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnTextFieldTheme { theme: theme.as_ref().clone() })))
 }
 
@@ -589,7 +582,7 @@ impl TextFieldTheme for ShadcnInputTextFieldTheme {
         _variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
-    ) -> gpui_luma::controls::textfield::TextFieldPalette {
+    ) -> luma::controls::textfield::TextFieldPalette {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_palette(
             tokens.as_ref(),
@@ -600,7 +593,7 @@ impl TextFieldTheme for ShadcnInputTextFieldTheme {
         )
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
@@ -611,7 +604,7 @@ impl TextFieldTheme for ShadcnInputTextFieldTheme {
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> gpui_luma::controls::textfield::TextFieldLook {
+    ) -> luma::controls::textfield::TextFieldLook {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_look(
             tokens.as_ref(),
@@ -629,7 +622,7 @@ pub fn input_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> 
     Arc::new(ShadcnInputTextFieldTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn input_textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
+pub fn input_textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
     Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnInputTextFieldTheme { theme: theme.as_ref().clone() })))
 }
 
@@ -643,7 +636,7 @@ impl TextFieldTheme for ShadcnSurfaceTextFieldTheme {
         _variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
-    ) -> gpui_luma::controls::textfield::TextFieldPalette {
+    ) -> luma::controls::textfield::TextFieldPalette {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_palette(
             tokens.as_ref(),
@@ -654,7 +647,7 @@ impl TextFieldTheme for ShadcnSurfaceTextFieldTheme {
         )
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
@@ -665,7 +658,7 @@ impl TextFieldTheme for ShadcnSurfaceTextFieldTheme {
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> gpui_luma::controls::textfield::TextFieldLook {
+    ) -> luma::controls::textfield::TextFieldLook {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_look(
             tokens.as_ref(),
@@ -693,7 +686,7 @@ impl TextFieldTheme for ShadcnPrimaryTextFieldTheme {
         _variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
-    ) -> gpui_luma::controls::textfield::TextFieldPalette {
+    ) -> luma::controls::textfield::TextFieldPalette {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_palette(
             tokens.as_ref(),
@@ -704,7 +697,7 @@ impl TextFieldTheme for ShadcnPrimaryTextFieldTheme {
         )
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
@@ -715,7 +708,7 @@ impl TextFieldTheme for ShadcnPrimaryTextFieldTheme {
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> gpui_luma::controls::textfield::TextFieldLook {
+    ) -> luma::controls::textfield::TextFieldLook {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_look(
             tokens.as_ref(),
@@ -733,9 +726,7 @@ pub fn primary_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme
     Arc::new(ShadcnPrimaryTextFieldTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn primary_textfield_template(
-    theme: Arc<ShadcnLook>,
-) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
+pub fn primary_textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
     Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnPrimaryTextFieldTheme {
         theme: theme.as_ref().clone(),
     })))
@@ -748,9 +739,9 @@ struct ShadcnTextAreaTheme {
 impl TextAreaTheme for ShadcnTextAreaTheme {
     fn resolve(
         &self,
-        state: gpui_luma::controls::textarea::TextAreaState,
+        state: luma::controls::textarea::TextAreaState,
         enabled: bool,
-    ) -> gpui_luma::controls::textarea::TextAreaPalette {
+    ) -> luma::controls::textarea::TextAreaPalette {
         let tokens = self.theme.mode_tokens();
         super::textarea::textarea_palette(
             tokens.as_ref(),
@@ -761,17 +752,17 @@ impl TextAreaTheme for ShadcnTextAreaTheme {
         )
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
     fn resolve_look(
         &self,
-        state: gpui_luma::controls::textarea::TextAreaState,
+        state: luma::controls::textarea::TextAreaState,
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> gpui_luma::controls::textarea::TextAreaLook {
+    ) -> luma::controls::textarea::TextAreaLook {
         let tokens = self.theme.mode_tokens();
         super::textarea::textarea_look(
             tokens.as_ref(),
@@ -785,7 +776,7 @@ impl TextAreaTheme for ShadcnTextAreaTheme {
     }
 }
 
-pub fn textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
+pub fn textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
     Arc::new(ThemedTextAreaTemplate::new(textarea_theme(Arc::clone(&theme))))
 }
 
@@ -800,9 +791,9 @@ struct ShadcnSurfaceTextAreaTheme {
 impl TextAreaTheme for ShadcnSurfaceTextAreaTheme {
     fn resolve(
         &self,
-        state: gpui_luma::controls::textarea::TextAreaState,
+        state: luma::controls::textarea::TextAreaState,
         enabled: bool,
-    ) -> gpui_luma::controls::textarea::TextAreaPalette {
+    ) -> luma::controls::textarea::TextAreaPalette {
         let tokens = self.theme.mode_tokens();
         super::textarea::textarea_palette(
             tokens.as_ref(),
@@ -813,17 +804,17 @@ impl TextAreaTheme for ShadcnSurfaceTextAreaTheme {
         )
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
     fn resolve_look(
         &self,
-        state: gpui_luma::controls::textarea::TextAreaState,
+        state: luma::controls::textarea::TextAreaState,
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> gpui_luma::controls::textarea::TextAreaLook {
+    ) -> luma::controls::textarea::TextAreaLook {
         let tokens = self.theme.mode_tokens();
         super::textarea::textarea_look(
             tokens.as_ref(),
@@ -852,9 +843,9 @@ struct ShadcnInputTextAreaTheme {
 impl TextAreaTheme for ShadcnInputTextAreaTheme {
     fn resolve(
         &self,
-        state: gpui_luma::controls::textarea::TextAreaState,
+        state: luma::controls::textarea::TextAreaState,
         enabled: bool,
-    ) -> gpui_luma::controls::textarea::TextAreaPalette {
+    ) -> luma::controls::textarea::TextAreaPalette {
         let tokens = self.theme.mode_tokens();
         super::textarea::textarea_palette(
             tokens.as_ref(),
@@ -865,17 +856,17 @@ impl TextAreaTheme for ShadcnInputTextAreaTheme {
         )
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
     fn resolve_look(
         &self,
-        state: gpui_luma::controls::textarea::TextAreaState,
+        state: luma::controls::textarea::TextAreaState,
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> gpui_luma::controls::textarea::TextAreaLook {
+    ) -> luma::controls::textarea::TextAreaLook {
         let tokens = self.theme.mode_tokens();
         super::textarea::textarea_look(
             tokens.as_ref(),
@@ -893,16 +884,16 @@ pub fn input_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
     Arc::new(ShadcnInputTextAreaTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn input_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
+pub fn input_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
     Arc::new(ThemedTextAreaTemplate::new(input_textarea_theme(Arc::clone(&theme))))
 }
 
 impl TextAreaTheme for ShadcnPrimaryTextAreaTheme {
     fn resolve(
         &self,
-        state: gpui_luma::controls::textarea::TextAreaState,
+        state: luma::controls::textarea::TextAreaState,
         enabled: bool,
-    ) -> gpui_luma::controls::textarea::TextAreaPalette {
+    ) -> luma::controls::textarea::TextAreaPalette {
         let tokens = self.theme.mode_tokens();
         super::textarea::textarea_palette(
             tokens.as_ref(),
@@ -913,17 +904,17 @@ impl TextAreaTheme for ShadcnPrimaryTextAreaTheme {
         )
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
     fn resolve_look(
         &self,
-        state: gpui_luma::controls::textarea::TextAreaState,
+        state: luma::controls::textarea::TextAreaState,
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> gpui_luma::controls::textarea::TextAreaLook {
+    ) -> luma::controls::textarea::TextAreaLook {
         let tokens = self.theme.mode_tokens();
         super::textarea::textarea_look(
             tokens.as_ref(),
@@ -941,7 +932,7 @@ pub fn primary_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> 
     Arc::new(ShadcnPrimaryTextAreaTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn primary_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
+pub fn primary_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
     Arc::new(ThemedTextAreaTemplate::new(primary_textarea_theme(Arc::clone(&theme))))
 }
 
@@ -966,12 +957,12 @@ impl TreeViewTheme for ShadcnTreeViewTheme {
         state: InteractionState,
         selected: bool,
         size: ControlSize,
-    ) -> gpui_luma::controls::tree_view::TreeViewPalette {
+    ) -> luma::controls::tree_view::TreeViewPalette {
         let tokens = self.theme.mode_tokens();
         tree_view_row_palette(tokens.as_ref(), selected, state, size)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
@@ -985,17 +976,17 @@ impl AccordionTheme for ShadcnAccordionTheme {
         &self,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::accordion::AccordionPalette {
+    ) -> luma::controls::accordion::AccordionPalette {
         let tokens = self.theme.mode_tokens();
         accordion_trigger_palette(tokens.as_ref(), self.theme.mode(), state, size)
     }
 
-    fn resolve_content(&self, expanded: bool) -> gpui_luma::controls::accordion::AccordionContentPalette {
+    fn resolve_content(&self, expanded: bool) -> luma::controls::accordion::AccordionContentPalette {
         let tokens = self.theme.mode_tokens();
         accordion_content_palette(tokens.as_ref(), self.theme.mode(), expanded)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
@@ -1009,7 +1000,7 @@ impl TabsNavigationTheme for ShadcnTabsNavigationTheme {
         &self,
         enabled: bool,
         size: ControlSize,
-    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationListLook {
+    ) -> luma::controls::tabs_navigation::TabsNavigationListLook {
         let tokens = self.theme.mode_tokens();
         tabs_navigation_list_look(tokens.as_ref(), enabled, size)
     }
@@ -1019,7 +1010,7 @@ impl TabsNavigationTheme for ShadcnTabsNavigationTheme {
         active: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationItemLook {
+    ) -> luma::controls::tabs_navigation::TabsNavigationItemLook {
         let tokens = self.theme.mode_tokens();
         tabs_navigation_item_look(tokens.as_ref(), active, state, size)
     }
@@ -1034,20 +1025,16 @@ struct ShadcnSidebarTheme {
 }
 
 impl SidebarTheme for ShadcnSidebarTheme {
-    fn resolve_container(&self) -> gpui_luma::controls::sidebar::SidebarContainerLook {
+    fn resolve_container(&self) -> luma::controls::sidebar::SidebarContainerLook {
         let tokens = self.theme.mode_tokens();
         sidebar_container_look(tokens.as_ref())
     }
 
-    fn resolve_section(&self) -> gpui_luma::controls::sidebar::SidebarSectionLook {
+    fn resolve_section(&self) -> luma::controls::sidebar::SidebarSectionLook {
         sidebar_section_look(&self.theme)
     }
 
-    fn resolve_branch(
-        &self,
-        state: InteractionState,
-        size: ControlSize,
-    ) -> gpui_luma::controls::sidebar::SidebarItemLook {
+    fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> luma::controls::sidebar::SidebarItemLook {
         sidebar_branch_look(&self.theme, state, size)
     }
 
@@ -1056,11 +1043,11 @@ impl SidebarTheme for ShadcnSidebarTheme {
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::sidebar::SidebarItemLook {
+    ) -> luma::controls::sidebar::SidebarItemLook {
         sidebar_item_look(&self.theme, selected, state, size)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
@@ -1120,10 +1107,10 @@ impl SidebarTemplate for ThemedSidebarTemplate {
         }
 
         let show_panel = match model.collapsible {
-            gpui_luma::controls::sidebar::SidebarCollapsible::Offcanvas => model.open,
-            gpui_luma::controls::sidebar::SidebarCollapsible::None
-            | gpui_luma::controls::sidebar::SidebarCollapsible::Icon
-            | gpui_luma::controls::sidebar::SidebarCollapsible::Responsive => true,
+            luma::controls::sidebar::SidebarCollapsible::Offcanvas => model.open,
+            luma::controls::sidebar::SidebarCollapsible::None
+            | luma::controls::sidebar::SidebarCollapsible::Icon
+            | luma::controls::sidebar::SidebarCollapsible::Responsive => true,
         };
         let mut root = gpui::div()
             .id(gpui::SharedString::from(format!("{}-shell", model.id)))
@@ -1171,12 +1158,12 @@ struct ShadcnControlGroupTheme {
 }
 
 impl ControlGroupTheme for ShadcnControlGroupTheme {
-    fn resolve_list(&self, enabled: bool) -> gpui_luma::controls::control_group::ControlGroupListLook {
+    fn resolve_list(&self, enabled: bool) -> luma::controls::control_group::ControlGroupListLook {
         let tokens = self.theme.mode_tokens();
         control_group_list_look(tokens.as_ref(), enabled)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
@@ -1215,7 +1202,7 @@ pub fn menu_choice_group<T>(_theme: Arc<ShadcnLook>, id: impl Into<gpui::SharedS
 where
     T: ControlGroupItemLike + 'static,
 {
-    gpui_luma::controls::control_group::new(id).active_descendant()
+    luma::controls::control_group::new(id).active_descendant()
 }
 
 struct ShadcnToolbarTheme {
@@ -1272,7 +1259,7 @@ impl ListBoxTheme for ShadcnListBoxTheme {
         enabled: bool,
         focused: bool,
         size: ControlSize,
-    ) -> gpui_luma::controls::listbox::ListBoxListLook {
+    ) -> luma::controls::listbox::ListBoxListLook {
         let tokens = self.theme.mode_tokens();
         listbox_list_look(tokens.as_ref(), enabled, focused, size)
     }
@@ -1282,12 +1269,12 @@ impl ListBoxTheme for ShadcnListBoxTheme {
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::listbox::ListBoxRowPalette {
+    ) -> luma::controls::listbox::ListBoxRowPalette {
         let tokens = self.theme.mode_tokens();
         listbox_row_palette(tokens.as_ref(), selected, state, size)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
@@ -1296,7 +1283,7 @@ pub fn listbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ListBoxTheme> {
     Arc::new(ShadcnListBoxTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn listbox_template(theme: Arc<ShadcnLook>) -> ControlGroupTemplate<gpui_luma::controls::listbox::ListBoxItem> {
+pub fn listbox_template(theme: Arc<ShadcnLook>) -> ControlGroupTemplate<luma::controls::listbox::ListBoxItem> {
     listbox_template_with_theme(listbox_theme(theme))
 }
 
@@ -1305,12 +1292,7 @@ struct ShadcnListViewTheme {
 }
 
 impl ListViewTheme for ShadcnListViewTheme {
-    fn resolve_look(
-        &self,
-        enabled: bool,
-        focused: bool,
-        size: ControlSize,
-    ) -> gpui_luma::controls::list_view::ListViewLook {
+    fn resolve_look(&self, enabled: bool, focused: bool, size: ControlSize) -> luma::controls::list_view::ListViewLook {
         let tokens = self.theme.mode_tokens();
         list_view_look(tokens.as_ref(), enabled, focused, size)
     }
@@ -1320,12 +1302,12 @@ impl ListViewTheme for ShadcnListViewTheme {
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::list_view::ListViewRowPalette {
+    ) -> luma::controls::list_view::ListViewRowPalette {
         let tokens = self.theme.mode_tokens();
         list_view_row_palette(tokens.as_ref(), selected, state, size)
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
@@ -1334,7 +1316,7 @@ pub fn list_view_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ListViewTheme> {
     Arc::new(ShadcnListViewTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn list_view_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::list_view::ListViewTemplate> {
+pub fn list_view_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::list_view::ListViewTemplate> {
     list_view_template_with_theme(list_view_theme(theme))
 }
 
@@ -1360,23 +1342,19 @@ impl ButtonFamilyTheme for ShadcnPagerButtonTheme {
         role: ButtonFamilyRole,
         _size: ControlSize,
         state: InteractionState,
-        _scale: &gpui_luma::theme::StandardBoxScale,
+        _scale: &luma::theme::StandardBoxScale,
         _pill_radius: f32,
     ) -> Option<ButtonFamilyLook> {
         Some(pager_button_look(self.theme.as_ref(), &self.pager_look, role, state))
     }
 
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+    fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }
 
 impl PagerTheme for ShadcnPagerTheme {
-    fn resolve(
-        &self,
-        enabled: bool,
-        style: gpui_luma::controls::pager::PagerStyle,
-    ) -> gpui_luma::controls::pager::PagerLook {
+    fn resolve(&self, enabled: bool, style: luma::controls::pager::PagerStyle) -> luma::controls::pager::PagerLook {
         pager_look(self.theme.as_ref(), enabled, style)
     }
 
@@ -1412,21 +1390,17 @@ struct ShadcnProgressTheme {
 }
 
 impl ProgressTheme for ShadcnProgressTheme {
-    fn resolve(
-        &self,
-        enabled: bool,
-        size: gpui_luma::theme::ControlSize,
-    ) -> gpui_luma::controls::progress::ProgressLook {
+    fn resolve(&self, enabled: bool, size: luma::theme::ControlSize) -> luma::controls::progress::ProgressLook {
         let tokens = self.theme.mode_tokens();
         progress_look(tokens.as_ref(), enabled, size)
     }
 }
 
-pub fn progress_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::progress::ProgressTemplate> {
+pub fn progress_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::progress::ProgressTemplate> {
     Arc::new(ThemedProgressTemplate::new(progress_theme(theme)))
 }
 
-pub fn linear_progress_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::progress::ProgressTemplate> {
+pub fn linear_progress_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::progress::ProgressTemplate> {
     Arc::new(ThemedLinearProgressTemplate::new(progress_theme(theme)))
 }
 
@@ -1439,13 +1413,13 @@ struct ShadcnStepperTheme {
 }
 
 impl StepperTheme for ShadcnStepperTheme {
-    fn resolve(&self, enabled: bool, size: gpui_luma::theme::ControlSize) -> gpui_luma::controls::stepper::StepperLook {
+    fn resolve(&self, enabled: bool, size: luma::theme::ControlSize) -> luma::controls::stepper::StepperLook {
         let tokens = self.theme.mode_tokens();
         stepper_look(tokens.as_ref(), enabled, size)
     }
 }
 
-pub fn stepper_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::stepper::StepperTemplate> {
+pub fn stepper_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::stepper::StepperTemplate> {
     Arc::new(ThemedStepperTemplate::new(stepper_theme(theme)))
 }
 

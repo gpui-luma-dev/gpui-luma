@@ -1,5 +1,5 @@
 [package]
-name = "gpui-luma-shell-common"
+name = "luma-shell-common"
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
@@ -8,9 +8,9 @@ publish = false
 [dependencies]
 anyhow = { workspace = true }
 gpui = { workspace = true }
-gpui-luma = { path = "../../../crates/sdk" }
-gpui-luma-fonts = { path = "../../../crates/font-assets" }
+luma = { path = "../../../crates/sdk" }
+luma-fonts = { path = "../../../crates/font-assets" }
 gpui_platform = { workspace = true }
 lucide-svg-static = { workspace = true }
-gpui-luma-look-shadcn = { path = "../../../crates/look-shadcn" }
+luma-look-shadcn = { path = "../../../crates/look-shadcn" }
 tracing = "0.1"

@@ -2,14 +2,14 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Bounds, IntoElement, Pixels, SharedString, Window, div, prelude::*, px};
 use lucide_svg_static::Icon as LucideIcon;
-use gpui_luma::controls::tabs_navigation::{
+use luma::controls::tabs_navigation::{
     ControlFocusState as TabsControlFocusState, TabsNavigationBoundsHandler, TabsNavigationClickHandler,
     TabsNavigationHoverHandler, TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler,
     TabsNavigationMouseUpHandler, TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate,
     TabsNavigationTemplateHandlers, TabsNavigationWidthMode,
 };
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::theme::ControlSize;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::shared::preview_handlers::{
     input_noop_click, input_noop_hover, input_noop_mouse_down, input_noop_mouse_up,
@@ -114,10 +114,7 @@ fn render_tabs_navigation_state_sample(
         },
         indicator: None,
         indicator_motion: None,
-        disclosure_icons: &gpui_luma::controls::icon::DisclosureIcons::new(
-            LucideIcon::ChevronUp,
-            LucideIcon::ChevronDown,
-        ),
+        disclosure_icons: &luma::controls::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
     };
 
     div()

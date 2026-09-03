@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{App, Div, Stateful, Window, div, hsla, point, prelude::*, px};
-use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use gpui_luma::controls::toggle::ToggleData;
+use luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use luma::controls::toggle::ToggleData;
 
 pub fn neumorphic_power_toggle_template() -> Arc<dyn ButtonTemplate<ToggleData>> {
     static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate<ToggleData>>> = OnceLock::new();

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 
 use super::inspector::common::{
     choice_elevation_applies, choice_indicator_only, choice_variant_style, interaction_state, value_flag,

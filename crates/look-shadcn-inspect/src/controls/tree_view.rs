@@ -1,7 +1,7 @@
 //! Inspect metadata for `tree_view`.
 
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct TreeViewRowInspectPalette {
     pub background: Option<ResolvedColor>,
@@ -28,8 +28,8 @@ pub fn inspect_tree_view_row_color_palette(
 ) -> TreeViewRowInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "tree_view_row_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_tree_view_row_colors(&resolver, state.disabled, state.layer())
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TreeViewRowColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_tree_view_row_colors(&resolver, state.disabled, state.layer())
+        .unwrap_or_else(|_| luma_look_shadcn::tables::TreeViewRowColorTable::fallback());
     TreeViewRowInspectPalette {
         background: colors.background,
         foreground: colors.foreground,
@@ -43,9 +43,9 @@ pub fn inspect_tree_view_metrics(
     theme_mode: ThemeMode,
     size: ControlSize,
 ) -> TreeViewInspectMetrics {
-    use gpui_luma::controls::tree_view::TreeViewScale;
+    use luma::controls::tree_view::TreeViewScale;
 
-    use gpui_luma_look_shadcn::catalog::SpacingField;
+    use luma_look_shadcn::catalog::SpacingField;
     use crate::metrics::{control_size_key, derived_metric, radius_metric, spacing_control_metric};
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
@@ -73,8 +73,8 @@ mod tests {
     #[test]
     fn tree_view_metadata_covers_row_table() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_tree_view_row_colors_metadata(
-                gpui_luma_look_shadcn::embedded_stylesheet()
+            luma_look_shadcn::stylesheet::resolve_tree_view_row_colors_metadata(
+                luma_look_shadcn::embedded_stylesheet()
             )
             .len(),
             5
@@ -87,12 +87,12 @@ mod tests {
         let palette = inspect_tree_view_row_color_palette(
             &mode,
             ThemeMode::Light,
-            gpui_luma::theme::InteractionState { disabled: true, ..Default::default() },
+            luma::theme::InteractionState { disabled: true, ..Default::default() },
         );
         assert!(palette.background.is_none());
         assert!(matches!(
             palette.foreground.source,
-            gpui_luma_look_shadcn::ColorSource::CssVar { ref token } if token == "muted-foreground"
+            luma_look_shadcn::ColorSource::CssVar { ref token } if token == "muted-foreground"
         ));
     }
 }

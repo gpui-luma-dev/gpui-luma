@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 
 use super::inspector::common::{textfield_elevation_applies, textfield_enabled, textfield_state, textfield_variant_style};
 use super::inspector::input::textfield_color_rows;

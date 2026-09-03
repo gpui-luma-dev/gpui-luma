@@ -1,7 +1,7 @@
 //! Inspect metadata for `progress`.
 
-use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
+use luma::theme::{InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct ProgressInspectPalette {
     pub track_color: ResolvedColor,
@@ -11,10 +11,10 @@ pub struct ProgressInspectPalette {
 
 #[derive(Clone, Debug)]
 pub struct ProgressInspectMetrics {
-    pub size: gpui_luma_look_shadcn::ResolvedMetric,
-    pub stroke_width: gpui_luma_look_shadcn::ResolvedMetric,
-    pub track_height: gpui_luma_look_shadcn::ResolvedMetric,
-    pub thumb_size: gpui_luma_look_shadcn::ResolvedMetric,
+    pub size: luma_look_shadcn::ResolvedMetric,
+    pub stroke_width: luma_look_shadcn::ResolvedMetric,
+    pub track_height: luma_look_shadcn::ResolvedMetric,
+    pub thumb_size: luma_look_shadcn::ResolvedMetric,
 }
 
 pub fn inspect_progress_color_palette(
@@ -24,8 +24,8 @@ pub fn inspect_progress_color_palette(
 ) -> ProgressInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "progress_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_progress_colors(&resolver, enabled)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ProgressColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_progress_colors(&resolver, enabled)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::ProgressColorTable::fallback());
     ProgressInspectPalette {
         track_color: colors.track_color,
         progress_color: colors.progress_color.clone(),
@@ -36,7 +36,7 @@ pub fn inspect_progress_color_palette(
 pub fn inspect_progress_metrics(mode: &ShadcnModeTokens, _theme_mode: ThemeMode) -> ProgressInspectMetrics {
     use crate::metrics::derived_metric;
 
-    let look = gpui_luma_look_shadcn::paint::progress_look(mode, true, gpui_luma::theme::ControlSize::Md);
+    let look = luma_look_shadcn::paint::progress_look(mode, true, luma::theme::ControlSize::Md);
 
     ProgressInspectMetrics {
         size: derived_metric("progress ring diameter", look.size),
@@ -50,15 +50,13 @@ pub fn inspect_progress_metrics(mode: &ShadcnModeTokens, _theme_mode: ThemeMode)
 mod tests {
     use super::*;
     use crate::test_support::sample_catalog;
-    use gpui_luma_look_shadcn::ColorSource;
+    use luma_look_shadcn::ColorSource;
 
     #[test]
     fn progress_metadata_has_enabled_and_disabled_rows() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_progress_colors_metadata(
-                gpui_luma_look_shadcn::embedded_stylesheet()
-            )
-            .len(),
+            luma_look_shadcn::stylesheet::resolve_progress_colors_metadata(luma_look_shadcn::embedded_stylesheet())
+                .len(),
             2
         );
     }

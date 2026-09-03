@@ -3,14 +3,14 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Hsla, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::color::color_field::model::ColorFieldModelKind;
-use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
-use gpui_luma::controls::color::color_ring::{ColorRingBuilder, primary_slider_value, sizing};
-use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::composition::{ColorCompositionSync, CompositionSize};
-use gpui_luma::controls::color::style::Size;
-use gpui_luma::controls::slider::SliderControl;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::color::color_field::model::ColorFieldModelKind;
+use luma::controls::color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
+use luma::controls::color::color_ring::{ColorRingBuilder, primary_slider_value, sizing};
+use luma::controls::color::color_slider::color_spec::Hsv;
+use luma::controls::color::composition::{ColorCompositionSync, CompositionSize};
+use luma::controls::color::style::Size;
+use luma::controls::slider::SliderControl;
+use luma_look_shadcn::ShadcnLook;
 
 use super::super::color_exposition_common::{
     composition_demo_card_width, composition_size_label, composition_title_text_size,

@@ -1,11 +1,11 @@
 use gpui::{AnyElement, FontWeight, IntoElement, SharedString, div, prelude::*, px};
-use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::grid_layout;
-use gpui_luma::theme::{ControlSize, InteractionState};
-use gpui_luma::GridTrack;
-use gpui_luma::controls::overlay_window::OverlayWindowEvent;
-use gpui_luma_look_shadcn::prelude::{LumaTypographyExt, ShadcnTextRole};
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::button_family::ButtonFamilyRole;
+use luma::grid_layout;
+use luma::theme::{ControlSize, InteractionState};
+use luma::GridTrack;
+use luma::controls::overlay_window::OverlayWindowEvent;
+use luma_look_shadcn::prelude::{LumaTypographyExt, ShadcnTextRole};
+use luma_look_shadcn::ShadcnLook;
 
 pub(super) fn overlay_status_for(event: &OverlayWindowEvent, label: &str) -> String {
     match event {

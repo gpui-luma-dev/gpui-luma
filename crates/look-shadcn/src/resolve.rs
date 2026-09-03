@@ -1,6 +1,6 @@
 use gpui::{Hsla, hsla};
 
-use gpui_luma::theme::InteractionLayer;
+use luma::theme::InteractionLayer;
 
 use super::catalog::CssTokenMap;
 

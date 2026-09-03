@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::tabs_navigation::TabsNavigation;
-use gpui_luma::controls::tree_view::{TreeNode, TreeView, TreeViewSelectionMode};
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::tree_view::{TreeNode, TreeView, TreeViewSelectionMode};
+use luma::theme::ControlSize;
+use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::shell::section_shell_with_width;

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Focusable, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
-use gpui_luma::controls::overlay_window::{OverlayWindow, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use luma::controls::overlay_window::{OverlayWindow, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};

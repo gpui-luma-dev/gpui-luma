@@ -5,8 +5,8 @@
 //! | Target | ghost (accent-foreground on hover) |
 //! | Menu   | floating menu surface              |
 
-use gpui_luma::controls::context_menu::ContextMenuLook;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma::controls::context_menu::ContextMenuLook;
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use super::floating_menu::floating_menu_look;

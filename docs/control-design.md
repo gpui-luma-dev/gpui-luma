@@ -1,6 +1,6 @@
 # GPUI-Luma Control Design Guidelines
 
-This document details the architectural patterns, API conventions, and styling pipelines for constructing and extending SDK controls in `gpui-luma`. It provides the "how, what, and why" for maintaining consistency and separation of concerns across the codebase.
+This document details the architectural patterns, API conventions, and styling pipelines for constructing and extending SDK controls in `luma`. It provides the "how, what, and why" for maintaining consistency and separation of concerns across the codebase.
 
 ---
 

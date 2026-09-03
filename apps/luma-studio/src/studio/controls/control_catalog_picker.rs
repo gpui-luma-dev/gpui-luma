@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, FontFeatures, FontWeight, MouseButton, Window, div, prelude::*, px};
-use gpui_luma::controls::floating_menu::FloatingMenuLook;
-use gpui_luma::theme::LumaTextStyle;
+use luma::controls::floating_menu::FloatingMenuLook;
+use luma::theme::LumaTextStyle;
 
 use crate::studio::components::catalog::{
     ComponentCatalogEntry, ComponentCatalogGroup, controls_exposition_id, groups_for_column,
@@ -193,6 +193,6 @@ fn render_catalog_item<M: 'static>(
 fn render_category_icon(icon: lucide_svg_static::Icon, color: gpui::Hsla) -> AnyElement {
     div()
         .flex_shrink_0()
-        .child(gpui_luma::controls::icon::lucide_icon(icon, color, CATEGORY_ICON_SIZE))
+        .child(luma::controls::icon::lucide_icon(icon, color, CATEGORY_ICON_SIZE))
         .into_any_element()
 }

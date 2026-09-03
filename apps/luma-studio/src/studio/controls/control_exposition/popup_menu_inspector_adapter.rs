@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 
 use super::inspector::common::{control_size, interaction_state, popup_menu_trigger_style};
 use super::inspector::input::trigger_color_rows;
@@ -75,7 +75,7 @@ fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> V
 }
 
 fn resolve_panel_color_rows(
-    palette: &gpui_luma_look_shadcn_inspect::FloatingMenuInspectPalette,
+    palette: &luma_look_shadcn_inspect::FloatingMenuInspectPalette,
     state_id: &str,
 ) -> Vec<InspectColorRow> {
     match state_id {

@@ -6,11 +6,11 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use gpui::{relative, App, Context, Entity, IntoElement, ParentElement, Render, SharedString, Styled, Window};
-use gpui_luma::controls::accordion::AccordionControl;
-use gpui_luma::controls::context_menu::{ContextMenu, MenuItem};
-use gpui_luma::controls::slider::Slider;
-use gpui_luma::controls::textfield::TextField;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma::controls::accordion::AccordionControl;
+use luma::controls::context_menu::{ContextMenu, MenuItem};
+use luma::controls::slider::Slider;
+use luma::controls::textfield::TextField;
+use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
 pub(super) use colors::ColorsPanel;
 pub(super) use other::OtherPanel;

@@ -2,14 +2,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter, HasPresenter};
-use gpui_luma::controls::command::icon_button::IconButton;
-use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
-use gpui_luma::controls::switch::{Switch, SwitchData, SwitchEvent};
-use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::{ControlSize, InteractionState, LumaThemeSyncExt, ThemeMode};
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole, sync_color_control_theme};
+use luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter, HasPresenter};
+use luma::controls::command::icon_button::IconButton;
+use luma::controls::button_family::ButtonFamilyRole;
+use luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
+use luma::controls::switch::{Switch, SwitchData, SwitchEvent};
+use luma::shell::TitleBar;
+use luma::theme::{ControlSize, InteractionState, LumaThemeSyncExt, ThemeMode};
+use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole, sync_color_control_theme};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::theme::{LumaStudioLaunchOptions, LumaStudioThemeChoice};
@@ -608,7 +608,7 @@ fn mode_switch_thumb_content(
             .flex()
             .items_center()
             .justify_center()
-            .child(gpui_luma::controls::icon::lucide_icon(icon, color, 13.0))
+            .child(luma::controls::icon::lucide_icon(icon, color, 13.0))
             .into_any_element()
     }
 }
@@ -616,7 +616,7 @@ fn mode_switch_thumb_content(
 fn titlebar_icon_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(lucide) => {
-            div().child(gpui_luma::controls::icon::lucide_icon(*lucide, color, 14.0)).into_any_element()
+            div().child(luma::controls::icon::lucide_icon(*lucide, color, 14.0)).into_any_element()
         }
         ControlIcon::SvgPath(path) => {
             gpui::svg().size(px(14.0)).text_color(color).path(path.clone()).into_any_element()

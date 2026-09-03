@@ -1,10 +1,10 @@
 //! Inspect metadata for `textfield`.
 
-use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use luma::theme::{InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
-use gpui_luma_look_shadcn::ShadcnTextFieldStyle;
-use gpui_luma::controls::textfield::TextFieldState;
+use luma_look_shadcn::ShadcnTextFieldStyle;
+use luma::controls::textfield::TextFieldState;
 
 pub struct TextFieldInspectPalette {
     pub background: ResolvedColor,
@@ -27,8 +27,8 @@ pub fn inspect_textfield_color_palette(
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "textfield_inspect");
     let mut colors =
-        gpui_luma_look_shadcn::tables::resolve_textfield_colors(&resolver, style, enabled, state.invalid, theme_mode)
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TextFieldColorTable::fallback());
+        luma_look_shadcn::tables::resolve_textfield_colors(&resolver, style, enabled, state.invalid, theme_mode)
+            .unwrap_or_else(|_| luma_look_shadcn::tables::TextFieldColorTable::fallback());
     if state.focused && state.focus_visible && !state.invalid && enabled {
         if let Ok(focus_border) = resolver.resolve_decl("ring") {
             colors.border = focus_border;
@@ -62,15 +62,15 @@ pub struct TextFieldInspectMetrics {
 pub fn inspect_textfield_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    size: gpui_luma::theme::ControlSize,
+    size: luma::theme::ControlSize,
 ) -> TextFieldInspectMetrics {
-    use gpui_luma::theme::StandardBoxScale;
+    use luma::theme::StandardBoxScale;
 
     use crate::metrics::{
         border_width_metric, control_size_key, focus_ring_offset_metric, focus_ring_width_metric, radius_metric,
         scaffold_control_metric, spacing_control_metric,
     };
-    use gpui_luma_look_shadcn::catalog::SpacingField;
+    use luma_look_shadcn::catalog::SpacingField;
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
@@ -95,9 +95,9 @@ pub fn inspect_textfield_elevation(
     style: ShadcnTextFieldStyle,
     enabled: bool,
 ) -> crate::controls::button::ButtonInspectElevation {
-    use gpui_luma::theme::InteractionState;
-    use gpui_luma_look_shadcn::paint::textfield_palette;
-    use gpui_luma_look_shadcn::stylesheet::{
+    use luma::theme::InteractionState;
+    use luma_look_shadcn::paint::textfield_palette;
+    use luma_look_shadcn::stylesheet::{
         embedded_stylesheet, find_textfield_elevation_rule, resolve_stylesheet_shadow_token,
     };
     use crate::controls::button::inspect_layered_elevation;
@@ -144,18 +144,16 @@ mod tests {
         );
         assert!(matches!(
             palette.background.source,
-            gpui_luma_look_shadcn::ColorSource::CssVar { ref token } if token == "muted"
+            luma_look_shadcn::ColorSource::CssVar { ref token } if token == "muted"
         ));
-        assert!(matches!(palette.border.source, gpui_luma_look_shadcn::ColorSource::Transparent));
+        assert!(matches!(palette.border.source, luma_look_shadcn::ColorSource::Transparent));
     }
 
     #[test]
     fn textfield_metadata_covers_style_and_state_rows() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_textfield_colors_metadata(
-                gpui_luma_look_shadcn::embedded_stylesheet()
-            )
-            .len(),
+            luma_look_shadcn::stylesheet::resolve_textfield_colors_metadata(luma_look_shadcn::embedded_stylesheet())
+                .len(),
             16
         );
     }

@@ -1,7 +1,7 @@
 //! Inspect metadata for `checkbox`.
 
-use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
+use luma::theme::{InteractionState, ThemeMode};
+use luma_look_shadcn::{
     LookContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens,
     format_inspect_css_key,
 };
@@ -24,8 +24,8 @@ pub fn inspect_checkbox_color_palette(
     let catalog = ctx.catalog();
     let layer = state.layer();
     let resolver = LookResolver::new(catalog, theme_mode, "checkbox_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_checkbox_colors(&resolver, style, checked, layer)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::CheckboxColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_checkbox_colors(&resolver, style, checked, layer)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::CheckboxColorTable::fallback());
     let indicator_border = effective_checkbox_indicator_border(checked, state.disabled, &colors, &resolver);
 
     CheckboxInspectPalette {
@@ -39,7 +39,7 @@ pub fn inspect_checkbox_color_palette(
 fn effective_checkbox_indicator_border(
     checked: bool,
     disabled: bool,
-    colors: &gpui_luma_look_shadcn::tables::CheckboxColorTable,
+    colors: &luma_look_shadcn::tables::CheckboxColorTable,
     resolver: &LookResolver,
 ) -> ResolvedColor {
     if checked && !disabled {
@@ -69,11 +69,11 @@ pub struct CheckboxInspectMetrics {
 pub fn inspect_checkbox_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    size: gpui_luma::theme::ControlSize,
+    size: luma::theme::ControlSize,
 ) -> CheckboxInspectMetrics {
-    use gpui_luma::controls::checkbox::CheckboxScale;
+    use luma::controls::checkbox::CheckboxScale;
 
-    use gpui_luma_look_shadcn::catalog::SpacingField;
+    use luma_look_shadcn::catalog::SpacingField;
     use crate::metrics::{
         border_width_metric, control_size_key, derived_metric, focus_ring_offset_metric, focus_ring_width_metric,
         radius_metric, scaffold_control_metric, spacing_control_metric,
@@ -85,9 +85,9 @@ pub fn inspect_checkbox_metrics(
     let scale = CheckboxScale::compute(size, metrics, 1.0);
     let size_key = control_size_key(size);
     let (ratio, radius_px, _icon_inset) = match size {
-        gpui_luma::theme::ControlSize::Sm => (0.45, 2.0, 2.0),
-        gpui_luma::theme::ControlSize::Md => (0.50, 4.0, 3.0),
-        gpui_luma::theme::ControlSize::Lg => (0.55, 6.0, 4.0),
+        luma::theme::ControlSize::Sm => (0.45, 2.0, 2.0),
+        luma::theme::ControlSize::Md => (0.50, 4.0, 3.0),
+        luma::theme::ControlSize::Lg => (0.55, 6.0, 4.0),
     };
 
     CheckboxInspectMetrics {
@@ -116,11 +116,11 @@ pub fn inspect_checkbox_elevation(
     checked: bool,
     state: InteractionState,
 ) -> crate::controls::button::ButtonInspectElevation {
-    use gpui_luma::theme::ControlSize;
-    use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
+    use luma::theme::ControlSize;
+    use luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
     use crate::controls::button::{button_style_key, inspect_layered_elevation};
 
-    let look = gpui_luma_look_shadcn::paint::checkbox_look(mode, style, checked, state, ControlSize::Md);
+    let look = luma_look_shadcn::paint::checkbox_look(mode, style, checked, state, ControlSize::Md);
     let layer = state.layer();
     let rule = embedded_stylesheet().checkbox.elevation_rule_for_layer(layer);
     let rule_shadow = rule.map(|rule| rule.shadow.clone()).unwrap_or_else(|| "none".to_string());

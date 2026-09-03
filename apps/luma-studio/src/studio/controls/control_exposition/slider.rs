@@ -2,10 +2,10 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
-use gpui_luma::controls::slider::{Slider, SliderEvent, SliderThumbPolicy};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use luma::controls::slider::{Slider, SliderEvent, SliderThumbPolicy};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;

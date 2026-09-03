@@ -3,12 +3,12 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::color::color_slider::color_spec::{Hsl, RgbaSpec};
-use gpui_luma::controls::color::color_slider::{ColorInterpolation, ColorSliderBuilder, SliderThumbSize};
-use gpui_luma::controls::slider::{SliderControl, SliderEvent};
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::color::color_slider::color_spec::{Hsl, RgbaSpec};
+use luma::controls::color::color_slider::{ColorInterpolation, ColorSliderBuilder, SliderThumbSize};
+use luma::controls::slider::{SliderControl, SliderEvent};
+use luma::theme::ControlSize;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::color_exposition_common::{format_slider_event, render_demo_section, render_field_card, slider_grid_stack};

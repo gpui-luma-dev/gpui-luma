@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::color::color_field::ColorFieldEvent;
-use gpui_luma::controls::color::composition::CompositionSize;
-use gpui_luma::controls::slider::SliderEvent;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::color::color_field::ColorFieldEvent;
+use luma::controls::color::composition::CompositionSize;
+use luma::controls::slider::SliderEvent;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::color_compositions::color_harmonies::{

@@ -1,5 +1,5 @@
 [package]
-name = "gpui-luma-shell-detached"
+name = "luma-shell-detached"
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
@@ -8,11 +8,11 @@ publish = false
 [dependencies]
 anyhow = { workspace = true }
 gpui = { workspace = true }
-gpui-luma = { path = "../../../crates/sdk" }
+luma = { path = "../../../crates/sdk" }
 lucide-svg-static.workspace = true
 gpui_platform = { workspace = true }
-gpui-luma-look-shadcn = { path = "../../../crates/look-shadcn" }
-gpui-luma-shell-common = { path = "../common" }
+luma-look-shadcn = { path = "../../../crates/look-shadcn" }
+luma-shell-common = { path = "../common" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = { version = "0.18" }

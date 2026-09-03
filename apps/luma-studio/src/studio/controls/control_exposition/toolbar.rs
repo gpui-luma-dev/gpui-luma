@@ -3,13 +3,13 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
-use gpui_luma::controls::control_group::ControlGroupFocusStrategy;
-use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::selector::SelectorItem;
-use gpui_luma::controls::toolbar::{ToolbarControl, ToolbarEvent, ToolbarValue};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use luma::controls::control_group::ControlGroupFocusStrategy;
+use luma::controls::menu_item::MenuItem;
+use luma::controls::selector::SelectorItem;
+use luma::controls::toolbar::{ToolbarControl, ToolbarEvent, ToolbarValue};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};

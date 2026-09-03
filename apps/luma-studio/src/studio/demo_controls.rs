@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AppContext, Context, Entity, Subscription};
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::theme::ControlSize;
+use luma_look_shadcn::ShadcnLook;
 
 use super::app::LumaStudioApp;
 use super::content_tabs::cards::{

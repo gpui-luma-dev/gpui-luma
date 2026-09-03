@@ -2,10 +2,10 @@
 
 use gpui::BoxShadow;
 use gpui::SharedString;
-use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::theme::shadow::shadow_projection_insets;
-use gpui_luma::theme::{ControlSize, InteractionState};
-use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, paint};
+use luma::controls::button_family::ButtonFamilyRole;
+use luma::theme::shadow::shadow_projection_insets;
+use luma::theme::{ControlSize, InteractionState};
+use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, paint};
 
 use super::box_model::{InspectEdgeInsets, InspectOccupationSnapshot};
 

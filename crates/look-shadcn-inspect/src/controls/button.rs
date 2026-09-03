@@ -1,16 +1,16 @@
 //! Inspect metadata for `button`.
 
 use gpui::{BoxShadow, Hsla};
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma_look_shadcn::{
     LookContext, LookResolver, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, ShadcnButtonStyle,
     ShadcnModeTokens, TypographySource,
 };
-use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, find_button_elevation_rule, resolve_stylesheet_shadow_token};
+use luma_look_shadcn::stylesheet::{embedded_stylesheet, find_button_elevation_rule, resolve_stylesheet_shadow_token};
 
-use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::controls::choice_indicator_layout::shadow_projection_extent;
-use gpui_luma_look_shadcn::catalog::SpacingField;
+use luma::controls::button_family::ButtonFamilyRole;
+use luma::controls::choice_indicator_layout::shadow_projection_extent;
+use luma_look_shadcn::catalog::SpacingField;
 
 pub struct ButtonInspectPalette {
     pub background: ResolvedColor,
@@ -34,8 +34,8 @@ pub fn inspect_button_color_palette(
     let layer = state.layer();
     let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "button_resolver");
-    let colors = gpui_luma_look_shadcn::tables::resolve_button_colors(&resolver, style, layer, theme_mode, selected)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ButtonColorPalette::fallback());
+    let colors = luma_look_shadcn::tables::resolve_button_colors(&resolver, style, layer, theme_mode, selected)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::ButtonColorPalette::fallback());
 
     let border = effective_border_resolved(&colors);
     ButtonInspectPalette { background: colors.background, foreground: colors.foreground, border }
@@ -62,7 +62,7 @@ pub fn inspect_button_metrics(
     size: ControlSize,
     state: InteractionState,
 ) -> ButtonInspectMetrics {
-    let look = gpui_luma_look_shadcn::paint::button_look(mode, theme_mode, style, role, size, state);
+    let look = luma_look_shadcn::paint::button_look(mode, theme_mode, style, role, size, state);
     let ctx = LookContext::new(mode, theme_mode, state);
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
@@ -88,7 +88,7 @@ pub fn inspect_button_metrics(
             source: MetricSource::Scaffold { path: "MetricTokens.focus.width".into() },
         },
         focus_ring_offset: focus_ring_offset_metric(
-            gpui_luma::controls::button_family::button_family_effective_border(look.border),
+            luma::controls::button_family::button_family_effective_border(look.border),
             metrics,
         ),
     }
@@ -132,7 +132,7 @@ pub fn inspect_button_elevation(
     state: InteractionState,
 ) -> ButtonInspectElevation {
     let effective_style = effective_button_style(style, role);
-    let look = gpui_luma_look_shadcn::paint::button_look(mode, theme_mode, style, role, ControlSize::Md, state);
+    let look = luma_look_shadcn::paint::button_look(mode, theme_mode, style, role, ControlSize::Md, state);
     let ctx = LookContext::new(mode, theme_mode, state);
     let stylesheet = embedded_stylesheet();
     let style_key = button_style_key(effective_style);
@@ -214,7 +214,7 @@ pub fn inspect_button_typography(mode: &ShadcnModeTokens, theme_mode: ThemeMode)
     }
 }
 
-fn typography_family_field(catalog: &gpui_luma_look_shadcn::catalog::CssTokenMap, family: &str) -> ResolvedTypography {
+fn typography_family_field(catalog: &luma_look_shadcn::catalog::CssTokenMap, family: &str) -> ResolvedTypography {
     if catalog.get("font-sans").is_some() {
         ResolvedTypography { value: family.to_string(), source: TypographySource::CssVar { token: "font-sans".into() } }
     } else {
@@ -305,7 +305,7 @@ fn scaffold_control_metric(size_key: &str, field: &str, value_px: f32) -> Resolv
 }
 
 fn spacing_control_metric(
-    catalog: &gpui_luma_look_shadcn::catalog::CssTokenMap,
+    catalog: &luma_look_shadcn::catalog::CssTokenMap,
     size: ControlSize,
     field: SpacingField,
     value_px: f32,
@@ -317,7 +317,7 @@ fn spacing_control_metric(
             SpacingField::PaddingY => "padding_y",
             SpacingField::Gap => "gap",
         };
-        let multiplier = gpui_luma_look_shadcn::catalog::spacing_multiplier(size, field);
+        let multiplier = luma_look_shadcn::catalog::spacing_multiplier(size, field);
         let multiplier_label = if (multiplier - multiplier.round()).abs() < f32::EPSILON {
             format!("{}", multiplier.round() as i32)
         } else {
@@ -339,11 +339,7 @@ fn spacing_control_metric(
     }
 }
 
-fn radius_metric(
-    catalog: &gpui_luma_look_shadcn::catalog::CssTokenMap,
-    size: ControlSize,
-    value_px: f32,
-) -> ResolvedMetric {
+fn radius_metric(catalog: &luma_look_shadcn::catalog::CssTokenMap, size: ControlSize, value_px: f32) -> ResolvedMetric {
     if catalog.get("radius").is_some() {
         let (size_label, offset) = match size {
             ControlSize::Sm => ("sm", 4.0_f32),
@@ -364,8 +360,8 @@ fn radius_metric(
     }
 }
 
-fn effective_border_resolved(colors: &gpui_luma_look_shadcn::tables::ButtonColorPalette) -> ResolvedColor {
-    use gpui_luma_look_shadcn::ColorSource;
+fn effective_border_resolved(colors: &luma_look_shadcn::tables::ButtonColorPalette) -> ResolvedColor {
+    use luma_look_shadcn::ColorSource;
 
     if let Some(color) = &colors.border {
         return color.clone();
@@ -374,7 +370,7 @@ fn effective_border_resolved(colors: &gpui_luma_look_shadcn::tables::ButtonColor
     ResolvedColor { value: gpui::hsla(0.0, 0.0, 0.0, 0.0), source: ColorSource::Transparent }
 }
 
-fn focus_ring_offset_metric(border: gpui::Hsla, metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
+fn focus_ring_offset_metric(border: gpui::Hsla, metrics: &luma::theme::MetricTokens) -> ResolvedMetric {
     let border_width = metrics.border_width.default;
     let focus = metrics.focus.width;
     if border.a <= 0.0 {
@@ -394,9 +390,8 @@ mod tests {
 
     #[test]
     fn button_color_table_metadata_is_populated() {
-        let metadata = gpui_luma_look_shadcn::stylesheet::resolve_button_colors_metadata(
-            gpui_luma_look_shadcn::embedded_stylesheet(),
-        );
+        let metadata =
+            luma_look_shadcn::stylesheet::resolve_button_colors_metadata(luma_look_shadcn::embedded_stylesheet());
         assert!(!metadata.is_empty());
         assert!(metadata[0].inputs.len() == 4);
     }
@@ -413,7 +408,7 @@ mod tests {
         );
         assert!(matches!(
             palette.border.source,
-            gpui_luma_look_shadcn::ColorSource::CssVar { ref token } if token == "primary"
+            luma_look_shadcn::ColorSource::CssVar { ref token } if token == "primary"
         ));
         assert_eq!(palette.border.value, palette.background.value);
     }
@@ -421,7 +416,7 @@ mod tests {
     #[test]
     fn inspect_metrics_match_button_look_for_primary_default_md() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let look = gpui_luma_look_shadcn::paint::button_look(
+        let look = luma_look_shadcn::paint::button_look(
             &mode,
             ThemeMode::Light,
             ShadcnButtonStyle::Primary,
@@ -506,12 +501,12 @@ mod tests {
 
         assert!(matches!(
             typography.font_family.source,
-            gpui_luma_look_shadcn::TypographySource::CssVar { ref token } if token == "font-sans"
+            luma_look_shadcn::TypographySource::CssVar { ref token } if token == "font-sans"
         ));
         assert_eq!(typography.font_family.value, "Outfit");
         assert!(matches!(
             typography.font_size.source,
-            gpui_luma_look_shadcn::TypographySource::Scaffold { ref path } if path.contains("label.size")
+            luma_look_shadcn::TypographySource::Scaffold { ref path } if path.contains("label.size")
         ));
         assert_eq!(typography.font_size.value, "12.5");
         assert_eq!(typography.line_height.value, "18");

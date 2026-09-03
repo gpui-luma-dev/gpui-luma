@@ -5,13 +5,13 @@ mod metrics;
 #[cfg(test)]
 mod test_support;
 
-pub use gpui_luma_look_shadcn::{
+pub use luma_look_shadcn::{
     ColorSource, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, TypographySource,
     format_color_source, format_css_style_ref, format_font_weight, format_inspect_css_key,
     format_inspect_metric_provenance, format_inspect_metric_source, format_inspect_provenance,
     format_inspect_typography_provenance, format_inspect_typography_source, format_metric_px, format_typography_px,
 };
-pub use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnTextFieldStyle};
+pub use luma_look_shadcn::{ShadcnButtonStyle, ShadcnTextFieldStyle};
 pub use look::ShadcnInspect;
 
 pub use controls::{

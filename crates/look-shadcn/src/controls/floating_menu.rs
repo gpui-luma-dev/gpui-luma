@@ -9,8 +9,8 @@
 //! | Item hover fg | `accent-foreground`                |
 //! | Item disabled | `muted-foreground`               |
 
-use gpui_luma::controls::floating_menu::FloatingMenuLook;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use luma::controls::floating_menu::FloatingMenuLook;
+use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -163,9 +163,9 @@ fn floating_menu_elevation_shadow(
 mod tests {
 
     use std::collections::BTreeMap;
-    use gpui_luma::theme::ThemeMode;
+    use luma::theme::ThemeMode;
 
-    use gpui_luma::theme::ControlSize;
+    use luma::theme::ControlSize;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -196,7 +196,7 @@ mod tests {
     #[test]
     fn floating_menu_resolves_stylesheet_shadow() {
         let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
-        let look = floating_menu_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md);
+        let look = floating_menu_look(&mode, luma::theme::ThemeMode::Light, ControlSize::Md);
 
         assert!(!look.shadow.is_empty());
     }
@@ -205,7 +205,7 @@ mod tests {
     fn floating_menu_uses_popover_surface_and_accent_item_hover() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look = floating_menu_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md);
+        let look = floating_menu_look(&mode, luma::theme::ThemeMode::Light, ControlSize::Md);
 
         assert_eq!(look.background, catalog.color("popover").expect("popover"));
         assert_eq!(look.foreground, catalog.color("popover-foreground").expect("popover-foreground"));
@@ -216,9 +216,9 @@ mod tests {
     #[test]
     fn floating_menu_item_typography_scales_with_size() {
         let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
-        let sm = floating_menu_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Sm);
-        let md = floating_menu_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md);
-        let lg = floating_menu_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Lg);
+        let sm = floating_menu_look(&mode, luma::theme::ThemeMode::Light, ControlSize::Sm);
+        let md = floating_menu_look(&mode, luma::theme::ThemeMode::Light, ControlSize::Md);
+        let lg = floating_menu_look(&mode, luma::theme::ThemeMode::Light, ControlSize::Lg);
 
         assert!((sm.item_typography.size - 12.0).abs() < f32::EPSILON);
         assert!((md.item_typography.size - 14.0).abs() < f32::EPSILON);

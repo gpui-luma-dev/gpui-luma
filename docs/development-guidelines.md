@@ -60,7 +60,7 @@ fn handle_activate_control(&mut self, _: &ActivateControl, _: &mut Window, cx: &
 Consumer applications must compose SDK controls, not reinvent them.
 
 ### 2.1 Use Layout Helper Macros (Strict Rules)
-In `apps/gallery` and all other application layout trees, **raw tail-chained flex layouts are strictly prohibited** for multi-child layouts. You must reuse the layout macros defined in `gpui_luma::macros` (`vstack!`, `hstack!`, `wrappanel!`, `dock_panel!`, `declare_form!`).
+In `apps/gallery` and all other application layout trees, **raw tail-chained flex layouts are strictly prohibited** for multi-child layouts. You must reuse the layout macros defined in `luma::macros` (`vstack!`, `hstack!`, `wrappanel!`, `dock_panel!`, `declare_form!`).
 
 #### The Layout Rule:
 If a container renders **more than one child**, you must use `vstack!`, `hstack!`, or `wrappanel!` instead of manually chaining `.flex().flex_col().gap(...)`.

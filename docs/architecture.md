@@ -1,22 +1,22 @@
 # GPUI-Luma Architecture Guide
 
-This document defines the core architecture, crate layout, module mapping, and design principles of the `gpui-luma` workspace. It serves as the canonical source of truth for both human developers and AI assistants.
+This document defines the core architecture, crate layout, module mapping, and design principles of the `luma` workspace. It serves as the canonical source of truth for both human developers and AI assistants.
 
 ---
 
 ## 1. Project Scope & Workspace Structure
 
-`gpui-luma` is a GPUI-based reusable component SDK. Downstream applications (such as Luma Studio) are consumers that compose these SDK controls, rather than inventing their own interactive chrome.
+`luma` is a GPUI-based reusable component SDK. Downstream applications (such as Luma Studio) are consumers that compose these SDK controls, rather than inventing their own interactive chrome.
 
 ### Workspace Crates
 
-*   **`crates/sdk` (`gpui-luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels).
-*   **`crates/font-assets` (`gpui-luma-fonts`)**: Shared embedded font assets and GPUI text-system registration helpers. Applications register bundled fonts at startup; the SDK remains font-file agnostic.
+*   **`crates/sdk` (`luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels).
+*   **`crates/font-assets` (`luma-fonts`)**: Shared embedded font assets and GPUI text-system registration helpers. Applications register bundled fonts at startup; the SDK remains font-file agnostic.
 *   **`crates/lucide-svg-static`**: Experimental generated-style, renderer-neutral Lucide SVG asset crate. It currently packages the three chevrons used by the SVG rotation spike; the intended follow-up is automated generation from pinned upstream Lucide releases.
-*   **`crates/look-shadcn` (`gpui-luma-look-shadcn`)**: The CSS-first product runtime theme (Shadcn/CSS look crate). It defines styling catalogs, stylesheet config matching, and look-specific extensions.
+*   **`crates/look-shadcn` (`luma-look-shadcn`)**: The CSS-first product runtime theme (Shadcn/CSS look crate). It defines styling catalogs, stylesheet config matching, and look-specific extensions.
 *   **`crates/look-shadcn-inspect`**: Support utilities for theme visual inspection and palette debugging.
 *   **`apps/luma-studio` (`luma-studio`)**: The theme customization dashboard, control documentation studio, and visual design testing app. System font classification for typography pickers lives in `studio/font_catalog/`.
-*   **`apps/color-viz` (`gpui-luma-color-viz`)**: Color visualization workspace (Shadcn look, shared theme CLI).
+*   **`apps/color-viz` (`luma-color-viz`)**: Color visualization workspace (Shadcn look, shared theme CLI).
 *   **`apps/shells/`**: Full-window shell reference apps — `SplitView` recipes (unified, inset, icon-rail, detached, split-titlebar) plus `vscode` (Luma Studio `ResizablePanels` workbench shell) — with shared theme and, where applicable, the Properties `SidebarControl` sample from `apps/shells/common`.
 
 ### Crate Dependencies
@@ -72,17 +72,17 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
 ## 3. Crate & Module Map
 
 ### `crates/sdk` Module Architecture
-*   [`init.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/init.rs): Global SDK initialization hook.
-*   [`focus.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/focus.rs): Focus scopes, key binders, and focus-traversal helpers.
-*   [`keyhandling.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/keyhandling.rs): Core key profile definitions and action bindings.
-*   [`layout.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/layout.rs): Re-export surface for SDK layout primitives.
-*   [`layouts/dock_panel.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/layouts/dock_panel.rs): `DockPanel` edge-docking layout and constraints.
-*   [`layouts/grid_layout.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/layouts/grid_layout.rs): `GridLayout` flex-compiled column-track layout.
-*   [`layouts/layer_stack.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/layouts/layer_stack.rs): `LayerStack` for ordered, full-size layers with synchronized rounded layer roots. It does not provide a rounded descendant clip; painted descendants must own the matching boundary.
-*   [`macros.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/macros.rs): Layout convenience macros (`vstack!`, `hstack!`, `grid_layout!`, `flow!`) and forms (`declare_form!`).
-*   [`theme/`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/theme): Global layout caches (`cache.rs`), metric scales (`layout.rs`), and token structures.
-*   [`controls/`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls): The control library:
-    *   **Shared infra:** [`template.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/template.rs) (modifiers), [`state.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/state.rs) (focus/composite states), [`value.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/value.rs) (numeric ranges), [`icon.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/icon.rs) (look-agnostic `IconSource` rendering plus shared `DisclosureIcons` and `SelectionStatusIcons` defaults).
+*   [`init.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/init.rs): Global SDK initialization hook.
+*   [`focus.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/focus.rs): Focus scopes, key binders, and focus-traversal helpers.
+*   [`keyhandling.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/keyhandling.rs): Core key profile definitions and action bindings.
+*   [`layout.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/layout.rs): Re-export surface for SDK layout primitives.
+*   [`layouts/dock_panel.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/layouts/dock_panel.rs): `DockPanel` edge-docking layout and constraints.
+*   [`layouts/grid_layout.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/layouts/grid_layout.rs): `GridLayout` flex-compiled column-track layout.
+*   [`layouts/layer_stack.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/layouts/layer_stack.rs): `LayerStack` for ordered, full-size layers with synchronized rounded layer roots. It does not provide a rounded descendant clip; painted descendants must own the matching boundary.
+*   [`macros.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/macros.rs): Layout convenience macros (`vstack!`, `hstack!`, `grid_layout!`, `flow!`) and forms (`declare_form!`).
+*   [`theme/`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/theme): Global layout caches (`cache.rs`), metric scales (`layout.rs`), and token structures.
+*   [`controls/`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/controls): The control library:
+    *   **Shared infra:** [`template.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/controls/template.rs) (modifiers), [`state.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/controls/state.rs) (focus/composite states), [`value.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/controls/value.rs) (numeric ranges), [`icon.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/controls/icon.rs) (look-agnostic `IconSource` rendering plus shared `DisclosureIcons` and `SelectionStatusIcons` defaults).
 *   **Buttons:** `command/button`, `command/icon_button`, `button_family`, `split_button` (single-focus action face plus menu trigger backed by the shared popup lifecycle; callers can configure distinct `open_trigger_icon` and `close_trigger_icon` values).
     *   **Choice:** `checkbox`, `radio_button`, `switch`, `toggle`, `control_group` (selection engine with explicit active-descendant focus by default, opt-in roving-item focus targets, and opt-in animated selection progress for compatible item templates; checkbox, ListBox, SelectionPanel, and Stepper affordances accept shared `SelectionStatusIcons`; menu-choice rows expose resolved item visual context via `ControlGroupItemVisualContext` and `with_menu_row_item_content`).
     *   **Composition:** `toolbar` (thin `control_group` specialization with horizontal layout, configurable focus strategy defaulting to `RovingItemFocus`, hosted items + separators, `Outline`/`Ghost` shell variants, unified `ToolbarEvent` fan-in from sourced child controls, and optional item-level click/change callbacks). Look-bound item factories live on `ShadcnToolbarItemExt` (`toolbar_button`, `toolbar_toggle`, `toolbar_textfield`, …).
@@ -94,17 +94,17 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
     *   **Navigation:** `sidebar` (`SidebarControl` with modern `sidebar_group` / `sidebar_menu` builders; flush list presentation engine lives under `sidebar/engine`; themed `SidebarTemplate` owns optional inset-pane radius, background, and descendant clipping), `tabs_navigation` (control-group-backed tabs with controlled button-family toggle item rendering, dropdown trigger events, anchor reporting, list-level active indicator that lerps position/width via `VisualTransition`, and reusable item-render / same-root overlay host helpers with `OverlayPresence` enter/exit for derived templates), `accordion`, `listbox`, `list_view`, `pager` (typed `PagerIcons` configure page-size and first/previous/next/last affordances), `progress` (`set_value` interpolates fill via `VisualTransition`; indeterminate mode uses looping `ContinuousPhase` shimmer/sweep), `tree_view` (branch expand/collapse lerps descendant row heights via per-node `VisualTransition` with delayed collapse splice-out, and rotates the branch chevron `0°→90°`), `stepper` (active-step indicator track fill lerps via `VisualTransition`; optional step content slots slide in a clipped panel host).
 
     Public callers should use `popover_button` for trigger-owned popovers; its placement and popup lifecycle implementation is private to that control.
-*   **Motion:** Shared frame-driven primitives live in [`animation.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/animation.rs) (`VisualTransition` for interruptible `0..1` retargeting, `DisclosureMotion` for shared open/closed expansion motion, and `ContinuousPhase` for looping timeline motion), [`overlay_presence.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/overlay_presence.rs) (`OverlayPresence` for keep-mounted overlay enter/exit), and [`popup_lifecycle.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/popup_lifecycle.rs) (`PopupLifecycle` for trigger-aware popup open/close, presence, and outside-click dismissal). Controls own transitions and drive them with `sync` + `cx.on_next_frame`.
+*   **Motion:** Shared frame-driven primitives live in [`animation.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/animation.rs) (`VisualTransition` for interruptible `0..1` retargeting, `DisclosureMotion` for shared open/closed expansion motion, and `ContinuousPhase` for looping timeline motion), [`overlay_presence.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/controls/overlay_presence.rs) (`OverlayPresence` for keep-mounted overlay enter/exit), and [`popup_lifecycle.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/controls/popup_lifecycle.rs) (`PopupLifecycle` for trigger-aware popup open/close, presence, and outside-click dismissal). Controls own transitions and drive them with `sync` + `cx.on_next_frame`.
 
 *   **Semantic icon decisions:** TextArea exposes its draggable resize-handle icon through `TextAreaBuilder::resize_handle_icon`; Selector item checkmarks share `SelectorIcons::selected`; and shell title-bar minimize, maximize/restore, and close glyphs remain fixed platform chrome. The title-bar controls map directly to native window control areas and actions, so a shared SDK icon contract would add customization surface without improving behavior or accessibility semantics. Caller-owned content icons and fixed decorative affordances (such as pager ellipses and text-entry clear/search glyphs) remain outside the semantic icon configuration surface.
 
 ### `crates/look-shadcn` Module Architecture
-*   [`look.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/look.rs): Holds the parsed CSS token database and mapping configurations.
-*   [`controls/ext.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/ext.rs): Implements `ShadcnLookControlExt` for spawning look-bound control builders.
-*   [`stylesheet/`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/stylesheet): Stylesheet matching configuration and resolvers:
+*   [`look.rs`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/look.rs): Holds the parsed CSS token database and mapping configurations.
+*   [`controls/ext.rs`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/controls/ext.rs): Implements `ShadcnLookControlExt` for spawning look-bound control builders.
+*   [`stylesheet/`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/stylesheet): Stylesheet matching configuration and resolvers:
     *   `config.rs`: Strongly deserialized Serde layouts for mapping styles to `style.toml`.
     *   `resolve.rs`: Layout metric calculations, variables (`@field`), and opacity resolver.
-*   [`ext.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/ext.rs): Layout extension modifiers (`bg_cn`, `text_cn`, `gap_cn`, `shadow_cn`).
+*   [`ext.rs`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/ext.rs): Layout extension modifiers (`bg_cn`, `text_cn`, `gap_cn`, `shadow_cn`).
 *   **Elevation:** Control/container shadows resolve from `[[*.elevation_rules]]` in `assets/style.toml` → catalog `--shadow-*` tokens → look fields → template `.shadow()`. Shadows paint outside the logical control bounds and do not reserve layout space; focus-ring geometry remains reserved where needed so focus does not shift layout. App chrome may use `div().shadow_cn(ShadcnShadow::…)` inside `with_look`.
 
 ### `apps/luma-studio` Experimental Layout Prototypes
@@ -143,6 +143,6 @@ User Actions (Pointer/Keyboard)
 Composed controls such as `autocomplete`, `combobox`, and `search_selector` wrap textfield and popup child controls, but their public semantic events follow the same SDK contract as simpler controls: update owned state, emit with `cx.emit(...)`, and notify as needed. Luma Studio event-log demos should retain subscriptions on the preview entity and lay out popup-based controls so their overlays do not cover the event stream.
 
 ### Overlay Theme Invalidation
-*   **`OverlayWindow`** observes [`LumaThemeRevision`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/theme/revision.rs) and re-renders itself when the active look changes.
+*   **`OverlayWindow`** observes [`LumaThemeRevision`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/theme/revision.rs) and re-renders itself when the active look changes.
 *   Persistent entities composed into overlay content (buttons, choice groups, etc.) must be registered on the builder via `.theme_child(...)` / `.theme_children([...])` so the overlay fans out invalidation without app-level notify plumbing.
 *   Overlay content closures must resolve look-derived tokens at render time; do not capture colors or metrics from the look at spawn time.

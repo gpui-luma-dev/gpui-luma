@@ -1,8 +1,8 @@
 //! Inspect metadata for `card`.
 
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::catalog::SpacingField;
-use gpui_luma_look_shadcn::{LookContext, ResolvedMetric, ShadcnLook, ShadcnRadius};
+use luma::theme::ControlSize;
+use luma_look_shadcn::catalog::SpacingField;
+use luma_look_shadcn::{LookContext, ResolvedMetric, ShadcnLook, ShadcnRadius};
 
 use crate::metrics::{derived_metric, radius_metric, spacing_control_metric};
 

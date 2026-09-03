@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use gpui::Hsla;
-use gpui_luma::theme::ThemeMode;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::theme::ThemeMode;
+use luma_look_shadcn::ShadcnLook;
 
 use super::hs_mixer::{ThemePaletteHsOverride, clamp_palette_temperature_amount, clamp_palette_vividness_amount};
 

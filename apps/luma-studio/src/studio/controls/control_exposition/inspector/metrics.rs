@@ -1,9 +1,9 @@
 use gpui::SharedString;
-use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::controls::scrollbar::ScrollbarOrientation;
-use gpui_luma::theme::{ControlSize, InteractionState};
-use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
-use gpui_luma_look_shadcn_inspect::{
+use luma::controls::button_family::ButtonFamilyRole;
+use luma::controls::scrollbar::ScrollbarOrientation;
+use luma::theme::{ControlSize, InteractionState};
+use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
+use luma_look_shadcn_inspect::{
     AccordionInspectMetrics, AutocompleteInspectMetrics, BadgeInspectMetrics, ButtonInspectMetrics,
     CheckboxInspectMetrics, ContextMenuInspectMetrics, FloatingMenuInspectMetrics, ListBoxInspectMetrics,
     ListViewInspectMetrics, SidebarInspectMetrics, OverlayWindowInspectMetrics, ProgressInspectMetrics,
@@ -261,7 +261,7 @@ pub fn overlay_window_layout_section(
     variant_id: &str,
     size_id: &str,
 ) -> InspectLayoutSection {
-    use gpui_luma::controls::overlay_window::OverlayWindowMode;
+    use luma::controls::overlay_window::OverlayWindowMode;
 
     let size = control_size(size_id);
     let mode = match variant_id {
@@ -369,7 +369,7 @@ pub fn pager_shell_layout_section(look: &ShadcnLook, diagram_id: &str, variant_i
 }
 
 pub fn pager_button_layout_section(look: &ShadcnLook, diagram_id: &str) -> InspectLayoutSection {
-    let style = gpui_luma::controls::pager::PagerStyle::Numeric;
+    let style = luma::controls::pager::PagerStyle::Numeric;
     pager_button_metrics_layout_section(look, diagram_id, &ShadcnInspect::new(look).inspect_pager_metrics(style))
 }
 
@@ -529,7 +529,7 @@ fn textfield_metrics_layout_section(
 fn selector_metrics_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
-    metrics: &gpui_luma_look_shadcn_inspect::SelectorInspectMetrics,
+    metrics: &luma_look_shadcn_inspect::SelectorInspectMetrics,
 ) -> InspectLayoutSection {
     let trigger_box = InspectBoxModelSnapshot::from_button_metrics(&metrics.trigger);
     let rows = metric_properties(&[
@@ -1037,7 +1037,7 @@ fn pager_shell_metrics_layout_section(
     rows.push(InspectPropertyRow::new(
         "requested font family",
         metrics.font_family.value.as_str(),
-        gpui_luma_look_shadcn_inspect::format_inspect_typography_source(&metrics.font_family.source),
+        luma_look_shadcn_inspect::format_inspect_typography_source(&metrics.font_family.source),
     ));
     rows.push(super::provenance::metric_row("shadow projection extent", &metrics.reserved_shadow_extent));
 
@@ -1069,7 +1069,7 @@ fn pager_button_metrics_layout_section(
     rows.push(InspectPropertyRow::new(
         "requested font family",
         metrics.font_family.value.as_str(),
-        gpui_luma_look_shadcn_inspect::format_inspect_typography_source(&metrics.font_family.source),
+        luma_look_shadcn_inspect::format_inspect_typography_source(&metrics.font_family.source),
     ));
     rows.push(super::provenance::metric_row("shadow projection extent", &metrics.reserved_shadow_extent));
     rows.push(InspectPropertyRow::new(

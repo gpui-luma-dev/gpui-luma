@@ -2,11 +2,11 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, EventEmitter, Pixels, Render, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::command::icon_button::IconButton;
-use gpui_luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
-use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanels, ResizablePanelsTheme};
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma::controls::command::icon_button::IconButton;
+use luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
+use luma::controls::resizable_panels::{PanelHideMode, ResizablePanels, ResizablePanelsTheme};
+use luma::theme::ControlSize;
+use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::layout_config::{LayoutConfig, PanelAlignment, PrimarySideBarPosition};

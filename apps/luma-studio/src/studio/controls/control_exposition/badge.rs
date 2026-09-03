@@ -3,10 +3,10 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use gpui_luma::{flow, hstack};
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use luma::{flow, hstack};
+use luma::theme::ControlSize;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};

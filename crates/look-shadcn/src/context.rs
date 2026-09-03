@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::sync::Arc;
 
-use gpui_luma::controls::color::style::{ColorControlTheme, active_color_control_theme, set_active_color_control_theme};
-use gpui_luma::theme::ThemeMode;
+use luma::controls::color::style::{ColorControlTheme, active_color_control_theme, set_active_color_control_theme};
+use luma::theme::ThemeMode;
 
 use crate::look::ShadcnLook;
 

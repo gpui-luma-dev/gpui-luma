@@ -1,13 +1,13 @@
 //! Inspect metadata for shared color-control chrome (slider, ring, arc, field, swatch, thumb).
 
 use gpui::{px, Hsla, Pixels};
-use gpui_luma::controls::color::chrome_tokens::{disabled_overlay, slider_blocked_overlay, swatch_checkerboard_colors};
-use gpui_luma::controls::color::color_arc::visual::default_color_arc_visual;
-use gpui_luma::controls::color::color_ring::visual::default_color_ring_visual;
-use gpui_luma::controls::color::color_slider::color_thumb::ThumbStyle;
-use gpui_luma::controls::color::color_slider::visual::default_color_slider_visual;
-use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
+use luma::controls::color::chrome_tokens::{disabled_overlay, slider_blocked_overlay, swatch_checkerboard_colors};
+use luma::controls::color::color_arc::visual::default_color_arc_visual;
+use luma::controls::color::color_ring::visual::default_color_ring_visual;
+use luma::controls::color::color_slider::color_thumb::ThumbStyle;
+use luma::controls::color::color_slider::visual::default_color_slider_visual;
+use luma::theme::{InteractionState, ThemeMode};
+use luma_look_shadcn::{
     format_inspect_css_key, sync_color_control_theme, ColorSource, LookContext, LookResolver, MetricSource,
     ResolvedColor, ResolvedMetric, ShadcnLook,
 };
@@ -122,8 +122,8 @@ fn shared_theme_section(
 }
 
 fn slider_track_section(
-    enabled: gpui_luma::controls::color::color_slider::visual::ColorSliderVisual,
-    disabled: gpui_luma::controls::color::color_slider::visual::ColorSliderVisual,
+    enabled: luma::controls::color::color_slider::visual::ColorSliderVisual,
+    disabled: luma::controls::color::color_slider::visual::ColorSliderVisual,
     border: &ResolvedColor,
     background: &ResolvedColor,
     theme_mode: ThemeMode,
@@ -163,7 +163,7 @@ fn slider_track_section(
 }
 
 fn ring_section(
-    disabled: gpui_luma::controls::color::color_ring::visual::ColorRingVisual,
+    disabled: luma::controls::color::color_ring::visual::ColorRingVisual,
     border: &ResolvedColor,
     background: &ResolvedColor,
 ) -> ColorChromeInspectSection {
@@ -185,7 +185,7 @@ fn ring_section(
 }
 
 fn arc_section(
-    disabled: gpui_luma::controls::color::color_arc::visual::ColorArcVisual,
+    disabled: luma::controls::color::color_arc::visual::ColorArcVisual,
     border: &ResolvedColor,
     background: &ResolvedColor,
 ) -> ColorChromeInspectSection {
@@ -289,9 +289,9 @@ fn property_row(
 fn metric_property(label: &'static str, metric: ResolvedMetric) -> ColorChromeInspectPropertyRow {
     ColorChromeInspectPropertyRow {
         label,
-        value: gpui_luma_look_shadcn::format_metric_px(metric.value_px),
-        source: gpui_luma_look_shadcn::format_inspect_metric_source(&metric.source),
-        detail: gpui_luma_look_shadcn::format_inspect_metric_provenance(&metric.source),
+        value: luma_look_shadcn::format_metric_px(metric.value_px),
+        source: luma_look_shadcn::format_inspect_metric_source(&metric.source),
+        detail: luma_look_shadcn::format_inspect_metric_provenance(&metric.source),
     }
 }
 
@@ -336,8 +336,8 @@ fn format_hsl(value: Hsla) -> String {
 
 #[cfg(test)]
 mod tests {
-    use gpui_luma::theme::ThemeMode;
-    use gpui_luma_look_shadcn::{ColorSource, LookResolver, ShadcnModeTokens};
+    use luma::theme::ThemeMode;
+    use luma_look_shadcn::{ColorSource, LookResolver, ShadcnModeTokens};
 
     use super::*;
     use crate::test_support::sample_catalog;

@@ -10,8 +10,8 @@
 //! | Item border       | `border`                           |
 //! | Content label     | `foreground`                       |
 
-use gpui_luma::controls::accordion::{AccordionContentPalette, AccordionPalette};
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use luma::controls::accordion::{AccordionContentPalette, AccordionPalette};
+use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -146,7 +146,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+    use luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;

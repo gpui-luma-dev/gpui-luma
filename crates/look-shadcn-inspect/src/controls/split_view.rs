@@ -1,7 +1,7 @@
 //! Inspect metadata for `split_view`.
 
-use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use luma::theme::{InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct SplitViewInspectPalette {
     pub separator: ResolvedColor,
@@ -36,8 +36,8 @@ pub fn inspect_split_view_color_palette(
 ) -> SplitViewInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "split_view_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_split_view_colors(&resolver, enabled)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SplitViewColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_split_view_colors(&resolver, enabled)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::SplitViewColorTable::fallback());
     SplitViewInspectPalette { separator: colors.separator, separator_hover: colors.separator_hover }
 }
 
@@ -45,15 +45,13 @@ pub fn inspect_split_view_color_palette(
 mod tests {
     use super::*;
     use crate::test_support::sample_catalog;
-    use gpui_luma_look_shadcn::ColorSource;
+    use luma_look_shadcn::ColorSource;
 
     #[test]
     fn split_view_metadata_covers_enabled_and_disabled() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_split_view_colors_metadata(
-                gpui_luma_look_shadcn::embedded_stylesheet()
-            )
-            .len(),
+            luma_look_shadcn::stylesheet::resolve_split_view_colors_metadata(luma_look_shadcn::embedded_stylesheet())
+                .len(),
             2
         );
     }

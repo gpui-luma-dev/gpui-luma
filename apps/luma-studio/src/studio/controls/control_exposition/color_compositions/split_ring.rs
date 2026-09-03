@@ -3,17 +3,17 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, hsla, prelude::*, px};
-use gpui_luma::controls::color::color_arc::{
+use luma::controls::color::color_arc::{
     ColorArcBuilder, ColorArcDomainRenderer, ColorArcRenderer, ColorArcTrackContext, RasterArcDelegate,
 };
-use gpui_luma::controls::color::color_ring::{
+use luma::controls::color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingTrackContext, HueRingDelegate, primary_slider_value,
 };
-use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::composition::{ColorCompositionSync, CompositionSize};
-use gpui_luma::controls::color::style::Size;
-use gpui_luma::controls::slider::SliderControl;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::color::color_slider::color_spec::Hsv;
+use luma::controls::color::composition::{ColorCompositionSync, CompositionSize};
+use luma::controls::color::style::Size;
+use luma::controls::slider::SliderControl;
+use luma_look_shadcn::ShadcnLook;
 
 use super::super::color_exposition_common::{
     composition_demo_card_width, composition_size_label, composition_title_text_size,

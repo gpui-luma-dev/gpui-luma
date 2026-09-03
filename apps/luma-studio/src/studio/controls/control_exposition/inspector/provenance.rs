@@ -1,4 +1,4 @@
-use gpui_luma_look_shadcn_inspect::{
+use luma_look_shadcn_inspect::{
     ButtonInspectElevation, ResolvedColor, ResolvedMetric, format_inspect_box_shadow_layer, format_inspect_css_key,
     format_inspect_metric_provenance, format_inspect_metric_source, format_inspect_provenance, format_metric_px,
 };

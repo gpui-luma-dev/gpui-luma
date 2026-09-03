@@ -8,21 +8,21 @@ use gpui::{
     AnyElement, Context, Entity, FontWeight, Hsla, Render, Subscription, Window, div, hsla, prelude::*, px, rgb,
     transparent_black,
 };
-use gpui_luma::controls::color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, HslWheelModel};
-use gpui_luma::controls::color::color_ring::{
+use luma::controls::color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, HslWheelModel};
+use luma::controls::color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingTrackContext, LightnessRingDelegate, primary_slider_value,
     sizing,
 };
-use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::composition::{ColorCompositionSync, CompositionSize};
-use gpui_luma::controls::color::style::Size;
-use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
-use gpui_luma::controls::slider::SliderControl;
-use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
-use gpui_luma::theme::ControlSize;
-use gpui_luma::vstack;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use luma::controls::color::color_slider::color_spec::Hsv;
+use luma::controls::color::composition::{ColorCompositionSync, CompositionSize};
+use luma::controls::color::style::Size;
+use luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
+use luma::controls::slider::SliderControl;
+use luma::controls::textfield::{TextField, TextFieldEvent};
+use luma::theme::ControlSize;
+use luma::vstack;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
 use super::super::color_exposition_common::{composition_demo_card_width, composition_size_label, format_hsl_label};
 

@@ -1,1 +1,1 @@
-pub use gpui_luma_fonts::{GEIST_MONO_FAMILY, JETBRAINS_MONO_FAMILY, RAJDHANI_FAMILY, register_all};
+pub use luma_fonts::{GEIST_MONO_FAMILY, JETBRAINS_MONO_FAMILY, RAJDHANI_FAMILY, register_all};

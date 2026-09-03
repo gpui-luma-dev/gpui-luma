@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{Context, FontWeight, IntoElement, Render, SharedString, Window, div, px};
 use gpui::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn::ShadcnLook;
 
 use super::inspector::color_chrome::{ColorChromeProfile, ColorChromeSection, resolve_color_chrome_sections};
 use super::inspector::render::{layout, render_color_category, render_property_rows_panel};

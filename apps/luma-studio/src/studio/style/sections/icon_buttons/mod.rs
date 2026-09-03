@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{ButtonTemplate, default_button_template};
-use gpui_luma::controls::tabs_navigation::TabsNavigation;
-use gpui_luma::theme::InteractionState;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::command::button::{ButtonTemplate, default_button_template};
+use luma::controls::tabs_navigation::TabsNavigation;
+use luma::theme::InteractionState;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::sections::buttons::render_button_state_sample;
 use crate::studio::style::shared::button_matrix::{

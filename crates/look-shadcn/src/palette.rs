@@ -1,13 +1,13 @@
 use anyhow::{Context as _, Result};
 use gpui::{Hsla, hsla};
 
-use gpui_luma::theme::ThemeMode;
+use luma::theme::ThemeMode;
 
 use crate::catalog::CssTokenMap;
 use crate::color::with_alpha;
 use crate::state_color::{algorithmic_state_color, catalog_state_color, token_base_from_palette};
 use crate::tokens::ShadcnToken;
-use gpui_luma::theme::InteractionLayer;
+use luma::theme::InteractionLayer;
 
 #[derive(Clone, Copy, Debug)]
 pub struct ShadcnActionRole {
@@ -168,7 +168,7 @@ impl ShadcnPalette {
 mod tests {
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::ThemeMode;
+    use luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
 

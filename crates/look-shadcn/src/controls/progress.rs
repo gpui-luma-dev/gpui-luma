@@ -1,7 +1,7 @@
 //! Progress — accent track + accent-foreground fill.
 
-use gpui_luma::controls::progress::ProgressLook;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma::controls::progress::ProgressLook;
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -78,7 +78,7 @@ pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) 
 mod tests {
 
     use std::collections::BTreeMap;
-    use gpui_luma::theme::ThemeMode;
+    use luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -107,7 +107,7 @@ mod tests {
     fn progress_uses_accent_track_and_accent_foreground_fill() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look = progress_look(&mode, true, gpui_luma::theme::ControlSize::Md);
+        let look = progress_look(&mode, true, luma::theme::ControlSize::Md);
 
         assert_eq!(look.track_color, catalog.color("accent").expect("accent"));
         assert_eq!(look.progress_color, catalog.color("accent-foreground").expect("accent-foreground"));
@@ -116,9 +116,9 @@ mod tests {
     #[test]
     fn progress_size_changes_metrics() {
         let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
-        let small = progress_look(&mode, true, gpui_luma::theme::ControlSize::Sm);
-        let medium = progress_look(&mode, true, gpui_luma::theme::ControlSize::Md);
-        let large = progress_look(&mode, true, gpui_luma::theme::ControlSize::Lg);
+        let small = progress_look(&mode, true, luma::theme::ControlSize::Sm);
+        let medium = progress_look(&mode, true, luma::theme::ControlSize::Md);
+        let large = progress_look(&mode, true, luma::theme::ControlSize::Lg);
 
         assert!(small.size < medium.size);
         assert!(medium.size < large.size);

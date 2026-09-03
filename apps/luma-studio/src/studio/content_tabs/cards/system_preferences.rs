@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use gpui::{Context, FontWeight, IntoElement, Render, Window, div, prelude::*};
-use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::progress::Progress;
-use gpui_luma::controls::slider::{Slider, SliderEvent};
-use gpui_luma::controls::switch::{Switch, SwitchEvent};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
-use gpui_luma::{declare_form, vstack};
+use luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use luma::controls::presenter::HasPresenter;
+use luma::controls::progress::Progress;
+use luma::controls::slider::{Slider, SliderEvent};
+use luma::controls::switch::{Switch, SwitchEvent};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use luma::{declare_form, vstack};
 
 use super::common::titled_card;
 

@@ -1,8 +1,8 @@
 //! Inspect metadata for `overlay_window`.
 
-use gpui_luma::controls::overlay_window::OverlayWindowMode;
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::{ColorSource, ResolvedColor, ResolvedMetric, ShadcnLook};
+use luma::controls::overlay_window::OverlayWindowMode;
+use luma::theme::ControlSize;
+use luma_look_shadcn::{ColorSource, ResolvedColor, ResolvedMetric, ShadcnLook};
 
 #[derive(Clone, Debug)]
 pub struct OverlayWindowInspectPalette {
@@ -26,7 +26,7 @@ pub fn inspect_overlay_window_color_palette(
     size: ControlSize,
     mode: OverlayWindowMode,
 ) -> OverlayWindowInspectPalette {
-    let shell = gpui_luma_look_shadcn::paint::overlay_window_look(look, size, mode);
+    let shell = luma_look_shadcn::paint::overlay_window_look(look, size, mode);
 
     OverlayWindowInspectPalette {
         background: resolved_from_hsla(shell.background, ColorSource::CssVar { token: "popover".into() }),
@@ -45,7 +45,7 @@ pub fn inspect_overlay_window_metrics(
 ) -> OverlayWindowInspectMetrics {
     use crate::metrics::derived_metric;
 
-    let shell = gpui_luma_look_shadcn::paint::overlay_window_look(look, size, mode);
+    let shell = luma_look_shadcn::paint::overlay_window_look(look, size, mode);
     let size_key = match size {
         ControlSize::Sm => "sm",
         ControlSize::Md => "md",

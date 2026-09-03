@@ -11,8 +11,8 @@
 //!
 //! **Surface**: filled `muted` background, no border, same text/selection tokens.
 
-use gpui_luma::controls::textfield::{TextFieldLook, TextFieldPalette, TextFieldState, compose_textfield_look};
-use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale, ThemeMode};
+use luma::controls::textfield::{TextFieldLook, TextFieldPalette, TextFieldState, compose_textfield_look};
+use luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -201,8 +201,8 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::controls::textfield::TextFieldState;
-    use gpui_luma::theme::{ControlSize, ThemeMode};
+    use luma::controls::textfield::TextFieldState;
+    use luma::theme::{ControlSize, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::color::with_alpha;

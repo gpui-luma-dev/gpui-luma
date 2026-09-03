@@ -1,7 +1,7 @@
 //! Convenient imports for shadcn look styling and control construction.
 //!
 //! ```ignore
-//! use gpui_luma_look_shadcn::prelude::*;
+//! use luma_look_shadcn::prelude::*;
 //!
 //! let submit = look.primary_button("submit").label("Submit").spawn(cx);
 //! with_look(&look, || {

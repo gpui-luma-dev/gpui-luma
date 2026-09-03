@@ -3,15 +3,15 @@ use std::sync::Arc;
 use gpui::{
     AnyElement, Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px, transparent_black,
 };
-use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel};
-use gpui_luma::controls::command::icon_button::IconButton;
-use gpui_luma::controls::presenter::ControlPresenter;
-use gpui_luma::controls::resizable_panels::{
+use luma::controls::command::button::{ButtonEvent, ButtonRenderModel};
+use luma::controls::command::icon_button::IconButton;
+use luma::controls::presenter::ControlPresenter;
+use luma::controls::resizable_panels::{
     PanelHideMode, ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation,
     ResizeHandleSize, ResizeHandleVisibility,
 };
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn::prelude::*;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::app::LumaStudioApp;
@@ -51,7 +51,7 @@ impl InspectorSplitShell {
         let id = id.into();
         let inspector_toggle = look
             .content_only_icon_button(format!("{id}-inspector-toggle"), LucideIcon::InspectionPanel)
-            .size(gpui_luma::theme::ControlSize::Sm)
+            .size(luma::theme::ControlSize::Sm)
             .spawn(cx);
         let title_color = look.chrome().title_text;
         inspector_toggle.update(cx, |button, cx| {
@@ -159,7 +159,7 @@ impl InspectorSplitShell {
 fn inspector_toggle_presenter(color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
     std::sync::Arc::new(move |_, _| {
         div()
-            .child(gpui_luma::controls::icon::lucide_icon(LucideIcon::InspectionPanel, color, 16.0))
+            .child(luma::controls::icon::lucide_icon(LucideIcon::InspectionPanel, color, 16.0))
             .into_any_element()
     })
 }

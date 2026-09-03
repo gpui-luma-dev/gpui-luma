@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, FocusHandle, IntoElement, MouseButton, ParentElement, Render, div, prelude::*};
-use gpui_luma::controls::command::button::{ButtonRenderModel, ControlPresenter};
-use gpui_luma::controls::command::icon_button::IconButton;
-use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::focus::LumaFocusScopeExt;
-use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma::controls::command::button::{ButtonRenderModel, ControlPresenter};
+use luma::controls::command::icon_button::IconButton;
+use luma::controls::button_family::ButtonFamilyRole;
+use luma::focus::LumaFocusScopeExt;
+use luma::shell::TitleBar;
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::theme::toggle_shell_theme;
@@ -96,7 +96,7 @@ fn theme_toggle_icon(mode: ThemeMode) -> LucideIcon {
 }
 
 fn theme_toggle_presenter(icon: LucideIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
-    Arc::new(move |_, _| div().child(gpui_luma::controls::icon::lucide_icon(icon, color, 14.0)).into_any_element())
+    Arc::new(move |_, _| div().child(luma::controls::icon::lucide_icon(icon, color, 14.0)).into_any_element())
 }
 
 fn shell_icon_color(look: &ShadcnLook) -> gpui::Hsla {

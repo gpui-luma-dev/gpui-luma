@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 
 use super::inspector::collection::{listbox_list_color_rows, listbox_row_color_rows};
 use super::inspector::common::{listbox_list_enabled, listbox_list_focused, listbox_row_state};

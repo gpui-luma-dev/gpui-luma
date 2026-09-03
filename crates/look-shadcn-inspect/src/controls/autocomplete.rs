@@ -1,7 +1,7 @@
 //! Inspect metadata for `autocomplete`.
 
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
+use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 use super::floating_menu::{FloatingMenuInspectMetrics, FloatingMenuInspectPalette};
 
@@ -24,8 +24,8 @@ pub fn inspect_autocomplete_chrome_color_palette(
 ) -> AutocompleteChromeInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "autocomplete_chrome_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_autocomplete_chrome_colors(&resolver, true)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::AutocompleteChromeColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_autocomplete_chrome_colors(&resolver, true)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::AutocompleteChromeColorTable::fallback());
     AutocompleteChromeInspectPalette {
         status_color: colors.status_color,
         muted_text_color: colors.muted_text_color,
@@ -61,8 +61,8 @@ mod tests {
     #[test]
     fn autocomplete_chrome_metadata_matches_table() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_autocomplete_chrome_colors_metadata(
-                gpui_luma_look_shadcn::embedded_stylesheet()
+            luma_look_shadcn::stylesheet::resolve_autocomplete_chrome_colors_metadata(
+                luma_look_shadcn::embedded_stylesheet()
             )
             .len(),
             1

@@ -8,13 +8,11 @@ mod theme_selector;
 use std::sync::{Arc, RwLock};
 
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::search_selector::SearchSelector;
-use gpui_luma::controls::tabs_navigation::{
-    TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
-};
+use luma::controls::search_selector::SearchSelector;
+use luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
 
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma::theme::ControlSize;
+use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
 use self::model::{SidebarTab, TOKEN_CATEGORIES};
 use self::panels::{ColorsPanel, OtherPanel, PanelContextMenuHost, TypographyPanel};

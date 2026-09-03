@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use gpui::{Hsla, hsla};
-use gpui_luma::theme::ThemeMode;
+use luma::theme::ThemeMode;
 use palette::{FromColor, Hsl as PaletteHsl, Oklch, Srgb};
 
 pub const PALETTE_VIVIDNESS_AMOUNT_MIN: f32 = -1.0;
@@ -229,7 +229,7 @@ fn shortest_hue_delta(from: f32, to: f32) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use gpui_luma::theme::ThemeMode;
+    use luma::theme::ThemeMode;
 
     use super::{ThemePaletteHsOverride, derive_palette_hs_color_overrides, shortest_hue_delta};
 

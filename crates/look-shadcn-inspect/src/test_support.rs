@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use gpui_luma_look_shadcn::CssTokenMap;
+use luma_look_shadcn::CssTokenMap;
 
 pub fn sample_catalog() -> CssTokenMap {
     CssTokenMap::from_map(BTreeMap::from([

@@ -5,16 +5,16 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
-use gpui_luma::controls::command::icon_button::IconButton;
-use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::popup_menu::{HasPresenter, PopupMenu, PopupMenuEvent, PopupMenuPlacement};
-use gpui_luma::controls::presenter::ControlPresenter;
-use gpui_luma::controls::scroll_container::ScrollbarAutoHideActivate;
-use gpui_luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
+use luma::controls::command::icon_button::IconButton;
+use luma::controls::menu_item::MenuItem;
+use luma::controls::popup_menu::{HasPresenter, PopupMenu, PopupMenuEvent, PopupMenuPlacement};
+use luma::controls::presenter::ControlPresenter;
+use luma::controls::scroll_container::ScrollbarAutoHideActivate;
+use luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
+use luma::theme::ControlSize;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -435,7 +435,7 @@ fn sidebar_toggle_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderM
         match &icon {
             ControlIcon::Lucide(lucide) => div()
                 .text_size(px(16.0))
-                .child(gpui_luma::controls::icon::lucide_icon(*lucide, color, 16.0))
+                .child(luma::controls::icon::lucide_icon(*lucide, color, 16.0))
                 .into_any_element(),
             ControlIcon::SvgPath(path) => {
                 gpui::svg().size(px(16.0)).text_color(color).path(path.clone()).into_any_element()
@@ -479,7 +479,7 @@ fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControl
         .spawn(cx)
 }
 
-fn user_menu_content() -> ControlPresenter<gpui_luma::controls::popup_menu::PopupMenuTriggerModel> {
+fn user_menu_content() -> ControlPresenter<luma::controls::popup_menu::PopupMenuTriggerModel> {
     Arc::new(|model, _| {
         div()
             .flex_1()
@@ -539,7 +539,7 @@ fn format_user_menu_event(event: &PopupMenuEvent) -> String {
 fn property_leaf_menu_item(
     look: &Arc<ShadcnLook>,
     leaf: &PropertyLeaf,
-) -> gpui_luma::controls::sidebar::SidebarMenuItemBuilder {
+) -> luma::controls::sidebar::SidebarMenuItemBuilder {
     let mut item = look
         .sidebar_menu_item(leaf.id, leaf.label)
         .disabled(!leaf.enabled)

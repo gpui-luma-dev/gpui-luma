@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
-use gpui_luma::controls::pager::{Pager, PagerEvent, PagerStyle};
-use gpui_luma::{vstack, wrappanel};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use luma::controls::pager::{Pager, PagerEvent, PagerStyle};
+use luma::{vstack, wrappanel};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
@@ -458,7 +458,7 @@ fn render_sample(
     label: &'static str,
     pager: Pager,
     muted_text: gpui::Hsla,
-    label_style: gpui_luma::theme::LumaTextStyle,
+    label_style: luma::theme::LumaTextStyle,
 ) -> impl IntoElement {
     vstack! {
         gap=8.0;

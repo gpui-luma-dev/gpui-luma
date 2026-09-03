@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use gpui_luma::theme::ThemeMode;
-use gpui_luma_look_shadcn::{BuiltInTheme, ShadcnLook, built_in_theme, built_in_themes};
+use luma::theme::ThemeMode;
+use luma_look_shadcn::{BuiltInTheme, ShadcnLook, built_in_theme, built_in_themes};
 
 pub fn available_theme_names() -> Vec<String> {
     built_in_themes().iter().map(|theme| theme.id.to_string()).collect()

@@ -9,7 +9,7 @@ This guide details the focus navigation model, traversal lifecycles, and action-
 Luma uses GPUI's action-based dispatch path to manage focus traversal instead of ad-hoc key listeners.
 
 ### Focus Actions
-Core focus traversal commands are declared in `gpui_luma::focus` as typed actions:
+Core focus traversal commands are declared in `luma::focus` as typed actions:
 *   `NextFocus` (tab)
 *   `PreviousFocus` (shift-tab)
 *   `EscapeFocus` (escape)
@@ -79,7 +79,7 @@ fn handle_escape_focus(&mut self, _: &EscapeFocus, _window: &mut Window, cx: &mu
 
 Default keys are registered explicitly at startup in `main.rs`:
 ```rust
-gpui_luma::focus::bind_default_focus_keys(cx);
-gpui_luma::keyhandling::bind_default_control_keys(cx);
+luma::focus::bind_default_focus_keys(cx);
+luma::keyhandling::bind_default_control_keys(cx);
 ```
 Binding focus and control keys are separate steps so applications can define when to load default SDK bindings or use custom ones.

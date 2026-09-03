@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use gpui_luma::theme::{ControlSize, InteractionLayer};
+use luma::theme::{ControlSize, InteractionLayer};
 use serde::Deserialize;
 
 use crate::controls::ShadcnButtonStyle;
@@ -1100,7 +1100,7 @@ pub struct SidebarStylesheet {
     pub item: SidebarItemStylesheet,
 }
 
-/// Layout metrics for [`gpui_luma::controls::sidebar::SidebarMetricScale`].
+/// Layout metrics for [`luma::controls::sidebar::SidebarMetricScale`].
 ///
 /// Values accept bare numbers, `px`, or `rem` (1rem = 16px).
 #[derive(Debug, Deserialize, Clone)]

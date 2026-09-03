@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use gpui_luma::theme::InteractionState;
-use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
+use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use luma::theme::InteractionState;
+use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::icons::render_lucide_icon;
@@ -167,7 +167,7 @@ fn render_button_size_radius_cell(
         radius_label_id(radius),
         if icon_only { "icon" } else { "text" }
     ));
-    let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<()>> = if icon_only {
+    let content: luma::controls::command::button::ControlPresenter<ButtonRenderModel<()>> = if icon_only {
         Arc::new(move |model, _| {
             let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
             render_lucide_icon(
@@ -214,10 +214,10 @@ pub(crate) fn button_look_for_semantic(
     style: ShadcnButtonStyle,
     size: ButtonSize,
     radius: ButtonRadiusPreset,
-) -> gpui_luma::controls::command::button::ButtonLookSource<()> {
+) -> luma::controls::command::button::ButtonLookSource<()> {
     Arc::new(move |model| {
         let tokens = theme.mode_tokens();
-        gpui_luma_look_shadcn::paint::button_look_semantic(
+        luma_look_shadcn::paint::button_look_semantic(
             tokens.as_ref(),
             theme.mode(),
             style,
@@ -232,7 +232,7 @@ pub(crate) fn button_look_for_semantic(
 pub(crate) fn button_look_for_style(
     theme: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> gpui_luma::controls::command::button::ButtonLookSource<()> {
+) -> luma::controls::command::button::ButtonLookSource<()> {
     Arc::new(move |model| match style {
         ShadcnButtonStyle::Primary => theme.as_ref().resolve_primary_button(model.role, model.size, model.state),
         ShadcnButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(model.role, model.size, model.state),

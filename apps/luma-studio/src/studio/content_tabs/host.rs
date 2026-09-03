@@ -1,14 +1,12 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Bounds, Context, Entity, Focusable, Pixels, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::popover_button::{PopoverButton, PopoverButtonEvent, PopoverDismissPolicy, PopoverPlacement};
-use gpui_luma::controls::tabs_navigation::{
-    TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
-};
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::paint::floating_menu_look;
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn::prelude::*;
+use luma::controls::popover_button::{PopoverButton, PopoverButtonEvent, PopoverDismissPolicy, PopoverPlacement};
+use luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
+use luma::theme::ControlSize;
+use luma_look_shadcn::paint::floating_menu_look;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn::prelude::*;
 
 use super::cards::render_demo_board;
 use super::controls;

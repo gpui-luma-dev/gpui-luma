@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use gpui_luma::controls::overlay_window::OverlayWindowMode;
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma::controls::overlay_window::OverlayWindowMode;
+use luma::theme::ControlSize;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 
 use super::inspector::input::overlay_window_palette_rows;
 use super::inspector::metrics::overlay_window_layout_section;

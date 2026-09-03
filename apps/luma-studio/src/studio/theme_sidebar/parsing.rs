@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use gpui::Hsla;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn::ShadcnLook;
 
 use super::model::{DEFAULT_RADIUS_REM, DEFAULT_SPACING_REM, REM_IN_PX};
 use crate::studio::export::{catalog_color_for_token, token_css_name};

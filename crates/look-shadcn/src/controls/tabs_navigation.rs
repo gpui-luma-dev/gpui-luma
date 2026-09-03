@@ -8,8 +8,8 @@
 //! | Disabled label    | `muted-foreground`            |
 //! | Disabled list bg  | `muted`                       |
 
-use gpui_luma::controls::tabs_navigation::{TabsNavigationItemLook, TabsNavigationListLook};
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use luma::controls::tabs_navigation::{TabsNavigationItemLook, TabsNavigationListLook};
+use luma::theme::{ControlSize, InteractionLayer, InteractionState};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -83,7 +83,7 @@ pub fn resolve_tabs_navigation_item_colors_with_stylesheet(
 }
 
 pub fn tabs_navigation_list_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -> TabsNavigationListLook {
-    let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
+    let ctx = LookContext::new(mode, mode.theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tabs_navigation_list");
     let colors = resolve_tabs_navigation_list_colors(&resolver, enabled)
@@ -108,7 +108,7 @@ pub fn tabs_navigation_item_look(
     state: InteractionState,
     size: ControlSize,
 ) -> TabsNavigationItemLook {
-    let ctx = LookContext::new(mode, ThemeMode::Light, state);
+    let ctx = LookContext::new(mode, mode.theme_mode, state);
     let metrics = ctx.metrics();
     let typography = ctx.typography();
     let layer = state.layer();
@@ -128,7 +128,7 @@ pub fn tabs_navigation_item_look(
         radius: metrics.radius(size),
         padding_x: metrics.padding_x(size),
         height: label_typography.line_height + metrics.padding_y(size) * 2.0,
-        indicator_height: 2.0,
+        indicator_height: 3.0,
     }
 }
 
@@ -137,7 +137,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+    use luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -169,6 +169,20 @@ mod tests {
         assert_eq!(active.label_color, catalog.color("foreground").expect("foreground"));
         assert_eq!(inactive.label_color, catalog.color("foreground").expect("foreground"));
         assert_eq!(active.indicator, Some(catalog.color("primary").expect("primary")));
+    }
+
+    #[test]
+    fn focused_active_tab_uses_primary_indicator() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let focused = tabs_navigation_item_look(
+            &mode,
+            true,
+            InteractionState { focused: true, ..InteractionState::default() },
+            ControlSize::Md,
+        );
+
+        assert_eq!(focused.indicator, Some(catalog.color("primary").expect("primary")));
     }
 
     #[test]

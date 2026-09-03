@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use gpui_luma::controls::textfield::TextFieldState;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextFieldStyle};
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma::controls::textfield::TextFieldState;
+use luma_look_shadcn::{ShadcnLook, ShadcnTextFieldStyle};
+use luma_look_shadcn_inspect::ShadcnInspect;
 
 use super::inspector::input::{floating_menu_color_rows, textfield_color_rows_prefixed};
 use super::inspector::metrics::textfield_menu_layout_section;

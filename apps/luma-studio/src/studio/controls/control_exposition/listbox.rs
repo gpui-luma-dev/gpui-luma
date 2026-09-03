@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::control_group::ControlGroupEvent;
-use gpui_luma::controls::listbox::{ListBox, ListBoxItem};
-use gpui_luma::{hstack, vstack};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::control_group::ControlGroupEvent;
+use luma::controls::listbox::{ListBox, ListBoxItem};
+use luma::{hstack, vstack};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::collection_theme_inspectors::ListBoxThemeInspector;

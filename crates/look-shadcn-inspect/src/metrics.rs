@@ -1,9 +1,9 @@
 //! Shared inspect metric helpers.
 
-use gpui_luma::theme::ControlSize;
+use luma::theme::ControlSize;
 
-use gpui_luma_look_shadcn::catalog::{CssTokenMap, SpacingField};
-use gpui_luma_look_shadcn::{MetricSource, ResolvedMetric};
+use luma_look_shadcn::catalog::{CssTokenMap, SpacingField};
+use luma_look_shadcn::{MetricSource, ResolvedMetric};
 
 pub fn control_size_key(size: ControlSize) -> &'static str {
     match size {
@@ -37,7 +37,7 @@ pub fn spacing_control_metric(
             SpacingField::PaddingY => "padding_y",
             SpacingField::Gap => "gap",
         };
-        let multiplier = gpui_luma_look_shadcn::catalog::spacing_multiplier(size, field);
+        let multiplier = luma_look_shadcn::catalog::spacing_multiplier(size, field);
         let multiplier_label = if (multiplier - multiplier.round()).abs() < f32::EPSILON {
             format!("{}", multiplier.round() as i32)
         } else {
@@ -88,20 +88,20 @@ pub fn pill_radius_metric(catalog: &CssTokenMap, value_px: f32) -> ResolvedMetri
     }
 }
 
-pub fn focus_ring_width_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
+pub fn focus_ring_width_metric(metrics: &luma::theme::MetricTokens) -> ResolvedMetric {
     ResolvedMetric {
         value_px: metrics.focus.width,
         source: MetricSource::Scaffold { path: "MetricTokens.focus.width".into() },
     }
 }
 
-pub fn focus_ring_offset_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
+pub fn focus_ring_offset_metric(metrics: &luma::theme::MetricTokens) -> ResolvedMetric {
     let border = metrics.border_width.default;
     let focus = metrics.focus.width;
     derived_metric("border_width.default + focus.width", border + focus)
 }
 
-pub fn border_width_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
+pub fn border_width_metric(metrics: &luma::theme::MetricTokens) -> ResolvedMetric {
     ResolvedMetric {
         value_px: metrics.border_width.default,
         source: MetricSource::Scaffold { path: "MetricTokens.border_width.default".into() },

@@ -1,9 +1,9 @@
 //! Inspect metadata for `resizable_panels`.
 
-use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use luma::theme::{InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
-use gpui_luma::controls::resizable_panels::ResizeHandleSize;
+use luma::controls::resizable_panels::ResizeHandleSize;
 
 pub struct ResizablePanelsInspectPalette {
     pub border: ResolvedColor,
@@ -27,9 +27,8 @@ pub fn inspect_resizable_panels_color_palette(
 ) -> ResizablePanelsInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "resizable_panels_inspect");
-    let colors =
-        gpui_luma_look_shadcn::tables::resolve_resizable_panels_colors(&resolver, state.disabled, state.layer())
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ResizablePanelsColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_resizable_panels_colors(&resolver, state.disabled, state.layer())
+        .unwrap_or_else(|_| luma_look_shadcn::tables::ResizablePanelsColorTable::fallback());
     ResizablePanelsInspectPalette {
         border: colors.border,
         divider: colors.divider,
@@ -60,13 +59,13 @@ pub fn inspect_resizable_panels_metrics(handle_size: ResizeHandleSize) -> Resiza
 mod tests {
     use super::*;
     use crate::test_support::sample_catalog;
-    use gpui_luma::theme::InteractionLayer;
+    use luma::theme::InteractionLayer;
 
     #[test]
     fn resizable_panels_metadata_covers_enabled_and_disabled_paths() {
         assert_eq!(
-            gpui_luma_look_shadcn::stylesheet::resolve_resizable_panels_colors_metadata(
-                gpui_luma_look_shadcn::embedded_stylesheet()
+            luma_look_shadcn::stylesheet::resolve_resizable_panels_colors_metadata(
+                luma_look_shadcn::embedded_stylesheet()
             )
             .len(),
             5
@@ -79,11 +78,11 @@ mod tests {
         let palette = inspect_resizable_panels_color_palette(
             &mode,
             ThemeMode::Light,
-            gpui_luma::theme::InteractionState { hovered: true, ..Default::default() },
+            luma::theme::InteractionState { hovered: true, ..Default::default() },
         );
         let resolver = LookResolver::new(&mode.catalog, ThemeMode::Light, "test");
         let expected =
-            gpui_luma_look_shadcn::tables::resolve_resizable_panels_colors(&resolver, false, InteractionLayer::Hovered)
+            luma_look_shadcn::tables::resolve_resizable_panels_colors(&resolver, false, InteractionLayer::Hovered)
                 .expect("colors")
                 .grip_emphasis;
         assert_eq!(palette.grip_emphasis.value, expected.hsla());

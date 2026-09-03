@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::textarea::{TextArea, TextAreaEvent, Validator};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use luma::controls::command::button::{Button, ButtonEvent};
+use luma::controls::presenter::HasPresenter;
+use luma::controls::textarea::{TextArea, TextAreaEvent, Validator};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
@@ -93,20 +93,27 @@ impl TextAreaExpositionLeftPane {
 impl Render for TextAreaExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
+            let foreground = self.look.token_color("foreground").unwrap_or_else(|_| self.look.chrome().body_text);
+            let section_heading = self.look.typography_scale(ShadcnTextSize::Sm);
             let preview = div()
                 .w_full()
                 .max_w(px(620.0))
                 .flex()
                 .flex_col()
                 .gap(px(16.0))
+                .text_color(foreground)
                 .child(self.text_area.clone())
                 .child(
                     div()
                         .flex()
                         .flex_col()
                         .gap(px(6.0))
-                        .child(div().child("Required / Invalid"))
-                        .child(div().child("Message *"))
+                        .child(
+                            div()
+                                .typography_style(section_heading)
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .child("Required / Invalid"),
+                        )
                         .child(self.required_preview.clone())
                         .child(
                             div()

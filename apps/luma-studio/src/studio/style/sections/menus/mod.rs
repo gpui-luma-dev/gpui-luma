@@ -1,19 +1,19 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma::controls::floating_menu::{
+use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use luma::controls::floating_menu::{
     FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuLook, render_floating_menu,
 };
-use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::popup_menu::{
+use luma::controls::menu_item::MenuItem;
+use luma::controls::popup_menu::{
     ControlFocusState as PopupMenuControlFocusState, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate,
     PopupMenuTemplateHandlers, PopupMenuTriggerStyle,
 };
-use gpui_luma::controls::state::MenuPath;
-use gpui_luma::controls::tabs_navigation::TabsNavigation;
-use gpui_luma::theme::InteractionState;
-use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
+use luma::controls::state::MenuPath;
+use luma::controls::tabs_navigation::TabsNavigation;
+use luma::theme::InteractionState;
+use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::button_matrix::{render_button_radius_header_cell};
@@ -248,7 +248,7 @@ fn render_floating_menu_size_cell(
 }
 
 fn floating_menu_look_for_size(look: &Arc<ShadcnLook>, size: ButtonSize) -> FloatingMenuLook {
-    gpui_luma_look_shadcn::paint::floating_menu_look(look.mode_tokens().as_ref(), look.mode(), size)
+    luma_look_shadcn::paint::floating_menu_look(look.mode_tokens().as_ref(), look.mode(), size)
 }
 
 fn render_menu_trigger_state_cell(
@@ -275,7 +275,7 @@ fn render_menu_trigger_state_cell(
         items: &items,
         open: false,
         disclosure_progress: 0.0,
-        presence: gpui_luma::OverlayPresence::new(false, false),
+        presence: luma::OverlayPresence::new(false, false),
         submenu_transition: None,
         highlight: None,
         trigger_bounds: None,
@@ -286,10 +286,7 @@ fn render_menu_trigger_state_cell(
         icon_only: false,
         icon: None,
         end_icon: None,
-        disclosure_icons: &gpui_luma::controls::icon::DisclosureIcons::new(
-            LucideIcon::ChevronUp,
-            LucideIcon::ChevronDown,
-        ),
+        disclosure_icons: &luma::controls::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
         full_width: false,
         without_elevation: false,
         split: false,
@@ -336,7 +333,7 @@ fn render_menu_trigger_size_radius_cell(
         items: &items,
         open: false,
         disclosure_progress: 0.0,
-        presence: gpui_luma::OverlayPresence::new(false, false),
+        presence: luma::OverlayPresence::new(false, false),
         submenu_transition: None,
         highlight: None,
         trigger_bounds: None,
@@ -347,10 +344,7 @@ fn render_menu_trigger_size_radius_cell(
         icon_only: false,
         icon: None,
         end_icon: None,
-        disclosure_icons: &gpui_luma::controls::icon::DisclosureIcons::new(
-            LucideIcon::ChevronUp,
-            LucideIcon::ChevronDown,
-        ),
+        disclosure_icons: &luma::controls::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
         full_width: false,
         without_elevation: false,
         split: false,
@@ -380,7 +374,7 @@ fn menu_trigger_focus_for_sample(sample: &ButtonStateSample) -> PopupMenuControl
 }
 
 fn menu_trigger_radius_px(look: &ShadcnLook, size: ButtonSize, radius: ButtonRadiusPreset) -> f32 {
-    gpui_luma_look_shadcn::paint::button_look_semantic(
+    luma_look_shadcn::paint::button_look_semantic(
         look.mode_tokens().as_ref(),
         look.mode(),
         ShadcnButtonStyle::Outline,

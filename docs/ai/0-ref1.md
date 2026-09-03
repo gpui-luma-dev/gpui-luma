@@ -75,7 +75,7 @@ controls/
   color/           leave, then extract (already in the roadmap)
 ```
 
-Do this with compatibility re-exports (`pub use controls::button as command` if needed). Don’t break `gpui_luma::controls::…` in the same change as behavior.
+Do this with compatibility re-exports (`pub use controls::button as command` if needed). Don’t break `luma::controls::…` in the same change as behavior.
 
 ## Three different “layout” namespaces
 
@@ -112,11 +112,11 @@ That matches the roadmap (`color-controls` later). Until extraction: keep it as 
 
 ## Public surface is deeper than it needs to be
 
-- `lib.rs` re-exports animation/layout/`init`, almost no controls — so every app learns `gpui_luma::controls::<family>::…`
+- `lib.rs` re-exports animation/layout/`init`, almost no controls — so every app learns `luma::controls::<family>::…`
 - No prelude
 - Shared types are imported from random depths (`presenter::HasPresenter`, `overlay_presence::…`, `menu_item::MenuItem`)
 
-A small `gpui_luma::prelude` (builders, events, `ControlSize`, `InteractionState`, `IconSource`) plus keeping family modules would cut Studio/look import noise without flattening everything.
+A small `luma::prelude` (builders, events, `ControlSize`, `InteractionState`, `IconSource`) plus keeping family modules would cut Studio/look import noise without flattening everything.
 
 `theme/tokens.rs` (~700 lines) is the other kitchen-sink: palettes, metrics, typography, elevation. Splitting `palette` / `metrics` / `typography` would match how looks actually consume them.
 

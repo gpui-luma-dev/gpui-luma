@@ -3,15 +3,15 @@
 use std::sync::Arc;
 
 use gpui::{App, AppContext, Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::color::color_arc::{
+use luma::controls::color::color_arc::{
     ColorArcBuilder, ColorArcDomainRenderer, ColorArcRenderer, ColorArcTrackContext, HueArcDelegate,
     LightnessArcDelegate, RasterArcDelegate, SaturationArcDelegate, refresh_color_arc, update_arc_delegate,
 };
-use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::style::Size;
-use gpui_luma::controls::slider::{SliderControl, SliderEvent};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::color::color_slider::color_spec::Hsv;
+use luma::controls::color::style::Size;
+use luma::controls::slider::{SliderControl, SliderEvent};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::color_chrome_exposition::{

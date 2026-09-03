@@ -1,9 +1,9 @@
 use gpui::{Context, Entity, FocusHandle, Render, Window, div, prelude::*};
-use gpui_luma::controls::color::style::{ColorControlTheme, set_active_color_control_theme};
-use gpui_luma::focus::LumaFocusScopeExt;
-use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::ThemeMode;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::color::style::{ColorControlTheme, set_active_color_control_theme};
+use luma::focus::LumaFocusScopeExt;
+use luma::shell::TitleBar;
+use luma::theme::ThemeMode;
+use luma_look_shadcn::ShadcnLook;
 use std::sync::Arc;
 
 use crate::gradient_builder::GradientBuilder;

@@ -4,14 +4,14 @@ use gpui::{
     AnyElement, Context, Entity, FocusHandle, IntoElement, ParentElement, Render, Styled, Subscription, Window, div,
     px, rgb,
 };
-use gpui_luma::controls::command::button::ButtonEvent;
-use gpui_luma::controls::command::icon_button::IconButton;
-use gpui_luma::controls::sidebar::SidebarControl;
-use gpui_luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
-use gpui_luma::theme::ThemeMode;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_shell_common::{
+use luma::controls::command::button::ButtonEvent;
+use luma::controls::command::icon_button::IconButton;
+use luma::controls::sidebar::SidebarControl;
+use luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
+use luma::theme::ThemeMode;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
+use luma_shell_common::{
     chrome::{
         HasShellTheme, handle_theme_toggle, render_app_root, render_title_bar, spawn_theme_toggle_button,
         wrap_content_pane,

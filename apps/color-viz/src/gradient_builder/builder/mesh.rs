@@ -1,8 +1,8 @@
 use gpui::{Corners, Pixels, SharedString, Size, div, prelude::*, px, size};
-use gpui_luma::controls::selector::SelectorItem;
-use gpui_luma::controls::tabs_navigation::TabsNavigationItem;
-use gpui_luma::theme::LumaTextStyle;
-use gpui_luma_look_shadcn::LumaTypographyExt;
+use luma::controls::selector::SelectorItem;
+use luma::controls::tabs_navigation::TabsNavigationItem;
+use luma::theme::LumaTextStyle;
+use luma_look_shadcn::LumaTypographyExt;
 
 use super::super::paint::{GradientType, MeshPoint};
 use super::super::paint::color_at_position;
@@ -336,7 +336,7 @@ pub(super) fn render_info_row(
     value: impl Into<SharedString>,
     label_style: LumaTextStyle,
     value_style: LumaTextStyle,
-    chrome: gpui_luma::theme::LumaChrome,
+    chrome: luma::theme::LumaChrome,
 ) -> impl IntoElement {
     div()
         .w_full()

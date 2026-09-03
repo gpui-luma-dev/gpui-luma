@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::combobox::{ComboBox, ComboBoxEvent, SelectionItem, TypingPolicy};
-use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
-use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::combobox::{ComboBox, ComboBoxEvent, SelectionItem, TypingPolicy};
+use luma::controls::toggle::{Toggle, ToggleEvent};
+use luma::controls::presenter::HasPresenter;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::combobox_inspector_adapter::{combobox_inspector_adapter, COMBOBOX_INSPECTOR_SPEC};

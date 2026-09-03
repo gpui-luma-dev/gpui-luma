@@ -1,7 +1,7 @@
 //! Inspect metadata for `stepper`.
 
-use gpui_luma::theme::{ThemeMode, ControlSize};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
+use luma::theme::{ThemeMode, ControlSize};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct StepperInspectPalette {
     pub complete_bg: ResolvedColor,
@@ -17,8 +17,8 @@ pub struct StepperInspectPalette {
 
 #[derive(Clone, Debug)]
 pub struct StepperInspectMetrics {
-    pub step_badge_size: gpui_luma_look_shadcn::ResolvedMetric,
-    pub track_thickness: gpui_luma_look_shadcn::ResolvedMetric,
+    pub step_badge_size: luma_look_shadcn::ResolvedMetric,
+    pub track_thickness: luma_look_shadcn::ResolvedMetric,
 }
 
 pub fn inspect_stepper_color_palette(
@@ -26,10 +26,10 @@ pub fn inspect_stepper_color_palette(
     theme_mode: ThemeMode,
     enabled: bool,
 ) -> StepperInspectPalette {
-    let ctx = LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, luma::theme::InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "stepper_inspect");
-    let palette = gpui_luma_look_shadcn::tables::resolve_stepper_colors(&resolver, enabled)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::StepperColorTable::fallback());
+    let palette = luma_look_shadcn::tables::resolve_stepper_colors(&resolver, enabled)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::StepperColorTable::fallback());
     StepperInspectPalette {
         complete_bg: palette.complete_bg,
         complete_fg: palette.complete_fg,
@@ -46,7 +46,7 @@ pub fn inspect_stepper_color_palette(
 pub fn inspect_stepper_metrics(mode: &ShadcnModeTokens, _theme_mode: ThemeMode) -> StepperInspectMetrics {
     use crate::metrics::derived_metric;
 
-    let look = gpui_luma_look_shadcn::paint::stepper_look(mode, true, ControlSize::Md);
+    let look = luma_look_shadcn::paint::stepper_look(mode, true, ControlSize::Md);
 
     StepperInspectMetrics {
         step_badge_size: derived_metric("stepper badge size", look.step_badge_size),
@@ -59,7 +59,7 @@ mod tests {
     use super::*;
     use crate::test_support::sample_catalog;
 
-    use gpui_luma_look_shadcn::ColorSource;
+    use luma_look_shadcn::ColorSource;
 
     #[test]
     fn inspect_enabled_stepper_uses_progress_color_elements() {

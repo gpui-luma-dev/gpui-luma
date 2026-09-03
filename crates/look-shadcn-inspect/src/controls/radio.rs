@@ -1,7 +1,7 @@
 //! Inspect metadata for `radio`.
 
-use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens};
+use luma::theme::{InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens};
 
 pub struct RadioButtonInspectPalette {
     pub indicator_background: ResolvedColor,
@@ -21,8 +21,8 @@ pub fn inspect_radio_button_color_palette(
     let catalog = ctx.catalog();
     let layer = state.layer();
     let resolver = LookResolver::new(catalog, theme_mode, "radio_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_radio_colors(&resolver, style, selected, layer)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::RadioColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_radio_colors(&resolver, style, selected, layer)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::RadioColorTable::fallback());
     let indicator_border = if selected && !state.disabled {
         colors.selection_ring
     } else {
@@ -52,11 +52,11 @@ pub struct RadioButtonInspectMetrics {
 pub fn inspect_radio_button_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    size: gpui_luma::theme::ControlSize,
+    size: luma::theme::ControlSize,
 ) -> RadioButtonInspectMetrics {
-    use gpui_luma::controls::radio_button::RadioScale;
+    use luma::controls::radio_button::RadioScale;
 
-    use gpui_luma_look_shadcn::catalog::SpacingField;
+    use luma_look_shadcn::catalog::SpacingField;
     use crate::metrics::{
         border_width_metric, control_size_key, derived_metric, focus_ring_offset_metric, focus_ring_width_metric,
         radius_metric, scaffold_control_metric, spacing_control_metric,
@@ -68,9 +68,9 @@ pub fn inspect_radio_button_metrics(
     let scale = RadioScale::compute(size, metrics, 1.0);
     let size_key = control_size_key(size);
     let ratio = match size {
-        gpui_luma::theme::ControlSize::Sm => 0.45,
-        gpui_luma::theme::ControlSize::Md => 0.50,
-        gpui_luma::theme::ControlSize::Lg => 0.55,
+        luma::theme::ControlSize::Sm => 0.45,
+        luma::theme::ControlSize::Md => 0.50,
+        luma::theme::ControlSize::Lg => 0.55,
     };
 
     RadioButtonInspectMetrics {
@@ -95,11 +95,11 @@ pub fn inspect_radio_button_elevation(
     selected: bool,
     state: InteractionState,
 ) -> crate::controls::button::ButtonInspectElevation {
-    use gpui_luma::theme::ControlSize;
-    use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
+    use luma::theme::ControlSize;
+    use luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
     use crate::controls::button::{button_style_key, inspect_layered_elevation};
 
-    let look = gpui_luma_look_shadcn::paint::radio_button_look(mode, style, selected, state, ControlSize::Md);
+    let look = luma_look_shadcn::paint::radio_button_look(mode, style, selected, state, ControlSize::Md);
     let layer = state.layer();
     let rule = embedded_stylesheet().radio.elevation_rule_for_layer(layer);
     let rule_shadow = rule.map(|rule| rule.shadow.clone()).unwrap_or_else(|| "none".to_string());

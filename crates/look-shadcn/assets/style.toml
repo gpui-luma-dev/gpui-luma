@@ -1350,21 +1350,21 @@ active = true
 layer = "default"
 focused = true
 label_color = "foreground"
-indicator = "ring"
+indicator = "@primary_default"
 
 [[tabs_navigation.item.color_rules]]
 active = true
 layer = "hover"
 focused = true
 label_color = "foreground"
-indicator = "ring"
+indicator = "@primary_layer"
 
 [[tabs_navigation.item.color_rules]]
 active = true
 layer = "pressed"
 focused = true
 label_color = "foreground"
-indicator = "ring"
+indicator = "@primary_layer"
 
 
 # =====================================================================

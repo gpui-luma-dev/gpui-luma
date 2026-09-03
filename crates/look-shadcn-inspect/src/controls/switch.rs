@@ -1,7 +1,7 @@
 //! Inspect metadata for `switch`.
 
-use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
+use luma::theme::{InteractionState, ThemeMode};
+use luma_look_shadcn::{
     LookContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens,
     format_inspect_css_key,
 };
@@ -24,8 +24,8 @@ pub fn inspect_switch_color_palette(
     let ctx = LookContext::new(mode, theme_mode, state);
     let catalog = ctx.catalog();
     let resolver = LookResolver::new(catalog, theme_mode, "switch_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_switch_colors(&resolver, style, on, state.disabled)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SwitchColorTable::fallback());
+    let colors = luma_look_shadcn::tables::resolve_switch_colors(&resolver, style, on, state.disabled)
+        .unwrap_or_else(|_| luma_look_shadcn::tables::SwitchColorTable::fallback());
     let thumb_border_color = colors.thumb_border;
     let track_border = if on && !state.disabled {
         let note = format!("= {}", format_inspect_css_key(&colors.track_background.source));
@@ -66,10 +66,10 @@ pub fn inspect_switch_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     style: ShadcnButtonStyle,
-    size: gpui_luma::theme::ControlSize,
+    size: luma::theme::ControlSize,
 ) -> SwitchInspectMetrics {
-    use gpui_luma_look_shadcn::catalog::SpacingField;
-    use gpui_luma_look_shadcn::paint::switch_scale;
+    use luma_look_shadcn::catalog::SpacingField;
+    use luma_look_shadcn::paint::switch_scale;
     use crate::metrics::{
         border_width_metric, control_size_key, derived_metric, focus_ring_offset_metric, focus_ring_width_metric,
         pill_radius_metric, spacing_control_metric,
@@ -120,11 +120,11 @@ pub fn inspect_switch_elevation(
     on: bool,
     state: InteractionState,
 ) -> crate::controls::button::ButtonInspectElevation {
-    use gpui_luma::theme::ControlSize;
-    use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
+    use luma::theme::ControlSize;
+    use luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
     use crate::controls::button::{button_style_key, inspect_layered_elevation};
 
-    let look = gpui_luma_look_shadcn::paint::switch_look(mode, theme_mode, style, on, state, ControlSize::Md);
+    let look = luma_look_shadcn::paint::switch_look(mode, theme_mode, style, on, state, ControlSize::Md);
     let layer = state.layer();
     let rule = embedded_stylesheet().switch.elevation_rule_for_layer(layer);
     let rule_shadow = rule.map(|rule| rule.shadow.clone()).unwrap_or_else(|| "none".to_string());

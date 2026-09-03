@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use gpui_luma_look_shadcn::ShadcnButtonStyle;
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use luma_look_shadcn::ShadcnButtonStyle;
+use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn_inspect::ShadcnInspect;
 
 use super::inspector::collection::pager_shell_color_rows;
 use super::inspector::common::{interaction_state, pager_button_role, pager_shell_enabled, pager_style};

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, Render, Subscription, Window, div, prelude::*, px, rgb};
-use gpui_luma::controls::scrollbar::{Scrollbar, ScrollbarEvent};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::scrollbar::{Scrollbar, ScrollbarEvent};
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;

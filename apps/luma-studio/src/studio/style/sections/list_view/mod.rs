@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::list_view::ListView;
-use gpui_luma::controls::tabs_navigation::TabsNavigation;
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma::controls::list_view::ListView;
+use luma::controls::tabs_navigation::TabsNavigation;
+use luma::theme::ControlSize;
+use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
 use crate::studio::style::shared::shell::section_shell_with_width;
 

@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::scrollbar::{ScrollbarOrientation, ScrollbarRenderModel, ScrollbarStyle, ScrollbarTemplate};
-use gpui_luma::controls::tabs_navigation::TabsNavigation;
-use gpui_luma::controls::value::ControlRange;
-use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::scrollbar::{ScrollbarOrientation, ScrollbarRenderModel, ScrollbarStyle, ScrollbarTemplate};
+use luma::controls::tabs_navigation::TabsNavigation;
+use luma::controls::value::ControlRange;
+use luma::theme::ControlSize;
+use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::shared::input_samples::{InputInteractionSample, input_interaction_samples};
 use crate::studio::style::shared::preview_handlers::input_scrollbar_handlers;
@@ -25,7 +25,7 @@ struct ScrollbarPreviewSample {
     size: ControlSize,
     id_suffix: &'static str,
     label: &'static str,
-    state: gpui_luma::controls::scrollbar::ScrollbarState,
+    state: luma::controls::scrollbar::ScrollbarState,
     enabled: bool,
     length: Option<f32>,
     style: ScrollbarStyle,
@@ -104,7 +104,7 @@ fn render_input_scrollbar_style_table(
     template: &Arc<dyn ScrollbarTemplate>,
     group_label: &'static str,
     samples: &[InputInteractionSample],
-    chrome: &gpui_luma::theme::LumaChrome,
+    chrome: &luma::theme::LumaChrome,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {

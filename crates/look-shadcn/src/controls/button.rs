@@ -1,7 +1,5 @@
-use gpui_luma::controls::button_family::{
-    ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_look,
-};
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, StandardBoxScale, ThemeMode, snap_to_pixel};
+use luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_look};
+use luma::theme::{ControlSize, InteractionLayer, InteractionState, StandardBoxScale, ThemeMode, snap_to_pixel};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -39,7 +37,7 @@ impl ButtonRadiusPreset {
 
 pub fn resolve_button_radius_preset(
     preset: ButtonRadiusPreset,
-    metrics: &gpui_luma::theme::MetricTokens,
+    metrics: &luma::theme::MetricTokens,
     height: f32,
 ) -> f32 {
     match preset {
@@ -257,11 +255,11 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
-    use gpui_luma::controls::button_family::ButtonFamilyRole;
+    use luma::controls::button_family::ButtonFamilyRole;
     use crate::catalog::CssTokenMap;
     use crate::controls::toggle::toggle_look;
     use crate::mode::ShadcnModeTokens;
-    use gpui_luma::theme::ThemeMode;
+    use luma::theme::ThemeMode;
 
     fn retro_arcade_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -398,7 +396,7 @@ mod tests {
         assert!((hovered.background.a - 0.50).abs() < f32::EPSILON);
         assert_eq!(hovered.background.h, input.h);
         assert_eq!(hovered.foreground, catalog.color("accent-foreground").expect("accent-foreground"));
-        assert_eq!(gpui_luma::controls::button_family::button_family_effective_border(hovered.border), input);
+        assert_eq!(luma::controls::button_family::button_family_effective_border(hovered.border), input);
     }
 
     #[test]
@@ -585,7 +583,7 @@ mod tests {
 
         assert_eq!(toggle.border, icon.border);
         assert!(
-            gpui_luma::controls::button_family::button_family_effective_border(toggle.border).a <= 0.0,
+            luma::controls::button_family::button_family_effective_border(toggle.border).a <= 0.0,
             "ghost toggle off-state should be borderless"
         );
     }
@@ -603,7 +601,7 @@ mod tests {
         );
 
         assert!(
-            gpui_luma::controls::button_family::button_family_effective_border(toggle.border).a > 0.0,
+            luma::controls::button_family::button_family_effective_border(toggle.border).a > 0.0,
             "primary toggle off-state should keep outline border"
         );
     }

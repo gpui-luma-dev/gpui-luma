@@ -3,10 +3,10 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
-use gpui_luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
-use gpui_luma::dock_panel;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook};
+use luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
+use luma::dock_panel;
+use luma_look_shadcn::prelude::*;
+use luma_look_shadcn::{LumaTypographyExt, ShadcnLook};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
@@ -342,15 +342,15 @@ fn format_dock_splitter_event(name: &str, event: &DockSplitterEvent) -> Option<S
 }
 
 fn render_nested_dock_examples(
-    chrome: gpui_luma::theme::LumaChrome,
+    chrome: luma::theme::LumaChrome,
     foreground: gpui::Hsla,
     muted: gpui::Hsla,
     band_background: gpui::Hsla,
     fill_background: gpui::Hsla,
     fill_foreground: gpui::Hsla,
 ) -> gpui::Div {
-    let title_style = gpui_luma::theme::LumaTypography::default().text.role.h4;
-    let body_style = gpui_luma::theme::LumaTypography::default().text.scale.sm;
+    let title_style = luma::theme::LumaTypography::default().text.role.h4;
+    let body_style = luma::theme::LumaTypography::default().text.scale.sm;
 
     div()
         .size_full()
@@ -406,14 +406,14 @@ fn render_nested_dock_examples(
 }
 
 fn render_nested_example_card(
-    chrome: gpui_luma::theme::LumaChrome,
+    chrome: luma::theme::LumaChrome,
     foreground: gpui::Hsla,
     muted: gpui::Hsla,
     title: &'static str,
     content: gpui::AnyElement,
 ) -> gpui::Div {
-    let title_style = gpui_luma::theme::LumaTypography::default().text.scale.sm;
-    let caption_style = gpui_luma::theme::LumaTypography::default().text.scale.xs;
+    let title_style = luma::theme::LumaTypography::default().text.scale.sm;
+    let caption_style = luma::theme::LumaTypography::default().text.scale.xs;
     div()
         .w(px(220.0))
         .flex()

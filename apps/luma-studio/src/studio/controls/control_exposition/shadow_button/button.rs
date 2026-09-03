@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{App, BoxShadow, Div, Hsla, SharedString, Stateful, Window, div, point, prelude::*, px};
-use gpui_luma::controls::button_family::{ButtonFamilyLook, button_family_effective_border};
-use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use gpui_luma::theme::InteractionState;
-use gpui_luma_look_shadcn::ShadcnLook;
+use luma::controls::button_family::{ButtonFamilyLook, button_family_effective_border};
+use luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use luma::theme::InteractionState;
+use luma_look_shadcn::ShadcnLook;
 
 const DEFAULT_OFFSET_X: f32 = 0.0;
 const DEFAULT_OFFSET_Y: f32 = 5.0;
