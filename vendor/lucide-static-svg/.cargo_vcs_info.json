@@ -1,7 +1,0 @@
-{
-  "git": {
-    "sha1": "a048a73aec0d5151ac3fa102449ab1087801d505",
-    "dirty": true
-  },
-  "path_in_vcs": "crates/lucide-static-svg"
-}

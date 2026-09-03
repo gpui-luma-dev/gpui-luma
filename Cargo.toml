@@ -27,7 +27,7 @@ publish = false
 [workspace.dependencies]
 anyhow = "1"
 gpui = { package = "gpui-unofficial", version = "1.13.1" }
-lucide-svg-static = { package = "lucide-static-svg", path = "vendor/lucide-static-svg" }
+lucide-svg-static = { package = "lucide-static-svg", git = "https://github.com/scottcg/lucide-svg-static" }
 gpui_platform = {
   package = "gpui-platform-gpui-unofficial",
   version = "1.13.1",
