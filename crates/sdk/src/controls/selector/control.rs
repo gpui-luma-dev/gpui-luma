@@ -13,7 +13,7 @@ use crate::controls::selector::model::{
 };
 use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
-use crate::keyhandling::{
+use crate::key_handling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
 use crate::theme::observe_theme_revision;

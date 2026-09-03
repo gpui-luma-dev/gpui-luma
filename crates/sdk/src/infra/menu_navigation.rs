@@ -1,5 +1,5 @@
-use crate::controls::menu_item::MenuItem;
-use crate::controls::state::MenuPath;
+use crate::infra::menu_item::MenuItem;
+use crate::infra::state::MenuPath;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum MenuDirection {
@@ -99,7 +99,7 @@ fn step_enabled_index(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::controls::menu_item::MenuItem;
+    use crate::infra::menu_item::MenuItem;
 
     #[test]
     fn root_navigation_skips_disabled_items_and_wraps() {

@@ -13,7 +13,7 @@ use super::model::{
 use super::template::ControlGroupTemplateHandlers;
 use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::state::{CompositeItemState, ControlFocusState};
-use crate::keyhandling::{
+use crate::key_handling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectNextRow,
     SelectPreviousItem, SelectPreviousRow,
 };

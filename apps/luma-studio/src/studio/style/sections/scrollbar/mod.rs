@@ -25,7 +25,7 @@ struct ScrollbarPreviewSample {
     size: ControlSize,
     id_suffix: &'static str,
     label: &'static str,
-    state: luma::controls::scrollbar::ScrollbarState,
+    state: luma::theme::InteractionState,
     enabled: bool,
     length: Option<f32>,
     style: ScrollbarStyle,

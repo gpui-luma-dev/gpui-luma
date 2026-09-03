@@ -474,7 +474,7 @@ macro_rules! form_field {
             .flex()
             .flex_col()
             .gap(::gpui::px(4.0))
-            .child($crate::controls::label::field_label($label, $chrome.body_text))
+            .child($crate::controls::field_label::field_label($label, $chrome.body_text))
             .child($control)
     };
 }

@@ -56,4 +56,3 @@ pub use theme::{
 pub(crate) use theme::compose_selector_look;
 
 pub use crate::controls::state::ControlFocusState;
-pub use crate::theme::InteractionState as SelectorState;

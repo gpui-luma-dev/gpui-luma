@@ -1,7 +1,7 @@
 use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
 use crate::controls::button_family::ButtonFamilyRole;
-use crate::controls::choice_indicator_layout::should_paint_shadow;
+use crate::controls::shadow_layout::should_paint_shadow;
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::checkbox::{CheckboxData, CheckboxPalette, CheckboxScale, CheckboxTheme, default_checkbox_theme};
 use crate::controls::template::TemplateWithModifiers;

@@ -24,9 +24,7 @@ pub use engine::{
     default_sidebar_panel_template, default_sidebar_theme,
 };
 
-use gpui::{Entity, SharedString};
-
-pub type SidebarControlEntity = Entity<SidebarControl>;
+use gpui::SharedString;
 
 pub fn new(id: impl Into<SharedString>) -> SidebarControlBuilder {
     SidebarControlBuilder::new(id)

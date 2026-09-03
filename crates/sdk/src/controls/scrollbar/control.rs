@@ -11,7 +11,7 @@ use super::{
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::scrollbar::model::{ScrollbarModel, normalized_thumb_fraction};
 use crate::controls::value::{ControlRange, value_from_input};
-use crate::keyhandling::{
+use crate::key_handling::{
     ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, MoveToEnd, MoveToStart,
 };
 use crate::theme::{ControlSize, observe_theme_revision};

@@ -1,7 +1,7 @@
 use gpui::{AnyElement, App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
 use crate::controls::button_family::ButtonFamilyRole;
-use crate::controls::choice_indicator_layout::should_paint_shadow;
+use crate::controls::shadow_layout::should_paint_shadow;
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::radio_button::{
     RadioButtonData, RadioButtonPalette, RadioButtonTheme, RadioScale, default_radio_button_theme,

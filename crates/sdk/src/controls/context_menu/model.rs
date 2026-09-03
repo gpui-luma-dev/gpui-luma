@@ -2,9 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, AppContext, Entity, IntoElement, Pixels, Point, SharedString};
 
-use super::{
-    ContextMenu, ContextMenuState, ContextMenuTemplate, ControlFocusState, MenuPath, default_context_menu_template,
-};
+use super::{ContextMenu, ContextMenuTemplate, ControlFocusState, MenuPath, default_context_menu_template};
+use crate::theme::InteractionState;
 use super::template::modified_context_menu_template;
 use crate::controls::menu_item::MenuItem;
 use crate::controls::overlay_presence::OverlayPresence;
@@ -34,7 +33,7 @@ pub struct ContextMenuRenderModel<'a> {
     pub submenu_transition: Option<(usize, f32)>,
     pub enabled: bool,
     pub focus: ControlFocusState,
-    pub state: ContextMenuState,
+    pub state: InteractionState,
 }
 
 pub struct ContextMenuBuilder {

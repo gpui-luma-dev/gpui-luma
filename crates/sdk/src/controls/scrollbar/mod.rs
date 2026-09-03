@@ -14,5 +14,3 @@ pub use template::{
 };
 
 pub use theme::{DefaultScrollbarTheme, ScrollbarLook, ScrollbarTheme, default_scrollbar_theme};
-
-pub use crate::theme::InteractionState as ScrollbarState;

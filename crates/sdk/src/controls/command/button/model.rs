@@ -6,9 +6,8 @@ use gpui::{Context, Entity, IntoElement, SharedString, div, prelude::*};
 use super::control::Button;
 use super::template::{ButtonTemplate, modified_button_template};
 pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
-use crate::controls::button_family::{
-    ButtonFamilyLook, ButtonFamilyRole, ButtonInteractionState as ButtonState, ButtonSize,
-};
+use crate::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole, ButtonSize};
+use crate::theme::InteractionState;
 use lucide_svg_static::Icon as LucideIcon;
 
 #[derive(Clone)]
@@ -56,7 +55,7 @@ pub struct ButtonRenderModel<D> {
     pub icon: Option<ControlIcon>,
     pub role: ButtonFamilyRole,
     pub size: ButtonSize,
-    pub state: ButtonState,
+    pub state: InteractionState,
     pub round: bool,
     pub radius_override: Cell<Option<f32>>,
     pub elevation: bool,
@@ -83,7 +82,7 @@ impl<D: Default> Default for ButtonRenderModel<D> {
             icon: None,
             role: ButtonFamilyRole::default(),
             size: ButtonSize::default(),
-            state: ButtonState::default(),
+            state: InteractionState::default(),
             round: false,
             radius_override: Cell::new(None),
             elevation: true,

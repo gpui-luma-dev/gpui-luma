@@ -130,6 +130,9 @@ pub trait ShadcnLookControlExt {
     fn scrollbar(&self, id: impl Into<SharedString>) -> ScrollbarBuilder;
     fn selector(&self, id: impl Into<SharedString>) -> SelectorBuilder<SelectorItem>;
     fn tabs_navigation(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder;
+    fn tabs(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder {
+        self.tabs_navigation(id)
+    }
     fn accordion(&self, id: impl Into<SharedString>) -> AccordionBuilder;
     fn tree_view<T>(&self, id: impl Into<SharedString>) -> TreeViewBuilder<T>
     where
@@ -166,6 +169,12 @@ pub trait ShadcnLookControlExt {
     fn button_group<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static;
+    fn icon_group<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
+    where
+        T: ControlGroupItemLike + Clone + Send + Sync + 'static,
+    {
+        self.button_group(id)
+    }
     fn icon_toolbar<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static;

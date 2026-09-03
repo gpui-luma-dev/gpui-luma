@@ -274,7 +274,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
 
         control = self.apply_modifiers(control, model);
 
-        if crate::controls::choice_indicator_layout::should_paint_shadow(
+        if crate::controls::shadow_layout::should_paint_shadow(
             model.elevation,
             model.state.disabled,
             look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),

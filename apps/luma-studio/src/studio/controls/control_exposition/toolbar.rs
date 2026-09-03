@@ -7,7 +7,7 @@ use luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
 use luma::controls::control_group::ControlGroupFocusStrategy;
 use luma::controls::menu_item::MenuItem;
 use luma::controls::selector::SelectorItem;
-use luma::controls::toolbar::{ToolbarControl, ToolbarEvent, ToolbarValue};
+use luma::controls::toolbar::{Toolbar, ToolbarEvent, ToolbarValue};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
@@ -33,7 +33,7 @@ pub struct ToolbarControlExposition {
 struct ToolbarExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    toolbar: ToolbarControl,
+    toolbar: Toolbar,
     roving_focus_button: Entity<Button<()>>,
     sequential_focus_button: Entity<Button<()>>,
     event_stream: Entity<ControlEventStream>,

@@ -5,47 +5,47 @@ use gpui::{
 };
 
 use super::{
-    DialogBuilder, DialogDismissPolicy, DialogEvent, DialogMode, DialogPosition, DialogRenderModel,
-    DialogTemplateHandlers, DialogTemplateParts, default_dialog_theme,
+    OverlayWindowBuilder, OverlayWindowDismissPolicy, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition,
+    OverlayWindowRenderModel, OverlayWindowTemplateHandlers, OverlayWindowTemplateParts, default_overlay_window_theme,
 };
 use super::model::ThemeInvalidator;
 use crate::theme::{ControlSize, observe_theme_revision};
 
 #[derive(Clone)]
-struct DialogHeaderDrag {
+struct OverlayWindowHeaderDrag {
     id: SharedString,
 }
 
-impl Render for DialogHeaderDrag {
+impl Render for OverlayWindowHeaderDrag {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         gpui::Empty
     }
 }
 
-pub struct DialogControl {
-    model: super::DialogModel,
+pub struct OverlayWindowControl {
+    model: super::OverlayWindowModel,
     focus_handle: FocusHandle,
     restore_focus: Option<FocusHandle>,
     pending_focus: bool,
     pending_focus_restore: bool,
-    dragging: Option<DialogDragState>,
+    dragging: Option<OverlayWindowDragState>,
     theme_children: Vec<ThemeInvalidator>,
     _subscriptions: Vec<Subscription>,
 }
 
 #[derive(Clone, Copy)]
-struct DialogDragState {
+struct OverlayWindowDragState {
     pointer_origin: Point<Pixels>,
-    dialog_origin: Point<Pixels>,
+    overlay_origin: Point<Pixels>,
 }
 
-type DialogMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-type DialogMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+type OverlayWindowMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+type OverlayWindowMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 
-impl EventEmitter<DialogEvent> for DialogControl {}
+impl EventEmitter<OverlayWindowEvent> for OverlayWindowControl {}
 
-impl DialogControl {
-    pub(crate) fn from_builder(builder: DialogBuilder, cx: &mut Context<Self>) -> Self {
+impl OverlayWindowControl {
+    pub(crate) fn from_builder(builder: OverlayWindowBuilder, cx: &mut Context<Self>) -> Self {
         observe_theme_revision(cx, |this, cx| {
             this.invalidate_theme_children(cx);
             cx.notify();
@@ -84,7 +84,7 @@ impl DialogControl {
         self.model.open = true;
         self.pending_focus = true;
         self.pending_focus_restore = false;
-        cx.emit(DialogEvent::Opened);
+        cx.emit(OverlayWindowEvent::Opened);
         cx.notify();
     }
 
@@ -96,21 +96,21 @@ impl DialogControl {
         self.pending_focus = false;
         self.pending_focus_restore = self.restore_focus.is_some();
         self.dragging = None;
-        cx.emit(DialogEvent::Dismissed);
+        cx.emit(OverlayWindowEvent::Dismissed);
         cx.notify();
     }
 
-    pub fn set_mode(&mut self, mode: DialogMode, cx: &mut Context<Self>) {
+    pub fn set_mode(&mut self, mode: OverlayWindowMode, cx: &mut Context<Self>) {
         self.model.mode = mode;
         cx.notify();
     }
 
-    pub fn set_position(&mut self, position: DialogPosition, cx: &mut Context<Self>) {
+    pub fn set_position(&mut self, position: OverlayWindowPosition, cx: &mut Context<Self>) {
         self.model.position = position;
         cx.notify();
     }
 
-    pub fn set_dismiss_policy(&mut self, dismiss_policy: DialogDismissPolicy, cx: &mut Context<Self>) {
+    pub fn set_dismiss_policy(&mut self, dismiss_policy: OverlayWindowDismissPolicy, cx: &mut Context<Self>) {
         self.model.dismiss_policy = dismiss_policy;
         cx.notify();
     }
@@ -134,8 +134,8 @@ impl DialogControl {
         self.model.open
     }
 
-    fn render_model<'a>(&'a self, window: &Window) -> DialogRenderModel<'a> {
-        DialogRenderModel {
+    fn render_model<'a>(&'a self, window: &Window) -> OverlayWindowRenderModel<'a> {
+        OverlayWindowRenderModel {
             id: &self.model.id,
             mode: self.model.mode,
             position: self.model.position,
@@ -155,15 +155,15 @@ impl DialogControl {
     fn handle_shell_mouse_down(&mut self, _event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         self.focus_handle.focus(window, cx);
         cx.stop_propagation();
-        if self.model.dismiss_policy == DialogDismissPolicy::CloseOnFocusLoss {
+        if self.model.dismiss_policy == OverlayWindowDismissPolicy::CloseOnFocusLoss {
             self.pending_focus = false;
         }
     }
 
     fn handle_shell_mouse_down_out(&mut self, _event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.model.mode == DialogMode::Modeless
+        if self.model.mode == OverlayWindowMode::Modeless
             && self.model.dismissible
-            && self.model.dismiss_policy == DialogDismissPolicy::CloseOnClickAway
+            && self.model.dismiss_policy == OverlayWindowDismissPolicy::CloseOnClickAway
         {
             self.dismiss(cx);
         }
@@ -184,13 +184,13 @@ impl DialogControl {
         }
 
         let viewport = window.viewport_size();
-        let origin = resolve_dialog_origin(self.model.position, viewport, self.model.size, self.model.width);
-        self.dragging = Some(DialogDragState { pointer_origin: event.position, dialog_origin: origin });
+        let origin = resolve_overlay_window_origin(self.model.position, viewport, self.model.size, self.model.width);
+        self.dragging = Some(OverlayWindowDragState { pointer_origin: event.position, overlay_origin: origin });
     }
 
     fn handle_drag_move(
         &mut self,
-        event: &DragMoveEvent<DialogHeaderDrag>,
+        event: &DragMoveEvent<OverlayWindowHeaderDrag>,
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -201,8 +201,8 @@ impl DialogControl {
             return;
         };
         let delta = event.event.position - dragging.pointer_origin;
-        let origin = point(dragging.dialog_origin.x + delta.x, dragging.dialog_origin.y + delta.y);
-        self.model.position = DialogPosition::Absolute(clamp_dialog_origin(
+        let origin = point(dragging.overlay_origin.x + delta.x, dragging.overlay_origin.y + delta.y);
+        self.model.position = OverlayWindowPosition::Absolute(clamp_overlay_window_origin(
             origin,
             _window.viewport_size(),
             self.model.size,
@@ -243,19 +243,19 @@ impl DialogControl {
     }
 }
 
-impl Focusable for DialogControl {
+impl Focusable for OverlayWindowControl {
     fn focus_handle(&self, _cx: &App) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
 
-impl Render for DialogControl {
+impl Render for OverlayWindowControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.sync_focus(window, cx);
 
         if self.model.open
-            && self.model.mode == DialogMode::Modeless
-            && self.model.dismiss_policy == DialogDismissPolicy::CloseOnFocusLoss
+            && self.model.mode == OverlayWindowMode::Modeless
+            && self.model.dismiss_policy == OverlayWindowDismissPolicy::CloseOnFocusLoss
             && !self.pending_focus
             && !self.has_internal_focus(window)
         {
@@ -266,7 +266,7 @@ impl Render for DialogControl {
             return div().into_any_element();
         }
 
-        let look = default_dialog_theme().resolve(self.model.size, self.model.mode);
+        let look = default_overlay_window_theme().resolve(self.model.size, self.model.mode);
         let model = self.render_model(window);
         let header_drag_handle = self.model.draggable.then(|| {
             div()
@@ -279,7 +279,7 @@ impl Render for DialogControl {
                 .occlude()
                 .cursor_grab()
                 .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_header_mouse_down))
-                .on_drag(DialogHeaderDrag { id: self.model.id.clone() }, |drag, _, _, cx| {
+                .on_drag(OverlayWindowHeaderDrag { id: self.model.id.clone() }, |drag, _, _, cx| {
                     cx.stop_propagation();
                     cx.new(|_| drag.clone())
                 })
@@ -289,9 +289,9 @@ impl Render for DialogControl {
         let shell = self.model.template.render(
             &model,
             &look,
-            DialogTemplateParts {
+            OverlayWindowTemplateParts {
                 header_drag_handle,
-                handlers: DialogTemplateHandlers {
+                handlers: OverlayWindowTemplateHandlers {
                     key_down: Box::new(cx.listener(Self::handle_key_down)),
                     header_mouse_down: Box::new(cx.listener(Self::handle_header_mouse_down)),
                     shell_mouse_down: Box::new(cx.listener(Self::handle_shell_mouse_down)),
@@ -308,7 +308,7 @@ impl Render for DialogControl {
             .into_any_element();
 
         let overlay = match self.model.mode {
-            DialogMode::Modal => render_modal_overlay(
+            OverlayWindowMode::Modal => render_modal_overlay(
                 &self.model.id,
                 shell,
                 &look,
@@ -316,7 +316,7 @@ impl Render for DialogControl {
                 window.viewport_size(),
                 Box::new(cx.listener(Self::handle_backdrop_mouse_down)),
             ),
-            DialogMode::Modeless => render_modeless_overlay(
+            OverlayWindowMode::Modeless => render_modeless_overlay(
                 &self.model.id,
                 shell,
                 self.model.position,
@@ -336,10 +336,10 @@ impl Render for DialogControl {
 fn render_modal_overlay(
     id: &SharedString,
     shell: gpui::AnyElement,
-    look: &super::DialogLook,
-    position: DialogPosition,
+    look: &super::OverlayWindowLook,
+    position: OverlayWindowPosition,
     viewport: Size<Pixels>,
-    backdrop_mouse_down: DialogMouseDownHandler,
+    backdrop_mouse_down: OverlayWindowMouseDownHandler,
 ) -> gpui::AnyElement {
     let content = render_modal_content(position, shell);
 
@@ -369,38 +369,38 @@ fn render_modal_overlay(
         .into_any_element()
 }
 
-fn render_modal_content(position: DialogPosition, shell: gpui::AnyElement) -> gpui::AnyElement {
+fn render_modal_content(position: OverlayWindowPosition, shell: gpui::AnyElement) -> gpui::AnyElement {
     match position {
-        DialogPosition::Absolute(point) => div()
+        OverlayWindowPosition::Absolute(point) => div()
             .relative()
             .size_full()
             .child(div().absolute().left(point.x).top(point.y).child(shell))
             .into_any_element(),
-        DialogPosition::Center => {
+        OverlayWindowPosition::Center => {
             div().size_full().flex().items_center().justify_center().p(px(24.0)).child(shell).into_any_element()
         }
-        DialogPosition::Top => {
+        OverlayWindowPosition::Top => {
             div().size_full().flex().items_center().justify_start().p(px(24.0)).child(shell).into_any_element()
         }
-        DialogPosition::Bottom => {
+        OverlayWindowPosition::Bottom => {
             div().size_full().flex().items_center().justify_end().p(px(24.0)).child(shell).into_any_element()
         }
-        DialogPosition::Left => {
+        OverlayWindowPosition::Left => {
             div().size_full().flex().items_start().justify_center().p(px(24.0)).child(shell).into_any_element()
         }
-        DialogPosition::Right => {
+        OverlayWindowPosition::Right => {
             div().size_full().flex().items_end().justify_center().p(px(24.0)).child(shell).into_any_element()
         }
-        DialogPosition::TopLeft => {
+        OverlayWindowPosition::TopLeft => {
             div().size_full().flex().items_start().justify_start().p(px(24.0)).child(shell).into_any_element()
         }
-        DialogPosition::TopRight => {
+        OverlayWindowPosition::TopRight => {
             div().size_full().flex().items_end().justify_start().p(px(24.0)).child(shell).into_any_element()
         }
-        DialogPosition::BottomLeft => {
+        OverlayWindowPosition::BottomLeft => {
             div().size_full().flex().items_start().justify_end().p(px(24.0)).child(shell).into_any_element()
         }
-        DialogPosition::BottomRight => {
+        OverlayWindowPosition::BottomRight => {
             div().size_full().flex().items_end().justify_end().p(px(24.0)).child(shell).into_any_element()
         }
     }
@@ -410,15 +410,15 @@ fn render_modal_content(position: DialogPosition, shell: gpui::AnyElement) -> gp
 fn render_modeless_overlay(
     id: &SharedString,
     shell: gpui::AnyElement,
-    position: DialogPosition,
+    position: OverlayWindowPosition,
     size: ControlSize,
     width: Option<f32>,
     viewport: Size<Pixels>,
     dragging: bool,
-    mouse_up: DialogMouseUpHandler,
-    mouse_up_out: DialogMouseUpHandler,
+    mouse_up: OverlayWindowMouseUpHandler,
+    mouse_up_out: OverlayWindowMouseUpHandler,
 ) -> gpui::AnyElement {
-    let origin = resolve_dialog_origin(position, viewport, size, width);
+    let origin = resolve_overlay_window_origin(position, viewport, size, width);
     anchored()
         .snap_to_window_with_margin(px(12.0))
         .anchor(Anchor::TopLeft)
@@ -445,13 +445,13 @@ fn render_modeless_overlay(
         .into_any_element()
 }
 
-fn resolve_dialog_origin(
-    position: DialogPosition,
+fn resolve_overlay_window_origin(
+    position: OverlayWindowPosition,
     viewport: Size<Pixels>,
     size: ControlSize,
     width: Option<f32>,
 ) -> Point<Pixels> {
-    let look = default_dialog_theme().resolve(size, DialogMode::Modeless);
+    let look = default_overlay_window_theme().resolve(size, OverlayWindowMode::Modeless);
     let width = px(match width {
         Some(width) => width.max(look.min_width),
         None => look.min_width.clamp(look.min_width, look.max_width),
@@ -460,26 +460,26 @@ fn resolve_dialog_origin(
     let inset = px(24.0);
 
     match position {
-        DialogPosition::Center => point((viewport.width - width) * 0.5, (viewport.height - height) * 0.5),
-        DialogPosition::Top => point((viewport.width - width) * 0.5, inset),
-        DialogPosition::Bottom => point((viewport.width - width) * 0.5, viewport.height - height - inset),
-        DialogPosition::Left => point(inset, (viewport.height - height) * 0.5),
-        DialogPosition::Right => point(viewport.width - width - inset, (viewport.height - height) * 0.5),
-        DialogPosition::TopLeft => point(inset, inset),
-        DialogPosition::TopRight => point(viewport.width - width - inset, inset),
-        DialogPosition::BottomLeft => point(inset, viewport.height - height - inset),
-        DialogPosition::BottomRight => point(viewport.width - width - inset, viewport.height - height - inset),
-        DialogPosition::Absolute(point) => point,
+        OverlayWindowPosition::Center => point((viewport.width - width) * 0.5, (viewport.height - height) * 0.5),
+        OverlayWindowPosition::Top => point((viewport.width - width) * 0.5, inset),
+        OverlayWindowPosition::Bottom => point((viewport.width - width) * 0.5, viewport.height - height - inset),
+        OverlayWindowPosition::Left => point(inset, (viewport.height - height) * 0.5),
+        OverlayWindowPosition::Right => point(viewport.width - width - inset, (viewport.height - height) * 0.5),
+        OverlayWindowPosition::TopLeft => point(inset, inset),
+        OverlayWindowPosition::TopRight => point(viewport.width - width - inset, inset),
+        OverlayWindowPosition::BottomLeft => point(inset, viewport.height - height - inset),
+        OverlayWindowPosition::BottomRight => point(viewport.width - width - inset, viewport.height - height - inset),
+        OverlayWindowPosition::Absolute(point) => point,
     }
 }
 
-fn clamp_dialog_origin(
+fn clamp_overlay_window_origin(
     origin: Point<Pixels>,
     viewport: Size<Pixels>,
     size: ControlSize,
     width: Option<f32>,
 ) -> Point<Pixels> {
-    let look = default_dialog_theme().resolve(size, DialogMode::Modeless);
+    let look = default_overlay_window_theme().resolve(size, OverlayWindowMode::Modeless);
     let width = px(width.unwrap_or(look.min_width).max(look.min_width));
     let height = px(look.estimated_height);
     let inset = px(12.0);

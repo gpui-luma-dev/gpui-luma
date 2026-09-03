@@ -36,8 +36,6 @@ pub use theme::{
 use gpui::{Entity, SharedString};
 
 pub type ListView<T> = Entity<ListViewControl<T>>;
-pub type ScrollingListView<T> = Entity<ListViewControl<T>>;
-pub type ScrollingListViewBuilder<T> = ListViewBuilder<T>;
 
 pub fn new(id: impl Into<SharedString>) -> ListViewBuilder<ListViewLabel> {
     ListViewBuilder::new(id)

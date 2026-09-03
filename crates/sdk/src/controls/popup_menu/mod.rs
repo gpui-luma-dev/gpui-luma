@@ -17,6 +17,5 @@ pub use theme::{
     compose_popup_menu_look, default_popup_menu_theme,
 };
 
-pub use crate::theme::InteractionState as PopupMenuState;
 pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
 pub use crate::controls::state::{ControlFocusState, MenuPath};

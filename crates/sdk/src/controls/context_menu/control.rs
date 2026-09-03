@@ -12,7 +12,7 @@ use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::state::{ControlFocusState, MenuPath};
 use crate::animation::DisclosureMotion;
 use crate::focus::EscapeFocus;
-use crate::keyhandling::{
+use crate::key_handling::{
     ActivateControl, CloseSubmenu, ControlKeyProfile, OpenContextMenu, OpenSubmenu, SelectFirstItem, SelectLastItem,
     SelectNextItem, SelectPreviousItem,
 };

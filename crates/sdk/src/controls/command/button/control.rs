@@ -9,7 +9,7 @@ pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
 
 use super::{ButtonBuilder, ButtonRenderModel};
 pub use crate::controls::command::{CommandCore, CommandEvent as ButtonEvent};
-use crate::keyhandling::{ActivateControl, ControlKeyProfile};
+use crate::key_handling::{ActivateControl, ControlKeyProfile};
 use crate::controls::command::button::model::ControlIcon;
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::theme::observe_theme_revision;

@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use gpui::{App, AppContext, Bounds, Entity, IntoElement, Pixels, SharedString};
 
-use super::{ControlFocusState, Selector, SelectorState, SelectorTemplate, SelectorVisualState, default_selector_template};
+use super::{ControlFocusState, Selector, SelectorTemplate, SelectorVisualState, default_selector_template};
+use crate::theme::InteractionState;
 use super::template::modified_selector_template;
 pub use crate::controls::selector_item_template::{
     SelectorItemRenderModel, SelectorItemTemplate, make_selector_item_template,
@@ -89,7 +90,7 @@ where
     pub item_template: Option<&'a SelectorItemTemplate<T>>,
     pub panel_template: Option<&'a dyn SelectorItemsTemplate<T>>,
     pub focus: ControlFocusState,
-    pub state: SelectorState,
+    pub state: InteractionState,
     pub visual_state: SelectorVisualState,
 }
 

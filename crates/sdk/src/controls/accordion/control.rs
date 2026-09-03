@@ -12,7 +12,7 @@ use super::{
 };
 use crate::animation::DisclosureMotion;
 use crate::controls::state::{CompositeItemState, ControlFocusState};
-use crate::keyhandling::{ActivateControl, SelectFirstItem, SelectLastItem};
+use crate::key_handling::{ActivateControl, SelectFirstItem, SelectLastItem};
 use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
@@ -341,8 +341,8 @@ impl AccordionControl {
         match action {
             AccordionKeyAction::Previous => self.move_focus(AccordionDirection::Previous, cx),
             AccordionKeyAction::Next => self.move_focus(AccordionDirection::Next, cx),
-            AccordionKeyAction::First => self.handle_first(&crate::keyhandling::SelectFirstItem, window, cx),
-            AccordionKeyAction::Last => self.handle_last(&crate::keyhandling::SelectLastItem, window, cx),
+            AccordionKeyAction::First => self.handle_first(&crate::key_handling::SelectFirstItem, window, cx),
+            AccordionKeyAction::Last => self.handle_last(&crate::key_handling::SelectLastItem, window, cx),
             AccordionKeyAction::Activate => self.handle_activate(&ActivateControl, window, cx),
         }
         window.prevent_default();

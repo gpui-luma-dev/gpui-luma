@@ -5,8 +5,6 @@ pub use template::{ThemedCheckboxTemplate, default_template as default_checkbox_
 
 pub use theme::{CheckboxLook, CheckboxPalette, CheckboxScale, CheckboxTheme, DefaultCheckboxTheme, default_checkbox_theme};
 
-pub use crate::theme::InteractionState as CheckboxState;
-
 use std::sync::Arc;
 use std::time::Duration;
 

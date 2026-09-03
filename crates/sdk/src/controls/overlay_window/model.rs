@@ -2,21 +2,22 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, AppContext, Context, Entity, IntoElement, SharedString, Window, point, px};
 
-use super::{DialogControl, DialogTemplate, default_dialog_template};
-use super::template::modified_dialog_template;
+use super::{OverlayWindowControl, OverlayWindowTemplate, default_overlay_window_template};
+use super::template::modified_overlay_window_template;
 use crate::theme::ControlSize;
 
-pub type DialogElementRenderer = Arc<dyn Fn(&DialogRenderModel<'_>, &mut Window, &mut App) -> AnyElement + Send + Sync>;
+pub type OverlayWindowElementRenderer =
+    Arc<dyn Fn(&OverlayWindowRenderModel<'_>, &mut Window, &mut App) -> AnyElement + Send + Sync>;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum DialogMode {
+pub enum OverlayWindowMode {
     #[default]
     Modal,
     Modeless,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum DialogDismissPolicy {
+pub enum OverlayWindowDismissPolicy {
     #[default]
     KeepOpen,
     CloseOnClickAway,
@@ -24,7 +25,7 @@ pub enum DialogDismissPolicy {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub enum DialogPosition {
+pub enum OverlayWindowPosition {
     #[default]
     Center,
     Top,
@@ -40,36 +41,36 @@ pub enum DialogPosition {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
-pub enum DialogEvent {
+pub enum OverlayWindowEvent {
     Opened,
     Dismissed,
 }
 
 #[derive(Clone)]
-pub struct DialogModel {
+pub struct OverlayWindowModel {
     pub(crate) id: SharedString,
-    pub(crate) content: DialogElementRenderer,
+    pub(crate) content: OverlayWindowElementRenderer,
     pub(crate) open: bool,
-    pub(crate) mode: DialogMode,
-    pub(crate) position: DialogPosition,
-    pub(crate) dismiss_policy: DialogDismissPolicy,
+    pub(crate) mode: OverlayWindowMode,
+    pub(crate) position: OverlayWindowPosition,
+    pub(crate) dismiss_policy: OverlayWindowDismissPolicy,
     pub(crate) dismissible: bool,
     pub(crate) draggable: bool,
     pub(crate) size: ControlSize,
     pub(crate) width: Option<f32>,
-    pub(crate) template: Arc<dyn DialogTemplate>,
+    pub(crate) template: Arc<dyn OverlayWindowTemplate>,
 }
 
-pub struct DialogRenderModel<'a> {
+pub struct OverlayWindowRenderModel<'a> {
     pub id: &'a SharedString,
-    pub mode: DialogMode,
-    pub position: DialogPosition,
+    pub mode: OverlayWindowMode,
+    pub position: OverlayWindowPosition,
     pub dismissible: bool,
     pub draggable: bool,
     pub size: ControlSize,
     pub width: Option<f32>,
     pub focused: bool,
-    pub content: &'a DialogElementRenderer,
+    pub content: &'a OverlayWindowElementRenderer,
 }
 
 pub(crate) struct ThemeInvalidator(Box<dyn Fn(&mut App) + Send>);
@@ -86,30 +87,30 @@ impl ThemeInvalidator {
     }
 }
 
-pub struct DialogBuilder {
-    pub(crate) model: DialogModel,
+pub struct OverlayWindowBuilder {
+    pub(crate) model: OverlayWindowModel,
     pub(crate) theme_children: Vec<ThemeInvalidator>,
 }
 
-pub fn new(id: impl Into<SharedString>) -> DialogBuilder {
-    DialogBuilder::new(id)
+pub fn new(id: impl Into<SharedString>) -> OverlayWindowBuilder {
+    OverlayWindowBuilder::new(id)
 }
 
-impl DialogBuilder {
+impl OverlayWindowBuilder {
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
-            model: DialogModel {
+            model: OverlayWindowModel {
                 id: id.into(),
                 content: Arc::new(|_, _, _| gpui::div().into_any_element()),
                 open: false,
-                mode: DialogMode::Modal,
-                position: DialogPosition::Center,
-                dismiss_policy: DialogDismissPolicy::KeepOpen,
+                mode: OverlayWindowMode::Modal,
+                position: OverlayWindowPosition::Center,
+                dismiss_policy: OverlayWindowDismissPolicy::KeepOpen,
                 dismissible: true,
                 draggable: false,
                 size: ControlSize::Md,
                 width: None,
-                template: default_dialog_template(),
+                template: default_overlay_window_template(),
             },
             theme_children: Vec::new(),
         }
@@ -137,7 +138,7 @@ impl DialogBuilder {
 
     pub fn content<F>(mut self, content: F) -> Self
     where
-        F: Fn(&DialogRenderModel<'_>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
+        F: Fn(&OverlayWindowRenderModel<'_>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
     {
         self.model.content = Arc::new(content);
         self
@@ -145,7 +146,7 @@ impl DialogBuilder {
 
     pub fn body<F>(self, body: F) -> Self
     where
-        F: Fn(&DialogRenderModel<'_>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
+        F: Fn(&OverlayWindowRenderModel<'_>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
     {
         self.content(body)
     }
@@ -155,22 +156,22 @@ impl DialogBuilder {
         self
     }
 
-    pub fn mode(mut self, mode: DialogMode) -> Self {
+    pub fn mode(mut self, mode: OverlayWindowMode) -> Self {
         self.model.mode = mode;
         self
     }
 
-    pub fn position(mut self, position: DialogPosition) -> Self {
+    pub fn position(mut self, position: OverlayWindowPosition) -> Self {
         self.model.position = position;
         self
     }
 
     pub fn absolute_position(mut self, x: f32, y: f32) -> Self {
-        self.model.position = DialogPosition::Absolute(point(px(x), px(y)));
+        self.model.position = OverlayWindowPosition::Absolute(point(px(x), px(y)));
         self
     }
 
-    pub fn dismiss_policy(mut self, dismiss_policy: DialogDismissPolicy) -> Self {
+    pub fn dismiss_policy(mut self, dismiss_policy: OverlayWindowDismissPolicy) -> Self {
         self.model.dismiss_policy = dismiss_policy;
         self
     }
@@ -195,21 +196,24 @@ impl DialogBuilder {
         self
     }
 
-    pub fn template(mut self, template: Arc<dyn DialogTemplate>) -> Self {
+    pub fn template(mut self, template: Arc<dyn OverlayWindowTemplate>) -> Self {
         self.model.template = template;
         self
     }
 
     pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
     where
-        F: Fn(gpui::Stateful<gpui::Div>, &DialogRenderModel<'_>) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
+        F: Fn(gpui::Stateful<gpui::Div>, &OverlayWindowRenderModel<'_>) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
     {
-        self.model.template = modified_dialog_template(Arc::clone(&self.model.template), modifier);
+        self.model.template = modified_overlay_window_template(Arc::clone(&self.model.template), modifier);
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<DialogControl> {
-        cx.new(|cx| DialogControl::from_builder(self, cx))
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<OverlayWindowControl> {
+        cx.new(|cx| OverlayWindowControl::from_builder(self, cx))
     }
 }
 
@@ -219,8 +223,8 @@ mod tests {
 
     #[test]
     fn with_template_modifier_wraps_template() {
-        let template = default_dialog_template();
-        let builder = DialogBuilder::new("dialog-test")
+        let template = default_overlay_window_template();
+        let builder = OverlayWindowBuilder::new("dialog-test")
             .template(template.clone())
             .with_template_modifier(|element, _| element);
 
@@ -229,7 +233,7 @@ mod tests {
 
     #[test]
     fn theme_children_starts_empty() {
-        let builder = DialogBuilder::new("dialog-test");
+        let builder = OverlayWindowBuilder::new("dialog-test");
         assert!(builder.theme_children.is_empty());
     }
 }

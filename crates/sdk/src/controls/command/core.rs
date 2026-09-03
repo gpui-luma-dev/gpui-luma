@@ -2,7 +2,7 @@ use gpui::{ClickEvent, Context, EventEmitter, MouseDownEvent, MouseUpEvent, Wind
 
 use crate::controls::button_family::ButtonInteractionState;
 use crate::controls::interaction::ControlInteraction;
-use crate::keyhandling::ActivateControl;
+use crate::key_handling::ActivateControl;
 
 /// Semantic command event emitted by command-like controls.
 ///

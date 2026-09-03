@@ -3,7 +3,7 @@ mod model;
 mod template;
 mod theme;
 
-pub use control::{Toolbar, ToolbarEvent, ToolbarValue, horizontal_arrow_policy};
+pub use control::{ToolbarControl, ToolbarEvent, ToolbarValue, horizontal_arrow_policy};
 pub use model::{
     ToolbarBuilder, ToolbarChangeHandler, ToolbarClickHandler, ToolbarItem, ToolbarItemKind, ToolbarItemRenderModel,
     ToolbarItemSource, ToolbarRenderModel,
@@ -16,7 +16,7 @@ pub use theme::{DefaultToolbarTheme, ToolbarLook, ToolbarTheme, ToolbarVariant, 
 
 use gpui::{Entity, SharedString};
 
-pub type ToolbarControl = Entity<Toolbar>;
+pub type Toolbar = Entity<ToolbarControl>;
 
 pub fn new(id: impl Into<SharedString>) -> ToolbarBuilder {
     ToolbarBuilder::new(id)

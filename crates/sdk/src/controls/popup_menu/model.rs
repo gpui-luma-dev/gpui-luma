@@ -3,7 +3,8 @@ use std::sync::Arc;
 use gpui::{AppContext, Bounds, Entity, Pixels, SharedString, div, prelude::*, px};
 use lucide_svg_static::Icon as LucideIcon;
 
-use super::{ControlFocusState, MenuPath, PopupMenu, PopupMenuState, PopupMenuTemplate, default_popup_menu_template};
+use super::{ControlFocusState, MenuPath, PopupMenu, PopupMenuTemplate, default_popup_menu_template};
+use crate::theme::InteractionState;
 use super::template::modified_popup_menu_template;
 use crate::controls::menu_item::MenuItem;
 use crate::controls::floating_menu::FloatingMenuHighlight;
@@ -40,7 +41,7 @@ pub struct PopupMenuTriggerModel {
     pub label: SharedString,
     pub open: bool,
     pub enabled: bool,
-    pub state: PopupMenuState,
+    pub state: InteractionState,
 }
 
 fn default_trigger_content() -> ControlPresenter<PopupMenuTriggerModel> {
@@ -102,7 +103,7 @@ pub struct PopupMenuRenderModel<'a> {
     pub highlight: Option<FloatingMenuHighlight>,
     pub enabled: bool,
     pub focus: ControlFocusState,
-    pub state: PopupMenuState,
+    pub state: InteractionState,
 }
 
 pub struct PopupMenuBuilder {

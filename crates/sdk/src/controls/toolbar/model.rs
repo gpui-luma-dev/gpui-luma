@@ -5,7 +5,7 @@ use gpui::{
     Window, div,
 };
 
-use super::control::Toolbar;
+use super::control::ToolbarControl;
 use super::template::{ToolbarTemplate, default_toolbar_template, modified_toolbar_template};
 use super::theme::ToolbarVariant;
 use crate::controls::command::button::Button;
@@ -34,8 +34,8 @@ pub enum ToolbarItemSource {
     TextField(TextField),
 }
 
-pub type ToolbarClickHandler = Arc<dyn Fn(&mut Context<Toolbar>) + 'static>;
-pub type ToolbarChangeHandler = Arc<dyn Fn(&super::ToolbarValue, &mut Context<Toolbar>) + 'static>;
+pub type ToolbarClickHandler = Arc<dyn Fn(&mut Context<ToolbarControl>) + 'static>;
+pub type ToolbarChangeHandler = Arc<dyn Fn(&super::ToolbarValue, &mut Context<ToolbarControl>) + 'static>;
 
 #[derive(Clone)]
 pub struct ToolbarItem {
@@ -188,7 +188,7 @@ impl ToolbarItem {
 
     pub fn on_click<F>(mut self, handler: F) -> Self
     where
-        F: Fn(&mut Context<Toolbar>) + 'static,
+        F: Fn(&mut Context<ToolbarControl>) + 'static,
     {
         self.on_click = Some(Arc::new(handler));
         self
@@ -196,7 +196,7 @@ impl ToolbarItem {
 
     pub fn on_change<F>(mut self, handler: F) -> Self
     where
-        F: Fn(&super::ToolbarValue, &mut Context<Toolbar>) + 'static,
+        F: Fn(&super::ToolbarValue, &mut Context<ToolbarControl>) + 'static,
     {
         self.on_change = Some(Arc::new(handler));
         self
@@ -334,8 +334,8 @@ impl ToolbarBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Toolbar> {
-        cx.new(|cx| Toolbar::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<ToolbarControl> {
+        cx.new(|cx| ToolbarControl::from_builder(self, cx))
     }
 
     pub(crate) fn control_group_template(&self) -> crate::controls::control_group::ControlGroupTemplate<ToolbarItem> {

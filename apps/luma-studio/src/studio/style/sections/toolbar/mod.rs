@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use luma::controls::selector::SelectorItem;
 use luma::controls::tabs_navigation::TabsNavigation;
-use luma::controls::toolbar::{ToolbarControl, ToolbarVariant};
+use luma::controls::toolbar::{Toolbar, ToolbarVariant};
 use luma::theme::ControlSize;
 use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt, ShadcnToolbarItemExt};
 use lucide_svg_static::Icon as LucideIcon;
@@ -18,13 +18,13 @@ const TOOLBAR_TABLE_ROW_HEIGHT: f32 = 56.0;
 
 pub(crate) struct ToolbarPreview {
     look: Arc<ShadcnLook>,
-    outline_enabled: ToolbarControl,
-    outline_disabled: ToolbarControl,
-    ghost_enabled: ToolbarControl,
-    ghost_disabled: ToolbarControl,
-    size_sm: ToolbarControl,
-    size_md: ToolbarControl,
-    size_lg: ToolbarControl,
+    outline_enabled: Toolbar,
+    outline_disabled: Toolbar,
+    ghost_enabled: Toolbar,
+    ghost_disabled: Toolbar,
+    size_sm: Toolbar,
+    size_md: Toolbar,
+    size_lg: Toolbar,
 }
 
 impl ToolbarPreview {
@@ -82,7 +82,7 @@ impl ToolbarPreview {
         cx.notify();
     }
 
-    fn all_toolbars(&self) -> [ToolbarControl; 7] {
+    fn all_toolbars(&self) -> [Toolbar; 7] {
         [
             self.outline_enabled.clone(),
             self.outline_disabled.clone(),
@@ -160,7 +160,7 @@ fn render_template_body(preview: &ToolbarPreview, chrome: &luma::theme::LumaChro
         .into_any_element()
 }
 
-fn toolbar_variant_row(label: &'static str, enabled: ToolbarControl, disabled: ToolbarControl) -> VariantStateTableRow {
+fn toolbar_variant_row(label: &'static str, enabled: Toolbar, disabled: Toolbar) -> VariantStateTableRow {
     VariantStateTableRow {
         label: SharedString::from(label),
         description: SharedString::from(""),
@@ -168,7 +168,7 @@ fn toolbar_variant_row(label: &'static str, enabled: ToolbarControl, disabled: T
     }
 }
 
-fn toolbar_preview_cell(toolbar: ToolbarControl) -> AnyElement {
+fn toolbar_preview_cell(toolbar: Toolbar) -> AnyElement {
     div().w_full().flex().items_center().justify_center().child(toolbar).into_any_element()
 }
 
@@ -185,7 +185,7 @@ fn render_sizes_body(preview: &ToolbarPreview, muted: gpui::Hsla) -> AnyElement 
         .into_any_element()
 }
 
-fn size_column(label: &'static str, muted: gpui::Hsla, toolbar: ToolbarControl) -> AnyElement {
+fn size_column(label: &'static str, muted: gpui::Hsla, toolbar: Toolbar) -> AnyElement {
     div()
         .flex()
         .flex_col()
@@ -225,7 +225,7 @@ fn spawn_stripped_toolbar(
     size: ControlSize,
     enabled: bool,
     cx: &mut Context<ToolbarPreview>,
-) -> ToolbarControl {
+) -> Toolbar {
     let id = format!("luma-studio-toolbar-{id_suffix}");
     look.toolbar(id)
         .size(size)

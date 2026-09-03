@@ -33,8 +33,6 @@ pub(crate) use template::{
     render_domain_track_layer, track_bounds_canvas,
 };
 
-pub use crate::theme::InteractionState as SliderState;
-
 use gpui::{Entity, SharedString};
 
 pub type Slider = Entity<SliderControl>;

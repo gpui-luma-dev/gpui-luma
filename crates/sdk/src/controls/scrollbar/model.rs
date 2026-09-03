@@ -3,7 +3,8 @@ use std::sync::Arc;
 use gpui::{AppContext, Entity, SharedString};
 
 use super::template::template_with_modifier;
-use super::{Scrollbar, ScrollbarState, ScrollbarTemplate, default_scrollbar_template};
+use super::{Scrollbar, ScrollbarTemplate, default_scrollbar_template};
+use crate::theme::InteractionState;
 use crate::controls::value::{ControlRange, normalized_step, value_from_input};
 use crate::theme::ControlSize;
 
@@ -98,7 +99,7 @@ pub struct ScrollbarRenderModel<'a> {
     pub size: ControlSize,
     pub style: ScrollbarStyle,
     pub enabled: bool,
-    pub state: ScrollbarState,
+    pub state: InteractionState,
 }
 
 pub struct ScrollbarBuilder {

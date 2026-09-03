@@ -31,7 +31,7 @@ pub enum ToolbarEvent {
     Change { id: SharedString, value: ToolbarValue },
 }
 
-pub struct Toolbar {
+pub struct ToolbarControl {
     group: Entity<ControlGroupControl<ToolbarItem>>,
     items: Vec<ToolbarItem>,
     size: ControlSize,
@@ -41,9 +41,9 @@ pub struct Toolbar {
     _item_subscriptions: Vec<Subscription>,
 }
 
-impl EventEmitter<ToolbarEvent> for Toolbar {}
+impl EventEmitter<ToolbarEvent> for ToolbarControl {}
 
-impl Toolbar {
+impl ToolbarControl {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(id: impl Into<SharedString>) -> ToolbarBuilder {
         ToolbarBuilder::new(id)
@@ -175,7 +175,7 @@ impl Toolbar {
     }
 }
 
-fn wire_item_subscriptions(items: &[ToolbarItem], cx: &mut Context<Toolbar>) -> Vec<Subscription> {
+fn wire_item_subscriptions(items: &[ToolbarItem], cx: &mut Context<ToolbarControl>) -> Vec<Subscription> {
     let mut subscriptions = Vec::new();
     for item in items {
         let Some(source) = item.event_source.clone() else {
@@ -224,13 +224,13 @@ fn wire_item_subscriptions(items: &[ToolbarItem], cx: &mut Context<Toolbar>) -> 
     subscriptions
 }
 
-impl Focusable for Toolbar {
+impl Focusable for ToolbarControl {
     fn focus_handle(&self, cx: &App) -> gpui::FocusHandle {
         self.group.read(cx).focus_handle(cx)
     }
 }
 
-impl Render for Toolbar {
+impl Render for ToolbarControl {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         div().child(self.group.clone()).into_any_element()
     }

@@ -9,4 +9,4 @@ pub use model::{
 };
 pub use template::{ButtonTemplate, ButtonTemplateModifier, DefaultButtonTemplate, default_button_template};
 
-pub use crate::controls::button_family::{ButtonInteractionState as ButtonState, ButtonSize};
+pub use crate::controls::button_family::ButtonSize;

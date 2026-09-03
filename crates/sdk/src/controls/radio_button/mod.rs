@@ -7,8 +7,6 @@ pub use theme::{
     default_radio_button_theme,
 };
 
-pub use crate::theme::InteractionState as RadioButtonState;
-
 use std::sync::Arc;
 use std::time::Duration;
 

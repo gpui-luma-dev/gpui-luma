@@ -10,7 +10,7 @@ use super::domain::DomainTrackRenderer;
 use super::input::{SliderInputStrategy, wrap_and_snap};
 use super::segments::build_track_segments;
 use super::template::{SliderTemplate, default_slider_template, modified_slider_template};
-use crate::controls::slider::SliderState;
+use crate::theme::InteractionState;
 use crate::controls::value::{ControlRange, normalized_step, value_from_input};
 use crate::theme::ControlSize;
 
@@ -198,7 +198,7 @@ pub struct SliderRenderModel<'a> {
     pub thumb_radius: Option<AbsoluteLength>,
     pub thumb_policy: SliderThumbPolicy,
     pub active_thumb_id: Option<ThumbId>,
-    pub state: SliderState,
+    pub state: InteractionState,
     pub domain_track: Option<Arc<dyn DomainTrackRenderer>>,
 }
 

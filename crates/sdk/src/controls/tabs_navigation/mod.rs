@@ -28,3 +28,7 @@ pub use theme::{
 };
 
 pub use crate::controls::state::{CompositeItemState as TabsNavigationItemState, ControlFocusState};
+
+pub type Tabs = gpui::Entity<TabsNavigation>;
+pub type TabsBuilder = TabsNavigationBuilder;
+pub type TabsEvent = TabsNavigationEvent;

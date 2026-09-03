@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use gpui::{Context, Pixels, Point, Size, Window, point};
 
-use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use super::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 
 /// Minimum scale factor for overlay enter/exit (Framer / Shadcn `zoom-in-95`).
 pub const OVERLAY_ENTER_SCALE_MIN: f32 = 0.95;

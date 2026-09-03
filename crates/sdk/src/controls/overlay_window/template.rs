@@ -2,56 +2,56 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{App, Div, KeyDownEvent, MouseButton, MouseDownEvent, Stateful, Window, div, px, prelude::*};
 
-use super::{DialogLook, DialogRenderModel, DialogTheme, default_dialog_theme};
+use super::{OverlayWindowLook, OverlayWindowRenderModel, OverlayWindowTheme, default_overlay_window_theme};
 
-pub type DialogMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub type DialogKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
+pub type OverlayWindowMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+pub type OverlayWindowKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 
-pub struct DialogTemplateHandlers {
-    pub key_down: DialogKeyDownHandler,
-    pub header_mouse_down: DialogMouseDownHandler,
-    pub shell_mouse_down: DialogMouseDownHandler,
-    pub shell_mouse_down_out: DialogMouseDownHandler,
+pub struct OverlayWindowTemplateHandlers {
+    pub key_down: OverlayWindowKeyDownHandler,
+    pub header_mouse_down: OverlayWindowMouseDownHandler,
+    pub shell_mouse_down: OverlayWindowMouseDownHandler,
+    pub shell_mouse_down_out: OverlayWindowMouseDownHandler,
 }
 
-pub type DialogTemplateModifier =
-    Box<dyn Fn(Stateful<Div>, &DialogRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+pub type OverlayWindowTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &OverlayWindowRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
 
-pub struct DialogTemplateParts {
+pub struct OverlayWindowTemplateParts {
     pub header_drag_handle: Option<gpui::AnyElement>,
-    pub handlers: DialogTemplateHandlers,
+    pub handlers: OverlayWindowTemplateHandlers,
 }
 
-pub trait DialogTemplate: Send + Sync {
+pub trait OverlayWindowTemplate: Send + Sync {
     fn render(
         &self,
-        model: &DialogRenderModel<'_>,
-        look: &DialogLook,
-        parts: DialogTemplateParts,
+        model: &OverlayWindowRenderModel<'_>,
+        look: &OverlayWindowLook,
+        parts: OverlayWindowTemplateParts,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div>;
 }
 
-pub struct ThemedDialogTemplate {
-    theme: Arc<dyn DialogTheme>,
-    modifiers: Vec<DialogTemplateModifier>,
+pub struct ThemedOverlayWindowTemplate {
+    theme: Arc<dyn OverlayWindowTheme>,
+    modifiers: Vec<OverlayWindowTemplateModifier>,
 }
 
-impl ThemedDialogTemplate {
-    pub fn new(theme: Arc<dyn DialogTheme>) -> Self {
+impl ThemedOverlayWindowTemplate {
+    pub fn new(theme: Arc<dyn OverlayWindowTheme>) -> Self {
         Self { theme, modifiers: Vec::new() }
     }
 
     pub fn with_modifier<F>(mut self, modifier: F) -> Self
     where
-        F: Fn(Stateful<Div>, &DialogRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+        F: Fn(Stateful<Div>, &OverlayWindowRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
     {
         self.modifiers.push(Box::new(modifier));
         self
     }
 
-    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &DialogRenderModel<'_>) -> Stateful<Div> {
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &OverlayWindowRenderModel<'_>) -> Stateful<Div> {
         for modifier in &self.modifiers {
             root = (modifier)(root, model);
         }
@@ -59,22 +59,22 @@ impl ThemedDialogTemplate {
     }
 }
 
-struct ModifiedDialogTemplate {
-    base: Arc<dyn DialogTemplate>,
-    modifiers: Vec<DialogTemplateModifier>,
+struct ModifiedOverlayWindowTemplate {
+    base: Arc<dyn OverlayWindowTemplate>,
+    modifiers: Vec<OverlayWindowTemplateModifier>,
 }
 
-impl ModifiedDialogTemplate {
-    fn new(base: Arc<dyn DialogTemplate>) -> Self {
+impl ModifiedOverlayWindowTemplate {
+    fn new(base: Arc<dyn OverlayWindowTemplate>) -> Self {
         Self { base, modifiers: Vec::new() }
     }
 
-    fn with_modifier(mut self, modifier: DialogTemplateModifier) -> Self {
+    fn with_modifier(mut self, modifier: OverlayWindowTemplateModifier) -> Self {
         self.modifiers.push(modifier);
         self
     }
 
-    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &DialogRenderModel<'_>) -> Stateful<Div> {
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &OverlayWindowRenderModel<'_>) -> Stateful<Div> {
         for modifier in &self.modifiers {
             root = (modifier)(root, model);
         }
@@ -82,25 +82,30 @@ impl ModifiedDialogTemplate {
     }
 }
 
-pub fn default_dialog_template() -> Arc<dyn DialogTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn DialogTemplate>> = OnceLock::new();
+pub fn default_overlay_window_template() -> Arc<dyn OverlayWindowTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn OverlayWindowTemplate>> = OnceLock::new();
 
-    TEMPLATE.get_or_init(|| Arc::new(ThemedDialogTemplate::new(default_dialog_theme()))).clone()
+    TEMPLATE
+        .get_or_init(|| Arc::new(ThemedOverlayWindowTemplate::new(default_overlay_window_theme())))
+        .clone()
 }
 
-pub(super) fn modified_dialog_template<F>(template: Arc<dyn DialogTemplate>, modifier: F) -> Arc<dyn DialogTemplate>
+pub(super) fn modified_overlay_window_template<F>(
+    template: Arc<dyn OverlayWindowTemplate>,
+    modifier: F,
+) -> Arc<dyn OverlayWindowTemplate>
 where
-    F: Fn(Stateful<Div>, &DialogRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    F: Fn(Stateful<Div>, &OverlayWindowRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
 {
-    Arc::new(ModifiedDialogTemplate::new(template).with_modifier(Box::new(modifier)))
+    Arc::new(ModifiedOverlayWindowTemplate::new(template).with_modifier(Box::new(modifier)))
 }
 
-impl DialogTemplate for ModifiedDialogTemplate {
+impl OverlayWindowTemplate for ModifiedOverlayWindowTemplate {
     fn render(
         &self,
-        model: &DialogRenderModel<'_>,
-        look: &DialogLook,
-        parts: DialogTemplateParts,
+        model: &OverlayWindowRenderModel<'_>,
+        look: &OverlayWindowLook,
+        parts: OverlayWindowTemplateParts,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
@@ -109,18 +114,19 @@ impl DialogTemplate for ModifiedDialogTemplate {
     }
 }
 
-impl DialogTemplate for ThemedDialogTemplate {
+impl OverlayWindowTemplate for ThemedOverlayWindowTemplate {
     fn render(
         &self,
-        model: &DialogRenderModel<'_>,
-        _look: &DialogLook,
-        parts: DialogTemplateParts,
+        model: &OverlayWindowRenderModel<'_>,
+        _look: &OverlayWindowLook,
+        parts: OverlayWindowTemplateParts,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
         let look = self.theme.resolve(model.size, model.mode);
-        let DialogTemplateParts { header_drag_handle, handlers } = parts;
-        let DialogTemplateHandlers { key_down, header_mouse_down, shell_mouse_down, shell_mouse_down_out } = handlers;
+        let OverlayWindowTemplateParts { header_drag_handle, handlers } = parts;
+        let OverlayWindowTemplateHandlers { key_down, header_mouse_down, shell_mouse_down, shell_mouse_down_out } =
+            handlers;
 
         let shell_width = match model.width {
             Some(width) => width.max(look.min_width),

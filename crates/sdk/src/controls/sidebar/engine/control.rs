@@ -17,7 +17,7 @@ use crate::controls::state::MenuPath;
 use crate::animation::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::popup_lifecycle::PopupLifecycle;
 use crate::focus::EscapeFocus;
-use crate::keyhandling::{
+use crate::key_handling::{
     ActivateControl, CloseSubmenu, ControlKeyProfile, OpenSubmenu, SelectFirstItem, SelectLastItem, SelectNextItem,
     SelectPreviousItem,
 };

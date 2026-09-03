@@ -11,7 +11,7 @@ use super::{
 };
 use crate::animation::DisclosureMotion;
 use crate::controls::state::{CompositeItemState, ControlFocusState};
-use crate::keyhandling::{
+use crate::key_handling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
 use crate::theme::observe_theme_revision;

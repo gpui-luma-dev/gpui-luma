@@ -15,7 +15,7 @@ use crate::controls::popup_lifecycle::PopupLifecycle;
 use crate::controls::floating_menu::FloatingMenuHighlight;
 use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
-use crate::keyhandling::{
+use crate::key_handling::{
     ActivateControl, CloseSubmenu, ControlKeyProfile, OpenSubmenu, SelectFirstItem, SelectLastItem, SelectNextItem,
     SelectPreviousItem,
 };

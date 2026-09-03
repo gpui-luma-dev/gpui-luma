@@ -16,7 +16,7 @@ use crate::controls::selection_panel::template::{
     SelectionPanelMouseUpHandler, SelectionPanelRenderModel, render_selection_panel,
 };
 use crate::controls::state::ControlFocusState;
-use crate::keyhandling::{
+use crate::key_handling::{
     ActivateControl, ControlKeyProfile, DecreaseValueLarge, IncreaseValueLarge, SelectFirstItem, SelectLastItem,
     SelectNextItem, SelectPreviousItem,
 };

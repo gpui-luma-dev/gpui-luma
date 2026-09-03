@@ -13,5 +13,4 @@ pub use template::{
 pub use theme::{DefaultContextMenuTheme, ContextMenuLook, ContextMenuTheme, default_context_menu_theme};
 
 pub use crate::controls::menu_item::{MenuItem, MenuItemIcon};
-pub use crate::theme::InteractionState as ContextMenuState;
 pub use crate::controls::state::{ControlFocusState, MenuPath};

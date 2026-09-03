@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::list_view::{ListSelectionMode, ListViewEvent, ScrollingListView};
+use luma::controls::list_view::{ListSelectionMode, ListView, ListViewEvent};
 use luma::{column, column_emphasis, scrolling_list_view};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;
@@ -33,7 +33,7 @@ pub struct ScrollingListViewControlExposition {
 struct ScrollingListViewExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    list_view: ScrollingListView<Task>,
+    list_view: ListView<Task>,
     selected_indices: Vec<usize>,
     event_stream: Entity<ControlEventStream>,
 }

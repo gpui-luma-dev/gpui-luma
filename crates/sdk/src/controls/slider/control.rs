@@ -22,7 +22,7 @@ use crate::controls::interaction::ControlInteraction;
 use super::constraints::normalize_intervals;
 use super::model::SliderModel;
 use crate::controls::value::{ControlRange, value_from_input};
-use crate::keyhandling::{
+use crate::key_handling::{
     ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, MoveToEnd, MoveToStart,
     RemoveValue,
 };

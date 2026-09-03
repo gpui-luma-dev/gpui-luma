@@ -4,10 +4,10 @@ use gpui::{BoxShadow, Hsla, SharedString, black, point, px};
 
 use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
-use super::DialogMode;
+use super::OverlayWindowMode;
 
 #[derive(Clone, Debug)]
-pub struct DialogLook {
+pub struct OverlayWindowLook {
     pub background: Hsla,
     pub border: Hsla,
     pub foreground: Hsla,
@@ -22,29 +22,29 @@ pub struct DialogLook {
     pub font_family: SharedString,
 }
 
-pub trait DialogTheme: Send + Sync {
-    fn resolve(&self, size: ControlSize, mode: DialogMode) -> DialogLook;
+pub trait OverlayWindowTheme: Send + Sync {
+    fn resolve(&self, size: ControlSize, mode: OverlayWindowMode) -> OverlayWindowLook;
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct DefaultDialogTheme {
+pub struct DefaultOverlayWindowTheme {
     tokens: ThemeTokens,
 }
 
-pub fn default_dialog_theme() -> Arc<dyn DialogTheme> {
-    static THEME: OnceLock<Arc<dyn DialogTheme>> = OnceLock::new();
+pub fn default_overlay_window_theme() -> Arc<dyn OverlayWindowTheme> {
+    static THEME: OnceLock<Arc<dyn OverlayWindowTheme>> = OnceLock::new();
 
-    THEME.get_or_init(|| Arc::new(DefaultDialogTheme::default())).clone()
+    THEME.get_or_init(|| Arc::new(DefaultOverlayWindowTheme::default())).clone()
 }
 
-impl DefaultDialogTheme {
+impl DefaultOverlayWindowTheme {
     pub fn new(tokens: ThemeTokens) -> Self {
         Self { tokens }
     }
 }
 
-impl DialogTheme for DefaultDialogTheme {
-    fn resolve(&self, size: ControlSize, mode: DialogMode) -> DialogLook {
+impl OverlayWindowTheme for DefaultOverlayWindowTheme {
+    fn resolve(&self, size: ControlSize, mode: OverlayWindowMode) -> OverlayWindowLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
@@ -55,16 +55,16 @@ impl DialogTheme for DefaultDialogTheme {
             ControlSize::Lg => 480.0,
         };
 
-        DialogLook {
+        OverlayWindowLook {
             background: palette.surface.floating.background,
             border: palette.surface.floating.border,
             foreground: palette.surface.floating.foreground,
-            backdrop_background: if mode == DialogMode::Modal {
+            backdrop_background: if mode == OverlayWindowMode::Modal {
                 Hsla { a: 0.44, ..black() }
             } else {
                 Hsla { a: 0.0, ..black() }
             },
-            shadow: if mode == DialogMode::Modal {
+            shadow: if mode == OverlayWindowMode::Modal {
                 elevation.dialog.to_box_shadows()
             } else {
                 vec![BoxShadow {
