@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prel
 use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
 use luma::controls::toggle::ToggleData;
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::theme::InteractionState;
 use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
@@ -24,7 +24,7 @@ const TOGGLE_TEXT_TABLE_STATE_COLUMN_WIDTH: f32 = 112.0;
 
 pub(crate) fn render_toggle_template_matrix_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -59,7 +59,7 @@ fn render_toggle_preview_tabbed_content(
     look: &ShadcnLook,
     template: &Arc<dyn ButtonTemplate<ToggleData>>,
     samples: &[ButtonStateSample],
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     active_tab: SharedString,
     border: gpui::Hsla,
     window: &mut Window,

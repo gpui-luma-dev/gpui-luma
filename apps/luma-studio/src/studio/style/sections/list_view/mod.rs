@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use luma::controls::list_view::ListView;
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::theme::ControlSize;
 use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
@@ -51,7 +51,7 @@ impl Render for ListViewPreview {
 
 pub(crate) fn render_list_view_template_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     preview: Entity<ListViewPreview>,
     cx: &mut App,
 ) -> AnyElement {

@@ -1,7 +1,7 @@
 use gpui::{App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
 use crate::infra::shadow_layout::should_paint_shadow;
-use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use crate::controls::button::{ButtonRenderModel, ButtonTemplate};
 
 use crate::controls::switch::{SwitchData, SwitchOrientation, SwitchPalette, SwitchTheme, default_switch_theme};
 use crate::infra::template::TemplateWithModifiers;

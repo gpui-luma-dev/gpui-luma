@@ -1,3 +1,9 @@
+//! Shared activation core for button-family controls.
+//!
+//! [`CommandCore`] owns focus/hover/enabled interaction and emits [`CommandEvent`]
+//! (re-exported as [`super::ButtonEvent`] from the button control). It does not
+//! render UI — presentations live in [`super::template`].
+
 use gpui::{ClickEvent, Context, EventEmitter, MouseDownEvent, MouseUpEvent, Window};
 
 use crate::controls::button_family::ButtonInteractionState;

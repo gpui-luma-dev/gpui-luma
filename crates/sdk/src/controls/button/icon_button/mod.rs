@@ -1,6 +1,6 @@
 use gpui::{Entity, SharedString};
 
-use crate::controls::command::button::{Button, ButtonBuilder, ControlIcon};
+use crate::controls::button::{Button, ButtonBuilder, ControlIcon};
 
 pub type IconButton = Entity<Button<()>>;
 

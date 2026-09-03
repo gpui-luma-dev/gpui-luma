@@ -8,7 +8,7 @@ use luma::controls::color::composition::CompositionSize;
 use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::selector::{Selector, SelectorEvent};
 use luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy, ThumbId};
-use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationWidthMode};
+use luma::controls::tabs::{Tabs, TabsEvent, TabsWidthMode};
 use luma::theme::{ControlSize, ThemeMode};
 use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 use lucide_svg_static::Icon as LucideIcon;
@@ -27,7 +27,7 @@ use mesh::{
 
 pub struct GradientBuilder {
     look: Arc<ShadcnLook>,
-    top_tabs: Entity<TabsNavigation>,
+    top_tabs: Entity<Tabs>,
     selected_tab: BuilderTab,
     gradient_stops: Entity<SliderControl>,
     stop_colors: HashMap<ThumbId, gpui::Hsla>,
@@ -106,7 +106,7 @@ impl GradientBuilder {
             .tabs("color-viz-builder-tabs")
             .items(builder_tab_items())
             .active("gradients")
-            .width_mode(TabsNavigationWidthMode::Uniform)
+            .width_mode(TabsWidthMode::Uniform)
             .spawn(cx);
         let type_selector =
             look.selector("color-viz-gradient-type").items(type_items()).selected_id("linear").spawn(cx);
@@ -184,7 +184,7 @@ impl GradientBuilder {
     fn wire_subscriptions(
         &mut self,
         cx: &mut Context<Self>,
-        top_tabs: Entity<TabsNavigation>,
+        top_tabs: Entity<Tabs>,
         gradient_stops: Entity<SliderControl>,
         add_stop_button: Entity<Button>,
         mesh_reset_button: Entity<Button>,
@@ -198,7 +198,7 @@ impl GradientBuilder {
         self._subscriptions.push(cx.subscribe(&gradient_stops, |this, _, event, cx| {
             this.handle_stops_event(event, cx);
         }));
-        self._subscriptions.push(cx.subscribe(&top_tabs, |this, _, event: &TabsNavigationEvent, cx| {
+        self._subscriptions.push(cx.subscribe(&top_tabs, |this, _, event: &TabsEvent, cx| {
             this.handle_top_tabs_event(event, cx);
         }));
         self._subscriptions.push(cx.subscribe(&add_stop_button, |this, _, event: &ButtonEvent, cx| {

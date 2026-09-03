@@ -1,6 +1,6 @@
 use gpui::{Corners, Pixels, SharedString, Size, div, prelude::*, px, size};
 use luma::controls::selector::SelectorItem;
-use luma::controls::tabs::TabsNavigationItem;
+use luma::controls::tabs::TabsItem;
 use luma::theme::LumaTextStyle;
 use luma_look_shadcn::LumaTypographyExt;
 
@@ -202,11 +202,8 @@ pub(super) fn mesh_aspect_ratio_items() -> Vec<SelectorItem> {
     ]
 }
 
-pub(super) fn builder_tab_items() -> Vec<TabsNavigationItem> {
-    vec![
-        TabsNavigationItem::new("gradients").label("Gradients"),
-        TabsNavigationItem::new("mesh").label("Mesh"),
-    ]
+pub(super) fn builder_tab_items() -> Vec<TabsItem> {
+    vec![TabsItem::new("gradients").label("Gradients"), TabsItem::new("mesh").label("Mesh")]
 }
 
 pub(super) fn preview_gradient_cache_key(

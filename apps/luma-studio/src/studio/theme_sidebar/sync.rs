@@ -1,10 +1,10 @@
 use gpui::Context;
 use luma::theme::ControlSize;
-use luma::controls::tabs::TabsNavigationWidthMode;
+use luma::controls::tabs::TabsWidthMode;
 
 use super::ThemeSidebar;
 use super::theme_selector::theme_selector_state;
-use crate::studio::content_tabs::luma_studio_tabs_navigation_template;
+use crate::studio::content_tabs::luma_studio_tabs_template;
 use crate::studio::overrides::StudioOverrides;
 use luma_look_shadcn::ShadcnLook;
 
@@ -53,8 +53,8 @@ impl ThemeSidebar {
     fn sync_tabs_template(&self, theme: &std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.tabs.update(cx, |tabs, cx| {
             tabs.set_size(ControlSize::Lg, cx);
-            tabs.set_width_mode(TabsNavigationWidthMode::Uniform, cx);
-            tabs.set_template(luma_studio_tabs_navigation_template(theme.clone(), ControlSize::Lg), cx);
+            tabs.set_width_mode(TabsWidthMode::Uniform, cx);
+            tabs.set_template(luma_studio_tabs_template(theme.clone(), ControlSize::Lg), cx);
         });
     }
 

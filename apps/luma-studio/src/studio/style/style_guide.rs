@@ -7,7 +7,7 @@ use gpui::{
     ScrollWheelEvent, Window, div, point, prelude::*, px,
 };
 use luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
-use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
+use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
 use luma::controls::color::style::ElementExt;
 use luma::{declare_form};
 use luma_look_shadcn::prelude::*;
@@ -117,32 +117,32 @@ declare_form! {
             last_scroll_offset: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
             last_max_scroll: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
             sidebar_preview: Option<Entity<SidebarControl>> = None,
-            buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
-            icon_buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
-            checkbox_preview_tabs: Option<Entity<TabsNavigation>> = None,
-            radio_preview_tabs: Option<Entity<TabsNavigation>> = None,
-            switch_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            buttons_preview_tabs: Option<Entity<Tabs>> = None,
+            icon_buttons_preview_tabs: Option<Entity<Tabs>> = None,
+            checkbox_preview_tabs: Option<Entity<Tabs>> = None,
+            radio_preview_tabs: Option<Entity<Tabs>> = None,
+            switch_preview_tabs: Option<Entity<Tabs>> = None,
             switch_customization_preview: Option<Entity<sections::switch::customization::SwitchCustomizationPreview>> =
                 None,
-            toggles_preview_tabs: Option<Entity<TabsNavigation>> = None,
-            menus_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            toggles_preview_tabs: Option<Entity<Tabs>> = None,
+            menus_preview_tabs: Option<Entity<Tabs>> = None,
             pager_preview: Option<Entity<sections::pager::PagerPreview>> = None,
-            selectors_preview_tabs: Option<Entity<TabsNavigation>> = None,
-            scrollbar_preview_tabs: Option<Entity<TabsNavigation>> = None,
-            textfield_preview_tabs: Option<Entity<TabsNavigation>> = None,
-            textarea_preview_tabs: Option<Entity<TabsNavigation>> = None,
-            slider_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            selectors_preview_tabs: Option<Entity<Tabs>> = None,
+            scrollbar_preview_tabs: Option<Entity<Tabs>> = None,
+            textfield_preview_tabs: Option<Entity<Tabs>> = None,
+            textarea_preview_tabs: Option<Entity<Tabs>> = None,
+            slider_preview_tabs: Option<Entity<Tabs>> = None,
             slider_customization_preview: Option<Entity<sections::slider::customization::SliderCustomizationPreview>> =
                 None,
-            listbox_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            listbox_preview_tabs: Option<Entity<Tabs>> = None,
             listbox_preview: Option<Entity<sections::listbox::ListboxPreview>> = None,
-            list_view_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            list_view_preview_tabs: Option<Entity<Tabs>> = None,
             list_view_preview: Option<Entity<sections::list_view::ListViewPreview>> = None,
-            tree_view_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            tree_view_preview_tabs: Option<Entity<Tabs>> = None,
             tree_view_preview: Option<Entity<sections::tree_view::TreeViewPreview>> = None,
-            accordion_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            accordion_preview_tabs: Option<Entity<Tabs>> = None,
             accordion_preview: Option<Entity<sections::accordion::AccordionPreview>> = None,
-            toolbar_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            toolbar_preview_tabs: Option<Entity<Tabs>> = None,
             toolbar_preview: Option<Entity<sections::toolbar::ToolbarPreview>> = None,
         }
     }
@@ -249,12 +249,12 @@ impl StyleGuidePanel {
         if let Some(tabs) = self.buttons_preview_tabs.clone() {
             let look = self.look.clone();
             tabs.update(cx, move |tabs, cx| {
-                tabs.set_template(look.tabs_navigation_template(), cx);
+                tabs.set_template(look.tabs_template(), cx);
             });
         }
     }
 
-    fn buttons_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn buttons_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.buttons_preview_tabs.clone() {
             return tabs;
         }
@@ -262,16 +262,13 @@ impl StyleGuidePanel {
         let tabs = self
             .look
             .tabs("luma-studio-buttons-preview-tabs")
-            .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
-            ])
+            .items([TabsItem::new("template-preview").label("Template Preview"), TabsItem::new("sizes").label("Sizes")])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -284,12 +281,12 @@ impl StyleGuidePanel {
         if let Some(tabs) = self.icon_buttons_preview_tabs.clone() {
             let look = self.look.clone();
             tabs.update(cx, move |tabs, cx| {
-                tabs.set_template(look.tabs_navigation_template(), cx);
+                tabs.set_template(look.tabs_template(), cx);
             });
         }
     }
 
-    fn icon_buttons_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn icon_buttons_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.icon_buttons_preview_tabs.clone() {
             return tabs;
         }
@@ -297,16 +294,13 @@ impl StyleGuidePanel {
         let tabs = self
             .look
             .tabs("luma-studio-icon-buttons-preview-tabs")
-            .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
-            ])
+            .items([TabsItem::new("template-preview").label("Template Preview"), TabsItem::new("sizes").label("Sizes")])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -319,12 +313,12 @@ impl StyleGuidePanel {
         if let Some(tabs) = self.toggles_preview_tabs.clone() {
             let look = self.look.clone();
             tabs.update(cx, move |tabs, cx| {
-                tabs.set_template(look.tabs_navigation_template(), cx);
+                tabs.set_template(look.tabs_template(), cx);
             });
         }
     }
 
-    fn toggles_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn toggles_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.toggles_preview_tabs.clone() {
             return tabs;
         }
@@ -332,16 +326,13 @@ impl StyleGuidePanel {
         let tabs = self
             .look
             .tabs("luma-studio-toggles-preview-tabs")
-            .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
-            ])
+            .items([TabsItem::new("template-preview").label("Template Preview"), TabsItem::new("sizes").label("Sizes")])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -354,7 +345,7 @@ impl StyleGuidePanel {
         self.sync_preview_tabs(self.checkbox_preview_tabs.clone(), cx);
     }
 
-    fn checkbox_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn checkbox_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.checkbox_preview_tabs.clone() {
             return tabs;
         }
@@ -363,16 +354,16 @@ impl StyleGuidePanel {
             .look
             .tabs("luma-studio-checkbox-preview-tabs")
             .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
-                TabsNavigationItem::new("shadows").label("Shadows"),
+                TabsItem::new("template-preview").label("Template Preview"),
+                TabsItem::new("sizes").label("Sizes"),
+                TabsItem::new("shadows").label("Shadows"),
             ])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -385,7 +376,7 @@ impl StyleGuidePanel {
         self.sync_preview_tabs(self.radio_preview_tabs.clone(), cx);
     }
 
-    fn radio_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn radio_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.radio_preview_tabs.clone() {
             return tabs;
         }
@@ -394,16 +385,16 @@ impl StyleGuidePanel {
             .look
             .tabs("luma-studio-radio-preview-tabs")
             .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
-                TabsNavigationItem::new("shadows").label("Shadows"),
+                TabsItem::new("template-preview").label("Template Preview"),
+                TabsItem::new("sizes").label("Sizes"),
+                TabsItem::new("shadows").label("Shadows"),
             ])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -416,7 +407,7 @@ impl StyleGuidePanel {
         self.sync_preview_tabs(self.switch_preview_tabs.clone(), cx);
     }
 
-    fn switch_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn switch_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.switch_preview_tabs.clone() {
             return tabs;
         }
@@ -425,16 +416,16 @@ impl StyleGuidePanel {
             .look
             .tabs("luma-studio-switch-preview-tabs")
             .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
-                TabsNavigationItem::new("customization").label("Customization"),
+                TabsItem::new("template-preview").label("Template Preview"),
+                TabsItem::new("sizes").label("Sizes"),
+                TabsItem::new("customization").label("Customization"),
             ])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -470,7 +461,7 @@ impl StyleGuidePanel {
         self.sync_preview_tabs(self.menus_preview_tabs.clone(), cx);
     }
 
-    fn menus_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn menus_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.menus_preview_tabs.clone() {
             return tabs;
         }
@@ -479,17 +470,17 @@ impl StyleGuidePanel {
             .look
             .tabs("luma-studio-menus-preview-tabs")
             .items([
-                TabsNavigationItem::new("menu-trigger").label("Menu Trigger"),
-                TabsNavigationItem::new("trigger-sizes").label("Trigger Sizes"),
-                TabsNavigationItem::new("floating-menu").label("Floating Menu"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
+                TabsItem::new("menu-trigger").label("Menu Trigger"),
+                TabsItem::new("trigger-sizes").label("Trigger Sizes"),
+                TabsItem::new("floating-menu").label("Floating Menu"),
+                TabsItem::new("sizes").label("Sizes"),
             ])
             .active("menu-trigger")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -529,7 +520,7 @@ impl StyleGuidePanel {
         self.sync_preview_tabs(self.textarea_preview_tabs.clone(), cx);
     }
 
-    fn textarea_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn textarea_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.textarea_preview_tabs.clone() {
             return tabs;
         }
@@ -538,15 +529,15 @@ impl StyleGuidePanel {
             .look
             .tabs("luma-studio-textarea-style-preview-tabs")
             .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("textarea-shadows").label("Shadows"),
+                TabsItem::new("template-preview").label("Template Preview"),
+                TabsItem::new("textarea-shadows").label("Shadows"),
             ])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -559,7 +550,7 @@ impl StyleGuidePanel {
         self.sync_preview_tabs(self.selectors_preview_tabs.clone(), cx);
     }
 
-    fn selectors_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn selectors_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.selectors_preview_tabs.clone() {
             return tabs;
         }
@@ -568,16 +559,16 @@ impl StyleGuidePanel {
             .look
             .tabs("luma-studio-selectors-preview-tabs")
             .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
-                TabsNavigationItem::new("shadows").label("Shadows"),
+                TabsItem::new("template-preview").label("Template Preview"),
+                TabsItem::new("sizes").label("Sizes"),
+                TabsItem::new("shadows").label("Shadows"),
             ])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -586,7 +577,7 @@ impl StyleGuidePanel {
         tabs
     }
 
-    fn scrollbar_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn scrollbar_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.scrollbar_preview_tabs.clone() {
             return tabs;
         }
@@ -595,16 +586,16 @@ impl StyleGuidePanel {
             .look
             .tabs("luma-studio-scrollbar-preview-tabs")
             .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
-                TabsNavigationItem::new("shadows").label("Shadows"),
+                TabsItem::new("template-preview").label("Template Preview"),
+                TabsItem::new("sizes").label("Sizes"),
+                TabsItem::new("shadows").label("Shadows"),
             ])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -613,7 +604,7 @@ impl StyleGuidePanel {
         tabs
     }
 
-    fn textfield_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn textfield_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.textfield_preview_tabs.clone() {
             return tabs;
         }
@@ -622,16 +613,16 @@ impl StyleGuidePanel {
             .look
             .tabs("luma-studio-textfield-preview-tabs")
             .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
-                TabsNavigationItem::new("shadows").label("Shadows"),
+                TabsItem::new("template-preview").label("Template Preview"),
+                TabsItem::new("sizes").label("Sizes"),
+                TabsItem::new("shadows").label("Shadows"),
             ])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -644,7 +635,7 @@ impl StyleGuidePanel {
         self.sync_preview_tabs(self.slider_preview_tabs.clone(), cx);
     }
 
-    fn slider_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn slider_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.slider_preview_tabs.clone() {
             return tabs;
         }
@@ -653,16 +644,16 @@ impl StyleGuidePanel {
             .look
             .tabs("luma-studio-slider-preview-tabs")
             .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
-                TabsNavigationItem::new("customization").label("Customization"),
+                TabsItem::new("template-preview").label("Template Preview"),
+                TabsItem::new("sizes").label("Sizes"),
+                TabsItem::new("customization").label("Customization"),
             ])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -694,29 +685,26 @@ impl StyleGuidePanel {
         }
     }
 
-    fn sync_preview_tabs(&self, tabs: Option<Entity<TabsNavigation>>, cx: &mut Context<Self>) {
+    fn sync_preview_tabs(&self, tabs: Option<Entity<Tabs>>, cx: &mut Context<Self>) {
         if let Some(tabs) = tabs {
             let look = self.look.clone();
             tabs.update(cx, move |tabs, cx| {
-                tabs.set_template(look.tabs_navigation_template(), cx);
+                tabs.set_template(look.tabs_template(), cx);
             });
         }
     }
 
-    fn spawn_template_sizes_tabs(&self, id: &'static str, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn spawn_template_sizes_tabs(&self, id: &'static str, cx: &mut Context<Self>) -> Entity<Tabs> {
         let tabs = self
             .look
             .tabs(id)
-            .items([
-                TabsNavigationItem::new("template-preview").label("Template Preview"),
-                TabsNavigationItem::new("sizes").label("Sizes"),
-            ])
+            .items([TabsItem::new("template-preview").label("Template Preview"), TabsItem::new("sizes").label("Sizes")])
             .active("template-preview")
-            .width_mode(TabsNavigationWidthMode::Intrinsic)
-            .template(self.look.tabs_navigation_template())
+            .width_mode(TabsWidthMode::Intrinsic)
+            .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
             cx.notify();
         })
         .detach();
@@ -724,7 +712,7 @@ impl StyleGuidePanel {
         tabs
     }
 
-    fn listbox_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn listbox_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.listbox_preview_tabs.clone() {
             return tabs;
         }
@@ -753,7 +741,7 @@ impl StyleGuidePanel {
         }
     }
 
-    fn list_view_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn list_view_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.list_view_preview_tabs.clone() {
             return tabs;
         }
@@ -782,7 +770,7 @@ impl StyleGuidePanel {
         }
     }
 
-    fn tree_view_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn tree_view_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.tree_view_preview_tabs.clone() {
             return tabs;
         }
@@ -811,7 +799,7 @@ impl StyleGuidePanel {
         }
     }
 
-    fn accordion_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn accordion_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.accordion_preview_tabs.clone() {
             return tabs;
         }
@@ -840,7 +828,7 @@ impl StyleGuidePanel {
         }
     }
 
-    fn toolbar_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+    fn toolbar_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.toolbar_preview_tabs.clone() {
             return tabs;
         }
@@ -1115,9 +1103,7 @@ impl StyleGuidePanel {
                 window,
                 cx,
             ),
-            StyleGuideSection::Tabs => {
-                sections::tabs::render_tabs_navigation_template_section(self.look.clone(), window, cx)
-            }
+            StyleGuideSection::Tabs => sections::tabs::render_tabs_template_section(self.look.clone(), window, cx),
             StyleGuideSection::Scrollbar => sections::scrollbar::render_scrollbar_template_section(
                 self.look.clone(),
                 self.scrollbar_preview_tabs.clone().expect("scrollbar preview tabs"),

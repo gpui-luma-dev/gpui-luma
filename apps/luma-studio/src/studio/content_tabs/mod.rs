@@ -9,4 +9,4 @@ mod tab;
 mod theme_usage;
 
 pub use host::{BoardSnapshot, ContentPaneHost};
-pub use navigation::luma_studio_tabs_navigation_template;
+pub use navigation::luma_studio_tabs_template;

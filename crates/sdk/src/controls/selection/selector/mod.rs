@@ -1,4 +1,7 @@
-//! Popup selector control.
+//! Popup selector control (trigger + anchored option list).
+//!
+//! Distinct from [`crate::controls::selection_panel`] (always-visible list) and
+//! [`crate::controls::selector_list`] (shared list chrome, not a control).
 //!
 //! # Examples
 //!

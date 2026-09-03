@@ -227,7 +227,7 @@ pub fn accordion_content_expanded(state_id: &str) -> bool {
     state_id == "expanded"
 }
 
-pub fn tabs_navigation_active(variant_id: &str) -> bool {
+pub fn tabs_active(variant_id: &str) -> bool {
     variant_id == "active"
 }
 

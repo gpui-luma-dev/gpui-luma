@@ -5,7 +5,7 @@ use gpui::{AppContext, Entity, SharedString};
 use super::template::template_with_modifier;
 use super::{TextFieldLook, TextFieldState, TextFieldTemplate, TextFieldVariant, default_textfield_template};
 use super::control::TextFieldControl;
-use crate::controls::command::button::ControlIcon;
+use crate::controls::button::ControlIcon;
 use crate::theme::ControlSize;
 
 pub type Validator = Arc<dyn Fn(&str) -> bool + Send + Sync>;

@@ -6,16 +6,16 @@ use gpui::{
     prelude::*,
 };
 
-use super::indicator::TabsNavigationIndicatorMotion;
-use super::{TabsNavigationBuilder, TabsNavigationItem};
+use super::indicator::TabsIndicatorMotion;
+use super::{TabsBuilder, TabsItem};
 use crate::controls::control_group::{ControlGroupControl, ControlGroupEvent, ControlGroupLayout, ControlSelectionMode};
-use crate::controls::tabs::model::TabsNavigationWidthMode;
+use crate::controls::tabs::model::TabsWidthMode;
 use crate::motion::DisclosureMotion;
 use crate::theme::ControlSize;
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
-pub enum TabsNavigationEvent {
+pub enum TabsEvent {
     Change { tab_id: SharedString, label: SharedString },
     Activate { tab_id: SharedString, label: SharedString },
     Reactivate { tab_id: SharedString, label: SharedString },
@@ -25,33 +25,33 @@ pub enum TabsNavigationEvent {
     ItemFocused { tab_id: SharedString, label: SharedString },
 }
 
-pub struct TabsNavigation {
-    group: Entity<ControlGroupControl<TabsNavigationItem>>,
-    items: Vec<TabsNavigationItem>,
+pub struct Tabs {
+    group: Entity<ControlGroupControl<TabsItem>>,
+    items: Vec<TabsItem>,
     active_id: Option<SharedString>,
     pending_changed_id: Option<SharedString>,
     item_bounds: Vec<Option<Bounds<Pixels>>>,
     size: ControlSize,
-    width_mode: TabsNavigationWidthMode,
+    width_mode: TabsWidthMode,
     animated: bool,
     disclosure_icons: crate::infra::icon::DisclosureIcons,
-    indicator_motion: TabsNavigationIndicatorMotion,
-    template: std::sync::Arc<dyn super::TabsNavigationTemplate>,
+    indicator_motion: TabsIndicatorMotion,
+    template: std::sync::Arc<dyn super::TabsTemplate>,
     disclosure_transitions: HashMap<SharedString, DisclosureMotion>,
     disclosure_progress: Arc<Mutex<HashMap<SharedString, f32>>>,
 }
 
-impl EventEmitter<TabsNavigationEvent> for TabsNavigation {}
+impl EventEmitter<TabsEvent> for Tabs {}
 
-impl TabsNavigation {
+impl Tabs {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(id: impl Into<SharedString>) -> TabsNavigationBuilder {
-        TabsNavigationBuilder::new(id)
+    pub fn new(id: impl Into<SharedString>) -> TabsBuilder {
+        TabsBuilder::new(id)
     }
 
-    pub(crate) fn from_builder(builder: TabsNavigationBuilder, cx: &mut Context<Self>) -> Self {
+    pub(crate) fn from_builder(builder: TabsBuilder, cx: &mut Context<Self>) -> Self {
         let model = builder.model.clone();
-        let indicator_motion = TabsNavigationIndicatorMotion::new(model.animated);
+        let indicator_motion = TabsIndicatorMotion::new(model.animated);
         let disclosure_progress = Arc::new(Mutex::new(
             builder
                 .model
@@ -126,7 +126,7 @@ impl TabsNavigation {
         cx.notify();
     }
 
-    pub fn set_items(&mut self, items: impl IntoIterator<Item = TabsNavigationItem>, cx: &mut Context<Self>) {
+    pub fn set_items(&mut self, items: impl IntoIterator<Item = TabsItem>, cx: &mut Context<Self>) {
         self.items = items.into_iter().collect();
         if !self
             .active_id
@@ -198,11 +198,7 @@ impl TabsNavigation {
         cx.notify();
     }
 
-    pub fn set_template(
-        &mut self,
-        template: std::sync::Arc<dyn super::TabsNavigationTemplate>,
-        cx: &mut Context<Self>,
-    ) {
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn super::TabsTemplate>, cx: &mut Context<Self>) {
         self.template = template;
         self.refresh_group_template(cx);
     }
@@ -215,7 +211,7 @@ impl TabsNavigation {
         self.refresh_group_template(cx);
     }
 
-    pub fn set_width_mode(&mut self, width_mode: TabsNavigationWidthMode, cx: &mut Context<Self>) {
+    pub fn set_width_mode(&mut self, width_mode: TabsWidthMode, cx: &mut Context<Self>) {
         if self.width_mode == width_mode {
             return;
         }
@@ -238,7 +234,7 @@ impl TabsNavigation {
         let disclosure_progress = self.disclosure_progress.clone();
         self.group.update(cx, |group, cx| {
             group.set_template(
-                super::template::tabs_navigation_control_group_template(
+                super::template::tabs_control_group_template(
                     size,
                     width_mode,
                     template,
@@ -308,12 +304,12 @@ impl TabsNavigation {
 }
 
 fn translate_group_event(
-    items: &[TabsNavigationItem],
+    items: &[TabsItem],
     active_id: &mut Option<SharedString>,
     pending_changed_id: &mut Option<SharedString>,
     item_bounds: &mut Vec<Option<Bounds<Pixels>>>,
     event: &ControlGroupEvent,
-) -> Vec<TabsNavigationEvent> {
+) -> Vec<TabsEvent> {
     match event {
         ControlGroupEvent::Change { changed_id, selected, .. } => {
             if !selected {
@@ -324,7 +320,7 @@ fn translate_group_event(
             };
             *active_id = Some(tab_id.clone());
             *pending_changed_id = Some(tab_id.clone());
-            vec![TabsNavigationEvent::Change { tab_id, label }]
+            vec![TabsEvent::Change { tab_id, label }]
         }
         ControlGroupEvent::Activate { activated_id } => {
             let Some((tab_id, label)) = item_event_payload(items, activated_id) else {
@@ -335,9 +331,9 @@ fn translate_group_event(
 
             let mut events = Vec::new();
             if !selected_changed && active_id.as_ref().is_some_and(|active_id| active_id == &tab_id) {
-                events.push(TabsNavigationEvent::Reactivate { tab_id: tab_id.clone(), label: label.clone() });
+                events.push(TabsEvent::Reactivate { tab_id: tab_id.clone(), label: label.clone() });
                 if item_is_dropdown_trigger(items, &tab_id) {
-                    events.push(TabsNavigationEvent::DropdownRequested {
+                    events.push(TabsEvent::DropdownRequested {
                         bounds: item_bounds_for_id(items, item_bounds, &tab_id),
                         tab_id: tab_id.clone(),
                         label: label.clone(),
@@ -345,7 +341,7 @@ fn translate_group_event(
                 }
             }
             *active_id = Some(tab_id.clone());
-            events.push(TabsNavigationEvent::Activate { tab_id, label });
+            events.push(TabsEvent::Activate { tab_id, label });
             events
         }
         ControlGroupEvent::ItemBoundsChanged { item_id, bounds } => {
@@ -353,32 +349,32 @@ fn translate_group_event(
                 return Vec::new();
             }
             store_item_bounds(items, item_bounds, item_id, *bounds);
-            vec![TabsNavigationEvent::ItemBoundsChanged { tab_id: item_id.clone(), bounds: *bounds }]
+            vec![TabsEvent::ItemBoundsChanged { tab_id: item_id.clone(), bounds: *bounds }]
         }
         ControlGroupEvent::FocusChanged { focused } => {
-            vec![TabsNavigationEvent::FocusChanged { focused: *focused }]
+            vec![TabsEvent::FocusChanged { focused: *focused }]
         }
         ControlGroupEvent::ItemFocused { item_id } => {
             let Some((tab_id, label)) = item_event_payload(items, item_id) else {
                 return Vec::new();
             };
-            vec![TabsNavigationEvent::ItemFocused { tab_id, label }]
+            vec![TabsEvent::ItemFocused { tab_id, label }]
         }
     }
 }
 
-fn item_event_payload(items: &[TabsNavigationItem], item_id: &SharedString) -> Option<(SharedString, SharedString)> {
+fn item_event_payload(items: &[TabsItem], item_id: &SharedString) -> Option<(SharedString, SharedString)> {
     items
         .iter()
         .find_map(|item| (item.id() == item_id).then(|| (item.id().clone(), item.label_text().clone())))
 }
 
-fn item_is_dropdown_trigger(items: &[TabsNavigationItem], item_id: &SharedString) -> bool {
+fn item_is_dropdown_trigger(items: &[TabsItem], item_id: &SharedString) -> bool {
     items.iter().any(|item| item.id() == item_id && item.is_dropdown_trigger())
 }
 
 fn item_bounds_for_id(
-    items: &[TabsNavigationItem],
+    items: &[TabsItem],
     item_bounds: &[Option<Bounds<Pixels>>],
     item_id: &SharedString,
 ) -> Option<Bounds<Pixels>> {
@@ -389,7 +385,7 @@ fn item_bounds_for_id(
 }
 
 fn store_item_bounds(
-    items: &[TabsNavigationItem],
+    items: &[TabsItem],
     item_bounds: &mut Vec<Option<Bounds<Pixels>>>,
     item_id: &SharedString,
     bounds: Bounds<Pixels>,
@@ -403,13 +399,13 @@ fn store_item_bounds(
     item_bounds[index] = Some(bounds);
 }
 
-impl Focusable for TabsNavigation {
+impl Focusable for Tabs {
     fn focus_handle(&self, cx: &App) -> gpui::FocusHandle {
         self.group.read(cx).focus_handle(cx)
     }
 }
 
-impl Render for TabsNavigation {
+impl Render for Tabs {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.sync_disclosure_transitions(window, cx);
         let was_animating = self.indicator_motion.is_animating();
@@ -428,13 +424,13 @@ mod tests {
     use gpui::{Bounds, point, px, size};
 
     use super::*;
-    use crate::controls::tabs::TabsNavigationItemAccessory;
+    use crate::controls::tabs::TabsItemAccessory;
 
-    fn items() -> Vec<TabsNavigationItem> {
+    fn items() -> Vec<TabsItem> {
         vec![
-            TabsNavigationItem::new("cards").label("Cards"),
-            TabsNavigationItem::new("controls").label("Controls").dropdown_trigger(),
-            TabsNavigationItem::new("theme").label("Theme"),
+            TabsItem::new("cards").label("Cards"),
+            TabsItem::new("controls").label("Controls").dropdown_trigger(),
+            TabsItem::new("theme").label("Theme"),
         ]
     }
 
@@ -464,22 +460,22 @@ mod tests {
         assert_eq!(events.len(), 4);
         assert!(matches!(
             &events[0],
-            TabsNavigationEvent::ItemBoundsChanged { tab_id, bounds: event_bounds }
+            TabsEvent::ItemBoundsChanged { tab_id, bounds: event_bounds }
                 if tab_id.as_ref() == "controls" && event_bounds == &bounds
         ));
         assert!(matches!(
             &events[1],
-            TabsNavigationEvent::Reactivate { tab_id, label }
+            TabsEvent::Reactivate { tab_id, label }
                 if tab_id.as_ref() == "controls" && label.as_ref() == "Controls"
         ));
         assert!(matches!(
             &events[2],
-            TabsNavigationEvent::DropdownRequested { tab_id, label, bounds: event_bounds }
+            TabsEvent::DropdownRequested { tab_id, label, bounds: event_bounds }
                 if tab_id.as_ref() == "controls" && label.as_ref() == "Controls" && event_bounds == &Some(bounds)
         ));
         assert!(matches!(
             &events[3],
-            TabsNavigationEvent::Activate { tab_id, label }
+            TabsEvent::Activate { tab_id, label }
                 if tab_id.as_ref() == "controls" && label.as_ref() == "Controls"
         ));
     }
@@ -512,28 +508,25 @@ mod tests {
         assert_eq!(events.len(), 2);
         assert!(matches!(
             &events[0],
-            TabsNavigationEvent::Change { tab_id, label }
+            TabsEvent::Change { tab_id, label }
                 if tab_id.as_ref() == "cards" && label.as_ref() == "Cards"
         ));
         assert!(matches!(
             &events[1],
-            TabsNavigationEvent::Activate { tab_id, label }
+            TabsEvent::Activate { tab_id, label }
                 if tab_id.as_ref() == "cards" && label.as_ref() == "Cards"
         ));
-        assert!(!events.iter().any(|event| matches!(event, TabsNavigationEvent::DropdownRequested { .. })));
-        assert!(!events.iter().any(|event| matches!(event, TabsNavigationEvent::Reactivate { .. })));
+        assert!(!events.iter().any(|event| matches!(event, TabsEvent::DropdownRequested { .. })));
+        assert!(!events.iter().any(|event| matches!(event, TabsEvent::Reactivate { .. })));
     }
 
     #[test]
     fn disclosure_accessory_tracks_open_state() {
-        let mut item = TabsNavigationItem::new("controls").label("Controls").dropdown_trigger();
-        assert_eq!(
-            item.trailing_accessory_ref().and_then(TabsNavigationItemAccessory::is_disclosure_open),
-            Some(false)
-        );
+        let mut item = TabsItem::new("controls").label("Controls").dropdown_trigger();
+        assert_eq!(item.trailing_accessory_ref().and_then(TabsItemAccessory::is_disclosure_open), Some(false));
 
         assert!(item.trailing_accessory.as_mut().is_some_and(|accessory| accessory.set_disclosure_open(true)));
         assert!(!item.trailing_accessory.as_mut().is_some_and(|accessory| accessory.set_disclosure_open(true)));
-        assert_eq!(item.trailing_accessory_ref().and_then(TabsNavigationItemAccessory::is_disclosure_open), Some(true));
+        assert_eq!(item.trailing_accessory_ref().and_then(TabsItemAccessory::is_disclosure_open), Some(true));
     }
 }

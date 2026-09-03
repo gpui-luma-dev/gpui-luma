@@ -40,7 +40,7 @@ use luma::controls::switch::{SwitchData, SwitchTheme, ThemedSwitchTemplate};
 use luma::controls::toggle::{ToggleData, apply_toggle_progress_chrome};
 use luma::controls::accordion::{AccordionTemplate, AccordionTheme, ThemedAccordionTemplate};
 use luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTreeViewTemplate};
-use luma::controls::tabs::{TabsNavigationTemplate, TabsNavigationTheme, ThemedTabsNavigationTemplate};
+use luma::controls::tabs::{TabsTemplate, TabsTheme, ThemedTabsTemplate};
 use luma::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
 use luma::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate};
 use luma::controls::toolbar::{ThemedToolbarTemplate, ToolbarLook, ToolbarTemplate, ToolbarTheme, ToolbarVariant};
@@ -68,7 +68,7 @@ use super::accordion::{accordion_content_palette, accordion_trigger_palette};
 use super::resizable_panels::resizable_panels_look;
 use super::split_view::split_view_look;
 use super::tree_view::tree_view_row_palette;
-use super::tabs_navigation::{tabs_navigation_item_look, tabs_navigation_list_look};
+use super::tabs::{tabs_item_look, tabs_list_look};
 use super::button::{button_look, button_palette};
 use crate::look_context::LookContext;
 use super::button::ShadcnButtonStyle;
@@ -991,14 +991,14 @@ impl AccordionTheme for ShadcnAccordionTheme {
     }
 }
 
-struct ShadcnTabsNavigationTheme {
+struct ShadcnTabsTheme {
     theme: ShadcnLook,
 }
 
-impl TabsNavigationTheme for ShadcnTabsNavigationTheme {
-    fn resolve_list(&self, enabled: bool, size: ControlSize) -> luma::controls::tabs::TabsNavigationListLook {
+impl TabsTheme for ShadcnTabsTheme {
+    fn resolve_list(&self, enabled: bool, size: ControlSize) -> luma::controls::tabs::TabsListLook {
         let tokens = self.theme.mode_tokens();
-        tabs_navigation_list_look(tokens.as_ref(), enabled, size)
+        tabs_list_look(tokens.as_ref(), enabled, size)
     }
 
     fn resolve_item(
@@ -1006,9 +1006,9 @@ impl TabsNavigationTheme for ShadcnTabsNavigationTheme {
         active: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> luma::controls::tabs::TabsNavigationItemLook {
+    ) -> luma::controls::tabs::TabsItemLook {
         let tokens = self.theme.mode_tokens();
-        tabs_navigation_item_look(tokens.as_ref(), active, state, size)
+        tabs_item_look(tokens.as_ref(), active, state, size)
     }
 
     fn font_family(&self) -> gpui::SharedString {
@@ -1067,12 +1067,12 @@ pub fn accordion_theme(theme: Arc<ShadcnLook>) -> Arc<dyn AccordionTheme> {
     Arc::new(ShadcnAccordionTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn tabs_navigation_template(theme: Arc<ShadcnLook>) -> Arc<dyn TabsNavigationTemplate> {
-    Arc::new(ThemedTabsNavigationTemplate::new(tabs_navigation_theme(Arc::clone(&theme))))
+pub fn tabs_template(theme: Arc<ShadcnLook>) -> Arc<dyn TabsTemplate> {
+    Arc::new(ThemedTabsTemplate::new(tabs_theme(Arc::clone(&theme))))
 }
 
-pub fn tabs_navigation_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TabsNavigationTheme> {
-    Arc::new(ShadcnTabsNavigationTheme { theme: theme.as_ref().clone() })
+pub fn tabs_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TabsTheme> {
+    Arc::new(ShadcnTabsTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn sidebar_panel_template(theme: Arc<ShadcnLook>) -> Arc<dyn SidebarPanelTemplate> {

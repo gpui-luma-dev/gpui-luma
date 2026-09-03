@@ -5,10 +5,15 @@ use gpui::{
 
 use crate::controls::resizable_panels::{ResizeHandleSize, ResizablePanelsLook};
 
-use super::handle::{
+mod handle;
+mod resize;
+
+pub use handle::{
     SlidePanelResizeHandlers, SlidePanelResizeHitHandlers, render_slide_panel_inner_resize_handle,
     render_slide_panel_resize_handle,
 };
+pub use resize::SlidePanelResizeDrag;
+
 use super::model::{SUPPORTED_TOP_ANCHORS, SlidePanelEdge, SlidePanelState};
 
 const DEFAULT_SIDE_PANEL_WIDTH: f32 = 360.0;

@@ -33,9 +33,8 @@ pub use crate::controls::scrollbar::{resolve_scrollbar_colors, ScrollbarColorTab
 pub use crate::controls::slider::{resolve_slider_colors, SliderColorTable};
 pub use crate::controls::split_view::{resolve_split_view_colors, SplitViewColorTable};
 pub use crate::controls::switch::{resolve_switch_colors, SwitchColorTable};
-pub use crate::controls::tabs_navigation::{
-    resolve_tabs_navigation_item_colors, resolve_tabs_navigation_list_colors, TabsNavigationItemColorTable,
-    TabsNavigationListColorTable,
+pub use crate::controls::tabs::{
+    resolve_tabs_item_colors, resolve_tabs_list_colors, TabsItemColorTable, TabsListColorTable,
 };
 pub use crate::controls::textfield::{resolve_textfield_colors, TextFieldColorTable};
 pub use crate::controls::tree_view::{resolve_tree_view_row_colors, TreeViewRowColorTable};

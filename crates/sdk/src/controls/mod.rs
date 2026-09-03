@@ -1,6 +1,5 @@
 //! Spawnable control families. Shared seams live in [`crate::infra`] and [`crate::motion`].
 
-pub(crate) mod command;
 pub mod button;
 pub mod choice;
 pub mod color;
@@ -11,7 +10,7 @@ pub mod range;
 pub mod selection;
 pub mod text;
 
-pub use command::icon_button;
+pub use button::icon_button;
 pub use button::family as button_family;
 pub use button::split_button;
 

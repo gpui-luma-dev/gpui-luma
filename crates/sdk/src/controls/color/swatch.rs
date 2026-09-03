@@ -10,7 +10,7 @@ use gpui::{prelude::*, *};
 use crate::controls::color::checkerboard_paint::{DEFAULT_CHECKERBOARD_SQUARE_SIZE, paint_masked_checkerboard};
 use crate::controls::color::chrome_tokens::swatch_checkerboard_colors;
 use crate::controls::color::style::ActiveTheme;
-use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use crate::controls::button::{ButtonRenderModel, ButtonTemplate};
 use crate::theme::ControlSize;
 
 /// Typed payload for a button-backed color swatch.

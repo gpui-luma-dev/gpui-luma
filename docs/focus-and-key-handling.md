@@ -44,7 +44,7 @@ Controls bind default key profile actions to their focus-tracked elements. Below
 | :--- | :--- | :--- | :--- |
 | **Command** | `Button`, `IconButton`, `ToggleButton` | `ActivateControl` | `Enter`, `Space` |
 | **Choice** | `Checkbox`, `Switch` | `ActivateControl` | `Space` |
-| **TabList** | `ControlGroup` composites, `TabsNavigation` | `SelectNextItem`, `SelectPreviousItem`, `SelectFirstItem`, `SelectLastItem` | Arrow keys (`Right/Down`, `Left/Up`), `Home`, `End` |
+| **TabList** | `ControlGroup` composites, `Tabs` | `SelectNextItem`, `SelectPreviousItem`, `SelectFirstItem`, `SelectLastItem` | Arrow keys (`Right/Down`, `Left/Up`), `Home`, `End` |
 | **RangeValue** | `Slider` | `IncreaseValue`, `DecreaseValue`, `IncreaseValueLarge`, `DecreaseValueLarge`, `MoveToStart`, `MoveToEnd` | Arrow keys (`Right/Up`, `Left/Down`), `PageUp`, `PageDown`, `Home`, `End` |
 | **ScrollOffset** | `Scrollbar` | `IncreaseValue`, `DecreaseValue`, `IncreaseValueLarge`, `DecreaseValueLarge`, `MoveToStart`, `MoveToEnd` | Arrow keys, `PageUp`, `PageDown`, `Home`, `End` |
 | **Menu** | `PopupMenu` | `SelectNextItem`, `SelectPreviousItem`, `OpenSubmenu`, `CloseSubmenu`, `ActivateControl`, `EscapeFocus` | Arrow keys, `Enter`, `Space`, `Escape` |

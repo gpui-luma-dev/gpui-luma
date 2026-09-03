@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::controls::tree_view::{TreeNode, TreeView, TreeViewSelectionMode};
 use luma::theme::ControlSize;
 use luma_look_shadcn::ShadcnLook;
@@ -47,7 +47,7 @@ impl Render for TreeViewPreview {
 
 pub(crate) fn render_tree_view_template_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     preview: Entity<TreeViewPreview>,
     cx: &mut App,
 ) -> AnyElement {

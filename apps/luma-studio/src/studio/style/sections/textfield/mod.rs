@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px};
 use luma::controls::button::ControlIcon;
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::controls::textfield::{
     TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate,
 };
@@ -50,7 +50,7 @@ const TEXTFIELD_STYLE_VARIANTS: [TextFieldStyleVariant; 3] = [
 
 pub(crate) fn render_textfield_template_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -72,7 +72,7 @@ pub(crate) fn render_textfield_template_section(
 
 fn render_textfield_preview_tabbed_content(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     active_tab: SharedString,
     border: gpui::Hsla,
     window: &mut Window,

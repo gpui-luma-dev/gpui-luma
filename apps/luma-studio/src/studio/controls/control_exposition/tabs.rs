@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
+use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;
 
@@ -12,30 +12,30 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::shell_theme_inspectors::TabsNavigationThemeInspector;
-use super::tabs_navigation_inspector_adapter::{TabsNavigationInspectorAdapter, TABS_NAVIGATION_INSPECTOR_SPEC};
+use super::shell_theme_inspectors::TabsThemeInspector;
+use super::tabs_inspector_adapter::{TabsInspectorAdapter, TABS_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 
-pub struct TabsNavigationControlExposition {
+pub struct TabsControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    left_pane: Entity<TabsNavigationExpositionLeftPane>,
-    theme_inspector: Entity<TabsNavigationThemeInspector>,
+    left_pane: Entity<TabsExpositionLeftPane>,
+    theme_inspector: Entity<TabsThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
     _subscriptions: Vec<Subscription>,
 }
 
-struct TabsNavigationExpositionLeftPane {
+struct TabsExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    tabs: Entity<TabsNavigation>,
-    uniform_tabs: Entity<TabsNavigation>,
+    tabs: Entity<Tabs>,
+    uniform_tabs: Entity<Tabs>,
     event_stream: Entity<ControlEventStream>,
     active_label: String,
     uniform_active_label: String,
 }
 
-impl TabsNavigationExpositionLeftPane {
+impl TabsExpositionLeftPane {
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.tabs.update(cx, |_, cx| cx.notify());
@@ -45,7 +45,7 @@ impl TabsNavigationExpositionLeftPane {
     }
 }
 
-impl Render for TabsNavigationExpositionLeftPane {
+impl Render for TabsExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
@@ -91,7 +91,7 @@ impl Render for TabsNavigationExpositionLeftPane {
     }
 }
 
-impl TabsNavigationControlExposition {
+impl TabsControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("tabs-navigation").expect("tabs-navigation catalog entry");
 
@@ -100,7 +100,7 @@ impl TabsNavigationControlExposition {
             .tabs("controls-doc-tabs-uniform")
             .items(uniform_width_tabs())
             .active("recent-activity")
-            .width_mode(TabsNavigationWidthMode::Uniform)
+            .width_mode(TabsWidthMode::Uniform)
             .spawn(cx);
 
         let event_stream = cx.new(|cx| {
@@ -108,11 +108,11 @@ impl TabsNavigationControlExposition {
                 cx,
                 look.clone(),
                 "controls-tabs-navigation-event-log",
-                "Click tabs or use keyboard navigation; TabsNavigationEvent variants appear below.",
+                "Click tabs or use keyboard navigation; TabsEvent variants appear below.",
             )
         });
 
-        let left_pane = cx.new(|_| TabsNavigationExpositionLeftPane {
+        let left_pane = cx.new(|_| TabsExpositionLeftPane {
             look: look.clone(),
             entry,
             tabs: tabs.clone(),
@@ -129,8 +129,8 @@ impl TabsNavigationControlExposition {
                 let left_pane = left_pane.clone();
                 move || left_pane.clone().into_any_element()
             },
-            &TABS_NAVIGATION_INSPECTOR_SPEC,
-            TabsNavigationInspectorAdapter::shared(),
+            &TABS_INSPECTOR_SPEC,
+            TabsInspectorAdapter::shared(),
         );
 
         let mut subscriptions = Vec::new();
@@ -138,8 +138,8 @@ impl TabsNavigationControlExposition {
             [(tabs.clone(), "intrinsic", left_pane.clone()), (uniform_tabs.clone(), "uniform", left_pane.clone())]
         {
             let event_stream = event_stream.clone();
-            subscriptions.push(cx.subscribe(&entity, move |_, _, event: &TabsNavigationEvent, cx| {
-                if let TabsNavigationEvent::Activate { label, .. } = event {
+            subscriptions.push(cx.subscribe(&entity, move |_, _, event: &TabsEvent, cx| {
+                if let TabsEvent::Activate { label, .. } = event {
                     left_pane.update(cx, |pane, cx| {
                         match label_field {
                             "intrinsic" => pane.active_label = label.to_string(),
@@ -148,7 +148,7 @@ impl TabsNavigationControlExposition {
                         cx.notify();
                     });
                 }
-                if let Some(line) = format_tabs_navigation_event(event) {
+                if let Some(line) = format_tabs_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }));
@@ -181,7 +181,7 @@ impl TabsNavigationControlExposition {
     }
 }
 
-impl Render for TabsNavigationControlExposition {
+impl Render for TabsControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             div()
@@ -194,22 +194,20 @@ impl Render for TabsNavigationControlExposition {
     }
 }
 
-fn format_tabs_navigation_event(event: &TabsNavigationEvent) -> Option<String> {
+fn format_tabs_event(event: &TabsEvent) -> Option<String> {
     match event {
-        TabsNavigationEvent::Activate { tab_id, label } => {
-            Some(format!("TabsNavigationEvent::Activate {{ tab_id: \"{tab_id}\", label: \"{label}\" }}"))
+        TabsEvent::Activate { tab_id, label } => {
+            Some(format!("TabsEvent::Activate {{ tab_id: \"{tab_id}\", label: \"{label}\" }}"))
         }
-        TabsNavigationEvent::Change { tab_id, label } => {
-            Some(format!("TabsNavigationEvent::Change {{ tab_id: \"{tab_id}\", label: \"{label}\" }}"))
+        TabsEvent::Change { tab_id, label } => {
+            Some(format!("TabsEvent::Change {{ tab_id: \"{tab_id}\", label: \"{label}\" }}"))
         }
-        TabsNavigationEvent::FocusChanged { focused } => {
-            Some(format!("TabsNavigationEvent::FocusChanged {{ focused: {focused} }}"))
+        TabsEvent::FocusChanged { focused } => Some(format!("TabsEvent::FocusChanged {{ focused: {focused} }}")),
+        TabsEvent::ItemFocused { tab_id, label } => {
+            Some(format!("TabsEvent::ItemFocused {{ tab_id: \"{tab_id}\", label: \"{label}\" }}"))
         }
-        TabsNavigationEvent::ItemFocused { tab_id, label } => {
-            Some(format!("TabsNavigationEvent::ItemFocused {{ tab_id: \"{tab_id}\", label: \"{label}\" }}"))
-        }
-        TabsNavigationEvent::Reactivate { tab_id, label } => {
-            Some(format!("TabsNavigationEvent::Reactivate {{ tab_id: \"{tab_id}\", label: \"{label}\" }}"))
+        TabsEvent::Reactivate { tab_id, label } => {
+            Some(format!("TabsEvent::Reactivate {{ tab_id: \"{tab_id}\", label: \"{label}\" }}"))
         }
         _ => None,
     }
@@ -218,7 +216,7 @@ fn format_tabs_navigation_event(event: &TabsNavigationEvent) -> Option<String> {
 fn render_tabs_example(
     look: &ShadcnLook,
     label: &'static str,
-    tabs: Entity<TabsNavigation>,
+    tabs: Entity<Tabs>,
     active_label: &str,
     detail: &'static str,
     content_width: f32,
@@ -268,20 +266,20 @@ fn render_tab_content(active_label: &str, detail: &'static str, width: f32, look
         .child(div().text_size(px(13.0)).line_height(px(18.0)).child(detail))
 }
 
-fn project_tabs() -> [TabsNavigationItem; 4] {
+fn project_tabs() -> [TabsItem; 4] {
     [
-        TabsNavigationItem::new("overview").label("Overview"),
-        TabsNavigationItem::new("activity").label("Activity"),
-        TabsNavigationItem::new("metrics").label("Metrics"),
-        TabsNavigationItem::new("settings").label("Settings").enabled(false),
+        TabsItem::new("overview").label("Overview"),
+        TabsItem::new("activity").label("Activity"),
+        TabsItem::new("metrics").label("Metrics"),
+        TabsItem::new("settings").label("Settings").enabled(false),
     ]
 }
 
-fn uniform_width_tabs() -> [TabsNavigationItem; 4] {
+fn uniform_width_tabs() -> [TabsItem; 4] {
     [
-        TabsNavigationItem::new("home").label("Home"),
-        TabsNavigationItem::new("recent-activity").label("Recent Activity"),
-        TabsNavigationItem::new("api-integrations").label("API & Integrations"),
-        TabsNavigationItem::new("settings").label("Settings").enabled(false),
+        TabsItem::new("home").label("Home"),
+        TabsItem::new("recent-activity").label("Recent Activity"),
+        TabsItem::new("api-integrations").label("API & Integrations"),
+        TabsItem::new("settings").label("Settings").enabled(false),
     ]
 }

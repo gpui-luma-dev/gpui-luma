@@ -7,7 +7,7 @@ use luma::controls::slider::{
     SliderInputStrategy, SliderRenderModel, SliderTemplate, SliderThumbPolicy, SliderThumbRole, SliderThumbValue,
     ThumbId, TrackPresentation, build_track_segments,
 };
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::infra::value::ControlRange;
 use luma::theme::{ControlSize, InteractionState};
 use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
@@ -41,7 +41,7 @@ const SLIDER_SIZES: [(ControlSize, &str); 3] =
 
 pub(crate) fn render_slider_template_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     customization_preview: Entity<SliderCustomizationPreview>,
     window: &mut Window,
     cx: &mut App,
@@ -72,7 +72,7 @@ pub(crate) fn render_slider_template_section(
 
 fn render_slider_preview_tabbed_content(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     customization_preview: Entity<SliderCustomizationPreview>,
     active_tab: SharedString,
     border: gpui::Hsla,

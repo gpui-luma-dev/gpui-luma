@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, Window};
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::shared::choice_matrix::{ChoiceTemplateControl, render_choice_control_template_matrix_section};
 
 pub(crate) fn render_radio_template_matrix_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {

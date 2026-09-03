@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use super::{TextFieldDrag, TextFieldLook, TextFieldRenderModel, TextFieldState, TextFieldVariant};
-use crate::controls::command::button::ControlIcon;
+use crate::controls::button::ControlIcon;
 use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
 use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 

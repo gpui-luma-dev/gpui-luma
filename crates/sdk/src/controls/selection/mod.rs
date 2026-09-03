@@ -1,4 +1,13 @@
-//! Selection controls and shared selector list chrome.
+//! Selection family: spawnable pickers plus shared list chrome.
+//!
+//! Three roles (do not collapse these names):
+//! - [`selector`] — popup dropdown control (trigger + anchored list)
+//! - [`selection_panel`] — listbox-in-a-panel control (always-visible option list)
+//! - [`selector_list`] — shared item-list template/chrome used by selector, combobox,
+//!   and autocomplete; **not** a spawnable control
+//!
+//! Related spawnables in this family: [`combobox`], [`autocomplete`], [`search_selector`],
+//! [`list_view`].
 
 pub mod autocomplete;
 pub mod combobox;

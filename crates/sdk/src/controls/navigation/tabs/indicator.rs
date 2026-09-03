@@ -6,13 +6,13 @@ use gpui::{Bounds, Hsla, Pixels};
 use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct TabsNavigationIndicatorRect {
+pub struct TabsIndicatorRect {
     pub left: f32,
     pub width: f32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct TabsNavigationIndicatorPaint {
+pub struct TabsIndicatorPaint {
     pub left: f32,
     pub width: f32,
     pub height: f32,
@@ -20,10 +20,10 @@ pub struct TabsNavigationIndicatorPaint {
 }
 
 #[derive(Debug)]
-struct TabsNavigationIndicatorMotionInner {
+struct TabsIndicatorMotionInner {
     transition: VisualTransition,
-    from: TabsNavigationIndicatorRect,
-    to: TabsNavigationIndicatorRect,
+    from: TabsIndicatorRect,
+    to: TabsIndicatorRect,
     list_bounds: Option<Bounds<Pixels>>,
     pending_item_bounds: Option<Bounds<Pixels>>,
     padding_x: f32,
@@ -33,12 +33,12 @@ struct TabsNavigationIndicatorMotionInner {
     has_geometry: bool,
 }
 
-impl TabsNavigationIndicatorMotionInner {
+impl TabsIndicatorMotionInner {
     fn new(animated: bool) -> Self {
         Self {
             transition: VisualTransition::new(1.0, Self::duration(animated)),
-            from: TabsNavigationIndicatorRect::default(),
-            to: TabsNavigationIndicatorRect::default(),
+            from: TabsIndicatorRect::default(),
+            to: TabsIndicatorRect::default(),
             list_bounds: None,
             pending_item_bounds: None,
             padding_x: 0.0,
@@ -88,8 +88,8 @@ impl TabsNavigationIndicatorMotionInner {
         self.list_bounds = None;
         self.pending_item_bounds = None;
         self.has_geometry = false;
-        self.from = TabsNavigationIndicatorRect::default();
-        self.to = TabsNavigationIndicatorRect::default();
+        self.from = TabsIndicatorRect::default();
+        self.to = TabsIndicatorRect::default();
         self.transition.snap_to(1.0);
     }
 
@@ -102,7 +102,7 @@ impl TabsNavigationIndicatorMotionInner {
         self.retarget(next, animate);
     }
 
-    fn retarget(&mut self, next: TabsNavigationIndicatorRect, animate: bool) {
+    fn retarget(&mut self, next: TabsIndicatorRect, animate: bool) {
         if !self.has_geometry || !animate || !self.animated {
             self.from = next;
             self.to = next;
@@ -123,8 +123,8 @@ impl TabsNavigationIndicatorMotionInner {
         self.has_geometry = true;
     }
 
-    fn display_rect(&self) -> TabsNavigationIndicatorRect {
-        TabsNavigationIndicatorRect {
+    fn display_rect(&self) -> TabsIndicatorRect {
+        TabsIndicatorRect {
             left: self.transition.interpolate(self.from.left, self.to.left),
             width: self.transition.interpolate(self.from.width, self.to.width),
         }
@@ -138,7 +138,7 @@ impl TabsNavigationIndicatorMotionInner {
         self.transition.is_animating()
     }
 
-    fn paint(&self) -> Option<TabsNavigationIndicatorPaint> {
+    fn paint(&self) -> Option<TabsIndicatorPaint> {
         let color = self.color?;
         if !self.has_geometry {
             return None;
@@ -147,19 +147,19 @@ impl TabsNavigationIndicatorMotionInner {
         if rect.width <= f32::EPSILON {
             return None;
         }
-        Some(TabsNavigationIndicatorPaint { left: rect.left, width: rect.width, height: self.height, color })
+        Some(TabsIndicatorPaint { left: rect.left, width: rect.width, height: self.height, color })
     }
 }
 
-/// Shared indicator motion state between [`super::TabsNavigation`] and the list template.
+/// Shared indicator motion state between [`super::TabsControl`] and the list template.
 #[derive(Clone, Debug)]
-pub struct TabsNavigationIndicatorMotion {
-    inner: Arc<Mutex<TabsNavigationIndicatorMotionInner>>,
+pub struct TabsIndicatorMotion {
+    inner: Arc<Mutex<TabsIndicatorMotionInner>>,
 }
 
-impl TabsNavigationIndicatorMotion {
+impl TabsIndicatorMotion {
     pub fn new(animated: bool) -> Self {
-        Self { inner: Arc::new(Mutex::new(TabsNavigationIndicatorMotionInner::new(animated))) }
+        Self { inner: Arc::new(Mutex::new(TabsIndicatorMotionInner::new(animated))) }
     }
 
     pub fn set_animated(&self, animated: bool) {
@@ -203,11 +203,11 @@ impl TabsNavigationIndicatorMotion {
         });
     }
 
-    pub fn paint(&self) -> Option<TabsNavigationIndicatorPaint> {
+    pub fn paint(&self) -> Option<TabsIndicatorPaint> {
         self.inner.lock().expect("tabs indicator motion lock").paint()
     }
 
-    pub fn display_rect_for_test(&self) -> TabsNavigationIndicatorRect {
+    pub fn display_rect_for_test(&self) -> TabsIndicatorRect {
         self.inner.lock().expect("tabs indicator motion lock").display_rect()
     }
 }
@@ -216,8 +216,8 @@ pub fn indicator_rect_from_bounds(
     item_bounds: Bounds<Pixels>,
     list_bounds: Bounds<Pixels>,
     padding_x: f32,
-) -> TabsNavigationIndicatorRect {
-    TabsNavigationIndicatorRect {
+) -> TabsIndicatorRect {
+    TabsIndicatorRect {
         left: (item_bounds.left() - list_bounds.left()).as_f32() + padding_x,
         width: (item_bounds.size.width.as_f32() - padding_x * 2.0).max(0.0),
     }
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn first_geometry_snaps_without_animation() {
-        let motion = TabsNavigationIndicatorMotion::new(true);
+        let motion = TabsIndicatorMotion::new(true);
         let list = Bounds::new(point(px(0.0), px(0.0)), size(px(400.0), px(40.0)));
         let item = Bounds::new(point(px(20.0), px(0.0)), size(px(60.0), px(40.0)));
         motion.set_list_bounds(list);
@@ -254,7 +254,7 @@ mod tests {
 
     #[test]
     fn retarget_animates_between_rects() {
-        let motion = TabsNavigationIndicatorMotion::new(true);
+        let motion = TabsIndicatorMotion::new(true);
         let list = Bounds::new(point(px(0.0), px(0.0)), size(px(400.0), px(40.0)));
         motion.set_list_bounds(list);
         motion.set_metrics(0.0, 2.0, Some(gpui::hsla(0.0, 0.0, 0.0, 1.0)));

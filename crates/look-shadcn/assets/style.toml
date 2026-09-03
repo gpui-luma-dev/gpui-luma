@@ -1297,69 +1297,69 @@ border = "border"
 # =====================================================================
 # 14. TABS NAVIGATION
 # =====================================================================
-[[tabs_navigation.list.color_rules]]
+[[tabs.list.color_rules]]
 enabled = true
 disabled_background = "transparent"
 
-[[tabs_navigation.list.color_rules]]
+[[tabs.list.color_rules]]
 enabled = false
 disabled_background = "muted"
 
-[[tabs_navigation.item.color_rules]]
+[[tabs.item.color_rules]]
 layer = "disabled"
 label_color = "muted-foreground"
 
-[[tabs_navigation.item.color_rules]]
+[[tabs.item.color_rules]]
 active = false
 layer = "default"
 label_color = "foreground"
 
-[[tabs_navigation.item.color_rules]]
+[[tabs.item.color_rules]]
 active = false
 layer = "hover"
 label_color = "foreground"
 
-[[tabs_navigation.item.color_rules]]
+[[tabs.item.color_rules]]
 active = false
 layer = "pressed"
 label_color = "foreground"
 
-[[tabs_navigation.item.color_rules]]
+[[tabs.item.color_rules]]
 active = true
 layer = "default"
 focused = false
 label_color = "foreground"
 indicator = "@primary_default"
 
-[[tabs_navigation.item.color_rules]]
+[[tabs.item.color_rules]]
 active = true
 layer = "hover"
 focused = false
 label_color = "foreground"
 indicator = "@primary_layer"
 
-[[tabs_navigation.item.color_rules]]
+[[tabs.item.color_rules]]
 active = true
 layer = "pressed"
 focused = false
 label_color = "foreground"
 indicator = "@primary_layer"
 
-[[tabs_navigation.item.color_rules]]
+[[tabs.item.color_rules]]
 active = true
 layer = "default"
 focused = true
 label_color = "foreground"
 indicator = "@primary_default"
 
-[[tabs_navigation.item.color_rules]]
+[[tabs.item.color_rules]]
 active = true
 layer = "hover"
 focused = true
 label_color = "foreground"
 indicator = "@primary_layer"
 
-[[tabs_navigation.item.color_rules]]
+[[tabs.item.color_rules]]
 active = true
 layer = "pressed"
 focused = true

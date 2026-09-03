@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Bounds, Context, Entity, Focusable, Pixels, Render, Subscription, Window, div, prelude::*, px};
 use luma::controls::popover_button::{PopoverButton, PopoverButtonEvent, PopoverDismissPolicy, PopoverPlacement};
-use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
+use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
 use luma::theme::ControlSize;
 use luma_look_shadcn::paint::floating_menu_look;
 use luma_look_shadcn::ShadcnLook;
@@ -12,7 +12,7 @@ use super::cards::render_demo_board;
 use super::controls;
 use super::dashboard;
 use super::palette;
-use super::navigation::luma_studio_tabs_navigation_template;
+use super::navigation::luma_studio_tabs_template;
 use super::style_guide;
 use super::tab::ContentTab;
 use super::theme_usage;
@@ -33,7 +33,7 @@ pub struct BoardSnapshot {
 }
 
 pub struct ContentPaneHost {
-    tabs: Entity<TabsNavigation>,
+    tabs: Entity<Tabs>,
     style_guide_panel: Entity<StyleGuidePanel>,
     controls_panel: Entity<ControlsPanel>,
     palette_panel: Entity<PalettePanel>,
@@ -62,15 +62,15 @@ impl ContentPaneHost {
             .look
             .tabs("luma-studio-content-tabs")
             .size(ControlSize::Lg)
-            .width_mode(TabsNavigationWidthMode::Uniform)
-            .template(luma_studio_tabs_navigation_template(board.look.clone(), ControlSize::Lg))
+            .width_mode(TabsWidthMode::Uniform)
+            .template(luma_studio_tabs_template(board.look.clone(), ControlSize::Lg))
             .items([
-                TabsNavigationItem::new("cards").label("Cards"),
-                TabsNavigationItem::new("dashboard").label("Dashboard"),
-                TabsNavigationItem::new("typography").label("Style Guide"),
-                TabsNavigationItem::new("controls").label("Controls").dropdown_trigger(),
-                TabsNavigationItem::new("palette").label("Color Palette"),
-                TabsNavigationItem::new("theme-usage").label("Theme Usage"),
+                TabsItem::new("cards").label("Cards"),
+                TabsItem::new("dashboard").label("Dashboard"),
+                TabsItem::new("typography").label("Style Guide"),
+                TabsItem::new("controls").label("Controls").dropdown_trigger(),
+                TabsItem::new("palette").label("Color Palette"),
+                TabsItem::new("theme-usage").label("Theme Usage"),
             ])
             .active("cards")
             .spawn(cx);
@@ -78,20 +78,20 @@ impl ContentPaneHost {
         let tabs_for_sub = tabs.clone();
         let picker_for_sub = catalog_picker.clone();
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&tabs_for_sub, |host, _, event: &TabsNavigationEvent, cx| match event {
-            TabsNavigationEvent::Change { tab_id, .. } => {
+        subscriptions.push(cx.subscribe(&tabs_for_sub, |host, _, event: &TabsEvent, cx| match event {
+            TabsEvent::Change { tab_id, .. } => {
                 let Some(tab) = ContentTab::from_id(tab_id.as_ref()) else {
                     return;
                 };
                 host.set_active_tab(tab, cx);
             }
-            TabsNavigationEvent::DropdownRequested { tab_id, bounds, .. } => {
+            TabsEvent::DropdownRequested { tab_id, bounds, .. } => {
                 if tab_id.as_ref() != "controls" {
                     return;
                 }
                 host.toggle_catalog_picker(*bounds, cx);
             }
-            TabsNavigationEvent::ItemBoundsChanged { tab_id, bounds } if tab_id.as_ref() == "controls" => {
+            TabsEvent::ItemBoundsChanged { tab_id, bounds } if tab_id.as_ref() == "controls" => {
                 host.set_catalog_picker_anchor(*bounds, cx);
             }
             _ => {}
@@ -213,8 +213,8 @@ impl ContentPaneHost {
         self.board = board;
         self.tabs.update(cx, |tabs, cx| {
             tabs.set_size(ControlSize::Lg, cx);
-            tabs.set_width_mode(TabsNavigationWidthMode::Uniform, cx);
-            tabs.set_template(luma_studio_tabs_navigation_template(look.clone(), ControlSize::Lg), cx);
+            tabs.set_width_mode(TabsWidthMode::Uniform, cx);
+            tabs.set_template(luma_studio_tabs_template(look.clone(), ControlSize::Lg), cx);
         });
         self.style_guide_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
         self.controls_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));

@@ -5,7 +5,7 @@ use gpui::{Hsla, SharedString};
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
-pub struct TabsNavigationListLook {
+pub struct TabsListLook {
     pub background: Option<Hsla>,
     pub border: Option<Hsla>,
     pub radius: f32,
@@ -14,7 +14,7 @@ pub struct TabsNavigationListLook {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct TabsNavigationItemLook {
+pub struct TabsItemLook {
     pub label_color: Hsla,
     pub indicator: Option<Hsla>,
     pub label_typography: LumaTextStyle,
@@ -24,35 +24,35 @@ pub struct TabsNavigationItemLook {
     pub indicator_height: f32,
 }
 
-pub trait TabsNavigationTheme: Send + Sync {
-    fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsNavigationListLook;
-    fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsNavigationItemLook;
+pub trait TabsTheme: Send + Sync {
+    fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsListLook;
+    fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsItemLook;
     fn font_family(&self) -> SharedString;
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct DefaultTabsNavigationTheme {
+pub struct DefaultTabsTheme {
     tokens: ThemeTokens,
 }
 
-pub fn default_tabs_navigation_theme() -> Arc<dyn TabsNavigationTheme> {
-    static THEME: OnceLock<Arc<dyn TabsNavigationTheme>> = OnceLock::new();
+pub fn default_tabs_theme() -> Arc<dyn TabsTheme> {
+    static THEME: OnceLock<Arc<dyn TabsTheme>> = OnceLock::new();
 
-    THEME.get_or_init(|| Arc::new(DefaultTabsNavigationTheme::default())).clone()
+    THEME.get_or_init(|| Arc::new(DefaultTabsTheme::default())).clone()
 }
 
-impl DefaultTabsNavigationTheme {
+impl DefaultTabsTheme {
     pub fn new(tokens: ThemeTokens) -> Self {
         Self { tokens }
     }
 }
 
-impl TabsNavigationTheme for DefaultTabsNavigationTheme {
-    fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsNavigationListLook {
+impl TabsTheme for DefaultTabsTheme {
+    fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsListLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
 
-        TabsNavigationListLook {
+        TabsListLook {
             background: (!enabled).then_some(palette.state.disabled.background),
             border: None,
             radius: metrics.radius(size),
@@ -61,7 +61,7 @@ impl TabsNavigationTheme for DefaultTabsNavigationTheme {
         }
     }
 
-    fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsNavigationItemLook {
+    fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsItemLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
@@ -79,7 +79,7 @@ impl TabsNavigationTheme for DefaultTabsNavigationTheme {
             InteractionLayer::Default => palette.state.selected.background,
         };
 
-        TabsNavigationItemLook {
+        TabsItemLook {
             label_color: match (active, state.disabled) {
                 (_, true) => palette.state.disabled.foreground,
                 (true, false) => active_color,

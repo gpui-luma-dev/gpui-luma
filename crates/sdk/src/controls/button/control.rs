@@ -8,9 +8,9 @@ use gpui::{
 pub use crate::infra::presenter::{ControlPresenter, HasPresenter};
 
 use super::{ButtonBuilder, ButtonRenderModel};
-pub use crate::controls::command::{CommandCore, CommandEvent as ButtonEvent};
+pub use super::core::{CommandCore, CommandEvent as ButtonEvent};
 use crate::key_handling::{ActivateControl, ControlKeyProfile};
-use crate::controls::command::button::model::ControlIcon;
+use super::model::ControlIcon;
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::theme::observe_theme_revision;
 

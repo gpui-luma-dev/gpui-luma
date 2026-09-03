@@ -7,8 +7,8 @@ use gpui::{
 
 use crate::infra::icon::lucide_icon;
 use crate::infra::icon::{SelectionStatusIcons, render_icon_source};
-use crate::controls::selection_panel::model::SelectionPanelItemLike;
-use crate::controls::selection_panel::theme::SelectionPanelLook;
+use super::model::SelectionPanelItemLike;
+use super::theme::SelectionPanelLook;
 
 #[derive(Clone, Debug)]
 pub struct SelectionPanelItemRenderModel<'a, T>

@@ -8,9 +8,8 @@ use luma_look_shadcn_inspect::{
     CheckboxInspectMetrics, ContextMenuInspectMetrics, FloatingMenuInspectMetrics, ListBoxInspectMetrics,
     ListViewInspectMetrics, SidebarInspectMetrics, OverlayWindowInspectMetrics, ProgressInspectMetrics,
     RadioButtonInspectMetrics, ResizablePanelsInspectMetrics, ScrollbarInspectMetrics, ShadcnInspect,
-    SliderInspectMetrics, SplitViewInspectMetrics, StepperInspectMetrics, SwitchInspectMetrics,
-    TabsNavigationInspectMetrics, TextFieldInspectMetrics, PagerInspectMetrics, ToolbarInspectMetrics,
-    TreeViewInspectMetrics,
+    SliderInspectMetrics, SplitViewInspectMetrics, StepperInspectMetrics, SwitchInspectMetrics, TabsInspectMetrics,
+    TextFieldInspectMetrics, PagerInspectMetrics, ToolbarInspectMetrics, TreeViewInspectMetrics,
 };
 
 use super::box_model::InspectBoxModelSnapshot;
@@ -347,12 +346,8 @@ pub fn sidebar_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str
     )
 }
 
-pub fn tabs_navigation_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
-    tabs_navigation_metrics_layout_section(
-        look,
-        diagram_id,
-        &ShadcnInspect::new(look).inspect_tabs_navigation_metrics(control_size(size_id)),
-    )
+pub fn tabs_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+    tabs_metrics_layout_section(look, diagram_id, &ShadcnInspect::new(look).inspect_tabs_metrics(control_size(size_id)))
 }
 
 pub fn toolbar_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
@@ -949,10 +944,10 @@ fn sidebar_metrics_layout_section(
     )
 }
 
-fn tabs_navigation_metrics_layout_section(
+fn tabs_metrics_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
-    metrics: &TabsNavigationInspectMetrics,
+    metrics: &TabsInspectMetrics,
 ) -> InspectLayoutSection {
     let box_model = InspectBoxModelSnapshot {
         height: metrics.item_height.value_px,

@@ -5,7 +5,7 @@ use gpui::{
 
 use super::model::{ToolbarBuilder, ToolbarItem, ToolbarItemSource};
 use super::theme::ToolbarVariant;
-use crate::controls::command::button::ButtonEvent;
+use crate::controls::button::ButtonEvent;
 use crate::controls::control_group::{
     ControlGroupArrowPolicy, ControlGroupControl, ControlGroupFocusStrategy, ControlGroupFocusTarget,
     ControlGroupLayout, ControlSelectionMode,

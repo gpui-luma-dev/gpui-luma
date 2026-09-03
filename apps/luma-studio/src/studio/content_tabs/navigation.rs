@@ -4,37 +4,33 @@ use gpui::{App, Div, Hsla, Stateful, Window, div, prelude::*, px};
 use luma::controls::color::style::ElementExt;
 use luma::controls::control_group::ControlGroupItemHandlerExt;
 use luma::controls::tabs::{
-    TabsNavigationIndicatorMotion, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
-    TabsNavigationTheme, render_tabs_navigation_item_button, resolve_tabs_navigation_uniform_item_width,
+    TabsIndicatorMotion, TabsRenderModel, TabsTemplate, TabsTemplateHandlers, TabsTheme, render_tab_button,
+    resolve_tabs_uniform_item_width,
 };
 use luma::theme::{ControlSize, InteractionState};
 use luma_look_shadcn::ShadcnLook;
 
-pub fn luma_studio_tabs_navigation_template(
-    look: Arc<ShadcnLook>,
-    tab_size: ControlSize,
-) -> Arc<dyn TabsNavigationTemplate> {
+pub fn luma_studio_tabs_template(look: Arc<ShadcnLook>, tab_size: ControlSize) -> Arc<dyn TabsTemplate> {
     let full_bar_color = look.token_color("border").unwrap_or(look.chrome().border);
-    Arc::new(LumaStudioTabsNavigationTemplate { theme: look.tabs_navigation_theme(), full_bar_color, tab_size })
+    Arc::new(LumaStudioTabsTemplate { theme: look.tabs_theme(), full_bar_color, tab_size })
 }
 
-struct LumaStudioTabsNavigationTemplate {
-    theme: Arc<dyn TabsNavigationTheme>,
+struct LumaStudioTabsTemplate {
+    theme: Arc<dyn TabsTheme>,
     full_bar_color: Hsla,
     tab_size: ControlSize,
 }
 
-impl TabsNavigationTemplate for LumaStudioTabsNavigationTemplate {
+impl TabsTemplate for LumaStudioTabsTemplate {
     fn render(
         &self,
-        model: &TabsNavigationRenderModel<'_>,
-        handlers: TabsNavigationTemplateHandlers,
+        model: &TabsRenderModel<'_>,
+        handlers: TabsTemplateHandlers,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
         let list_look = self.theme.resolve_list(model.enabled, self.tab_size);
-        let uniform_width =
-            resolve_tabs_navigation_uniform_item_width(model, self.theme.as_ref(), self.tab_size, window);
+        let uniform_width = resolve_tabs_uniform_item_width(model, self.theme.as_ref(), self.tab_size, window);
 
         let active_item = model.items.iter().find(|item| item.active);
         let active_look =
@@ -74,16 +70,8 @@ impl TabsNavigationTemplate for LumaStudioTabsNavigationTemplate {
 
         for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
             let look = self.theme.resolve_item(item.active, item.state.interaction_state(), self.tab_size);
-            let mut tab = render_tabs_navigation_item_button(
-                model.id,
-                item,
-                look,
-                self.theme.font_family(),
-                self.tab_size,
-                window,
-                cx,
-            )
-            .control_group_item_handlers(item_handlers);
+            let mut tab = render_tab_button(model.id, item, look, self.theme.font_family(), self.tab_size, window, cx)
+                .control_group_item_handlers(item_handlers);
 
             if let Some(width) = uniform_width {
                 tab = tab.w(px(width)).flex_none();
@@ -96,8 +84,7 @@ impl TabsNavigationTemplate for LumaStudioTabsNavigationTemplate {
             root = root.child(tab);
         }
 
-        if let Some(indicator) =
-            model.indicator.or_else(|| model.indicator_motion.and_then(TabsNavigationIndicatorMotion::paint))
+        if let Some(indicator) = model.indicator.or_else(|| model.indicator_motion.and_then(TabsIndicatorMotion::paint))
         {
             root = root.child(
                 div()

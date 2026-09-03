@@ -48,7 +48,7 @@ use super::shadow_button::ShadowButtonControlExposition;
 use super::split_button::SplitButtonControlExposition;
 use super::slide_panel::SlidePanelControlExposition;
 use super::switch::SwitchControlExposition;
-use super::tabs_navigation::TabsNavigationControlExposition;
+use super::tabs::TabsControlExposition;
 use super::textarea::TextAreaControlExposition;
 use super::textfield::TextFieldControlExposition;
 use super::toggle::ToggleControlExposition;
@@ -92,7 +92,7 @@ pub enum ControlExposition {
     DockPanel(Entity<DockPanelControlExposition>),
     ResizablePanels(Entity<ResizablePanelsControlExposition>),
     Sidebar(Entity<SidebarControlExposition>),
-    TabsNavigation(Entity<TabsNavigationControlExposition>),
+    Tabs(Entity<TabsControlExposition>),
     ContextMenu(Entity<ContextMenuControlExposition>),
     FloatingMenu(Entity<FloatingMenuControlExposition>),
     PagingListView(Entity<PagingListViewControlExposition>),
@@ -153,7 +153,7 @@ impl ControlExposition {
             Self::DockPanel(cx.new(|cx| DockPanelControlExposition::new(cx, look.clone()))),
             Self::ResizablePanels(cx.new(|cx| ResizablePanelsControlExposition::new(cx, look.clone()))),
             Self::Sidebar(cx.new(|cx| SidebarControlExposition::new(cx, look.clone()))),
-            Self::TabsNavigation(cx.new(|cx| TabsNavigationControlExposition::new(cx, look.clone()))),
+            Self::Tabs(cx.new(|cx| TabsControlExposition::new(cx, look.clone()))),
             Self::ContextMenu(cx.new(|cx| ContextMenuControlExposition::new(cx, look.clone()))),
             Self::FloatingMenu(cx.new(|cx| FloatingMenuControlExposition::new(cx, look.clone()))),
             Self::PopupMenu(cx.new(|cx| PopupMenuControlExposition::new(cx, look.clone()))),
@@ -215,7 +215,7 @@ impl ControlExposition {
             Self::DockPanel(entity) => entity.read(cx).entry(),
             Self::ResizablePanels(entity) => entity.read(cx).entry(),
             Self::Sidebar(entity) => entity.read(cx).entry(),
-            Self::TabsNavigation(entity) => entity.read(cx).entry(),
+            Self::Tabs(entity) => entity.read(cx).entry(),
             Self::ContextMenu(entity) => entity.read(cx).entry(),
             Self::FloatingMenu(entity) => entity.read(cx).entry(),
             Self::PopupMenu(entity) => entity.read(cx).entry(),
@@ -262,7 +262,7 @@ impl ControlExposition {
             Self::SelectionPanel(entity) => entity.read(cx).fills_viewport(),
             Self::TreeView(entity) => entity.read(cx).fills_viewport(),
             Self::Sidebar(entity) => entity.read(cx).fills_viewport(),
-            Self::TabsNavigation(entity) => entity.read(cx).fills_viewport(),
+            Self::Tabs(entity) => entity.read(cx).fills_viewport(),
             Self::Toolbar(entity) => entity.read(cx).fills_viewport(),
             Self::Pager(entity) => entity.read(cx).fills_viewport(),
             Self::Accordion(entity) => entity.read(cx).fills_viewport(),
@@ -312,7 +312,7 @@ impl ControlExposition {
             Self::SelectionPanel(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::TreeView(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Sidebar(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
-            Self::TabsNavigation(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::Tabs(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Toolbar(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Pager(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Accordion(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
@@ -372,7 +372,7 @@ impl ControlExposition {
             Self::SelectionPanel(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::TreeView(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Sidebar(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
-            Self::TabsNavigation(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::Tabs(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Toolbar(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Pager(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Accordion(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
@@ -433,7 +433,7 @@ impl ControlExposition {
             Self::DockPanel(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::ResizablePanels(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::Sidebar(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
-            Self::TabsNavigation(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::Tabs(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::ContextMenu(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::FloatingMenu(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::PopupMenu(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
@@ -491,7 +491,7 @@ impl ControlExposition {
             Self::DockPanel(entity) => entity.clone().into_any_element(),
             Self::ResizablePanels(entity) => entity.clone().into_any_element(),
             Self::Sidebar(entity) => entity.clone().into_any_element(),
-            Self::TabsNavigation(entity) => entity.clone().into_any_element(),
+            Self::Tabs(entity) => entity.clone().into_any_element(),
             Self::ContextMenu(entity) => entity.clone().into_any_element(),
             Self::FloatingMenu(entity) => entity.clone().into_any_element(),
             Self::PopupMenu(entity) => entity.clone().into_any_element(),

@@ -2,36 +2,36 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::indicator::{TabsNavigationIndicatorMotion, TabsNavigationIndicatorPaint};
-use super::template::{tabs_navigation_control_group_template, template_with_modifier};
-use super::{TabsNavigation, TabsNavigationTemplate, default_tabs_navigation_template};
+use super::indicator::{TabsIndicatorMotion, TabsIndicatorPaint};
+use super::template::{tabs_control_group_template, template_with_modifier};
+use super::{Tabs, TabsTemplate, default_tabs_template};
 use crate::controls::control_group::ControlGroupItemLike;
 use crate::infra::icon::IconSource;
 use crate::infra::icon::DisclosureIcons;
-use crate::controls::tabs::{ControlFocusState, TabsNavigationItemState};
+use crate::controls::tabs::{ControlFocusState, TabsItemState};
 use crate::theme::ControlSize;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum TabsNavigationWidthMode {
+pub enum TabsWidthMode {
     #[default]
     Intrinsic,
     Uniform,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum TabsNavigationTriggerKind {
+pub enum TabsTriggerKind {
     #[default]
     Select,
     Dropdown,
 }
 
 #[derive(Clone, Debug)]
-pub enum TabsNavigationItemAccessory {
+pub enum TabsItemAccessory {
     Icon(IconSource),
     Disclosure { open: bool },
 }
 
-impl TabsNavigationItemAccessory {
+impl TabsItemAccessory {
     pub fn icon(icon: impl Into<IconSource>) -> Self {
         Self::Icon(icon.into())
     }
@@ -60,17 +60,17 @@ impl TabsNavigationItemAccessory {
 }
 
 #[derive(Clone, Debug)]
-pub struct TabsNavigationItem {
+pub struct TabsItem {
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
     pub(crate) enabled: bool,
-    pub(crate) trigger_kind: TabsNavigationTriggerKind,
-    pub(crate) leading_accessory: Option<TabsNavigationItemAccessory>,
-    pub(crate) trailing_accessory: Option<TabsNavigationItemAccessory>,
+    pub(crate) trigger_kind: TabsTriggerKind,
+    pub(crate) leading_accessory: Option<TabsItemAccessory>,
+    pub(crate) trailing_accessory: Option<TabsItemAccessory>,
     pub(crate) disclosure_progress: f32,
 }
 
-impl TabsNavigationItem {
+impl TabsItem {
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
 
@@ -78,7 +78,7 @@ impl TabsNavigationItem {
             label: id.clone(),
             id,
             enabled: true,
-            trigger_kind: TabsNavigationTriggerKind::Select,
+            trigger_kind: TabsTriggerKind::Select,
             leading_accessory: None,
             trailing_accessory: None,
             disclosure_progress: 0.0,
@@ -95,41 +95,41 @@ impl TabsNavigationItem {
         self
     }
 
-    pub fn trigger_kind(mut self, trigger_kind: TabsNavigationTriggerKind) -> Self {
+    pub fn trigger_kind(mut self, trigger_kind: TabsTriggerKind) -> Self {
         self.trigger_kind = trigger_kind;
         self
     }
 
     pub fn dropdown_trigger(mut self) -> Self {
-        self.trigger_kind = TabsNavigationTriggerKind::Dropdown;
+        self.trigger_kind = TabsTriggerKind::Dropdown;
         if self.trailing_accessory.is_none() {
-            self.trailing_accessory = Some(TabsNavigationItemAccessory::disclosure(false));
+            self.trailing_accessory = Some(TabsItemAccessory::disclosure(false));
         }
         self.disclosure_progress = 0.0;
         self
     }
 
-    pub fn leading_accessory(mut self, accessory: TabsNavigationItemAccessory) -> Self {
+    pub fn leading_accessory(mut self, accessory: TabsItemAccessory) -> Self {
         self.leading_accessory = Some(accessory);
         self
     }
 
-    pub fn trailing_accessory(mut self, accessory: TabsNavigationItemAccessory) -> Self {
+    pub fn trailing_accessory(mut self, accessory: TabsItemAccessory) -> Self {
         self.trailing_accessory = Some(accessory);
         self
     }
 
     pub fn leading_icon(self, icon: impl Into<IconSource>) -> Self {
-        self.leading_accessory(TabsNavigationItemAccessory::icon(icon))
+        self.leading_accessory(TabsItemAccessory::icon(icon))
     }
 
     pub fn trailing_icon(self, icon: impl Into<IconSource>) -> Self {
-        self.trailing_accessory(TabsNavigationItemAccessory::icon(icon))
+        self.trailing_accessory(TabsItemAccessory::icon(icon))
     }
 
     pub fn trailing_disclosure(self, open: bool) -> Self {
         let mut item = self;
-        item.trailing_accessory = Some(TabsNavigationItemAccessory::disclosure(open));
+        item.trailing_accessory = Some(TabsItemAccessory::disclosure(open));
         item.disclosure_progress = if open { 1.0 } else { 0.0 };
         item
     }
@@ -146,19 +146,19 @@ impl TabsNavigationItem {
         self.enabled
     }
 
-    pub fn trigger_kind_value(&self) -> TabsNavigationTriggerKind {
+    pub fn trigger_kind_value(&self) -> TabsTriggerKind {
         self.trigger_kind
     }
 
     pub fn is_dropdown_trigger(&self) -> bool {
-        self.trigger_kind == TabsNavigationTriggerKind::Dropdown
+        self.trigger_kind == TabsTriggerKind::Dropdown
     }
 
-    pub fn leading_accessory_ref(&self) -> Option<&TabsNavigationItemAccessory> {
+    pub fn leading_accessory_ref(&self) -> Option<&TabsItemAccessory> {
         self.leading_accessory.as_ref()
     }
 
-    pub fn trailing_accessory_ref(&self) -> Option<&TabsNavigationItemAccessory> {
+    pub fn trailing_accessory_ref(&self) -> Option<&TabsItemAccessory> {
         self.trailing_accessory.as_ref()
     }
 
@@ -167,7 +167,7 @@ impl TabsNavigationItem {
     }
 }
 
-impl ControlGroupItemLike for TabsNavigationItem {
+impl ControlGroupItemLike for TabsItem {
     fn id(&self) -> &SharedString {
         &self.id
     }
@@ -182,54 +182,54 @@ impl ControlGroupItemLike for TabsNavigationItem {
 }
 
 #[derive(Clone)]
-pub struct TabsNavigationModel {
+pub struct TabsModel {
     pub(crate) id: SharedString,
     pub(crate) size: ControlSize,
-    pub(crate) width_mode: TabsNavigationWidthMode,
-    pub(crate) items: Vec<TabsNavigationItem>,
+    pub(crate) width_mode: TabsWidthMode,
+    pub(crate) items: Vec<TabsItem>,
     pub(crate) active_id: Option<SharedString>,
     pub(crate) enabled: bool,
     pub(crate) animated: bool,
     pub(crate) disclosure_icons: DisclosureIcons,
-    pub(crate) template: Arc<dyn TabsNavigationTemplate>,
+    pub(crate) template: Arc<dyn TabsTemplate>,
 }
 
-pub struct TabsNavigationRenderItem<'a> {
+pub struct TabsRenderItem<'a> {
     pub id: &'a SharedString,
     pub label: &'a SharedString,
-    pub trigger_kind: TabsNavigationTriggerKind,
-    pub leading_accessory: Option<&'a TabsNavigationItemAccessory>,
-    pub trailing_accessory: Option<&'a TabsNavigationItemAccessory>,
+    pub trigger_kind: TabsTriggerKind,
+    pub leading_accessory: Option<&'a TabsItemAccessory>,
+    pub trailing_accessory: Option<&'a TabsItemAccessory>,
     pub active: bool,
     pub enabled: bool,
-    pub state: TabsNavigationItemState,
+    pub state: TabsItemState,
     pub disclosure_progress: f32,
 }
 
-pub struct TabsNavigationRenderModel<'a> {
+pub struct TabsRenderModel<'a> {
     pub id: &'a SharedString,
     pub size: ControlSize,
-    pub width_mode: TabsNavigationWidthMode,
-    pub items: Vec<TabsNavigationRenderItem<'a>>,
+    pub width_mode: TabsWidthMode,
+    pub items: Vec<TabsRenderItem<'a>>,
     pub active_id: Option<&'a SharedString>,
     pub enabled: bool,
     pub focus: ControlFocusState,
-    pub indicator: Option<TabsNavigationIndicatorPaint>,
-    pub indicator_motion: Option<&'a TabsNavigationIndicatorMotion>,
+    pub indicator: Option<TabsIndicatorPaint>,
+    pub indicator_motion: Option<&'a TabsIndicatorMotion>,
     pub disclosure_icons: &'a DisclosureIcons,
 }
 
-pub struct TabsNavigationBuilder {
-    pub(crate) model: TabsNavigationModel,
+pub struct TabsBuilder {
+    pub(crate) model: TabsModel,
 }
 
-impl TabsNavigationBuilder {
+impl TabsBuilder {
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
-            model: TabsNavigationModel {
+            model: TabsModel {
                 id: id.into(),
                 size: ControlSize::Md,
-                width_mode: TabsNavigationWidthMode::Intrinsic,
+                width_mode: TabsWidthMode::Intrinsic,
                 items: Vec::new(),
                 active_id: None,
                 enabled: true,
@@ -238,17 +238,17 @@ impl TabsNavigationBuilder {
                     lucide_svg_static::Icon::ChevronUp,
                     lucide_svg_static::Icon::ChevronDown,
                 ),
-                template: default_tabs_navigation_template(),
+                template: default_tabs_template(),
             },
         }
     }
 
-    pub fn item(mut self, item: TabsNavigationItem) -> Self {
+    pub fn item(mut self, item: TabsItem) -> Self {
         self.model.items.push(item);
         self
     }
 
-    pub fn items(mut self, items: impl IntoIterator<Item = TabsNavigationItem>) -> Self {
+    pub fn items(mut self, items: impl IntoIterator<Item = TabsItem>) -> Self {
         self.model.items = items.into_iter().collect();
         self
     }
@@ -263,7 +263,7 @@ impl TabsNavigationBuilder {
         self
     }
 
-    pub fn width_mode(mut self, width_mode: TabsNavigationWidthMode) -> Self {
+    pub fn width_mode(mut self, width_mode: TabsWidthMode) -> Self {
         self.model.width_mode = width_mode;
         self
     }
@@ -283,32 +283,29 @@ impl TabsNavigationBuilder {
         self
     }
 
-    pub fn template(mut self, template: Arc<dyn TabsNavigationTemplate>) -> Self {
+    pub fn template(mut self, template: Arc<dyn TabsTemplate>) -> Self {
         self.model.template = template;
         self
     }
 
     pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
     where
-        F: Fn(gpui::Stateful<gpui::Div>, &TabsNavigationRenderModel<'_>) -> gpui::Stateful<gpui::Div>
-            + Send
-            + Sync
-            + 'static,
+        F: Fn(gpui::Stateful<gpui::Div>, &TabsRenderModel<'_>) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
     {
         self.model.template = template_with_modifier(Arc::clone(&self.model.template), modifier);
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<TabsNavigation> {
-        cx.new(|cx| TabsNavigation::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Tabs> {
+        cx.new(|cx| Tabs::from_builder(self, cx))
     }
 
     pub(crate) fn control_group_template(
         &self,
-        indicator_motion: TabsNavigationIndicatorMotion,
+        indicator_motion: TabsIndicatorMotion,
         disclosure_progress: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<SharedString, f32>>>,
-    ) -> crate::controls::control_group::ControlGroupTemplate<TabsNavigationItem> {
-        tabs_navigation_control_group_template(
+    ) -> crate::controls::control_group::ControlGroupTemplate<TabsItem> {
+        tabs_control_group_template(
             self.model.size,
             self.model.width_mode,
             Arc::clone(&self.model.template),
@@ -325,8 +322,8 @@ mod tests {
 
     #[test]
     fn with_template_modifier_wraps_template() {
-        let template = default_tabs_navigation_template();
-        let builder = TabsNavigationBuilder::new("tabs-test")
+        let template = default_tabs_template();
+        let builder = TabsBuilder::new("tabs-test")
             .template(template.clone())
             .with_template_modifier(|element, _| element);
 
@@ -335,22 +332,17 @@ mod tests {
 
     #[test]
     fn item_accessories_are_configurable() {
-        let item = TabsNavigationItem::new("controls")
-            .leading_icon(lucide_svg_static::Icon::Settings)
-            .trailing_disclosure(true);
+        let item = TabsItem::new("controls").leading_icon(lucide_svg_static::Icon::Settings).trailing_disclosure(true);
 
         assert!(item.leading_accessory_ref().is_some());
-        assert_eq!(item.trailing_accessory_ref().and_then(TabsNavigationItemAccessory::is_disclosure_open), Some(true));
+        assert_eq!(item.trailing_accessory_ref().and_then(TabsItemAccessory::is_disclosure_open), Some(true));
     }
 
     #[test]
     fn dropdown_trigger_sets_trigger_kind_and_default_disclosure() {
-        let item = TabsNavigationItem::new("controls").label("Controls").dropdown_trigger();
+        let item = TabsItem::new("controls").label("Controls").dropdown_trigger();
 
         assert!(item.is_dropdown_trigger());
-        assert_eq!(
-            item.trailing_accessory_ref().and_then(TabsNavigationItemAccessory::is_disclosure_open),
-            Some(false)
-        );
+        assert_eq!(item.trailing_accessory_ref().and_then(TabsItemAccessory::is_disclosure_open), Some(false));
     }
 }

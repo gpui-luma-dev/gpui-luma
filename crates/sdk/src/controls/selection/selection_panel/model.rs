@@ -12,8 +12,8 @@ use crate::infra::icon::IconSource;
 use crate::infra::icon::SelectionStatusIcons;
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 
-use crate::controls::selection_panel::template::{SelectionPanelTemplate, default_selection_panel_template};
-use crate::controls::selection_panel::theme::{SelectionPanelLook, default_selection_panel_look};
+use super::template::{SelectionPanelTemplate, default_selection_panel_template};
+use super::theme::{SelectionPanelLook, default_selection_panel_look};
 use crate::theme::{ControlSize, ThemeTokens};
 
 pub trait SelectionPanelItemLike {

@@ -6,7 +6,7 @@ use lucide_svg_static::Icon as LucideIcon;
 use super::model::{PagerPageItem, PagerRenderModel, PagerStyle};
 use super::theme::{PagerLook, PagerTheme, default_pager_theme};
 use crate::controls::button_family::ButtonFamilyRole;
-use crate::controls::command::button::{ButtonRenderModel, ControlPresenter};
+use crate::controls::button::{ButtonRenderModel, ControlPresenter};
 use crate::infra::icon::{IconSource, render_icon_source};
 use crate::theme::InteractionState;
 

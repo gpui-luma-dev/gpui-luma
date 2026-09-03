@@ -1,3 +1,8 @@
+//! Radio group — LMTP specialization over button-backed options.
+//!
+//! Files: `model` / `control` / `template`. Look-level colors come from the
+//! radio-button / button family themes (no separate `theme.rs` here).
+
 mod control;
 mod model;
 mod template;

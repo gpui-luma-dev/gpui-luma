@@ -4,7 +4,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Window, div, prelude::*};
 
 use crate::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use crate::controls::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::control_group::{
     self as control_group, ControlGroupItemElementTemplate, ControlGroupItemHandlerExt, ControlGroupItemLike,
     ControlGroupItemRenderModel, ControlGroupItemTemplate, ControlGroupLayout, ControlGroupRenderModel,

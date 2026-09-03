@@ -6,7 +6,7 @@ use luma::controls::button::ButtonRenderModel;
 use luma::controls::checkbox::CheckboxData;
 use luma::controls::radio_button::RadioButtonData;
 use luma::controls::switch::SwitchData;
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::theme::InteractionState;
 use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 
@@ -62,7 +62,7 @@ pub(crate) fn render_choice_control_template_matrix_section(
     control: ChoiceTemplateControl,
     title: &'static str,
     description: &'static str,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -85,7 +85,7 @@ pub(crate) fn render_choice_control_template_matrix_section(
 fn render_choice_preview_tabbed_content(
     look: Arc<ShadcnLook>,
     control: ChoiceTemplateControl,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     active_tab: SharedString,
     border: gpui::Hsla,
     window: &mut Window,

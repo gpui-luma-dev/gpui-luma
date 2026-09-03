@@ -5,7 +5,7 @@ use gpui::{AnyElement, IntoElement};
 use super::model::{ControlGroupItemLike, ControlGroupItemRenderModel};
 use super::template::{ControlGroupItemTemplate, make_control_group_item_template};
 use crate::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use crate::controls::button::{ButtonRenderModel, ButtonTemplate};
 
 pub fn button_item_template<T>(
     button_template: Arc<dyn ButtonTemplate<bool>>,

@@ -8,7 +8,7 @@ use gpui::prelude::*;
 use luma::controls::accordion::{
     AccordionContent, AccordionControl, AccordionItem, AccordionSelectionMode, AccordionTrigger,
 };
-use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem};
+use luma::controls::tabs::{Tabs, TabsEvent, TabsItem};
 use luma::theme::ThemeMode;
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt};
 
@@ -21,7 +21,7 @@ pub struct ThemeInspector {
     look: Arc<ShadcnLook>,
     spec: &'static ControlInspectorSpec,
     resolver: SharedInspectorResolver,
-    part_tabs: Option<Entity<TabsNavigation>>,
+    part_tabs: Option<Entity<Tabs>>,
     parts: Vec<PartInspectorControls>,
     active_part_id: SharedString,
     active_variant_id: SharedString,
@@ -32,7 +32,7 @@ pub struct ThemeInspector {
 
 struct PartInspectorControls {
     part_id: SharedString,
-    variant_tabs: Option<Entity<TabsNavigation>>,
+    variant_tabs: Option<Entity<Tabs>>,
     variants: Vec<VariantInspectorControls>,
 }
 
@@ -64,7 +64,7 @@ struct LayoutSizeInspector {
     part_id: SharedString,
     variant_id: SharedString,
     state_id: SharedString,
-    size_tabs: Entity<TabsNavigation>,
+    size_tabs: Entity<Tabs>,
     active_size_id: SharedString,
     _subscriptions: Vec<Subscription>,
 }
@@ -76,7 +76,7 @@ struct ColorValueInspector {
     part_id: SharedString,
     variant_id: SharedString,
     state_id: SharedString,
-    value_tabs: Entity<TabsNavigation>,
+    value_tabs: Entity<Tabs>,
     active_value_id: SharedString,
     _subscriptions: Vec<Subscription>,
 }
@@ -102,8 +102,8 @@ impl ThemeInspector {
                 .active(active_part_id.as_ref())
                 .spawn(cx);
 
-            subscriptions.push(cx.subscribe(&tabs, |inspector, _, event: &TabsNavigationEvent, cx| {
-                let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+            subscriptions.push(cx.subscribe(&tabs, |inspector, _, event: &TabsEvent, cx| {
+                let TabsEvent::Activate { tab_id, .. } = event else {
                     return;
                 };
                 inspector.active_part_id = tab_id.clone();
@@ -282,8 +282,8 @@ impl ThemeInspector {
                 .active(active_part_id.as_ref())
                 .spawn(cx);
 
-            let subscription = cx.subscribe(&tabs, |inspector, _, event: &TabsNavigationEvent, cx| {
-                let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+            let subscription = cx.subscribe(&tabs, |inspector, _, event: &TabsEvent, cx| {
+                let TabsEvent::Activate { tab_id, .. } = event else {
                     return;
                 };
                 inspector.active_part_id = tab_id.clone();
@@ -439,8 +439,8 @@ fn applicable_parts(
         .collect()
 }
 
-fn part_tab_items(parts: &[&InspectorPart]) -> Vec<TabsNavigationItem> {
-    parts.iter().map(|part| TabsNavigationItem::new(part.id).label(part.label)).collect()
+fn part_tab_items(parts: &[&InspectorPart]) -> Vec<TabsItem> {
+    parts.iter().map(|part| TabsItem::new(part.id).label(part.label)).collect()
 }
 
 fn default_active_part_id(applicable: &[&InspectorPart], spec: &ControlInspectorSpec) -> SharedString {
@@ -454,8 +454,8 @@ fn default_active_part_id(applicable: &[&InspectorPart], spec: &ControlInspector
     }
 }
 
-fn variant_tab_items(variants: &[InspectorVariant]) -> Vec<TabsNavigationItem> {
-    variants.iter().map(|variant| TabsNavigationItem::new(variant.id).label(variant.label)).collect()
+fn variant_tab_items(variants: &[InspectorVariant]) -> Vec<TabsItem> {
+    variants.iter().map(|variant| TabsItem::new(variant.id).label(variant.label)).collect()
 }
 
 fn default_variant_for_part(spec: &ControlInspectorSpec, part_id: &str) -> SharedString {
@@ -535,7 +535,7 @@ fn spawn_variant_tabs(
     part_id: SharedString,
     snapshot: &InspectorUiSnapshot,
     cx: &mut Context<ThemeInspector>,
-) -> (Option<Entity<TabsNavigation>>, Vec<Subscription>, SharedString) {
+) -> (Option<Entity<Tabs>>, Vec<Subscription>, SharedString) {
     if variants.is_empty() {
         return (None, Vec::new(), SharedString::from(""));
     }
@@ -555,8 +555,8 @@ fn spawn_variant_tabs(
         .spawn(cx);
 
     let mut subs = Vec::new();
-    subs.push(cx.subscribe(&tabs, move |inspector, _, event: &TabsNavigationEvent, cx| {
-        let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+    subs.push(cx.subscribe(&tabs, move |inspector, _, event: &TabsEvent, cx| {
+        let TabsEvent::Activate { tab_id, .. } = event else {
             return;
         };
         inspector.active_part_id = part_id.clone();
@@ -924,8 +924,8 @@ impl LayoutSizeInspector {
             .spawn(cx);
 
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&size_tabs, |inspector, _, event: &TabsNavigationEvent, cx| {
-            let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+        subscriptions.push(cx.subscribe(&size_tabs, |inspector, _, event: &TabsEvent, cx| {
+            let TabsEvent::Activate { tab_id, .. } = event else {
                 return;
             };
             inspector.active_size_id = tab_id.clone();
@@ -993,8 +993,8 @@ impl ColorValueInspector {
             .spawn(cx);
 
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&value_tabs, |inspector, _, event: &TabsNavigationEvent, cx| {
-            let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+        subscriptions.push(cx.subscribe(&value_tabs, |inspector, _, event: &TabsEvent, cx| {
+            let TabsEvent::Activate { tab_id, .. } = event else {
                 return;
             };
             inspector.active_value_id = tab_id.clone();
@@ -1037,12 +1037,12 @@ impl Render for ColorValueInspector {
     }
 }
 
-fn size_tab_items(spec: &ControlInspectorSpec) -> Vec<TabsNavigationItem> {
-    spec.sizes.iter().map(|size| TabsNavigationItem::new(size.id).label(size.label)).collect()
+fn size_tab_items(spec: &ControlInspectorSpec) -> Vec<TabsItem> {
+    spec.sizes.iter().map(|size| TabsItem::new(size.id).label(size.label)).collect()
 }
 
-fn value_tab_items(spec: &ControlInspectorSpec) -> Vec<TabsNavigationItem> {
-    spec.value_modes.iter().map(|value| TabsNavigationItem::new(value.id).label(value.label)).collect()
+fn value_tab_items(spec: &ControlInspectorSpec) -> Vec<TabsItem> {
+    spec.value_modes.iter().map(|value| TabsItem::new(value.id).label(value.label)).collect()
 }
 
 fn inspector_context_key(parts: &[&str]) -> String {

@@ -19,7 +19,7 @@ pub use resolve::{
     resolve_resizable_panels_color_rule, resolve_scrollbar_color_rule, resolve_scrollbar_metrics,
     resolve_slider_color_rule, resolve_slider_metrics, resolve_split_view_color_rule, resolve_stylesheet_shadow_token,
     resolve_layered_elevation_shadow, resolve_switch_color_rule, resolve_switch_metrics, resolve_stylesheet_metric,
-    resolve_tabs_navigation_item_color_rule, resolve_tabs_navigation_list_color_rule, resolve_textfield_color_rule,
+    resolve_tabs_item_color_rule, resolve_tabs_list_color_rule, resolve_textfield_color_rule,
     resolve_tree_view_row_color_rule, resolve_typography_rule, ResolvedFields,
 };
 
@@ -38,8 +38,8 @@ use config::{
     FloatingMenuTriggerColorRule, ListboxListColorRule, ListboxRowColorRule, ListViewRowColorRule,
     ListViewSurfaceColorRule, SidebarBranchColorRule, SidebarContainerColorRule, SidebarItemColorRule,
     SidebarSectionColorRule, ProgressColorRule, RadioColorRule, ResizablePanelsColorRule, ScrollbarColorRule,
-    SliderColorRule, SplitViewColorRule, SwitchColorRule, TabsNavigationItemColorRule, TabsNavigationListColorRule,
-    TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
+    SliderColorRule, SplitViewColorRule, SwitchColorRule, TabsItemColorRule, TabsListColorRule, TextfieldColorRule,
+    TreeViewRowColorRule, TypographyRule,
 };
 use selector::{AsSelectorState, ButtonSelectorState, badge_variant_key, theme_mode_key};
 
@@ -199,20 +199,17 @@ pub fn find_floating_menu_trigger_color_rule(
     stylesheet.floating_menu.trigger.find_color_rule(disabled, layer)
 }
 
-pub fn find_tabs_navigation_list_color_rule(
-    stylesheet: &StylesheetConfig,
-    enabled: bool,
-) -> Option<&TabsNavigationListColorRule> {
-    stylesheet.tabs_navigation.list.find_color_rule(enabled)
+pub fn find_tabs_list_color_rule(stylesheet: &StylesheetConfig, enabled: bool) -> Option<&TabsListColorRule> {
+    stylesheet.tabs.list.find_color_rule(enabled)
 }
 
-pub fn find_tabs_navigation_item_color_rule(
+pub fn find_tabs_item_color_rule(
     stylesheet: &StylesheetConfig,
     active: bool,
     layer: InteractionLayer,
     focused: bool,
-) -> Option<&TabsNavigationItemColorRule> {
-    stylesheet.tabs_navigation.item.find_color_rule(active, layer, focused)
+) -> Option<&TabsItemColorRule> {
+    stylesheet.tabs.item.find_color_rule(active, layer, focused)
 }
 
 pub fn find_tree_view_row_color_rule(
@@ -597,9 +594,9 @@ pub fn resolve_ghost_trigger_colors_metadata(stylesheet: &StylesheetConfig) -> V
         .collect()
 }
 
-pub fn resolve_tabs_navigation_list_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
+pub fn resolve_tabs_list_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
     stylesheet
-        .tabs_navigation
+        .tabs
         .list
         .color_rules
         .iter()
@@ -610,9 +607,9 @@ pub fn resolve_tabs_navigation_list_colors_metadata(stylesheet: &StylesheetConfi
         .collect()
 }
 
-pub fn resolve_tabs_navigation_item_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
+pub fn resolve_tabs_item_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
     stylesheet
-        .tabs_navigation
+        .tabs
         .item
         .color_rules
         .iter()
@@ -899,8 +896,8 @@ pub fn all_color_rule_metadata(stylesheet: &StylesheetConfig) -> Vec<ColorRuleMe
         section(stylesheet, "list_view", "row", resolve_list_view_row_colors_metadata(stylesheet)),
         section(stylesheet, "floating_menu", "surface", resolve_floating_menu_colors_metadata(stylesheet)),
         section(stylesheet, "floating_menu", "trigger", resolve_ghost_trigger_colors_metadata(stylesheet)),
-        section(stylesheet, "tabs_navigation", "list", resolve_tabs_navigation_list_colors_metadata(stylesheet)),
-        section(stylesheet, "tabs_navigation", "item", resolve_tabs_navigation_item_colors_metadata(stylesheet)),
+        section(stylesheet, "tabs", "list", resolve_tabs_list_colors_metadata(stylesheet)),
+        section(stylesheet, "tabs", "item", resolve_tabs_item_colors_metadata(stylesheet)),
         section(stylesheet, "tree_view", "row", resolve_tree_view_row_colors_metadata(stylesheet)),
         section(stylesheet, "sidebar", "container", resolve_sidebar_container_colors_metadata(stylesheet)),
         section(stylesheet, "sidebar", "section", resolve_sidebar_section_colors_metadata(stylesheet)),
@@ -956,7 +953,7 @@ mod tests {
         assert_eq!(stylesheet.list_view.row.color_rules.len(), 6);
         assert_eq!(stylesheet.floating_menu.trigger.color_rules.len(), 5);
         assert_eq!(stylesheet.floating_menu.surface.elevation_rules.len(), 1);
-        assert_eq!(stylesheet.tabs_navigation.item.color_rules.len(), 10);
+        assert_eq!(stylesheet.tabs.item.color_rules.len(), 10);
         assert_eq!(stylesheet.tree_view.row.color_rules.len(), 5);
         assert_eq!(stylesheet.sidebar.item.color_rules.len(), 10);
         assert_eq!(stylesheet.textfield.color_rules.len(), 16);
@@ -1006,8 +1003,8 @@ mod tests {
                 + embedded_stylesheet().list_view.row.color_rules.len()
                 + embedded_stylesheet().floating_menu.surface.color_rules.len()
                 + embedded_stylesheet().floating_menu.trigger.color_rules.len()
-                + embedded_stylesheet().tabs_navigation.list.color_rules.len()
-                + embedded_stylesheet().tabs_navigation.item.color_rules.len()
+                + embedded_stylesheet().tabs.list.color_rules.len()
+                + embedded_stylesheet().tabs.item.color_rules.len()
                 + embedded_stylesheet().tree_view.row.color_rules.len()
                 + embedded_stylesheet().sidebar.container.color_rules.len()
                 + embedded_stylesheet().sidebar.section.color_rules.len()

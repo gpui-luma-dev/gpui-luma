@@ -3,7 +3,7 @@ pub(crate) mod customization;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::sections::switch::customization::SwitchCustomizationPreview;
@@ -14,7 +14,7 @@ use crate::studio::style::shared::shell::section_shell_with_width;
 
 pub(crate) fn render_switch_template_matrix_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     customization_preview: Entity<SwitchCustomizationPreview>,
     window: &mut Window,
     cx: &mut App,
@@ -45,7 +45,7 @@ pub(crate) fn render_switch_template_matrix_section(
 
 fn render_switch_preview_tabbed_content(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     customization_preview: Entity<SwitchCustomizationPreview>,
     active_tab: SharedString,
     border: gpui::Hsla,

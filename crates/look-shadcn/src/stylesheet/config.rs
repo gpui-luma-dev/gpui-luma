@@ -35,7 +35,7 @@ pub struct StylesheetConfig {
     #[serde(default)]
     pub floating_menu: FloatingMenuStylesheet,
     #[serde(default)]
-    pub tabs_navigation: TabsNavigationStylesheet,
+    pub tabs: TabsStylesheet,
     #[serde(default)]
     pub tree_view: TreeViewStylesheet,
     #[serde(default, alias = "navigation_sidebar")]
@@ -983,50 +983,45 @@ pub struct FloatingMenuTriggerColorRule {
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
-pub struct TabsNavigationStylesheet {
+pub struct TabsStylesheet {
     #[serde(default)]
-    pub list: TabsNavigationListStylesheet,
+    pub list: TabsListStylesheet,
     #[serde(default)]
-    pub item: TabsNavigationItemStylesheet,
+    pub item: TabsItemStylesheet,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
-pub struct TabsNavigationListStylesheet {
+pub struct TabsListStylesheet {
     #[serde(default)]
-    pub color_rules: Vec<TabsNavigationListColorRule>,
+    pub color_rules: Vec<TabsListColorRule>,
 }
 
-impl TabsNavigationListStylesheet {
-    pub fn find_color_rule(&self, enabled: bool) -> Option<&TabsNavigationListColorRule> {
+impl TabsListStylesheet {
+    pub fn find_color_rule(&self, enabled: bool) -> Option<&TabsListColorRule> {
         find_enabled_color_rule(&self.color_rules, enabled)
     }
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct TabsNavigationListColorRule {
+pub struct TabsListColorRule {
     pub enabled: Option<bool>,
     pub disabled_background: String,
 }
 
-impl EnabledColorRule for TabsNavigationListColorRule {
+impl EnabledColorRule for TabsListColorRule {
     fn enabled(&self) -> Option<bool> {
         self.enabled
     }
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
-pub struct TabsNavigationItemStylesheet {
+pub struct TabsItemStylesheet {
     #[serde(default)]
-    pub color_rules: Vec<TabsNavigationItemColorRule>,
+    pub color_rules: Vec<TabsItemColorRule>,
 }
 
-impl TabsNavigationItemStylesheet {
-    pub fn find_color_rule(
-        &self,
-        active: bool,
-        layer: InteractionLayer,
-        focused: bool,
-    ) -> Option<&TabsNavigationItemColorRule> {
+impl TabsItemStylesheet {
+    pub fn find_color_rule(&self, active: bool, layer: InteractionLayer, focused: bool) -> Option<&TabsItemColorRule> {
         self.color_rules.iter().find(|rule| {
             if rule.layer.as_deref() == Some("disabled") {
                 return layer == InteractionLayer::Disabled;
@@ -1042,7 +1037,7 @@ impl TabsNavigationItemStylesheet {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct TabsNavigationItemColorRule {
+pub struct TabsItemColorRule {
     pub active: Option<bool>,
     pub layer: Option<String>,
     pub focused: Option<bool>,

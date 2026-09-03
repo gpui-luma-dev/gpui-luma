@@ -7,7 +7,7 @@ use crate::controls::resizable_panels::{
 };
 
 use super::resize::SlidePanelResizeDrag;
-use super::model::SlidePanelEdge;
+use super::super::model::SlidePanelEdge;
 
 pub type SlidePanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type SlidePanelDragMoveHandler = Box<dyn Fn(&DragMoveEvent<SlidePanelResizeDrag>, &mut Window, &mut App) + 'static>;

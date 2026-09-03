@@ -75,8 +75,8 @@ impl GradientBuilder {
         }
     }
 
-    pub(super) fn handle_top_tabs_event(&mut self, event: &TabsNavigationEvent, cx: &mut Context<Self>) {
-        let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+    pub(super) fn handle_top_tabs_event(&mut self, event: &TabsEvent, cx: &mut Context<Self>) {
+        let TabsEvent::Activate { tab_id, .. } = event else {
             return;
         };
         let next = match tab_id.as_ref() {

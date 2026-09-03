@@ -23,7 +23,7 @@ mod selector;
 mod slider;
 mod split_view;
 mod switch;
-mod tabs_navigation;
+mod tabs;
 mod textarea;
 mod textfield;
 mod toolbar;
@@ -102,10 +102,9 @@ pub use textfield::{
     TextFieldInspectMetrics, TextFieldInspectPalette, inspect_textfield_color_palette, inspect_textfield_elevation,
     inspect_textfield_metrics,
 };
-pub use tabs_navigation::{
-    TabsNavigationInspectMetrics, TabsNavigationItemInspectPalette, TabsNavigationListInspectPalette,
-    inspect_tabs_navigation_item_color_palette, inspect_tabs_navigation_list_color_palette,
-    inspect_tabs_navigation_metrics,
+pub use tabs::{
+    TabsInspectMetrics, TabsItemInspectPalette, TabsListInspectPalette, inspect_tabs_item_color_palette,
+    inspect_tabs_list_color_palette, inspect_tabs_metrics,
 };
 pub use textarea::{inspect_textarea_color_palette, inspect_textarea_metrics};
 pub use toolbar::{ToolbarInspectMetrics, ToolbarInspectPalette, inspect_toolbar_color_palette, inspect_toolbar_metrics};

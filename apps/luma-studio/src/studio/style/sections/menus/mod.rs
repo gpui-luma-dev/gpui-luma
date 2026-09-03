@@ -11,7 +11,7 @@ use luma::controls::popup_menu::{
     PopupMenuTemplateHandlers, PopupMenuTriggerStyle,
 };
 use luma::infra::state::MenuPath;
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::theme::InteractionState;
 use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
@@ -29,7 +29,7 @@ type MenuPreviewScrollWheelHandler = Arc<dyn Fn(&gpui::ScrollWheelEvent, &mut Wi
 
 pub(crate) fn render_menu_template_state_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     scroll_wheel: MenuPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
@@ -51,7 +51,7 @@ pub(crate) fn render_menu_template_state_section(
 
 fn render_menus_preview_tabbed_content(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     active_tab: SharedString,
     border: gpui::Hsla,
     scroll_wheel: MenuPreviewScrollWheelHandler,

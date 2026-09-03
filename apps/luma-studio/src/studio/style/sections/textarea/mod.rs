@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, TextR
 use luma::controls::textarea::{
     TextAreaLineMetric, TextAreaRenderModel, TextAreaState, TextAreaTemplate, TextAreaTheme, ThemedTextAreaTemplate,
 };
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::theme::{ControlSize, StandardBoxScale};
 use luma_look_shadcn::ShadcnLook;
 
@@ -43,7 +43,7 @@ const TEXTAREA_STYLE_VARIANTS: [TextAreaStyleVariant; 3] = [
 
 pub(crate) fn render_textarea_template_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -65,7 +65,7 @@ pub(crate) fn render_textarea_template_section(
 
 fn render_textarea_preview_tabbed_content(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     active_tab: SharedString,
     border: gpui::Hsla,
     window: &mut Window,

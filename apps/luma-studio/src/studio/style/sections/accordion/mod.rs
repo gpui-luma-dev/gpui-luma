@@ -6,7 +6,7 @@ use luma::controls::accordion::{
     AccordionTemplate, AccordionTemplateHandlers, AccordionTrigger,
 };
 use luma::infra::state::{CompositeItemState, ControlFocusState};
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::theme::ControlSize;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
@@ -70,7 +70,7 @@ impl Render for AccordionPreview {
 
 pub(crate) fn render_accordion_template_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     preview: Entity<AccordionPreview>,
     window: &mut Window,
     cx: &mut App,

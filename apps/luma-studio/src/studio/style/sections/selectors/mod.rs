@@ -27,7 +27,7 @@ use luma::controls::selector_list::{
     SelectorItem as SelectorPanelItem, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplateHandlers,
     SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_template,
 };
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::controls::textfield::{TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant};
 use luma::controls::textfield::TextFieldLook;
 use luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale};
@@ -131,7 +131,7 @@ fn state_label_asset_path(state_id: &str) -> &'static str {
 
 pub(crate) fn render_selector_templates_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     scroll_wheel: SelectorPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
@@ -181,7 +181,7 @@ fn apply_selector_preview_textfield_size(
 
 fn render_selector_preview_tabbed_content(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     active_tab: SharedString,
     border: gpui::Hsla,
     scroll_wheel: SelectorPreviewScrollWheelHandler,

@@ -44,7 +44,7 @@ use luma::controls::slider::{self, SliderBuilder};
 use luma::controls::switch::{self, SwitchBuilder};
 use luma::controls::accordion::AccordionBuilder;
 use luma::controls::tree_view::TreeViewBuilder;
-use luma::controls::tabs::{TabsNavigation, TabsNavigationBuilder};
+use luma::controls::tabs::{Tabs, TabsBuilder};
 use luma::controls::textarea::{self, TextAreaBuilder, ThemedTextAreaTemplate};
 use luma::controls::textfield::{self, TextFieldBuilder, ThemedTextFieldTemplate};
 use luma::controls::toggle::{self, ToggleBuilder};
@@ -129,10 +129,7 @@ pub trait ShadcnLookControlExt {
     fn resizable_panels(&self, id: impl Into<SharedString>) -> ResizablePanelsBuilder;
     fn scrollbar(&self, id: impl Into<SharedString>) -> ScrollbarBuilder;
     fn selector(&self, id: impl Into<SharedString>) -> SelectorBuilder<SelectorItem>;
-    fn tabs(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder;
-    fn tabs_navigation(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder {
-        self.tabs(id)
-    }
+    fn tabs(&self, id: impl Into<SharedString>) -> TabsBuilder;
     fn accordion(&self, id: impl Into<SharedString>) -> AccordionBuilder;
     fn tree_view<T>(&self, id: impl Into<SharedString>) -> TreeViewBuilder<T>
     where
@@ -472,8 +469,8 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         Selector::new(id).template(self.selector_template())
     }
 
-    fn tabs(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder {
-        TabsNavigation::new(id).template(self.tabs_navigation_template())
+    fn tabs(&self, id: impl Into<SharedString>) -> TabsBuilder {
+        Tabs::new(id).template(self.tabs_template())
     }
 
     fn accordion(&self, id: impl Into<SharedString>) -> AccordionBuilder {

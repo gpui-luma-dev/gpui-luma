@@ -5,13 +5,13 @@ use gpui::{
 
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use crate::controls::scrollbar::{ScrollbarEvent, ScrollbarTemplate};
-use crate::controls::selection_panel::item_template::{SelectionPanelItemTemplate, make_selection_panel_item_template};
-use crate::controls::selection_panel::model::{
+use super::item_template::{SelectionPanelItemTemplate, make_selection_panel_item_template};
+use super::model::{
     SelectionPanelBuilder, SelectionPanelLookProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
     default_selection_panel_model,
 };
-use crate::controls::selection_panel::template::SelectionPanelTemplate;
-use crate::controls::selection_panel::template::{
+use super::template::SelectionPanelTemplate;
+use super::template::{
     SelectionPanelClickHandler, SelectionPanelHoverHandler, SelectionPanelMouseDownHandler,
     SelectionPanelMouseUpHandler, SelectionPanelRenderModel, render_selection_panel,
 };
@@ -225,10 +225,7 @@ where
 
     pub fn set_item_template_fn<F, E>(&mut self, template: F, cx: &mut Context<Self>)
     where
-        F: for<'a> Fn(&crate::controls::selection_panel::SelectionPanelItemRenderModel<'a, T>, &mut App) -> E
-            + Send
-            + Sync
-            + 'static,
+        F: for<'a> Fn(&super::SelectionPanelItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.set_item_template(Some(make_selection_panel_item_template(template)), cx);

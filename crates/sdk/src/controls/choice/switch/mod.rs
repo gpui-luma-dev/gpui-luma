@@ -14,7 +14,7 @@ use gpui::{
 
 use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::button_family::ButtonSize;
-use crate::controls::command::button::{Button, ButtonBuilder, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use crate::controls::button::{Button, ButtonBuilder, ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use crate::infra::presenter::{ControlPresenter, HasPresenter};
 
 pub type Switch = Entity<SwitchControl>;

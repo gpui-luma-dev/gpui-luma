@@ -2,16 +2,16 @@ use std::sync::Arc;
 
 use gpui::{App, Div, SharedString, Stateful, div, prelude::*, px};
 
-pub use crate::controls::selection_panel::item_template::{
+pub use super::item_template::{
     SelectionPanelClickHandler, SelectionPanelHoverHandler, SelectionPanelMouseDownHandler,
     SelectionPanelMouseUpHandler,
 };
-use crate::controls::selection_panel::item_template::{
+use super::item_template::{
     SelectionPanelItemRowHandlers, SelectionPanelItemRowModel, SelectionPanelItemTemplate,
     render_selection_panel_item_row,
 };
-use crate::controls::selection_panel::model::SelectionPanelItemLike;
-use crate::controls::selection_panel::theme::SelectionPanelLook;
+use super::model::SelectionPanelItemLike;
+use super::theme::SelectionPanelLook;
 use crate::infra::state::ControlFocusState;
 use crate::infra::icon::SelectionStatusIcons;
 

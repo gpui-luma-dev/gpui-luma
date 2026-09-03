@@ -6,14 +6,11 @@ use gpui::{
     anchored, deferred, div, font, hsla, point, px, prelude::*,
 };
 
-use super::indicator::TabsNavigationIndicatorMotion;
-use super::{
-    TabsNavigationItem, TabsNavigationItemAccessory, TabsNavigationRenderItem, TabsNavigationRenderModel,
-    model::TabsNavigationWidthMode,
-};
+use super::indicator::TabsIndicatorMotion;
+use super::{TabsItem, TabsItemAccessory, TabsRenderItem, TabsRenderModel, model::TabsWidthMode};
 use crate::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole, default_button_family_theme};
 use crate::controls::color::style::ElementExt;
-use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate};
+use crate::controls::button::{ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate};
 use crate::controls::control_group::{
     ControlGroupBoundsHandler, ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemHandlerExt,
     ControlGroupMouseDownHandler, ControlGroupMouseUpHandler, ControlGroupRenderModel, ControlGroupTemplate,
@@ -21,38 +18,38 @@ use crate::controls::control_group::{
 };
 use crate::infra::icon::{DisclosureIcons, IconSource, lucide_icon, render_disclosure_icon};
 use crate::motion::overlay_presence::OverlayPresence;
-use crate::controls::tabs::{TabsNavigationItemLook, TabsNavigationTheme, default_tabs_navigation_theme};
+use crate::controls::tabs::{TabsItemLook, TabsTheme, default_tabs_theme};
 use crate::theme::{ControlSize, InteractionState};
 
 const TAB_ACCESSORY_SIZE: f32 = 12.0;
 const TAB_ACCESSORY_GAP: f32 = 4.0;
 
-pub type TabsNavigationClickHandler = ControlGroupClickHandler;
-pub type TabsNavigationBoundsHandler = ControlGroupBoundsHandler;
-pub type TabsNavigationHoverHandler = ControlGroupHoverHandler;
-pub type TabsNavigationMouseDownHandler = ControlGroupMouseDownHandler;
-pub type TabsNavigationMouseUpHandler = ControlGroupMouseUpHandler;
-pub type TabsNavigationTemplateHandlers = ControlGroupTemplateHandlers;
+pub type TabsClickHandler = ControlGroupClickHandler;
+pub type TabsBoundsHandler = ControlGroupBoundsHandler;
+pub type TabsHoverHandler = ControlGroupHoverHandler;
+pub type TabsMouseDownHandler = ControlGroupMouseDownHandler;
+pub type TabsMouseUpHandler = ControlGroupMouseUpHandler;
+pub type TabsTemplateHandlers = ControlGroupTemplateHandlers;
 
-pub type TabsNavigationTemplateModifier =
-    Box<dyn Fn(Stateful<Div>, &TabsNavigationRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+pub type TabsTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &TabsRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
 
 #[derive(Clone)]
-pub struct TabsNavigationOverlayState {
+pub struct TabsOverlayState {
     trigger_bounds: Arc<Mutex<Option<Bounds<Pixels>>>>,
     presence: Arc<Mutex<OverlayPresence>>,
-    last_overlay: Arc<Mutex<Option<TabsNavigationCachedOverlay>>>,
+    last_overlay: Arc<Mutex<Option<TabsCachedOverlay>>>,
 }
 
 #[derive(Clone)]
-struct TabsNavigationCachedOverlay {
+struct TabsCachedOverlay {
     content_size: Size<Pixels>,
-    placement: TabsNavigationOverlayPlacement,
+    placement: TabsOverlayPlacement,
     offset_y: Pixels,
     window_margin: Pixels,
 }
 
-impl Default for TabsNavigationOverlayState {
+impl Default for TabsOverlayState {
     fn default() -> Self {
         Self {
             trigger_bounds: Arc::new(Mutex::new(None)),
@@ -62,7 +59,7 @@ impl Default for TabsNavigationOverlayState {
     }
 }
 
-impl TabsNavigationOverlayState {
+impl TabsOverlayState {
     pub fn new() -> Self {
         Self::default()
     }
@@ -99,42 +96,42 @@ impl TabsNavigationOverlayState {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum TabsNavigationOverlayPlacement {
+pub enum TabsOverlayPlacement {
     BelowStart,
     BelowCenter,
 }
 
-pub struct TabsNavigationItemOverlay {
+pub struct TabsItemOverlay {
     pub content: AnyElement,
     pub content_size: Size<Pixels>,
-    pub placement: TabsNavigationOverlayPlacement,
+    pub placement: TabsOverlayPlacement,
     pub offset_y: Pixels,
     pub window_margin: Pixels,
 }
 
 #[derive(Clone, Copy)]
-struct ResolvedTabsNavigationOverlayPlacement {
+struct ResolvedTabsOverlayPlacement {
     anchor: Anchor,
     position: Point<Pixels>,
     offset: Point<Pixels>,
 }
 
 #[derive(Clone)]
-struct TabsNavigationButtonData {
-    look: TabsNavigationItemLook,
+struct TabsButtonData {
+    look: TabsItemLook,
     disclosure_icons: DisclosureIcons,
 }
 
 #[derive(Clone)]
-pub struct TabsNavigationItemButtonStyle {
-    pub look: TabsNavigationItemLook,
+pub struct TabsItemButtonStyle {
+    pub look: TabsItemLook,
     pub font_family: SharedString,
     pub size: ControlSize,
     pub disclosure_icons: DisclosureIcons,
 }
 
-impl TabsNavigationItemButtonStyle {
-    pub fn new(look: TabsNavigationItemLook, font_family: SharedString, size: ControlSize) -> Self {
+impl TabsItemButtonStyle {
+    pub fn new(look: TabsItemLook, font_family: SharedString, size: ControlSize) -> Self {
         Self {
             look,
             font_family,
@@ -152,35 +149,35 @@ impl TabsNavigationItemButtonStyle {
     }
 }
 
-pub trait TabsNavigationTemplate: Send + Sync {
+pub trait TabsTemplate: Send + Sync {
     fn render(
         &self,
-        model: &TabsNavigationRenderModel<'_>,
-        handlers: TabsNavigationTemplateHandlers,
+        model: &TabsRenderModel<'_>,
+        handlers: TabsTemplateHandlers,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div>;
 }
 
-pub struct ThemedTabsNavigationTemplate {
-    theme: Arc<dyn TabsNavigationTheme>,
-    modifiers: Vec<TabsNavigationTemplateModifier>,
+pub struct ThemedTabsTemplate {
+    theme: Arc<dyn TabsTheme>,
+    modifiers: Vec<TabsTemplateModifier>,
 }
 
-impl ThemedTabsNavigationTemplate {
-    pub fn new(theme: Arc<dyn TabsNavigationTheme>) -> Self {
+impl ThemedTabsTemplate {
+    pub fn new(theme: Arc<dyn TabsTheme>) -> Self {
         Self { theme, modifiers: Vec::new() }
     }
 
     pub fn with_modifier<F>(mut self, modifier: F) -> Self
     where
-        F: Fn(Stateful<Div>, &TabsNavigationRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+        F: Fn(Stateful<Div>, &TabsRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
     {
         self.modifiers.push(Box::new(modifier));
         self
     }
 
-    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TabsNavigationRenderModel<'_>) -> Stateful<Div> {
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TabsRenderModel<'_>) -> Stateful<Div> {
         for modifier in &self.modifiers {
             root = modifier(root, model);
         }
@@ -188,22 +185,22 @@ impl ThemedTabsNavigationTemplate {
     }
 }
 
-struct ModifiedTabsNavigationTemplate {
-    base: Arc<dyn TabsNavigationTemplate>,
-    modifiers: Vec<TabsNavigationTemplateModifier>,
+struct ModifiedTabsTemplate {
+    base: Arc<dyn TabsTemplate>,
+    modifiers: Vec<TabsTemplateModifier>,
 }
 
-impl ModifiedTabsNavigationTemplate {
-    fn new(base: Arc<dyn TabsNavigationTemplate>) -> Self {
+impl ModifiedTabsTemplate {
+    fn new(base: Arc<dyn TabsTemplate>) -> Self {
         Self { base, modifiers: Vec::new() }
     }
 
-    fn with_modifier(mut self, modifier: TabsNavigationTemplateModifier) -> Self {
+    fn with_modifier(mut self, modifier: TabsTemplateModifier) -> Self {
         self.modifiers.push(modifier);
         self
     }
 
-    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TabsNavigationRenderModel<'_>) -> Stateful<Div> {
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TabsRenderModel<'_>) -> Stateful<Div> {
         for modifier in &self.modifiers {
             root = modifier(root, model);
         }
@@ -211,29 +208,24 @@ impl ModifiedTabsNavigationTemplate {
     }
 }
 
-pub fn default_tabs_navigation_template() -> Arc<dyn TabsNavigationTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn TabsNavigationTemplate>> = OnceLock::new();
+pub fn default_tabs_template() -> Arc<dyn TabsTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn TabsTemplate>> = OnceLock::new();
 
-    TEMPLATE
-        .get_or_init(|| Arc::new(ThemedTabsNavigationTemplate::new(default_tabs_navigation_theme())))
-        .clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedTabsTemplate::new(default_tabs_theme()))).clone()
 }
 
-pub(super) fn template_with_modifier<F>(
-    template: Arc<dyn TabsNavigationTemplate>,
-    modifier: F,
-) -> Arc<dyn TabsNavigationTemplate>
+pub(super) fn template_with_modifier<F>(template: Arc<dyn TabsTemplate>, modifier: F) -> Arc<dyn TabsTemplate>
 where
-    F: Fn(Stateful<Div>, &TabsNavigationRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    F: Fn(Stateful<Div>, &TabsRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
 {
-    Arc::new(ModifiedTabsNavigationTemplate::new(template).with_modifier(Box::new(modifier)))
+    Arc::new(ModifiedTabsTemplate::new(template).with_modifier(Box::new(modifier)))
 }
 
-impl TabsNavigationTemplate for ModifiedTabsNavigationTemplate {
+impl TabsTemplate for ModifiedTabsTemplate {
     fn render(
         &self,
-        model: &TabsNavigationRenderModel<'_>,
-        handlers: TabsNavigationTemplateHandlers,
+        model: &TabsRenderModel<'_>,
+        handlers: TabsTemplateHandlers,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
@@ -242,16 +234,16 @@ impl TabsNavigationTemplate for ModifiedTabsNavigationTemplate {
     }
 }
 
-impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
+impl TabsTemplate for ThemedTabsTemplate {
     fn render(
         &self,
-        model: &TabsNavigationRenderModel<'_>,
-        handlers: TabsNavigationTemplateHandlers,
+        model: &TabsRenderModel<'_>,
+        handlers: TabsTemplateHandlers,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
         let list_look = self.theme.resolve_list(model.enabled, model.size);
-        let uniform_width = resolve_tabs_navigation_uniform_item_width(model, self.theme.as_ref(), model.size, window);
+        let uniform_width = resolve_tabs_uniform_item_width(model, self.theme.as_ref(), model.size, window);
 
         let active_item = model.items.iter().find(|item| item.active);
         let active_look =
@@ -288,10 +280,10 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
 
         for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
             let look = self.theme.resolve_item(item.active, item.state.interaction_state(), model.size);
-            let mut tab = render_tabs_navigation_item_button_with_style(
+            let mut tab = render_tab_button_with_style(
                 model.id,
                 item,
-                TabsNavigationItemButtonStyle::new(look, self.theme.font_family(), model.size)
+                TabsItemButtonStyle::new(look, self.theme.font_family(), model.size)
                     .disclosure_icons(model.disclosure_icons.clone()),
                 window,
                 cx,
@@ -309,8 +301,7 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
             root = root.child(tab);
         }
 
-        if let Some(indicator) =
-            model.indicator.or_else(|| model.indicator_motion.and_then(TabsNavigationIndicatorMotion::paint))
+        if let Some(indicator) = model.indicator.or_else(|| model.indicator_motion.and_then(TabsIndicatorMotion::paint))
         {
             root = root.child(
                 div()
@@ -328,13 +319,13 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
     }
 }
 
-pub fn resolve_tabs_navigation_uniform_item_width(
-    model: &TabsNavigationRenderModel<'_>,
-    theme: &dyn TabsNavigationTheme,
+pub fn resolve_tabs_uniform_item_width(
+    model: &TabsRenderModel<'_>,
+    theme: &dyn TabsTheme,
     size: ControlSize,
     window: &mut Window,
 ) -> Option<f32> {
-    if model.width_mode != TabsNavigationWidthMode::Uniform {
+    if model.width_mode != TabsWidthMode::Uniform {
         return None;
     }
 
@@ -371,12 +362,12 @@ pub fn resolve_tabs_navigation_uniform_item_width(
     Some(max_width)
 }
 
-pub fn render_tabs_navigation_item_overlay_host<F>(
+pub fn render_tabs_overlay_host<F>(
     id: impl Into<SharedString>,
     mut trigger: Stateful<Div>,
     width: Option<Pixels>,
-    overlay_state: TabsNavigationOverlayState,
-    overlay: Option<TabsNavigationItemOverlay>,
+    overlay_state: TabsOverlayState,
+    overlay: Option<TabsItemOverlay>,
     on_mouse_down_out: F,
 ) -> AnyElement
 where
@@ -405,16 +396,15 @@ where
 
     match overlay {
         Some(overlay) => {
-            *overlay_state.last_overlay.lock().expect("tabs navigation overlay cache lock") =
-                Some(TabsNavigationCachedOverlay {
-                    content_size: overlay.content_size,
-                    placement: overlay.placement,
-                    offset_y: overlay.offset_y,
-                    window_margin: overlay.window_margin,
-                });
+            *overlay_state.last_overlay.lock().expect("tabs navigation overlay cache lock") = Some(TabsCachedOverlay {
+                content_size: overlay.content_size,
+                placement: overlay.placement,
+                offset_y: overlay.offset_y,
+                window_margin: overlay.window_margin,
+            });
             overlay_state.set_overlay_open(true);
             let presence = overlay_state.presence_snapshot();
-            let placement = resolve_tabs_navigation_overlay_placement(
+            let placement = resolve_tabs_overlay_placement(
                 overlay_state.trigger_bounds(),
                 overlay.placement,
                 overlay.content_size,
@@ -437,7 +427,7 @@ where
                 && let Some(cached) =
                     overlay_state.last_overlay.lock().expect("tabs navigation overlay cache lock").clone()
             {
-                let placement = resolve_tabs_navigation_overlay_placement(
+                let placement = resolve_tabs_overlay_placement(
                     overlay_state.trigger_bounds(),
                     cached.placement,
                     cached.content_size,
@@ -461,22 +451,22 @@ where
     root.into_any_element()
 }
 
-fn resolve_tabs_navigation_overlay_placement(
+fn resolve_tabs_overlay_placement(
     trigger_bounds: Option<Bounds<Pixels>>,
-    placement: TabsNavigationOverlayPlacement,
+    placement: TabsOverlayPlacement,
     content_size: Size<Pixels>,
     offset_y: Pixels,
-) -> ResolvedTabsNavigationOverlayPlacement {
+) -> ResolvedTabsOverlayPlacement {
     let trigger_bounds = trigger_bounds
         .unwrap_or_else(|| Bounds::new(point(px(0.0), px(0.0)), Size { width: px(0.0), height: px(0.0) }));
 
     match placement {
-        TabsNavigationOverlayPlacement::BelowStart => ResolvedTabsNavigationOverlayPlacement {
+        TabsOverlayPlacement::BelowStart => ResolvedTabsOverlayPlacement {
             anchor: Anchor::TopLeft,
             position: point(trigger_bounds.left(), trigger_bounds.bottom()),
             offset: point(px(0.0), offset_y),
         },
-        TabsNavigationOverlayPlacement::BelowCenter => ResolvedTabsNavigationOverlayPlacement {
+        TabsOverlayPlacement::BelowCenter => ResolvedTabsOverlayPlacement {
             anchor: Anchor::TopLeft,
             position: point(trigger_bounds.center().x, trigger_bounds.bottom()),
             offset: point(-(content_size.width * 0.5), offset_y),
@@ -484,61 +474,48 @@ fn resolve_tabs_navigation_overlay_placement(
     }
 }
 
-fn tabs_navigation_item_button_template() -> Arc<dyn ButtonTemplate<TabsNavigationButtonData>> {
-    static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate<TabsNavigationButtonData>>> = OnceLock::new();
+fn tab_button_template() -> Arc<dyn ButtonTemplate<TabsButtonData>> {
+    static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate<TabsButtonData>>> = OnceLock::new();
 
     TEMPLATE
-        .get_or_init(|| Arc::new(DefaultButtonTemplate::<TabsNavigationButtonData>::new(default_button_family_theme())))
+        .get_or_init(|| Arc::new(DefaultButtonTemplate::<TabsButtonData>::new(default_button_family_theme())))
         .clone()
 }
 
-pub fn render_tabs_navigation_item_button(
+pub fn render_tab_button(
     navigation_id: &SharedString,
-    item: &TabsNavigationRenderItem<'_>,
-    look: TabsNavigationItemLook,
+    item: &TabsRenderItem<'_>,
+    look: TabsItemLook,
     font_family: SharedString,
     size: ControlSize,
     window: &mut Window,
     cx: &mut App,
 ) -> Stateful<Div> {
-    render_tabs_navigation_item_button_with_style(
-        navigation_id,
-        item,
-        TabsNavigationItemButtonStyle::new(look, font_family, size),
-        window,
-        cx,
-    )
+    render_tab_button_with_style(navigation_id, item, TabsItemButtonStyle::new(look, font_family, size), window, cx)
 }
 
-pub fn render_tabs_navigation_item_button_with_style(
+pub fn render_tab_button_with_style(
     navigation_id: &SharedString,
-    item: &TabsNavigationRenderItem<'_>,
-    style: TabsNavigationItemButtonStyle,
+    item: &TabsRenderItem<'_>,
+    style: TabsItemButtonStyle,
     window: &mut Window,
     cx: &mut App,
 ) -> Stateful<Div> {
-    tabs_navigation_item_button_template().render(
-        &tabs_navigation_button_model(
-            navigation_id,
-            item,
-            style.look,
-            style.font_family,
-            style.size,
-            style.disclosure_icons,
-        ),
+    tab_button_template().render(
+        &tab_button_model(navigation_id, item, style.look, style.font_family, style.size, style.disclosure_icons),
         window,
         cx,
     )
 }
 
-fn tabs_navigation_button_model(
+fn tab_button_model(
     navigation_id: &SharedString,
-    item: &TabsNavigationRenderItem<'_>,
-    look: TabsNavigationItemLook,
+    item: &TabsRenderItem<'_>,
+    look: TabsItemLook,
     font_family: SharedString,
     size: ControlSize,
     disclosure_icons: DisclosureIcons,
-) -> ButtonRenderModel<TabsNavigationButtonData> {
+) -> ButtonRenderModel<TabsButtonData> {
     let label = item.label.clone();
     let leading_accessory = item.leading_accessory.cloned();
     let trailing_accessory = item.trailing_accessory.cloned();
@@ -546,7 +523,7 @@ fn tabs_navigation_button_model(
 
     ButtonRenderModel {
         id: format!("{}-tab-{}", navigation_id, item.id).into(),
-        data: TabsNavigationButtonData { look, disclosure_icons },
+        data: TabsButtonData { look, disclosure_icons },
         icon: None,
         content: Arc::new(move |model, _| {
             let mut label_content = div().flex().items_center().gap(px(TAB_ACCESSORY_GAP));
@@ -584,11 +561,11 @@ fn tabs_navigation_button_model(
         switch_orientation: crate::controls::switch::SwitchOrientation::Horizontal,
         switch_track_content: None,
         switch_thumb_content: None,
-        look: Some(Arc::new(move |model| tabs_navigation_button_look(model.data.look, font_family.clone()))),
+        look: Some(Arc::new(move |model| tab_button_look(model.data.look, font_family.clone()))),
     }
 }
 
-fn tabs_navigation_button_look(look: TabsNavigationItemLook, font_family: SharedString) -> ButtonFamilyLook {
+fn tab_button_look(look: TabsItemLook, font_family: SharedString) -> ButtonFamilyLook {
     ButtonFamilyLook {
         background: hsla(0.0, 0.0, 0.0, 0.0),
         foreground: look.label_color,
@@ -606,14 +583,14 @@ fn tabs_navigation_button_look(look: TabsNavigationItemLook, font_family: Shared
 }
 
 fn render_accessory(
-    accessory: &TabsNavigationItemAccessory,
+    accessory: &TabsItemAccessory,
     color: gpui::Hsla,
     disclosure_icons: &crate::infra::icon::DisclosureIcons,
     disclosure_progress: f32,
 ) -> gpui::AnyElement {
     match accessory {
-        TabsNavigationItemAccessory::Icon(icon) => render_tab_icon_source(icon, color),
-        TabsNavigationItemAccessory::Disclosure { .. } => {
+        TabsItemAccessory::Icon(icon) => render_tab_icon_source(icon, color),
+        TabsItemAccessory::Disclosure { .. } => {
             render_disclosure_icon(disclosure_icons, disclosure_progress, color, TAB_ACCESSORY_SIZE)
         }
     }
@@ -626,44 +603,38 @@ fn render_tab_icon_source(icon: &IconSource, color: gpui::Hsla) -> gpui::AnyElem
     }
 }
 
-pub(crate) fn tabs_navigation_control_group_template(
+pub(crate) fn tabs_control_group_template(
     size: crate::theme::ControlSize,
-    width_mode: TabsNavigationWidthMode,
-    template: Arc<dyn TabsNavigationTemplate>,
-    indicator_motion: TabsNavigationIndicatorMotion,
+    width_mode: TabsWidthMode,
+    template: Arc<dyn TabsTemplate>,
+    indicator_motion: TabsIndicatorMotion,
     disclosure_icons: crate::infra::icon::DisclosureIcons,
     disclosure_progress: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<SharedString, f32>>>,
-) -> ControlGroupTemplate<TabsNavigationItem> {
+) -> ControlGroupTemplate<TabsItem> {
     Arc::new(move |model, handlers, window, cx| {
-        let tabs_model = tabs_navigation_render_model(
-            model,
-            size,
-            width_mode,
-            &indicator_motion,
-            &disclosure_icons,
-            &disclosure_progress,
-        );
+        let tabs_model =
+            tabs_render_model(model, size, width_mode, &indicator_motion, &disclosure_icons, &disclosure_progress);
         template.render(&tabs_model, handlers, window, cx)
     })
 }
 
-fn tabs_navigation_render_model<'a>(
-    model: &'a ControlGroupRenderModel<'a, TabsNavigationItem>,
+fn tabs_render_model<'a>(
+    model: &'a ControlGroupRenderModel<'a, TabsItem>,
     size: crate::theme::ControlSize,
-    width_mode: TabsNavigationWidthMode,
-    indicator_motion: &'a TabsNavigationIndicatorMotion,
+    width_mode: TabsWidthMode,
+    indicator_motion: &'a TabsIndicatorMotion,
     disclosure_icons: &'a crate::infra::icon::DisclosureIcons,
     disclosure_progress: &std::sync::Arc<std::sync::Mutex<std::collections::HashMap<SharedString, f32>>>,
-) -> TabsNavigationRenderModel<'a> {
+) -> TabsRenderModel<'a> {
     let progress = disclosure_progress.lock().expect("tabs disclosure progress lock");
-    TabsNavigationRenderModel {
+    TabsRenderModel {
         id: model.id,
         size,
         width_mode,
         items: model
             .items
             .iter()
-            .map(|item| TabsNavigationRenderItem {
+            .map(|item| TabsRenderItem {
                 id: item.item.id(),
                 label: item.item.label_text(),
                 trigger_kind: item.item.trigger_kind_value(),
@@ -692,9 +663,9 @@ mod tests {
 
     #[test]
     fn overlay_below_start_anchors_to_trigger_bottom_left() {
-        let placement = resolve_tabs_navigation_overlay_placement(
+        let placement = resolve_tabs_overlay_placement(
             Some(Bounds::new(point(px(40.0), px(10.0)), size(px(80.0), px(32.0)))),
-            TabsNavigationOverlayPlacement::BelowStart,
+            TabsOverlayPlacement::BelowStart,
             size(px(200.0), px(120.0)),
             px(6.0),
         );
@@ -706,9 +677,9 @@ mod tests {
 
     #[test]
     fn overlay_below_center_anchors_to_trigger_center_with_content_offset() {
-        let placement = resolve_tabs_navigation_overlay_placement(
+        let placement = resolve_tabs_overlay_placement(
             Some(Bounds::new(point(px(40.0), px(10.0)), size(px(80.0), px(32.0)))),
-            TabsNavigationOverlayPlacement::BelowCenter,
+            TabsOverlayPlacement::BelowCenter,
             size(px(200.0), px(120.0)),
             px(6.0),
         );

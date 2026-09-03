@@ -25,7 +25,7 @@ pub(crate) mod selector;
 pub(crate) mod selector_items_panel;
 pub(crate) mod slider;
 pub(crate) mod switch;
-pub(crate) mod tabs_navigation;
+pub(crate) mod tabs;
 pub(crate) mod templates;
 pub(crate) mod toggle;
 pub(crate) mod textfield;

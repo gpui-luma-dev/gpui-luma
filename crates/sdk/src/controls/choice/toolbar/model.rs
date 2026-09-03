@@ -8,7 +8,7 @@ use gpui::{
 use super::control::ToolbarControl;
 use super::template::{ToolbarTemplate, default_toolbar_template, modified_toolbar_template};
 use super::theme::ToolbarVariant;
-use crate::controls::command::button::Button;
+use crate::controls::button::Button;
 use crate::controls::control_group::{ControlGroupArrowPolicy, ControlGroupFocusStrategy, ControlGroupItemLike};
 use crate::controls::popup_menu::PopupMenu;
 use crate::infra::presenter::{HostedContent, Presenter};

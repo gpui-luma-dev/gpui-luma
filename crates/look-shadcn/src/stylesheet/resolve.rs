@@ -14,8 +14,8 @@ use super::config::{
     ListViewSurfaceColorRule, SidebarBranchColorRule, SidebarContainerColorRule, SidebarItemColorRule,
     SidebarMetricsRule, SidebarSectionColorRule, ProgressColorRule, ProgressMetricsRule, RadioColorRule,
     ResizablePanelsColorRule, ScrollbarMetricsRule, SliderMetricsRule, SliderColorRule, SplitViewColorRule,
-    StepperMetricsRule, SwitchColorRule, SwitchMetricsRule, ScrollbarColorRule, TabsNavigationItemColorRule,
-    TabsNavigationListColorRule, TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
+    StepperMetricsRule, SwitchColorRule, SwitchMetricsRule, ScrollbarColorRule, TabsItemColorRule, TabsListColorRule,
+    TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
 };
 
 /// Context for resolving derived stylesheet tokens (`@outline_layer`, `@action_layer`, etc.).
@@ -425,30 +425,30 @@ pub fn resolve_floating_menu_trigger_color_rule(
     Ok(ResolvedGhostTriggerColors { background, foreground })
 }
 
-pub fn resolve_tabs_navigation_list_color_rule(
+pub fn resolve_tabs_list_color_rule(
     resolver: &LookResolver<'_>,
-    rule: &TabsNavigationListColorRule,
-) -> anyhow::Result<ResolvedTabsNavigationListColors> {
+    rule: &TabsListColorRule,
+) -> anyhow::Result<ResolvedTabsListColors> {
     let disabled_background = resolve_stylesheet_color(
         resolver,
         &rule.disabled_background,
         &ResolvedFields::default(),
         &ResolveContext::default(),
     )?;
-    Ok(ResolvedTabsNavigationListColors { disabled_background })
+    Ok(ResolvedTabsListColors { disabled_background })
 }
 
-pub fn resolve_tabs_navigation_item_color_rule(
+pub fn resolve_tabs_item_color_rule(
     resolver: &LookResolver<'_>,
-    rule: &TabsNavigationItemColorRule,
+    rule: &TabsItemColorRule,
     layer: InteractionLayer,
-) -> anyhow::Result<ResolvedTabsNavigationItemColors> {
+) -> anyhow::Result<ResolvedTabsItemColors> {
     let ctx = ResolveContext { style: ShadcnButtonStyle::Primary, layer, disabled: false };
     let mut fields = ResolvedFields::default();
     let label_color = resolve_stylesheet_color(resolver, &rule.label_color, &fields, &ctx)?;
     fields.insert("label_color", label_color.clone());
     let indicator = resolve_optional_stylesheet_color(resolver, rule.indicator.as_deref(), &fields, &ctx)?;
-    Ok(ResolvedTabsNavigationItemColors { label_color, indicator })
+    Ok(ResolvedTabsItemColors { label_color, indicator })
 }
 
 pub fn resolve_tree_view_row_color_rule(
@@ -748,12 +748,12 @@ pub struct ResolvedGhostTriggerColors {
 }
 
 #[derive(Clone, Debug)]
-pub struct ResolvedTabsNavigationListColors {
+pub struct ResolvedTabsListColors {
     pub disabled_background: ResolvedColor,
 }
 
 #[derive(Clone, Debug)]
-pub struct ResolvedTabsNavigationItemColors {
+pub struct ResolvedTabsItemColors {
     pub label_color: ResolvedColor,
     pub indicator: Option<ResolvedColor>,
 }

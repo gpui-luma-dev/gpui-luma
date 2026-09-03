@@ -8,88 +8,84 @@
 //! | Disabled label    | `muted-foreground`            |
 //! | Disabled list bg  | `muted`                       |
 
-use luma::controls::tabs::{TabsNavigationItemLook, TabsNavigationListLook};
+use luma::controls::tabs::{TabsItemLook, TabsListLook};
 use luma::theme::{ControlSize, InteractionLayer, InteractionState};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_tabs_navigation_item_color_rule, find_tabs_navigation_list_color_rule,
-    resolve_tabs_navigation_item_color_rule, resolve_tabs_navigation_list_color_rule,
+    StylesheetConfig, embedded_stylesheet, find_tabs_item_color_rule, find_tabs_list_color_rule,
+    resolve_tabs_item_color_rule, resolve_tabs_list_color_rule,
 };
 
 #[derive(Clone, Debug)]
-pub struct TabsNavigationListColorTable {
+pub struct TabsListColorTable {
     pub disabled_background: ResolvedColor,
 }
 
-impl TabsNavigationListColorTable {
+impl TabsListColorTable {
     pub fn fallback() -> Self {
         Self { disabled_background: ResolvedColor::transparent() }
     }
 }
 
-pub fn resolve_tabs_navigation_list_colors(
-    resolver: &LookResolver<'_>,
-    enabled: bool,
-) -> anyhow::Result<TabsNavigationListColorTable> {
-    resolve_tabs_navigation_list_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+pub fn resolve_tabs_list_colors(resolver: &LookResolver<'_>, enabled: bool) -> anyhow::Result<TabsListColorTable> {
+    resolve_tabs_list_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
 }
 
-pub fn resolve_tabs_navigation_list_colors_with_stylesheet(
+pub fn resolve_tabs_list_colors_with_stylesheet(
     resolver: &LookResolver<'_>,
     stylesheet: &StylesheetConfig,
     enabled: bool,
-) -> anyhow::Result<TabsNavigationListColorTable> {
-    let rule = find_tabs_navigation_list_color_rule(stylesheet, enabled)
+) -> anyhow::Result<TabsListColorTable> {
+    let rule = find_tabs_list_color_rule(stylesheet, enabled)
         .ok_or_else(|| anyhow::anyhow!("no matching tabs navigation list color rule"))?;
-    let colors = resolve_tabs_navigation_list_color_rule(resolver, rule)?;
-    Ok(TabsNavigationListColorTable { disabled_background: colors.disabled_background })
+    let colors = resolve_tabs_list_color_rule(resolver, rule)?;
+    Ok(TabsListColorTable { disabled_background: colors.disabled_background })
 }
 
 #[derive(Clone, Debug)]
-pub struct TabsNavigationItemColorTable {
+pub struct TabsItemColorTable {
     pub label_color: ResolvedColor,
     pub indicator: Option<ResolvedColor>,
 }
 
-impl TabsNavigationItemColorTable {
+impl TabsItemColorTable {
     pub fn fallback() -> Self {
         Self { label_color: ResolvedColor::fallback_foreground(), indicator: None }
     }
 }
 
-pub fn resolve_tabs_navigation_item_colors(
+pub fn resolve_tabs_item_colors(
     resolver: &LookResolver<'_>,
     active: bool,
     layer: InteractionLayer,
     focused: bool,
-) -> anyhow::Result<TabsNavigationItemColorTable> {
-    resolve_tabs_navigation_item_colors_with_stylesheet(resolver, embedded_stylesheet(), active, layer, focused)
+) -> anyhow::Result<TabsItemColorTable> {
+    resolve_tabs_item_colors_with_stylesheet(resolver, embedded_stylesheet(), active, layer, focused)
 }
 
-pub fn resolve_tabs_navigation_item_colors_with_stylesheet(
+pub fn resolve_tabs_item_colors_with_stylesheet(
     resolver: &LookResolver<'_>,
     stylesheet: &StylesheetConfig,
     active: bool,
     layer: InteractionLayer,
     focused: bool,
-) -> anyhow::Result<TabsNavigationItemColorTable> {
-    let rule = find_tabs_navigation_item_color_rule(stylesheet, active, layer, focused)
+) -> anyhow::Result<TabsItemColorTable> {
+    let rule = find_tabs_item_color_rule(stylesheet, active, layer, focused)
         .ok_or_else(|| anyhow::anyhow!("no matching tabs navigation item color rule"))?;
-    let colors = resolve_tabs_navigation_item_color_rule(resolver, rule, layer)?;
-    Ok(TabsNavigationItemColorTable { label_color: colors.label_color, indicator: colors.indicator })
+    let colors = resolve_tabs_item_color_rule(resolver, rule, layer)?;
+    Ok(TabsItemColorTable { label_color: colors.label_color, indicator: colors.indicator })
 }
 
-pub fn tabs_navigation_list_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -> TabsNavigationListLook {
+pub fn tabs_list_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -> TabsListLook {
     let ctx = LookContext::new(mode, mode.theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tabs_navigation_list");
-    let colors = resolve_tabs_navigation_list_colors(&resolver, enabled)
-        .unwrap_or_else(|_| TabsNavigationListColorTable::fallback());
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tabs_list");
+    let colors = resolve_tabs_list_colors(&resolver, enabled).unwrap_or_else(|_| TabsListColorTable::fallback());
 
-    TabsNavigationListLook {
+    TabsListLook {
         background: if enabled {
             None
         } else {
@@ -102,26 +98,26 @@ pub fn tabs_navigation_list_look(mode: &ShadcnModeTokens, enabled: bool, size: C
     }
 }
 
-pub fn tabs_navigation_item_look(
+pub fn tabs_item_look(
     mode: &ShadcnModeTokens,
     active: bool,
     state: InteractionState,
     size: ControlSize,
-) -> TabsNavigationItemLook {
+) -> TabsItemLook {
     let ctx = LookContext::new(mode, mode.theme_mode, state);
     let metrics = ctx.metrics();
     let typography = ctx.typography();
     let layer = state.layer();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tabs_navigation_item");
-    let colors = resolve_tabs_navigation_item_colors(&resolver, active, layer, state.focused)
-        .unwrap_or_else(|_| TabsNavigationItemColorTable::fallback());
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tabs_item");
+    let colors = resolve_tabs_item_colors(&resolver, active, layer, state.focused)
+        .unwrap_or_else(|_| TabsItemColorTable::fallback());
     let label_typography = match size {
         ControlSize::Sm => typography.text.caption,
         ControlSize::Md => typography.text.label,
         ControlSize::Lg => typography.text.body,
     };
 
-    TabsNavigationItemLook {
+    TabsItemLook {
         label_color: colors.label_color.hsla(),
         indicator: colors.indicator.map(|color| color.hsla()),
         label_typography,
@@ -141,7 +137,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::tabs_navigation_item_look;
+    use super::tabs_item_look;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -163,8 +159,8 @@ mod tests {
     fn active_and_inactive_tabs_use_foreground() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let active = tabs_navigation_item_look(&mode, true, InteractionState::default(), ControlSize::Md);
-        let inactive = tabs_navigation_item_look(&mode, false, InteractionState::default(), ControlSize::Md);
+        let active = tabs_item_look(&mode, true, InteractionState::default(), ControlSize::Md);
+        let inactive = tabs_item_look(&mode, false, InteractionState::default(), ControlSize::Md);
 
         assert_eq!(active.label_color, catalog.color("foreground").expect("foreground"));
         assert_eq!(inactive.label_color, catalog.color("foreground").expect("foreground"));
@@ -175,7 +171,7 @@ mod tests {
     fn focused_active_tab_uses_primary_indicator() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let focused = tabs_navigation_item_look(
+        let focused = tabs_item_look(
             &mode,
             true,
             InteractionState { focused: true, ..InteractionState::default() },
@@ -189,9 +185,9 @@ mod tests {
     fn tab_typography_changes_with_size() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
-        let small = tabs_navigation_item_look(&mode, false, InteractionState::default(), ControlSize::Sm);
-        let medium = tabs_navigation_item_look(&mode, false, InteractionState::default(), ControlSize::Md);
-        let large = tabs_navigation_item_look(&mode, false, InteractionState::default(), ControlSize::Lg);
+        let small = tabs_item_look(&mode, false, InteractionState::default(), ControlSize::Sm);
+        let medium = tabs_item_look(&mode, false, InteractionState::default(), ControlSize::Md);
+        let large = tabs_item_look(&mode, false, InteractionState::default(), ControlSize::Lg);
 
         assert!(small.label_typography.size < medium.label_typography.size);
         assert!(medium.label_typography.size < large.label_typography.size);

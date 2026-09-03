@@ -1,3 +1,8 @@
+//! Listbox-in-a-panel selection control (always-visible option list).
+//!
+//! Distinct from [`crate::controls::selector`] (popup dropdown) and
+//! [`crate::controls::selector_list`] (shared list chrome, not a control).
+
 mod control;
 mod item_template;
 mod model;

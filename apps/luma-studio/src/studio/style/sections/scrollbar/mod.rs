@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
 use luma::controls::scrollbar::{ScrollbarOrientation, ScrollbarRenderModel, ScrollbarStyle, ScrollbarTemplate};
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::infra::value::ControlRange;
 use luma::theme::ControlSize;
 use luma_look_shadcn::ShadcnLook;
@@ -33,7 +33,7 @@ struct ScrollbarPreviewSample {
 
 pub(crate) fn render_scrollbar_template_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -55,7 +55,7 @@ pub(crate) fn render_scrollbar_template_section(
 
 fn render_scrollbar_preview_tabbed_content(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     active_tab: SharedString,
     border: gpui::Hsla,
     window: &mut Window,

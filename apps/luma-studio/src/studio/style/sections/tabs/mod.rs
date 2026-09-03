@@ -3,10 +3,9 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Bounds, IntoElement, Pixels, SharedString, Window, div, prelude::*, px};
 use lucide_svg_static::Icon as LucideIcon;
 use luma::controls::tabs::{
-    ControlFocusState as TabsControlFocusState, TabsNavigationBoundsHandler, TabsNavigationClickHandler,
-    TabsNavigationHoverHandler, TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler,
-    TabsNavigationMouseUpHandler, TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate,
-    TabsNavigationTemplateHandlers, TabsNavigationWidthMode,
+    ControlFocusState as TabsControlFocusState, TabsBoundsHandler, TabsClickHandler, TabsHoverHandler, TabsItem,
+    TabsItemState, TabsMouseDownHandler, TabsMouseUpHandler, TabsRenderItem, TabsRenderModel, TabsTemplate,
+    TabsTemplateHandlers, TabsWidthMode,
 };
 use luma::theme::ControlSize;
 use luma_look_shadcn::ShadcnLook;
@@ -17,23 +16,19 @@ use crate::studio::style::shared::preview_handlers::{
 use crate::studio::style::shared::shell::section_shell_with_width;
 
 #[derive(Clone, Copy)]
-struct TabsNavigationStateSample {
+struct TabsStateSample {
     id: &'static str,
     label: &'static str,
     active_index: usize,
     target_index: usize,
-    target_state: TabsNavigationItemState,
+    target_state: TabsItemState,
     enabled: bool,
 }
 
-pub(crate) fn render_tabs_navigation_template_section(
-    look: Arc<ShadcnLook>,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
+pub(crate) fn render_tabs_template_section(look: Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
     let chrome = look.chrome();
-    let template = look.tabs_navigation_template();
-    let samples = tabs_navigation_state_samples();
+    let template = look.tabs_template();
+    let samples = tabs_state_samples();
 
     section_shell_with_width(
         960.0,
@@ -48,32 +43,34 @@ pub(crate) fn render_tabs_navigation_template_section(
             .flex_col()
             .items_center()
             .gap(px(10.0))
-            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                samples.into_iter().map(|sample| {
-                    render_tabs_navigation_state_sample(&template, sample, chrome.muted_text, window, cx)
-                }),
-            ))
+            .child(
+                div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                    samples
+                        .into_iter()
+                        .map(|sample| render_tabs_state_sample(&template, sample, chrome.muted_text, window, cx)),
+                ),
+            )
             .into_any_element(),
     )
 }
 
-fn render_tabs_navigation_state_sample(
-    template: &Arc<dyn TabsNavigationTemplate>,
-    sample: TabsNavigationStateSample,
+fn render_tabs_state_sample(
+    template: &Arc<dyn TabsTemplate>,
+    sample: TabsStateSample,
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let id = SharedString::from(format!("luma-studio-tabs-navigation-preview-{}", sample.id));
-    let items = tabs_navigation_preview_tabs();
-    let active_id = items.get(sample.active_index).map(TabsNavigationItem::id);
+    let items = tabs_preview_tabs();
+    let active_id = items.get(sample.active_index).map(TabsItem::id);
     let render_items = items
         .iter()
         .enumerate()
         .map(|(index, item)| {
             let item_enabled = sample.enabled && item.is_enabled();
             let active = active_id.is_some_and(|active_id| active_id == item.id());
-            let mut state = TabsNavigationItemState { selected: active, ..TabsNavigationItemState::default() };
+            let mut state = TabsItemState { selected: active, ..TabsItemState::default() };
 
             if index == sample.target_index {
                 state = sample.target_state;
@@ -88,7 +85,7 @@ fn render_tabs_navigation_state_sample(
                 state.focus_visible = false;
             }
 
-            TabsNavigationRenderItem {
+            TabsRenderItem {
                 id: item.id(),
                 label: item.label_text(),
                 trigger_kind: item.trigger_kind_value(),
@@ -101,10 +98,10 @@ fn render_tabs_navigation_state_sample(
             }
         })
         .collect::<Vec<_>>();
-    let model = TabsNavigationRenderModel {
+    let model = TabsRenderModel {
         id: &id,
         size: ControlSize::Md,
-        width_mode: TabsNavigationWidthMode::Intrinsic,
+        width_mode: TabsWidthMode::Intrinsic,
         items: render_items,
         active_id,
         enabled: sample.enabled,
@@ -122,107 +119,101 @@ fn render_tabs_navigation_state_sample(
         .flex_col()
         .items_center()
         .gap(px(6.0))
-        .child(template.render(&model, tabs_navigation_preview_handlers(items.len()), window, cx))
+        .child(template.render(&model, tabs_preview_handlers(items.len()), window, cx))
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
 }
 
-fn tabs_navigation_state_samples() -> [TabsNavigationStateSample; 7] {
+fn tabs_state_samples() -> [TabsStateSample; 7] {
     [
-        TabsNavigationStateSample {
+        TabsStateSample {
             id: "inactive",
             label: "Inactive",
             active_index: 1,
             target_index: 0,
-            target_state: TabsNavigationItemState::default(),
+            target_state: TabsItemState::default(),
             enabled: true,
         },
-        TabsNavigationStateSample {
+        TabsStateSample {
             id: "active",
             label: "Active",
             active_index: 1,
             target_index: 1,
-            target_state: TabsNavigationItemState { selected: true, ..TabsNavigationItemState::default() },
+            target_state: TabsItemState { selected: true, ..TabsItemState::default() },
             enabled: true,
         },
-        TabsNavigationStateSample {
+        TabsStateSample {
             id: "hover",
             label: "Hover",
             active_index: 1,
             target_index: 0,
-            target_state: TabsNavigationItemState { hovered: true, ..TabsNavigationItemState::default() },
+            target_state: TabsItemState { hovered: true, ..TabsItemState::default() },
             enabled: true,
         },
-        TabsNavigationStateSample {
+        TabsStateSample {
             id: "focus",
             label: "Focus",
             active_index: 1,
             target_index: 1,
-            target_state: TabsNavigationItemState {
+            target_state: TabsItemState {
                 selected: true,
                 active: true,
                 focus_visible: true,
-                ..TabsNavigationItemState::default()
+                ..TabsItemState::default()
             },
             enabled: true,
         },
-        TabsNavigationStateSample {
+        TabsStateSample {
             id: "pressed",
             label: "Pressed",
             active_index: 1,
             target_index: 1,
-            target_state: TabsNavigationItemState {
+            target_state: TabsItemState {
                 selected: true,
                 active: true,
                 hovered: true,
                 pressed: true,
                 focus_visible: true,
-                ..TabsNavigationItemState::default()
+                ..TabsItemState::default()
             },
             enabled: true,
         },
-        TabsNavigationStateSample {
+        TabsStateSample {
             id: "disabled-item",
             label: "Disabled item",
             active_index: 1,
             target_index: 2,
-            target_state: TabsNavigationItemState { disabled: true, ..TabsNavigationItemState::default() },
+            target_state: TabsItemState { disabled: true, ..TabsItemState::default() },
             enabled: true,
         },
-        TabsNavigationStateSample {
+        TabsStateSample {
             id: "disabled-list",
             label: "Disabled list",
             active_index: 1,
             target_index: 1,
-            target_state: TabsNavigationItemState {
-                selected: true,
-                disabled: true,
-                ..TabsNavigationItemState::default()
-            },
+            target_state: TabsItemState { selected: true, disabled: true, ..TabsItemState::default() },
             enabled: false,
         },
     ]
 }
 
-fn tabs_navigation_preview_handlers(count: usize) -> TabsNavigationTemplateHandlers {
-    TabsNavigationTemplateHandlers {
-        item_bounds: (0..count).map(|_| Box::new(input_noop_bounds) as TabsNavigationBoundsHandler).collect(),
-        item_hovers: (0..count).map(|_| Box::new(input_noop_hover) as TabsNavigationHoverHandler).collect(),
-        item_mouse_downs: (0..count)
-            .map(|_| Box::new(input_noop_mouse_down) as TabsNavigationMouseDownHandler)
-            .collect(),
-        item_mouse_ups: (0..count).map(|_| Box::new(input_noop_mouse_up) as TabsNavigationMouseUpHandler).collect(),
-        item_mouse_up_outs: (0..count).map(|_| Box::new(input_noop_mouse_up) as TabsNavigationMouseUpHandler).collect(),
-        item_clicks: (0..count).map(|_| Box::new(input_noop_click) as TabsNavigationClickHandler).collect(),
+fn tabs_preview_handlers(count: usize) -> TabsTemplateHandlers {
+    TabsTemplateHandlers {
+        item_bounds: (0..count).map(|_| Box::new(input_noop_bounds) as TabsBoundsHandler).collect(),
+        item_hovers: (0..count).map(|_| Box::new(input_noop_hover) as TabsHoverHandler).collect(),
+        item_mouse_downs: (0..count).map(|_| Box::new(input_noop_mouse_down) as TabsMouseDownHandler).collect(),
+        item_mouse_ups: (0..count).map(|_| Box::new(input_noop_mouse_up) as TabsMouseUpHandler).collect(),
+        item_mouse_up_outs: (0..count).map(|_| Box::new(input_noop_mouse_up) as TabsMouseUpHandler).collect(),
+        item_clicks: (0..count).map(|_| Box::new(input_noop_click) as TabsClickHandler).collect(),
     }
 }
 
 fn input_noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
 
-fn tabs_navigation_preview_tabs() -> [TabsNavigationItem; 3] {
+fn tabs_preview_tabs() -> [TabsItem; 3] {
     [
-        TabsNavigationItem::new("overview").label("Overview"),
-        TabsNavigationItem::new("activity").label("Activity"),
-        TabsNavigationItem::new("settings").label("Settings").enabled(false),
+        TabsItem::new("overview").label("Overview"),
+        TabsItem::new("activity").label("Activity"),
+        TabsItem::new("settings").label("Settings").enabled(false),
     ]
 }

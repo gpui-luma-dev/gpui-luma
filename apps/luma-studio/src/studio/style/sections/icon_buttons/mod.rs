@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
 use luma::controls::button::{ButtonTemplate, default_button_template};
-use luma::controls::tabs::TabsNavigation;
+use luma::controls::tabs::Tabs;
 use luma::theme::InteractionState;
 use luma_look_shadcn::ShadcnLook;
 
@@ -16,7 +16,7 @@ use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateT
 
 pub(crate) fn render_icon_button_template_matrix_section(
     look: Arc<ShadcnLook>,
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -75,7 +75,7 @@ fn render_icon_button_preview_tabbed_content(
     look: &ShadcnLook,
     template: &Arc<dyn ButtonTemplate<()>>,
     samples: &[ButtonStateSample],
-    preview_tabs: Entity<TabsNavigation>,
+    preview_tabs: Entity<Tabs>,
     active_tab: SharedString,
     border: gpui::Hsla,
     window: &mut Window,

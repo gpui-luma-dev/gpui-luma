@@ -6,7 +6,7 @@ use super::button_item_template::button_item_template;
 use super::model::{ControlGroupItemLike, ControlGroupItemRenderModel};
 use super::template::{ControlGroupItemTemplate, make_control_group_item_template};
 use crate::controls::button_family::ButtonFamilyRole;
-use crate::controls::command::button::ButtonTemplate;
+use crate::controls::button::ButtonTemplate;
 use crate::controls::toggle::ToggleData;
 
 /// Icon/control-group items with [`ButtonFamilyRole::Toggle`].
@@ -36,7 +36,7 @@ where
     let content_fn = Arc::new(content_fn);
     make_control_group_item_template(move |item: &ControlGroupItemRenderModel<'_, T>, window, cx| {
         let item_data = item.item.clone();
-        let render_model = crate::controls::command::button::ButtonRenderModel {
+        let render_model = crate::controls::button::ButtonRenderModel {
             id: format!("{}-{}", item.group_id, item.item.id()).into(),
             data: ToggleData { selected: item.selected, progress: item.selection_progress },
             content: Arc::new({

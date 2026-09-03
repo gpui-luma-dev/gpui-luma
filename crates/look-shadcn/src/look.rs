@@ -565,12 +565,12 @@ impl ShadcnLook {
         templates::selection_panel_look_provider(Arc::clone(self))
     }
 
-    pub fn tabs_navigation_template(self: &Arc<Self>) -> Arc<dyn luma::controls::tabs::TabsNavigationTemplate> {
-        templates::tabs_navigation_template(Arc::clone(self))
+    pub fn tabs_template(self: &Arc<Self>) -> Arc<dyn luma::controls::tabs::TabsTemplate> {
+        templates::tabs_template(Arc::clone(self))
     }
 
-    pub fn tabs_navigation_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::tabs::TabsNavigationTheme> {
-        templates::tabs_navigation_theme(Arc::clone(self))
+    pub fn tabs_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::tabs::TabsTheme> {
+        templates::tabs_theme(Arc::clone(self))
     }
 
     pub fn accordion_template(self: &Arc<Self>) -> Arc<dyn luma::controls::accordion::AccordionTemplate> {

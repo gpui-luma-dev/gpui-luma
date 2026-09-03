@@ -9,7 +9,7 @@ use std::sync::{Arc, RwLock};
 
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use luma::controls::search_selector::SearchSelector;
-use luma::controls::tabs::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode};
+use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
 
 use luma::theme::ControlSize;
 use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
@@ -21,7 +21,7 @@ use self::theme_selector::{
     ThemeSelectorSwatchCache, render_theme_search_selector_item, theme_search_selector_panel_template,
     theme_search_selector_template, theme_selector_state,
 };
-use super::content_tabs::luma_studio_tabs_navigation_template;
+use super::content_tabs::luma_studio_tabs_template;
 use crate::studio::app::LumaStudioApp;
 use crate::studio::overrides::StudioOverrides;
 
@@ -31,7 +31,7 @@ pub struct ThemeSidebar {
     theme_selector: SearchSelector,
     theme_selector_swatches: Arc<RwLock<ThemeSelectorSwatchCache>>,
     theme_selector_selected_id: Arc<RwLock<SharedString>>,
-    tabs: Entity<TabsNavigation>,
+    tabs: Entity<Tabs>,
     active_tab: SidebarTab,
     colors_panel: Entity<ColorsPanel>,
     colors_host: Entity<PanelContextMenuHost>,
@@ -98,19 +98,19 @@ impl ThemeSidebar {
         let tabs = look
             .tabs("luma-studio-sidebar-tabs")
             .size(ControlSize::Lg)
-            .width_mode(TabsNavigationWidthMode::Uniform)
-            .template(luma_studio_tabs_navigation_template(look.clone(), ControlSize::Lg))
+            .width_mode(TabsWidthMode::Uniform)
+            .template(luma_studio_tabs_template(look.clone(), ControlSize::Lg))
             .items([
-                TabsNavigationItem::new("colors").label("Colors"),
-                TabsNavigationItem::new("typography").label("Typography"),
-                TabsNavigationItem::new("other").label("Other"),
+                TabsItem::new("colors").label("Colors"),
+                TabsItem::new("typography").label("Typography"),
+                TabsItem::new("other").label("Other"),
             ])
             .active("colors")
             .spawn(cx);
 
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&tabs, |sidebar, _, event: &TabsNavigationEvent, cx| {
-            let TabsNavigationEvent::Activate { tab_id, .. } = event else {
+        subscriptions.push(cx.subscribe(&tabs, |sidebar, _, event: &TabsEvent, cx| {
+            let TabsEvent::Activate { tab_id, .. } = event else {
                 return;
             };
             if let Some(tab) = SidebarTab::from_id(tab_id.as_ref()) {

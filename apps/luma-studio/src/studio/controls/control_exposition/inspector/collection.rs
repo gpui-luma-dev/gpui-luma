@@ -2,7 +2,7 @@ use luma_look_shadcn_inspect::{
     AccordionContentInspectPalette, AccordionTriggerInspectPalette, ListBoxListInspectPalette,
     ListBoxRowInspectPalette, ListViewInspectPalette, ListViewRowInspectPalette, SidebarContainerInspectPalette,
     SidebarItemInspectPalette, SidebarSectionInspectPalette, PagerShellInspectPalette, ResizablePanelsInspectPalette,
-    SplitViewInspectPalette, TabsNavigationItemInspectPalette, TabsNavigationListInspectPalette, ToolbarInspectPalette,
+    SplitViewInspectPalette, TabsItemInspectPalette, TabsListInspectPalette, ToolbarInspectPalette,
     TreeViewRowInspectPalette,
 };
 
@@ -75,7 +75,7 @@ pub fn sidebar_item_color_rows(palette: &SidebarItemInspectPalette) -> Vec<Inspe
     rows
 }
 
-pub fn tabs_navigation_item_color_rows(palette: &TabsNavigationItemInspectPalette) -> Vec<InspectColorRow> {
+pub fn tabs_item_color_rows(palette: &TabsItemInspectPalette) -> Vec<InspectColorRow> {
     let mut rows = vec![color_row("label", &palette.label_color)];
     if let Some(indicator) = &palette.indicator {
         rows.push(color_row("indicator", indicator));
@@ -83,7 +83,7 @@ pub fn tabs_navigation_item_color_rows(palette: &TabsNavigationItemInspectPalett
     rows
 }
 
-pub fn tabs_navigation_list_color_rows(palette: &TabsNavigationListInspectPalette) -> Vec<InspectColorRow> {
+pub fn tabs_list_color_rows(palette: &TabsListInspectPalette) -> Vec<InspectColorRow> {
     palette
         .background
         .as_ref()

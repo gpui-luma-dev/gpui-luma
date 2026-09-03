@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::controls::command::button::{ButtonTemplate, default_button_template};
+use crate::controls::button::{ButtonTemplate, default_button_template};
 use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 use super::PagerStyle;

@@ -1,5 +1,11 @@
-//! Shared menu renderer and highlight state. Not a spawnable LMTP entity —
-//! `popup_menu` / `context_menu` own the entity and call these templates.
+//! Shared menu renderer and highlight state.
+//!
+//! **Not a spawnable LMTP control.** There is no `FloatingMenu` entity and no
+//! `look.floating_menu(id)` factory. `popup_menu` / `context_menu` own the entities
+//! and call these templates for list chrome, highlight motion, and submenu presence.
+//!
+//! Prefer those spawnable controls for app composition; import this module only when
+//! building a look template or a derived menu surface.
 
 mod model;
 mod template;

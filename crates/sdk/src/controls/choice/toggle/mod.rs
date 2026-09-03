@@ -10,7 +10,7 @@ use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::button_family::{
     ButtonFamilyPalette, ButtonFamilyRole, button_family_effective_border, default_button_family_theme,
 };
-use crate::controls::command::button::{
+use crate::controls::button::{
     Button, ButtonBuilder, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate,
 };
 use crate::infra::presenter::{ControlPresenter, HasPresenter};
@@ -194,7 +194,7 @@ pub struct ToggleBuilder {
 }
 
 impl ToggleBuilder {
-    pub fn icon(self, icon: impl Into<crate::controls::command::button::ControlIcon>) -> Self {
+    pub fn icon(self, icon: impl Into<crate::controls::button::ControlIcon>) -> Self {
         Self { button: self.button.icon(icon), ..self }
     }
 
