@@ -1,9 +1,5 @@
 use gpui::SharedString;
 
-pub use crate::controls::selector_item_template::{
-    SelectorItemRenderModel, SelectorItemTemplate, make_selector_item_template,
-};
-
 use crate::controls::icon::IconSource;
 
 pub trait SelectorItemLike {

@@ -1,13 +1,17 @@
+//! Shared selector item-list chrome used by [`super::selector`], combobox, and autocomplete.
+//!
+//! This is not a spawnable control. Prefer [`super::selector`] (popup dropdown) or
+//! [`super::selection_panel`] (listbox-in-a-panel).
+
+mod item_template;
 mod items_template;
 mod model;
 
-pub use model::{
-    SelectorItem, SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorPath,
-    make_selector_item_template, normalize_selector_items,
-};
+pub use item_template::{SelectorItemRenderModel, SelectorItemTemplate, make_selector_item_template};
 pub use items_template::{
     DefaultSelectorItemsTemplate, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplate,
     SelectorItemsTemplateHandlers, SelectorItemsTemplateModifier, SelectorPanelClickHandler, SelectorPanelHoverHandler,
     SelectorPanelMouseDownHandler, default_selector_items_panel_look, default_selector_items_template,
 };
+pub use model::{SelectorItem, SelectorItemLike, SelectorPath, normalize_selector_items};
 pub(crate) use items_template::items_template_with_modifier;

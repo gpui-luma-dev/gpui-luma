@@ -4,7 +4,7 @@ use gpui::{
     prelude::*, px,
 };
 
-use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
+use crate::controls::selector_list::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::animation::DisclosureMotion;
 use crate::controls::selector::SelectorVisualState;
 use crate::controls::interaction::ControlInteraction;

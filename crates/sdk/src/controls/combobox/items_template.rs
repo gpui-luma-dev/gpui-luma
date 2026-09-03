@@ -4,7 +4,7 @@ use gpui::{App, SharedString, Stateful, div, prelude::*, px};
 
 use super::behavior::SelectionItem;
 use super::item_template::ComboBoxItemTemplate;
-use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
+use crate::controls::selector_list::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
 
 pub struct ComboBoxItemsRenderModel<'a> {
     pub menu_id: &'a SharedString,

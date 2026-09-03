@@ -8,7 +8,7 @@ use gpui::{
 use crate::controls::button_family::button_family_effective_border;
 use crate::controls::icon::lucide_icon;
 use crate::controls::selector::SelectorLook;
-use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
+use crate::controls::selector_list::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::controls::overlay_presence::OverlayPresence;
 
 use super::behavior::SelectionItem;

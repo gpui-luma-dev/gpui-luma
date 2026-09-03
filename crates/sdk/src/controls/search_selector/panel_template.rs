@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{AnyElement, App, Bounds, Pixels, SharedString, anchored, deferred, div, point, prelude::*, px};
 
-use crate::controls::selector_panel::SelectorItemsPanelLook;
+use crate::controls::selector_list::SelectorItemsPanelLook;
 
 use super::behavior::SelectionItem;
 use super::item_template::SearchSelectorItemTemplate;

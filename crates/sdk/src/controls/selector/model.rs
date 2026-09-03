@@ -5,14 +5,11 @@ use gpui::{App, AppContext, Bounds, Entity, IntoElement, Pixels, SharedString};
 use super::{ControlFocusState, Selector, SelectorTemplate, SelectorVisualState, default_selector_template};
 use crate::theme::InteractionState;
 use super::template::modified_selector_template;
-pub use crate::controls::selector_item_template::{
-    SelectorItemRenderModel, SelectorItemTemplate, make_selector_item_template,
+pub use crate::controls::selector_list::{
+    SelectorItem, SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorItemsTemplate, SelectorPath,
+    default_selector_items_template, make_selector_item_template, normalize_selector_items,
 };
-pub use crate::controls::selector_panel::{
-    SelectorItem, SelectorItemLike, SelectorItemsTemplate, SelectorPath, default_selector_items_template,
-    normalize_selector_items,
-};
-use crate::controls::selector_panel::items_template_with_modifier;
+use crate::controls::selector_list::items_template_with_modifier;
 use crate::theme::ControlSize;
 use crate::controls::overlay_presence::OverlayPresence;
 use crate::controls::icon::IconSource;
@@ -229,7 +226,7 @@ where
     where
         F: for<'a> Fn(
                 gpui::Stateful<gpui::Div>,
-                &crate::controls::selector_panel::SelectorItemsRenderModel<'a, T>,
+                &crate::controls::selector_list::SelectorItemsRenderModel<'a, T>,
             ) -> gpui::Stateful<gpui::Div>
             + Send
             + Sync

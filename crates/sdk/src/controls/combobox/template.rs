@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use crate::controls::icon::lucide_icon;
-use crate::controls::selector_panel::SelectorItemsPanelLook;
+use crate::controls::selector_list::SelectorItemsPanelLook;
 use crate::controls::overlay_presence::OverlayPresence;
 
 pub type ComboBoxKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;

@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use crate::controls::icon::lucide_icon;
-use crate::controls::selector_panel::{
+use crate::controls::selector_list::{
     SelectorItem, SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler,
 };
 use crate::controls::overlay_presence::OverlayPresence;

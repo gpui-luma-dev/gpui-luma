@@ -190,7 +190,7 @@ where
             presence: self.presence,
             trigger_bounds: self.trigger_bounds,
             placement: self.model.placement,
-            active_path: self.active_index.map(crate::controls::selector_panel::SelectorPath::Item),
+            active_path: self.active_index.map(crate::controls::selector_list::SelectorPath::Item),
             enabled: self.model.enabled,
             size: self.model.size,
             trigger_style: self.model.trigger_style,

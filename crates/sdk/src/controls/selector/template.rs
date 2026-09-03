@@ -10,7 +10,7 @@ use super::item_template::render_item_content;
 
 use crate::controls::button_family::button_family_effective_border;
 use crate::controls::color::style::ElementExt;
-use crate::controls::selector_panel::{
+use crate::controls::selector_list::{
     SelectorItem, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
     default_selector_items_template,
 };
@@ -379,7 +379,7 @@ where
                     let on_item_mouse_down = on_item_mouse_down.clone();
                     Box::new(move |event: &MouseDownEvent, window: &mut Window, cx: &mut App| {
                         on_item_mouse_down(model_index, event, window, cx);
-                    }) as crate::controls::selector_panel::SelectorPanelMouseDownHandler
+                    }) as crate::controls::selector_list::SelectorPanelMouseDownHandler
                 })
                 .collect::<Vec<_>>();
             let item_clicks = (0..model.items.len())

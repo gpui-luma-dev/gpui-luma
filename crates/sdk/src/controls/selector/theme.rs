@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
+use crate::controls::selector_list::{SelectorItemsPanelLook, default_selector_items_panel_look};
 use crate::controls::textfield::apply_control_size_typography;
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,

@@ -3,7 +3,7 @@ use gpui::{
     ScrollWheelEvent, SharedString, Subscription, TextRun, Window, font, px,
 };
 
-use crate::controls::selector_panel::{SelectorPanelClickHandler, SelectorPanelHoverHandler};
+use crate::controls::selector_list::{SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::textfield::{TextFieldState, TextFieldVariant};
 use crate::theme::observe_theme_revision;

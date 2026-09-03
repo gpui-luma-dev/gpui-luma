@@ -10,7 +10,7 @@ use super::template::{
     default_autocomplete_textbox_template, modified_autocomplete_items_template,
     modified_autocomplete_textbox_template,
 };
-use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
+use crate::controls::selector_list::{SelectorItemsPanelLook, default_selector_items_panel_look};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 use crate::controls::textfield::{TextFieldTemplate, default_textfield_template};
 use crate::theme::{ControlSize, ThemeTokens};

@@ -5,7 +5,8 @@ use gpui::{
     prelude::*, px,
 };
 use crate::controls::icon::{IconSource, render_icon_source};
-use crate::controls::selector_panel::{SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorPath};
+use super::item_template::{SelectorItemRenderModel, SelectorItemTemplate};
+use super::model::{SelectorItemLike, SelectorPath};
 use crate::controls::state::ControlFocusState;
 use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
