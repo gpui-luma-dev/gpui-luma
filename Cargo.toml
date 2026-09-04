@@ -4,6 +4,7 @@ members = [
   "crates/font-assets",
   "crates/sdk",
   "crates/look-shadcn",
+  "crates/look-shadcn-assets",
   "crates/look-shadcn-inspect",
   "apps/luma-studio",
   "apps/neumorphic-demo",
@@ -26,6 +27,11 @@ publish = false
 
 [workspace.dependencies]
 anyhow = "1"
+luma = { package = "gpui-luma-sdk", path = "crates/sdk" }
+luma-look-shadcn = { package = "gpui-luma-look-shadcn", path = "crates/look-shadcn" }
+luma-shadcn-assets = { package = "gpui-luma-shadcn-assets", path = "crates/look-shadcn-assets" }
+luma-look-shadcn-inspect = { package = "gpui-luma-look-shadcn-inspect", path = "crates/look-shadcn-inspect" }
+luma-fonts = { path = "crates/font-assets" }
 gpui = { package = "gpui-unofficial", version = "1.13.1" }
 lucide-svg-static = { package = "lucide-static-svg", git = "https://github.com/scottcg/lucide-svg-static" }
 gpui_platform = {
@@ -52,7 +58,7 @@ codegen-units = 16
 debug = "limited"
 split-debuginfo = "unpacked"
 
-[profile.dev.package.luma]
+[profile.dev.package.gpui-luma-sdk]
 opt-level = 2
 
 [profile.dev.package.luma-studio]

@@ -117,17 +117,6 @@ impl ShadcnLookSnapshot {
 }
 
 impl ShadcnLook {
-    pub fn native() -> Self {
-        Self::from_css_str(include_str!("../assets/native.css")).expect("embedded shadcn native CSS should parse")
-    }
-
-    pub fn from_built_in_theme(theme_id: &str) -> anyhow::Result<Self> {
-        let Some(theme) = crate::built_in_theme(theme_id) else {
-            anyhow::bail!("unknown built-in shadcn theme `{theme_id}`");
-        };
-        Self::from_css_str(theme.css)
-    }
-
     /// Loads shadcn palette tokens from tweakcn-style CSS (`:root` / `.dark` custom properties).
     pub fn from_css_str(source: &str) -> anyhow::Result<Self> {
         let catalog = parse_css_catalog(source)?;
@@ -966,14 +955,14 @@ mod tests {
 
     #[test]
     fn native_look_resolves_primary_color() {
-        let look = ShadcnLook::native();
+        let look = crate::test_support::native_look();
         let primary = look.color(ShadcnToken::Primary);
         assert!(primary.a > 0.0);
     }
 
     #[test]
     fn radius_scales_from_base_token() {
-        let look = ShadcnLook::native();
+        let look = crate::test_support::native_look();
         assert!(look.radius(ShadcnRadius::Lg) >= look.radius(ShadcnRadius::Sm));
     }
 
@@ -983,7 +972,7 @@ mod tests {
         let css = hsla_to_css_value(color);
         assert_eq!(css, "hsla(120 100% 50% / 0.000)");
 
-        let look = ShadcnLook::native();
+        let look = crate::test_support::native_look();
         let overridden = look.with_color_overrides(&HashMap::from([(String::from("--accent"), color)]));
         assert_eq!(overridden.color(ShadcnToken::Accent).a, 0.0);
     }

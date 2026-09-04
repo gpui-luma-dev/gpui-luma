@@ -2442,6 +2442,55 @@ dependencies = [
 ]
 
 [[package]]
+name = "gpui-luma-look-shadcn"
+version = "0.9.0-alpha.1"
+dependencies = [
+ "anyhow",
+ "gpui-luma-sdk",
+ "gpui-unofficial",
+ "lucide-static-svg",
+ "palette",
+ "serde",
+ "toml 0.8.23",
+]
+
+[[package]]
+name = "gpui-luma-look-shadcn-inspect"
+version = "0.9.0-alpha.1"
+dependencies = [
+ "anyhow",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-sdk",
+ "gpui-luma-shadcn-assets",
+ "gpui-unofficial",
+]
+
+[[package]]
+name = "gpui-luma-sdk"
+version = "0.9.0-alpha.1"
+dependencies = [
+ "anyhow",
+ "darling",
+ "gpui-unofficial",
+ "image",
+ "lucide-static-svg",
+ "palette",
+ "serde",
+ "smallvec",
+ "tiny-skia",
+ "toml 0.8.23",
+ "ttf-parser",
+]
+
+[[package]]
+name = "gpui-luma-shadcn-assets"
+version = "0.9.0-alpha.1"
+dependencies = [
+ "anyhow",
+ "gpui-luma-look-shadcn",
+]
+
+[[package]]
 name = "gpui-macos-gpui-unofficial"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3582,35 +3631,19 @@ version = "1.40.0"
 source = "git+https://github.com/scottcg/lucide-svg-static#c036f0f9acc494bf4d658fde756cbd04b1564907"
 
 [[package]]
-name = "luma"
-version = "0.9.0-alpha.1"
-dependencies = [
- "anyhow",
- "darling",
- "gpui-unofficial",
- "image",
- "lucide-static-svg",
- "palette",
- "serde",
- "smallvec",
- "tiny-skia",
- "toml 0.8.23",
- "ttf-parser",
-]
-
-[[package]]
 name = "luma-color-viz"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-sdk",
+ "gpui-luma-shadcn-assets",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
  "image",
  "lucide-static-svg",
- "luma",
  "luma-fonts",
- "luma-look-shadcn",
  "palette",
  "smallvec",
  "tiny-skia",
@@ -3628,38 +3661,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "luma-look-shadcn"
-version = "0.9.0-alpha.1"
-dependencies = [
- "anyhow",
- "gpui-unofficial",
- "lucide-static-svg",
- "luma",
- "palette",
- "serde",
- "toml 0.8.23",
-]
-
-[[package]]
-name = "luma-look-shadcn-inspect"
-version = "0.9.0-alpha.1"
-dependencies = [
- "anyhow",
- "gpui-unofficial",
- "luma",
- "luma-look-shadcn",
-]
-
-[[package]]
 name = "luma-neumorphic-demo"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
  "lucide-static-svg",
- "luma",
 ]
 
 [[package]]
@@ -3667,12 +3677,13 @@ name = "luma-shell-common"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-sdk",
+ "gpui-luma-shadcn-assets",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "lucide-static-svg",
- "luma",
  "luma-fonts",
- "luma-look-shadcn",
  "tracing",
 ]
 
@@ -3681,12 +3692,12 @@ name = "luma-shell-detached"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
  "lucide-static-svg",
- "luma",
- "luma-look-shadcn",
  "luma-shell-common",
 ]
 
@@ -3695,12 +3706,12 @@ name = "luma-shell-icon-rail"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
  "lucide-static-svg",
- "luma",
- "luma-look-shadcn",
  "luma-shell-common",
 ]
 
@@ -3709,12 +3720,12 @@ name = "luma-shell-inset"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
  "lucide-static-svg",
- "luma",
- "luma-look-shadcn",
  "luma-shell-common",
 ]
 
@@ -3723,12 +3734,12 @@ name = "luma-shell-split-titlebar"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
  "lucide-static-svg",
- "luma",
- "luma-look-shadcn",
  "luma-shell-common",
 ]
 
@@ -3737,12 +3748,12 @@ name = "luma-shell-unified"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
  "lucide-static-svg",
- "luma",
- "luma-look-shadcn",
  "luma-shell-common",
 ]
 
@@ -3751,12 +3762,12 @@ name = "luma-shell-vscode"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
  "lucide-static-svg",
- "luma",
- "luma-look-shadcn",
  "luma-shell-common",
 ]
 
@@ -3765,14 +3776,15 @@ name = "luma-studio"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-look-shadcn-inspect",
+ "gpui-luma-sdk",
+ "gpui-luma-shadcn-assets",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
  "lucide-static-svg",
- "luma",
  "luma-fonts",
- "luma-look-shadcn",
- "luma-look-shadcn-inspect",
  "palette",
  "serde",
  "thiserror 2.0.18",

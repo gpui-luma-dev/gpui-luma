@@ -1,9 +1,12 @@
 [package]
-name = "luma"
+name = "gpui-luma-sdk"
 version.workspace = true
 edition = "2024"
 license = "Apache-2.0"
 publish = false
+
+[lib]
+name = "luma"
 
 [dependencies]
 gpui.workspace = true

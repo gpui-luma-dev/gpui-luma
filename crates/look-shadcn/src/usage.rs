@@ -313,11 +313,10 @@ const fn part(
 #[cfg(test)]
 mod tests {
     use super::all_shadcn_theme_usages;
-    use crate::ShadcnLook;
 
     #[test]
     fn shadcn_usage_tokens_resolve_in_css_theme() {
-        let theme = ShadcnLook::from_built_in_theme("retro-arcade").expect("retro-arcade css");
+        let theme = crate::test_support::built_in_look("retro-arcade");
         for usage in all_shadcn_theme_usages() {
             for part in usage.parts {
                 let resolves = theme.token_color(part.token).is_ok() || theme.parse_shadow_token(part.token).is_ok();

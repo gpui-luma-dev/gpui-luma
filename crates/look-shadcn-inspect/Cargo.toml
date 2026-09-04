@@ -1,15 +1,21 @@
 [package]
-name = "luma-look-shadcn-inspect"
+name = "gpui-luma-look-shadcn-inspect"
 version.workspace = true
 edition = "2024"
 license = "Apache-2.0"
 publish = false
 
+[lib]
+name = "luma_look_shadcn_inspect"
+
 [dependencies]
 gpui.workspace = true
-luma = { path = "../sdk" }
-luma-look-shadcn = { path = "../look-shadcn" }
+luma.workspace = true
+luma-look-shadcn.workspace = true
 anyhow.workspace = true
+
+[dev-dependencies]
+luma-shadcn-assets.workspace = true
 
 [lints]
 workspace = true

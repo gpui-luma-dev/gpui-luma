@@ -13,7 +13,8 @@ use luma::controls::search_selector::{
 };
 use luma::controls::selector::SelectorTheme;
 use luma::theme::{InteractionState, StandardBoxScale};
-use luma_look_shadcn::{BuiltInTheme, ShadcnLook};
+use luma_look_shadcn::ShadcnLook;
+use luma_shadcn_assets::{BuiltInTheme, built_in_look, native_look};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::theme::available_themes;
@@ -67,13 +68,13 @@ fn built_in_theme_selector_entry(
     theme: &BuiltInTheme,
     current_look: &ShadcnLook,
 ) -> Option<(SharedString, SharedString, ThemeSwatches)> {
-    let look = ShadcnLook::from_built_in_theme(theme.id).ok()?;
+    let look = built_in_look(theme.id).ok()?;
     look.set_mode(current_look.mode());
     Some((SharedString::from(theme.id), SharedString::from(theme.display_name()), swatches_for_look(&look)))
 }
 
 fn native_look_for_mode(current_look: &ShadcnLook) -> ShadcnLook {
-    let look = ShadcnLook::native();
+    let look = native_look();
     look.set_mode(current_look.mode());
     look
 }

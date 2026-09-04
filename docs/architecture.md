@@ -10,11 +10,12 @@ This document defines the core architecture, crate layout, module mapping, and d
 
 ### Workspace Crates
 
-*   **`crates/sdk` (`luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels).
-*   **`crates/font-assets` (`luma-fonts`)**: Shared embedded font assets and GPUI text-system registration helpers. Applications register bundled fonts at startup; the SDK remains font-file agnostic.
+*   **`crates/sdk` (`gpui-luma-sdk`, rustc crate `luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels).
+*   **`crates/font-assets` (`luma-fonts`)**: Dev/demo embedded font assets and GPUI text-system registration helpers. Applications register chosen fonts at startup; the SDK and look runtime remain font-file agnostic. Not a production default of the look crate. A later `google-fonts-static`-style crate may replace this.
 *   **`crates/lucide-svg-static`**: Experimental generated-style, renderer-neutral Lucide SVG asset crate. It currently packages the three chevrons used by the SVG rotation spike; the intended follow-up is automated generation from pinned upstream Lucide releases.
-*   **`crates/look-shadcn` (`luma-look-shadcn`)**: The CSS-first product runtime theme (Shadcn/CSS look crate). It defines styling catalogs, stylesheet config matching, and look-specific extensions.
-*   **`crates/look-shadcn-inspect`**: Support utilities for theme visual inspection and palette debugging.
+*   **`crates/look-shadcn` (`gpui-luma-look-shadcn`, rustc crate `luma_look_shadcn`)**: Shadcn look **runtime** — CSS catalog parsing, `style.toml` recipe matching, and look-specific control factories. Callers supply CSS via `ShadcnLook::from_css_str` (or a path). It does not embed tweakcn theme packs. `look-core` is **not** a crate yet; extract it only after this split is stable.
+*   **`crates/look-shadcn-assets` (`gpui-luma-shadcn-assets`, rustc crate `luma_shadcn_assets`)**: Optional CSS theme packs (`native.css`, tweakcn) for Studio and shells. Production apps should pick and pass their own CSS rather than depending on this crate.
+*   **`crates/look-shadcn-inspect` (`gpui-luma-look-shadcn-inspect`, rustc crate `luma_look_shadcn_inspect`)**: Support utilities for theme visual inspection and palette debugging.
 *   **`apps/luma-studio` (`luma-studio`)**: The theme customization dashboard, control documentation studio, and visual design testing app. System font classification for typography pickers lives in `studio/font_catalog/`.
 *   **`apps/color-viz` (`luma-color-viz`)**: Color visualization workspace (Shadcn look, shared theme CLI).
 *   **`apps/shells/`**: Full-window shell reference apps — `SplitView` recipes (unified, inset, icon-rail, detached, split-titlebar) plus `vscode` (Luma Studio `ResizablePanels` workbench shell) — with shared theme and, where applicable, the Properties `SidebarControl` sample from `apps/shells/common`.
@@ -26,12 +27,18 @@ graph TD
     Studio[apps/luma-studio] --> SDK[crates/sdk]
     SDK --> Lucide[Lucide SVG assets]
     Studio --> Look[crates/look-shadcn]
+    Studio --> Assets[crates/look-shadcn-assets]
+    Studio --> Fonts[crates/font-assets]
     ColorViz[apps/color-viz] --> SDK
     ColorViz --> Look
-    GraphViz --> Look
+    ColorViz --> Assets
+    ColorViz --> Fonts
     Shells[apps/shells] --> SDK
     Shells --> Look
+    Shells --> Assets
+    Shells --> Fonts
     Look --> SDK
+    Assets --> Look
     LookInspect[crates/look-shadcn-inspect] --> Look
     LookInspect --> SDK
 ```
@@ -97,7 +104,7 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
 *   **Semantic icon decisions:** TextArea exposes its draggable resize-handle icon through `TextAreaBuilder::resize_handle_icon`; Selector item checkmarks share `SelectorIcons::selected`; and shell title-bar minimize, maximize/restore, and close glyphs remain fixed platform chrome. The title-bar controls map directly to native window control areas and actions, so a shared SDK icon contract would add customization surface without improving behavior or accessibility semantics. Caller-owned content icons and fixed decorative affordances (such as pager ellipses and text-entry clear/search glyphs) remain outside the semantic icon configuration surface.
 
 ### `crates/look-shadcn` Module Architecture
-*   [`look.rs`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/look.rs): Holds the parsed CSS token database and mapping configurations.
+*   [`look.rs`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/look.rs): Holds the parsed CSS token database and mapping configurations. CSS is supplied by the caller (`from_css_str` / `from_css_path`); bundled tweakcn packs live in `crates/look-shadcn-assets`.
 *   [`controls/ext.rs`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/controls/ext.rs): Implements `ShadcnLookControlExt` for spawning look-bound control builders.
 *   [`stylesheet/`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/stylesheet): Stylesheet matching configuration and resolvers:
     *   `config.rs`: Strongly deserialized Serde layouts for mapping styles to `style.toml`.

@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 anyhow = { workspace = true }
 gpui = { workspace = true }
-luma = { path = "../../crates/sdk" }
+luma.workspace = true
 lucide-svg-static.workspace = true
 gpui_platform = { workspace = true }
 

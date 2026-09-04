@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn inspect_default_badge_uses_primary_fill() {
-        let look = ShadcnLook::native();
+        let look = luma_shadcn_assets::native_look();
         let palette = inspect_badge_color_palette(&look, BadgeVariant::Default);
         assert_eq!(palette.background.value, look.color(ShadcnToken::Primary));
         assert!(matches!(
@@ -73,7 +73,7 @@ mod tests {
 
     #[test]
     fn inspect_badge_metrics_use_pill_radius() {
-        let look = ShadcnLook::native();
+        let look = luma_shadcn_assets::native_look();
         let mode = look.mode_tokens();
         let metrics =
             inspect_badge_metrics(mode.as_ref(), &look, BadgeVariant::Default, ControlSize::Md, ThemeMode::Light);

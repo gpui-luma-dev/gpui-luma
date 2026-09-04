@@ -8,10 +8,11 @@ publish = false
 [dependencies]
 anyhow = { workspace = true }
 gpui = { workspace = true }
-luma = { path = "../../crates/sdk" }
-luma-fonts = { path = "../../crates/font-assets" }
-luma-look-shadcn = { path = "../../crates/look-shadcn" }
-luma-look-shadcn-inspect = { path = "../../crates/look-shadcn-inspect" }
+luma.workspace = true
+luma-fonts.workspace = true
+luma-look-shadcn.workspace = true
+luma-shadcn-assets.workspace = true
+luma-look-shadcn-inspect.workspace = true
 lucide-svg-static.workspace = true
 gpui_platform = { workspace = true }
 font-kit.workspace = true

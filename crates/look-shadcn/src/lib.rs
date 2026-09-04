@@ -1,5 +1,4 @@
 mod action;
-mod built_in;
 mod look_context;
 pub mod catalog;
 mod color;
@@ -19,6 +18,9 @@ pub mod stylesheet;
 mod tokens;
 mod usage;
 
+#[cfg(test)]
+mod test_support;
+
 pub mod paint;
 pub mod prelude;
 pub mod tables;
@@ -31,7 +33,6 @@ pub use mode::ShadcnModeTokens;
 pub use palette::{ShadcnActionRole, ShadcnPalette};
 pub use tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextRole, ShadcnTextSize, ShadcnToken};
 pub use look_context::LookContext;
-pub use built_in::{BuiltInTheme, built_in_theme, built_in_themes};
 pub use stylesheet::{
     ColorRuleMetadataSection, StylesheetConfig, all_color_rule_metadata, embedded_color_rule_metadata,
     embedded_stylesheet,

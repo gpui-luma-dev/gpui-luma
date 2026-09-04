@@ -311,7 +311,7 @@ mod tests {
 
     #[test]
     fn astrovista_light_off_switch_uses_background_thumb_and_border_track() {
-        let theme = crate::ShadcnLook::from_built_in_theme("astrovista").expect("astrovista css");
+        let theme = crate::test_support::built_in_look("astrovista");
         let mode_tokens = theme.mode_tokens();
         let look = switch_look(
             mode_tokens.as_ref(),
@@ -337,7 +337,7 @@ mod tests {
 
     #[test]
     fn astrovista_dark_off_switch_uses_background_thumb() {
-        let theme = crate::ShadcnLook::from_built_in_theme("astrovista").expect("astrovista css");
+        let theme = crate::test_support::built_in_look("astrovista");
         theme.set_mode(ThemeMode::Dark);
         let mode_tokens = theme.mode_tokens();
         let look = switch_look(
