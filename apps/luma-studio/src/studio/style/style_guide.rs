@@ -8,7 +8,7 @@ use gpui::{
 };
 use luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
 use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
-use luma::controls::color::style::ElementExt;
+use luma::infra::ElementExt;
 use luma::{declare_form};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};

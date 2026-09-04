@@ -89,7 +89,7 @@ pub(crate) fn normalized_step(step: f32) -> f32 {
     if step.is_finite() && step > 0.0 { step } else { 1.0 }
 }
 
-pub(crate) fn value_from_input(value: impl Into<f64>) -> f32 {
+pub fn value_from_input(value: impl Into<f64>) -> f32 {
     finite_or(value.into() as f32, 0.0)
 }
 

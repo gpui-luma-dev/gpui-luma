@@ -4,7 +4,7 @@ use gpui::{
     ClickEvent, Context, Anchor, Corners, HitboxBehavior, ImageSource, MouseButton, MouseDownEvent, MouseMoveEvent,
     MouseUpEvent, Pixels, Render, Window, anchored, canvas, deferred, div, img, point, prelude::*, px, relative, size,
 };
-use luma::controls::color::style::{ElementExt, StyledExt};
+use luma::infra::{ElementExt, StyledExt};
 use luma::theme::LumaTextStyle;
 use luma::{form_field, hstack, vstack};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnTextSize};

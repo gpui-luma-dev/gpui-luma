@@ -1,11 +1,11 @@
 //! Inspect metadata for shared color-control chrome (slider, ring, arc, field, swatch, thumb).
 
 use gpui::{px, Hsla, Pixels};
-use luma::controls::color::chrome_tokens::{disabled_overlay, slider_blocked_overlay, swatch_checkerboard_colors};
-use luma::controls::color::color_arc::visual::default_color_arc_visual;
-use luma::controls::color::color_ring::visual::default_color_ring_visual;
-use luma::controls::color::color_slider::color_thumb::ThumbStyle;
-use luma::controls::color::color_slider::visual::default_color_slider_visual;
+use luma_color::chrome_tokens::{disabled_overlay, slider_blocked_overlay, swatch_checkerboard_colors};
+use luma_color::color_arc::visual::default_color_arc_visual;
+use luma_color::color_ring::visual::default_color_ring_visual;
+use luma_color::color_slider::color_thumb::ThumbStyle;
+use luma_color::color_slider::visual::default_color_slider_visual;
 use luma::theme::{InteractionState, ThemeMode};
 use luma_look_shadcn::{
     format_inspect_css_key, sync_color_control_theme, ColorSource, LookContext, LookResolver, MetricSource,
@@ -122,8 +122,8 @@ fn shared_theme_section(
 }
 
 fn slider_track_section(
-    enabled: luma::controls::color::color_slider::visual::ColorSliderVisual,
-    disabled: luma::controls::color::color_slider::visual::ColorSliderVisual,
+    enabled: luma_color::color_slider::visual::ColorSliderVisual,
+    disabled: luma_color::color_slider::visual::ColorSliderVisual,
     border: &ResolvedColor,
     background: &ResolvedColor,
     theme_mode: ThemeMode,
@@ -163,7 +163,7 @@ fn slider_track_section(
 }
 
 fn ring_section(
-    disabled: luma::controls::color::color_ring::visual::ColorRingVisual,
+    disabled: luma_color::color_ring::visual::ColorRingVisual,
     border: &ResolvedColor,
     background: &ResolvedColor,
 ) -> ColorChromeInspectSection {
@@ -185,7 +185,7 @@ fn ring_section(
 }
 
 fn arc_section(
-    disabled: luma::controls::color::color_arc::visual::ColorArcVisual,
+    disabled: luma_color::color_arc::visual::ColorArcVisual,
     border: &ResolvedColor,
     background: &ResolvedColor,
 ) -> ColorChromeInspectSection {

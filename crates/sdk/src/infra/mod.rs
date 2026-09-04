@@ -1,5 +1,7 @@
 //! Shared LMTP seams, menu helpers, and chrome that are not spawnable controls.
 
+pub mod arc_shape;
+pub mod element_ext;
 pub mod field_label;
 pub mod icon;
 pub(crate) mod interaction;
@@ -11,3 +13,6 @@ pub mod shadow_layout;
 pub mod state;
 pub mod template;
 pub mod value;
+
+pub use arc_shape::{Arc, ArcData};
+pub use element_ext::{ElementExt, StyledExt};

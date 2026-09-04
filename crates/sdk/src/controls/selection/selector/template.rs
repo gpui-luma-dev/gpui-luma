@@ -9,7 +9,7 @@ use super::{SelectorPlacement, SelectorRenderModel};
 use super::item_template::render_item_content;
 
 use crate::controls::button_family::button_family_effective_border;
-use crate::controls::color::style::ElementExt;
+use crate::infra::ElementExt;
 use crate::controls::selector_list::{
     SelectorItem, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
     default_selector_items_template,

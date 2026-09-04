@@ -14,39 +14,40 @@ luma-studio-perf:
     MTL_HUD_ENABLED=1 cargo run -p luma-studio --release
 
 neumorphic-demo:
-    cargo run -p gpui-luma-neumorphic-demo
+    cargo run -p luma-neumorphic-demo
 
 neumorphic-demo-rel:
-    cargo run -p gpui-luma-neumorphic-demo --release
+    cargo run -p luma-neumorphic-demo --release
 
 color-viz:
-    cargo run -p gpui-luma-color-viz --release -- elegent-luxury
+    cargo run -p luma-color-viz --release -- elegent-luxury
 
 color-viz-rel:
-    MTL_HUD_ENABLED=1 cargo run -p gpui-luma-color-viz --release -- retro-arcade
+    MTL_HUD_ENABLED=1 cargo run -p luma-color-viz --release -- retro-arcade
 
-graph-viz:
-    cargo run -p gpui-luma-graph-viz -- awesome-open-claw
+# graph-viz app is not in the workspace currently
+# graph-viz:
+#     cargo run -p luma-graph-viz -- awesome-open-claw
 
 # SplitView shell demos (apps/shells/)
 
 shell:
-    cargo run -p gpui-luma-shell-unified -- default
+    cargo run -p luma-shell-unified -- default
 
 shell-inset:
-    cargo run -p gpui-luma-shell-inset -- default
+    cargo run -p luma-shell-inset -- default
 
 shell-rail:
-    cargo run -p gpui-luma-shell-icon-rail -- default
+    cargo run -p luma-shell-icon-rail -- default
 
 shell-detached:
-    cargo run -p gpui-luma-shell-detached -- default
+    cargo run -p luma-shell-detached -- default
 
 shell-titlebar:
-    cargo run -p gpui-luma-shell-split-titlebar -- default
+    cargo run -p luma-shell-split-titlebar -- default
 
 shell-vscode:
-    cargo run -p gpui-luma-shell-vscode -- default
+    cargo run -p luma-shell-vscode -- default
 
 loc:
     tokei --types Rust

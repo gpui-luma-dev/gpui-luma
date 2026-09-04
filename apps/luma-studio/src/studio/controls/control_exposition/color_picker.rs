@@ -3,13 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::color::ColorSwatch;
-use luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
-use luma::controls::color::color_slider::color_spec::Hsv;
-use luma::controls::color::color_slider::{
-    AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing,
-};
-use luma::controls::color::composition::{ColorCompositionSync, CompositionSize};
+use luma_color::ColorSwatch;
+use luma_color::color_field::{ColorFieldEvent, ColorFieldState};
+use luma_color::color_slider::color_spec::Hsv;
+use luma_color::color_slider::{AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing};
+use luma_color::composition::{ColorCompositionSync, CompositionSize};
 use luma::controls::slider::{SliderControl, SliderEvent};
 use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;

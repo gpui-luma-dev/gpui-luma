@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use luma::controls::color::style::{ColorControlTheme, set_active_color_control_theme};
+use luma_color::style::{ColorControlTheme, set_active_color_control_theme};
 use luma::theme::{LumaThemeSyncExt, ThemeMode};
 use luma_look_shadcn::ShadcnLook;
 use luma_shadcn_assets::{built_in_look, built_in_theme, built_in_themes, native_look};

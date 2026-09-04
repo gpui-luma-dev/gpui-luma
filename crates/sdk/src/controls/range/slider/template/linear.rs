@@ -7,7 +7,7 @@ use super::{
     attach_thumb_drag, effective_thumb_radius, render_domain_track_layer, render_linear_thumb, track_bounds_canvas,
     track_surface_background, DISABLED_OPACITY,
 };
-use crate::controls::color::style::StyledExt;
+use crate::infra::StyledExt;
 use crate::controls::slider::{SliderTheme, default_slider_theme};
 
 use super::super::layout::{display_position, segment_corner_radii, segment_display_span};

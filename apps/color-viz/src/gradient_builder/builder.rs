@@ -3,8 +3,8 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use gpui::{AppContext, Bounds, Context, Entity, Pixels, RenderImage, Size, Subscription, px, size};
-use luma::controls::color::color_slider::{ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext};
-use luma::controls::color::composition::CompositionSize;
+use luma_color::color_slider::{ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext};
+use luma_color::composition::CompositionSize;
 use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::selector::{Selector, SelectorEvent};
 use luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy, ThumbId};

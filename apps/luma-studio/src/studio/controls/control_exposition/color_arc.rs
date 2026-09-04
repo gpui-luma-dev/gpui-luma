@@ -3,12 +3,12 @@
 use std::sync::Arc;
 
 use gpui::{App, AppContext, Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::color::color_arc::{
+use luma_color::color_arc::{
     ColorArcBuilder, ColorArcDomainRenderer, ColorArcRenderer, ColorArcTrackContext, HueArcDelegate,
     LightnessArcDelegate, RasterArcDelegate, SaturationArcDelegate, refresh_color_arc, update_arc_delegate,
 };
-use luma::controls::color::color_slider::color_spec::Hsv;
-use luma::controls::color::style::Size;
+use luma_color::color_slider::color_spec::Hsv;
+use luma_color::style::Size;
 use luma::controls::slider::{SliderControl, SliderEvent};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;

@@ -3,15 +3,15 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, hsla, prelude::*, px};
-use luma::controls::color::color_arc::{
+use luma_color::color_arc::{
     ColorArcBuilder, ColorArcDomainRenderer, ColorArcRenderer, ColorArcTrackContext, RasterArcDelegate,
 };
-use luma::controls::color::color_ring::{
+use luma_color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingTrackContext, HueRingDelegate, primary_slider_value,
 };
-use luma::controls::color::color_slider::color_spec::Hsv;
-use luma::controls::color::composition::{ColorCompositionSync, CompositionSize};
-use luma::controls::color::style::Size;
+use luma_color::color_slider::color_spec::Hsv;
+use luma_color::composition::{ColorCompositionSync, CompositionSize};
+use luma_color::style::Size;
 use luma::controls::slider::SliderControl;
 use luma_look_shadcn::ShadcnLook;
 

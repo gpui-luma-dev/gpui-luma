@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::color::color_slider::color_spec::{Hsl, RgbaSpec};
-use luma::controls::color::color_slider::{ColorInterpolation, ColorSliderBuilder, SliderThumbSize};
+use luma_color::color_slider::color_spec::{Hsl, RgbaSpec};
+use luma_color::color_slider::{ColorInterpolation, ColorSliderBuilder, SliderThumbSize};
 use luma::controls::slider::{SliderControl, SliderEvent};
 use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;

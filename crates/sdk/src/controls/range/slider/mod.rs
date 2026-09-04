@@ -27,8 +27,8 @@ pub use template::{
 };
 pub use theme::{DefaultSliderTheme, SliderLook, SliderTheme, default_slider_theme};
 
-pub(crate) use layout::{display_position, segment_corner_radii, segment_display_span};
-pub(crate) use template::{
+pub use layout::{display_position, segment_corner_radii, segment_display_span};
+pub use template::{
     SliderInteractionHandlers, attach_linear_interaction, attach_radial_interaction, attach_thumb_drag,
     render_domain_track_layer, track_bounds_canvas,
 };

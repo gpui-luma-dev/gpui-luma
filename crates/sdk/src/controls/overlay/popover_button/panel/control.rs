@@ -5,7 +5,7 @@ use gpui::{
 };
 
 use super::model::{PopoverPanelBuilder, PopoverPanelDismissPolicy, PopoverPanelPlacement, PopoverPanelRenderModel};
-use crate::controls::color::style::ElementExt;
+use crate::infra::ElementExt;
 use crate::motion::overlay_presence::OverlayPresence;
 use crate::focus::EscapeFocus;
 

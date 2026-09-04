@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::color::ColorSwatch;
-use luma::controls::color::color_slider::color_spec::{
+use luma_color::ColorSwatch;
+use luma_color::color_slider::color_spec::{
     ColorChannel, ColorSpecification, Hsl, Hsv, HueAlpha, Lab, Oklch, RgbaSpec, slider_step_for_channel,
 };
-use luma::controls::color::color_slider::{
+use luma_color::color_slider::{
     AlphaDelegate, ChannelDelegate, ColorSliderBuilder, ColorSliderDelegate, ColorSliderDomainRenderer, HueDelegate,
     primary_slider_value, refresh_color_slider, update_domain_delegate,
 };

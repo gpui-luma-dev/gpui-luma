@@ -13,7 +13,7 @@ use crate::controls::scroll_container::ScrollContainer;
 use crate::theme::{ControlSize, InteractionState, LumaTextStyle, LumaTypography};
 use crate::controls::floating_menu::{FloatingMenuLook, FloatingMenuTheme, default_floating_menu_theme};
 use crate::infra::icon::{DisclosureIcons, render_disclosure_icon, render_icon_source};
-use crate::controls::color::style::ElementExt;
+use crate::infra::ElementExt;
 use super::{SidebarTheme, default_sidebar_theme};
 
 const CONTAINER_GAP: f32 = 8.0;

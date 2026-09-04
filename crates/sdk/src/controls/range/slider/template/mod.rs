@@ -11,7 +11,7 @@ use gpui::{
     size, transparent_black, prelude::*,
 };
 
-use crate::controls::color::shape::{Arc as ShapeArc, ArcData};
+use crate::infra::{Arc as ShapeArc, ArcData};
 
 use super::model::{SliderRenderModel, SliderThumbValue, ThumbId};
 use super::SliderDrag;
@@ -20,7 +20,7 @@ pub use angular_dial::{ThemedAngularDialTemplate, default_angular_dial_template}
 pub use circular_ring::{ThemedCircularRingTemplate, default_circular_ring_template};
 pub use linear::{ThemedSliderTemplate, default_slider_template};
 
-pub(crate) use crate::controls::slider::domain::render_domain_track_layer;
+pub use crate::controls::slider::domain::render_domain_track_layer;
 
 pub type SliderBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + Send + Sync>;
 pub type SliderHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + Send + Sync>;
@@ -44,7 +44,7 @@ pub struct SliderTemplateHandlers {
 pub type SliderTemplateModifier =
     Box<dyn Fn(Stateful<Div>, &SliderRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
 
-pub(crate) struct SliderInteractionHandlers {
+pub struct SliderInteractionHandlers {
     pub hover: SliderHoverHandler,
     pub mouse_down: SliderMouseDownHandler,
     pub mouse_move: SliderMouseMoveHandler,
@@ -239,13 +239,13 @@ pub(crate) fn render_linear_thumb(
     thumb
 }
 
-pub(crate) fn track_bounds_canvas(track_bounds: SliderBoundsHandler) -> impl IntoElement {
+pub fn track_bounds_canvas(track_bounds: SliderBoundsHandler) -> impl IntoElement {
     canvas(move |bounds, window, cx| track_bounds(&bounds, window, cx), |_, _, _, _| {})
         .absolute()
         .size_full()
 }
 
-pub(crate) fn attach_radial_interaction(
+pub fn attach_radial_interaction(
     mut root: Stateful<Div>,
     model: &SliderRenderModel<'_>,
     handlers: SliderInteractionHandlers,
@@ -275,7 +275,7 @@ pub(crate) fn attach_radial_interaction(
     }
 }
 
-pub(crate) fn attach_linear_interaction(
+pub fn attach_linear_interaction(
     mut root: Stateful<Div>,
     model: &SliderRenderModel<'_>,
     handlers: SliderInteractionHandlers,
@@ -300,7 +300,7 @@ pub(crate) fn attach_linear_interaction(
     }
 }
 
-pub(crate) fn attach_thumb_drag(
+pub fn attach_thumb_drag(
     mut thumb: Stateful<Div>,
     model_id: &SharedString,
     thumb_id: ThumbId,

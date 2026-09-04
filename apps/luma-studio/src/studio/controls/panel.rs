@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Pixels, ScrollHandle, Size, Window, div, point, prelude::*, px};
-use luma::controls::color::style::ElementExt;
+use luma::infra::ElementExt;
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;
 

@@ -4,14 +4,12 @@ use gpui::{
     AnyElement, App, Context, Entity, EventEmitter, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*,
     px, size,
 };
-use luma::controls::color::{ColorSwatchButtonTemplate, ColorSwatchData};
+use luma_color::{ColorSwatchButtonTemplate, ColorSwatchData};
 use luma::controls::button::{Button, ButtonEvent};
-use luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
-use luma::controls::color::color_slider::color_spec::Hsv;
-use luma::controls::color::color_slider::{
-    AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing,
-};
-use luma::controls::color::composition::ColorCompositionSync;
+use luma_color::color_field::{ColorFieldEvent, ColorFieldState};
+use luma_color::color_slider::color_spec::Hsv;
+use luma_color::color_slider::{AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing};
+use luma_color::composition::ColorCompositionSync;
 use luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
 use luma::controls::slider::{SliderControl, SliderEvent};
 use luma::theme::ControlSize;

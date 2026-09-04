@@ -23,10 +23,7 @@ pub trait DomainTrackRenderer: Send + Sync {
     }
 }
 
-pub(crate) fn render_domain_track_layer(
-    model: &SliderRenderModel<'_>,
-    track_radius: Pixels,
-) -> Option<impl IntoElement> {
+pub fn render_domain_track_layer(model: &SliderRenderModel<'_>, track_radius: Pixels) -> Option<impl IntoElement> {
     let renderer = model.domain_track.as_ref()?;
 
     let orientation = model.orientation;

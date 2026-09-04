@@ -1,9 +1,9 @@
 //! Shared layout and readout helpers for color control expositions.
 
 use gpui::{FontWeight, Hsla, div, prelude::*, px};
-use luma::controls::color::ColorSwatch;
-use luma::controls::color::CompositionSize;
-use luma::controls::color::color_field::ColorFieldEvent;
+use luma_color::ColorSwatch;
+use luma_color::CompositionSize;
+use luma_color::color_field::ColorFieldEvent;
 use luma::controls::slider::SliderEvent;
 use luma::{GridLayout, GridTrack};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnRadius, ShadcnTextRole, ShadcnTextSize};
@@ -338,12 +338,12 @@ pub(super) fn centered_field(content: impl gpui::IntoElement) -> gpui::AnyElemen
     div().w_full().flex().items_center().justify_center().child(content).into_any_element()
 }
 
-pub(super) fn composition_size_label(size: luma::controls::color::CompositionSize) -> &'static str {
+pub(super) fn composition_size_label(size: luma_color::CompositionSize) -> &'static str {
     match size {
-        luma::controls::color::CompositionSize::Sm => "sm",
-        luma::controls::color::CompositionSize::Md => "md",
-        luma::controls::color::CompositionSize::Lg => "lg",
-        luma::controls::color::CompositionSize::Custom(_) => "custom",
+        luma_color::CompositionSize::Sm => "sm",
+        luma_color::CompositionSize::Md => "md",
+        luma_color::CompositionSize::Lg => "lg",
+        luma_color::CompositionSize::Custom(_) => "custom",
     }
 }
 

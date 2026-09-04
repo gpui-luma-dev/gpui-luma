@@ -1,5 +1,5 @@
 use gpui::{Context, Entity, FocusHandle, Render, Window, div, prelude::*};
-use luma::controls::color::style::{ColorControlTheme, set_active_color_control_theme};
+use luma_color::style::{ColorControlTheme, set_active_color_control_theme};
 use luma::focus::LumaFocusScopeExt;
 use luma::shell::TitleBar;
 use luma::theme::ThemeMode;

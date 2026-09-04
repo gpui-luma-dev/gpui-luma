@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::color::color_field::ColorFieldEvent;
-use luma::controls::color::composition::CompositionSize;
+use luma_color::color_field::ColorFieldEvent;
+use luma_color::composition::CompositionSize;
 use luma::controls::slider::SliderEvent;
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;

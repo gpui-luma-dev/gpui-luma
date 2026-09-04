@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::sync::Arc;
 
-use luma::controls::color::style::{ColorControlTheme, active_color_control_theme, set_active_color_control_theme};
+use luma_color::style::{ColorControlTheme, active_color_control_theme, set_active_color_control_theme};
 use luma::theme::ThemeMode;
 
 use crate::look::ShadcnLook;

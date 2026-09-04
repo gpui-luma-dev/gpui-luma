@@ -2,7 +2,6 @@
 
 pub mod button;
 pub mod choice;
-pub mod color;
 pub mod layout;
 pub mod navigation;
 pub mod overlay;

@@ -3,7 +3,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{App, MouseButton, Stateful, Window, div, hsla, px, prelude::*};
 use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use luma::controls::color::style::ElementExt;
+use luma::infra::ElementExt;
 use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
 use luma::controls::control_group::{ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplateHandlers};
 use luma::controls::radio_group::RadioGroupTemplate;

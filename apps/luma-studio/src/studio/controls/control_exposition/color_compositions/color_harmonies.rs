@@ -8,14 +8,14 @@ use gpui::{
     AnyElement, Context, Entity, FontWeight, Hsla, Render, Subscription, Window, div, hsla, prelude::*, px, rgb,
     transparent_black,
 };
-use luma::controls::color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, HslWheelModel};
-use luma::controls::color::color_ring::{
+use luma_color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, HslWheelModel};
+use luma_color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingTrackContext, LightnessRingDelegate, primary_slider_value,
     sizing,
 };
-use luma::controls::color::color_slider::color_spec::Hsv;
-use luma::controls::color::composition::{ColorCompositionSync, CompositionSize};
-use luma::controls::color::style::Size;
+use luma_color::color_slider::color_spec::Hsv;
+use luma_color::composition::{ColorCompositionSync, CompositionSize};
+use luma_color::style::Size;
 use luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use luma::controls::slider::SliderControl;
 use luma::controls::textfield::{TextField, TextFieldEvent};

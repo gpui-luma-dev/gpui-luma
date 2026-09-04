@@ -9,6 +9,7 @@ publish = false
 anyhow = { workspace = true }
 gpui = { workspace = true }
 luma.workspace = true
+luma-color.workspace = true
 luma-fonts.workspace = true
 gpui_platform = { workspace = true }
 lucide-svg-static = { workspace = true }

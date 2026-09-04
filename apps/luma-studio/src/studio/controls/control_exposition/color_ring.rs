@@ -3,14 +3,14 @@
 use std::sync::Arc;
 
 use gpui::{App, AppContext, Context, Entity, Hsla, Render, Subscription, Window, div, hsla, prelude::*, px};
-use luma::controls::color::color_ring::{
+use luma_color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingRenderer, ColorRingTrackContext, HueRingDelegate,
     LightnessRingDelegate, RasterRingDelegate, SaturationRingDelegate, primary_slider_value, refresh_color_ring,
     update_ring_delegate,
 };
-use luma::controls::color::color_slider::color_spec::{Hsl, Hsv};
-use luma::controls::color::color_slider::ColorSpecification;
-use luma::controls::color::style::Size;
+use luma_color::color_slider::color_spec::{Hsl, Hsv};
+use luma_color::color_slider::ColorSpecification;
+use luma_color::style::Size;
 use luma::controls::slider::{SliderControl, SliderEvent};
 use luma::{vstack, wrappanel};
 use luma_look_shadcn::prelude::*;

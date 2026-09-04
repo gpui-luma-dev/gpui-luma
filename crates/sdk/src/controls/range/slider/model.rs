@@ -247,6 +247,14 @@ impl SliderBuilder {
         self
     }
 
+    pub fn set_strategy(&mut self, strategy: SliderInputStrategy) {
+        self.model.strategy = strategy;
+    }
+
+    pub fn set_radial_hit_target(&mut self, target: Arc<dyn RadialHitTarget>) {
+        self.model.radial_hit_target = Some(target);
+    }
+
     pub fn orientation(mut self, orientation: SliderOrientation) -> Self {
         self.model.strategy = orientation.into();
         self

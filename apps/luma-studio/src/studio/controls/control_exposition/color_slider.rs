@@ -3,9 +3,9 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Hsla, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::color::ColorSwatch;
-use luma::controls::color::color_slider::color_spec::{Hsl, RgbaSpec};
-use luma::controls::color::color_slider::{
+use luma_color::ColorSwatch;
+use luma_color::color_slider::color_spec::{Hsl, RgbaSpec};
+use luma_color::color_slider::{
     AlphaDelegate, ChannelDelegate, ColorInterpolation, ColorSliderBuilder, ColorSliderDomainRenderer,
     ColorSpecification, refresh_color_slider, update_domain_delegate,
 };

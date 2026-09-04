@@ -3,12 +3,12 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Hsla, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::color::color_field::model::ColorFieldModelKind;
-use luma::controls::color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
-use luma::controls::color::color_ring::{ColorRingBuilder, primary_slider_value, sizing};
-use luma::controls::color::color_slider::color_spec::Hsv;
-use luma::controls::color::composition::{ColorCompositionSync, CompositionSize};
-use luma::controls::color::style::Size;
+use luma_color::color_field::model::ColorFieldModelKind;
+use luma_color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
+use luma_color::color_ring::{ColorRingBuilder, primary_slider_value, sizing};
+use luma_color::color_slider::color_spec::Hsv;
+use luma_color::composition::{ColorCompositionSync, CompositionSize};
+use luma_color::style::Size;
 use luma::controls::slider::SliderControl;
 use luma_look_shadcn::ShadcnLook;
 

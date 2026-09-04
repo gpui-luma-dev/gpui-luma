@@ -7,7 +7,7 @@
 
 use gpui::{AnyElement, Corners, IntoElement, ParentElement, Pixels, RenderOnce, div, prelude::*};
 
-use crate::controls::color::style::StyledExt;
+use crate::infra::StyledExt;
 
 /// A full-size, ordered stack of rounded layers.
 ///

@@ -1,6 +1,6 @@
 use super::*;
 
-use luma::controls::color::color_slider::{GradientDelegate, GradientStop, refresh_color_slider, update_domain_delegate};
+use luma_color::color_slider::{GradientDelegate, GradientStop, refresh_color_slider, update_domain_delegate};
 
 use super::super::color::format_css_gradient;
 use super::super::paint::{

@@ -9,7 +9,7 @@ use gpui::{
 use super::indicator::TabsIndicatorMotion;
 use super::{TabsItem, TabsItemAccessory, TabsRenderItem, TabsRenderModel, model::TabsWidthMode};
 use crate::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole, default_button_family_theme};
-use crate::controls::color::style::ElementExt;
+use crate::infra::ElementExt;
 use crate::controls::button::{ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate};
 use crate::controls::control_group::{
     ControlGroupBoundsHandler, ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemHandlerExt,

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{App, Div, Hsla, Stateful, Window, div, prelude::*, px};
-use luma::controls::color::style::ElementExt;
+use luma::infra::ElementExt;
 use luma::controls::control_group::ControlGroupItemHandlerExt;
 use luma::controls::tabs::{
     TabsIndicatorMotion, TabsRenderModel, TabsTemplate, TabsTemplateHandlers, TabsTheme, render_tab_button,

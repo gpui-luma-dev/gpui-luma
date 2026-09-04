@@ -11,7 +11,7 @@ use super::model::{
 };
 use super::theme::{ControlGroupTheme, default_control_group_theme};
 use super::themed_template::{ThemedControlGroupTemplate, themed_control_group_template};
-use crate::controls::color::style::ElementExt;
+use crate::infra::ElementExt;
 
 pub type ControlGroupClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type ControlGroupHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;

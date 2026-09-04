@@ -11,6 +11,7 @@ name = "luma_look_shadcn_inspect"
 [dependencies]
 gpui.workspace = true
 luma.workspace = true
+luma-color.workspace = true
 luma-look-shadcn.workspace = true
 anyhow.workspace = true
 

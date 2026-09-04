@@ -2442,10 +2442,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "gpui-luma-color"
+version = "0.9.0-alpha.1"
+dependencies = [
+ "anyhow",
+ "gpui-luma-sdk",
+ "gpui-unofficial",
+ "image",
+ "palette",
+ "smallvec",
+ "tiny-skia",
+]
+
+[[package]]
 name = "gpui-luma-look-shadcn"
 version = "0.9.0-alpha.1"
 dependencies = [
  "anyhow",
+ "gpui-luma-color",
  "gpui-luma-sdk",
  "gpui-unofficial",
  "lucide-static-svg",
@@ -2459,6 +2473,7 @@ name = "gpui-luma-look-shadcn-inspect"
 version = "0.9.0-alpha.1"
 dependencies = [
  "anyhow",
+ "gpui-luma-color",
  "gpui-luma-look-shadcn",
  "gpui-luma-sdk",
  "gpui-luma-shadcn-assets",
@@ -2472,12 +2487,10 @@ dependencies = [
  "anyhow",
  "darling",
  "gpui-unofficial",
- "image",
  "lucide-static-svg",
  "palette",
  "serde",
  "smallvec",
- "tiny-skia",
  "toml 0.8.23",
  "ttf-parser",
 ]
@@ -3635,6 +3648,7 @@ name = "luma-color-viz"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-color",
  "gpui-luma-look-shadcn",
  "gpui-luma-sdk",
  "gpui-luma-shadcn-assets",
@@ -3677,6 +3691,7 @@ name = "luma-shell-common"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-color",
  "gpui-luma-look-shadcn",
  "gpui-luma-sdk",
  "gpui-luma-shadcn-assets",
@@ -3776,6 +3791,7 @@ name = "luma-studio"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-color",
  "gpui-luma-look-shadcn",
  "gpui-luma-look-shadcn-inspect",
  "gpui-luma-sdk",
