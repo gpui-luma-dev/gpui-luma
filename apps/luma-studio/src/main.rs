@@ -28,7 +28,7 @@ fn main() {
         if let Err(error) = luma::init(cx).and_then(|_| {
             luma::focus::bind_default_focus_keys(cx);
             luma::key_handling::bind_default_control_keys(cx);
-            luma_fonts::register_all(cx)?;
+            luma_app_common::register_all(cx)?;
             app_shell::open(cx, launch_options.clone())
         }) {
             eprintln!("failed to open Luma Studio: {error:?}");

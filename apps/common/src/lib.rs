@@ -1,11 +1,13 @@
-//! Optional Shadcn CSS theme packs.
+//! Shared demo assets for Luma apps (Studio, shells, color-viz).
 //!
-//! These files are demo/Studio conveniences, not part of the look runtime.
-//! Production apps should pass chosen CSS into [`luma_look_shadcn::ShadcnLook::from_css_str`].
+//! Embeds tweakcn CSS packs and fonts referenced by those themes. Not part of the
+//! SDK or look runtime — production apps should supply their own CSS and fonts.
 
 mod built_in;
+mod fonts;
 
 pub use built_in::{BuiltInTheme, built_in_theme, built_in_themes};
+pub use fonts::{GEIST_MONO_FAMILY, JETBRAINS_MONO_FAMILY, RAJDHANI_FAMILY, register, register_all};
 use luma_look_shadcn::ShadcnLook;
 
 /// Default sample theme CSS (`native.css`).

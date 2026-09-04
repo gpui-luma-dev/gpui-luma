@@ -12,7 +12,7 @@ GPUI-Luma completely decouples control behavior from the styling system through 
 ┌──────────────────────────────────────────────┐
 │  Tier 1: Design Tokens (CSS Catalog)         │ <-- Theme skin CSS supplied by the app
 │  --primary: hsl(330 64% 52%); --radius: 6px   │     (`ShadcnLook::from_css_str`). Demo packs
-│                                              │     live in `crates/look-shadcn-assets`.
+│                                              │     live in `apps/common`.
 └──────────────────────┬───────────────────────┘
                        │ resolves variables
 ┌──────────────────────▼───────────────────────┐

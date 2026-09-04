@@ -10,9 +10,8 @@ anyhow = { workspace = true }
 gpui = { workspace = true }
 luma.workspace = true
 luma-color.workspace = true
-luma-fonts.workspace = true
+luma-app-common.workspace = true
 luma-look-shadcn.workspace = true
-luma-shadcn-assets.workspace = true
 luma-look-shadcn-inspect.workspace = true
 lucide-svg-static.workspace = true
 gpui_platform = { workspace = true }

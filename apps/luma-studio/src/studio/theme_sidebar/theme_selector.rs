@@ -14,7 +14,7 @@ use luma::controls::search_selector::{
 use luma::controls::selector::SelectorTheme;
 use luma::theme::{InteractionState, StandardBoxScale};
 use luma_look_shadcn::ShadcnLook;
-use luma_shadcn_assets::{BuiltInTheme, built_in_look, native_look};
+use luma_app_common::{BuiltInTheme, built_in_look, native_look};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::theme::available_themes;

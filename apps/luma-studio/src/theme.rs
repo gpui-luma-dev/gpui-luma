@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use luma::theme::ThemeMode;
 use luma_look_shadcn::ShadcnLook;
-use luma_shadcn_assets::{BuiltInTheme, built_in_look, built_in_theme, built_in_themes, native_look};
+use luma_app_common::{BuiltInTheme, built_in_look, built_in_theme, built_in_themes, native_look};
 
 pub fn available_theme_names() -> Vec<String> {
     built_in_themes().iter().map(|theme| theme.id.to_string()).collect()

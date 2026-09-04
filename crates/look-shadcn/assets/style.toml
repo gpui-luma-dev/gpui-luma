@@ -722,11 +722,11 @@ shadow = "none"
 
 [[textfield.elevation_rules]]
 style = "surface"
-shadow = "shadow-xs"
+shadow = "none"
 
 [[textfield.elevation_rules]]
 style = "input"
-shadow = "shadow-xs"
+shadow = "none"
 
 [[textfield.color_rules]]
 style = "input"
@@ -745,7 +745,7 @@ style = "input"
 enabled = true
 invalid = false
 mode = "light"
-background = "input"
+background = "transparent"
 foreground = "foreground"
 border = "border"
 placeholder = "muted-foreground"
@@ -759,7 +759,7 @@ style = "input"
 enabled = true
 invalid = false
 mode = "dark"
-background = "input"
+background = "input/30"
 foreground = "foreground"
 border = "border"
 placeholder = "muted-foreground"
@@ -773,7 +773,7 @@ style = "input"
 enabled = true
 invalid = true
 mode = "light"
-background = "input"
+background = "transparent"
 foreground = "foreground"
 border = "destructive"
 placeholder = "muted-foreground"
@@ -787,7 +787,7 @@ style = "input"
 enabled = true
 invalid = true
 mode = "dark"
-background = "input"
+background = "input/30"
 foreground = "foreground"
 border = "destructive"
 placeholder = "muted-foreground"

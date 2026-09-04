@@ -12,11 +12,10 @@ This document defines the core architecture, crate layout, module mapping, and d
 
 *   **`crates/sdk` (`gpui-luma-sdk`, rustc crate `luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels). Advanced color controls live in `luma-color`.
 *   **`crates/luma-color` (`gpui-luma-color`, rustc crate `luma_color`)**: Color-domain controls built on the SDK slider engine — `color_slider`, `color_field`, `color_ring`, `color_arc`, swatch, chrome tokens, and composition sync helpers. Depends on `luma`; themed via look `sync_color_control_theme` / `with_look`.
-*   **`crates/font-assets` (`luma-fonts`)**: Dev/demo embedded font assets and GPUI text-system registration helpers. Applications register chosen fonts at startup; the SDK and look runtime remain font-file agnostic. Not a production default of the look crate. A later `google-fonts-static`-style crate may replace this.
 *   **`crates/lucide-svg-static`**: Experimental generated-style, renderer-neutral Lucide SVG asset crate. It currently packages the three chevrons used by the SVG rotation spike; the intended follow-up is automated generation from pinned upstream Lucide releases.
 *   **`crates/look-shadcn` (`gpui-luma-look-shadcn`, rustc crate `luma_look_shadcn`)**: Shadcn look **runtime** — CSS catalog parsing, `style.toml` recipe matching, and look-specific control factories. Callers supply CSS via `ShadcnLook::from_css_str` (or a path). It does not embed tweakcn theme packs. `look-core` is **not** a crate yet; extract it only after this split is stable.
-*   **`crates/look-shadcn-assets` (`gpui-luma-shadcn-assets`, rustc crate `luma_shadcn_assets`)**: Optional CSS theme packs (`native.css`, tweakcn) for Studio and shells. Production apps should pick and pass their own CSS rather than depending on this crate.
 *   **`crates/look-shadcn-inspect` (`gpui-luma-look-shadcn-inspect`, rustc crate `luma_look_shadcn_inspect`)**: Support utilities for theme visual inspection and palette debugging.
+*   **`apps/common` (`luma-app-common`)**: Shared demo assets for Studio, shells, and color-viz — embedded tweakcn CSS packs plus fonts those themes reference, with GPUI registration helpers. Not an SDK crate; production apps supply their own CSS and fonts. Look-crate tests keep a small local CSS fixture set instead of depending on this package.
 *   **`apps/luma-studio` (`luma-studio`)**: Shadcn-focused integration workbench (control docs, theme inspection, color compositions). Not a product app. System font classification for typography pickers lives in `studio/font_catalog/`.
 *   **`apps/color-viz` (`luma-color-viz`)**: GPUI platform-gap lab (e.g. P3 / shader limits) using Shadcn look and shared theme CLI — not the color product home.
 *   **`apps/shells/`**: Full-window shell reference apps — `SplitView` recipes (unified, inset, icon-rail, detached, split-titlebar) plus `vscode` (Luma Studio `ResizablePanels` workbench shell) — with shared theme and, where applicable, the Properties `SidebarControl` sample from `apps/shells/common`.
@@ -30,21 +29,18 @@ graph TD
     Color --> SDK
     SDK --> Lucide[Lucide SVG assets]
     Studio --> Look[crates/look-shadcn]
-    Studio --> Assets[crates/look-shadcn-assets]
-    Studio --> Fonts[crates/font-assets]
+    Studio --> AppCommon[apps/common]
     ColorViz[apps/color-viz] --> SDK
     ColorViz --> Color
     ColorViz --> Look
-    ColorViz --> Assets
-    ColorViz --> Fonts
+    ColorViz --> AppCommon
     Shells[apps/shells] --> SDK
     Shells --> Color
     Shells --> Look
-    Shells --> Assets
-    Shells --> Fonts
+    Shells --> AppCommon
     Look --> SDK
     Look --> Color
-    Assets --> Look
+    AppCommon --> Look
     LookInspect[crates/look-shadcn-inspect] --> Look
     LookInspect --> SDK
     LookInspect --> Color
@@ -115,7 +111,7 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
 *   **Core elements:** `color_slider`, `color_field`, `color_ring`, `color_arc` (builders return unified `Slider` entities where applicable), `swatch`, `chrome_tokens`, `style` (`ColorControlTheme` + sizing), `composition` (`ColorCompositionSync`, `CompositionSize`).
 *   Look integration: `look-shadcn` calls `sync_color_control_theme` inside `with_look` so color chrome tracks the active theme.
 ### `crates/look-shadcn` Module Architecture
-*   [`look.rs`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/look.rs): Holds the parsed CSS token database and mapping configurations. CSS is supplied by the caller (`from_css_str` / `from_css_path`); bundled tweakcn packs live in `crates/look-shadcn-assets`.
+*   [`look.rs`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/look.rs): Holds the parsed CSS token database and mapping configurations. CSS is supplied by the caller (`from_css_str` / `from_css_path`); demo tweakcn packs live in `apps/common`.
 *   [`controls/ext.rs`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/controls/ext.rs): Implements `ShadcnLookControlExt` for spawning look-bound control builders.
 *   [`stylesheet/`](file:///Users/scg/Developer/GitHub/luma/crates/look-shadcn/src/stylesheet): Stylesheet matching configuration and resolvers:
     *   `config.rs`: Strongly deserialized Serde layouts for mapping styles to `style.toml`.

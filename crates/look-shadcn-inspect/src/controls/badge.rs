@@ -58,11 +58,12 @@ fn metrics_catalog(mode: &ShadcnModeTokens) -> &luma_look_shadcn::catalog::CssTo
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma_look_shadcn::{ColorSource, ShadcnToken};
+    use luma_look_shadcn::{ColorSource, ShadcnLook, ShadcnToken};
 
     #[test]
     fn inspect_default_badge_uses_primary_fill() {
-        let look = luma_shadcn_assets::native_look();
+        let look = ShadcnLook::from_css_str(include_str!("../../tests/fixtures/native.css"))
+            .expect("native CSS fixture should parse");
         let palette = inspect_badge_color_palette(&look, BadgeVariant::Default);
         assert_eq!(palette.background.value, look.color(ShadcnToken::Primary));
         assert!(matches!(
@@ -73,7 +74,8 @@ mod tests {
 
     #[test]
     fn inspect_badge_metrics_use_pill_radius() {
-        let look = luma_shadcn_assets::native_look();
+        let look = ShadcnLook::from_css_str(include_str!("../../tests/fixtures/native.css"))
+            .expect("native CSS fixture should parse");
         let mode = look.mode_tokens();
         let metrics =
             inspect_badge_metrics(mode.as_ref(), &look, BadgeVariant::Default, ControlSize::Md, ThemeMode::Light);

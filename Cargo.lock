@@ -2476,7 +2476,6 @@ dependencies = [
  "gpui-luma-color",
  "gpui-luma-look-shadcn",
  "gpui-luma-sdk",
- "gpui-luma-shadcn-assets",
  "gpui-unofficial",
 ]
 
@@ -2493,14 +2492,6 @@ dependencies = [
  "smallvec",
  "toml 0.8.23",
  "ttf-parser",
-]
-
-[[package]]
-name = "gpui-luma-shadcn-assets"
-version = "0.9.0-alpha.1"
-dependencies = [
- "anyhow",
- "gpui-luma-look-shadcn",
 ]
 
 [[package]]
@@ -3644,6 +3635,17 @@ version = "1.40.0"
 source = "git+https://github.com/scottcg/lucide-svg-static#c036f0f9acc494bf4d658fde756cbd04b1564907"
 
 [[package]]
+name = "luma-app-common"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "google-fonts",
+ "gpui-luma-look-shadcn",
+ "gpui-unofficial",
+ "tracing",
+]
+
+[[package]]
 name = "luma-color-viz"
 version = "0.1.0"
 dependencies = [
@@ -3651,26 +3653,15 @@ dependencies = [
  "gpui-luma-color",
  "gpui-luma-look-shadcn",
  "gpui-luma-sdk",
- "gpui-luma-shadcn-assets",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
  "image",
  "lucide-static-svg",
- "luma-fonts",
+ "luma-app-common",
  "palette",
  "smallvec",
  "tiny-skia",
- "tracing",
-]
-
-[[package]]
-name = "luma-fonts"
-version = "0.9.0-alpha.1"
-dependencies = [
- "anyhow",
- "google-fonts",
- "gpui-unofficial",
  "tracing",
 ]
 
@@ -3694,11 +3685,10 @@ dependencies = [
  "gpui-luma-color",
  "gpui-luma-look-shadcn",
  "gpui-luma-sdk",
- "gpui-luma-shadcn-assets",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "lucide-static-svg",
- "luma-fonts",
+ "luma-app-common",
  "tracing",
 ]
 
@@ -3795,12 +3785,11 @@ dependencies = [
  "gpui-luma-look-shadcn",
  "gpui-luma-look-shadcn-inspect",
  "gpui-luma-sdk",
- "gpui-luma-shadcn-assets",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
  "lucide-static-svg",
- "luma-fonts",
+ "luma-app-common",
  "palette",
  "serde",
  "thiserror 2.0.18",

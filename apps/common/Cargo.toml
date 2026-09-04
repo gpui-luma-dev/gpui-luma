@@ -1,9 +1,13 @@
 [package]
-name = "luma-fonts"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-publish.workspace = true
+name = "luma-app-common"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+description = "Shared demo assets for Luma apps — tweakcn CSS packs and embedded fonts. Not an SDK crate."
+
+[lib]
+name = "luma_app_common"
 
 [features]
 font-download = ["dep:google-fonts"]
@@ -11,6 +15,7 @@ font-download = ["dep:google-fonts"]
 [dependencies]
 anyhow = { workspace = true }
 gpui = { workspace = true }
+luma-look-shadcn.workspace = true
 google-fonts = { version = "0.1.5", default-features = false, features = ["full"], optional = true }
 tracing = "0.1"
 
@@ -18,3 +23,6 @@ tracing = "0.1"
 name = "download-google-fonts"
 path = "src/bin/download-google-fonts.rs"
 required-features = ["font-download"]
+
+[lints]
+workspace = true

@@ -1,12 +1,11 @@
 [workspace]
 resolver = "2"
 members = [
-  "crates/font-assets",
   "crates/sdk",
   "crates/luma-color",
   "crates/look-shadcn",
-  "crates/look-shadcn-assets",
   "crates/look-shadcn-inspect",
+  "apps/common",
   "apps/luma-studio",
   "apps/neumorphic-demo",
   "apps/color-viz",
@@ -31,9 +30,8 @@ anyhow = "1"
 luma = { package = "gpui-luma-sdk", path = "crates/sdk" }
 luma-color = { package = "gpui-luma-color", path = "crates/luma-color" }
 luma-look-shadcn = { package = "gpui-luma-look-shadcn", path = "crates/look-shadcn" }
-luma-shadcn-assets = { package = "gpui-luma-shadcn-assets", path = "crates/look-shadcn-assets" }
 luma-look-shadcn-inspect = { package = "gpui-luma-look-shadcn-inspect", path = "crates/look-shadcn-inspect" }
-luma-fonts = { path = "crates/font-assets" }
+luma-app-common = { path = "apps/common" }
 gpui = { package = "gpui-unofficial", version = "1.13.1" }
 lucide-svg-static = { package = "lucide-static-svg", git = "https://github.com/scottcg/lucide-svg-static" }
 gpui_platform = {
