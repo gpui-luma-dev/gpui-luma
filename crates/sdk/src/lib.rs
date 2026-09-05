@@ -19,4 +19,4 @@ pub use motion::{
     overlay_enter_scale,
 };
 pub use init::init;
-pub use layouts::{DockPanel, GridLayout, GridTrack, LayerStack};
+pub use layouts::{DockPanel, GridLayout, GridTrack, LayerStack, WideMiddle, WideMiddleLayout, spawn_wide_middle};

@@ -13,6 +13,12 @@ luma-studio-rel:
 luma-studio-perf:
     MTL_HUD_ENABLED=1 cargo run -p luma-studio --release
 
+luma-radix:
+    cargo run -p luma-radix-studio
+
+luma-radix-rel:
+    cargo run -p luma-radix-studio --release
+
 neumorphic-demo:
     cargo run -p luma-neumorphic-demo
 

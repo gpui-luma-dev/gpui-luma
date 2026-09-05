@@ -96,7 +96,7 @@ SDK and look crates must **never** use GPUI's text helpers directly. Instead, th
 
 ## 5. Look-Specific Extensions
 
-Design-language specifics (like Shadcn variants, styled card containers, and badges) reside entirely inside the look crate (`crates/look-shadcn`), leaving the core SDK look-agnostic.
+Design-language specifics (like Shadcn variants, styled card containers, and badges) reside entirely inside the look crate (`crates/look-shadcn`), leaving the core SDK look-agnostic. Shared provenance shapes live in `crates/look-core`. A second look stub lives in `crates/look-radix` (`RadixLook` + `RadixLookControlExt`) and implements the same SDK `*Theme` traits without Shadcn token names.
 
 These extensions are implemented via trait extension on the active theme:
 ```rust
@@ -108,6 +108,8 @@ pub trait ShadcnLookControlExt {
 }
 ```
  Downstream applications call these methods (e.g. `look.primary_button("save")`, `look.card("panel")`) to spawn controls or look-layer styled containers pre-bound to Shadcn tokens.
+
+To author another look without editing the SDK: implement the needed `*Theme` traits, expose a look-local factory ext, and keep source interpretation (CSS, 12-step scales, …) inside the look crate. See `luma_look_core` crate docs and [`docs/look-boundary-inventory.md`](look-boundary-inventory.md).
 
 ---
 

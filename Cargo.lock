@@ -2455,11 +2455,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "gpui-luma-look-core"
+version = "0.9.0-alpha.1"
+dependencies = [
+ "gpui-luma-sdk",
+ "gpui-unofficial",
+]
+
+[[package]]
+name = "gpui-luma-look-radix"
+version = "0.9.0-alpha.1"
+dependencies = [
+ "gpui-luma-look-core",
+ "gpui-luma-sdk",
+ "gpui-unofficial",
+ "image",
+ "smallvec",
+ "tiny-skia",
+]
+
+[[package]]
 name = "gpui-luma-look-shadcn"
 version = "0.9.0-alpha.1"
 dependencies = [
  "anyhow",
  "gpui-luma-color",
+ "gpui-luma-look-core",
  "gpui-luma-sdk",
  "gpui-unofficial",
  "lucide-static-svg",
@@ -3670,6 +3691,20 @@ name = "luma-neumorphic-demo"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-sdk",
+ "gpui-platform-gpui-unofficial",
+ "gpui-unofficial",
+ "gtk",
+ "lucide-static-svg",
+]
+
+[[package]]
+name = "luma-radix-studio"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui-luma-color",
+ "gpui-luma-look-radix",
  "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",

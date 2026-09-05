@@ -12,6 +12,7 @@ name = "luma_look_shadcn"
 gpui.workspace = true
 luma.workspace = true
 luma-color.workspace = true
+luma-look-core.workspace = true
 anyhow.workspace = true
 serde = { workspace = true, features = ["derive"] }
 toml.workspace = true

@@ -3,10 +3,13 @@ resolver = "2"
 members = [
   "crates/sdk",
   "crates/luma-color",
+  "crates/look-core",
   "crates/look-shadcn",
   "crates/look-shadcn-inspect",
+  "crates/look-radix",
   "apps/common",
   "apps/luma-studio",
+  "apps/radix-studio",
   "apps/neumorphic-demo",
   "apps/color-viz",
   "apps/shells/common",
@@ -29,8 +32,10 @@ publish = false
 anyhow = "1"
 luma = { package = "gpui-luma-sdk", path = "crates/sdk" }
 luma-color = { package = "gpui-luma-color", path = "crates/luma-color" }
+luma-look-core = { package = "gpui-luma-look-core", path = "crates/look-core" }
 luma-look-shadcn = { package = "gpui-luma-look-shadcn", path = "crates/look-shadcn" }
 luma-look-shadcn-inspect = { package = "gpui-luma-look-shadcn-inspect", path = "crates/look-shadcn-inspect" }
+luma-look-radix = { package = "gpui-luma-look-radix", path = "crates/look-radix" }
 luma-app-common = { path = "apps/common" }
 gpui = { package = "gpui-unofficial", version = "1.13.1" }
 lucide-svg-static = { package = "lucide-static-svg", git = "https://github.com/scottcg/lucide-svg-static" }
@@ -68,6 +73,9 @@ opt-level = 1
 opt-level = 1
 
 [profile.dev.package.luma-color-viz]
+opt-level = 1
+
+[profile.dev.package.luma-radix-studio]
 opt-level = 1
 
 [profile.dev.package.luma-shell-unified]

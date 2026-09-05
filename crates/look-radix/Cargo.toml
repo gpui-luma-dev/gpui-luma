@@ -1,0 +1,20 @@
+[package]
+name = "gpui-luma-look-radix"
+version.workspace = true
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "luma_look_radix"
+
+[dependencies]
+gpui.workspace = true
+image.workspace = true
+luma.workspace = true
+luma-look-core.workspace = true
+smallvec.workspace = true
+tiny-skia.workspace = true
+
+[lints]
+workspace = true

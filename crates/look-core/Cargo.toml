@@ -1,0 +1,16 @@
+[package]
+name = "gpui-luma-look-core"
+version.workspace = true
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "luma_look_core"
+
+[dependencies]
+gpui.workspace = true
+luma.workspace = true
+
+[lints]
+workspace = true

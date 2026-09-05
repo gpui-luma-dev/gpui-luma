@@ -13,10 +13,13 @@ This document defines the core architecture, crate layout, module mapping, and d
 *   **`crates/sdk` (`gpui-luma-sdk`, rustc crate `luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels). Advanced color controls live in `luma-color`.
 *   **`crates/luma-color` (`gpui-luma-color`, rustc crate `luma_color`)**: Color-domain controls built on the SDK slider engine — `color_slider`, `color_field`, `color_ring`, `color_arc`, swatch, chrome tokens, and composition sync helpers. Depends on `luma`; themed via look `sync_color_control_theme` / `with_look`.
 *   **`crates/lucide-svg-static`**: Experimental generated-style, renderer-neutral Lucide SVG asset crate. It currently packages the three chevrons used by the SVG rotation spike; the intended follow-up is automated generation from pinned upstream Lucide releases.
-*   **`crates/look-shadcn` (`gpui-luma-look-shadcn`, rustc crate `luma_look_shadcn`)**: Shadcn look **runtime** — CSS catalog parsing, `style.toml` recipe matching, and look-specific control factories. Callers supply CSS via `ShadcnLook::from_css_str` (or a path). It does not embed tweakcn theme packs. `look-core` is **not** a crate yet; extract it only after this split is stable.
+*   **`crates/look-core` (`gpui-luma-look-core`, rustc crate `luma_look_core`)**: Thin look-agnostic contracts — resolved color/metric/typography values and provenance sources (`Authored`, `ScaleStep`, …). No CSS parsing, no control factories. See [`docs/look-boundary-inventory.md`](look-boundary-inventory.md) and crate docs for how to author a look without editing the SDK.
+*   **`crates/look-shadcn` (`gpui-luma-look-shadcn`, rustc crate `luma_look_shadcn`)**: Shadcn look **runtime** — CSS catalog parsing, `style.toml` recipe matching, and look-specific control factories. Callers supply CSS via `ShadcnLook::from_css_str` (or a path). It does not embed tweakcn theme packs. Depends on `look-core` for shared provenance shapes (Shadcn still owns its CSS-shaped `ResolvedColor` until a later migration).
+*   **`crates/look-radix` (`gpui-luma-look-radix`, rustc crate `luma_look_radix`)**: Minimal Radix-shaped look stub — dual 12-step **color** + **gray** scales (plus destructive), semantic role mapping, `page_background()` (color #3 → gray #1), `signup_stage()` + Skia-rasterized signup mesh (`rasterize_signup_mesh_*` → cached `RenderImage`), and theme adapters for button, textfield, checkbox, switch, toggle, tabs, popup menu, and overlay window via `RadixLookControlExt`. Proves a second look can theme SDK primitives without SDK API changes.
 *   **`crates/look-shadcn-inspect` (`gpui-luma-look-shadcn-inspect`, rustc crate `luma_look_shadcn_inspect`)**: Support utilities for theme visual inspection and palette debugging.
 *   **`apps/common` (`luma-app-common`)**: Shared demo assets for Studio, shells, and color-viz — embedded tweakcn CSS packs plus fonts those themes reference, with GPUI registration helpers. Not an SDK crate; production apps supply their own CSS and fonts. Look-crate tests keep a small local CSS fixture set instead of depending on this package.
 *   **`apps/luma-studio` (`luma-studio`)**: Shadcn-focused integration workbench (control docs, theme inspection, color compositions). Not a product app. System font classification for typography pickers lives in `studio/font_catalog/`.
+*   **`apps/radix-studio` (`luma-radix-studio`)**: Single-screen workbench for the `look-radix` stub — custom palette overview (mode toggle, seed hex displays, 12-step scales, control previews bound via `RadixLookControlExt`). Not a product app.
 *   **`apps/color-viz` (`luma-color-viz`)**: GPUI platform-gap lab (e.g. P3 / shader limits) using Shadcn look and shared theme CLI — not the color product home.
 *   **`apps/shells/`**: Full-window shell reference apps — `SplitView` recipes (unified, inset, icon-rail, detached, split-titlebar) plus `vscode` (Luma Studio `ResizablePanels` workbench shell) — with shared theme and, where applicable, the Properties `SidebarControl` sample from `apps/shells/common`.
 
@@ -30,6 +33,8 @@ graph TD
     SDK --> Lucide[Lucide SVG assets]
     Studio --> Look[crates/look-shadcn]
     Studio --> AppCommon[apps/common]
+    RadixStudio[apps/radix-studio] --> SDK
+    RadixStudio --> LookRadix
     ColorViz[apps/color-viz] --> SDK
     ColorViz --> Color
     ColorViz --> Look
@@ -38,8 +43,12 @@ graph TD
     Shells --> Color
     Shells --> Look
     Shells --> AppCommon
+    LookCore[crates/look-core] --> SDK
     Look --> SDK
     Look --> Color
+    Look --> LookCore
+    LookRadix[crates/look-radix] --> SDK
+    LookRadix --> LookCore
     AppCommon --> Look
     LookInspect[crates/look-shadcn-inspect] --> Look
     LookInspect --> SDK
@@ -85,7 +94,7 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
 *   [`init.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/init.rs): Global SDK initialization hook.
 *   [`focus.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/focus.rs): Focus scopes, key binders, and focus-traversal helpers.
 *   [`key_handling.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/key_handling.rs): Core key profile definitions and action bindings.
-*   [`layouts/`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/layouts): Primitive layout stacks — `DockPanel`, `GridLayout`, `LayerStack`. `LayerStack` does not provide a rounded descendant clip; painted descendants must own the matching boundary.
+*   [`layouts/`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/layouts): Primitive layout stacks — `DockPanel`, `GridLayout`, `LayerStack`, `WideMiddle` / `WideMiddleLayout` (measure-aware leading|middle|trailing; middle is hard-capped in the three-column row via `middle_max_width`, sides take leftover flex; when mins no longer fit, middle reorders onto its own full-width row). `LayerStack` does not provide a rounded descendant clip; painted descendants must own the matching boundary.
 *   [`macros.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/macros.rs): Layout convenience macros (`vstack!`, `hstack!`, `grid_layout!`, `flow!`) and forms (`declare_form!`).
 *   [`prelude.rs`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/prelude.rs): Small shared import surface — builders, events, `ControlSize`, `InteractionState`, `IconSource`. Family modules remain the source of templates and themes.
 *   [`theme/`](file:///Users/scg/Developer/GitHub/luma/crates/sdk/src/theme): Global layout caches (`cache.rs`), metric scales (`scales.rs`), and token structures split as `tokens::{palette, metrics, typography, elevation}` (`ControlSize` / `ThemeMode` stay on `tokens`). `luma::prelude` re-exports builders, events, `ControlSize`, `InteractionState`, and `IconSource`.

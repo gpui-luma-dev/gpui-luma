@@ -1,0 +1,21 @@
+[package]
+name = "luma-radix-studio"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+gpui = { workspace = true }
+gpui_platform = { workspace = true }
+luma.workspace = true
+luma-color.workspace = true
+luma-look-radix.workspace = true
+lucide-svg-static.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = { version = "0.18" }
+
+[lints]
+workspace = true

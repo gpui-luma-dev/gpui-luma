@@ -27,6 +27,12 @@ pub mod tables;
 
 pub use catalog::{CssTokenCatalog, CssTokenMap, parse_css_catalog};
 pub use context::{sync_color_control_theme, with_look};
+/// Look-agnostic provenance types (shared with other looks via `look-core`).
+pub use luma_look_core::{
+    ColorSource as LookColorSource, MetricSource as LookMetricSource, ResolvedColor as LookResolvedColor,
+    ResolvedMetric as LookResolvedMetric, ResolvedTypography as LookResolvedTypography,
+    TypographySource as LookTypographySource,
+};
 pub use ext::{LumaTypographyExt, ShadcnElementExt};
 pub use look::ShadcnLook;
 pub use mode::ShadcnModeTokens;
