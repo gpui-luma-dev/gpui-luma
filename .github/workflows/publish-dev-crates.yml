@@ -1,7 +1,7 @@
 name: Publish Dev Crates
 
-# Packages the five library crates and cuts a GitHub prerelease.
-# Distribution: git tag + Release assets (.crate). Not crates.io (later).
+# Cuts a beta GitHub prerelease for the five library crates.
+# Consume via git tag (not crates.io / .crate — blocked by unpublished git deps).
 
 on:
   workflow_dispatch:
@@ -11,10 +11,16 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  LIB_PACKAGES: >-
+    gpui-luma-core
+    gpui-luma-color
+    gpui-luma-look-core
+    gpui-luma-look-radix
+    gpui-luma-look-shadcn
 
 jobs:
   publish:
-    name: Package and release
+    name: Verify, tag, and release
     runs-on: ubuntu-latest
 
     steps:
@@ -64,53 +70,42 @@ jobs:
 
       - name: Clippy library crates
         run: |
+          # shellcheck disable=SC2086
           cargo clippy \
-            --package gpui-luma-core \
-            --package gpui-luma-color \
-            --package gpui-luma-look-core \
-            --package gpui-luma-look-radix \
-            --package gpui-luma-look-shadcn \
+            $(printf -- '--package %s ' ${LIB_PACKAGES}) \
             --all-targets
 
-      - name: Package crates (dependency order)
+      - name: Check library crates
+        run: |
+          # shellcheck disable=SC2086
+          cargo check \
+            $(printf -- '--package %s ' ${LIB_PACKAGES})
+
+      - name: Build source archive
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
         run: |
           set -euo pipefail
           mkdir -p dist
-          packages=(
-            gpui-luma-core
-            gpui-luma-color
-            gpui-luma-look-core
-            gpui-luma-look-radix
-            gpui-luma-look-shadcn
-          )
-          for pkg in "${packages[@]}"; do
-            echo "::group::cargo package -p ${pkg}"
-            cargo package -p "${pkg}"
-            echo "::endgroup::"
-          done
-
+          git archive --format=tar.gz --prefix="gpui-luma-${TAG}/" -o "dist/gpui-luma-${TAG}.tar.gz" "${GITHUB_SHA}"
+          shasum -a 256 "dist/gpui-luma-${TAG}.tar.gz" | tee "dist/gpui-luma-${TAG}.tar.gz.sha256"
+          cat > dist/manifest.json <<EOF
           {
-            echo '{'
-            echo "  \"version\": \"${{ steps.meta.outputs.workspace_version }}\","
-            echo "  \"tag\": \"${{ steps.meta.outputs.tag }}\","
-            echo "  \"commit\": \"${GITHUB_SHA}\","
-            echo '  "packages": ['
-            first=1
-            for crate in target/package/*.crate; do
-              name="$(basename "${crate}")"
-              sum="$(shasum -a 256 "${crate}" | awk '{print $1}')"
-              if [[ "${first}" -eq 0 ]]; then
-                echo ','
-              fi
-              first=0
-              printf '    {"file": "%s", "sha256": "%s"}' "${name}" "${sum}"
-            done
-            echo
-            echo '  ]'
-            echo '}'
-          } > dist/manifest.json
-
-          cp target/package/*.crate dist/
+            "version": "${{ steps.meta.outputs.workspace_version }}",
+            "tag": "${TAG}",
+            "commit": "${GITHUB_SHA}",
+            "packages": [
+              "gpui-luma-core",
+              "gpui-luma-color",
+              "gpui-luma-look-core",
+              "gpui-luma-look-radix",
+              "gpui-luma-look-shadcn"
+            ],
+            "distribution": "git-tag"
+          }
+          EOF
+          # Strip leading indentation from the heredoc
+          sed -i 's/^          //' dist/manifest.json
           cat dist/manifest.json
 
       - name: Create annotated tag
@@ -137,7 +132,9 @@ jobs:
           body="$(cat <<EOF
           ## Luma library crates \`${VERSION}\`
 
-          Beta cut (not published to crates.io).
+          Beta cut. Prefer **git tag** dependencies (crates.io later).
+
+          Included packages: \`gpui-luma-core\`, \`gpui-luma-color\`, \`gpui-luma-look-core\`, \`gpui-luma-look-radix\`, \`gpui-luma-look-shadcn\`.
 
           ### Consume via git tag
 
@@ -157,12 +154,17 @@ jobs:
 
           if gh release view "${TAG}" >/dev/null 2>&1; then
             echo "Release ${TAG} already exists; uploading assets"
-            gh release upload "${TAG}" dist/*.crate dist/manifest.json --clobber
+            gh release upload "${TAG}" \
+              "dist/gpui-luma-${TAG}.tar.gz" \
+              "dist/gpui-luma-${TAG}.tar.gz.sha256" \
+              dist/manifest.json \
+              --clobber
           else
             gh release create "${TAG}" \
               --title "Luma crates ${TAG}" \
               --notes "${body}" \
               --prerelease \
-              dist/*.crate \
+              "dist/gpui-luma-${TAG}.tar.gz" \
+              "dist/gpui-luma-${TAG}.tar.gz.sha256" \
               dist/manifest.json
           fi
