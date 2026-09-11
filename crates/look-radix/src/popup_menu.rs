@@ -11,9 +11,24 @@ use luma::theme::{InteractionLayer, InteractionState, LumaTextStyle, MetricToken
 
 use crate::look::RadixLook;
 use crate::semantic::SemanticRole;
+use crate::tone::RadixTone;
+
+/// Radix Themes menu content variants, as carried by the SDK popup menu control.
+///
+/// The variant only governs the highlighted item: the panel itself is identical.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum RadixPopupMenuVariant {
+    /// Highlighted item takes the solid accent (`accent-9` on `accent-contrast`).
+    #[default]
+    Solid,
+    /// Highlighted item takes a soft accent tint (`accent-4`), text unchanged.
+    Soft,
+}
 
 struct RadixPopupMenuTheme {
     look: RadixLook,
+    variant: RadixPopupMenuVariant,
+    tone: RadixTone,
 }
 
 impl PopupMenuTheme for RadixPopupMenuTheme {
@@ -25,17 +40,11 @@ impl PopupMenuTheme for RadixPopupMenuTheme {
     ) -> PopupMenuPalette {
         let _ = metrics;
         let layer = state.layer();
+        let tone = self.tone;
+        let step = |step| tone.step(&self.look, step);
         let (mut background, mut foreground, mut border) = match trigger_style {
-            PopupMenuTriggerStyle::Primary => (
-                self.look.resolve_role(SemanticRole::Primary).hsla(),
-                self.look.resolve_role(SemanticRole::PrimaryForeground).hsla(),
-                Some(self.look.resolve_role(SemanticRole::Primary).hsla()),
-            ),
-            PopupMenuTriggerStyle::Secondary => (
-                self.look.resolve_role(SemanticRole::Soft).hsla(),
-                self.look.resolve_role(SemanticRole::SoftForeground).hsla(),
-                Some(self.look.resolve_role(SemanticRole::Soft).hsla()),
-            ),
+            PopupMenuTriggerStyle::Primary => (step(9), tone.contrast(&self.look), Some(step(9))),
+            PopupMenuTriggerStyle::Secondary => (step(3), step(11), Some(step(3))),
             PopupMenuTriggerStyle::Outline => (
                 self.look.resolve_role(SemanticRole::Background).hsla(),
                 self.look.resolve_role(SemanticRole::Foreground).hsla(),
@@ -54,16 +63,18 @@ impl PopupMenuTheme for RadixPopupMenuTheme {
             }
             InteractionLayer::Hovered | InteractionLayer::Pressed => {
                 if matches!(trigger_style, PopupMenuTriggerStyle::Ghost | PopupMenuTriggerStyle::Outline) {
-                    background = self.look.resolve_role(SemanticRole::Soft).hsla();
+                    background = step(3);
                 } else if matches!(trigger_style, PopupMenuTriggerStyle::Primary) {
-                    background = self.look.resolve_step(crate::scale::ScaleFamily::Color, 10).hsla();
+                    background = step(10);
+                } else if matches!(trigger_style, PopupMenuTriggerStyle::Secondary) {
+                    background = step(4);
                 }
             }
             InteractionLayer::Default => {}
         }
 
         if state.focused && !state.disabled {
-            border = Some(self.look.resolve_role(SemanticRole::Focus).hsla());
+            border = Some(step(8));
         }
 
         PopupMenuPalette {
@@ -72,7 +83,7 @@ impl PopupMenuTheme for RadixPopupMenuTheme {
             trigger_border: border,
             trigger_shadow: None,
             trigger_typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight::MEDIUM },
-            floating_menu: floating_menu_look(&self.look),
+            floating_menu: floating_menu_look(&self.look, self.variant, self.tone),
         }
     }
 
@@ -97,8 +108,13 @@ impl PopupMenuTheme for RadixPopupMenuTheme {
     }
 }
 
-fn floating_menu_look(look: &RadixLook) -> FloatingMenuLook {
+fn floating_menu_look(look: &RadixLook, variant: RadixPopupMenuVariant, tone: RadixTone) -> FloatingMenuLook {
     let metrics = look.metrics();
+    let (item_hover_background, item_hover_foreground) = match variant {
+        RadixPopupMenuVariant::Solid => (tone.step(look, 9), tone.contrast(look)),
+        RadixPopupMenuVariant::Soft => (tone.step(look, 4), look.resolve_role(SemanticRole::Foreground).hsla()),
+    };
+
     FloatingMenuLook {
         background: look.resolve_role(SemanticRole::Surface).hsla(),
         foreground: look.resolve_role(SemanticRole::Foreground).hsla(),
@@ -114,8 +130,8 @@ fn floating_menu_look(look: &RadixLook) -> FloatingMenuLook {
         padding: metrics.spacing.s2,
         min_width: 180.0,
         item_disabled_foreground: look.resolve_role(SemanticRole::MutedForeground).hsla(),
-        item_hover_background: look.resolve_role(SemanticRole::Soft).hsla(),
-        item_hover_foreground: look.resolve_role(SemanticRole::SoftForeground).hsla(),
+        item_hover_background,
+        item_hover_foreground,
         item_typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight::NORMAL },
         item_height: metrics.control.md.height * 0.9,
         item_padding_x: metrics.control.md.padding_x * 0.75,
@@ -127,23 +143,71 @@ fn floating_menu_look(look: &RadixLook) -> FloatingMenuLook {
     }
 }
 
-pub fn popup_menu_theme(look: Arc<RadixLook>) -> Arc<dyn PopupMenuTheme> {
-    Arc::new(RadixPopupMenuTheme { look: look.as_ref().clone() })
+pub fn popup_menu_theme(
+    look: Arc<RadixLook>,
+    variant: RadixPopupMenuVariant,
+    tone: RadixTone,
+) -> Arc<dyn PopupMenuTheme> {
+    Arc::new(RadixPopupMenuTheme { look: look.as_ref().clone(), variant, tone })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn primary_trigger_uses_accent() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = popup_menu_theme(look.clone());
-        let palette = theme.resolve(
+    fn trigger_palette(look: &Arc<RadixLook>, tone: RadixTone) -> PopupMenuPalette {
+        popup_menu_theme(Arc::clone(look), RadixPopupMenuVariant::default(), tone).resolve(
             PopupMenuTriggerStyle::Primary,
             PopupMenuTriggerMetrics::default(),
             InteractionState::default(),
-        );
+        )
+    }
+
+    #[test]
+    fn primary_trigger_uses_accent() {
+        let look = Arc::new(RadixLook::built_in());
+        let palette = trigger_palette(&look, RadixTone::Accent);
+
         assert_eq!(palette.trigger_background.l, look.resolve_role(SemanticRole::Primary).hsla().l);
+    }
+
+    #[test]
+    fn gray_tone_locks_the_trigger_to_the_neutral_scale() {
+        let look = Arc::new(RadixLook::built_in());
+        let gray = trigger_palette(&look, RadixTone::Gray);
+
+        assert_eq!(gray.trigger_background, RadixTone::Gray.step(&look, 9));
+        assert_ne!(gray.trigger_background, trigger_palette(&look, RadixTone::Accent).trigger_background);
+    }
+
+    #[test]
+    fn solid_variant_highlights_items_with_the_solid_accent() {
+        let look = RadixLook::built_in();
+        let menu = floating_menu_look(&look, RadixPopupMenuVariant::Solid, RadixTone::Accent);
+
+        assert_eq!(menu.item_hover_background, look.resolve_role(SemanticRole::Primary).hsla());
+        assert_eq!(menu.item_hover_foreground, look.resolve_role(SemanticRole::PrimaryForeground).hsla());
+    }
+
+    #[test]
+    fn soft_variant_tints_items_and_keeps_the_panel_text() {
+        let look = RadixLook::built_in();
+        let solid = floating_menu_look(&look, RadixPopupMenuVariant::Solid, RadixTone::Accent);
+        let soft = floating_menu_look(&look, RadixPopupMenuVariant::Soft, RadixTone::Accent);
+
+        assert_eq!(soft.item_hover_foreground, look.resolve_role(SemanticRole::Foreground).hsla());
+        assert!(soft.item_hover_background.l > solid.item_hover_background.l);
+        assert_eq!(soft.background, solid.background);
+    }
+
+    #[test]
+    fn gray_tone_keeps_the_panel_and_only_swaps_the_highlight() {
+        let look = RadixLook::built_in();
+        let accent = floating_menu_look(&look, RadixPopupMenuVariant::Solid, RadixTone::Accent);
+        let gray = floating_menu_look(&look, RadixPopupMenuVariant::Solid, RadixTone::Gray);
+
+        assert_eq!(gray.item_hover_background, RadixTone::Gray.step(&look, 9));
+        assert_ne!(gray.item_hover_background, accent.item_hover_background);
+        assert_eq!(gray.background, accent.background);
     }
 }

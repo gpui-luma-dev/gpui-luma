@@ -2,10 +2,11 @@
 
 mod app;
 mod app_shell;
-mod color_hex;
-mod color_textfield;
-#[path = "assets/assets.rs"]
 mod assets;
+mod color_hex;
+mod controls;
+mod screens;
+mod tabs;
 
 use assets::Assets;
 use gpui::{actions, App, KeyBinding, Menu, MenuItem};

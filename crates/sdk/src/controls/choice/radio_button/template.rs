@@ -3,12 +3,9 @@ use gpui::{AnyElement, App, Div, Hsla, Stateful, Window, div, hsla, px, prelude:
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::infra::shadow_layout::should_paint_shadow;
 use crate::controls::button::{ButtonRenderModel, ButtonTemplate};
-use crate::controls::radio_button::{
-    RadioButtonData, RadioButtonPalette, RadioButtonTheme, RadioScale, default_radio_button_theme,
-};
+use crate::controls::radio_button::{RadioButtonData, RadioButtonPalette, RadioButtonTheme, default_radio_button_theme};
 use crate::infra::template::TemplateWithModifiers;
 use crate::define_control_template;
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
 const FOCUS_RING_GAP: f32 = 1.0;
 
@@ -86,11 +83,7 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         };
 
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| RadioScale::compute(model.size, metrics, scale_factor),
-        );
+        let scale = self.theme.scale(model.size, scale_factor);
 
         let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
         let indicator_visual = {

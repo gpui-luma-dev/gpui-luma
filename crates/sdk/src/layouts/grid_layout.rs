@@ -160,11 +160,11 @@ fn build_grid_cell(element: Option<AnyElement>, tracks: &[GridTrack], gap_x: f32
     let GridSpanSizing { fixed_width, star_weight } = measure_grid_span(tracks, gap_x);
 
     let mut cell = if star_weight > 0.0 {
-        let mut cell = div().min_w(px(fixed_width)).flex_1();
+        let mut cell = div().min_w(px(fixed_width)).flex_1().overflow_hidden();
         cell.style().flex_grow = Some(star_weight);
         cell
     } else {
-        div().w(px(fixed_width)).flex_shrink_0()
+        div().w(px(fixed_width)).flex_shrink_0().overflow_hidden()
     };
 
     if let Some(element) = element {

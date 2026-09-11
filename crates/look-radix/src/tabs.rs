@@ -17,9 +17,11 @@ struct RadixTabsTheme {
 impl TabsTheme for RadixTabsTheme {
     fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsListLook {
         let metrics = self.look.metrics();
+        // Underline tabs: no list box border. Style-guide / sidebar chrome draws its own
+        // full-width hairline under the control (see luma-studio accordion / buttons sections).
         TabsListLook {
             background: (!enabled).then(|| self.look.resolve_role(SemanticRole::Surface).hsla()),
-            border: Some(self.look.resolve_role(SemanticRole::Border).hsla()),
+            border: None,
             radius: 0.0,
             padding: 0.0,
             gap: metrics.gap(size),

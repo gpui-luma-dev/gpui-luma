@@ -203,22 +203,24 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
             track.into_any_element()
         };
 
-        let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(model, cx));
+        let indicator_only = matches!(model.role, crate::controls::button_family::ButtonFamilyRole::Icon);
+        let mut control =
+            div().id(format!("{}-control", model.id)).relative().flex().items_center().rounded(px(track_radius));
 
-        let control = div()
-            .id(format!("{}-control", model.id))
-            .relative()
-            .flex()
-            .items_center()
-            .gap(px(scale.gap))
-            .text_color(settled_palette.label_color)
-            .text_size(px(settled_palette.label_typography.size))
-            .line_height(px(settled_palette.label_typography.line_height))
-            .font_family(settled_palette.label_font_family.clone())
-            .font_weight(settled_palette.label_typography.weight)
-            .rounded(px(track_radius))
-            .child(track)
-            .child(label);
+        if indicator_only {
+            control = control.child(track);
+        } else {
+            let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(model, cx));
+            control = control
+                .gap(px(scale.gap))
+                .text_color(settled_palette.label_color)
+                .text_size(px(settled_palette.label_typography.size))
+                .line_height(px(settled_palette.label_typography.line_height))
+                .font_family(settled_palette.label_font_family.clone())
+                .font_weight(settled_palette.label_typography.weight)
+                .child(track)
+                .child(label);
+        }
 
         let mut root = self.apply_modifiers(control, model);
 

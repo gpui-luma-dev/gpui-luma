@@ -103,6 +103,7 @@ pub struct ColorSwatch {
     custom_height: Option<Pixels>,
     corner_radius: Option<Pixels>,
     checkerboard: bool,
+    bordered: bool,
 }
 
 impl ColorSwatch {
@@ -117,6 +118,7 @@ impl ColorSwatch {
             custom_height: None,
             corner_radius: None,
             checkerboard: false,
+            bordered: true,
         }
     }
 
@@ -157,6 +159,12 @@ impl ColorSwatch {
         self
     }
 
+    /// Sets whether the theme border is painted around the swatch.
+    pub fn bordered(mut self, enabled: bool) -> Self {
+        self.bordered = enabled;
+        self
+    }
+
     fn height_for_size(size: ControlSize) -> Pixels {
         match size {
             ControlSize::Sm => px(28.0),
@@ -189,7 +197,7 @@ impl RenderOnce for ColorSwatch {
         let height = self.custom_height.unwrap_or_else(|| Self::height_for_size(self.size));
         let radius = self.corner_radius.unwrap_or_else(|| Self::default_radius(self.size));
         let color = self.color;
-        let border_width = px(1.0);
+        let border_width = if self.bordered { px(1.0) } else { px(0.0) };
         let corner_radii = Corners::all(radius);
 
         div().relative().w_full().h(height).child(

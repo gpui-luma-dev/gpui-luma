@@ -1,0 +1,157 @@
+//! Top-level screen navigation toggle bar (Custom Palette / Colors / Icons).
+
+use std::sync::Arc;
+
+use gpui::{Context, Entity, EventEmitter, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*};
+use luma::controls::button::{Button, ButtonEvent};
+use luma::controls::toggle::{Toggle, ToggleEvent};
+use luma::hstack;
+use luma::infra::presenter::HasPresenter;
+use luma::theme::ThemeMode;
+use luma_look_radix::{RadixLook, RadixLookControlExt};
+
+use crate::assets::{icon_named, react_icon};
+use crate::tabs::RadixStudioTab;
+
+/// Radix icons are drawn on a native 15x15 grid.
+const THEME_ICON_SIZE: f32 = 15.0;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ScreenNavEvent {
+    Change { tab: RadixStudioTab },
+    ModeChange { mode: ThemeMode },
+}
+
+pub struct ScreenNav {
+    look: Arc<RadixLook>,
+    active: RadixStudioTab,
+    custom_palette: Toggle,
+    colors: Toggle,
+    icons: Toggle,
+    style_guide: Toggle,
+    developer: Toggle,
+    theme_toggle: Entity<Button>,
+    _subscriptions: Vec<Subscription>,
+}
+
+impl EventEmitter<ScreenNavEvent> for ScreenNav {}
+
+impl ScreenNav {
+    pub fn new(look: &Arc<RadixLook>, cx: &mut Context<Self>) -> Self {
+        let custom_palette = look.page_toggle("page-custom-palette").with_data(true).label("Custom Palette").spawn(cx);
+        let colors = look.page_toggle("page-colors").with_data(false).label("Colors").spawn(cx);
+        let icons = look.page_toggle("page-icons").with_data(false).label("Icons").spawn(cx);
+        let style_guide = look.page_toggle("page-style-guide").with_data(false).label("Style Guide").spawn(cx);
+        let developer = look.page_toggle("page-developer").with_data(false).label("Developer").spawn(cx);
+        // Quiet ghost: transparent at rest, soft fill on hover, no focus ring. A `Toggle`
+        // would paint the accent fill in its selected state, so the mode lives in the look.
+        let icon_look = Arc::clone(look);
+        let theme_toggle = look
+            .quiet_ghost_button("screen-nav-theme")
+            .content(move |model, _| {
+                let color = model.resolved_look.as_ref().map_or(Hsla::default(), |look| look.foreground);
+                let name = match icon_look.mode() {
+                    ThemeMode::Dark => "moon",
+                    ThemeMode::Light => "sun",
+                };
+                icon_named(name)
+                    .map(|icon| react_icon(icon, color, THEME_ICON_SIZE))
+                    .unwrap_or_else(|| div().into_any_element())
+            })
+            .spawn(cx);
+
+        let mut subscriptions = Vec::new();
+        subscriptions.push(cx.subscribe(&custom_palette, |this, _, event: &ToggleEvent, cx| {
+            if let ToggleEvent::Change { selected: true } = event {
+                this.select(RadixStudioTab::CustomPalette, cx);
+            }
+        }));
+        subscriptions.push(cx.subscribe(&colors, |this, _, event: &ToggleEvent, cx| {
+            if let ToggleEvent::Change { selected: true } = event {
+                this.select(RadixStudioTab::Colors, cx);
+            }
+        }));
+        subscriptions.push(cx.subscribe(&icons, |this, _, event: &ToggleEvent, cx| {
+            if let ToggleEvent::Change { selected: true } = event {
+                this.select(RadixStudioTab::Icons, cx);
+            }
+        }));
+        subscriptions.push(cx.subscribe(&style_guide, |this, _, event: &ToggleEvent, cx| {
+            if let ToggleEvent::Change { selected: true } = event {
+                this.select(RadixStudioTab::StyleGuide, cx);
+            }
+        }));
+        subscriptions.push(cx.subscribe(&developer, |this, _, event: &ToggleEvent, cx| {
+            if let ToggleEvent::Change { selected: true } = event {
+                this.select(RadixStudioTab::Developer, cx);
+            }
+        }));
+        subscriptions.push(cx.subscribe(&theme_toggle, |this, _, event: &ButtonEvent, cx| {
+            if !matches!(event, ButtonEvent::Click) {
+                return;
+            }
+            let mode = match this.look.mode() {
+                ThemeMode::Dark => ThemeMode::Light,
+                ThemeMode::Light => ThemeMode::Dark,
+            };
+            cx.emit(ScreenNavEvent::ModeChange { mode });
+        }));
+
+        Self {
+            look: Arc::clone(look),
+            active: RadixStudioTab::CustomPalette,
+            custom_palette,
+            colors,
+            icons,
+            style_guide,
+            developer,
+            theme_toggle,
+            _subscriptions: subscriptions,
+        }
+    }
+
+    pub fn active(&self) -> RadixStudioTab {
+        self.active
+    }
+
+    pub fn select(&mut self, tab: RadixStudioTab, cx: &mut Context<Self>) {
+        if self.active == tab {
+            return;
+        }
+        self.active = tab;
+        self.custom_palette
+            .update(cx, |toggle, cx| toggle.set_data(tab == RadixStudioTab::CustomPalette, cx));
+        self.colors.update(cx, |toggle, cx| toggle.set_data(tab == RadixStudioTab::Colors, cx));
+        self.icons.update(cx, |toggle, cx| toggle.set_data(tab == RadixStudioTab::Icons, cx));
+        self.style_guide.update(cx, |toggle, cx| toggle.set_data(tab == RadixStudioTab::StyleGuide, cx));
+        self.developer.update(cx, |toggle, cx| toggle.set_data(tab == RadixStudioTab::Developer, cx));
+        cx.emit(ScreenNavEvent::Change { tab });
+        cx.notify();
+    }
+
+    /// Repaints the theme face when the mode changes elsewhere (e.g. the palette screen toggles).
+    /// The face reads the look, so only a notify is needed.
+    pub fn mode_changed(&mut self, cx: &mut Context<Self>) {
+        cx.notify();
+    }
+}
+
+impl Render for ScreenNav {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .w_full()
+            .flex()
+            .flex_row()
+            .items_center()
+            .child(div().flex_1())
+            .child(hstack! {
+                gap=8 align=center justify=center;
+                self.custom_palette.clone(),
+                self.colors.clone(),
+                self.icons.clone(),
+                self.style_guide.clone(),
+                self.developer.clone(),
+            })
+            .child(div().flex_1().flex().flex_row().justify_end().child(self.theme_toggle.clone()))
+    }
+}

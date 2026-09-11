@@ -59,6 +59,11 @@ pub type RadioButtonLook = RadioButtonPalette;
 pub trait RadioButtonTheme: Send + Sync {
     fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> RadioButtonPalette;
     fn metrics(&self) -> MetricTokens;
+
+    /// Geometry for the indicator / label row. Defaults to [`RadioScale::compute`].
+    fn scale(&self, size: ControlSize, scale_factor: f32) -> RadioScale {
+        RadioScale::compute(size, &self.metrics(), scale_factor)
+    }
 }
 
 #[derive(Clone, Debug, Default)]

@@ -10,7 +10,9 @@ use gpui::{Background, Hsla, linear_color_stop, linear_gradient};
 use luma::theme::{MetricTokens, ThemeMode};
 use luma_look_core::ResolvedColor;
 
-use crate::scale::{ModeScales, ScaleFamily, ScalePair, ScaleStep, built_in_scales, color_scale_from_seed};
+use crate::button::ClassicButtonParams;
+use crate::palette::{PaletteSlot, RadixAccent, RadixGray, ThemePalettes, scale_pair};
+use crate::scale::{ModeScales, ScaleFamily, ScalePair, ScaleStep, color_scale_from_seed};
 use crate::semantic::SemanticRole;
 
 /// Canonical page wash: color step 3 at the top, settling to gray step 1.
@@ -106,25 +108,96 @@ pub struct RadixLook {
 
 struct RadixLookState {
     scales: RwLock<ScalePair>,
+    palettes: RwLock<ThemePalettes>,
     metrics: MetricTokens,
     mode: AtomicU8,
+    classic_shadow: RwLock<ClassicButtonParams>,
     /// Bumped on mode change so callers can observe cheaply if desired.
     revision: RwLock<u64>,
 }
 
 impl RadixLook {
+    /// Radix's own default theme: indigo accent with its paired slate gray.
     pub fn built_in() -> Self {
-        Self::new(built_in_scales(), MetricTokens::default(), ThemeMode::Light)
+        Self::from_palettes(
+            RadixAccent::default(),
+            RadixGray::default(),
+            crate::button_layout::radix_metric_tokens(),
+            ThemeMode::Light,
+        )
     }
 
+    pub fn from_palettes(accent: RadixAccent, gray: RadixGray, metrics: MetricTokens, mode: ThemeMode) -> Self {
+        let look = Self::new(scale_pair(accent, gray), metrics, mode);
+        if let Ok(mut palettes) = look.state.palettes.write() {
+            *palettes = ThemePalettes::named(accent, gray);
+        }
+        look
+    }
+
+    /// Scales without palette identity; both slots report as custom.
     pub fn new(scales: ScalePair, metrics: MetricTokens, mode: ThemeMode) -> Self {
         Self {
             state: Arc::new(RadixLookState {
                 scales: RwLock::new(scales),
+                palettes: RwLock::new(ThemePalettes { accent: PaletteSlot::Custom, gray: PaletteSlot::Custom }),
                 metrics,
                 mode: AtomicU8::new(mode_to_u8(mode)),
+                classic_shadow: RwLock::new(ClassicButtonParams::default()),
                 revision: RwLock::new(0),
             }),
+        }
+    }
+
+    /// An independent copy of this look's scales, palettes, metrics, mode, and tuning.
+    ///
+    /// Cloning a [`RadixLook`] shares one mutable state, so every control repaints together.
+    /// Forking is how a screen can edit a palette without touching the rest of the app.
+    pub fn fork(&self) -> Self {
+        let scales = *self.state.scales.read().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let forked = Self::new(scales, self.metrics(), self.mode());
+        if let Ok(mut palettes) = forked.state.palettes.write() {
+            *palettes = self.palettes();
+        }
+        if let Ok(mut classic) = forked.state.classic_shadow.write() {
+            *classic = self.classic_params();
+        }
+        forked
+    }
+
+    /// Palettes currently in use, for readouts and pickers.
+    pub fn palettes(&self) -> ThemePalettes {
+        *self.state.palettes.read().unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// Palette name behind one family, so swatches can report `indigo 9` over `color 9`.
+    pub fn palette_label(&self, family: ScaleFamily) -> &'static str {
+        self.scales().family(family).palette()
+    }
+
+    /// Repaints every control from a different named pair.
+    pub fn set_palettes(&self, accent: RadixAccent, gray: RadixGray) {
+        if let Ok(mut scales) = self.state.scales.write() {
+            *scales = scale_pair(accent, gray);
+        }
+        if let Ok(mut palettes) = self.state.palettes.write() {
+            *palettes = ThemePalettes::named(accent, gray);
+        }
+        self.bump_revision();
+    }
+
+    /// Current [`RadixButtonVariant::Classic`](crate::RadixButtonVariant::Classic) shadow geometry.
+    pub fn classic_params(&self) -> ClassicButtonParams {
+        *self.state.classic_shadow.read().unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// Retunes the Classic bubble for every button resolved from this look.
+    pub fn set_classic_params(&self, params: ClassicButtonParams) {
+        if let Ok(mut current) = self.state.classic_shadow.write() {
+            *current = params;
+        }
+        if let Ok(mut revision) = self.state.revision.write() {
+            *revision = revision.wrapping_add(1);
         }
     }
 
@@ -140,11 +213,20 @@ impl RadixLook {
     }
 
     /// Rebuilds both chromatic mode scales from the supplied color-9 anchor.
+    ///
+    /// The accent slot stops being a named palette; the gray slot keeps its name.
     pub fn set_accent_seed(&self, seed: Hsla) {
         if let Ok(mut scales) = self.state.scales.write() {
             scales.light.color = color_scale_from_seed(seed, ThemeMode::Light);
             scales.dark.color = color_scale_from_seed(seed, ThemeMode::Dark);
         }
+        if let Ok(mut palettes) = self.state.palettes.write() {
+            palettes.accent = PaletteSlot::Custom;
+        }
+        self.bump_revision();
+    }
+
+    fn bump_revision(&self) {
         if let Ok(mut revision) = self.state.revision.write() {
             *revision = revision.wrapping_add(1);
         }
@@ -167,11 +249,36 @@ impl RadixLook {
     }
 
     pub fn resolve_role(&self, role: SemanticRole) -> ResolvedColor {
+        if role == SemanticRole::PrimaryForeground && self.accent_uses_dark_solid_contrast() {
+            return self.dark_solid_contrast();
+        }
         role.resolve(self.scales(), self.mode())
     }
 
     pub fn resolve_step(&self, family: ScaleFamily, step: ScaleStep) -> ResolvedColor {
         self.scales().resolved(family, step)
+    }
+
+    /// Whether solid accent faces need dark labels (lime / mint / sky / yellow / amber).
+    pub fn accent_uses_dark_solid_contrast(&self) -> bool {
+        match self.palettes().accent {
+            PaletteSlot::Named(name) => {
+                RadixAccent::ALL.iter().any(|accent| accent.as_str() == name && accent.uses_dark_solid_contrast())
+            }
+            // Custom seeds: treat a light solid face like Radix's bright accents.
+            PaletteSlot::Custom => self.resolve_step(ScaleFamily::Color, 9).hsla().l >= 0.68,
+        }
+    }
+
+    /// Dark label for bright solid faces — the darker of gray 1 / gray 12 in the active mode.
+    fn dark_solid_contrast(&self) -> ResolvedColor {
+        let gray1 = self.resolve_step(ScaleFamily::Gray, 1);
+        let gray12 = self.resolve_step(ScaleFamily::Gray, 12);
+        if gray1.hsla().l <= gray12.hsla().l {
+            gray1
+        } else {
+            gray12
+        }
     }
 
     /// Default page background recipe: **color #3 → gray #1**, settling at ⅓.
@@ -208,6 +315,45 @@ mod tests {
         let dark_bg = look.resolve_role(SemanticRole::Background).hsla();
         assert_ne!(light_bg.l, dark_bg.l);
         assert_eq!(look.revision(), 1);
+    }
+
+    #[test]
+    fn built_in_reports_indigo_on_slate() {
+        let look = RadixLook::built_in();
+
+        assert_eq!(look.palettes(), ThemePalettes::named(RadixAccent::Indigo, RadixGray::Auto));
+        assert_eq!(look.palette_label(ScaleFamily::Color), "indigo");
+        assert_eq!(look.palette_label(ScaleFamily::Gray), "slate");
+    }
+
+    #[test]
+    fn a_fork_starts_equal_and_then_drifts_alone() {
+        let theme = RadixLook::built_in();
+        let draft = theme.fork();
+        assert_eq!(draft.palettes(), theme.palettes());
+        assert_eq!(draft.resolve_role(SemanticRole::Primary).hsla(), theme.resolve_role(SemanticRole::Primary).hsla());
+
+        draft.set_accent_seed(gpui::hsla(0.05, 0.9, 0.5, 1.0));
+
+        assert_ne!(draft.resolve_role(SemanticRole::Primary).hsla(), theme.resolve_role(SemanticRole::Primary).hsla());
+        assert_eq!(draft.palettes().accent, PaletteSlot::Custom);
+        assert_eq!(theme.palettes().accent, PaletteSlot::Named("indigo"));
+        // The gray slot is untouched by an accent seed.
+        assert_eq!(draft.palettes().gray, theme.palettes().gray);
+    }
+
+    #[test]
+    fn set_palettes_restores_named_scales() {
+        let draft = RadixLook::built_in().fork();
+        draft.set_accent_seed(gpui::hsla(0.05, 0.9, 0.5, 1.0));
+
+        draft.set_palettes(RadixAccent::Indigo, RadixGray::Auto);
+
+        assert_eq!(draft.palettes(), ThemePalettes::named(RadixAccent::Indigo, RadixGray::Auto));
+        assert_eq!(
+            draft.resolve_role(SemanticRole::Primary).hsla(),
+            RadixLook::built_in().resolve_role(SemanticRole::Primary).hsla()
+        );
     }
 
     #[test]

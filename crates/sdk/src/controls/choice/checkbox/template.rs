@@ -3,10 +3,9 @@ use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, 
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::infra::shadow_layout::should_paint_shadow;
 use crate::controls::button::{ButtonRenderModel, ButtonTemplate};
-use crate::controls::checkbox::{CheckboxData, CheckboxPalette, CheckboxScale, CheckboxTheme, default_checkbox_theme};
+use crate::controls::checkbox::{CheckboxData, CheckboxPalette, CheckboxTheme, default_checkbox_theme};
 use crate::infra::template::TemplateWithModifiers;
 use crate::define_control_template;
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
 const FOCUS_RING_GAP: f32 = 1.0;
 
@@ -83,11 +82,7 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
             0.0
         };
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| CheckboxScale::compute(model.size, metrics, scale_factor),
-        );
+        let scale = self.theme.scale(model.size, scale_factor);
 
         let indicator_visual = {
             let mut indicator = div()

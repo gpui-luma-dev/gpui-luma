@@ -62,6 +62,11 @@ pub type CheckboxLook = CheckboxPalette;
 pub trait CheckboxTheme: Send + Sync {
     fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> CheckboxPalette;
     fn metrics(&self) -> MetricTokens;
+
+    /// Geometry for the indicator / label row. Defaults to [`CheckboxScale::compute`].
+    fn scale(&self, size: ControlSize, scale_factor: f32) -> CheckboxScale {
+        CheckboxScale::compute(size, &self.metrics(), scale_factor)
+    }
 }
 
 #[derive(Clone, Debug, Default)]
