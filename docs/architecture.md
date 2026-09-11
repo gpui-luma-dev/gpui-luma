@@ -10,7 +10,7 @@ This document defines the core architecture, crate layout, module mapping, and d
 
 ### Workspace Crates
 
-*   **`crates/sdk` (`gpui-luma-sdk`, rustc crate `luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels). Advanced color controls live in `luma-color`.
+*   **`crates/sdk` (`gpui-luma-core`, rustc crate `luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels). Advanced color controls live in `luma-color`.
 *   **`crates/luma-color` (`gpui-luma-color`, rustc crate `luma_color`)**: Color-domain controls built on the SDK slider engine — `color_slider`, `color_field`, `color_ring`, `color_arc`, swatch, chrome tokens, and composition sync helpers. Depends on `luma`; themed via look `sync_color_control_theme` / `with_look`.
 *   **`crates/lucide-svg-static`**: Experimental generated-style, renderer-neutral Lucide SVG asset crate. It currently packages the three chevrons used by the SVG rotation spike; the intended follow-up is automated generation from pinned upstream Lucide releases.
 *   **`crates/look-core` (`gpui-luma-look-core`, rustc crate `luma_look_core`)**: Thin look-agnostic contracts — resolved color/metric/typography values and provenance sources (`Authored`, `ScaleStep`, …). No CSS parsing, no control factories. See [`docs/look-boundary-inventory.md`](look-boundary-inventory.md) and crate docs for how to author a look without editing the SDK.

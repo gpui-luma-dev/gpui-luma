@@ -1,0 +1,168 @@
+name: Publish Dev Crates
+
+# Packages the five library crates and cuts a GitHub prerelease.
+# Distribution: git tag + Release assets (.crate). Not crates.io (later).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish:
+    name: Package and release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Resolve version and tag
+        id: meta
+        run: |
+          set -euo pipefail
+          version="$(sed -n '/^\[workspace.package\]/,/^\[/p' Cargo.toml | sed -n 's/^version = "\(.*\)"/\1/p' | head -1)"
+          if [[ -z "${version}" ]]; then
+            echo "Could not read workspace.package.version from Cargo.toml" >&2
+            exit 1
+          fi
+          tag="v${version}"
+          echo "workspace_version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "Workspace version: ${version}"
+          echo "Tag: ${tag}"
+
+      - name: Reject tag if it already exists on another commit
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            existing="$(git rev-list -n 1 "${TAG}")"
+            if [[ "${existing}" != "${GITHUB_SHA}" ]]; then
+              echo "Tag ${TAG} already points at ${existing}, expected ${GITHUB_SHA}" >&2
+              exit 1
+            fi
+          fi
+
+      - name: Format check
+        run: cargo fmt --all --check
+
+      - name: Clippy library crates
+        run: |
+          cargo clippy \
+            --package gpui-luma-core \
+            --package gpui-luma-color \
+            --package gpui-luma-look-core \
+            --package gpui-luma-look-radix \
+            --package gpui-luma-look-shadcn \
+            --all-targets
+
+      - name: Package crates (dependency order)
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          packages=(
+            gpui-luma-core
+            gpui-luma-color
+            gpui-luma-look-core
+            gpui-luma-look-radix
+            gpui-luma-look-shadcn
+          )
+          for pkg in "${packages[@]}"; do
+            echo "::group::cargo package -p ${pkg}"
+            cargo package -p "${pkg}"
+            echo "::endgroup::"
+          done
+
+          {
+            echo '{'
+            echo "  \"version\": \"${{ steps.meta.outputs.workspace_version }}\","
+            echo "  \"tag\": \"${{ steps.meta.outputs.tag }}\","
+            echo "  \"commit\": \"${GITHUB_SHA}\","
+            echo '  "packages": ['
+            first=1
+            for crate in target/package/*.crate; do
+              name="$(basename "${crate}")"
+              sum="$(shasum -a 256 "${crate}" | awk '{print $1}')"
+              if [[ "${first}" -eq 0 ]]; then
+                echo ','
+              fi
+              first=0
+              printf '    {"file": "%s", "sha256": "%s"}' "${name}" "${sum}"
+            done
+            echo
+            echo '  ]'
+            echo '}'
+          } > dist/manifest.json
+
+          cp target/package/*.crate dist/
+          cat dist/manifest.json
+
+      - name: Create annotated tag
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already on this commit"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${TAG}" "${GITHUB_SHA}" -m "Luma crates ${TAG}"
+            git push origin "refs/tags/${TAG}"
+          fi
+
+      - name: Create GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.workspace_version }}
+        run: |
+          set -euo pipefail
+          body="$(cat <<EOF
+          ## Luma library crates \`${VERSION}\`
+
+          Beta cut (not published to crates.io).
+
+          ### Consume via git tag
+
+          \`\`\`toml
+          [dependencies]
+          luma = { package = "gpui-luma-core", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
+          luma-color = { package = "gpui-luma-color", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
+          luma-look-core = { package = "gpui-luma-look-core", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
+          luma-look-radix = { package = "gpui-luma-look-radix", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
+          luma-look-shadcn = { package = "gpui-luma-look-shadcn", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
+          \`\`\`
+
+          Imports remain \`use luma::…\`.
+          EOF
+          )"
+          body="$(printf '%s\n' "${body}" | sed 's/^          //')"
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists; uploading assets"
+            gh release upload "${TAG}" dist/*.crate dist/manifest.json --clobber
+          else
+            gh release create "${TAG}" \
+              --title "Luma crates ${TAG}" \
+              --notes "${body}" \
+              --prerelease \
+              dist/*.crate \
+              dist/manifest.json
+          fi

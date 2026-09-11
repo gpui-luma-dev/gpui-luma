@@ -2443,10 +2443,10 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-color"
-version = "0.9.0-alpha.1"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
- "gpui-luma-sdk",
+ "gpui-luma-core",
  "gpui-unofficial",
  "image",
  "palette",
@@ -2455,54 +2455,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "gpui-luma-look-core"
-version = "0.9.0-alpha.1"
-dependencies = [
- "gpui-luma-sdk",
- "gpui-unofficial",
-]
-
-[[package]]
-name = "gpui-luma-look-radix"
-version = "0.9.0-alpha.1"
-dependencies = [
- "gpui-luma-look-core",
- "gpui-luma-sdk",
- "gpui-unofficial",
- "image",
- "smallvec",
- "tiny-skia",
-]
-
-[[package]]
-name = "gpui-luma-look-shadcn"
-version = "0.9.0-alpha.1"
-dependencies = [
- "anyhow",
- "gpui-luma-color",
- "gpui-luma-look-core",
- "gpui-luma-sdk",
- "gpui-unofficial",
- "lucide-static-svg",
- "palette",
- "serde",
- "toml 0.8.23",
-]
-
-[[package]]
-name = "gpui-luma-look-shadcn-inspect"
-version = "0.9.0-alpha.1"
-dependencies = [
- "anyhow",
- "gpui-luma-color",
- "gpui-luma-look-shadcn",
- "gpui-luma-sdk",
- "gpui-unofficial",
-]
-
-[[package]]
-name = "gpui-luma-sdk"
-version = "0.9.0-alpha.1"
+name = "gpui-luma-core"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "darling",
@@ -2513,6 +2467,52 @@ dependencies = [
  "smallvec",
  "toml 0.8.23",
  "ttf-parser",
+]
+
+[[package]]
+name = "gpui-luma-look-core"
+version = "0.9.0-beta.1"
+dependencies = [
+ "gpui-luma-core",
+ "gpui-unofficial",
+]
+
+[[package]]
+name = "gpui-luma-look-radix"
+version = "0.9.0-beta.1"
+dependencies = [
+ "gpui-luma-core",
+ "gpui-luma-look-core",
+ "gpui-unofficial",
+ "image",
+ "smallvec",
+ "tiny-skia",
+]
+
+[[package]]
+name = "gpui-luma-look-shadcn"
+version = "0.9.0-beta.1"
+dependencies = [
+ "anyhow",
+ "gpui-luma-color",
+ "gpui-luma-core",
+ "gpui-luma-look-core",
+ "gpui-unofficial",
+ "lucide-static-svg",
+ "palette",
+ "serde",
+ "toml 0.8.23",
+]
+
+[[package]]
+name = "gpui-luma-look-shadcn-inspect"
+version = "0.9.0-beta.1"
+dependencies = [
+ "anyhow",
+ "gpui-luma-color",
+ "gpui-luma-core",
+ "gpui-luma-look-shadcn",
+ "gpui-unofficial",
 ]
 
 [[package]]
@@ -3672,8 +3672,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "gpui-luma-color",
+ "gpui-luma-core",
  "gpui-luma-look-shadcn",
- "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
@@ -3691,7 +3691,7 @@ name = "luma-neumorphic-demo"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "gpui-luma-sdk",
+ "gpui-luma-core",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
@@ -3704,8 +3704,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "gpui-luma-color",
+ "gpui-luma-core",
  "gpui-luma-look-radix",
- "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
@@ -3718,8 +3718,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "gpui-luma-color",
+ "gpui-luma-core",
  "gpui-luma-look-shadcn",
- "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "lucide-static-svg",
@@ -3732,8 +3732,8 @@ name = "luma-shell-detached"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-core",
  "gpui-luma-look-shadcn",
- "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
@@ -3746,8 +3746,8 @@ name = "luma-shell-icon-rail"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-core",
  "gpui-luma-look-shadcn",
- "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
@@ -3760,8 +3760,8 @@ name = "luma-shell-inset"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-core",
  "gpui-luma-look-shadcn",
- "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
@@ -3774,8 +3774,8 @@ name = "luma-shell-split-titlebar"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-core",
  "gpui-luma-look-shadcn",
- "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
@@ -3788,8 +3788,8 @@ name = "luma-shell-unified"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-core",
  "gpui-luma-look-shadcn",
- "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
@@ -3802,8 +3802,8 @@ name = "luma-shell-vscode"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma-core",
  "gpui-luma-look-shadcn",
- "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
@@ -3817,9 +3817,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "gpui-luma-color",
+ "gpui-luma-core",
  "gpui-luma-look-shadcn",
  "gpui-luma-look-shadcn-inspect",
- "gpui-luma-sdk",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
