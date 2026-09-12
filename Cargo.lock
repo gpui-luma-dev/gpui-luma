@@ -3652,8 +3652,9 @@ checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
 
 [[package]]
 name = "lucide-static-svg"
-version = "1.40.0"
-source = "git+https://github.com/scottcg/lucide-svg-static#c036f0f9acc494bf4d658fde756cbd04b1564907"
+version = "1.45.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fa74f26dfbf67015b0ae59c21390b46e0e23515e5ae986fe44f9e8851edfc36"
 
 [[package]]
 name = "luma-app-common"

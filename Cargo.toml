@@ -38,7 +38,7 @@ luma-look-shadcn-inspect = { package = "gpui-luma-look-shadcn-inspect", path = "
 luma-look-radix = { package = "gpui-luma-look-radix", path = "crates/look-radix" }
 luma-app-common = { path = "apps/common" }
 gpui = { package = "gpui-unofficial", version = "1.13.1" }
-lucide-svg-static = { package = "lucide-static-svg", git = "https://github.com/scottcg/lucide-svg-static" }
+lucide-svg-static = { package = "lucide-static-svg", version = "1.45.0" }
 gpui_platform = {
   package = "gpui-platform-gpui-unofficial",
   version = "1.13.1",
