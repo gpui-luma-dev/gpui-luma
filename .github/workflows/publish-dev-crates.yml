@@ -1,7 +1,7 @@
 name: Publish Dev Crates
 
-# Cuts a beta GitHub prerelease for the five library crates.
-# Consume via git tag (not crates.io / .crate — blocked by unpublished git deps).
+# Cuts a beta GitHub prerelease for the library crates.
+# Consume via git tag (not crates.io).
 
 on:
   workflow_dispatch:
@@ -17,6 +17,7 @@ env:
     gpui-luma-look-core
     gpui-luma-look-radix
     gpui-luma-look-shadcn
+    gpui-luma
 
 jobs:
   publish:
@@ -95,6 +96,7 @@ jobs:
             "tag": "${TAG}",
             "commit": "${GITHUB_SHA}",
             "packages": [
+              "gpui-luma",
               "gpui-luma-core",
               "gpui-luma-color",
               "gpui-luma-look-core",
@@ -118,7 +120,7 @@ jobs:
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git tag -a "${TAG}" "${GITHUB_SHA}" -m "Luma crates ${TAG}"
+            git tag -a "${TAG}" "${GITHUB_SHA}" -m "${TAG}"
             git push origin "refs/tags/${TAG}"
           fi
 
@@ -130,24 +132,25 @@ jobs:
         run: |
           set -euo pipefail
           body="$(cat <<EOF
-          ## Luma library crates \`${VERSION}\`
+          ## \`${VERSION}\`
 
           Beta cut. Prefer **git tag** dependencies (crates.io later).
 
-          Included packages: \`gpui-luma-core\`, \`gpui-luma-color\`, \`gpui-luma-look-core\`, \`gpui-luma-look-radix\`, \`gpui-luma-look-shadcn\`.
+          ### Typical app
 
-          ### Consume via git tag
+          Depend on the \`gpui-luma\` facade (SDK + look-core), then **one** look:
 
           \`\`\`toml
           [dependencies]
-          luma = { package = "gpui-luma-core", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
-          luma-color = { package = "gpui-luma-color", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
-          luma-look-core = { package = "gpui-luma-look-core", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
-          luma-look-radix = { package = "gpui-luma-look-radix", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
+          luma = { package = "gpui-luma", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
           luma-look-shadcn = { package = "gpui-luma-look-shadcn", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
+          # or: luma-look-radix = { package = "gpui-luma-look-radix", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
+          # optional: luma-color = { package = "gpui-luma-color", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
           \`\`\`
 
           Imports remain \`use luma::…\`.
+
+          Also in this tag: \`gpui-luma-core\`, \`gpui-luma-look-core\`, \`gpui-luma-color\`, \`gpui-luma-look-shadcn\`, \`gpui-luma-look-radix\`.
           EOF
           )"
           body="$(printf '%s\n' "${body}" | sed 's/^          //')"
@@ -161,7 +164,7 @@ jobs:
               --clobber
           else
             gh release create "${TAG}" \
-              --title "Luma crates ${TAG}" \
+              --title "${TAG}" \
               --notes "${body}" \
               --prerelease \
               "dist/gpui-luma-${TAG}.tar.gz" \

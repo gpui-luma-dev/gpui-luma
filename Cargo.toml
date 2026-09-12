@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
   "crates/sdk",
+  "crates/gpui-luma",
   "crates/luma-color",
   "crates/look-core",
   "crates/look-shadcn",
@@ -20,7 +21,7 @@ members = [
   "apps/shells/split-titlebar",
   "apps/shells/vscode",
 ]
-default-members = ["crates/sdk", "apps/luma-studio", "apps/neumorphic-demo", "apps/color-viz"]
+default-members = ["crates/gpui-luma", "apps/luma-studio", "apps/neumorphic-demo", "apps/color-viz"]
 
 [workspace.package]
 version = "0.9.0-beta.1"
@@ -31,6 +32,7 @@ publish = false
 [workspace.dependencies]
 anyhow = "1"
 luma = { package = "gpui-luma-core", path = "crates/sdk" }
+gpui-luma = { path = "crates/gpui-luma" }
 luma-color = { package = "gpui-luma-color", path = "crates/luma-color" }
 luma-look-core = { package = "gpui-luma-look-core", path = "crates/look-core" }
 luma-look-shadcn = { package = "gpui-luma-look-shadcn", path = "crates/look-shadcn" }

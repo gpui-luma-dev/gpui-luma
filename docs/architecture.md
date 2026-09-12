@@ -10,10 +10,11 @@ This document defines the core architecture, crate layout, module mapping, and d
 
 ### Workspace Crates
 
-*   **`crates/sdk` (`gpui-luma-core`, rustc crate `luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels). Advanced color controls live in `luma-color`.
+*   **`crates/gpui-luma` (`gpui-luma`, rustc crate `luma`)**: Primary **consumer facade** — re-exports `gpui-luma-core` and `gpui-luma-look-core`. Downstream apps should depend on this package, then add **exactly one** look (`look-shadcn` or `look-radix`). Optional: `luma-color`.
+*   **`crates/sdk` (`gpui-luma-core`, rustc crate `luma`)**: The styling-agnostic component SDK containing core controls (buttons, inputs, sliders, scrollbars, context menus, layout panels). Advanced color controls live in `luma-color`. Prefer depending on the `gpui-luma` facade unless you are authoring a look or need the core package alone.
 *   **`crates/luma-color` (`gpui-luma-color`, rustc crate `luma_color`)**: Color-domain controls built on the SDK slider engine — `color_slider`, `color_field`, `color_ring`, `color_arc`, swatch, chrome tokens, and composition sync helpers. Depends on `luma`; themed via look `sync_color_control_theme` / `with_look`.
 *   **`crates/lucide-svg-static`**: Experimental generated-style, renderer-neutral Lucide SVG asset crate. It currently packages the three chevrons used by the SVG rotation spike; the intended follow-up is automated generation from pinned upstream Lucide releases.
-*   **`crates/look-core` (`gpui-luma-look-core`, rustc crate `luma_look_core`)**: Thin look-agnostic contracts — resolved color/metric/typography values and provenance sources (`Authored`, `ScaleStep`, …). No CSS parsing, no control factories. See [`docs/look-boundary-inventory.md`](look-boundary-inventory.md) and crate docs for how to author a look without editing the SDK.
+*   **`crates/look-core` (`gpui-luma-look-core`, rustc crate `luma_look_core`)**: Thin look-agnostic contracts — resolved color/metric/typography values and provenance sources (`Authored`, `ScaleStep`, …). No CSS parsing, no control factories. See [`docs/look-boundary-inventory.md`](look-boundary-inventory.md) and crate docs for how to author a look without editing the SDK. Bundled into the `gpui-luma` facade for app consumers.
 *   **`crates/look-shadcn` (`gpui-luma-look-shadcn`, rustc crate `luma_look_shadcn`)**: Shadcn look **runtime** — CSS catalog parsing, `style.toml` recipe matching, and look-specific control factories. Callers supply CSS via `ShadcnLook::from_css_str` (or a path). It does not embed tweakcn theme packs. Depends on `look-core` for shared provenance shapes (Shadcn still owns its CSS-shaped `ResolvedColor` until a later migration).
 *   **`crates/look-radix` (`gpui-luma-look-radix`, rustc crate `luma_look_radix`)**: Minimal Radix-shaped look stub — dual 12-step **color** + **gray** scales (plus destructive), semantic role mapping, `page_background()` (color #3 → gray #1), `signup_stage()` + Skia-rasterized signup mesh (`rasterize_signup_mesh_*` → cached `RenderImage`), and theme adapters for button, textfield, textarea, slider, checkbox, radio, switch, toggle, tabs, popup menu, and overlay window via `RadixLookControlExt`. Proves a second look can theme SDK primitives without SDK API changes.
 *   **`crates/look-shadcn-inspect` (`gpui-luma-look-shadcn-inspect`, rustc crate `luma_look_shadcn_inspect`)**: Support utilities for theme visual inspection and palette debugging.
@@ -27,7 +28,9 @@ This document defines the core architecture, crate layout, module mapping, and d
 
 ```mermaid
 graph TD
-    Studio[apps/luma-studio] --> SDK[crates/sdk]
+    Facade[crates/gpui-luma] --> SDK[crates/sdk]
+    Facade --> LookCore[crates/look-core]
+    Studio[apps/luma-studio] --> SDK
     Studio --> Color[crates/luma-color]
     Color --> SDK
     SDK --> Lucide[Lucide SVG assets]
@@ -43,7 +46,7 @@ graph TD
     Shells --> Color
     Shells --> Look
     Shells --> AppCommon
-    LookCore[crates/look-core] --> SDK
+    LookCore --> SDK
     Look --> SDK
     Look --> Color
     Look --> LookCore

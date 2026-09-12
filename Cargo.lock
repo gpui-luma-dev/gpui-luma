@@ -2442,6 +2442,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "gpui-luma"
+version = "0.9.0-beta.1"
+dependencies = [
+ "gpui-luma-core",
+ "gpui-luma-look-core",
+]
+
+[[package]]
 name = "gpui-luma-color"
 version = "0.9.0-beta.1"
 dependencies = [

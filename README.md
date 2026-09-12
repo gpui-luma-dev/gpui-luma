@@ -12,7 +12,15 @@ cd gpui-luma
 cargo build
 ```
 
-Library crates of interest: `gpui-luma-core`, `gpui-luma-color`, `gpui-luma-look-core`, `gpui-luma-look-shadcn`, `gpui-luma-look-radix`.
+Library crates: depend on **`gpui-luma`** (SDK + look-core facade), then **one** look — `gpui-luma-look-shadcn` *or* `gpui-luma-look-radix`. Optional: `gpui-luma-color`.
+
+```toml
+[dependencies]
+luma = { package = "gpui-luma", git = "https://github.com/scottcg/gpui-luma", tag = "v0.9.0-beta.1" }
+luma-look-shadcn = { package = "gpui-luma-look-shadcn", git = "https://github.com/scottcg/gpui-luma", tag = "v0.9.0-beta.1" }
+```
+
+Imports stay `use luma::…`.
 
 ## Example programs
 
