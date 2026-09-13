@@ -19,9 +19,9 @@ use luma_color::style::Size;
 use luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use luma::controls::slider::SliderControl;
 use luma::controls::textfield::{TextField, TextFieldEvent};
-use luma::theme::ControlSize;
 use luma::vstack;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
 use super::super::color_exposition_common::{composition_demo_card_width, composition_size_label, format_hsl_label};
@@ -34,10 +34,10 @@ pub fn composition_caption_text_size(size: CompositionSize) -> ShadcnTextSize {
     super::super::color_exposition_common::composition_caption_text_size(size)
 }
 
-pub fn composition_control_size(size: CompositionSize) -> ControlSize {
+pub fn composition_control_size(size: CompositionSize) -> ShadcnSize {
     match size {
-        CompositionSize::Sm => ControlSize::Sm,
-        CompositionSize::Md | CompositionSize::Lg | CompositionSize::Custom(_) => ControlSize::Md,
+        CompositionSize::Sm => ShadcnSize::Sm,
+        CompositionSize::Md | CompositionSize::Lg | CompositionSize::Custom(_) => ShadcnSize::Md,
     }
 }
 
@@ -174,15 +174,15 @@ impl ColorHarmoniesDemo {
         let lightness_renderer = lightness_builder.domain_renderer();
         let lightness_context = lightness_builder.track_context();
         let lightness_ring = lightness_builder.spawn(cx);
-        let harmony_menu = look
-            .selector(format!("controls-doc-color-harmonies-harmony-{size_label}"))
+        let harmony_menu = shadcn::Selector::new(format!("controls-doc-color-harmonies-harmony-{size_label}"))
+            .look(look.as_ref())
             .label("Combination")
             .size(control_size)
             .items(color_combination_items())
             .selected_id(ColorCombination::Tetradic.id())
             .spawn(cx);
-        let color_input = look
-            .textfield(format!("controls-doc-color-harmonies-input-{size_label}"))
+        let color_input = shadcn::TextField::new(format!("controls-doc-color-harmonies-input-{size_label}"))
+            .look(look.as_ref())
             .value(format_hsl_input(color))
             .placeholder("hsl(120 50% 40%) or #006081")
             .size(control_size)

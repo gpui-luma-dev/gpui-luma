@@ -16,7 +16,8 @@ use luma::controls::control_group::{
 };
 use luma::theme::{ControlSize, InteractionState, LumaTextStyle, observe_theme_revision};
 use luma::{GridTrack, grid_layout, hstack, vstack};
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole};
+use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole};
+use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::layout_config::{LayoutConfig, LayoutRegion, PanelAlignment, PrimarySideBarPosition};
@@ -50,47 +51,52 @@ impl CustomizeLayoutDialog {
     pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let dialog = cx.entity().clone();
         let config = LayoutConfig::default();
-        let close_button =
-            look.ghost_icon_button("customize-layout-close", LucideIcon::X).size(ControlSize::Sm).spawn(cx);
-        let reset_button = look
-            .ghost_icon_button("customize-layout-reset", LucideIcon::RotateCcw)
-            .size(ControlSize::Sm)
+        let close_button = shadcn::Button::icon_button("customize-layout-close", LucideIcon::X)
+            .look(look.as_ref())
+            .ghost()
+            .size(shadcn::ShadcnSize::Sm)
+            .spawn(cx);
+        let reset_button = shadcn::Button::icon_button("customize-layout-reset", LucideIcon::RotateCcw)
+            .look(look.as_ref())
+            .ghost()
+            .size(shadcn::ShadcnSize::Sm)
             .spawn(cx);
         sync_header_icon_presenters(&close_button, &reset_button, &look, cx);
 
-        let visibility_group = look
-            .menu_choice_group("customize-layout-visibility")
+        let visibility_group = shadcn::MenuChoiceGroup::new("customize-layout-visibility")
+            .look(look.as_ref())
             .multiple()
             .items(visibility_group_items())
             .selected_ids(config.visible_region_ids())
             .with_menu_row_item_content_sized(
-                look.control_group_theme(),
-                ControlSize::Sm,
+                shadcn::ShadcnSize::Sm,
                 ROW_H,
                 ROW_RADIUS,
                 |model, visual, _window, _cx| visibility_row_content(model, visual),
             )
             .spawn(cx);
 
-        let primary_side_bar_position_group = look
-            .menu_choice_group("customize-layout-primary-side-bar-position")
-            .single_required()
-            .items([
-                ControlGroupItem::new(PrimarySideBarPosition::Left.id()).label(PrimarySideBarPosition::Left.label()),
-                ControlGroupItem::new(PrimarySideBarPosition::Right.id()).label(PrimarySideBarPosition::Right.label()),
-            ])
-            .selected(PrimarySideBarPosition::Left.id())
-            .with_menu_row_item_content_sized(
-                look.control_group_theme(),
-                ControlSize::Sm,
-                ROW_H,
-                ROW_RADIUS,
-                |model, visual, _window, _cx| position_row_content(model, visual),
-            )
-            .spawn(cx);
+        let primary_side_bar_position_group =
+            shadcn::MenuChoiceGroup::new("customize-layout-primary-side-bar-position")
+                .look(look.as_ref())
+                .single_required()
+                .items([
+                    ControlGroupItem::new(PrimarySideBarPosition::Left.id())
+                        .label(PrimarySideBarPosition::Left.label()),
+                    ControlGroupItem::new(PrimarySideBarPosition::Right.id())
+                        .label(PrimarySideBarPosition::Right.label()),
+                ])
+                .selected(PrimarySideBarPosition::Left.id())
+                .with_menu_row_item_content_sized(
+                    shadcn::ShadcnSize::Sm,
+                    ROW_H,
+                    ROW_RADIUS,
+                    |model, visual, _window, _cx| position_row_content(model, visual),
+                )
+                .spawn(cx);
 
-        let panel_alignment_group = look
-            .menu_choice_group("customize-layout-panel-alignment")
+        let panel_alignment_group = shadcn::MenuChoiceGroup::new("customize-layout-panel-alignment")
+            .look(look.as_ref())
             .single_required()
             .items([
                 ControlGroupItem::new(PanelAlignment::Left.id()).label(PanelAlignment::Left.label()),
@@ -100,8 +106,7 @@ impl CustomizeLayoutDialog {
             ])
             .selected(PanelAlignment::Center.id())
             .with_menu_row_item_content_sized(
-                look.control_group_theme(),
-                ControlSize::Sm,
+                shadcn::ShadcnSize::Sm,
                 ROW_H,
                 ROW_RADIUS,
                 |model, visual, _window, _cx| panel_alignment_row_content(model, visual),

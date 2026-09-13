@@ -11,7 +11,8 @@ use luma::controls::resizable_panels::{
 };
 use luma::resizable_panels;
 use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextSize};
+use luma_look_shadcn as shadcn;
+use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
@@ -281,8 +282,11 @@ impl ResizablePanelsControlExposition {
             ]
         };
 
-        let reset_controlled_button =
-            look.secondary_button("controls-doc-resizable-controlled-reset").label("Reset (30 / 70)").spawn(cx);
+        let reset_controlled_button = shadcn::Button::new("controls-doc-resizable-controlled-reset")
+            .look(look.as_ref())
+            .secondary()
+            .label("Reset (30 / 70)")
+            .spawn(cx);
 
         let animated_panels = resizable_panels! {
             cx,
@@ -330,13 +334,15 @@ impl ResizablePanelsControlExposition {
             ])
             .spawn(cx);
 
-        let toggle_animated_button = look
-            .secondary_button("controls-doc-resizable-animated-toggle")
+        let toggle_animated_button = shadcn::Button::new("controls-doc-resizable-animated-toggle")
+            .look(look.as_ref())
+            .secondary()
             .label("Toggle Left Panel (Animated)")
             .spawn(cx);
 
-        let toggle_instant_button = look
-            .secondary_button("controls-doc-resizable-instant-toggle")
+        let toggle_instant_button = shadcn::Button::new("controls-doc-resizable-instant-toggle")
+            .look(look.as_ref())
+            .secondary()
             .label("Toggle Left Panel (Instant / Non-Animated)")
             .spawn(cx);
 

@@ -5,6 +5,7 @@ use luma::controls::combobox::{ComboBox, ComboBoxEvent, SelectionItem, TypingPol
 use luma::controls::toggle::{Toggle, ToggleEvent};
 use luma::infra::presenter::HasPresenter;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -97,8 +98,8 @@ impl Render for ComboBoxExpositionLeftPane {
 impl ComboBoxControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("combobox").expect("combobox catalog entry");
-        let preview = look
-            .combobox("controls-doc-combobox", combobox_demo_items())
+        let preview = shadcn::ComboBox::new("controls-doc-combobox", combobox_demo_items())
+            .look(look.as_ref())
             .placeholder("Strict mode (exact match only)…")
             .full_width(true)
             .clean_on_escape(true)
@@ -107,8 +108,9 @@ impl ComboBoxControlExposition {
             .show_clear_button(true)
             .invalid(false)
             .spawn(cx);
-        let selection_required_toggle = look
-            .outline_toggle("controls-doc-combobox-selection-required")
+        let selection_required_toggle = shadcn::Toggle::new("controls-doc-combobox-selection-required")
+            .look(look.as_ref())
+            .outline()
             .with_data(false)
             .content(|_, _| div().child("Selection Required").into_any_element())
             .spawn(cx);

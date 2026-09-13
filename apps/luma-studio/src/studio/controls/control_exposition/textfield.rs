@@ -7,6 +7,7 @@ use luma::controls::button::{Button, ButtonEvent};
 use luma::infra::presenter::HasPresenter;
 use luma::controls::textfield::{TextField, TextFieldEvent};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -111,20 +112,22 @@ impl Render for TextFieldExpositionLeftPane {
 impl TextFieldControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("textfield").expect("textfield catalog entry");
-        let preview = look
-            .textfield("controls-doc-textfield-preview")
-            .primary(&look)
+        let preview = shadcn::TextField::new("controls-doc-textfield-preview")
+            .look(look.as_ref())
             .placeholder("Email address")
             .full_width(true)
             .spawn(cx);
-        let required_preview = look
-            .textfield("controls-doc-textfield-required-preview")
-            .primary(&look)
+        let required_preview = shadcn::TextField::new("controls-doc-textfield-required-preview")
+            .look(look.as_ref())
             .placeholder("Required input")
             .full_width(true)
             .validator(Arc::new(|value: &str| !value.is_empty()))
             .spawn(cx);
-        let set_sample_button = look.secondary_button("controls-textfield-set-sample").label("Set Sample").spawn(cx);
+        let set_sample_button = shadcn::Button::new("controls-textfield-set-sample")
+            .look(look.as_ref())
+            .secondary()
+            .label("Set Sample")
+            .spawn(cx);
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,

@@ -4,8 +4,7 @@ use gpui::{Context, Entity, Render, Window, div, prelude::*};
 use luma::controls::button::Button;
 use luma::infra::presenter::HasPresenter;
 use luma::controls::selector::{Selector, SelectorItem};
-use luma::theme::ControlSize;
-use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use luma::{declare_form, form_field, hstack, vstack};
 
@@ -14,15 +13,14 @@ use super::common::titled_card;
 declare_form! {
     pub struct SharePanel {
         controls: {
-            link_selector: Entity<Selector> = look
-                .selector("share-link")
+            link_selector: Entity<Selector> = shadcn::Selector::new("share-link").look(look.as_ref())
                 .label("Anyone with the link")
                 .items(link_items()),
-            copy_button: Entity<Button> = look.outline_button("share-copy").label("Copy Link").size(size),
+            copy_button: Entity<Button> = shadcn::Button::new("share-copy").look(look.as_ref()).outline().label("Copy Link").size(size),
         },
         args: {
             look: Arc<ShadcnLook>,
-            size: ControlSize,
+            size: shadcn::ShadcnSize,
         },
         fields: {}
     }

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use luma::controls::accordion::{AccordionContent, AccordionControl, AccordionEvent, AccordionItem, AccordionTrigger};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use luma_look_shadcn as shadcn;
 use luma::{vstack};
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -19,8 +20,8 @@ pub struct AccordionPanel {
 
 impl AccordionPanel {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let accordion = look
-            .accordion("studio-accordion-single")
+        let accordion = shadcn::Accordion::new("studio-accordion-single")
+            .look(look.as_ref())
             .single()
             .item(demo_item("general", "General", LucideIcon::Settings, "General settings content."))
             .item(demo_item("billing", "Billing", LucideIcon::CreditCard, "Billing and payment details."))

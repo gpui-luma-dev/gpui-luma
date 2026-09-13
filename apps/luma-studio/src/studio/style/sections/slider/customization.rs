@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
 use luma::controls::slider::{Slider, SliderEvent, SliderThumbPolicy, ThumbId};
-use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 /// Vertical gap between label, control, and value within each customization demo.
@@ -33,32 +33,37 @@ pub(crate) struct SliderCustomizationPreview {
 impl SliderCustomizationPreview {
     pub(crate) fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let stops_policy = SliderThumbPolicy::multi_stop();
-        let reversed_slider =
-            look.slider("luma-studio-slider-reversed").reversed(true).range(1..100).step(1).value(41).spawn(cx);
-        let blocked_slider = look
-            .slider("luma-studio-slider-blocked")
+        let reversed_slider = shadcn::Slider::new("luma-studio-slider-reversed")
+            .look(look.as_ref())
+            .reversed(true)
+            .range(1..100)
+            .step(1)
+            .value(41)
+            .spawn(cx);
+        let blocked_slider = shadcn::Slider::new("luma-studio-slider-blocked")
+            .look(look.as_ref())
             .range(0.0..360.0)
             .step(10.0)
             .value(100.0)
             .allowed_intervals(vec![0.0..=120.0, 180.0..=240.0, 300.0..=360.0])
             .spawn(cx);
-        let stops_slider = look
-            .slider("luma-studio-slider-stops")
+        let stops_slider = shadcn::Slider::new("luma-studio-slider-stops")
+            .look(look.as_ref())
             .multi_stop()
             .range(0.0..360.0)
             .step(1.0)
             .thumb_values([(0.0, None), (180.0, None), (300.0, None)])
             .spawn(cx);
-        let angular_slider = look
-            .slider("luma-studio-slider-angular")
+        let angular_slider = shadcn::Slider::new("luma-studio-slider-angular")
+            .look(look.as_ref())
             .angular(-1.25 * PI, 0.25 * PI)
             .template(look.slider_angular_template())
             .range(0..100)
             .step(1)
             .value(50)
             .spawn(cx);
-        let wrapping_slider = look
-            .slider("luma-studio-slider-wrapping")
+        let wrapping_slider = shadcn::Slider::new("luma-studio-slider-wrapping")
+            .look(look.as_ref())
             .angular(0.0, 2.0 * PI)
             .wrapping(true)
             .domain()

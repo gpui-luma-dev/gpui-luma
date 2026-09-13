@@ -6,6 +6,7 @@ use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma::infra::presenter::HasPresenter;
 use luma::controls::switch::{Switch, SwitchEvent};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -103,13 +104,15 @@ impl Render for SwitchExpositionLeftPane {
 impl SwitchControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("switch").expect("switch catalog entry");
-        let secondary_switch = look
-            .secondary_switch("controls-doc-switch-secondary")
+        let secondary_switch = shadcn::Switch::new("controls-doc-switch-secondary")
+            .look(look.as_ref())
+            .secondary()
             .with_data(true)
             .content(|_, _| div().into_any_element())
             .spawn(cx);
-        let primary_switch = look
-            .primary_switch("controls-doc-switch-primary")
+        let primary_switch = shadcn::Switch::new("controls-doc-switch-primary")
+            .look(look.as_ref())
+            .primary()
             .with_data(false)
             .content(|_, _| div().into_any_element())
             .spawn(cx);

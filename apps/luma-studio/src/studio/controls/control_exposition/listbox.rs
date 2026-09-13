@@ -7,6 +7,7 @@ use luma::controls::control_group::ControlGroupEvent;
 use luma::controls::listbox::{ListBox, ListBoxItem};
 use luma::{hstack, vstack};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -278,8 +279,8 @@ fn fruit_listbox(
     cx: &mut Context<ListBoxExpositionLeftPane>,
 ) -> ListBox {
     let mut builder = match mode {
-        ListBoxMode::Single | ListBoxMode::HorizontalSingle => look.listbox(id),
-        ListBoxMode::Multiple => look.listbox_multiple(id),
+        ListBoxMode::Single | ListBoxMode::HorizontalSingle => shadcn::ListBox::new(id).look(look.as_ref()),
+        ListBoxMode::Multiple => shadcn::ListBox::multiple(id).look(look.as_ref()),
     };
 
     if matches!(mode, ListBoxMode::HorizontalSingle) {

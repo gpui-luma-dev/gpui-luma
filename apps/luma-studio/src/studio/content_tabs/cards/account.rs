@@ -4,8 +4,7 @@ use gpui::{Context, Entity, Render, Window, div, prelude::*};
 use luma::infra::presenter::HasPresenter;
 use luma::controls::button::Button;
 use luma::controls::textfield::TextField;
-use luma_look_shadcn::prelude::*;
-use luma::theme::{ControlSize};
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use luma::{declare_form, form_field, hstack, vstack};
 
@@ -14,19 +13,18 @@ use super::common::{or_divider, titled_card};
 declare_form! {
     pub struct AccountPanel {
         controls: {
-            github_button: Entity<Button> = look.outline_button("account-github").label("GitHub").size(size),
-            google_button: Entity<Button> = look.outline_button("account-google").label("Google").size(size),
-            email_field: TextField = look.textfield("account-email").primary(&look).placeholder("Email").full_width(true),
-            password_field: TextField = look
-                .textfield("account-password")
-                .primary(&look)
+            github_button: Entity<Button> = shadcn::Button::new("account-github").look(look.as_ref()).outline().label("GitHub").size(size),
+            google_button: Entity<Button> = shadcn::Button::new("account-google").look(look.as_ref()).outline().label("Google").size(size),
+            email_field: TextField = shadcn::TextField::new("account-email").look(look.as_ref()).placeholder("Email").full_width(true),
+            password_field: TextField = shadcn::TextField::new("account-password").look(look.as_ref())
+
                 .placeholder("Password")
                 .full_width(true),
-            create_button: Entity<Button> = look.primary_button("account-create").label("Create account").size(size),
+            create_button: Entity<Button> = shadcn::Button::new("account-create").look(look.as_ref()).primary().label("Create account").size(size),
         },
         args: {
             look: Arc<ShadcnLook>,
-            size: ControlSize,
+            size: shadcn::ShadcnSize,
         },
         fields: {}
     }

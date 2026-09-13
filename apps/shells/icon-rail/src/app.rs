@@ -10,7 +10,7 @@ use luma::infra::presenter::HasPresenter;
 use luma::controls::sidebar::SidebarControl;
 use luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
 use luma::theme::ThemeMode;
-use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use luma_shell_common::{
     chrome::{
@@ -54,7 +54,11 @@ impl IconRailShellApp {
             .sidebar_collapsed_width(px(ICON_RAIL_COLLAPSED_WIDTH))
             .separator_visibility(SplitViewSeparatorVisibility::Hover)
             .spawn(cx);
-        let toggle_button = look.secondary_button("shell-icon-rail-toggle").label("Toggle Collapse").spawn(cx);
+        let toggle_button = shadcn::Button::new("shell-icon-rail-toggle")
+            .look(look.as_ref())
+            .secondary()
+            .label("Toggle Collapse")
+            .spawn(cx);
         let theme_toggle_button = spawn_theme_toggle_button("shell-titlebar-theme-toggle-icon-rail", &look, cx);
 
         let mut subscriptions = Vec::new();

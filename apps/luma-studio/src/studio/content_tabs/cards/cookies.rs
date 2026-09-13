@@ -4,7 +4,7 @@ use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use luma::infra::presenter::HasPresenter;
 use luma::controls::button::Button;
 use luma::controls::switch::{Switch, SwitchEvent};
-use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use luma::{declare_form, hstack, vstack};
 
@@ -13,8 +13,7 @@ use super::common::titled_card;
 declare_form! {
     pub struct CookiesPanel {
         controls: {
-            necessary_switch: Switch = look
-                .primary_switch("cookies-necessary")
+            necessary_switch: Switch = shadcn::Switch::new("cookies-necessary").look(look.as_ref()).primary()
                 .with_data(true)
                 .content(|_, _| div().into_any_element())
                 => SwitchEvent |this, event, cx| {
@@ -23,8 +22,7 @@ declare_form! {
                         cx.notify();
                     }
                 },
-            functional_switch: Switch = look
-                .primary_switch("cookies-functional")
+            functional_switch: Switch = shadcn::Switch::new("cookies-functional").look(look.as_ref()).primary()
                 .with_data(false)
                 .content(|_, _| div().into_any_element())
                 => SwitchEvent |this, event, cx| {
@@ -33,7 +31,7 @@ declare_form! {
                         cx.notify();
                     }
                 },
-            save_button: Entity<Button> = look.outline_button("cookies-save").label("Save preferences"),
+            save_button: Entity<Button> = shadcn::Button::new("cookies-save").look(look.as_ref()).outline().label("Save preferences"),
         },
         args: {
             look: Arc<ShadcnLook>,

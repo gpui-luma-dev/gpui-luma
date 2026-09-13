@@ -9,7 +9,8 @@ use luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
 use luma::controls::switch::{Switch, SwitchData, SwitchEvent};
 use luma::shell::TitleBar;
 use luma::theme::{ControlSize, InteractionState, LumaThemeSyncExt, ThemeMode};
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole, sync_color_control_theme};
+use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, sync_color_control_theme};
+use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::theme::{LumaStudioLaunchOptions, LumaStudioThemeChoice};
@@ -58,7 +59,7 @@ impl LumaStudioApp {
         let look = Self::load_theme(&active_theme_id);
         look.set_mode(mode);
         sync_color_control_theme(look.as_ref());
-        let demos = DemoControls::spawn(cx, look.clone(), ControlSize::Md);
+        let demos = DemoControls::spawn(cx, look.clone(), shadcn::ShadcnSize::Md);
 
         let overrides = StudioOverrides::default();
         cx.set_global(LumaStudioAppHandle { entity: app.clone() });
@@ -80,18 +81,21 @@ impl LumaStudioApp {
             cx,
         );
 
-        let sidebar_toggle = look
-            .content_only_icon_button("luma-studio-sidebar-toggle", LucideIcon::PanelLeft)
-            .size(ControlSize::Sm)
+        let sidebar_toggle = shadcn::Button::icon_button("luma-studio-sidebar-toggle", LucideIcon::PanelLeft)
+            .look(look.as_ref())
+            .content_only()
+            .size(shadcn::ShadcnSize::Sm)
             .spawn(cx);
-        let reset_theme_button = look
-            .content_only_icon_button("luma-studio-reset-theme", LucideIcon::RefreshCcw)
-            .size(ControlSize::Sm)
+        let reset_theme_button = shadcn::Button::icon_button("luma-studio-reset-theme", LucideIcon::RefreshCcw)
+            .look(look.as_ref())
+            .content_only()
+            .size(shadcn::ShadcnSize::Sm)
             .spawn(cx);
-        let mut mode_toggle = look
-            .content_only_switch("mode-toggle")
+        let mut mode_toggle = shadcn::Switch::new("mode-toggle")
+            .look(look.as_ref())
+            .content_only()
             .with_data(matches!(mode, ThemeMode::Dark))
-            .size(ControlSize::Sm)
+            .size(shadcn::ShadcnSize::Sm)
             .fixed_geometry(px(32.0), px(17.0), px(14.0));
         mode_toggle.set_presenter(Arc::new(|_, _| div().into_any_element()));
         let mode_toggle = mode_toggle.spawn(cx);

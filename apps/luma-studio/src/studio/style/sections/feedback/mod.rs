@@ -5,7 +5,7 @@ use luma::controls::progress::{ProgressDirection, ProgressRenderModel, ProgressT
 use luma::infra::value::ControlRange;
 use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn::{ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::shell::section_shell_with_width;
@@ -67,9 +67,9 @@ pub(crate) fn render_feedback_template_section(look: Arc<ShadcnLook>, window: &m
                         look.badge("Ghost").variant(BadgeVariant::Ghost).into_any_element(),
                     ]))
                     .child(div().flex().flex_wrap().items_center().gap(px(10.0)).children([
-                        look.badge("Small").size(ControlSize::Sm).variant(BadgeVariant::Secondary).into_any_element(),
-                        look.badge("Medium").size(ControlSize::Md).variant(BadgeVariant::Secondary).into_any_element(),
-                        look.badge("Large").size(ControlSize::Lg).variant(BadgeVariant::Secondary).into_any_element(),
+                        look.badge("Small").size(ShadcnSize::Sm).variant(BadgeVariant::Secondary).into_any_element(),
+                        look.badge("Medium").size(ShadcnSize::Md).variant(BadgeVariant::Secondary).into_any_element(),
+                        look.badge("Large").size(ShadcnSize::Lg).variant(BadgeVariant::Secondary).into_any_element(),
                     ]))
                     .child(
                         div().flex().flex_wrap().items_center().gap(px(10.0)).children([

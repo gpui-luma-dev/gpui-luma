@@ -5,6 +5,7 @@ use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use luma::controls::slider::{Slider, SliderEvent, SliderThumbPolicy};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -227,26 +228,36 @@ impl SliderControlExposition {
         let stops_policy = SliderThumbPolicy::multi_stop();
         let stops_interaction_hint = multi_stop_interaction_hint(stops_policy);
 
-        let fill_slider = look.slider("controls-doc-slider-fill").range(1..100).step(1).value(41).spawn(cx);
-        let blocked_slider = look
-            .slider("controls-doc-slider-blocked")
+        let fill_slider = shadcn::Slider::new("controls-doc-slider-fill")
+            .look(look.as_ref())
+            .range(1..100)
+            .step(1)
+            .value(41)
+            .spawn(cx);
+        let blocked_slider = shadcn::Slider::new("controls-doc-slider-blocked")
+            .look(look.as_ref())
             .range(0.0..360.0)
             .step(10.0)
             .value(100.0)
             .allowed_intervals(vec![0.0..=120.0, 180.0..=240.0, 300.0..=360.0])
             .spawn(cx);
-        let reversed_slider =
-            look.slider("controls-doc-slider-reversed").reversed(true).range(1..100).step(1).value(41).spawn(cx);
-        let angular_slider = look
-            .slider("controls-doc-slider-angular")
+        let reversed_slider = shadcn::Slider::new("controls-doc-slider-reversed")
+            .look(look.as_ref())
+            .reversed(true)
+            .range(1..100)
+            .step(1)
+            .value(41)
+            .spawn(cx);
+        let angular_slider = shadcn::Slider::new("controls-doc-slider-angular")
+            .look(look.as_ref())
             .angular(-1.25 * PI, 0.25 * PI)
             .template(look.slider_angular_template())
             .range(0..100)
             .step(1)
             .value(50)
             .spawn(cx);
-        let wrapping_slider = look
-            .slider("controls-doc-slider-wrapping")
+        let wrapping_slider = shadcn::Slider::new("controls-doc-slider-wrapping")
+            .look(look.as_ref())
             .angular(0.0, 2.0 * PI)
             .wrapping(true)
             .domain()
@@ -255,8 +266,8 @@ impl SliderControlExposition {
             .step(1.0)
             .value(180.0)
             .spawn(cx);
-        let stops_slider = look
-            .slider("controls-doc-slider-stops")
+        let stops_slider = shadcn::Slider::new("controls-doc-slider-stops")
+            .look(look.as_ref())
             .multi_stop()
             .range(0.0..360.0)
             .step(1.0)
@@ -270,7 +281,11 @@ impl SliderControlExposition {
                 "Drag sliders; SliderEvent variants from the fill track appear below.",
             )
         });
-        let animate_button = look.secondary_button("controls-doc-slider-animate").label("Animate value").spawn(cx);
+        let animate_button = shadcn::Button::new("controls-doc-slider-animate")
+            .look(look.as_ref())
+            .secondary()
+            .label("Animate value")
+            .spawn(cx);
 
         let mut subscriptions = Vec::new();
         let left_pane = cx.new(|cx| {

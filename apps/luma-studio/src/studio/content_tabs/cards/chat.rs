@@ -4,7 +4,7 @@ use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use luma::controls::button::{Button, ControlIcon};
 use luma::controls::textfield::TextField;
 use luma_look_shadcn::prelude::*;
-use luma::theme::ControlSize;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 use luma::{declare_form, hstack, vstack};
 use lucide_svg_static::Icon as LucideIcon;
@@ -14,21 +14,18 @@ use super::common::{avatar, AvatarSize, card, message_bubble};
 declare_form! {
     pub struct ChatPanel {
         controls: {
-            message_field: TextField = look
-                .textfield("chat-message")
+            message_field: TextField = shadcn::TextField::new("chat-message").look(look.as_ref())
                 .placeholder("Type your message…")
                 .full_width(true),
-            send_button: Entity<Button> = look
-                .primary_icon_button("chat-send", ControlIcon::Lucide(LucideIcon::ArrowUp))
+            send_button: Entity<Button> = shadcn::Button::icon_button("chat-send", ControlIcon::Lucide(LucideIcon::ArrowUp)).look(look.as_ref()).primary()
                 .size(size)
                 .round(true),
-            plus_button: Entity<Button> = look
-                .secondary_icon_button("chat-add", ControlIcon::Lucide(LucideIcon::Plus))
+            plus_button: Entity<Button> = shadcn::Button::icon_button("chat-add", ControlIcon::Lucide(LucideIcon::Plus)).look(look.as_ref()).secondary()
                 .size(size),
         },
         args: {
             look: Arc<ShadcnLook>,
-            size: ControlSize,
+            size: ShadcnSize,
         },
         fields: {}
     }

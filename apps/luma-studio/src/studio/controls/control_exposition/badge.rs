@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use luma::{flow, hstack};
-use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use lucide_svg_static::Icon as LucideIcon;
@@ -80,9 +79,9 @@ impl Render for BadgeExpositionLeftPane {
                     title_color,
                     hstack! {
                         gap=10.0 align=center justify=center;
-                        look.badge("Small").size(ControlSize::Sm).variant(BadgeVariant::Secondary),
-                        look.badge("Medium").size(ControlSize::Md).variant(BadgeVariant::Secondary),
-                        look.badge("Large").size(ControlSize::Lg).variant(BadgeVariant::Secondary),
+                        look.badge("Small").size(ShadcnSize::Sm).variant(BadgeVariant::Secondary),
+                        look.badge("Medium").size(ShadcnSize::Md).variant(BadgeVariant::Secondary),
+                        look.badge("Large").size(ShadcnSize::Lg).variant(BadgeVariant::Secondary),
                     },
                 ))
                 .child(demo_section(

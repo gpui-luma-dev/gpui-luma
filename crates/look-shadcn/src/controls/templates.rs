@@ -10,7 +10,7 @@ use luma::controls::checkbox::{CheckboxData, CheckboxTheme, ThemedCheckboxTempla
 use luma::controls::button::{ButtonTemplate, DefaultButtonTemplate};
 use luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
 use luma::controls::control_group::{
-    ControlGroupBuilder, ControlGroupItemLike, ControlGroupItemPalette, ControlGroupTemplate, ControlGroupTheme,
+    ControlGroupItemLike, ControlGroupItemPalette, ControlGroupTemplate, ControlGroupTheme,
     control_group_template_with_theme,
 };
 use luma::controls::dock_splitter::DockSplitterTheme;
@@ -28,7 +28,7 @@ use luma::controls::progress::{ProgressTheme, ThemedLinearProgressTemplate, Them
 use luma::controls::stepper::{StepperTheme, ThemedStepperTemplate};
 use luma::controls::radio_button::{RadioButtonData, RadioButtonTheme, ThemedRadioButtonTemplate};
 use luma::controls::scrollbar::{ScrollbarTheme, ThemedScrollbarTemplate};
-use luma::controls::selector::{SelectorTheme, SelectorVisualState, ThemedSelectorTemplate};
+use luma::controls::selector::{SelectorItemLike, SelectorTheme, SelectorVisualState, ThemedSelectorTemplate};
 use luma::controls::selector_list::default_selector_items_template;
 use luma::controls::selection_panel::SelectionPanelLookProvider;
 use luma::controls::resizable_panels::ResizablePanelsTheme;
@@ -104,15 +104,15 @@ impl ButtonFamilyTheme for ShadcnStyledButtonFamilyTheme {
     }
 }
 
-pub fn styled_button_family_theme(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonFamilyTheme> {
-    Arc::new(ShadcnStyledButtonFamilyTheme { theme: theme.as_ref().clone(), style })
+pub fn styled_button_family_theme(theme: ShadcnLook, style: ShadcnButtonStyle) -> Arc<dyn ButtonFamilyTheme> {
+    Arc::new(ShadcnStyledButtonFamilyTheme { theme: theme.clone(), style })
 }
 
-pub fn button_family_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ButtonFamilyTheme> {
+pub fn button_family_theme(theme: ShadcnLook) -> Arc<dyn ButtonFamilyTheme> {
     styled_button_family_theme(theme, ShadcnButtonStyle::Secondary)
 }
 
-pub fn button_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<()>> {
+pub fn button_template(theme: ShadcnLook, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<()>> {
     Arc::new(DefaultButtonTemplate::new(styled_button_family_theme(theme, style)))
 }
 
@@ -179,75 +179,72 @@ impl RadioButtonTheme for ShadcnStyledRadioButtonTheme {
     }
 }
 
-pub fn checkbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn CheckboxTheme> {
+pub fn checkbox_theme(theme: ShadcnLook) -> Arc<dyn CheckboxTheme> {
     checkbox_theme_with_style(theme, ShadcnButtonStyle::Primary)
 }
 
-pub fn checkbox_theme_with_style(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn CheckboxTheme> {
-    Arc::new(ShadcnStyledCheckboxTheme { theme: theme.as_ref().clone(), style })
+pub fn checkbox_theme_with_style(theme: ShadcnLook, style: ShadcnButtonStyle) -> Arc<dyn CheckboxTheme> {
+    Arc::new(ShadcnStyledCheckboxTheme { theme: theme.clone(), style })
 }
 
-pub fn switch_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SwitchTheme> {
+pub fn switch_theme(theme: ShadcnLook) -> Arc<dyn SwitchTheme> {
     switch_theme_with_style(theme, ShadcnButtonStyle::Primary)
 }
 
-pub fn switch_theme_with_style(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn SwitchTheme> {
-    Arc::new(ShadcnStyledSwitchTheme { theme: theme.as_ref().clone(), style })
+pub fn switch_theme_with_style(theme: ShadcnLook, style: ShadcnButtonStyle) -> Arc<dyn SwitchTheme> {
+    Arc::new(ShadcnStyledSwitchTheme { theme: theme.clone(), style })
 }
 
-pub fn radio_button_theme(theme: Arc<ShadcnLook>) -> Arc<dyn RadioButtonTheme> {
+pub fn radio_button_theme(theme: ShadcnLook) -> Arc<dyn RadioButtonTheme> {
     radio_button_theme_with_style(theme, ShadcnButtonStyle::Primary)
 }
 
-pub fn radio_button_theme_with_style(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn RadioButtonTheme> {
-    Arc::new(ShadcnStyledRadioButtonTheme { theme: theme.as_ref().clone(), style })
+pub fn radio_button_theme_with_style(theme: ShadcnLook, style: ShadcnButtonStyle) -> Arc<dyn RadioButtonTheme> {
+    Arc::new(ShadcnStyledRadioButtonTheme { theme: theme.clone(), style })
 }
 
-pub fn switch_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<SwitchData>> {
+pub fn switch_template(theme: ShadcnLook, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<SwitchData>> {
     Arc::new(ThemedSwitchTemplate::new(switch_theme_with_style(theme, style)))
 }
 
-pub fn checkbox_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<CheckboxData>> {
+pub fn checkbox_template(theme: ShadcnLook, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<CheckboxData>> {
     Arc::new(ThemedCheckboxTemplate::new(checkbox_theme_with_style(theme, style)))
 }
 
-pub fn radio_button_template(
-    theme: Arc<ShadcnLook>,
-    style: ShadcnButtonStyle,
-) -> Arc<dyn ButtonTemplate<RadioButtonData>> {
+pub fn radio_button_template(theme: ShadcnLook, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<RadioButtonData>> {
     Arc::new(ThemedRadioButtonTemplate::new(radio_button_theme_with_style(theme, style)))
 }
 
-pub fn slider_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SliderTheme> {
+pub fn slider_theme(theme: ShadcnLook) -> Arc<dyn SliderTheme> {
     slider_theme_with_style(theme, ShadcnButtonStyle::Primary)
 }
 
-pub fn slider_theme_with_style(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn SliderTheme> {
-    Arc::new(ShadcnSliderTheme { theme: theme.as_ref().clone(), style })
+pub fn slider_theme_with_style(theme: ShadcnLook, style: ShadcnButtonStyle) -> Arc<dyn SliderTheme> {
+    Arc::new(ShadcnSliderTheme { theme: theme.clone(), style })
 }
 
-pub fn dock_splitter_theme(theme: Arc<ShadcnLook>) -> Arc<dyn DockSplitterTheme> {
-    Arc::new(ShadcnDockSplitterTheme { theme: theme.as_ref().clone() })
+pub fn dock_splitter_theme(theme: ShadcnLook) -> Arc<dyn DockSplitterTheme> {
+    Arc::new(ShadcnDockSplitterTheme { theme: theme.clone() })
 }
 
-pub fn resizable_panels_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ResizablePanelsTheme> {
-    Arc::new(ShadcnResizablePanelsTheme { theme: theme.as_ref().clone() })
+pub fn resizable_panels_theme(theme: ShadcnLook) -> Arc<dyn ResizablePanelsTheme> {
+    Arc::new(ShadcnResizablePanelsTheme { theme: theme.clone() })
 }
 
-pub fn split_view_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SplitViewTheme> {
-    Arc::new(ShadcnSplitViewTheme { theme: theme.as_ref().clone() })
+pub fn split_view_theme(theme: ShadcnLook) -> Arc<dyn SplitViewTheme> {
+    Arc::new(ShadcnSplitViewTheme { theme: theme.clone() })
 }
 
-pub fn scrollbar_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ScrollbarTheme> {
-    Arc::new(ShadcnScrollbarTheme { theme: theme.as_ref().clone() })
+pub fn scrollbar_theme(theme: ShadcnLook) -> Arc<dyn ScrollbarTheme> {
+    Arc::new(ShadcnScrollbarTheme { theme: theme.clone() })
 }
 
-pub fn selector_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SelectorTheme> {
-    Arc::new(ShadcnSelectorTheme { theme: theme.as_ref().clone() })
+pub fn selector_theme(theme: ShadcnLook) -> Arc<dyn SelectorTheme> {
+    Arc::new(ShadcnSelectorTheme { theme: theme.clone() })
 }
 
-pub fn popup_menu_theme(theme: Arc<ShadcnLook>) -> Arc<dyn PopupMenuTheme> {
-    Arc::new(ShadcnPopupMenuTheme { theme: theme.as_ref().clone() })
+pub fn popup_menu_theme(theme: ShadcnLook) -> Arc<dyn PopupMenuTheme> {
+    Arc::new(ShadcnPopupMenuTheme { theme: theme.clone() })
 }
 
 struct ShadcnDockSplitterTheme {
@@ -334,27 +331,27 @@ impl ScrollbarTheme for ShadcnScrollbarTheme {
     }
 }
 
-pub fn slider_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::slider::SliderTemplate> {
+pub fn slider_template(theme: ShadcnLook) -> Arc<dyn luma::controls::slider::SliderTemplate> {
     slider_template_with_style(theme, ShadcnButtonStyle::Primary)
 }
 
 pub fn slider_template_with_style(
-    theme: Arc<ShadcnLook>,
+    theme: ShadcnLook,
     style: ShadcnButtonStyle,
 ) -> Arc<dyn luma::controls::slider::SliderTemplate> {
     Arc::new(ThemedSliderTemplate::new(slider_theme_with_style(theme, style)))
 }
 
-pub fn slider_angular_template(theme: Arc<ShadcnLook>) -> Arc<dyn SliderTemplate> {
+pub fn slider_angular_template(theme: ShadcnLook) -> Arc<dyn SliderTemplate> {
     Arc::new(ThemedAngularDialTemplate::new(slider_theme(theme)))
 }
 
-pub fn slider_circular_ring_template(theme: Arc<ShadcnLook>) -> Arc<dyn SliderTemplate> {
+pub fn slider_circular_ring_template(theme: ShadcnLook) -> Arc<dyn SliderTemplate> {
     Arc::new(ThemedCircularRingTemplate::new(slider_theme(theme)))
 }
 
-pub fn scrollbar_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::scrollbar::ScrollbarTemplate> {
-    Arc::new(ThemedScrollbarTemplate::new(Arc::new(ShadcnScrollbarTheme { theme: theme.as_ref().clone() })))
+pub fn scrollbar_template(theme: ShadcnLook) -> Arc<dyn luma::controls::scrollbar::ScrollbarTemplate> {
+    Arc::new(ThemedScrollbarTemplate::new(Arc::new(ShadcnScrollbarTheme { theme: theme.clone() })))
 }
 
 struct ShadcnFloatingMenuTheme {
@@ -423,20 +420,20 @@ impl ContextMenuTheme for ShadcnContextMenuTheme {
     }
 }
 
-pub fn floating_menu_theme(theme: Arc<ShadcnLook>) -> Arc<dyn FloatingMenuTheme> {
-    Arc::new(ShadcnFloatingMenuTheme { theme: theme.as_ref().clone() })
+pub fn floating_menu_theme(theme: ShadcnLook) -> Arc<dyn FloatingMenuTheme> {
+    Arc::new(ShadcnFloatingMenuTheme { theme: theme.clone() })
 }
 
-pub fn popup_menu_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::popup_menu::PopupMenuTemplate> {
-    Arc::new(ThemedPopupMenuTemplate::new(Arc::new(ShadcnPopupMenuTheme { theme: theme.as_ref().clone() })))
+pub fn popup_menu_template(theme: ShadcnLook) -> Arc<dyn luma::controls::popup_menu::PopupMenuTemplate> {
+    Arc::new(ThemedPopupMenuTemplate::new(Arc::new(ShadcnPopupMenuTheme { theme: theme.clone() })))
 }
 
-pub fn context_menu_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ContextMenuTheme> {
-    Arc::new(ShadcnContextMenuTheme { theme: theme.as_ref().clone() })
+pub fn context_menu_theme(theme: ShadcnLook) -> Arc<dyn ContextMenuTheme> {
+    Arc::new(ShadcnContextMenuTheme { theme: theme.clone() })
 }
 
-pub fn context_menu_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::context_menu::ContextMenuTemplate> {
-    Arc::new(ThemedContextMenuTemplate::new(context_menu_theme(Arc::clone(&theme))))
+pub fn context_menu_template(theme: ShadcnLook) -> Arc<dyn luma::controls::context_menu::ContextMenuTemplate> {
+    Arc::new(ThemedContextMenuTemplate::new(context_menu_theme(theme.clone())))
 }
 
 struct ShadcnSelectorTheme {
@@ -557,19 +554,22 @@ impl AutocompleteTheme for ShadcnAutocompleteTheme {
     }
 }
 
-pub fn selector_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::selector::SelectorTemplate> {
+pub fn selector_template<T>(theme: ShadcnLook) -> Arc<dyn luma::controls::selector::SelectorTemplate<T>>
+where
+    T: SelectorItemLike + 'static,
+{
     Arc::new(ThemedSelectorTemplate::new(
-        Arc::new(ShadcnSelectorTheme { theme: theme.as_ref().clone() }),
-        default_selector_items_template::<luma::controls::selector::SelectorItem>(),
+        Arc::new(ShadcnSelectorTheme { theme: theme.clone() }),
+        default_selector_items_template::<T>(),
     ))
 }
 
-pub fn textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
-    Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnTextFieldTheme { theme: theme.as_ref().clone() })))
+pub fn textfield_template(theme: ShadcnLook) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
+    Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnTextFieldTheme { theme: theme.clone() })))
 }
 
-pub fn textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
-    Arc::new(ShadcnTextFieldTheme { theme: theme.as_ref().clone() })
+pub fn textfield_theme(theme: ShadcnLook) -> Arc<dyn TextFieldTheme> {
+    Arc::new(ShadcnTextFieldTheme { theme: theme.clone() })
 }
 
 struct ShadcnInputTextFieldTheme {
@@ -618,12 +618,12 @@ impl TextFieldTheme for ShadcnInputTextFieldTheme {
     }
 }
 
-pub fn input_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
-    Arc::new(ShadcnInputTextFieldTheme { theme: theme.as_ref().clone() })
+pub fn input_textfield_theme(theme: ShadcnLook) -> Arc<dyn TextFieldTheme> {
+    Arc::new(ShadcnInputTextFieldTheme { theme: theme.clone() })
 }
 
-pub fn input_textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
-    Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnInputTextFieldTheme { theme: theme.as_ref().clone() })))
+pub fn input_textfield_template(theme: ShadcnLook) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
+    Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnInputTextFieldTheme { theme: theme.clone() })))
 }
 
 struct ShadcnSurfaceTextFieldTheme {
@@ -672,8 +672,8 @@ impl TextFieldTheme for ShadcnSurfaceTextFieldTheme {
     }
 }
 
-pub fn surface_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
-    Arc::new(ShadcnSurfaceTextFieldTheme { theme: theme.as_ref().clone() })
+pub fn surface_textfield_theme(theme: ShadcnLook) -> Arc<dyn TextFieldTheme> {
+    Arc::new(ShadcnSurfaceTextFieldTheme { theme: theme.clone() })
 }
 
 struct ShadcnPrimaryTextFieldTheme {
@@ -722,14 +722,12 @@ impl TextFieldTheme for ShadcnPrimaryTextFieldTheme {
     }
 }
 
-pub fn primary_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
-    Arc::new(ShadcnPrimaryTextFieldTheme { theme: theme.as_ref().clone() })
+pub fn primary_textfield_theme(theme: ShadcnLook) -> Arc<dyn TextFieldTheme> {
+    Arc::new(ShadcnPrimaryTextFieldTheme { theme: theme.clone() })
 }
 
-pub fn primary_textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
-    Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnPrimaryTextFieldTheme {
-        theme: theme.as_ref().clone(),
-    })))
+pub fn primary_textfield_template(theme: ShadcnLook) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
+    Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnPrimaryTextFieldTheme { theme: theme.clone() })))
 }
 
 struct ShadcnTextAreaTheme {
@@ -776,12 +774,12 @@ impl TextAreaTheme for ShadcnTextAreaTheme {
     }
 }
 
-pub fn textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
-    Arc::new(ThemedTextAreaTemplate::new(textarea_theme(Arc::clone(&theme))))
+pub fn textarea_template(theme: ShadcnLook) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
+    Arc::new(ThemedTextAreaTemplate::new(textarea_theme(theme.clone())))
 }
 
-pub fn textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
-    Arc::new(ShadcnTextAreaTheme { theme: theme.as_ref().clone() })
+pub fn textarea_theme(theme: ShadcnLook) -> Arc<dyn TextAreaTheme> {
+    Arc::new(ShadcnTextAreaTheme { theme: theme.clone() })
 }
 
 struct ShadcnSurfaceTextAreaTheme {
@@ -828,8 +826,8 @@ impl TextAreaTheme for ShadcnSurfaceTextAreaTheme {
     }
 }
 
-pub fn surface_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
-    Arc::new(ShadcnSurfaceTextAreaTheme { theme: theme.as_ref().clone() })
+pub fn surface_textarea_theme(theme: ShadcnLook) -> Arc<dyn TextAreaTheme> {
+    Arc::new(ShadcnSurfaceTextAreaTheme { theme: theme.clone() })
 }
 
 struct ShadcnPrimaryTextAreaTheme {
@@ -880,12 +878,12 @@ impl TextAreaTheme for ShadcnInputTextAreaTheme {
     }
 }
 
-pub fn input_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
-    Arc::new(ShadcnInputTextAreaTheme { theme: theme.as_ref().clone() })
+pub fn input_textarea_theme(theme: ShadcnLook) -> Arc<dyn TextAreaTheme> {
+    Arc::new(ShadcnInputTextAreaTheme { theme: theme.clone() })
 }
 
-pub fn input_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
-    Arc::new(ThemedTextAreaTemplate::new(input_textarea_theme(Arc::clone(&theme))))
+pub fn input_textarea_template(theme: ShadcnLook) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
+    Arc::new(ThemedTextAreaTemplate::new(input_textarea_theme(theme.clone())))
 }
 
 impl TextAreaTheme for ShadcnPrimaryTextAreaTheme {
@@ -928,19 +926,19 @@ impl TextAreaTheme for ShadcnPrimaryTextAreaTheme {
     }
 }
 
-pub fn primary_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
-    Arc::new(ShadcnPrimaryTextAreaTheme { theme: theme.as_ref().clone() })
+pub fn primary_textarea_theme(theme: ShadcnLook) -> Arc<dyn TextAreaTheme> {
+    Arc::new(ShadcnPrimaryTextAreaTheme { theme: theme.clone() })
 }
 
-pub fn primary_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
-    Arc::new(ThemedTextAreaTemplate::new(primary_textarea_theme(Arc::clone(&theme))))
+pub fn primary_textarea_template(theme: ShadcnLook) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
+    Arc::new(ThemedTextAreaTemplate::new(primary_textarea_theme(theme.clone())))
 }
 
-pub fn autocomplete_theme(theme: Arc<ShadcnLook>) -> Arc<dyn AutocompleteTheme> {
-    Arc::new(ShadcnAutocompleteTheme { theme: theme.as_ref().clone() })
+pub fn autocomplete_theme(theme: ShadcnLook) -> Arc<dyn AutocompleteTheme> {
+    Arc::new(ShadcnAutocompleteTheme { theme: theme.clone() })
 }
 
-pub fn selection_panel_look_provider(theme: Arc<ShadcnLook>) -> SelectionPanelLookProvider {
+pub fn selection_panel_look_provider(theme: ShadcnLook) -> SelectionPanelLookProvider {
     Arc::new(move |size| {
         let tokens = theme.mode_tokens();
         selection_panel_look(tokens.as_ref(), theme.mode(), size)
@@ -1048,43 +1046,43 @@ impl SidebarTheme for ShadcnSidebarTheme {
     }
 }
 
-pub fn tree_view_template<T>(theme: Arc<ShadcnLook>) -> Arc<dyn TreeViewTemplate<T>>
+pub fn tree_view_template<T>(theme: ShadcnLook) -> Arc<dyn TreeViewTemplate<T>>
 where
     T: Send + Sync + 'static,
 {
-    Arc::new(ThemedTreeViewTemplate::new(tree_view_theme(Arc::clone(&theme))))
+    Arc::new(ThemedTreeViewTemplate::new(tree_view_theme(theme.clone())))
 }
 
-pub fn tree_view_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TreeViewTheme> {
-    Arc::new(ShadcnTreeViewTheme { theme: theme.as_ref().clone() })
+pub fn tree_view_theme(theme: ShadcnLook) -> Arc<dyn TreeViewTheme> {
+    Arc::new(ShadcnTreeViewTheme { theme: theme.clone() })
 }
 
-pub fn accordion_template(theme: Arc<ShadcnLook>) -> Arc<dyn AccordionTemplate> {
-    Arc::new(ThemedAccordionTemplate::new(accordion_theme(Arc::clone(&theme))))
+pub fn accordion_template(theme: ShadcnLook) -> Arc<dyn AccordionTemplate> {
+    Arc::new(ThemedAccordionTemplate::new(accordion_theme(theme.clone())))
 }
 
-pub fn accordion_theme(theme: Arc<ShadcnLook>) -> Arc<dyn AccordionTheme> {
-    Arc::new(ShadcnAccordionTheme { theme: theme.as_ref().clone() })
+pub fn accordion_theme(theme: ShadcnLook) -> Arc<dyn AccordionTheme> {
+    Arc::new(ShadcnAccordionTheme { theme: theme.clone() })
 }
 
-pub fn tabs_template(theme: Arc<ShadcnLook>) -> Arc<dyn TabsTemplate> {
-    Arc::new(ThemedTabsTemplate::new(tabs_theme(Arc::clone(&theme))))
+pub fn tabs_template(theme: ShadcnLook) -> Arc<dyn TabsTemplate> {
+    Arc::new(ThemedTabsTemplate::new(tabs_theme(theme.clone())))
 }
 
-pub fn tabs_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TabsTheme> {
-    Arc::new(ShadcnTabsTheme { theme: theme.as_ref().clone() })
+pub fn tabs_theme(theme: ShadcnLook) -> Arc<dyn TabsTheme> {
+    Arc::new(ShadcnTabsTheme { theme: theme.clone() })
 }
 
-pub fn sidebar_panel_template(theme: Arc<ShadcnLook>) -> Arc<dyn SidebarPanelTemplate> {
-    let menu_theme = floating_menu_theme(Arc::clone(&theme));
+pub fn sidebar_panel_template(theme: ShadcnLook) -> Arc<dyn SidebarPanelTemplate> {
+    let menu_theme = floating_menu_theme(theme.clone());
     Arc::new(ThemedSidebarPanelTemplate::new_with_floating_menu_theme(
-        Arc::new(ShadcnSidebarTheme { theme: theme.as_ref().clone() }),
+        Arc::new(ShadcnSidebarTheme { theme: theme.clone() }),
         menu_theme,
     ))
 }
 
-pub fn sidebar_template(theme: Arc<ShadcnLook>) -> Arc<dyn SidebarTemplate> {
-    Arc::new(ThemedSidebarTemplate { theme: theme.as_ref().clone() })
+pub fn sidebar_template(theme: ShadcnLook) -> Arc<dyn SidebarTemplate> {
+    Arc::new(ThemedSidebarTemplate { theme: theme.clone() })
 }
 
 struct ThemedSidebarTemplate {
@@ -1145,8 +1143,8 @@ impl SidebarTemplate for ThemedSidebarTemplate {
     }
 }
 
-pub fn sidebar_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SidebarTheme> {
-    Arc::new(ShadcnSidebarTheme { theme: theme.as_ref().clone() })
+pub fn sidebar_theme(theme: ShadcnLook) -> Arc<dyn SidebarTheme> {
+    Arc::new(ShadcnSidebarTheme { theme: theme.clone() })
 }
 
 struct ShadcnControlGroupTheme {
@@ -1183,22 +1181,15 @@ impl ControlGroupTheme for ShadcnControlGroupTheme {
     }
 }
 
-pub fn control_group_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ControlGroupTheme> {
-    Arc::new(ShadcnControlGroupTheme { theme: theme.as_ref().clone() })
+pub fn control_group_theme(theme: ShadcnLook) -> Arc<dyn ControlGroupTheme> {
+    Arc::new(ShadcnControlGroupTheme { theme: theme.clone() })
 }
 
-pub fn control_group_template<T>(theme: Arc<ShadcnLook>) -> ControlGroupTemplate<T>
+pub fn control_group_template<T>(theme: ShadcnLook) -> ControlGroupTemplate<T>
 where
     T: ControlGroupItemLike + Clone + Send + Sync + 'static,
 {
     control_group_template_with_theme(control_group_theme(theme))
-}
-
-pub fn menu_choice_group<T>(_theme: Arc<ShadcnLook>, id: impl Into<gpui::SharedString>) -> ControlGroupBuilder<T>
-where
-    T: ControlGroupItemLike + 'static,
-{
-    luma::controls::control_group::new(id).active_descendant()
 }
 
 struct ShadcnToolbarTheme {
@@ -1237,11 +1228,11 @@ impl ToolbarTheme for ShadcnToolbarTheme {
     }
 }
 
-pub fn toolbar_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ToolbarTheme> {
-    Arc::new(ShadcnToolbarTheme { theme: theme.as_ref().clone() })
+pub fn toolbar_theme(theme: ShadcnLook) -> Arc<dyn ToolbarTheme> {
+    Arc::new(ShadcnToolbarTheme { theme: theme.clone() })
 }
 
-pub fn toolbar_template(theme: Arc<ShadcnLook>) -> Arc<dyn ToolbarTemplate> {
+pub fn toolbar_template(theme: ShadcnLook) -> Arc<dyn ToolbarTemplate> {
     Arc::new(ThemedToolbarTemplate::new(toolbar_theme(theme)))
 }
 
@@ -1275,11 +1266,11 @@ impl ListBoxTheme for ShadcnListBoxTheme {
     }
 }
 
-pub fn listbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ListBoxTheme> {
-    Arc::new(ShadcnListBoxTheme { theme: theme.as_ref().clone() })
+pub fn listbox_theme(theme: ShadcnLook) -> Arc<dyn ListBoxTheme> {
+    Arc::new(ShadcnListBoxTheme { theme: theme.clone() })
 }
 
-pub fn listbox_template(theme: Arc<ShadcnLook>) -> ControlGroupTemplate<luma::controls::listbox::ListBoxItem> {
+pub fn listbox_template(theme: ShadcnLook) -> ControlGroupTemplate<luma::controls::listbox::ListBoxItem> {
     listbox_template_with_theme(listbox_theme(theme))
 }
 
@@ -1308,20 +1299,20 @@ impl ListViewTheme for ShadcnListViewTheme {
     }
 }
 
-pub fn list_view_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ListViewTheme> {
-    Arc::new(ShadcnListViewTheme { theme: theme.as_ref().clone() })
+pub fn list_view_theme(theme: ShadcnLook) -> Arc<dyn ListViewTheme> {
+    Arc::new(ShadcnListViewTheme { theme: theme.clone() })
 }
 
-pub fn list_view_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::list_view::ListViewTemplate> {
+pub fn list_view_template(theme: ShadcnLook) -> Arc<dyn luma::controls::list_view::ListViewTemplate> {
     list_view_template_with_theme(list_view_theme(theme))
 }
 
 struct ShadcnPagerTheme {
-    theme: Arc<ShadcnLook>,
+    theme: ShadcnLook,
 }
 
 struct ShadcnPagerButtonTheme {
-    theme: Arc<ShadcnLook>,
+    theme: ShadcnLook,
     pager_look: PagerLook,
 }
 
@@ -1341,7 +1332,7 @@ impl ButtonFamilyTheme for ShadcnPagerButtonTheme {
         _scale: &luma::theme::StandardBoxScale,
         _pill_radius: f32,
     ) -> Option<ButtonFamilyLook> {
-        Some(pager_button_look(self.theme.as_ref(), &self.pager_look, role, state))
+        Some(pager_button_look(&self.theme, &self.pager_look, role, state))
     }
 
     fn metrics(&self) -> luma::theme::MetricTokens {
@@ -1351,27 +1342,27 @@ impl ButtonFamilyTheme for ShadcnPagerButtonTheme {
 
 impl PagerTheme for ShadcnPagerTheme {
     fn resolve(&self, enabled: bool, style: luma::controls::pager::PagerStyle) -> luma::controls::pager::PagerLook {
-        pager_look(self.theme.as_ref(), enabled, style)
+        pager_look(&self.theme, enabled, style)
     }
 
     fn button_template(&self, pager_look: &PagerLook) -> Arc<dyn ButtonTemplate<()>> {
         Arc::new(DefaultButtonTemplate::new(Arc::new(ShadcnPagerButtonTheme {
-            theme: Arc::clone(&self.theme),
+            theme: self.theme.clone(),
             pager_look: pager_look.clone(),
         })))
     }
 }
 
-pub fn pager_template(theme: Arc<ShadcnLook>) -> Arc<dyn PagerTemplate> {
+pub fn pager_template(theme: ShadcnLook) -> Arc<dyn PagerTemplate> {
     Arc::new(ThemedPagerTemplate::new(pager_theme(theme)))
 }
 
-pub fn pager_theme(theme: Arc<ShadcnLook>) -> Arc<dyn PagerTheme> {
+pub fn pager_theme(theme: ShadcnLook) -> Arc<dyn PagerTheme> {
     Arc::new(ShadcnPagerTheme { theme })
 }
 
 pub fn radio_group_template<T>(
-    theme: Arc<ShadcnLook>,
+    theme: ShadcnLook,
     style: ShadcnButtonStyle,
     layout: RadioGroupLayout,
 ) -> ControlGroupTemplate<T>
@@ -1392,16 +1383,16 @@ impl ProgressTheme for ShadcnProgressTheme {
     }
 }
 
-pub fn progress_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::progress::ProgressTemplate> {
+pub fn progress_template(theme: ShadcnLook) -> Arc<dyn luma::controls::progress::ProgressTemplate> {
     Arc::new(ThemedProgressTemplate::new(progress_theme(theme)))
 }
 
-pub fn linear_progress_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::progress::ProgressTemplate> {
+pub fn linear_progress_template(theme: ShadcnLook) -> Arc<dyn luma::controls::progress::ProgressTemplate> {
     Arc::new(ThemedLinearProgressTemplate::new(progress_theme(theme)))
 }
 
-pub fn progress_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ProgressTheme> {
-    Arc::new(ShadcnProgressTheme { theme: theme.as_ref().clone() })
+pub fn progress_theme(theme: ShadcnLook) -> Arc<dyn ProgressTheme> {
+    Arc::new(ShadcnProgressTheme { theme: theme.clone() })
 }
 
 struct ShadcnStepperTheme {
@@ -1415,20 +1406,20 @@ impl StepperTheme for ShadcnStepperTheme {
     }
 }
 
-pub fn stepper_template(theme: Arc<ShadcnLook>) -> Arc<dyn luma::controls::stepper::StepperTemplate> {
+pub fn stepper_template(theme: ShadcnLook) -> Arc<dyn luma::controls::stepper::StepperTemplate> {
     Arc::new(ThemedStepperTemplate::new(stepper_theme(theme)))
 }
 
-pub fn stepper_theme(theme: Arc<ShadcnLook>) -> Arc<dyn StepperTheme> {
-    Arc::new(ShadcnStepperTheme { theme: theme.as_ref().clone() })
+pub fn stepper_theme(theme: ShadcnLook) -> Arc<dyn StepperTheme> {
+    Arc::new(ShadcnStepperTheme { theme: theme.clone() })
 }
 
-pub fn overlay_window_template(theme: Arc<ShadcnLook>) -> Arc<dyn OverlayWindowTemplate> {
+pub fn overlay_window_template(theme: ShadcnLook) -> Arc<dyn OverlayWindowTemplate> {
     Arc::new(ThemedOverlayWindowTemplate::new(overlay_window_theme(theme)))
 }
 
-pub fn overlay_window_theme(theme: Arc<ShadcnLook>) -> Arc<dyn OverlayWindowTheme> {
-    Arc::new(ShadcnOverlayWindowTheme { theme: theme.as_ref().clone() })
+pub fn overlay_window_theme(theme: ShadcnLook) -> Arc<dyn OverlayWindowTheme> {
+    Arc::new(ShadcnOverlayWindowTheme { theme: theme.clone() })
 }
 
 struct ShadcnOverlayWindowTheme {
@@ -1441,7 +1432,7 @@ impl OverlayWindowTheme for ShadcnOverlayWindowTheme {
     }
 }
 
-pub fn toggle_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<ToggleData>> {
+pub fn toggle_template(theme: ShadcnLook, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<ToggleData>> {
     let button_family_theme = styled_button_family_theme(theme, style);
     let theme_for_mod = Arc::clone(&button_family_theme);
     Arc::new(DefaultButtonTemplate::<ToggleData>::new(button_family_theme).with_modifier(move |element, model| {
@@ -1456,13 +1447,13 @@ pub fn toggle_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<
 }
 
 /// Non-animated toggle chrome for control-group items (`ButtonTemplate<bool>`).
-pub fn toggle_item_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
+pub fn toggle_item_template(theme: ShadcnLook, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
     Arc::new(DefaultButtonTemplate::new(styled_button_family_theme(theme, style)))
 }
 
 /// Animated toggle chrome for control-group items carrying [`ToggleData`].
 pub fn animated_toggle_item_template(
-    theme: Arc<ShadcnLook>,
+    theme: ShadcnLook,
     style: ShadcnButtonStyle,
 ) -> Arc<dyn ButtonTemplate<ToggleData>> {
     let button_family_theme = styled_button_family_theme(theme, style);

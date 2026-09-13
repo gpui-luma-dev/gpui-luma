@@ -5,7 +5,7 @@ use std::sync::{
     RwLock,
 };
 
-use gpui::{BoxShadow, Hsla, SharedString};
+use gpui::{App, BoxShadow, Global, Hsla, SharedString};
 use luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole};
 use luma::theme::pack::LumaChrome;
 use luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeMode};
@@ -39,6 +39,23 @@ const GENERIC_FAMILIES: &[&str] = &[
 #[derive(Clone)]
 pub struct ShadcnLook {
     state: Arc<ShadcnLookState>,
+}
+
+impl Global for ShadcnLook {}
+
+/// `.look(&…)` if set, else ambient Global, else [`ShadcnLook::built_in()`]. Never panics.
+pub(crate) fn resolve_look(explicit: Option<&ShadcnLook>, ambient: Option<&ShadcnLook>) -> ShadcnLook {
+    if let Some(look) = explicit {
+        return look.clone();
+    }
+    if let Some(look) = ambient {
+        return look.clone();
+    }
+    ShadcnLook::built_in()
+}
+
+pub(crate) fn resolve_look_from(explicit: Option<&ShadcnLook>, cx: &App) -> ShadcnLook {
+    resolve_look(explicit, cx.try_global::<ShadcnLook>())
 }
 
 struct ShadcnLookState {
@@ -117,6 +134,17 @@ impl ShadcnLookSnapshot {
 }
 
 impl ShadcnLook {
+    /// Bundled fallback theme used when no look is bound and no Global is set.
+    pub fn built_in() -> Self {
+        static BUILT_IN: std::sync::OnceLock<ShadcnLook> = std::sync::OnceLock::new();
+        BUILT_IN
+            .get_or_init(|| {
+                Self::from_css_str(include_str!("../tests/fixtures/native.css"))
+                    .expect("bundled built-in CSS should parse")
+            })
+            .clone()
+    }
+
     /// Loads shadcn palette tokens from tweakcn-style CSS (`:root` / `.dark` custom properties).
     pub fn from_css_str(source: &str) -> anyhow::Result<Self> {
         let catalog = parse_css_catalog(source)?;
@@ -405,134 +433,134 @@ impl ShadcnLook {
     }
 
     pub fn switch_template(
-        self: &Arc<Self>,
+        &self,
         style: ShadcnButtonStyle,
     ) -> Arc<dyn luma::controls::button::ButtonTemplate<luma::controls::switch::SwitchData>> {
-        templates::switch_template(Arc::clone(self), style)
+        templates::switch_template(self.clone(), style)
     }
 
     pub fn checkbox_template(
-        self: &Arc<Self>,
+        &self,
         style: ShadcnButtonStyle,
     ) -> Arc<dyn luma::controls::button::ButtonTemplate<luma::controls::checkbox::CheckboxData>> {
-        templates::checkbox_template(Arc::clone(self), style)
+        templates::checkbox_template(self.clone(), style)
     }
 
     pub fn radio_button_template(
-        self: &Arc<Self>,
+        &self,
         style: ShadcnButtonStyle,
     ) -> Arc<dyn luma::controls::button::ButtonTemplate<luma::controls::radio_button::RadioButtonData>> {
-        templates::radio_button_template(Arc::clone(self), style)
+        templates::radio_button_template(self.clone(), style)
     }
 
-    pub fn button_template(
-        self: &Arc<Self>,
-        style: ShadcnButtonStyle,
-    ) -> Arc<dyn luma::controls::button::ButtonTemplate<()>> {
-        templates::button_template(Arc::clone(self), style)
+    pub fn button_template(&self, style: ShadcnButtonStyle) -> Arc<dyn luma::controls::button::ButtonTemplate<()>> {
+        templates::button_template(self.clone(), style)
     }
 
-    pub fn slider_template(self: &Arc<Self>) -> Arc<dyn luma::controls::slider::SliderTemplate> {
-        templates::slider_template(Arc::clone(self))
+    pub fn slider_template(&self) -> Arc<dyn luma::controls::slider::SliderTemplate> {
+        templates::slider_template(self.clone())
     }
 
     pub fn slider_template_with_style(
-        self: &Arc<Self>,
+        &self,
         style: ShadcnButtonStyle,
     ) -> Arc<dyn luma::controls::slider::SliderTemplate> {
-        templates::slider_template_with_style(Arc::clone(self), style)
+        templates::slider_template_with_style(self.clone(), style)
     }
 
-    pub fn slider_angular_template(self: &Arc<Self>) -> Arc<dyn luma::controls::slider::SliderTemplate> {
-        templates::slider_angular_template(Arc::clone(self))
+    pub fn slider_angular_template(&self) -> Arc<dyn luma::controls::slider::SliderTemplate> {
+        templates::slider_angular_template(self.clone())
     }
 
-    pub fn slider_circular_ring_template(self: &Arc<Self>) -> Arc<dyn luma::controls::slider::SliderTemplate> {
-        templates::slider_circular_ring_template(Arc::clone(self))
+    pub fn slider_circular_ring_template(&self) -> Arc<dyn luma::controls::slider::SliderTemplate> {
+        templates::slider_circular_ring_template(self.clone())
     }
 
-    pub fn scrollbar_template(self: &Arc<Self>) -> Arc<dyn luma::controls::scrollbar::ScrollbarTemplate> {
-        templates::scrollbar_template(Arc::clone(self))
+    pub fn scrollbar_template(&self) -> Arc<dyn luma::controls::scrollbar::ScrollbarTemplate> {
+        templates::scrollbar_template(self.clone())
     }
 
-    pub fn floating_menu_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::floating_menu::FloatingMenuTheme> {
-        templates::floating_menu_theme(Arc::clone(self))
+    pub fn floating_menu_theme(&self) -> Arc<dyn luma::controls::floating_menu::FloatingMenuTheme> {
+        templates::floating_menu_theme(self.clone())
     }
 
-    pub fn popup_menu_template(self: &Arc<Self>) -> Arc<dyn luma::controls::popup_menu::PopupMenuTemplate> {
-        templates::popup_menu_template(Arc::clone(self))
+    pub fn popup_menu_template(&self) -> Arc<dyn luma::controls::popup_menu::PopupMenuTemplate> {
+        templates::popup_menu_template(self.clone())
     }
 
-    pub fn context_menu_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::context_menu::ContextMenuTheme> {
-        templates::context_menu_theme(Arc::clone(self))
+    pub fn context_menu_theme(&self) -> Arc<dyn luma::controls::context_menu::ContextMenuTheme> {
+        templates::context_menu_theme(self.clone())
     }
 
-    pub fn context_menu_template(self: &Arc<Self>) -> Arc<dyn luma::controls::context_menu::ContextMenuTemplate> {
-        templates::context_menu_template(Arc::clone(self))
+    pub fn context_menu_template(&self) -> Arc<dyn luma::controls::context_menu::ContextMenuTemplate> {
+        templates::context_menu_template(self.clone())
     }
 
-    pub fn selector_template(self: &Arc<Self>) -> Arc<dyn luma::controls::selector::SelectorTemplate> {
-        templates::selector_template(Arc::clone(self))
+    pub fn selector_template<T>(&self) -> Arc<dyn luma::controls::selector::SelectorTemplate<T>>
+    where
+        T: luma::controls::selector::SelectorItemLike + 'static,
+    {
+        templates::selector_template(self.clone())
     }
 
-    pub fn textfield_template(self: &Arc<Self>) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
-        templates::textfield_template(Arc::clone(self))
+    pub fn textfield_template(&self) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
+        templates::textfield_template(self.clone())
     }
 
-    pub fn textfield_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::textfield::TextFieldTheme> {
-        templates::textfield_theme(Arc::clone(self))
+    pub fn textfield_theme(&self) -> Arc<dyn luma::controls::textfield::TextFieldTheme> {
+        templates::textfield_theme(self.clone())
     }
 
-    pub fn input_textfield_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::textfield::TextFieldTheme> {
-        templates::input_textfield_theme(Arc::clone(self))
+    pub fn input_textfield_theme(&self) -> Arc<dyn luma::controls::textfield::TextFieldTheme> {
+        templates::input_textfield_theme(self.clone())
     }
 
-    pub fn input_textfield_template(self: &Arc<Self>) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
-        templates::input_textfield_template(Arc::clone(self))
+    pub fn input_textfield_template(&self) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
+        templates::input_textfield_template(self.clone())
     }
 
-    pub fn surface_textfield_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::textfield::TextFieldTheme> {
-        templates::surface_textfield_theme(Arc::clone(self))
+    pub fn surface_textfield_theme(&self) -> Arc<dyn luma::controls::textfield::TextFieldTheme> {
+        templates::surface_textfield_theme(self.clone())
     }
 
-    pub fn primary_textfield_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::textfield::TextFieldTheme> {
-        templates::primary_textfield_theme(Arc::clone(self))
+    pub fn primary_textfield_theme(&self) -> Arc<dyn luma::controls::textfield::TextFieldTheme> {
+        templates::primary_textfield_theme(self.clone())
     }
 
-    pub fn primary_textfield_template(self: &Arc<Self>) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
-        templates::primary_textfield_template(Arc::clone(self))
+    pub fn primary_textfield_template(&self) -> Arc<dyn luma::controls::textfield::TextFieldTemplate> {
+        templates::primary_textfield_template(self.clone())
     }
 
-    pub fn textarea_template(self: &Arc<Self>) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
-        templates::textarea_template(Arc::clone(self))
+    pub fn textarea_template(&self) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
+        templates::textarea_template(self.clone())
     }
 
-    pub fn textarea_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::textarea::TextAreaTheme> {
-        templates::textarea_theme(Arc::clone(self))
+    pub fn textarea_theme(&self) -> Arc<dyn luma::controls::textarea::TextAreaTheme> {
+        templates::textarea_theme(self.clone())
     }
 
-    pub fn surface_textarea_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::textarea::TextAreaTheme> {
-        templates::surface_textarea_theme(Arc::clone(self))
+    pub fn surface_textarea_theme(&self) -> Arc<dyn luma::controls::textarea::TextAreaTheme> {
+        templates::surface_textarea_theme(self.clone())
     }
 
-    pub fn primary_textarea_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::textarea::TextAreaTheme> {
-        templates::primary_textarea_theme(Arc::clone(self))
+    pub fn primary_textarea_theme(&self) -> Arc<dyn luma::controls::textarea::TextAreaTheme> {
+        templates::primary_textarea_theme(self.clone())
     }
 
-    pub fn input_textarea_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::textarea::TextAreaTheme> {
-        templates::input_textarea_theme(Arc::clone(self))
+    pub fn input_textarea_theme(&self) -> Arc<dyn luma::controls::textarea::TextAreaTheme> {
+        templates::input_textarea_theme(self.clone())
     }
 
-    pub fn input_textarea_template(self: &Arc<Self>) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
-        templates::input_textarea_template(Arc::clone(self))
+    pub fn input_textarea_template(&self) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
+        templates::input_textarea_template(self.clone())
     }
 
-    pub fn primary_textarea_template(self: &Arc<Self>) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
-        templates::primary_textarea_template(Arc::clone(self))
+    pub fn primary_textarea_template(&self) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
+        templates::primary_textarea_template(self.clone())
     }
 
-    pub fn autocomplete_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::autocomplete::AutocompleteTheme> {
-        templates::autocomplete_theme(Arc::clone(self))
+    pub fn autocomplete_theme(&self) -> Arc<dyn luma::controls::autocomplete::AutocompleteTheme> {
+        templates::autocomplete_theme(self.clone())
     }
 
     pub fn selector_items_panel_look(
@@ -548,83 +576,70 @@ impl ShadcnLook {
         selection_panel_look(tokens.as_ref(), self.mode(), size)
     }
 
-    pub fn selection_panel_look_provider(
-        self: &Arc<Self>,
-    ) -> luma::controls::selection_panel::SelectionPanelLookProvider {
-        templates::selection_panel_look_provider(Arc::clone(self))
+    pub fn selection_panel_look_provider(&self) -> luma::controls::selection_panel::SelectionPanelLookProvider {
+        templates::selection_panel_look_provider(self.clone())
     }
 
-    pub fn tabs_template(self: &Arc<Self>) -> Arc<dyn luma::controls::tabs::TabsTemplate> {
-        templates::tabs_template(Arc::clone(self))
+    pub fn tabs_template(&self) -> Arc<dyn luma::controls::tabs::TabsTemplate> {
+        templates::tabs_template(self.clone())
     }
 
-    pub fn tabs_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::tabs::TabsTheme> {
-        templates::tabs_theme(Arc::clone(self))
+    pub fn tabs_theme(&self) -> Arc<dyn luma::controls::tabs::TabsTheme> {
+        templates::tabs_theme(self.clone())
     }
 
-    pub fn accordion_template(self: &Arc<Self>) -> Arc<dyn luma::controls::accordion::AccordionTemplate> {
-        templates::accordion_template(Arc::clone(self))
+    pub fn accordion_template(&self) -> Arc<dyn luma::controls::accordion::AccordionTemplate> {
+        templates::accordion_template(self.clone())
     }
 
-    pub fn accordion_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::accordion::AccordionTheme> {
-        templates::accordion_theme(Arc::clone(self))
+    pub fn accordion_theme(&self) -> Arc<dyn luma::controls::accordion::AccordionTheme> {
+        templates::accordion_theme(self.clone())
     }
 
-    pub fn accordion(self: &Arc<Self>, id: impl Into<SharedString>) -> luma::controls::accordion::AccordionBuilder {
-        luma::controls::accordion::new(id).template(self.accordion_template())
-    }
-
-    pub fn tree_view_template<T>(self: &Arc<Self>) -> Arc<dyn luma::controls::tree_view::TreeViewTemplate<T>>
+    pub fn tree_view_template<T>(&self) -> Arc<dyn luma::controls::tree_view::TreeViewTemplate<T>>
     where
         T: Send + Sync + 'static,
     {
-        templates::tree_view_template(Arc::clone(self))
+        templates::tree_view_template(self.clone())
     }
 
-    pub fn tree_view_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::tree_view::TreeViewTheme> {
-        templates::tree_view_theme(Arc::clone(self))
+    pub fn tree_view_theme(&self) -> Arc<dyn luma::controls::tree_view::TreeViewTheme> {
+        templates::tree_view_theme(self.clone())
     }
 
-    pub fn tree_view<T>(self: &Arc<Self>, id: impl Into<SharedString>) -> luma::controls::tree_view::TreeViewBuilder<T>
-    where
-        T: Clone + Send + Sync + 'static,
-    {
-        luma::controls::tree_view::new(id).template(self.tree_view_template::<T>())
+    pub fn dock_splitter_theme(&self) -> Arc<dyn luma::controls::dock_splitter::DockSplitterTheme> {
+        templates::dock_splitter_theme(self.clone())
     }
 
-    pub fn dock_splitter_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::dock_splitter::DockSplitterTheme> {
-        templates::dock_splitter_theme(Arc::clone(self))
-    }
-
-    pub fn resizable_panels_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::resizable_panels::ResizablePanelsTheme> {
-        templates::resizable_panels_theme(Arc::clone(self))
+    pub fn resizable_panels_theme(&self) -> Arc<dyn luma::controls::resizable_panels::ResizablePanelsTheme> {
+        templates::resizable_panels_theme(self.clone())
     }
 
     pub fn resizable_panels(
-        self: &Arc<Self>,
+        &self,
         id: impl Into<SharedString>,
     ) -> luma::controls::resizable_panels::ResizablePanelsBuilder {
         luma::controls::resizable_panels::ResizablePanels::new(id).theme(self.resizable_panels_theme())
     }
 
-    pub fn split_view_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::split_view::SplitViewTheme> {
-        templates::split_view_theme(Arc::clone(self))
+    pub fn split_view_theme(&self) -> Arc<dyn luma::controls::split_view::SplitViewTheme> {
+        templates::split_view_theme(self.clone())
     }
 
-    pub fn split_view(self: &Arc<Self>, id: impl Into<SharedString>) -> luma::controls::split_view::SplitViewBuilder {
+    pub fn split_view(&self, id: impl Into<SharedString>) -> luma::controls::split_view::SplitViewBuilder {
         luma::controls::split_view::SplitView::new(id).theme(self.split_view_theme())
     }
 
-    pub fn sidebar_panel_template(self: &Arc<Self>) -> Arc<dyn luma::controls::sidebar::SidebarPanelTemplate> {
-        templates::sidebar_panel_template(Arc::clone(self))
+    pub fn sidebar_panel_template(&self) -> Arc<dyn luma::controls::sidebar::SidebarPanelTemplate> {
+        templates::sidebar_panel_template(self.clone())
     }
 
-    pub fn sidebar_template(self: &Arc<Self>) -> Arc<dyn luma::controls::sidebar::SidebarTemplate> {
-        templates::sidebar_template(Arc::clone(self))
+    pub fn sidebar_template(&self) -> Arc<dyn luma::controls::sidebar::SidebarTemplate> {
+        templates::sidebar_template(self.clone())
     }
 
-    pub fn sidebar_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::sidebar::SidebarTheme> {
-        templates::sidebar_theme(Arc::clone(self))
+    pub fn sidebar_theme(&self) -> Arc<dyn luma::controls::sidebar::SidebarTheme> {
+        templates::sidebar_theme(self.clone())
     }
 
     pub fn sidebar_metric_scale(&self) -> luma::controls::sidebar::SidebarMetricScale {
@@ -635,244 +650,167 @@ impl ShadcnLook {
         )
     }
 
-    pub fn sidebar_control(
-        self: &Arc<Self>,
-        id: impl Into<SharedString>,
-    ) -> luma::controls::sidebar::SidebarControlBuilder {
-        luma::controls::sidebar::SidebarControl::new(id)
-            .template(self.sidebar_template())
-            .panel_template(self.sidebar_panel_template())
-            .scrollbar_template(self.scrollbar_template())
-    }
-
-    pub fn sidebar(self: &Arc<Self>, id: impl Into<SharedString>) -> luma::controls::sidebar::SidebarBuilder {
-        luma::controls::sidebar::sidebar(id)
-    }
-
-    pub fn sidebar_header(self: &Arc<Self>) -> luma::controls::sidebar::SidebarHeaderBuilder {
-        luma::controls::sidebar::sidebar_header()
-    }
-
-    pub fn sidebar_content(self: &Arc<Self>) -> luma::controls::sidebar::SidebarContentBuilder {
-        luma::controls::sidebar::sidebar_content()
-    }
-
-    pub fn sidebar_group(self: &Arc<Self>) -> luma::controls::sidebar::SidebarGroupBuilder {
-        luma::controls::sidebar::sidebar_group()
-    }
-
-    pub fn sidebar_menu(self: &Arc<Self>, id: impl Into<SharedString>) -> luma::controls::sidebar::SidebarMenuBuilder {
-        luma::controls::sidebar::sidebar_menu(id)
-    }
-
-    pub fn sidebar_menu_item(
-        self: &Arc<Self>,
-        id: impl Into<SharedString>,
-        label: impl Into<SharedString>,
-    ) -> luma::controls::sidebar::SidebarMenuItemBuilder {
-        luma::controls::sidebar::sidebar_menu_item(id, label)
-    }
-
-    pub fn sidebar_menu_sub(self: &Arc<Self>) -> luma::controls::sidebar::SidebarMenuSubBuilder {
-        luma::controls::sidebar::sidebar_menu_sub()
-    }
-
-    pub fn sidebar_footer(self: &Arc<Self>) -> luma::controls::sidebar::SidebarFooterBuilder {
-        luma::controls::sidebar::sidebar_footer()
-    }
-
-    pub fn sidebar_rail(self: &Arc<Self>) -> luma::controls::sidebar::SidebarRailBuilder {
-        luma::controls::sidebar::sidebar_rail()
-    }
-
-    pub fn sidebar_inset(self: &Arc<Self>) -> luma::controls::sidebar::SidebarInsetBuilder {
-        luma::controls::sidebar::sidebar_inset()
-    }
-
-    pub fn sidebar_trigger(self: &Arc<Self>, id: impl Into<SharedString>) -> luma::controls::button::ButtonBuilder<()> {
-        luma::controls::icon_button::new(id, lucide_svg_static::Icon::PanelLeft)
-            .template(self.button_template(ShadcnButtonStyle::Ghost))
-    }
-
-    pub fn control_group_template<T>(self: &Arc<Self>) -> luma::controls::control_group::ControlGroupTemplate<T>
+    pub fn control_group_template<T>(&self) -> luma::controls::control_group::ControlGroupTemplate<T>
     where
         T: luma::controls::control_group::ControlGroupItemLike + Clone + Send + Sync + 'static,
     {
-        templates::control_group_template(Arc::clone(self))
+        templates::control_group_template(self.clone())
     }
 
-    pub fn control_group_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::control_group::ControlGroupTheme> {
-        templates::control_group_theme(Arc::clone(self))
+    pub fn control_group_theme(&self) -> Arc<dyn luma::controls::control_group::ControlGroupTheme> {
+        templates::control_group_theme(self.clone())
     }
 
-    pub fn toolbar_template(self: &Arc<Self>) -> Arc<dyn luma::controls::toolbar::ToolbarTemplate> {
-        templates::toolbar_template(Arc::clone(self))
+    pub fn toolbar_template(&self) -> Arc<dyn luma::controls::toolbar::ToolbarTemplate> {
+        templates::toolbar_template(self.clone())
     }
 
-    pub fn toolbar_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::toolbar::ToolbarTheme> {
-        templates::toolbar_theme(Arc::clone(self))
+    pub fn toolbar_theme(&self) -> Arc<dyn luma::controls::toolbar::ToolbarTheme> {
+        templates::toolbar_theme(self.clone())
     }
 
     pub fn listbox_template(
-        self: &Arc<Self>,
+        &self,
     ) -> luma::controls::control_group::ControlGroupTemplate<luma::controls::listbox::ListBoxItem> {
-        templates::listbox_template(Arc::clone(self))
+        templates::listbox_template(self.clone())
     }
 
     pub fn listbox_template_for_size(
-        self: &Arc<Self>,
+        &self,
         size: luma::theme::ControlSize,
     ) -> luma::controls::control_group::ControlGroupTemplate<luma::controls::listbox::ListBoxItem> {
         luma::controls::listbox::listbox_template_with_theme_and_size(self.listbox_theme(), size)
     }
 
-    pub fn listbox_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::listbox::ListBoxTheme> {
-        templates::listbox_theme(Arc::clone(self))
+    pub fn listbox_theme(&self) -> Arc<dyn luma::controls::listbox::ListBoxTheme> {
+        templates::listbox_theme(self.clone())
     }
 
-    pub fn list_view_template(self: &Arc<Self>) -> Arc<dyn luma::controls::list_view::ListViewTemplate> {
-        templates::list_view_template(Arc::clone(self))
+    pub fn list_view_template(&self) -> Arc<dyn luma::controls::list_view::ListViewTemplate> {
+        templates::list_view_template(self.clone())
     }
 
-    pub fn list_view_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::list_view::ListViewTheme> {
-        templates::list_view_theme(Arc::clone(self))
+    pub fn list_view_theme(&self) -> Arc<dyn luma::controls::list_view::ListViewTheme> {
+        templates::list_view_theme(self.clone())
     }
 
-    pub fn pager_template(self: &Arc<Self>) -> Arc<dyn luma::controls::pager::PagerTemplate> {
-        templates::pager_template(Arc::clone(self))
+    pub fn pager_template(&self) -> Arc<dyn luma::controls::pager::PagerTemplate> {
+        templates::pager_template(self.clone())
     }
 
-    pub fn pager_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::pager::PagerTheme> {
-        templates::pager_theme(Arc::clone(self))
+    pub fn pager_theme(&self) -> Arc<dyn luma::controls::pager::PagerTheme> {
+        templates::pager_theme(self.clone())
     }
 
     pub fn radio_group_template<T>(
-        self: &Arc<Self>,
+        &self,
         style: ShadcnButtonStyle,
     ) -> luma::controls::control_group::ControlGroupTemplate<T>
     where
         T: luma::controls::control_group::ControlGroupItemLike + 'static,
     {
-        templates::radio_group_template(
-            Arc::clone(self),
-            style,
-            luma::controls::radio_group::RadioGroupLayout::Vertical,
-        )
+        templates::radio_group_template(self.clone(), style, luma::controls::radio_group::RadioGroupLayout::Vertical)
     }
 
     pub fn radio_group_horizontal_template<T>(
-        self: &Arc<Self>,
+        &self,
         style: ShadcnButtonStyle,
     ) -> luma::controls::control_group::ControlGroupTemplate<T>
     where
         T: luma::controls::control_group::ControlGroupItemLike + 'static,
     {
-        templates::radio_group_template(
-            Arc::clone(self),
-            style,
-            luma::controls::radio_group::RadioGroupLayout::Horizontal,
-        )
+        templates::radio_group_template(self.clone(), style, luma::controls::radio_group::RadioGroupLayout::Horizontal)
     }
 
-    pub fn progress_template(self: &Arc<Self>) -> Arc<dyn luma::controls::progress::ProgressTemplate> {
-        templates::progress_template(Arc::clone(self))
+    pub fn progress_template(&self) -> Arc<dyn luma::controls::progress::ProgressTemplate> {
+        templates::progress_template(self.clone())
     }
 
-    pub fn linear_progress_template(self: &Arc<Self>) -> Arc<dyn luma::controls::progress::ProgressTemplate> {
-        templates::linear_progress_template(Arc::clone(self))
+    pub fn linear_progress_template(&self) -> Arc<dyn luma::controls::progress::ProgressTemplate> {
+        templates::linear_progress_template(self.clone())
     }
 
-    pub fn progress_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::progress::ProgressTheme> {
-        templates::progress_theme(Arc::clone(self))
+    pub fn progress_theme(&self) -> Arc<dyn luma::controls::progress::ProgressTheme> {
+        templates::progress_theme(self.clone())
     }
 
-    pub fn stepper_template(self: &Arc<Self>) -> Arc<dyn luma::controls::stepper::StepperTemplate> {
-        templates::stepper_template(Arc::clone(self))
+    pub fn stepper_template(&self) -> Arc<dyn luma::controls::stepper::StepperTemplate> {
+        templates::stepper_template(self.clone())
     }
 
-    pub fn stepper_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::stepper::StepperTheme> {
-        templates::stepper_theme(Arc::clone(self))
+    pub fn stepper_theme(&self) -> Arc<dyn luma::controls::stepper::StepperTheme> {
+        templates::stepper_theme(self.clone())
     }
 
-    pub fn overlay_window_template(self: &Arc<Self>) -> Arc<dyn luma::controls::overlay_window::OverlayWindowTemplate> {
-        templates::overlay_window_template(Arc::clone(self))
+    pub fn overlay_window_template(&self) -> Arc<dyn luma::controls::overlay_window::OverlayWindowTemplate> {
+        templates::overlay_window_template(self.clone())
     }
 
-    pub fn overlay_window_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::overlay_window::OverlayWindowTheme> {
-        templates::overlay_window_theme(Arc::clone(self))
+    pub fn overlay_window_theme(&self) -> Arc<dyn luma::controls::overlay_window::OverlayWindowTheme> {
+        templates::overlay_window_theme(self.clone())
     }
 
-    pub fn overlay_window(
-        self: &Arc<Self>,
-        id: impl Into<SharedString>,
-    ) -> luma::controls::overlay_window::OverlayWindowBuilder {
+    pub fn overlay_window(&self, id: impl Into<SharedString>) -> luma::controls::overlay_window::OverlayWindowBuilder {
         luma::controls::overlay_window::overlay_window(id).template(self.overlay_window_template())
     }
 
-    pub fn card(self: &Arc<Self>, id: impl Into<SharedString>) -> crate::controls::ShadcnCardBuilder {
-        crate::controls::ShadcnCardBuilder::new(Arc::clone(self), id)
-    }
-
     pub fn toggle_template(
-        self: &Arc<Self>,
+        &self,
         style: ShadcnButtonStyle,
     ) -> Arc<dyn luma::controls::button::ButtonTemplate<luma::controls::toggle::ToggleData>> {
-        templates::toggle_template(Arc::clone(self), style)
+        templates::toggle_template(self.clone(), style)
     }
 
     /// Toggle-looking chrome for control-group / toolbar items that use a `bool` selected payload.
     /// Prefer [`Self::toggle_template`] for the animated [`luma::controls::toggle::Toggle`] control.
     pub fn toggle_item_template(
-        self: &Arc<Self>,
+        &self,
         style: ShadcnButtonStyle,
     ) -> Arc<dyn luma::controls::button::ButtonTemplate<bool>> {
-        templates::toggle_item_template(Arc::clone(self), style)
+        templates::toggle_item_template(self.clone(), style)
     }
 
     pub fn animated_toggle_item_template(
-        self: &Arc<Self>,
+        &self,
         style: ShadcnButtonStyle,
     ) -> Arc<dyn luma::controls::button::ButtonTemplate<luma::controls::toggle::ToggleData>> {
-        templates::animated_toggle_item_template(Arc::clone(self), style)
+        templates::animated_toggle_item_template(self.clone(), style)
     }
 
-    pub fn button_family_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::button_family::ButtonFamilyTheme> {
-        templates::button_family_theme(Arc::clone(self))
+    pub fn button_family_theme(&self) -> Arc<dyn luma::controls::button_family::ButtonFamilyTheme> {
+        templates::button_family_theme(self.clone())
     }
 
-    pub fn checkbox_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::checkbox::CheckboxTheme> {
-        templates::checkbox_theme(Arc::clone(self))
+    pub fn checkbox_theme(&self) -> Arc<dyn luma::controls::checkbox::CheckboxTheme> {
+        templates::checkbox_theme(self.clone())
     }
 
-    pub fn switch_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::switch::SwitchTheme> {
-        templates::switch_theme(Arc::clone(self))
+    pub fn switch_theme(&self) -> Arc<dyn luma::controls::switch::SwitchTheme> {
+        templates::switch_theme(self.clone())
     }
 
-    pub fn radio_button_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::radio_button::RadioButtonTheme> {
-        templates::radio_button_theme(Arc::clone(self))
+    pub fn radio_button_theme(&self) -> Arc<dyn luma::controls::radio_button::RadioButtonTheme> {
+        templates::radio_button_theme(self.clone())
     }
 
-    pub fn slider_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::slider::SliderTheme> {
-        templates::slider_theme(Arc::clone(self))
+    pub fn slider_theme(&self) -> Arc<dyn luma::controls::slider::SliderTheme> {
+        templates::slider_theme(self.clone())
     }
 
-    pub fn slider_theme_with_style(
-        self: &Arc<Self>,
-        style: ShadcnButtonStyle,
-    ) -> Arc<dyn luma::controls::slider::SliderTheme> {
-        templates::slider_theme_with_style(Arc::clone(self), style)
+    pub fn slider_theme_with_style(&self, style: ShadcnButtonStyle) -> Arc<dyn luma::controls::slider::SliderTheme> {
+        templates::slider_theme_with_style(self.clone(), style)
     }
 
-    pub fn scrollbar_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::scrollbar::ScrollbarTheme> {
-        templates::scrollbar_theme(Arc::clone(self))
+    pub fn scrollbar_theme(&self) -> Arc<dyn luma::controls::scrollbar::ScrollbarTheme> {
+        templates::scrollbar_theme(self.clone())
     }
 
-    pub fn selector_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::selector::SelectorTheme> {
-        templates::selector_theme(Arc::clone(self))
+    pub fn selector_theme(&self) -> Arc<dyn luma::controls::selector::SelectorTheme> {
+        templates::selector_theme(self.clone())
     }
 
-    pub fn popup_menu_theme(self: &Arc<Self>) -> Arc<dyn luma::controls::popup_menu::PopupMenuTheme> {
-        templates::popup_menu_theme(Arc::clone(self))
+    pub fn popup_menu_theme(&self) -> Arc<dyn luma::controls::popup_menu::PopupMenuTheme> {
+        templates::popup_menu_theme(self.clone())
     }
 }
 

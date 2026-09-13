@@ -7,7 +7,8 @@ use luma::controls::button_family::ButtonFamilyRole;
 use luma::focus::LumaFocusScopeExt;
 use luma::shell::TitleBar;
 use luma::theme::{ControlSize, InteractionState, ThemeMode};
-use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn::{ShadcnLook};
+use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::theme::toggle_shell_theme;
@@ -45,7 +46,10 @@ pub fn spawn_theme_toggle_button<T: 'static>(
     look: &Arc<ShadcnLook>,
     cx: &mut Context<T>,
 ) -> IconButton {
-    let button = look.content_only_icon_button(id, theme_toggle_icon(look.mode())).spawn(cx);
+    let button = shadcn::Button::icon_button(id, theme_toggle_icon(look.mode()))
+        .look(look.as_ref())
+        .content_only()
+        .spawn(cx);
     sync_theme_toggle_button(&button, look, cx);
     button
 }

@@ -10,6 +10,7 @@ use luma::controls::progress::ProgressDirection;
 use luma::controls::stepper::{StepState, Stepper, StepperLabelPlacement, StepperRenderModel, StepperTemplate};
 use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -214,11 +215,11 @@ impl Render for StepperExpositionLeftPane {
 impl StepperControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("stepper").expect("stepper catalog entry");
-        let mut stepper_builder = look
-            .stepper("controls-doc-stepper", DEMO_STEP_COUNT)
+        let mut stepper_builder = shadcn::Stepper::new("controls-doc-stepper", DEMO_STEP_COUNT)
+            .look(look.as_ref())
             .current_step(1)
             .labels(DEMO_LABELS.to_vec())
-            .size(DEMO_SIZE)
+            .size(ShadcnSize::Md)
             .content_height(DEMO_CONTENT_HEIGHT);
         for (index, body) in DEMO_STEP_BODIES.iter().enumerate() {
             let body = *body;
@@ -237,10 +238,26 @@ impl StepperControlExposition {
             });
         }
         let stepper = stepper_builder.spawn(cx);
-        let start_button = look.secondary_button("controls-doc-stepper-start").label("Start").spawn(cx);
-        let previous_button = look.secondary_button("controls-doc-stepper-previous").label("Previous").spawn(cx);
-        let next_button = look.button("controls-doc-stepper-next").label("Next").spawn(cx);
-        let enable_toggle_button = look.outline_button("controls-doc-stepper-enable-toggle").label("Disable").spawn(cx);
+        let start_button = shadcn::Button::new("controls-doc-stepper-start")
+            .look(look.as_ref())
+            .secondary()
+            .label("Start")
+            .spawn(cx);
+        let previous_button = shadcn::Button::new("controls-doc-stepper-previous")
+            .look(look.as_ref())
+            .secondary()
+            .label("Previous")
+            .spawn(cx);
+        let next_button = shadcn::Button::new("controls-doc-stepper-next")
+            .look(look.as_ref())
+            .secondary()
+            .label("Next")
+            .spawn(cx);
+        let enable_toggle_button = shadcn::Button::new("controls-doc-stepper-enable-toggle")
+            .look(look.as_ref())
+            .outline()
+            .label("Disable")
+            .spawn(cx);
 
         let left_pane = cx.new(|_| StepperExpositionLeftPane {
             look: look.clone(),

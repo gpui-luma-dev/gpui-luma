@@ -12,7 +12,8 @@ use luma::controls::search_selector::SearchSelector;
 use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
 
 use luma::theme::ControlSize;
-use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn::{ShadcnLook};
+use luma_look_shadcn as shadcn;
 
 use self::model::{SidebarTab, TOKEN_CATEGORIES};
 use self::panels::{ColorsPanel, OtherPanel, PanelContextMenuHost, TypographyPanel};
@@ -79,8 +80,8 @@ impl ThemeSidebar {
         let (theme_items, swatch_cache) = theme_selector_state(look.as_ref());
         *theme_selector_swatches.write().expect("theme selector swatches lock") = swatch_cache;
         let swatches_for_template = theme_selector_swatches.clone();
-        let theme_selector = look
-            .search_selector("luma-studio-theme-selector", theme_items)
+        let theme_selector = shadcn::SearchSelector::new("luma-studio-theme-selector", theme_items)
+            .look(look.as_ref())
             .placeholder("Theme")
             .search_placeholder("Search themes...")
             .selected_id(active_theme_id)
@@ -95,9 +96,9 @@ impl ThemeSidebar {
             .with_item_template(move |model, cx| render_theme_search_selector_item(model, &swatches_for_template, cx))
             .spawn(cx);
 
-        let tabs = look
-            .tabs("luma-studio-sidebar-tabs")
-            .size(ControlSize::Lg)
+        let tabs = shadcn::Tabs::new("luma-studio-sidebar-tabs")
+            .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Lg)
             .width_mode(TabsWidthMode::Uniform)
             .template(luma_studio_tabs_template(look.clone(), ControlSize::Lg))
             .items([

@@ -5,6 +5,7 @@ use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::overlay_window::{OverlayWindow, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition};
 use luma::infra::presenter::HasPresenter;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -80,7 +81,10 @@ impl Render for DraggableOverlayExpositionLeftPane {
 impl DraggableOverlayControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("draggable-overlay").expect("draggable-overlay catalog entry");
-        let close = look.content_only_icon_button("controls-doc-draggable-close", LucideIcon::X).spawn(cx);
+        let close = shadcn::Button::icon_button("controls-doc-draggable-close", LucideIcon::X)
+            .look(look.as_ref())
+            .content_only()
+            .spawn(cx);
         let overlay = look
             .overlay_window("controls-doc-draggable-overlay")
             .mode(OverlayWindowMode::Modeless)
@@ -100,7 +104,11 @@ impl DraggableOverlayControlExposition {
             })
             .theme_children([close.clone()])
             .spawn(cx);
-        let trigger = look.primary_button("controls-doc-draggable-trigger").label("Open draggable").spawn(cx);
+        let trigger = shadcn::Button::new("controls-doc-draggable-trigger")
+            .look(look.as_ref())
+            .primary()
+            .label("Open draggable")
+            .spawn(cx);
 
         let left_pane = cx.new(|_| DraggableOverlayExpositionLeftPane {
             look: look.clone(),

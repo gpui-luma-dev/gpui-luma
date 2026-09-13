@@ -228,13 +228,13 @@ impl GradientBuilder {
                 continue;
             }
 
-            let button = self
-                .look
-                .outline_icon_button(
-                    format!("color-viz-gradient-stop-delete-{}", thumb_id.as_u64()),
-                    LucideIcon::Trash,
-                )
-                .spawn(cx);
+            let button = shadcn::Button::icon_button(
+                format!("color-viz-gradient-stop-delete-{}", thumb_id.as_u64()),
+                LucideIcon::Trash,
+            )
+            .look(self.look.as_ref())
+            .outline()
+            .spawn(cx);
             button.update(cx, |button, cx| button.set_enabled(can_remove, cx));
             self._subscriptions.push(cx.subscribe(&button, move |this, _, event: &ButtonEvent, cx| {
                 if matches!(event, ButtonEvent::Click) {

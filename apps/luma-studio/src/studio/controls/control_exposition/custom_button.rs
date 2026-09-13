@@ -6,6 +6,7 @@ use gpui::{AnyElement, Context, Entity, Render, Subscription, Window, div, prelu
 use luma::controls::button_family::default_button_family_theme;
 use luma::controls::button::{Button, ButtonEvent, ButtonTemplate, DefaultButtonTemplate, HasPresenter};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -81,9 +82,13 @@ impl CustomButtonControlExposition {
             .spawn(cx);
 
         let standard_icon_only =
-            look.secondary_icon_button("controls-doc-custom-std-icon-only", LucideIcon::FaceGrinning).spawn(cx);
-        let standard_text_icon = look
-            .secondary_button("controls-doc-custom-std-text-icon")
+            shadcn::Button::icon_button("controls-doc-custom-std-icon-only", LucideIcon::FaceGrinning)
+                .look(look.as_ref())
+                .secondary()
+                .spawn(cx);
+        let standard_text_icon = shadcn::Button::new("controls-doc-custom-std-text-icon")
+            .look(look.as_ref())
+            .secondary()
             .content(|_, _| {
                 div()
                     .flex()
@@ -93,8 +98,9 @@ impl CustomButtonControlExposition {
                     .child(render_lucide_icon(LucideIcon::FaceGrinning))
             })
             .spawn(cx);
-        let standard_icon_text = look
-            .secondary_button("controls-doc-custom-std-icon-text")
+        let standard_icon_text = shadcn::Button::new("controls-doc-custom-std-icon-text")
+            .look(look.as_ref())
+            .secondary()
             .content(|_, _| {
                 div()
                     .flex()
@@ -106,9 +112,13 @@ impl CustomButtonControlExposition {
             .spawn(cx);
 
         let prominent_icon_only =
-            look.primary_icon_button("controls-doc-custom-prom-icon-only", LucideIcon::FaceGrinning).spawn(cx);
-        let prominent_text_icon = look
-            .primary_button("controls-doc-custom-prom-text-icon")
+            shadcn::Button::icon_button("controls-doc-custom-prom-icon-only", LucideIcon::FaceGrinning)
+                .look(look.as_ref())
+                .primary()
+                .spawn(cx);
+        let prominent_text_icon = shadcn::Button::new("controls-doc-custom-prom-text-icon")
+            .look(look.as_ref())
+            .primary()
             .content(|_, _| {
                 div()
                     .flex()
@@ -118,8 +128,9 @@ impl CustomButtonControlExposition {
                     .child(render_lucide_icon(LucideIcon::FaceGrinning))
             })
             .spawn(cx);
-        let prominent_icon_text = look
-            .primary_button("controls-doc-custom-prom-icon-text")
+        let prominent_icon_text = shadcn::Button::new("controls-doc-custom-prom-icon-text")
+            .look(look.as_ref())
+            .primary()
             .content(|_, _| {
                 div()
                     .flex()

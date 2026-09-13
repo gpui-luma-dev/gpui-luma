@@ -7,9 +7,9 @@ use luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView
 use luma::controls::pager::PagerStyle;
 use luma::infra::presenter::ControlPresenter;
 use luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
-use luma::theme::ControlSize;
 use luma::{column, column_emphasis, paging_list_view};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnLook, ShadcnTextSize, with_look};
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -32,20 +32,21 @@ pub struct DashboardPanel {
 
 impl DashboardPanel {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let sidebar = look
-            .sidebar_control("studio-dashboard-nav")
+        let sidebar = shadcn::Sidebar::new("studio-dashboard-nav")
+            .look(look.as_ref())
             .default_open(true)
             .collapsible(SidebarCollapsible::Icon)
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
             .sidebar(
                 property_sidebar(&look, "studio-dashboard-nav-panel", "Properties", "Task workspace")
-                    .rail(look.sidebar_rail()),
+                    .rail(shadcn::Sidebar::rail()),
             )
             .spawn(cx);
 
-        let sidebar_toggle = look
-            .content_only_icon_button("studio-dashboard-sidebar-toggle", LucideIcon::PanelLeft)
-            .size(ControlSize::Sm)
+        let sidebar_toggle = shadcn::Button::icon_button("studio-dashboard-sidebar-toggle", LucideIcon::PanelLeft)
+            .look(look.as_ref())
+            .content_only()
+            .size(shadcn::ShadcnSize::Sm)
             .spawn(cx);
         sidebar_toggle.update(cx, |button, cx| {
             button.set_presenter(
@@ -61,10 +62,10 @@ impl DashboardPanel {
             id = "studio-dashboard-tasks";
             items = tasks;
             page_size = DEFAULT_PAGE_SIZE;
-            pager = look
-                .pager("studio-dashboard-tasks-pager")
+            pager = shadcn::Pager::new("studio-dashboard-tasks-pager").look(look.as_ref())
                 .style(PagerStyle::MinimalEdge)
-                .page_size(DEFAULT_PAGE_SIZE);
+                .page_size(DEFAULT_PAGE_SIZE)
+                .into_sdk_builder(cx);
             selection = ListSelectionMode::Single;
             selected_index = 1;
             active_index = 1;

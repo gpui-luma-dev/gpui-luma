@@ -9,7 +9,7 @@ use luma::controls::icon_button::IconButton;
 use luma::controls::sidebar::SidebarControl;
 use luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
 use luma::theme::ThemeMode;
-use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use luma_shell_common::{
     chrome::{
@@ -43,7 +43,10 @@ impl DetachedShellApp {
         sync_color_control_theme(&look);
 
         let sidebar = nav_sample::spawn_properties_sidebar(look.clone(), "shell-nav", cx);
-        let toggle_button = look.ghost_icon_button("shell-detached-toggle", LucideIcon::Menu).spawn(cx);
+        let toggle_button = shadcn::Button::icon_button("shell-detached-toggle", LucideIcon::Menu)
+            .look(look.as_ref())
+            .ghost()
+            .spawn(cx);
         let theme_toggle_button = spawn_theme_toggle_button("shell-titlebar-theme-toggle-detached", &look, cx);
         let split_view = look
             .split_view("shell-detached")

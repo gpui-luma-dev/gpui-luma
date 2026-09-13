@@ -6,6 +6,7 @@ use gpui::{Context, Entity, FontWeight, Render, Subscription, Window, div, prelu
 use luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use luma::infra::presenter::HasPresenter;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -137,24 +138,28 @@ impl Render for CheckboxExpositionLeftPane {
 impl CheckboxControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("checkbox").expect("checkbox catalog entry");
-        let secondary_checkbox = look
-            .secondary_checkbox("controls-doc-checkbox-secondary")
+        let secondary_checkbox = shadcn::Checkbox::new("controls-doc-checkbox-secondary")
+            .look(look.as_ref())
+            .secondary()
             .with_data(true)
             .content(|_, _| div().child("Secondary").into_any_element())
             .spawn(cx);
-        let primary_checkbox = look
-            .primary_checkbox("controls-doc-checkbox-primary")
+        let primary_checkbox = shadcn::Checkbox::new("controls-doc-checkbox-primary")
+            .look(look.as_ref())
+            .primary()
             .with_data(false)
             .content(|_, _| div().child("Primary").into_any_element())
             .spawn(cx);
-        let indicator_only_checked = look
-            .primary_checkbox("controls-doc-checkbox-indicator-only-checked")
+        let indicator_only_checked = shadcn::Checkbox::new("controls-doc-checkbox-indicator-only-checked")
+            .look(look.as_ref())
+            .primary()
             .with_data(true)
             .indicator_only()
             .compact()
             .spawn(cx);
-        let indicator_only_unchecked = look
-            .primary_checkbox("controls-doc-checkbox-indicator-only-unchecked")
+        let indicator_only_unchecked = shadcn::Checkbox::new("controls-doc-checkbox-indicator-only-unchecked")
+            .look(look.as_ref())
+            .primary()
             .with_data(false)
             .indicator_only()
             .compact()

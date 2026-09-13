@@ -12,8 +12,7 @@ use luma::controls::list_view::{
 use luma::infra::menu_item::MenuItem;
 use luma::controls::popup_menu::PopupMenu;
 use luma::infra::presenter::HasPresenter;
-use luma_look_shadcn::prelude::*;
-use luma::theme::{ControlSize};
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use luma::{hstack, vstack};
 
@@ -23,12 +22,12 @@ const PAYMENTS_CARD_WIDTH: f32 = 720.0;
 const PAYMENTS_PAGE_SIZE: usize = 6;
 const PAYMENTS_VISIBLE_ROWS: usize = 6;
 
-/// Data-table row height: fits text rows without reserving full [`ControlSize`] command height.
-fn payments_row_height(size: ControlSize) -> f32 {
+/// Data-table row height: fits text rows without reserving full command height.
+fn payments_row_height(size: shadcn::ShadcnSize) -> f32 {
     match size {
-        ControlSize::Sm => 28.0,
-        ControlSize::Md => 32.0,
-        ControlSize::Lg => 36.0,
+        shadcn::ShadcnSize::Sm => 28.0,
+        shadcn::ShadcnSize::Md => 32.0,
+        shadcn::ShadcnSize::Lg => 36.0,
     }
 }
 
@@ -50,13 +49,13 @@ pub struct PaymentsPanel {
 }
 
 impl PaymentsPanel {
-    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>, size: ControlSize) -> Self {
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>, size: shadcn::ShadcnSize) -> Self {
         let payments = sample_payments();
         let row_checkboxes = Arc::new(spawn_row_checkboxes(look.clone(), payments.len(), cx));
         let row_menus = Arc::new(spawn_row_menus(look.clone(), payments.len(), cx));
-        let list_size = ControlSize::Sm;
-        let list_view = look
-            .list_view("studio-payments")
+        let list_size = shadcn::ShadcnSize::Sm;
+        let list_view = shadcn::ListView::new("studio-payments")
+            .look(look.as_ref())
             .items(payments)
             .multiple()
             .select_on_row_click(false)
@@ -89,8 +88,18 @@ impl PaymentsPanel {
             }));
         }
 
-        let prev_button = look.outline_button("payments-prev").label("Previous").size(size).spawn(cx);
-        let next_button = look.outline_button("payments-next").label("Next").size(size).spawn(cx);
+        let prev_button = shadcn::Button::new("payments-prev")
+            .look(look.as_ref())
+            .outline()
+            .label("Previous")
+            .size(size)
+            .spawn(cx);
+        let next_button = shadcn::Button::new("payments-next")
+            .look(look.as_ref())
+            .outline()
+            .label("Next")
+            .size(size)
+            .spawn(cx);
         subscriptions.push(cx.subscribe(&prev_button, |panel, _, event, cx| {
             if matches!(event, ButtonEvent::Click) {
                 panel.list_view.update(cx, |list, cx| list.prev_page(cx));
@@ -189,9 +198,11 @@ impl Render for PaymentsPanel {
 fn spawn_row_checkboxes(look: Arc<ShadcnLook>, row_count: usize, cx: &mut Context<PaymentsPanel>) -> Vec<Checkbox> {
     (0..row_count)
         .map(|index| {
-            look.primary_checkbox(format!("studio-payments-row-{index}"))
+            shadcn::Checkbox::new(format!("studio-payments-row-{index}"))
+                .look(look.as_ref())
+                .primary()
                 .with_data(false)
-                .size(ControlSize::Sm)
+                .size(shadcn::ShadcnSize::Sm)
                 .indicator_only()
                 .tab_stop(false)
                 .spawn(cx)
@@ -202,9 +213,10 @@ fn spawn_row_checkboxes(look: Arc<ShadcnLook>, row_count: usize, cx: &mut Contex
 fn spawn_row_menus(look: Arc<ShadcnLook>, row_count: usize, cx: &mut Context<PaymentsPanel>) -> Vec<Entity<PopupMenu>> {
     (0..row_count)
         .map(|index| {
-            look.popup_menu(format!("studio-payments-row-menu-{index}"))
+            shadcn::PopupMenu::new(format!("studio-payments-row-menu-{index}"))
+                .look(look.as_ref())
                 .ghost()
-                .size(ControlSize::Sm)
+                .size(shadcn::ShadcnSize::Sm)
                 .icon(LucideIcon::EllipsisVertical)
                 .items(payment_action_items())
                 .spawn(cx)

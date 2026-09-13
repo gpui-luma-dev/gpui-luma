@@ -14,6 +14,7 @@ use luma::controls::slide_panel::{
 use luma::controls::toggle::{Toggle, ToggleEvent};
 use luma::{flow, hstack, vstack};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnLook, slide_panel_background, slide_panel_panels_look};
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -146,16 +147,48 @@ struct SlidePanelDemo {
 
 impl SlidePanelDemo {
     fn new(look: Arc<ShadcnLook>, event_stream: Entity<ControlEventStream>, cx: &mut Context<Self>) -> Self {
-        let trigger_left = look.primary_button("controls-doc-slide-open-left").label("Open Left").spawn(cx);
-        let trigger_right = look.primary_button("controls-doc-slide-open-right").label("Open Right").spawn(cx);
-        let trigger_top = look.primary_button("controls-doc-slide-open-top").label("Open Top").spawn(cx);
-        let trigger_bottom = look.primary_button("controls-doc-slide-open-bottom").label("Open Bottom").spawn(cx);
-        let close_button = look.ghost_icon_button("controls-doc-slide-close", LucideIcon::X).spawn(cx);
-        let primary_action = look.primary_button("controls-doc-slide-primary").label("Apply Changes").spawn(cx);
-        let secondary_action = look.secondary_button("controls-doc-slide-secondary").label("Review Draft").spawn(cx);
-        let archive_action = look.ghost_button("controls-doc-slide-archive").label("Archive").spawn(cx);
-        let backdrop_toggle = look
-            .secondary_toggle("controls-doc-slide-backdrop-toggle")
+        let trigger_left = shadcn::Button::new("controls-doc-slide-open-left")
+            .look(look.as_ref())
+            .primary()
+            .label("Open Left")
+            .spawn(cx);
+        let trigger_right = shadcn::Button::new("controls-doc-slide-open-right")
+            .look(look.as_ref())
+            .primary()
+            .label("Open Right")
+            .spawn(cx);
+        let trigger_top = shadcn::Button::new("controls-doc-slide-open-top")
+            .look(look.as_ref())
+            .primary()
+            .label("Open Top")
+            .spawn(cx);
+        let trigger_bottom = shadcn::Button::new("controls-doc-slide-open-bottom")
+            .look(look.as_ref())
+            .primary()
+            .label("Open Bottom")
+            .spawn(cx);
+        let close_button = shadcn::Button::icon_button("controls-doc-slide-close", LucideIcon::X)
+            .look(look.as_ref())
+            .ghost()
+            .spawn(cx);
+        let primary_action = shadcn::Button::new("controls-doc-slide-primary")
+            .look(look.as_ref())
+            .primary()
+            .label("Apply Changes")
+            .spawn(cx);
+        let secondary_action = shadcn::Button::new("controls-doc-slide-secondary")
+            .look(look.as_ref())
+            .secondary()
+            .label("Review Draft")
+            .spawn(cx);
+        let archive_action = shadcn::Button::new("controls-doc-slide-archive")
+            .look(look.as_ref())
+            .ghost()
+            .label("Archive")
+            .spawn(cx);
+        let backdrop_toggle = shadcn::Toggle::new("controls-doc-slide-backdrop-toggle")
+            .look(look.as_ref())
+            .secondary()
             .with_data(true)
             .content(|model, _| {
                 let label = if model.data.selected {

@@ -7,6 +7,7 @@ use luma::infra::icon::lucide_icon;
 use luma::infra::presenter::HasPresenter;
 use luma::controls::toggle::{Toggle, ToggleEvent};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -138,18 +139,21 @@ impl ToggleControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("toggle").expect("toggle catalog entry");
 
-        let secondary_toggle = look
-            .secondary_toggle("controls-doc-toggle-secondary")
+        let secondary_toggle = shadcn::Toggle::new("controls-doc-toggle-secondary")
+            .look(look.as_ref())
+            .secondary()
             .with_data(true)
             .content(|_, _| div().child("Secondary").into_any_element())
             .spawn(cx);
-        let primary_toggle = look
-            .primary_toggle("controls-doc-toggle-primary")
+        let primary_toggle = shadcn::Toggle::new("controls-doc-toggle-primary")
+            .look(look.as_ref())
+            .primary()
             .with_data(false)
             .content(|_, _| div().child("Primary").into_any_element())
             .spawn(cx);
-        let secondary_round_icon_toggle = look
-            .secondary_toggle("controls-doc-toggle-secondary-round-icon")
+        let secondary_round_icon_toggle = shadcn::Toggle::new("controls-doc-toggle-secondary-round-icon")
+            .look(look.as_ref())
+            .secondary()
             .with_data(false)
             .round(true)
             .content(|model, _| {
@@ -160,8 +164,9 @@ impl ToggleControlExposition {
                 .into_any_element()
             })
             .spawn(cx);
-        let primary_round_icon_toggle = look
-            .primary_toggle("controls-doc-toggle-primary-round-icon")
+        let primary_round_icon_toggle = shadcn::Toggle::new("controls-doc-toggle-primary-round-icon")
+            .look(look.as_ref())
+            .primary()
             .with_data(true)
             .round(true)
             .content(|model, _| {

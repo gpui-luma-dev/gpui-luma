@@ -5,8 +5,8 @@ use luma::controls::popover_button::{PopoverButton, PopoverButtonEvent, PopoverD
 use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
 use luma::theme::ControlSize;
 use luma_look_shadcn::paint::floating_menu_look;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn::prelude::*;
 
 use super::cards::render_demo_board;
 use super::controls;
@@ -58,10 +58,9 @@ impl ContentPaneHost {
             .window_margin(px(8.0))
             .measure_trigger(false)
             .spawn(cx);
-        let tabs = board
-            .look
-            .tabs("luma-studio-content-tabs")
-            .size(ControlSize::Lg)
+        let tabs = shadcn::Tabs::new("luma-studio-content-tabs")
+            .look(board.look.as_ref())
+            .size(shadcn::ShadcnSize::Lg)
             .width_mode(TabsWidthMode::Uniform)
             .template(luma_studio_tabs_template(board.look.clone(), ControlSize::Lg))
             .items([

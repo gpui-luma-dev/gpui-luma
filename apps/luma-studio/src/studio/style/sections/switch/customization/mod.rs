@@ -3,10 +3,10 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
 use luma::controls::button::ButtonRenderModel;
 use luma::infra::presenter::HasPresenter;
-use luma::controls::switch::{Switch, SwitchBuilder, SwitchData, SwitchEvent, SwitchOrientation};
+use luma::controls::switch::{Switch, SwitchData, SwitchEvent, SwitchOrientation};
 use luma::theme::InteractionState;
 use luma_look_shadcn::paint::switch_look;
-use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -27,21 +27,28 @@ pub(crate) struct SwitchCustomizationPreview {
 impl SwitchCustomizationPreview {
     pub(crate) fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let primary_switch = labeled_switch(
-            look.primary_switch("luma-studio-labeled-switch-primary").with_data(true),
+            shadcn::Switch::new("luma-studio-labeled-switch-primary")
+                .look(look.as_ref())
+                .primary()
+                .with_data(true),
             look.clone(),
             ShadcnButtonStyle::Primary,
         )
         .content(|_, _| div().into_any_element())
         .spawn(cx);
         let secondary_switch = labeled_switch(
-            look.secondary_switch("luma-studio-labeled-switch-secondary").with_data(false),
+            shadcn::Switch::new("luma-studio-labeled-switch-secondary")
+                .look(look.as_ref())
+                .secondary()
+                .with_data(false),
             look.clone(),
             ShadcnButtonStyle::Secondary,
         )
         .content(|_, _| div().into_any_element())
         .spawn(cx);
-        let vertical_switch = look
-            .primary_switch("luma-studio-vertical-switch-primary")
+        let vertical_switch = shadcn::Switch::new("luma-studio-vertical-switch-primary")
+            .look(look.as_ref())
+            .primary()
             .vertical()
             .with_data(true)
             .thumb_content(icon_thumb_content(look.clone(), ShadcnButtonStyle::Primary))
@@ -91,7 +98,7 @@ impl SwitchCustomizationPreview {
     }
 }
 
-fn labeled_switch(builder: SwitchBuilder, look: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> SwitchBuilder {
+fn labeled_switch(builder: shadcn::Switch, look: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> shadcn::Switch {
     builder
         .track_length_extra(LABEL_TRACK_EXTRA_WIDTH)
         .track_content(labeled_track_content(look.clone(), style))

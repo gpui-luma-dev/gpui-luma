@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use luma::controls::list_view::ListView;
 use luma::controls::tabs::Tabs;
-use luma::theme::ControlSize;
-use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn::{ShadcnLook};
+use luma_look_shadcn as shadcn;
 
 use crate::studio::style::shared::shell::section_shell_with_width;
 
@@ -24,10 +24,10 @@ pub(crate) struct ListViewPreview {
 impl ListViewPreview {
     pub(crate) fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            sm: mailbox_list_view(&look, "luma-studio-list-view-sm", ControlSize::Sm, cx),
-            md: mailbox_list_view(&look, "luma-studio-list-view-md", ControlSize::Md, cx),
-            lg: mailbox_list_view(&look, "luma-studio-list-view-lg", ControlSize::Lg, cx),
-            template: mailbox_list_view(&look, "luma-studio-list-view-template", ControlSize::Md, cx),
+            sm: mailbox_list_view(&look, "luma-studio-list-view-sm", shadcn::ShadcnSize::Sm, cx),
+            md: mailbox_list_view(&look, "luma-studio-list-view-md", shadcn::ShadcnSize::Md, cx),
+            lg: mailbox_list_view(&look, "luma-studio-list-view-lg", shadcn::ShadcnSize::Lg, cx),
+            template: mailbox_list_view(&look, "luma-studio-list-view-template", shadcn::ShadcnSize::Md, cx),
             look,
         }
     }
@@ -117,13 +117,14 @@ fn size_column(label: &'static str, muted: gpui::Hsla, list_view: ListView<Previ
         .into_any_element()
 }
 
-fn mailbox_list_view(
+fn mailbox_list_view<M: 'static>(
     look: &Arc<ShadcnLook>,
     id: impl Into<SharedString>,
-    size: ControlSize,
-    cx: &mut impl gpui::AppContext,
+    size: shadcn::ShadcnSize,
+    cx: &mut Context<M>,
 ) -> ListView<PreviewRow> {
-    look.list_view(id)
+    shadcn::ListView::new(id)
+        .look(look.as_ref())
         .items([
             PreviewRow { title: SharedString::from("Inbox") },
             PreviewRow { title: SharedString::from("Drafts") },

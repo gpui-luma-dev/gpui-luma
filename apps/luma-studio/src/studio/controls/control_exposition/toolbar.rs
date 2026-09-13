@@ -9,6 +9,7 @@ use luma::infra::menu_item::MenuItem;
 use luma::controls::selector::SelectorItem;
 use luma::controls::toolbar::{Toolbar, ToolbarEvent, ToolbarValue};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -102,13 +103,19 @@ impl ToolbarControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("toolbar").expect("toolbar catalog entry");
 
-        let roving_focus_button =
-            look.ghost_button("controls-doc-toolbar-focus-roving").label("Roving focus").spawn(cx);
-        let sequential_focus_button =
-            look.ghost_button("controls-doc-toolbar-focus-sequential").label("Sequential focus").spawn(cx);
+        let roving_focus_button = shadcn::Button::new("controls-doc-toolbar-focus-roving")
+            .look(look.as_ref())
+            .ghost()
+            .label("Roving focus")
+            .spawn(cx);
+        let sequential_focus_button = shadcn::Button::new("controls-doc-toolbar-focus-sequential")
+            .look(look.as_ref())
+            .ghost()
+            .label("Sequential focus")
+            .spawn(cx);
 
-        let toolbar = look
-            .toolbar("controls-doc-toolbar")
+        let toolbar = shadcn::Toolbar::new("controls-doc-toolbar")
+            .look(look.as_ref())
             .roving_item_focus()
             .item(look.toolbar_menu(
                 "assistant",

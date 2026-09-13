@@ -3,11 +3,12 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Hsla, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::icon_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
+use luma::controls::icon_group::{IconGroup, IconGroupEvent, IconGroupItem};
 use luma::controls::control_group::{
-    ControlGroupBuilder, ControlGroupItemTemplate, animated_toggle_button_item_template,
+    ControlGroupItemLike, ControlGroupItemTemplate, animated_toggle_button_item_template,
     make_control_group_item_template,
 };
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
@@ -178,8 +179,8 @@ fn icon_group(
     multiple: bool,
     cx: &mut Context<ToggleGroupControlExposition>,
 ) -> IconGroup<IconGroupItem> {
-    let mut builder = look
-        .icon_group(id)
+    let mut builder = shadcn::IconGroup::new(id)
+        .look(look.as_ref())
         .items(items(&PLACEMENT))
         // Ghost's hover/pressed fill is intentionally the same accent treatment
         // as its selected state, so selection animation reads as a flash.
@@ -220,10 +221,10 @@ fn theme_aware_toggle_item_template(
 }
 
 fn apply_selection(
-    builder: ControlGroupBuilder<IconGroupItem>,
+    builder: shadcn::IconGroup<IconGroupItem>,
     selected: &[&'static str],
     multiple: bool,
-) -> ControlGroupBuilder<IconGroupItem> {
+) -> shadcn::IconGroup<IconGroupItem> {
     if multiple {
         builder.multiple().selected_ids(selected.iter().copied())
     } else {

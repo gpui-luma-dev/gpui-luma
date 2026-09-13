@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AppContext, Context, Entity, Subscription};
-use luma::theme::ControlSize;
 use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn as shadcn;
 
 use super::app::LumaStudioApp;
 use super::content_tabs::cards::{
@@ -29,7 +29,7 @@ pub struct DemoControls {
 }
 
 impl DemoControls {
-    pub fn spawn(cx: &mut Context<LumaStudioApp>, look: Arc<ShadcnLook>, size: ControlSize) -> Self {
+    pub fn spawn(cx: &mut Context<LumaStudioApp>, look: Arc<ShadcnLook>, size: shadcn::ShadcnSize) -> Self {
         Self {
             upgrade: cx.new(|cx| UpgradePanel::new(cx, look.clone(), size)),
             account: cx.new(|cx| AccountPanel::new(cx, look.clone(), size)),

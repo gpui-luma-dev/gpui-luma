@@ -10,6 +10,7 @@ use luma::controls::slider::{Slider, SliderEvent};
 use luma::controls::textfield::{TextField, TextFieldEvent};
 use luma::{GridTrack, grid_layout, hstack, vstack};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use luma_look_shadcn as shadcn;
 
 use super::colors::sync_token_field_template;
 use super::super::model::{METRIC_FIELD_WIDTH, OTHER_CATEGORIES, SHADOW_COLOR_FIELD_WIDTH, SHADOW_SECTION_GAP};
@@ -619,8 +620,8 @@ impl OtherPanel {
         expanded_categories: &HashSet<String>,
         cx: &mut Context<Self>,
     ) -> Entity<AccordionControl> {
-        let mut accordion_builder = look
-            .accordion("luma-studio-other-accordion")
+        let mut accordion_builder = shadcn::Accordion::new("luma-studio-other-accordion")
+            .look(look.as_ref())
             .multiple()
             .item_dividers(false)
             .trigger_min_height(28.0)

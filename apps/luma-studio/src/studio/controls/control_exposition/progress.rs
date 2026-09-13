@@ -8,6 +8,7 @@ use luma::controls::progress::{Progress, ProgressDirection, ProgressRenderModel,
 use luma::infra::value::ControlRange;
 use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -194,21 +195,27 @@ impl Render for ProgressExpositionLeftPane {
 impl ProgressControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("progress").expect("progress catalog entry");
-        let linear_progress = look
-            .linear_progress("controls-doc-progress")
+        let linear_progress = shadcn::Progress::linear("controls-doc-progress")
+            .look(look.as_ref())
             .range(1..100)
             .value(41)
-            .size(LINEAR_DEMO_SIZE)
+            .size(ShadcnSize::Lg)
             .show_thumb(true)
             .spawn(cx);
-        let indeterminate_linear = look
-            .linear_progress("controls-doc-progress-indeterminate-linear")
-            .size(LINEAR_DEMO_SIZE)
+        let indeterminate_linear = shadcn::Progress::linear("controls-doc-progress-indeterminate-linear")
+            .look(look.as_ref())
+            .size(ShadcnSize::Lg)
             .indeterminate(true)
             .spawn(cx);
-        let indeterminate_circular =
-            look.progress("controls-doc-progress-indeterminate-circular").indeterminate(true).spawn(cx);
-        let animate_button = look.secondary_button("controls-doc-progress-animate").label("Animate value").spawn(cx);
+        let indeterminate_circular = shadcn::Progress::new("controls-doc-progress-indeterminate-circular")
+            .look(look.as_ref())
+            .indeterminate(true)
+            .spawn(cx);
+        let animate_button = shadcn::Button::new("controls-doc-progress-animate")
+            .look(look.as_ref())
+            .secondary()
+            .label("Animate value")
+            .spawn(cx);
         let left_pane = cx.new(|_| ProgressExpositionLeftPane {
             look: look.clone(),
             entry,

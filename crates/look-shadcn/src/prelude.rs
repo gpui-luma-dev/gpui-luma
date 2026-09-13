@@ -1,9 +1,10 @@
 //! Convenient imports for shadcn look styling and control construction.
 //!
 //! ```ignore
+//! use luma_look_shadcn as shadcn;
 //! use luma_look_shadcn::prelude::*;
 //!
-//! let submit = look.primary_button("submit").label("Submit").spawn(cx);
+//! let submit = shadcn::Button::new("submit").look(&look).primary().label("Submit").spawn(cx);
 //! with_look(&look, || {
 //!     div()
 //!         .bg_cn(ShadcnToken::Background)
@@ -12,11 +13,9 @@
 //! ```
 
 pub use crate::context::{sync_color_control_theme, with_look};
-pub use crate::controls::{
-    ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt,
-    ShadcnTextAreaExt, ShadcnTextFieldExt, ShadcnToolbarItemExt,
-};
+pub use crate::controls::{ShadcnButtonStyle, ShadcnToolbarItemExt};
 pub use crate::elements::{Badge, BadgeIconPlacement, BadgeVariant};
 pub use crate::ext::{LumaTypographyExt, ShadcnElementExt};
 pub use crate::look::ShadcnLook;
+pub use crate::size::ShadcnSize;
 pub use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextRole, ShadcnTextSize, ShadcnToken};

@@ -7,6 +7,7 @@ use luma::controls::accordion::{AccordionContent, AccordionControl, AccordionEve
 use luma::controls::textfield::{TextField, TextFieldEvent};
 use luma::vstack;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -88,14 +89,14 @@ impl AccordionControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("accordion").expect("accordion catalog entry");
 
-        let interactive_field = look
-            .textfield("controls-doc-accordion-interactive-field")
+        let interactive_field = shadcn::TextField::new("controls-doc-accordion-interactive-field")
+            .look(look.as_ref())
             .value("Edit me")
             .full_width(true)
             .spawn(cx);
         let field_for_content = interactive_field.clone();
-        let interactive = look
-            .accordion("controls-doc-accordion-interactive")
+        let interactive = shadcn::Accordion::new("controls-doc-accordion-interactive")
+            .look(look.as_ref())
             .single()
             .item(
                 AccordionItem::new(
@@ -115,16 +116,16 @@ impl AccordionControlExposition {
             )
             .spawn(cx);
 
-        let single = look
-            .accordion("controls-doc-accordion-single")
+        let single = shadcn::Accordion::new("controls-doc-accordion-single")
+            .look(look.as_ref())
             .single()
             .item(demo_item("general", "General", LucideIcon::Settings, "General settings content."))
             .item(demo_item("billing", "Billing", LucideIcon::CreditCard, "Billing and payment details."))
             .item(demo_item("team", "Team", LucideIcon::Users, "Team member management.").expanded(true))
             .item(demo_item("legacy", "Legacy", LucideIcon::Archive, "Legacy configuration.").enabled(false))
             .spawn(cx);
-        let multiple = look
-            .accordion("controls-doc-accordion-multiple")
+        let multiple = shadcn::Accordion::new("controls-doc-accordion-multiple")
+            .look(look.as_ref())
             .multiple()
             .items([
                 demo_item("faq-1", "What is GPUI-Luma?", LucideIcon::CircleQuestionMark, "A GPUI component library."),

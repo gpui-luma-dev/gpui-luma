@@ -8,6 +8,7 @@ use luma::infra::{ElementExt, StyledExt};
 use luma::theme::LumaTextStyle;
 use luma::{form_field, hstack, vstack};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnTextSize};
+use luma_look_shadcn as shadcn;
 
 use super::super::color::{format_hex_color, format_percent};
 use super::super::paint::paint_gradient_preview;
@@ -194,8 +195,8 @@ impl Render for GradientBuilder {
                                     .position(point(bounds.left(), bounds.bottom()))
                                     .offset(point(px(0.0), px(4.0)))
                                     .child(
-                                        self.look
-                                            .card("color-viz-color-picker-popup")
+                                        shadcn::Card::new("color-viz-color-picker-popup")
+                                            .look(self.look.as_ref())
                                             .elevated(true)
                                             .child(color_picker.clone())
                                             .render(window, cx)
@@ -306,8 +307,8 @@ impl Render for GradientBuilder {
                                     .position(point(bounds.left(), bounds.bottom()))
                                     .offset(point(px(0.0), px(4.0)))
                                     .child(
-                                        self.look
-                                            .card("color-viz-color-picker-popup")
+                                        shadcn::Card::new("color-viz-color-picker-popup")
+                                            .look(self.look.as_ref())
                                             .elevated(true)
                                             .child(color_picker.clone())
                                             .render(window, cx)

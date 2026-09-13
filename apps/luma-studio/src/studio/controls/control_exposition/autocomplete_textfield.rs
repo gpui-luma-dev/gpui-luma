@@ -5,6 +5,7 @@ use luma::controls::autocomplete::{Autocomplete, AutocompleteEvent, SelectionIte
 use luma::infra::presenter::HasPresenter;
 use luma::controls::toggle::{Toggle, ToggleEvent};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -89,15 +90,16 @@ impl Render for AutocompleteExpositionLeftPane {
 impl AutocompleteTextFieldControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("autocomplete-textfield").expect("autocomplete-textfield catalog entry");
-        let preview = look
-            .autocomplete("controls-doc-autocomplete", autocomplete_demo_items())
+        let preview = shadcn::Autocomplete::new("controls-doc-autocomplete", autocomplete_demo_items())
+            .look(look.as_ref())
             .placeholder("Start typing…")
             .full_width(true)
             .clean_on_escape(true)
             .invalid(false)
             .spawn(cx);
-        let selection_required_toggle = look
-            .outline_toggle("controls-doc-autocomplete-selection-required")
+        let selection_required_toggle = shadcn::Toggle::new("controls-doc-autocomplete-selection-required")
+            .look(look.as_ref())
+            .outline()
             .with_data(false)
             .content(|_, _| div().child("Selection Required").into_any_element())
             .spawn(cx);

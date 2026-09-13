@@ -4,8 +4,8 @@ use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, Sh
 use luma::controls::selector::SelectorItem;
 use luma::controls::tabs::Tabs;
 use luma::controls::toolbar::{Toolbar, ToolbarVariant};
-use luma::theme::ControlSize;
-use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt, ShadcnToolbarItemExt};
+use luma_look_shadcn::{ShadcnLook, ShadcnToolbarItemExt};
+use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::shell::section_shell_with_width;
@@ -34,7 +34,7 @@ impl ToolbarPreview {
                 &look,
                 "outline-enabled",
                 ToolbarVariant::Outline,
-                ControlSize::Md,
+                shadcn::ShadcnSize::Md,
                 true,
                 cx,
             ),
@@ -42,7 +42,7 @@ impl ToolbarPreview {
                 &look,
                 "outline-disabled",
                 ToolbarVariant::Outline,
-                ControlSize::Md,
+                shadcn::ShadcnSize::Md,
                 false,
                 cx,
             ),
@@ -50,7 +50,7 @@ impl ToolbarPreview {
                 &look,
                 "ghost-enabled",
                 ToolbarVariant::Ghost,
-                ControlSize::Md,
+                shadcn::ShadcnSize::Md,
                 true,
                 cx,
             ),
@@ -58,13 +58,34 @@ impl ToolbarPreview {
                 &look,
                 "ghost-disabled",
                 ToolbarVariant::Ghost,
-                ControlSize::Md,
+                shadcn::ShadcnSize::Md,
                 false,
                 cx,
             ),
-            size_sm: spawn_stripped_toolbar(&look, "size-sm", ToolbarVariant::Outline, ControlSize::Sm, true, cx),
-            size_md: spawn_stripped_toolbar(&look, "size-md", ToolbarVariant::Outline, ControlSize::Md, true, cx),
-            size_lg: spawn_stripped_toolbar(&look, "size-lg", ToolbarVariant::Outline, ControlSize::Lg, true, cx),
+            size_sm: spawn_stripped_toolbar(
+                &look,
+                "size-sm",
+                ToolbarVariant::Outline,
+                shadcn::ShadcnSize::Sm,
+                true,
+                cx,
+            ),
+            size_md: spawn_stripped_toolbar(
+                &look,
+                "size-md",
+                ToolbarVariant::Outline,
+                shadcn::ShadcnSize::Md,
+                true,
+                cx,
+            ),
+            size_lg: spawn_stripped_toolbar(
+                &look,
+                "size-lg",
+                ToolbarVariant::Outline,
+                shadcn::ShadcnSize::Lg,
+                true,
+                cx,
+            ),
             look,
         }
     }
@@ -222,12 +243,13 @@ fn spawn_stripped_toolbar(
     look: &Arc<ShadcnLook>,
     id_suffix: &str,
     variant: ToolbarVariant,
-    size: ControlSize,
+    size: shadcn::ShadcnSize,
     enabled: bool,
     cx: &mut Context<ToolbarPreview>,
 ) -> Toolbar {
     let id = format!("luma-studio-toolbar-{id_suffix}");
-    look.toolbar(id)
+    shadcn::Toolbar::new(id)
+        .look(look.as_ref())
         .size(size)
         .enabled(enabled)
         .variant(variant)

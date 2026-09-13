@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use gpui::{AppContext, Entity, SharedString};
+use gpui::{Context, Entity, SharedString};
 use luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
 use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 #[derive(Clone, Copy)]
@@ -67,57 +68,57 @@ const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
     PropertyLeaf { id: "reset-overrides", label: "Reset Overrides", icon: Some(LucideIcon::RotateCcw), enabled: false },
 ];
 
-pub fn spawn_properties_sidebar(
+pub fn spawn_properties_sidebar<T: 'static>(
     look: Arc<ShadcnLook>,
     id: impl Into<SharedString>,
-    cx: &mut impl AppContext,
+    cx: &mut Context<T>,
 ) -> Entity<SidebarControl> {
     let id = id.into();
     let panel_id = SharedString::from(format!("{id}-panel"));
 
-    let mut pinned_menu = look.sidebar_menu(format!("{id}-pinned"));
+    let mut pinned_menu = shadcn::Sidebar::menu(format!("{id}-pinned"));
     for leaf in PINNED_PROPERTIES {
         pinned_menu = pinned_menu.item(property_leaf_menu_item(&look, leaf));
     }
 
-    let mut properties_menu = look.sidebar_menu(format!("{id}-properties"));
+    let mut properties_menu = shadcn::Sidebar::menu(format!("{id}-properties"));
     for group in PROPERTY_GROUPS {
-        let mut sub = look.sidebar_menu_sub();
+        let mut sub = shadcn::Sidebar::menu_sub();
         for leaf in group.leaves {
             sub = sub.item(property_leaf_menu_item(&look, leaf));
         }
         properties_menu = properties_menu
-            .item(look.sidebar_menu_item(group.id, group.label).icon(group.icon).expanded(group.expanded).sub(sub));
+            .item(shadcn::Sidebar::menu_item(group.id, group.label).icon(group.icon).expanded(group.expanded).sub(sub));
     }
 
-    let mut footer = look.sidebar_footer();
+    let mut footer = shadcn::Sidebar::footer();
     for leaf in FOOTER_PROPERTIES {
         footer = footer.child(property_leaf_menu_item(&look, leaf));
     }
 
-    look.sidebar_control(id)
+    shadcn::Sidebar::new(id)
+        .look(look.as_ref())
         .default_open(true)
         .collapsible(SidebarCollapsible::Icon)
         .sidebar(
-            look.sidebar(panel_id)
-                .header(look.sidebar_header().title("Properties").subtitle("Rectangle / Prominent card"))
+            shadcn::Sidebar::panel(panel_id)
+                .header(shadcn::Sidebar::header().title("Properties").subtitle("Rectangle / Prominent card"))
                 .content(
-                    look.sidebar_content()
-                        .group(look.sidebar_group().label("Pinned").menu(pinned_menu))
-                        .group(look.sidebar_group().label("Properties").menu(properties_menu)),
+                    shadcn::Sidebar::content()
+                        .group(shadcn::Sidebar::group().label("Pinned").menu(pinned_menu))
+                        .group(shadcn::Sidebar::group().label("Properties").menu(properties_menu)),
                 )
                 .footer(footer)
-                .rail(look.sidebar_rail()),
+                .rail(shadcn::Sidebar::rail()),
         )
         .spawn(cx)
 }
 
 fn property_leaf_menu_item(
-    look: &Arc<ShadcnLook>,
+    _look: &Arc<ShadcnLook>,
     leaf: &PropertyLeaf,
 ) -> luma::controls::sidebar::SidebarMenuItemBuilder {
-    let mut item = look
-        .sidebar_menu_item(leaf.id, leaf.label)
+    let mut item = shadcn::Sidebar::menu_item(leaf.id, leaf.label)
         .disabled(!leaf.enabled)
         .active(leaf.id == INITIAL_PROPERTY_SELECTION_ID);
     if let Some(icon) = leaf.icon {

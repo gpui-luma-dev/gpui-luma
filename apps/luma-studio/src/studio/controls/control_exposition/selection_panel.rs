@@ -4,6 +4,7 @@ use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma::controls::selection_panel::{SelectionPanelControl, SelectionPanelEvent, SelectionPanelItem};
 use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -90,8 +91,8 @@ impl SelectionPanelControlExposition {
             })
             .collect::<Vec<_>>();
 
-        let preview = look
-            .selection_panel_builder("controls-doc-selection-panel")
+        let preview = shadcn::SelectionPanel::new("controls-doc-selection-panel")
+            .look(look.as_ref())
             .panel_id("controls-doc-selection-panel-popup")
             .items(items)
             .scrolling(true)

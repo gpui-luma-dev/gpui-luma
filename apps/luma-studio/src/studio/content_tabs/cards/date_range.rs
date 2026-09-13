@@ -3,8 +3,7 @@ use std::sync::Arc;
 use gpui::{Context, Entity, Render, Window, prelude::*};
 use luma::infra::menu_item::MenuItem;
 use luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
-use luma::theme::ControlSize;
-use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use luma::{declare_form, form_field, vstack};
 
@@ -13,10 +12,9 @@ use super::common::titled_card;
 declare_form! {
     pub struct DateRangePanel {
         controls: {
-            date_menu: Entity<PopupMenu> = look
-                .popup_menu("date-range")
+            date_menu: Entity<PopupMenu> = shadcn::PopupMenu::new("date-range").look(look.as_ref())
                 .label("Jan 20, 2023 - Feb 09, 2023")
-                .size(ControlSize::Sm)
+                .size(shadcn::ShadcnSize::Sm)
                 .items(date_stub_items())
                 => PopupMenuEvent |this, event, cx| {
                     let PopupMenuEvent::Select { label, .. } = event else {

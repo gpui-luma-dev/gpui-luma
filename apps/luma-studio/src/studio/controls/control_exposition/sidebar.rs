@@ -12,8 +12,8 @@ use luma::controls::popup_menu::{HasPresenter, PopupMenu, PopupMenuEvent, PopupM
 use luma::infra::presenter::ControlPresenter;
 use luma::controls::scroll_container::ScrollbarAutoHideActivate;
 use luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
-use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -189,9 +189,10 @@ impl SidebarControlExposition {
 
         let sidebar_control = spawn_sidebar_control(&look, cx);
 
-        let sidebar_toggle = look
-            .content_only_icon_button("controls-doc-sidebar-toggle", LucideIcon::PanelLeft)
-            .size(ControlSize::Sm)
+        let sidebar_toggle = shadcn::Button::icon_button("controls-doc-sidebar-toggle", LucideIcon::PanelLeft)
+            .look(look.as_ref())
+            .content_only()
+            .size(shadcn::ShadcnSize::Sm)
             .spawn(cx);
 
         let user_menu = spawn_user_menu(&look, cx);
@@ -445,35 +446,36 @@ fn sidebar_toggle_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderM
 }
 
 fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControlExposition>) -> Entity<SidebarControl> {
-    let mut pinned_menu = look.sidebar_menu("pinned_menu");
+    let mut pinned_menu = shadcn::Sidebar::menu("pinned_menu");
     for leaf in PINNED_PROPERTIES {
         pinned_menu = pinned_menu.item(property_leaf_menu_item(look, leaf));
     }
 
-    let mut properties_menu = look.sidebar_menu("properties_menu");
+    let mut properties_menu = shadcn::Sidebar::menu("properties_menu");
     for group in PROPERTY_GROUPS {
-        let mut sub = look.sidebar_menu_sub();
+        let mut sub = shadcn::Sidebar::menu_sub();
         for leaf in group.leaves {
             sub = sub.item(property_leaf_menu_item(look, leaf));
         }
         properties_menu = properties_menu
-            .item(look.sidebar_menu_item(group.id, group.label).icon(group.icon).expanded(group.expanded).sub(sub));
+            .item(shadcn::Sidebar::menu_item(group.id, group.label).icon(group.icon).expanded(group.expanded).sub(sub));
     }
 
-    look.sidebar_control("controls-doc-sidebar-control")
+    shadcn::Sidebar::new("controls-doc-sidebar-control")
+        .look(look.as_ref())
         .default_open(true)
         .collapsible(SidebarCollapsible::Icon)
         .auto_hide_scrollbar(true)
         .auto_hide_scrollbar_activate(ScrollbarAutoHideActivate::Move)
         .sidebar(
-            look.sidebar("workbench_sidebar")
-                .header(look.sidebar_header().title("Properties").subtitle("Rectangle / Prominent card"))
+            shadcn::Sidebar::panel("workbench_sidebar")
+                .header(shadcn::Sidebar::header().title("Properties").subtitle("Rectangle / Prominent card"))
                 .content(
-                    look.sidebar_content()
-                        .group(look.sidebar_group().label("Pinned").menu(pinned_menu))
-                        .group(look.sidebar_group().label("Properties").menu(properties_menu)),
+                    shadcn::Sidebar::content()
+                        .group(shadcn::Sidebar::group().label("Pinned").menu(pinned_menu))
+                        .group(shadcn::Sidebar::group().label("Properties").menu(properties_menu)),
                 )
-                .rail(look.sidebar_rail()),
+                .rail(shadcn::Sidebar::rail()),
         )
         .overlay_scrollbar(true)
         .spawn(cx)
@@ -494,8 +496,8 @@ fn user_menu_content() -> ControlPresenter<luma::controls::popup_menu::PopupMenu
 }
 
 fn spawn_user_menu(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControlExposition>) -> Entity<PopupMenu> {
-    let mut builder = look
-        .popup_menu("controls-doc-sidebar-user-menu")
+    let mut builder = shadcn::PopupMenu::new("controls-doc-sidebar-user-menu")
+        .look(look.as_ref())
         .label(USER_MENU_NAME)
         .end_icon(LucideIcon::EllipsisVertical)
         .full_width(true)
@@ -537,11 +539,10 @@ fn format_user_menu_event(event: &PopupMenuEvent) -> String {
 }
 
 fn property_leaf_menu_item(
-    look: &Arc<ShadcnLook>,
+    _look: &Arc<ShadcnLook>,
     leaf: &PropertyLeaf,
 ) -> luma::controls::sidebar::SidebarMenuItemBuilder {
-    let mut item = look
-        .sidebar_menu_item(leaf.id, leaf.label)
+    let mut item = shadcn::Sidebar::menu_item(leaf.id, leaf.label)
         .disabled(!leaf.enabled)
         .active(leaf.id == INITIAL_PROPERTY_SELECTION_ID);
     if let Some(icon) = leaf.icon {

@@ -10,7 +10,8 @@ use luma::controls::selector::{Selector, SelectorEvent};
 use luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy, ThumbId};
 use luma::controls::tabs::{Tabs, TabsEvent, TabsWidthMode};
 use luma::theme::{ControlSize, ThemeMode};
-use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn::{ShadcnLook};
+use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 mod actions;
@@ -97,25 +98,47 @@ impl GradientBuilder {
             stop_colors.insert(thumb.id, thumb.preview.unwrap_or(start));
         }
         let selected_stop = gradient_stops.read(cx).active_thumb_id();
-        let add_stop_button = look.outline_icon_button("color-viz-gradient-add-stop", LucideIcon::Plus).spawn(cx);
-        let mesh_reset_button = look.outline_icon_button("color-viz-mesh-reset", LucideIcon::RotateCcw).spawn(cx);
+        let add_stop_button = shadcn::Button::icon_button("color-viz-gradient-add-stop", LucideIcon::Plus)
+            .look(look.as_ref())
+            .outline()
+            .spawn(cx);
+        let mesh_reset_button = shadcn::Button::icon_button("color-viz-mesh-reset", LucideIcon::RotateCcw)
+            .look(look.as_ref())
+            .outline()
+            .spawn(cx);
 
-        let rotation_slider =
-            look.slider("color-viz-gradient-rotation").range(0.0..360.0).step(1.0).value(90.0).spawn(cx);
-        let top_tabs = look
-            .tabs("color-viz-builder-tabs")
+        let rotation_slider = shadcn::Slider::new("color-viz-gradient-rotation")
+            .look(look.as_ref())
+            .range(0.0..360.0)
+            .step(1.0)
+            .value(90.0)
+            .spawn(cx);
+        let top_tabs = shadcn::Tabs::new("color-viz-builder-tabs")
+            .look(look.as_ref())
             .items(builder_tab_items())
             .active("gradients")
             .width_mode(TabsWidthMode::Uniform)
             .spawn(cx);
-        let type_selector =
-            look.selector("color-viz-gradient-type").items(type_items()).selected_id("linear").spawn(cx);
-        let renderer_selector =
-            look.selector("color-viz-gradient-renderer").items(renderer_items()).selected_id("quads").spawn(cx);
-        let mesh_grid_selector =
-            look.selector("color-viz-mesh-grid").items(mesh_grid_items()).selected_id("3x4").spawn(cx);
-        let mesh_aspect_ratio_selector =
-            look.selector("color-viz-mesh-aspect").items(mesh_aspect_ratio_items()).selected_id("3:4").spawn(cx);
+        let type_selector = shadcn::Selector::new("color-viz-gradient-type")
+            .look(look.as_ref())
+            .items(type_items())
+            .selected_id("linear")
+            .spawn(cx);
+        let renderer_selector = shadcn::Selector::new("color-viz-gradient-renderer")
+            .look(look.as_ref())
+            .items(renderer_items())
+            .selected_id("quads")
+            .spawn(cx);
+        let mesh_grid_selector = shadcn::Selector::new("color-viz-mesh-grid")
+            .look(look.as_ref())
+            .items(mesh_grid_items())
+            .selected_id("3x4")
+            .spawn(cx);
+        let mesh_aspect_ratio_selector = shadcn::Selector::new("color-viz-mesh-aspect")
+            .look(look.as_ref())
+            .items(mesh_aspect_ratio_items())
+            .selected_id("3:4")
+            .spawn(cx);
         let color_picker = cx.new(|cx| SvTrianglePicker::with_size(start, CompositionSize::Md, cx));
         let mesh_grid_preset = MeshGridPreset::SampleThreeByFour;
         let mesh_aspect_ratio_preset = MeshAspectRatioPreset::ThreeByFour;

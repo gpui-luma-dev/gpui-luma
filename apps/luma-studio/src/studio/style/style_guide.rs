@@ -11,7 +11,8 @@ use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
 use luma::infra::ElementExt;
 use luma::{declare_form};
 use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn as shadcn;
+use luma_look_shadcn::{ShadcnLook};
 use crate::studio::panels::sidebar::{INITIAL_PROPERTY_SELECTION_ID, property_sidebar};
 use crate::studio::style::sections;
 use crate::studio::style::shared::callout::render_sparse_catalog_callout;
@@ -204,8 +205,8 @@ impl StyleGuidePanel {
         }
 
         let look = self.look.clone();
-        let sidebar = look
-            .sidebar_control("luma-studio-style-guide-sidebar-preview")
+        let sidebar = shadcn::Sidebar::new("luma-studio-style-guide-sidebar-preview")
+            .look(look.as_ref())
             .default_open(true)
             .collapsible(SidebarCollapsible::Icon)
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
@@ -216,7 +217,7 @@ impl StyleGuidePanel {
                     "Properties",
                     "Task workspace",
                 )
-                .rail(look.sidebar_rail()),
+                .rail(shadcn::Sidebar::rail()),
             )
             .spawn(cx);
 
@@ -237,7 +238,7 @@ impl StyleGuidePanel {
                         "Properties",
                         "Task workspace",
                     )
-                    .rail(look.sidebar_rail()),
+                    .rail(shadcn::Sidebar::rail()),
                     cx,
                 );
                 sidebar.set_selected_id(INITIAL_PROPERTY_SELECTION_ID, cx);
@@ -259,9 +260,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-buttons-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-buttons-preview-tabs")
+            .look(self.look.as_ref())
             .items([TabsItem::new("template-preview").label("Template Preview"), TabsItem::new("sizes").label("Sizes")])
             .active("template-preview")
             .width_mode(TabsWidthMode::Intrinsic)
@@ -291,9 +291,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-icon-buttons-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-icon-buttons-preview-tabs")
+            .look(self.look.as_ref())
             .items([TabsItem::new("template-preview").label("Template Preview"), TabsItem::new("sizes").label("Sizes")])
             .active("template-preview")
             .width_mode(TabsWidthMode::Intrinsic)
@@ -323,9 +322,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-toggles-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-toggles-preview-tabs")
+            .look(self.look.as_ref())
             .items([TabsItem::new("template-preview").label("Template Preview"), TabsItem::new("sizes").label("Sizes")])
             .active("template-preview")
             .width_mode(TabsWidthMode::Intrinsic)
@@ -350,9 +348,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-checkbox-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-checkbox-preview-tabs")
+            .look(self.look.as_ref())
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("sizes").label("Sizes"),
@@ -381,9 +378,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-radio-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-radio-preview-tabs")
+            .look(self.look.as_ref())
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("sizes").label("Sizes"),
@@ -412,9 +408,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-switch-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-switch-preview-tabs")
+            .look(self.look.as_ref())
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("sizes").label("Sizes"),
@@ -466,9 +461,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-menus-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-menus-preview-tabs")
+            .look(self.look.as_ref())
             .items([
                 TabsItem::new("menu-trigger").label("Menu Trigger"),
                 TabsItem::new("trigger-sizes").label("Trigger Sizes"),
@@ -525,9 +519,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-textarea-style-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-textarea-style-preview-tabs")
+            .look(self.look.as_ref())
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("textarea-shadows").label("Shadows"),
@@ -555,9 +548,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-selectors-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-selectors-preview-tabs")
+            .look(self.look.as_ref())
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("sizes").label("Sizes"),
@@ -582,9 +574,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-scrollbar-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-scrollbar-preview-tabs")
+            .look(self.look.as_ref())
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("sizes").label("Sizes"),
@@ -609,9 +600,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-textfield-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-textfield-preview-tabs")
+            .look(self.look.as_ref())
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("sizes").label("Sizes"),
@@ -640,9 +630,8 @@ impl StyleGuidePanel {
             return tabs;
         }
 
-        let tabs = self
-            .look
-            .tabs("luma-studio-slider-preview-tabs")
+        let tabs = shadcn::Tabs::new("luma-studio-slider-preview-tabs")
+            .look(self.look.as_ref())
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("sizes").label("Sizes"),
@@ -695,9 +684,8 @@ impl StyleGuidePanel {
     }
 
     fn spawn_template_sizes_tabs(&self, id: &'static str, cx: &mut Context<Self>) -> Entity<Tabs> {
-        let tabs = self
-            .look
-            .tabs(id)
+        let tabs = shadcn::Tabs::new(id)
+            .look(self.look.as_ref())
             .items([TabsItem::new("template-preview").label("Template Preview"), TabsItem::new("sizes").label("Sizes")])
             .active("template-preview")
             .width_mode(TabsWidthMode::Intrinsic)

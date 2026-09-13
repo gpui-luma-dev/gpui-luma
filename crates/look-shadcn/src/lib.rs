@@ -13,6 +13,7 @@ mod palette;
 mod provenance;
 mod resolve;
 mod shadow;
+mod size;
 mod state_color;
 pub mod stylesheet;
 mod tokens;
@@ -35,6 +36,7 @@ pub use luma_look_core::{
 };
 pub use ext::{LumaTypographyExt, ShadcnElementExt};
 pub use look::ShadcnLook;
+pub use size::ShadcnSize;
 pub use mode::ShadcnModeTokens;
 pub use palette::{ShadcnActionRole, ShadcnPalette};
 pub use tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextRole, ShadcnTextSize, ShadcnToken};
@@ -45,10 +47,11 @@ pub use stylesheet::{
 };
 pub use elements::{Badge, BadgeLook, BadgeColorTable, BadgeIconPlacement, BadgeVariant, badge_look, resolve_badge_colors};
 pub use controls::{
-    ButtonRadiusPreset, ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCard, ShadcnCardBuilder, ToggleLayout,
-    ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSliderStyleExt, ShadcnSwitchStyleExt, ShadcnTextFieldExt,
-    ShadcnTextFieldStyle, ShadcnToolbarItemExt, ToolbarTextFieldItemBuilder, slide_panel_background,
-    slide_panel_panels_look,
+    Accordion, Autocomplete, Button, ButtonRadiusPreset, Card, Checkbox, ComboBox, ContextMenu, IconGroup, ListBox,
+    ListView, MenuChoiceGroup, Pager, PopupMenu, Progress, Radio, RadioGroup, Scrollbar, SearchSelector,
+    SelectionPanel, Selector, ShadcnButtonStyle, ShadcnCard, Sidebar, Slider, SplitButton, Stepper, Switch, Tabs,
+    TextArea, TextField, Toggle, ToggleLayout, Toolbar, TreeView, ShadcnTextFieldStyle, ShadcnToolbarItemExt,
+    ToolbarTextFieldItemBuilder, slide_panel_background, slide_panel_panels_look,
 };
 pub use provenance::{
     ColorSource, LookResolver, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, TypographySource,

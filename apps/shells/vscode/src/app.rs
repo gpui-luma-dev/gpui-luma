@@ -10,7 +10,8 @@ use luma::controls::resizable_panels::ResizablePanelsEvent;
 use luma::focus::LumaFocusScopeExt;
 use luma::shell::{TITLE_BAR_HEIGHT, TitleBar};
 use luma::theme::{ControlSize, InteractionState, ThemeMode};
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole};
+use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole};
+use luma_look_shadcn as shadcn;
 use luma_shell_common::{
     chrome::{HasShellTheme, handle_theme_toggle, spawn_theme_toggle_button},
     theme::{ShellThemeChoice, sync_color_control_theme},
@@ -61,18 +62,24 @@ impl VscodeShellApp {
             )
         });
 
-        let customize_layout_toggle = look
-            .content_only_icon_button("shell-vscode-customize-layout-toggle", LucideIcon::LayoutPanelLeft)
-            .size(ControlSize::Sm)
-            .spawn(cx);
-        let primary_side_bar_toggle = look
-            .content_only_icon_button("shell-vscode-primary-side-bar-toggle", LucideIcon::PanelLeft)
-            .size(ControlSize::Sm)
-            .spawn(cx);
-        let secondary_side_bar_toggle = look
-            .content_only_icon_button("shell-vscode-secondary-side-bar-toggle", LucideIcon::PanelRight)
-            .size(ControlSize::Sm)
-            .spawn(cx);
+        let customize_layout_toggle =
+            shadcn::Button::icon_button("shell-vscode-customize-layout-toggle", LucideIcon::LayoutPanelLeft)
+                .look(look.as_ref())
+                .content_only()
+                .size(shadcn::ShadcnSize::Sm)
+                .spawn(cx);
+        let primary_side_bar_toggle =
+            shadcn::Button::icon_button("shell-vscode-primary-side-bar-toggle", LucideIcon::PanelLeft)
+                .look(look.as_ref())
+                .content_only()
+                .size(shadcn::ShadcnSize::Sm)
+                .spawn(cx);
+        let secondary_side_bar_toggle =
+            shadcn::Button::icon_button("shell-vscode-secondary-side-bar-toggle", LucideIcon::PanelRight)
+                .look(look.as_ref())
+                .content_only()
+                .size(shadcn::ShadcnSize::Sm)
+                .spawn(cx);
         for (button, icon) in [
             (&customize_layout_toggle, LucideIcon::LayoutPanelLeft),
             (&primary_side_bar_toggle, LucideIcon::PanelLeft),

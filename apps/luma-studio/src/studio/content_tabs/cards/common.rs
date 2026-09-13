@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, FontWeight, Hsla, IntoElement, SharedString, Window, div, prelude::*, px};
 use luma::hstack;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AvatarSize {
@@ -44,7 +45,7 @@ pub fn card(
     div()
         .w_full()
         .max_w_full()
-        .child(look.card(id).child_render(content).render(window, cx))
+        .child(shadcn::Card::new(id).look(look.as_ref()).child_render(content).render(window, cx))
         .into_any_element()
 }
 
@@ -62,7 +63,14 @@ pub fn titled_card(
     div()
         .w_full()
         .max_w_full()
-        .child(look.card(id).title(title).description(subtitle).child_render(content).render(window, cx))
+        .child(
+            shadcn::Card::new(id)
+                .look(look.as_ref())
+                .title(title)
+                .description(subtitle)
+                .child_render(content)
+                .render(window, cx),
+        )
         .into_any_element()
 }
 

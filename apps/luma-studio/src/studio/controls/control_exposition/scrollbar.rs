@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, Render, Subscription, Window, div, prelude::*, px, rgb};
 use luma::controls::scrollbar::{Scrollbar, ScrollbarEvent};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -91,8 +92,8 @@ impl Render for ScrollbarExpositionLeftPane {
 impl ScrollbarControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("scrollbar").expect("scrollbar catalog entry");
-        let horizontal_scrollbar = look
-            .scrollbar("controls-doc-scrollbar-horizontal")
+        let horizontal_scrollbar = shadcn::Scrollbar::new("controls-doc-scrollbar-horizontal")
+            .look(look.as_ref())
             .horizontal()
             .range(0..220)
             .step(20)
@@ -100,8 +101,8 @@ impl ScrollbarControlExposition {
             .value(40)
             .thumb_fraction(0.54)
             .spawn(cx);
-        let vertical_scrollbar = look
-            .scrollbar("controls-doc-scrollbar-vertical")
+        let vertical_scrollbar = shadcn::Scrollbar::new("controls-doc-scrollbar-vertical")
+            .look(look.as_ref())
             .vertical()
             .range(0..240)
             .step(20)

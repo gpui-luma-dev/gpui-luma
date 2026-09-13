@@ -10,7 +10,8 @@ use luma::controls::accordion::AccordionControl;
 use luma::controls::context_menu::{ContextMenu, MenuItem};
 use luma::controls::slider::Slider;
 use luma::controls::textfield::TextField;
-use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn::{ShadcnLook};
+use luma_look_shadcn as shadcn;
 
 pub(super) use colors::ColorsPanel;
 pub(super) use other::OtherPanel;
@@ -32,7 +33,11 @@ impl PanelContextMenuHost {
         F: Fn(&mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
-        let context_menu = look.context_menu(id).target_content(target_content).items(items).spawn(cx);
+        let context_menu = shadcn::ContextMenu::new(id)
+            .look(look.as_ref())
+            .target_content(target_content)
+            .items(items)
+            .spawn(cx);
 
         Self { context_menu }
     }
@@ -81,19 +86,19 @@ pub(super) fn expanded_category_ids<'a>(
         .collect()
 }
 
-pub(super) fn spawn_compact_textfield<T>(
+pub(super) fn spawn_compact_textfield<T: 'static>(
     look: &Arc<ShadcnLook>,
     id: &str,
     value: impl Into<SharedString>,
     cx: &mut Context<T>,
 ) -> TextField {
-    colors::apply_token_field_style(look, look.textfield(format!("luma-studio-{id}-field")))
+    colors::apply_token_field_style(look, shadcn::TextField::new(format!("luma-studio-{id}-field")).look(look.as_ref()))
         .value(value)
         .full_width(true)
         .spawn(cx)
 }
 
-pub(super) fn spawn_slider<T>(
+pub(super) fn spawn_slider<T: 'static>(
     look: &Arc<ShadcnLook>,
     id: &str,
     min: f32,
@@ -102,5 +107,10 @@ pub(super) fn spawn_slider<T>(
     value: f32,
     cx: &mut Context<T>,
 ) -> Slider {
-    look.slider(format!("luma-studio-{id}-slider")).range(min..max).step(step).value(value).spawn(cx)
+    shadcn::Slider::new(format!("luma-studio-{id}-slider"))
+        .look(look.as_ref())
+        .range(min..max)
+        .step(step)
+        .value(value)
+        .spawn(cx)
 }

@@ -12,15 +12,15 @@ use luma::controls::selector::SelectorItem;
 use luma::controls::toolbar::{ToolbarItem, ToolbarItemSource, horizontal_arrow_policy};
 use luma::focus::EscapeFocus;
 
-use super::ext::ShadcnLookControlExt;
 use crate::look::ShadcnLook;
+use crate::{Button, PopupMenu, Selector, TextField, Toggle};
 
 /// Default fixed width for toolbar-hosted search/text fields.
 const DEFAULT_TOOLBAR_TEXTFIELD_WIDTH: f32 = 140.0;
 
 /// Fluent builder for a toolbar-hosted text field.
 pub struct ToolbarTextFieldItemBuilder {
-    look: Arc<ShadcnLook>,
+    look: ShadcnLook,
     id: SharedString,
     placeholder: SharedString,
     width: Pixels,
@@ -42,9 +42,8 @@ impl ToolbarTextFieldItemBuilder {
         let width = self.width;
         // Size the host and keep the field full-width so the control fill matches the
         // focus ring (same pattern as search_selector / combobox embedded fields).
-        let entity = self
-            .look
-            .textfield(format!("toolbar-field-{}", self.id))
+        let entity = TextField::new(format!("toolbar-field-{}", self.id))
+            .look(&self.look)
             .placeholder(self.placeholder)
             .tab_stop(false)
             .full_width(true)
@@ -114,7 +113,7 @@ pub trait ShadcnToolbarItemExt {
     fn toolbar_textfield(&self, id: impl Into<SharedString>) -> ToolbarTextFieldItemBuilder;
 }
 
-impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
+impl ShadcnToolbarItemExt for ShadcnLook {
     fn toolbar_button<M: 'static>(
         &self,
         id: impl Into<SharedString>,
@@ -122,7 +121,8 @@ impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
         cx: &mut Context<M>,
     ) -> ToolbarItem {
         let id = id.into();
-        let entity = self.ghost_icon_button(format!("toolbar-btn-{id}"), icon).tab_stop(false).spawn(cx);
+        let entity =
+            Button::icon_button(format!("toolbar-btn-{id}"), icon).look(self).ghost().tab_stop(false).spawn(cx);
         ToolbarItem::command_button(id, entity, cx)
     }
 
@@ -134,7 +134,8 @@ impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
     ) -> ToolbarItem {
         let id = id.into();
         let icon = icon.into();
-        let entity = self.ghost_toggle(format!("toolbar-toggle-{id}")).icon(icon).tab_stop(false).spawn(cx);
+        let entity =
+            Toggle::new(format!("toolbar-toggle-{id}")).look(self).ghost().icon(icon).tab_stop(false).spawn(cx);
         ToolbarItem::toggle_button(id, entity, cx)
     }
 
@@ -147,8 +148,12 @@ impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
         cx: &mut Context<M>,
     ) -> ToolbarItem {
         let id = id.into();
-        let mut builder =
-            self.popup_menu(format!("toolbar-menu-{id}")).label(label).ghost().tab_stop(false).items(items);
+        let mut builder = PopupMenu::new(format!("toolbar-menu-{id}"))
+            .look(self)
+            .label(label)
+            .ghost()
+            .tab_stop(false)
+            .items(items);
         if let ControlIcon::Lucide(lucide) = icon.into() {
             builder = builder.icon(lucide);
         }
@@ -164,8 +169,8 @@ impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
         cx: &mut Context<M>,
     ) -> ToolbarItem {
         let id = id.into();
-        let entity = self
-            .popup_menu(format!("toolbar-menu-{id}"))
+        let entity = PopupMenu::new(format!("toolbar-menu-{id}"))
+            .look(self)
             .label(label)
             .ghost()
             .tab_stop(false)
@@ -183,8 +188,8 @@ impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
         cx: &mut Context<M>,
     ) -> ToolbarItem {
         let id = id.into();
-        let entity = self
-            .selector(format!("toolbar-selector-{id}"))
+        let entity = Selector::new(format!("toolbar-selector-{id}"))
+            .look(self)
             .label(label)
             .tab_stop(false)
             .items(items)
@@ -195,10 +200,66 @@ impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
 
     fn toolbar_textfield(&self, id: impl Into<SharedString>) -> ToolbarTextFieldItemBuilder {
         ToolbarTextFieldItemBuilder {
-            look: Arc::clone(self),
+            look: self.clone(),
             id: id.into(),
             placeholder: SharedString::new(""),
             width: px(DEFAULT_TOOLBAR_TEXTFIELD_WIDTH),
         }
+    }
+}
+
+impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
+    fn toolbar_button<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        icon: impl Into<ControlIcon>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem {
+        self.as_ref().toolbar_button(id, icon, cx)
+    }
+
+    fn toolbar_toggle<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        icon: impl Into<ControlIcon>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem {
+        self.as_ref().toolbar_toggle(id, icon, cx)
+    }
+
+    fn toolbar_menu<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        icon: impl Into<ControlIcon>,
+        items: impl IntoIterator<Item = MenuItem>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem {
+        self.as_ref().toolbar_menu(id, label, icon, items, cx)
+    }
+
+    fn toolbar_label_menu<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        items: impl IntoIterator<Item = MenuItem>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem {
+        self.as_ref().toolbar_label_menu(id, label, items, cx)
+    }
+
+    fn toolbar_selector<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        items: impl IntoIterator<Item = SelectorItem>,
+        selected_id: impl Into<SharedString>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem {
+        self.as_ref().toolbar_selector(id, label, items, selected_id, cx)
+    }
+
+    fn toolbar_textfield(&self, id: impl Into<SharedString>) -> ToolbarTextFieldItemBuilder {
+        self.as_ref().toolbar_textfield(id)
     }
 }

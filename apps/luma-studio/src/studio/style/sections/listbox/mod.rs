@@ -4,7 +4,8 @@ use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, Sh
 use luma::controls::listbox::{ListBox, ListBoxItem};
 use luma::controls::tabs::Tabs;
 use luma::theme::ControlSize;
-use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn::{ShadcnLook};
+use luma_look_shadcn as shadcn;
 
 use crate::studio::style::shared::shell::section_shell_with_width;
 
@@ -115,13 +116,14 @@ fn size_column(label: &'static str, muted: gpui::Hsla, listbox: ListBox, width: 
         .into_any_element()
 }
 
-fn fruit_listbox(
+fn fruit_listbox<M: 'static>(
     look: &Arc<ShadcnLook>,
     id: impl Into<SharedString>,
     size: ControlSize,
-    cx: &mut impl gpui::AppContext,
+    cx: &mut Context<M>,
 ) -> ListBox {
-    look.listbox(id)
+    shadcn::ListBox::new(id)
+        .look(look.as_ref())
         .template(look.listbox_template_for_size(size))
         .items([
             ListBoxItem::new("apples", "apples").label("Apples"),

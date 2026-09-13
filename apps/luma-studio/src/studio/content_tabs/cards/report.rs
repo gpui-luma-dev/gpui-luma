@@ -6,8 +6,7 @@ use luma::controls::button::Button;
 use luma::controls::selector::{Selector, SelectorItem};
 use luma::controls::textarea::TextArea;
 use luma::controls::textfield::TextField;
-use luma_look_shadcn::prelude::*;
-use luma::theme::{ControlSize};
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use luma::{declare_form, form_field, hstack, vstack};
 
@@ -16,27 +15,24 @@ use super::common::titled_card;
 declare_form! {
     pub struct ReportPanel {
         controls: {
-            area_selector: Entity<Selector> = look
-                .selector("report-area")
+            area_selector: Entity<Selector> = shadcn::Selector::new("report-area").look(look.as_ref())
                 .label("Billing")
                 .items(area_items()),
-            security_selector: Entity<Selector> = look
-                .selector("report-security")
+            security_selector: Entity<Selector> = shadcn::Selector::new("report-security").look(look.as_ref())
                 .label("Severity 2")
                 .items(security_items()),
-            subject_field: TextField = look.textfield("report-subject").primary(&look).placeholder("Subject").full_width(true),
-            description_area: Entity<TextArea> = look
-                .textarea("report-description")
-                .primary(&look)
+            subject_field: TextField = shadcn::TextField::new("report-subject").look(look.as_ref()).placeholder("Subject").full_width(true),
+            description_area: Entity<TextArea> = shadcn::TextArea::new("report-description").look(look.as_ref())
+
                 .placeholder("Description")
                 .full_width(true)
                 .rows(4),
-            cancel_button: Entity<Button> = look.ghost_button("report-cancel").label("Cancel").size(size),
-            submit_button: Entity<Button> = look.primary_button("report-submit").label("Submit").size(size),
+            cancel_button: Entity<Button> = shadcn::Button::new("report-cancel").look(look.as_ref()).ghost().label("Cancel").size(size),
+            submit_button: Entity<Button> = shadcn::Button::new("report-submit").look(look.as_ref()).primary().label("Submit").size(size),
         },
         args: {
             look: Arc<ShadcnLook>,
-            size: ControlSize,
+            size: shadcn::ShadcnSize,
         },
         fields: {}
     }

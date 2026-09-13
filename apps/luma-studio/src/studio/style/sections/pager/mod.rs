@@ -6,6 +6,7 @@ use luma::controls::pager::{Pager, PagerEvent, PagerStyle};
 use luma::infra::presenter::HasPresenter;
 use luma::{vstack, wrappanel};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnTextSize};
 
 use crate::studio::style::shared::shell::section_shell_with_width;
@@ -41,8 +42,8 @@ impl PagerPreview {
         let enabled = true;
         let page_count = page_count_for(total_items, page_size);
 
-        let minimal = look
-            .pager("luma-studio-pager-minimal")
+        let minimal = shadcn::Pager::new("luma-studio-pager-minimal")
+            .look(look.as_ref())
             .style(PagerStyle::Minimal)
             .page_size(page_size)
             .page_size_options(PAGE_SIZES)
@@ -50,8 +51,8 @@ impl PagerPreview {
             .current_page(current_page)
             .page_indicator_formatter(|current, total| SharedString::from(format!("{current} / {total}")))
             .spawn(cx);
-        let minimal_edge = look
-            .pager("luma-studio-pager-minimal-edge")
+        let minimal_edge = shadcn::Pager::new("luma-studio-pager-minimal-edge")
+            .look(look.as_ref())
             .style(PagerStyle::MinimalEdge)
             .page_size(page_size)
             .page_size_options(PAGE_SIZES)
@@ -59,16 +60,16 @@ impl PagerPreview {
             .current_page(current_page)
             .page_indicator_formatter(|current, total| SharedString::from(format!("{current} of {total}")))
             .spawn(cx);
-        let numeric = look
-            .pager("luma-studio-pager-numeric")
+        let numeric = shadcn::Pager::new("luma-studio-pager-numeric")
+            .look(look.as_ref())
             .style(PagerStyle::Numeric)
             .page_size(page_size)
             .page_size_options(PAGE_SIZES)
             .page_count(page_count)
             .current_page(current_page)
             .spawn(cx);
-        let numeric_no_edges = look
-            .pager("luma-studio-pager-numeric-no-edges")
+        let numeric_no_edges = shadcn::Pager::new("luma-studio-pager-numeric-no-edges")
+            .look(look.as_ref())
             .style(PagerStyle::Numeric)
             .page_size(page_size)
             .page_size_options(PAGE_SIZES)
@@ -78,8 +79,8 @@ impl PagerPreview {
             .previous_label("Back")
             .next_label("Next")
             .spawn(cx);
-        let numeric_compact = look
-            .pager("luma-studio-pager-numeric-compact")
+        let numeric_compact = shadcn::Pager::new("luma-studio-pager-numeric-compact")
+            .look(look.as_ref())
             .style(PagerStyle::Numeric)
             .page_size(page_size)
             .page_size_options(PAGE_SIZES)
@@ -91,14 +92,41 @@ impl PagerPreview {
             .next_label("Next")
             .last_label("Last")
             .spawn(cx);
-        let page_prev_button = look.secondary_button("luma-studio-pager-page-prev").label("Page -").spawn(cx);
-        let page_next_button = look.secondary_button("luma-studio-pager-page-next").label("Page +").spawn(cx);
-        let total_down_button = look.secondary_button("luma-studio-pager-total-down").label("Items -").spawn(cx);
-        let total_up_button = look.secondary_button("luma-studio-pager-total-up").label("Items +").spawn(cx);
-        let size_down_button = look.secondary_button("luma-studio-pager-size-down").label("Per page -").spawn(cx);
-        let size_up_button = look.secondary_button("luma-studio-pager-size-up").label("Per page +").spawn(cx);
-        let enabled_toggle_button =
-            look.outline_button("luma-studio-pager-enabled-toggle").label("Toggle enabled").spawn(cx);
+        let page_prev_button = shadcn::Button::new("luma-studio-pager-page-prev")
+            .look(look.as_ref())
+            .secondary()
+            .label("Page -")
+            .spawn(cx);
+        let page_next_button = shadcn::Button::new("luma-studio-pager-page-next")
+            .look(look.as_ref())
+            .secondary()
+            .label("Page +")
+            .spawn(cx);
+        let total_down_button = shadcn::Button::new("luma-studio-pager-total-down")
+            .look(look.as_ref())
+            .secondary()
+            .label("Items -")
+            .spawn(cx);
+        let total_up_button = shadcn::Button::new("luma-studio-pager-total-up")
+            .look(look.as_ref())
+            .secondary()
+            .label("Items +")
+            .spawn(cx);
+        let size_down_button = shadcn::Button::new("luma-studio-pager-size-down")
+            .look(look.as_ref())
+            .secondary()
+            .label("Per page -")
+            .spawn(cx);
+        let size_up_button = shadcn::Button::new("luma-studio-pager-size-up")
+            .look(look.as_ref())
+            .secondary()
+            .label("Per page +")
+            .spawn(cx);
+        let enabled_toggle_button = shadcn::Button::new("luma-studio-pager-enabled-toggle")
+            .look(look.as_ref())
+            .outline()
+            .label("Toggle enabled")
+            .spawn(cx);
 
         let mut preview = Self {
             look,

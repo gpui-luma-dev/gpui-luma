@@ -5,6 +5,7 @@ use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::overlay_window::{OverlayWindow, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition};
 use luma::infra::presenter::HasPresenter;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -98,7 +99,10 @@ impl Render for OverlayPositioningExpositionLeftPane {
 impl OverlayPositioningControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("overlay-positioning").expect("overlay-positioning catalog entry");
-        let close = look.content_only_icon_button("controls-doc-positioning-close", LucideIcon::X).spawn(cx);
+        let close = shadcn::Button::icon_button("controls-doc-positioning-close", LucideIcon::X)
+            .look(look.as_ref())
+            .content_only()
+            .spawn(cx);
         let overlay = look
             .overlay_window("controls-doc-positioning-overlay")
             .mode(OverlayWindowMode::Modeless)
@@ -121,9 +125,21 @@ impl OverlayPositioningControlExposition {
             })
             .theme_children([close.clone()])
             .spawn(cx);
-        let center_trigger = look.secondary_button("controls-doc-position-center").label("Center").spawn(cx);
-        let corner_trigger = look.secondary_button("controls-doc-position-corner").label("Top right").spawn(cx);
-        let absolute_trigger = look.secondary_button("controls-doc-position-absolute").label("Absolute").spawn(cx);
+        let center_trigger = shadcn::Button::new("controls-doc-position-center")
+            .look(look.as_ref())
+            .secondary()
+            .label("Center")
+            .spawn(cx);
+        let corner_trigger = shadcn::Button::new("controls-doc-position-corner")
+            .look(look.as_ref())
+            .secondary()
+            .label("Top right")
+            .spawn(cx);
+        let absolute_trigger = shadcn::Button::new("controls-doc-position-absolute")
+            .look(look.as_ref())
+            .secondary()
+            .label("Absolute")
+            .spawn(cx);
 
         let left_pane = cx.new(|_| OverlayPositioningExpositionLeftPane {
             look: look.clone(),

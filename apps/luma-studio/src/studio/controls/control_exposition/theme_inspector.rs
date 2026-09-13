@@ -10,7 +10,8 @@ use luma::controls::accordion::{
 };
 use luma::controls::tabs::{Tabs, TabsEvent, TabsItem};
 use luma::theme::ThemeMode;
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn::{LumaTypographyExt, ShadcnLook};
+use luma_look_shadcn as shadcn;
 
 use super::inspector::{
     ControlInspectorSpec, InspectorCategory, InspectorPart, InspectorSelection, InspectorStateSpec, InspectorVariant,
@@ -96,8 +97,8 @@ impl ThemeInspector {
             (None, SharedString::from(""))
         } else {
             let active_part_id = default_active_part_id(&applicable, spec);
-            let tabs = look
-                .tabs(format!("{}-part-tabs", spec.id_prefix))
+            let tabs = shadcn::Tabs::new(format!("{}-part-tabs", spec.id_prefix))
+                .look(look.as_ref())
                 .items(part_tab_items(&applicable))
                 .active(active_part_id.as_ref())
                 .spawn(cx);
@@ -275,9 +276,8 @@ impl ThemeInspector {
                 tabs.set_active(active_part_id.as_ref(), cx);
             });
         } else {
-            let tabs = self
-                .look
-                .tabs(format!("{}-part-tabs", self.spec.id_prefix))
+            let tabs = shadcn::Tabs::new(format!("{}-part-tabs", self.spec.id_prefix))
+                .look(self.look.as_ref())
                 .items(part_tab_items(&applicable))
                 .active(active_part_id.as_ref())
                 .spawn(cx);
@@ -548,8 +548,8 @@ fn spawn_variant_tabs(
         default_variant_id
     };
 
-    let tabs = look
-        .tabs(format!("{}-{}-variant-tabs", spec.id_prefix, part_id))
+    let tabs = shadcn::Tabs::new(format!("{}-{}-variant-tabs", spec.id_prefix, part_id))
+        .look(look.as_ref())
         .items(variant_tab_items(variants))
         .active(active_variant_id)
         .spawn(cx);
@@ -690,7 +690,8 @@ fn state_accordion(
     cx: &mut Context<ThemeInspector>,
 ) -> Entity<AccordionControl> {
     let state_key = inspector_context_key(&[part_id.as_ref(), variant_id.as_ref()]);
-    look.accordion(format!("{}-{}-{}-states", spec.id_prefix, part_id, variant_id))
+    shadcn::Accordion::new(format!("{}-{}-{}-states", spec.id_prefix, part_id, variant_id))
+        .look(look.as_ref())
         .mode(AccordionSelectionMode::Multiple)
         .item_dividers(false)
         .trigger_min_height(30.0)
@@ -815,7 +816,8 @@ fn category_accordion(
     categories: &[InspectorCategory],
     cx: &mut Context<ThemePropertyTree>,
 ) -> Entity<AccordionControl> {
-    look.accordion(format!("{}-{}-{}-categories", spec.id_prefix, part_id, variant_id))
+    shadcn::Accordion::new(format!("{}-{}-{}-categories", spec.id_prefix, part_id, variant_id))
+        .look(look.as_ref())
         .mode(AccordionSelectionMode::Multiple)
         .item_dividers(false)
         .trigger_min_height(28.0)
@@ -917,8 +919,8 @@ impl LayoutSizeInspector {
             .filter(|size_id| spec.sizes.iter().any(|size| size.id == size_id.as_ref()))
             .unwrap_or_else(|| SharedString::from(spec.default_size_id));
 
-        let size_tabs = look
-            .tabs(format!("{}-{}-{}-size-tabs", spec.id_prefix, part_id, variant_id))
+        let size_tabs = shadcn::Tabs::new(format!("{}-{}-{}-size-tabs", spec.id_prefix, part_id, variant_id))
+            .look(look.as_ref())
             .items(size_tab_items(spec))
             .active(active_size_id.as_ref())
             .spawn(cx);
@@ -986,8 +988,8 @@ impl ColorValueInspector {
             .filter(|value_id| spec.value_modes.iter().any(|value| value.id == value_id.as_ref()))
             .unwrap_or_else(|| SharedString::from(spec.default_value_id));
 
-        let value_tabs = look
-            .tabs(format!("{}-{}-{}-value-tabs", spec.id_prefix, part_id, variant_id))
+        let value_tabs = shadcn::Tabs::new(format!("{}-{}-{}-value-tabs", spec.id_prefix, part_id, variant_id))
+            .look(look.as_ref())
             .items(value_tab_items(spec))
             .active(active_value_id.as_ref())
             .spawn(cx);

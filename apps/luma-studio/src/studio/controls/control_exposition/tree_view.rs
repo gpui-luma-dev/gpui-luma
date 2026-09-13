@@ -7,6 +7,7 @@ use luma::controls::scroll_container::ScrollContainer;
 use luma::controls::scrollbar::ScrollbarEvent;
 use luma::controls::tree_view::{TreeNode, TreeView, TreeViewEvent, TreeViewSelectionMode};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -97,8 +98,8 @@ impl TreeViewControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("tree-view").expect("tree-view catalog entry");
 
-        let tree = look
-            .tree_view("controls-doc-tree-view")
+        let tree = shadcn::TreeView::new("controls-doc-tree-view")
+            .look(look.as_ref())
             .selection_mode(TreeViewSelectionMode::Single)
             .items(mock_file_tree())
             .spawn(cx);

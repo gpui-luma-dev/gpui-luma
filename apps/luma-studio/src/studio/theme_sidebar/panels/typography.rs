@@ -14,7 +14,8 @@ use luma::controls::search_selector::{
 use luma::vstack;
 use crate::studio::font_catalog::{FontCatalog, FontSlot};
 use crate::studio::font_family_match::{clean_css_family_name, match_css_named_family};
-use luma_look_shadcn::{ShadcnFont, ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn::{ShadcnFont, ShadcnLook};
+use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::super::model::TYPOGRAPHY_CATEGORIES;
@@ -169,8 +170,8 @@ impl TypographyPanel {
         expanded_categories: &HashSet<String>,
         cx: &mut Context<Self>,
     ) -> Entity<AccordionControl> {
-        let mut accordion_builder = look
-            .accordion("luma-studio-typography-accordion")
+        let mut accordion_builder = shadcn::Accordion::new("luma-studio-typography-accordion")
+            .look(look.as_ref())
             .multiple()
             .item_dividers(false)
             .trigger_min_height(28.0)
@@ -348,8 +349,8 @@ fn build_font_search_selector(
     let (selected, items, fallback_label) = font_search_selector_state(look, font_catalog, role, font_names);
     let preview_font = selected.clone();
     let selected_font = Arc::new(RwLock::new(selected.clone()));
-    let search_selector = look
-        .search_selector(id, items)
+    let search_selector = shadcn::SearchSelector::new(id, items)
+        .look(look.as_ref())
         .placeholder(fallback_label)
         .search_placeholder("Search fonts...")
         .selected_id(selected)

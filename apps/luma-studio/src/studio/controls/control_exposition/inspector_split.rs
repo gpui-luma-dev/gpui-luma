@@ -11,6 +11,7 @@ use luma::controls::resizable_panels::{
     ResizeHandleSize, ResizeHandleVisibility,
 };
 use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::prelude::*;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -49,10 +50,12 @@ impl InspectorSplitShell {
         R: Fn() -> AnyElement + 'static,
     {
         let id = id.into();
-        let inspector_toggle = look
-            .content_only_icon_button(format!("{id}-inspector-toggle"), LucideIcon::InspectionPanel)
-            .size(luma::theme::ControlSize::Sm)
-            .spawn(cx);
+        let inspector_toggle =
+            shadcn::Button::icon_button(format!("{id}-inspector-toggle"), LucideIcon::InspectionPanel)
+                .look(look.as_ref())
+                .content_only()
+                .size(shadcn::ShadcnSize::Sm)
+                .spawn(cx);
         let title_color = look.chrome().title_text;
         inspector_toggle.update(cx, |button, cx| {
             button.set_presenter(inspector_toggle_presenter(title_color), cx);

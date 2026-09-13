@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use luma::infra::menu_item::MenuItem;
 use luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
-use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 use luma::{declare_form, hstack, vstack};
 
@@ -15,10 +15,9 @@ const TEAM_CARD_WIDTH: f32 = 380.0;
 declare_form! {
     pub struct TeamPanel {
         controls: {
-            sofia_menu: Entity<PopupMenu> = look
-                .popup_menu("team-sofia")
+            sofia_menu: Entity<PopupMenu> = shadcn::PopupMenu::new("team-sofia").look(look.as_ref())
                 .label("Owner")
-                .size(ControlSize::Sm)
+                .size(shadcn::ShadcnSize::Sm)
                 .without_elevation()
                 .items(role_menu_items())
                 => PopupMenuEvent |this, event, cx| {
@@ -27,10 +26,9 @@ declare_form! {
                     };
                     this.sofia_menu.update(cx, |menu, cx| menu.set_label(label.clone(), cx));
                 },
-            jackson_menu: Entity<PopupMenu> = look
-                .popup_menu("team-jackson")
+            jackson_menu: Entity<PopupMenu> = shadcn::PopupMenu::new("team-jackson").look(look.as_ref())
                 .label("Developer")
-                .size(ControlSize::Sm)
+                .size(shadcn::ShadcnSize::Sm)
                 .without_elevation()
                 .items(role_menu_items())
                 => PopupMenuEvent |this, event, cx| {
@@ -39,10 +37,9 @@ declare_form! {
                     };
                     this.jackson_menu.update(cx, |menu, cx| menu.set_label(label.clone(), cx));
                 },
-            isabella_menu: Entity<PopupMenu> = look
-                .popup_menu("team-isabella")
+            isabella_menu: Entity<PopupMenu> = shadcn::PopupMenu::new("team-isabella").look(look.as_ref())
                 .label("Billing")
-                .size(ControlSize::Sm)
+                .size(shadcn::ShadcnSize::Sm)
                 .without_elevation()
                 .items(role_menu_items())
                 => PopupMenuEvent |this, event, cx| {

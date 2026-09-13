@@ -7,6 +7,7 @@ use luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView
 use luma::controls::pager::PagerStyle;
 use luma::{column, column_emphasis, paging_list_view};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -122,10 +123,10 @@ impl PagingListViewControlExposition {
             id = "controls-doc-listview-paged";
             items = tasks;
             page_size = DEFAULT_PAGE_SIZE;
-            pager = look
-                .pager("controls-doc-listview-paged-pager")
+            pager = shadcn::Pager::new("controls-doc-listview-paged-pager").look(look.as_ref())
                 .style(PagerStyle::MinimalEdge)
-                .page_size(DEFAULT_PAGE_SIZE);
+                .page_size(DEFAULT_PAGE_SIZE)
+                .into_sdk_builder(cx);
             selection = ListSelectionMode::Single;
             selected_index = 1;
             active_index = 1;

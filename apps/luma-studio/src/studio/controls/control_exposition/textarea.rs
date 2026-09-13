@@ -6,6 +6,7 @@ use luma::controls::button::{Button, ButtonEvent};
 use luma::infra::presenter::HasPresenter;
 use luma::controls::textarea::{TextArea, TextAreaEvent, Validator};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -157,18 +158,16 @@ impl Render for TextAreaExpositionLeftPane {
 impl TextAreaControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("textarea").expect("textarea catalog entry");
-        let text_area = look
-            .textarea("controls-doc-textarea")
-            .primary(&look)
+        let text_area = shadcn::TextArea::new("controls-doc-textarea")
+            .look(look.as_ref())
             .placeholder("Write a multiline message")
             .full_width(true)
             .rows(6)
             .clean_on_escape(true)
             .select_all_on_tab_focus(true)
             .spawn(cx);
-        let required_preview = look
-            .textarea("controls-doc-textarea-required-preview")
-            .primary(&look)
+        let required_preview = shadcn::TextArea::new("controls-doc-textarea-required-preview")
+            .look(look.as_ref())
             .placeholder("Required message")
             .full_width(true)
             .rows(3)
@@ -182,20 +181,31 @@ impl TextAreaControlExposition {
                 "Edit the text area; TextAreaEvent variants appear below.",
             )
         });
-        let set_sample_button = look.secondary_button("controls-textarea-set-sample").label("Set Sample").spawn(cx);
-        let clear_button = look.secondary_button("controls-textarea-clear").label("Clear").spawn(cx);
-        let enabled_checkbox = look
-            .checkbox("controls-textarea-enabled")
+        let set_sample_button = shadcn::Button::new("controls-textarea-set-sample")
+            .look(look.as_ref())
+            .secondary()
+            .label("Set Sample")
+            .spawn(cx);
+        let clear_button = shadcn::Button::new("controls-textarea-clear")
+            .look(look.as_ref())
+            .secondary()
+            .label("Clear")
+            .spawn(cx);
+        let enabled_checkbox = shadcn::Checkbox::new("controls-textarea-enabled")
+            .look(look.as_ref())
+            .primary()
             .with_data(true)
             .content(|_, _| div().child("Enabled").into_any_element())
             .spawn(cx);
-        let clean_on_escape_checkbox = look
-            .checkbox("controls-textarea-clean-on-escape")
+        let clean_on_escape_checkbox = shadcn::Checkbox::new("controls-textarea-clean-on-escape")
+            .look(look.as_ref())
+            .primary()
             .with_data(true)
             .content(|_, _| div().child("Escape clears").into_any_element())
             .spawn(cx);
-        let validation_checkbox = look
-            .checkbox("controls-textarea-validation")
+        let validation_checkbox = shadcn::Checkbox::new("controls-textarea-validation")
+            .look(look.as_ref())
+            .primary()
             .with_data(false)
             .content(|_, _| div().child("Strict validation").into_any_element())
             .spawn(cx);

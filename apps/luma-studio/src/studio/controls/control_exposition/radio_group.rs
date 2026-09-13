@@ -8,6 +8,7 @@ use luma::controls::radio_group::{
     self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, SelectionMode,
 };
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -68,14 +69,14 @@ impl RadioGroupControlExposition {
         let secondary_horizontal = look.radio_group_horizontal_template(ShadcnButtonStyle::Secondary);
         let radio_template = look.radio_button_template(ShadcnButtonStyle::Secondary);
 
-        let vertical_group = look
-            .radio_group("controls-doc-radio-group-vertical")
+        let vertical_group = shadcn::RadioGroup::new("controls-doc-radio-group-vertical")
+            .look(look.as_ref())
             .template(secondary_vertical)
             .items(density_items())
             .selected(Density::Comfortable.id())
             .spawn(cx);
-        let horizontal_group = look
-            .radio_group_horizontal("controls-doc-radio-group-horizontal")
+        let horizontal_group = shadcn::RadioGroup::horizontal("controls-doc-radio-group-horizontal")
+            .look(look.as_ref())
             .template(secondary_horizontal)
             .items(density_items())
             .selected(Density::Comfortable.id())

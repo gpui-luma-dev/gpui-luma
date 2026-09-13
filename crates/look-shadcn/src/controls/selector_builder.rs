@@ -1,0 +1,244 @@
+//! Look-owned selector builder. Spawn synthesizes the SDK [`luma::controls::selector::Selector`].
+
+use gpui::{App, Context, Div, Entity, IntoElement, SharedString, Stateful};
+use luma::controls::selector::{
+    SelectorBuilder, SelectorIcons, SelectorItem, SelectorItemLike, SelectorItemRenderModel, SelectorPlacement,
+    SelectorRenderModel, SelectorTriggerStyle,
+};
+use crate::look::{ShadcnLook, resolve_look_from};
+use crate::size::ShadcnSize;
+
+type SelectorModifier<T> =
+    Box<dyn for<'a> Fn(Stateful<Div>, &SelectorRenderModel<'a, T>) -> Stateful<Div> + Send + Sync>;
+type SelectorItemTemplate<T> =
+    Box<dyn for<'a> Fn(&SelectorItemRenderModel<'a, T>, &mut App) -> gpui::AnyElement + Send + Sync>;
+
+/// Builder in the guise of a selector: Shadcn axes plus SDK options, until `.spawn(cx)`.
+pub struct Selector<T = SelectorItem>
+where
+    T: SelectorItemLike + 'static,
+{
+    id: SharedString,
+    look: Option<ShadcnLook>,
+    label: Option<SharedString>,
+    items: Vec<T>,
+    selected_id: Option<SharedString>,
+    size: ShadcnSize,
+    enabled: bool,
+    invalid: bool,
+    tab_stop: bool,
+    placement: SelectorPlacement,
+    trigger_style: SelectorTriggerStyle,
+    icons: Option<SelectorIcons>,
+    without_elevation: bool,
+    item_template: Option<SelectorItemTemplate<T>>,
+    modifiers: Vec<SelectorModifier<T>>,
+}
+
+impl Selector<SelectorItem> {
+    pub fn new(id: impl Into<SharedString>) -> Self {
+        Self::new_typed(id)
+    }
+}
+
+impl<T> Selector<T>
+where
+    T: SelectorItemLike + 'static,
+{
+    pub fn new_typed(id: impl Into<SharedString>) -> Self {
+        Self {
+            id: id.into(),
+            look: None,
+            label: None,
+            items: Vec::new(),
+            selected_id: None,
+            size: ShadcnSize::Md,
+            enabled: true,
+            invalid: false,
+            tab_stop: true,
+            placement: SelectorPlacement::Smart,
+            trigger_style: SelectorTriggerStyle::default(),
+            icons: None,
+            without_elevation: false,
+            item_template: None,
+            modifiers: Vec::new(),
+        }
+    }
+
+    /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
+    pub fn look(mut self, look: &ShadcnLook) -> Self {
+        self.look = Some(look.clone());
+        self
+    }
+
+    pub fn label(mut self, label: impl Into<SharedString>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+
+    pub fn outline(self) -> Self {
+        self.trigger_style(SelectorTriggerStyle::Outline)
+    }
+
+    pub fn ghost(self) -> Self {
+        self.trigger_style(SelectorTriggerStyle::Ghost)
+    }
+
+    pub fn trigger_style(mut self, style: SelectorTriggerStyle) -> Self {
+        self.trigger_style = style;
+        self
+    }
+
+    pub fn size(mut self, size: ShadcnSize) -> Self {
+        self.size = size;
+        self
+    }
+
+    pub fn item(mut self, item: T) -> Self {
+        self.items.push(item);
+        self
+    }
+
+    pub fn items(mut self, items: impl IntoIterator<Item = T>) -> Self {
+        self.items = items.into_iter().collect();
+        self
+    }
+
+    pub fn selected_id(mut self, selected_id: impl Into<SharedString>) -> Self {
+        self.selected_id = Some(selected_id.into());
+        self
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
+    pub fn invalid(mut self, invalid: bool) -> Self {
+        self.invalid = invalid;
+        self
+    }
+
+    pub fn tab_stop(mut self, tab_stop: bool) -> Self {
+        self.tab_stop = tab_stop;
+        self
+    }
+
+    pub fn placement(mut self, placement: SelectorPlacement) -> Self {
+        self.placement = placement;
+        self
+    }
+
+    pub fn icons(mut self, icons: SelectorIcons) -> Self {
+        self.icons = Some(icons);
+        self
+    }
+
+    pub fn without_elevation(mut self) -> Self {
+        self.without_elevation = true;
+        self
+    }
+
+    pub fn with_item_template<F, E>(mut self, template: F) -> Self
+    where
+        F: for<'a> Fn(&SelectorItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
+        E: IntoElement + 'static,
+    {
+        self.item_template = Some(Box::new(move |model, cx| template(model, cx).into_any_element()));
+        self
+    }
+
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(Stateful<Div>, &SelectorRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::selector::Selector<T>> {
+        let look = self.resolve_look(cx);
+        self.into_sdk_builder(look).spawn(cx)
+    }
+
+    fn resolve_look(&self, cx: &App) -> ShadcnLook {
+        resolve_look_from(self.look.as_ref(), cx)
+    }
+
+    fn into_sdk_builder(self, look: ShadcnLook) -> SelectorBuilder<T> {
+        let mut builder = luma::controls::selector::Selector::new_typed(self.id)
+            .template(look.selector_template())
+            .items(self.items)
+            .size(self.size.control_size())
+            .enabled(self.enabled)
+            .invalid(self.invalid)
+            .tab_stop(self.tab_stop)
+            .placement(self.placement)
+            .trigger_style(self.trigger_style);
+        if let Some(label) = self.label {
+            builder = builder.label(label);
+        }
+        if let Some(selected_id) = self.selected_id {
+            builder = builder.selected_id(selected_id);
+        }
+        if let Some(icons) = self.icons {
+            builder = builder.icons(icons);
+        }
+        if self.without_elevation {
+            builder = builder.without_elevation();
+        }
+        if let Some(item_template) = self.item_template {
+            builder = builder.with_item_template(move |model, cx| item_template(model, cx));
+        }
+        for modifier in self.modifiers {
+            builder = builder.with_template_modifier(move |root, model| (modifier)(root, model));
+        }
+        builder
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn items_keep_shadcn_axes() {
+        let selector = Selector::new("theme").ghost().size(ShadcnSize::Sm).label("Theme");
+        assert_eq!(selector.trigger_style, SelectorTriggerStyle::Ghost);
+        assert_eq!(selector.size, ShadcnSize::Sm);
+        assert_eq!(selector.label.as_deref(), Some("Theme"));
+    }
+
+    #[test]
+    fn into_sdk_builder_does_not_panic() {
+        let look = ShadcnLook::built_in();
+        let _builder = Selector::new("ok")
+            .look(&look)
+            .items([SelectorItem::new("one").label("One")])
+            .selected_id("one")
+            .into_sdk_builder(look);
+    }
+
+    #[test]
+    fn typed_into_sdk_builder_does_not_panic() {
+        struct ThemeItem {
+            id: SharedString,
+            label: SharedString,
+        }
+        impl SelectorItemLike for ThemeItem {
+            fn id(&self) -> &SharedString {
+                &self.id
+            }
+            fn label(&self) -> &SharedString {
+                &self.label
+            }
+        }
+
+        let look = ShadcnLook::built_in();
+        let _builder = Selector::new_typed("ok")
+            .look(&look)
+            .items([ThemeItem { id: "one".into(), label: "One".into() }])
+            .selected_id("one")
+            .into_sdk_builder(look);
+    }
+}

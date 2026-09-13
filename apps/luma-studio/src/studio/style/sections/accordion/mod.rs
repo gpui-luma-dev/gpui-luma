@@ -9,6 +9,7 @@ use luma::infra::state::{CompositeItemState, ControlFocusState};
 use luma::controls::tabs::Tabs;
 use luma::theme::ControlSize;
 use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::button_matrix::render_icon_button_state_header_cell;
@@ -44,9 +45,9 @@ pub(crate) struct AccordionPreview {
 impl AccordionPreview {
     pub(crate) fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            sm: sample_accordion(&look, "luma-studio-accordion-sm", ControlSize::Sm, cx),
-            md: sample_accordion(&look, "luma-studio-accordion-md", ControlSize::Md, cx),
-            lg: sample_accordion(&look, "luma-studio-accordion-lg", ControlSize::Lg, cx),
+            sm: sample_accordion(&look, "luma-studio-accordion-sm", shadcn::ShadcnSize::Sm, cx),
+            md: sample_accordion(&look, "luma-studio-accordion-md", shadcn::ShadcnSize::Md, cx),
+            lg: sample_accordion(&look, "luma-studio-accordion-lg", shadcn::ShadcnSize::Lg, cx),
             look,
         }
     }
@@ -256,14 +257,15 @@ fn accordion_template_state_samples() -> [ButtonStateSample; 5] {
     ]
 }
 
-fn sample_accordion(
+fn sample_accordion<M: 'static>(
     look: &Arc<ShadcnLook>,
     id: impl Into<SharedString>,
-    size: ControlSize,
-    cx: &mut impl gpui::AppContext,
+    size: shadcn::ShadcnSize,
+    cx: &mut Context<M>,
 ) -> Accordion {
     let id = id.into();
-    look.accordion(id.clone())
+    shadcn::Accordion::new(id.clone())
+        .look(look.as_ref())
         .single()
         .size(size)
         .item(demo_item(format!("{id}-account"), "Account", LucideIcon::User, "Profile and security.").expanded(true))

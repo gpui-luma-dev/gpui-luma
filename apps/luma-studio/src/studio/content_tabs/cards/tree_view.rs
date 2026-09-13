@@ -5,6 +5,7 @@ use luma::controls::scroll_container::ScrollContainer;
 use luma::controls::scrollbar::ScrollbarEvent;
 use luma::controls::tree_view::{TreeNode, TreeViewControl, TreeViewEvent, TreeViewSelectionMode};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use luma_look_shadcn as shadcn;
 use luma::{vstack};
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -25,8 +26,8 @@ pub struct TreeViewPanel {
 
 impl TreeViewPanel {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let tree = look
-            .tree_view("studio-tree-view")
+        let tree = shadcn::TreeView::new("studio-tree-view")
+            .look(look.as_ref())
             .selection_mode(TreeViewSelectionMode::Single)
             .items(mock_file_tree())
             .spawn(cx);

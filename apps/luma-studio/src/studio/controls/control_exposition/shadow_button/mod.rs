@@ -14,6 +14,7 @@ use luma::controls::toggle::{Toggle, ToggleEvent};
 use luma::theme::{InteractionState, LumaChrome};
 use luma::{hstack, vstack};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -69,34 +70,51 @@ impl ShadowButtonControlExposition {
             .template(template.clone())
             .spawn(cx);
         let state_preview = cx.new(|_| ButtonStatePreview::new(look.clone(), template.clone()));
-        let reset_button = look.secondary_button("controls-doc-shadow-reset").label("Reset Shadow").spawn(cx);
-        let bounds_toggle = look
-            .secondary_toggle("controls-doc-shadow-show-bounds")
+        let reset_button = shadcn::Button::new("controls-doc-shadow-reset")
+            .look(look.as_ref())
+            .secondary()
+            .label("Reset Shadow")
+            .spawn(cx);
+        let bounds_toggle = shadcn::Toggle::new("controls-doc-shadow-show-bounds")
+            .look(look.as_ref())
+            .secondary()
             .with_data(true)
             .content(|_, _| div().child("Show Bounds").into_any_element())
             .spawn(cx);
-        let color_field = look
-            .textfield("controls-doc-shadow-color")
+        let color_field = shadcn::TextField::new("controls-doc-shadow-color")
+            .look(look.as_ref())
             .placeholder(default_shadow_color_placeholder(default_shadow_color))
             .full_width(true)
             .clean_on_escape(true)
             .validator(shadow_color_validator())
             .spawn(cx);
 
-        let offset_x_slider =
-            look.slider("controls-doc-shadow-offset-x").range(-20..20).step(1).value(shadow.offset_x).spawn(cx);
-        let offset_y_slider =
-            look.slider("controls-doc-shadow-offset-y").range(-8..24).step(1).value(shadow.offset_y).spawn(cx);
-        let blur_slider =
-            look.slider("controls-doc-shadow-blur").range(0..32).step(1).value(shadow.blur_radius).spawn(cx);
-        let spread_slider = look
-            .slider("controls-doc-shadow-spread")
+        let offset_x_slider = shadcn::Slider::new("controls-doc-shadow-offset-x")
+            .look(look.as_ref())
+            .range(-20..20)
+            .step(1)
+            .value(shadow.offset_x)
+            .spawn(cx);
+        let offset_y_slider = shadcn::Slider::new("controls-doc-shadow-offset-y")
+            .look(look.as_ref())
+            .range(-8..24)
+            .step(1)
+            .value(shadow.offset_y)
+            .spawn(cx);
+        let blur_slider = shadcn::Slider::new("controls-doc-shadow-blur")
+            .look(look.as_ref())
+            .range(0..32)
+            .step(1)
+            .value(shadow.blur_radius)
+            .spawn(cx);
+        let spread_slider = shadcn::Slider::new("controls-doc-shadow-spread")
+            .look(look.as_ref())
             .range(-12..20)
             .step(1)
             .value(shadow.spread_radius)
             .spawn(cx);
-        let opacity_slider = look
-            .slider("controls-doc-shadow-opacity")
+        let opacity_slider = shadcn::Slider::new("controls-doc-shadow-opacity")
+            .look(look.as_ref())
             .range(0..100)
             .step(1)
             .value(shadow.opacity * 100.0)

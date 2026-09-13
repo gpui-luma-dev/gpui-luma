@@ -5,6 +5,7 @@ use luma::controls::selector::{Selector, SelectorEvent, SelectorItem, SelectorPl
 use luma::infra::presenter::HasPresenter;
 use luma::controls::toggle::{Toggle, ToggleEvent};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -95,22 +96,23 @@ impl Render for SelectorExpositionLeftPane {
 impl PopupSelectorControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("popup-selector").expect("popup-selector catalog entry");
-        let preview_below = look
-            .selector("controls-doc-selector-below")
+        let preview_below = shadcn::Selector::new("controls-doc-selector-below")
+            .look(look.as_ref())
             .label("Below selector")
             .items(selector_items())
             .placement(SelectorPlacement::BelowStart)
             .invalid(false)
             .spawn(cx);
-        let preview_smart = look
-            .selector("controls-doc-selector-smart")
+        let preview_smart = shadcn::Selector::new("controls-doc-selector-smart")
+            .look(look.as_ref())
             .label("Smart selector")
             .items(selector_items())
             .placement(SelectorPlacement::Smart)
             .invalid(false)
             .spawn(cx);
-        let selection_required_toggle = look
-            .outline_toggle("controls-doc-selector-selection-required")
+        let selection_required_toggle = shadcn::Toggle::new("controls-doc-selector-selection-required")
+            .look(look.as_ref())
+            .outline()
             .with_data(false)
             .content(|_, _| div().child("Selection Required").into_any_element())
             .spawn(cx);

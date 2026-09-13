@@ -5,6 +5,7 @@ use luma::controls::search_selector::{SearchSelector, SearchSelectorEvent, Selec
 use luma::infra::presenter::HasPresenter;
 use luma::controls::toggle::{Toggle, ToggleEvent};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -89,16 +90,17 @@ impl Render for SearchSelectorExpositionLeftPane {
 impl SearchSelectorControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("search-selector").expect("search-selector catalog entry");
-        let preview = look
-            .search_selector("controls-doc-search-selector", search_selector_demo_items())
+        let preview = shadcn::SearchSelector::new("controls-doc-search-selector", search_selector_demo_items())
+            .look(look.as_ref())
             .placeholder("Choose a state…")
             .search_placeholder("Search states")
             .full_width(true)
             .clean_on_escape(true)
             .invalid(false)
             .spawn(cx);
-        let selection_required_toggle = look
-            .outline_toggle("controls-doc-search-selector-selection-required")
+        let selection_required_toggle = shadcn::Toggle::new("controls-doc-search-selector-selection-required")
+            .look(look.as_ref())
+            .outline()
             .with_data(false)
             .content(|_, _| div().child("Selection Required").into_any_element())
             .spawn(cx);

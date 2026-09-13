@@ -5,6 +5,7 @@ use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::overlay_window::{OverlayWindow, OverlayWindowMode};
 use luma::infra::presenter::HasPresenter;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -78,8 +79,16 @@ impl Render for ModalOverlayExpositionLeftPane {
 impl ModalOverlayControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("modal-overlay").expect("modal-overlay catalog entry");
-        let cancel = look.outline_button("controls-doc-dialog-cancel").label("Cancel").spawn(cx);
-        let confirm = look.primary_button("controls-doc-dialog-confirm").label("Confirm").spawn(cx);
+        let cancel = shadcn::Button::new("controls-doc-dialog-cancel")
+            .look(look.as_ref())
+            .outline()
+            .label("Cancel")
+            .spawn(cx);
+        let confirm = shadcn::Button::new("controls-doc-dialog-confirm")
+            .look(look.as_ref())
+            .primary()
+            .label("Confirm")
+            .spawn(cx);
         let overlay = look
             .overlay_window("controls-doc-dialog-overlay")
             .mode(OverlayWindowMode::Modal)
@@ -99,7 +108,11 @@ impl ModalOverlayControlExposition {
             })
             .theme_children([cancel.clone(), confirm.clone()])
             .spawn(cx);
-        let trigger = look.primary_button("controls-doc-dialog-trigger").label("Open modal").spawn(cx);
+        let trigger = shadcn::Button::new("controls-doc-dialog-trigger")
+            .look(look.as_ref())
+            .primary()
+            .label("Open modal")
+            .spawn(cx);
 
         let left_pane = cx.new(|_| ModalOverlayExpositionLeftPane {
             look: look.clone(),

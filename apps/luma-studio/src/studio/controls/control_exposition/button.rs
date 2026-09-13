@@ -7,6 +7,7 @@ use luma::controls::button::{Button, ButtonEvent};
 use luma::infra::presenter::HasPresenter;
 use luma::controls::switch::{Switch, SwitchEvent};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -118,12 +119,29 @@ pub struct ButtonControlExposition {
 impl ButtonControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("button").expect("button catalog entry");
-        let primary = look.primary_button("controls-doc-button-primary").label("Primary").spawn(cx);
-        let secondary = look.secondary_button("controls-doc-button-secondary").label("Secondary").spawn(cx);
-        let outline = look.outline_button("controls-doc-button-outline").label("Outline").spawn(cx);
-        let ghost = look.ghost_button("controls-doc-button-ghost").label("Ghost").spawn(cx);
-        let enabled_switch = look
-            .primary_switch("controls-doc-button-enabled-switch")
+        let primary = shadcn::Button::new("controls-doc-button-primary")
+            .look(look.as_ref())
+            .primary()
+            .label("Primary")
+            .spawn(cx);
+        let secondary = shadcn::Button::new("controls-doc-button-secondary")
+            .look(look.as_ref())
+            .secondary()
+            .label("Secondary")
+            .spawn(cx);
+        let outline = shadcn::Button::new("controls-doc-button-outline")
+            .look(look.as_ref())
+            .outline()
+            .label("Outline")
+            .spawn(cx);
+        let ghost = shadcn::Button::new("controls-doc-button-ghost")
+            .look(look.as_ref())
+            .ghost()
+            .label("Ghost")
+            .spawn(cx);
+        let enabled_switch = shadcn::Switch::new("controls-doc-button-enabled-switch")
+            .look(look.as_ref())
+            .primary()
             .with_data(true)
             .content(|_, _| div().child("Enabled").into_any_element())
             .spawn(cx);

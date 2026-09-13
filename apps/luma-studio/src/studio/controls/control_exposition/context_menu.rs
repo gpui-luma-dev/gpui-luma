@@ -5,6 +5,7 @@ use luma::controls::context_menu::{ContextMenu, ContextMenuEvent};
 use luma::controls::textfield::TextField;
 use luma::infra::menu_item::MenuItem;
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -77,19 +78,19 @@ impl Render for ContextMenuExpositionLeftPane {
 impl ContextMenuControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("context-menu").expect("context-menu catalog entry");
-        let preview = look
-            .context_menu("controls-doc-context-menu")
+        let preview = shadcn::ContextMenu::new("controls-doc-context-menu")
+            .look(look.as_ref())
             .label("Right-click me")
             .items(context_menu_items())
             .spawn(cx);
-        let textfield = look
-            .textfield("controls-doc-context-menu-textfield")
+        let textfield = shadcn::TextField::new("controls-doc-context-menu-textfield")
+            .look(look.as_ref())
             .value("Sample text for context actions")
             .full_width(true)
             .spawn(cx);
         let textfield_target = textfield.clone();
-        let textfield_context_menu = look
-            .context_menu("controls-doc-context-menu-textfield-menu")
+        let textfield_context_menu = shadcn::ContextMenu::new("controls-doc-context-menu-textfield-menu")
+            .look(look.as_ref())
             .target_content(move |_| div().w(px(200.0)).child(textfield_target.clone()))
             .items(textfield_context_menu_items())
             .spawn(cx);

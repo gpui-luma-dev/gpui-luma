@@ -5,8 +5,8 @@ use gpui::{AnyElement, Context, Entity, EventEmitter, Pixels, Render, SharedStri
 use luma::controls::icon_button::IconButton;
 use luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
 use luma::controls::resizable_panels::{PanelHideMode, ResizablePanels, ResizablePanelsTheme};
-use luma::theme::ControlSize;
-use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn::{ShadcnLook};
+use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::layout_config::{LayoutConfig, PanelAlignment, PrimarySideBarPosition};
@@ -317,8 +317,10 @@ fn spawn_activity_rail_buttons<const N: usize>(
     cx: &mut Context<WorkspaceLayout>,
 ) -> [IconButton; N] {
     std::array::from_fn(|index| {
-        look.content_only_icon_button(format!("{prefix}-{index}"), icons[index])
-            .size(ControlSize::Md)
+        shadcn::Button::icon_button(format!("{prefix}-{index}"), icons[index])
+            .look(look.as_ref())
+            .content_only()
+            .size(shadcn::ShadcnSize::Md)
             .spawn(cx)
     })
 }

@@ -7,6 +7,7 @@ use luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use luma::controls::pager::{Pager, PagerEvent, PagerStyle};
 use luma::{vstack, wrappanel};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -220,8 +221,8 @@ impl PagerControlExposition {
         let enabled = true;
         let page_count = page_count_for(total_items, page_size);
 
-        let minimal = look
-            .pager("controls-doc-pager-minimal")
+        let minimal = shadcn::Pager::new("controls-doc-pager-minimal")
+            .look(look.as_ref())
             .style(PagerStyle::Minimal)
             .page_size(page_size)
             .page_size_options(PAGE_SIZES)
@@ -229,8 +230,8 @@ impl PagerControlExposition {
             .current_page(current_page)
             .page_indicator_formatter(|current, total| SharedString::from(format!("{current} / {total}")))
             .spawn(cx);
-        let minimal_edge = look
-            .pager("controls-doc-pager-minimal-edge")
+        let minimal_edge = shadcn::Pager::new("controls-doc-pager-minimal-edge")
+            .look(look.as_ref())
             .style(PagerStyle::MinimalEdge)
             .page_size(page_size)
             .page_size_options(PAGE_SIZES)
@@ -238,16 +239,16 @@ impl PagerControlExposition {
             .current_page(current_page)
             .page_indicator_formatter(|current, total| SharedString::from(format!("{current} of {total}")))
             .spawn(cx);
-        let numeric = look
-            .pager("controls-doc-pager-numeric")
+        let numeric = shadcn::Pager::new("controls-doc-pager-numeric")
+            .look(look.as_ref())
             .style(PagerStyle::Numeric)
             .page_size(page_size)
             .page_size_options(PAGE_SIZES)
             .page_count(page_count)
             .current_page(current_page)
             .spawn(cx);
-        let numeric_no_edges = look
-            .pager("controls-doc-pager-numeric-no-edges")
+        let numeric_no_edges = shadcn::Pager::new("controls-doc-pager-numeric-no-edges")
+            .look(look.as_ref())
             .style(PagerStyle::Numeric)
             .page_size(page_size)
             .page_size_options(PAGE_SIZES)
@@ -257,8 +258,8 @@ impl PagerControlExposition {
             .previous_label("Back")
             .next_label("Next")
             .spawn(cx);
-        let numeric_compact = look
-            .pager("controls-doc-pager-numeric-compact")
+        let numeric_compact = shadcn::Pager::new("controls-doc-pager-numeric-compact")
+            .look(look.as_ref())
             .style(PagerStyle::Numeric)
             .page_size(page_size)
             .page_size_options(PAGE_SIZES)
@@ -280,14 +281,41 @@ impl PagerControlExposition {
             )
         });
 
-        let page_prev_button = look.secondary_button("controls-doc-pager-page-prev").label("Page -").spawn(cx);
-        let page_next_button = look.secondary_button("controls-doc-pager-page-next").label("Page +").spawn(cx);
-        let total_down_button = look.secondary_button("controls-doc-pager-total-down").label("Items -").spawn(cx);
-        let total_up_button = look.secondary_button("controls-doc-pager-total-up").label("Items +").spawn(cx);
-        let size_down_button = look.secondary_button("controls-doc-pager-size-down").label("Per page -").spawn(cx);
-        let size_up_button = look.secondary_button("controls-doc-pager-size-up").label("Per page +").spawn(cx);
-        let enabled_toggle_button =
-            look.outline_button("controls-doc-pager-enabled-toggle").label("Toggle enabled").spawn(cx);
+        let page_prev_button = shadcn::Button::new("controls-doc-pager-page-prev")
+            .look(look.as_ref())
+            .secondary()
+            .label("Page -")
+            .spawn(cx);
+        let page_next_button = shadcn::Button::new("controls-doc-pager-page-next")
+            .look(look.as_ref())
+            .secondary()
+            .label("Page +")
+            .spawn(cx);
+        let total_down_button = shadcn::Button::new("controls-doc-pager-total-down")
+            .look(look.as_ref())
+            .secondary()
+            .label("Items -")
+            .spawn(cx);
+        let total_up_button = shadcn::Button::new("controls-doc-pager-total-up")
+            .look(look.as_ref())
+            .secondary()
+            .label("Items +")
+            .spawn(cx);
+        let size_down_button = shadcn::Button::new("controls-doc-pager-size-down")
+            .look(look.as_ref())
+            .secondary()
+            .label("Per page -")
+            .spawn(cx);
+        let size_up_button = shadcn::Button::new("controls-doc-pager-size-up")
+            .look(look.as_ref())
+            .secondary()
+            .label("Per page +")
+            .spawn(cx);
+        let enabled_toggle_button = shadcn::Button::new("controls-doc-pager-enabled-toggle")
+            .look(look.as_ref())
+            .outline()
+            .label("Toggle enabled")
+            .spawn(cx);
 
         let left_pane = cx.new(|_| PagerExpositionLeftPane {
             look: look.clone(),

@@ -4,6 +4,7 @@ use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma::infra::menu_item::MenuItem;
 use luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -89,14 +90,14 @@ impl Render for PopupMenuExpositionLeftPane {
 impl PopupMenuControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("popup-menu").expect("popup-menu catalog entry");
-        let preview_smart = look
-            .popup_menu("controls-doc-popup-menu-smart")
+        let preview_smart = shadcn::PopupMenu::new("controls-doc-popup-menu-smart")
+            .look(look.as_ref())
             .label("Smart popup")
             .items(popup_menu_items())
             .placement(PopupMenuPlacement::Smart)
             .spawn(cx);
-        let preview_below = look
-            .popup_menu("controls-doc-popup-menu-below")
+        let preview_below = shadcn::PopupMenu::new("controls-doc-popup-menu-below")
+            .look(look.as_ref())
             .label("Below popup")
             .items(popup_menu_items())
             .placement(PopupMenuPlacement::BelowStart)

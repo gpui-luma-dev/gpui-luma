@@ -10,6 +10,7 @@ use luma::theme::{ControlSize, LumaTextStyle, observe_theme_revision};
 
 use crate::look::ShadcnLook;
 use crate::look_context::LookContext;
+use crate::size::ShadcnSize;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
@@ -122,7 +123,7 @@ pub type CardElementRenderer = Arc<dyn Fn(&mut Window, &mut App) -> AnyElement +
 #[derive(Clone)]
 struct ShadcnCardConfig {
     id: SharedString,
-    size: ControlSize,
+    size: ShadcnSize,
     title: Option<SharedString>,
     description: Option<SharedString>,
     header: Option<CardElementRenderer>,
@@ -133,18 +134,19 @@ struct ShadcnCardConfig {
     body_fill: bool,
 }
 
-pub struct ShadcnCardBuilder {
-    look: Arc<ShadcnLook>,
+/// Builder in the guise of a card: Shadcn surface plus content slots, until `.spawn(cx)` / `.render(...)`.
+pub struct Card {
+    look: Option<ShadcnLook>,
     config: ShadcnCardConfig,
 }
 
-impl ShadcnCardBuilder {
-    pub fn new(look: Arc<ShadcnLook>, id: impl Into<SharedString>) -> Self {
+impl Card {
+    pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
-            look,
+            look: None,
             config: ShadcnCardConfig {
                 id: id.into(),
-                size: ControlSize::Md,
+                size: ShadcnSize::Md,
                 title: None,
                 description: None,
                 header: None,
@@ -157,7 +159,17 @@ impl ShadcnCardBuilder {
         }
     }
 
-    pub fn size(mut self, size: ControlSize) -> Self {
+    /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
+    pub fn look(mut self, look: &ShadcnLook) -> Self {
+        self.look = Some(look.clone());
+        self
+    }
+
+    fn resolve_look(&self, cx: &App) -> ShadcnLook {
+        crate::look::resolve_look(self.look.as_ref(), cx.try_global::<ShadcnLook>())
+    }
+
+    pub fn size(mut self, size: ShadcnSize) -> Self {
         self.config.size = size;
         self
     }
@@ -223,21 +235,23 @@ impl ShadcnCardBuilder {
     }
 
     pub fn render(self, window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        render_card(&self.look, &self.config, window, cx)
+        let look = self.resolve_look(cx);
+        render_card(&look, &self.config, window, cx)
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<ShadcnCard> {
-        cx.new(|cx| ShadcnCard::from_config(self.look, self.config, cx))
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<ShadcnCard> {
+        let look = self.resolve_look(cx);
+        cx.new(|cx| ShadcnCard::from_config(look, self.config, cx))
     }
 }
 
 pub struct ShadcnCard {
-    look: Arc<ShadcnLook>,
+    look: ShadcnLook,
     config: ShadcnCardConfig,
 }
 
 impl ShadcnCard {
-    fn from_config(look: Arc<ShadcnLook>, config: ShadcnCardConfig, cx: &mut Context<Self>) -> Self {
+    fn from_config(look: ShadcnLook, config: ShadcnCardConfig, cx: &mut Context<Self>) -> Self {
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self { look, config }
     }
@@ -250,7 +264,7 @@ impl Render for ShadcnCard {
 }
 
 fn render_card(look: &ShadcnLook, config: &ShadcnCardConfig, window: &mut Window, cx: &mut App) -> Stateful<Div> {
-    let card_look = card_look(look, config.size);
+    let card_look = card_look(look, config.size.control_size());
 
     let mut root = div()
         .id(config.id.clone())

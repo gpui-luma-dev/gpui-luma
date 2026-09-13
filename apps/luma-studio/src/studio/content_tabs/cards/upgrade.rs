@@ -11,8 +11,9 @@ use luma::controls::radio_button::{RadioButtonData, ThemedRadioButtonTemplate};
 use luma::controls::radio_group::{RadioGroup, RadioGroupItemLike, horizontal as horizontal_radio_group};
 use luma::controls::textarea::TextArea;
 use luma::controls::textfield::TextField;
-use luma::theme::{ControlSize, InteractionLayer, LumaTextStyle};
+use luma::theme::{InteractionLayer, LumaTextStyle};
 use luma_look_shadcn::ShadcnToken;
+use luma_look_shadcn as shadcn;
 use luma::{declare_form, form_field, hstack, vstack};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
@@ -57,12 +58,12 @@ struct PlanOptionTemplateSpec {
 declare_form! {
     pub struct UpgradePanel {
         controls: {
-            name_field: TextField = look.textfield("upgrade-name").primary(&look).placeholder("Name").full_width(true),
-            email_field: TextField = look.textfield("upgrade-email").primary(&look).placeholder("Email").full_width(true),
-            card_field: TextField = look.textfield("upgrade-card").primary(&look).placeholder("Card Number").full_width(true),
+            name_field: TextField = shadcn::TextField::new("upgrade-name").look(look.as_ref()).placeholder("Name").full_width(true),
+            email_field: TextField = shadcn::TextField::new("upgrade-email").look(look.as_ref()).placeholder("Email").full_width(true),
+            card_field: TextField = shadcn::TextField::new("upgrade-card").look(look.as_ref()).placeholder("Card Number").full_width(true),
             // full_width fills the fixed host (72/64px below); it does not grow with typed content.
-            expiry_field: TextField = look.textfield("upgrade-expiry").primary(&look).placeholder("MM/YY").full_width(true),
-            cvc_field: TextField = look.textfield("upgrade-cvc").primary(&look).placeholder("CVC").full_width(true),
+            expiry_field: TextField = shadcn::TextField::new("upgrade-expiry").look(look.as_ref()).placeholder("MM/YY").full_width(true),
+            cvc_field: TextField = shadcn::TextField::new("upgrade-cvc").look(look.as_ref()).placeholder("CVC").full_width(true),
             plan_group: RadioGroup<PlanOptionItem> = horizontal_radio_group("upgrade-plan")
                 .item_element_template(plan_option_item_element_template(look.clone()))
                 .with_item_layout(|items, _, _, _| {
@@ -74,14 +75,12 @@ declare_form! {
                 })
                 .items(plan_items())
                 .selected("starter"),
-            notes_area: Entity<TextArea> = look
-                .textarea("upgrade-notes")
-                .primary(&look)
+            notes_area: Entity<TextArea> = shadcn::TextArea::new("upgrade-notes").look(look.as_ref())
+
                 .placeholder("Notes")
                 .full_width(true)
                 .rows(3),
-            terms_checkbox: Checkbox = look
-                .primary_checkbox("upgrade-terms")
+            terms_checkbox: Checkbox = shadcn::Checkbox::new("upgrade-terms").look(look.as_ref()).primary()
                 .with_data(true)
                 .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
                 => CheckboxEvent |this, event, cx| {
@@ -90,8 +89,7 @@ declare_form! {
                         cx.notify();
                     }
                 },
-            email_checkbox: Checkbox = look
-                .primary_checkbox("upgrade-email-opt")
+            email_checkbox: Checkbox = shadcn::Checkbox::new("upgrade-email-opt").look(look.as_ref()).primary()
                 .with_data(false)
                 .content(|_, _| div().child("Allow us to send you emails").into_any_element())
                 => CheckboxEvent |this, event, cx| {
@@ -100,12 +98,12 @@ declare_form! {
                         cx.notify();
                     }
                 },
-            cancel_button: Entity<Button> = look.outline_button("upgrade-cancel").label("Cancel").size(size),
-            upgrade_button: Entity<Button> = look.primary_button("upgrade-submit").label("Upgrade Plan").size(size),
+            cancel_button: Entity<Button> = shadcn::Button::new("upgrade-cancel").look(look.as_ref()).outline().label("Cancel").size(size),
+            upgrade_button: Entity<Button> = shadcn::Button::new("upgrade-submit").look(look.as_ref()).primary().label("Upgrade Plan").size(size),
         },
         args: {
             look: Arc<ShadcnLook>,
-            size: ControlSize,
+            size: ShadcnSize,
         },
         fields: {
             terms_accepted: bool = true,

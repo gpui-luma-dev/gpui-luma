@@ -7,6 +7,7 @@ use luma::controls::progress::Progress;
 use luma::controls::slider::{Slider, SliderEvent};
 use luma::controls::switch::{Switch, SwitchEvent};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use luma::{declare_form, vstack};
 
@@ -17,44 +18,38 @@ const SYSTEM_PREFERENCES_CARD_WIDTH: f32 = 380.0;
 declare_form! {
     pub struct SystemPreferencesPanel {
         controls: {
-            two_factor_switch: Switch = look
-                .primary_switch("luma-studio-system-two-factor")
+            two_factor_switch: Switch = shadcn::Switch::new("luma-studio-system-two-factor").look(look.as_ref()).primary()
                 .with_data(false)
                 .content(|_, _| div().child("Two-factor authentication").into_any_element())
                 => SwitchEvent |this, event, cx| {
                     this.handle_two_factor_event(event, cx);
                 },
-            terms_checkbox: Checkbox = look
-                .primary_checkbox("luma-studio-system-terms")
+            terms_checkbox: Checkbox = shadcn::Checkbox::new("luma-studio-system-terms").look(look.as_ref()).primary()
                 .with_data(false)
                 .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
                 => CheckboxEvent |this, event, cx| {
                     this.handle_terms_event(event, cx);
                 },
-            social_checkbox: Checkbox = look
-                .primary_checkbox("luma-studio-system-social")
+            social_checkbox: Checkbox = shadcn::Checkbox::new("luma-studio-system-social").look(look.as_ref()).primary()
                 .with_data(true)
                 .content(|_, _| div().child("Social").into_any_element())
                 => CheckboxEvent |this, event, cx| {
                     this.handle_social_event(event, cx);
                 },
-            referral_checkbox: Checkbox = look
-                .primary_checkbox("luma-studio-system-referral")
+            referral_checkbox: Checkbox = shadcn::Checkbox::new("luma-studio-system-referral").look(look.as_ref()).primary()
                 .with_data(false)
                 .content(|_, _| div().child("Referral").into_any_element())
                 => CheckboxEvent |this, event, cx| {
                     this.handle_referral_event(event, cx);
                 },
-            budget_slider: Slider = look
-                .slider("luma-studio-system-budget")
+            budget_slider: Slider = shadcn::Slider::new("luma-studio-system-budget").look(look.as_ref())
                 .range(0..100)
                 .step(5)
                 .value(40)
                 => SliderEvent |this, event, cx| {
                     this.handle_budget_event(event, cx);
                 },
-            completion_progress: Progress = look
-                .progress("luma-studio-system-completion")
+            completion_progress: Progress = shadcn::Progress::new("luma-studio-system-completion").look(look.as_ref())
                 .range(0..100)
                 .value(initial_completion as i32),
         },

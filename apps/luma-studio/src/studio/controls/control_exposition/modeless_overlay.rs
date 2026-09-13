@@ -4,6 +4,7 @@ use gpui::{Context, Entity, Focusable, Render, Subscription, Window, div, prelud
 use luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use luma::controls::overlay_window::{OverlayWindow, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -82,7 +83,10 @@ impl Render for ModelessOverlayExpositionLeftPane {
 impl ModelessOverlayControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("modeless-overlay").expect("modeless-overlay catalog entry");
-        let close = look.content_only_icon_button("controls-doc-modeless-close", LucideIcon::X).spawn(cx);
+        let close = shadcn::Button::icon_button("controls-doc-modeless-close", LucideIcon::X)
+            .look(look.as_ref())
+            .content_only()
+            .spawn(cx);
         let overlay = look
             .overlay_window("controls-doc-modeless-overlay")
             .mode(OverlayWindowMode::Modeless)
@@ -106,9 +110,16 @@ impl ModelessOverlayControlExposition {
             })
             .theme_children([close.clone()])
             .spawn(cx);
-        let trigger = look.primary_button("controls-doc-modeless-trigger").label("Open modeless").spawn(cx);
-        let background_counter =
-            look.outline_button("controls-doc-modeless-background").label("Background 0").spawn(cx);
+        let trigger = shadcn::Button::new("controls-doc-modeless-trigger")
+            .look(look.as_ref())
+            .primary()
+            .label("Open modeless")
+            .spawn(cx);
+        let background_counter = shadcn::Button::new("controls-doc-modeless-background")
+            .look(look.as_ref())
+            .outline()
+            .label("Background 0")
+            .spawn(cx);
 
         let left_pane = cx.new(|_| ModelessOverlayExpositionLeftPane {
             look: look.clone(),

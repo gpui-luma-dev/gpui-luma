@@ -5,6 +5,7 @@ use std::sync::Arc;
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -95,9 +96,13 @@ impl TabsControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("tabs-navigation").expect("tabs-navigation catalog entry");
 
-        let tabs = look.tabs("controls-doc-tabs").items(project_tabs()).active("activity").spawn(cx);
-        let uniform_tabs = look
-            .tabs("controls-doc-tabs-uniform")
+        let tabs = shadcn::Tabs::new("controls-doc-tabs")
+            .look(look.as_ref())
+            .items(project_tabs())
+            .active("activity")
+            .spawn(cx);
+        let uniform_tabs = shadcn::Tabs::new("controls-doc-tabs-uniform")
+            .look(look.as_ref())
             .items(uniform_width_tabs())
             .active("recent-activity")
             .width_mode(TabsWidthMode::Uniform)

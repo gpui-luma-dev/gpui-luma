@@ -3,9 +3,10 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
-use luma::controls::textfield::{TextField, TextFieldBuilder, TextFieldEvent, TextFieldLook, TextFieldLookOverride};
+use luma::controls::textfield::{TextField, TextFieldEvent, TextFieldLook, TextFieldLookOverride};
 use luma::vstack;
 use luma_look_shadcn::{ShadcnFont, ShadcnLook};
+use luma_look_shadcn as shadcn;
 
 use super::super::model::TOKEN_CATEGORIES;
 use super::super::parsing::effective_token_color;
@@ -112,8 +113,8 @@ impl ColorsPanel {
         expanded_categories: &HashSet<String>,
         cx: &mut Context<Self>,
     ) -> Entity<AccordionControl> {
-        let mut accordion_builder = look
-            .accordion("luma-studio-token-accordion")
+        let mut accordion_builder = shadcn::Accordion::new("luma-studio-token-accordion")
+            .look(look.as_ref())
             .multiple()
             .item_dividers(false)
             .trigger_min_height(28.0)
@@ -247,12 +248,12 @@ pub(super) fn token_field_look_override_arc(theme: &ShadcnLook) -> TextFieldLook
     })
 }
 
-pub(super) fn apply_token_field_style(theme: &ShadcnLook, builder: TextFieldBuilder) -> TextFieldBuilder {
+pub(super) fn apply_token_field_style(theme: &ShadcnLook, builder: shadcn::TextField) -> shadcn::TextField {
     let override_fn = token_field_look_override_arc(theme);
     builder.compact().look_override(move |look| override_fn(look))
 }
 
-/// Keep compact token fields on the same Primary template used by `look.textfield()`.
+/// Keep compact token fields on the same Primary template used by `shadcn::TextField::new().look(look.as_ref())`.
 pub(super) fn sync_token_field_template<T>(theme: &Arc<ShadcnLook>, field: &TextField, cx: &mut Context<T>) {
     field.update(cx, |field, cx| {
         field.set_template(theme.primary_textfield_template(), cx);

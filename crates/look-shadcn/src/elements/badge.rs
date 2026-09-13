@@ -1,10 +1,9 @@
-use std::sync::Arc;
-
 use gpui::{Div, FontWeight, IntoElement, SharedString, div, px, prelude::*};
 use luma::infra::icon::{IconSource, lucide_icon};
 use luma::theme::{ControlSize, LumaTextStyle};
 
 use crate::look::ShadcnLook;
+use crate::size::ShadcnSize;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
 use crate::stylesheet::{embedded_stylesheet, find_badge_color_rule, resolve_badge_color_rule, resolve_button_metrics_rule};
 use crate::tokens::{ShadcnFont, ShadcnToken};
@@ -38,10 +37,10 @@ pub enum BadgeIconPlacement {
 
 #[derive(Clone)]
 pub struct Badge {
-    look: Arc<ShadcnLook>,
+    look: ShadcnLook,
     label: SharedString,
     variant: BadgeVariant,
-    size: ControlSize,
+    size: ShadcnSize,
     icon: Option<IconSource>,
     icon_placement: BadgeIconPlacement,
 }
@@ -119,12 +118,12 @@ impl BadgeColorTable {
 }
 
 impl Badge {
-    pub fn new(look: Arc<ShadcnLook>, label: impl Into<SharedString>) -> Self {
+    pub fn new(look: ShadcnLook, label: impl Into<SharedString>) -> Self {
         Self {
             look,
             label: label.into(),
             variant: BadgeVariant::Default,
-            size: ControlSize::Md,
+            size: ShadcnSize::Md,
             icon: None,
             icon_placement: BadgeIconPlacement::Start,
         }
@@ -140,7 +139,7 @@ impl Badge {
         self
     }
 
-    pub fn size(mut self, size: ControlSize) -> Self {
+    pub fn size(mut self, size: ShadcnSize) -> Self {
         self.size = size;
         self
     }
@@ -204,7 +203,7 @@ impl IntoElement for Badge {
     type Element = Div;
 
     fn into_element(self) -> Self::Element {
-        let look = badge_look(&self.look, self.variant, self.size);
+        let look = badge_look(&self.look, self.variant, self.size.control_size());
         let mut root = div()
             .flex()
             .items_center()
@@ -268,7 +267,7 @@ fn render_badge_icon(icon: &IconSource, color: gpui::Hsla, size: f32) -> gpui::A
 
 impl ShadcnLook {
     pub fn badge(&self, label: impl Into<SharedString>) -> Badge {
-        Badge::new(Arc::new(self.clone()), label)
+        Badge::new(self.clone(), label)
     }
 }
 

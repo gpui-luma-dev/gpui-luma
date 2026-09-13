@@ -15,7 +15,8 @@ use luma::theme::{ControlSize, InteractionState};
 use luma::{hstack, vstack};
 use luma::controls::split_button::{SplitButton, SplitButtonEvent};
 use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use luma_look_shadcn as shadcn;
+use luma_look_shadcn::{ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::event_stream::ControlEventStream;
@@ -61,10 +62,13 @@ impl SplitButtonControlExposition {
             )
         });
         let variants = [
-            ("Primary", look.primary_split_button("controls-split-button-primary")),
-            ("Secondary", look.secondary_split_button("controls-split-button-secondary")),
-            ("Outline", look.outline_split_button("controls-split-button-outline")),
-            ("Ghost", look.ghost_split_button("controls-split-button-ghost")),
+            ("Primary", shadcn::SplitButton::new("controls-split-button-primary").look(look.as_ref()).primary()),
+            (
+                "Secondary",
+                shadcn::SplitButton::new("controls-split-button-secondary").look(look.as_ref()).secondary(),
+            ),
+            ("Outline", shadcn::SplitButton::new("controls-split-button-outline").look(look.as_ref()).outline()),
+            ("Ghost", shadcn::SplitButton::new("controls-split-button-ghost").look(look.as_ref()).ghost()),
         ];
         let mut pairs = Vec::new();
         let mut subscriptions = Vec::new();
@@ -91,8 +95,9 @@ impl SplitButtonControlExposition {
 
             pairs.push(SplitButtonPair { control, label });
         }
-        let content_example = look
-            .primary_split_button("controls-split-content-example")
+        let content_example = shadcn::SplitButton::new("controls-split-content-example")
+            .look(look.as_ref())
+            .primary()
             .label("Label")
             .content(|model: &PopupMenuTriggerModel, _| {
                 hstack! {
@@ -271,7 +276,7 @@ fn render_split_button_content_code(look: &ShadcnLook) -> AnyElement {
                 .font_family(controls_mono_font())
                 .text_color(chrome.muted_text)
                 .child(
-                    "use luma::infra::icon::lucide_icon;\nuse luma::controls::popup_menu::PopupMenuTriggerModel;\nuse luma::infra::presenter::HasPresenter;\n\nlet open = look\n    .primary_split_button(\"open\")\n    .label(\"Label\")\n    .content(|model: &PopupMenuTriggerModel, _| {\n        hstack! {\n            gap = 6.0;\n            align = center;\n            lucide_icon(LucideIcon::Pencil, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0),\n            div().child(model.label.clone()),\n        }\n    })\n    .items(items)\n    .spawn(cx);",
+                    "use luma::infra::icon::lucide_icon;\nuse luma::controls::popup_menu::PopupMenuTriggerModel;\nuse luma::infra::presenter::HasPresenter;\n\nlet open = shadcn::SplitButton::new(\"open\").look(look.as_ref()).primary()\n    .label(\"Label\")\n    .content(|model: &PopupMenuTriggerModel, _| {\n        hstack! {\n            gap = 6.0;\n            align = center;\n            lucide_icon(LucideIcon::Pencil, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0),\n            div().child(model.label.clone()),\n        }\n    })\n    .items(items)\n    .spawn(cx);",
                 ),
         )
         .into_any_element()

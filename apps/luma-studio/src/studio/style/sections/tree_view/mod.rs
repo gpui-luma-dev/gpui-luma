@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use luma::controls::tabs::Tabs;
 use luma::controls::tree_view::{TreeNode, TreeView, TreeViewSelectionMode};
-use luma::theme::ControlSize;
 use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::shell::section_shell_with_width;
@@ -20,10 +20,10 @@ pub(crate) struct TreeViewPreview {
 impl TreeViewPreview {
     pub(crate) fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            sm: sample_tree(&look, "luma-studio-tree-sm", ControlSize::Sm, cx),
-            md: sample_tree(&look, "luma-studio-tree-md", ControlSize::Md, cx),
-            lg: sample_tree(&look, "luma-studio-tree-lg", ControlSize::Lg, cx),
-            template: sample_tree(&look, "luma-studio-tree-template", ControlSize::Md, cx),
+            sm: sample_tree(&look, "luma-studio-tree-sm", shadcn::ShadcnSize::Sm, cx),
+            md: sample_tree(&look, "luma-studio-tree-md", shadcn::ShadcnSize::Md, cx),
+            lg: sample_tree(&look, "luma-studio-tree-lg", shadcn::ShadcnSize::Lg, cx),
+            template: sample_tree(&look, "luma-studio-tree-template", shadcn::ShadcnSize::Md, cx),
             look,
         }
     }
@@ -127,14 +127,15 @@ fn size_column(
         .into_any_element()
 }
 
-fn sample_tree(
+fn sample_tree<M: 'static>(
     look: &Arc<ShadcnLook>,
     id: impl Into<SharedString>,
-    size: ControlSize,
-    cx: &mut impl gpui::AppContext,
+    size: shadcn::ShadcnSize,
+    cx: &mut Context<M>,
 ) -> TreeView<SharedString> {
     let id = id.into();
-    look.tree_view(id.clone())
+    shadcn::TreeView::new(id.clone())
+        .look(look.as_ref())
         .selection_mode(TreeViewSelectionMode::Single)
         .size(size)
         .items(sample_nodes(id.as_ref()))

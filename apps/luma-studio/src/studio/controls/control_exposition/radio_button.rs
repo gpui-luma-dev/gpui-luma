@@ -6,6 +6,7 @@ use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma::infra::presenter::HasPresenter;
 use luma::controls::radio_button::{RadioButton, RadioButtonEvent};
 use luma_look_shadcn::prelude::*;
+use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -108,17 +109,23 @@ impl Render for RadioButtonExpositionLeftPane {
 impl RadioButtonControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("radio-button").expect("radio-button catalog entry");
-        let secondary_radio = look
-            .secondary_radio("controls-doc-radio-secondary")
+        let secondary_radio = shadcn::Radio::new("controls-doc-radio-secondary")
+            .look(look.as_ref())
+            .secondary()
             .with_data(false)
             .content(|_, _| div().child("Secondary").into_any_element())
             .spawn(cx);
-        let primary_radio = look
-            .primary_radio("controls-doc-radio-primary")
+        let primary_radio = shadcn::Radio::new("controls-doc-radio-primary")
+            .look(look.as_ref())
+            .primary()
             .with_data(false)
             .content(|_, _| div().child("Primary").into_any_element())
             .spawn(cx);
-        let content_only_radio = look.content_only_radio("controls-doc-radio-content-only").with_data(false).spawn(cx);
+        let content_only_radio = shadcn::Radio::new("controls-doc-radio-content-only")
+            .look(look.as_ref())
+            .content_only()
+            .with_data(false)
+            .spawn(cx);
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,

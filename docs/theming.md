@@ -98,18 +98,17 @@ SDK and look crates must **never** use GPUI's text helpers directly. Instead, th
 
 Design-language specifics (like Shadcn variants, styled card containers, and badges) reside entirely inside the look crate (`crates/look-shadcn`), leaving the core SDK look-agnostic. Shared provenance shapes live in `crates/look-core`. A second look stub lives in `crates/look-radix` (`Look`, look-owned builders, and `LookControlExt` for templates/overlay) and implements the same SDK `*Theme` traits without Shadcn token names.
 
-These extensions are implemented via trait extension on the active theme:
+These extensions are implemented as look-owned builders (leftover factories remain only for overlay window, split view, and resizable panels):
 ```rust
-pub trait ShadcnLookControlExt {
-    fn button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()>;
-    fn card(&self, id: impl Into<SharedString>) -> ShadcnCardBuilder;
-    fn badge(&self, label: impl Into<SharedString>) -> Badge;
-    // ... maps specialized controls directly to Shadcn templates
-}
-```
- Downstream applications call these methods (e.g. `look.primary_button("save")`, `look.card("panel")`) to spawn controls or look-layer styled containers pre-bound to Shadcn tokens.
+use luma_look_shadcn as shadcn;
 
-To author another look without editing the SDK: implement the needed `*Theme` traits, expose a look-local factory ext, and keep source interpretation (CSS, 12-step scales, …) inside the look crate. See `luma_look_core` crate docs and [`docs/look-boundary-inventory.md`](look-boundary-inventory.md).
+shadcn::Button::new("save").look(&look).primary().label("Save").spawn(cx);
+shadcn::Card::new("panel").look(&look).spawn(cx);
+look.badge("New");
+```
+Downstream applications bind a look with `.look(&look)` (or rely on ambient `cx.set_global(look)` / `ShadcnLook::built_in()`) and spawn controls pre-bound to Shadcn tokens.
+
+To author another look without editing the SDK: implement the needed `*Theme` traits, expose look-owned builders (or leftover factories), and keep source interpretation (CSS, 12-step scales, …) inside the look crate. See `luma_look_core` crate docs and [`docs/look-boundary-inventory.md`](look-boundary-inventory.md).
 
 ---
 
