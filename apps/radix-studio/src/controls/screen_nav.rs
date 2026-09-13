@@ -8,7 +8,8 @@ use luma::controls::toggle::{Toggle, ToggleEvent};
 use luma::hstack;
 use luma::infra::presenter::HasPresenter;
 use luma::theme::ThemeMode;
-use luma_look_radix::{RadixLook, RadixLookControlExt};
+use luma_look_radix::Look;
+use luma_look_radix as radix;
 
 use crate::assets::{icon_named, react_icon};
 use crate::tabs::RadixStudioTab;
@@ -23,7 +24,7 @@ pub enum ScreenNavEvent {
 }
 
 pub struct ScreenNav {
-    look: Arc<RadixLook>,
+    look: Arc<Look>,
     active: RadixStudioTab,
     custom_palette: Toggle,
     colors: Toggle,
@@ -37,17 +38,29 @@ pub struct ScreenNav {
 impl EventEmitter<ScreenNavEvent> for ScreenNav {}
 
 impl ScreenNav {
-    pub fn new(look: &Arc<RadixLook>, cx: &mut Context<Self>) -> Self {
-        let custom_palette = look.page_toggle("page-custom-palette").with_data(true).label("Custom Palette").spawn(cx);
-        let colors = look.page_toggle("page-colors").with_data(false).label("Colors").spawn(cx);
-        let icons = look.page_toggle("page-icons").with_data(false).label("Icons").spawn(cx);
-        let style_guide = look.page_toggle("page-style-guide").with_data(false).label("Style Guide").spawn(cx);
-        let developer = look.page_toggle("page-developer").with_data(false).label("Developer").spawn(cx);
+    pub fn new(look: &Arc<Look>, cx: &mut Context<Self>) -> Self {
+        let custom_palette = radix::Toggle::new("page-custom-palette")
+            .look(look)
+            .page()
+            .with_data(true)
+            .label("Custom Palette")
+            .spawn(cx);
+        let colors = radix::Toggle::new("page-colors").look(look).page().with_data(false).label("Colors").spawn(cx);
+        let icons = radix::Toggle::new("page-icons").look(look).page().with_data(false).label("Icons").spawn(cx);
+        let style_guide = radix::Toggle::new("page-style-guide")
+            .look(look)
+            .page()
+            .with_data(false)
+            .label("Style Guide")
+            .spawn(cx);
+        let developer =
+            radix::Toggle::new("page-developer").look(look).page().with_data(false).label("Developer").spawn(cx);
         // Quiet ghost: transparent at rest, soft fill on hover, no focus ring. A `Toggle`
         // would paint the accent fill in its selected state, so the mode lives in the look.
         let icon_look = Arc::clone(look);
-        let theme_toggle = look
-            .quiet_ghost_button("screen-nav-theme")
+        let theme_toggle = radix::Button::new("screen-nav-theme")
+            .look(look)
+            .ghost_quiet()
             .content(move |model, _| {
                 let color = model.resolved_look.as_ref().map_or(Hsla::default(), |look| look.foreground);
                 let name = match icon_look.mode() {

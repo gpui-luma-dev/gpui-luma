@@ -7,20 +7,21 @@
 use std::sync::Arc;
 
 use gpui::{BoxShadow, Hsla, point, px};
-use luma::controls::switch::{SwitchPalette, SwitchScale, SwitchTheme};
+use luma::controls::button::ButtonTemplate;
+use luma::controls::switch::{SwitchPalette, SwitchScale, SwitchTheme, ThemedSwitchTemplate};
 use luma::theme::{ControlSize, InteractionState, MetricTokens};
 
-use crate::button::RadixButtonPaint;
-use crate::button_layout::RadixRadius;
-use crate::look::RadixLook;
+use crate::button::Paint;
+use crate::button_layout::Radius;
+use crate::look::Look;
 use crate::scale::ScaleFamily;
 use crate::semantic::SemanticRole;
-use crate::tone::RadixTone;
+use crate::tone::Tone;
 use crate::typography::{font_family, label_typography};
 
 /// The Radix Themes switch variant scheme (Classic / Surface / Soft).
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum RadixSwitchVariant {
+pub enum SwitchVariant {
     Classic,
     #[default]
     Surface,
@@ -29,14 +30,14 @@ pub enum RadixSwitchVariant {
 
 /// Radix `size` prop on Switch. Default is [`Self::Two`].
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum RadixSwitchSize {
+pub enum SwitchSize {
     One,
     #[default]
     Two,
     Three,
 }
 
-impl RadixSwitchSize {
+impl SwitchSize {
     pub const ALL: [Self; 3] = [Self::One, Self::Two, Self::Three];
 
     pub fn as_str(self) -> &'static str {
@@ -82,19 +83,19 @@ impl RadixSwitchSize {
 }
 
 /// Radix `--radius-thumb` for the given theme radius setting.
-fn radius_thumb(radius: RadixRadius) -> f32 {
+fn radius_thumb(radius: Radius) -> f32 {
     match radius {
-        RadixRadius::None | RadixRadius::Small => 0.5,
-        RadixRadius::Medium | RadixRadius::Large | RadixRadius::Full => 9999.0,
+        Radius::None | Radius::Small => 0.5,
+        Radius::Medium | Radius::Large | Radius::Full => 9999.0,
     }
 }
 
-pub fn resolve_switch_radius(size: RadixSwitchSize, radius: RadixRadius) -> f32 {
+pub fn resolve_switch_radius(size: SwitchSize, radius: Radius) -> f32 {
     let themed = size.radius_base() * radius.factor();
     themed.max(radius_thumb(radius)).min(size.height() / 2.0)
 }
 
-pub fn switch_scale_for(size: RadixSwitchSize, radius: RadixRadius) -> SwitchScale {
+pub fn switch_scale_for(size: SwitchSize, radius: Radius) -> SwitchScale {
     let height = size.height();
     let width = height * 1.75;
     let inset = 1.0;
@@ -110,11 +111,11 @@ pub fn switch_scale_for(size: RadixSwitchSize, radius: RadixRadius) -> SwitchSca
     }
 }
 
-struct RadixSwitchTheme {
-    look: RadixLook,
-    variant: RadixSwitchVariant,
-    paint: RadixButtonPaint,
-    geometry: Option<(RadixSwitchSize, RadixRadius)>,
+struct SwitchThemeAdapter {
+    look: Look,
+    variant: SwitchVariant,
+    paint: Paint,
+    geometry: Option<(SwitchSize, Radius)>,
 }
 
 fn alpha(color: Hsla, a: f32) -> Hsla {
@@ -142,13 +143,13 @@ fn thumb_shadow(on: bool) -> Vec<BoxShadow> {
     ]
 }
 
-impl SwitchTheme for RadixSwitchTheme {
+impl SwitchTheme for SwitchThemeAdapter {
     fn resolve(&self, on: bool, state: InteractionState, size: ControlSize) -> SwitchPalette {
         let look = &self.look;
         let high_contrast = self.paint.high_contrast;
         let family = match self.paint.tone {
-            RadixTone::Accent => ScaleFamily::Color,
-            RadixTone::Gray => ScaleFamily::Gray,
+            Tone::Accent => ScaleFamily::Color,
+            Tone::Gray => ScaleFamily::Gray,
         };
         let step = |n| look.resolve_step(family, n).hsla();
         let gray = |n| look.resolve_step(ScaleFamily::Gray, n).hsla();
@@ -165,20 +166,18 @@ impl SwitchTheme for RadixSwitchTheme {
             (alpha(gray(3), 0.55), alpha(gray(3), 0.55), gray(2), gray(2), thumb_shadow(false))
         } else {
             match (self.variant, on) {
-                (RadixSwitchVariant::Surface, false) => {
+                (SwitchVariant::Surface, false) => {
                     (alpha(gray(3), 0.55), alpha(gray(5), 0.7), white, white, thumb_shadow(false))
                 }
-                (RadixSwitchVariant::Surface, true) => (accent_on, accent_on, white, white, thumb_shadow(true)),
-                (RadixSwitchVariant::Classic, false) => {
+                (SwitchVariant::Surface, true) => (accent_on, accent_on, white, white, thumb_shadow(true)),
+                (SwitchVariant::Classic, false) => {
                     (alpha(gray(4), 0.6), alpha(gray(5), 0.55), white, white, thumb_shadow(false))
                 }
-                (RadixSwitchVariant::Classic, true) => {
-                    (accent_on, alpha(gray(3), 0.5), white, white, thumb_shadow(true))
-                }
-                (RadixSwitchVariant::Soft, false) => {
+                (SwitchVariant::Classic, true) => (accent_on, alpha(gray(3), 0.5), white, white, thumb_shadow(true)),
+                (SwitchVariant::Soft, false) => {
                     (alpha(gray(3), 0.55), alpha(gray(3), 0.55), white, white, thumb_shadow(false))
                 }
-                (RadixSwitchVariant::Soft, true) => (soft_on, soft_on, white, white, thumb_shadow(true)),
+                (SwitchVariant::Soft, true) => (soft_on, soft_on, white, white, thumb_shadow(true)),
             }
         };
 
@@ -212,72 +211,82 @@ impl SwitchTheme for RadixSwitchTheme {
             return switch_scale_for(radix_size, radius);
         }
         let radix_size = match size {
-            ControlSize::Sm => RadixSwitchSize::One,
-            ControlSize::Md => RadixSwitchSize::Two,
-            ControlSize::Lg => RadixSwitchSize::Three,
+            ControlSize::Sm => SwitchSize::One,
+            ControlSize::Md => SwitchSize::Two,
+            ControlSize::Lg => SwitchSize::Three,
         };
-        switch_scale_for(radix_size, RadixRadius::Medium)
+        switch_scale_for(radix_size, Radius::Medium)
     }
 }
 
-pub fn switch_theme(look: Arc<RadixLook>) -> Arc<dyn SwitchTheme> {
-    switch_theme_with(look, RadixSwitchVariant::default(), RadixButtonPaint::accent())
+pub fn switch_theme(look: &Look) -> Arc<dyn SwitchTheme> {
+    switch_theme_with(look, SwitchVariant::default(), Paint::accent())
 }
 
-pub fn switch_theme_with(
-    look: Arc<RadixLook>,
-    variant: RadixSwitchVariant,
-    paint: RadixButtonPaint,
-) -> Arc<dyn SwitchTheme> {
-    Arc::new(RadixSwitchTheme { look: look.as_ref().clone(), variant, paint, geometry: None })
+pub fn switch_theme_with(look: &Look, variant: SwitchVariant, paint: Paint) -> Arc<dyn SwitchTheme> {
+    Arc::new(SwitchThemeAdapter { look: look.clone(), variant, paint, geometry: None })
 }
 
 pub fn switch_theme_for(
-    look: Arc<RadixLook>,
-    variant: RadixSwitchVariant,
-    paint: RadixButtonPaint,
-    size: RadixSwitchSize,
-    radius: RadixRadius,
+    look: &Look,
+    variant: SwitchVariant,
+    paint: Paint,
+    size: SwitchSize,
+    radius: Radius,
 ) -> Arc<dyn SwitchTheme> {
-    Arc::new(RadixSwitchTheme { look: look.as_ref().clone(), variant, paint, geometry: Some((size, radius)) })
+    Arc::new(SwitchThemeAdapter { look: look.clone(), variant, paint, geometry: Some((size, radius)) })
+}
+
+pub fn switch_template(
+    look: &Look,
+    variant: SwitchVariant,
+    paint: Paint,
+) -> Arc<dyn ButtonTemplate<luma::controls::switch::SwitchData>> {
+    Arc::new(ThemedSwitchTemplate::new(switch_theme_with(look, variant, paint)))
+}
+
+pub fn switch_template_for(
+    look: &Look,
+    variant: SwitchVariant,
+    paint: Paint,
+    size: SwitchSize,
+    radius: Radius,
+) -> Arc<dyn ButtonTemplate<luma::controls::switch::SwitchData>> {
+    Arc::new(ThemedSwitchTemplate::new(switch_theme_for(look, variant, paint, size, radius)))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn palette(variant: RadixSwitchVariant, on: bool) -> SwitchPalette {
-        let look = Arc::new(RadixLook::built_in());
-        switch_theme_with(look, variant, RadixButtonPaint::accent()).resolve(
-            on,
-            InteractionState::default(),
-            ControlSize::Md,
-        )
+    fn palette(variant: SwitchVariant, on: bool) -> SwitchPalette {
+        let look = Look::built_in();
+        switch_theme_with(&look, variant, Paint::accent()).resolve(on, InteractionState::default(), ControlSize::Md)
     }
 
     #[test]
     fn surface_on_uses_primary_fill() {
-        let look = RadixLook::built_in();
+        let look = Look::built_in();
         assert_eq!(
-            palette(RadixSwitchVariant::Surface, true).track_background,
+            palette(SwitchVariant::Surface, true).track_background,
             look.resolve_role(SemanticRole::Primary).hsla()
         );
     }
 
     #[test]
     fn soft_on_uses_step_four() {
-        let look = RadixLook::built_in();
+        let look = Look::built_in();
         assert_eq!(
-            palette(RadixSwitchVariant::Soft, true).track_background,
+            palette(SwitchVariant::Soft, true).track_background,
             look.resolve_step(ScaleFamily::Color, 4).hsla()
         );
     }
 
     #[test]
     fn surface_high_contrast_uses_step_twelve() {
-        let look = Arc::new(RadixLook::built_in());
-        let paint = RadixButtonPaint::accent().high_contrast();
-        let on = switch_theme_with(Arc::clone(&look), RadixSwitchVariant::Surface, paint).resolve(
+        let look = Look::built_in();
+        let paint = Paint::accent().high_contrast();
+        let on = switch_theme_with(&look, SwitchVariant::Surface, paint).resolve(
             true,
             InteractionState::default(),
             ControlSize::Md,
@@ -287,14 +296,14 @@ mod tests {
 
     #[test]
     fn medium_radius_pills_the_track() {
-        let size = RadixSwitchSize::Two;
-        assert_eq!(resolve_switch_radius(size, RadixRadius::Medium), size.height() / 2.0);
-        assert!(resolve_switch_radius(size, RadixRadius::None) < 1.0);
+        let size = SwitchSize::Two;
+        assert_eq!(resolve_switch_radius(size, Radius::Medium), size.height() / 2.0);
+        assert!(resolve_switch_radius(size, Radius::None) < 1.0);
     }
 
     #[test]
     fn size_two_matches_radix_height() {
-        let scale = switch_scale_for(RadixSwitchSize::Two, RadixRadius::Medium);
+        let scale = switch_scale_for(SwitchSize::Two, Radius::Medium);
         assert_eq!(scale.track_height, 20.0);
         assert_eq!(scale.track_width, 35.0);
         assert_eq!(scale.thumb_size, 18.0);

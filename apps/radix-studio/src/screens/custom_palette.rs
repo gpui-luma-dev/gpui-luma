@@ -11,7 +11,7 @@ use luma::controls::textfield::TextField;
 use luma::controls::toggle::Toggle;
 use luma::infra::ElementExt;
 use luma::{GridLayout, GridTrack, WideMiddle, WideMiddleLayout, hstack, vstack};
-use luma_look_radix::{PaletteSlot, RadixLook, SCALE_LEN, ScaleFamily, SignupStage, ThemePalettes};
+use luma_look_radix::{PaletteSlot, Look, SCALE_LEN, ScaleFamily, SignupStage, ThemePalettes};
 
 use crate::app::RadixStudioApp;
 use crate::controls::ColorTextField;
@@ -56,7 +56,7 @@ pub struct PreviewControls {
 }
 
 pub struct PageArgs<'a> {
-    pub look: &'a Arc<RadixLook>,
+    pub look: &'a Arc<Look>,
     pub light_toggle: Toggle,
     pub dark_toggle: Toggle,
     pub accent_field: Entity<ColorTextField>,
@@ -234,7 +234,7 @@ fn seed_field(
     }
 }
 
-fn scale_section(look: &RadixLook, muted: Hsla, cx: &mut Context<RadixStudioApp>) -> impl IntoElement {
+fn scale_section(look: &Look, muted: Hsla, cx: &mut Context<RadixStudioApp>) -> impl IntoElement {
     let columns = vec![GridTrack::Star(1.0); SCALE_LEN];
     let mut grid = GridLayout::new().columns(columns).gap_x(SCALE_SWATCH_GAP).gap_y(SCALE_SWATCH_GAP);
 
@@ -259,7 +259,7 @@ fn scale_section(look: &RadixLook, muted: Hsla, cx: &mut Context<RadixStudioApp>
     grid.into_element().w_full()
 }
 
-fn scale_swatch(family: ScaleFamily, step: u8, look: &RadixLook, cx: &mut Context<RadixStudioApp>) -> impl IntoElement {
+fn scale_swatch(family: ScaleFamily, step: u8, look: &Look, cx: &mut Context<RadixStudioApp>) -> impl IntoElement {
     let color = look.resolve_step(family, step).hsla();
     div()
         .id(SharedString::from(format!("swatch-{}-{step}", family.as_str())))
@@ -302,7 +302,7 @@ fn scale_step_number(step: u8, muted: Hsla) -> impl IntoElement {
 
 #[allow(clippy::too_many_arguments)]
 fn preview_section(
-    look: &RadixLook,
+    look: &Look,
     mesh_image: Option<Arc<RenderImage>>,
     app: Entity<RadixStudioApp>,
     preview_layout: Entity<WideMiddle>,
@@ -393,7 +393,7 @@ fn preview_column_left(
 
 #[allow(clippy::too_many_arguments)]
 fn preview_column_center(
-    look: &RadixLook,
+    look: &Look,
     mesh_image: Option<Arc<RenderImage>>,
     app: Entity<RadixStudioApp>,
     name: TextField,

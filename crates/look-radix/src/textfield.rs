@@ -6,24 +6,25 @@ use std::sync::Arc;
 
 use gpui::{BoxShadow, FontWeight, SharedString, point, px};
 use luma::controls::textfield::{
-    TextFieldLook, TextFieldPalette, TextFieldState, TextFieldTheme, TextFieldVariant, compose_textfield_look,
+    TextFieldLook, TextFieldPalette, TextFieldState, TextFieldTemplate, TextFieldTheme,
+    TextFieldVariant as SdkTextFieldVariant, ThemedTextFieldTemplate, compose_textfield_look,
 };
 use luma::theme::{ControlSize, LumaTextStyle, MetricTokens, StandardBoxScale};
 
-use crate::look::RadixLook;
+use crate::look::Look;
 use crate::scale::ScaleFamily;
 use crate::semantic::SemanticRole;
 
 /// Radix Themes text-field / text-area visual variants.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum RadixTextFieldVariant {
+pub enum TextFieldVariant {
     Classic,
     #[default]
     Surface,
     Soft,
 }
 
-impl RadixTextFieldVariant {
+impl TextFieldVariant {
     pub const ALL: [Self; 3] = [Self::Classic, Self::Surface, Self::Soft];
 
     pub fn as_str(self) -> &'static str {
@@ -43,13 +44,50 @@ impl RadixTextFieldVariant {
     }
 }
 
-struct RadixTextFieldTheme {
-    look: RadixLook,
-    variant: RadixTextFieldVariant,
+/// Radix `size` prop on Text Field. Default is [`Self::Two`].
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum TextFieldSize {
+    One,
+    #[default]
+    Two,
+    Three,
 }
 
-impl TextFieldTheme for RadixTextFieldTheme {
-    fn resolve(&self, _variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldPalette {
+impl TextFieldSize {
+    pub const ALL: [Self; 3] = [Self::One, Self::Two, Self::Three];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::One => "1",
+            Self::Two => "2",
+            Self::Three => "3",
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::One => "Size 1",
+            Self::Two => "Size 2",
+            Self::Three => "Size 3",
+        }
+    }
+
+    pub fn control_size(self) -> ControlSize {
+        match self {
+            Self::One => ControlSize::Sm,
+            Self::Two => ControlSize::Md,
+            Self::Three => ControlSize::Lg,
+        }
+    }
+}
+
+struct TextFieldThemeAdapter {
+    look: Look,
+    variant: TextFieldVariant,
+}
+
+impl TextFieldTheme for TextFieldThemeAdapter {
+    fn resolve(&self, _variant: SdkTextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldPalette {
         resolve_text_chrome_palette(&self.look, self.variant, state.hovered, state.focused, state.invalid, enabled)
     }
 
@@ -59,7 +97,7 @@ impl TextFieldTheme for RadixTextFieldTheme {
 
     fn resolve_look(
         &self,
-        variant: TextFieldVariant,
+        variant: SdkTextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         size: ControlSize,
@@ -68,7 +106,7 @@ impl TextFieldTheme for RadixTextFieldTheme {
         let mut palette = self.resolve(variant, state, enabled);
         palette.typography = typography_for_size(size);
         let mut look = compose_textfield_look(&palette, scale, self.metrics().border_width.default);
-        if matches!(self.variant, RadixTextFieldVariant::Soft | RadixTextFieldVariant::Classic) {
+        if matches!(self.variant, TextFieldVariant::Soft | TextFieldVariant::Classic) {
             // Soft has no rim; Classic draws its edge via shadow-1.
             look.border_width = 0.0;
         }
@@ -76,17 +114,21 @@ impl TextFieldTheme for RadixTextFieldTheme {
     }
 }
 
-pub fn textfield_theme(look: Arc<RadixLook>) -> Arc<dyn TextFieldTheme> {
-    textfield_theme_with(look, RadixTextFieldVariant::default())
+pub fn textfield_theme(look: &Look) -> Arc<dyn TextFieldTheme> {
+    textfield_theme_with(look, TextFieldVariant::default())
 }
 
-pub fn textfield_theme_with(look: Arc<RadixLook>, variant: RadixTextFieldVariant) -> Arc<dyn TextFieldTheme> {
-    Arc::new(RadixTextFieldTheme { look: look.as_ref().clone(), variant })
+pub fn textfield_theme_with(look: &Look, variant: TextFieldVariant) -> Arc<dyn TextFieldTheme> {
+    Arc::new(TextFieldThemeAdapter { look: look.clone(), variant })
+}
+
+pub fn textfield_template(look: &Look, variant: TextFieldVariant) -> Arc<dyn TextFieldTemplate> {
+    Arc::new(ThemedTextFieldTemplate::new(textfield_theme_with(look, variant)))
 }
 
 pub(crate) fn resolve_text_chrome_palette(
-    look: &RadixLook,
-    variant: RadixTextFieldVariant,
+    look: &Look,
+    variant: TextFieldVariant,
     hovered: bool,
     focused: bool,
     invalid: bool,
@@ -103,13 +145,13 @@ pub(crate) fn resolve_text_chrome_palette(
     if !enabled {
         return TextFieldPalette {
             background: match variant {
-                RadixTextFieldVariant::Soft => alpha(gray(3), 0.55),
-                RadixTextFieldVariant::Classic | RadixTextFieldVariant::Surface => surface,
+                TextFieldVariant::Soft => alpha(gray(3), 0.55),
+                TextFieldVariant::Classic | TextFieldVariant::Surface => surface,
             },
             foreground: placeholder,
             border: match variant {
-                RadixTextFieldVariant::Soft => gpui::transparent_black(),
-                RadixTextFieldVariant::Classic | RadixTextFieldVariant::Surface => gray(6),
+                TextFieldVariant::Soft => gpui::transparent_black(),
+                TextFieldVariant::Classic | TextFieldVariant::Surface => gray(6),
             },
             placeholder,
             icon: placeholder,
@@ -125,28 +167,28 @@ pub(crate) fn resolve_text_chrome_palette(
     // Radix: surface = inset gray rim; classic = raised shadow-1; soft = accent tint, no border.
     let (background, border, shadow) = if invalid {
         let bg = match variant {
-            RadixTextFieldVariant::Soft => accent(3),
-            RadixTextFieldVariant::Classic | RadixTextFieldVariant::Surface => surface,
+            TextFieldVariant::Soft => accent(3),
+            TextFieldVariant::Classic | TextFieldVariant::Surface => surface,
         };
         (bg, look.resolve_role(SemanticRole::Destructive).hsla(), None)
     } else if focused {
         let bg = match variant {
-            RadixTextFieldVariant::Soft => accent(3),
-            RadixTextFieldVariant::Classic | RadixTextFieldVariant::Surface => surface,
+            TextFieldVariant::Soft => accent(3),
+            TextFieldVariant::Classic | TextFieldVariant::Surface => surface,
         };
         let focus = look.resolve_role(SemanticRole::Focus).hsla();
         (bg, focus, None)
     } else {
         match variant {
-            RadixTextFieldVariant::Surface => {
+            TextFieldVariant::Surface => {
                 let border = if hovered { gray(8) } else { gray(7) };
                 (surface, border, None)
             }
-            RadixTextFieldVariant::Classic => {
+            TextFieldVariant::Classic => {
                 // Classic draws its edge via `--shadow-1`, not a gray stroke.
                 (surface, gpui::transparent_black(), Some(classic_field_shadow(gray(5), alpha(gray(2), 0.45))))
             }
-            RadixTextFieldVariant::Soft => {
+            TextFieldVariant::Soft => {
                 let bg = if hovered { accent(4) } else { accent(3) };
                 (bg, gpui::transparent_black(), None)
             }
@@ -206,10 +248,10 @@ mod tests {
 
     #[test]
     fn focused_border_uses_focus_role() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = textfield_theme(look.clone());
+        let look = Look::built_in();
+        let theme = textfield_theme(&look);
         let palette = theme.resolve(
-            TextFieldVariant::Standard,
+            SdkTextFieldVariant::Standard,
             TextFieldState { focused: true, focus_visible: true, ..Default::default() },
             true,
         );
@@ -219,22 +261,22 @@ mod tests {
 
     #[test]
     fn soft_uses_accent_tint_background() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = textfield_theme_with(Arc::clone(&look), RadixTextFieldVariant::Soft);
-        let palette = theme.resolve(TextFieldVariant::Standard, TextFieldState::default(), true);
+        let look = Look::built_in();
+        let theme = textfield_theme_with(&look, TextFieldVariant::Soft);
+        let palette = theme.resolve(SdkTextFieldVariant::Standard, TextFieldState::default(), true);
         assert_eq!(palette.background, look.resolve_step(ScaleFamily::Color, 3).hsla());
     }
 
     #[test]
     fn classic_uses_shadow_not_gray_border() {
-        let look = Arc::new(RadixLook::built_in());
-        let classic = textfield_theme_with(Arc::clone(&look), RadixTextFieldVariant::Classic).resolve(
-            TextFieldVariant::Standard,
+        let look = Look::built_in();
+        let classic = textfield_theme_with(&look, TextFieldVariant::Classic).resolve(
+            SdkTextFieldVariant::Standard,
             TextFieldState::default(),
             true,
         );
-        let surface = textfield_theme_with(Arc::clone(&look), RadixTextFieldVariant::Surface).resolve(
-            TextFieldVariant::Standard,
+        let surface = textfield_theme_with(&look, TextFieldVariant::Surface).resolve(
+            SdkTextFieldVariant::Standard,
             TextFieldState::default(),
             true,
         );

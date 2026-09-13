@@ -15,7 +15,7 @@ use luma::controls::slider::{
 use luma::controls::tabs::Tabs;
 use luma::infra::value::ControlRange;
 use luma::theme::ControlSize;
-use luma_look_radix::{RadixAccent, RadixGray, RadixLook, RadixLookControlExt, RadixSliderVariant, ScaleFamily};
+use luma_look_radix::{Accent, Gray, Look, LookControlExt, SliderVariant, ScaleFamily};
 
 use super::matrix_grid::{
     COL_GAP, centered, column_header, empty_corner, equal_data_columns, fixed_grid, preview_tabbed, row_label,
@@ -36,16 +36,16 @@ const DEMO_WIDTH: f32 = 120.0;
 pub struct VariantDef {
     pub id: &'static str,
     pub label: &'static str,
-    pub variant: RadixSliderVariant,
+    pub variant: SliderVariant,
 }
 
 pub const RADIX_VARIANTS: [VariantDef; 2] = [
-    VariantDef { id: "surface", label: "Surface", variant: RadixSliderVariant::Surface },
-    VariantDef { id: "soft", label: "Soft", variant: RadixSliderVariant::Soft },
+    VariantDef { id: "surface", label: "Surface", variant: SliderVariant::Surface },
+    VariantDef { id: "soft", label: "Soft", variant: SliderVariant::Soft },
 ];
 
 pub fn tabbed(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     preview_tabs: Entity<Tabs>,
     fg: Hsla,
     muted: Hsla,
@@ -64,7 +64,7 @@ pub fn tabbed(
     preview_tabbed(preview_tabs, border, body)
 }
 
-pub fn sizes_matrix(look: &Arc<RadixLook>, fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
+pub fn sizes_matrix(look: &Arc<Look>, fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
     let sizes = [(ControlSize::Sm, "Sm"), (ControlSize::Md, "Md"), (ControlSize::Lg, "Lg")];
     let mut grid =
         fixed_grid(equal_data_columns(ROW_LABEL_WIDTH, SIZE_COLUMN_WIDTH, sizes.len()), SIZE_COL_GAP, SIZE_ROW_GAP);
@@ -87,13 +87,7 @@ pub fn sizes_matrix(look: &Arc<RadixLook>, fg: Hsla, muted: Hsla, window: &mut W
     grid.into_any_element()
 }
 
-pub fn colors_matrix(
-    base_look: &Arc<RadixLook>,
-    fg: Hsla,
-    muted: Hsla,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
+pub fn colors_matrix(base_look: &Arc<Look>, fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
     let mut grid =
         fixed_grid(equal_data_columns(ROW_LABEL_WIDTH, COLOR_COLUMN_WIDTH, RADIX_VARIANTS.len()), COL_GAP, COL_GAP);
 
@@ -102,10 +96,10 @@ pub fn colors_matrix(
         grid = grid.child(column_header(def.label, muted), 0, col + 1);
     }
 
-    for (row, accent) in RadixAccent::ALL.iter().enumerate() {
+    for (row, accent) in Accent::ALL.iter().enumerate() {
         let row = row + 1;
         let row_look = Arc::new(base_look.fork());
-        row_look.set_palettes(*accent, RadixGray::Auto);
+        row_look.set_palettes(*accent, Gray::Auto);
         let accent_id = accent.as_str();
         let label = super::palettes::title_case(accent_id);
 
@@ -132,7 +126,7 @@ pub fn colors_matrix(
 }
 
 pub fn matrix(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     variants: &[VariantDef],
     fg: Hsla,
     muted: Hsla,
@@ -169,8 +163,8 @@ pub fn matrix(
 
 fn description(def: &VariantDef, accent: &str, gray: &str) -> String {
     match def.variant {
-        RadixSliderVariant::Soft => format!("{gray} track, {accent}-6 fill"),
-        RadixSliderVariant::Surface => format!("{gray} track, flat thumb"),
+        SliderVariant::Soft => format!("{gray} track, {accent}-6 fill"),
+        SliderVariant::Surface => format!("{gray} track, flat thumb"),
         _ => String::new(),
     }
 }

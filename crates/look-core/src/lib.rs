@@ -5,7 +5,7 @@
 //! 1. Depend on `luma` (SDK) and optionally `luma_look_core`.
 //! 2. Implement the SDK `*Theme` traits your controls need (`ButtonFamilyTheme`,
 //!    `TextFieldTheme`, …). Resolve into the SDK `*Look` / `*Palette` paint structs.
-//! 3. Expose a **look-local** factory extension trait (e.g. `RadixLookControlExt`) that
+//! 3. Expose a **look-local** factory extension trait (e.g. `LookControlExt`) that
 //!    binds builders with `.template(...)` / `.theme(...)`. Do **not** add look variant
 //!    enums (`primary`, `outline`, Radix `solid`/`soft`, …) to the SDK.
 //! 4. Keep source interpretation (CSS catalogs, 12-step scales, Tailwind seeds) inside

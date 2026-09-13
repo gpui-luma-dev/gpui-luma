@@ -10,11 +10,11 @@ use luma::controls::button_family::{
 use luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale};
 use gpui::FontWeight;
 
-use crate::button_layout::{RadixButtonSize, RadixRadius, apply_button_box, button_box_for};
-use crate::look::RadixLook;
+use crate::button_layout::{ButtonSize, Radius, apply_button_box, button_box_for};
+use crate::look::Look;
 use crate::scale::ScaleFamily;
 use crate::semantic::SemanticRole;
-use crate::tone::RadixTone;
+use crate::tone::Tone;
 
 /// Look-owned button treatments. Not Shadcn variant names and not SDK enums.
 ///
@@ -22,7 +22,7 @@ use crate::tone::RadixTone;
 /// variant scheme. The remaining variants are app chrome kept for one-off use and
 /// are deliberately outside that scheme.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum RadixButtonVariant {
+pub enum ButtonVariant {
     /// Solid accent fill with a darker edge and a raised drop shadow.
     Classic,
     #[default]
@@ -40,20 +40,20 @@ pub enum RadixButtonVariant {
     Page,
 }
 
-/// Paint axes that sit beside [`RadixButtonVariant`]: accent vs gray, and Radix `highContrast`.
+/// Paint axes that sit beside [`ButtonVariant`]: accent vs gray, and Radix `highContrast`.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct RadixButtonPaint {
-    pub tone: RadixTone,
+pub struct Paint {
+    pub tone: Tone,
     pub high_contrast: bool,
 }
 
-impl RadixButtonPaint {
+impl Paint {
     pub const fn accent() -> Self {
-        Self { tone: RadixTone::Accent, high_contrast: false }
+        Self { tone: Tone::Accent, high_contrast: false }
     }
 
     pub const fn gray() -> Self {
-        Self { tone: RadixTone::Gray, high_contrast: false }
+        Self { tone: Tone::Gray, high_contrast: false }
     }
 
     pub const fn high_contrast(mut self) -> Self {
@@ -62,13 +62,13 @@ impl RadixButtonPaint {
     }
 }
 
-struct RadixButtonFamilyTheme {
-    look: RadixLook,
-    variant: RadixButtonVariant,
-    paint: RadixButtonPaint,
+struct ButtonFamilyThemeAdapter {
+    look: Look,
+    variant: ButtonVariant,
+    paint: Paint,
 }
 
-impl ButtonFamilyTheme for RadixButtonFamilyTheme {
+impl ButtonFamilyTheme for ButtonFamilyThemeAdapter {
     fn resolve(&self, role: ButtonFamilyRole, _size: ControlSize, state: InteractionState) -> ButtonFamilyPalette {
         resolve_button_palette(&self.look, self.variant, self.paint, role, state)
     }
@@ -104,10 +104,10 @@ impl ButtonFamilyTheme for RadixButtonFamilyTheme {
         };
         let _ = control;
         let mut look = compose_button_family_look(&palette, role, scale, pill_radius);
-        if matches!(self.variant, RadixButtonVariant::Page) {
+        if matches!(self.variant, ButtonVariant::Page) {
             look.radius = pill_radius;
         }
-        if matches!(self.variant, RadixButtonVariant::Classic) {
+        if matches!(self.variant, ButtonVariant::Classic) {
             look.shadow = Some(classic_shadow(&self.look, palette.background, state));
             // Classic keeps an editable radius knob; default matches Radix size-2 / medium (4px).
             look.radius = self.look.classic_params().radius;
@@ -117,49 +117,46 @@ impl ButtonFamilyTheme for RadixButtonFamilyTheme {
 }
 
 /// Accent tone, normal contrast — the default Radix button paint.
-pub fn button_family_theme(look: Arc<RadixLook>, variant: RadixButtonVariant) -> Arc<dyn ButtonFamilyTheme> {
-    button_family_theme_with(look, variant, RadixButtonPaint::accent())
+pub fn button_family_theme(look: &Look, variant: ButtonVariant) -> Arc<dyn ButtonFamilyTheme> {
+    button_family_theme_with(look, variant, Paint::accent())
 }
 
 /// Full look resolver for a Radix size × radius cell (All Sizes matrix / previews).
-pub fn button_look_for(
-    look: Arc<RadixLook>,
-    variant: RadixButtonVariant,
-    paint: RadixButtonPaint,
-    size: RadixButtonSize,
-    radius: RadixRadius,
-) -> luma::controls::button::ButtonLookSource<()> {
+pub fn button_look_for<D: 'static>(
+    look: &Look,
+    variant: ButtonVariant,
+    paint: Paint,
+    size: ButtonSize,
+    radius: Radius,
+) -> luma::controls::button::ButtonLookSource<D> {
+    let look = look.clone();
     Arc::new(move |model| {
         let palette = resolve_button_palette(&look, variant, paint, model.role, model.state);
         let mut family = apply_button_box(&palette, model.role, button_box_for(size, radius));
-        if matches!(variant, RadixButtonVariant::Classic) {
+        if matches!(variant, ButtonVariant::Classic) {
             family.shadow = Some(classic_shadow(&look, family.background, model.state));
         }
         family
     })
 }
 
-pub fn button_family_theme_with(
-    look: Arc<RadixLook>,
-    variant: RadixButtonVariant,
-    paint: RadixButtonPaint,
-) -> Arc<dyn ButtonFamilyTheme> {
-    Arc::new(RadixButtonFamilyTheme { look: look.as_ref().clone(), variant, paint })
+pub fn button_family_theme_with(look: &Look, variant: ButtonVariant, paint: Paint) -> Arc<dyn ButtonFamilyTheme> {
+    Arc::new(ButtonFamilyThemeAdapter { look: look.clone(), variant, paint })
 }
 
 fn resolve_button_palette(
-    look: &RadixLook,
-    variant: RadixButtonVariant,
-    paint: RadixButtonPaint,
+    look: &Look,
+    variant: ButtonVariant,
+    paint: Paint,
     role: ButtonFamilyRole,
     state: InteractionState,
 ) -> ButtonFamilyPalette {
     let layer = state.layer();
     let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
     // Quiet ghosts share every Ghost treatment except the focus ring.
-    let quiet = matches!(variant, RadixButtonVariant::GhostQuiet);
-    let page = matches!(variant, RadixButtonVariant::Page);
-    let variant = if quiet { RadixButtonVariant::Ghost } else { variant };
+    let quiet = matches!(variant, ButtonVariant::GhostQuiet);
+    let page = matches!(variant, ButtonVariant::Page);
+    let variant = if quiet { ButtonVariant::Ghost } else { variant };
     let high_contrast = paint.high_contrast;
     let tone = paint.tone;
     let step = |n| tone.step(look, n);
@@ -192,7 +189,7 @@ fn resolve_button_palette(
         (step(9), tone.contrast(look), Some(step(9)))
     } else {
         match variant {
-            RadixButtonVariant::Classic | RadixButtonVariant::Solid => {
+            ButtonVariant::Classic | ButtonVariant::Solid => {
                 if high_contrast {
                     // Radix: accent-12 on gray-1.
                     (step(12), solid_high_contrast_label(look), Some(step(12)))
@@ -200,15 +197,15 @@ fn resolve_button_palette(
                     (step(9), tone.contrast(look), Some(step(9)))
                 }
             }
-            RadixButtonVariant::Soft => {
+            ButtonVariant::Soft => {
                 let fg = if high_contrast { step(12) } else { step(11) };
                 (step(3), fg, Some(step(3)))
             }
-            RadixButtonVariant::Surface => {
+            ButtonVariant::Surface => {
                 let fg = if high_contrast { step(12) } else { step(11) };
                 (step(2), fg, Some(step(7)))
             }
-            RadixButtonVariant::Outline => {
+            ButtonVariant::Outline => {
                 let fg = if high_contrast {
                     step(12)
                 } else {
@@ -221,7 +218,7 @@ fn resolve_button_palette(
                 };
                 (transparent(), fg, Some(edge))
             }
-            RadixButtonVariant::Ghost | RadixButtonVariant::GhostQuiet => {
+            ButtonVariant::Ghost | ButtonVariant::GhostQuiet => {
                 let fg = if high_contrast {
                     step(12)
                 } else {
@@ -229,16 +226,14 @@ fn resolve_button_palette(
                 };
                 (transparent(), fg, None)
             }
-            RadixButtonVariant::Page => unreachable!(),
+            ButtonVariant::Page => unreachable!(),
         }
     };
 
-    if matches!(variant, RadixButtonVariant::Ghost | RadixButtonVariant::Outline | RadixButtonVariant::Page)
-        && !selected
-    {
+    if matches!(variant, ButtonVariant::Ghost | ButtonVariant::Outline | ButtonVariant::Page) && !selected {
         background = transparent();
         // Page and Ghost are borderless chrome; Outline keeps its edge.
-        if matches!(variant, RadixButtonVariant::Ghost | RadixButtonVariant::Page) {
+        if matches!(variant, ButtonVariant::Ghost | ButtonVariant::Page) {
             border = None;
         }
     }
@@ -259,7 +254,7 @@ fn resolve_button_palette(
         }
         InteractionLayer::Hovered => {
             background = shift_for_hover(look, variant, tone, high_contrast, selected, background);
-            if matches!(variant, RadixButtonVariant::Surface) && !selected {
+            if matches!(variant, ButtonVariant::Surface) && !selected {
                 border = Some(step(8));
             }
         }
@@ -268,7 +263,7 @@ fn resolve_button_palette(
 
     // Classic's edge tracks whatever the face settled on, so hover and press keep a
     // consistent outline instead of snapping back to the resting accent.
-    if matches!(variant, RadixButtonVariant::Classic) && !matches!(layer, InteractionLayer::Disabled) {
+    if matches!(variant, ButtonVariant::Classic) && !matches!(layer, InteractionLayer::Disabled) {
         border = Some(shift_lightness(background, look.classic_params().border_delta));
     }
 
@@ -286,30 +281,27 @@ fn resolve_button_palette(
 }
 
 /// Solid high-contrast labels always use gray-1, matching Radix `color: var(--gray-1)`.
-fn solid_high_contrast_label(look: &RadixLook) -> Hsla {
+fn solid_high_contrast_label(look: &Look) -> Hsla {
     look.resolve_step(ScaleFamily::Gray, 1).hsla()
 }
 
 /// Recipes that tint toward accent 3/4 on hover and press instead of the solid steps.
-fn is_tinted(variant: RadixButtonVariant) -> bool {
+fn is_tinted(variant: ButtonVariant) -> bool {
     matches!(
         variant,
-        RadixButtonVariant::Soft
-            | RadixButtonVariant::Surface
-            | RadixButtonVariant::Ghost
-            | RadixButtonVariant::Outline
+        ButtonVariant::Soft | ButtonVariant::Surface | ButtonVariant::Ghost | ButtonVariant::Outline
     )
 }
 
 fn shift_for_hover(
-    look: &RadixLook,
-    variant: RadixButtonVariant,
-    tone: RadixTone,
+    look: &Look,
+    variant: ButtonVariant,
+    tone: Tone,
     high_contrast: bool,
     selected: bool,
     base: Hsla,
 ) -> Hsla {
-    if selected || matches!(variant, RadixButtonVariant::Solid | RadixButtonVariant::Classic) {
+    if selected || matches!(variant, ButtonVariant::Solid | ButtonVariant::Classic) {
         // HC solids stay on step 12; Radix uses a CSS filter we approximate with a lighten.
         return if high_contrast {
             shift_lightness(tone.step(look, 12), 0.04)
@@ -325,14 +317,14 @@ fn shift_for_hover(
 }
 
 fn shift_for_press(
-    look: &RadixLook,
-    variant: RadixButtonVariant,
-    tone: RadixTone,
+    look: &Look,
+    variant: ButtonVariant,
+    tone: Tone,
     high_contrast: bool,
     selected: bool,
     base: Hsla,
 ) -> Hsla {
-    if selected || matches!(variant, RadixButtonVariant::Solid | RadixButtonVariant::Classic) {
+    if selected || matches!(variant, ButtonVariant::Solid | ButtonVariant::Classic) {
         return if high_contrast {
             shift_lightness(tone.step(look, 12), -0.03)
         } else {
@@ -356,9 +348,9 @@ fn inset_shadow(offset_y: f32, blur: f32, spread: f32, color: Hsla) -> BoxShadow
     }
 }
 
-/// Tunable geometry for the [`Classic`](RadixButtonVariant::Classic) button.
+/// Tunable geometry for the [`Classic`](ButtonVariant::Classic) button.
 ///
-/// Held on [`RadixLook`](crate::RadixLook) so a tuning UI can drive every Classic
+/// Held on [`Look`](crate::Look) so a tuning UI can drive every Classic
 /// button live. Defaults are sampled from a reference render: the face is a vertical
 /// wash that grows *lighter* toward the bottom, a 1px specular rim sits just inside
 /// the top border, and a single border darker than the fill wraps the whole edge.
@@ -433,13 +425,8 @@ fn classic_wash(params: ClassicButtonParams, base: Hsla, pressed: bool) -> (Hsla
     if pressed { (bottom, top) } else { (top, bottom) }
 }
 
-fn classic_fill(
-    look: &RadixLook,
-    paint: RadixButtonPaint,
-    role: ButtonFamilyRole,
-    state: InteractionState,
-) -> Background {
-    let base = resolve_button_palette(look, RadixButtonVariant::Classic, paint, role, state).background;
+fn classic_fill(look: &Look, paint: Paint, role: ButtonFamilyRole, state: InteractionState) -> Background {
+    let base = resolve_button_palette(look, ButtonVariant::Classic, paint, role, state).background;
     if state.disabled {
         return base.into();
     }
@@ -451,7 +438,7 @@ fn classic_fill(
 /// Bevel for the Classic face: a crisp specular rim just inside the top border with a
 /// short fade below it, and a shaded lip inside the bottom border. Pressing drops the
 /// lip and inverts the rim so the light reads as coming from below.
-fn classic_shadow(look: &RadixLook, fill: Hsla, state: InteractionState) -> Vec<BoxShadow> {
+fn classic_shadow(look: &Look, fill: Hsla, state: InteractionState) -> Vec<BoxShadow> {
     let params = look.classic_params();
     let tint = |delta: f32, alpha: f32| Hsla { a: alpha, ..shift_lightness(fill, delta) };
 
@@ -485,17 +472,31 @@ fn classic_shadow(look: &RadixLook, fill: Hsla, state: InteractionState) -> Vec<
     shadows
 }
 
+/// Template for a Radix variant × paint cell. Classic keeps its gradient wash.
+pub fn button_template<D: Clone + 'static>(
+    look: &Look,
+    variant: ButtonVariant,
+    paint: Paint,
+) -> Arc<dyn ButtonTemplate<D>> {
+    if matches!(variant, ButtonVariant::Classic) {
+        classic_button_template_with(look, paint)
+    } else {
+        Arc::new(DefaultButtonTemplate::new(button_family_theme_with(look, variant, paint)))
+    }
+}
+
 /// Classic needs a gradient face, which [`ButtonFamilyLook`] cannot carry, so the look
 /// ships its own template. Callers that build templates by hand (the style guide matrix)
 /// must use this instead of a bare [`DefaultButtonTemplate`] or they lose the wash.
-pub fn classic_button_template(look: Arc<RadixLook>) -> Arc<dyn ButtonTemplate<()>> {
-    classic_button_template_with(look, RadixButtonPaint::accent())
+pub fn classic_button_template<D: Clone + 'static>(look: &Look) -> Arc<dyn ButtonTemplate<D>> {
+    classic_button_template_with(look, Paint::accent())
 }
 
 /// Classic template with an explicit paint axis (tone / high contrast).
-pub fn classic_button_template_with(look: Arc<RadixLook>, paint: RadixButtonPaint) -> Arc<dyn ButtonTemplate<()>> {
-    let theme = button_family_theme_with(Arc::clone(&look), RadixButtonVariant::Classic, paint);
-    Arc::new(DefaultButtonTemplate::new(theme).with_modifier(move |root, model: &ButtonRenderModel<()>| {
+pub fn classic_button_template_with<D: Clone + 'static>(look: &Look, paint: Paint) -> Arc<dyn ButtonTemplate<D>> {
+    let theme = button_family_theme_with(look, ButtonVariant::Classic, paint);
+    let look = look.clone();
+    Arc::new(DefaultButtonTemplate::new(theme).with_modifier(move |root, model: &ButtonRenderModel<D>| {
         root.bg(classic_fill(&look, paint, model.role, model.state))
     }))
 }
@@ -511,8 +512,8 @@ mod tests {
 
     #[test]
     fn solid_default_uses_primary_steps() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = button_family_theme(look.clone(), RadixButtonVariant::Solid);
+        let look = Look::built_in();
+        let theme = button_family_theme(&look, ButtonVariant::Solid);
         let palette = theme.resolve(ButtonFamilyRole::Text, ControlSize::Md, InteractionState::default());
         let expected_bg = look.resolve_role(SemanticRole::Primary).hsla();
         assert_eq!(palette.background.h, expected_bg.h);
@@ -521,8 +522,8 @@ mod tests {
 
     #[test]
     fn ghost_default_is_transparent() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = button_family_theme(look, RadixButtonVariant::Ghost);
+        let look = Look::built_in();
+        let theme = button_family_theme(&look, ButtonVariant::Ghost);
         let palette = theme.resolve(ButtonFamilyRole::Text, ControlSize::Md, InteractionState::default());
         assert_eq!(palette.background.a, 0.0);
         assert!(palette.border.is_none());
@@ -530,8 +531,8 @@ mod tests {
 
     #[test]
     fn surface_uses_accent_panel_and_edge() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = button_family_theme(Arc::clone(&look), RadixButtonVariant::Surface);
+        let look = Look::built_in();
+        let theme = button_family_theme(&look, ButtonVariant::Surface);
         let palette = theme.resolve(ButtonFamilyRole::Text, ControlSize::Md, InteractionState::default());
 
         assert_eq!(palette.background, look.resolve_step(ScaleFamily::Color, 2).hsla());
@@ -541,59 +542,43 @@ mod tests {
 
     #[test]
     fn solid_high_contrast_uses_step_twelve_on_gray_one() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = button_family_theme_with(
-            Arc::clone(&look),
-            RadixButtonVariant::Solid,
-            RadixButtonPaint::gray().high_contrast(),
-        );
+        let look = Look::built_in();
+        let theme = button_family_theme_with(&look, ButtonVariant::Solid, Paint::gray().high_contrast());
         let palette = theme.resolve(ButtonFamilyRole::Text, ControlSize::Md, InteractionState::default());
 
-        assert_eq!(palette.background, RadixTone::Gray.step(&look, 12));
+        assert_eq!(palette.background, Tone::Gray.step(&look, 12));
         assert_eq!(palette.foreground, look.resolve_step(ScaleFamily::Gray, 1).hsla());
     }
 
     #[test]
     fn classic_high_contrast_uses_step_twelve() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = button_family_theme_with(
-            Arc::clone(&look),
-            RadixButtonVariant::Classic,
-            RadixButtonPaint::accent().high_contrast(),
-        );
+        let look = Look::built_in();
+        let theme = button_family_theme_with(&look, ButtonVariant::Classic, Paint::accent().high_contrast());
         let palette = theme.resolve(ButtonFamilyRole::Text, ControlSize::Md, InteractionState::default());
 
-        assert_eq!(palette.background, RadixTone::Accent.step(&look, 12));
+        assert_eq!(palette.background, Tone::Accent.step(&look, 12));
         assert_eq!(palette.foreground, look.resolve_step(ScaleFamily::Gray, 1).hsla());
     }
 
     #[test]
     fn soft_high_contrast_darkens_the_label_only() {
-        let look = Arc::new(RadixLook::built_in());
-        let normal = button_family_theme_with(Arc::clone(&look), RadixButtonVariant::Soft, RadixButtonPaint::gray());
-        let hc = button_family_theme_with(
-            Arc::clone(&look),
-            RadixButtonVariant::Soft,
-            RadixButtonPaint::gray().high_contrast(),
-        );
+        let look = Look::built_in();
+        let normal = button_family_theme_with(&look, ButtonVariant::Soft, Paint::gray());
+        let hc = button_family_theme_with(&look, ButtonVariant::Soft, Paint::gray().high_contrast());
         let state = InteractionState::default();
         let normal = normal.resolve(ButtonFamilyRole::Text, ControlSize::Md, state);
         let hc = hc.resolve(ButtonFamilyRole::Text, ControlSize::Md, state);
 
         assert_eq!(hc.background, normal.background);
-        assert_eq!(hc.foreground, RadixTone::Gray.step(&look, 12));
+        assert_eq!(hc.foreground, Tone::Gray.step(&look, 12));
         assert_ne!(hc.foreground, normal.foreground);
     }
 
     #[test]
     fn classic_high_contrast_shifts_fill_to_step_twelve() {
-        let look = Arc::new(RadixLook::built_in());
-        let normal = button_family_theme_with(Arc::clone(&look), RadixButtonVariant::Classic, RadixButtonPaint::gray());
-        let hc = button_family_theme_with(
-            Arc::clone(&look),
-            RadixButtonVariant::Classic,
-            RadixButtonPaint::gray().high_contrast(),
-        );
+        let look = Look::built_in();
+        let normal = button_family_theme_with(&look, ButtonVariant::Classic, Paint::gray());
+        let hc = button_family_theme_with(&look, ButtonVariant::Classic, Paint::gray().high_contrast());
         let state = InteractionState::default();
 
         assert_ne!(
@@ -604,14 +589,13 @@ mod tests {
 
     #[test]
     fn classic_lime_uses_dark_contrast_label() {
-        let look = Arc::new(RadixLook::from_palettes(
-            crate::palette::RadixAccent::Lime,
-            crate::palette::RadixGray::Auto,
+        let look = Look::from_palettes(
+            crate::palette::Accent::Lime,
+            crate::palette::Gray::Auto,
             Default::default(),
             luma::theme::ThemeMode::Light,
-        ));
-        let theme =
-            button_family_theme_with(Arc::clone(&look), RadixButtonVariant::Classic, RadixButtonPaint::accent());
+        );
+        let theme = button_family_theme_with(&look, ButtonVariant::Classic, Paint::accent());
         let palette = theme.resolve(ButtonFamilyRole::Text, ControlSize::Md, InteractionState::default());
 
         assert!(palette.foreground.l < palette.background.l);
@@ -620,9 +604,9 @@ mod tests {
 
     #[test]
     fn classic_shares_the_solid_fill_behind_a_darker_border() {
-        let look = Arc::new(RadixLook::built_in());
-        let classic = button_family_theme(Arc::clone(&look), RadixButtonVariant::Classic);
-        let solid = button_family_theme(Arc::clone(&look), RadixButtonVariant::Solid);
+        let look = Look::built_in();
+        let classic = button_family_theme(&look, ButtonVariant::Classic);
+        let solid = button_family_theme(&look, ButtonVariant::Solid);
         let state = InteractionState::default();
         let palette = classic.resolve(ButtonFamilyRole::Text, ControlSize::Md, state);
 
@@ -632,8 +616,8 @@ mod tests {
         assert_eq!(border.h, palette.background.h, "border keeps the accent hue");
     }
 
-    fn classic_shadows(look: &Arc<RadixLook>, state: InteractionState) -> Vec<BoxShadow> {
-        let theme = button_family_theme(Arc::clone(look), RadixButtonVariant::Classic);
+    fn classic_shadows(look: &Look, state: InteractionState) -> Vec<BoxShadow> {
+        let theme = button_family_theme(&look, ButtonVariant::Classic);
         let scale = StandardBoxScale::compute(ControlSize::Md, &look.metrics(), 2.0);
         theme
             .resolve_look(ButtonFamilyRole::Text, ControlSize::Md, state, &scale, 999.0)
@@ -644,7 +628,7 @@ mod tests {
 
     #[test]
     fn classic_bevels_a_lit_top_and_a_shaded_bottom() {
-        let look = Arc::new(RadixLook::built_in());
+        let look = Look::built_in();
         let fill = look.resolve_role(SemanticRole::Primary).hsla();
         let shadows = classic_shadows(&look, InteractionState::default());
         let edge = |downward: bool| {
@@ -669,7 +653,7 @@ mod tests {
 
     #[test]
     fn classic_face_lightens_toward_the_bottom() {
-        let look = RadixLook::built_in();
+        let look = Look::built_in();
         let fill = look.resolve_role(SemanticRole::Primary).hsla();
         let params = look.classic_params();
         let (top, bottom) = classic_wash(params, fill, false);
@@ -681,7 +665,7 @@ mod tests {
 
     #[test]
     fn classic_shadow_follows_the_look_params() {
-        let look = Arc::new(RadixLook::built_in());
+        let look = Look::built_in();
         let blur = || classic_shadows(&look, InteractionState::default()).iter().any(|s| s.blur_radius == px(19.0));
 
         assert!(!blur());
@@ -691,8 +675,8 @@ mod tests {
 
     #[test]
     fn page_toggle_stays_borderless_when_unselected() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = button_family_theme(look, RadixButtonVariant::Page);
+        let look = Look::built_in();
+        let theme = button_family_theme(&look, ButtonVariant::Page);
         let palette =
             theme.resolve(ButtonFamilyRole::Toggle { selected: false }, ControlSize::Md, InteractionState::default());
 
@@ -702,8 +686,8 @@ mod tests {
 
     #[test]
     fn page_toggle_is_binary_off_on() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = button_family_theme(look, RadixButtonVariant::Page);
+        let look = Look::built_in();
+        let theme = button_family_theme(&look, ButtonVariant::Page);
         let role = ButtonFamilyRole::Toggle { selected: true };
         let resting = theme.resolve(role, ControlSize::Md, InteractionState::default());
         let focused = theme.resolve(role, ControlSize::Md, InteractionState { focused: true, ..Default::default() });
@@ -723,9 +707,9 @@ mod tests {
 
     #[test]
     fn ghost_quiet_keeps_ghost_hover_without_focus_border() {
-        let look = Arc::new(RadixLook::built_in());
-        let ghost = button_family_theme(Arc::clone(&look), RadixButtonVariant::Ghost);
-        let quiet = button_family_theme(look, RadixButtonVariant::GhostQuiet);
+        let look = Look::built_in();
+        let ghost = button_family_theme(&look, ButtonVariant::Ghost);
+        let quiet = button_family_theme(&look, ButtonVariant::GhostQuiet);
         let hovered = InteractionState { hovered: true, ..InteractionState::default() };
         let focused = InteractionState { focused: true, ..InteractionState::default() };
 

@@ -141,10 +141,10 @@ mod tests {
     use gpui::hsla;
 
     use super::*;
-    use crate::palette::{RadixAccent, RadixGray, scale_pair};
+    use crate::palette::{Accent, Gray, scale_pair};
 
     fn indigo_slate() -> ScalePair {
-        scale_pair(RadixAccent::Indigo, RadixGray::Auto)
+        scale_pair(Accent::Indigo, Gray::Auto)
     }
 
     #[test]

@@ -3,6 +3,8 @@ use gpui::{
     MouseUpEvent, Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
 };
 use lucide_svg_static::Icon as LucideIcon;
+
+use crate::controls::button::ControlIcon;
 use std::time::Duration;
 
 use super::{PopupMenuBuilder, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, MenuPath};
@@ -99,10 +101,15 @@ impl PopupMenu {
     /// Icon-only face preset: [`super::icon_content`] + square chrome (`icon_only`).
     ///
     /// Not a parallel field beside the presenter. Mirrors [`super::PopupMenuBuilder::icon`].
-    pub fn set_icon(&mut self, icon: LucideIcon, cx: &mut Context<Self>) {
-        self.model.content = super::icon_content(icon);
+    /// Lucide glyphs also fill `icon`; SVG paths render through the presenter.
+    pub fn set_icon(&mut self, icon: impl Into<ControlIcon>, cx: &mut Context<Self>) {
+        let icon = icon.into();
+        self.model.content = super::icon_content(icon.clone());
         self.model.icon_only = true;
-        self.model.icon = Some(icon);
+        self.model.icon = match icon {
+            ControlIcon::Lucide(icon) => Some(icon),
+            ControlIcon::SvgPath(_) => None,
+        };
         cx.notify();
     }
 

@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, FontWeight, Hsla, IntoElement, SharedString, div, prelude::*, px};
 use luma::{GridLayout, GridTrack, hstack, vstack};
-use luma_look_radix::{RadixLook, SCALE_LEN, ScaleFamily};
+use luma_look_radix::{Look, SCALE_LEN, ScaleFamily};
 
 /// Gutter between shade cells (matches Custom Palette).
 const SCALE_SWATCH_GAP: f32 = 3.0;
@@ -22,7 +22,7 @@ const SCALE_LEGEND_GROUPS: &[(&str, usize)] = &[
     ("Accessible text", 2),
 ];
 
-pub fn indicator(look: &Arc<RadixLook>, muted: Hsla) -> AnyElement {
+pub fn indicator(look: &Arc<Look>, muted: Hsla) -> AnyElement {
     let accent_name = title_case(look.palette_label(ScaleFamily::Color));
     let gray_name = title_case(look.palette_label(ScaleFamily::Gray));
 
@@ -97,7 +97,7 @@ fn legend_group(label: &'static str, muted: Hsla) -> impl IntoElement {
     .w_full()
 }
 
-fn scale_swatch(look: &RadixLook, family: ScaleFamily, step: u8) -> impl IntoElement {
+fn scale_swatch(look: &Look, family: ScaleFamily, step: u8) -> impl IntoElement {
     let color = look.resolve_step(family, step).hsla();
     div()
         .id(SharedString::from(format!("style-guide-swatch-{}-{step}", family.as_str())))

@@ -1,4 +1,4 @@
-//! Popup menu variant template preview: every `RadixPopupMenuVariant` across interaction states.
+//! Popup menu variant template preview: every `PopupMenuVariant` across interaction states.
 //!
 //! Renders the SDK popup menu template with the state forced, exactly like the button and
 //! checkbox matrices. The trigger carries the variant's own trigger style; the variant also
@@ -16,7 +16,7 @@ use luma::controls::popup_menu::{
 };
 use luma::infra::icon::DisclosureIcons;
 use luma::infra::menu_item::MenuItem;
-use luma_look_radix::{RadixLook, RadixLookControlExt, RadixPopupMenuVariant, RadixTone, ScaleFamily};
+use luma_look_radix::{Look, LookControlExt, PopupMenuVariant, Tone, ScaleFamily};
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::states::{self, StateSample};
@@ -27,8 +27,8 @@ const STATE_COLUMN_WIDTH: f32 = 124.0;
 pub struct VariantDef {
     id: &'static str,
     label: &'static str,
-    variant: RadixPopupMenuVariant,
-    tone: RadixTone,
+    variant: PopupMenuVariant,
+    tone: Tone,
     trigger_style: PopupMenuTriggerStyle,
 }
 
@@ -40,35 +40,35 @@ pub const RADIX_VARIANTS: [VariantDef; 4] = [
     VariantDef {
         id: "solid",
         label: "Solid",
-        variant: RadixPopupMenuVariant::Solid,
-        tone: RadixTone::Accent,
+        variant: PopupMenuVariant::Solid,
+        tone: Tone::Accent,
         trigger_style: PopupMenuTriggerStyle::Primary,
     },
     VariantDef {
         id: "soft",
         label: "Soft",
-        variant: RadixPopupMenuVariant::Soft,
-        tone: RadixTone::Accent,
+        variant: PopupMenuVariant::Soft,
+        tone: Tone::Accent,
         trigger_style: PopupMenuTriggerStyle::Secondary,
     },
     VariantDef {
         id: "solid-gray",
         label: "Solid · Gray",
-        variant: RadixPopupMenuVariant::Solid,
-        tone: RadixTone::Gray,
+        variant: PopupMenuVariant::Solid,
+        tone: Tone::Gray,
         trigger_style: PopupMenuTriggerStyle::Primary,
     },
     VariantDef {
         id: "soft-gray",
         label: "Soft · Gray",
-        variant: RadixPopupMenuVariant::Soft,
-        tone: RadixTone::Gray,
+        variant: PopupMenuVariant::Soft,
+        tone: Tone::Gray,
         trigger_style: PopupMenuTriggerStyle::Secondary,
     },
 ];
 
 pub fn matrix(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     variants: &[VariantDef],
     fg: Hsla,
     muted: Hsla,
@@ -98,16 +98,16 @@ pub fn matrix(
 
 fn description(def: &VariantDef, accent: &str, gray: &str) -> String {
     match (def.variant, def.tone) {
-        (RadixPopupMenuVariant::Solid, RadixTone::Accent) => {
+        (PopupMenuVariant::Solid, Tone::Accent) => {
             format!("{accent} 9 face, contrast label")
         }
-        (RadixPopupMenuVariant::Soft, RadixTone::Accent) => {
+        (PopupMenuVariant::Soft, Tone::Accent) => {
             format!("{accent} 3 face, {accent} 11 label")
         }
-        (RadixPopupMenuVariant::Solid, RadixTone::Gray) => {
+        (PopupMenuVariant::Solid, Tone::Gray) => {
             format!("{gray} 9 face, locked neutral")
         }
-        (RadixPopupMenuVariant::Soft, RadixTone::Gray) => {
+        (PopupMenuVariant::Soft, Tone::Gray) => {
             format!("{gray} 3 face, locked neutral")
         }
     }

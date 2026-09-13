@@ -15,9 +15,7 @@ use luma::controls::textarea::{
     TextAreaLineMetric, TextAreaLook, TextAreaRenderModel, TextAreaState, TextAreaTemplate, TextAreaTheme,
 };
 use luma::theme::{ControlSize, StandardBoxScale};
-use luma_look_radix::{
-    RadixAccent, RadixGray, RadixLook, RadixLookControlExt, RadixTextFieldVariant, ScaleFamily, textarea_theme_with,
-};
+use luma_look_radix::{Accent, Gray, Look, LookControlExt, TextFieldVariant, ScaleFamily, textarea_theme_with};
 
 use super::matrix_grid::{
     COL_GAP, centered, column_header, empty_corner, equal_data_columns, fixed_grid, preview_tabbed, row_label,
@@ -40,12 +38,12 @@ const HEADER_ICON_SIZE: f32 = 15.0;
 pub struct VariantDef {
     pub id: &'static str,
     pub label: &'static str,
-    pub variant: RadixTextFieldVariant,
+    pub variant: TextFieldVariant,
 }
 
 pub const RADIX_VARIANTS: [VariantDef; 2] = [
-    VariantDef { id: "surface", label: "Surface", variant: RadixTextFieldVariant::Surface },
-    VariantDef { id: "soft", label: "Soft", variant: RadixTextFieldVariant::Soft },
+    VariantDef { id: "surface", label: "Surface", variant: TextFieldVariant::Surface },
+    VariantDef { id: "soft", label: "Soft", variant: TextFieldVariant::Soft },
 ];
 
 #[derive(Clone, Copy)]
@@ -106,7 +104,7 @@ fn samples() -> [AreaSample; 6] {
 }
 
 pub fn tabbed(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     preview_tabs: Entity<Tabs>,
     fg: Hsla,
     muted: Hsla,
@@ -125,7 +123,7 @@ pub fn tabbed(
     preview_tabbed(preview_tabs, border, body)
 }
 
-pub fn sizes_matrix(look: &Arc<RadixLook>, fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
+pub fn sizes_matrix(look: &Arc<Look>, fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
     let sizes = [(ControlSize::Sm, "Sm"), (ControlSize::Md, "Md"), (ControlSize::Lg, "Lg")];
     let mut grid =
         fixed_grid(equal_data_columns(ROW_LABEL_WIDTH, SIZE_COLUMN_WIDTH, sizes.len()), SIZE_COL_GAP, SIZE_ROW_GAP);
@@ -139,7 +137,7 @@ pub fn sizes_matrix(look: &Arc<RadixLook>, fg: Hsla, muted: Hsla, window: &mut W
         let row = row + 1;
         grid = grid.child(row_label(def.label, fg), row, 0);
         let template = look.textarea_template(def.variant);
-        let theme = textarea_theme_with(Arc::clone(look), def.variant);
+        let theme = textarea_theme_with(look, def.variant);
         for (col, (size, _)) in sizes.iter().enumerate() {
             let sample =
                 AreaSample { id: "size", label: "Size", icon: "home", state: TextAreaState::default(), enabled: true };
@@ -154,13 +152,7 @@ pub fn sizes_matrix(look: &Arc<RadixLook>, fg: Hsla, muted: Hsla, window: &mut W
     grid.into_any_element()
 }
 
-pub fn colors_matrix(
-    base_look: &Arc<RadixLook>,
-    fg: Hsla,
-    muted: Hsla,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
+pub fn colors_matrix(base_look: &Arc<Look>, fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
     let mut grid =
         fixed_grid(equal_data_columns(ROW_LABEL_WIDTH, COLOR_COLUMN_WIDTH, RADIX_VARIANTS.len()), COL_GAP, COL_GAP);
 
@@ -169,17 +161,17 @@ pub fn colors_matrix(
         grid = grid.child(column_header(def.label, muted), 0, col + 1);
     }
 
-    for (row, accent) in RadixAccent::ALL.iter().enumerate() {
+    for (row, accent) in Accent::ALL.iter().enumerate() {
         let row = row + 1;
         let row_look = Arc::new(base_look.fork());
-        row_look.set_palettes(*accent, RadixGray::Auto);
+        row_look.set_palettes(*accent, Gray::Auto);
         let accent_id = accent.as_str();
         let label = super::palettes::title_case(accent_id);
 
         grid = grid.child(row_label(label, fg), row, 0);
         for (col, def) in RADIX_VARIANTS.iter().enumerate() {
             let template = row_look.textarea_template(def.variant);
-            let theme = textarea_theme_with(Arc::clone(&row_look), def.variant);
+            let theme = textarea_theme_with(&row_look, def.variant);
             let sample = AreaSample {
                 id: "default",
                 label: "Default",
@@ -207,7 +199,7 @@ pub fn colors_matrix(
 }
 
 pub fn matrix(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     variants: &[VariantDef],
     fg: Hsla,
     muted: Hsla,
@@ -229,7 +221,7 @@ pub fn matrix(
         .iter()
         .map(|def| {
             let template = look.textarea_template(def.variant);
-            let theme = textarea_theme_with(Arc::clone(look), def.variant);
+            let theme = textarea_theme_with(look, def.variant);
             TableRow {
                 label: SharedString::from(def.label),
                 description: SharedString::from(description(def, &accent, &gray)),
@@ -249,8 +241,8 @@ pub fn matrix(
 
 fn description(def: &VariantDef, accent: &str, gray: &str) -> String {
     match def.variant {
-        RadixTextFieldVariant::Soft => format!("{accent} tint, no hard edge"),
-        RadixTextFieldVariant::Surface => format!("{gray} rim on surface"),
+        TextFieldVariant::Soft => format!("{accent} tint, no hard edge"),
+        TextFieldVariant::Surface => format!("{gray} rim on surface"),
         _ => String::new(),
     }
 }

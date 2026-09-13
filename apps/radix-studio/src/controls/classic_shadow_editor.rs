@@ -1,6 +1,6 @@
 //! Live editor for the Classic button's bubble shadow.
 //!
-//! Every slider writes straight into [`RadixLook::set_classic_params`], so the
+//! Every slider writes straight into [`Look::set_classic_params`], so the
 //! whole app retunes as you drag. The readout under the preview is the literal to paste
 //! back into `ClassicButtonParams::default` once the numbers look right.
 
@@ -12,11 +12,11 @@ use gpui::{
     Window, div, prelude::*, px,
 };
 use luma::controls::button::{Button, ButtonEvent};
-use luma::controls::button_family::ButtonSize;
-use luma::controls::slider::{self, Slider, SliderEvent};
+use luma::controls::slider::{Slider, SliderEvent};
 use luma::infra::presenter::HasPresenter;
 use luma::{hstack, vstack};
-use luma_look_radix::{ClassicButtonParams, RadixLook, RadixLookControlExt, SemanticRole};
+use luma_look_radix as radix;
+use luma_look_radix::{ClassicButtonParams, ButtonSize, Look, SemanticRole};
 
 use crate::assets::{icon_named, react_icon};
 
@@ -285,7 +285,7 @@ pub enum ClassicShadowEditorEvent {
 }
 
 pub struct ClassicShadowEditor {
-    look: Arc<RadixLook>,
+    look: Arc<Look>,
     params: ClassicButtonParams,
     sliders: Vec<(Field, Slider)>,
     preview: Entity<Button>,
@@ -299,14 +299,15 @@ pub struct ClassicShadowEditor {
 impl EventEmitter<ClassicShadowEditorEvent> for ClassicShadowEditor {}
 
 impl ClassicShadowEditor {
-    pub fn new(look: &Arc<RadixLook>, cx: &mut Context<Self>) -> Self {
+    pub fn new(look: &Arc<Look>, cx: &mut Context<Self>) -> Self {
         let mut params = look.classic_params();
         let mut sliders = Vec::new();
         let mut subscriptions = Vec::new();
 
         for spec in GROUPS.iter().flat_map(|(_, specs)| specs.iter()) {
             let field = spec.field;
-            let control = slider::new(format!("classic-shadow-{}", spec.id))
+            let control = radix::Slider::new(format!("classic-shadow-{}", spec.id))
+                .look(look)
                 .range(spec.min..spec.max)
                 .step(spec.step)
                 .value(*field.slot(&mut params))
@@ -321,13 +322,14 @@ impl ClassicShadowEditor {
             sliders.push((field, control));
         }
 
-        let preview = look
-            .classic_button("classic-shadow-preview")
-            .size(ButtonSize::Lg)
+        let preview = radix::Button::new("classic-shadow-preview")
+            .look(look)
+            .classic()
+            .size(ButtonSize::Three)
             .label("Next")
             .with_template_modifier(|button, _| button.h(px(PREVIEW_HEIGHT)).w(px(PREVIEW_WIDTH)))
             .spawn(cx);
-        let reset = look.soft_button("classic-shadow-reset").label("Reset").spawn(cx);
+        let reset = radix::Button::new("classic-shadow-reset").look(look).soft().label("Reset").spawn(cx);
         subscriptions.push(cx.subscribe(&reset, |this, _, event: &ButtonEvent, cx| {
             if matches!(event, ButtonEvent::Click) {
                 this.set_params(ClassicButtonParams::default(), cx);
@@ -336,8 +338,9 @@ impl ClassicShadowEditor {
 
         let copied = Arc::new(AtomicBool::new(false));
         let copy_state = Arc::clone(&copied);
-        let copy = look
-            .quiet_ghost_button("classic-shadow-copy")
+        let copy = radix::Button::new("classic-shadow-copy")
+            .look(look)
+            .ghost_quiet()
             .content(move |model, _| {
                 let color = model.resolved_look.as_ref().map_or(Hsla::default(), |look| look.foreground);
                 let name = if copy_state.load(Ordering::Relaxed) {

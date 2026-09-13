@@ -8,23 +8,23 @@
 use std::sync::Arc;
 
 use gpui::{BoxShadow, Hsla, point, px};
-use luma::controls::slider::{SliderLook, SliderTheme, SliderThumbSize};
+use luma::controls::slider::{SliderLook, SliderTemplate, SliderTheme, SliderThumbSize, ThemedSliderTemplate};
 use luma::theme::{ControlSize, InteractionLayer, InteractionState};
 
-use crate::look::RadixLook;
+use crate::look::Look;
 use crate::scale::ScaleFamily;
 use crate::semantic::SemanticRole;
 
 /// Radix Themes slider visual variants.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum RadixSliderVariant {
+pub enum SliderVariant {
     Classic,
     #[default]
     Surface,
     Soft,
 }
 
-impl RadixSliderVariant {
+impl SliderVariant {
     pub const ALL: [Self; 3] = [Self::Classic, Self::Surface, Self::Soft];
 
     pub fn as_str(self) -> &'static str {
@@ -44,16 +44,53 @@ impl RadixSliderVariant {
     }
 }
 
-struct RadixSliderTheme {
-    look: RadixLook,
-    variant: RadixSliderVariant,
+/// Radix `size` prop on Slider. Default is [`Self::Two`].
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SliderSize {
+    One,
+    #[default]
+    Two,
+    Three,
+}
+
+impl SliderSize {
+    pub const ALL: [Self; 3] = [Self::One, Self::Two, Self::Three];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::One => "1",
+            Self::Two => "2",
+            Self::Three => "3",
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::One => "Size 1",
+            Self::Two => "Size 2",
+            Self::Three => "Size 3",
+        }
+    }
+
+    pub fn control_size(self) -> ControlSize {
+        match self {
+            Self::One => ControlSize::Sm,
+            Self::Two => ControlSize::Md,
+            Self::Three => ControlSize::Lg,
+        }
+    }
+}
+
+struct SliderThemeAdapter {
+    look: Look,
+    variant: SliderVariant,
 }
 
 fn alpha(color: Hsla, a: f32) -> Hsla {
     Hsla { a, ..color }
 }
 
-impl SliderTheme for RadixSliderTheme {
+impl SliderTheme for SliderThemeAdapter {
     fn resolve(&self, size: ControlSize, thumb_size: Option<SliderThumbSize>, state: InteractionState) -> SliderLook {
         let look = &self.look;
         let gray = |n| look.resolve_step(ScaleFamily::Gray, n).hsla();
@@ -65,7 +102,7 @@ impl SliderTheme for RadixSliderTheme {
         } else {
             match (self.variant, layer) {
                 // Soft range is `--accent-6` (see radix slider.css).
-                (RadixSliderVariant::Soft, _) => accent(6),
+                (SliderVariant::Soft, _) => accent(6),
                 (_, InteractionLayer::Pressed) => accent(11),
                 (_, InteractionLayer::Hovered) => accent(10),
                 _ => look.resolve_role(SemanticRole::Primary).hsla(),
@@ -77,8 +114,8 @@ impl SliderTheme for RadixSliderTheme {
             alpha(gray(4), 0.55)
         } else {
             match self.variant {
-                RadixSliderVariant::Soft => alpha(gray(4), 0.65),
-                RadixSliderVariant::Surface | RadixSliderVariant::Classic => alpha(gray(3), 0.55),
+                SliderVariant::Soft => alpha(gray(4), 0.65),
+                SliderVariant::Surface | SliderVariant::Classic => alpha(gray(3), 0.55),
             }
         };
 
@@ -92,9 +129,9 @@ impl SliderTheme for RadixSliderTheme {
             gray(6)
         } else {
             match self.variant {
-                RadixSliderVariant::Soft => alpha(accent(6), 0.35),
-                RadixSliderVariant::Surface => alpha(gpui::black(), 0.16),
-                RadixSliderVariant::Classic => alpha(gpui::black(), 0.22),
+                SliderVariant::Soft => alpha(accent(6), 0.35),
+                SliderVariant::Surface => alpha(gpui::black(), 0.16),
+                SliderVariant::Classic => alpha(gpui::black(), 0.22),
             }
         };
 
@@ -102,9 +139,9 @@ impl SliderTheme for RadixSliderTheme {
             Vec::new()
         } else {
             match self.variant {
-                RadixSliderVariant::Surface => surface_thumb_shadow(),
-                RadixSliderVariant::Classic => classic_thumb_shadow(),
-                RadixSliderVariant::Soft => soft_thumb_shadow(),
+                SliderVariant::Surface => surface_thumb_shadow(),
+                SliderVariant::Classic => classic_thumb_shadow(),
+                SliderVariant::Soft => soft_thumb_shadow(),
             }
         };
 
@@ -190,12 +227,16 @@ fn soft_thumb_shadow() -> Vec<BoxShadow> {
     ]
 }
 
-pub fn slider_theme(look: Arc<RadixLook>) -> Arc<dyn SliderTheme> {
-    slider_theme_with(look, RadixSliderVariant::default())
+pub fn slider_theme(look: &Look) -> Arc<dyn SliderTheme> {
+    slider_theme_with(look, SliderVariant::default())
 }
 
-pub fn slider_theme_with(look: Arc<RadixLook>, variant: RadixSliderVariant) -> Arc<dyn SliderTheme> {
-    Arc::new(RadixSliderTheme { look: look.as_ref().clone(), variant })
+pub fn slider_theme_with(look: &Look, variant: SliderVariant) -> Arc<dyn SliderTheme> {
+    Arc::new(SliderThemeAdapter { look: look.clone(), variant })
+}
+
+pub fn slider_template(look: &Look, variant: SliderVariant) -> Arc<dyn SliderTemplate> {
+    Arc::new(ThemedSliderTemplate::new(slider_theme_with(look, variant)))
 }
 
 #[cfg(test)]
@@ -204,16 +245,16 @@ mod tests {
 
     #[test]
     fn surface_fill_uses_primary() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = slider_theme_with(Arc::clone(&look), RadixSliderVariant::Surface);
+        let look = Look::built_in();
+        let theme = slider_theme_with(&look, SliderVariant::Surface);
         let resolved = theme.resolve(ControlSize::Md, None, InteractionState::default());
         assert_eq!(resolved.fill_background, look.resolve_role(SemanticRole::Primary).hsla());
     }
 
     #[test]
     fn soft_uses_gray_track_and_accent_fill() {
-        let look = Arc::new(RadixLook::built_in());
-        let theme = slider_theme_with(Arc::clone(&look), RadixSliderVariant::Soft);
+        let look = Look::built_in();
+        let theme = slider_theme_with(&look, SliderVariant::Soft);
         let resolved = theme.resolve(ControlSize::Md, None, InteractionState::default());
         assert_eq!(resolved.fill_background, look.resolve_step(ScaleFamily::Color, 6).hsla());
         assert_ne!(
@@ -225,13 +266,13 @@ mod tests {
 
     #[test]
     fn classic_thumb_is_more_elevated_than_surface() {
-        let look = Arc::new(RadixLook::built_in());
-        let classic = slider_theme_with(Arc::clone(&look), RadixSliderVariant::Classic).resolve(
+        let look = Look::built_in();
+        let classic = slider_theme_with(&look, SliderVariant::Classic).resolve(
             ControlSize::Md,
             None,
             InteractionState::default(),
         );
-        let surface = slider_theme_with(Arc::clone(&look), RadixSliderVariant::Surface).resolve(
+        let surface = slider_theme_with(&look, SliderVariant::Surface).resolve(
             ControlSize::Md,
             None,
             InteractionState::default(),

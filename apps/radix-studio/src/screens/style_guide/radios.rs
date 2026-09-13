@@ -13,10 +13,7 @@ use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use luma::controls::radio_button::RadioButtonData;
 use luma::controls::tabs::Tabs;
 use luma::{hstack, vstack};
-use luma_look_radix::{
-    RadixAccent, RadixButtonPaint, RadixGray, RadixLook, RadixLookControlExt, RadixRadioSize, RadixRadioVariant,
-    ScaleFamily,
-};
+use luma_look_radix::{Accent, Paint, Gray, Look, LookControlExt, RadioSize, RadioVariant, ScaleFamily};
 
 use super::matrix_grid::{
     COL_GAP, centered, column_header, corner_label, empty_corner, equal_data_columns, fixed_grid, preview_tabbed,
@@ -36,7 +33,7 @@ pub struct VariantDef {
     pub id: &'static str,
     pub label: &'static str,
     description: &'static str,
-    pub variant: RadixRadioVariant,
+    pub variant: RadioVariant,
 }
 
 /// Style Guide radio variants (Classic deferred until elevation lands).
@@ -45,13 +42,13 @@ pub const RADIX_VARIANTS: [VariantDef; 2] = [
         id: "surface",
         label: "Surface",
         description: "Panel face behind a neutral edge",
-        variant: RadixRadioVariant::Surface,
+        variant: RadioVariant::Surface,
     },
-    VariantDef { id: "soft", label: "Soft", description: "Accent tint, no edge", variant: RadixRadioVariant::Soft },
+    VariantDef { id: "soft", label: "Soft", description: "Accent tint, no edge", variant: RadioVariant::Soft },
 ];
 
 pub fn tabbed(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     preview_tabs: Entity<Tabs>,
     fg: Hsla,
     muted: Hsla,
@@ -71,43 +68,37 @@ pub fn tabbed(
 }
 
 /// Size 1–3 for every radio variant (always circular — no radius axis).
-pub fn sizes_matrix(look: &Arc<RadixLook>, _fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
+pub fn sizes_matrix(look: &Arc<Look>, _fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
     vstack! { gap=SIZE_TABLE_GAP; }
         .children(RADIX_VARIANTS.iter().map(|def| sizes_variant_table(look, def, muted, window, cx)))
         .into_any_element()
 }
 
 fn sizes_variant_table(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     def: &VariantDef,
     muted: Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let mut grid =
-        fixed_grid(equal_data_columns(ROW_LABEL_WIDTH, SIZE_COLUMN_WIDTH, RadixRadioSize::ALL.len()), COL_GAP, 0.0);
+        fixed_grid(equal_data_columns(ROW_LABEL_WIDTH, SIZE_COLUMN_WIDTH, RadioSize::ALL.len()), COL_GAP, 0.0);
 
     grid = grid.child(corner_label(def.label, muted), 0, 0);
-    for (col, size) in RadixRadioSize::ALL.iter().enumerate() {
+    for (col, size) in RadioSize::ALL.iter().enumerate() {
         grid = grid.child(column_header(size.label(), muted), 0, col + 1);
     }
 
     grid = grid.child(div().w_full().h(px(8.0)), 1, 0);
-    for (col, size) in RadixRadioSize::ALL.iter().enumerate() {
+    for (col, size) in RadioSize::ALL.iter().enumerate() {
         grid = grid.child(sizes_cell(look, def, *size, window, cx), 1, col + 1);
     }
 
     grid.into_any_element()
 }
 
-fn sizes_cell(
-    look: &Arc<RadixLook>,
-    def: &VariantDef,
-    size: RadixRadioSize,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    let template = look.radio_template_for(def.variant, RadixButtonPaint::accent(), size);
+fn sizes_cell(look: &Arc<Look>, def: &VariantDef, size: RadioSize, window: &mut Window, cx: &mut App) -> AnyElement {
+    let template = look.radio_template_for(def.variant, Paint::accent(), size);
     centered(radio_pair(
         &template,
         &format!("sizes-{}-{}", def.id, size.as_str()),
@@ -118,13 +109,7 @@ fn sizes_cell(
 }
 
 /// Accents × variants: each cell pairs default + high-contrast (unselected + selected each).
-pub fn colors_matrix(
-    base_look: &Arc<RadixLook>,
-    fg: Hsla,
-    muted: Hsla,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
+pub fn colors_matrix(base_look: &Arc<Look>, fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
     let mut grid =
         fixed_grid(equal_data_columns(ROW_LABEL_WIDTH, COLOR_COLUMN_WIDTH, RADIX_VARIANTS.len()), COL_GAP, COL_GAP);
 
@@ -133,10 +118,10 @@ pub fn colors_matrix(
         grid = grid.child(column_header(def.label, muted), 0, col + 1);
     }
 
-    for (row, accent) in RadixAccent::ALL.iter().enumerate() {
+    for (row, accent) in Accent::ALL.iter().enumerate() {
         let row = row + 1;
         let row_look = Arc::new(base_look.fork());
-        row_look.set_palettes(*accent, RadixGray::Auto);
+        row_look.set_palettes(*accent, Gray::Auto);
         let accent_id = accent.as_str();
         let label = super::palettes::title_case(accent_id);
 
@@ -150,14 +135,14 @@ pub fn colors_matrix(
 }
 
 fn colors_variant_cell(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     accent_id: &str,
     def: &VariantDef,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let default = look.radio_template_with(def.variant, RadixButtonPaint::accent());
-    let high_contrast = look.radio_template_with(def.variant, RadixButtonPaint::accent().high_contrast());
+    let default = look.radio_template_with(def.variant, Paint::accent());
+    let high_contrast = look.radio_template_with(def.variant, Paint::accent().high_contrast());
 
     centered(
         hstack! { gap=12 align=center; }
@@ -173,7 +158,7 @@ fn colors_variant_cell(
 }
 
 pub fn matrix(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     variants: &[VariantDef],
     fg: Hsla,
     muted: Hsla,
@@ -203,8 +188,8 @@ pub fn matrix(
 
 fn description(def: &VariantDef, accent: &str, gray: &str) -> String {
     match def.variant {
-        RadixRadioVariant::Soft => format!("{accent} tint, no edge"),
-        RadixRadioVariant::Surface => format!("Panel face behind a {gray} edge"),
+        RadioVariant::Soft => format!("{accent} tint, no edge"),
+        RadioVariant::Surface => format!("Panel face behind a {gray} edge"),
         _ => def.description.to_string(),
     }
 }

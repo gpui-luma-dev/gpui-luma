@@ -1,0 +1,323 @@
+//! Look-owned button builder. Spawn synthesizes the SDK [`luma::controls::button::Button`].
+
+use gpui::{App, Context, Div, Entity, SharedString, Stateful};
+use luma::controls::button::{
+    ButtonBuilder, ButtonRenderModel, ButtonTemplateModifier, ControlIcon, ControlPresenter, HasPresenter,
+};
+use luma::controls::button_family::ButtonFamilyRole;
+
+use crate::button::{Paint, ButtonVariant, button_look_for, button_template};
+use crate::button_layout::{ButtonSize, Radius};
+use crate::look::{Look, resolve_look};
+use crate::tone::Tone;
+
+/// Builder in the guise of a button: Radix axes plus SDK options, until `.spawn(cx)`.
+pub struct Button<D = ()> {
+    id: SharedString,
+    look: Option<Look>,
+    variant: ButtonVariant,
+    paint: Paint,
+    size: ButtonSize,
+    radius: Radius,
+    icon: Option<ControlIcon>,
+    role: ButtonFamilyRole,
+    enabled: bool,
+    tab_stop: bool,
+    compact: bool,
+    data: D,
+    content: Option<ControlPresenter<ButtonRenderModel<D>>>,
+    modifiers: Vec<ButtonTemplateModifier<D>>,
+}
+
+impl Button<()> {
+    pub fn new(id: impl Into<SharedString>) -> Self {
+        Self {
+            id: id.into(),
+            look: None,
+            variant: ButtonVariant::default(),
+            paint: Paint::accent(),
+            size: ButtonSize::default(),
+            radius: Radius::default(),
+            icon: None,
+            role: ButtonFamilyRole::Text,
+            enabled: true,
+            tab_stop: true,
+            compact: false,
+            data: (),
+            content: None,
+            modifiers: Vec::new(),
+        }
+    }
+
+    /// Pick a typed payload. Call once, usually at the start of the chain.
+    ///
+    /// Resets presenter content and queued template modifiers (they are typed on `D`).
+    /// Radix axes and SDK settings (`icon`, `role`, `enabled`, `tab_stop`, `compact`) are kept.
+    pub fn typed<D: Clone + 'static>(self, data: D) -> Button<D> {
+        Button {
+            id: self.id,
+            look: self.look,
+            variant: self.variant,
+            paint: self.paint,
+            size: self.size,
+            radius: self.radius,
+            icon: self.icon,
+            role: self.role,
+            enabled: self.enabled,
+            tab_stop: self.tab_stop,
+            compact: self.compact,
+            data,
+            content: None,
+            modifiers: Vec::new(),
+        }
+    }
+}
+
+impl<D: Clone + 'static> Button<D> {
+    /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
+    pub fn look(mut self, look: &Look) -> Self {
+        self.look = Some(look.clone());
+        self
+    }
+
+    pub fn variant(mut self, variant: ButtonVariant) -> Self {
+        self.variant = variant;
+        self
+    }
+
+    pub fn classic(self) -> Self {
+        self.variant(ButtonVariant::Classic)
+    }
+
+    pub fn solid(self) -> Self {
+        self.variant(ButtonVariant::Solid)
+    }
+
+    pub fn soft(self) -> Self {
+        self.variant(ButtonVariant::Soft)
+    }
+
+    pub fn surface(self) -> Self {
+        self.variant(ButtonVariant::Surface)
+    }
+
+    pub fn outline(self) -> Self {
+        self.variant(ButtonVariant::Outline)
+    }
+
+    pub fn ghost(self) -> Self {
+        self.variant(ButtonVariant::Ghost)
+    }
+
+    pub fn ghost_quiet(self) -> Self {
+        self.variant(ButtonVariant::GhostQuiet)
+    }
+
+    pub fn page(self) -> Self {
+        self.variant(ButtonVariant::Page)
+    }
+
+    pub fn accent(mut self) -> Self {
+        self.paint.tone = Tone::Accent;
+        self
+    }
+
+    pub fn gray(mut self) -> Self {
+        self.paint.tone = Tone::Gray;
+        self
+    }
+
+    pub fn high_contrast(mut self, high_contrast: bool) -> Self {
+        self.paint.high_contrast = high_contrast;
+        self
+    }
+
+    pub fn size(mut self, size: ButtonSize) -> Self {
+        self.size = size;
+        self
+    }
+
+    pub fn radius(mut self, radius: Radius) -> Self {
+        self.radius = radius;
+        self
+    }
+
+    pub fn icon(mut self, icon: impl Into<ControlIcon>) -> Self {
+        self.icon = Some(icon.into());
+        self
+    }
+
+    pub fn role(mut self, role: ButtonFamilyRole) -> Self {
+        self.role = role;
+        self
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
+    pub fn tab_stop(mut self, tab_stop: bool) -> Self {
+        self.tab_stop = tab_stop;
+        self
+    }
+
+    pub fn compact(mut self) -> Self {
+        self.compact = true;
+        self
+    }
+
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &ButtonRenderModel<D>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::button::Button<D>> {
+        let look = self.resolve_look(cx);
+        self.into_sdk_builder(look).spawn(cx)
+    }
+
+    fn resolve_look(&self, cx: &App) -> Look {
+        resolve_look(self.look.as_ref(), cx.try_global::<Look>())
+    }
+
+    fn into_sdk_builder(self, look: Look) -> ButtonBuilder<D> {
+        let template = button_template(&look, self.variant, self.paint);
+        let geometry = button_look_for(&look, self.variant, self.paint, self.size, self.radius);
+        let mut builder = luma::controls::button::Button::new(self.id)
+            .typed(self.data)
+            .template(template)
+            .with_look(move |model| geometry(model))
+            .size(self.size.control_size())
+            .role(self.role)
+            .enabled(self.enabled)
+            .tab_stop(self.tab_stop);
+        if let Some(icon) = self.icon {
+            builder = builder.icon(icon);
+        }
+        if self.compact {
+            builder = builder.compact();
+        }
+        if let Some(content) = self.content {
+            HasPresenter::set_presenter(&mut builder, content);
+        }
+        for modifier in self.modifiers {
+            builder = builder.with_template_modifier(move |root, model| (modifier)(root, model));
+        }
+        builder
+    }
+}
+
+impl<D: 'static> HasPresenter<ButtonRenderModel<D>> for Button<D> {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<D>>) {
+        self.content = Some(content);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::button_layout::button_box_for;
+    use crate::look::resolve_look;
+    use luma::controls::button::HasPresenter;
+    use luma::theme::ControlSize;
+
+    fn primary(look: &Look) -> gpui::Hsla {
+        look.resolve_role(crate::semantic::SemanticRole::Primary).hsla()
+    }
+
+    #[test]
+    fn missing_look_and_global_falls_back_to_built_in() {
+        let resolved = resolve_look(None, None);
+        assert_eq!(resolved.palettes(), Look::built_in().palettes());
+        assert_eq!(primary(&resolved), primary(&Look::built_in()));
+    }
+
+    #[test]
+    fn explicit_look_wins_over_ambient() {
+        let ambient = Look::built_in();
+        let fork = ambient.fork();
+        fork.set_accent_seed(gpui::hsla(0.05, 0.9, 0.5, 1.0));
+        let resolved = resolve_look(Some(&fork), Some(&ambient));
+        assert_eq!(primary(&resolved), primary(&fork));
+        assert_ne!(primary(&resolved), primary(&ambient));
+    }
+
+    #[test]
+    fn ambient_is_used_when_look_is_omitted() {
+        let ambient = Look::built_in().fork();
+        ambient.set_accent_seed(gpui::hsla(0.12, 0.8, 0.4, 1.0));
+        let resolved = resolve_look(None, Some(&ambient));
+        assert_eq!(primary(&resolved), primary(&ambient));
+        assert_ne!(primary(&resolved), primary(&Look::built_in()));
+    }
+
+    #[test]
+    fn classic_bind_selects_classic_template() {
+        let button = Button::new("classic").classic();
+        assert!(matches!(button.variant, ButtonVariant::Classic));
+    }
+
+    #[test]
+    fn size_maps_to_sdk_control_size() {
+        assert_eq!(Button::new("s").size(ButtonSize::One).size.control_size(), ControlSize::Sm);
+        assert_eq!(Button::new("s").size(ButtonSize::Two).size.control_size(), ControlSize::Md);
+        assert_eq!(Button::new("s").size(ButtonSize::Three).size.control_size(), ControlSize::Lg);
+        assert_eq!(Button::new("s").size(ButtonSize::Four).size.control_size(), ControlSize::Lg);
+    }
+
+    #[test]
+    fn bind_geometry_uses_size_and_radius() {
+        let look = Look::built_in();
+        let button = Button::new("sized").size(ButtonSize::Four).radius(Radius::None);
+        let geometry = button_look_for::<()>(&look, button.variant, button.paint, button.size, button.radius);
+        let model = ButtonRenderModel::<()> { size: button.size.control_size(), ..Default::default() };
+        let family = geometry(&model);
+        assert_eq!(family.radius, button_box_for(ButtonSize::Four, Radius::None).radius);
+    }
+
+    #[test]
+    fn modifiers_queue_in_call_order() {
+        let button = Button::new("mod").with_template_modifier(|root, _| root).with_template_modifier(|root, _| root);
+        assert_eq!(button.modifiers.len(), 2);
+    }
+
+    #[test]
+    fn into_sdk_builder_does_not_panic() {
+        let look = Look::built_in();
+        let _builder = Button::new("ok")
+            .look(&look)
+            .solid()
+            .high_contrast(true)
+            .gray()
+            .label("Submit")
+            .with_template_modifier(|root, _| root)
+            .into_sdk_builder(look);
+    }
+
+    #[test]
+    fn typed_keeps_radix_axes_and_resets_d_typed_seams() {
+        let button = Button::new("counter")
+            .solid()
+            .gray()
+            .size(ButtonSize::Three)
+            .label("ignored")
+            .with_template_modifier(|root, _| root)
+            .typed(7u32);
+        assert!(matches!(button.variant, ButtonVariant::Solid));
+        assert_eq!(button.paint.tone, Tone::Gray);
+        assert_eq!(button.size, ButtonSize::Three);
+        assert_eq!(button.data, 7);
+        assert!(button.content.is_none());
+        assert!(button.modifiers.is_empty());
+    }
+
+    #[test]
+    fn typed_bind_does_not_panic() {
+        let look = Look::built_in();
+        let _builder = Button::new("counter").look(&look).classic().typed(true).label("On").into_sdk_builder(look);
+    }
+}

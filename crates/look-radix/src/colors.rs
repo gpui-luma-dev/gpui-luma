@@ -6,10 +6,10 @@ mod colors_data;
 use gpui::{Hsla, hsla};
 use luma::theme::ThemeMode;
 
-pub use colors_data::{BLACK_ALPHA_STEPS, DARK_FAMILIES, LIGHT_FAMILIES, RADIX_COLORS_VERSION, WHITE_ALPHA_STEPS};
-pub use colors_data::{RadixColorScale, RadixColorValueKind};
+pub use colors_data::{BLACK_ALPHA_STEPS, DARK_FAMILIES, LIGHT_FAMILIES, COLORS_VERSION, WHITE_ALPHA_STEPS};
+pub use colors_data::{RawColorScale, ColorValueKind};
 
-pub fn families(mode: ThemeMode) -> &'static [RadixColorScale] {
+pub fn families(mode: ThemeMode) -> &'static [RawColorScale] {
     match mode {
         ThemeMode::Light => LIGHT_FAMILIES,
         ThemeMode::Dark => DARK_FAMILIES,
@@ -73,7 +73,7 @@ mod tests {
         assert_eq!(families(ThemeMode::Light).len(), 31);
         assert_eq!(families(ThemeMode::Light).first().unwrap().family, "gray");
         assert_eq!(families(ThemeMode::Light).last().unwrap().family, "gold");
-        assert_eq!(RADIX_COLORS_VERSION, "3.0.0");
+        assert_eq!(COLORS_VERSION, "3.0.0");
     }
 
     #[test]

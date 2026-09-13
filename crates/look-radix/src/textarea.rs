@@ -2,18 +2,58 @@
 
 use std::sync::Arc;
 
-use luma::controls::textarea::{TextAreaLook, TextAreaPalette, TextAreaState, TextAreaTheme, compose_textarea_look};
+use luma::controls::textarea::{
+    TextAreaLook, TextAreaPalette, TextAreaState, TextAreaTemplate, TextAreaTheme, ThemedTextAreaTemplate,
+    compose_textarea_look,
+};
 use luma::theme::{ControlSize, MetricTokens, StandardBoxScale};
 
-use crate::look::RadixLook;
-use crate::textfield::{RadixTextFieldVariant, resolve_text_chrome_palette};
+use crate::look::Look;
+use crate::textfield::{TextFieldVariant, resolve_text_chrome_palette};
 
-struct RadixTextAreaTheme {
-    look: RadixLook,
-    variant: RadixTextFieldVariant,
+/// Radix `size` prop on Text Area. Default is [`Self::Two`].
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum TextAreaSize {
+    One,
+    #[default]
+    Two,
+    Three,
 }
 
-impl TextAreaTheme for RadixTextAreaTheme {
+impl TextAreaSize {
+    pub const ALL: [Self; 3] = [Self::One, Self::Two, Self::Three];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::One => "1",
+            Self::Two => "2",
+            Self::Three => "3",
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::One => "Size 1",
+            Self::Two => "Size 2",
+            Self::Three => "Size 3",
+        }
+    }
+
+    pub fn control_size(self) -> ControlSize {
+        match self {
+            Self::One => ControlSize::Sm,
+            Self::Two => ControlSize::Md,
+            Self::Three => ControlSize::Lg,
+        }
+    }
+}
+
+struct TextAreaThemeAdapter {
+    look: Look,
+    variant: TextFieldVariant,
+}
+
+impl TextAreaTheme for TextAreaThemeAdapter {
     fn resolve(&self, state: TextAreaState, enabled: bool) -> TextAreaPalette {
         let field =
             resolve_text_chrome_palette(&self.look, self.variant, state.hovered, state.focused, state.invalid, enabled);
@@ -44,17 +84,21 @@ impl TextAreaTheme for RadixTextAreaTheme {
     ) -> TextAreaLook {
         let mut look = compose_textarea_look(&self.resolve(state, enabled), scale, self.metrics().border_width.default);
         let _ = size;
-        if matches!(self.variant, RadixTextFieldVariant::Soft | RadixTextFieldVariant::Classic) {
+        if matches!(self.variant, TextFieldVariant::Soft | TextFieldVariant::Classic) {
             look.border_width = 0.0;
         }
         look
     }
 }
 
-pub fn textarea_theme(look: Arc<RadixLook>) -> Arc<dyn TextAreaTheme> {
-    textarea_theme_with(look, RadixTextFieldVariant::default())
+pub fn textarea_theme(look: &Look) -> Arc<dyn TextAreaTheme> {
+    textarea_theme_with(look, TextFieldVariant::default())
 }
 
-pub fn textarea_theme_with(look: Arc<RadixLook>, variant: RadixTextFieldVariant) -> Arc<dyn TextAreaTheme> {
-    Arc::new(RadixTextAreaTheme { look: look.as_ref().clone(), variant })
+pub fn textarea_theme_with(look: &Look, variant: TextFieldVariant) -> Arc<dyn TextAreaTheme> {
+    Arc::new(TextAreaThemeAdapter { look: look.clone(), variant })
+}
+
+pub fn textarea_template(look: &Look, variant: TextFieldVariant) -> Arc<dyn TextAreaTemplate> {
+    Arc::new(ThemedTextAreaTemplate::new(textarea_theme_with(look, variant)))
 }

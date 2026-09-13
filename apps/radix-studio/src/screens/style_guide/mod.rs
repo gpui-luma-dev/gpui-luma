@@ -20,7 +20,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Entity, IntoElement, Window, prelude::*};
 use luma::controls::tabs::Tabs;
 use luma::vstack;
-use luma_look_radix::{RadixLook, ScaleFamily, SemanticRole};
+use luma_look_radix::{Look, ScaleFamily, SemanticRole};
 
 use super::section::section;
 
@@ -34,7 +34,7 @@ pub struct PreviewTabs {
     pub sliders: Entity<Tabs>,
 }
 
-pub fn page(look: &Arc<RadixLook>, tabs: PreviewTabs, window: &mut Window, cx: &mut App) -> AnyElement {
+pub fn page(look: &Arc<Look>, tabs: PreviewTabs, window: &mut Window, cx: &mut App) -> AnyElement {
     let fg = look.resolve_role(SemanticRole::Foreground).hsla();
     let muted = look.resolve_role(SemanticRole::MutedForeground).hsla();
     let border = look.resolve_role(SemanticRole::Border).hsla();

@@ -13,10 +13,7 @@ use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use luma::controls::switch::SwitchData;
 use luma::controls::tabs::Tabs;
 use luma::{hstack, vstack};
-use luma_look_radix::{
-    RadixAccent, RadixButtonPaint, RadixGray, RadixLook, RadixLookControlExt, RadixRadius, RadixSwitchSize,
-    RadixSwitchVariant, ScaleFamily,
-};
+use luma_look_radix::{Accent, Paint, Gray, Look, LookControlExt, Radius, SwitchSize, SwitchVariant, ScaleFamily};
 
 use super::matrix_grid::{
     COL_GAP, centered, column_header, corner_label, empty_corner, equal_data_columns, fixed_grid, preview_tabbed,
@@ -39,7 +36,7 @@ pub struct VariantDef {
     pub id: &'static str,
     pub label: &'static str,
     description: &'static str,
-    pub variant: RadixSwitchVariant,
+    pub variant: SwitchVariant,
 }
 
 /// Style Guide switch variants (Classic deferred until elevation lands).
@@ -48,18 +45,18 @@ pub const RADIX_VARIANTS: [VariantDef; 2] = [
         id: "surface",
         label: "Surface",
         description: "Gray track with an accent fill when on",
-        variant: RadixSwitchVariant::Surface,
+        variant: SwitchVariant::Surface,
     },
     VariantDef {
         id: "soft",
         label: "Soft",
         description: "Accent tint when on, no hard edge",
-        variant: RadixSwitchVariant::Soft,
+        variant: SwitchVariant::Soft,
     },
 ];
 
 pub fn tabbed(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     preview_tabs: Entity<Tabs>,
     fg: Hsla,
     muted: Hsla,
@@ -79,14 +76,14 @@ pub fn tabbed(
 }
 
 /// Size 1–3 × theme radius for every switch variant.
-pub fn sizes_matrix(look: &Arc<RadixLook>, fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
+pub fn sizes_matrix(look: &Arc<Look>, fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
     vstack! { gap=SIZE_TABLE_GAP; }
         .children(RADIX_VARIANTS.iter().map(|def| sizes_variant_table(look, def, fg, muted, window, cx)))
         .into_any_element()
 }
 
 fn sizes_variant_table(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     def: &VariantDef,
     fg: Hsla,
     muted: Hsla,
@@ -94,20 +91,20 @@ fn sizes_variant_table(
     cx: &mut App,
 ) -> AnyElement {
     let mut grid = fixed_grid(
-        equal_data_columns(ROW_LABEL_WIDTH, SIZE_COLUMN_WIDTH, RadixRadius::ALL.len()),
+        equal_data_columns(ROW_LABEL_WIDTH, SIZE_COLUMN_WIDTH, Radius::ALL.len()),
         SIZE_COL_GAP,
         SIZE_ROW_GAP,
     );
 
     grid = grid.child(corner_label(def.label, muted), 0, 0);
-    for (col, radius) in RadixRadius::ALL.iter().enumerate() {
+    for (col, radius) in Radius::ALL.iter().enumerate() {
         grid = grid.child(column_header(radius.label(), muted), 0, col + 1);
     }
 
-    for (row, size) in RadixSwitchSize::ALL.iter().enumerate() {
+    for (row, size) in SwitchSize::ALL.iter().enumerate() {
         let row = row + 1;
         grid = grid.child(row_label(size.label(), fg), row, 0);
-        for (col, radius) in RadixRadius::ALL.iter().enumerate() {
+        for (col, radius) in Radius::ALL.iter().enumerate() {
             grid = grid.child(sizes_cell(look, def, *size, *radius, window, cx), row, col + 1);
         }
     }
@@ -116,14 +113,14 @@ fn sizes_variant_table(
 }
 
 fn sizes_cell(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     def: &VariantDef,
-    size: RadixSwitchSize,
-    radius: RadixRadius,
+    size: SwitchSize,
+    radius: Radius,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let template = look.switch_template_for(def.variant, RadixButtonPaint::accent(), size, radius);
+    let template = look.switch_template_for(def.variant, Paint::accent(), size, radius);
     centered(switch_pair(
         &template,
         &format!("sizes-{}-{}-{}", def.id, size.as_str(), radius.as_str()),
@@ -134,13 +131,7 @@ fn sizes_cell(
 }
 
 /// Accents × variants: each cell pairs default + high-contrast (off + on each).
-pub fn colors_matrix(
-    base_look: &Arc<RadixLook>,
-    fg: Hsla,
-    muted: Hsla,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
+pub fn colors_matrix(base_look: &Arc<Look>, fg: Hsla, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
     let mut grid =
         fixed_grid(equal_data_columns(ROW_LABEL_WIDTH, COLOR_COLUMN_WIDTH, RADIX_VARIANTS.len()), COL_GAP, COL_GAP);
 
@@ -149,10 +140,10 @@ pub fn colors_matrix(
         grid = grid.child(column_header(def.label, muted), 0, col + 1);
     }
 
-    for (row, accent) in RadixAccent::ALL.iter().enumerate() {
+    for (row, accent) in Accent::ALL.iter().enumerate() {
         let row = row + 1;
         let row_look = Arc::new(base_look.fork());
-        row_look.set_palettes(*accent, RadixGray::Auto);
+        row_look.set_palettes(*accent, Gray::Auto);
         let accent_id = accent.as_str();
         let label = super::palettes::title_case(accent_id);
 
@@ -166,14 +157,14 @@ pub fn colors_matrix(
 }
 
 fn colors_variant_cell(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     accent_id: &str,
     def: &VariantDef,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let default = look.switch_template_with(def.variant, RadixButtonPaint::accent());
-    let high_contrast = look.switch_template_with(def.variant, RadixButtonPaint::accent().high_contrast());
+    let default = look.switch_template_with(def.variant, Paint::accent());
+    let high_contrast = look.switch_template_with(def.variant, Paint::accent().high_contrast());
 
     centered(
         hstack! { gap=12 align=center; }
@@ -189,7 +180,7 @@ fn colors_variant_cell(
 }
 
 pub fn matrix(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     variants: &[VariantDef],
     fg: Hsla,
     muted: Hsla,
@@ -223,8 +214,8 @@ pub fn matrix(
 
 fn description(def: &VariantDef, accent: &str, gray: &str) -> String {
     match def.variant {
-        RadixSwitchVariant::Soft => format!("{accent} tint when on"),
-        RadixSwitchVariant::Surface => format!("{gray} track, {accent} when on"),
+        SwitchVariant::Soft => format!("{accent} tint when on"),
+        SwitchVariant::Surface => format!("{gray} track, {accent} when on"),
         _ => def.description.to_string(),
     }
 }

@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
-use gpui::{AppContext, Bounds, Entity, Pixels, SharedString, div, prelude::*, px};
+use gpui::{AppContext, Bounds, Entity, Pixels, SharedString, div, prelude::*, px, svg};
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::{ControlFocusState, MenuPath, PopupMenu, PopupMenuTemplate, default_popup_menu_template};
 use crate::theme::InteractionState;
 use super::template::modified_popup_menu_template;
+use crate::controls::button::ControlIcon;
 use crate::infra::menu_item::MenuItem;
 use crate::controls::floating_menu::FloatingMenuHighlight;
 use crate::infra::icon::DisclosureIcons;
@@ -49,8 +50,13 @@ fn default_trigger_content() -> ControlPresenter<PopupMenuTriggerModel> {
 }
 
 /// Presenter used by the icon-only face preset ([`PopupMenuBuilder::icon`] / [`PopupMenu::set_icon`](super::PopupMenu::set_icon)).
-pub fn icon_content(icon: LucideIcon) -> ControlPresenter<PopupMenuTriggerModel> {
-    Arc::new(move |_, _| crate::infra::icon::lucide_icon(icon, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0))
+pub fn icon_content(icon: impl Into<ControlIcon>) -> ControlPresenter<PopupMenuTriggerModel> {
+    match icon.into() {
+        ControlIcon::Lucide(icon) => {
+            Arc::new(move |_, _| crate::infra::icon::lucide_icon(icon, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0))
+        }
+        ControlIcon::SvgPath(path) => Arc::new(move |_, _| svg().size(px(16.0)).path(path.clone()).into_any_element()),
+    }
 }
 
 #[derive(Clone)]
@@ -150,10 +156,15 @@ impl PopupMenuBuilder {
     ///
     /// Not a parallel field beside the presenter — use [`HasPresenter::content`] / [`PopupMenu::set_presenter`](super::PopupMenu::set_presenter)
     /// for a custom face. Mirrors [`PopupMenu::set_icon`](super::PopupMenu::set_icon).
-    pub fn icon(mut self, icon: LucideIcon) -> Self {
-        self.model.content = icon_content(icon);
+    /// Lucide glyphs also fill `icon`; SVG paths render through the presenter.
+    pub fn icon(mut self, icon: impl Into<ControlIcon>) -> Self {
+        let icon = icon.into();
+        self.model.content = icon_content(icon.clone());
         self.model.icon_only = true;
-        self.model.icon = Some(icon);
+        self.model.icon = match icon {
+            ControlIcon::Lucide(icon) => Some(icon),
+            ControlIcon::SvgPath(_) => None,
+        };
         self
     }
 
@@ -269,5 +280,12 @@ mod tests {
             .with_template_modifier(|element, _| element);
 
         assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn svg_path_icon_keeps_icon_only_chrome() {
+        let builder = PopupMenuBuilder::new("icon").icon(ControlIcon::SvgPath("M1 1h4v4H1z".into()));
+        assert!(builder.model.icon_only);
+        assert!(builder.model.icon.is_none());
     }
 }

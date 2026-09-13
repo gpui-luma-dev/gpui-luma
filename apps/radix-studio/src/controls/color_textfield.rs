@@ -14,7 +14,8 @@ use luma_color::color_slider::color_spec::Hsv;
 use luma_color::color_slider::{ColorSliderBuilder, primary_slider_value, sizing};
 use luma_color::composition::ColorCompositionSync;
 use luma_color::{ColorSwatchButtonTemplate, ColorSwatchData};
-use luma_look_radix::{RadixLook, RadixLookControlExt, SemanticRole};
+use luma_look_radix::{Look, SemanticRole};
+use luma_look_radix as radix;
 
 #[derive(Clone, Debug)]
 pub enum ColorTextFieldEvent {
@@ -23,7 +24,7 @@ pub enum ColorTextFieldEvent {
 
 pub struct ColorTextField {
     id: SharedString,
-    look: Arc<RadixLook>,
+    look: Arc<Look>,
     color: Hsla,
     hsv: Hsv,
     focused: bool,
@@ -42,7 +43,7 @@ impl EventEmitter<ColorTextFieldEvent> for ColorTextField {}
 
 impl ColorTextField {
     pub fn new(
-        look: Arc<RadixLook>,
+        look: Arc<Look>,
         id: impl Into<SharedString>,
         color: Hsla,
         value: impl Into<String>,
@@ -214,12 +215,13 @@ impl Render for ColorTextField {
 }
 
 fn embedded_textfield(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     id: impl Into<SharedString>,
     value: impl Into<String>,
     cx: &mut Context<ColorTextField>,
 ) -> TextField {
-    look.textfield(id)
+    radix::TextField::new(id)
+        .look(look)
         .value(value.into())
         .look_override(|mut field| {
             field.background = gpui::transparent_black();

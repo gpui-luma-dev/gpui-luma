@@ -5,19 +5,20 @@ use std::sync::Arc;
 use gpui::{BoxShadow, FontWeight, black, point, px};
 use luma::controls::floating_menu::FloatingMenuLook;
 use luma::controls::popup_menu::{
-    PopupMenuPalette, PopupMenuTheme, PopupMenuTriggerMetrics, PopupMenuTriggerStyle, compose_popup_menu_look,
+    PopupMenuPalette, PopupMenuTemplate, PopupMenuTheme, PopupMenuTriggerMetrics, PopupMenuTriggerStyle,
+    ThemedPopupMenuTemplate, compose_popup_menu_look,
 };
 use luma::theme::{InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale};
 
-use crate::look::RadixLook;
+use crate::look::Look;
 use crate::semantic::SemanticRole;
-use crate::tone::RadixTone;
+use crate::tone::Tone;
 
 /// Radix Themes menu content variants, as carried by the SDK popup menu control.
 ///
 /// The variant only governs the highlighted item: the panel itself is identical.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum RadixPopupMenuVariant {
+pub enum PopupMenuVariant {
     /// Highlighted item takes the solid accent (`accent-9` on `accent-contrast`).
     #[default]
     Solid,
@@ -25,13 +26,13 @@ pub enum RadixPopupMenuVariant {
     Soft,
 }
 
-struct RadixPopupMenuTheme {
-    look: RadixLook,
-    variant: RadixPopupMenuVariant,
-    tone: RadixTone,
+struct PopupMenuThemeAdapter {
+    look: Look,
+    variant: PopupMenuVariant,
+    tone: Tone,
 }
 
-impl PopupMenuTheme for RadixPopupMenuTheme {
+impl PopupMenuTheme for PopupMenuThemeAdapter {
     fn resolve(
         &self,
         trigger_style: PopupMenuTriggerStyle,
@@ -108,11 +109,11 @@ impl PopupMenuTheme for RadixPopupMenuTheme {
     }
 }
 
-fn floating_menu_look(look: &RadixLook, variant: RadixPopupMenuVariant, tone: RadixTone) -> FloatingMenuLook {
+fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: Tone) -> FloatingMenuLook {
     let metrics = look.metrics();
     let (item_hover_background, item_hover_foreground) = match variant {
-        RadixPopupMenuVariant::Solid => (tone.step(look, 9), tone.contrast(look)),
-        RadixPopupMenuVariant::Soft => (tone.step(look, 4), look.resolve_role(SemanticRole::Foreground).hsla()),
+        PopupMenuVariant::Solid => (tone.step(look, 9), tone.contrast(look)),
+        PopupMenuVariant::Soft => (tone.step(look, 4), look.resolve_role(SemanticRole::Foreground).hsla()),
     };
 
     FloatingMenuLook {
@@ -143,20 +144,20 @@ fn floating_menu_look(look: &RadixLook, variant: RadixPopupMenuVariant, tone: Ra
     }
 }
 
-pub fn popup_menu_theme(
-    look: Arc<RadixLook>,
-    variant: RadixPopupMenuVariant,
-    tone: RadixTone,
-) -> Arc<dyn PopupMenuTheme> {
-    Arc::new(RadixPopupMenuTheme { look: look.as_ref().clone(), variant, tone })
+pub fn popup_menu_theme(look: &Look, variant: PopupMenuVariant, tone: Tone) -> Arc<dyn PopupMenuTheme> {
+    Arc::new(PopupMenuThemeAdapter { look: look.clone(), variant, tone })
+}
+
+pub fn popup_menu_template(look: &Look, variant: PopupMenuVariant, tone: Tone) -> Arc<dyn PopupMenuTemplate> {
+    Arc::new(ThemedPopupMenuTemplate::new(popup_menu_theme(look, variant, tone)))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn trigger_palette(look: &Arc<RadixLook>, tone: RadixTone) -> PopupMenuPalette {
-        popup_menu_theme(Arc::clone(look), RadixPopupMenuVariant::default(), tone).resolve(
+    fn trigger_palette(look: &Look, tone: Tone) -> PopupMenuPalette {
+        popup_menu_theme(look, PopupMenuVariant::default(), tone).resolve(
             PopupMenuTriggerStyle::Primary,
             PopupMenuTriggerMetrics::default(),
             InteractionState::default(),
@@ -165,25 +166,25 @@ mod tests {
 
     #[test]
     fn primary_trigger_uses_accent() {
-        let look = Arc::new(RadixLook::built_in());
-        let palette = trigger_palette(&look, RadixTone::Accent);
+        let look = Look::built_in();
+        let palette = trigger_palette(&look, Tone::Accent);
 
         assert_eq!(palette.trigger_background.l, look.resolve_role(SemanticRole::Primary).hsla().l);
     }
 
     #[test]
     fn gray_tone_locks_the_trigger_to_the_neutral_scale() {
-        let look = Arc::new(RadixLook::built_in());
-        let gray = trigger_palette(&look, RadixTone::Gray);
+        let look = Look::built_in();
+        let gray = trigger_palette(&look, Tone::Gray);
 
-        assert_eq!(gray.trigger_background, RadixTone::Gray.step(&look, 9));
-        assert_ne!(gray.trigger_background, trigger_palette(&look, RadixTone::Accent).trigger_background);
+        assert_eq!(gray.trigger_background, Tone::Gray.step(&look, 9));
+        assert_ne!(gray.trigger_background, trigger_palette(&look, Tone::Accent).trigger_background);
     }
 
     #[test]
     fn solid_variant_highlights_items_with_the_solid_accent() {
-        let look = RadixLook::built_in();
-        let menu = floating_menu_look(&look, RadixPopupMenuVariant::Solid, RadixTone::Accent);
+        let look = Look::built_in();
+        let menu = floating_menu_look(&look, PopupMenuVariant::Solid, Tone::Accent);
 
         assert_eq!(menu.item_hover_background, look.resolve_role(SemanticRole::Primary).hsla());
         assert_eq!(menu.item_hover_foreground, look.resolve_role(SemanticRole::PrimaryForeground).hsla());
@@ -191,9 +192,9 @@ mod tests {
 
     #[test]
     fn soft_variant_tints_items_and_keeps_the_panel_text() {
-        let look = RadixLook::built_in();
-        let solid = floating_menu_look(&look, RadixPopupMenuVariant::Solid, RadixTone::Accent);
-        let soft = floating_menu_look(&look, RadixPopupMenuVariant::Soft, RadixTone::Accent);
+        let look = Look::built_in();
+        let solid = floating_menu_look(&look, PopupMenuVariant::Solid, Tone::Accent);
+        let soft = floating_menu_look(&look, PopupMenuVariant::Soft, Tone::Accent);
 
         assert_eq!(soft.item_hover_foreground, look.resolve_role(SemanticRole::Foreground).hsla());
         assert!(soft.item_hover_background.l > solid.item_hover_background.l);
@@ -202,11 +203,11 @@ mod tests {
 
     #[test]
     fn gray_tone_keeps_the_panel_and_only_swaps_the_highlight() {
-        let look = RadixLook::built_in();
-        let accent = floating_menu_look(&look, RadixPopupMenuVariant::Solid, RadixTone::Accent);
-        let gray = floating_menu_look(&look, RadixPopupMenuVariant::Solid, RadixTone::Gray);
+        let look = Look::built_in();
+        let accent = floating_menu_look(&look, PopupMenuVariant::Solid, Tone::Accent);
+        let gray = floating_menu_look(&look, PopupMenuVariant::Solid, Tone::Gray);
 
-        assert_eq!(gray.item_hover_background, RadixTone::Gray.step(&look, 9));
+        assert_eq!(gray.item_hover_background, Tone::Gray.step(&look, 9));
         assert_ne!(gray.item_hover_background, accent.item_hover_background);
         assert_eq!(gray.background, accent.background);
     }

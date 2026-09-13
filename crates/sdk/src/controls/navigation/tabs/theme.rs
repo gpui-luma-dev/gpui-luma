@@ -17,6 +17,8 @@ pub struct TabsListLook {
 pub struct TabsItemLook {
     pub label_color: Hsla,
     pub indicator: Option<Hsla>,
+    /// Selected-chip fill. `None` is transparent (line / underline tabs).
+    pub background: Option<Hsla>,
     pub label_typography: LumaTextStyle,
     pub radius: f32,
     pub padding_x: f32,
@@ -90,6 +92,7 @@ impl TabsTheme for DefaultTabsTheme {
             } else {
                 active_color
             }),
+            background: None,
             label_typography,
             radius: metrics.radius(size),
             padding_x: metrics.padding_x(size),

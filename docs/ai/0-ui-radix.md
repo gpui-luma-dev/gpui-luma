@@ -50,7 +50,7 @@ The exact filenames may be adjusted to fit the existing code, but tab-specific v
 - Add a typed tab identifier, for example `RadixStudioTab::{CustomPalette, Colors, Icons}`.
 - Store the active tab in `RadixStudioApp`.
 - Subscribe to the top-level tabs control and update the active tab from its semantic change event.
-- Preserve shared entities and state—`RadixLook`, theme mode toggles, seed fields, swatch overlay, signup mesh cache, and subscriptions—at the app or shared component boundary so switching tabs does not recreate them unnecessarily.
+- Preserve shared entities and state—`Look`, theme mode toggles, seed fields, swatch overlay, signup mesh cache, and subscriptions—at the app or shared component boundary so switching tabs does not recreate them unnecessarily.
 - Render only the active tab's content while keeping the top tab bar mounted.
 - Keep the tab bar accessible as a tablist with tab items and a clear selected state.
 
@@ -77,7 +77,7 @@ Create the initial tab surface for the Radix icon inventory and future icon prev
 
 ## SDK and look constraints
 
-- Use the SDK `Tabs` control and the Radix look factory (`look.tabs(...)`) for tab behavior and focus handling.
+- Use the SDK `Tabs` control and the Radix look-owned builder (`radix::Tabs::new(...)`) for tab behavior and focus handling.
 - If the existing tabs presentation cannot provide the requested selected pill, add or adjust the Radix look-owned tabs presentation rather than building tab buttons from raw styled `div`s in the app.
 - Preserve keyboard navigation, focus indication, hit testing, and theme invalidation.
 - Keep application-specific layout and content in `apps/radix-studio`; do not add Radix-specific visual recipes to the SDK core.

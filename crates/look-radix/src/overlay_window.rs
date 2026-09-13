@@ -6,14 +6,14 @@ use gpui::{BoxShadow, FontWeight, SharedString, black, point, px};
 use luma::controls::overlay_window::{OverlayWindowLook, OverlayWindowMode, OverlayWindowTheme};
 use luma::theme::{ControlSize, LumaTextStyle};
 
-use crate::look::RadixLook;
+use crate::look::Look;
 use crate::semantic::SemanticRole;
 
-struct RadixOverlayWindowTheme {
-    look: RadixLook,
+struct OverlayWindowThemeAdapter {
+    look: Look,
 }
 
-impl OverlayWindowTheme for RadixOverlayWindowTheme {
+impl OverlayWindowTheme for OverlayWindowThemeAdapter {
     fn resolve(&self, size: ControlSize, mode: OverlayWindowMode) -> OverlayWindowLook {
         let metrics = self.look.metrics();
         OverlayWindowLook {
@@ -55,6 +55,6 @@ impl OverlayWindowTheme for RadixOverlayWindowTheme {
     }
 }
 
-pub fn overlay_window_theme(look: Arc<RadixLook>) -> Arc<dyn OverlayWindowTheme> {
-    Arc::new(RadixOverlayWindowTheme { look: look.as_ref().clone() })
+pub fn overlay_window_theme(look: &Look) -> Arc<dyn OverlayWindowTheme> {
+    Arc::new(OverlayWindowThemeAdapter { look: look.clone() })
 }

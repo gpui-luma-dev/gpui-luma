@@ -61,7 +61,7 @@ impl SemanticRole {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::palette::{RadixAccent, RadixGray, scale_pair};
+    use crate::palette::{Accent, Gray, scale_pair};
 
     #[test]
     fn primary_uses_color_step_nine() {
@@ -73,7 +73,7 @@ mod tests {
     #[test]
     fn light_and_dark_share_border_step() {
         assert_eq!(SemanticRole::Border.mapping(ThemeMode::Light), SemanticRole::Border.mapping(ThemeMode::Dark));
-        let scales = scale_pair(RadixAccent::Indigo, RadixGray::Auto);
+        let scales = scale_pair(Accent::Indigo, Gray::Auto);
         let light = SemanticRole::Border.resolve(scales.for_mode(ThemeMode::Light), ThemeMode::Light);
         let dark = SemanticRole::Border.resolve(scales.for_mode(ThemeMode::Dark), ThemeMode::Dark);
         assert_ne!(light.hsla().l, dark.hsla().l);

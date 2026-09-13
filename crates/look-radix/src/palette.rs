@@ -15,7 +15,7 @@ const DESTRUCTIVE_PALETTE: &str = "red";
 
 /// Accent palettes, in the order Radix's theme panel lists them.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum RadixAccent {
+pub enum Accent {
     Gray,
     Gold,
     Bronze,
@@ -45,7 +45,7 @@ pub enum RadixAccent {
     Sky,
 }
 
-impl RadixAccent {
+impl Accent {
     pub const ALL: [Self; 26] = [
         Self::Gray,
         Self::Gold,
@@ -107,7 +107,7 @@ impl RadixAccent {
     }
 
     /// The neutral Radix pairs with this accent, mirroring `getMatchingGrayColor`.
-    pub fn matching_gray(self) -> RadixGray {
+    pub fn matching_gray(self) -> Gray {
         match self {
             Self::Tomato
             | Self::Red
@@ -116,12 +116,12 @@ impl RadixAccent {
             | Self::Pink
             | Self::Plum
             | Self::Purple
-            | Self::Violet => RadixGray::Mauve,
-            Self::Iris | Self::Indigo | Self::Blue | Self::Sky | Self::Cyan => RadixGray::Slate,
-            Self::Teal | Self::Jade | Self::Mint | Self::Green => RadixGray::Sage,
-            Self::Grass | Self::Lime => RadixGray::Olive,
-            Self::Yellow | Self::Amber | Self::Orange | Self::Brown => RadixGray::Sand,
-            Self::Gray | Self::Gold | Self::Bronze => RadixGray::Gray,
+            | Self::Violet => Gray::Mauve,
+            Self::Iris | Self::Indigo | Self::Blue | Self::Sky | Self::Cyan => Gray::Slate,
+            Self::Teal | Self::Jade | Self::Mint | Self::Green => Gray::Sage,
+            Self::Grass | Self::Lime => Gray::Olive,
+            Self::Yellow | Self::Amber | Self::Orange | Self::Brown => Gray::Sand,
+            Self::Gray | Self::Gold | Self::Bronze => Gray::Gray,
         }
     }
 
@@ -133,7 +133,7 @@ impl RadixAccent {
 
 /// Gray palettes, plus `Auto` for the accent's recommended pairing.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum RadixGray {
+pub enum Gray {
     #[default]
     Auto,
     Gray,
@@ -144,7 +144,7 @@ pub enum RadixGray {
     Sand,
 }
 
-impl RadixGray {
+impl Gray {
     pub const ALL: [Self; 7] = [Self::Auto, Self::Gray, Self::Mauve, Self::Slate, Self::Sage, Self::Olive, Self::Sand];
 
     pub fn as_str(self) -> &'static str {
@@ -160,7 +160,7 @@ impl RadixGray {
     }
 
     /// Resolves `Auto` against the accent; every other choice is already concrete.
-    pub fn resolve(self, accent: RadixAccent) -> Self {
+    pub fn resolve(self, accent: Accent) -> Self {
         match self {
             Self::Auto => accent.matching_gray(),
             other => other,
@@ -192,25 +192,25 @@ pub struct ThemePalettes {
 }
 
 impl ThemePalettes {
-    pub fn named(accent: RadixAccent, gray: RadixGray) -> Self {
+    pub fn named(accent: Accent, gray: Gray) -> Self {
         Self { accent: PaletteSlot::Named(accent.as_str()), gray: PaletteSlot::Named(gray.resolve(accent).as_str()) }
     }
 }
 
 impl Default for ThemePalettes {
     fn default() -> Self {
-        Self::named(RadixAccent::default(), RadixGray::default())
+        Self::named(Accent::default(), Gray::default())
     }
 }
 
 /// Builds both modes' scales from the named accent and gray.
-pub fn scale_pair(accent: RadixAccent, gray: RadixGray) -> ScalePair {
+pub fn scale_pair(accent: Accent, gray: Gray) -> ScalePair {
     let gray = gray.resolve(accent);
 
     ScalePair { light: mode_scales(accent, gray, ThemeMode::Light), dark: mode_scales(accent, gray, ThemeMode::Dark) }
 }
 
-fn mode_scales(accent: RadixAccent, gray: RadixGray, mode: ThemeMode) -> ModeScales {
+fn mode_scales(accent: Accent, gray: Gray, mode: ThemeMode) -> ModeScales {
     ModeScales {
         gray: named_scale(gray.as_str(), mode),
         color: named_scale(accent.as_str(), mode),
@@ -233,28 +233,28 @@ mod tests {
 
     #[test]
     fn every_accent_and_gray_name_exists_in_the_catalog() {
-        for accent in RadixAccent::ALL {
+        for accent in Accent::ALL {
             assert!(family_steps(ThemeMode::Light, accent.as_str()).is_some(), "{}", accent.as_str());
             assert!(family_steps(ThemeMode::Dark, accent.as_str()).is_some(), "{}", accent.as_str());
         }
-        for gray in RadixGray::ALL {
-            let resolved = gray.resolve(RadixAccent::Indigo);
+        for gray in Gray::ALL {
+            let resolved = gray.resolve(Accent::Indigo);
             assert!(family_steps(ThemeMode::Light, resolved.as_str()).is_some(), "{}", resolved.as_str());
         }
     }
 
     #[test]
     fn auto_gray_follows_radix_pairing() {
-        assert_eq!(RadixGray::Auto.resolve(RadixAccent::Indigo), RadixGray::Slate);
-        assert_eq!(RadixGray::Auto.resolve(RadixAccent::Ruby), RadixGray::Mauve);
-        assert_eq!(RadixGray::Auto.resolve(RadixAccent::Lime), RadixGray::Olive);
-        assert_eq!(RadixGray::Auto.resolve(RadixAccent::Gold), RadixGray::Gray);
-        assert_eq!(RadixGray::Sand.resolve(RadixAccent::Indigo), RadixGray::Sand);
+        assert_eq!(Gray::Auto.resolve(Accent::Indigo), Gray::Slate);
+        assert_eq!(Gray::Auto.resolve(Accent::Ruby), Gray::Mauve);
+        assert_eq!(Gray::Auto.resolve(Accent::Lime), Gray::Olive);
+        assert_eq!(Gray::Auto.resolve(Accent::Gold), Gray::Gray);
+        assert_eq!(Gray::Sand.resolve(Accent::Indigo), Gray::Sand);
     }
 
     #[test]
     fn indigo_slate_carries_real_radix_steps_and_provenance() {
-        let scales = scale_pair(RadixAccent::Indigo, RadixGray::Auto).for_mode(ThemeMode::Light);
+        let scales = scale_pair(Accent::Indigo, Gray::Auto).for_mode(ThemeMode::Light);
         let accent_9 = scales.resolved(ScaleFamily::Color, 9);
         let gray_9 = scales.resolved(ScaleFamily::Gray, 9);
 
@@ -271,7 +271,7 @@ mod tests {
 
     #[test]
     fn palette_labels_report_the_resolved_names() {
-        let palettes = ThemePalettes::named(RadixAccent::Indigo, RadixGray::Auto);
+        let palettes = ThemePalettes::named(Accent::Indigo, Gray::Auto);
 
         assert_eq!(palettes.accent.label(), "indigo");
         assert_eq!(palettes.gray.label(), "slate");

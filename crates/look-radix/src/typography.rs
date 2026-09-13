@@ -3,7 +3,7 @@
 use gpui::{FontWeight, SharedString};
 use luma::theme::{ControlSize, LumaTextStyle};
 
-use crate::look::RadixLook;
+use crate::look::Look;
 
 pub(crate) fn label_typography(size: ControlSize) -> LumaTextStyle {
     match size {
@@ -13,6 +13,6 @@ pub(crate) fn label_typography(size: ControlSize) -> LumaTextStyle {
     }
 }
 
-pub(crate) fn font_family(_look: &RadixLook) -> SharedString {
+pub(crate) fn font_family(_look: &Look) -> SharedString {
     SharedString::from("System UI")
 }

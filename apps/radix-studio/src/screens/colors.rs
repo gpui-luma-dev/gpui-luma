@@ -5,13 +5,13 @@ use luma::hstack;
 use luma::vstack;
 use luma::theme::ThemeMode;
 use luma_color::ColorSwatch;
-use luma_look_radix::{BLACK_ALPHA_STEPS, RadixLook, WHITE_ALPHA_STEPS, color_families, parse_color};
+use luma_look_radix::{BLACK_ALPHA_STEPS, Look, WHITE_ALPHA_STEPS, color_families, parse_color};
 
 const COLOR_MATRIX_LABEL_W: f32 = 112.0;
 const COLOR_MATRIX_CELL_W: f32 = 95.0;
 const COLOR_MATRIX_CELL_H: f32 = 50.0;
 
-pub fn page(look: &RadixLook, fg: Hsla, muted: Hsla) -> gpui::AnyElement {
+pub fn page(look: &Look, fg: Hsla, muted: Hsla) -> gpui::AnyElement {
     let mut matrix = div().flex().flex_col().gap(px(3.0)).flex_none();
     let mut groups = hstack! { gap=3; div().w(px(COLOR_MATRIX_LABEL_W)).flex_none() };
     for (label, span) in [("Backgrounds", 2), ("Interactive", 3), ("Borders", 3), ("Solid", 2), ("Text", 2)] {
@@ -87,7 +87,7 @@ fn page_gradient(start: Hsla, end: Hsla) -> gpui::Background {
     linear_gradient(180.0, linear_color_stop(start, 0.0), linear_color_stop(end, 1.0 / 3.0))
 }
 
-fn color_catalog_row(family: &luma_look_radix::RadixColorScale, muted: Hsla) -> gpui::Div {
+fn color_catalog_row(family: &luma_look_radix::RawColorScale, muted: Hsla) -> gpui::Div {
     let mut row = hstack! {
         gap=3;
         div().w(px(COLOR_MATRIX_LABEL_W)).flex_none().text_sm().text_color(muted).child(family.family),

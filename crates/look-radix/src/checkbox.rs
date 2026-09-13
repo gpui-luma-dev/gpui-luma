@@ -7,15 +7,16 @@
 use std::sync::Arc;
 
 use gpui::{BoxShadow, Hsla, point, px};
-use luma::controls::checkbox::{CheckboxPalette, CheckboxScale, CheckboxTheme};
+use luma::controls::button::ButtonTemplate;
+use luma::controls::checkbox::{CheckboxPalette, CheckboxScale, CheckboxTheme, ThemedCheckboxTemplate};
 use luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens};
 
-use crate::button::RadixButtonPaint;
-use crate::button_layout::RadixRadius;
-use crate::look::RadixLook;
+use crate::button::Paint;
+use crate::button_layout::Radius;
+use crate::look::Look;
 use crate::scale::ScaleFamily;
 use crate::semantic::SemanticRole;
-use crate::tone::RadixTone;
+use crate::tone::Tone;
 use crate::typography::{font_family, label_typography};
 
 /// The Radix Themes checkbox variant scheme.
@@ -24,7 +25,7 @@ use crate::typography::{font_family, label_typography};
 /// accent when checked. `Classic` adds the raised inset treatment. `Soft` drops the
 /// edge entirely and keeps an accent tint in both check states.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum RadixCheckboxVariant {
+pub enum CheckboxVariant {
     Classic,
     #[default]
     Surface,
@@ -33,14 +34,14 @@ pub enum RadixCheckboxVariant {
 
 /// Radix `size` prop on Checkbox. Default is [`Self::Two`].
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum RadixCheckboxSize {
+pub enum CheckboxSize {
     One,
     #[default]
     Two,
     Three,
 }
 
-impl RadixCheckboxSize {
+impl CheckboxSize {
     pub const ALL: [Self; 3] = [Self::One, Self::Two, Self::Three];
 
     pub fn as_str(self) -> &'static str {
@@ -100,15 +101,15 @@ const RADIUS_1: f32 = 3.0;
 
 /// Theme radius applied to checkbox geometry. `Full` shares Large's factor — Radix never
 /// pills checkboxes (avoids looking like a radio).
-pub fn resolve_checkbox_radius(size: RadixCheckboxSize, radius: RadixRadius) -> f32 {
+pub fn resolve_checkbox_radius(size: CheckboxSize, radius: Radius) -> f32 {
     let factor = match radius {
-        RadixRadius::Full => RadixRadius::Large.factor(),
+        Radius::Full => Radius::Large.factor(),
         other => other.factor(),
     };
     RADIUS_1 * size.radius_mul() * factor
 }
 
-pub fn checkbox_scale_for(size: RadixCheckboxSize, radius: RadixRadius) -> CheckboxScale {
+pub fn checkbox_scale_for(size: CheckboxSize, radius: Radius) -> CheckboxScale {
     let box_size = size.box_size();
     let glyph = size.glyph_size();
     let indicator_radius = resolve_checkbox_radius(size, radius);
@@ -125,11 +126,11 @@ pub fn checkbox_scale_for(size: RadixCheckboxSize, radius: RadixRadius) -> Check
     }
 }
 
-struct RadixCheckboxTheme {
-    look: RadixLook,
-    variant: RadixCheckboxVariant,
-    paint: RadixButtonPaint,
-    geometry: Option<(RadixCheckboxSize, RadixRadius)>,
+struct CheckboxThemeAdapter {
+    look: Look,
+    variant: CheckboxVariant,
+    paint: Paint,
+    geometry: Option<(CheckboxSize, Radius)>,
 }
 
 /// Radix `--shadow-1`: a hairline rim with a soft top fade, so the resting face reads
@@ -159,14 +160,14 @@ fn alpha(color: Hsla, a: f32) -> Hsla {
     Hsla { a, ..color }
 }
 
-impl CheckboxTheme for RadixCheckboxTheme {
+impl CheckboxTheme for CheckboxThemeAdapter {
     fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> CheckboxPalette {
         let look = &self.look;
         let layer = state.layer();
         let high_contrast = self.paint.high_contrast;
         let family = match self.paint.tone {
-            RadixTone::Accent => ScaleFamily::Color,
-            RadixTone::Gray => ScaleFamily::Gray,
+            Tone::Accent => ScaleFamily::Color,
+            Tone::Gray => ScaleFamily::Gray,
         };
         let step = |n| look.resolve_step(family, n).hsla();
         let gray = |n| look.resolve_step(ScaleFamily::Gray, n).hsla();
@@ -193,23 +194,23 @@ impl CheckboxTheme for RadixCheckboxTheme {
 
         let (indicator_background, mut indicator_border, checkmark_color, indicator_shadow) =
             match (layer, self.variant, checked) {
-                (InteractionLayer::Disabled, RadixCheckboxVariant::Classic, _) => {
+                (InteractionLayer::Disabled, CheckboxVariant::Classic, _) => {
                     (alpha(surface, 0.0), gray(6), gray(8), Some(resting_shadow(gray(5), alpha(gray(3), 0.4))))
                 }
-                (InteractionLayer::Disabled, RadixCheckboxVariant::Soft, _) => {
+                (InteractionLayer::Disabled, CheckboxVariant::Soft, _) => {
                     (alpha(surface, 0.0), alpha(surface, 0.0), gray(8), None)
                 }
-                (InteractionLayer::Disabled, RadixCheckboxVariant::Surface, _) => {
+                (InteractionLayer::Disabled, CheckboxVariant::Surface, _) => {
                     (alpha(surface, 0.0), gray(6), gray(8), None)
                 }
                 // Soft keeps the same accent tint whether or not it is checked.
-                (_, RadixCheckboxVariant::Soft, _) => (step(5), step(5), soft_check, None),
-                (_, RadixCheckboxVariant::Surface, false) => (surface, gray(7), gray(11), None),
-                (_, RadixCheckboxVariant::Surface, true) => (filled, filled, contrast, None),
-                (_, RadixCheckboxVariant::Classic, false) => {
+                (_, CheckboxVariant::Soft, _) => (step(5), step(5), soft_check, None),
+                (_, CheckboxVariant::Surface, false) => (surface, gray(7), gray(11), None),
+                (_, CheckboxVariant::Surface, true) => (filled, filled, contrast, None),
+                (_, CheckboxVariant::Classic, false) => {
                     (surface, gray(3), gray(11), Some(resting_shadow(gray(5), alpha(gray(2), 0.5))))
                 }
-                (_, RadixCheckboxVariant::Classic, true) => {
+                (_, CheckboxVariant::Classic, true) => {
                     (filled, filled, contrast, Some(checked_shadow(alpha(contrast, 0.35), alpha(gpui::black(), 0.28))))
                 }
             };
@@ -246,52 +247,66 @@ impl CheckboxTheme for RadixCheckboxTheme {
             return checkbox_scale_for(radix_size, radius);
         }
         let radix_size = match size {
-            ControlSize::Sm => RadixCheckboxSize::One,
-            ControlSize::Md => RadixCheckboxSize::Two,
-            ControlSize::Lg => RadixCheckboxSize::Three,
+            ControlSize::Sm => CheckboxSize::One,
+            ControlSize::Md => CheckboxSize::Two,
+            ControlSize::Lg => CheckboxSize::Three,
         };
         let _ = scale_factor;
-        checkbox_scale_for(radix_size, RadixRadius::Medium)
+        checkbox_scale_for(radix_size, Radius::Medium)
     }
 }
 
-pub fn checkbox_theme(look: Arc<RadixLook>, variant: RadixCheckboxVariant) -> Arc<dyn CheckboxTheme> {
-    checkbox_theme_with(look, variant, RadixButtonPaint::accent())
+pub fn checkbox_theme(look: &Look, variant: CheckboxVariant) -> Arc<dyn CheckboxTheme> {
+    checkbox_theme_with(look, variant, Paint::accent())
 }
 
-pub fn checkbox_theme_with(
-    look: Arc<RadixLook>,
-    variant: RadixCheckboxVariant,
-    paint: RadixButtonPaint,
-) -> Arc<dyn CheckboxTheme> {
-    Arc::new(RadixCheckboxTheme { look: look.as_ref().clone(), variant, paint, geometry: None })
+pub fn checkbox_theme_with(look: &Look, variant: CheckboxVariant, paint: Paint) -> Arc<dyn CheckboxTheme> {
+    Arc::new(CheckboxThemeAdapter { look: look.clone(), variant, paint, geometry: None })
 }
 
 /// Theme for a size × radius style-guide cell.
 pub fn checkbox_theme_for(
-    look: Arc<RadixLook>,
-    variant: RadixCheckboxVariant,
-    paint: RadixButtonPaint,
-    size: RadixCheckboxSize,
-    radius: RadixRadius,
+    look: &Look,
+    variant: CheckboxVariant,
+    paint: Paint,
+    size: CheckboxSize,
+    radius: Radius,
 ) -> Arc<dyn CheckboxTheme> {
-    Arc::new(RadixCheckboxTheme { look: look.as_ref().clone(), variant, paint, geometry: Some((size, radius)) })
+    Arc::new(CheckboxThemeAdapter { look: look.clone(), variant, paint, geometry: Some((size, radius)) })
+}
+
+pub fn checkbox_template(
+    look: &Look,
+    variant: CheckboxVariant,
+    paint: Paint,
+) -> Arc<dyn ButtonTemplate<luma::controls::checkbox::CheckboxData>> {
+    Arc::new(ThemedCheckboxTemplate::new(checkbox_theme_with(look, variant, paint)))
+}
+
+pub fn checkbox_template_for(
+    look: &Look,
+    variant: CheckboxVariant,
+    paint: Paint,
+    size: CheckboxSize,
+    radius: Radius,
+) -> Arc<dyn ButtonTemplate<luma::controls::checkbox::CheckboxData>> {
+    Arc::new(ThemedCheckboxTemplate::new(checkbox_theme_for(look, variant, paint, size, radius)))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn palette(variant: RadixCheckboxVariant, checked: bool) -> CheckboxPalette {
-        let look = Arc::new(RadixLook::built_in());
-        checkbox_theme(look, variant).resolve(checked, InteractionState::default(), ControlSize::Md)
+    fn palette(variant: CheckboxVariant, checked: bool) -> CheckboxPalette {
+        let look = Look::built_in();
+        checkbox_theme(&look, variant).resolve(checked, InteractionState::default(), ControlSize::Md)
     }
 
     #[test]
     fn surface_fills_with_the_accent_behind_a_gray_edge() {
-        let look = RadixLook::built_in();
-        let unchecked = palette(RadixCheckboxVariant::Surface, false);
-        let checked = palette(RadixCheckboxVariant::Surface, true);
+        let look = Look::built_in();
+        let unchecked = palette(CheckboxVariant::Surface, false);
+        let checked = palette(CheckboxVariant::Surface, true);
 
         assert_eq!(unchecked.indicator_border, look.resolve_step(ScaleFamily::Gray, 7).hsla());
         assert_eq!(checked.indicator_background, look.resolve_role(SemanticRole::Primary).hsla());
@@ -300,31 +315,31 @@ mod tests {
 
     #[test]
     fn soft_keeps_one_accent_tint_in_both_check_states() {
-        let tint = RadixLook::built_in().resolve_step(ScaleFamily::Color, 5).hsla();
+        let tint = Look::built_in().resolve_step(ScaleFamily::Color, 5).hsla();
 
         for checked in [false, true] {
-            assert_eq!(palette(RadixCheckboxVariant::Soft, checked).indicator_background, tint);
+            assert_eq!(palette(CheckboxVariant::Soft, checked).indicator_background, tint);
         }
         assert_eq!(
-            palette(RadixCheckboxVariant::Soft, true).checkmark_color,
-            RadixLook::built_in().resolve_step(ScaleFamily::Color, 11).hsla()
+            palette(CheckboxVariant::Soft, true).checkmark_color,
+            Look::built_in().resolve_step(ScaleFamily::Color, 11).hsla()
         );
     }
 
     #[test]
     fn classic_is_the_only_variant_that_carries_a_shadow() {
         for checked in [false, true] {
-            assert!(palette(RadixCheckboxVariant::Classic, checked).indicator_shadow.is_some());
-            assert!(palette(RadixCheckboxVariant::Surface, checked).indicator_shadow.is_none());
-            assert!(palette(RadixCheckboxVariant::Soft, checked).indicator_shadow.is_none());
+            assert!(palette(CheckboxVariant::Classic, checked).indicator_shadow.is_some());
+            assert!(palette(CheckboxVariant::Surface, checked).indicator_shadow.is_none());
+            assert!(palette(CheckboxVariant::Soft, checked).indicator_shadow.is_none());
         }
     }
 
     #[test]
     fn surface_high_contrast_uses_step_twelve_fill() {
-        let look = Arc::new(RadixLook::built_in());
-        let paint = RadixButtonPaint::accent().high_contrast();
-        let checked = checkbox_theme_with(Arc::clone(&look), RadixCheckboxVariant::Surface, paint).resolve(
+        let look = Look::built_in();
+        let paint = Paint::accent().high_contrast();
+        let checked = checkbox_theme_with(&look, CheckboxVariant::Surface, paint).resolve(
             true,
             InteractionState::default(),
             ControlSize::Md,
@@ -335,9 +350,9 @@ mod tests {
 
     #[test]
     fn soft_high_contrast_darkens_the_checkmark_only() {
-        let look = Arc::new(RadixLook::built_in());
-        let paint = RadixButtonPaint::accent().high_contrast();
-        let checked = checkbox_theme_with(Arc::clone(&look), RadixCheckboxVariant::Soft, paint).resolve(
+        let look = Look::built_in();
+        let paint = Paint::accent().high_contrast();
+        let checked = checkbox_theme_with(&look, CheckboxVariant::Soft, paint).resolve(
             true,
             InteractionState::default(),
             ControlSize::Md,
@@ -348,14 +363,14 @@ mod tests {
 
     #[test]
     fn checkbox_radius_never_pills_on_full() {
-        let size = RadixCheckboxSize::Two;
-        assert_eq!(resolve_checkbox_radius(size, RadixRadius::Full), resolve_checkbox_radius(size, RadixRadius::Large));
-        assert!(resolve_checkbox_radius(size, RadixRadius::Full) < size.box_size() / 2.0);
+        let size = CheckboxSize::Two;
+        assert_eq!(resolve_checkbox_radius(size, Radius::Full), resolve_checkbox_radius(size, Radius::Large));
+        assert!(resolve_checkbox_radius(size, Radius::Full) < size.box_size() / 2.0);
     }
 
     #[test]
     fn size_two_medium_matches_radius_one() {
-        assert_eq!(resolve_checkbox_radius(RadixCheckboxSize::Two, RadixRadius::Medium), 3.0);
-        assert_eq!(checkbox_scale_for(RadixCheckboxSize::Two, RadixRadius::Medium).indicator_size, 16.0);
+        assert_eq!(resolve_checkbox_radius(CheckboxSize::Two, Radius::Medium), 3.0);
+        assert_eq!(checkbox_scale_for(CheckboxSize::Two, Radius::Medium).indicator_size, 16.0);
     }
 }

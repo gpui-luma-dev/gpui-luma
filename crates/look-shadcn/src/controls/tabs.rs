@@ -120,6 +120,7 @@ pub fn tabs_item_look(
     TabsItemLook {
         label_color: colors.label_color.hsla(),
         indicator: colors.indicator.map(|color| color.hsla()),
+        background: None,
         label_typography,
         radius: metrics.radius(size),
         padding_x: metrics.padding_x(size),
@@ -165,6 +166,7 @@ mod tests {
         assert_eq!(active.label_color, catalog.color("foreground").expect("foreground"));
         assert_eq!(inactive.label_color, catalog.color("foreground").expect("foreground"));
         assert_eq!(active.indicator, Some(catalog.color("primary").expect("primary")));
+        assert!(active.background.is_none());
     }
 
     #[test]

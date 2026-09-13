@@ -9,13 +9,13 @@ use gpui::{AnyElement, App, FontWeight, Hsla, IntoElement, SharedString, Window,
 use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
 use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use luma::hstack;
-use luma_look_radix::{RadixButtonPaint, RadixButtonVariant, RadixLook, RadixLookControlExt};
+use luma_look_radix::{Paint, ButtonVariant, Look, LookControlExt};
 
 use super::buttons::{RADIX_VARIANTS, VariantDef};
 
-pub fn strip(look: &Arc<RadixLook>, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
+pub fn strip(look: &Arc<Look>, muted: Hsla, window: &mut Window, cx: &mut App) -> AnyElement {
     let variants: Vec<&VariantDef> =
-        RADIX_VARIANTS.iter().filter(|def| !matches!(def.variant, RadixButtonVariant::Ghost)).collect();
+        RADIX_VARIANTS.iter().filter(|def| !matches!(def.variant, ButtonVariant::Ghost)).collect();
 
     div()
         .w_full()
@@ -23,9 +23,9 @@ pub fn strip(look: &Arc<RadixLook>, muted: Hsla, window: &mut Window, cx: &mut A
         .flex_col()
         .gap(px(12.0))
         .child(row_label("Normal", muted))
-        .child(button_row(look, &variants, RadixButtonPaint::gray(), "normal", window, cx))
+        .child(button_row(look, &variants, Paint::gray(), "normal", window, cx))
         .child(row_label("High contrast", muted))
-        .child(button_row(look, &variants, RadixButtonPaint::gray().high_contrast(), "hc", window, cx))
+        .child(button_row(look, &variants, Paint::gray().high_contrast(), "hc", window, cx))
         .into_any_element()
 }
 
@@ -40,9 +40,9 @@ fn row_label(label: &'static str, muted: Hsla) -> AnyElement {
 }
 
 fn button_row(
-    look: &Arc<RadixLook>,
+    look: &Arc<Look>,
     variants: &[&VariantDef],
-    paint: RadixButtonPaint,
+    paint: Paint,
     row_id: &str,
     window: &mut Window,
     cx: &mut App,

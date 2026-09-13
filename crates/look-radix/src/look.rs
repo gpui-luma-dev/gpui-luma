@@ -6,12 +6,12 @@ use std::sync::{
     RwLock,
 };
 
-use gpui::{Background, Hsla, linear_color_stop, linear_gradient};
+use gpui::{Background, Global, Hsla, linear_color_stop, linear_gradient};
 use luma::theme::{MetricTokens, ThemeMode};
 use luma_look_core::ResolvedColor;
 
 use crate::button::ClassicButtonParams;
-use crate::palette::{PaletteSlot, RadixAccent, RadixGray, ThemePalettes, scale_pair};
+use crate::palette::{PaletteSlot, Accent, Gray, ThemePalettes, scale_pair};
 use crate::scale::{ModeScales, ScaleFamily, ScalePair, ScaleStep, color_scale_from_seed};
 use crate::semantic::SemanticRole;
 
@@ -33,7 +33,7 @@ impl Default for PageBackground {
 }
 
 impl PageBackground {
-    pub fn stops(self, look: &RadixLook) -> (Hsla, Hsla) {
+    pub fn stops(self, look: &Look) -> (Hsla, Hsla) {
         (
             look.resolve_step(ScaleFamily::Color, self.color_step).hsla(),
             look.resolve_step(ScaleFamily::Gray, self.gray_step).hsla(),
@@ -41,7 +41,7 @@ impl PageBackground {
     }
 
     /// Top → down linear wash suitable for `.bg(...)`.
-    pub fn paint(self, look: &RadixLook) -> Background {
+    pub fn paint(self, look: &Look) -> Background {
         let (from, to) = self.stops(look);
         linear_gradient(180.0, linear_color_stop(from, 0.0), linear_color_stop(to, self.settle_at))
     }
@@ -80,15 +80,15 @@ pub struct SignupMeshColors {
 }
 
 impl SignupStage {
-    pub fn fill(self, look: &RadixLook) -> Hsla {
+    pub fn fill(self, look: &Look) -> Hsla {
         look.resolve_step(ScaleFamily::Gray, self.fill_step).hsla()
     }
 
-    pub fn card(self, look: &RadixLook) -> Hsla {
+    pub fn card(self, look: &Look) -> Hsla {
         look.resolve_step(ScaleFamily::Gray, self.card_step).hsla()
     }
 
-    pub fn mesh_colors(self, look: &RadixLook) -> SignupMeshColors {
+    pub fn mesh_colors(self, look: &Look) -> SignupMeshColors {
         SignupMeshColors {
             background: look.resolve_role(SemanticRole::Background).hsla(),
             accent_1: look.resolve_step(ScaleFamily::Color, 1).hsla(),
@@ -102,11 +102,24 @@ impl SignupStage {
 }
 
 #[derive(Clone)]
-pub struct RadixLook {
-    state: Arc<RadixLookState>,
+pub struct Look {
+    state: Arc<LookState>,
 }
 
-struct RadixLookState {
+impl Global for Look {}
+
+/// `.look(&…)` if set, else ambient Global, else [`Look::built_in()`]. Never panics.
+pub(crate) fn resolve_look(explicit: Option<&Look>, ambient: Option<&Look>) -> Look {
+    if let Some(look) = explicit {
+        return look.clone();
+    }
+    if let Some(look) = ambient {
+        return look.clone();
+    }
+    Look::built_in()
+}
+
+struct LookState {
     scales: RwLock<ScalePair>,
     palettes: RwLock<ThemePalettes>,
     metrics: MetricTokens,
@@ -116,18 +129,13 @@ struct RadixLookState {
     revision: RwLock<u64>,
 }
 
-impl RadixLook {
+impl Look {
     /// Radix's own default theme: indigo accent with its paired slate gray.
     pub fn built_in() -> Self {
-        Self::from_palettes(
-            RadixAccent::default(),
-            RadixGray::default(),
-            crate::button_layout::radix_metric_tokens(),
-            ThemeMode::Light,
-        )
+        Self::from_palettes(Accent::default(), Gray::default(), crate::button_layout::metric_tokens(), ThemeMode::Light)
     }
 
-    pub fn from_palettes(accent: RadixAccent, gray: RadixGray, metrics: MetricTokens, mode: ThemeMode) -> Self {
+    pub fn from_palettes(accent: Accent, gray: Gray, metrics: MetricTokens, mode: ThemeMode) -> Self {
         let look = Self::new(scale_pair(accent, gray), metrics, mode);
         if let Ok(mut palettes) = look.state.palettes.write() {
             *palettes = ThemePalettes::named(accent, gray);
@@ -138,7 +146,7 @@ impl RadixLook {
     /// Scales without palette identity; both slots report as custom.
     pub fn new(scales: ScalePair, metrics: MetricTokens, mode: ThemeMode) -> Self {
         Self {
-            state: Arc::new(RadixLookState {
+            state: Arc::new(LookState {
                 scales: RwLock::new(scales),
                 palettes: RwLock::new(ThemePalettes { accent: PaletteSlot::Custom, gray: PaletteSlot::Custom }),
                 metrics,
@@ -151,7 +159,7 @@ impl RadixLook {
 
     /// An independent copy of this look's scales, palettes, metrics, mode, and tuning.
     ///
-    /// Cloning a [`RadixLook`] shares one mutable state, so every control repaints together.
+    /// Cloning a [`Look`] shares one mutable state, so every control repaints together.
     /// Forking is how a screen can edit a palette without touching the rest of the app.
     pub fn fork(&self) -> Self {
         let scales = *self.state.scales.read().unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -176,7 +184,7 @@ impl RadixLook {
     }
 
     /// Repaints every control from a different named pair.
-    pub fn set_palettes(&self, accent: RadixAccent, gray: RadixGray) {
+    pub fn set_palettes(&self, accent: Accent, gray: Gray) {
         if let Ok(mut scales) = self.state.scales.write() {
             *scales = scale_pair(accent, gray);
         }
@@ -186,7 +194,7 @@ impl RadixLook {
         self.bump_revision();
     }
 
-    /// Current [`RadixButtonVariant::Classic`](crate::RadixButtonVariant::Classic) shadow geometry.
+    /// Current [`ButtonVariant::Classic`](crate::ButtonVariant::Classic) shadow geometry.
     pub fn classic_params(&self) -> ClassicButtonParams {
         *self.state.classic_shadow.read().unwrap_or_else(|poisoned| poisoned.into_inner())
     }
@@ -263,7 +271,7 @@ impl RadixLook {
     pub fn accent_uses_dark_solid_contrast(&self) -> bool {
         match self.palettes().accent {
             PaletteSlot::Named(name) => {
-                RadixAccent::ALL.iter().any(|accent| accent.as_str() == name && accent.uses_dark_solid_contrast())
+                Accent::ALL.iter().any(|accent| accent.as_str() == name && accent.uses_dark_solid_contrast())
             }
             // Custom seeds: treat a light solid face like Radix's bright accents.
             PaletteSlot::Custom => self.resolve_step(ScaleFamily::Color, 9).hsla().l >= 0.68,
@@ -309,7 +317,7 @@ mod tests {
 
     #[test]
     fn mode_switch_changes_resolved_background() {
-        let look = RadixLook::built_in();
+        let look = Look::built_in();
         let light_bg = look.resolve_role(SemanticRole::Background).hsla();
         look.set_mode(ThemeMode::Dark);
         let dark_bg = look.resolve_role(SemanticRole::Background).hsla();
@@ -319,16 +327,16 @@ mod tests {
 
     #[test]
     fn built_in_reports_indigo_on_slate() {
-        let look = RadixLook::built_in();
+        let look = Look::built_in();
 
-        assert_eq!(look.palettes(), ThemePalettes::named(RadixAccent::Indigo, RadixGray::Auto));
+        assert_eq!(look.palettes(), ThemePalettes::named(Accent::Indigo, Gray::Auto));
         assert_eq!(look.palette_label(ScaleFamily::Color), "indigo");
         assert_eq!(look.palette_label(ScaleFamily::Gray), "slate");
     }
 
     #[test]
     fn a_fork_starts_equal_and_then_drifts_alone() {
-        let theme = RadixLook::built_in();
+        let theme = Look::built_in();
         let draft = theme.fork();
         assert_eq!(draft.palettes(), theme.palettes());
         assert_eq!(draft.resolve_role(SemanticRole::Primary).hsla(), theme.resolve_role(SemanticRole::Primary).hsla());
@@ -344,21 +352,21 @@ mod tests {
 
     #[test]
     fn set_palettes_restores_named_scales() {
-        let draft = RadixLook::built_in().fork();
+        let draft = Look::built_in().fork();
         draft.set_accent_seed(gpui::hsla(0.05, 0.9, 0.5, 1.0));
 
-        draft.set_palettes(RadixAccent::Indigo, RadixGray::Auto);
+        draft.set_palettes(Accent::Indigo, Gray::Auto);
 
-        assert_eq!(draft.palettes(), ThemePalettes::named(RadixAccent::Indigo, RadixGray::Auto));
+        assert_eq!(draft.palettes(), ThemePalettes::named(Accent::Indigo, Gray::Auto));
         assert_eq!(
             draft.resolve_role(SemanticRole::Primary).hsla(),
-            RadixLook::built_in().resolve_role(SemanticRole::Primary).hsla()
+            Look::built_in().resolve_role(SemanticRole::Primary).hsla()
         );
     }
 
     #[test]
     fn page_background_mixes_color_and_gray() {
-        let look = RadixLook::built_in();
+        let look = Look::built_in();
         let recipe = PageBackground::default();
         let (from, to) = recipe.stops(&look);
         let color_3 = look.resolve_step(ScaleFamily::Color, 3).hsla();
@@ -370,7 +378,7 @@ mod tests {
 
     #[test]
     fn signup_stage_uses_gray_fill_and_color_mesh() {
-        let look = RadixLook::built_in();
+        let look = Look::built_in();
         let stage = look.signup_stage();
         assert_eq!(stage.fill(&look), look.resolve_step(ScaleFamily::Gray, 2).hsla());
         assert_eq!(stage.card(&look), look.resolve_step(ScaleFamily::Gray, 1).hsla());

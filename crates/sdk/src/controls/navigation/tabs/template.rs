@@ -567,7 +567,7 @@ fn tab_button_model(
 
 fn tab_button_look(look: TabsItemLook, font_family: SharedString) -> ButtonFamilyLook {
     ButtonFamilyLook {
-        background: hsla(0.0, 0.0, 0.0, 0.0),
+        background: look.background.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0)),
         foreground: look.label_color,
         border: None,
         typography: look.label_typography,

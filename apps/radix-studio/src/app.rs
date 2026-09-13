@@ -18,9 +18,9 @@ use luma::shell::TitleBar;
 use luma::theme::ThemeMode;
 use luma::{WideMiddle, dock_panel, spawn_wide_middle, vstack};
 use luma_look_radix::{
-    RadixAccent, RadixGray, RadixLook, RadixLookControlExt, ScaleFamily, SemanticRole, SignupMeshCacheKey,
-    rasterize_signup_mesh_for_look,
+    Accent, Gray, Look, LookControlExt, ScaleFamily, SemanticRole, SignupMeshCacheKey, rasterize_signup_mesh_for_look,
 };
+use luma_look_radix as radix;
 
 use crate::color_hex::format_hex;
 use crate::controls::{
@@ -41,11 +41,11 @@ struct SwatchSelection {
 pub struct RadixStudioApp {
     focus_scope: FocusHandle,
     /// Named palettes every screen but Custom Palette paints from.
-    theme: Arc<RadixLook>,
+    theme: Arc<Look>,
     /// Forked look the Custom Palette screen edits in isolation.
-    draft: Arc<RadixLook>,
-    theme_accent: RadixAccent,
-    theme_gray: RadixGray,
+    draft: Arc<Look>,
+    theme_accent: Accent,
+    theme_gray: Gray,
     screen_nav: Entity<ScreenNav>,
     light_toggle: Toggle,
     dark_toggle: Toggle,
@@ -86,15 +86,16 @@ pub struct RadixStudioApp {
 impl RadixStudioApp {
     pub fn new(_window: &mut Window, cx: &mut Context<Self>) -> Self {
         let focus_scope = cx.focus_handle();
-        let theme_accent = RadixAccent::Indigo;
-        let theme_gray = RadixGray::Auto;
-        let theme = Arc::new(RadixLook::built_in());
+        let theme_accent = Accent::Indigo;
+        let theme_gray = Gray::Auto;
+        let theme = Arc::new(Look::built_in());
         theme.set_mode(ThemeMode::Dark);
+        cx.set_global(theme.as_ref().clone());
         // Custom Palette edits a fork, so seed changes never repaint the rest of the app.
         let draft = Arc::new(theme.fork());
 
-        let light_toggle = draft.toggle("mode-light").with_data(false).label("Light").spawn(cx);
-        let dark_toggle = draft.toggle("mode-dark").with_data(true).label("Dark").spawn(cx);
+        let light_toggle = radix::Toggle::new("mode-light").look(&draft).with_data(false).label("Light").spawn(cx);
+        let dark_toggle = radix::Toggle::new("mode-dark").look(&draft).with_data(true).label("Dark").spawn(cx);
         let screen_nav = cx.new(|cx| ScreenNav::new(&theme, cx));
 
         let accent_color = draft.resolve_role(SemanticRole::Primary).hsla();
@@ -124,15 +125,17 @@ impl RadixStudioApp {
             cx.notify();
         }));
 
-        let palette_reset = draft.ghost_button("palette-reset").label("Reset to theme").spawn(cx);
+        let palette_reset = radix::Button::new("palette-reset").look(&draft).ghost().label("Reset to theme").spawn(cx);
         subscriptions.push(cx.subscribe(&palette_reset, |this, _, event: &ButtonEvent, cx| {
             if matches!(event, ButtonEvent::Click) {
                 this.reset_draft(cx);
             }
         }));
 
-        let copy_menu = draft
-            .solid_popup_menu("copy-palette")
+        let copy_menu = radix::PopupMenu::new("copy-palette")
+            .look(&draft)
+            .solid()
+            .primary()
             .label("Copy")
             .items([
                 MenuItem::new("copy-css").label("Copy as CSS"),
@@ -141,25 +144,28 @@ impl RadixStudioApp {
             ])
             .spawn(cx);
 
-        let search_field = draft.textfield("preview-search").placeholder("Search…").spawn(cx);
-        let search_submit = draft.solid_button("preview-search-submit").label("Submit").spawn(cx);
+        let search_field = radix::TextField::new("preview-search").look(&draft).placeholder("Search…").spawn(cx);
+        let search_submit = radix::Button::new("preview-search-submit").look(&draft).solid().label("Submit").spawn(cx);
 
-        let sign_up_name = draft.textfield("signup-name").placeholder("Full name").spawn(cx);
-        let sign_up_email = draft.textfield("signup-email").placeholder("Email").spawn(cx);
-        let sign_up_password = draft.textfield("signup-password").placeholder("Password").spawn(cx);
-        let create_account = draft.solid_button("signup-create").label("Create account").spawn(cx);
-        let continue_github = draft.outline_button("signup-github").label("Continue with GitHub").spawn(cx);
-        let soft_demo = draft.soft_button("demo-soft").label("Soft").spawn(cx);
-        let outline_demo = draft.outline_button("demo-outline").label("Outline").spawn(cx);
-        let ghost_demo = draft.ghost_button("demo-ghost").label("Ghost").spawn(cx);
+        let sign_up_name = radix::TextField::new("signup-name").look(&draft).placeholder("Full name").spawn(cx);
+        let sign_up_email = radix::TextField::new("signup-email").look(&draft).placeholder("Email").spawn(cx);
+        let sign_up_password = radix::TextField::new("signup-password").look(&draft).placeholder("Password").spawn(cx);
+        let create_account = radix::Button::new("signup-create").look(&draft).solid().label("Create account").spawn(cx);
+        let continue_github =
+            radix::Button::new("signup-github").look(&draft).outline().label("Continue with GitHub").spawn(cx);
+        let soft_demo = radix::Button::new("demo-soft").look(&draft).soft().label("Soft").spawn(cx);
+        let outline_demo = radix::Button::new("demo-outline").look(&draft).outline().label("Outline").spawn(cx);
+        let ghost_demo = radix::Button::new("demo-ghost").look(&draft).ghost().label("Ghost").spawn(cx);
 
-        let preview_switch = draft.switch("preview-switch").with_data(true).label("Notifications").spawn(cx);
-        let task_a = draft.checkbox("task-a").with_data(false).label("Respond to comment").spawn(cx);
-        let task_b = draft.checkbox("task-b").with_data(true).label("Close Q2 finances").spawn(cx);
-        let task_c = draft.checkbox("task-c").with_data(true).label("Review invoice #3456").spawn(cx);
+        let preview_switch =
+            radix::Switch::new("preview-switch").look(&draft).with_data(true).label("Notifications").spawn(cx);
+        let task_a = radix::Checkbox::new("task-a").look(&draft).with_data(false).label("Respond to comment").spawn(cx);
+        let task_b = radix::Checkbox::new("task-b").look(&draft).with_data(true).label("Close Q2 finances").spawn(cx);
+        let task_c =
+            radix::Checkbox::new("task-c").look(&draft).with_data(true).label("Review invoice #3456").spawn(cx);
 
         let swatch_info = Arc::new(Mutex::new(None::<SwatchSelection>));
-        let swatch_close = draft.ghost_button("swatch-info-close").label("Close").spawn(cx);
+        let swatch_close = radix::Button::new("swatch-info-close").look(&draft).ghost().label("Close").spawn(cx);
         let swatch_overlay = draft
             .overlay_window("swatch-info")
             .mode(OverlayWindowMode::Modeless)
@@ -272,9 +278,8 @@ impl RadixStudioApp {
             return tabs;
         }
 
-        let tabs = self
-            .theme
-            .tabs("radix-studio-buttons-preview-tabs")
+        let tabs = radix::Tabs::new("radix-studio-buttons-preview-tabs")
+            .look(&self.theme)
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("colors").label("Colors"),
@@ -297,9 +302,8 @@ impl RadixStudioApp {
             return tabs;
         }
 
-        let tabs = self
-            .theme
-            .tabs("radix-studio-checkboxes-preview-tabs")
+        let tabs = radix::Tabs::new("radix-studio-checkboxes-preview-tabs")
+            .look(&self.theme)
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("colors").label("Colors"),
@@ -322,9 +326,8 @@ impl RadixStudioApp {
             return tabs;
         }
 
-        let tabs = self
-            .theme
-            .tabs("radix-studio-radios-preview-tabs")
+        let tabs = radix::Tabs::new("radix-studio-radios-preview-tabs")
+            .look(&self.theme)
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("colors").label("Colors"),
@@ -347,9 +350,8 @@ impl RadixStudioApp {
             return tabs;
         }
 
-        let tabs = self
-            .theme
-            .tabs("radix-studio-switches-preview-tabs")
+        let tabs = radix::Tabs::new("radix-studio-switches-preview-tabs")
+            .look(&self.theme)
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("colors").label("Colors"),
@@ -372,9 +374,8 @@ impl RadixStudioApp {
             return tabs;
         }
 
-        let tabs = self
-            .theme
-            .tabs("radix-studio-textfields-preview-tabs")
+        let tabs = radix::Tabs::new("radix-studio-textfields-preview-tabs")
+            .look(&self.theme)
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("colors").label("Colors"),
@@ -397,9 +398,8 @@ impl RadixStudioApp {
             return tabs;
         }
 
-        let tabs = self
-            .theme
-            .tabs("radix-studio-textareas-preview-tabs")
+        let tabs = radix::Tabs::new("radix-studio-textareas-preview-tabs")
+            .look(&self.theme)
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("colors").label("Colors"),
@@ -422,9 +422,8 @@ impl RadixStudioApp {
             return tabs;
         }
 
-        let tabs = self
-            .theme
-            .tabs("radix-studio-sliders-preview-tabs")
+        let tabs = radix::Tabs::new("radix-studio-sliders-preview-tabs")
+            .look(&self.theme)
             .items([
                 TabsItem::new("template-preview").label("Template Preview"),
                 TabsItem::new("colors").label("Colors"),

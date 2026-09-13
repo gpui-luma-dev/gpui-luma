@@ -13,7 +13,7 @@ use tiny_skia::{
     Color, FillRule, GradientStop, Paint, Path, PathBuilder, Pixmap, Point, RadialGradient, SpreadMode, Transform,
 };
 
-use crate::look::{RadixLook, SignupMeshColors, SignupStage};
+use crate::look::{Look, SignupMeshColors, SignupStage};
 
 /// Logical SVG viewBox.
 pub const MESH_VIEWBOX_W: f32 = 2560.0;
@@ -32,7 +32,7 @@ pub struct SignupMeshCacheKey {
 }
 
 impl SignupMeshCacheKey {
-    pub fn for_look(look: &RadixLook, width: u32, height: u32) -> Self {
+    pub fn for_look(look: &Look, width: u32, height: u32) -> Self {
         let colors = SignupStage::default().mesh_colors(look);
         Self { width, height, look_revision: look.revision(), color_fingerprint: fingerprint_mesh_colors(&colors) }
     }
@@ -102,7 +102,7 @@ fn rasterize_signup_mesh_with_world(
 }
 
 /// Convenience: resolve mesh colors from a look and rasterize for a stage-sized pixmap.
-pub fn rasterize_signup_mesh_for_look(look: &RadixLook, width: u32, height: u32) -> Option<Arc<RenderImage>> {
+pub fn rasterize_signup_mesh_for_look(look: &Look, width: u32, height: u32) -> Option<Arc<RenderImage>> {
     let colors = SignupStage::default().mesh_colors(look);
     rasterize_signup_mesh_stage(&colors, width, height)
 }
@@ -403,13 +403,13 @@ mod tests {
 
     #[test]
     fn rasterize_produces_image() {
-        let look = RadixLook::built_in();
+        let look = Look::built_in();
         assert!(rasterize_signup_mesh_for_look(&look, 320, 240).is_some());
     }
 
     #[test]
     fn mesh_pixels_follow_color_scale_not_swapped_channels() {
-        let look = RadixLook::built_in();
+        let look = Look::built_in();
         let colors = SignupStage::default().mesh_colors(&look);
         let accent = colors.accent_9.to_rgb();
         // Built-in indigo: blue channel dominates red.

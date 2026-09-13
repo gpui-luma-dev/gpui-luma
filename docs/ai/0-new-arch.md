@@ -178,7 +178,7 @@ The existing SDK color modules prove substantial reusable behavior, but they als
 - synchronized multi-control compositions;
 - palette editing and token provenance.
 
-The eventual direction is a `color-controls` crate built on SDK primitives. It should consume a generic color editing/palette model rather than depend directly on `ShadcnLook` or `RadixLook`.
+The eventual direction is a `color-controls` crate built on SDK primitives. It should consume a generic color editing/palette model rather than depend directly on `ShadcnLook` or `Look`.
 
 Potential shared data contracts include:
 

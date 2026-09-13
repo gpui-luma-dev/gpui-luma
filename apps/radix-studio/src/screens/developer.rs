@@ -4,12 +4,12 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Entity, IntoElement, prelude::*};
 use luma::vstack;
-use luma_look_radix::{RadixLook, SemanticRole};
+use luma_look_radix::{Look, SemanticRole};
 
 use super::section::section;
 use crate::controls::ClassicShadowEditor;
 
-pub fn page(look: &Arc<RadixLook>, shadow_editor: Entity<ClassicShadowEditor>) -> AnyElement {
+pub fn page(look: &Arc<Look>, shadow_editor: Entity<ClassicShadowEditor>) -> AnyElement {
     let fg = look.resolve_role(SemanticRole::Foreground).hsla();
     let muted = look.resolve_role(SemanticRole::MutedForeground).hsla();
     let border = look.resolve_role(SemanticRole::Border).hsla();
