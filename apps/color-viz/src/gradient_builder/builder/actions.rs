@@ -232,7 +232,7 @@ impl GradientBuilder {
                 .look
                 .outline_icon_button(
                     format!("color-viz-gradient-stop-delete-{}", thumb_id.as_u64()),
-                    LucideIcon::Trash2,
+                    LucideIcon::Trash,
                 )
                 .spawn(cx);
             button.update(cx, |button, cx| button.set_enabled(can_remove, cx));
