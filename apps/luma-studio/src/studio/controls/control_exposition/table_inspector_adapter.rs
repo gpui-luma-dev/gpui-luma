@@ -3,38 +3,38 @@ use std::sync::Arc;
 use luma_look_shadcn::ShadcnLook;
 use luma_look_shadcn_inspect::ShadcnInspect;
 
-use super::inspector::collection::{list_view_row_color_rows, list_view_surface_color_rows};
-use super::inspector::common::{list_view_row_selected, listbox_row_state, progress_enabled};
-use super::inspector::metrics::list_view_layout_section;
-use super::inspector::specs::{CHOICE_SIZES, LIST_VIEW_ROW_VALUE_MODES, LIST_VIEW_STATES, LIST_VIEW_VARIANTS};
+use super::inspector::collection::{table_row_color_rows, table_surface_color_rows};
+use super::inspector::common::{table_row_selected, listbox_row_state, progress_enabled};
+use super::inspector::metrics::table_layout_section;
+use super::inspector::specs::{CHOICE_SIZES, TABLE_ROW_VALUE_MODES, TABLE_STATES, TABLE_VARIANTS};
 use super::inspector::{
     ControlInspectorResolver, ControlInspectorSpec, InspectorCategoryContent, InspectorSelection, InspectorStateSpec,
     SharedInspectorResolver,
 };
 
-pub static LIST_VIEW_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
-    control_label: "ListView",
-    id_prefix: "list-view-theme-inspector",
+pub static TABLE_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
+    control_label: "Table",
+    id_prefix: "table-theme-inspector",
     parts: &[],
-    variants: &LIST_VIEW_VARIANTS,
-    states: &LIST_VIEW_STATES,
+    variants: &TABLE_VARIANTS,
+    states: &TABLE_STATES,
     sizes: &CHOICE_SIZES,
-    value_modes: &LIST_VIEW_ROW_VALUE_MODES,
+    value_modes: &TABLE_ROW_VALUE_MODES,
     default_part_id: "",
     default_variant_id: "surface",
     default_size_id: "md",
     default_value_id: "unselected",
 };
 
-pub struct ListViewInspectorAdapter;
+pub struct TableInspectorAdapter;
 
-impl ListViewInspectorAdapter {
+impl TableInspectorAdapter {
     pub fn shared() -> SharedInspectorResolver {
         Arc::new(Self)
     }
 }
 
-impl ControlInspectorResolver for ListViewInspectorAdapter {
+impl ControlInspectorResolver for TableInspectorAdapter {
     fn resolve_category(
         &self,
         look: &ShadcnLook,
@@ -43,9 +43,9 @@ impl ControlInspectorResolver for ListViewInspectorAdapter {
     ) -> InspectorCategoryContent {
         match category_id {
             "color" => InspectorCategoryContent::Colors(resolve_color_rows(look, selection)),
-            "layout" => InspectorCategoryContent::Layout(list_view_layout_section(
+            "layout" => InspectorCategoryContent::Layout(table_layout_section(
                 look,
-                "list-view-theme-inspector-box-model",
+                "table-theme-inspector-box-model",
                 selection.variant_id,
                 selection.size_id,
             )),
@@ -72,15 +72,15 @@ fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> V
     let inspect = ShadcnInspect::new(look);
     match selection.variant_id {
         "row" | "grid-cell" => {
-            let palette = inspect.inspect_list_view_row_color_palette(
-                list_view_row_selected(selection.value_id),
+            let palette = inspect.inspect_table_row_color_palette(
+                table_row_selected(selection.value_id),
                 listbox_row_state(selection.state_id),
             );
-            list_view_row_color_rows(&palette)
+            table_row_color_rows(&palette)
         }
         _ => {
-            let palette = inspect.inspect_list_view_color_palette(progress_enabled(selection.state_id));
-            list_view_surface_color_rows(&palette)
+            let palette = inspect.inspect_table_color_palette(progress_enabled(selection.state_id));
+            table_surface_color_rows(&palette)
         }
     }
 }

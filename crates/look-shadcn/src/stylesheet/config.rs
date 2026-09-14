@@ -31,7 +31,7 @@ pub struct StylesheetConfig {
     #[serde(default)]
     pub listbox: ListboxStylesheet,
     #[serde(default)]
-    pub list_view: ListViewStylesheet,
+    pub table: TableStylesheet,
     #[serde(default)]
     pub floating_menu: FloatingMenuStylesheet,
     #[serde(default)]
@@ -802,27 +802,27 @@ pub struct ListboxRowColorRule {
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
-pub struct ListViewStylesheet {
+pub struct TableStylesheet {
     #[serde(default)]
-    pub surface: ListViewSurfaceStylesheet,
+    pub surface: TableSurfaceStylesheet,
     #[serde(default)]
-    pub row: ListViewRowStylesheet,
+    pub row: TableRowStylesheet,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
-pub struct ListViewSurfaceStylesheet {
+pub struct TableSurfaceStylesheet {
     #[serde(default)]
-    pub metrics: HashMap<String, ListViewSurfaceMetricsRule>,
+    pub metrics: HashMap<String, TableSurfaceMetricsRule>,
     #[serde(default)]
-    pub color_rules: Vec<ListViewSurfaceColorRule>,
+    pub color_rules: Vec<TableSurfaceColorRule>,
 }
 
-impl ListViewSurfaceStylesheet {
-    pub fn find_color_rule(&self, enabled: bool) -> Option<&ListViewSurfaceColorRule> {
+impl TableSurfaceStylesheet {
+    pub fn find_color_rule(&self, enabled: bool) -> Option<&TableSurfaceColorRule> {
         find_enabled_color_rule(&self.color_rules, enabled)
     }
 
-    pub fn metrics_for_size(&self, size: ControlSize) -> Option<&ListViewSurfaceMetricsRule> {
+    pub fn metrics_for_size(&self, size: ControlSize) -> Option<&TableSurfaceMetricsRule> {
         let key = match size {
             ControlSize::Sm => "sm",
             ControlSize::Md => "md",
@@ -833,7 +833,7 @@ impl ListViewSurfaceStylesheet {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct ListViewSurfaceMetricsRule {
+pub struct TableSurfaceMetricsRule {
     pub padding_y_factor: f32,
     pub radius: String,
     #[serde(default)]
@@ -841,7 +841,7 @@ pub struct ListViewSurfaceMetricsRule {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct ListViewSurfaceColorRule {
+pub struct TableSurfaceColorRule {
     pub enabled: Option<bool>,
     pub background: String,
     pub border: String,
@@ -849,26 +849,26 @@ pub struct ListViewSurfaceColorRule {
     pub header_label_color: String,
 }
 
-impl EnabledColorRule for ListViewSurfaceColorRule {
+impl EnabledColorRule for TableSurfaceColorRule {
     fn enabled(&self) -> Option<bool> {
         self.enabled
     }
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
-pub struct ListViewRowStylesheet {
+pub struct TableRowStylesheet {
     #[serde(default)]
-    pub color_rules: Vec<ListViewRowColorRule>,
+    pub color_rules: Vec<TableRowColorRule>,
 }
 
-impl ListViewRowStylesheet {
+impl TableRowStylesheet {
     pub fn find_color_rule(
         &self,
         selected: bool,
         focused: bool,
         disabled: bool,
         layer: InteractionLayer,
-    ) -> Option<&ListViewRowColorRule> {
+    ) -> Option<&TableRowColorRule> {
         self.color_rules.iter().find(|rule| {
             if rule.disabled == Some(true) {
                 return disabled;
@@ -891,7 +891,7 @@ impl ListViewRowStylesheet {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct ListViewRowColorRule {
+pub struct TableRowColorRule {
     pub disabled: Option<bool>,
     pub selected: Option<bool>,
     pub focused: Option<bool>,

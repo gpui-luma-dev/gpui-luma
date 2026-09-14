@@ -1,46 +1,46 @@
-//! Scrolling list view control exposition — scrollable task grid with fixed viewport.
+//! Scrolling table control exposition — scrollable task grid with fixed viewport.
 
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::list_view::{ListSelectionMode, ListView, ListViewEvent};
-use luma::{column, column_emphasis, scrolling_list_view};
+use luma::controls::table::{TableSelectionMode, Table, TableEvent};
+use luma::{column, column_emphasis, scrolling_table};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::collection_theme_inspectors::ListViewThemeInspector;
+use super::collection_theme_inspectors::TableThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::list_view_demo::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
-use super::list_view_inspector_adapter::{ListViewInspectorAdapter, LIST_VIEW_INSPECTOR_SPEC};
+use super::table_demo::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
+use super::table_inspector_adapter::{TableInspectorAdapter, TABLE_INSPECTOR_SPEC};
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const DEFAULT_VISIBLE_ROWS: usize = 25;
 
-pub struct ScrollingListViewControlExposition {
+pub struct ScrollingTableControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    left_pane: Entity<ScrollingListViewExpositionLeftPane>,
-    theme_inspector: Entity<ListViewThemeInspector>,
+    left_pane: Entity<ScrollingTableExpositionLeftPane>,
+    theme_inspector: Entity<TableThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
     _subscriptions: Vec<Subscription>,
 }
 
-struct ScrollingListViewExpositionLeftPane {
+struct ScrollingTableExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    list_view: ListView<Task>,
+    table: Table<Task>,
     selected_indices: Vec<usize>,
     event_stream: Entity<ControlEventStream>,
 }
 
-impl ScrollingListViewExpositionLeftPane {
-    fn handle_list_event(&mut self, event: &ListViewEvent, cx: &mut Context<Self>) {
-        if let ListViewEvent::SelectionChanged { selected_indices } = event {
+impl ScrollingTableExpositionLeftPane {
+    fn handle_list_event(&mut self, event: &TableEvent, cx: &mut Context<Self>) {
+        if let TableEvent::SelectionChanged { selected_indices } = event {
             self.selected_indices = selected_indices.clone();
             cx.notify();
         }
@@ -48,13 +48,13 @@ impl ScrollingListViewExpositionLeftPane {
 
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.list_view.update(cx, |_, cx| cx.notify());
+        self.table.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
     }
 }
 
-impl Render for ScrollingListViewExpositionLeftPane {
+impl Render for ScrollingTableExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
@@ -91,11 +91,11 @@ impl Render for ScrollingListViewExpositionLeftPane {
                                 .child("Keyboard: Arrow keys move the active row. Enter or Space selects it."),
                         ),
                 )
-                .child(self.list_view.clone())
+                .child(self.table.clone())
                 .child(self.event_stream.clone());
 
             div()
-                .id("controls-doc-scrolling-list-view-left-pane")
+                .id("controls-doc-scrolling-table-left-pane")
                 .size_full()
                 .min_h(px(0.0))
                 .min_w(px(0.0))
@@ -111,16 +111,16 @@ impl Render for ScrollingListViewExpositionLeftPane {
     }
 }
 
-impl ScrollingListViewControlExposition {
+impl ScrollingTableControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("scrolling-list-view").expect("scrolling-list-view catalog entry");
+        let entry = *catalog_entry("scrolling-table").expect("scrolling-table catalog entry");
 
         let tasks = build_task_rows();
-        let list_view = scrolling_list_view! {
-            list_view_theme = look.list_view_theme();
-            id = "controls-doc-listview-scroll";
+        let table = scrolling_table! {
+            table_theme = look.table_theme();
+            id = "controls-doc-table-scroll";
             items = tasks;
-            selection = ListSelectionMode::Single;
+            selection = TableSelectionMode::Single;
             selected_index = 1;
             active_index = 1;
             row_label = |row| row.title.clone();
@@ -181,36 +181,36 @@ impl ScrollingListViewControlExposition {
             ControlEventStream::new(
                 cx,
                 look.clone(),
-                "controls-scrolling-list-view-event-log",
-                "Select rows and scroll; ListViewEvent variants appear below.",
+                "controls-scrolling-table-event-log",
+                "Select rows and scroll; TableEvent variants appear below.",
             )
         });
 
-        let left_pane = cx.new(|_| ScrollingListViewExpositionLeftPane {
+        let left_pane = cx.new(|_| ScrollingTableExpositionLeftPane {
             look: look.clone(),
             entry,
-            list_view: list_view.clone(),
+            table: table.clone(),
             selected_indices: vec![1],
             event_stream: event_stream.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
             look.clone(),
-            "controls-doc-scrolling-list-view-pane",
+            "controls-doc-scrolling-table-pane",
             {
                 let left_pane = left_pane.clone();
                 move || left_pane.clone().into_any_element()
             },
-            &LIST_VIEW_INSPECTOR_SPEC,
-            ListViewInspectorAdapter::shared(),
+            &TABLE_INSPECTOR_SPEC,
+            TableInspectorAdapter::shared(),
         );
 
-        let subscription = cx.subscribe(&list_view, {
+        let subscription = cx.subscribe(&table, {
             let event_stream = event_stream.clone();
             let left_pane = left_pane.clone();
-            move |_, _, event: &ListViewEvent, cx| {
+            move |_, _, event: &TableEvent, cx| {
                 left_pane.update(cx, |pane, cx| pane.handle_list_event(event, cx));
-                if let Some(line) = format_list_view_event(event) {
+                if let Some(line) = format_table_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }
@@ -243,11 +243,11 @@ impl ScrollingListViewControlExposition {
     }
 }
 
-impl Render for ScrollingListViewControlExposition {
+impl Render for ScrollingTableControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             div()
-                .id("controls-doc-scrolling-list-view-exposition")
+                .id("controls-doc-scrolling-table-exposition")
                 .size_full()
                 .min_h(px(0.0))
                 .min_w(px(0.0))
@@ -256,30 +256,26 @@ impl Render for ScrollingListViewControlExposition {
     }
 }
 
-fn format_list_view_event(event: &ListViewEvent) -> Option<String> {
+fn format_table_event(event: &TableEvent) -> Option<String> {
     match event {
-        ListViewEvent::SelectionChanged { selected_indices } => {
-            Some(format!("ListViewEvent::SelectionChanged {{ selected_indices: {selected_indices:?} }}"))
+        TableEvent::SelectionChanged { selected_indices } => {
+            Some(format!("TableEvent::SelectionChanged {{ selected_indices: {selected_indices:?} }}"))
         }
-        ListViewEvent::ActiveIndexChanged { active_index } => {
-            Some(format!("ListViewEvent::ActiveIndexChanged {{ active_index: {active_index:?} }}"))
+        TableEvent::ActiveIndexChanged { active_index } => {
+            Some(format!("TableEvent::ActiveIndexChanged {{ active_index: {active_index:?} }}"))
         }
-        ListViewEvent::ScrollChanged { top_index } => {
-            Some(format!("ListViewEvent::ScrollChanged {{ top_index: {top_index} }}"))
+        TableEvent::ScrollChanged { top_index } => {
+            Some(format!("TableEvent::ScrollChanged {{ top_index: {top_index} }}"))
         }
-        ListViewEvent::PageChanged { page } => Some(format!("ListViewEvent::PageChanged {{ page: {page} }}")),
-        ListViewEvent::PageSizeChanged { page_size } => {
-            Some(format!("ListViewEvent::PageSizeChanged {{ page_size: {page_size} }}"))
+        TableEvent::PageChanged { page } => Some(format!("TableEvent::PageChanged {{ page: {page} }}")),
+        TableEvent::PageSizeChanged { page_size } => {
+            Some(format!("TableEvent::PageSizeChanged {{ page_size: {page_size} }}"))
         }
-        ListViewEvent::FocusChanged { focused } => {
-            Some(format!("ListViewEvent::FocusChanged {{ focused: {focused} }}"))
+        TableEvent::FocusChanged { focused } => Some(format!("TableEvent::FocusChanged {{ focused: {focused} }}")),
+        TableEvent::RowHoverChanged { index, hovered } => {
+            Some(format!("TableEvent::RowHoverChanged {{ index: {index}, hovered: {hovered} }}"))
         }
-        ListViewEvent::RowHoverChanged { index, hovered } => {
-            Some(format!("ListViewEvent::RowHoverChanged {{ index: {index}, hovered: {hovered} }}"))
-        }
-        ListViewEvent::EnabledChanged { enabled } => {
-            Some(format!("ListViewEvent::EnabledChanged {{ enabled: {enabled} }}"))
-        }
+        TableEvent::EnabledChanged { enabled } => Some(format!("TableEvent::EnabledChanged {{ enabled: {enabled} }}")),
         _ => None,
     }
 }

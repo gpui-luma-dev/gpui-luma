@@ -1,4 +1,4 @@
-//! List view — input surface + accent whisper hover, muted selected rows.
+//! Table — input surface + accent whisper hover, muted selected rows.
 //!
 //! | Row state   | Token / effect        |
 //! |-------------|-----------------------|
@@ -7,26 +7,26 @@
 //! | Selected    | `muted`               |
 //! | Keyboard active | `muted`           |
 
-use luma::controls::list_view::{ListViewLook, ListViewRowPalette};
+use luma::controls::table::{TableLook, TableRowPalette};
 use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_list_view_row_color_rule, find_list_view_surface_color_rule,
-    resolve_list_view_row_color_rule, resolve_list_view_surface_color_rule, resolve_stylesheet_metric,
+    StylesheetConfig, embedded_stylesheet, find_table_row_color_rule, find_table_surface_color_rule,
+    resolve_table_row_color_rule, resolve_table_surface_color_rule, resolve_stylesheet_metric,
 };
 
 #[derive(Clone, Debug)]
-pub struct ListViewSurfaceColorTable {
+pub struct TableSurfaceColorTable {
     pub background: ResolvedColor,
     pub border: ResolvedColor,
     pub header_background: ResolvedColor,
     pub header_label_color: ResolvedColor,
 }
 
-impl ListViewSurfaceColorTable {
+impl TableSurfaceColorTable {
     pub fn fallback() -> Self {
         Self {
             background: ResolvedColor::transparent(),
@@ -37,22 +37,22 @@ impl ListViewSurfaceColorTable {
     }
 }
 
-pub fn resolve_list_view_surface_colors(
+pub fn resolve_table_surface_colors(
     resolver: &LookResolver<'_>,
     enabled: bool,
-) -> anyhow::Result<ListViewSurfaceColorTable> {
-    resolve_list_view_surface_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+) -> anyhow::Result<TableSurfaceColorTable> {
+    resolve_table_surface_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
 }
 
-pub fn resolve_list_view_surface_colors_with_stylesheet(
+pub fn resolve_table_surface_colors_with_stylesheet(
     resolver: &LookResolver<'_>,
     stylesheet: &StylesheetConfig,
     enabled: bool,
-) -> anyhow::Result<ListViewSurfaceColorTable> {
-    let rule = find_list_view_surface_color_rule(stylesheet, enabled)
-        .ok_or_else(|| anyhow::anyhow!("no matching list view surface color rule"))?;
-    let colors = resolve_list_view_surface_color_rule(resolver, rule)?;
-    Ok(ListViewSurfaceColorTable {
+) -> anyhow::Result<TableSurfaceColorTable> {
+    let rule = find_table_surface_color_rule(stylesheet, enabled)
+        .ok_or_else(|| anyhow::anyhow!("no matching table surface color rule"))?;
+    let colors = resolve_table_surface_color_rule(resolver, rule)?;
+    Ok(TableSurfaceColorTable {
         background: colors.background,
         border: colors.border,
         header_background: colors.header_background,
@@ -61,13 +61,13 @@ pub fn resolve_list_view_surface_colors_with_stylesheet(
 }
 
 #[derive(Clone, Debug)]
-pub struct ListViewRowColorTable {
+pub struct TableRowColorTable {
     pub background: ResolvedColor,
     pub label_color: ResolvedColor,
     pub divider: ResolvedColor,
 }
 
-impl ListViewRowColorTable {
+impl TableRowColorTable {
     pub fn fallback() -> Self {
         Self {
             background: ResolvedColor::transparent(),
@@ -77,41 +77,37 @@ impl ListViewRowColorTable {
     }
 }
 
-pub fn resolve_list_view_row_colors(
+pub fn resolve_table_row_colors(
     resolver: &LookResolver<'_>,
     selected: bool,
     focused: bool,
     disabled: bool,
     layer: InteractionLayer,
-) -> anyhow::Result<ListViewRowColorTable> {
-    resolve_list_view_row_colors_with_stylesheet(resolver, embedded_stylesheet(), selected, focused, disabled, layer)
+) -> anyhow::Result<TableRowColorTable> {
+    resolve_table_row_colors_with_stylesheet(resolver, embedded_stylesheet(), selected, focused, disabled, layer)
 }
 
-pub fn resolve_list_view_row_colors_with_stylesheet(
+pub fn resolve_table_row_colors_with_stylesheet(
     resolver: &LookResolver<'_>,
     stylesheet: &StylesheetConfig,
     selected: bool,
     focused: bool,
     disabled: bool,
     layer: InteractionLayer,
-) -> anyhow::Result<ListViewRowColorTable> {
-    let rule = find_list_view_row_color_rule(stylesheet, selected, focused, disabled, layer)
-        .ok_or_else(|| anyhow::anyhow!("no matching list view row color rule"))?;
-    let colors = resolve_list_view_row_color_rule(resolver, rule, layer)?;
-    Ok(ListViewRowColorTable {
-        background: colors.background,
-        label_color: colors.label_color,
-        divider: colors.divider,
-    })
+) -> anyhow::Result<TableRowColorTable> {
+    let rule = find_table_row_color_rule(stylesheet, selected, focused, disabled, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching table row color rule"))?;
+    let colors = resolve_table_row_color_rule(resolver, rule, layer)?;
+    Ok(TableRowColorTable { background: colors.background, label_color: colors.label_color, divider: colors.divider })
 }
 
-pub fn list_view_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: ControlSize) -> ListViewLook {
+pub fn table_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: ControlSize) -> TableLook {
     let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
     let metrics = ctx.metrics();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "list_view");
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "table");
     let colors =
-        resolve_list_view_surface_colors(&resolver, enabled).unwrap_or_else(|_| ListViewSurfaceColorTable::fallback());
-    let surface_metrics = embedded_stylesheet().list_view.surface.metrics_for_size(size);
+        resolve_table_surface_colors(&resolver, enabled).unwrap_or_else(|_| TableSurfaceColorTable::fallback());
+    let surface_metrics = embedded_stylesheet().table.surface.metrics_for_size(size);
     let radius = surface_metrics
         .and_then(|rule| resolve_stylesheet_metric(&rule.radius, metrics, size))
         .unwrap_or(metrics.radius(size));
@@ -120,7 +116,7 @@ pub fn list_view_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, si
         .and_then(|max| resolve_stylesheet_metric(max, metrics, size))
         .map_or(radius, |max| radius.min(max));
 
-    ListViewLook {
+    TableLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
         header_background: colors.header_background.hsla(),
@@ -132,22 +128,22 @@ pub fn list_view_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, si
     }
 }
 
-pub fn list_view_row_palette(
+pub fn table_row_palette(
     mode: &ShadcnModeTokens,
     selected: bool,
     state: InteractionState,
     size: ControlSize,
-) -> ListViewRowPalette {
+) -> TableRowPalette {
     let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let typography = ctx.typography();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "list_view_row");
-    let colors = resolve_list_view_row_colors(&resolver, selected, state.focused, state.disabled, state.layer())
-        .unwrap_or_else(|_| ListViewRowColorTable::fallback());
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "table_row");
+    let colors = resolve_table_row_colors(&resolver, selected, state.focused, state.disabled, state.layer())
+        .unwrap_or_else(|_| TableRowColorTable::fallback());
 
     let mut label_typography = typography.text.label;
     super::apply_button_metrics_typography(&mut label_typography, mode, size);
 
-    ListViewRowPalette {
+    TableRowPalette {
         background: colors.background.hsla(),
         label_color: colors.label_color.hsla(),
         divider: colors.divider.hsla(),
@@ -167,7 +163,7 @@ mod tests {
     use crate::color::with_alpha;
     use crate::mode::ShadcnModeTokens;
     use crate::resolve::resolve_color;
-    use super::list_view_row_palette;
+    use super::table_row_palette;
 
     const ROW_HOVER_ACCENT_ALPHA: f32 = 0.4;
 
@@ -191,21 +187,13 @@ mod tests {
     }
 
     #[test]
-    fn list_view_row_hover_uses_accent_whisper_and_selected_uses_muted() {
+    fn table_row_hover_uses_accent_whisper_and_selected_uses_muted() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let hover = list_view_row_palette(
-            &mode,
-            false,
-            InteractionState { hovered: true, ..Default::default() },
-            ControlSize::Md,
-        );
-        let selected = list_view_row_palette(
-            &mode,
-            true,
-            InteractionState { hovered: true, ..Default::default() },
-            ControlSize::Md,
-        );
+        let hover =
+            table_row_palette(&mode, false, InteractionState { hovered: true, ..Default::default() }, ControlSize::Md);
+        let selected =
+            table_row_palette(&mode, true, InteractionState { hovered: true, ..Default::default() }, ControlSize::Md);
 
         let accent = catalog.color("accent").expect("accent");
         assert_eq!(hover.background, with_alpha(accent, ROW_HOVER_ACCENT_ALPHA));

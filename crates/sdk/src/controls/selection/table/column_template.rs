@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, FontWeight, SharedString, Window, div, prelude::*};
 
-use super::model::{ListViewColumnCellTemplate, ListViewRowRenderModel};
+use super::model::{TableColumnCellTemplate, TableRowRenderModel};
 
-pub type ListViewColumnRenderModel<'a, T> = ListViewRowRenderModel<'a, T>;
+pub type TableColumnRenderModel<'a, T> = TableRowRenderModel<'a, T>;
 
-pub fn default_text_column_template<T, F, S>(value_fn: F) -> ListViewColumnCellTemplate<T>
+pub fn default_text_column_template<T, F, S>(value_fn: F) -> TableColumnCellTemplate<T>
 where
     T: 'static,
     F: Fn(&T) -> S + Send + Sync + 'static,
@@ -18,7 +18,7 @@ where
     })
 }
 
-pub fn default_muted_column_template<T, F, S>(value_fn: F) -> ListViewColumnCellTemplate<T>
+pub fn default_muted_column_template<T, F, S>(value_fn: F) -> TableColumnCellTemplate<T>
 where
     T: 'static,
     F: Fn(&T) -> S + Send + Sync + 'static,
@@ -30,7 +30,7 @@ where
     })
 }
 
-pub fn default_emphasis_column_template<T, F, S>(value_fn: F) -> ListViewColumnCellTemplate<T>
+pub fn default_emphasis_column_template<T, F, S>(value_fn: F) -> TableColumnCellTemplate<T>
 where
     T: 'static,
     F: Fn(&T) -> S + Send + Sync + 'static,
@@ -42,7 +42,7 @@ where
     })
 }
 
-pub fn default_numeric_column_template<T, F, S>(value_fn: F) -> ListViewColumnCellTemplate<T>
+pub fn default_numeric_column_template<T, F, S>(value_fn: F) -> TableColumnCellTemplate<T>
 where
     T: 'static,
     F: Fn(&T) -> S + Send + Sync + 'static,
@@ -54,13 +54,10 @@ where
     })
 }
 
-pub fn column_template_with_modifier<T, F>(
-    base: ListViewColumnCellTemplate<T>,
-    modifier: F,
-) -> ListViewColumnCellTemplate<T>
+pub fn column_template_with_modifier<T, F>(base: TableColumnCellTemplate<T>, modifier: F) -> TableColumnCellTemplate<T>
 where
     T: 'static,
-    F: Fn(AnyElement, &ListViewColumnRenderModel<'_, T>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
+    F: Fn(AnyElement, &TableColumnRenderModel<'_, T>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
 {
     Arc::new(move |model, window, cx| {
         let cell = base(model, window, cx);

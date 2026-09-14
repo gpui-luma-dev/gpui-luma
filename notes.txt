@@ -1,9 +1,0 @@
-change checkbox etc to have true ring and style guide to show select+focused
-
-add 'reset' (right click menu) to swatch
-add 'copy' to clipboard from swatch
-add before (or original color) to popup
-add recent selected to popup
-add tailwind option to popup
-
-someway to edit text/font sizes in ui

@@ -1,35 +1,34 @@
-//! Look-owned list-view builder. Spawn synthesizes the SDK [`luma::controls::list_view::ListView`].
+//! Look-owned table builder. Spawn synthesizes the SDK [`luma::controls::table::Table`].
 
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, ListAlignment, SharedString, Window};
-use luma::controls::list_view::{
-    ListSelectionMode, ListViewBuilder, ListViewColumn, ListViewControl, ListViewRowRenderModel, ListViewTemplate,
-    ListViewTheme,
+use luma::controls::table::{
+    TableSelectionMode, TableBuilder, TableColumn, TableControl, TableRowRenderModel, TableTemplate, TableTheme,
 };
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
 
-/// Builder in the guise of a list view: Shadcn theme/template plus SDK options, until `.spawn(cx)`.
-pub struct ListView<T>
+/// Builder in the guise of a table: Shadcn theme/template plus SDK options, until `.spawn(cx)`.
+pub struct Table<T>
 where
     T: 'static,
 {
     look: Option<ShadcnLook>,
-    builder: ListViewBuilder<T>,
+    builder: TableBuilder<T>,
     custom_template: bool,
     custom_theme: bool,
     size: ShadcnSize,
 }
 
-impl<T> ListView<T>
+impl<T> Table<T>
 where
     T: 'static,
 {
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
             look: None,
-            builder: luma::controls::list_view::new_typed(id),
+            builder: luma::controls::table::new_typed(id),
             custom_template: false,
             custom_theme: false,
             size: ShadcnSize::Md,
@@ -52,7 +51,7 @@ where
         self
     }
 
-    pub fn selection_mode(mut self, selection_mode: ListSelectionMode) -> Self {
+    pub fn selection_mode(mut self, selection_mode: TableSelectionMode) -> Self {
         self.builder = self.builder.selection_mode(selection_mode);
         self
     }
@@ -154,13 +153,13 @@ where
         self
     }
 
-    pub fn template(mut self, template: Arc<dyn ListViewTemplate>) -> Self {
+    pub fn template(mut self, template: Arc<dyn TableTemplate>) -> Self {
         self.custom_template = true;
         self.builder = self.builder.template(template);
         self
     }
 
-    pub fn theme(mut self, theme: Arc<dyn ListViewTheme>) -> Self {
+    pub fn theme(mut self, theme: Arc<dyn TableTheme>) -> Self {
         self.custom_theme = true;
         self.builder = self.builder.theme(theme);
         self
@@ -168,30 +167,30 @@ where
 
     pub fn with_row_template<F, E>(mut self, template: F) -> Self
     where
-        F: for<'a> Fn(&ListViewRowRenderModel<'a, T>, AnyElement, &mut Window, &mut App) -> E + Send + Sync + 'static,
+        F: for<'a> Fn(&TableRowRenderModel<'a, T>, AnyElement, &mut Window, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.builder = self.builder.with_row_template(template);
         self
     }
 
-    pub fn grid_view(mut self, columns: impl IntoIterator<Item = ListViewColumn<T>>) -> Self {
+    pub fn grid_view(mut self, columns: impl IntoIterator<Item = TableColumn<T>>) -> Self {
         self.builder = self.builder.grid_view(columns);
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<ListViewControl<T>> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<TableControl<T>> {
         let look = resolve_look_from(self.look.as_ref(), cx);
         self.into_sdk_builder(look).spawn(cx)
     }
 
-    fn into_sdk_builder(self, look: ShadcnLook) -> ListViewBuilder<T> {
+    fn into_sdk_builder(self, look: ShadcnLook) -> TableBuilder<T> {
         let mut builder = self.builder.size(self.size.control_size());
         if !self.custom_theme {
-            builder = builder.theme(look.list_view_theme());
+            builder = builder.theme(look.table_theme());
         }
         if !self.custom_template {
-            builder = builder.template(look.list_view_template());
+            builder = builder.template(look.table_template());
         }
         builder
     }
@@ -204,7 +203,7 @@ mod tests {
     #[test]
     fn into_sdk_builder_does_not_panic() {
         let look = ShadcnLook::built_in();
-        let _builder = ListView::new("ok")
+        let _builder = Table::new("ok")
             .look(&look)
             .items([SharedString::from("one")])
             .row_label(|row| row.clone())

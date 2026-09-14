@@ -127,7 +127,7 @@ impl Pager {
     /// Convert to the SDK builder using `.look(...)`, ambient Global, or [`ShadcnLook::built_in()`].
     ///
     /// Use this when a look-owned pager is composed into another SDK builder
-    /// (for example `paging_list_view!`) that expects [`PagerBuilder`]. Pass `cx`
+    /// (for example `paging_table!`) that expects [`PagerBuilder`]. Pass `cx`
     /// so ambient look resolution works when `.look(...)` was omitted.
     pub fn into_sdk_builder(self, cx: &App) -> PagerBuilder {
         let look = resolve_look_from(self.look.as_ref(), cx);

@@ -12,7 +12,7 @@ pub use crate::controls::combobox::{ComboBox, ComboBoxBuilder, ComboBoxEvent};
 pub use crate::controls::context_menu::{ContextMenu, ContextMenuBuilder, ContextMenuEvent};
 pub use crate::controls::icon_button::IconButton;
 pub use crate::controls::icon_group::{IconGroup, IconGroupBuilder};
-pub use crate::controls::list_view::{ListView, ListViewBuilder, ListViewEvent};
+pub use crate::controls::table::{Table, TableBuilder, TableEvent};
 pub use crate::controls::popover_button::{PopoverButton, PopoverButtonBuilder, PopoverButtonEvent};
 pub use crate::controls::popup_menu::{PopupMenu, PopupMenuBuilder, PopupMenuEvent};
 pub use crate::controls::radio_button::{RadioButton, RadioButtonBuilder, RadioButtonEvent};

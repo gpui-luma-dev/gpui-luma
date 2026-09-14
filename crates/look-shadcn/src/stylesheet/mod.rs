@@ -11,7 +11,7 @@ pub use resolve::{
     resolve_accordion_content_color_rule, resolve_accordion_trigger_color_rule, resolve_button_color_rule,
     resolve_badge_color_rule, resolve_button_metrics_rule, resolve_card_color_rule, resolve_checkbox_color_rule,
     resolve_control_group_list_color_rule, resolve_floating_menu_surface_color_rule,
-    resolve_floating_menu_trigger_color_rule, resolve_list_view_row_color_rule, resolve_list_view_surface_color_rule,
+    resolve_floating_menu_trigger_color_rule, resolve_table_row_color_rule, resolve_table_surface_color_rule,
     resolve_listbox_list_color_rule, resolve_listbox_row_color_rule, resolve_sidebar_branch_color_rule,
     resolve_sidebar_container_color_rule, resolve_sidebar_item_color_rule, resolve_sidebar_metrics,
     resolve_sidebar_section_color_rule, resolve_autocomplete_chrome_color_rule, resolve_progress_color_rule,
@@ -35,10 +35,10 @@ use crate::tokens::{ShadcnTextRole, ShadcnTextSize};
 use config::{
     AccordionContentColorRule, AccordionTriggerColorRule, AutocompleteChromeColorRule, BadgeColorRule, ButtonColorRule,
     CardColorRule, CheckboxColorRule, ControlGroupListColorRule, FloatingMenuSurfaceColorRule,
-    FloatingMenuTriggerColorRule, ListboxListColorRule, ListboxRowColorRule, ListViewRowColorRule,
-    ListViewSurfaceColorRule, SidebarBranchColorRule, SidebarContainerColorRule, SidebarItemColorRule,
-    SidebarSectionColorRule, ProgressColorRule, RadioColorRule, ResizablePanelsColorRule, ScrollbarColorRule,
-    SliderColorRule, SplitViewColorRule, SwitchColorRule, TabsItemColorRule, TabsListColorRule, TextfieldColorRule,
+    FloatingMenuTriggerColorRule, ListboxListColorRule, ListboxRowColorRule, TableRowColorRule, TableSurfaceColorRule,
+    SidebarBranchColorRule, SidebarContainerColorRule, SidebarItemColorRule, SidebarSectionColorRule,
+    ProgressColorRule, RadioColorRule, ResizablePanelsColorRule, ScrollbarColorRule, SliderColorRule,
+    SplitViewColorRule, SwitchColorRule, TabsItemColorRule, TabsListColorRule, TextfieldColorRule,
     TreeViewRowColorRule, TypographyRule,
 };
 use selector::{AsSelectorState, ButtonSelectorState, badge_variant_key, theme_mode_key};
@@ -164,21 +164,18 @@ pub fn find_listbox_row_color_rule(
     stylesheet.listbox.row.find_color_rule(disabled, focused, layer)
 }
 
-pub fn find_list_view_surface_color_rule(
-    stylesheet: &StylesheetConfig,
-    enabled: bool,
-) -> Option<&ListViewSurfaceColorRule> {
-    stylesheet.list_view.surface.find_color_rule(enabled)
+pub fn find_table_surface_color_rule(stylesheet: &StylesheetConfig, enabled: bool) -> Option<&TableSurfaceColorRule> {
+    stylesheet.table.surface.find_color_rule(enabled)
 }
 
-pub fn find_list_view_row_color_rule(
+pub fn find_table_row_color_rule(
     stylesheet: &StylesheetConfig,
     selected: bool,
     focused: bool,
     disabled: bool,
     layer: InteractionLayer,
-) -> Option<&ListViewRowColorRule> {
-    stylesheet.list_view.row.find_color_rule(selected, focused, disabled, layer)
+) -> Option<&TableRowColorRule> {
+    stylesheet.table.row.find_color_rule(selected, focused, disabled, layer)
 }
 
 pub fn find_floating_menu_surface_color_rule(stylesheet: &StylesheetConfig) -> Option<&FloatingMenuSurfaceColorRule> {
@@ -515,9 +512,9 @@ pub fn resolve_listbox_row_colors_metadata(stylesheet: &StylesheetConfig) -> Vec
         .collect()
 }
 
-pub fn resolve_list_view_surface_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
+pub fn resolve_table_surface_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
     stylesheet
-        .list_view
+        .table
         .surface
         .color_rules
         .iter()
@@ -533,9 +530,9 @@ pub fn resolve_list_view_surface_colors_metadata(stylesheet: &StylesheetConfig) 
         .collect()
 }
 
-pub fn resolve_list_view_row_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
+pub fn resolve_table_row_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
     stylesheet
-        .list_view
+        .table
         .row
         .color_rules
         .iter()
@@ -892,8 +889,8 @@ pub fn all_color_rule_metadata(stylesheet: &StylesheetConfig) -> Vec<ColorRuleMe
         section(stylesheet, "resizable_panels", "color", resolve_resizable_panels_colors_metadata(stylesheet)),
         section(stylesheet, "listbox", "list", resolve_listbox_list_colors_metadata(stylesheet)),
         section(stylesheet, "listbox", "row", resolve_listbox_row_colors_metadata(stylesheet)),
-        section(stylesheet, "list_view", "surface", resolve_list_view_surface_colors_metadata(stylesheet)),
-        section(stylesheet, "list_view", "row", resolve_list_view_row_colors_metadata(stylesheet)),
+        section(stylesheet, "table", "surface", resolve_table_surface_colors_metadata(stylesheet)),
+        section(stylesheet, "table", "row", resolve_table_row_colors_metadata(stylesheet)),
         section(stylesheet, "floating_menu", "surface", resolve_floating_menu_colors_metadata(stylesheet)),
         section(stylesheet, "floating_menu", "trigger", resolve_ghost_trigger_colors_metadata(stylesheet)),
         section(stylesheet, "tabs", "list", resolve_tabs_list_colors_metadata(stylesheet)),
@@ -950,7 +947,7 @@ mod tests {
         assert_eq!(stylesheet.resizable_panels.color_rules.len(), 5);
         assert_eq!(stylesheet.listbox.list.color_rules.len(), 2);
         assert_eq!(stylesheet.listbox.row.color_rules.len(), 6);
-        assert_eq!(stylesheet.list_view.row.color_rules.len(), 6);
+        assert_eq!(stylesheet.table.row.color_rules.len(), 6);
         assert_eq!(stylesheet.floating_menu.trigger.color_rules.len(), 5);
         assert_eq!(stylesheet.floating_menu.surface.elevation_rules.len(), 1);
         assert_eq!(stylesheet.tabs.item.color_rules.len(), 10);
@@ -999,8 +996,8 @@ mod tests {
                 + embedded_stylesheet().resizable_panels.color_rules.len()
                 + embedded_stylesheet().listbox.list.color_rules.len()
                 + embedded_stylesheet().listbox.row.color_rules.len()
-                + embedded_stylesheet().list_view.surface.color_rules.len()
-                + embedded_stylesheet().list_view.row.color_rules.len()
+                + embedded_stylesheet().table.surface.color_rules.len()
+                + embedded_stylesheet().table.row.color_rules.len()
                 + embedded_stylesheet().floating_menu.surface.color_rules.len()
                 + embedded_stylesheet().floating_menu.trigger.color_rules.len()
                 + embedded_stylesheet().tabs.list.color_rules.len()

@@ -1,11 +1,11 @@
 use gpui::{AnyElement, Stateful, div, prelude::*, px};
 
-use super::theme::ListViewRowLook;
+use super::theme::TableRowLook;
 
-pub(crate) fn render_list_view_row(
+pub(crate) fn render_table_row(
     id: impl Into<gpui::ElementId>,
     content: AnyElement,
-    look: ListViewRowLook,
+    look: TableRowLook,
     enabled: bool,
     show_top_divider: bool,
     is_custom: bool,

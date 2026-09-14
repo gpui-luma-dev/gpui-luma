@@ -16,7 +16,7 @@ use luma::controls::control_group::{
 use luma::controls::dock_splitter::DockSplitterTheme;
 use luma::controls::radio_group::{RadioGroupLayout, radio_group_buttons_template};
 use luma::controls::floating_menu::FloatingMenuTheme;
-use luma::controls::list_view::{ListViewTheme, list_view_template_with_theme};
+use luma::controls::table::{TableTheme, table_template_with_theme};
 use luma::controls::sidebar::{
     DefaultSidebarTemplate, SidebarPanelTemplate, SidebarRenderModel, SidebarTemplate, SidebarTheme,
     ThemedSidebarPanelTemplate,
@@ -53,7 +53,7 @@ use super::control_group::control_group_list_look;
 use super::context_menu::context_menu_look;
 use super::overlay_window::overlay_window_look;
 use super::floating_menu::floating_menu_look;
-use super::list_view::{list_view_look, list_view_row_palette};
+use super::table::{table_look, table_row_palette};
 use super::sidebar::{sidebar_branch_look, sidebar_container_look, sidebar_item_look, sidebar_section_look};
 use super::listbox::{listbox_list_look, listbox_row_palette};
 use super::pager::{pager_button_look, pager_look};
@@ -1250,14 +1250,14 @@ pub fn listbox_template(theme: ShadcnLook) -> ControlGroupTemplate<luma::control
     listbox_template_with_theme(listbox_theme(theme))
 }
 
-struct ShadcnListViewTheme {
+struct ShadcnTableTheme {
     theme: ShadcnLook,
 }
 
-impl ListViewTheme for ShadcnListViewTheme {
-    fn resolve_look(&self, enabled: bool, focused: bool, size: ControlSize) -> luma::controls::list_view::ListViewLook {
+impl TableTheme for ShadcnTableTheme {
+    fn resolve_look(&self, enabled: bool, focused: bool, size: ControlSize) -> luma::controls::table::TableLook {
         let tokens = self.theme.mode_tokens();
-        list_view_look(tokens.as_ref(), enabled, focused, size)
+        table_look(tokens.as_ref(), enabled, focused, size)
     }
 
     fn resolve_row(
@@ -1265,9 +1265,9 @@ impl ListViewTheme for ShadcnListViewTheme {
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> luma::controls::list_view::ListViewRowPalette {
+    ) -> luma::controls::table::TableRowPalette {
         let tokens = self.theme.mode_tokens();
-        list_view_row_palette(tokens.as_ref(), selected, state, size)
+        table_row_palette(tokens.as_ref(), selected, state, size)
     }
 
     fn metrics(&self) -> luma::theme::MetricTokens {
@@ -1275,12 +1275,12 @@ impl ListViewTheme for ShadcnListViewTheme {
     }
 }
 
-pub fn list_view_theme(theme: ShadcnLook) -> Arc<dyn ListViewTheme> {
-    Arc::new(ShadcnListViewTheme { theme: theme.clone() })
+pub fn table_theme(theme: ShadcnLook) -> Arc<dyn TableTheme> {
+    Arc::new(ShadcnTableTheme { theme: theme.clone() })
 }
 
-pub fn list_view_template(theme: ShadcnLook) -> Arc<dyn luma::controls::list_view::ListViewTemplate> {
-    list_view_template_with_theme(list_view_theme(theme))
+pub fn table_template(theme: ShadcnLook) -> Arc<dyn luma::controls::table::TableTemplate> {
+    table_template_with_theme(table_theme(theme))
 }
 
 struct ShadcnPagerTheme {

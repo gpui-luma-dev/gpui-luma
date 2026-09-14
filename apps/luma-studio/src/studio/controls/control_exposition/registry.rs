@@ -31,7 +31,7 @@ use super::sidebar::SidebarControlExposition;
 use super::overlay_draggable::DraggableOverlayControlExposition;
 use super::overlay_positioning::OverlayPositioningControlExposition;
 use super::pager::PagerControlExposition;
-use super::paging_list_view::PagingListViewControlExposition;
+use super::paging_table::PagingTableControlExposition;
 use super::popup_selector::PopupSelectorControlExposition;
 use super::progress::ProgressControlExposition;
 use super::stepper::StepperControlExposition;
@@ -40,7 +40,7 @@ use super::radio_group::RadioGroupControlExposition;
 use super::resizable_panels::ResizablePanelsControlExposition;
 use super::popup_menu::PopupMenuControlExposition;
 use super::scrollbar::ScrollbarControlExposition;
-use super::scrolling_list_view::ScrollingListViewControlExposition;
+use super::scrolling_table::ScrollingTableControlExposition;
 use super::search_selector::SearchSelectorControlExposition;
 use super::selection_panel::SelectionPanelControlExposition;
 use super::slider::SliderControlExposition;
@@ -95,11 +95,11 @@ pub enum ControlExposition {
     Tabs(Entity<TabsControlExposition>),
     ContextMenu(Entity<ContextMenuControlExposition>),
     FloatingMenu(Entity<FloatingMenuControlExposition>),
-    PagingListView(Entity<PagingListViewControlExposition>),
+    PagingTable(Entity<PagingTableControlExposition>),
     PopupMenu(Entity<PopupMenuControlExposition>),
     AutocompleteTextField(Entity<AutocompleteTextFieldControlExposition>),
     ComboBox(Entity<ComboBoxControlExposition>),
-    ScrollingListView(Entity<ScrollingListViewControlExposition>),
+    ScrollingTable(Entity<ScrollingTableControlExposition>),
     SearchSelector(Entity<SearchSelectorControlExposition>),
     PopupSelector(Entity<PopupSelectorControlExposition>),
     SelectionPanel(Entity<SelectionPanelControlExposition>),
@@ -128,8 +128,8 @@ impl ControlExposition {
             Self::ListBox(cx.new(|cx| ListBoxControlExposition::new(cx, look.clone()))),
             Self::Toolbar(cx.new(|cx| ToolbarControlExposition::new(cx, look.clone()))),
             Self::Pager(cx.new(|cx| PagerControlExposition::new(cx, look.clone()))),
-            Self::ScrollingListView(cx.new(|cx| ScrollingListViewControlExposition::new(cx, look.clone()))),
-            Self::PagingListView(cx.new(|cx| PagingListViewControlExposition::new(cx, look.clone()))),
+            Self::ScrollingTable(cx.new(|cx| ScrollingTableControlExposition::new(cx, look.clone()))),
+            Self::PagingTable(cx.new(|cx| PagingTableControlExposition::new(cx, look.clone()))),
             Self::TreeView(cx.new(|cx| TreeViewControlExposition::new(cx, look.clone()))),
             Self::Badge(cx.new(|cx| BadgeControlExposition::new(cx, look.clone()))),
             Self::Progress(cx.new(|cx| ProgressControlExposition::new(cx, look.clone()))),
@@ -190,8 +190,8 @@ impl ControlExposition {
             Self::ListBox(entity) => entity.read(cx).entry(),
             Self::Toolbar(entity) => entity.read(cx).entry(),
             Self::Pager(entity) => entity.read(cx).entry(),
-            Self::ScrollingListView(entity) => entity.read(cx).entry(),
-            Self::PagingListView(entity) => entity.read(cx).entry(),
+            Self::ScrollingTable(entity) => entity.read(cx).entry(),
+            Self::PagingTable(entity) => entity.read(cx).entry(),
             Self::TreeView(entity) => entity.read(cx).entry(),
             Self::Badge(entity) => entity.read(cx).entry(),
             Self::Progress(entity) => entity.read(cx).entry(),
@@ -257,8 +257,8 @@ impl ControlExposition {
             Self::AutocompleteTextField(entity) => entity.read(cx).fills_viewport(),
             Self::SearchSelector(entity) => entity.read(cx).fills_viewport(),
             Self::ListBox(entity) => entity.read(cx).fills_viewport(),
-            Self::ScrollingListView(entity) => entity.read(cx).fills_viewport(),
-            Self::PagingListView(entity) => entity.read(cx).fills_viewport(),
+            Self::ScrollingTable(entity) => entity.read(cx).fills_viewport(),
+            Self::PagingTable(entity) => entity.read(cx).fills_viewport(),
             Self::SelectionPanel(entity) => entity.read(cx).fills_viewport(),
             Self::TreeView(entity) => entity.read(cx).fills_viewport(),
             Self::Sidebar(entity) => entity.read(cx).fills_viewport(),
@@ -305,10 +305,8 @@ impl ControlExposition {
             }
             Self::SearchSelector(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::ListBox(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
-            Self::ScrollingListView(entity) => {
-                entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx))
-            }
-            Self::PagingListView(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ScrollingTable(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::PagingTable(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::SelectionPanel(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::TreeView(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::Sidebar(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
@@ -365,10 +363,8 @@ impl ControlExposition {
             }
             Self::SearchSelector(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::ListBox(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
-            Self::ScrollingListView(entity) => {
-                entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx))
-            }
-            Self::PagingListView(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ScrollingTable(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::PagingTable(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::SelectionPanel(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::TreeView(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::Sidebar(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
@@ -408,8 +404,8 @@ impl ControlExposition {
             Self::ListBox(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::Toolbar(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::Pager(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
-            Self::ScrollingListView(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
-            Self::PagingListView(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::ScrollingTable(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
+            Self::PagingTable(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::TreeView(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::Badge(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
             Self::Progress(entity) => entity.update(cx, |exposition, cx| exposition.sync_look(look, cx)),
@@ -466,8 +462,8 @@ impl ControlExposition {
             Self::ListBox(entity) => entity.clone().into_any_element(),
             Self::Toolbar(entity) => entity.clone().into_any_element(),
             Self::Pager(entity) => entity.clone().into_any_element(),
-            Self::ScrollingListView(entity) => entity.clone().into_any_element(),
-            Self::PagingListView(entity) => entity.clone().into_any_element(),
+            Self::ScrollingTable(entity) => entity.clone().into_any_element(),
+            Self::PagingTable(entity) => entity.clone().into_any_element(),
             Self::TreeView(entity) => entity.clone().into_any_element(),
             Self::Badge(entity) => entity.clone().into_any_element(),
             Self::Progress(entity) => entity.clone().into_any_element(),

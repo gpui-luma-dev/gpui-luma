@@ -14,8 +14,8 @@ use crate::controls::{
     ButtonInspectElevation, ButtonInspectMetrics, ButtonInspectPalette, ButtonInspectTypography, CardInspectMetrics,
     CheckboxInspectMetrics, CheckboxInspectPalette, ContextMenuInspectMetrics, ContextMenuInspectPalette,
     ControlGroupInspectMetrics, ControlGroupListInspectPalette, FloatingMenuInspectMetrics, FloatingMenuInspectPalette,
-    ListBoxInspectMetrics, ListBoxListInspectPalette, ListBoxRowInspectPalette, ListViewInspectMetrics,
-    ListViewInspectPalette, ListViewRowInspectPalette, SidebarContainerInspectPalette, SidebarInspectMetrics,
+    ListBoxInspectMetrics, ListBoxListInspectPalette, ListBoxRowInspectPalette, TableInspectMetrics,
+    TableInspectPalette, TableRowInspectPalette, SidebarContainerInspectPalette, SidebarInspectMetrics,
     SidebarItemInspectPalette, SidebarSectionInspectPalette, OverlayWindowInspectMetrics, OverlayWindowInspectPalette,
     PagerInspectMetrics, PagerShellInspectPalette, PopupMenuInspectMetrics, PopupMenuInspectPalette,
     ProgressInspectMetrics, ProgressInspectPalette, RadioButtonInspectMetrics, RadioButtonInspectPalette,
@@ -31,8 +31,8 @@ use crate::controls::{
     inspect_button_metrics, inspect_button_typography, inspect_card_metrics, inspect_checkbox_color_palette,
     inspect_checkbox_elevation, inspect_checkbox_metrics, inspect_context_menu_color_palette,
     inspect_context_menu_metrics, inspect_control_group_list_color_palette, inspect_control_group_metrics,
-    inspect_floating_menu_color_palette, inspect_floating_menu_metrics, inspect_list_view_color_palette,
-    inspect_list_view_metrics, inspect_list_view_row_color_palette, inspect_listbox_list_color_palette,
+    inspect_floating_menu_color_palette, inspect_floating_menu_metrics, inspect_table_color_palette,
+    inspect_table_metrics, inspect_table_row_color_palette, inspect_listbox_list_color_palette,
     inspect_listbox_metrics, inspect_listbox_row_color_palette, inspect_sidebar_branch_color_palette,
     inspect_sidebar_container_color_palette, inspect_sidebar_item_color_palette, inspect_sidebar_metrics,
     inspect_sidebar_section_color_palette, inspect_overlay_window_color_palette, inspect_overlay_window_metrics,
@@ -364,20 +364,16 @@ impl<'a> ShadcnInspect<'a> {
         inspect_resizable_panels_metrics(handle_size)
     }
 
-    pub fn inspect_list_view_color_palette(&self, enabled: bool) -> ListViewInspectPalette {
-        inspect_list_view_color_palette(&self.mode_tokens(), self.theme_mode(), enabled)
+    pub fn inspect_table_color_palette(&self, enabled: bool) -> TableInspectPalette {
+        inspect_table_color_palette(&self.mode_tokens(), self.theme_mode(), enabled)
     }
 
-    pub fn inspect_list_view_row_color_palette(
-        &self,
-        selected: bool,
-        state: InteractionState,
-    ) -> ListViewRowInspectPalette {
-        inspect_list_view_row_color_palette(&self.mode_tokens(), self.theme_mode(), selected, state)
+    pub fn inspect_table_row_color_palette(&self, selected: bool, state: InteractionState) -> TableRowInspectPalette {
+        inspect_table_row_color_palette(&self.mode_tokens(), self.theme_mode(), selected, state)
     }
 
-    pub fn inspect_list_view_metrics(&self, size: ControlSize) -> ListViewInspectMetrics {
-        inspect_list_view_metrics(&self.mode_tokens(), self.theme_mode(), size)
+    pub fn inspect_table_metrics(&self, size: ControlSize) -> TableInspectMetrics {
+        inspect_table_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_accordion_trigger_color_palette(&self, state: InteractionState) -> AccordionTriggerInspectPalette {

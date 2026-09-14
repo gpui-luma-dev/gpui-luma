@@ -8,28 +8,28 @@ use crate::controls::pager::{
     render_page_size_select,
 };
 
-use super::control::{ListViewControl, ListViewEvent};
-use super::model::ListViewBuilder;
+use super::control::{TableControl, TableEvent};
+use super::model::TableBuilder;
 
-pub type PagingListView<T> = Entity<PagingListViewControl<T>>;
+pub type PagingTable<T> = Entity<PagingTableControl<T>>;
 
-pub struct PagingListViewControl<T: 'static> {
-    list: Entity<ListViewControl<T>>,
+pub struct PagingTableControl<T: 'static> {
+    list: Entity<TableControl<T>>,
     pager: Entity<PagerControl>,
 }
 
-impl<T: 'static> PagingListViewControl<T> {
-    pub fn new(list: Entity<ListViewControl<T>>, pager: Entity<PagerControl>, cx: &mut Context<Self>) -> Self {
+impl<T: 'static> PagingTableControl<T> {
+    pub fn new(list: Entity<TableControl<T>>, pager: Entity<PagerControl>, cx: &mut Context<Self>) -> Self {
         let pager_clone = pager.clone();
         cx.subscribe(&list, move |_, list_control, event, cx| {
             let list = list_control.read(cx);
             match event {
-                ListViewEvent::SelectionChanged { selected_indices } => {
+                TableEvent::SelectionChanged { selected_indices } => {
                     let count = selected_indices.len();
                     let total = list.items().len();
                     pager_clone.update(cx, |pager, cx| pager.set_info_text(Some(selection_summary(count, total)), cx));
                 }
-                ListViewEvent::PageChanged { page } => {
+                TableEvent::PageChanged { page } => {
                     let page_size = list.page_size().unwrap_or(10);
                     let page_count = list.page_count();
                     pager_clone.update(cx, |pager, cx| {
@@ -38,7 +38,7 @@ impl<T: 'static> PagingListViewControl<T> {
                         pager.set_page(*page, cx);
                     });
                 }
-                ListViewEvent::PageSizeChanged { page_size } => {
+                TableEvent::PageSizeChanged { page_size } => {
                     let current_page = list.current_page();
                     let page_count = list.page_count();
                     pager_clone.update(cx, |pager, cx| {
@@ -47,7 +47,7 @@ impl<T: 'static> PagingListViewControl<T> {
                         pager.set_page(current_page, cx);
                     });
                 }
-                ListViewEvent::ActiveIndexChanged { .. } => {}
+                TableEvent::ActiveIndexChanged { .. } => {}
                 _ => {}
             }
         })
@@ -73,7 +73,7 @@ impl<T: 'static> PagingListViewControl<T> {
         Self { list, pager }
     }
 
-    pub fn list(&self) -> &Entity<ListViewControl<T>> {
+    pub fn list(&self) -> &Entity<TableControl<T>> {
         &self.list
     }
 
@@ -86,9 +86,9 @@ impl<T: 'static> PagingListViewControl<T> {
     }
 }
 
-impl<T: 'static> EventEmitter<ListViewEvent> for PagingListViewControl<T> {}
+impl<T: 'static> EventEmitter<TableEvent> for PagingTableControl<T> {}
 
-impl<T: 'static> Render for PagingListViewControl<T> {
+impl<T: 'static> Render for PagingTableControl<T> {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let list = self.list.clone();
         let pager = self.pager.clone();
@@ -106,17 +106,17 @@ impl<T: 'static> Render for PagingListViewControl<T> {
     }
 }
 
-struct ListViewPagerTemplate {
+struct TablePagerTemplate {
     theme: Arc<dyn PagerTheme>,
 }
 
-impl ListViewPagerTemplate {
+impl TablePagerTemplate {
     fn new(theme: Arc<dyn PagerTheme>) -> Self {
         Self { theme }
     }
 }
 
-impl PagerTemplate for ListViewPagerTemplate {
+impl PagerTemplate for TablePagerTemplate {
     fn render(
         &self,
         model: &PagerRenderModel<'_>,
@@ -169,25 +169,25 @@ impl PagerTemplate for ListViewPagerTemplate {
     }
 }
 
-pub struct PagingListViewBuilder<T: 'static> {
-    list_builder: ListViewBuilder<T>,
+pub struct PagingTableBuilder<T: 'static> {
+    list_builder: TableBuilder<T>,
     pager_builder: PagerBuilder,
 }
 
-impl<T: 'static> PagingListViewBuilder<T> {
-    pub fn new(list_builder: ListViewBuilder<T>, pager_builder: PagerBuilder) -> Self {
+impl<T: 'static> PagingTableBuilder<T> {
+    pub fn new(list_builder: TableBuilder<T>, pager_builder: PagerBuilder) -> Self {
         Self { list_builder, pager_builder }
     }
 
-    /// Fill the parent height; see [`ListViewBuilder::fill_height`].
+    /// Fill the parent height; see [`TableBuilder::fill_height`].
     pub fn fill_height(mut self) -> Self {
         self.list_builder = self.list_builder.fill_height();
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> PagingListView<T> {
+    pub fn spawn(self, cx: &mut impl AppContext) -> PagingTable<T> {
         let fill_height = self.list_builder.model.fill_height;
-        let list = cx.new(|cx| ListViewControl::from_builder(self.list_builder, cx));
+        let list = cx.new(|cx| TableControl::from_builder(self.list_builder, cx));
 
         let (current_page, page_count, page_size, selected_count, total_rows) = list.read_with(cx, |list, _| {
             (
@@ -208,7 +208,7 @@ impl<T: 'static> PagingListViewBuilder<T> {
         }
         let pager_theme = pager_builder.model.theme.clone().unwrap_or_else(default_pager_theme);
         pager_builder = pager_builder.style(PagerStyle::MinimalEdge);
-        pager_builder = pager_builder.template(Arc::new(ListViewPagerTemplate::new(pager_theme)));
+        pager_builder = pager_builder.template(Arc::new(TablePagerTemplate::new(pager_theme)));
 
         let pager = pager_builder
             .current_page(current_page)
@@ -217,7 +217,7 @@ impl<T: 'static> PagingListViewBuilder<T> {
             .info_text(selection_summary(selected_count, total_rows))
             .spawn(cx);
 
-        cx.new(|cx| PagingListViewControl::new(list, pager, cx))
+        cx.new(|cx| PagingTableControl::new(list, pager, cx))
     }
 }
 

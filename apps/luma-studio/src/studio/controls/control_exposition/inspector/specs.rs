@@ -462,15 +462,15 @@ pub static LISTBOX_STATES: [InspectorStateSpec; 6] = [
     },
 ];
 
-pub static LIST_VIEW_VARIANTS: [InspectorVariant; 3] = [
+pub static TABLE_VARIANTS: [InspectorVariant; 3] = [
     InspectorVariant { id: "surface", label: "Surface" },
     InspectorVariant { id: "row", label: "Row" },
     InspectorVariant { id: "grid-cell", label: "Grid Cell" },
 ];
 
-pub static LIST_VIEW_STATES: [InspectorStateSpec; 6] = LISTBOX_STATES;
+pub static TABLE_STATES: [InspectorStateSpec; 6] = LISTBOX_STATES;
 
-pub static LIST_VIEW_ROW_VALUE_MODES: [InspectorValueMode; 2] = [
+pub static TABLE_ROW_VALUE_MODES: [InspectorValueMode; 2] = [
     InspectorValueMode { id: "unselected", label: "unselected" },
     InspectorValueMode { id: "selected", label: "selected" },
 ];

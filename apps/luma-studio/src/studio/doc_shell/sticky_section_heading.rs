@@ -288,7 +288,7 @@ fn style_guide_section_order_for_title(title: &str) -> usize {
         "Checkbox" => 2,
         "Feedback" => 3,
         "Icon Button" => 4,
-        "List View" => 5,
+        "Table" => 5,
         "Listbox" => 6,
         "Menus" => 7,
         "Pager" => 8,
@@ -427,11 +427,11 @@ mod tests {
             },
         );
         tracker.register(
-            "List View",
-            style_guide_section_order_for_title("List View"),
+            "Table",
+            style_guide_section_order_for_title("Table"),
             gpui::Bounds { origin: gpui::point(px(0.0), px(900.0)), size: gpui::size(px(800.0), px(72.0)) },
             SectionHeading {
-                title: "List View",
+                title: "Table",
                 description: "desc",
                 title_color: gpui::black(),
                 muted_text: gpui::black(),
@@ -441,7 +441,7 @@ mod tests {
 
         assert_eq!(tracker.active_title(0.0), Some("Accordion"));
         assert_eq!(tracker.active_title(860.0), Some("Accordion"));
-        assert_eq!(tracker.active_title(920.0), Some("List View"));
-        assert_eq!(tracker.anchor_top("List View"), Some(900.0));
+        assert_eq!(tracker.active_title(920.0), Some("Table"));
+        assert_eq!(tracker.anchor_top("Table"), Some(900.0));
     }
 }

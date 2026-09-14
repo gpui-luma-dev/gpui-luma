@@ -1,26 +1,26 @@
 #[macro_export]
 macro_rules! column {
     ($header:expr, width = $width:expr => $render_fn:expr) => {
-        $crate::controls::list_view::ListViewColumn::fixed($header, ($width) as f32, $render_fn)
+        $crate::controls::table::TableColumn::fixed($header, ($width) as f32, $render_fn)
     };
     ($header:expr => $render_fn:expr) => {
-        $crate::controls::list_view::ListViewColumn::fill($header, $render_fn)
+        $crate::controls::table::TableColumn::fill($header, $render_fn)
     };
 }
 
 #[macro_export]
 macro_rules! column_text {
     ($header:expr, width = $width:expr => $render_fn:expr) => {
-        $crate::controls::list_view::ListViewColumn::fixed(
+        $crate::controls::table::TableColumn::fixed(
             $header,
             ($width) as f32,
-            $crate::controls::list_view::default_text_column_template($render_fn),
+            $crate::controls::table::default_text_column_template($render_fn),
         )
     };
     ($header:expr => $render_fn:expr) => {
-        $crate::controls::list_view::ListViewColumn::fill(
+        $crate::controls::table::TableColumn::fill(
             $header,
-            $crate::controls::list_view::default_text_column_template($render_fn),
+            $crate::controls::table::default_text_column_template($render_fn),
         )
     };
 }
@@ -28,16 +28,16 @@ macro_rules! column_text {
 #[macro_export]
 macro_rules! column_muted {
     ($header:expr, width = $width:expr => $render_fn:expr) => {
-        $crate::controls::list_view::ListViewColumn::fixed(
+        $crate::controls::table::TableColumn::fixed(
             $header,
             ($width) as f32,
-            $crate::controls::list_view::default_muted_column_template($render_fn),
+            $crate::controls::table::default_muted_column_template($render_fn),
         )
     };
     ($header:expr => $render_fn:expr) => {
-        $crate::controls::list_view::ListViewColumn::fill(
+        $crate::controls::table::TableColumn::fill(
             $header,
-            $crate::controls::list_view::default_muted_column_template($render_fn),
+            $crate::controls::table::default_muted_column_template($render_fn),
         )
     };
 }
@@ -45,16 +45,16 @@ macro_rules! column_muted {
 #[macro_export]
 macro_rules! column_emphasis {
     ($header:expr, width = $width:expr => $render_fn:expr) => {
-        $crate::controls::list_view::ListViewColumn::fixed(
+        $crate::controls::table::TableColumn::fixed(
             $header,
             ($width) as f32,
-            $crate::controls::list_view::default_emphasis_column_template($render_fn),
+            $crate::controls::table::default_emphasis_column_template($render_fn),
         )
     };
     ($header:expr => $render_fn:expr) => {
-        $crate::controls::list_view::ListViewColumn::fill(
+        $crate::controls::table::TableColumn::fill(
             $header,
-            $crate::controls::list_view::default_emphasis_column_template($render_fn),
+            $crate::controls::table::default_emphasis_column_template($render_fn),
         )
     };
 }
@@ -62,25 +62,25 @@ macro_rules! column_emphasis {
 #[macro_export]
 macro_rules! column_numeric {
     ($header:expr, width = $width:expr => $render_fn:expr) => {
-        $crate::controls::list_view::ListViewColumn::fixed(
+        $crate::controls::table::TableColumn::fixed(
             $header,
             ($width) as f32,
-            $crate::controls::list_view::default_numeric_column_template($render_fn),
+            $crate::controls::table::default_numeric_column_template($render_fn),
         )
     };
     ($header:expr => $render_fn:expr) => {
-        $crate::controls::list_view::ListViewColumn::fill(
+        $crate::controls::table::TableColumn::fill(
             $header,
-            $crate::controls::list_view::default_numeric_column_template($render_fn),
+            $crate::controls::table::default_numeric_column_template($render_fn),
         )
     };
 }
 
 #[macro_export]
-macro_rules! list_view {
+macro_rules! table {
     // Branch 1: grid_view + row_template together
     (
-        $( list_view_theme = $list_view_theme:expr; )?
+        $( table_theme = $table_theme:expr; )?
         id = $id:expr;
         items = $items:expr;
         $( selection = $selection:expr; )?
@@ -94,8 +94,8 @@ macro_rules! list_view {
         grid_view = { $($col:expr),* $(,)? };
         row_template = |$model:ident, $cells:ident, $win:ident, $cx:ident| $body:expr $(;)?
     ) => {{
-        let builder = $crate::controls::list_view::new_typed($id).items($items);
-        $( let builder = builder.theme($list_view_theme); )?
+        let builder = $crate::controls::table::new_typed($id).items($items);
+        $( let builder = builder.theme($table_theme); )?
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -117,7 +117,7 @@ macro_rules! list_view {
 
     // Branch 2: grid_view only (uses internal default row template)
     (
-        $( list_view_theme = $list_view_theme:expr; )?
+        $( table_theme = $table_theme:expr; )?
         id = $id:expr;
         items = $items:expr;
         $( selection = $selection:expr; )?
@@ -130,8 +130,8 @@ macro_rules! list_view {
         $( scroll_snap = $scroll_snap:expr; )?
         grid_view = { $($col:expr),* $(,)? } $(;)?
     ) => {{
-        let builder = $crate::controls::list_view::new_typed($id).items($items);
-        $( let builder = builder.theme($list_view_theme); )?
+        let builder = $crate::controls::table::new_typed($id).items($items);
+        $( let builder = builder.theme($table_theme); )?
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -150,7 +150,7 @@ macro_rules! list_view {
 
     // Branch 3: row_template only
     (
-        $( list_view_theme = $list_view_theme:expr; )?
+        $( table_theme = $table_theme:expr; )?
         id = $id:expr;
         items = $items:expr;
         $( selection = $selection:expr; )?
@@ -163,8 +163,8 @@ macro_rules! list_view {
         $( scroll_snap = $scroll_snap:expr; )?
         row_template = |$model:ident, $cells:ident, $win:ident, $cx:ident| $body:expr $(;)?
     ) => {{
-        let builder = $crate::controls::list_view::new_typed($id).items($items);
-        $( let builder = builder.theme($list_view_theme); )?
+        let builder = $crate::controls::table::new_typed($id).items($items);
+        $( let builder = builder.theme($table_theme); )?
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -185,10 +185,10 @@ macro_rules! list_view {
 }
 
 #[macro_export]
-macro_rules! scrolling_list_view {
+macro_rules! scrolling_table {
     // grid_view + row_template
     (
-        list_view_theme = $list_view_theme:expr;
+        table_theme = $table_theme:expr;
         id = $id:expr;
         items = $items:expr;
         $( selection = $selection:expr; )?
@@ -201,8 +201,8 @@ macro_rules! scrolling_list_view {
         grid_view = { $($col:expr),* $(,)? };
         row_template = |$model:ident, $cells:ident, $win:ident, $cx:ident| $body:expr $(;)?
     ) => {{
-        let builder = $crate::controls::list_view::new_typed($id).items($items);
-        let builder = builder.theme($list_view_theme);
+        let builder = $crate::controls::table::new_typed($id).items($items);
+        let builder = builder.theme($table_theme);
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -223,7 +223,7 @@ macro_rules! scrolling_list_view {
 
     // grid_view only
     (
-        list_view_theme = $list_view_theme:expr;
+        table_theme = $table_theme:expr;
         id = $id:expr;
         items = $items:expr;
         $( selection = $selection:expr; )?
@@ -235,8 +235,8 @@ macro_rules! scrolling_list_view {
         $( scroll_snap = $scroll_snap:expr; )?
         grid_view = { $($col:expr),* $(,)? } $(;)?
     ) => {{
-        let builder = $crate::controls::list_view::new_typed($id).items($items);
-        let builder = builder.theme($list_view_theme);
+        let builder = $crate::controls::table::new_typed($id).items($items);
+        let builder = builder.theme($table_theme);
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -254,10 +254,10 @@ macro_rules! scrolling_list_view {
 }
 
 #[macro_export]
-macro_rules! paging_list_view {
+macro_rules! paging_table {
     // grid_view + row_template
     (
-        list_view_theme = $list_view_theme:expr;
+        table_theme = $table_theme:expr;
         id = $id:expr;
         items = $items:expr;
         page_size = $page_size:expr;
@@ -271,8 +271,8 @@ macro_rules! paging_list_view {
         grid_view = { $($col:expr),* $(,)? };
         row_template = |$model:ident, $cells:ident, $rwin:ident, $rcx:ident| $body:expr $(;)?
     ) => {{
-        let builder = $crate::controls::list_view::new_typed($id).items($items);
-        let builder = builder.theme($list_view_theme);
+        let builder = $crate::controls::table::new_typed($id).items($items);
+        let builder = builder.theme($table_theme);
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -293,7 +293,7 @@ macro_rules! paging_list_view {
             .page_size($page_size);
         $( let pager_builder = $pager; )?
 
-        $crate::controls::list_view::PagingListViewBuilder::new(
+        $crate::controls::table::PagingTableBuilder::new(
             builder.paged($page_size),
             pager_builder,
         )
@@ -301,7 +301,7 @@ macro_rules! paging_list_view {
 
     // grid_view only
     (
-        list_view_theme = $list_view_theme:expr;
+        table_theme = $table_theme:expr;
         id = $id:expr;
         items = $items:expr;
         page_size = $page_size:expr;
@@ -314,8 +314,8 @@ macro_rules! paging_list_view {
         $( visible_rows = $visible_rows:expr; )?
         grid_view = { $($col:expr),* $(,)? } $(;)?
     ) => {{
-        let builder = $crate::controls::list_view::new_typed($id).items($items);
-        let builder = builder.theme($list_view_theme);
+        let builder = $crate::controls::table::new_typed($id).items($items);
+        let builder = builder.theme($table_theme);
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -333,7 +333,7 @@ macro_rules! paging_list_view {
             .page_size($page_size);
         $( let pager_builder = $pager; )?
 
-        $crate::controls::list_view::PagingListViewBuilder::new(
+        $crate::controls::table::PagingTableBuilder::new(
             builder.paged($page_size),
             pager_builder,
         )

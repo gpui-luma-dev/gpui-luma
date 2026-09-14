@@ -3,11 +3,11 @@ use std::sync::Arc;
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma::controls::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
 use luma::controls::icon_button::IconButton;
-use luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView};
+use luma::controls::table::{TableSelectionMode, TableEvent, PagingTable};
 use luma::controls::pager::PagerStyle;
 use luma::infra::presenter::ControlPresenter;
 use luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
-use luma::{column, column_emphasis, paging_list_view};
+use luma::{column, column_emphasis, paging_table};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnLook, ShadcnTextSize, with_look};
@@ -18,14 +18,14 @@ use super::task_list::{Task, build_task_rows, email_column, status_cell, tag_pil
 
 const DEFAULT_PAGE_SIZE: usize = 25;
 const LIST_HEADER_TITLE: &str = "Documents";
-const LIST_VIEW_OUTER_PADDING_PX: f32 = 16.0;
+const TABLE_OUTER_PADDING_PX: f32 = 16.0;
 const CONTENT_INSET_PX: f32 = 10.0;
 
 pub struct DashboardPanel {
     look: Arc<ShadcnLook>,
     sidebar: Entity<SidebarControl>,
     sidebar_toggle: IconButton,
-    list_view: PagingListView<Task>,
+    table: PagingTable<Task>,
     sidebar_open: bool,
     _subscriptions: Vec<Subscription>,
 }
@@ -57,8 +57,8 @@ impl DashboardPanel {
 
         let tasks = build_task_rows();
         let dashboard_muted_text = look.chrome().muted_text;
-        let list_view = paging_list_view! {
-            list_view_theme = look.list_view_theme();
+        let table = paging_table! {
+            table_theme = look.table_theme();
             id = "studio-dashboard-tasks";
             items = tasks;
             page_size = DEFAULT_PAGE_SIZE;
@@ -66,7 +66,7 @@ impl DashboardPanel {
                 .style(PagerStyle::MinimalEdge)
                 .page_size(DEFAULT_PAGE_SIZE)
                 .into_sdk_builder(cx);
-            selection = ListSelectionMode::Single;
+            selection = TableSelectionMode::Single;
             selected_index = 1;
             active_index = 1;
             row_label = |row| row.title.clone();
@@ -133,11 +133,11 @@ impl DashboardPanel {
                 panel.sidebar.update(cx, |sidebar, cx| sidebar.toggle_open(cx));
             }
         }));
-        subscriptions.push(cx.subscribe(&list_view, |_, _, _: &ListViewEvent, cx| {
+        subscriptions.push(cx.subscribe(&table, |_, _, _: &TableEvent, cx| {
             cx.notify();
         }));
 
-        Self { look, sidebar, sidebar_toggle, list_view, sidebar_open: true, _subscriptions: subscriptions }
+        Self { look, sidebar, sidebar_toggle, table, sidebar_open: true, _subscriptions: subscriptions }
     }
 
     fn sync_sidebar_toggle_icon(&self, cx: &mut Context<Self>) {
@@ -236,14 +236,14 @@ impl Render for DashboardPanel {
                                             .w_full()
                                             .flex()
                                             .flex_col()
-                                            .p(px(LIST_VIEW_OUTER_PADDING_PX))
+                                            .p(px(TABLE_OUTER_PADDING_PX))
                                             .child(
                                                 div()
                                                     .flex_1()
                                                     .min_w(px(0.0))
                                                     .min_h(px(0.0))
                                                     .w_full()
-                                                    .child(self.list_view.clone()),
+                                                    .child(self.table.clone()),
                                             ),
                                     ),
                             ),

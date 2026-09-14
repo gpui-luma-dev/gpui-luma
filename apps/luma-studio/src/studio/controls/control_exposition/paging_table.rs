@@ -1,48 +1,48 @@
-//! Paging list view control exposition — paged task grid with embedded pager.
+//! Paging table control exposition — paged task grid with embedded pager.
 
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView};
+use luma::controls::table::{TableSelectionMode, TableEvent, PagingTable};
 use luma::controls::pager::PagerStyle;
-use luma::{column, column_emphasis, paging_list_view};
+use luma::{column, column_emphasis, paging_table};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::collection_theme_inspectors::ListViewThemeInspector;
+use super::collection_theme_inspectors::TableThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::list_view_demo::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
-use super::list_view_inspector_adapter::{ListViewInspectorAdapter, LIST_VIEW_INSPECTOR_SPEC};
+use super::table_demo::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
+use super::table_inspector_adapter::{TableInspectorAdapter, TABLE_INSPECTOR_SPEC};
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
 const DEFAULT_PAGE_SIZE: usize = 10;
 
-pub struct PagingListViewControlExposition {
+pub struct PagingTableControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    left_pane: Entity<PagingListViewExpositionLeftPane>,
-    theme_inspector: Entity<ListViewThemeInspector>,
+    left_pane: Entity<PagingTableExpositionLeftPane>,
+    theme_inspector: Entity<TableThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
     _subscriptions: Vec<Subscription>,
 }
 
-struct PagingListViewExpositionLeftPane {
+struct PagingTableExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    list_view: PagingListView<Task>,
+    table: PagingTable<Task>,
     selected_indices: Vec<usize>,
     event_stream: Entity<ControlEventStream>,
 }
 
-impl PagingListViewExpositionLeftPane {
-    fn handle_list_event(&mut self, event: &ListViewEvent, cx: &mut Context<Self>) {
-        if let ListViewEvent::SelectionChanged { selected_indices } = event {
+impl PagingTableExpositionLeftPane {
+    fn handle_list_event(&mut self, event: &TableEvent, cx: &mut Context<Self>) {
+        if let TableEvent::SelectionChanged { selected_indices } = event {
             self.selected_indices = selected_indices.clone();
             cx.notify();
         }
@@ -50,13 +50,13 @@ impl PagingListViewExpositionLeftPane {
 
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.list_view.update(cx, |_, cx| cx.notify());
+        self.table.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
     }
 }
 
-impl Render for PagingListViewExpositionLeftPane {
+impl Render for PagingTableExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
@@ -78,7 +78,7 @@ impl Render for PagingListViewExpositionLeftPane {
                             div()
                                 .text_sm()
                                 .text_color(chrome.muted_text)
-                                .child("Paged task grid with the SDK paging toolbar wired to ListView commands."),
+                                .child("Paged task grid with the SDK paging toolbar wired to Table commands."),
                         )
                         .child(
                             div()
@@ -93,11 +93,11 @@ impl Render for PagingListViewExpositionLeftPane {
                                 .child("Keyboard: Arrow keys move the active row. Enter or Space selects it."),
                         ),
                 )
-                .child(self.list_view.clone())
+                .child(self.table.clone())
                 .child(self.event_stream.clone());
 
             div()
-                .id("controls-doc-paging-list-view-left-pane")
+                .id("controls-doc-paging-table-left-pane")
                 .size_full()
                 .min_h(px(0.0))
                 .min_w(px(0.0))
@@ -113,21 +113,21 @@ impl Render for PagingListViewExpositionLeftPane {
     }
 }
 
-impl PagingListViewControlExposition {
+impl PagingTableControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("paging-list-view").expect("paging-list-view catalog entry");
+        let entry = *catalog_entry("paging-table").expect("paging-table catalog entry");
 
         let tasks = build_task_rows();
-        let list_view = paging_list_view! {
-            list_view_theme = look.list_view_theme();
-            id = "controls-doc-listview-paged";
+        let table = paging_table! {
+            table_theme = look.table_theme();
+            id = "controls-doc-table-paged";
             items = tasks;
             page_size = DEFAULT_PAGE_SIZE;
-            pager = shadcn::Pager::new("controls-doc-listview-paged-pager").look(look.as_ref())
+            pager = shadcn::Pager::new("controls-doc-table-paged-pager").look(look.as_ref())
                 .style(PagerStyle::MinimalEdge)
                 .page_size(DEFAULT_PAGE_SIZE)
                 .into_sdk_builder(cx);
-            selection = ListSelectionMode::Single;
+            selection = TableSelectionMode::Single;
             selected_index = 1;
             active_index = 1;
             row_label = |row| row.title.clone();
@@ -186,36 +186,36 @@ impl PagingListViewControlExposition {
             ControlEventStream::new(
                 cx,
                 look.clone(),
-                "controls-paging-list-view-event-log",
-                "Select rows and change pages; ListViewEvent variants appear below.",
+                "controls-paging-table-event-log",
+                "Select rows and change pages; TableEvent variants appear below.",
             )
         });
 
-        let left_pane = cx.new(|_| PagingListViewExpositionLeftPane {
+        let left_pane = cx.new(|_| PagingTableExpositionLeftPane {
             look: look.clone(),
             entry,
-            list_view: list_view.clone(),
+            table: table.clone(),
             selected_indices: vec![1],
             event_stream: event_stream.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
             look.clone(),
-            "controls-doc-paging-list-view-pane",
+            "controls-doc-paging-table-pane",
             {
                 let left_pane = left_pane.clone();
                 move || left_pane.clone().into_any_element()
             },
-            &LIST_VIEW_INSPECTOR_SPEC,
-            ListViewInspectorAdapter::shared(),
+            &TABLE_INSPECTOR_SPEC,
+            TableInspectorAdapter::shared(),
         );
 
-        let subscription = cx.subscribe(&list_view, {
+        let subscription = cx.subscribe(&table, {
             let event_stream = event_stream.clone();
             let left_pane = left_pane.clone();
-            move |_, _, event: &ListViewEvent, cx| {
+            move |_, _, event: &TableEvent, cx| {
                 left_pane.update(cx, |pane, cx| pane.handle_list_event(event, cx));
-                if let Some(line) = format_list_view_event(event) {
+                if let Some(line) = format_table_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }
@@ -248,11 +248,11 @@ impl PagingListViewControlExposition {
     }
 }
 
-impl Render for PagingListViewControlExposition {
+impl Render for PagingTableControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             div()
-                .id("controls-doc-paging-list-view-exposition")
+                .id("controls-doc-paging-table-exposition")
                 .size_full()
                 .min_h(px(0.0))
                 .min_w(px(0.0))
@@ -261,30 +261,26 @@ impl Render for PagingListViewControlExposition {
     }
 }
 
-fn format_list_view_event(event: &ListViewEvent) -> Option<String> {
+fn format_table_event(event: &TableEvent) -> Option<String> {
     match event {
-        ListViewEvent::SelectionChanged { selected_indices } => {
-            Some(format!("ListViewEvent::SelectionChanged {{ selected_indices: {selected_indices:?} }}"))
+        TableEvent::SelectionChanged { selected_indices } => {
+            Some(format!("TableEvent::SelectionChanged {{ selected_indices: {selected_indices:?} }}"))
         }
-        ListViewEvent::ActiveIndexChanged { active_index } => {
-            Some(format!("ListViewEvent::ActiveIndexChanged {{ active_index: {active_index:?} }}"))
+        TableEvent::ActiveIndexChanged { active_index } => {
+            Some(format!("TableEvent::ActiveIndexChanged {{ active_index: {active_index:?} }}"))
         }
-        ListViewEvent::ScrollChanged { top_index } => {
-            Some(format!("ListViewEvent::ScrollChanged {{ top_index: {top_index} }}"))
+        TableEvent::ScrollChanged { top_index } => {
+            Some(format!("TableEvent::ScrollChanged {{ top_index: {top_index} }}"))
         }
-        ListViewEvent::PageChanged { page } => Some(format!("ListViewEvent::PageChanged {{ page: {page} }}")),
-        ListViewEvent::PageSizeChanged { page_size } => {
-            Some(format!("ListViewEvent::PageSizeChanged {{ page_size: {page_size} }}"))
+        TableEvent::PageChanged { page } => Some(format!("TableEvent::PageChanged {{ page: {page} }}")),
+        TableEvent::PageSizeChanged { page_size } => {
+            Some(format!("TableEvent::PageSizeChanged {{ page_size: {page_size} }}"))
         }
-        ListViewEvent::FocusChanged { focused } => {
-            Some(format!("ListViewEvent::FocusChanged {{ focused: {focused} }}"))
+        TableEvent::FocusChanged { focused } => Some(format!("TableEvent::FocusChanged {{ focused: {focused} }}")),
+        TableEvent::RowHoverChanged { index, hovered } => {
+            Some(format!("TableEvent::RowHoverChanged {{ index: {index}, hovered: {hovered} }}"))
         }
-        ListViewEvent::RowHoverChanged { index, hovered } => {
-            Some(format!("ListViewEvent::RowHoverChanged {{ index: {index}, hovered: {hovered} }}"))
-        }
-        ListViewEvent::EnabledChanged { enabled } => {
-            Some(format!("ListViewEvent::EnabledChanged {{ enabled: {enabled} }}"))
-        }
+        TableEvent::EnabledChanged { enabled } => Some(format!("TableEvent::EnabledChanged {{ enabled: {enabled} }}")),
         _ => None,
     }
 }

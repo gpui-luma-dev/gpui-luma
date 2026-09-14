@@ -9,13 +9,13 @@ use super::layout::{
     page_count, page_start, rows_for_viewport_height_border_box, visible_item_count, visible_row_height,
 };
 use super::model::{
-    ListScrollMode, ListSelectionMode, ListViewBuilder, ListViewHeaderTemplate, ListViewLabel, ListViewModel,
-    ListViewRenderModel, ListViewRowRenderModel, make_list_view_header_template, make_list_view_row_template,
+    TableScrollMode, TableSelectionMode, TableBuilder, TableHeaderTemplate, TableLabel, TableModel, TableRenderModel,
+    TableRowRenderModel, make_table_header_template, make_table_row_template,
 };
-use super::row::render_list_view_row;
-use super::template::ListViewTemplate;
-use super::theme::{ListViewLook, ListViewTheme};
-use super::model::ListViewLookOverride;
+use super::row::render_table_row;
+use super::template::TableTemplate;
+use super::theme::{TableLook, TableTheme};
+use super::model::TableLookOverride;
 use crate::infra::state::ControlFocusState;
 use crate::key_handling::{
     ActivateControl, ControlKeyProfile, DecreaseValueLarge, IncreaseValueLarge, SelectFirstItem, SelectLastItem,
@@ -26,7 +26,7 @@ use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
-pub enum ListViewEvent {
+pub enum TableEvent {
     SelectionChanged { selected_indices: Vec<usize> },
     ActiveIndexChanged { active_index: Option<usize> },
     PageChanged { page: usize },
@@ -37,11 +37,11 @@ pub enum ListViewEvent {
     EnabledChanged { enabled: bool },
 }
 
-pub struct ListViewControl<T>
+pub struct TableControl<T>
 where
     T: 'static,
 {
-    model: ListViewModel<T>,
+    model: TableModel<T>,
     list_state: ListState,
     focus_handle: gpui::FocusHandle,
     focus_in_subscription: Option<Subscription>,
@@ -55,25 +55,25 @@ where
     fill_row_height: Option<f32>,
 }
 
-impl<T> EventEmitter<ListViewEvent> for ListViewControl<T> where T: 'static {}
+impl<T> EventEmitter<TableEvent> for TableControl<T> where T: 'static {}
 
-impl ListViewControl<ListViewLabel> {
+impl TableControl<TableLabel> {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(id: impl Into<SharedString>) -> ListViewBuilder<ListViewLabel> {
-        ListViewBuilder::new(id)
+    pub fn new(id: impl Into<SharedString>) -> TableBuilder<TableLabel> {
+        TableBuilder::new(id)
     }
 }
 
-impl<T> ListViewControl<T>
+impl<T> TableControl<T>
 where
     T: 'static,
 {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new_typed(id: impl Into<SharedString>) -> ListViewBuilder<T> {
-        ListViewBuilder::new_typed(id)
+    pub fn new_typed(id: impl Into<SharedString>) -> TableBuilder<T> {
+        TableBuilder::new_typed(id)
     }
 
-    pub(crate) fn from_builder(mut builder: ListViewBuilder<T>, cx: &mut Context<Self>) -> Self {
+    pub(crate) fn from_builder(mut builder: TableBuilder<T>, cx: &mut Context<Self>) -> Self {
         normalize_model(&mut builder.model);
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
 
@@ -112,11 +112,11 @@ where
         self.model.active_index
     }
 
-    pub fn selection_mode(&self) -> ListSelectionMode {
+    pub fn selection_mode(&self) -> TableSelectionMode {
         self.model.selection_mode
     }
 
-    pub fn scroll_mode(&self) -> ListScrollMode {
+    pub fn scroll_mode(&self) -> TableScrollMode {
         self.model.scroll_mode
     }
 
@@ -134,7 +134,7 @@ where
 
     pub fn page_size(&self) -> Option<usize> {
         match self.model.scroll_mode {
-            ListScrollMode::Paged { page_size } => Some(page_size.max(1)),
+            TableScrollMode::Paged { page_size } => Some(page_size.max(1)),
             _ => None,
         }
     }
@@ -163,7 +163,7 @@ where
         normalize_model(&mut self.model);
         let next = self.model.selected_indices.clone();
         if next != previous {
-            cx.emit(ListViewEvent::SelectionChanged { selected_indices: next });
+            cx.emit(TableEvent::SelectionChanged { selected_indices: next });
         }
         cx.notify();
     }
@@ -177,7 +177,7 @@ where
         self.set_active_index_internal(active_index, None, cx);
     }
 
-    pub fn set_selection_mode(&mut self, selection_mode: ListSelectionMode, cx: &mut Context<Self>) {
+    pub fn set_selection_mode(&mut self, selection_mode: TableSelectionMode, cx: &mut Context<Self>) {
         if self.model.selection_mode == selection_mode {
             return;
         }
@@ -187,7 +187,7 @@ where
         cx.notify();
     }
 
-    pub fn set_scroll_mode(&mut self, scroll_mode: ListScrollMode, cx: &mut Context<Self>) {
+    pub fn set_scroll_mode(&mut self, scroll_mode: TableScrollMode, cx: &mut Context<Self>) {
         if self.model.scroll_mode == scroll_mode {
             return;
         }
@@ -210,7 +210,7 @@ where
 
         self.current_page = next;
         self.sync_list_state();
-        cx.emit(ListViewEvent::PageChanged { page: next });
+        cx.emit(TableEvent::PageChanged { page: next });
         cx.notify();
     }
 
@@ -241,11 +241,11 @@ where
         let keep_in_view = self.focus_index_for_page_size_change();
         let next_page =
             page_after_size_change(self.current_page, old_page_size, page_size, self.model.items.len(), keep_in_view);
-        self.model.scroll_mode = ListScrollMode::Paged { page_size };
+        self.model.scroll_mode = TableScrollMode::Paged { page_size };
         self.current_page = next_page;
         self.sync_list_state();
-        cx.emit(ListViewEvent::PageSizeChanged { page_size });
-        cx.emit(ListViewEvent::PageChanged { page: self.current_page });
+        cx.emit(TableEvent::PageSizeChanged { page_size });
+        cx.emit(TableEvent::PageChanged { page: self.current_page });
         cx.notify();
     }
 
@@ -306,7 +306,7 @@ where
             self.emit_focus_changed(false, cx);
         }
 
-        cx.emit(ListViewEvent::EnabledChanged { enabled });
+        cx.emit(TableEvent::EnabledChanged { enabled });
         cx.notify();
     }
 
@@ -320,34 +320,34 @@ where
         cx.notify();
     }
 
-    pub fn set_template(&mut self, template: std::sync::Arc<dyn ListViewTemplate>, cx: &mut Context<Self>) {
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn TableTemplate>, cx: &mut Context<Self>) {
         self.model.template = template;
         cx.notify();
     }
 
-    pub fn set_theme(&mut self, theme: std::sync::Arc<dyn ListViewTheme>, cx: &mut Context<Self>) {
+    pub fn set_theme(&mut self, theme: std::sync::Arc<dyn TableTheme>, cx: &mut Context<Self>) {
         self.model.theme = theme;
         self.list_state.remeasure();
         cx.notify();
     }
 
-    pub fn set_look_override(&mut self, look_override: Option<ListViewLookOverride>, cx: &mut Context<Self>) {
+    pub fn set_look_override(&mut self, look_override: Option<TableLookOverride>, cx: &mut Context<Self>) {
         self.model.look_override = look_override;
         self.list_state.remeasure();
         cx.notify();
     }
 
-    pub fn set_header_template(&mut self, header_template: Option<ListViewHeaderTemplate>, cx: &mut Context<Self>) {
+    pub fn set_header_template(&mut self, header_template: Option<TableHeaderTemplate>, cx: &mut Context<Self>) {
         self.model.header_template = header_template;
         cx.notify();
     }
 
     pub fn set_header_template_fn<F, E>(&mut self, template: F, cx: &mut Context<Self>)
     where
-        F: for<'a> Fn(&ListViewRenderModel<'a>, &mut Window, &mut App) -> E + Send + Sync + 'static,
+        F: for<'a> Fn(&TableRenderModel<'a>, &mut Window, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
-        self.model.header_template = Some(make_list_view_header_template(template));
+        self.model.header_template = Some(make_table_header_template(template));
         cx.notify();
     }
 
@@ -360,13 +360,13 @@ where
 
     pub fn set_row_template_fn<F, E>(&mut self, template: F, cx: &mut Context<Self>)
     where
-        F: for<'a> Fn(&ListViewRowRenderModel<'a, T>, gpui::AnyElement, &mut Window, &mut App) -> E
+        F: for<'a> Fn(&TableRowRenderModel<'a, T>, gpui::AnyElement, &mut Window, &mut App) -> E
             + Send
             + Sync
             + 'static,
         E: IntoElement + 'static,
     {
-        self.model.row_template = Some(make_list_view_row_template(template));
+        self.model.row_template = Some(make_table_row_template(template));
         self.list_state.remeasure();
         cx.notify();
     }
@@ -380,15 +380,15 @@ where
     }
 
     fn is_paged(&self) -> bool {
-        matches!(self.model.scroll_mode, ListScrollMode::Paged { .. })
+        matches!(self.model.scroll_mode, TableScrollMode::Paged { .. })
     }
 
     fn is_scroll_snap(&self) -> bool {
-        matches!(self.model.scroll_mode, ListScrollMode::ScrollSnap)
+        matches!(self.model.scroll_mode, TableScrollMode::ScrollSnap)
     }
 
-    fn visible_list_item_count(model: &ListViewModel<T>, current_page: usize) -> usize {
-        if let ListScrollMode::Paged { page_size } = model.scroll_mode {
+    fn visible_list_item_count(model: &TableModel<T>, current_page: usize) -> usize {
+        if let TableScrollMode::Paged { page_size } = model.scroll_mode {
             visible_item_count(model.items.len(), current_page, page_size)
         } else {
             model.items.len()
@@ -422,7 +422,7 @@ where
         }
     }
 
-    fn row_scroll_increment(&self, row_look: &super::theme::ListViewRowLook) -> f32 {
+    fn row_scroll_increment(&self, row_look: &super::theme::TableRowLook) -> f32 {
         self.fill_row_height.unwrap_or_else(|| visible_row_height(row_look, self.model.visible_row_height))
     }
 
@@ -489,10 +489,10 @@ where
 
     /// Keep the active row rendered inside the viewport. When moving up within the
     /// first page, pin scroll at row 0 so the list top stays anchored.
-    fn scroll_active_into_view(&mut self, index: usize, direction: Option<ListDirection>, cx: &mut Context<Self>) {
+    fn scroll_active_into_view(&mut self, index: usize, direction: Option<TableDirection>, cx: &mut Context<Self>) {
         let visible_rows = self.visible_row_capacity().max(1);
 
-        if direction == Some(ListDirection::Previous) && index < visible_rows {
+        if direction == Some(TableDirection::Previous) && index < visible_rows {
             self.list_state.scroll_to(ListOffset { item_ix: 0, offset_in_item: px(0.0) });
             self.emit_scroll_changed_if_needed(cx);
             return;
@@ -521,7 +521,7 @@ where
         self.list_state.scroll_to(ListOffset { item_ix, offset_in_item: px(0.0) });
     }
 
-    fn resolve_look(&self, window: &Window) -> ListViewLook {
+    fn resolve_look(&self, window: &Window) -> TableLook {
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
         let mut look = self.model.theme.resolve_look(self.model.enabled, focus.focused, self.model.size);
         if let Some(override_fn) = &self.model.look_override {
@@ -530,7 +530,7 @@ where
         look
     }
 
-    fn resolve_row_look(&self, window: &Window, cx: &mut Context<Self>) -> super::theme::ListViewRowLook {
+    fn resolve_row_look(&self, window: &Window, cx: &mut Context<Self>) -> super::theme::TableRowLook {
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
@@ -546,12 +546,12 @@ where
         )
     }
 
-    fn resolve_row_look_for_metrics(&self, scale_factor: f32) -> super::theme::ListViewRowLook {
+    fn resolve_row_look_for_metrics(&self, scale_factor: f32) -> super::theme::TableRowLook {
         let scale = ListRowScale::compute(self.model.size, &self.model.theme.metrics(), scale_factor);
         self.model.theme.resolve_row_look(false, InteractionState::default(), self.model.size, &scale)
     }
 
-    fn render_model(&self, window: &Window, cx: &mut Context<Self>) -> ListViewRenderModel<'_> {
+    fn render_model(&self, window: &Window, cx: &mut Context<Self>) -> TableRenderModel<'_> {
         let look = self.resolve_look(window);
         let row_look = self.resolve_row_look(window, cx);
         let has_header = self.model.header_template.is_some();
@@ -561,7 +561,7 @@ where
         let body_rows_height = visible_rows.map(|count| super::layout::body_rows_height(count, row_height));
         let shell_height = visible_rows.map(|count| compute_shell_height(count, row_height, &look, has_header));
 
-        ListViewRenderModel {
+        TableRenderModel {
             id: &self.model.id,
             look,
             row_look,
@@ -618,8 +618,8 @@ where
             look.padding_x = 0.0;
         }
 
-        let row_model = ListViewRowRenderModel {
-            list_id: &self.model.id,
+        let row_model = TableRowRenderModel {
+            table_id: &self.model.id,
             row: item,
             index,
             sibling_count: self.model.items.len(),
@@ -647,7 +647,7 @@ where
         };
 
         let row_height = self.fill_row_height.or(self.model.visible_row_height);
-        let row = render_list_view_row(
+        let row = render_table_row(
             format!("{}-row-{}", self.model.id, index),
             content,
             look,
@@ -677,7 +677,7 @@ where
     fn set_active_index_internal(
         &mut self,
         active_index: Option<usize>,
-        scroll_direction: Option<ListDirection>,
+        scroll_direction: Option<TableDirection>,
         cx: &mut Context<Self>,
     ) -> bool {
         let next = match active_index {
@@ -702,7 +702,7 @@ where
                 self.scroll_active_into_view(index, scroll_direction, cx);
             }
         }
-        cx.emit(ListViewEvent::ActiveIndexChanged { active_index: next });
+        cx.emit(TableEvent::ActiveIndexChanged { active_index: next });
         cx.notify();
         true
     }
@@ -720,7 +720,7 @@ where
         self.model.selected_indices = next.clone();
         self.model.active_index =
             normalize_active_index(Some(index), self.model.items.as_slice(), self.model.row_enabled.as_ref(), &next);
-        cx.emit(ListViewEvent::SelectionChanged { selected_indices: next });
+        cx.emit(TableEvent::SelectionChanged { selected_indices: next });
         cx.notify();
         true
     }
@@ -741,7 +741,7 @@ where
 
     fn clear_hovered_index(&mut self, cx: &mut Context<Self>) {
         if let Some(index) = self.hovered_index.take() {
-            cx.emit(ListViewEvent::RowHoverChanged { index, hovered: false });
+            cx.emit(TableEvent::RowHoverChanged { index, hovered: false });
         }
     }
 
@@ -754,7 +754,7 @@ where
             if self.hovered_index != Some(index) {
                 self.clear_hovered_index(cx);
                 self.hovered_index = Some(index);
-                cx.emit(ListViewEvent::RowHoverChanged { index, hovered: true });
+                cx.emit(TableEvent::RowHoverChanged { index, hovered: true });
                 cx.notify();
             }
         } else if self.hovered_index == Some(index) {
@@ -799,7 +799,7 @@ where
         }
     }
 
-    fn move_active(&mut self, direction: ListDirection, cx: &mut Context<Self>) {
+    fn move_active(&mut self, direction: TableDirection, cx: &mut Context<Self>) {
         self.clear_pointer_interaction(cx);
         if let Some(next_index) = next_enabled_index(
             self.model.items.as_slice(),
@@ -823,11 +823,11 @@ where
     }
 
     fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, _window: &mut Window, cx: &mut Context<Self>) {
-        self.move_active(ListDirection::Previous, cx);
+        self.move_active(TableDirection::Previous, cx);
     }
 
     fn handle_select_next_item(&mut self, _: &SelectNextItem, _window: &mut Window, cx: &mut Context<Self>) {
-        self.move_active(ListDirection::Next, cx);
+        self.move_active(TableDirection::Next, cx);
     }
 
     fn handle_select_first_item(&mut self, _: &SelectFirstItem, _window: &mut Window, cx: &mut Context<Self>) {
@@ -950,7 +950,7 @@ where
         }
 
         self.emitted_focused = focused;
-        cx.emit(ListViewEvent::FocusChanged { focused });
+        cx.emit(TableEvent::FocusChanged { focused });
         true
     }
 
@@ -961,12 +961,12 @@ where
         }
 
         self.emitted_scroll_top_index = top_index;
-        cx.emit(ListViewEvent::ScrollChanged { top_index });
+        cx.emit(TableEvent::ScrollChanged { top_index });
         true
     }
 }
 
-impl<T> Focusable for ListViewControl<T>
+impl<T> Focusable for TableControl<T>
 where
     T: 'static,
 {
@@ -975,7 +975,7 @@ where
     }
 }
 
-impl<T> Render for ListViewControl<T>
+impl<T> Render for TableControl<T>
 where
     T: 'static,
 {
@@ -1039,12 +1039,12 @@ where
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum ListDirection {
+enum TableDirection {
     Previous,
     Next,
 }
 
-pub(crate) fn normalize_model<T>(model: &mut ListViewModel<T>)
+pub(crate) fn normalize_model<T>(model: &mut TableModel<T>)
 where
     T: 'static,
 {
@@ -1063,14 +1063,14 @@ where
 }
 
 pub(crate) fn normalize_selected_indices<T>(
-    selection_mode: ListSelectionMode,
+    selection_mode: TableSelectionMode,
     items: &[T],
     row_enabled: &dyn Fn(&T) -> bool,
     selected_indices: &[usize],
 ) -> Vec<usize> {
     let mut normalized = Vec::new();
 
-    if selection_mode == ListSelectionMode::None {
+    if selection_mode == TableSelectionMode::None {
         return normalized;
     }
 
@@ -1080,7 +1080,7 @@ pub(crate) fn normalize_selected_indices<T>(
         }
 
         normalized.push(index);
-        if selection_mode == ListSelectionMode::Single {
+        if selection_mode == TableSelectionMode::Single {
             break;
         }
     }
@@ -1122,7 +1122,7 @@ fn next_enabled_index<T>(
     items: &[T],
     row_enabled: &dyn Fn(&T) -> bool,
     current_index: Option<usize>,
-    direction: ListDirection,
+    direction: TableDirection,
 ) -> Option<usize> {
     let len = items.len();
     if len == 0 {
@@ -1131,14 +1131,14 @@ fn next_enabled_index<T>(
 
     match current_index {
         None => match direction {
-            ListDirection::Next => first_enabled_index(items, row_enabled),
-            ListDirection::Previous => last_enabled_index(items, row_enabled),
+            TableDirection::Next => first_enabled_index(items, row_enabled),
+            TableDirection::Previous => last_enabled_index(items, row_enabled),
         },
         Some(start) => match direction {
-            ListDirection::Next => (start + 1..len)
+            TableDirection::Next => (start + 1..len)
                 .find(|&index| row_enabled(&items[index]))
                 .or_else(|| (start + 1 < len).then(|| start + 1)),
-            ListDirection::Previous => {
+            TableDirection::Previous => {
                 (0..start).rfind(|&index| row_enabled(&items[index])).or_else(|| (start > 0).then(|| start - 1))
             }
         },
@@ -1146,14 +1146,14 @@ fn next_enabled_index<T>(
 }
 
 fn compute_next_selected_indices(
-    selection_mode: ListSelectionMode,
+    selection_mode: TableSelectionMode,
     current: &[usize],
     toggled_index: usize,
 ) -> Vec<usize> {
     match selection_mode {
-        ListSelectionMode::None => Vec::new(),
-        ListSelectionMode::Single => vec![toggled_index],
-        ListSelectionMode::Multiple => {
+        TableSelectionMode::None => Vec::new(),
+        TableSelectionMode::Single => vec![toggled_index],
+        TableSelectionMode::Multiple => {
             let mut next = current.to_vec();
             if let Some(position) = next.iter().position(|index| *index == toggled_index) {
                 next.remove(position);
@@ -1171,13 +1171,13 @@ mod tests {
     use gpui::SharedString;
 
     use super::{
-        ListDirection, ListSelectionMode, compute_next_selected_indices, next_enabled_index, normalize_active_index,
+        TableDirection, TableSelectionMode, compute_next_selected_indices, next_enabled_index, normalize_active_index,
         normalize_selected_indices,
     };
-    use crate::controls::list_view::ListViewLabel;
-    use crate::controls::list_view::layout::{clamp_page, page_count, visible_item_count};
+    use crate::controls::table::TableLabel;
+    use crate::controls::table::layout::{clamp_page, page_count, visible_item_count};
 
-    fn row_enabled(row: &ListViewLabel) -> bool {
+    fn row_enabled(row: &TableLabel) -> bool {
         row.enabled
     }
 
@@ -1185,23 +1185,21 @@ mod tests {
     fn none_selection_mode_clears_selection() {
         let items = demo_items();
         assert_eq!(
-            normalize_selected_indices(ListSelectionMode::None, &items, &row_enabled, &[0, 1, 2]),
+            normalize_selected_indices(TableSelectionMode::None, &items, &row_enabled, &[0, 1, 2]),
             Vec::<usize>::new()
         );
     }
 
     #[test]
     fn single_selection_mode_keeps_first_enabled_item() {
-        let items =
-            vec![ListViewLabel::new("one"), ListViewLabel::new("two").enabled(false), ListViewLabel::new("three")];
+        let items = vec![TableLabel::new("one"), TableLabel::new("two").enabled(false), TableLabel::new("three")];
 
-        assert_eq!(normalize_selected_indices(ListSelectionMode::Single, &items, &row_enabled, &[1, 2, 0]), vec![2]);
+        assert_eq!(normalize_selected_indices(TableSelectionMode::Single, &items, &row_enabled, &[1, 2, 0]), vec![2]);
     }
 
     #[test]
     fn active_index_falls_back_to_first_selected_then_first_enabled() {
-        let items =
-            vec![ListViewLabel::new("one").enabled(false), ListViewLabel::new("two"), ListViewLabel::new("three")];
+        let items = vec![TableLabel::new("one").enabled(false), TableLabel::new("two"), TableLabel::new("three")];
 
         assert_eq!(normalize_active_index(Some(0), &items, &row_enabled, &[2]), Some(2));
         assert_eq!(normalize_active_index(None, &items, &row_enabled, &[]), Some(1));
@@ -1209,8 +1207,8 @@ mod tests {
 
     #[test]
     fn multiple_selection_toggles_index() {
-        assert_eq!(compute_next_selected_indices(ListSelectionMode::Multiple, &[1, 3], 2), vec![1, 2, 3]);
-        assert_eq!(compute_next_selected_indices(ListSelectionMode::Multiple, &[1, 2, 3], 2), vec![1, 3]);
+        assert_eq!(compute_next_selected_indices(TableSelectionMode::Multiple, &[1, 3], 2), vec![1, 2, 3]);
+        assert_eq!(compute_next_selected_indices(TableSelectionMode::Multiple, &[1, 2, 3], 2), vec![1, 3]);
     }
 
     #[test]
@@ -1224,33 +1222,32 @@ mod tests {
     fn next_enabled_index_does_not_wrap() {
         let items = demo_items();
 
-        assert_eq!(next_enabled_index(&items, &row_enabled, Some(0), ListDirection::Previous), None);
-        assert_eq!(next_enabled_index(&items, &row_enabled, Some(2), ListDirection::Next), None);
-        assert_eq!(next_enabled_index(&items, &row_enabled, Some(0), ListDirection::Next), Some(1));
-        assert_eq!(next_enabled_index(&items, &row_enabled, Some(2), ListDirection::Previous), Some(1));
+        assert_eq!(next_enabled_index(&items, &row_enabled, Some(0), TableDirection::Previous), None);
+        assert_eq!(next_enabled_index(&items, &row_enabled, Some(2), TableDirection::Next), None);
+        assert_eq!(next_enabled_index(&items, &row_enabled, Some(0), TableDirection::Next), Some(1));
+        assert_eq!(next_enabled_index(&items, &row_enabled, Some(2), TableDirection::Previous), Some(1));
     }
 
     #[test]
     fn next_enabled_index_steps_onto_adjacent_disabled_row_at_boundary() {
-        let items =
-            vec![ListViewLabel::new("zero").enabled(false), ListViewLabel::new("one"), ListViewLabel::new("two")];
+        let items = vec![TableLabel::new("zero").enabled(false), TableLabel::new("one"), TableLabel::new("two")];
 
-        assert_eq!(next_enabled_index(&items, &row_enabled, Some(1), ListDirection::Previous), Some(0));
-        assert_eq!(next_enabled_index(&items, &row_enabled, Some(0), ListDirection::Next), Some(1));
-        assert_eq!(next_enabled_index(&items, &row_enabled, Some(0), ListDirection::Previous), None);
+        assert_eq!(next_enabled_index(&items, &row_enabled, Some(1), TableDirection::Previous), Some(0));
+        assert_eq!(next_enabled_index(&items, &row_enabled, Some(0), TableDirection::Next), Some(1));
+        assert_eq!(next_enabled_index(&items, &row_enabled, Some(0), TableDirection::Previous), None);
     }
 
-    fn demo_items() -> Vec<ListViewLabel> {
+    fn demo_items() -> Vec<TableLabel> {
         vec![
-            ListViewLabel::new(SharedString::from("one")),
-            ListViewLabel::new(SharedString::from("two")),
-            ListViewLabel::new(SharedString::from("three")),
+            TableLabel::new(SharedString::from("one")),
+            TableLabel::new(SharedString::from("two")),
+            TableLabel::new(SharedString::from("three")),
         ]
     }
 
     #[test]
     fn row_label_round_trips() {
-        let row = ListViewLabel::new("alpha");
+        let row = TableLabel::new("alpha");
         assert_eq!(row.label, SharedString::from("alpha"));
     }
 }

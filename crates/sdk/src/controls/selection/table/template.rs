@@ -2,18 +2,18 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{AnyElement, App, Div, Stateful, Window, div, px, prelude::*};
 
-use super::model::ListViewRenderModel;
+use super::model::TableRenderModel;
 
 /// GPUI draws `border_1` inset; match section fills to the inner curve.
 pub(crate) const SHELL_BORDER_WIDTH: f32 = 1.0;
 
-pub type ListViewTemplateModifier =
-    Box<dyn Fn(Stateful<Div>, &ListViewRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+pub type TableTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &TableRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
 
-pub trait ListViewTemplate: Send + Sync {
+pub trait TableTemplate: Send + Sync {
     fn render(
         &self,
-        model: &ListViewRenderModel<'_>,
+        model: &TableRenderModel<'_>,
         header: Option<AnyElement>,
         body: AnyElement,
         window: &mut Window,
@@ -21,12 +21,12 @@ pub trait ListViewTemplate: Send + Sync {
     ) -> Stateful<Div>;
 }
 
-/// Paints list shell from resolved [`ListViewRenderModel`] only (no theme lookup).
+/// Paints list shell from resolved [`TableRenderModel`] only (no theme lookup).
 #[derive(Clone, Copy, Debug, Default)]
-pub struct DefaultListViewShellTemplate;
+pub struct DefaultTableShellTemplate;
 
-impl DefaultListViewShellTemplate {
-    pub fn paint_shell(model: &ListViewRenderModel<'_>, header: Option<AnyElement>, body: AnyElement) -> Stateful<Div> {
+impl DefaultTableShellTemplate {
+    pub fn paint_shell(model: &TableRenderModel<'_>, header: Option<AnyElement>, body: AnyElement) -> Stateful<Div> {
         let list = &model.look;
         let inner_radius = list.inner_radius(SHELL_BORDER_WIDTH);
         let has_header = header.is_some();
@@ -88,15 +88,15 @@ impl DefaultListViewShellTemplate {
         root.child(column)
     }
 
-    pub fn shell_height_for_model(model: &ListViewRenderModel<'_>) -> Option<f32> {
+    pub fn shell_height_for_model(model: &TableRenderModel<'_>) -> Option<f32> {
         model.shell_height
     }
 }
 
-impl ListViewTemplate for DefaultListViewShellTemplate {
+impl TableTemplate for DefaultTableShellTemplate {
     fn render(
         &self,
-        model: &ListViewRenderModel<'_>,
+        model: &TableRenderModel<'_>,
         header: Option<AnyElement>,
         body: AnyElement,
         _window: &mut Window,
@@ -106,22 +106,22 @@ impl ListViewTemplate for DefaultListViewShellTemplate {
     }
 }
 
-struct ModifiedListViewTemplate {
-    base: Arc<dyn ListViewTemplate>,
-    modifiers: Vec<ListViewTemplateModifier>,
+struct ModifiedTableTemplate {
+    base: Arc<dyn TableTemplate>,
+    modifiers: Vec<TableTemplateModifier>,
 }
 
-impl ModifiedListViewTemplate {
-    fn new(base: Arc<dyn ListViewTemplate>) -> Self {
+impl ModifiedTableTemplate {
+    fn new(base: Arc<dyn TableTemplate>) -> Self {
         Self { base, modifiers: Vec::new() }
     }
 
-    fn with_modifier(mut self, modifier: ListViewTemplateModifier) -> Self {
+    fn with_modifier(mut self, modifier: TableTemplateModifier) -> Self {
         self.modifiers.push(modifier);
         self
     }
 
-    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &ListViewRenderModel<'_>) -> Stateful<Div> {
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TableRenderModel<'_>) -> Stateful<Div> {
         for modifier in &self.modifiers {
             root = modifier(root, model);
         }
@@ -129,10 +129,10 @@ impl ModifiedListViewTemplate {
     }
 }
 
-impl ListViewTemplate for ModifiedListViewTemplate {
+impl TableTemplate for ModifiedTableTemplate {
     fn render(
         &self,
-        model: &ListViewRenderModel<'_>,
+        model: &TableRenderModel<'_>,
         header: Option<AnyElement>,
         body: AnyElement,
         window: &mut Window,
@@ -143,31 +143,26 @@ impl ListViewTemplate for ModifiedListViewTemplate {
     }
 }
 
-pub fn default_list_view_template() -> Arc<dyn ListViewTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn ListViewTemplate>> = OnceLock::new();
+pub fn default_table_template() -> Arc<dyn TableTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn TableTemplate>> = OnceLock::new();
 
-    TEMPLATE.get_or_init(|| Arc::new(DefaultListViewShellTemplate)).clone()
+    TEMPLATE.get_or_init(|| Arc::new(DefaultTableShellTemplate)).clone()
 }
 
-/// Shell template only; row/list colors come from [`ListViewTheme`] on the control builder.
-pub fn list_view_template_with_theme(
-    _theme: Arc<dyn crate::controls::list_view::ListViewTheme>,
-) -> Arc<dyn ListViewTemplate> {
-    default_list_view_template()
+/// Shell template only; row/list colors come from [`TableTheme`] on the control builder.
+pub fn table_template_with_theme(_theme: Arc<dyn crate::controls::table::TableTheme>) -> Arc<dyn TableTemplate> {
+    default_table_template()
 }
 
-pub(super) fn modified_list_view_template<F>(
-    template: Arc<dyn ListViewTemplate>,
-    modifier: F,
-) -> Arc<dyn ListViewTemplate>
+pub(super) fn modified_table_template<F>(template: Arc<dyn TableTemplate>, modifier: F) -> Arc<dyn TableTemplate>
 where
-    F: Fn(Stateful<Div>, &ListViewRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    F: Fn(Stateful<Div>, &TableRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
 {
-    ModifiedListViewTemplate::new(template).with_modifier(Box::new(modifier)).into()
+    ModifiedTableTemplate::new(template).with_modifier(Box::new(modifier)).into()
 }
 
-impl ModifiedListViewTemplate {
-    fn into(self) -> Arc<dyn ListViewTemplate> {
+impl ModifiedTableTemplate {
+    fn into(self) -> Arc<dyn TableTemplate> {
         Arc::new(self)
     }
 }

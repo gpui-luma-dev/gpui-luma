@@ -950,58 +950,58 @@ clear_icon_hover_color = "foreground"
 
 
 # =====================================================================
-# 7. LIST VIEW
+# 7. TABLE
 # =====================================================================
-[list_view.surface.metrics.md]
+[table.surface.metrics.md]
 padding_y_factor = 0.5
 radius = "radius.md"
 max_radius = "1rem"
 
-[[list_view.surface.color_rules]]
+[[table.surface.color_rules]]
 enabled = true
 background = "background"
 border = "input"
 header_background = "muted"
 header_label_color = "muted-foreground"
 
-[[list_view.surface.color_rules]]
+[[table.surface.color_rules]]
 enabled = false
 background = "muted"
 border = "input"
 header_background = "muted"
 header_label_color = "muted-foreground"
 
-[[list_view.row.color_rules]]
+[[table.row.color_rules]]
 disabled = true
 background = "transparent"
 label_color = "muted-foreground"
 divider = "border"
 
-[[list_view.row.color_rules]]
+[[table.row.color_rules]]
 selected = true
 background = "muted"
 label_color = "foreground"
 divider = "border"
 
-[[list_view.row.color_rules]]
+[[table.row.color_rules]]
 focused = true
 background = "muted"
 label_color = "foreground"
 divider = "border"
 
-[[list_view.row.color_rules]]
+[[table.row.color_rules]]
 layer = "hover"
 background = "@accent_whisper_40"
 label_color = "foreground"
 divider = "border"
 
-[[list_view.row.color_rules]]
+[[table.row.color_rules]]
 layer = "pressed"
 background = "@accent_whisper_pressed_40"
 label_color = "foreground"
 divider = "border"
 
-[[list_view.row.color_rules]]
+[[table.row.color_rules]]
 layer = "default"
 background = "transparent"
 label_color = "foreground"

@@ -8,7 +8,7 @@ mod checkbox;
 mod context_menu;
 mod control_group;
 mod floating_menu;
-mod list_view;
+mod table;
 mod listbox;
 mod sidebar;
 mod overlay_window;
@@ -68,9 +68,9 @@ pub use listbox::{
     ListBoxInspectMetrics, ListBoxListInspectPalette, ListBoxRowInspectPalette, inspect_listbox_list_color_palette,
     inspect_listbox_metrics, inspect_listbox_row_color_palette,
 };
-pub use list_view::{
-    ListViewInspectMetrics, ListViewInspectPalette, ListViewRowInspectPalette, inspect_list_view_color_palette,
-    inspect_list_view_metrics, inspect_list_view_row_color_palette,
+pub use table::{
+    TableInspectMetrics, TableInspectPalette, TableRowInspectPalette, inspect_table_color_palette,
+    inspect_table_metrics, inspect_table_row_color_palette,
 };
 pub use resizable_panels::{
     ResizablePanelsInspectMetrics, ResizablePanelsInspectPalette, inspect_resizable_panels_color_palette,

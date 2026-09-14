@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use luma::controls::list_view::ListView;
+use luma::controls::table::Table;
 use luma::controls::tabs::Tabs;
 use luma_look_shadcn::{ShadcnLook};
 use luma_look_shadcn as shadcn;
@@ -13,46 +13,46 @@ struct PreviewRow {
     title: SharedString,
 }
 
-pub(crate) struct ListViewPreview {
+pub(crate) struct TablePreview {
     look: Arc<ShadcnLook>,
-    sm: ListView<PreviewRow>,
-    md: ListView<PreviewRow>,
-    lg: ListView<PreviewRow>,
-    template: ListView<PreviewRow>,
+    sm: Table<PreviewRow>,
+    md: Table<PreviewRow>,
+    lg: Table<PreviewRow>,
+    template: Table<PreviewRow>,
 }
 
-impl ListViewPreview {
+impl TablePreview {
     pub(crate) fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            sm: mailbox_list_view(&look, "luma-studio-list-view-sm", shadcn::ShadcnSize::Sm, cx),
-            md: mailbox_list_view(&look, "luma-studio-list-view-md", shadcn::ShadcnSize::Md, cx),
-            lg: mailbox_list_view(&look, "luma-studio-list-view-lg", shadcn::ShadcnSize::Lg, cx),
-            template: mailbox_list_view(&look, "luma-studio-list-view-template", shadcn::ShadcnSize::Md, cx),
+            sm: mailbox_table(&look, "luma-studio-table-sm", shadcn::ShadcnSize::Sm, cx),
+            md: mailbox_table(&look, "luma-studio-table-md", shadcn::ShadcnSize::Md, cx),
+            lg: mailbox_table(&look, "luma-studio-table-lg", shadcn::ShadcnSize::Lg, cx),
+            template: mailbox_table(&look, "luma-studio-table-template", shadcn::ShadcnSize::Md, cx),
             look,
         }
     }
 
     pub(crate) fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        let template = look.list_view_template();
-        for list_view in [&self.sm, &self.md, &self.lg, &self.template] {
+        let template = look.table_template();
+        for table in [&self.sm, &self.md, &self.lg, &self.template] {
             let template = template.clone();
-            list_view.update(cx, move |list_view, cx| list_view.set_template(template, cx));
+            table.update(cx, move |table, cx| table.set_template(template, cx));
         }
         cx.notify();
     }
 }
 
-impl Render for ListViewPreview {
+impl Render for TablePreview {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         div()
     }
 }
 
-pub(crate) fn render_list_view_template_section(
+pub(crate) fn render_table_template_section(
     look: Arc<ShadcnLook>,
     preview_tabs: Entity<Tabs>,
-    preview: Entity<ListViewPreview>,
+    preview: Entity<TablePreview>,
     cx: &mut App,
 ) -> AnyElement {
     let chrome = look.chrome();
@@ -62,7 +62,7 @@ pub(crate) fn render_list_view_template_section(
 
     section_shell_with_width(
         960.0,
-        "List View",
+        "Table",
         "Scrollable list rows. Sizes tab: Sm/Md/Lg label typography.",
         chrome.title_text,
         chrome.muted_text,
@@ -82,11 +82,11 @@ pub(crate) fn render_list_view_template_section(
     )
 }
 
-fn render_template_body(preview: &ListViewPreview, muted: gpui::Hsla) -> AnyElement {
+fn render_template_body(preview: &TablePreview, muted: gpui::Hsla) -> AnyElement {
     size_column("Template", muted, preview.template.clone(), 220.0)
 }
 
-fn render_sizes_body(preview: &ListViewPreview, muted: gpui::Hsla) -> AnyElement {
+fn render_sizes_body(preview: &TablePreview, muted: gpui::Hsla) -> AnyElement {
     div()
         .flex()
         .flex_wrap()
@@ -98,7 +98,7 @@ fn render_sizes_body(preview: &ListViewPreview, muted: gpui::Hsla) -> AnyElement
         .into_any_element()
 }
 
-fn size_column(label: &'static str, muted: gpui::Hsla, list_view: ListView<PreviewRow>, width: f32) -> AnyElement {
+fn size_column(label: &'static str, muted: gpui::Hsla, table: Table<PreviewRow>, width: f32) -> AnyElement {
     div()
         .flex()
         .flex_col()
@@ -113,17 +113,17 @@ fn size_column(label: &'static str, muted: gpui::Hsla, list_view: ListView<Previ
                 .text_color(muted)
                 .child(label),
         )
-        .child(div().flex_1().w_full().child(list_view))
+        .child(div().flex_1().w_full().child(table))
         .into_any_element()
 }
 
-fn mailbox_list_view<M: 'static>(
+fn mailbox_table<M: 'static>(
     look: &Arc<ShadcnLook>,
     id: impl Into<SharedString>,
     size: shadcn::ShadcnSize,
     cx: &mut Context<M>,
-) -> ListView<PreviewRow> {
-    shadcn::ListView::new(id)
+) -> Table<PreviewRow> {
+    shadcn::Table::new(id)
         .look(look.as_ref())
         .items([
             PreviewRow { title: SharedString::from("Inbox") },

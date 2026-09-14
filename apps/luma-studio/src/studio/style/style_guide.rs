@@ -42,7 +42,7 @@ enum StyleGuideSection {
     TextField,
     TextArea,
     Listbox,
-    ListView,
+    Table,
     TreeView,
     Accordion,
     Typography,
@@ -56,7 +56,7 @@ impl StyleGuideSection {
         Self::Checkbox,
         Self::Feedback,
         Self::IconButtons,
-        Self::ListView,
+        Self::Table,
         Self::Listbox,
         Self::Menus,
         Self::Pager,
@@ -83,7 +83,7 @@ impl StyleGuideSection {
             Self::Checkbox => "Checkbox",
             Self::Feedback => "Feedback",
             Self::IconButtons => "Icon Button",
-            Self::ListView => "List View",
+            Self::Table => "Table",
             Self::Listbox => "Listbox",
             Self::Menus => "Menus",
             Self::Pager => "Pager",
@@ -137,8 +137,8 @@ declare_form! {
                 None,
             listbox_preview_tabs: Option<Entity<Tabs>> = None,
             listbox_preview: Option<Entity<sections::listbox::ListboxPreview>> = None,
-            list_view_preview_tabs: Option<Entity<Tabs>> = None,
-            list_view_preview: Option<Entity<sections::list_view::ListViewPreview>> = None,
+            table_preview_tabs: Option<Entity<Tabs>> = None,
+            table_preview: Option<Entity<sections::table::TablePreview>> = None,
             tree_view_preview_tabs: Option<Entity<Tabs>> = None,
             tree_view_preview: Option<Entity<sections::tree_view::TreeViewPreview>> = None,
             accordion_preview_tabs: Option<Entity<Tabs>> = None,
@@ -168,8 +168,8 @@ impl StyleGuidePanel {
         self.sync_textarea_preview_tabs(cx);
         self.sync_listbox_preview_tabs(cx);
         self.sync_listbox_preview(cx);
-        self.sync_list_view_preview_tabs(cx);
-        self.sync_list_view_preview(cx);
+        self.sync_table_preview_tabs(cx);
+        self.sync_table_preview(cx);
         self.sync_tree_view_preview_tabs(cx);
         self.sync_tree_view_preview(cx);
         self.sync_accordion_preview_tabs(cx);
@@ -729,30 +729,30 @@ impl StyleGuidePanel {
         }
     }
 
-    fn list_view_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
-        if let Some(tabs) = self.list_view_preview_tabs.clone() {
+    fn table_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
+        if let Some(tabs) = self.table_preview_tabs.clone() {
             return tabs;
         }
-        let tabs = self.spawn_template_sizes_tabs("luma-studio-list-view-preview-tabs", cx);
-        self.list_view_preview_tabs = Some(tabs.clone());
+        let tabs = self.spawn_template_sizes_tabs("luma-studio-table-preview-tabs", cx);
+        self.table_preview_tabs = Some(tabs.clone());
         tabs
     }
 
-    fn sync_list_view_preview_tabs(&mut self, cx: &mut Context<Self>) {
-        self.sync_preview_tabs(self.list_view_preview_tabs.clone(), cx);
+    fn sync_table_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        self.sync_preview_tabs(self.table_preview_tabs.clone(), cx);
     }
 
-    fn list_view_preview(&mut self, cx: &mut Context<Self>) -> Entity<sections::list_view::ListViewPreview> {
-        if let Some(preview) = self.list_view_preview.clone() {
+    fn table_preview(&mut self, cx: &mut Context<Self>) -> Entity<sections::table::TablePreview> {
+        if let Some(preview) = self.table_preview.clone() {
             return preview;
         }
-        let preview = cx.new(|cx| sections::list_view::ListViewPreview::new(cx, self.look.clone()));
-        self.list_view_preview = Some(preview.clone());
+        let preview = cx.new(|cx| sections::table::TablePreview::new(cx, self.look.clone()));
+        self.table_preview = Some(preview.clone());
         preview
     }
 
-    fn sync_list_view_preview(&mut self, cx: &mut Context<Self>) {
-        if let Some(preview) = self.list_view_preview.clone() {
+    fn sync_table_preview(&mut self, cx: &mut Context<Self>) {
+        if let Some(preview) = self.table_preview.clone() {
             let look = self.look.clone();
             preview.update(cx, move |preview, cx| preview.sync_look(look, cx));
         }
@@ -866,8 +866,8 @@ impl Render for StyleGuidePanel {
         let _ = self.slider_customization_preview(cx);
         let _ = self.listbox_preview_tabs(cx);
         let _ = self.listbox_preview(cx);
-        let _ = self.list_view_preview_tabs(cx);
-        let _ = self.list_view_preview(cx);
+        let _ = self.table_preview_tabs(cx);
+        let _ = self.table_preview(cx);
         let _ = self.tree_view_preview_tabs(cx);
         let _ = self.tree_view_preview(cx);
         let _ = self.accordion_preview_tabs(cx);
@@ -1020,7 +1020,7 @@ impl StyleGuidePanel {
                 | StyleGuideSection::Slider
                 | StyleGuideSection::TextField
                 | StyleGuideSection::Listbox
-                | StyleGuideSection::ListView
+                | StyleGuideSection::Table
                 | StyleGuideSection::TreeView
                 | StyleGuideSection::Accordion
                 | StyleGuideSection::Toolbar
@@ -1123,10 +1123,10 @@ impl StyleGuidePanel {
                 self.listbox_preview.clone().expect("listbox preview"),
                 cx,
             ),
-            StyleGuideSection::ListView => sections::list_view::render_list_view_template_section(
+            StyleGuideSection::Table => sections::table::render_table_template_section(
                 self.look.clone(),
-                self.list_view_preview_tabs.clone().expect("list view preview tabs"),
-                self.list_view_preview.clone().expect("list view preview"),
+                self.table_preview_tabs.clone().expect("table preview tabs"),
+                self.table_preview.clone().expect("table preview"),
                 cx,
             ),
             StyleGuideSection::TreeView => sections::tree_view::render_tree_view_template_section(

@@ -6,7 +6,7 @@ use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use luma_look_shadcn_inspect::{
     AccordionInspectMetrics, AutocompleteInspectMetrics, BadgeInspectMetrics, ButtonInspectMetrics,
     CheckboxInspectMetrics, ContextMenuInspectMetrics, FloatingMenuInspectMetrics, ListBoxInspectMetrics,
-    ListViewInspectMetrics, SidebarInspectMetrics, OverlayWindowInspectMetrics, ProgressInspectMetrics,
+    TableInspectMetrics, SidebarInspectMetrics, OverlayWindowInspectMetrics, ProgressInspectMetrics,
     RadioButtonInspectMetrics, ResizablePanelsInspectMetrics, ScrollbarInspectMetrics, ShadcnInspect,
     SliderInspectMetrics, SplitViewInspectMetrics, StepperInspectMetrics, SwitchInspectMetrics, TabsInspectMetrics,
     TextFieldInspectMetrics, PagerInspectMetrics, ToolbarInspectMetrics, TreeViewInspectMetrics,
@@ -314,19 +314,19 @@ pub fn listbox_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str
     )
 }
 
-pub fn list_view_layout_section(
+pub fn table_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
     variant_id: &str,
     size_id: &str,
 ) -> InspectLayoutSection {
     if variant_id == "grid-cell" {
-        return list_view_grid_cell_layout_section(look, diagram_id, control_size(size_id));
+        return table_grid_cell_layout_section(look, diagram_id, control_size(size_id));
     }
-    list_view_metrics_layout_section(
+    table_metrics_layout_section(
         look,
         diagram_id,
-        &ShadcnInspect::new(look).inspect_list_view_metrics(control_size(size_id)),
+        &ShadcnInspect::new(look).inspect_table_metrics(control_size(size_id)),
     )
 }
 
@@ -788,10 +788,10 @@ fn listbox_metrics_layout_section(
     )
 }
 
-fn list_view_metrics_layout_section(
+fn table_metrics_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
-    metrics: &ListViewInspectMetrics,
+    metrics: &TableInspectMetrics,
 ) -> InspectLayoutSection {
     let box_model = InspectBoxModelSnapshot {
         height: metrics.row_min_height.value_px,
@@ -827,9 +827,9 @@ fn compact_table_row_height(size: ControlSize) -> f32 {
     }
 }
 
-fn list_view_grid_cell_layout_section(look: &ShadcnLook, diagram_id: &str, size: ControlSize) -> InspectLayoutSection {
+fn table_grid_cell_layout_section(look: &ShadcnLook, diagram_id: &str, size: ControlSize) -> InspectLayoutSection {
     const GRID_CONTROL_COLUMN_WIDTH: f32 = 48.0;
-    let row_metrics = ShadcnInspect::new(look).inspect_list_view_metrics(size);
+    let row_metrics = ShadcnInspect::new(look).inspect_table_metrics(size);
     let checkbox_metrics = ShadcnInspect::new(look).inspect_checkbox_metrics(ControlSize::Sm);
     let compact_row_height = compact_table_row_height(size);
     let inner_row_height = compact_row_height - (row_metrics.row_padding_y.value_px * 2.0);
@@ -854,7 +854,7 @@ fn list_view_grid_cell_layout_section(look: &ShadcnLook, diagram_id: &str, size:
             InspectPropertyRow::new(
                 "grid cell width",
                 format!("{GRID_CONTROL_COLUMN_WIDTH:.0}px"),
-                "ListViewColumn::fixed_control",
+                "TableColumn::fixed_control",
             ),
             InspectPropertyRow::new(
                 "compact row height",

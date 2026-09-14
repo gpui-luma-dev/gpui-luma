@@ -19,7 +19,7 @@ pub use text::{textarea, textfield};
 
 pub use overlay::{context_menu, floating_menu, overlay_window, popover_button, popup_menu, slide_panel};
 
-pub use selection::{autocomplete, combobox, list_view, search_selector, selection_panel, selector, selector_list};
+pub use selection::{autocomplete, combobox, table, search_selector, selection_panel, selector, selector_list};
 
 pub use navigation::{accordion, pager, sidebar, stepper, tabs, tree_view};
 

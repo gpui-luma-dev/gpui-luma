@@ -684,12 +684,12 @@ impl ShadcnLook {
         templates::listbox_theme(self.clone())
     }
 
-    pub fn list_view_template(&self) -> Arc<dyn luma::controls::list_view::ListViewTemplate> {
-        templates::list_view_template(self.clone())
+    pub fn table_template(&self) -> Arc<dyn luma::controls::table::TableTemplate> {
+        templates::table_template(self.clone())
     }
 
-    pub fn list_view_theme(&self) -> Arc<dyn luma::controls::list_view::ListViewTheme> {
-        templates::list_view_theme(self.clone())
+    pub fn table_theme(&self) -> Arc<dyn luma::controls::table::TableTheme> {
+        templates::table_theme(self.clone())
     }
 
     pub fn pager_template(&self) -> Arc<dyn luma::controls::pager::PagerTemplate> {

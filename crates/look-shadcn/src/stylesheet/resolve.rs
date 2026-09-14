@@ -10,12 +10,12 @@ use crate::provenance::{LookResolver, ResolvedColor};
 use super::config::{
     AccordionContentColorRule, AccordionTriggerColorRule, AutocompleteChromeColorRule, BadgeColorRule, ButtonColorRule,
     ButtonMetricsRule, CardColorRule, CheckboxColorRule, ControlGroupListColorRule, FloatingMenuSurfaceColorRule,
-    FloatingMenuTriggerColorRule, ListboxListColorRule, ListboxRowColorRule, ListViewRowColorRule,
-    ListViewSurfaceColorRule, SidebarBranchColorRule, SidebarContainerColorRule, SidebarItemColorRule,
-    SidebarMetricsRule, SidebarSectionColorRule, ProgressColorRule, ProgressMetricsRule, RadioColorRule,
-    ResizablePanelsColorRule, ScrollbarMetricsRule, SliderMetricsRule, SliderColorRule, SplitViewColorRule,
-    StepperMetricsRule, SwitchColorRule, SwitchMetricsRule, ScrollbarColorRule, TabsItemColorRule, TabsListColorRule,
-    TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
+    FloatingMenuTriggerColorRule, ListboxListColorRule, ListboxRowColorRule, TableRowColorRule, TableSurfaceColorRule,
+    SidebarBranchColorRule, SidebarContainerColorRule, SidebarItemColorRule, SidebarMetricsRule,
+    SidebarSectionColorRule, ProgressColorRule, ProgressMetricsRule, RadioColorRule, ResizablePanelsColorRule,
+    ScrollbarMetricsRule, SliderMetricsRule, SliderColorRule, SplitViewColorRule, StepperMetricsRule, SwitchColorRule,
+    SwitchMetricsRule, ScrollbarColorRule, TabsItemColorRule, TabsListColorRule, TextfieldColorRule,
+    TreeViewRowColorRule, TypographyRule,
 };
 
 /// Context for resolving derived stylesheet tokens (`@outline_layer`, `@action_layer`, etc.).
@@ -354,10 +354,10 @@ pub fn resolve_listbox_row_color_rule(
     Ok(ResolvedListboxRowColors { label_color, background })
 }
 
-pub fn resolve_list_view_surface_color_rule(
+pub fn resolve_table_surface_color_rule(
     resolver: &LookResolver<'_>,
-    rule: &ListViewSurfaceColorRule,
-) -> anyhow::Result<ResolvedListViewSurfaceColors> {
+    rule: &TableSurfaceColorRule,
+) -> anyhow::Result<ResolvedTableSurfaceColors> {
     let ctx = ResolveContext::default();
     let mut fields = ResolvedFields::default();
     let background = resolve_stylesheet_color(resolver, &rule.background, &fields, &ctx)?;
@@ -367,14 +367,14 @@ pub fn resolve_list_view_surface_color_rule(
     let header_background = resolve_stylesheet_color(resolver, &rule.header_background, &fields, &ctx)?;
     fields.insert("header_background", header_background.clone());
     let header_label_color = resolve_stylesheet_color(resolver, &rule.header_label_color, &fields, &ctx)?;
-    Ok(ResolvedListViewSurfaceColors { background, border, header_background, header_label_color })
+    Ok(ResolvedTableSurfaceColors { background, border, header_background, header_label_color })
 }
 
-pub fn resolve_list_view_row_color_rule(
+pub fn resolve_table_row_color_rule(
     resolver: &LookResolver<'_>,
-    rule: &ListViewRowColorRule,
+    rule: &TableRowColorRule,
     layer: InteractionLayer,
-) -> anyhow::Result<ResolvedListViewRowColors> {
+) -> anyhow::Result<ResolvedTableRowColors> {
     let ctx = ResolveContext { style: ShadcnButtonStyle::Primary, layer, disabled: rule.disabled.unwrap_or(false) };
     let mut fields = ResolvedFields::default();
     let background = resolve_stylesheet_color(resolver, &rule.background, &fields, &ctx)?;
@@ -382,7 +382,7 @@ pub fn resolve_list_view_row_color_rule(
     let label_color = resolve_stylesheet_color(resolver, &rule.label_color, &fields, &ctx)?;
     fields.insert("label_color", label_color.clone());
     let divider = resolve_stylesheet_color(resolver, &rule.divider, &fields, &ctx)?;
-    Ok(ResolvedListViewRowColors { background, label_color, divider })
+    Ok(ResolvedTableRowColors { background, label_color, divider })
 }
 
 pub fn resolve_floating_menu_surface_color_rule(
@@ -717,7 +717,7 @@ pub struct ResolvedListboxRowColors {
 }
 
 #[derive(Clone, Debug)]
-pub struct ResolvedListViewSurfaceColors {
+pub struct ResolvedTableSurfaceColors {
     pub background: ResolvedColor,
     pub border: ResolvedColor,
     pub header_background: ResolvedColor,
@@ -725,7 +725,7 @@ pub struct ResolvedListViewSurfaceColors {
 }
 
 #[derive(Clone, Debug)]
-pub struct ResolvedListViewRowColors {
+pub struct ResolvedTableRowColors {
     pub background: ResolvedColor,
     pub label_color: ResolvedColor,
     pub divider: ResolvedColor,

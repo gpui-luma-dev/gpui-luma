@@ -9,7 +9,7 @@ use crate::theme::{
 const ROW_HOVER_ACCENT_ALPHA: f32 = 0.4;
 
 #[derive(Clone, Debug)]
-pub struct ListViewLook {
+pub struct TableLook {
     pub background: Hsla,
     pub border: Hsla,
     pub header_background: Hsla,
@@ -20,8 +20,8 @@ pub struct ListViewLook {
     pub padding_y: f32,
 }
 
-impl ListViewLook {
-    /// Returns the shared radius for all painted ListView surface layers.
+impl TableLook {
+    /// Returns the shared radius for all painted Table surface layers.
     ///
     /// The shell border is inset by GPUI during paint, but independently
     /// subtracting that width from child layers produces divergent corner
@@ -33,7 +33,7 @@ impl ListViewLook {
 }
 
 #[derive(Clone, Debug)]
-pub struct ListViewRowPalette {
+pub struct TableRowPalette {
     pub background: Hsla,
     pub label_color: Hsla,
     pub divider: Hsla,
@@ -41,7 +41,7 @@ pub struct ListViewRowPalette {
 }
 
 #[derive(Clone, Debug)]
-pub struct ListViewRowLook {
+pub struct TableRowLook {
     pub background: Hsla,
     pub label_color: Hsla,
     pub divider: Hsla,
@@ -53,9 +53,9 @@ pub struct ListViewRowLook {
     pub label_baseline_shift: f32,
 }
 
-pub trait ListViewTheme: Send + Sync {
-    fn resolve_look(&self, enabled: bool, focused: bool, size: ControlSize) -> ListViewLook;
-    fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListViewRowPalette;
+pub trait TableTheme: Send + Sync {
+    fn resolve_look(&self, enabled: bool, focused: bool, size: ControlSize) -> TableLook;
+    fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> TableRowPalette;
     fn metrics(&self) -> MetricTokens;
 
     fn resolve_row_look(
@@ -64,34 +64,34 @@ pub trait ListViewTheme: Send + Sync {
         state: InteractionState,
         size: ControlSize,
         scale: &ListRowScale,
-    ) -> ListViewRowLook {
-        compose_list_view_row_look(&self.resolve_row(selected, state, size), scale)
+    ) -> TableRowLook {
+        compose_table_row_look(&self.resolve_row(selected, state, size), scale)
     }
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct DefaultListViewTheme {
+pub struct DefaultTableTheme {
     tokens: ThemeTokens,
 }
 
-pub fn default_list_view_theme() -> Arc<dyn ListViewTheme> {
-    static THEME: OnceLock<Arc<dyn ListViewTheme>> = OnceLock::new();
+pub fn default_table_theme() -> Arc<dyn TableTheme> {
+    static THEME: OnceLock<Arc<dyn TableTheme>> = OnceLock::new();
 
-    THEME.get_or_init(|| Arc::new(DefaultListViewTheme::default())).clone()
+    THEME.get_or_init(|| Arc::new(DefaultTableTheme::default())).clone()
 }
 
-impl DefaultListViewTheme {
+impl DefaultTableTheme {
     pub fn new(tokens: ThemeTokens) -> Self {
         Self { tokens }
     }
 }
 
-impl ListViewTheme for DefaultListViewTheme {
-    fn resolve_look(&self, enabled: bool, _focused: bool, size: ControlSize) -> ListViewLook {
+impl TableTheme for DefaultTableTheme {
+    fn resolve_look(&self, enabled: bool, _focused: bool, size: ControlSize) -> TableLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
 
-        ListViewLook {
+        TableLook {
             background: if enabled {
                 palette.form.input.background
             } else {
@@ -115,7 +115,7 @@ impl ListViewTheme for DefaultListViewTheme {
         }
     }
 
-    fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListViewRowPalette {
+    fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> TableRowPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
 
@@ -149,7 +149,7 @@ impl ListViewTheme for DefaultListViewTheme {
         let mut label_typography = typography.text.label;
         crate::controls::textfield::apply_control_size_typography(&mut label_typography, typography, size);
 
-        ListViewRowPalette { background, label_color, divider: palette.form.input.border, label_typography }
+        TableRowPalette { background, label_color, divider: palette.form.input.border, label_typography }
     }
 
     fn metrics(&self) -> MetricTokens {
@@ -157,8 +157,8 @@ impl ListViewTheme for DefaultListViewTheme {
     }
 }
 
-pub(crate) fn compose_list_view_row_look(palette: &ListViewRowPalette, scale: &ListRowScale) -> ListViewRowLook {
-    ListViewRowLook {
+pub(crate) fn compose_table_row_look(palette: &TableRowPalette, scale: &ListRowScale) -> TableRowLook {
+    TableRowLook {
         background: palette.background,
         label_color: palette.label_color,
         divider: palette.divider,

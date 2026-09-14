@@ -1,22 +1,22 @@
-use super::model::ListScrollMode;
+use super::model::TableScrollMode;
 use super::template::SHELL_BORDER_WIDTH;
-use super::theme::{ListViewLook, ListViewRowLook};
+use super::theme::{TableLook, TableRowLook};
 
 /// GPUI row elements use `min_h(min_height)` with `py(padding_y)` on the same node, so the
-/// laid-out row height is [`ListViewRowLook::min_height`], not min_height + padding.
+/// laid-out row height is [`TableRowLook::min_height`], not min_height + padding.
 pub const ROW_DIVIDER_WIDTH: f32 = 1.0;
 
-/// Per-row layout height for [`ListViewRowLook::min_height`] rows (see module comment).
-pub fn default_row_height(row_look: &ListViewRowLook) -> f32 {
+/// Per-row layout height for [`TableRowLook::min_height`] rows (see module comment).
+pub fn default_row_height(row_look: &TableRowLook) -> f32 {
     row_look.min_height
 }
 
-pub fn visible_row_height(row_look: &ListViewRowLook, override_height: Option<f32>) -> f32 {
+pub fn visible_row_height(row_look: &TableRowLook, override_height: Option<f32>) -> f32 {
     override_height.unwrap_or_else(|| default_row_height(row_look))
 }
 
-/// Matches [`DefaultListViewShellTemplate::paint_shell`] header slot padding.
-pub fn header_height(list_look: &ListViewLook) -> f32 {
+/// Matches [`DefaultTableShellTemplate::paint_shell`] header slot padding.
+pub fn header_height(list_look: &TableLook) -> f32 {
     list_look.header_typography.line_height + list_look.padding_y + (list_look.padding_y * 0.75)
 }
 
@@ -61,7 +61,7 @@ pub fn distributed_row_height(viewport_height: f32, row_count: usize) -> Option<
     Some(viewport_height / row_count as f32)
 }
 
-pub fn compute_shell_height(visible_rows: usize, row_height: f32, list_look: &ListViewLook, has_header: bool) -> f32 {
+pub fn compute_shell_height(visible_rows: usize, row_height: f32, list_look: &TableLook, has_header: bool) -> f32 {
     let mut total_height = body_rows_height(visible_rows, row_height);
 
     if has_header {
@@ -73,19 +73,19 @@ pub fn compute_shell_height(visible_rows: usize, row_height: f32, list_look: &Li
 
 /// Resolves the row count used for fixed shell/body height.
 ///
-/// When [`fill_height`](super::model::ListViewBuilder::fill_height) is set, only an explicit
+/// When [`fill_height`](super::model::TableBuilder::fill_height) is set, only an explicit
 /// `visible_rows` value produces a fixed height; otherwise the shell fills its parent (`h_full`).
 /// Paged lists without fill-height still size from `page_size` when `visible_rows` is unset.
 pub fn effective_visible_rows(
     visible_rows: Option<usize>,
-    scroll_mode: ListScrollMode,
+    scroll_mode: TableScrollMode,
     fill_height: bool,
 ) -> Option<usize> {
     if fill_height {
         return visible_rows;
     }
     visible_rows.or(match scroll_mode {
-        ListScrollMode::Paged { page_size } => Some(page_size),
+        TableScrollMode::Paged { page_size } => Some(page_size),
         _ => None,
     })
 }
@@ -175,8 +175,8 @@ mod tests {
     use super::*;
     use crate::theme::LumaTextStyle;
 
-    fn sample_row_look() -> ListViewRowLook {
-        ListViewRowLook {
+    fn sample_row_look() -> TableRowLook {
+        TableRowLook {
             background: gpui::transparent_black(),
             label_color: gpui::black(),
             divider: gpui::black(),
@@ -189,8 +189,8 @@ mod tests {
         }
     }
 
-    fn sample_list_look() -> ListViewLook {
-        ListViewLook {
+    fn sample_list_look() -> TableLook {
+        TableLook {
             background: gpui::white(),
             border: gpui::black(),
             header_background: gpui::white(),
@@ -262,13 +262,13 @@ mod tests {
 
     #[test]
     fn effective_visible_rows_paged_uses_page_size() {
-        assert_eq!(effective_visible_rows(None, ListScrollMode::Paged { page_size: 25 }, false), Some(25));
+        assert_eq!(effective_visible_rows(None, TableScrollMode::Paged { page_size: 25 }, false), Some(25));
     }
 
     #[test]
     fn effective_visible_rows_fill_height_skips_page_size() {
-        assert_eq!(effective_visible_rows(None, ListScrollMode::Paged { page_size: 25 }, true), None);
-        assert_eq!(effective_visible_rows(Some(10), ListScrollMode::Paged { page_size: 25 }, true), Some(10));
+        assert_eq!(effective_visible_rows(None, TableScrollMode::Paged { page_size: 25 }, true), None);
+        assert_eq!(effective_visible_rows(Some(10), TableScrollMode::Paged { page_size: 25 }, true), Some(10));
     }
 
     #[test]

@@ -14,8 +14,8 @@ pub use crate::controls::control_group::{resolve_control_group_list_colors, Cont
 pub use crate::controls::floating_menu::{
     resolve_floating_menu_colors, resolve_ghost_trigger_colors, FloatingMenuColorTable, GhostTriggerColorTable,
 };
-pub use crate::controls::list_view::{
-    resolve_list_view_row_colors, resolve_list_view_surface_colors, ListViewRowColorTable, ListViewSurfaceColorTable,
+pub use crate::controls::table::{
+    resolve_table_row_colors, resolve_table_surface_colors, TableRowColorTable, TableSurfaceColorTable,
 };
 pub use crate::controls::listbox::{
     resolve_listbox_list_colors, resolve_listbox_row_colors, ListBoxListColorTable, ListBoxRowColorTable,

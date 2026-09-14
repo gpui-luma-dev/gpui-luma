@@ -6,9 +6,7 @@ use luma::column_numeric;
 use luma::column_text;
 use luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use luma::controls::button::{Button, ButtonEvent};
-use luma::controls::list_view::{
-    ListViewColumn, ListViewColumnCellTemplate, ListViewControl, ListViewEvent, ListViewRowRenderModel,
-};
+use luma::controls::table::{TableColumn, TableColumnCellTemplate, TableControl, TableEvent, TableRowRenderModel};
 use luma::infra::menu_item::MenuItem;
 use luma::controls::popup_menu::PopupMenu;
 use luma::infra::presenter::HasPresenter;
@@ -40,7 +38,7 @@ struct PaymentRow {
 
 pub struct PaymentsPanel {
     look: Arc<ShadcnLook>,
-    list_view: Entity<ListViewControl<PaymentRow>>,
+    table: Entity<TableControl<PaymentRow>>,
     row_checkboxes: Arc<Vec<Checkbox>>,
     prev_button: Entity<Button>,
     next_button: Entity<Button>,
@@ -54,7 +52,7 @@ impl PaymentsPanel {
         let row_checkboxes = Arc::new(spawn_row_checkboxes(look.clone(), payments.len(), cx));
         let row_menus = Arc::new(spawn_row_menus(look.clone(), payments.len(), cx));
         let list_size = shadcn::ShadcnSize::Sm;
-        let list_view = shadcn::ListView::new("studio-payments")
+        let table = shadcn::Table::new("studio-payments")
             .look(look.as_ref())
             .items(payments)
             .multiple()
@@ -68,13 +66,13 @@ impl PaymentsPanel {
             .spawn(cx);
 
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&list_view, |panel, _, event, cx| {
+        subscriptions.push(cx.subscribe(&table, |panel, _, event, cx| {
             match event {
-                ListViewEvent::SelectionChanged { .. } => {
-                    panel.selected_count = panel.list_view.read(cx).selected_indices().len();
+                TableEvent::SelectionChanged { .. } => {
+                    panel.selected_count = panel.table.read(cx).selected_indices().len();
                     panel.sync_checkboxes_from_list(cx);
                 }
-                ListViewEvent::PageChanged { .. } => {}
+                TableEvent::PageChanged { .. } => {}
                 _ => return,
             }
             cx.notify();
@@ -102,19 +100,19 @@ impl PaymentsPanel {
             .spawn(cx);
         subscriptions.push(cx.subscribe(&prev_button, |panel, _, event, cx| {
             if matches!(event, ButtonEvent::Click) {
-                panel.list_view.update(cx, |list, cx| list.prev_page(cx));
+                panel.table.update(cx, |list, cx| list.prev_page(cx));
             }
         }));
         subscriptions.push(cx.subscribe(&next_button, |panel, _, event, cx| {
             if matches!(event, ButtonEvent::Click) {
-                panel.list_view.update(cx, |list, cx| list.next_page(cx));
+                panel.table.update(cx, |list, cx| list.next_page(cx));
             }
         }));
 
         Self {
             prev_button,
             next_button,
-            list_view,
+            table,
             row_checkboxes,
             look,
             selected_count: 0,
@@ -123,13 +121,13 @@ impl PaymentsPanel {
     }
 
     fn toggle_row_selection(&mut self, index: usize, cx: &mut Context<Self>) {
-        self.list_view.update(cx, |list, cx| {
+        self.table.update(cx, |list, cx| {
             list.toggle_selected_index(index, cx);
         });
     }
 
     fn sync_checkboxes_from_list(&self, cx: &mut Context<Self>) {
-        let selected: Vec<_> = self.list_view.read(cx).selected_indices().to_vec();
+        let selected: Vec<_> = self.table.read(cx).selected_indices().to_vec();
         for (index, checkbox) in self.row_checkboxes.iter().enumerate() {
             let checked = selected.contains(&index);
             checkbox.update(cx, |button, cx| {
@@ -144,11 +142,11 @@ impl PaymentsPanel {
 impl Render for PaymentsPanel {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
-        let total_rows = self.list_view.read(cx).items().len();
-        let at_first = self.list_view.read(cx).current_page() == 0;
-        let at_last = self.list_view.read(cx).current_page() + 1 >= self.list_view.read(cx).page_count().max(1);
+        let total_rows = self.table.read(cx).items().len();
+        let at_first = self.table.read(cx).current_page() == 0;
+        let at_last = self.table.read(cx).current_page() + 1 >= self.table.read(cx).page_count().max(1);
         let selected_count = self.selected_count;
-        let list_view = self.list_view.clone();
+        let table = self.table.clone();
         let prev_button = self.prev_button.clone();
         let next_button = self.next_button.clone();
 
@@ -170,7 +168,7 @@ impl Render for PaymentsPanel {
                         .border_1()
                         .border_color(chrome.border)
                         .overflow_hidden()
-                        .child(list_view.clone()),
+                        .child(table.clone()),
                     hstack! {
                         justify=between align=center gap=12;
                         format!("{} of {total_rows} row(s) selected.", selected_count),
@@ -235,13 +233,13 @@ fn payment_action_items() -> Vec<MenuItem> {
 fn payment_columns(
     row_checkboxes: Arc<Vec<Checkbox>>,
     row_menus: Arc<Vec<Entity<PopupMenu>>>,
-) -> Vec<ListViewColumn<PaymentRow>> {
+) -> Vec<TableColumn<PaymentRow>> {
     vec![
-        ListViewColumn::fixed_control("", 48.0, selection_checkbox_column(row_checkboxes)),
-        ListViewColumn::fixed_control("Status", 72.0, |row: &PaymentRow| status_icon_cell(row.status)),
+        TableColumn::fixed_control("", 48.0, selection_checkbox_column(row_checkboxes)),
+        TableColumn::fixed_control("Status", 72.0, |row: &PaymentRow| status_icon_cell(row.status)),
         column_text!("Email" => |row: &PaymentRow| row.email.clone()),
         column_numeric!("Amount", width = 96 => |row: &PaymentRow| row.amount.clone()),
-        ListViewColumn::fixed_control("", 40.0, row_menu_column(row_menus)),
+        TableColumn::fixed_control("", 40.0, row_menu_column(row_menus)),
     ]
 }
 
@@ -262,14 +260,14 @@ fn status_icon_cell(status: &'static str) -> impl IntoElement {
         .child(luma::infra::icon::lucide_icon(icon, color, 16.0))
 }
 
-fn selection_checkbox_column(row_checkboxes: Arc<Vec<Checkbox>>) -> ListViewColumnCellTemplate<PaymentRow> {
-    Arc::new(move |model: &ListViewRowRenderModel<'_, PaymentRow>, _, _| {
+fn selection_checkbox_column(row_checkboxes: Arc<Vec<Checkbox>>) -> TableColumnCellTemplate<PaymentRow> {
+    Arc::new(move |model: &TableRowRenderModel<'_, PaymentRow>, _, _| {
         row_checkboxes[model.index].clone().into_any_element()
     })
 }
 
-fn row_menu_column(row_menus: Arc<Vec<Entity<PopupMenu>>>) -> ListViewColumnCellTemplate<PaymentRow> {
-    Arc::new(move |model: &ListViewRowRenderModel<'_, PaymentRow>, _, _| {
+fn row_menu_column(row_menus: Arc<Vec<Entity<PopupMenu>>>) -> TableColumnCellTemplate<PaymentRow> {
+    Arc::new(move |model: &TableRowRenderModel<'_, PaymentRow>, _, _| {
         div()
             .w_full()
             .flex()

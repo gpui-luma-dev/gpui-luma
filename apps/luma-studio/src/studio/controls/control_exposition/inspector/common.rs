@@ -219,7 +219,7 @@ pub fn listbox_row_state(state_id: &str) -> InteractionState {
     }
 }
 
-pub fn list_view_row_selected(value_id: &str) -> bool {
+pub fn table_row_selected(value_id: &str) -> bool {
     value_id == "selected"
 }
 

@@ -1,6 +1,6 @@
 use luma_look_shadcn_inspect::{
     AccordionContentInspectPalette, AccordionTriggerInspectPalette, ListBoxListInspectPalette,
-    ListBoxRowInspectPalette, ListViewInspectPalette, ListViewRowInspectPalette, SidebarContainerInspectPalette,
+    ListBoxRowInspectPalette, TableInspectPalette, TableRowInspectPalette, SidebarContainerInspectPalette,
     SidebarItemInspectPalette, SidebarSectionInspectPalette, PagerShellInspectPalette, ResizablePanelsInspectPalette,
     SplitViewInspectPalette, TabsItemInspectPalette, TabsListInspectPalette, ToolbarInspectPalette,
     TreeViewRowInspectPalette,
@@ -22,7 +22,7 @@ pub fn listbox_row_color_rows(palette: &ListBoxRowInspectPalette) -> Vec<Inspect
     vec![color_row("background", &palette.background), color_row("label", &palette.label_color)]
 }
 
-pub fn list_view_surface_color_rows(palette: &ListViewInspectPalette) -> Vec<InspectColorRow> {
+pub fn table_surface_color_rows(palette: &TableInspectPalette) -> Vec<InspectColorRow> {
     vec![
         color_row("background", &palette.background),
         color_row("border", &palette.border),
@@ -31,7 +31,7 @@ pub fn list_view_surface_color_rows(palette: &ListViewInspectPalette) -> Vec<Ins
     ]
 }
 
-pub fn list_view_row_color_rows(palette: &ListViewRowInspectPalette) -> Vec<InspectColorRow> {
+pub fn table_row_color_rows(palette: &TableRowInspectPalette) -> Vec<InspectColorRow> {
     vec![
         color_row("background", &palette.background),
         color_row("label", &palette.label_color),

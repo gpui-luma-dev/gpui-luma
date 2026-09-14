@@ -1,7 +1,7 @@
-//! Shared task grid data and column helpers for list view expositions.
+//! Shared task grid data and column helpers for table expositions.
 
 use gpui::{FontWeight, SharedString, div, prelude::*, px};
-use luma::controls::list_view::{ListViewColumn, column_template_with_modifier, default_text_column_template};
+use luma::controls::table::{TableColumn, column_template_with_modifier, default_text_column_template};
 use lucide_svg_static::Icon as LucideIcon;
 
 #[derive(Clone)]
@@ -25,7 +25,7 @@ fn make_task(index: usize) -> Task {
 
     Task {
         id: format!("T-{index:04}").into(),
-        title: format!("Ship list view row {index}").into(),
+        title: format!("Ship table row {index}").into(),
         email: format!("owner+{index}@luma.dev").into(),
         tag: TAGS[index % TAGS.len()],
         status: STATUSES[index % STATUSES.len()],
@@ -33,8 +33,8 @@ fn make_task(index: usize) -> Task {
     }
 }
 
-pub(super) fn email_column() -> ListViewColumn<Task> {
-    ListViewColumn::fixed(
+pub(super) fn email_column() -> TableColumn<Task> {
+    TableColumn::fixed(
         "Email",
         200.0,
         column_template_with_modifier(

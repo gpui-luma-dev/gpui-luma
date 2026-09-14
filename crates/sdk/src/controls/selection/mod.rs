@@ -7,11 +7,11 @@
 //!   and autocomplete; **not** a spawnable control
 //!
 //! Related spawnables in this family: [`combobox`], [`autocomplete`], [`search_selector`],
-//! [`list_view`].
+//! [`table`].
 
 pub mod autocomplete;
 pub mod combobox;
-pub mod list_view;
+pub mod table;
 pub mod search_selector;
 pub mod selection_panel;
 pub mod selector;
