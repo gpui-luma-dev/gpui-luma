@@ -1,8 +1,8 @@
 use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
-use crate::controls::button_family::ButtonFamilyRole;
+use crate::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole};
 use crate::infra::shadow_layout::should_paint_shadow;
-use crate::controls::button::{ButtonRenderModel, ButtonTemplate};
+use crate::controls::button::{ButtonRenderModel, ButtonTemplate, button_content_context};
 use crate::controls::checkbox::{CheckboxData, CheckboxPalette, CheckboxTheme, default_checkbox_theme};
 use crate::infra::template::TemplateWithModifiers;
 use crate::define_control_template;
@@ -160,7 +160,23 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
         if indicator_only {
             control = control.child(indicator);
         } else {
-            let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(model, cx));
+            let content_look = ButtonFamilyLook {
+                background: settled_palette.control_background.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0)),
+                foreground: settled_palette.label_color,
+                muted_foreground: settled_palette.label_color,
+                border: settled_palette.control_border,
+                typography: settled_palette.label_typography,
+                font_family: settled_palette.label_font_family.clone(),
+                radius: scale.control_radius,
+                padding_x: scale.control_padding_x,
+                padding_y: scale.control_padding_y,
+                gap: scale.gap,
+                height: scale.height,
+                icon_size: scale.glyph_size,
+                shadow: None,
+            };
+            let content_model = button_content_context(model, content_look);
+            let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(&content_model, cx));
             control = control
                 .gap(px(scale.gap))
                 .min_h(px(scale.height))

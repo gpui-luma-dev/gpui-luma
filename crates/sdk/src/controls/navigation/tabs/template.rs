@@ -549,7 +549,6 @@ fn tab_button_model(
         role: ButtonFamilyRole::Toggle { selected: item.active },
         size,
         state: item.state.interaction_state(),
-        resolved_look: None,
         round: false,
         radius_override: Cell::new(Some(look.radius)),
         elevation: false,
@@ -569,6 +568,7 @@ fn tab_button_look(look: TabsItemLook, font_family: SharedString) -> ButtonFamil
     ButtonFamilyLook {
         background: look.background.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0)),
         foreground: look.label_color,
+        muted_foreground: look.label_color,
         border: None,
         typography: look.label_typography,
         font_family,

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{App, BoxShadow, Div, Hsla, SharedString, Stateful, Window, div, point, prelude::*, px};
 use luma::controls::button_family::{ButtonFamilyLook, button_family_effective_border};
-use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
+use luma::controls::button::{ButtonRenderModel, ButtonTemplate, button_content_context};
 use luma::theme::InteractionState;
 use luma_look_shadcn::ShadcnLook;
 
@@ -123,7 +123,8 @@ impl ButtonTemplate<()> for PrototypeShadowButtonTemplate {
             control = control.px(px(look.padding_x)).py(px(look.padding_y)).rounded(px(look.radius));
         }
 
-        control = control.child(div().text_color(look.foreground).child((model.content)(model, cx)));
+        let content_model = button_content_context(model, look.clone());
+        control = control.child(div().text_color(look.foreground).child((model.content)(&content_model, cx)));
 
         let radius = if let Some(radius_override) = model.radius_override.get() {
             radius_override

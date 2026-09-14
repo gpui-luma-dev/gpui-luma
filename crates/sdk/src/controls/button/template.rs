@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
-use super::ButtonRenderModel;
+use super::{ButtonContentContext, ButtonRenderModel, button_content_context};
 use crate::controls::button_family::{
     ButtonFamilyLook, ButtonFamilyRole, ButtonFamilyTheme, button_family_effective_border, compose_button_family_look,
     default_button_family_theme,
@@ -63,14 +63,11 @@ fn clone_model_with_state<D: Clone>(model: &ButtonRenderModel<D>, state: Interac
         switch_track_content: model.switch_track_content.clone(),
         switch_thumb_content: model.switch_thumb_content.clone(),
         look: model.look.clone(),
-        resolved_look: None,
     }
 }
 
-fn presenter_model<D: Clone>(model: &ButtonRenderModel<D>, look: &ButtonFamilyLook) -> ButtonRenderModel<D> {
-    let mut model = clone_model_with_state(model, model.state);
-    model.resolved_look = Some(look.clone());
-    model
+fn presenter_model<D: Clone>(model: &ButtonRenderModel<D>, look: &ButtonFamilyLook) -> ButtonContentContext<D> {
+    button_content_context(model, look.clone())
 }
 
 fn resolve_probe_look<D: Clone>(
@@ -341,6 +338,7 @@ mod tests {
         ButtonFamilyLook {
             background: Hsla { h: 120.0, s: 1.0, l: 0.5, a: 1.0 },
             foreground: Hsla { h: 0.0, s: 0.0, l: 1.0, a: 1.0 },
+            muted_foreground: Hsla { h: 0.0, s: 0.0, l: 0.7, a: 1.0 },
             border: Some(Hsla { h: 120.0, s: 1.0, l: 0.3, a: 1.0 }),
             typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
             font_family: "test".into(),
@@ -384,7 +382,7 @@ mod tests {
         let look = lime_look();
         let presented = presenter_model(&model, &look);
 
-        assert_eq!(presented.resolved_look.as_ref().map(|look| look.foreground), Some(look.foreground));
+        assert_eq!(presented.look.foreground, look.foreground);
     }
 
     #[test]
@@ -392,6 +390,7 @@ mod tests {
         let palette = ButtonFamilyPalette {
             background: Hsla::default(),
             foreground: Hsla::default(),
+            muted_foreground: Hsla::default(),
             border: Some(Hsla::default()),
             typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
             font_family: "test".into(),

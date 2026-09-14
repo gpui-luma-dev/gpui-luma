@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
-use luma::controls::button::ButtonRenderModel;
+use luma::controls::button::ButtonContentContext;
 use luma::infra::presenter::HasPresenter;
 use luma::controls::switch::{Switch, SwitchData, SwitchEvent, SwitchOrientation};
 use luma::theme::InteractionState;
@@ -108,7 +108,7 @@ fn labeled_switch(builder: shadcn::Switch, look: Arc<ShadcnLook>, style: ShadcnB
 fn labeled_track_content(
     look: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> impl Fn(&ButtonRenderModel<SwitchData>, &mut App) -> AnyElement + Send + Sync + 'static {
+) -> impl Fn(&ButtonContentContext<SwitchData>, &mut App) -> AnyElement + Send + Sync + 'static {
     move |model, _| {
         let checked = model.data.checked;
         let tokens = look.mode_tokens();
@@ -142,7 +142,7 @@ fn labeled_track_content(
 fn icon_thumb_content(
     look: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> impl Fn(&ButtonRenderModel<SwitchData>, &mut App) -> AnyElement + Send + Sync + 'static {
+) -> impl Fn(&ButtonContentContext<SwitchData>, &mut App) -> AnyElement + Send + Sync + 'static {
     move |model, _| {
         let checked = model.data.checked;
         let tokens = look.mode_tokens();

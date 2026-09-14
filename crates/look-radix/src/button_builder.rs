@@ -2,7 +2,8 @@
 
 use gpui::{App, Context, Div, Entity, SharedString, Stateful};
 use luma::controls::button::{
-    ButtonBuilder, ButtonRenderModel, ButtonTemplateModifier, ControlIcon, ControlPresenter, HasPresenter,
+    ButtonBuilder, ButtonContentContext, ButtonRenderModel, ButtonTemplateModifier, ControlIcon, ControlPresenter,
+    HasPresenter,
 };
 use luma::controls::button_family::ButtonFamilyRole;
 
@@ -25,7 +26,7 @@ pub struct Button<D = ()> {
     tab_stop: bool,
     compact: bool,
     data: D,
-    content: Option<ControlPresenter<ButtonRenderModel<D>>>,
+    content: Option<ControlPresenter<ButtonContentContext<D>>>,
     modifiers: Vec<ButtonTemplateModifier<D>>,
 }
 
@@ -211,8 +212,8 @@ impl<D: Clone + 'static> Button<D> {
     }
 }
 
-impl<D: 'static> HasPresenter<ButtonRenderModel<D>> for Button<D> {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<D>>) {
+impl<D: 'static> HasPresenter<ButtonContentContext<D>> for Button<D> {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<D>>) {
         self.content = Some(content);
     }
 }

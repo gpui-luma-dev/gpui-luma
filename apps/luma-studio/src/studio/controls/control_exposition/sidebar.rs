@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
+use luma::controls::button::{ButtonContentContext, ButtonEvent, ControlIcon};
 use luma::controls::icon_button::IconButton;
 use luma::infra::menu_item::MenuItem;
 use luma::controls::popup_menu::{HasPresenter, PopupMenu, PopupMenuEvent, PopupMenuPlacement};
@@ -430,9 +430,9 @@ fn preview_shell(
         .into_any_element()
 }
 
-fn sidebar_toggle_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {
+fn sidebar_toggle_presenter(icon: ControlIcon) -> ControlPresenter<ButtonContentContext<()>> {
     Arc::new(move |model, _| {
-        let color = model.resolved_look.as_ref().map_or(gpui::Hsla::default(), |look| look.foreground);
+        let color = model.look.foreground;
         match &icon {
             ControlIcon::Lucide(lucide) => div()
                 .text_size(px(16.0))

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
 use luma::controls::button_family::ButtonSize;
-use luma::controls::button::ButtonRenderModel;
+use luma::controls::button::{ButtonContentContext, ButtonRenderModel};
 use luma::controls::checkbox::CheckboxData;
 use luma::controls::radio_button::RadioButtonData;
 use luma::controls::switch::SwitchData;
@@ -37,15 +37,19 @@ impl ChoiceTemplateControl {
         }
     }
 
-    pub(crate) fn radio_content(self) -> luma::controls::button::ControlPresenter<ButtonRenderModel<RadioButtonData>> {
+    pub(crate) fn radio_content(
+        self,
+    ) -> luma::controls::button::ControlPresenter<ButtonContentContext<RadioButtonData>> {
         Arc::new(move |_, _| div().into_any_element())
     }
 
-    pub(crate) fn checkbox_content(self) -> luma::controls::button::ControlPresenter<ButtonRenderModel<CheckboxData>> {
+    pub(crate) fn checkbox_content(
+        self,
+    ) -> luma::controls::button::ControlPresenter<ButtonContentContext<CheckboxData>> {
         Arc::new(move |_, _| div().into_any_element())
     }
 
-    pub(crate) fn switch_content(self) -> luma::controls::button::ControlPresenter<ButtonRenderModel<SwitchData>> {
+    pub(crate) fn switch_content(self) -> luma::controls::button::ControlPresenter<ButtonContentContext<SwitchData>> {
         Arc::new(move |_, _| div().into_any_element())
     }
 

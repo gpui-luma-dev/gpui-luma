@@ -15,7 +15,7 @@ use gpui::{
 
 use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::button_family::ButtonFamilyRole;
-use crate::controls::button::{Button, ButtonBuilder, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use crate::controls::button::{Button, ButtonBuilder, ButtonContentContext, ButtonEvent, ButtonTemplate};
 use crate::infra::presenter::{ControlPresenter, HasPresenter};
 use crate::infra::icon::SelectionStatusIcons;
 use crate::theme::ControlSize;
@@ -142,7 +142,7 @@ impl CheckboxControl {
 
     pub fn set_presenter(
         &mut self,
-        content: ControlPresenter<ButtonRenderModel<CheckboxData>>,
+        content: ControlPresenter<ButtonContentContext<CheckboxData>>,
         cx: &mut Context<Self>,
     ) {
         self.button.update(cx, |button, cx| button.set_presenter(content, cx));
@@ -261,8 +261,8 @@ impl CheckboxBuilder {
     }
 }
 
-impl HasPresenter<ButtonRenderModel<CheckboxData>> for CheckboxBuilder {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<CheckboxData>>) {
+impl HasPresenter<ButtonContentContext<CheckboxData>> for CheckboxBuilder {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<CheckboxData>>) {
         self.button.set_presenter(content);
     }
 }

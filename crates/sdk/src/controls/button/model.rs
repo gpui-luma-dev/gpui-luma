@@ -25,10 +25,34 @@ impl From<LucideIcon> for ControlIcon {
 pub type ButtonLookSource<D> = Arc<dyn Fn(&ButtonRenderModel<D>) -> ButtonFamilyLook + Send + Sync>;
 
 #[derive(Clone)]
+pub struct ButtonContentContext<D> {
+    pub id: SharedString,
+    pub data: D,
+    pub state: InteractionState,
+    pub role: ButtonFamilyRole,
+    pub size: ButtonSize,
+    pub look: ButtonFamilyLook,
+}
+
+pub fn button_content_context<D: Clone>(
+    model: &ButtonRenderModel<D>,
+    look: ButtonFamilyLook,
+) -> ButtonContentContext<D> {
+    ButtonContentContext {
+        id: model.id.clone(),
+        data: model.data.clone(),
+        state: model.state,
+        role: model.role,
+        size: model.size,
+        look,
+    }
+}
+
+#[derive(Clone)]
 pub struct ButtonModel<D = ()> {
     pub(crate) id: SharedString,
     pub(crate) data: D,
-    pub(crate) content: ControlPresenter<ButtonRenderModel<D>>,
+    pub(crate) content: ControlPresenter<ButtonContentContext<D>>,
     pub(crate) icon: Option<ControlIcon>,
     pub(crate) role: ButtonFamilyRole,
     pub(crate) size: ButtonSize,
@@ -42,8 +66,8 @@ pub struct ButtonModel<D = ()> {
     pub(crate) switch_track_height: Option<f32>,
     pub(crate) switch_thumb_size: Option<f32>,
     pub(crate) switch_orientation: crate::controls::switch::SwitchOrientation,
-    pub(crate) switch_track_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
-    pub(crate) switch_thumb_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
+    pub(crate) switch_track_content: Option<ControlPresenter<ButtonContentContext<D>>>,
+    pub(crate) switch_thumb_content: Option<ControlPresenter<ButtonContentContext<D>>>,
     pub(crate) look: Option<ButtonLookSource<D>>,
     pub(crate) template: Arc<dyn ButtonTemplate<D>>,
 }
@@ -51,7 +75,7 @@ pub struct ButtonModel<D = ()> {
 pub struct ButtonRenderModel<D> {
     pub id: SharedString,
     pub data: D,
-    pub content: ControlPresenter<ButtonRenderModel<D>>,
+    pub content: ControlPresenter<ButtonContentContext<D>>,
     pub icon: Option<ControlIcon>,
     pub role: ButtonFamilyRole,
     pub size: ButtonSize,
@@ -65,12 +89,9 @@ pub struct ButtonRenderModel<D> {
     pub switch_track_height: Option<f32>,
     pub switch_thumb_size: Option<f32>,
     pub switch_orientation: crate::controls::switch::SwitchOrientation,
-    pub switch_track_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
-    pub switch_thumb_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
+    pub switch_track_content: Option<ControlPresenter<ButtonContentContext<D>>>,
+    pub switch_thumb_content: Option<ControlPresenter<ButtonContentContext<D>>>,
     pub look: Option<ButtonLookSource<D>>,
-    /// The look resolved by the active button template for this render pass.
-    /// Presenters can use this for custom content that needs themed colors.
-    pub resolved_look: Option<ButtonFamilyLook>,
 }
 
 impl<D: Default> Default for ButtonRenderModel<D> {
@@ -95,7 +116,6 @@ impl<D: Default> Default for ButtonRenderModel<D> {
             switch_track_content: None,
             switch_thumb_content: None,
             look: None,
-            resolved_look: None,
         }
     }
 }
@@ -272,8 +292,8 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
     }
 }
 
-impl<D: 'static> HasPresenter<ButtonRenderModel<D>> for ButtonBuilder<D> {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<D>>) {
+impl<D: 'static> HasPresenter<ButtonContentContext<D>> for ButtonBuilder<D> {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<D>>) {
         self.model.content = content;
     }
 }

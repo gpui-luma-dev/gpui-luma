@@ -168,6 +168,7 @@ pub fn apply_button_box(palette: &ButtonFamilyPalette, role: ButtonFamilyRole, b
     ButtonFamilyLook {
         background: palette.background,
         foreground: palette.foreground,
+        muted_foreground: palette.muted_foreground,
         border: palette.border,
         typography: box_.typography,
         font_family: palette.font_family.clone(),

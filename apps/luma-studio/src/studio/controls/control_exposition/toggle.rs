@@ -156,26 +156,14 @@ impl ToggleControlExposition {
             .secondary()
             .with_data(false)
             .round(true)
-            .content(|model, _| {
-                round_icon_glyph(
-                    false,
-                    model.resolved_look.as_ref().map_or(gpui::Hsla::default(), |look| look.foreground),
-                )
-                .into_any_element()
-            })
+            .content(|model, _| round_icon_glyph(false, model.look.foreground).into_any_element())
             .spawn(cx);
         let primary_round_icon_toggle = shadcn::Toggle::new("controls-doc-toggle-primary-round-icon")
             .look(look.as_ref())
             .primary()
             .with_data(true)
             .round(true)
-            .content(|model, _| {
-                round_icon_glyph(
-                    true,
-                    model.resolved_look.as_ref().map_or(gpui::Hsla::default(), |look| look.foreground),
-                )
-                .into_any_element()
-            })
+            .content(|model, _| round_icon_glyph(true, model.look.foreground).into_any_element())
             .spawn(cx);
 
         let event_stream = cx.new(|cx| {
@@ -286,8 +274,7 @@ fn wire_toggle(
                     this.secondary_round_icon_toggle.update(cx, |toggle, cx| {
                         toggle.set_presenter(
                             Arc::new(move |model, _| {
-                                let foreground =
-                                    model.resolved_look.as_ref().map_or(gpui::Hsla::default(), |look| look.foreground);
+                                let foreground = model.look.foreground;
                                 round_icon_glyph(selected, foreground).into_any_element()
                             }),
                             cx,
@@ -300,8 +287,7 @@ fn wire_toggle(
                     this.primary_round_icon_toggle.update(cx, |toggle, cx| {
                         toggle.set_presenter(
                             Arc::new(move |model, _| {
-                                let foreground =
-                                    model.resolved_look.as_ref().map_or(gpui::Hsla::default(), |look| look.foreground);
+                                let foreground = model.look.foreground;
                                 round_icon_glyph(selected, foreground).into_any_element()
                             }),
                             cx,

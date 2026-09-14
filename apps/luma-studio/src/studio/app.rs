@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter, HasPresenter};
+use luma::controls::button::{ButtonContentContext, ButtonEvent, ControlIcon, ControlPresenter, HasPresenter};
 use luma::controls::icon_button::IconButton;
 use luma::controls::button_family::ButtonFamilyRole;
 use luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
@@ -600,7 +600,7 @@ impl LumaStudioApp {
 
 fn mode_switch_thumb_content(
     color: gpui::Hsla,
-) -> impl Fn(&ButtonRenderModel<SwitchData>, &mut App) -> AnyElement + Send + Sync + 'static {
+) -> impl Fn(&ButtonContentContext<SwitchData>, &mut App) -> AnyElement + Send + Sync + 'static {
     move |model, _| {
         let icon = if model.data.checked {
             LucideIcon::Moon
@@ -617,7 +617,7 @@ fn mode_switch_thumb_content(
     }
 }
 
-fn titlebar_icon_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
+fn titlebar_icon_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonContentContext<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(lucide) => {
             div().child(luma::infra::icon::lucide_icon(*lucide, color, 14.0)).into_any_element()

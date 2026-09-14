@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{SharedString, div, prelude::*};
-use luma::controls::button::ButtonRenderModel;
+use luma::controls::button::ButtonContentContext;
 use luma::theme::InteractionState;
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -20,12 +20,6 @@ pub(crate) enum ButtonTemplateVariant {
     IconButton,
 }
 
-pub(crate) fn button_preview_look(
-    model: &ButtonRenderModel<()>,
-) -> Option<luma::controls::button_family::ButtonFamilyLook> {
-    model.look.as_ref().map(|resolve| resolve(model))
-}
-
 impl ButtonTemplateVariant {
     pub(crate) fn id(self) -> &'static str {
         match self {
@@ -38,17 +32,13 @@ impl ButtonTemplateVariant {
         matches!(self, Self::IconButton)
     }
 
-    pub(crate) fn content(self) -> luma::controls::button::ControlPresenter<ButtonRenderModel<()>> {
+    pub(crate) fn content(self) -> luma::controls::button::ControlPresenter<ButtonContentContext<()>> {
         let label = SharedString::from("Button");
         match self {
             Self::TextButton => Arc::new(move |_, _| div().child(label.clone()).into_any_element()),
             Self::IconButton => Arc::new(move |model, _| {
-                let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
-                render_lucide_icon(
-                    LucideIcon::Heart,
-                    button_preview_look(model).map(|look| look.foreground).unwrap_or_default(),
-                    icon_size,
-                )
+                let icon_size = model.look.icon_size;
+                render_lucide_icon(LucideIcon::Heart, model.look.foreground, icon_size)
             }),
         }
     }

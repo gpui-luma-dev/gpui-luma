@@ -7,7 +7,7 @@ use gpui::{
 
 pub use crate::infra::presenter::{ControlPresenter, HasPresenter};
 
-use super::{ButtonBuilder, ButtonRenderModel};
+use super::{ButtonBuilder, ButtonContentContext, ButtonRenderModel};
 pub use super::core::{CommandCore, CommandEvent as ButtonEvent};
 use crate::key_handling::{ActivateControl, ControlKeyProfile};
 use super::model::ControlIcon;
@@ -50,7 +50,7 @@ impl<D: Clone + 'static> Button<D> {
         }
     }
 
-    pub fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<D>>, cx: &mut Context<Self>) {
+    pub fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<D>>, cx: &mut Context<Self>) {
         self.model.content = content;
         cx.notify();
     }
@@ -106,7 +106,6 @@ impl<D: Clone + 'static> Button<D> {
             switch_track_content: self.model.switch_track_content.clone(),
             switch_thumb_content: self.model.switch_thumb_content.clone(),
             look: self.model.look.clone(),
-            resolved_look: None,
         }
     }
 

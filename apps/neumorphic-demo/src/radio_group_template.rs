@@ -1,10 +1,12 @@
 use std::cell::Cell;
 use std::sync::{Arc, OnceLock};
 
-use gpui::{App, MouseButton, Stateful, Window, div, hsla, px, prelude::*};
+use gpui::{App, FontWeight, MouseButton, Stateful, Window, div, hsla, px, prelude::*};
 use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use luma::infra::ElementExt;
-use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
+use luma::controls::button::{ButtonRenderModel, ButtonTemplate, button_content_context};
+use luma::controls::button_family::ButtonFamilyLook;
+use luma::theme::LumaTextStyle;
 use luma::controls::control_group::{ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplateHandlers};
 use luma::controls::radio_group::RadioGroupTemplate;
 
@@ -102,6 +104,25 @@ impl ButtonTemplate<bool> for NeumorphicSegmentedButtonTemplate {
             Vec::new()
         };
 
+        let content_model = button_content_context(
+            model,
+            ButtonFamilyLook {
+                background,
+                foreground: text_color,
+                muted_foreground: text_color,
+                border: Some(border),
+                typography: LumaTextStyle { size: 11.0, line_height: 12.0, weight: FontWeight::MEDIUM },
+                font_family: "System UI".into(),
+                radius: 17.0,
+                padding_x: 0.0,
+                padding_y: 0.0,
+                gap: 0.0,
+                height: 34.0,
+                icon_size: 14.0,
+                shadow: None,
+            },
+        );
+
         div()
             .id(model.id.clone())
             .relative()
@@ -123,7 +144,7 @@ impl ButtonTemplate<bool> for NeumorphicSegmentedButtonTemplate {
                 gpui::FontWeight::MEDIUM
             })
             .text_color(text_color)
-            .child((model.content)(model, _cx))
+            .child((model.content)(&content_model, _cx))
     }
 }
 

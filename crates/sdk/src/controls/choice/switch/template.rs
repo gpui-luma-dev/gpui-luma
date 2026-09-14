@@ -1,7 +1,8 @@
 use gpui::{App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
 use crate::infra::shadow_layout::should_paint_shadow;
-use crate::controls::button::{ButtonRenderModel, ButtonTemplate};
+use crate::controls::button::{ButtonRenderModel, ButtonTemplate, button_content_context};
+use crate::controls::button_family::ButtonFamilyLook;
 
 use crate::controls::switch::{SwitchData, SwitchOrientation, SwitchPalette, SwitchTheme, default_switch_theme};
 use crate::infra::template::TemplateWithModifiers;
@@ -138,8 +139,24 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
             .border_color(palette.thumb_border)
             .rounded(px(thumb_radius));
 
+        let content_look = ButtonFamilyLook {
+            background: palette.track_background,
+            foreground: settled_palette.label_color,
+            muted_foreground: settled_palette.label_color,
+            border: Some(palette.track_border),
+            typography: settled_palette.label_typography,
+            font_family: settled_palette.label_font_family.clone(),
+            radius: track_radius,
+            padding_x: 0.0,
+            padding_y: 0.0,
+            gap: scale.gap,
+            height: scale.track_height,
+            icon_size: scale.thumb_size,
+            shadow: None,
+        };
+        let content_model = button_content_context(model, content_look.clone());
         if let Some(content) = &model.switch_thumb_content {
-            thumb = thumb.child(content(model, cx));
+            thumb = thumb.child(content(&content_model, cx));
         }
 
         let mut track_visual = div()
@@ -162,7 +179,7 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
                     .left_0()
                     .overflow_hidden()
                     .rounded(px(track_radius))
-                    .child(content(model, cx)),
+                    .child(content(&content_model, cx)),
             );
         }
 
@@ -210,7 +227,7 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
         if indicator_only {
             control = control.child(track);
         } else {
-            let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(model, cx));
+            let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(&content_model, cx));
             control = control
                 .gap(px(scale.gap))
                 .text_color(settled_palette.label_color)

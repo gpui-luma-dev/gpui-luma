@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, FocusHandle, IntoElement, MouseButton, ParentElement, Render, div, prelude::*};
-use luma::controls::button::{ButtonRenderModel, ControlPresenter};
+use luma::controls::button::{ButtonContentContext, ControlPresenter};
 use luma::controls::icon_button::IconButton;
 use luma::controls::button_family::ButtonFamilyRole;
 use luma::focus::LumaFocusScopeExt;
@@ -99,7 +99,7 @@ fn theme_toggle_icon(mode: ThemeMode) -> LucideIcon {
     }
 }
 
-fn theme_toggle_presenter(icon: LucideIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
+fn theme_toggle_presenter(icon: LucideIcon, color: gpui::Hsla) -> ControlPresenter<ButtonContentContext<()>> {
     Arc::new(move |_, _| div().child(luma::infra::icon::lucide_icon(icon, color, 14.0)).into_any_element())
 }
 

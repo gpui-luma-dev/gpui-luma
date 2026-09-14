@@ -274,6 +274,7 @@ fn resolve_button_palette(
     ButtonFamilyPalette {
         background,
         foreground,
+        muted_foreground: foreground,
         border,
         typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight::MEDIUM },
         font_family: SharedString::from("System UI"),

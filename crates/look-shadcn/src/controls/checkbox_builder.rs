@@ -1,7 +1,7 @@
 //! Look-owned checkbox builder. Spawn synthesizes the SDK [`luma::controls::checkbox::Checkbox`].
 
 use gpui::{App, Context, SharedString};
-use luma::controls::button::{ButtonRenderModel, ControlPresenter, HasPresenter};
+use luma::controls::button::{ButtonContentContext, ControlPresenter, HasPresenter};
 use luma::controls::checkbox::{CheckboxBuilder, CheckboxData};
 use luma::infra::icon::SelectionStatusIcons;
 use super::button::ShadcnButtonStyle;
@@ -22,7 +22,7 @@ pub struct Checkbox {
     indicator_only: bool,
     animated: bool,
     icons: Option<SelectionStatusIcons>,
-    content: Option<ControlPresenter<ButtonRenderModel<CheckboxData>>>,
+    content: Option<ControlPresenter<ButtonContentContext<CheckboxData>>>,
 }
 
 impl Checkbox {
@@ -163,8 +163,8 @@ impl Checkbox {
     }
 }
 
-impl HasPresenter<ButtonRenderModel<CheckboxData>> for Checkbox {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<CheckboxData>>) {
+impl HasPresenter<ButtonContentContext<CheckboxData>> for Checkbox {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<CheckboxData>>) {
         self.content = Some(content);
     }
 }

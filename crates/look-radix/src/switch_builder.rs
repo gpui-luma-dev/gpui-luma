@@ -1,7 +1,7 @@
 //! Look-owned switch builder. Spawn synthesizes the SDK [`luma::controls::switch::Switch`].
 
 use gpui::{App, Context, SharedString};
-use luma::controls::button::{ButtonRenderModel, ControlPresenter, HasPresenter};
+use luma::controls::button::{ButtonContentContext, ControlPresenter, HasPresenter};
 use luma::controls::switch::{SwitchBuilder, SwitchData, SwitchOrientation};
 
 use crate::button::Paint;
@@ -25,7 +25,7 @@ pub struct Switch {
     without_elevation: bool,
     animated: bool,
     orientation: Option<SwitchOrientation>,
-    content: Option<ControlPresenter<ButtonRenderModel<SwitchData>>>,
+    content: Option<ControlPresenter<ButtonContentContext<SwitchData>>>,
 }
 
 impl Switch {
@@ -179,8 +179,8 @@ impl Switch {
     }
 }
 
-impl HasPresenter<ButtonRenderModel<SwitchData>> for Switch {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<SwitchData>>) {
+impl HasPresenter<ButtonContentContext<SwitchData>> for Switch {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<SwitchData>>) {
         self.content = Some(content);
     }
 }

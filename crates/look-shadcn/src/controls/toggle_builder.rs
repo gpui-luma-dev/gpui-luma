@@ -1,7 +1,7 @@
 //! Look-owned toggle builder. Spawn synthesizes the SDK [`luma::controls::toggle::Toggle`].
 
 use gpui::{App, Context, SharedString};
-use luma::controls::button::{ButtonRenderModel, ControlIcon, ControlPresenter, HasPresenter};
+use luma::controls::button::{ButtonContentContext, ControlIcon, ControlPresenter, HasPresenter};
 use luma::controls::toggle::{ToggleBuilder, ToggleData};
 use super::button::ShadcnButtonStyle;
 use crate::look::{ShadcnLook, resolve_look_from};
@@ -21,7 +21,7 @@ pub struct Toggle {
     animated: bool,
     round: bool,
     icon: Option<ControlIcon>,
-    content: Option<ControlPresenter<ButtonRenderModel<ToggleData>>>,
+    content: Option<ControlPresenter<ButtonContentContext<ToggleData>>>,
 }
 
 impl Toggle {
@@ -162,8 +162,8 @@ impl Toggle {
     }
 }
 
-impl HasPresenter<ButtonRenderModel<ToggleData>> for Toggle {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<ToggleData>>) {
+impl HasPresenter<ButtonContentContext<ToggleData>> for Toggle {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<ToggleData>>) {
         self.content = Some(content);
     }
 }

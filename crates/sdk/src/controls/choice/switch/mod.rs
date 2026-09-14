@@ -14,7 +14,7 @@ use gpui::{
 
 use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::button_family::ButtonSize;
-use crate::controls::button::{Button, ButtonBuilder, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use crate::controls::button::{Button, ButtonBuilder, ButtonContentContext, ButtonEvent, ButtonTemplate};
 use crate::infra::presenter::{ControlPresenter, HasPresenter};
 
 pub type Switch = Entity<SwitchControl>;
@@ -129,7 +129,11 @@ impl SwitchControl {
         cx.notify();
     }
 
-    pub fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<SwitchData>>, cx: &mut Context<Self>) {
+    pub fn set_presenter(
+        &mut self,
+        content: ControlPresenter<ButtonContentContext<SwitchData>>,
+        cx: &mut Context<Self>,
+    ) {
         self.button.update(cx, |button, cx| button.set_presenter(content, cx));
         cx.notify();
     }
@@ -155,7 +159,7 @@ impl SwitchControl {
 
     pub fn set_switch_track_content<F, E>(&mut self, builder: F, cx: &mut Context<Self>)
     where
-        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonContentContext<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.button.update(cx, |button, cx| button.set_switch_track_content(builder, cx));
@@ -164,7 +168,7 @@ impl SwitchControl {
 
     pub fn set_switch_thumb_content<F, E>(&mut self, builder: F, cx: &mut Context<Self>)
     where
-        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonContentContext<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.button.update(cx, |button, cx| button.set_switch_thumb_content(builder, cx));
@@ -301,7 +305,7 @@ impl SwitchBuilder {
     /// Renders content inside the switch track behind the thumb.
     pub fn track_content<F, E>(mut self, builder: F) -> Self
     where
-        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonContentContext<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.button.model.switch_track_content = Some(Arc::new(move |model, cx| builder(model, cx).into_any_element()));
@@ -311,7 +315,7 @@ impl SwitchBuilder {
     /// Renders content inside the moving switch thumb.
     pub fn thumb_content<F, E>(mut self, builder: F) -> Self
     where
-        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonContentContext<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.button.model.switch_thumb_content = Some(Arc::new(move |model, cx| builder(model, cx).into_any_element()));
@@ -331,8 +335,8 @@ impl SwitchBuilder {
     }
 }
 
-impl HasPresenter<ButtonRenderModel<SwitchData>> for SwitchBuilder {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<SwitchData>>) {
+impl HasPresenter<ButtonContentContext<SwitchData>> for SwitchBuilder {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<SwitchData>>) {
         self.button.set_presenter(content);
     }
 }
@@ -354,7 +358,7 @@ impl Button<SwitchData> {
 
     pub fn set_switch_track_content<F, E>(&mut self, builder: F, cx: &mut Context<Self>)
     where
-        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonContentContext<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.model.switch_track_content = Some(Arc::new(move |model, cx| builder(model, cx).into_any_element()));
@@ -363,7 +367,7 @@ impl Button<SwitchData> {
 
     pub fn set_switch_thumb_content<F, E>(&mut self, builder: F, cx: &mut Context<Self>)
     where
-        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonContentContext<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.model.switch_thumb_content = Some(Arc::new(move |model, cx| builder(model, cx).into_any_element()));

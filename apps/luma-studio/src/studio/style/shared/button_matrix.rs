@@ -8,7 +8,7 @@ use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::icons::render_lucide_icon;
-use crate::studio::style::shared::samples::{ButtonStateSample, button_preview_look};
+use crate::studio::style::shared::samples::ButtonStateSample;
 use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
 
 pub(crate) const BUTTON_TABLE_STATE_COLUMN_WIDTH: f32 = 152.0;
@@ -167,19 +167,16 @@ fn render_button_size_radius_cell(
         radius_label_id(radius),
         if icon_only { "icon" } else { "text" }
     ));
-    let content: luma::controls::button::ControlPresenter<ButtonRenderModel<()>> = if icon_only {
-        Arc::new(move |model, _| {
-            let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
-            render_lucide_icon(
-                LucideIcon::Heart,
-                button_preview_look(model).map(|look| look.foreground).unwrap_or_default(),
-                icon_size,
-            )
-        })
-    } else {
-        let label = SharedString::from("Button");
-        Arc::new(move |_, _| div().child(label.clone()).into_any_element())
-    };
+    let content: luma::controls::button::ControlPresenter<luma::controls::button::ButtonContentContext<()>> =
+        if icon_only {
+            Arc::new(move |model, _| {
+                let icon_size = model.look.icon_size;
+                render_lucide_icon(LucideIcon::Heart, model.look.foreground, icon_size)
+            })
+        } else {
+            let label = SharedString::from("Button");
+            Arc::new(move |_, _| div().child(label.clone()).into_any_element())
+        };
     let model = ButtonRenderModel {
         id,
         data: (),

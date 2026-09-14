@@ -18,7 +18,8 @@ pub use control::{Button, ButtonEvent};
 pub use core::{CommandCore, CommandEvent};
 pub use crate::infra::template::{ControlTemplate, Modifier, TemplateWithModifiers};
 pub use model::{
-    ButtonBuilder, ButtonLookSource, ButtonModel, ButtonRenderModel, ControlIcon, ControlPresenter, HasPresenter,
+    button_content_context, ButtonBuilder, ButtonContentContext, ButtonLookSource, ButtonModel, ButtonRenderModel,
+    ControlIcon, ControlPresenter, HasPresenter,
 };
 pub use template::{ButtonTemplate, ButtonTemplateModifier, DefaultButtonTemplate, default_button_template};
 pub use family::ButtonSize;

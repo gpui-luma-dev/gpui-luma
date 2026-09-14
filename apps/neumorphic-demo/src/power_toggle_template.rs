@@ -1,7 +1,9 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{App, Div, Stateful, Window, div, hsla, point, prelude::*, px};
-use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
+use gpui::{App, Div, FontWeight, Stateful, Window, div, hsla, point, prelude::*, px};
+use luma::controls::button::{ButtonRenderModel, ButtonTemplate, button_content_context};
+use luma::controls::button_family::ButtonFamilyLook;
+use luma::theme::LumaTextStyle;
 use luma::controls::toggle::ToggleData;
 
 pub fn neumorphic_power_toggle_template() -> Arc<dyn ButtonTemplate<ToggleData>> {
@@ -78,6 +80,25 @@ impl ButtonTemplate<ToggleData> for NeumorphicPowerToggleTemplate {
             hsla(0.0, 0.0, 1.0, 0.18)
         };
 
+        let content_model = button_content_context(
+            model,
+            ButtonFamilyLook {
+                background,
+                foreground: icon_color,
+                muted_foreground: icon_color,
+                border: Some(border),
+                typography: LumaTextStyle { size: 14.0, line_height: 16.0, weight: FontWeight::NORMAL },
+                font_family: "System UI".into(),
+                radius: 14.0,
+                padding_x: 3.0,
+                padding_y: 3.0,
+                gap: 0.0,
+                height: 42.0,
+                icon_size: 18.0,
+                shadow: None,
+            },
+        );
+
         div()
             .id(model.id.clone())
             .relative()
@@ -110,7 +131,7 @@ impl ButtonTemplate<ToggleData> for NeumorphicPowerToggleTemplate {
                             .rounded_tl(px(11.0))
                             .rounded_tr(px(11.0)),
                     )
-                    .child(div().text_color(icon_color).child((model.content)(model, cx))),
+                    .child(div().text_color(icon_color).child((model.content)(&content_model, cx))),
             )
             .when(state.disabled, |div| div.opacity(0.64))
             .when(!state.disabled, |div| div.cursor_pointer())

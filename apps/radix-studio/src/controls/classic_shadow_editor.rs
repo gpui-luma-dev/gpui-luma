@@ -342,7 +342,7 @@ impl ClassicShadowEditor {
             .look(look)
             .ghost_quiet()
             .content(move |model, _| {
-                let color = model.resolved_look.as_ref().map_or(Hsla::default(), |look| look.foreground);
+                let color = model.look.foreground;
                 let name = if copy_state.load(Ordering::Relaxed) {
                     "check"
                 } else {

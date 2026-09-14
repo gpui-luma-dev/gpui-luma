@@ -1,7 +1,7 @@
 //! Look-owned radio builder. Spawn synthesizes the SDK [`luma::controls::radio_button::RadioButton`].
 
 use gpui::{App, Context, SharedString};
-use luma::controls::button::{ButtonRenderModel, ControlPresenter, HasPresenter};
+use luma::controls::button::{ButtonContentContext, ControlPresenter, HasPresenter};
 use luma::controls::button_family::ButtonFamilyRole;
 use luma::controls::radio_button::{RadioButtonBuilder, RadioButtonData};
 
@@ -24,7 +24,7 @@ pub struct Radio {
     without_elevation: bool,
     animated: bool,
     role: Option<ButtonFamilyRole>,
-    content: Option<ControlPresenter<ButtonRenderModel<RadioButtonData>>>,
+    content: Option<ControlPresenter<ButtonContentContext<RadioButtonData>>>,
 }
 
 impl Radio {
@@ -164,8 +164,8 @@ impl Radio {
     }
 }
 
-impl HasPresenter<ButtonRenderModel<RadioButtonData>> for Radio {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<RadioButtonData>>) {
+impl HasPresenter<ButtonContentContext<RadioButtonData>> for Radio {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<RadioButtonData>>) {
         self.content = Some(content);
     }
 }

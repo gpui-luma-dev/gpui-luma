@@ -6,7 +6,7 @@ use gpui::{
     AnyElement, App, Context, Entity, FontWeight, Hsla, IntoElement, Render, SharedString, Window, div, prelude::*, px,
 };
 use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use luma::controls::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use luma::controls::button::{Button, ButtonContentContext, ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use luma::infra::presenter::HasPresenter;
 use luma::controls::slider::{Slider, SliderEvent};
 use luma::controls::textfield::{TextField, TextFieldEvent, Validator};
@@ -733,8 +733,8 @@ fn render_button_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("controls-doc-shadow-preview-{}", sample.id));
     let label = SharedString::from("Button");
-    let content: luma::controls::button::ControlPresenter<ButtonRenderModel<()>> =
-        Arc::new(move |_: &ButtonRenderModel<()>, _| div().child(label.clone()).into_any_element());
+    let content: luma::controls::button::ControlPresenter<ButtonContentContext<()>> =
+        Arc::new(move |_: &ButtonContentContext<()>, _| div().child(label.clone()).into_any_element());
     let model = ButtonRenderModel {
         id,
         data: (),

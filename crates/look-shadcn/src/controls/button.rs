@@ -228,6 +228,7 @@ pub fn button_palette(
     ButtonFamilyPalette {
         background,
         foreground,
+        muted_foreground: ctx.palette().app_muted_foreground,
         border,
         typography,
         font_family: ctx.typography().font.sans.family.clone().into(),

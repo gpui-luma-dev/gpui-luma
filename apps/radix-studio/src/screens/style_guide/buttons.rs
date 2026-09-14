@@ -8,7 +8,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, Hsla, IntoElement, SharedString, Window, div, prelude::*, px};
-use luma::controls::button::{ButtonRenderModel, ButtonTemplate, ControlPresenter};
+use luma::controls::button::{ButtonContentContext, ButtonRenderModel, ButtonTemplate, ControlPresenter};
 use luma::controls::button_family::{ButtonFamilyRole, ButtonSize as SdkButtonSize};
 use luma::controls::tabs::Tabs;
 use luma::infra::icon::lucide_icon;
@@ -189,11 +189,11 @@ fn preview_next(template: &Arc<dyn ButtonTemplate<()>>, id: &str, window: &mut W
     template.render(&model, window, cx).into_any_element()
 }
 
-fn next_content() -> ControlPresenter<ButtonRenderModel<()>> {
+fn next_content() -> ControlPresenter<ButtonContentContext<()>> {
     Arc::new(|model, _| {
-        let fg = model.resolved_look.as_ref().map(|look| look.foreground).unwrap_or_else(gpui::white);
-        let icon = model.resolved_look.as_ref().map(|look| look.icon_size).unwrap_or(14.0);
-        let gap = model.resolved_look.as_ref().map(|look| look.gap).unwrap_or(8.0);
+        let fg = model.look.foreground;
+        let icon = model.look.icon_size;
+        let gap = model.look.gap;
         div()
             .flex()
             .items_center()

@@ -17,7 +17,7 @@ use gpui::{
 
 use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
 use crate::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use crate::controls::button::{Button, ButtonBuilder, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use crate::controls::button::{Button, ButtonBuilder, ButtonContentContext, ButtonEvent, ButtonTemplate};
 use crate::infra::presenter::{ControlPresenter, HasPresenter};
 
 pub type RadioButton = Entity<RadioButtonControl>;
@@ -134,7 +134,7 @@ impl RadioButtonControl {
 
     pub fn set_presenter(
         &mut self,
-        content: ControlPresenter<ButtonRenderModel<RadioButtonData>>,
+        content: ControlPresenter<ButtonContentContext<RadioButtonData>>,
         cx: &mut Context<Self>,
     ) {
         self.button.update(cx, |button, cx| button.set_presenter(content, cx));
@@ -240,8 +240,8 @@ impl RadioButtonBuilder {
     }
 }
 
-impl HasPresenter<ButtonRenderModel<RadioButtonData>> for RadioButtonBuilder {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<RadioButtonData>>) {
+impl HasPresenter<ButtonContentContext<RadioButtonData>> for RadioButtonBuilder {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<RadioButtonData>>) {
         self.button.set_presenter(content);
     }
 }

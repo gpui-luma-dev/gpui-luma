@@ -20,6 +20,7 @@ pub enum ButtonFamilyRole {
 pub struct ButtonFamilyPalette {
     pub background: Hsla,
     pub foreground: Hsla,
+    pub muted_foreground: Hsla,
     /// Explicit border color from the theme. `None` means borderless.
     pub border: Option<Hsla>,
     pub typography: LumaTextStyle,
@@ -30,6 +31,7 @@ pub struct ButtonFamilyPalette {
 pub struct ButtonFamilyLook {
     pub background: Hsla,
     pub foreground: Hsla,
+    pub muted_foreground: Hsla,
     /// Explicit border color from the theme. `None` means borderless.
     pub border: Option<Hsla>,
     pub typography: LumaTextStyle,
@@ -121,6 +123,7 @@ fn native_button_palette(tokens: &ThemeTokens, role: ButtonFamilyRole, state: In
     ButtonFamilyPalette {
         background,
         foreground,
+        muted_foreground: palette.app.muted_foreground,
         border: Some(border),
         typography: typography.text.label,
         font_family: typography.font.sans.family.clone().into(),
@@ -143,6 +146,7 @@ pub fn compose_button_family_look(
     ButtonFamilyLook {
         background: palette.background,
         foreground: palette.foreground,
+        muted_foreground: palette.muted_foreground,
         border: palette.border,
         typography: palette.typography,
         font_family: palette.font_family.clone(),

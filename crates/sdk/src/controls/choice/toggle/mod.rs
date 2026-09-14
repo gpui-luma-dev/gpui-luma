@@ -11,7 +11,7 @@ use crate::controls::button_family::{
     ButtonFamilyPalette, ButtonFamilyRole, button_family_effective_border, default_button_family_theme,
 };
 use crate::controls::button::{
-    Button, ButtonBuilder, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate,
+    Button, ButtonBuilder, ButtonContentContext, ButtonEvent, ButtonTemplate, DefaultButtonTemplate,
 };
 use crate::infra::presenter::{ControlPresenter, HasPresenter};
 use crate::theme::ControlSize;
@@ -133,7 +133,11 @@ impl ToggleControl {
         cx.notify();
     }
 
-    pub fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<ToggleData>>, cx: &mut Context<Self>) {
+    pub fn set_presenter(
+        &mut self,
+        content: ControlPresenter<ButtonContentContext<ToggleData>>,
+        cx: &mut Context<Self>,
+    ) {
         self.button.update(cx, |button, cx| button.set_presenter(content, cx));
         cx.notify();
     }
@@ -245,8 +249,8 @@ impl ToggleBuilder {
     }
 }
 
-impl HasPresenter<ButtonRenderModel<ToggleData>> for ToggleBuilder {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<ToggleData>>) {
+impl HasPresenter<ButtonContentContext<ToggleData>> for ToggleBuilder {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<ToggleData>>) {
         self.button.set_presenter(content);
     }
 }
@@ -291,6 +295,7 @@ fn lerp_toggle_palette(off: &ButtonFamilyPalette, on: &ButtonFamilyPalette, prog
     ButtonFamilyPalette {
         background: lerp_hsla(off.background, on.background, t),
         foreground: lerp_hsla(off.foreground, on.foreground, t),
+        muted_foreground: lerp_hsla(off.muted_foreground, on.muted_foreground, t),
         border: lerp_optional_hsla(off.border, on.border, t),
         typography: settled.typography,
         font_family: settled.font_family.clone(),

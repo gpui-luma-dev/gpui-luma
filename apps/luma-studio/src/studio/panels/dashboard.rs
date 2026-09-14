@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::button::{ButtonEvent, ButtonRenderModel, ControlIcon};
+use luma::controls::button::{ButtonContentContext, ButtonEvent, ControlIcon};
 use luma::controls::icon_button::IconButton;
 use luma::controls::table::{TableSelectionMode, TableEvent, PagingTable};
 use luma::controls::pager::PagerStyle;
@@ -253,7 +253,7 @@ impl Render for DashboardPanel {
     }
 }
 
-fn sidebar_toggle_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonRenderModel<()>> {
+fn sidebar_toggle_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonContentContext<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(lucide) => {
             div().child(luma::infra::icon::lucide_icon(*lucide, color, 16.0)).into_any_element()

@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use gpui::{Context, Entity, EventEmitter, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*};
+use gpui::{Context, Entity, EventEmitter, IntoElement, Render, Subscription, Window, div, prelude::*};
 use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::toggle::{Toggle, ToggleEvent};
 use luma::hstack;
@@ -62,7 +62,7 @@ impl ScreenNav {
             .look(look)
             .ghost_quiet()
             .content(move |model, _| {
-                let color = model.resolved_look.as_ref().map_or(Hsla::default(), |look| look.foreground);
+                let color = model.look.foreground;
                 let name = match icon_look.mode() {
                     ThemeMode::Dark => "moon",
                     ThemeMode::Light => "sun",

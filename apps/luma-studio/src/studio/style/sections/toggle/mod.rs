@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
 use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
+use luma::controls::button::{ButtonContentContext, ButtonRenderModel, ButtonTemplate};
 use luma::controls::toggle::ToggleData;
 use luma::controls::tabs::Tabs;
 use luma::theme::InteractionState;
@@ -240,7 +240,7 @@ fn render_toggle_size_radius_cell(
         radius_label_id(radius),
         if icon_only { "icon" } else { "text" }
     ));
-    let content: luma::controls::button::ControlPresenter<ButtonRenderModel<ToggleData>> = if icon_only {
+    let content: luma::controls::button::ControlPresenter<ButtonContentContext<ToggleData>> = if icon_only {
         Arc::new(move |model, _| {
             let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
             render_lucide_icon(
@@ -303,7 +303,7 @@ fn render_toggle_state_sample(
         if icon_only { "icon" } else { "text" },
         sample.id
     ));
-    let content: luma::controls::button::ControlPresenter<ButtonRenderModel<ToggleData>> = if icon_only {
+    let content: luma::controls::button::ControlPresenter<ButtonContentContext<ToggleData>> = if icon_only {
         Arc::new(move |model, _| round_icon_glyph(model, selected))
     } else {
         let label = SharedString::from("Toggle");
@@ -398,9 +398,9 @@ fn toggle_look_for_semantic(
 }
 
 fn button_preview_look(
-    model: &ButtonRenderModel<ToggleData>,
+    model: &ButtonContentContext<ToggleData>,
 ) -> Option<luma::controls::button_family::ButtonFamilyLook> {
-    model.look.as_ref().map(|resolve| resolve(model))
+    Some(model.look.clone())
 }
 
 fn toggle_button_look_for_style(
@@ -419,9 +419,9 @@ fn toggle_button_look_for_style(
     })
 }
 
-pub(crate) fn round_icon_glyph(model: &ButtonRenderModel<ToggleData>, selected: bool) -> AnyElement {
+pub(crate) fn round_icon_glyph(model: &ButtonContentContext<ToggleData>, selected: bool) -> AnyElement {
     let icon = if selected { LucideIcon::Check } else { LucideIcon::Plus };
-    let icon_size = model.look.as_ref().map(|resolve| resolve(model).icon_size).unwrap_or(16.0);
-    let color = model.look.as_ref().map(|resolve| resolve(model).foreground).unwrap_or_default();
+    let icon_size = model.look.icon_size;
+    let color = model.look.foreground;
     render_lucide_icon(icon, color, icon_size)
 }

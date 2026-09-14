@@ -6,7 +6,7 @@ use lucide_svg_static::Icon as LucideIcon;
 use super::model::{PagerPageItem, PagerRenderModel, PagerStyle};
 use super::theme::{PagerLook, PagerTheme, default_pager_theme};
 use crate::controls::button_family::ButtonFamilyRole;
-use crate::controls::button::{ButtonRenderModel, ControlPresenter};
+use crate::controls::button::{ButtonContentContext, ButtonRenderModel, ControlPresenter};
 use crate::infra::icon::{IconSource, render_icon_source};
 use crate::theme::InteractionState;
 
@@ -496,7 +496,7 @@ fn render_nav_button(
     let icon = spec.icon;
     let label_position = spec.label_position;
     let label = spec.label.cloned();
-    let content: ControlPresenter<ButtonRenderModel<()>> = Arc::new(move |_, _| {
+    let content: ControlPresenter<ButtonContentContext<()>> = Arc::new(move |_, _| {
         let icon_element = render_icon_source(&icon, icon_color, icon_size);
         let label_element = label.as_ref().map(|label| div().child(label.clone()).into_any_element());
         match (label_position, label_element) {
@@ -550,7 +550,7 @@ fn render_page_button(
 ) -> AnyElement {
     let selected = page == model.current_page.min(model.page_count.saturating_sub(1));
     let label = SharedString::from(format!("{}", page + 1));
-    let content: ControlPresenter<ButtonRenderModel<()>> =
+    let content: ControlPresenter<ButtonContentContext<()>> =
         Arc::new(move |_, _| div().child(label.clone()).into_any_element());
 
     let click = (model.enabled && !selected).then(|| {
@@ -585,7 +585,7 @@ fn render_gap_button(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let content: ControlPresenter<ButtonRenderModel<()>> = Arc::new(move |_, _| {
+    let content: ControlPresenter<ButtonContentContext<()>> = Arc::new(move |_, _| {
         crate::infra::icon::lucide_icon(LucideIcon::Ellipsis, gpui::hsla(0.0, 0.0, 0.5, 1.0), 16.0)
     });
 
@@ -615,7 +615,7 @@ fn render_gap_button(
 struct PagerButtonSpec {
     id_suffix: String,
     role: ButtonFamilyRole,
-    content: ControlPresenter<ButtonRenderModel<()>>,
+    content: ControlPresenter<ButtonContentContext<()>>,
     interaction_disabled: bool,
     layout: PagerButtonLayout,
 }

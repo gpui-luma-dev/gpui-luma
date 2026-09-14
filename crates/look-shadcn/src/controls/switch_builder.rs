@@ -1,7 +1,7 @@
 //! Look-owned switch builder. Spawn synthesizes the SDK [`luma::controls::switch::Switch`].
 
 use gpui::{App, Context, IntoElement, Pixels, SharedString};
-use luma::controls::button::{ButtonRenderModel, ControlPresenter, HasPresenter};
+use luma::controls::button::{ButtonContentContext, ControlPresenter, HasPresenter};
 use luma::controls::switch::{SwitchBuilder, SwitchData, SwitchOrientation};
 use super::button::ShadcnButtonStyle;
 use crate::look::{ShadcnLook, resolve_look_from};
@@ -24,9 +24,9 @@ pub struct Switch {
     track_thickness: Option<Pixels>,
     thumb_size: Option<Pixels>,
     track_length_extra: f32,
-    track_content: Option<ControlPresenter<ButtonRenderModel<SwitchData>>>,
-    thumb_content: Option<ControlPresenter<ButtonRenderModel<SwitchData>>>,
-    content: Option<ControlPresenter<ButtonRenderModel<SwitchData>>>,
+    track_content: Option<ControlPresenter<ButtonContentContext<SwitchData>>>,
+    thumb_content: Option<ControlPresenter<ButtonContentContext<SwitchData>>>,
+    content: Option<ControlPresenter<ButtonContentContext<SwitchData>>>,
 }
 
 impl Switch {
@@ -157,7 +157,7 @@ impl Switch {
 
     pub fn track_content<F, E>(mut self, builder: F) -> Self
     where
-        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonContentContext<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.track_content = Some(std::sync::Arc::new(move |model, cx| builder(model, cx).into_any_element()));
@@ -166,7 +166,7 @@ impl Switch {
 
     pub fn thumb_content<F, E>(mut self, builder: F) -> Self
     where
-        F: Fn(&ButtonRenderModel<SwitchData>, &mut App) -> E + Send + Sync + 'static,
+        F: Fn(&ButtonContentContext<SwitchData>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.thumb_content = Some(std::sync::Arc::new(move |model, cx| builder(model, cx).into_any_element()));
@@ -221,8 +221,8 @@ impl Switch {
     }
 }
 
-impl HasPresenter<ButtonRenderModel<SwitchData>> for Switch {
-    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<SwitchData>>) {
+impl HasPresenter<ButtonContentContext<SwitchData>> for Switch {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonContentContext<SwitchData>>) {
         self.content = Some(content);
     }
 }
