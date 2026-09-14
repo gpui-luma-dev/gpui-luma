@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Context, Entity, EventEmitter, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*,
-    px, size,
+    AnyElement, App, ClipboardItem, Context, Entity, EventEmitter, Hsla, IntoElement, Render, Subscription, Window,
+    div, prelude::*, px, size,
 };
 use luma_color::{ColorSwatchButtonTemplate, ColorSwatchData};
-use luma::controls::button::{Button, ButtonEvent};
+use luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use luma_color::color_field::{ColorFieldEvent, ColorFieldState};
 use luma_color::color_slider::color_spec::Hsv;
 use luma_color::color_slider::{AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing};
@@ -13,7 +13,10 @@ use luma_color::composition::ColorCompositionSync;
 use luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
 use luma::controls::slider::{SliderControl, SliderEvent};
 use luma::theme::ControlSize;
-use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn::{ShadcnLook, ShadcnSize};
+use luma_look_shadcn as shadcn;
+
+use crate::studio::color_format::format_compact_hsla;
 
 #[derive(Clone, Debug)]
 pub(crate) enum ColorPickerEvent {
@@ -57,7 +60,7 @@ impl ColorPickerPopover {
         swatch_size: f32,
         cx: &mut Context<Self>,
     ) -> Self {
-        Self::new_with_size_and_content(look, color, instance_id, swatch_size, None, cx)
+        Self::new_with_size_and_content(look, color, instance_id, swatch_size, None, false, cx)
     }
 
     #[allow(dead_code)]
@@ -69,7 +72,7 @@ impl ColorPickerPopover {
         content: ColorPickerContent,
         cx: &mut Context<Self>,
     ) -> Self {
-        Self::new_with_size_and_content(look, color, instance_id.into(), swatch_size, Some(content), cx)
+        Self::new_with_size_and_content(look, color, instance_id.into(), swatch_size, Some(content), false, cx)
     }
 
     fn new_with_size_and_content(
@@ -78,6 +81,7 @@ impl ColorPickerPopover {
         instance_id: String,
         swatch_size: f32,
         content: Option<ColorPickerContent>,
+        include_copy_button: bool,
         cx: &mut Context<Self>,
     ) -> Self {
         let hsv = Hsv::from_hsla_ext(color);
@@ -104,13 +108,23 @@ impl ColorPickerPopover {
             .template(Arc::new(ColorSwatchButtonTemplate))
             .spawn(cx);
 
+        let copy_button = include_copy_button.then(|| {
+            shadcn::Button::new(format!("{instance_id}-copy"))
+                .look(look.as_ref())
+                .outline()
+                .size(ShadcnSize::Sm)
+                .label("Copy color spec")
+                .spawn(cx)
+        });
+
         let default_content: ColorPickerContent = {
             let field = field.clone();
             let hue_slider = hue_slider.clone();
             let alpha_slider = alpha_slider.clone();
             let look = look.clone();
+            let copy_button = copy_button.clone();
             Arc::new(move |_, _, _, _| {
-                div()
+                let mut content = div()
                     .w(px(260.0))
                     .p(px(12.0))
                     .gap(px(10.0))
@@ -122,14 +136,17 @@ impl ColorPickerPopover {
                     .rounded(px(6.0))
                     .child(div().w(px(236.0)).h(px(180.0)).child(field.clone()))
                     .child(div().w(px(236.0)).child(hue_slider.clone()))
-                    .child(div().w(px(236.0)).child(alpha_slider.clone()))
-                    .into_any_element()
+                    .child(div().w(px(236.0)).child(alpha_slider.clone()));
+                if let Some(copy_button) = &copy_button {
+                    content = content.child(copy_button.clone());
+                }
+                content.into_any_element()
             })
         };
         let content = content.unwrap_or(default_content);
         let picker_entity = cx.entity().clone();
         let content_for_popover = content.clone();
-        let subscriptions = vec![
+        let mut subscriptions = vec![
             cx.subscribe(&field, |picker, _, event: &ColorFieldEvent, cx| {
                 let (ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv)) = event else {
                     return;
@@ -157,6 +174,13 @@ impl ColorPickerPopover {
                 picker.emit_change(cx);
             }),
         ];
+        if let Some(copy_button) = &copy_button {
+            subscriptions.push(cx.subscribe(copy_button, |picker, _, event: &ButtonEvent, cx| {
+                if matches!(event, ButtonEvent::Click) {
+                    cx.write_to_clipboard(ClipboardItem::new_string(format_compact_hsla(picker.color)));
+                }
+            }));
+        }
 
         let button_for_popover = button.clone();
         let popover = PopoverButton::new(format!("{instance_id}-popover"))
@@ -205,7 +229,7 @@ impl ColorPickerPopover {
         instance_id: impl Into<String>,
         cx: &mut Context<Self>,
     ) -> Self {
-        Self::new_with_size(look, color, instance_id.into(), 55.0, cx)
+        Self::new_with_size_and_content(look, color, instance_id.into(), 55.0, None, true, cx)
     }
 
     pub(crate) fn set_color(&mut self, color: Hsla, cx: &mut Context<Self>) {
