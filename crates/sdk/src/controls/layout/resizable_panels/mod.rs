@@ -7,7 +7,7 @@ mod theme;
 
 pub use control::{ResizablePanels, ResizablePanelsEvent, ResizablePanelsHandleDrag};
 pub use model::{
-    PanelHideMode, PanelLayoutState, PanelRender, PanelSize, ResizeCollapseBehavior, ResizeCollapseDirection,
+    PanelHideMode, PanelId, PanelLayoutState, PanelRender, PanelSize, ResizeCollapseBehavior, ResizeCollapseDirection,
     ResizeCollapseMode, ResizeHandleMetrics, ResizeHandleSize, ResizeHandleVisibility, ResizablePanelSpec,
     ResizablePanelsBuilder, ResizablePanelsModel, ResizablePanelsOrientation, ResizablePanelsRenderModel, render_pane,
 };

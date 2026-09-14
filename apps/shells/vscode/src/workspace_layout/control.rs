@@ -4,14 +4,15 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, EventEmitter, Pixels, Render, SharedString, Window, div, prelude::*, px};
 use luma::controls::icon_button::IconButton;
 use luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
-use luma::controls::resizable_panels::{PanelHideMode, ResizablePanels, ResizablePanelsTheme};
+use luma::controls::resizable_panels::{PanelHideMode, PanelId, ResizablePanels, ResizablePanelsTheme};
 use luma_look_shadcn::{ShadcnLook};
 use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::layout_config::{LayoutConfig, PanelAlignment, PrimarySideBarPosition};
 use crate::workbench_layout::{
-    LEFT_EDGE_PANEL_INDEX, PrimarySideBar, RIGHT_EDGE_PANEL_INDEX, SecondarySideBar, WORKBENCH_PANEL_H, WorkbenchLayout,
+    LEFT_EDGE_PANEL_INDEX, PRIMARY_SIDE_BAR_REGION, PrimarySideBar, RIGHT_EDGE_PANEL_INDEX, SECONDARY_SIDE_BAR_REGION,
+    SecondarySideBar, WORKBENCH_PANEL_H, WorkbenchLayout,
 };
 use crate::workspace_layout::template::{
     ACTIVITY_BAR_W, ActivityRailEdge, ActivityRailSpec, ExternalPanelGeometry, activity_bar_rail, floating_output_panel,
@@ -100,20 +101,6 @@ impl WorkspaceLayout {
         self.workbench.panels()
     }
 
-    pub fn primary_side_bar_panel_index(&self) -> usize {
-        match self.config.primary_side_bar_position {
-            PrimarySideBarPosition::Left => LEFT_EDGE_PANEL_INDEX,
-            PrimarySideBarPosition::Right => RIGHT_EDGE_PANEL_INDEX,
-        }
-    }
-
-    pub fn secondary_side_bar_panel_index(&self) -> usize {
-        match self.config.primary_side_bar_position {
-            PrimarySideBarPosition::Left => RIGHT_EDGE_PANEL_INDEX,
-            PrimarySideBarPosition::Right => LEFT_EDGE_PANEL_INDEX,
-        }
-    }
-
     pub fn set_frame_size(&mut self, width: Pixels, height: Pixels, cx: &mut Context<Self>) {
         if self.frame_width == width && self.frame_height == height {
             return;
@@ -123,8 +110,12 @@ impl WorkspaceLayout {
         // The first layout pass starts with a provisional 1px frame, so a
         // complete panel collapse can fail before the real viewport exists.
         // Reconcile sidebar visibility once the measured frame is available.
-        self.sync_panel_visibility(self.primary_side_bar_panel_index(), self.config.primary_side_bar_visible, cx);
-        self.sync_panel_visibility(self.secondary_side_bar_panel_index(), self.config.secondary_side_bar_visible, cx);
+        self.sync_panel_visibility(&PanelId::new(PRIMARY_SIDE_BAR_REGION), self.config.primary_side_bar_visible, cx);
+        self.sync_panel_visibility(
+            &PanelId::new(SECONDARY_SIDE_BAR_REGION),
+            self.config.secondary_side_bar_visible,
+            cx,
+        );
         cx.notify();
     }
 
@@ -140,13 +131,13 @@ impl WorkspaceLayout {
 
     pub fn set_primary_side_bar_visible(&mut self, visible: bool, cx: &mut Context<Self>) {
         self.config.primary_side_bar_visible = visible;
-        self.sync_panel_visibility(self.primary_side_bar_panel_index(), visible, cx);
+        self.sync_panel_visibility(&PanelId::new(PRIMARY_SIDE_BAR_REGION), visible, cx);
         cx.notify();
     }
 
     pub fn set_secondary_side_bar_visible(&mut self, visible: bool, cx: &mut Context<Self>) {
         self.config.secondary_side_bar_visible = visible;
-        self.sync_panel_visibility(self.secondary_side_bar_panel_index(), visible, cx);
+        self.sync_panel_visibility(&PanelId::new(SECONDARY_SIDE_BAR_REGION), visible, cx);
         cx.notify();
     }
 
@@ -192,11 +183,13 @@ impl WorkspaceLayout {
         });
     }
 
-    fn sync_panel_visibility(&self, panel_index: usize, visible: bool, cx: &mut Context<Self>) {
+    fn sync_panel_visibility(&self, region: &PanelId, visible: bool, cx: &mut Context<Self>) {
         self.workbench.panels().update(cx, |panels, cx| {
-            let hidden = panels.is_panel_hidden(panel_index);
+            let Some(hidden) = panels.is_region_hidden(region) else {
+                return;
+            };
             if hidden == visible {
-                panels.toggle_panel_hidden(panel_index, PanelHideMode::Completely, cx);
+                panels.toggle_region_hidden(region, PanelHideMode::Completely, cx);
             }
         });
     }

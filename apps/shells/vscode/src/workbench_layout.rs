@@ -10,12 +10,18 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Pixels, SharedString, div, px, prelude::*};
-use luma::controls::resizable_panels::{ResizablePanelSpec, ResizablePanels, ResizeHandleSize, ResizeHandleVisibility};
+use luma::controls::resizable_panels::{
+    PanelId, ResizablePanelSpec, ResizablePanels, ResizeHandleSize, ResizeHandleVisibility,
+};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole};
 
 use crate::layout_config::{PanelAlignment, PrimarySideBarPosition};
 
 pub const WORKBENCH_PANEL_H: f32 = 180.0;
+// These opaque IDs belong to this demo; the SDK only knows them as stable panel identities.
+pub const PRIMARY_SIDE_BAR_REGION: &str = "vscode.primary-side-bar";
+pub const EDITOR_REGION: &str = "vscode.editor";
+pub const SECONDARY_SIDE_BAR_REGION: &str = "vscode.secondary-side-bar";
 
 /// Resizable panel index for the physical left edge slot.
 pub const LEFT_EDGE_PANEL_INDEX: usize = 0;
@@ -85,19 +91,25 @@ impl WorkbenchLayout {
             Rc::new(RefCell::new(Rc::new(|| gpui::Empty.into_any_element())));
         let editor_panel_splitter = panel_splitter.clone();
 
+        // The workbench has three physical slots. Logical IDs let the shell swap
+        // sidebar ownership without rebuilding the panel tree or losing sizes.
         let panels = look
             .resizable_panels(format!("{id}-panels"))
             .handle_visibility(ResizeHandleVisibility::Hover)
             .resize_handle(ResizeHandleSize::Sm)
             .handle_grip(true)
             .show_border(false)
-            .panel(side_bar_panel(edge_side_bar(
-                primary_side_bar_position.clone(),
-                PrimarySideBarPosition::Left,
-                primary_side_bar.clone(),
-                secondary_side_bar.clone(),
-            )))
-            .panel(
+            .region(
+                PanelId::new(PRIMARY_SIDE_BAR_REGION),
+                side_bar_panel(edge_side_bar(
+                    primary_side_bar_position.clone(),
+                    PrimarySideBarPosition::Left,
+                    primary_side_bar.clone(),
+                    secondary_side_bar.clone(),
+                )),
+            )
+            .region(
+                PanelId::new(EDITOR_REGION),
                 ResizablePanelSpec::new_render(move || {
                     render_region_slot(editor_region(
                         &look_for_panels,
@@ -110,12 +122,15 @@ impl WorkbenchLayout {
                 .weight(1.0)
                 .min(px(320.0)),
             )
-            .panel(side_bar_panel(edge_side_bar(
-                primary_side_bar_position.clone(),
-                PrimarySideBarPosition::Right,
-                primary_side_bar,
-                secondary_side_bar,
-            )))
+            .region(
+                PanelId::new(SECONDARY_SIDE_BAR_REGION),
+                side_bar_panel(edge_side_bar(
+                    primary_side_bar_position.clone(),
+                    PrimarySideBarPosition::Right,
+                    primary_side_bar,
+                    secondary_side_bar,
+                )),
+            )
             .spawn(cx);
 
         Self { panels, primary_side_bar_position, panel_visible, panel_alignment, panel_height_px, panel_splitter }
@@ -155,7 +170,10 @@ impl WorkbenchLayout {
             return;
         }
         self.primary_side_bar_position.set(position);
-        self.panels.update(cx, |_, cx| cx.notify());
+        self.panels.update(cx, |panels, cx| {
+            // Visibility is applied by VscodeShellApp after this identity swap.
+            panels.swap_regions(&PanelId::new(PRIMARY_SIDE_BAR_REGION), &PanelId::new(SECONDARY_SIDE_BAR_REGION), cx);
+        });
     }
 
     pub fn set_panel_layout<T: 'static>(&self, visible: bool, alignment: PanelAlignment, cx: &mut Context<T>) {

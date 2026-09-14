@@ -17,6 +17,20 @@ pub enum ResizablePanelsOrientation {
     Vertical,
 }
 
+/// Application-defined identity for a panel that is independent of its physical index.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct PanelId(SharedString);
+
+impl PanelId {
+    pub fn new(id: impl Into<SharedString>) -> Self {
+        Self(id.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
 /// Preset overlay resize handle dimensions (lane, grip, and hit target scale together).
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ResizeHandleSize {
@@ -157,6 +171,7 @@ impl PanelLayoutState {
 
 #[derive(Clone)]
 pub struct ResizablePanelSpec {
+    pub(crate) panel_id: Option<PanelId>,
     pub size: PanelSize,
     pub min_px: Option<f32>,
     pub max_px: Option<f32>,
@@ -172,6 +187,7 @@ impl ResizablePanelSpec {
         F: Fn() -> E + 'static,
     {
         Self {
+            panel_id: None,
             size: PanelSize::Weight(1.0),
             min_px: None,
             max_px: None,
@@ -373,6 +389,20 @@ impl ResizablePanelsBuilder {
         self
     }
 
+    /// Adds a panel with an application-defined logical identity.
+    ///
+    /// If the identity is already assigned, the new declaration moves it to this panel.
+    pub fn region(mut self, panel_id: PanelId, mut panel: ResizablePanelSpec) -> Self {
+        if let Some(existing_index) =
+            self.model.panels.iter().position(|existing| existing.panel_id.as_ref() == Some(&panel_id))
+        {
+            self.model.panels[existing_index].panel_id = None;
+        }
+        panel.panel_id = Some(panel_id);
+        self.model.panels.push(panel);
+        self
+    }
+
     pub fn panels<I>(mut self, panels: I) -> Self
     where
         I: IntoIterator<Item = ResizablePanelSpec>,
@@ -420,9 +450,9 @@ mod resize_handle_tests {
     use std::sync::Arc;
 
     use super::{
-        ResizeCollapseBehavior, ResizeCollapseDirection, ResizeCollapseMode, ResizeHandleSize, ResizeHandleVisibility,
+        PanelId, ResizablePanelSpec, ResizablePanelsBuilder, ResizeCollapseBehavior, ResizeCollapseDirection,
+        ResizeCollapseMode, ResizeHandleSize, ResizeHandleVisibility, default_resizable_panels_template,
     };
-    use super::{ResizablePanelsBuilder, default_resizable_panels_template};
 
     #[test]
     fn metrics_increase_across_presets() {
@@ -489,5 +519,28 @@ mod resize_handle_tests {
 
         let builder_opt_out = ResizablePanelsBuilder::new("panels").animated(false);
         assert!(!builder_opt_out.model.animated);
+    }
+
+    #[test]
+    fn regions_use_application_defined_panel_ids() {
+        let primary = PanelId::new("workbench.primary-sidebar");
+        let editor = PanelId::new("workbench.editor");
+        let builder = ResizablePanelsBuilder::new("regions")
+            .region(primary.clone(), ResizablePanelSpec::new_render(|| gpui::div()))
+            .region(editor.clone(), ResizablePanelSpec::new_render(|| gpui::div()));
+
+        assert_eq!(builder.model.panels[0].panel_id, Some(primary));
+        assert_eq!(builder.model.panels[1].panel_id, Some(editor));
+    }
+
+    #[test]
+    fn declaring_an_existing_region_moves_its_identity() {
+        let primary = PanelId::new("workbench.primary-sidebar");
+        let builder = ResizablePanelsBuilder::new("regions")
+            .region(primary.clone(), ResizablePanelSpec::new_render(|| gpui::div()))
+            .region(primary.clone(), ResizablePanelSpec::new_render(|| gpui::div()));
+
+        assert_eq!(builder.model.panels[0].panel_id, None);
+        assert_eq!(builder.model.panels[1].panel_id, Some(primary));
     }
 }

@@ -29,6 +29,7 @@ use crate::workspace_layout::{PrimarySideBar, SecondarySideBar, WorkspaceLayout,
 
 const STATUS_BAR_H: f32 = 32.0;
 
+/// Demo shell coordinator: owns desired layout state and projects it into GPUI controls.
 pub struct VscodeShellApp {
     focus_scope: FocusHandle,
     look: Arc<ShadcnLook>,
@@ -205,13 +206,14 @@ impl VscodeShellApp {
     fn apply_layout_config(&mut self, cx: &mut Context<Self>) {
         self.applying_layout_config = true;
         self.workspace_layout.update(cx, |layout, cx| {
+            // Change logical ownership before visibility so a sidebar's state follows its new edge.
+            layout.set_primary_side_bar_position(self.layout_config.primary_side_bar_position, cx);
             layout.set_activity_bar_visible(self.layout_config.activity_bar_visible, cx);
             layout.set_secondary_activity_bar_visible(self.layout_config.secondary_activity_bar_visible, cx);
             layout.set_primary_side_bar_visible(self.layout_config.primary_side_bar_visible, cx);
             layout.set_secondary_side_bar_visible(self.layout_config.secondary_side_bar_visible, cx);
             layout.set_panel_visible(self.layout_config.panel_visible, cx);
             layout.set_status_bar_visible(self.layout_config.status_bar_visible, cx);
-            layout.set_primary_side_bar_position(self.layout_config.primary_side_bar_position, cx);
             layout.set_panel_alignment(self.layout_config.panel_alignment, cx);
             layout.set_panel_height(self.layout_config.panel_height_px, cx);
         });
@@ -238,20 +240,17 @@ impl VscodeShellApp {
         if self.applying_layout_config {
             return;
         }
-        if let ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden } = event {
-            let primary_index = self.workspace_layout.read(cx).primary_side_bar_panel_index();
-            let secondary_index = self.workspace_layout.read(cx).secondary_side_bar_panel_index();
-            if *panel_index == primary_index {
-                self.layout_config = reduce_layout_config(
-                    self.layout_config.clone(),
-                    LayoutAction::PanelVisibilityReported { region: LayoutRegion::PrimarySideBar, hidden: *hidden },
-                );
-            } else if *panel_index == secondary_index {
-                self.layout_config = reduce_layout_config(
-                    self.layout_config.clone(),
-                    LayoutAction::PanelVisibilityReported { region: LayoutRegion::SecondarySideBar, hidden: *hidden },
-                );
-            }
+        // Physical-index events remain available in the SDK; the shell listens to logical IDs.
+        if let ResizablePanelsEvent::PanelRegionHiddenChanged { region, hidden, .. } = event {
+            let region = match region.as_str() {
+                crate::workbench_layout::PRIMARY_SIDE_BAR_REGION => LayoutRegion::PrimarySideBar,
+                crate::workbench_layout::SECONDARY_SIDE_BAR_REGION => LayoutRegion::SecondarySideBar,
+                _ => return,
+            };
+            self.layout_config = reduce_layout_config(
+                self.layout_config.clone(),
+                LayoutAction::PanelVisibilityReported { region, hidden: *hidden },
+            );
             self.sync_side_bar_toggle_icons(cx);
             self.refresh_customize_layout_dialog(cx);
         }

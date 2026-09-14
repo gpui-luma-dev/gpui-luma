@@ -6,9 +6,9 @@ use gpui::{
 use super::{
     math::{apply_pair_collapse_px, apply_pair_delta_px, content_axis_size, solve_layout_px_with_min_overrides},
     model::{
-        PanelHideMode, PanelLayoutState, PanelSize, ResizeCollapseDirection, ResizeCollapseMode,
-        ResizeHandleVisibility, ResizablePanelsBuilder, ResizablePanelsModel, ResizablePanelsOrientation,
-        ResizablePanelsRenderModel,
+        PanelHideMode, PanelId, PanelLayoutState, PanelSize, ResizablePanelSpec, ResizeCollapseDirection,
+        ResizeCollapseMode, ResizeHandleVisibility, ResizablePanelsBuilder, ResizablePanelsModel,
+        ResizablePanelsOrientation, ResizablePanelsRenderModel,
     },
 };
 use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
@@ -30,12 +30,34 @@ impl Render for ResizablePanelsHandleDrag {
 #[non_exhaustive]
 pub enum ResizablePanelsEvent {
     ResizeStart,
-    SizesChanged { sizes_px: Vec<f32> },
-    ResizeEnd { sizes_px: Vec<f32> },
-    PanelHiddenChanged { panel_index: usize, hidden: bool },
-    HandleFocusChanged { handle_index: usize, focused: bool },
-    HandleHoverChanged { handle_index: usize, hovered: bool },
-    EnabledChanged { enabled: bool },
+    SizesChanged {
+        sizes_px: Vec<f32>,
+    },
+    ResizeEnd {
+        sizes_px: Vec<f32>,
+    },
+    PanelHiddenChanged {
+        panel_index: usize,
+        hidden: bool,
+    },
+    /// Emitted alongside [`Self::PanelHiddenChanged`] when the panel has an identity.
+    /// Both events are retained so physical-index subscribers remain compatible.
+    PanelRegionHiddenChanged {
+        region: PanelId,
+        panel_index: usize,
+        hidden: bool,
+    },
+    HandleFocusChanged {
+        handle_index: usize,
+        focused: bool,
+    },
+    HandleHoverChanged {
+        handle_index: usize,
+        hovered: bool,
+    },
+    EnabledChanged {
+        enabled: bool,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -353,6 +375,48 @@ impl ResizablePanels {
         self.panel_hide_restore.get(panel_index).is_some_and(Option::is_some)
     }
 
+    pub fn panel_index_for_region(&self, region: &PanelId) -> Option<usize> {
+        self.model.panels.iter().position(|panel| panel.panel_id.as_ref() == Some(region))
+    }
+
+    pub fn region_for_panel_index(&self, panel_index: usize) -> Option<PanelId> {
+        self.model.panels.get(panel_index).and_then(|panel| panel.panel_id.clone())
+    }
+
+    pub fn is_region_hidden(&self, region: &PanelId) -> Option<bool> {
+        self.panel_index_for_region(region).map(|panel_index| self.is_panel_hidden(panel_index))
+    }
+
+    /// Swaps two logical identities without changing physical panel layout state.
+    ///
+    /// This is useful when an application changes which edge owns a logical panel.
+    /// Sizes, collapse state, and restore state remain attached to their physical slots.
+    pub fn swap_regions(&mut self, first: &PanelId, second: &PanelId, cx: &mut Context<Self>) -> bool {
+        if !swap_region_ids(&mut self.model.panels, first, second) {
+            return false;
+        }
+        cx.notify();
+        true
+    }
+
+    pub fn hide_region(&mut self, region: &PanelId, mode: PanelHideMode, cx: &mut Context<Self>) {
+        if let Some(panel_index) = self.panel_index_for_region(region) {
+            self.hide_panel(panel_index, mode, cx);
+        }
+    }
+
+    pub fn show_region(&mut self, region: &PanelId, cx: &mut Context<Self>) {
+        if let Some(panel_index) = self.panel_index_for_region(region) {
+            self.show_panel(panel_index, cx);
+        }
+    }
+
+    pub fn toggle_region_hidden(&mut self, region: &PanelId, mode: PanelHideMode, cx: &mut Context<Self>) {
+        if let Some(panel_index) = self.panel_index_for_region(region) {
+            self.toggle_panel_hidden(panel_index, mode, cx);
+        }
+    }
+
     /// Hides a panel and records its layout for a later [`Self::show_panel`] call.
     ///
     /// `PanelHideMode::ToMinSize` leaves the panel in the interactive resize model;
@@ -395,7 +459,7 @@ impl ResizablePanels {
             cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
             cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
         }
-        cx.emit(ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden: true });
+        self.emit_panel_hidden_changed(panel_index, true, cx);
         cx.notify();
     }
 
@@ -414,7 +478,7 @@ impl ResizablePanels {
             if self.model.animated {
                 cx.emit(ResizablePanelsEvent::ResizeStart);
             }
-            cx.emit(ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden: false });
+            self.emit_panel_hidden_changed(panel_index, false, cx);
             cx.notify();
         }
     }
@@ -424,6 +488,13 @@ impl ResizablePanels {
             self.show_panel(panel_index, cx);
         } else {
             self.hide_panel(panel_index, mode, cx);
+        }
+    }
+
+    fn emit_panel_hidden_changed(&self, panel_index: usize, hidden: bool, cx: &mut Context<Self>) {
+        cx.emit(ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden });
+        if let Some(region) = self.region_for_panel_index(panel_index) {
+            cx.emit(ResizablePanelsEvent::PanelRegionHiddenChanged { region, panel_index, hidden });
         }
     }
 
@@ -469,10 +540,14 @@ impl ResizablePanels {
     fn clear_all_restore_state(&mut self, cx: &mut Context<Self>) {
         self.collapsed_min_overrides.fill(false);
         self.collapse_restore.fill(None);
-        for (panel_index, restore) in self.panel_hide_restore.iter_mut().enumerate() {
-            if restore.take().is_some() {
-                cx.emit(ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden: false });
-            }
+        let restored_panels = self
+            .panel_hide_restore
+            .iter_mut()
+            .enumerate()
+            .filter_map(|(panel_index, restore)| restore.take().map(|_| panel_index))
+            .collect::<Vec<_>>();
+        for panel_index in restored_panels {
+            self.emit_panel_hidden_changed(panel_index, false, cx);
         }
     }
 
@@ -487,7 +562,7 @@ impl ResizablePanels {
             if let Some(restore) = self.panel_hide_restore.get_mut(panel_index)
                 && restore.take().is_some()
             {
-                cx.emit(ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden: false });
+                self.emit_panel_hidden_changed(panel_index, false, cx);
             }
         }
     }
@@ -898,6 +973,21 @@ impl ResizablePanels {
     }
 }
 
+fn swap_region_ids(panels: &mut [ResizablePanelSpec], first: &PanelId, second: &PanelId) -> bool {
+    let Some(first_index) = panels.iter().position(|panel| panel.panel_id.as_ref() == Some(first)) else {
+        return false;
+    };
+    let Some(second_index) = panels.iter().position(|panel| panel.panel_id.as_ref() == Some(second)) else {
+        return false;
+    };
+    if first_index == second_index {
+        return false;
+    }
+    panels[first_index].panel_id = Some(second.clone());
+    panels[second_index].panel_id = Some(first.clone());
+    true
+}
+
 impl Render for ResizablePanels {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let mut was_animating = false;
@@ -934,5 +1024,24 @@ impl Render for ResizablePanels {
         let template = self.model.template.clone();
 
         div().size_full().child(template.render(&model, &look, &self.handle_focuses, window, cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{PanelId, ResizablePanelSpec, swap_region_ids};
+
+    #[test]
+    fn swap_region_ids_preserves_the_physical_panel_slots() {
+        let first = PanelId::new("first");
+        let second = PanelId::new("second");
+        let mut panels =
+            vec![ResizablePanelSpec::new_render(|| gpui::div()), ResizablePanelSpec::new_render(|| gpui::div())];
+        panels[0].panel_id = Some(first.clone());
+        panels[1].panel_id = Some(second.clone());
+
+        assert!(swap_region_ids(&mut panels, &first, &second));
+        assert_eq!(panels[0].panel_id, Some(second));
+        assert_eq!(panels[1].panel_id, Some(first));
     }
 }
