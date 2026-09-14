@@ -118,7 +118,7 @@ impl LayoutRegion {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LayoutConfig {
     pub activity_bar_visible: bool,
     pub secondary_activity_bar_visible: bool,
@@ -131,13 +131,23 @@ pub struct LayoutConfig {
     pub panel_height_px: f32,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LayoutAction {
+    SetRegionVisible { region: LayoutRegion, visible: bool },
+    SetPrimarySideBarPosition(PrimarySideBarPosition),
+    SetPanelAlignment(PanelAlignment),
+    SetPanelHeight { height_px: f32 },
+    PanelVisibilityReported { region: LayoutRegion, hidden: bool },
+    Reset,
+}
+
 impl Default for LayoutConfig {
     fn default() -> Self {
         Self {
             activity_bar_visible: true,
             secondary_activity_bar_visible: false,
             primary_side_bar_visible: true,
-            secondary_side_bar_visible: false,
+            secondary_side_bar_visible: true,
             panel_visible: true,
             status_bar_visible: true,
             primary_side_bar_position: PrimarySideBarPosition::Left,
@@ -186,6 +196,18 @@ impl LayoutConfig {
     }
 }
 
+pub fn reduce_layout_config(mut config: LayoutConfig, action: LayoutAction) -> LayoutConfig {
+    match action {
+        LayoutAction::SetRegionVisible { region, visible } => config.set_region_visible(region, visible),
+        LayoutAction::SetPrimarySideBarPosition(position) => config.primary_side_bar_position = position,
+        LayoutAction::SetPanelAlignment(alignment) => config.panel_alignment = alignment,
+        LayoutAction::SetPanelHeight { height_px } => config.panel_height_px = height_px,
+        LayoutAction::PanelVisibilityReported { region, hidden } => config.set_region_visible(region, !hidden),
+        LayoutAction::Reset => config = LayoutConfig::default(),
+    }
+    config
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -196,6 +218,7 @@ mod tests {
 
         assert!(config.activity_bar_visible);
         assert!(config.primary_side_bar_visible);
+        assert!(config.secondary_side_bar_visible);
         assert!(config.panel_visible);
         assert_eq!(config.primary_side_bar_position, PrimarySideBarPosition::Left);
         assert_eq!(config.panel_alignment, PanelAlignment::Center);
@@ -209,5 +232,23 @@ mod tests {
 
         assert!(!config.panel_visible);
         assert!(!config.visible_region_ids().iter().any(|id| id == "panel"));
+    }
+
+    #[test]
+    fn reducer_updates_layout_state_from_actions() {
+        let config = reduce_layout_config(
+            LayoutConfig::default(),
+            LayoutAction::SetRegionVisible { region: LayoutRegion::Panel, visible: false },
+        );
+        assert!(!config.panel_visible);
+
+        let config = reduce_layout_config(
+            config,
+            LayoutAction::PanelVisibilityReported { region: LayoutRegion::SecondarySideBar, hidden: true },
+        );
+        assert!(!config.secondary_side_bar_visible);
+
+        let config = reduce_layout_config(config, LayoutAction::Reset);
+        assert_eq!(config, LayoutConfig::default());
     }
 }

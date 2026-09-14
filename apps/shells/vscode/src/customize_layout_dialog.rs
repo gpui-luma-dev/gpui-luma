@@ -53,12 +53,12 @@ impl CustomizeLayoutDialog {
         let config = LayoutConfig::default();
         let close_button = shadcn::Button::icon_button("customize-layout-close", LucideIcon::X)
             .look(look.as_ref())
-            .ghost()
+            .content_only()
             .size(shadcn::ShadcnSize::Sm)
             .spawn(cx);
         let reset_button = shadcn::Button::icon_button("customize-layout-reset", LucideIcon::RotateCcw)
             .look(look.as_ref())
-            .ghost()
+            .content_only()
             .size(shadcn::ShadcnSize::Sm)
             .spawn(cx);
         sync_header_icon_presenters(&close_button, &reset_button, &look, cx);
@@ -121,7 +121,7 @@ impl CustomizeLayoutDialog {
             .position(OverlayWindowPosition::Center)
             .draggable(true)
             .size(ControlSize::Sm)
-            .dismiss_policy(OverlayWindowDismissPolicy::CloseOnClickAway)
+            .dismiss_policy(OverlayWindowDismissPolicy::KeepOpen)
             .width(DIALOG_W)
             .with_template_modifier(move |shell, _| {
                 let dialog_background = overlay_look

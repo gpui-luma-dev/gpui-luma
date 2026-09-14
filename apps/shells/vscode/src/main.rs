@@ -4,6 +4,7 @@ mod app;
 mod app_shell;
 mod customize_layout_dialog;
 mod layout_config;
+mod shell_state;
 mod workspace_layout;
 mod workbench_layout;
 #[path = "assets/assets.rs"]

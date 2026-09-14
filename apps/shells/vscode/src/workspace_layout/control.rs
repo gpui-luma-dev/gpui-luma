@@ -120,6 +120,11 @@ impl WorkspaceLayout {
         }
         self.frame_width = width;
         self.frame_height = height;
+        // The first layout pass starts with a provisional 1px frame, so a
+        // complete panel collapse can fail before the real viewport exists.
+        // Reconcile sidebar visibility once the measured frame is available.
+        self.sync_panel_visibility(self.primary_side_bar_panel_index(), self.config.primary_side_bar_visible, cx);
+        self.sync_panel_visibility(self.secondary_side_bar_panel_index(), self.config.secondary_side_bar_visible, cx);
         cx.notify();
     }
 
