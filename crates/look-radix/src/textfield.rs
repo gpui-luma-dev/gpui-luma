@@ -6,8 +6,8 @@ use std::sync::Arc;
 
 use gpui::{BoxShadow, FontWeight, SharedString, point, px};
 use luma::controls::textfield::{
-    TextFieldLook, TextFieldPalette, TextFieldState, TextFieldTemplate, TextFieldTheme,
-    TextFieldVariant as SdkTextFieldVariant, ThemedTextFieldTemplate, compose_textfield_look,
+    TextFieldLook, TextFieldPalette, TextFieldState, TextFieldTemplate, TextFieldTheme, ThemedTextFieldTemplate,
+    compose_textfield_look,
 };
 use luma::theme::{ControlSize, LumaTextStyle, MetricTokens, StandardBoxScale};
 
@@ -87,7 +87,7 @@ struct TextFieldThemeAdapter {
 }
 
 impl TextFieldTheme for TextFieldThemeAdapter {
-    fn resolve(&self, _variant: SdkTextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldPalette {
+    fn resolve(&self, state: TextFieldState, enabled: bool) -> TextFieldPalette {
         resolve_text_chrome_palette(&self.look, self.variant, state.hovered, state.focused, state.invalid, enabled)
     }
 
@@ -97,13 +97,12 @@ impl TextFieldTheme for TextFieldThemeAdapter {
 
     fn resolve_look(
         &self,
-        variant: SdkTextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
     ) -> TextFieldLook {
-        let mut palette = self.resolve(variant, state, enabled);
+        let mut palette = self.resolve(state, enabled);
         palette.typography = typography_for_size(size);
         let mut look = compose_textfield_look(&palette, scale, self.metrics().border_width.default);
         if matches!(self.variant, TextFieldVariant::Soft | TextFieldVariant::Classic) {
@@ -250,11 +249,7 @@ mod tests {
     fn focused_border_uses_focus_role() {
         let look = Look::built_in();
         let theme = textfield_theme(&look);
-        let palette = theme.resolve(
-            SdkTextFieldVariant::Standard,
-            TextFieldState { focused: true, focus_visible: true, ..Default::default() },
-            true,
-        );
+        let palette = theme.resolve(TextFieldState { focused: true, focus_visible: true, ..Default::default() }, true);
         let expected = look.resolve_role(SemanticRole::Focus).hsla();
         assert_eq!(palette.border.l, expected.l);
     }
@@ -263,23 +258,15 @@ mod tests {
     fn soft_uses_accent_tint_background() {
         let look = Look::built_in();
         let theme = textfield_theme_with(&look, TextFieldVariant::Soft);
-        let palette = theme.resolve(SdkTextFieldVariant::Standard, TextFieldState::default(), true);
+        let palette = theme.resolve(TextFieldState::default(), true);
         assert_eq!(palette.background, look.resolve_step(ScaleFamily::Color, 3).hsla());
     }
 
     #[test]
     fn classic_uses_shadow_not_gray_border() {
         let look = Look::built_in();
-        let classic = textfield_theme_with(&look, TextFieldVariant::Classic).resolve(
-            SdkTextFieldVariant::Standard,
-            TextFieldState::default(),
-            true,
-        );
-        let surface = textfield_theme_with(&look, TextFieldVariant::Surface).resolve(
-            SdkTextFieldVariant::Standard,
-            TextFieldState::default(),
-            true,
-        );
+        let classic = textfield_theme_with(&look, TextFieldVariant::Classic).resolve(TextFieldState::default(), true);
+        let surface = textfield_theme_with(&look, TextFieldVariant::Surface).resolve(TextFieldState::default(), true);
 
         assert_eq!(classic.background, surface.background);
         assert!(classic.shadow.is_some(), "classic carries shadow-1");

@@ -11,10 +11,7 @@ use gpui::{
     AnyElement, App, Entity, FontWeight, Hsla, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px,
 };
 use luma::controls::tabs::Tabs;
-use luma::controls::textfield::{
-    TextFieldLook, TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme,
-    TextFieldVariant as SdkTextFieldVariant,
-};
+use luma::controls::textfield::{TextFieldLook, TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme};
 use luma::theme::{ControlSize, StandardBoxScale};
 use luma_look_radix::{Accent, Gray, Look, LookControlExt, TextFieldVariant, ScaleFamily, textfield_theme_with};
 
@@ -298,7 +295,6 @@ fn render_field(
         placeholder: &placeholder,
         value: &value,
         prefix_icon: None,
-        variant: SdkTextFieldVariant::Standard,
         size,
         enabled: sample.enabled,
         full_width: true,
@@ -326,7 +322,7 @@ fn field_look(
     window: &Window,
 ) -> TextFieldLook {
     let scale = StandardBoxScale::compute(size, &theme.metrics(), window.scale_factor());
-    theme.resolve_look(SdkTextFieldVariant::Standard, state, enabled, size, &scale)
+    theme.resolve_look(state, enabled, size, &scale)
 }
 
 fn character_offsets(

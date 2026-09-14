@@ -5,12 +5,6 @@ use gpui::{BoxShadow, Hsla, SharedString};
 use crate::theme::{ControlSize, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
 use crate::controls::textfield::TextFieldState;
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum TextFieldVariant {
-    #[default]
-    Standard,
-}
-
 #[derive(Clone, Debug)]
 pub struct TextFieldPalette {
     pub background: Hsla,
@@ -50,20 +44,19 @@ pub struct TextFieldLook {
 }
 
 pub trait TextFieldTheme: Send + Sync {
-    fn resolve(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldPalette;
+    fn resolve(&self, state: TextFieldState, enabled: bool) -> TextFieldPalette;
 
     fn metrics(&self) -> MetricTokens;
 
     fn resolve_look(
         &self,
-        variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
     ) -> TextFieldLook {
         let _ = size;
-        compose_textfield_look(&self.resolve(variant, state, enabled), scale, self.metrics().border_width.default)
+        compose_textfield_look(&self.resolve(state, enabled), scale, self.metrics().border_width.default)
     }
 }
 
@@ -85,7 +78,7 @@ impl DefaultTextFieldTheme {
 }
 
 impl TextFieldTheme for DefaultTextFieldTheme {
-    fn resolve(&self, _variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldPalette {
+    fn resolve(&self, state: TextFieldState, enabled: bool) -> TextFieldPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
 
@@ -142,13 +135,12 @@ impl TextFieldTheme for DefaultTextFieldTheme {
 
     fn resolve_look(
         &self,
-        variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
     ) -> TextFieldLook {
-        let mut palette = self.resolve(variant, state, enabled);
+        let mut palette = self.resolve(state, enabled);
         apply_control_size_typography(&mut palette.typography, &self.tokens.typography, size);
         compose_textfield_look(&palette, scale, self.metrics().border_width.default)
     }
@@ -211,12 +203,9 @@ mod tests {
         let scale_sm = StandardBoxScale::compute(ControlSize::Sm, &theme.metrics(), 1.0);
         let scale_lg = StandardBoxScale::compute(ControlSize::Lg, &theme.metrics(), 1.0);
 
-        let md =
-            theme.resolve_look(TextFieldVariant::Standard, TextFieldState::default(), true, ControlSize::Md, &scale_md);
-        let sm =
-            theme.resolve_look(TextFieldVariant::Standard, TextFieldState::default(), true, ControlSize::Sm, &scale_sm);
-        let lg =
-            theme.resolve_look(TextFieldVariant::Standard, TextFieldState::default(), true, ControlSize::Lg, &scale_lg);
+        let md = theme.resolve_look(TextFieldState::default(), true, ControlSize::Md, &scale_md);
+        let sm = theme.resolve_look(TextFieldState::default(), true, ControlSize::Sm, &scale_sm);
+        let lg = theme.resolve_look(TextFieldState::default(), true, ControlSize::Lg, &scale_lg);
 
         assert!((md.typography.size - theme.tokens.typography.text.body.size).abs() < f32::EPSILON);
         assert!(sm.typography.size < md.typography.size);

@@ -77,7 +77,11 @@ impl SelectionPanelControlExposition {
         let wide_panel_look = Arc::new({
             let active_look = look.clone();
             move |size: ControlSize| {
-                let mut panel_look = active_look.selection_panel_look(size);
+                let mut panel_look = active_look.selection_panel_look(match size {
+                    ControlSize::Sm => ShadcnSize::Sm,
+                    ControlSize::Md => ShadcnSize::Md,
+                    ControlSize::Lg => ShadcnSize::Lg,
+                });
                 panel_look.min_width = 280.0;
                 panel_look
             }

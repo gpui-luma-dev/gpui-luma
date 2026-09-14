@@ -46,6 +46,15 @@ impl ShadcnSize {
             Self::Lg => ControlSize::Lg,
         }
     }
+
+    /// Map an SDK size onto [`ShadcnSize`] for spawn callbacks that still pass [`ControlSize`].
+    pub(crate) fn from_control_size(size: ControlSize) -> Self {
+        match size {
+            ControlSize::Sm => Self::Sm,
+            ControlSize::Md => Self::Md,
+            ControlSize::Lg => Self::Lg,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -58,6 +67,9 @@ mod tests {
         assert_eq!(ShadcnSize::Md.control_size(), ControlSize::Md);
         assert_eq!(ShadcnSize::DEFAULT.control_size(), ControlSize::Md);
         assert_eq!(ShadcnSize::Lg.control_size(), ControlSize::Lg);
+        assert_eq!(ShadcnSize::from_control_size(ControlSize::Sm), ShadcnSize::Sm);
+        assert_eq!(ShadcnSize::from_control_size(ControlSize::Md), ShadcnSize::Md);
+        assert_eq!(ShadcnSize::from_control_size(ControlSize::Lg), ShadcnSize::Lg);
     }
 
     #[test]

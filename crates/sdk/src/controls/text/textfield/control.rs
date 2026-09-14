@@ -290,7 +290,6 @@ impl TextFieldControl {
     fn resolved_look(&self, window: &Window, cx: &mut Context<Self>) -> TextFieldLook {
         let base_state = TextFieldState { focused: false, focus_visible: false, ..self.state };
         let mut look = self.model.template.resolve_look_with_scale(
-            self.model.variant,
             base_state,
             self.model.enabled,
             self.model.size,
@@ -299,7 +298,6 @@ impl TextFieldControl {
         );
         let focus_state = TextFieldState { focused: true, focus_visible: true, ..self.state };
         let mut focus_look = self.model.template.resolve_look_with_scale(
-            self.model.variant,
             focus_state,
             self.model.enabled,
             self.model.size,
@@ -330,7 +328,6 @@ impl TextFieldControl {
             placeholder: &self.model.placeholder,
             value: &self.model.value,
             prefix_icon: self.model.prefix_icon.as_ref(),
-            variant: self.model.variant,
             size: self.model.size,
             enabled: self.model.enabled,
             full_width: self.model.full_width,

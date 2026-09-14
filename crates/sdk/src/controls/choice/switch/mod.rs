@@ -223,8 +223,11 @@ pub enum SwitchOrientation {
     Vertical,
 }
 
-/// Builder for [`Switch`] controls. Distinct from [`ButtonBuilder<SwitchData>`] so Shadcn style
-/// helpers apply the switch template rather than the checkbox template.
+/// Builder for [`Switch`] controls.
+///
+/// Apps should spawn through a look-owned builder (for example
+/// `luma_look_shadcn::Switch::new(...)`) rather than constructing this type
+/// directly or styling [`ButtonBuilder<SwitchData>`] as a checkbox.
 pub struct SwitchBuilder {
     button: ButtonBuilder<SwitchData>,
     animated: bool,

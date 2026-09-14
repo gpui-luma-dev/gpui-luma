@@ -5,7 +5,7 @@ use gpui::{
 
 use crate::controls::selector_list::{SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::controls::scrollbar::ScrollbarEvent;
-use crate::controls::textfield::{TextFieldState, TextFieldVariant};
+use crate::controls::textfield::TextFieldState;
 use crate::theme::observe_theme_revision;
 use crate::motion::overlay_presence::OverlayPresence;
 
@@ -575,12 +575,8 @@ impl Render for ComboBoxControl {
             .unwrap_or_else(|| "none".to_string());
 
         let minimum_trigger_width = {
-            let textfield_look = self.model.textfield_template.resolve_look(
-                TextFieldVariant::Standard,
-                TextFieldState::default(),
-                true,
-                self.model.size,
-            );
+            let textfield_look =
+                self.model.textfield_template.resolve_look(TextFieldState::default(), true, self.model.size);
             let mut text_font = font(".SystemUIFont");
             text_font.weight = textfield_look.typography.weight;
             let placeholder_run = TextRun {

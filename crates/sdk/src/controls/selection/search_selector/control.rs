@@ -12,7 +12,7 @@ use crate::infra::interaction::ControlInteraction;
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use crate::motion::overlay_presence::OverlayPresence;
 use crate::controls::scrollbar::ScrollbarEvent;
-use crate::controls::textfield::{TextFieldState, TextFieldVariant};
+use crate::controls::textfield::TextFieldState;
 use crate::theme::observe_theme_revision;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
@@ -658,12 +658,8 @@ impl Render for SearchSelectorControl {
             .map(|item| item.label.to_string());
 
         let minimum_trigger_width = {
-            let textfield_look = self.model.textfield_template.resolve_look(
-                TextFieldVariant::Standard,
-                TextFieldState::default(),
-                true,
-                self.model.size,
-            );
+            let textfield_look =
+                self.model.textfield_template.resolve_look(TextFieldState::default(), true, self.model.size);
             let mut text_font = font(".SystemUIFont");
             text_font.weight = textfield_look.typography.weight;
             let placeholder_run = TextRun {

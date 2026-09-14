@@ -1,6 +1,6 @@
 use gpui::{Div, FontWeight, IntoElement, SharedString, div, px, prelude::*};
 use luma::infra::icon::{IconSource, lucide_icon};
-use luma::theme::{ControlSize, LumaTextStyle};
+use luma::theme::LumaTextStyle;
 
 use crate::look::ShadcnLook;
 use crate::size::ShadcnSize;
@@ -177,11 +177,12 @@ pub fn resolve_badge_colors_with_stylesheet(
     Ok(BadgeColorTable { background: colors.background, foreground: colors.foreground, border: colors.border })
 }
 
-pub fn badge_look(theme: &ShadcnLook, variant: BadgeVariant, size: ControlSize) -> BadgeLook {
+pub fn badge_look(theme: &ShadcnLook, variant: BadgeVariant, size: ShadcnSize) -> BadgeLook {
     let tokens = theme.mode_tokens();
     let metrics = &tokens.metrics;
+    let control_size = size.control_size();
     let typography = badge_typography(tokens.as_ref(), size);
-    let min_height = typography.line_height + metrics.padding_y(size);
+    let min_height = typography.line_height + metrics.padding_y(control_size);
     let colors = resolve_badge_colors(theme, variant).unwrap_or_else(|_| BadgeColorTable::fallback(theme, variant));
 
     BadgeLook {
@@ -190,9 +191,9 @@ pub fn badge_look(theme: &ShadcnLook, variant: BadgeVariant, size: ControlSize) 
         border: colors.border.map(|border| border.hsla()),
         radius: tokens.metrics.radius.pill,
         min_height,
-        padding_x: metrics.padding_x(size),
+        padding_x: metrics.padding_x(control_size),
         padding_y: ((min_height - typography.line_height) * 0.5).max(0.0),
-        gap: (metrics.gap(size) * 0.75).max(4.0),
+        gap: (metrics.gap(control_size) * 0.75).max(4.0),
         icon_size: typography.size,
         typography,
         font_family: theme.font(ShadcnFont::Sans),
@@ -203,7 +204,7 @@ impl IntoElement for Badge {
     type Element = Div;
 
     fn into_element(self) -> Self::Element {
-        let look = badge_look(&self.look, self.variant, self.size.control_size());
+        let look = badge_look(&self.look, self.variant, self.size);
         let mut root = div()
             .flex()
             .items_center()
@@ -236,14 +237,15 @@ impl IntoElement for Badge {
     }
 }
 
-fn badge_typography(tokens: &crate::mode::ShadcnModeTokens, size: ControlSize) -> LumaTextStyle {
+fn badge_typography(tokens: &crate::mode::ShadcnModeTokens, size: ShadcnSize) -> LumaTextStyle {
     let mut typography = tokens.typography.text.label;
     typography.weight = FontWeight::MEDIUM;
+    let control_size = size.control_size();
 
     if let Some(metrics) = embedded_stylesheet()
         .button
-        .metrics_for_size(size)
-        .map(|rule| resolve_button_metrics_rule(rule, &tokens.metrics, size))
+        .metrics_for_size(control_size)
+        .map(|rule| resolve_button_metrics_rule(rule, &tokens.metrics, control_size))
     {
         let base_size = typography.size.max(1.0);
         typography.size = metrics.font_size;
@@ -282,7 +284,7 @@ mod tests {
     #[test]
     fn default_badge_uses_primary_tokens() {
         let shadcn = sample_look();
-        let look = badge_look(&shadcn, BadgeVariant::Default, ControlSize::Md);
+        let look = badge_look(&shadcn, BadgeVariant::Default, ShadcnSize::Md);
 
         assert_eq!(look.background, shadcn.color(ShadcnToken::Primary));
         assert_eq!(look.foreground, shadcn.color(ShadcnToken::PrimaryForeground));
@@ -292,7 +294,7 @@ mod tests {
     fn outline_badge_uses_border_in_dark_mode() {
         let shadcn = sample_look();
         shadcn.set_mode(luma::theme::ThemeMode::Dark);
-        let look = badge_look(&shadcn, BadgeVariant::Outline, ControlSize::Md);
+        let look = badge_look(&shadcn, BadgeVariant::Outline, ShadcnSize::Md);
 
         assert_eq!(look.foreground, shadcn.color(ShadcnToken::Foreground));
         assert_eq!(look.border, Some(shadcn.token_color("input").expect("input")));
@@ -301,7 +303,7 @@ mod tests {
     #[test]
     fn ghost_badge_is_transparent() {
         let shadcn = sample_look();
-        let look = badge_look(&shadcn, BadgeVariant::Ghost, ControlSize::Md);
+        let look = badge_look(&shadcn, BadgeVariant::Ghost, ShadcnSize::Md);
 
         assert_eq!(look.background.a, 0.0);
         assert!(look.border.is_none());
@@ -310,9 +312,9 @@ mod tests {
     #[test]
     fn badge_size_resolves_button_typography() {
         let shadcn = sample_look();
-        let small = badge_look(&shadcn, BadgeVariant::Secondary, ControlSize::Sm);
-        let medium = badge_look(&shadcn, BadgeVariant::Secondary, ControlSize::Md);
-        let large = badge_look(&shadcn, BadgeVariant::Secondary, ControlSize::Lg);
+        let small = badge_look(&shadcn, BadgeVariant::Secondary, ShadcnSize::Sm);
+        let medium = badge_look(&shadcn, BadgeVariant::Secondary, ShadcnSize::Md);
+        let large = badge_look(&shadcn, BadgeVariant::Secondary, ShadcnSize::Lg);
 
         assert!(small.typography.size < medium.typography.size);
         assert!(medium.typography.size < large.typography.size);

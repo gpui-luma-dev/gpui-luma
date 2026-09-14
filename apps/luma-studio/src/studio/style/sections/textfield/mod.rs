@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, TextR
 use luma::controls::button::ControlIcon;
 use luma::controls::tabs::Tabs;
 use luma::controls::textfield::{
-    TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate,
+    TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, ThemedTextFieldTemplate,
 };
 use luma::theme::{ControlSize, StandardBoxScale};
 use luma_look_shadcn::ShadcnLook;
@@ -225,7 +225,6 @@ fn render_textfield_cell(
         placeholder: &placeholder,
         value: &value,
         prefix_icon: Some(&prefix_icon),
-        variant: TextFieldVariant::Standard,
         size,
         enabled: sample.enabled,
         full_width: true,
@@ -296,7 +295,7 @@ fn input_textfield_look(
     window: &Window,
 ) -> luma::controls::textfield::TextFieldLook {
     let scale = StandardBoxScale::compute(size, &theme.metrics(), window.scale_factor());
-    theme.resolve_look(TextFieldVariant::Standard, state, enabled, size, &scale)
+    theme.resolve_look(state, enabled, size, &scale)
 }
 
 fn input_textfield_character_offsets(

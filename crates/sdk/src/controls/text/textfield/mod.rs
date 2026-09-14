@@ -13,8 +13,8 @@ pub use template::{
     TextFieldDragMoveHandler, ThemedTextFieldTemplate, default_textfield_template,
 };
 pub use theme::{
-    DefaultTextFieldTheme, TextFieldLook, TextFieldPalette, TextFieldTheme, TextFieldVariant,
-    apply_control_size_typography, compose_textfield_look, default_textfield_theme,
+    DefaultTextFieldTheme, TextFieldLook, TextFieldPalette, TextFieldTheme, apply_control_size_typography,
+    compose_textfield_look, default_textfield_theme,
 };
 
 use gpui::{Entity, SharedString};

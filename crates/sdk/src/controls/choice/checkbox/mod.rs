@@ -199,8 +199,11 @@ impl IntoElement for CheckboxControl {
     }
 }
 
-/// Builder for [`Checkbox`] controls. Distinct from [`ButtonBuilder<CheckboxData>`] so Shadcn style
-/// helpers apply the checkbox template rather than the switch template.
+/// Builder for [`Checkbox`] controls.
+///
+/// Apps should spawn through a look-owned builder (for example
+/// `luma_look_shadcn::Checkbox::new(...)`) rather than constructing this type
+/// directly or styling [`ButtonBuilder<CheckboxData>`] as a switch.
 pub struct CheckboxBuilder {
     button: ButtonBuilder<CheckboxData>,
     animated: bool,

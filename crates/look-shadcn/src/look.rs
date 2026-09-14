@@ -19,6 +19,7 @@ use crate::stylesheet::{
 };
 
 use crate::shadow::parse_shadow_token;
+use crate::size::ShadcnSize;
 use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnTextRole, ShadcnTextSize, ShadcnToken};
 
 const GENERIC_FAMILIES: &[&str] = &[
@@ -551,7 +552,7 @@ impl ShadcnLook {
         templates::input_textarea_theme(self.clone())
     }
 
-    pub fn input_textarea_template(&self) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
+    pub(crate) fn input_textarea_template(&self) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
         templates::input_textarea_template(self.clone())
     }
 
@@ -563,20 +564,17 @@ impl ShadcnLook {
         templates::autocomplete_theme(self.clone())
     }
 
-    pub fn selector_items_panel_look(
-        &self,
-        size: ControlSize,
-    ) -> luma::controls::selector_list::SelectorItemsPanelLook {
+    pub fn selector_items_panel_look(&self, size: ShadcnSize) -> luma::controls::selector_list::SelectorItemsPanelLook {
         let tokens = self.mode_tokens();
-        selector_items_panel_look(tokens.as_ref(), self.mode(), size)
+        selector_items_panel_look(tokens.as_ref(), self.mode(), size.control_size())
     }
 
-    pub fn selection_panel_look(&self, size: ControlSize) -> luma::controls::selection_panel::SelectionPanelLook {
+    pub fn selection_panel_look(&self, size: ShadcnSize) -> luma::controls::selection_panel::SelectionPanelLook {
         let tokens = self.mode_tokens();
-        selection_panel_look(tokens.as_ref(), self.mode(), size)
+        selection_panel_look(tokens.as_ref(), self.mode(), size.control_size())
     }
 
-    pub fn selection_panel_look_provider(&self) -> luma::controls::selection_panel::SelectionPanelLookProvider {
+    pub(crate) fn selection_panel_look_provider(&self) -> luma::controls::selection_panel::SelectionPanelLookProvider {
         templates::selection_panel_look_provider(self.clone())
     }
 

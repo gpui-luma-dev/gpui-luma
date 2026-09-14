@@ -5,7 +5,7 @@ use gpui::{
     TextAlign, TextRun, Window, canvas, div, fill, font, point, px, prelude::*, size, svg,
 };
 
-use super::{TextFieldDrag, TextFieldLook, TextFieldRenderModel, TextFieldState, TextFieldVariant};
+use super::{TextFieldDrag, TextFieldLook, TextFieldRenderModel, TextFieldState};
 use crate::controls::button::ControlIcon;
 use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
 use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
@@ -100,15 +100,8 @@ pub type TextFieldTemplateModifier =
     Box<dyn Fn(Stateful<Div>, &TextFieldRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
 
 pub trait TextFieldTemplate: Send + Sync {
-    fn resolve_look(
-        &self,
-        variant: TextFieldVariant,
-        state: TextFieldState,
-        enabled: bool,
-        size: ControlSize,
-    ) -> TextFieldLook {
+    fn resolve_look(&self, state: TextFieldState, enabled: bool, size: ControlSize) -> TextFieldLook {
         default_textfield_theme().resolve_look(
-            variant,
             state,
             enabled,
             size,
@@ -118,14 +111,13 @@ pub trait TextFieldTemplate: Send + Sync {
 
     fn resolve_look_with_scale(
         &self,
-        variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         size: ControlSize,
         _scale_factor: f32,
         _cx: &mut App,
     ) -> TextFieldLook {
-        self.resolve_look(variant, state, enabled, size)
+        self.resolve_look(state, enabled, size)
     }
 
     fn render(
@@ -200,26 +192,19 @@ where
 }
 
 impl TextFieldTemplate for ModifiedTextFieldTemplate {
-    fn resolve_look(
-        &self,
-        variant: TextFieldVariant,
-        state: TextFieldState,
-        enabled: bool,
-        size: ControlSize,
-    ) -> TextFieldLook {
-        self.base.resolve_look(variant, state, enabled, size)
+    fn resolve_look(&self, state: TextFieldState, enabled: bool, size: ControlSize) -> TextFieldLook {
+        self.base.resolve_look(state, enabled, size)
     }
 
     fn resolve_look_with_scale(
         &self,
-        variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         size: ControlSize,
         scale_factor: f32,
         cx: &mut App,
     ) -> TextFieldLook {
-        self.base.resolve_look_with_scale(variant, state, enabled, size, scale_factor, cx)
+        self.base.resolve_look_with_scale(state, enabled, size, scale_factor, cx)
     }
 
     fn render(
@@ -235,25 +220,13 @@ impl TextFieldTemplate for ModifiedTextFieldTemplate {
 }
 
 impl TextFieldTemplate for ThemedTextFieldTemplate {
-    fn resolve_look(
-        &self,
-        variant: TextFieldVariant,
-        state: TextFieldState,
-        enabled: bool,
-        size: ControlSize,
-    ) -> TextFieldLook {
-        self.theme.resolve_look(
-            variant,
-            state,
-            enabled,
-            size,
-            &StandardBoxScale::compute(size, &self.theme.metrics(), 1.0),
-        )
+    fn resolve_look(&self, state: TextFieldState, enabled: bool, size: ControlSize) -> TextFieldLook {
+        self.theme
+            .resolve_look(state, enabled, size, &StandardBoxScale::compute(size, &self.theme.metrics(), 1.0))
     }
 
     fn resolve_look_with_scale(
         &self,
-        variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         size: ControlSize,
@@ -265,7 +238,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             LayoutCacheKey { size, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(size, metrics, scale_factor),
         );
-        self.theme.resolve_look(variant, state, enabled, size, &scale)
+        self.theme.resolve_look(state, enabled, size, &scale)
     }
 
     fn render(
@@ -284,9 +257,9 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
             );
             let base_state = TextFieldState { focused: false, focus_visible: false, ..model.state };
-            let base_look = self.theme.resolve_look(model.variant, base_state, model.enabled, model.size, &scale);
+            let base_look = self.theme.resolve_look(base_state, model.enabled, model.size, &scale);
             let focus_state = TextFieldState { focused: true, focus_visible: true, ..model.state };
-            let focus_look = self.theme.resolve_look(model.variant, focus_state, model.enabled, model.size, &scale);
+            let focus_look = self.theme.resolve_look(focus_state, model.enabled, model.size, &scale);
             look.border = base_look.border;
             look.focus_border = Some(focus_look.border);
         }

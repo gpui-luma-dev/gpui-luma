@@ -124,7 +124,9 @@ impl ComboBox {
             .textfield_template(theme.primary_textfield_template())
             .autocomplete_theme(theme.autocomplete_theme())
             .scrollbar_template(theme.scrollbar_template())
-            .popup_look_provider(Arc::new(move |size| theme.selector_items_panel_look(size)))
+            .popup_look_provider(Arc::new(move |size| {
+                theme.selector_items_panel_look(ShadcnSize::from_control_size(size))
+            }))
     }
 }
 

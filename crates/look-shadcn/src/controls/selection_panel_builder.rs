@@ -1,7 +1,5 @@
 //! Look-owned selection-panel builder. Spawn synthesizes the SDK [`luma::controls::selection_panel::SelectionPanelControl`].
 
-use std::sync::Arc;
-
 use gpui::{App, Context, Entity, IntoElement, SharedString};
 use luma::controls::selection_panel::{
     SelectionPanelBuilder, SelectionPanelControl, SelectionPanelItem, SelectionPanelItemLike,
@@ -146,7 +144,7 @@ where
         let theme = look.clone();
         let mut builder = self.builder.size(self.size.control_size()).scrollbar_template(theme.scrollbar_template());
         if !self.custom_look_provider {
-            builder = builder.look_provider(Arc::new(move |size| theme.selection_panel_look(size)));
+            builder = builder.look_provider(theme.selection_panel_look_provider());
         }
         builder
     }

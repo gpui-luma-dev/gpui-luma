@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AppContext, Entity, SharedString};
 
 use super::template::template_with_modifier;
-use super::{TextFieldLook, TextFieldState, TextFieldTemplate, TextFieldVariant, default_textfield_template};
+use super::{TextFieldLook, TextFieldState, TextFieldTemplate, default_textfield_template};
 use super::control::TextFieldControl;
 use crate::controls::button::ControlIcon;
 use crate::theme::ControlSize;
@@ -17,7 +17,6 @@ pub struct TextFieldModel {
     pub(crate) placeholder: SharedString,
     pub(crate) value: SharedString,
     pub(crate) prefix_icon: Option<ControlIcon>,
-    pub(crate) variant: TextFieldVariant,
     pub(crate) enabled: bool,
     pub(crate) tab_stop: bool,
     pub(crate) size: ControlSize,
@@ -36,7 +35,6 @@ pub struct TextFieldRenderModel<'a> {
     pub placeholder: &'a SharedString,
     pub value: &'a SharedString,
     pub prefix_icon: Option<&'a ControlIcon>,
-    pub variant: TextFieldVariant,
     pub size: ControlSize,
     pub enabled: bool,
     pub full_width: bool,
@@ -59,7 +57,6 @@ impl TextFieldBuilder {
                 placeholder: SharedString::default(),
                 value: SharedString::default(),
                 prefix_icon: None,
-                variant: TextFieldVariant::Standard,
                 enabled: true,
                 tab_stop: true,
                 size: ControlSize::Md,
@@ -87,11 +84,6 @@ impl TextFieldBuilder {
 
     pub fn prefix_icon(mut self, icon: impl Into<ControlIcon>) -> Self {
         self.model.prefix_icon = Some(icon.into());
-        self
-    }
-
-    pub fn variant(mut self, variant: TextFieldVariant) -> Self {
-        self.model.variant = variant;
         self
     }
 
@@ -175,8 +167,7 @@ impl TextFieldBuilder {
 mod tests {
     use super::*;
     use crate::controls::textfield::{
-        TextFieldPalette, TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate,
-        default_textfield_theme,
+        TextFieldPalette, TextFieldState, TextFieldTheme, ThemedTextFieldTemplate, default_textfield_theme,
     };
     use crate::theme::{ControlSize, MetricTokens, ThemeTokens};
     use gpui::hsla;
@@ -196,9 +187,8 @@ mod tests {
         struct MarkerTheme;
 
         impl TextFieldTheme for MarkerTheme {
-            fn resolve(&self, _variant: TextFieldVariant, _state: TextFieldState, _enabled: bool) -> TextFieldPalette {
-                let mut palette =
-                    default_textfield_theme().resolve(TextFieldVariant::Standard, TextFieldState::default(), true);
+            fn resolve(&self, _state: TextFieldState, _enabled: bool) -> TextFieldPalette {
+                let mut palette = default_textfield_theme().resolve(TextFieldState::default(), true);
                 palette.background = hsla(0.12, 1.0, 0.55, 1.0);
                 palette
             }
@@ -209,13 +199,13 @@ mod tests {
         }
 
         let base = Arc::new(ThemedTextFieldTemplate::new(Arc::new(MarkerTheme)));
-        let expected = base.resolve_look(TextFieldVariant::Standard, TextFieldState::default(), true, ControlSize::Md);
+        let expected = base.resolve_look(TextFieldState::default(), true, ControlSize::Md);
         let modified = TextFieldBuilder::new("textfield-test")
             .template(base)
             .with_template_modifier(|element, _| element)
             .model
             .template;
-        let look = modified.resolve_look(TextFieldVariant::Standard, TextFieldState::default(), true, ControlSize::Md);
+        let look = modified.resolve_look(TextFieldState::default(), true, ControlSize::Md);
 
         assert_eq!(look.background, expected.background);
         assert_eq!(look.background, hsla(0.12, 1.0, 0.55, 1.0));

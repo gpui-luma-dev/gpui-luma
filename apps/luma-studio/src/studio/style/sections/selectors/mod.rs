@@ -28,11 +28,11 @@ use luma::controls::selector_list::{
     SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_template,
 };
 use luma::controls::tabs::Tabs;
-use luma::controls::textfield::{TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant};
+use luma::controls::textfield::{TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme};
 use luma::controls::textfield::TextFieldLook;
 use luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale};
 use luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};
-use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn::{ShadcnLook, ShadcnSize};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::preview_handlers::{input_noop_click, input_noop_hover, input_textfield_handlers};
@@ -432,7 +432,7 @@ fn render_selector_autocomplete_trigger(
     let value = SharedString::from(if state.selector_selected { "California" } else { "" });
     let placeholder = SharedString::from(placeholder);
     let status_theme = look.autocomplete_theme().resolve(size);
-    let popup_look = look.selector_items_panel_look(size);
+    let popup_look = look.selector_items_panel_look(shadcn_size(size));
 
     let model = AutocompleteRenderModel {
         id: id.clone(),
@@ -493,7 +493,7 @@ fn render_selector_combobox_trigger(
     let value = SharedString::from(if state.selector_selected { "California" } else { "" });
     let placeholder = SharedString::from(placeholder);
     let status_theme = look.autocomplete_theme().resolve(size);
-    let popup_look = look.selector_items_panel_look(size);
+    let popup_look = look.selector_items_panel_look(shadcn_size(size));
     let popup_bounds = (state.id == "pressed" || state.selector_open)
         .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(SELECTOR_TRIGGER_WIDTH), px(32.0))));
     let popup_open = popup_bounds.is_some();
@@ -672,28 +672,19 @@ fn render_selector_preview_textfield(
         look,
         value.as_ref(),
         theme.clone(),
-        TextFieldVariant::Standard,
         state.textfield_state,
         state.textfield_enabled,
         size,
         window,
     );
 
-    let look = selector_preview_textfield_look(
-        look,
-        theme,
-        TextFieldVariant::Standard,
-        state.textfield_state,
-        state.textfield_enabled,
-        size,
-        window,
-    );
+    let look =
+        selector_preview_textfield_look(look, theme, state.textfield_state, state.textfield_enabled, size, window);
     let text_model = TextFieldRenderModel {
         id,
         placeholder,
         value,
         prefix_icon: None,
-        variant: TextFieldVariant::Standard,
         size,
         enabled: state.textfield_enabled,
         full_width: true,
@@ -717,7 +708,7 @@ fn render_selector_popup_preview(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let popup_look = look.selector_items_panel_look(size);
+    let popup_look = look.selector_items_panel_look(shadcn_size(size));
     let popup_id = SharedString::from(format!("{id}-popup-preview"));
     let items = selector_popup_items_for_control(control);
     let item_hovers = (0..items.len())
@@ -788,28 +779,19 @@ fn render_selector_popup_preview(
                 look,
                 search_value.as_ref(),
                 look.input_textfield_theme(),
-                TextFieldVariant::Standard,
                 TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() },
                 true,
                 size,
                 window,
             );
             let search_state = TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() };
-            let search_look = selector_preview_textfield_look(
-                look,
-                &look.input_textfield_theme(),
-                TextFieldVariant::Standard,
-                search_state,
-                true,
-                size,
-                window,
-            );
+            let search_look =
+                selector_preview_textfield_look(look, &look.input_textfield_theme(), search_state, true, size, window);
             let search_model = TextFieldRenderModel {
                 id: &search_id,
                 placeholder: &search_placeholder,
                 value: &search_value,
                 prefix_icon: None,
-                variant: TextFieldVariant::Standard,
                 size,
                 enabled: true,
                 full_width: true,
@@ -987,13 +969,12 @@ fn selector_textfield_character_offsets(
     look: &Arc<ShadcnLook>,
     value: &str,
     theme: Arc<dyn TextFieldTheme>,
-    variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
     size: ControlSize,
     window: &mut Window,
 ) -> Vec<f32> {
-    let look = selector_preview_textfield_look(look, &theme, variant, state, enabled, size, window);
+    let look = selector_preview_textfield_look(look, &theme, state, enabled, size, window);
     let value_shared = SharedString::from(value.to_string());
     let run = TextRun {
         len: value_shared.len(),
@@ -1030,14 +1011,21 @@ fn selector_char_to_byte_offset(text: &str, char_offset: usize) -> usize {
 fn selector_preview_textfield_look(
     look: &Arc<ShadcnLook>,
     theme: &Arc<dyn TextFieldTheme>,
-    variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
     size: ControlSize,
     window: &Window,
 ) -> luma::controls::textfield::TextFieldLook {
     let scale = StandardBoxScale::compute(size, &theme.metrics(), window.scale_factor());
-    apply_selector_preview_textfield_size(look, theme.resolve_look(variant, state, enabled, size, &scale), size)
+    apply_selector_preview_textfield_size(look, theme.resolve_look(state, enabled, size, &scale), size)
+}
+
+fn shadcn_size(size: ControlSize) -> ShadcnSize {
+    match size {
+        ControlSize::Sm => ShadcnSize::Sm,
+        ControlSize::Md => ShadcnSize::Md,
+        ControlSize::Lg => ShadcnSize::Lg,
+    }
 }
 
 fn render_selector_combobox_popup_preview_from_templates(

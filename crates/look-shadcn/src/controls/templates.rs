@@ -42,7 +42,7 @@ use luma::controls::accordion::{AccordionTemplate, AccordionTheme, ThemedAccordi
 use luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTreeViewTemplate};
 use luma::controls::tabs::{TabsTemplate, TabsTheme, ThemedTabsTemplate};
 use luma::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
-use luma::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate};
+use luma::controls::textfield::{TextFieldState, TextFieldTheme, ThemedTextFieldTemplate};
 use luma::controls::toolbar::{ThemedToolbarTemplate, ToolbarLook, ToolbarTemplate, ToolbarTheme, ToolbarVariant};
 
 use luma::theme::{ControlSize, InteractionState, StandardBoxScale};
@@ -502,12 +502,7 @@ struct ShadcnTextFieldTheme {
 }
 
 impl TextFieldTheme for ShadcnTextFieldTheme {
-    fn resolve(
-        &self,
-        _variant: TextFieldVariant,
-        state: TextFieldState,
-        enabled: bool,
-    ) -> luma::controls::textfield::TextFieldPalette {
+    fn resolve(&self, state: TextFieldState, enabled: bool) -> luma::controls::textfield::TextFieldPalette {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_palette(
             tokens.as_ref(),
@@ -524,7 +519,6 @@ impl TextFieldTheme for ShadcnTextFieldTheme {
 
     fn resolve_look(
         &self,
-        _variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         size: ControlSize,
@@ -577,12 +571,7 @@ struct ShadcnInputTextFieldTheme {
 }
 
 impl TextFieldTheme for ShadcnInputTextFieldTheme {
-    fn resolve(
-        &self,
-        _variant: TextFieldVariant,
-        state: TextFieldState,
-        enabled: bool,
-    ) -> luma::controls::textfield::TextFieldPalette {
+    fn resolve(&self, state: TextFieldState, enabled: bool) -> luma::controls::textfield::TextFieldPalette {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_palette(
             tokens.as_ref(),
@@ -599,7 +588,6 @@ impl TextFieldTheme for ShadcnInputTextFieldTheme {
 
     fn resolve_look(
         &self,
-        _variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         size: ControlSize,
@@ -631,12 +619,7 @@ struct ShadcnSurfaceTextFieldTheme {
 }
 
 impl TextFieldTheme for ShadcnSurfaceTextFieldTheme {
-    fn resolve(
-        &self,
-        _variant: TextFieldVariant,
-        state: TextFieldState,
-        enabled: bool,
-    ) -> luma::controls::textfield::TextFieldPalette {
+    fn resolve(&self, state: TextFieldState, enabled: bool) -> luma::controls::textfield::TextFieldPalette {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_palette(
             tokens.as_ref(),
@@ -653,7 +636,6 @@ impl TextFieldTheme for ShadcnSurfaceTextFieldTheme {
 
     fn resolve_look(
         &self,
-        _variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         size: ControlSize,
@@ -681,12 +663,7 @@ struct ShadcnPrimaryTextFieldTheme {
 }
 
 impl TextFieldTheme for ShadcnPrimaryTextFieldTheme {
-    fn resolve(
-        &self,
-        _variant: TextFieldVariant,
-        state: TextFieldState,
-        enabled: bool,
-    ) -> luma::controls::textfield::TextFieldPalette {
+    fn resolve(&self, state: TextFieldState, enabled: bool) -> luma::controls::textfield::TextFieldPalette {
         let tokens = self.theme.mode_tokens();
         super::textfield::textfield_palette(
             tokens.as_ref(),
@@ -703,7 +680,6 @@ impl TextFieldTheme for ShadcnPrimaryTextFieldTheme {
 
     fn resolve_look(
         &self,
-        _variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         size: ControlSize,

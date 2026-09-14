@@ -1,7 +1,7 @@
 //! Inspect metadata for `badge`.
 
 use luma::theme::{ControlSize, ThemeMode};
-use luma_look_shadcn::{BadgeVariant, ResolvedColor, ResolvedMetric, ShadcnLook, ShadcnModeTokens};
+use luma_look_shadcn::{BadgeVariant, ResolvedColor, ResolvedMetric, ShadcnLook, ShadcnModeTokens, ShadcnSize};
 
 use crate::metrics::{derived_metric, pill_radius_metric, spacing_control_metric};
 
@@ -34,7 +34,15 @@ pub fn inspect_badge_metrics(
     size: ControlSize,
     _theme_mode: ThemeMode,
 ) -> BadgeInspectMetrics {
-    let look = luma_look_shadcn::badge_look(look, variant, size);
+    let look = luma_look_shadcn::badge_look(
+        look,
+        variant,
+        match size {
+            ControlSize::Sm => ShadcnSize::Sm,
+            ControlSize::Md => ShadcnSize::Md,
+            ControlSize::Lg => ShadcnSize::Lg,
+        },
+    );
 
     BadgeInspectMetrics {
         min_height: derived_metric("badge min height", look.min_height),
