@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use gpui::Hsla;
 use luma::theme::ThemeMode;
-use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn::{ShadcnLook, ShadowTokenParts, shadow_ladder_overrides};
 
 use super::hs_mixer::{ThemePaletteHsOverride, clamp_palette_temperature_amount, clamp_palette_vividness_amount};
 
@@ -26,17 +26,6 @@ pub const PALETTE_SATURATION_MULTIPLIER_MIN: f32 = 0.0;
 pub const PALETTE_SATURATION_MULTIPLIER_MAX: f32 = 2.0;
 pub const PALETTE_LIGHTNESS_MULTIPLIER_MIN: f32 = 0.0;
 pub const PALETTE_LIGHTNESS_MULTIPLIER_MAX: f32 = 2.0;
-
-const SHADOW_LADDER_TOKENS: [&str; 8] = [
-    "shadow-2xs",
-    "shadow-xs",
-    "shadow-sm",
-    "shadow",
-    "shadow-md",
-    "shadow-lg",
-    "shadow-xl",
-    "shadow-2xl",
-];
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThemePaletteHslOverride {
@@ -80,18 +69,14 @@ impl ThemeShadowOverride {
         self.color.a = clamp_shadow_opacity(opacity);
     }
 
-    pub fn to_css_value(&self) -> String {
-        format!(
-            "{}px {}px {}px {}px hsl({} {}% {}% / {})",
-            format_shadow_number(self.offset_x_px),
-            format_shadow_number(self.offset_y_px),
-            format_shadow_number(self.blur_px),
-            format_shadow_number(self.spread_px),
-            (self.color.h * 360.0).round(),
-            (self.color.s * 100.0).round(),
-            (self.color.l * 100.0).round(),
-            format_shadow_number(self.color.a),
-        )
+    fn to_parts(&self) -> ShadowTokenParts {
+        ShadowTokenParts {
+            color: self.color,
+            blur_px: self.blur_px,
+            spread_px: self.spread_px,
+            offset_x_px: self.offset_x_px,
+            offset_y_px: self.offset_y_px,
+        }
     }
 }
 
@@ -225,10 +210,7 @@ impl StudioOverrides {
             overrides.insert("spacing".to_string(), rem_css_value(spacing_rem));
         }
         if let Some(shadow) = &self.shadow {
-            let shadow = shadow.to_css_value();
-            for token in SHADOW_LADDER_TOKENS {
-                overrides.insert(token.to_string(), shadow.clone());
-            }
+            overrides.extend(shadow_ladder_overrides(shadow.to_parts()));
         }
         if let Some(font_sans) = &self.font_sans {
             overrides.insert("font-sans".to_string(), font_sans.clone());
@@ -360,18 +342,6 @@ pub fn quote_css_font_family(family: &str) -> String {
     }
 }
 
-fn format_shadow_number(value: f32) -> String {
-    let rounded = (value * 100.0).round() / 100.0;
-    let mut text = format!("{rounded:.2}");
-    while text.contains('.') && text.ends_with('0') {
-        text.pop();
-    }
-    if text.ends_with('.') {
-        text.pop();
-    }
-    text
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -406,8 +376,11 @@ mod tests {
 
         let tokens = overrides.token_overrides();
         let shadow = tokens.get("shadow").expect("base shadow override");
-        for token in SHADOW_LADDER_TOKENS {
-            assert_eq!(tokens.get(token), Some(shadow));
+        for token in luma_look_shadcn::SHADOW_LADDER_TOKENS {
+            assert!(tokens.contains_key(token));
         }
+        assert!(tokens.get("shadow-md").expect("medium shadow override") != shadow);
+        assert!(tokens.get("shadow-2xl").expect("largest shadow override") != shadow);
+        assert!(shadow.contains(","));
     }
 }

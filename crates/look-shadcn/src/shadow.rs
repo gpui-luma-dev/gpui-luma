@@ -1,6 +1,99 @@
+use std::collections::HashMap;
+
 use anyhow::{Context as _, Result};
 use gpui::{BoxShadow, Hsla, point, px};
 use crate::catalog::CssTokenMap;
+
+pub const SHADOW_LADDER_TOKENS: [&str; 8] = [
+    "shadow-2xs",
+    "shadow-xs",
+    "shadow-sm",
+    "shadow",
+    "shadow-md",
+    "shadow-lg",
+    "shadow-xl",
+    "shadow-2xl",
+];
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ShadowTokenParts {
+    pub color: Hsla,
+    pub blur_px: f32,
+    pub spread_px: f32,
+    pub offset_x_px: f32,
+    pub offset_y_px: f32,
+}
+
+impl ShadowTokenParts {
+    pub fn to_css_value(self) -> String {
+        format_shadow_layer(self.offset_x_px, self.offset_y_px, self.blur_px, self.spread_px, self.color)
+    }
+}
+
+/// Generates the standard Shadcn shadow ladder from one editable shadow part set.
+pub fn shadow_ladder_overrides(parts: ShadowTokenParts) -> HashMap<String, String> {
+    let levels = [
+        ("shadow-2xs", 0.5, None),
+        ("shadow-xs", 0.5, None),
+        ("shadow-sm", 1.0, Some((1.0, 2.0, -1.0, 1.0))),
+        ("shadow", 1.0, Some((1.0, 2.0, -1.0, 1.0))),
+        ("shadow-md", 1.0, Some((2.0, 4.0, -1.0, 1.0))),
+        ("shadow-lg", 1.0, Some((4.0, 6.0, -1.0, 1.0))),
+        ("shadow-xl", 1.0, Some((8.0, 10.0, -1.0, 1.0))),
+        ("shadow-2xl", 2.5, None),
+    ];
+
+    levels
+        .into_iter()
+        .map(|(token, primary_alpha, secondary)| {
+            let primary = ShadowTokenParts { color: with_alpha(parts.color, parts.color.a * primary_alpha), ..parts };
+            let value = if let Some((offset_y_factor, blur_px, spread_px, _)) = secondary {
+                let secondary = format_shadow_layer(
+                    parts.offset_x_px,
+                    parts.offset_y_px * offset_y_factor,
+                    blur_px,
+                    spread_px,
+                    with_alpha(parts.color, parts.color.a),
+                );
+                format!("{}, {}", primary.to_css_value(), secondary)
+            } else {
+                primary.to_css_value()
+            };
+            (token.to_string(), value)
+        })
+        .collect()
+}
+
+fn with_alpha(mut color: Hsla, alpha: f32) -> Hsla {
+    color.a = alpha.clamp(0.0, 1.0);
+    color
+}
+
+fn format_shadow_layer(offset_x: f32, offset_y: f32, blur: f32, spread: f32, color: Hsla) -> String {
+    format!(
+        "{}px {}px {}px {}px hsl({} {}% {}% / {})",
+        format_shadow_number(offset_x),
+        format_shadow_number(offset_y),
+        format_shadow_number(blur),
+        format_shadow_number(spread),
+        (color.h * 360.0).round(),
+        (color.s * 100.0).round(),
+        (color.l * 100.0).round(),
+        format_shadow_number(color.a),
+    )
+}
+
+fn format_shadow_number(value: f32) -> String {
+    let rounded = (value * 100.0).round() / 100.0;
+    let mut text = format!("{rounded:.2}");
+    while text.contains('.') && text.ends_with('0') {
+        text.pop();
+    }
+    if text.ends_with('.') {
+        text.pop();
+    }
+    text
+}
 
 pub(crate) fn parse_shadow_token(catalog: &CssTokenMap, token_key: &str) -> Result<Vec<BoxShadow>> {
     let raw = catalog.get(token_key).with_context(|| format!("missing css token `--{token_key}`"))?;
@@ -115,5 +208,23 @@ mod tests {
         let raw = "0px 2px 0px 0px hsl(0 0% 20% / 0.15), 0px 1px 2px -1px hsl(0 0% 20% / 0.15)";
         let shadows = parse_box_shadow_value(raw).unwrap();
         assert_eq!(shadows.len(), 2);
+    }
+
+    #[test]
+    fn shadow_ladder_preserves_parts_and_restores_scale() {
+        let parts = ShadowTokenParts {
+            color: Hsla { h: 0.5, s: 0.4, l: 0.2, a: 0.2 },
+            blur_px: 10.0,
+            spread_px: -2.0,
+            offset_x_px: 3.0,
+            offset_y_px: 4.0,
+        };
+        let ladder = shadow_ladder_overrides(parts);
+
+        assert_eq!(ladder.len(), SHADOW_LADDER_TOKENS.len());
+        assert!(ladder["shadow-2xs"].contains("0.1"));
+        assert!(ladder["shadow"].contains(", 3px 4px 2px -1px"));
+        assert!(ladder["shadow-xl"].contains("3px 32px 10px -1px"));
+        assert!(ladder["shadow-2xl"].contains("0.5"));
     }
 }

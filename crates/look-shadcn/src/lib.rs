@@ -36,6 +36,7 @@ pub use luma_look_core::{
 };
 pub use ext::{LumaTypographyExt, ShadcnElementExt};
 pub use look::ShadcnLook;
+pub use shadow::{SHADOW_LADDER_TOKENS, ShadowTokenParts, shadow_ladder_overrides};
 pub use size::ShadcnSize;
 pub use mode::ShadcnModeTokens;
 pub use palette::{ShadcnActionRole, ShadcnPalette};
