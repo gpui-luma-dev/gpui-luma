@@ -160,7 +160,11 @@ fn build_grid_cell(element: Option<AnyElement>, tracks: &[GridTrack], gap_x: f32
     let GridSpanSizing { fixed_width, star_weight } = measure_grid_span(tracks, gap_x);
 
     let mut cell = if star_weight > 0.0 {
-        let mut cell = div().min_w(px(fixed_width)).flex_1().overflow_hidden();
+        // Flexible tracks must allow controls to paint slightly beyond their
+        // layout box. Sliders, for example, reserve thumb space inside their
+        // root but still need their thumb shadow and border to remain visible
+        // at the ends of the track.
+        let mut cell = div().min_w(px(fixed_width)).flex_1();
         cell.style().flex_grow = Some(star_weight);
         cell
     } else {
