@@ -10,6 +10,7 @@ use luma_look_shadcn::ShadcnLook;
 
 use super::cards::render_demo_board;
 use super::controls;
+use super::developer::SortableCollectionPrototype;
 use super::dashboard;
 use super::palette;
 use super::navigation::luma_studio_tabs_template;
@@ -36,6 +37,7 @@ pub struct ContentPaneHost {
     tabs: Entity<Tabs>,
     style_guide_panel: Entity<StyleGuidePanel>,
     controls_panel: Entity<ControlsPanel>,
+    developer_panel: Entity<SortableCollectionPrototype>,
     palette_panel: Entity<PalettePanel>,
     theme_usage_panel: Entity<ThemeUsagePanel>,
     board: BoardSnapshot,
@@ -48,6 +50,7 @@ impl ContentPaneHost {
     pub fn new(app: Entity<LumaStudioApp>, board: BoardSnapshot, cx: &mut Context<Self>) -> Self {
         let host = cx.entity();
         let controls_panel = cx.new(|cx| ControlsPanel::new(cx, board.look.clone()));
+        let developer_panel = cx.new(|_| SortableCollectionPrototype::new(board.look.clone()));
         let picker_host = host.clone();
         let catalog_picker = PopoverButton::new("luma-studio-controls-picker")
             .trigger(|_, _| div().w(px(0.0)).h(px(0.0)).into_any_element())
@@ -68,6 +71,7 @@ impl ContentPaneHost {
                 TabsItem::new("dashboard").label("Dashboard"),
                 TabsItem::new("typography").label("Style Guide"),
                 TabsItem::new("controls").label("Controls").dropdown_trigger(),
+                TabsItem::new("developer").label("Developer"),
                 TabsItem::new("palette").label("Color Palette"),
                 TabsItem::new("theme-usage").label("Theme Usage"),
             ])
@@ -111,6 +115,7 @@ impl ContentPaneHost {
             tabs,
             style_guide_panel,
             controls_panel,
+            developer_panel,
             palette_panel,
             theme_usage_panel,
             board,
@@ -141,6 +146,11 @@ impl ContentPaneHost {
                 panel.sync_snapshot(look, cx);
                 panel.request_layout_refresh(cx);
             });
+        }
+
+        if tab == ContentTab::Developer {
+            let look = self.board.look.clone();
+            self.developer_panel.update(cx, |panel, cx| panel.sync_look(look, cx));
         }
 
         if tab == ContentTab::Palette {
@@ -217,6 +227,7 @@ impl ContentPaneHost {
         });
         self.style_guide_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
         self.controls_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
+        self.developer_panel.update(cx, |panel, cx| panel.sync_look(look.clone(), cx));
         self.palette_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), overrides, cx));
         self.theme_usage_panel.update(cx, |panel, cx| panel.sync_snapshot(look, cx));
         cx.notify();
@@ -251,6 +262,7 @@ impl Render for ContentPaneHost {
                 ContentTab::Dashboard => dashboard::viewport().child(board.demos.dashboard.clone()),
                 ContentTab::Typography => style_guide::viewport().child(self.style_guide_panel.clone()),
                 ContentTab::Controls => controls::viewport().child(self.controls_panel.clone()),
+                ContentTab::Developer => controls::viewport().child(self.developer_panel.clone()),
                 ContentTab::Palette => palette::viewport().child(self.palette_panel.clone()),
                 ContentTab::ThemeUsage => theme_usage::viewport().child(self.theme_usage_panel.clone()),
             })
