@@ -1,7 +1,10 @@
 //! Look-owned listbox builder. Spawn synthesizes the SDK listbox control-group.
 
-use gpui::{App, Context, Entity, SharedString};
-use luma::controls::control_group::{ControlGroupBuilder, ControlGroupControl, ControlGroupTemplate};
+use gpui::{App, Context, Div, Entity, SharedString, Stateful};
+use luma::controls::control_group::{
+    ControlGroupBuilder, ControlGroupChromeModel, ControlGroupControl, ControlGroupItemElementTemplate,
+    ControlGroupItemTemplate, ControlGroupTemplate,
+};
 use luma::controls::listbox::{ListBoxItem, multiple as sdk_multiple, new as sdk_new};
 
 use crate::look::{ShadcnLook, resolve_look_from};
@@ -70,6 +73,24 @@ impl ListBox {
     pub fn template(mut self, template: ControlGroupTemplate<ListBoxItem>) -> Self {
         self.custom_template = true;
         self.builder = self.builder.template(template);
+        self
+    }
+
+    pub fn item_template(mut self, template: ControlGroupItemTemplate<ListBoxItem>) -> Self {
+        self.builder = self.builder.item_template(template);
+        self
+    }
+
+    pub fn item_element_template(mut self, template: ControlGroupItemElementTemplate<ListBoxItem>) -> Self {
+        self.builder = self.builder.item_element_template(template);
+        self
+    }
+
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &ControlGroupChromeModel) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.builder = self.builder.with_template_modifier(modifier);
         self
     }
 

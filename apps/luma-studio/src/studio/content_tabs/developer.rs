@@ -2,17 +2,36 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use gpui::{
-    Bounds, Context, DragMoveEvent, IntoElement, KeyDownEvent, MouseButton, MouseUpEvent, Pixels, Point, Render,
-    SharedString, Window, div, prelude::*, point, px,
+    Bounds, Context, CursorStyle, DragMoveEvent, IntoElement, KeyDownEvent, MouseButton, MouseUpEvent, Pixels, Point,
+    Render, SharedString, Window, div, prelude::*, point, px,
 };
+use luma::controls::control_group::{ControlGroupItemRenderModel, ControlGroupItemTemplate};
+use luma::controls::listbox::ListBox as SdkListBox;
 use luma::infra::ElementExt;
-use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn::{ListBox, ShadcnLook, ShadcnRadius};
 
 #[derive(Clone)]
 struct SortableItem {
     id: SharedString,
     label: SharedString,
-    accent: gpui::Hsla,
+}
+
+fn accent_for(id: &str) -> gpui::Hsla {
+    let hue = match id {
+        "research" => 0.58,
+        "wireframes" => 0.08,
+        "prototype" => 0.75,
+        "qa" => 0.32,
+        "docs" => 0.16,
+        "discovery" => 0.42,
+        "spec" => 0.67,
+        "priorities" => 0.92,
+        "review" => 0.22,
+        "release" => 0.05,
+        "measure" => 0.48,
+        _ => 0.0,
+    };
+    gpui::hsla(hue, 0.55, 0.52, 1.0)
 }
 
 #[derive(Clone)]
@@ -117,42 +136,51 @@ pub struct SortableCollectionPrototype {
     look: Arc<ShadcnLook>,
     rows: Vec<SortableRow>,
     item_bounds: Vec<Vec<Bounds<Pixels>>>,
+    list_bounds: Vec<Bounds<Pixels>>,
     dragging: Option<SortableDrag>,
     drop_target: Option<DropTarget>,
     drag_trace: Option<DragTrace>,
     pending_trace: Option<(DragTrace, &'static str)>,
     last_event: SharedString,
+    listboxes: [Option<SdkListBox>; 2],
 }
 
 impl SortableCollectionPrototype {
     pub fn new(look: Arc<ShadcnLook>) -> Self {
-        let item = |id: &str, label: &str, hue: f32| SortableItem {
-            id: id.into(),
-            label: label.into(),
-            accent: gpui::hsla(hue, 0.55, 0.52, 1.0),
-        };
+        let item = |id: &str, label: &str| SortableItem { id: id.into(), label: label.into() };
         Self {
             look,
             rows: vec![
                 SortableRow {
                     label: "Backlog".into(),
-                    items: vec![item("research", "Research", 0.58), item("wireframes", "Wireframes", 0.08)],
+                    items: vec![
+                        item("research", "Research"),
+                        item("wireframes", "Wireframes"),
+                        item("discovery", "Discovery"),
+                        item("spec", "Specification"),
+                        item("priorities", "Priorities"),
+                    ],
                 },
                 SortableRow {
                     label: "In progress".into(),
                     items: vec![
-                        item("prototype", "Prototype", 0.75),
-                        item("qa", "QA pass", 0.32),
-                        item("docs", "Docs", 0.16),
+                        item("prototype", "Prototype"),
+                        item("qa", "QA pass"),
+                        item("docs", "Docs"),
+                        item("review", "Design review"),
+                        item("release", "Release plan"),
+                        item("measure", "Measure results"),
                     ],
                 },
             ],
             item_bounds: Vec::new(),
+            list_bounds: Vec::new(),
             dragging: None,
             drop_target: None,
             drag_trace: None,
             pending_trace: None,
-            last_event: "Ready — drag an item within or between rows".into(),
+            last_event: "Ready — drag an item between lists".into(),
+            listboxes: [None, None],
         }
     }
 
@@ -163,18 +191,13 @@ impl SortableCollectionPrototype {
 
     fn begin_drag(&mut self, drag: SortableDrag, cx: &mut Context<Self>) {
         self.dragging = Some(drag.clone());
-        self.drop_target = Some(DropTarget { row: drag.row, index: drag.index });
+        self.drop_target = None;
         self.drag_trace = Some(DragTrace::new(drag.item_id.clone()));
         self.last_event = format!("Dragging {}", drag.item_id).into();
         cx.notify();
     }
 
-    fn update_drop_target(
-        &mut self,
-        event: &DragMoveEvent<SortableDrag>,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn update_drop_target(&mut self, event: &DragMoveEvent<SortableDrag>, window: &mut Window, cx: &mut Context<Self>) {
         let drag = event.drag(cx);
         let Some(session) = self.dragging.as_ref() else { return };
         if drag.item_id != session.item_id {
@@ -187,14 +210,36 @@ impl SortableCollectionPrototype {
             trace.last_move = Some(now);
         }
         let mut target = self.item_bounds.iter().enumerate().find_map(|(row, bounds)| {
+            if bounds.is_empty() {
+                return self
+                    .list_bounds
+                    .get(row)
+                    .filter(|bounds| bounds.contains(&position))
+                    .map(|_| DropTarget { row, index: 0 });
+            }
             let first = bounds.first()?;
             let last = bounds.last()?;
-            if position.y < first.origin.y - px(8.0) || position.y > last.bottom() + px(8.0) {
+            if position.x < first.origin.x - px(8.0)
+                || position.x > first.right() + px(8.0)
+                || position.y < first.origin.y - px(8.0)
+                || position.y > last.bottom() + px(8.0)
+            {
                 return None;
             }
             let index = bounds.iter().position(|bound| position.y < bound.center().y).unwrap_or(bounds.len());
             Some(DropTarget { row, index })
         });
+        if target.is_some_and(|target| target.row == session.row) {
+            target = None;
+        }
+        cx.set_active_drag_cursor_style(
+            if target.is_some() {
+                CursorStyle::DragCopy
+            } else {
+                CursorStyle::OperationNotAllowed
+            },
+            window,
+        );
         if target.is_some_and(|target| {
             target.row == session.row && (target.index == session.index || target.index == session.index + 1)
         }) {
@@ -256,6 +301,7 @@ impl SortableCollectionPrototype {
         self.last_event =
             format!("Committed move: {} → row {}, position {}", session.item_id, target.row + 1, target.index + 1)
                 .into();
+        self.sync_listboxes(cx);
         cx.notify();
     }
 
@@ -272,52 +318,89 @@ impl SortableCollectionPrototype {
         self.last_event = "Cancelled — Escape pressed".into();
         cx.notify();
     }
-}
 
-impl Render for SortableCollectionPrototype {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        if let Some((trace, outcome)) = self.pending_trace.take() {
-            trace.print(outcome);
+    fn sync_listboxes(&mut self, cx: &mut Context<Self>) {
+        for (row, listbox) in self.listboxes.iter().enumerate() {
+            if let Some(listbox) = listbox {
+                listbox.update(cx, |listbox, cx| {
+                    listbox.set_items(
+                        self.rows[row].items.iter().map(|item| {
+                            luma::controls::listbox::ListBoxItem::new(item.id.clone(), item.id.clone())
+                                .label(item.label.clone())
+                        }),
+                        cx,
+                    );
+                });
+            }
         }
-        let background = self.look.token_color("background").unwrap_or(self.look.chrome().app_background);
-        let card = self.look.token_color("card").unwrap_or(self.look.chrome().panel_background);
-        let foreground = self.look.token_color("foreground").unwrap_or(self.look.chrome().body_text);
-        let muted = self.look.token_color("muted-foreground").unwrap_or(self.look.chrome().muted_text);
-        let border = self.look.token_color("border").unwrap_or(self.look.chrome().border);
-        let focus = self.look.token_color("ring").unwrap_or(self.look.chrome().border);
-        self.item_bounds = self.rows.iter().map(|row| vec![Bounds::default(); row.items.len()]).collect();
-        let prototype = cx.entity();
-        let mut rows = Vec::new();
+    }
 
-        for (row_index, row) in self.rows.iter().enumerate() {
-            let mut items = Vec::new();
-            for (item_index, item) in row.items.iter().enumerate() {
-                let drag = SortableDrag {
-                    row: row_index,
-                    index: item_index,
-                    item_id: item.id.clone(),
-                    label: item.label.clone(),
-                    accent: item.accent,
-                    look: self.look.clone(),
-                    cursor_offset: point(px(0.0), px(0.0)),
-                };
-                let bounds_host = prototype.clone();
-                let start_host = prototype.clone();
-                let finish_host = prototype.clone();
-                let target_before = self.drop_target == Some(DropTarget { row: row_index, index: item_index });
-                let target_at_end = self.drop_target == Some(DropTarget { row: row_index, index: row.items.len() })
-                    && item_index + 1 == row.items.len();
-                let mut item_view = div()
-                    .id(format!("sortable-item-{}", item.id))
-                    .relative()
+    fn create_listbox(&mut self, row_index: usize, cx: &mut Context<Self>) -> SdkListBox {
+        let prototype = cx.entity();
+        let look = self.look.clone();
+        let item_look = look.clone();
+        let item_template: ControlGroupItemTemplate<luma::controls::listbox::ListBoxItem> =
+            Arc::new(move |item: &ControlGroupItemRenderModel<'_, _>, _, _| {
+                let accent = accent_for(item.item.id().as_ref());
+                let foreground = item_look.token_color("foreground").unwrap_or(item_look.chrome().body_text);
+                let muted = item_look.token_color("muted-foreground").unwrap_or(item_look.chrome().muted_text);
+                div()
                     .flex()
                     .items_center()
                     .gap(px(10.0))
+                    .child(div().w(px(8.0)).h(px(8.0)).rounded(px(4.0)).bg(accent))
+                    .child(
+                        div()
+                            .flex_1()
+                            .child(div().text_sm().text_color(foreground).child(item.item.label_text().clone()))
+                            .child(
+                                div().text_xs().text_color(muted).child(format!("{} · drag to move", item.item.id())),
+                            ),
+                    )
+                    .into_any_element()
+            });
+        let bounds_host_seed = prototype.clone();
+        let start_host_seed = prototype.clone();
+        let finish_host_seed = prototype.clone();
+        let finish_host_out_seed = prototype.clone();
+        let item_element_template = Arc::new(
+            move |item: &ControlGroupItemRenderModel<'_, luma::controls::listbox::ListBoxItem>,
+                  item_template: Option<&ControlGroupItemTemplate<luma::controls::listbox::ListBoxItem>>,
+                  window: &mut Window,
+                  app: &mut gpui::App| {
+                let item_id = item.item.id().clone();
+                let item_index = item.index;
+                let sibling_count = item.sibling_count;
+                let bounds_host = bounds_host_seed.clone();
+                let start_host = start_host_seed.clone();
+                let finish_host = finish_host_seed.clone();
+                let finish_host_out = finish_host_out_seed.clone();
+                let drag = SortableDrag {
+                    row: row_index,
+                    index: item_index,
+                    item_id: item_id.clone(),
+                    label: item.item.label_text().clone(),
+                    accent: accent_for(item_id.as_ref()),
+                    look: look.clone(),
+                    cursor_offset: point(px(0.0), px(0.0)),
+                };
+                let drop_target = prototype.read(app).drop_target;
+                let target_before = drop_target == Some(DropTarget { row: row_index, index: item_index });
+                let target_at_end = drop_target == Some(DropTarget { row: row_index, index: item_index + 1 })
+                    && item_index + 1 == sibling_count;
+                let card = look.token_color("card").unwrap_or(look.chrome().panel_background);
+                let border = look.token_color("border").unwrap_or(look.chrome().border);
+                let content = item_template
+                    .map(|template| template(item, window, app))
+                    .unwrap_or_else(|| div().into_any_element());
+                let mut element = div()
+                    .id(format!("sortable-listbox-item-{}", item_id))
+                    .relative()
                     .w_full()
                     .min_h(px(52.0))
                     .px(px(14.0))
                     .py(px(10.0))
-                    .rounded(px(8.0))
+                    .rounded(px(look.radius(ShadcnRadius::Lg)))
                     .bg(card)
                     .border_1()
                     .border_color(border)
@@ -325,9 +408,12 @@ impl Render for SortableCollectionPrototype {
                     .on_mouse_up(MouseButton::Left, move |event, window, cx| {
                         finish_host.update(cx, |this, cx| this.finish_drag(event, window, cx));
                     })
-                    .on_mouse_up_out(MouseButton::Left, cx.listener(Self::finish_drag))
-                    .on_drag(drag, move |payload, cursor_offset, _, cx| {
+                    .on_mouse_up_out(MouseButton::Left, move |event, window, cx| {
+                        finish_host_out.update(cx, |this, cx| this.finish_drag(event, window, cx));
+                    })
+                    .on_drag(drag, move |payload, cursor_offset, window, cx| {
                         start_host.update(cx, |this, cx| this.begin_drag(payload.clone(), cx));
+                        cx.set_active_drag_cursor_style(CursorStyle::OperationNotAllowed, window);
                         let mut preview = payload.clone();
                         preview.cursor_offset = cursor_offset;
                         cx.new(|_| preview)
@@ -340,34 +426,66 @@ impl Render for SortableCollectionPrototype {
                                 *slot = bounds;
                             }
                         });
-                    });
+                    })
+                    .child(content);
                 if target_before || target_at_end {
-                    let mut marker = div()
-                        .id(format!("sortable-drop-marker-{}", item.id))
-                        .absolute()
-                        .left(px(0.0))
-                        .right(px(0.0))
-                        .h(px(4.0))
-                        .rounded(px(2.0))
-                        .bg(focus);
-                    marker = if target_before {
-                        marker.top(px(-3.0))
+                    let marker =
+                        div().absolute().left(px(0.0)).right(px(0.0)).h(px(4.0)).rounded(px(2.0)).bg(prototype
+                            .read(app)
+                            .look
+                            .token_color("ring")
+                            .unwrap_or(prototype.read(app).look.chrome().border));
+                    element = if target_before {
+                        element.child(marker.top(px(-3.0)))
                     } else {
-                        marker.bottom(px(-3.0))
+                        element.child(marker.bottom(px(-3.0)))
                     };
-                    item_view = item_view.child(marker);
                 }
-                items.push(
-                    item_view.child(div().w(px(8.0)).h(px(8.0)).rounded(px(4.0)).bg(item.accent)).child(
-                        div()
-                            .flex_1()
-                            .child(div().text_sm().text_color(foreground).child(item.label.clone()))
-                            .child(div().text_xs().text_color(muted).child(format!("{} · drag to move", item.id))),
-                    ),
-                );
+                element
+            },
+        );
+        let items = self.rows[row_index].items.iter().map(|item| {
+            luma::controls::listbox::ListBoxItem::new(item.id.clone(), item.id.clone()).label(item.label.clone())
+        });
+        ListBox::new(format!("developer-sortable-listbox-{row_index}"))
+            .look(&self.look)
+            .template(self.look.listbox_template())
+            .with_template_modifier(|root, _| root.min_h(px(60.0)))
+            .items(items)
+            .item_template(item_template)
+            .item_element_template(item_element_template)
+            .spawn(cx)
+    }
+}
+
+impl Render for SortableCollectionPrototype {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.listboxes[0].is_none() {
+            for row_index in 0..self.rows.len() {
+                let listbox = self.create_listbox(row_index, cx);
+                self.listboxes[row_index] = Some(listbox);
             }
-            rows.push(
+        }
+        self.item_bounds = self.rows.iter().map(|row| vec![Bounds::default(); row.items.len()]).collect();
+        self.list_bounds = vec![Bounds::default(); self.rows.len()];
+        if let Some((trace, outcome)) = self.pending_trace.take() {
+            trace.print(outcome);
+        }
+        let background = self.look.token_color("background").unwrap_or(self.look.chrome().app_background);
+        let card = self.look.token_color("card").unwrap_or(self.look.chrome().panel_background);
+        let foreground = self.look.token_color("foreground").unwrap_or(self.look.chrome().body_text);
+        let muted = self.look.token_color("muted-foreground").unwrap_or(self.look.chrome().muted_text);
+        let border = self.look.token_color("border").unwrap_or(self.look.chrome().border);
+        let listboxes: Vec<_> = self
+            .listboxes
+            .iter()
+            .zip(&self.rows)
+            .enumerate()
+            .map(|(row_index, (listbox, row))| {
+                let bounds_host = cx.entity();
                 div()
+                    .flex_1()
+                    .min_w(px(0.0))
                     .flex()
                     .flex_col()
                     .gap(px(8.0))
@@ -385,10 +503,20 @@ impl Render for SortableCollectionPrototype {
                             )
                             .child(div().text_xs().text_color(muted).child(format!("{} items", row.items.len()))),
                     )
-                    .children(items),
-            );
-        }
-
+                    .child(
+                        div()
+                            .min_h(px(60.0))
+                            .on_prepaint(move |bounds, _, cx| {
+                                bounds_host.update(cx, |this, _| {
+                                    if let Some(slot) = this.list_bounds.get_mut(row_index) {
+                                        *slot = bounds;
+                                    }
+                                });
+                            })
+                            .child(listbox.as_ref().expect("listbox initialized").clone()),
+                    )
+            })
+            .collect();
         div()
             .id("developer-sortable-collection")
             .size_full()
@@ -400,10 +528,38 @@ impl Render for SortableCollectionPrototype {
             .on_mouse_up(MouseButton::Left, cx.listener(Self::finish_drag))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::finish_drag))
             .on_key_down(cx.listener(Self::cancel_drag))
-            .child(div().max_w(px(760.0)).flex().flex_col().gap(px(24.0)).child(
-                div().flex().flex_col().gap(px(8.0)).child(div().text_xl().font_weight(gpui::FontWeight::SEMIBOLD).text_color(foreground).child("Developer · Sortable collection")).child(
-                    div().text_sm().text_color(muted).child("App-local prototype for same-row reorder, cross-row moves, insertion gaps, previews, and cancellation."),
-                ),
-            ).child(div().p(px(12.0)).rounded(px(8.0)).bg(card).border_1().border_color(border).child(div().text_sm().text_color(focus).child(self.last_event.clone()))).children(rows))
+            .child(
+                div()
+                    .max_w(px(980.0))
+                    .flex()
+                    .flex_col()
+                    .gap(px(16.0))
+                    .child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .gap(px(8.0))
+                            .child(
+                                div()
+                                    .text_xl()
+                                    .font_weight(gpui::FontWeight::SEMIBOLD)
+                                    .text_color(foreground)
+                                    .child("Developer · Sortable collection"),
+                            )
+                            .child(div().text_sm().text_color(muted).child(
+                                "SDK ListBox prototype for cross-list moves; same-list reorder is disabled for now.",
+                            )),
+                    )
+                    .child(
+                        div()
+                            .p(px(12.0))
+                            .rounded(px(8.0))
+                            .bg(card)
+                            .border_1()
+                            .border_color(border)
+                            .child(div().text_sm().text_color(foreground).child(self.last_event.clone())),
+                    )
+                    .child(div().flex().gap(px(16.0)).children(listboxes)),
+            )
     }
 }
