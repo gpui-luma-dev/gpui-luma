@@ -2390,10 +2390,34 @@ dependencies = [
 ]
 
 [[package]]
-name = "gpui-linux-gpui-unofficial"
-version = "1.16.3"
+name = "gpui-apple-gpui-unofficial"
+version = "1.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac3ea79e6346ee7afa831760ef4577ad53c8b11742600b188b32ef9894402194"
+checksum = "496c62276ef0810cba86961080702f29fe674a2713da6c5d908a63c49ddfb3a6"
+dependencies = [
+ "anyhow",
+ "block",
+ "cbindgen",
+ "cocoa 0.26.0",
+ "collections-gpui-unofficial",
+ "core-foundation 0.10.1",
+ "core-video",
+ "derive_more",
+ "etagere",
+ "foreign-types 0.5.0",
+ "gpui-unofficial",
+ "image",
+ "log",
+ "metal",
+ "objc",
+ "parking_lot",
+]
+
+[[package]]
+name = "gpui-linux-gpui-unofficial"
+version = "1.17.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "393fb3d04fbf2cf5098cf876e8c92eadd24829fa4a9bda58e0a24f3b51fd2b0c"
 dependencies = [
  "accesskit",
  "accesskit_unix",
@@ -2526,9 +2550,9 @@ dependencies = [
 
 [[package]]
 name = "gpui-macos-gpui-unofficial"
-version = "1.16.3"
+version = "1.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3076015417956ea37604d6977c132322cd1b9604cde30cda00e226f1bc9760a3"
+checksum = "8df4f7a179ebbd2f1fb5efca9482d0e831aa0fbd96125e6b2f78fa8309c69282"
 dependencies = [
  "accesskit",
  "accesskit_macos",
@@ -2536,20 +2560,17 @@ dependencies = [
  "async-task",
  "block",
  "block2 0.6.2",
- "cbindgen",
  "cocoa 0.26.0",
  "collections-gpui-unofficial",
  "core-foundation 0.10.1",
  "core-foundation-sys",
  "core-graphics 0.24.0",
  "core-text",
- "core-video",
  "ctor",
- "derive_more",
  "dispatch2",
- "etagere",
  "foreign-types 0.5.0",
  "futures",
+ "gpui-apple-gpui-unofficial",
  "gpui-unofficial",
  "gpui-util-gpui-unofficial",
  "image",
@@ -2588,9 +2609,9 @@ dependencies = [
 
 [[package]]
 name = "gpui-platform-gpui-unofficial"
-version = "1.16.3"
+version = "1.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05dae88e47272851fcc71f41df271d959af7c20dbdb7b5a10112810e15b82b32"
+checksum = "aace4fe75db0c14d17a595226837a0a363412594bc3268df2c7e49f29715098f"
 dependencies = [
  "console_error_panic_hook",
  "gpui-linux-gpui-unofficial",
@@ -2613,9 +2634,9 @@ dependencies = [
 
 [[package]]
 name = "gpui-unofficial"
-version = "1.16.3"
+version = "1.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b228b1004d4dd0d8eb5f3a37850647362f835695149c8723970fa99d18138adb"
+checksum = "5364b783eaa13d216fe38078dd2f5c4e526d97dc8a7aae5904a4b23581396c69"
 dependencies = [
  "accesskit",
  "anyhow",
@@ -2709,9 +2730,9 @@ dependencies = [
 
 [[package]]
 name = "gpui-web-gpui-unofficial"
-version = "1.16.3"
+version = "1.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bad795901d493a72dde2dd0c90d3a478e47b82e3098823459f0ddd56612339cd"
+checksum = "fe73d0e9e40e6cb7b97fe3e17299cb90fdededa802027733c18323aefb7ac56c"
 dependencies = [
  "anyhow",
  "console_error_panic_hook",
@@ -2723,6 +2744,7 @@ dependencies = [
  "log",
  "parking_lot",
  "raw-window-handle",
+ "scheduler-gpui-unofficial",
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2733,9 +2755,9 @@ dependencies = [
 
 [[package]]
 name = "gpui-wgpu-gpui-unofficial"
-version = "1.16.3"
+version = "1.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e59bd9077da2110375d8642238c101518a938811643c1aea14ce880d6a895286"
+checksum = "e3fc56d63025794ea85870ee2c4c37967e7a008db10c641ce35214c29c666480"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -2764,9 +2786,9 @@ dependencies = [
 
 [[package]]
 name = "gpui-windows-gpui-unofficial"
-version = "1.16.3"
+version = "1.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "daedd42b77de4ac27cf85ea5d114f4969cd189da9b0cd0f6a4348ec70ecd452b"
+checksum = "9887c81dc30055e0482b16c31b587f7fc3a1ba99d18179e3e5b98c42b0f903aa"
 dependencies = [
  "accesskit",
  "accesskit_windows",
@@ -2790,12 +2812,6 @@ dependencies = [
  "windows-numerics 0.2.0",
  "windows-registry 0.5.3",
 ]
-
-[[package]]
-name = "grid"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b40ca9252762c466af32d0b1002e91e4e1bc5398f77455e55474deb466355ff5"
 
 [[package]]
 name = "gtk"
@@ -5807,6 +5823,7 @@ dependencies = [
  "futures",
  "parking_lot",
  "rand 0.9.5",
+ "wasm_thread",
  "web-time",
 ]
 
@@ -6560,14 +6577,14 @@ dependencies = [
 
 [[package]]
 name = "taffy"
-version = "0.12.2"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "340a09581f29809fc0df82a3955501dc7f2a21f887e5d1c13dbe288fe1c0bef4"
+checksum = "c034e05f6ee85a12daa63863c2245797715075c70649947aa0da54f3f2ab1d0f"
 dependencies = [
  "arrayvec",
- "grid",
  "serde",
  "slotmap",
+ "smallvec",
 ]
 
 [[package]]
