@@ -2,6 +2,27 @@ use gpui::{KeyDownEvent, Modifiers};
 
 use super::state::{EditableTextPolicy, TextSelectionState, select_all};
 
+/// Truncate clipboard text to `max_bytes` UTF-8 bytes (`None` keeps the full clipboard).
+pub(crate) fn cap_clipboard_paste(text: &str, max_bytes: Option<usize>) -> &str {
+    let Some(max_bytes) = max_bytes else {
+        return text;
+    };
+    if text.len() <= max_bytes {
+        return text;
+    }
+
+    match text.get(..max_bytes) {
+        Some(exact) => exact,
+        None => {
+            let mut end = max_bytes;
+            while end > 0 && !text.is_char_boundary(end) {
+                end -= 1;
+            }
+            &text[..end]
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum FocusNavigation {
     Next,
@@ -400,6 +421,7 @@ pub(crate) fn handle_key_down<S: TextSelectionState>(
         }
         "v" if secondary => {
             if let Some(text) = clipboard_text {
+                let text = cap_clipboard_paste(text, policy.max_clipboard_paste_bytes);
                 let text = if policy.strip_newlines_on_paste {
                     text.replace(['\n', '\r'], "")
                 } else {
@@ -474,14 +496,16 @@ fn insert_text<S: TextSelectionState>(state: &mut S, chars: &mut Vec<char>, valu
     }
 
     let _ = delete_selection(state, chars);
-    let mut inserted = 0usize;
-    for ch in value.chars() {
-        chars.insert(state.cursor() + inserted, ch);
-        inserted += 1;
+    let inserted: Vec<char> = value.chars().collect();
+    let count = inserted.len();
+    if count == 0 {
+        return false;
     }
-    state.set_cursor_raw(state.cursor() + inserted);
+    let at = state.cursor();
+    chars.splice(at..at, inserted);
+    state.set_cursor_raw(at + count);
     state.clear_selection();
-    inserted > 0
+    true
 }
 
 fn selected_text<S: TextSelectionState>(state: &S, chars: &[char]) -> Option<String> {
@@ -600,6 +624,7 @@ mod tests {
                 strip_newlines_on_paste: false,
                 allow_tab_character: true,
                 clear_on_escape: false,
+                ..Default::default()
             },
         );
 
@@ -636,6 +661,7 @@ mod tests {
             strip_newlines_on_paste: false,
             allow_tab_character: true,
             clear_on_escape: false,
+            ..Default::default()
         };
 
         let result = handle_key_down(&mut state, "ab\ncdef\nxy", &event_down, None, policy);
@@ -670,6 +696,7 @@ mod tests {
             strip_newlines_on_paste: false,
             allow_tab_character: true,
             clear_on_escape: false,
+            ..Default::default()
         };
         let mut state = TestState { cursor: 4, ..Default::default() };
 
@@ -691,6 +718,7 @@ mod tests {
             strip_newlines_on_paste: true,
             allow_tab_character: false,
             clear_on_escape: false,
+            ..Default::default()
         };
 
         let copy = handle_key_down(&mut state, "abcdef", &event("c", secondary_modifiers()), None, policy);
@@ -707,6 +735,36 @@ mod tests {
         let paste = handle_key_down(&mut state, "aef", &event("v", secondary_modifiers()), Some("x\ny"), policy);
         assert!(paste.changed);
         assert_eq!(paste.value, "axyef");
+    }
+
+    #[test]
+    fn paste_respects_configured_byte_budget() {
+        let mut state = TestState { cursor: 0, ..Default::default() };
+        let policy = EditableTextPolicy { max_clipboard_paste_bytes: Some(8), ..Default::default() };
+        let paste = handle_key_down(&mut state, "", &event("v", secondary_modifiers()), Some("hello world"), policy);
+        assert!(paste.changed);
+        assert_eq!(paste.value, "hello wo");
+    }
+
+    #[test]
+    fn paste_without_budget_keeps_the_full_clipboard() {
+        let mut state = TestState { cursor: 0, ..Default::default() };
+        let policy = EditableTextPolicy { max_clipboard_paste_bytes: None, ..Default::default() };
+        let paste = handle_key_down(&mut state, "", &event("v", secondary_modifiers()), Some("hello world"), policy);
+        assert!(paste.changed);
+        assert_eq!(paste.value, "hello world");
+    }
+
+    #[test]
+    fn cap_clipboard_paste_truncates_on_char_boundary() {
+        let capped = cap_clipboard_paste("éééé", Some(3));
+        assert_eq!(capped, "é");
+        assert!(capped.is_char_boundary(capped.len()));
+    }
+
+    #[test]
+    fn cap_clipboard_paste_none_is_unlimited() {
+        assert_eq!(cap_clipboard_paste("hello world", None), "hello world");
     }
 
     fn event(key: &str, modifiers: Modifiers) -> KeyDownEvent {

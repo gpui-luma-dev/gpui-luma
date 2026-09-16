@@ -22,6 +22,7 @@ pub struct TextAreaModel {
     pub(crate) rows: usize,
     pub(crate) clean_on_escape: bool,
     pub(crate) select_all_on_tab_focus: bool,
+    pub(crate) max_clipboard_paste_bytes: Option<usize>,
     pub(crate) resize_handle_icon: IconSource,
     pub(crate) validator: Option<Validator>,
     pub(crate) look_override: Option<TextAreaLookOverride>,
@@ -70,6 +71,7 @@ impl TextAreaBuilder {
                 rows: 4,
                 clean_on_escape: false,
                 select_all_on_tab_focus: false,
+                max_clipboard_paste_bytes: Some(crate::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
                 resize_handle_icon: lucide_svg_static::Icon::Scaling.into(),
                 validator: None,
                 look_override: None,
@@ -116,6 +118,15 @@ impl TextAreaBuilder {
 
     pub fn select_all_on_tab_focus(mut self, select_all: bool) -> Self {
         self.model.select_all_on_tab_focus = select_all;
+        self
+    }
+
+    /// Limit clipboard paste to `max_bytes` UTF-8 bytes (`None` keeps the full clipboard).
+    ///
+    /// Default is [`crate::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES`]. This is a desktop
+    /// memory budget; raise or disable it for large-document editors.
+    pub fn max_clipboard_paste_bytes(mut self, max_bytes: Option<usize>) -> Self {
+        self.model.max_clipboard_paste_bytes = max_bytes;
         self
     }
 

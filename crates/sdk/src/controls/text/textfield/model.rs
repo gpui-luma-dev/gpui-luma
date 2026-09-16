@@ -25,6 +25,7 @@ pub struct TextFieldModel {
     pub(crate) clean_on_escape: bool,
     pub(crate) select_all_on_tab_focus: bool,
     pub(crate) propagate_home_end_to_parent: bool,
+    pub(crate) max_clipboard_paste_bytes: Option<usize>,
     pub(crate) validator: Option<Validator>,
     pub(crate) look_override: Option<TextFieldLookOverride>,
     pub(crate) template: Arc<dyn TextFieldTemplate>,
@@ -65,6 +66,7 @@ impl TextFieldBuilder {
                 clean_on_escape: false,
                 select_all_on_tab_focus: false,
                 propagate_home_end_to_parent: false,
+                max_clipboard_paste_bytes: Some(crate::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
                 validator: None,
                 look_override: None,
                 template: default_textfield_template(),
@@ -126,6 +128,15 @@ impl TextFieldBuilder {
 
     pub fn propagate_home_end_to_parent(mut self, propagate: bool) -> Self {
         self.model.propagate_home_end_to_parent = propagate;
+        self
+    }
+
+    /// Limit clipboard paste to `max_bytes` UTF-8 bytes (`None` keeps the full clipboard).
+    ///
+    /// Default is [`crate::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES`]. This is a desktop
+    /// memory budget; raise or disable it for large-document editors.
+    pub fn max_clipboard_paste_bytes(mut self, max_bytes: Option<usize>) -> Self {
+        self.model.max_clipboard_paste_bytes = max_bytes;
         self
     }
 

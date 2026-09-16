@@ -27,6 +27,7 @@ pub struct TextField {
     clean_on_escape: bool,
     select_all_on_tab_focus: bool,
     propagate_home_end_to_parent: bool,
+    max_clipboard_paste_bytes: Option<usize>,
     validator: Option<Validator>,
     look_override: Option<TextFieldLookOverride>,
     modifiers: Vec<TextFieldModifier>,
@@ -49,6 +50,7 @@ impl TextField {
             clean_on_escape: false,
             select_all_on_tab_focus: false,
             propagate_home_end_to_parent: false,
+            max_clipboard_paste_bytes: Some(luma::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
             validator: None,
             look_override: None,
             modifiers: Vec::new(),
@@ -133,6 +135,12 @@ impl TextField {
         self
     }
 
+    /// Limit clipboard paste to `max_bytes` UTF-8 bytes (`None` keeps the full clipboard).
+    pub fn max_clipboard_paste_bytes(mut self, max_bytes: Option<usize>) -> Self {
+        self.max_clipboard_paste_bytes = max_bytes;
+        self
+    }
+
     pub fn validator(mut self, validator: Validator) -> Self {
         self.validator = Some(validator);
         self
@@ -175,7 +183,8 @@ impl TextField {
             .full_width(self.full_width)
             .clean_on_escape(self.clean_on_escape)
             .select_all_on_tab_focus(self.select_all_on_tab_focus)
-            .propagate_home_end_to_parent(self.propagate_home_end_to_parent);
+            .propagate_home_end_to_parent(self.propagate_home_end_to_parent)
+            .max_clipboard_paste_bytes(self.max_clipboard_paste_bytes);
         if let Some(icon) = self.prefix_icon {
             builder = builder.prefix_icon(icon);
         }

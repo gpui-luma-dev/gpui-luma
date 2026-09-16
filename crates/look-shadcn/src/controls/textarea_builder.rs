@@ -24,6 +24,7 @@ pub struct TextArea {
     rows: usize,
     clean_on_escape: bool,
     select_all_on_tab_focus: bool,
+    max_clipboard_paste_bytes: Option<usize>,
     resize_handle_icon: Option<IconSource>,
     validator: Option<Validator>,
     look_override: Option<Arc<dyn Fn(TextAreaLook) -> TextAreaLook + Send + Sync>>,
@@ -44,6 +45,7 @@ impl TextArea {
             rows: 4,
             clean_on_escape: false,
             select_all_on_tab_focus: false,
+            max_clipboard_paste_bytes: Some(luma::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
             resize_handle_icon: None,
             validator: None,
             look_override: None,
@@ -118,6 +120,12 @@ impl TextArea {
         self
     }
 
+    /// Limit clipboard paste to `max_bytes` UTF-8 bytes (`None` keeps the full clipboard).
+    pub fn max_clipboard_paste_bytes(mut self, max_bytes: Option<usize>) -> Self {
+        self.max_clipboard_paste_bytes = max_bytes;
+        self
+    }
+
     pub fn resize_handle_icon(mut self, icon: impl Into<IconSource>) -> Self {
         self.resize_handle_icon = Some(icon.into());
         self
@@ -175,7 +183,8 @@ impl TextArea {
             .size(self.size.control_size())
             .rows(self.rows)
             .clean_on_escape(self.clean_on_escape)
-            .select_all_on_tab_focus(self.select_all_on_tab_focus);
+            .select_all_on_tab_focus(self.select_all_on_tab_focus)
+            .max_clipboard_paste_bytes(self.max_clipboard_paste_bytes);
         if let Some(icon) = self.resize_handle_icon {
             builder = builder.resize_handle_icon(icon);
         }
