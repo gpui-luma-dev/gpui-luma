@@ -1,3 +1,5 @@
+//! Inspector adapters for the button control family.
+
 use std::sync::Arc;
 
 use luma::controls::button_family::ButtonFamilyRole;
@@ -5,11 +7,11 @@ use luma_look_shadcn::ShadcnLook;
 use luma_look_shadcn_inspect::ShadcnInspect;
 use lucide_svg_static::Icon as LucideIcon;
 
-use super::inspector::common::{button_variant_style, control_size, interaction_state};
-use super::inspector::metrics::button_layout_section;
-use super::inspector::provenance::{color_row, elevation_snapshot};
-use super::inspector::specs::CHOICE_SIZES;
-use super::inspector::{
+use super::super::common::{button_variant_style, control_size, interaction_state};
+use super::super::metrics::button_layout_section;
+use super::super::provenance::{color_row, elevation_snapshot};
+use super::super::specs::CHOICE_SIZES;
+use super::super::schema::{
     ControlInspectorResolver, ControlInspectorSpec, InspectColorRow, InspectPropertyRow, InspectorCategory,
     InspectorCategoryContent, InspectorSelection, InspectorStateSpec, InspectorVariant, SharedInspectorResolver,
 };
@@ -110,7 +112,7 @@ impl ControlInspectorResolver for ButtonInspectorAdapter {
 
     fn category_applies(&self, _look: &ShadcnLook, selection: InspectorSelection<'_>, category_id: &str) -> bool {
         if category_id == "elevation" {
-            return super::inspector::common::button_elevation_applies(selection.variant_id, selection.state_id);
+            return super::super::common::button_elevation_applies(selection.variant_id, selection.state_id);
         }
         true
     }
@@ -133,7 +135,7 @@ fn resolve_color_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> V
 fn resolve_layout_section(
     look: &ShadcnLook,
     selection: InspectorSelection<'_>,
-) -> super::inspector::InspectLayoutSection {
+) -> super::super::schema::InspectLayoutSection {
     button_layout_section(
         look,
         "button-theme-inspector-box-model",
@@ -147,7 +149,7 @@ fn resolve_layout_section(
 fn resolve_elevation(
     look: &ShadcnLook,
     selection: InspectorSelection<'_>,
-) -> super::inspector::InspectElevationSnapshot {
+) -> super::super::schema::InspectElevationSnapshot {
     let elevation = ShadcnInspect::new(look).inspect_button_elevation(
         button_variant_style(selection.variant_id),
         button_role(selection),

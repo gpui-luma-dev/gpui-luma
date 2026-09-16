@@ -218,8 +218,8 @@ impl ToggleControlExposition {
                 let left_pane = left_pane.clone();
                 move || left_pane.clone().into_any_element()
             },
-            &super::toggle_inspector_adapter::TOGGLE_INSPECTOR_SPEC,
-            super::toggle_inspector_adapter::ToggleInspectorAdapter::shared(),
+            &super::inspector::TOGGLE_INSPECTOR_SPEC,
+            super::inspector::ToggleInspectorAdapter::shared(),
         );
 
         Self { look, entry, left_pane, theme_inspector, inspector_split }

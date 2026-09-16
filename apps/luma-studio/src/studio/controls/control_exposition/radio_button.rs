@@ -151,8 +151,8 @@ impl RadioButtonControlExposition {
                 let left_pane = left_pane.clone();
                 move || left_pane.clone().into_any_element()
             },
-            &super::radio_button_inspector_adapter::RADIO_BUTTON_INSPECTOR_SPEC,
-            super::radio_button_inspector_adapter::RadioButtonInspectorAdapter::shared(),
+            &super::inspector::RADIO_BUTTON_INSPECTOR_SPEC,
+            super::inspector::RadioButtonInspectorAdapter::shared(),
         );
 
         let mut subscriptions = Vec::new();

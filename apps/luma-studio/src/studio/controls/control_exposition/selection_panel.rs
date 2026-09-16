@@ -14,7 +14,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::selection_panel_inspector_adapter::{SelectionPanelInspectorAdapter, SELECTION_PANEL_INSPECTOR_SPEC};
+use super::inspector::{SelectionPanelInspectorAdapter, SELECTION_PANEL_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 
 pub struct SelectionPanelControlExposition {

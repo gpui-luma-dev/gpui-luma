@@ -15,7 +15,7 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::progress_inspector_adapter::{ProgressInspectorAdapter, PROGRESS_INSPECTOR_SPEC};
+use super::inspector::{ProgressInspectorAdapter, PROGRESS_INSPECTOR_SPEC};
 use super::standalone_theme_inspectors::ProgressThemeInspector;
 use super::template::render_control_exposition_card;
 

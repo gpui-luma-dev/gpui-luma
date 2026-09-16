@@ -15,7 +15,7 @@ use super::collection_theme_inspectors::ListBoxThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::listbox_inspector_adapter::{ListBoxInspectorAdapter, LISTBOX_INSPECTOR_SPEC};
+use super::inspector::{ListBoxInspectorAdapter, LISTBOX_INSPECTOR_SPEC};
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 

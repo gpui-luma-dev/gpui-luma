@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::Context;
 use luma_look_shadcn::ShadcnLook;
 
-use super::button_inspector_adapter::{ButtonInspectorAdapter, BUTTON_INSPECTOR_SPEC};
+use super::inspector::{ButtonInspectorAdapter, BUTTON_INSPECTOR_SPEC};
 use super::theme_inspector::ThemeInspector;
 
 pub type ButtonThemeInspector = ThemeInspector;

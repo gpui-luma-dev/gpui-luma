@@ -12,7 +12,7 @@ use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
-use super::floating_menu_inspector_adapter::{FloatingMenuInspectorAdapter, FLOATING_MENU_INSPECTOR_SPEC};
+use super::inspector::{FloatingMenuInspectorAdapter, FLOATING_MENU_INSPECTOR_SPEC};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::standalone_theme_inspectors::FloatingMenuThemeInspector;

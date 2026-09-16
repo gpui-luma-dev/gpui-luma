@@ -13,7 +13,7 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::inspector_split::InspectorSplitShell;
 use super::model::ControlExpositionLayout;
 use super::overlay_demo::{overlay_status_for, render_overlay_dialog_panel, render_overlay_status};
-use super::overlay_window_inspector_adapter::{OverlayWindowInspectorAdapter, OVERLAY_WINDOW_INSPECTOR_SPEC};
+use super::inspector::{OverlayWindowInspectorAdapter, OVERLAY_WINDOW_INSPECTOR_SPEC};
 use super::shell_theme_inspectors::OverlayWindowThemeInspector;
 use super::template::render_control_exposition_card;
 
