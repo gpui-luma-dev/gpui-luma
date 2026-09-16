@@ -214,10 +214,7 @@ fn base_item_look(_theme: &ShadcnLook, ctx: &LookContext, size: ControlSize) -> 
 
     SidebarItemLook {
         background: None,
-        focus_border: (state.focused && !state.disabled).then(|| {
-            crate::focus::focus_ring_color(ctx.catalog())
-                .unwrap_or_else(|err| panic!("navigation sidebar focus ring: {err}"))
-        }),
+        focus_border: (state.focused && !state.disabled).then(|| crate::focus::focus_ring_or_fallback(ctx.catalog())),
         foreground: colors.foreground.hsla(),
         icon_color: colors.icon_color.hsla(),
         typography: typography.text.label,
@@ -321,5 +318,19 @@ mod tests {
             selected.foreground,
             catalog.color("sidebar-primary-foreground").expect("sidebar-primary-foreground")
         );
+    }
+
+    #[test]
+    fn focused_sidebar_item_does_not_panic_when_ring_token_is_missing() {
+        let mut mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        mode.catalog.tokens.remove("ring");
+        let ctx = crate::look_context::LookContext::new(
+            &mode,
+            ThemeMode::Light,
+            InteractionState { focused: true, ..InteractionState::default() },
+        );
+        let look = super::base_item_look(&ShadcnLook::built_in(), &ctx, ControlSize::Md);
+
+        assert_eq!(look.focus_border, Some(crate::provenance::ResolvedColor::fallback_foreground().hsla()));
     }
 }

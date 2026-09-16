@@ -13,7 +13,6 @@ use super::apply_button_metrics_typography;
 
 use crate::look_context::LookContext;
 use crate::provenance::{LookResolver, ResolvedColor};
-use crate::resolve::resolve_color;
 use super::ShadcnButtonStyle;
 use super::choice_indicator::choice_indicator_color_layer;
 use crate::mode::ShadcnModeTokens;
@@ -89,11 +88,11 @@ pub fn checkbox_look(
         .unwrap_or_else(|_| CheckboxColorTable::fallback());
 
     let indicator_border = if !content_only && state.focused && !state.disabled {
-        crate::focus::focus_ring_color(catalog).unwrap_or_else(|err| panic!("checkbox focus ring: {err}"))
+        crate::focus::focus_ring_or_fallback(catalog)
     } else if checked && !state.disabled {
         colors.indicator_background.hsla()
     } else {
-        resolve_color(catalog, "border").unwrap_or_else(|err| panic!("checkbox properties: {err}"))
+        crate::resolve::resolve_color_or_fallback(catalog, "border")
     };
 
     CheckboxPalette {
@@ -220,5 +219,30 @@ mod tests {
         assert_eq!(content_only.indicator_border, primary.indicator_border);
         assert_eq!(content_only.checkmark_color, primary.checkmark_color);
         assert!(content_only.indicator_shadow.is_none());
+    }
+
+    fn mode_without_border_and_ring() -> ShadcnModeTokens {
+        let mut mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        mode.catalog.tokens.remove("ring");
+        mode.catalog.tokens.remove("border");
+        mode
+    }
+
+    #[test]
+    fn incomplete_catalog_does_not_panic_on_focus_or_border() {
+        let mode = mode_without_border_and_ring();
+        let fallback = ResolvedColor::fallback_foreground().hsla();
+        let focused = checkbox_look(
+            &mode,
+            ShadcnButtonStyle::Primary,
+            false,
+            InteractionState { focused: true, ..InteractionState::default() },
+            ControlSize::Md,
+        );
+        let unfocused =
+            checkbox_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default(), ControlSize::Md);
+
+        assert_eq!(focused.indicator_border, fallback);
+        assert_eq!(unfocused.indicator_border, fallback);
     }
 }
