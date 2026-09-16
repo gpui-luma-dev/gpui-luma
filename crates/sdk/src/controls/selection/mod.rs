@@ -9,6 +9,9 @@
 //! Related spawnables in this family: [`combobox`], [`autocomplete`], [`search_selector`],
 //! [`table`].
 
+mod behavior;
+mod text_selection;
+
 pub mod autocomplete;
 pub mod combobox;
 pub mod table;
