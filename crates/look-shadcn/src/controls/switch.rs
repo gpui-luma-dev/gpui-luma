@@ -16,7 +16,6 @@ use super::apply_button_metrics_typography;
 
 use crate::look_context::LookContext;
 use crate::provenance::{LookResolver, ResolvedColor};
-use crate::resolve::resolve_color;
 use crate::shadow::parse_shadow_token;
 use super::button::{ButtonRadiusPreset, resolve_button_radius_preset};
 use super::ShadcnButtonStyle;
@@ -154,11 +153,11 @@ pub fn switch_look(
 
     let track_background = colors.track_background.hsla();
     let track_border = if state.focused && !state.disabled {
-        crate::focus::focus_ring_color(catalog).unwrap_or_else(|err| panic!("switch focus ring: {err}"))
+        crate::focus::focus_ring_or_fallback(catalog)
     } else if on && !state.disabled {
         track_background
     } else {
-        resolve_color(catalog, "border").unwrap_or_else(|err| panic!("switch properties: {err}"))
+        crate::resolve::resolve_color_or_fallback(catalog, "border")
     };
     let mut thumb_background = colors.thumb_background.hsla();
     let mut thumb_border = if on && !state.disabled {
@@ -520,5 +519,37 @@ mod tests {
         assert_eq!(content_only.thumb_background, gpui::hsla(0.0, 0.0, 1.0, 1.0));
         assert_eq!(content_only.thumb_border, gpui::hsla(0.0, 0.0, 1.0, 1.0));
         assert!(content_only.thumb_shadow.is_empty());
+    }
+
+    fn mode_without_border_and_ring() -> ShadcnModeTokens {
+        let mut mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        mode.catalog.tokens.remove("ring");
+        mode.catalog.tokens.remove("border");
+        mode
+    }
+
+    #[test]
+    fn incomplete_catalog_does_not_panic_on_focus_or_border() {
+        let mode = mode_without_border_and_ring();
+        let fallback = crate::provenance::ResolvedColor::fallback_foreground().hsla();
+        let focused = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            false,
+            InteractionState { focused: true, ..InteractionState::default() },
+            ControlSize::Md,
+        );
+        let unfocused = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            false,
+            InteractionState::default(),
+            ControlSize::Md,
+        );
+
+        assert_eq!(focused.track_border, fallback);
+        assert_eq!(unfocused.track_border, fallback);
     }
 }

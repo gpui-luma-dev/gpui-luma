@@ -10,7 +10,8 @@ use luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use super::floating_menu::floating_menu_look;
-use crate::resolve::{resolve_color, resolve_ghost_trigger_background, resolve_ghost_trigger_foreground};
+use crate::provenance::ResolvedColor;
+use crate::resolve::{resolve_color_or_fallback, resolve_ghost_trigger_background, resolve_ghost_trigger_foreground};
 use crate::mode::ShadcnModeTokens;
 
 pub fn context_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: InteractionState) -> ContextMenuLook {
@@ -24,15 +25,66 @@ pub fn context_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: 
 
     ContextMenuLook {
         target_background: resolve_ghost_trigger_background(catalog, layer)
-            .unwrap_or_else(|err| panic!("context menu properties: {err}")),
+            .unwrap_or_else(|_| gpui::hsla(0.0, 0.0, 0.0, 0.0)),
         target_foreground: resolve_ghost_trigger_foreground(catalog, layer, state.disabled)
-            .unwrap_or_else(|err| panic!("context menu properties: {err}")),
-        target_border: resolve_color(catalog, "border").unwrap_or_else(|err| panic!("context menu properties: {err}")),
+            .unwrap_or_else(|_| ResolvedColor::fallback_foreground().hsla()),
+        target_border: resolve_color_or_fallback(catalog, "border"),
         target_typography: typography.text.label,
         target_radius: metrics.radius(size),
         target_padding_x: metrics.padding_x(size),
         target_padding_y: metrics.padding_y(size),
         target_min_width: 200.0,
         floating_menu: floating_menu_look(ctx.tokens, ctx.theme_mode, size),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use luma::theme::{InteractionState, ThemeMode};
+
+    use super::context_menu_look;
+    use crate::catalog::CssTokenMap;
+    use crate::mode::ShadcnModeTokens;
+    use crate::provenance::ResolvedColor;
+
+    fn sample_catalog() -> CssTokenMap {
+        CssTokenMap::from_map(BTreeMap::from([
+            ("primary".into(), "oklch(0.5924 0.2025 355.8943)".into()),
+            ("primary-foreground".into(), "oklch(1 0 0)".into()),
+            ("secondary".into(), "oklch(0.6437 0.1019 187.3840)".into()),
+            ("secondary-foreground".into(), "oklch(1 0 0)".into()),
+            ("background".into(), "oklch(0.9735 0.0261 90.0953)".into()),
+            ("foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
+            ("muted".into(), "oklch(0.6979 0.0159 196.7940)".into()),
+            ("muted-foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
+            ("accent".into(), "oklch(0.5808 0.1732 39.5003)".into()),
+            ("accent-foreground".into(), "oklch(1 0 0)".into()),
+            ("border".into(), "oklch(0.6537 0.0197 205.2618)".into()),
+            ("input".into(), "oklch(0.6537 0.0197 205.2618)".into()),
+            ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
+            ("card".into(), "oklch(0.9306 0.0260 92.4020)".into()),
+        ]))
+    }
+
+    #[test]
+    fn incomplete_catalog_does_not_panic_on_border_or_disabled_ghost() {
+        let mut mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        mode.catalog.tokens.remove("border");
+        mode.catalog.tokens.remove("muted");
+        mode.catalog.tokens.remove("muted-foreground");
+        let fallback = ResolvedColor::fallback_foreground().hsla();
+
+        let look = context_menu_look(&mode, ThemeMode::Light, InteractionState::default());
+        let disabled = context_menu_look(
+            &mode,
+            ThemeMode::Light,
+            InteractionState { disabled: true, ..InteractionState::default() },
+        );
+
+        assert_eq!(look.target_border, fallback);
+        assert_eq!(disabled.target_background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
+        assert_eq!(disabled.target_foreground, fallback);
     }
 }
