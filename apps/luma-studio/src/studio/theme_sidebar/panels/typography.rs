@@ -821,7 +821,7 @@ mod tests {
             Some(&SharedString::from("Rajdhani")),
             &SharedString::from("Rajdhani Variable"),
         );
-        assert_eq!(items[0].label.as_ref(), "Rajdhani");
+        assert_eq!(items[0].label.as_ref(), "Rajdhani → Rajdhani Variable ✓");
     }
 
     #[test]

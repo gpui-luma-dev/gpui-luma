@@ -17,6 +17,7 @@ env:
     gpui-luma-look-core
     gpui-luma-look-radix
     gpui-luma-look-shadcn
+    gpui-luma-look-shadcn-inspect
     gpui-luma
 
 jobs:

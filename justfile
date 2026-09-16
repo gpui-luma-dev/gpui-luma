@@ -59,10 +59,15 @@ loc:
     tokei --types Rust
 
 clippy:
-    cargo clippy --all-targets
+    cargo clippy --workspace --all-targets
 
 format-check:
     cargo fmt --all --check
 
 format:
     cargo fmt --all
+
+test:
+    cargo test --workspace --all-targets
+
+ci: format-check clippy test
