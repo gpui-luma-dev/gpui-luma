@@ -11,7 +11,9 @@ use super::{
     TextFieldLook, TextFieldBuilder, TextFieldRenderModel, TextFieldState, TextFieldTemplateHandlers,
     model::TextFieldModel,
 };
-use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
+use crate::controls::text::{
+    EditableTextPolicy, FocusNavigation, cap_clipboard_paste, handle_key_down, select_all, word_cluster_range,
+};
 use crate::theme::observe_theme_revision;
 
 #[derive(Clone)]
@@ -228,7 +230,7 @@ impl TextFieldControl {
         let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) else {
             return;
         };
-        let text = text.replace(['\n', '\r'], "");
+        let text = cap_clipboard_paste(&text, self.model.max_clipboard_paste_bytes).replace(['\n', '\r'], "");
         if text.is_empty() {
             return;
         }
@@ -252,6 +254,11 @@ impl TextFieldControl {
 
     pub fn set_clean_on_escape(&mut self, clean_on_escape: bool, cx: &mut Context<Self>) {
         self.model.clean_on_escape = clean_on_escape;
+        cx.notify();
+    }
+
+    pub fn set_max_clipboard_paste_bytes(&mut self, max_bytes: Option<usize>, cx: &mut Context<Self>) {
+        self.model.max_clipboard_paste_bytes = max_bytes;
         cx.notify();
     }
 
@@ -614,6 +621,7 @@ impl TextFieldControl {
                 strip_newlines_on_paste: true,
                 allow_tab_character: false,
                 clear_on_escape: self.model.clean_on_escape,
+                max_clipboard_paste_bytes: self.model.max_clipboard_paste_bytes,
             },
         );
 

@@ -1,10 +1,25 @@
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct EditableTextPolicy {
     pub multiline: bool,
     pub submit_on_enter: bool,
     pub strip_newlines_on_paste: bool,
     pub allow_tab_character: bool,
     pub clear_on_escape: bool,
+    /// UTF-8 byte budget for clipboard paste. `None` accepts the full clipboard.
+    pub max_clipboard_paste_bytes: Option<usize>,
+}
+
+impl Default for EditableTextPolicy {
+    fn default() -> Self {
+        Self {
+            multiline: false,
+            submit_on_enter: false,
+            strip_newlines_on_paste: false,
+            allow_tab_character: false,
+            clear_on_escape: false,
+            max_clipboard_paste_bytes: Some(super::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
+        }
+    }
 }
 
 pub(crate) trait TextSelectionState {
