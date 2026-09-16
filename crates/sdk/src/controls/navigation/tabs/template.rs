@@ -10,6 +10,7 @@ use super::indicator::TabsIndicatorMotion;
 use super::{TabsItem, TabsItemAccessory, TabsRenderItem, TabsRenderModel, model::TabsWidthMode};
 use crate::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole, default_button_family_theme};
 use crate::infra::ElementExt;
+use crate::infra::lock;
 use crate::controls::button::{ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate};
 use crate::controls::control_group::{
     ControlGroupBoundsHandler, ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemHandlerExt,
@@ -65,33 +66,33 @@ impl TabsOverlayState {
     }
 
     pub fn trigger_bounds(&self) -> Option<Bounds<Pixels>> {
-        *self.trigger_bounds.lock().expect("tabs navigation overlay trigger bounds lock")
+        *lock::mutex(&self.trigger_bounds)
     }
 
     pub fn set_animated(&self, animated: bool) {
-        self.presence.lock().expect("tabs navigation overlay presence lock").set_animated(animated);
+        lock::mutex(&self.presence).set_animated(animated);
     }
 
     /// Sync presence for the current frame. Returns `true` while animating.
     /// Hosting controls should call this from `Render` and `cx.notify()` while it returns true.
     pub fn sync_for_frame(&self) -> bool {
-        self.presence.lock().expect("tabs navigation overlay presence lock").sync()
+        lock::mutex(&self.presence).sync()
     }
 
     pub fn is_animating(&self) -> bool {
-        self.presence.lock().expect("tabs navigation overlay presence lock").is_animating()
+        lock::mutex(&self.presence).is_animating()
     }
 
     pub fn should_paint(&self) -> bool {
-        self.presence.lock().expect("tabs navigation overlay presence lock").should_paint()
+        lock::mutex(&self.presence).should_paint()
     }
 
     fn set_overlay_open(&self, open: bool) {
-        self.presence.lock().expect("tabs navigation overlay presence lock").set_open(open);
+        lock::mutex(&self.presence).set_open(open);
     }
 
     fn presence_snapshot(&self) -> OverlayPresence {
-        *self.presence.lock().expect("tabs navigation overlay presence lock")
+        *lock::mutex(&self.presence)
     }
 }
 
@@ -379,7 +380,7 @@ where
             let trigger_bounds = overlay_state.trigger_bounds.clone();
             move |bounds, _, _| {
                 if let Some(bounds) = bounds.first() {
-                    *trigger_bounds.lock().expect("tabs navigation overlay trigger bounds lock") = Some(*bounds);
+                    *lock::mutex(&trigger_bounds) = Some(*bounds);
                 }
             }
         })
@@ -396,7 +397,7 @@ where
 
     match overlay {
         Some(overlay) => {
-            *overlay_state.last_overlay.lock().expect("tabs navigation overlay cache lock") = Some(TabsCachedOverlay {
+            *lock::mutex(&overlay_state.last_overlay) = Some(TabsCachedOverlay {
                 content_size: overlay.content_size,
                 placement: overlay.placement,
                 offset_y: overlay.offset_y,
@@ -424,8 +425,7 @@ where
             overlay_state.set_overlay_open(false);
             let presence = overlay_state.presence_snapshot();
             if presence.should_paint()
-                && let Some(cached) =
-                    overlay_state.last_overlay.lock().expect("tabs navigation overlay cache lock").clone()
+                && let Some(cached) = lock::mutex(&overlay_state.last_overlay).clone()
             {
                 let placement = resolve_tabs_overlay_placement(
                     overlay_state.trigger_bounds(),
@@ -626,7 +626,7 @@ fn tabs_render_model<'a>(
     disclosure_icons: &'a crate::infra::icon::DisclosureIcons,
     disclosure_progress: &std::sync::Arc<std::sync::Mutex<std::collections::HashMap<SharedString, f32>>>,
 ) -> TabsRenderModel<'a> {
-    let progress = disclosure_progress.lock().expect("tabs disclosure progress lock");
+    let progress = lock::mutex(disclosure_progress);
     TabsRenderModel {
         id: model.id,
         size,
@@ -687,5 +687,17 @@ mod tests {
         assert_eq!(placement.anchor, Anchor::TopLeft);
         assert_eq!(placement.position, point(px(80.0), px(42.0)));
         assert_eq!(placement.offset, point(px(-100.0), px(6.0)));
+    }
+
+    #[test]
+    fn poisoned_overlay_locks_do_not_abort_queries() {
+        let state = TabsOverlayState::new();
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _guard = state.presence.lock().unwrap();
+            panic!("poison");
+        }));
+        assert!(!state.should_paint());
+        assert!(!state.is_animating());
+        assert!(state.trigger_bounds().is_none());
     }
 }

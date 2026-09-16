@@ -10,6 +10,7 @@ use super::indicator::TabsIndicatorMotion;
 use super::{TabsBuilder, TabsItem};
 use crate::controls::control_group::{ControlGroupControl, ControlGroupEvent, ControlGroupLayout, ControlSelectionMode};
 use crate::controls::tabs::model::TabsWidthMode;
+use crate::infra::lock;
 use crate::motion::DisclosureMotion;
 use crate::theme::ControlSize;
 
@@ -138,7 +139,7 @@ impl Tabs {
         self.pending_changed_id = None;
         self.item_bounds.clear();
         {
-            let mut progress = self.disclosure_progress.lock().expect("tabs disclosure progress lock");
+            let mut progress = lock::mutex(&self.disclosure_progress);
             progress.clear();
             for item in &self.items {
                 if item.trailing_accessory_ref().is_some() {

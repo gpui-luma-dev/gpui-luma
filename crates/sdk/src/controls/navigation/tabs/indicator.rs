@@ -4,6 +4,7 @@ use std::time::Duration;
 use gpui::{Bounds, Hsla, Pixels};
 
 use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::infra::lock;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct TabsIndicatorRect {
@@ -162,32 +163,36 @@ impl TabsIndicatorMotion {
         Self { inner: Arc::new(Mutex::new(TabsIndicatorMotionInner::new(animated))) }
     }
 
+    fn inner(&self) -> std::sync::MutexGuard<'_, TabsIndicatorMotionInner> {
+        lock::mutex(&self.inner)
+    }
+
     pub fn set_animated(&self, animated: bool) {
-        self.inner.lock().expect("tabs indicator motion lock").set_animated(animated);
+        self.inner().set_animated(animated);
     }
 
     pub fn set_metrics(&self, padding_x: f32, height: f32, color: Option<Hsla>) {
-        self.inner.lock().expect("tabs indicator motion lock").set_metrics(padding_x, height, color);
+        self.inner().set_metrics(padding_x, height, color);
     }
 
     pub fn set_list_bounds(&self, bounds: Bounds<Pixels>) {
-        self.inner.lock().expect("tabs indicator motion lock").set_list_bounds(bounds);
+        self.inner().set_list_bounds(bounds);
     }
 
     pub fn clear_geometry(&self) {
-        self.inner.lock().expect("tabs indicator motion lock").clear_geometry();
+        self.inner().clear_geometry();
     }
 
     pub fn apply_item_bounds(&self, item_bounds: Bounds<Pixels>, animate: bool) {
-        self.inner.lock().expect("tabs indicator motion lock").apply_item_bounds(item_bounds, animate);
+        self.inner().apply_item_bounds(item_bounds, animate);
     }
 
     pub fn sync(&self) -> bool {
-        self.inner.lock().expect("tabs indicator motion lock").sync()
+        self.inner().sync()
     }
 
     pub fn is_animating(&self) -> bool {
-        self.inner.lock().expect("tabs indicator motion lock").is_animating()
+        self.inner().is_animating()
     }
 
     pub fn schedule_frame<T>(&self, window: &mut gpui::Window, cx: &mut gpui::Context<T>)
@@ -204,11 +209,11 @@ impl TabsIndicatorMotion {
     }
 
     pub fn paint(&self) -> Option<TabsIndicatorPaint> {
-        self.inner.lock().expect("tabs indicator motion lock").paint()
+        self.inner().paint()
     }
 
     pub fn display_rect_for_test(&self) -> TabsIndicatorRect {
-        self.inner.lock().expect("tabs indicator motion lock").display_rect()
+        self.inner().display_rect()
     }
 }
 
@@ -250,6 +255,17 @@ mod tests {
         let paint = motion.paint().expect("paint");
         assert_eq!(paint.left, 24.0);
         assert_eq!(paint.width, 52.0);
+    }
+
+    #[test]
+    fn poisoned_motion_lock_does_not_abort_paint() {
+        let motion = TabsIndicatorMotion::new(false);
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _guard = motion.inner.lock().unwrap();
+            panic!("poison");
+        }));
+        assert!(motion.paint().is_none());
+        assert!(!motion.is_animating());
     }
 
     #[test]

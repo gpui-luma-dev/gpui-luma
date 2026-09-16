@@ -7,6 +7,7 @@ use std::sync::{
 
 use gpui::{App, BoxShadow, Global, Hsla, SharedString};
 use luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole};
+use luma::infra::lock;
 use luma::theme::pack::LumaChrome;
 use luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeMode};
 
@@ -189,7 +190,7 @@ impl ShadcnLook {
     }
 
     fn snapshot(&self) -> Arc<ShadcnLookSnapshot> {
-        self.state.snapshot.read().expect("shadcn look snapshot lock poisoned").clone()
+        lock::read(&self.state.snapshot).clone()
     }
 
     pub fn stylesheet(&self) -> Arc<StylesheetConfig> {
@@ -325,13 +326,13 @@ impl ShadcnLook {
     }
 
     pub fn replace_theme(&self, other: &ShadcnLook) {
-        *self.state.snapshot.write().expect("shadcn look snapshot lock poisoned") = other.snapshot();
+        *lock::write(&self.state.snapshot) = other.snapshot();
     }
 
     pub fn apply_color_overrides(&self, overrides: &HashMap<String, Hsla>) -> anyhow::Result<()> {
         let snapshot = self.snapshot();
         let next = snapshot.with_color_overrides(overrides)?;
-        *self.state.snapshot.write().expect("shadcn look snapshot lock poisoned") = Arc::new(next);
+        *lock::write(&self.state.snapshot) = Arc::new(next);
         Ok(())
     }
 
@@ -342,14 +343,14 @@ impl ShadcnLook {
     ) -> anyhow::Result<()> {
         let snapshot = self.snapshot();
         let next = snapshot.with_mode_color_overrides(light_overrides, dark_overrides)?;
-        *self.state.snapshot.write().expect("shadcn look snapshot lock poisoned") = Arc::new(next);
+        *lock::write(&self.state.snapshot) = Arc::new(next);
         Ok(())
     }
 
     pub fn apply_token_overrides(&self, overrides: &HashMap<String, String>) -> anyhow::Result<()> {
         let snapshot = self.snapshot();
         let next = snapshot.with_token_overrides(overrides)?;
-        *self.state.snapshot.write().expect("shadcn look snapshot lock poisoned") = Arc::new(next);
+        *lock::write(&self.state.snapshot) = Arc::new(next);
         Ok(())
     }
 
@@ -911,5 +912,17 @@ mod tests {
         let look = crate::test_support::native_look();
         let overridden = look.with_color_overrides(&HashMap::from([(String::from("--accent"), color)]));
         assert_eq!(overridden.color(ShadcnToken::Accent).a, 0.0);
+    }
+
+    #[test]
+    fn poisoned_snapshot_lock_does_not_abort_reads() {
+        let look = crate::test_support::native_look();
+        let expected = look.color(ShadcnToken::Primary);
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _guard = look.state.snapshot.write().unwrap();
+            panic!("poison");
+        }));
+        assert_eq!(look.color(ShadcnToken::Primary), expected);
+        assert!(look.has_css_catalog());
     }
 }

@@ -4,6 +4,7 @@ pub mod arc_shape;
 pub mod element_ext;
 pub mod field_label;
 pub mod icon;
+pub mod lock;
 pub(crate) mod interaction;
 pub mod menu_item;
 pub(crate) mod menu_navigation;
