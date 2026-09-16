@@ -15,6 +15,7 @@ pub fn open(cx: &mut App, launch_options: LumaStudioLaunchOptions) -> anyhow::Re
         WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             titlebar: Some(TitleBar::title_bar_options()),
+            app_owns_titlebar_drag: true,
             ..Default::default()
         },
         |window, cx| cx.new(|cx| LumaStudioApp::new(window, cx, launch_options)),

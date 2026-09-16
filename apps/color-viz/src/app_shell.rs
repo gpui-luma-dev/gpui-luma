@@ -11,6 +11,7 @@ pub fn open(cx: &mut App, theme_choice: ColorVizThemeChoice) -> anyhow::Result<(
         WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             titlebar: Some(TitleBar::title_bar_options()),
+            app_owns_titlebar_drag: true,
             ..Default::default()
         },
         |window, cx| cx.new(|cx| ColorVizApp::new(window, cx, theme_choice)),
