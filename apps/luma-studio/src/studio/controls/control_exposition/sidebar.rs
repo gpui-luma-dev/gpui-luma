@@ -23,7 +23,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::ControlExpositionLayout;
-use super::sidebar_inspector_adapter::{SidebarInspectorAdapter, SIDEBAR_INSPECTOR_SPEC};
+use super::inspector::{SidebarInspectorAdapter, SIDEBAR_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 
 #[derive(Clone, Copy)]

@@ -12,7 +12,7 @@ use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::accordion_inspector_adapter::{AccordionInspectorAdapter, ACCORDION_INSPECTOR_SPEC};
+use super::inspector::{AccordionInspectorAdapter, ACCORDION_INSPECTOR_SPEC};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;

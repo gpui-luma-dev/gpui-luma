@@ -10,7 +10,7 @@ use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::context_menu_inspector_adapter::{ContextMenuInspectorAdapter, CONTEXT_MENU_INSPECTOR_SPEC};
+use super::inspector::{ContextMenuInspectorAdapter, CONTEXT_MENU_INSPECTOR_SPEC};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;

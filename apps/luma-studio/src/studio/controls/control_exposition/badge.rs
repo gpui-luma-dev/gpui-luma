@@ -9,7 +9,7 @@ use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::badge_inspector_adapter::{BadgeInspectorAdapter, BADGE_INSPECTOR_SPEC};
+use super::inspector::{BadgeInspectorAdapter, BADGE_INSPECTOR_SPEC};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};

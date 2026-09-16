@@ -17,7 +17,7 @@ use super::input_theme_inspectors::TextFieldThemeInspector;
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-use super::textfield_inspector_adapter::{TextFieldInspectorAdapter, TEXTFIELD_INSPECTOR_SPEC};
+use super::inspector::{TextFieldInspectorAdapter, TEXTFIELD_INSPECTOR_SPEC};
 
 pub struct TextFieldControlExposition {
     look: Arc<ShadcnLook>,

@@ -16,7 +16,7 @@ use super::input_theme_inspectors::TextAreaThemeInspector;
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-use super::textarea_inspector_adapter::{TextAreaInspectorAdapter, TEXTAREA_INSPECTOR_SPEC};
+use super::inspector::{TextAreaInspectorAdapter, TEXTAREA_INSPECTOR_SPEC};
 
 pub struct TextAreaControlExposition {
     look: Arc<ShadcnLook>,

@@ -1,3 +1,4 @@
+mod adapters;
 pub mod box_model;
 pub mod collection;
 pub mod common;
@@ -14,7 +15,8 @@ mod components;
 
 pub use render::{layout, render_category_content};
 pub use schema::{
-    ControlInspectorResolver, ControlInspectorSpec, InspectColorRow, InspectElevationSnapshot, InspectLayoutSection,
-    InspectPropertyRow, InspectorCategory, InspectorCategoryContent, InspectorPart, InspectorSelection,
-    InspectorStateSpec, InspectorVariant, SharedInspectorResolver,
+    ControlInspectorSpec, InspectorCategory, InspectorPart, InspectorSelection, InspectorStateSpec, InspectorVariant,
+    SharedInspectorResolver,
 };
+
+pub use adapters::*;

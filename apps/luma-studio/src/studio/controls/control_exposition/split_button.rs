@@ -23,7 +23,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::ControlExpositionLayout;
-use super::split_button_inspector_adapter::{split_button_inspector_resolver, SPLIT_BUTTON_INSPECTOR_SPEC};
+use super::inspector::{split_button_inspector_resolver, SPLIT_BUTTON_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 use crate::studio::controls::catalog::{catalog_entry, ControlDocEntry};
 use crate::studio::style::shared::preview_handlers::{

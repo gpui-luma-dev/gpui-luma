@@ -18,7 +18,7 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-use super::tree_view_inspector_adapter::{TreeViewInspectorAdapter, TREE_VIEW_INSPECTOR_SPEC};
+use super::inspector::{TreeViewInspectorAdapter, TREE_VIEW_INSPECTOR_SPEC};
 
 const TREE_DEPTH: usize = 5;
 

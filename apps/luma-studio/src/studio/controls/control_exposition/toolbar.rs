@@ -20,7 +20,7 @@ use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::shell_theme_inspectors::ToolbarThemeInspector;
 use super::template::render_control_exposition_card;
-use super::toolbar_inspector_adapter::{ToolbarInspectorAdapter, TOOLBAR_INSPECTOR_SPEC};
+use super::inspector::{ToolbarInspectorAdapter, TOOLBAR_INSPECTOR_SPEC};
 
 pub struct ToolbarControlExposition {
     look: Arc<ShadcnLook>,

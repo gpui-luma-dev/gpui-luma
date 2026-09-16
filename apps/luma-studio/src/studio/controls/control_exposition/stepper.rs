@@ -18,7 +18,7 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::standalone_theme_inspectors::StepperThemeInspector;
-use super::stepper_inspector_adapter::{StepperInspectorAdapter, STEPPER_INSPECTOR_SPEC};
+use super::inspector::{StepperInspectorAdapter, STEPPER_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 
 const DEMO_STEP_COUNT: usize = 4;

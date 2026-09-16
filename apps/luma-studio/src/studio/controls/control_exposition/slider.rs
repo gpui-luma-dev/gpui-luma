@@ -13,7 +13,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::slider_inspector_adapter::{SliderInspectorAdapter, SLIDER_INSPECTOR_SPEC};
+use super::inspector::{SliderInspectorAdapter, SLIDER_INSPECTOR_SPEC};
 use super::standalone_theme_inspectors::SliderThemeInspector;
 use super::template::render_control_exposition_card;
 

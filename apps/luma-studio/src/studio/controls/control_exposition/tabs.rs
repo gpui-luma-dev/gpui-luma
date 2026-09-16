@@ -14,7 +14,7 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::shell_theme_inspectors::TabsThemeInspector;
-use super::tabs_inspector_adapter::{TabsInspectorAdapter, TABS_INSPECTOR_SPEC};
+use super::inspector::{TabsInspectorAdapter, TABS_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 
 pub struct TabsControlExposition {

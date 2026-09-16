@@ -17,7 +17,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::table_demo::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
-use super::table_inspector_adapter::{TableInspectorAdapter, TABLE_INSPECTOR_SPEC};
+use super::inspector::{TableInspectorAdapter, TABLE_INSPECTOR_SPEC};
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 

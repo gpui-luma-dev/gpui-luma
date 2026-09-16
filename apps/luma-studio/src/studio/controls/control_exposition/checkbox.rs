@@ -190,8 +190,8 @@ impl CheckboxControlExposition {
                 let left_pane = left_pane.clone();
                 move || left_pane.clone().into_any_element()
             },
-            &super::checkbox_inspector_adapter::CHECKBOX_INSPECTOR_SPEC,
-            super::checkbox_inspector_adapter::CheckboxInspectorAdapter::shared(),
+            &super::inspector::CHECKBOX_INSPECTOR_SPEC,
+            super::inspector::CheckboxInspectorAdapter::shared(),
         );
 
         let mut subscriptions = Vec::new();

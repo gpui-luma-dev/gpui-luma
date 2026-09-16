@@ -140,8 +140,8 @@ impl SwitchControlExposition {
                 let left_pane = left_pane.clone();
                 move || left_pane.clone().into_any_element()
             },
-            &super::switch_inspector_adapter::SWITCH_INSPECTOR_SPEC,
-            super::switch_inspector_adapter::SwitchInspectorAdapter::shared(),
+            &super::inspector::SWITCH_INSPECTOR_SPEC,
+            super::inspector::SwitchInspectorAdapter::shared(),
         );
 
         let mut subscriptions = Vec::new();

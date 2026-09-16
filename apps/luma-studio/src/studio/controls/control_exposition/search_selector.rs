@@ -14,7 +14,7 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::input_theme_inspectors::SearchSelectorThemeInspector;
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::search_selector_inspector_adapter::{search_selector_inspector_adapter, SEARCH_SELECTOR_INSPECTOR_SPEC};
+use super::inspector::{search_selector_inspector_adapter, SEARCH_SELECTOR_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 
 pub struct SearchSelectorControlExposition {

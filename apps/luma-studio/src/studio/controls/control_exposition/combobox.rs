@@ -9,7 +9,7 @@ use luma_look_shadcn as shadcn;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::combobox_inspector_adapter::{combobox_inspector_adapter, COMBOBOX_INSPECTOR_SPEC};
+use super::inspector::{combobox_inspector_adapter, COMBOBOX_INSPECTOR_SPEC};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::input_theme_inspectors::ComboBoxThemeInspector;

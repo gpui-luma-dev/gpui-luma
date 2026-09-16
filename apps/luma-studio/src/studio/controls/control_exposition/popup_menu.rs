@@ -13,7 +13,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::popup_menu_inspector_adapter::{PopupMenuInspectorAdapter, POPUP_MENU_INSPECTOR_SPEC};
+use super::inspector::{PopupMenuInspectorAdapter, POPUP_MENU_INSPECTOR_SPEC};
 use super::standalone_theme_inspectors::PopupMenuThemeInspector;
 use super::template::render_control_exposition_card;
 
