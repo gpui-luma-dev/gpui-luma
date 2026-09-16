@@ -386,8 +386,16 @@ where
             element = element.opacity(0.56);
         }
 
+        if model.scroll_handle.is_some() {
+            element = element.flex_none();
+        }
+
         if model.layout == ControlGroupLayout::Horizontal {
-            element = element.flex_1().h_full();
+            element = if model.scroll_handle.is_some() {
+                element.flex_none().w_auto().h_full()
+            } else {
+                element.flex_1().h_full()
+            };
         }
 
         items.push(ControlGroupItemElement {

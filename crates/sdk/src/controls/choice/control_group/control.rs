@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use gpui::{
     App, Bounds, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
-    MouseUpEvent, Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
+    MouseUpEvent, Pixels, Render, ScrollHandle, SharedString, Subscription, Window, div, prelude::*,
 };
 
 use super::model::{
@@ -44,6 +44,7 @@ where
     pressed_item: Option<usize>,
     item_bounds: Vec<Option<Bounds<Pixels>>>,
     selection_transitions: HashMap<SharedString, VisualTransition>,
+    scroll_handle: Option<ScrollHandle>,
 }
 
 impl<T> EventEmitter<ControlGroupEvent> for ControlGroupControl<T> where T: ControlGroupItemLike + 'static {}
@@ -72,6 +73,7 @@ where
             })
             .collect();
         let tab_stop = builder.model.enabled && builder.model.tab_stop;
+        let scrollable = builder.model.scrollable;
 
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
@@ -86,6 +88,7 @@ where
             pressed_item: None,
             item_bounds: Vec::new(),
             selection_transitions,
+            scroll_handle: scrollable.then(ScrollHandle::new),
         }
     }
 
@@ -327,6 +330,7 @@ where
             state_mode: self.model.state_mode,
             enabled: self.model.enabled,
             layout: self.model.layout,
+            scroll_handle: self.scroll_handle.as_ref(),
             focus,
             focus_strategy: self.model.focus_strategy,
             item_template: self.model.item_template.as_ref(),
@@ -773,22 +777,22 @@ where
         let model = self.render_model(window, cx);
         let handlers = self.template_handlers(cx);
 
-        div()
-            .child(
-                (self.model.template)(&model, handlers, window, cx)
-                    .track_focus(&self.focus_handle)
-                    .key_context(ControlKeyProfile::TabList.context())
-                    .on_action(cx.listener(Self::handle_select_previous_item))
-                    .on_action(cx.listener(Self::handle_select_next_item))
-                    .on_action(cx.listener(Self::handle_select_previous_row))
-                    .on_action(cx.listener(Self::handle_select_next_row))
-                    .on_action(cx.listener(Self::handle_select_first_item))
-                    .on_action(cx.listener(Self::handle_select_last_item))
-                    .on_action(cx.listener(Self::handle_activate_control))
-                    .on_action(cx.listener(Self::handle_group_next_focus))
-                    .on_action(cx.listener(Self::handle_group_prev_focus)),
-            )
-            .into_any_element()
+        let root = div().child(
+            (self.model.template)(&model, handlers, window, cx)
+                .track_focus(&self.focus_handle)
+                .key_context(ControlKeyProfile::TabList.context())
+                .on_action(cx.listener(Self::handle_select_previous_item))
+                .on_action(cx.listener(Self::handle_select_next_item))
+                .on_action(cx.listener(Self::handle_select_previous_row))
+                .on_action(cx.listener(Self::handle_select_next_row))
+                .on_action(cx.listener(Self::handle_select_first_item))
+                .on_action(cx.listener(Self::handle_select_last_item))
+                .on_action(cx.listener(Self::handle_activate_control))
+                .on_action(cx.listener(Self::handle_group_next_focus))
+                .on_action(cx.listener(Self::handle_group_prev_focus)),
+        );
+
+        root.into_any_element()
     }
 }
 
@@ -1247,6 +1251,7 @@ mod tests {
             enabled: true,
             tab_stop: true,
             layout: ControlGroupLayout::default(),
+            scrollable: false,
             template: default_control_group_template(),
             item_template: None,
             item_element_template: None,

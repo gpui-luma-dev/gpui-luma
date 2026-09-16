@@ -36,6 +36,11 @@ impl ListBox {
         self
     }
 
+    pub fn single_allow_none(mut self) -> Self {
+        self.builder = self.builder.single_allow_none();
+        self
+    }
+
     pub fn vertical(mut self) -> Self {
         self.builder = self.builder.vertical();
         self

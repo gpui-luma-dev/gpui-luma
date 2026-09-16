@@ -71,6 +71,7 @@ pub type ListBox = Entity<ControlGroupControl<ListBoxItem>>;
 fn listbox_builder(id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem> {
     ControlGroupBuilder::new(id)
         .vertical()
+        .scrollable()
         .template(default_listbox_template())
         .item_template(default_listbox_item_template())
 }

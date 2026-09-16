@@ -271,6 +271,14 @@ enum ListBoxMode {
     Multiple,
 }
 
+const LISTBOX_ITEMS_WINDOW: usize = 3;
+const LISTBOX_ROW_HEIGHT: f32 = 36.0;
+const LISTBOX_ROW_GAP: f32 = 2.0;
+const LISTBOX_VERTICAL_PADDING: f32 = 8.0;
+const LISTBOX_WINDOW_HEIGHT: f32 = LISTBOX_ITEMS_WINDOW as f32 * LISTBOX_ROW_HEIGHT
+    + (LISTBOX_ITEMS_WINDOW - 1) as f32 * LISTBOX_ROW_GAP
+    + LISTBOX_VERTICAL_PADDING;
+
 fn fruit_listbox(
     look: &Arc<ShadcnLook>,
     id: &'static str,
@@ -313,7 +321,11 @@ fn render_listbox_sample(
                 .text_color(status_color)
                 .child(status),
         },
-        listbox,
+        div()
+            .id(format!("{label}-items-window"))
+            .w_full()
+            .h(px(LISTBOX_WINDOW_HEIGHT))
+            .child(listbox),
     }
 }
 
@@ -322,6 +334,12 @@ fn fruit_items() -> Vec<ListBoxItem> {
         ListBoxItem::new("apples", "apples").label("Apples"),
         ListBoxItem::new("oranges", "oranges").label("Oranges"),
         ListBoxItem::new("bananas", "bananas").label("Bananas"),
+        ListBoxItem::new("cherries", "cherries").label("Cherries"),
+        ListBoxItem::new("grapes", "grapes").label("Grapes"),
+        ListBoxItem::new("lemons", "lemons").label("Lemons"),
+        ListBoxItem::new("pears", "pears").label("Pears"),
+        ListBoxItem::new("plums", "plums").label("Plums"),
+        ListBoxItem::new("strawberries", "strawberries").label("Strawberries"),
     ]
 }
 

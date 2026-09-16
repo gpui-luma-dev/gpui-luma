@@ -39,6 +39,9 @@ impl ThemedListBoxTemplate {
             .id(model.id.clone())
             .relative()
             .w_full()
+            .h_full()
+            .min_w(px(0.0))
+            .min_h(px(0.0))
             .flex()
             .gap(px(list_look.row_gap))
             .overflow_hidden()
@@ -54,6 +57,14 @@ impl ThemedListBoxTemplate {
             ControlGroupLayout::Vertical => root.flex_col(),
         };
 
+        if let Some(scroll_handle) = model.scroll_handle {
+            root = match model.layout {
+                ControlGroupLayout::Horizontal => root.overflow_x_scroll(),
+                ControlGroupLayout::Vertical => root.overflow_y_scroll(),
+            }
+            .track_scroll(scroll_handle);
+        }
+
         let default_item_element_template = self.row_item_element_template();
         let row_model = ControlGroupRenderModel {
             id: model.id,
@@ -66,6 +77,7 @@ impl ThemedListBoxTemplate {
             layout: model.layout,
             focus: model.focus,
             focus_strategy: model.focus_strategy,
+            scroll_handle: None,
             item_template: model.item_template,
             item_element_template: model.item_element_template.or(Some(&default_item_element_template)),
         };

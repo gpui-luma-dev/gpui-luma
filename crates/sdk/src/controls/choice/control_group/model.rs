@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, AppContext, Div, Entity, FocusHandle, Hsla, IntoElement, ParentElement, SharedString, Stateful,
-    Window, div,
+    AnyElement, App, AppContext, Div, Entity, FocusHandle, Hsla, IntoElement, ParentElement, ScrollHandle,
+    SharedString, Stateful, Window, div,
 };
 
 use super::control::ControlGroupControl;
@@ -178,6 +178,7 @@ where
     pub(crate) enabled: bool,
     pub(crate) tab_stop: bool,
     pub(crate) layout: ControlGroupLayout,
+    pub(crate) scrollable: bool,
     pub(crate) template: ControlGroupTemplate<T>,
     pub(crate) item_template: Option<ControlGroupItemTemplate<T>>,
     pub(crate) item_element_template: Option<ControlGroupItemElementTemplate<T>>,
@@ -240,6 +241,7 @@ where
     pub state_mode: ControlGroupStateMode,
     pub enabled: bool,
     pub layout: ControlGroupLayout,
+    pub scroll_handle: Option<&'a ScrollHandle>,
     pub focus: ControlFocusState,
     pub focus_strategy: ControlGroupFocusStrategy,
     pub item_template: Option<&'a ControlGroupItemTemplate<T>>,
@@ -274,6 +276,7 @@ where
                 enabled: true,
                 tab_stop: true,
                 layout: ControlGroupLayout::default(),
+                scrollable: false,
                 template: default_control_group_template(),
                 item_template: None,
                 item_element_template: None,
@@ -292,6 +295,11 @@ where
 
     pub fn vertical(self) -> Self {
         self.layout(ControlGroupLayout::Vertical)
+    }
+
+    pub fn scrollable(mut self) -> Self {
+        self.model.scrollable = true;
+        self
     }
 
     pub fn item(mut self, item: T) -> Self {
@@ -633,6 +641,17 @@ mod tests {
 
         let builder = ControlGroupBuilder::<ControlGroupItem>::new("control-group-test").tab_stop(false);
         assert!(!builder.model.tab_stop);
+    }
+
+    #[test]
+    fn scrolling_is_opt_in_and_preserves_layout_axis() {
+        let vertical = ControlGroupBuilder::<ControlGroupItem>::new("vertical").scrollable();
+        assert!(vertical.model.scrollable);
+        assert_eq!(vertical.model.layout, ControlGroupLayout::Vertical);
+
+        let horizontal = ControlGroupBuilder::<ControlGroupItem>::new("horizontal").horizontal().scrollable();
+        assert!(horizontal.model.scrollable);
+        assert_eq!(horizontal.model.layout, ControlGroupLayout::Horizontal);
     }
 
     #[test]
