@@ -86,6 +86,7 @@ impl Render for ListBoxExpositionLeftPane {
                 render_listbox_sample(
                     "Single select",
                     self.single.clone(),
+                    LISTBOX_WINDOW_HEIGHT,
                     format!("Selected: {}", self.single_choice),
                     chrome.muted_text,
                     chrome.body_text,
@@ -93,6 +94,7 @@ impl Render for ListBoxExpositionLeftPane {
                 render_listbox_sample(
                     "Horizontal single select",
                     self.horizontal.clone(),
+                    LISTBOX_HORIZONTAL_HEIGHT,
                     format!("Selected: {}", self.horizontal_choice),
                     chrome.muted_text,
                     chrome.body_text,
@@ -100,6 +102,7 @@ impl Render for ListBoxExpositionLeftPane {
                 render_listbox_sample(
                     "Multiple select",
                     self.multiple.clone(),
+                    LISTBOX_WINDOW_HEIGHT,
                     format!("Selected: {}", self.multi_choices.join(", ")),
                     chrome.muted_text,
                     chrome.body_text,
@@ -180,7 +183,6 @@ impl ListBoxControlExposition {
                     append_listbox_event(&event_stream, event, cx);
                 }
             }));
-
             pane
         });
 
@@ -271,10 +273,11 @@ enum ListBoxMode {
     Multiple,
 }
 
-const LISTBOX_ITEMS_WINDOW: usize = 3;
+const LISTBOX_ITEMS_WINDOW: usize = 4;
 const LISTBOX_ROW_HEIGHT: f32 = 36.0;
 const LISTBOX_ROW_GAP: f32 = 2.0;
 const LISTBOX_VERTICAL_PADDING: f32 = 8.0;
+const LISTBOX_HORIZONTAL_HEIGHT: f32 = LISTBOX_ROW_HEIGHT + LISTBOX_VERTICAL_PADDING;
 const LISTBOX_WINDOW_HEIGHT: f32 = LISTBOX_ITEMS_WINDOW as f32 * LISTBOX_ROW_HEIGHT
     + (LISTBOX_ITEMS_WINDOW - 1) as f32 * LISTBOX_ROW_GAP
     + LISTBOX_VERTICAL_PADDING;
@@ -295,12 +298,22 @@ fn fruit_listbox(
         builder = builder.horizontal();
     }
 
-    builder.items(fruit_items()).selected_ids(selected_ids).spawn(cx)
+    let listbox_height = match mode {
+        ListBoxMode::HorizontalSingle => LISTBOX_HORIZONTAL_HEIGHT,
+        ListBoxMode::Single | ListBoxMode::Multiple => LISTBOX_WINDOW_HEIGHT,
+    };
+
+    builder
+        .with_template_modifier(move |root, _| root.h(px(listbox_height)))
+        .items(fruit_items())
+        .selected_ids(selected_ids)
+        .spawn(cx)
 }
 
 fn render_listbox_sample(
     label: &'static str,
     listbox: ListBox,
+    listbox_height: f32,
     status: String,
     label_color: gpui::Hsla,
     status_color: gpui::Hsla,
@@ -324,9 +337,12 @@ fn render_listbox_sample(
         div()
             .id(format!("{label}-items-window"))
             .w_full()
-            .h(px(LISTBOX_WINDOW_HEIGHT))
+            .min_w(px(0.0))
+            .h(px(listbox_height))
             .child(listbox),
     }
+    .w_full()
+    .min_w(px(0.0))
 }
 
 fn fruit_items() -> Vec<ListBoxItem> {
