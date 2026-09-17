@@ -9,20 +9,24 @@ use luma::controls::listbox::{ListBoxItem, multiple as sdk_multiple, new as sdk_
 
 use crate::look::{ShadcnLook, resolve_look_from};
 
+type ListBoxTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &ControlGroupChromeModel) -> Stateful<Div> + Send + Sync + 'static>;
+
 /// Builder in the guise of a listbox: Shadcn template plus SDK options, until `.spawn(cx)`.
 pub struct ListBox {
     look: Option<ShadcnLook>,
     builder: ControlGroupBuilder<ListBoxItem>,
     custom_template: bool,
+    template_modifiers: Vec<ListBoxTemplateModifier>,
 }
 
 impl ListBox {
     pub fn new(id: impl Into<SharedString>) -> Self {
-        Self { look: None, builder: sdk_new(id), custom_template: false }
+        Self { look: None, builder: sdk_new(id), custom_template: false, template_modifiers: Vec::new() }
     }
 
     pub fn multiple(id: impl Into<SharedString>) -> Self {
-        Self { look: None, builder: sdk_multiple(id), custom_template: false }
+        Self { look: None, builder: sdk_multiple(id), custom_template: false, template_modifiers: Vec::new() }
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
@@ -95,7 +99,7 @@ impl ListBox {
     where
         F: Fn(Stateful<Div>, &ControlGroupChromeModel) -> Stateful<Div> + Send + Sync + 'static,
     {
-        self.builder = self.builder.with_template_modifier(modifier);
+        self.template_modifiers.push(Box::new(modifier));
         self
     }
 
@@ -109,11 +113,17 @@ impl ListBox {
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ControlGroupBuilder<ListBoxItem> {
-        if self.custom_template {
+        let mut builder = if self.custom_template {
             self.builder
         } else {
             self.builder.template(look.listbox_template())
+        };
+
+        for modifier in self.template_modifiers {
+            builder = builder.with_template_modifier(modifier);
         }
+
+        builder
     }
 }
 

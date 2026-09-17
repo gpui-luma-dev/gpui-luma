@@ -50,7 +50,8 @@ impl ThemedListBoxTemplate {
             .rounded(px(list_look.radius))
             .bg(list_look.background)
             .border_1()
-            .border_color(list_look.border);
+            .border_color(list_look.border)
+            .on_scroll_wheel(|_, _, cx| cx.stop_propagation());
 
         root = match model.layout {
             ControlGroupLayout::Horizontal => root.flex_row().items_center(),
