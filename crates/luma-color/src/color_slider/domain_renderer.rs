@@ -5,13 +5,13 @@ use gpui::{Bounds, Hsla, Pixels, Window};
 use luma::controls::slider::{DomainTrackRenderer, SliderOrientation};
 use luma::infra::lock;
 
+use crate::domain_renderer::LockedDomain;
 use super::template::ColorSliderTemplateConfig;
+use super::track_context::{axis_from_orientation, ColorSliderTrackContext};
 use super::types::ColorSliderDelegate;
-use super::track_context::{ColorSliderTrackContext, axis_from_orientation};
 
 pub struct ColorSliderDomainRenderer {
-    delegate: Arc<RwLock<Arc<dyn ColorSliderDelegate>>>,
-    context: Arc<RwLock<ColorSliderTrackContext>>,
+    inner: LockedDomain<dyn ColorSliderDelegate, ColorSliderTrackContext>,
     template_config: Arc<RwLock<ColorSliderTemplateConfig>>,
 }
 
@@ -21,43 +21,39 @@ impl ColorSliderDomainRenderer {
         context: ColorSliderTrackContext,
         template_config: Arc<RwLock<ColorSliderTemplateConfig>>,
     ) -> Self {
-        Self { delegate: Arc::new(RwLock::new(delegate)), context: Arc::new(RwLock::new(context)), template_config }
+        Self { inner: LockedDomain::new(delegate, context), template_config }
     }
 
     pub fn context(&self) -> ColorSliderTrackContext {
-        lock::read(&self.context).clone()
+        self.inner.context()
     }
 
     pub fn set_context(&self, context: ColorSliderTrackContext) {
-        *lock::write(&self.context) = context;
+        self.inner.set_context(context);
     }
 
     pub fn set_delegate(&self, delegate: Arc<dyn ColorSliderDelegate>) {
-        *lock::write(&self.delegate) = delegate;
+        self.inner.set_delegate(delegate);
     }
 
     pub fn shared_context(&self) -> Arc<RwLock<ColorSliderTrackContext>> {
-        Arc::clone(&self.context)
+        self.inner.shared_context()
     }
 }
 
 impl DomainTrackRenderer for ColorSliderDomainRenderer {
     fn paint(&self, bounds: Bounds<Pixels>, orientation: SliderOrientation, reversed: bool, window: &mut Window) {
-        {
-            let mut context = lock::write(&self.context);
+        self.inner.with_context_mut(|context| {
             context.axis = axis_from_orientation(orientation);
             context.reversed = reversed;
-        }
-        let mut paint_context = lock::read(&self.context).clone();
+        });
+        let mut paint_context = self.inner.context();
         paint_context.corner_radii = lock::read(&self.template_config).corner_radii.clone();
-        let delegate = lock::read(&self.delegate).clone();
-        delegate.paint_domain_track(&paint_context, bounds, window);
+        self.inner.read_delegate().paint_domain_track(&paint_context, bounds, window);
     }
 
     fn get_color_at_position(&self, position: f32) -> Option<Hsla> {
-        let context = lock::read(&self.context);
-        let delegate = lock::read(&self.delegate).clone();
-        Some(delegate.get_color_for_context(&context, position))
+        Some(self.inner.read_delegate().get_color_for_context(&self.inner.context(), position))
     }
 }
 
@@ -108,7 +104,7 @@ mod tests {
         let renderer = sample_renderer();
         let expected = renderer.get_color_at_position(0.5);
         let _ = catch_unwind(AssertUnwindSafe(|| {
-            let _guard = renderer.context.write().unwrap();
+            let _guard = renderer.inner.context_lock().write().unwrap();
             panic!("poison");
         }));
         assert_eq!(renderer.get_color_at_position(0.5), expected);
