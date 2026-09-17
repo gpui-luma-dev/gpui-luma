@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use gpui::{
     Bounds, Context, CursorStyle, DragMoveEvent, IntoElement, KeyDownEvent, MouseButton, MouseUpEvent, Pixels, Point,
-    Render, SharedString, Window, div, prelude::*, point, px,
+    Render, SharedString, Subscription, Window, div, point, prelude::*, px,
 };
-use luma::controls::control_group::{ControlGroupItemRenderModel, ControlGroupItemTemplate};
+use luma::controls::control_group::{ControlGroupEvent, ControlGroupItemRenderModel, ControlGroupItemTemplate};
 use luma::controls::listbox::ListBox as SdkListBox;
 use luma::infra::ElementExt;
 use luma_look_shadcn::{ListBox, ShadcnLook, ShadcnRadius};
@@ -46,10 +46,9 @@ struct DropTarget {
 }
 
 #[derive(Clone)]
-struct SortableDrag {
+struct ReorderableDrag {
     row: usize,
-    index: usize,
-    item_id: SharedString,
+    item_ids: Vec<SharedString>,
     label: SharedString,
     accent: gpui::Hsla,
     look: Arc<ShadcnLook>,
@@ -61,22 +60,27 @@ const SORTABLE_LISTBOX_ITEM_HEIGHT: f32 = 68.0;
 const SORTABLE_LISTBOX_HEIGHT: f32 = SORTABLE_LISTBOX_VISIBLE_ITEMS as f32 * SORTABLE_LISTBOX_ITEM_HEIGHT;
 
 #[derive(Clone, Copy)]
-pub struct SortableCollectionOptions {
+pub struct ReorderableCollectionOptions {
     pub allow_same_list_reordering: bool,
     pub source_drag_overlay: Option<gpui::Hsla>,
 }
 
-impl Default for SortableCollectionOptions {
+impl Default for ReorderableCollectionOptions {
     fn default() -> Self {
         Self { allow_same_list_reordering: true, source_drag_overlay: Some(gpui::hsla(0.0, 0.0, 0.52, 0.58)) }
     }
 }
 
-impl Render for SortableDrag {
+impl Render for ReorderableDrag {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let card = self.look.token_color("card").unwrap_or(self.look.chrome().panel_background);
         let foreground = self.look.token_color("foreground").unwrap_or(self.look.chrome().body_text);
         let focus = self.look.token_color("ring").unwrap_or(self.look.chrome().border);
+        let label = if self.item_ids.len() > 1 {
+            format!("{} (+{} more)", self.label, self.item_ids.len() - 1)
+        } else {
+            self.label.to_string()
+        };
         div().relative().w(self.cursor_offset.x + px(180.0)).h(px(52.0)).child(
             div()
                 .absolute()
@@ -96,29 +100,31 @@ impl Render for SortableDrag {
                         .items_center()
                         .gap(px(10.0))
                         .child(div().w(px(8.0)).h(px(8.0)).rounded(px(4.0)).bg(self.accent))
-                        .child(div().text_sm().text_color(foreground).child(self.label.clone())),
+                        .child(div().text_sm().text_color(foreground).child(label)),
                 ),
         )
     }
 }
 
-pub struct SortableCollectionPrototype {
+pub struct ReorderableCollection {
     look: Arc<ShadcnLook>,
     rows: Vec<SortableRow>,
     item_bounds: Vec<Vec<Bounds<Pixels>>>,
     list_bounds: Vec<Bounds<Pixels>>,
-    dragging: Option<SortableDrag>,
+    dragging: Option<ReorderableDrag>,
     drop_target: Option<DropTarget>,
-    options: SortableCollectionOptions,
+    options: ReorderableCollectionOptions,
+    selected_ids: [Vec<SharedString>; 2],
     listboxes: [Option<SdkListBox>; 2],
+    _subscriptions: Vec<Subscription>,
 }
 
-impl SortableCollectionPrototype {
+impl ReorderableCollection {
     pub fn new(look: Arc<ShadcnLook>) -> Self {
-        Self::with_options(look, SortableCollectionOptions::default())
+        Self::with_options(look, ReorderableCollectionOptions::default())
     }
 
-    pub fn with_options(look: Arc<ShadcnLook>, options: SortableCollectionOptions) -> Self {
+    pub fn with_options(look: Arc<ShadcnLook>, options: ReorderableCollectionOptions) -> Self {
         let item = |id: &str, label: &str| SortableItem { id: id.into(), label: label.into() };
         Self {
             look,
@@ -150,7 +156,9 @@ impl SortableCollectionPrototype {
             dragging: None,
             drop_target: None,
             options,
+            selected_ids: [Vec::new(), Vec::new()],
             listboxes: [None, None],
+            _subscriptions: Vec::new(),
         }
     }
 
@@ -159,16 +167,32 @@ impl SortableCollectionPrototype {
         cx.notify();
     }
 
-    fn begin_drag(&mut self, drag: SortableDrag, cx: &mut Context<Self>) {
+    fn begin_drag(&mut self, drag: ReorderableDrag, cx: &mut Context<Self>) -> bool {
+        if self
+            .selected_ids
+            .iter()
+            .enumerate()
+            .any(|(row, selected_ids)| row != drag.row && !selected_ids.is_empty())
+        {
+            return false;
+        }
+
+        self.selected_ids[drag.row] = drag.item_ids.clone();
         self.dragging = Some(drag.clone());
         self.drop_target = None;
         cx.notify();
+        true
     }
 
-    fn update_drop_target(&mut self, event: &DragMoveEvent<SortableDrag>, window: &mut Window, cx: &mut Context<Self>) {
+    fn update_drop_target(
+        &mut self,
+        event: &DragMoveEvent<ReorderableDrag>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         let drag = event.drag(cx);
         let Some(session) = self.dragging.as_ref() else { return };
-        if drag.item_id != session.item_id {
+        if drag.row != session.row {
             return;
         }
         let position = event.event.position;
@@ -207,10 +231,21 @@ impl SortableCollectionPrototype {
             },
             window,
         );
-        if target.is_some_and(|target| {
-            target.row == session.row && (target.index == session.index || target.index == session.index + 1)
-        }) {
-            target = None;
+        if let Some(candidate) = target
+            && candidate.row == session.row
+        {
+            let selected_indices: Vec<_> = self.rows[session.row]
+                .items
+                .iter()
+                .enumerate()
+                .filter_map(|(index, item)| session.item_ids.iter().any(|id| id == &item.id).then_some(index))
+                .collect();
+            if let (Some(first), Some(last)) = (selected_indices.first(), selected_indices.last())
+                && candidate.index >= *first
+                && candidate.index <= *last + 1
+            {
+                target = None;
+            }
         }
         let target_changed = self.drop_target != target;
         if target_changed {
@@ -227,20 +262,48 @@ impl SortableCollectionPrototype {
             cx.notify();
             return;
         };
-        if session.row >= self.rows.len()
-            || session.index >= self.rows[session.row].items.len()
-            || target.row >= self.rows.len()
-        {
+        if session.row >= self.rows.len() || target.row >= self.rows.len() {
             cx.notify();
             return;
         }
-        let item = self.rows[session.row].items.remove(session.index);
-        if target.row == session.row && target.index > session.index {
-            target.index -= 1;
+
+        let source_items = &self.rows[session.row].items;
+        let source_indices: Vec<_> = source_items
+            .iter()
+            .enumerate()
+            .filter_map(|(index, item)| session.item_ids.iter().any(|id| id == &item.id).then_some(index))
+            .collect();
+        if source_indices.len() != session.item_ids.len() {
+            cx.notify();
+            return;
+        }
+
+        let mut moved_items = Vec::with_capacity(source_indices.len());
+        for index in source_indices.iter().rev() {
+            moved_items.push(self.rows[session.row].items.remove(*index));
+        }
+        moved_items.reverse();
+
+        if target.row == session.row {
+            let removed_before_target = source_indices.iter().filter(|index| **index < target.index).count();
+            target.index = target.index.saturating_sub(removed_before_target);
         }
         target.index = target.index.min(self.rows[target.row].items.len());
-        self.rows[target.row].items.insert(target.index, item);
+        for (offset, item) in moved_items.into_iter().enumerate() {
+            self.rows[target.row].items.insert(target.index + offset, item);
+        }
+
+        if target.row != session.row {
+            self.selected_ids[session.row].retain(|id| !session.item_ids.iter().any(|moved_id| moved_id == id));
+            self.selected_ids[target.row].extend(session.item_ids.iter().cloned());
+        }
         self.sync_listboxes(cx);
+        for (row, listbox) in self.listboxes.iter().enumerate() {
+            if let Some(listbox) = listbox {
+                let selected_ids = self.selected_ids[row].clone();
+                listbox.update(cx, |listbox, cx| listbox.set_selected_ids(selected_ids, cx));
+            }
+        }
         cx.notify();
     }
 
@@ -310,10 +373,9 @@ impl SortableCollectionPrototype {
                 let start_host = start_host_seed.clone();
                 let finish_host = finish_host_seed.clone();
                 let finish_host_out = finish_host_out_seed.clone();
-                let drag = SortableDrag {
+                let drag = ReorderableDrag {
                     row: row_index,
-                    index: item_index,
-                    item_id: item_id.clone(),
+                    item_ids: vec![item_id.clone()],
                     label: item.item.label_text().clone(),
                     accent: accent_for(item_id.as_ref()),
                     look: look.clone(),
@@ -324,7 +386,7 @@ impl SortableCollectionPrototype {
                     let state = prototype.read(app);
                     (
                         state.options.source_drag_overlay,
-                        state.dragging.as_ref().is_some_and(|drag| drag.item_id == item_id),
+                        state.dragging.as_ref().is_some_and(|drag| drag.item_ids.iter().any(|id| id == &item_id)),
                     )
                 };
                 let target_before = drop_target == Some(DropTarget { row: row_index, index: item_index });
@@ -365,16 +427,27 @@ impl SortableCollectionPrototype {
                         });
                     })
                     .child(content);
+                let selection_host = start_host_seed.clone();
                 element = element.on_drag(drag, move |payload, cursor_offset, window, cx| {
+                    let selected_ids = {
+                        let state = selection_host.read(cx);
+                        if state.selected_ids[row_index].iter().any(|id| id == &payload.item_ids[0]) {
+                            state.selected_ids[row_index].clone()
+                        } else {
+                            vec![payload.item_ids[0].clone()]
+                        }
+                    };
+                    let mut payload = payload.clone();
+                    payload.item_ids = selected_ids.clone();
                     start_host.update(cx, |this, cx| {
                         if let Some(listbox) = this.listboxes[row_index].clone() {
-                            let item_id = payload.item_id.clone();
-                            listbox.update(cx, |listbox, cx| listbox.set_selected_ids([item_id], cx));
+                            listbox.update(cx, |listbox, cx| listbox.set_selected_ids(selected_ids.clone(), cx));
                         }
-                        this.begin_drag(payload.clone(), cx);
+                        if !this.begin_drag(payload.clone(), cx) {
+                            cx.set_active_drag_cursor_style(CursorStyle::OperationNotAllowed, window);
+                        }
                     });
-                    cx.set_active_drag_cursor_style(CursorStyle::OperationNotAllowed, window);
-                    let mut preview = payload.clone();
+                    let mut preview = payload;
                     preview.cursor_offset = cursor_offset;
                     cx.new(|_| preview)
                 });
@@ -401,9 +474,8 @@ impl SortableCollectionPrototype {
         let items = self.rows[row_index].items.iter().map(|item| {
             luma::controls::listbox::ListBoxItem::new(item.id.clone(), item.id.clone()).label(item.label.clone())
         });
-        ListBox::new(format!("developer-sortable-listbox-{row_index}"))
+        ListBox::multiple(format!("developer-sortable-listbox-{row_index}"))
             .look(&self.look)
-            .single_allow_none()
             .template(self.look.listbox_template())
             .with_template_modifier(|root, _| root.h(px(SORTABLE_LISTBOX_HEIGHT)))
             .items(items)
@@ -413,11 +485,18 @@ impl SortableCollectionPrototype {
     }
 }
 
-impl Render for SortableCollectionPrototype {
+impl Render for ReorderableCollection {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         if self.listboxes[0].is_none() {
             for row_index in 0..self.rows.len() {
                 let listbox = self.create_listbox(row_index, cx);
+                let subscription = cx.subscribe(&listbox, move |this, _, event, cx| {
+                    if let ControlGroupEvent::Change { selected_ids, .. } = event {
+                        this.selected_ids[row_index] = selected_ids.clone();
+                        cx.notify();
+                    }
+                });
+                self._subscriptions.push(subscription);
                 self.listboxes[row_index] = Some(listbox);
             }
         }
@@ -494,7 +573,7 @@ impl Render for SortableCollectionPrototype {
                                     .text_xl()
                                     .font_weight(gpui::FontWeight::SEMIBOLD)
                                     .text_color(foreground)
-                                    .child("Developer · Sortable collection"),
+                                    .child("Developer · Reorderable collection"),
                             )
                             .child(div().text_sm().text_color(muted).child(
                                 "SDK ListBox prototype with configurable cross-list moves and same-list reordering.",

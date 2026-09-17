@@ -10,7 +10,7 @@ use luma_look_shadcn::ShadcnLook;
 
 use super::cards::render_demo_board;
 use super::controls;
-use super::developer::SortableCollectionPrototype;
+use super::developer::ReorderableCollection;
 use super::dashboard;
 use super::palette;
 use super::navigation::luma_studio_tabs_template;
@@ -37,7 +37,7 @@ pub struct ContentPaneHost {
     tabs: Entity<Tabs>,
     style_guide_panel: Entity<StyleGuidePanel>,
     controls_panel: Entity<ControlsPanel>,
-    developer_panel: Entity<SortableCollectionPrototype>,
+    developer_panel: Entity<ReorderableCollection>,
     palette_panel: Entity<PalettePanel>,
     theme_usage_panel: Entity<ThemeUsagePanel>,
     board: BoardSnapshot,
@@ -50,7 +50,7 @@ impl ContentPaneHost {
     pub fn new(app: Entity<LumaStudioApp>, board: BoardSnapshot, cx: &mut Context<Self>) -> Self {
         let host = cx.entity();
         let controls_panel = cx.new(|cx| ControlsPanel::new(cx, board.look.clone()));
-        let developer_panel = cx.new(|_| SortableCollectionPrototype::new(board.look.clone()));
+        let developer_panel = cx.new(|_| ReorderableCollection::new(board.look.clone()));
         let picker_host = host.clone();
         let catalog_picker = PopoverButton::new("luma-studio-controls-picker")
             .trigger(|_, _| div().w(px(0.0)).h(px(0.0)).into_any_element())
