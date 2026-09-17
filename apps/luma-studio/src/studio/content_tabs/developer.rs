@@ -61,6 +61,53 @@ struct DropAnimation {
     offsets: [HashMap<SharedString, Pixels>; 2],
 }
 
+fn apply_reorder_move(
+    rows: &mut [SortableRow],
+    source_row: usize,
+    item_ids: &[SharedString],
+    mut target: DropTarget,
+) -> bool {
+    if item_ids.is_empty() || source_row >= rows.len() || target.row >= rows.len() {
+        return false;
+    }
+
+    let source_indices: Vec<_> = rows[source_row]
+        .items
+        .iter()
+        .enumerate()
+        .filter_map(|(index, item)| item_ids.iter().any(|id| id == &item.id).then_some(index))
+        .collect();
+    if source_indices.len() != item_ids.len() {
+        return false;
+    }
+
+    let mut moved_items = Vec::with_capacity(source_indices.len());
+    for index in source_indices.iter().rev() {
+        moved_items.push(rows[source_row].items.remove(*index));
+    }
+    moved_items.reverse();
+
+    if target.row == source_row {
+        let removed_before_target = source_indices.iter().filter(|index| **index < target.index).count();
+        target.index = target.index.saturating_sub(removed_before_target);
+    }
+    target.index = target.index.min(rows[target.row].items.len());
+    for (offset, item) in moved_items.into_iter().enumerate() {
+        rows[target.row].items.insert(target.index + offset, item);
+    }
+
+    true
+}
+
+fn select_drag_items(selected_ids: &mut [Vec<SharedString>; 2], row: usize, item_ids: &[SharedString]) {
+    for (other_row, ids) in selected_ids.iter_mut().enumerate() {
+        if other_row != row {
+            ids.clear();
+        }
+    }
+    selected_ids[row] = item_ids.to_vec();
+}
+
 const SORTABLE_LISTBOX_VISIBLE_ITEMS: usize = 4;
 const SORTABLE_LISTBOX_ITEM_HEIGHT: f32 = 68.0;
 const SORTABLE_LISTBOX_HEIGHT: f32 = SORTABLE_LISTBOX_VISIBLE_ITEMS as f32 * SORTABLE_LISTBOX_ITEM_HEIGHT;
@@ -196,23 +243,14 @@ impl ReorderableCollection {
         cx.notify();
     }
 
-    fn begin_drag(&mut self, drag: ReorderableDrag, cx: &mut Context<Self>) -> bool {
-        if self
-            .selected_ids
-            .iter()
-            .enumerate()
-            .any(|(row, selected_ids)| row != drag.row && !selected_ids.is_empty())
-        {
-            return false;
-        }
-
-        self.selected_ids[drag.row] = drag.item_ids.clone();
+    fn begin_drag(&mut self, drag: ReorderableDrag, cx: &mut Context<Self>) {
+        self.clear_other_selections_for_active_list(drag.row, cx);
+        select_drag_items(&mut self.selected_ids, drag.row, &drag.item_ids);
         self.dragging = Some(drag.clone());
         self.drop_target = None;
         self.drag_position = None;
         self.auto_scroll = None;
         cx.notify();
-        true
     }
 
     fn update_drop_target(
@@ -342,7 +380,7 @@ impl ReorderableCollection {
         self.drag_position = None;
         self.auto_scroll = None;
         let Some(session) = self.dragging.take() else { return };
-        let Some(mut target) = self.drop_target.take() else {
+        let Some(target) = self.drop_target.take() else {
             cx.notify();
             return;
         };
@@ -354,30 +392,9 @@ impl ReorderableCollection {
         let old_bounds = self.item_bounds.clone();
         let old_ids: Vec<Vec<SharedString>> =
             self.rows.iter().map(|row| row.items.iter().map(|item| item.id.clone()).collect()).collect();
-        let source_items = &self.rows[session.row].items;
-        let source_indices: Vec<_> = source_items
-            .iter()
-            .enumerate()
-            .filter_map(|(index, item)| session.item_ids.iter().any(|id| id == &item.id).then_some(index))
-            .collect();
-        if source_indices.len() != session.item_ids.len() {
+        if !apply_reorder_move(&mut self.rows, session.row, &session.item_ids, target) {
             cx.notify();
             return;
-        }
-
-        let mut moved_items = Vec::with_capacity(source_indices.len());
-        for index in source_indices.iter().rev() {
-            moved_items.push(self.rows[session.row].items.remove(*index));
-        }
-        moved_items.reverse();
-
-        if target.row == session.row {
-            let removed_before_target = source_indices.iter().filter(|index| **index < target.index).count();
-            target.index = target.index.saturating_sub(removed_before_target);
-        }
-        target.index = target.index.min(self.rows[target.row].items.len());
-        for (offset, item) in moved_items.into_iter().enumerate() {
-            self.rows[target.row].items.insert(target.index + offset, item);
         }
 
         self.start_drop_animation(&old_bounds, &old_ids);
@@ -491,6 +508,12 @@ impl ReorderableCollection {
         }
     }
 
+    fn clear_other_selections_for_active_list(&mut self, selected_row: usize, cx: &mut Context<Self>) {
+        if self.options.drop_selection_behavior != DropSelectionBehavior::PreserveExisting {
+            self.clear_other_selections(selected_row, cx);
+        }
+    }
+
     fn create_listbox(&mut self, row_index: usize, cx: &mut Context<Self>) -> SdkListBox {
         let prototype = cx.entity();
         let look = self.look.clone();
@@ -529,6 +552,7 @@ impl ReorderableCollection {
                 let sibling_count = item.sibling_count;
                 let bounds_host = bounds_host_seed.clone();
                 let start_host = start_host_seed.clone();
+                let selection_host = start_host_seed.clone();
                 let finish_host = finish_host_seed.clone();
                 let finish_host_out = finish_host_out_seed.clone();
                 let drag = ReorderableDrag {
@@ -569,6 +593,11 @@ impl ReorderableCollection {
                     .border_1()
                     .border_color(if item.selected { selection_border } else { border })
                     .cursor_grab()
+                    .on_mouse_down(MouseButton::Left, move |_, _, cx| {
+                        selection_host.update(cx, |this, cx| {
+                            this.clear_other_selections_for_active_list(row_index, cx);
+                        });
+                    })
                     .on_mouse_up(MouseButton::Left, move |event, window, cx| {
                         finish_host.update(cx, |this, cx| this.finish_drag(event, window, cx));
                     })
@@ -589,7 +618,7 @@ impl ReorderableCollection {
                     element = element.top(offset);
                 }
                 let selection_host = start_host_seed.clone();
-                element = element.on_drag(drag, move |payload, cursor_offset, window, cx| {
+                element = element.on_drag(drag, move |payload, cursor_offset, _window, cx| {
                     let selected_ids = {
                         let state = selection_host.read(cx);
                         if state.selected_ids[row_index].iter().any(|id| id == &payload.item_ids[0]) {
@@ -604,9 +633,7 @@ impl ReorderableCollection {
                         if let Some(listbox) = this.listboxes[row_index].clone() {
                             listbox.update(cx, |listbox, cx| listbox.set_selected_ids(selected_ids.clone(), cx));
                         }
-                        if !this.begin_drag(payload.clone(), cx) {
-                            cx.set_active_drag_cursor_style(CursorStyle::OperationNotAllowed, window);
-                        }
+                        this.begin_drag(payload.clone(), cx);
                     });
                     let mut preview = payload;
                     preview.cursor_offset = cursor_offset;
@@ -663,7 +690,7 @@ impl Render for ReorderableCollection {
                     if let ControlGroupEvent::Change { selected_ids, .. } = event {
                         this.selected_ids[row_index] = selected_ids.clone();
                         if !selected_ids.is_empty() {
-                            this.clear_other_selections(row_index, cx);
+                            this.clear_other_selections_for_active_list(row_index, cx);
                         }
                         cx.notify();
                     }
@@ -753,5 +780,62 @@ impl Render for ReorderableCollection {
                     )
                     .child(div().flex().gap(px(16.0)).children(listboxes)),
             )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{DropTarget, SortableItem, SortableRow, apply_reorder_move, select_drag_items};
+    use gpui::SharedString;
+
+    fn row(ids: &[&str]) -> SortableRow {
+        SortableRow {
+            label: "row".into(),
+            items: ids.iter().map(|id| SortableItem { id: (*id).into(), label: (*id).into() }).collect(),
+        }
+    }
+
+    fn ids(rows: &[SortableRow]) -> Vec<Vec<SharedString>> {
+        rows.iter().map(|row| row.items.iter().map(|item| item.id.clone()).collect()).collect()
+    }
+
+    fn shared_ids(ids: &[&str]) -> Vec<SharedString> {
+        ids.iter().map(|id| (*id).into()).collect()
+    }
+
+    #[test]
+    fn cross_list_move_preserves_selected_order() {
+        let mut rows = vec![row(&["a", "b", "c", "d"]), row(&["x", "y"])];
+        let selected = vec![SharedString::from("b"), SharedString::from("c")];
+
+        assert!(apply_reorder_move(&mut rows, 0, &selected, DropTarget { row: 1, index: 1 }));
+        assert_eq!(ids(&rows), vec![shared_ids(&["a", "d"]), shared_ids(&["x", "b", "c", "y"])]);
+    }
+
+    #[test]
+    fn same_list_non_contiguous_move_preserves_relative_order() {
+        let mut rows = vec![row(&["a", "b", "c", "d", "e"]), row(&[])];
+        let selected = vec![SharedString::from("b"), SharedString::from("d")];
+
+        assert!(apply_reorder_move(&mut rows, 0, &selected, DropTarget { row: 0, index: 5 }));
+        assert_eq!(ids(&rows)[0], shared_ids(&["a", "c", "e", "b", "d"]));
+    }
+
+    #[test]
+    fn invalid_move_leaves_rows_unchanged() {
+        let mut rows = vec![row(&["a", "b"]), row(&["x"])];
+        let before = ids(&rows);
+
+        assert!(!apply_reorder_move(&mut rows, 0, &[SharedString::from("missing")], DropTarget { row: 1, index: 0 },));
+        assert_eq!(ids(&rows), before);
+    }
+
+    #[test]
+    fn starting_drag_clears_selection_in_the_other_list() {
+        let mut selected_ids = [shared_ids(&["source"]), shared_ids(&["destination"])];
+
+        select_drag_items(&mut selected_ids, 0, &shared_ids(&["source"]));
+
+        assert_eq!(selected_ids, [shared_ids(&["source"]), Vec::new()]);
     }
 }
