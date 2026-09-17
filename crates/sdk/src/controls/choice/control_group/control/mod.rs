@@ -4,7 +4,7 @@ mod selection;
 
 use std::collections::HashMap;
 
-use gpui::{App, Bounds, Context, EventEmitter, Focusable, Pixels, ScrollHandle, SharedString, Subscription};
+use gpui::{App, Bounds, Context, EventEmitter, Focusable, Pixels, ScrollHandle, SharedString, Subscription, point, px};
 
 use super::model::{
     ControlGroupBuilder, ControlGroupFocusStrategy, ControlGroupItemLike, ControlGroupModel, ControlGroupStateMode,
@@ -135,6 +135,23 @@ where
     pub fn set_layout(&mut self, layout: super::model::ControlGroupLayout, cx: &mut Context<Self>) {
         self.model.layout = layout;
         cx.notify();
+    }
+
+    pub fn scroll_vertical_by(&self, delta: Pixels, cx: &mut Context<Self>) -> bool {
+        let Some(scroll_handle) = self.scroll_handle.as_ref() else {
+            return false;
+        };
+
+        let current = (-scroll_handle.offset().y.as_f32()).max(0.0);
+        let maximum = scroll_handle.max_offset().y.as_f32().max(0.0);
+        let target = (current + delta.as_f32()).clamp(0.0, maximum);
+        if (target - current).abs() <= 0.5 {
+            return false;
+        }
+
+        scroll_handle.set_offset(point(px(0.0), px(-target)));
+        cx.notify();
+        true
     }
 
     pub fn set_focus_strategy(&mut self, focus_strategy: ControlGroupFocusStrategy, cx: &mut Context<Self>) {

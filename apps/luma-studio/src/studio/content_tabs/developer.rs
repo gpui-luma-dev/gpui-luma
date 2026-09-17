@@ -58,6 +58,8 @@ struct ReorderableDrag {
 const SORTABLE_LISTBOX_VISIBLE_ITEMS: usize = 4;
 const SORTABLE_LISTBOX_ITEM_HEIGHT: f32 = 68.0;
 const SORTABLE_LISTBOX_HEIGHT: f32 = SORTABLE_LISTBOX_VISIBLE_ITEMS as f32 * SORTABLE_LISTBOX_ITEM_HEIGHT;
+const REORDERABLE_EDGE_SCROLL_ZONE: f32 = 56.0;
+const REORDERABLE_EDGE_SCROLL_STEP: f32 = 14.0;
 
 #[derive(Clone, Copy)]
 pub struct ReorderableCollectionOptions {
@@ -117,6 +119,9 @@ pub struct ReorderableCollection {
     selected_ids: [Vec<SharedString>; 2],
     listboxes: [Option<SdkListBox>; 2],
     _subscriptions: Vec<Subscription>,
+    drag_position: Option<Point<Pixels>>,
+    auto_scroll: Option<(usize, Pixels)>,
+    auto_scroll_scheduled: bool,
 }
 
 impl ReorderableCollection {
@@ -159,6 +164,9 @@ impl ReorderableCollection {
             selected_ids: [Vec::new(), Vec::new()],
             listboxes: [None, None],
             _subscriptions: Vec::new(),
+            drag_position: None,
+            auto_scroll: None,
+            auto_scroll_scheduled: false,
         }
     }
 
@@ -180,6 +188,8 @@ impl ReorderableCollection {
         self.selected_ids[drag.row] = drag.item_ids.clone();
         self.dragging = Some(drag.clone());
         self.drop_target = None;
+        self.drag_position = None;
+        self.auto_scroll = None;
         cx.notify();
         true
     }
@@ -195,11 +205,22 @@ impl ReorderableCollection {
         if drag.row != session.row {
             return;
         }
-        let position = event.event.position;
+        self.update_drop_target_at(event.event.position, window, cx);
+    }
+
+    fn update_drop_target_at(&mut self, position: Point<Pixels>, window: &mut Window, cx: &mut Context<Self>) {
+        let Some((session_row, session_item_ids)) =
+            self.dragging.as_ref().map(|session| (session.row, session.item_ids.clone()))
+        else {
+            return;
+        };
+        self.drag_position = Some(position);
+        self.auto_scroll = self.edge_scroll_target(position);
+        if self.auto_scroll.is_some() {
+            self.schedule_auto_scroll(window, cx);
+        }
         let mut target = self.item_bounds.iter().enumerate().find_map(|(row, bounds)| {
-            let Some(list_bounds) = self.list_bounds.get(row) else {
-                return None;
-            };
+            let list_bounds = self.list_bounds.get(row)?;
             if !list_bounds.contains(&position) {
                 return None;
             }
@@ -220,7 +241,7 @@ impl ReorderableCollection {
             let index = bounds.iter().position(|bound| position.y < bound.center().y).unwrap_or(bounds.len());
             Some(DropTarget { row, index })
         });
-        if !self.options.allow_same_list_reordering && target.is_some_and(|target| target.row == session.row) {
+        if !self.options.allow_same_list_reordering && target.is_some_and(|target| target.row == session_row) {
             target = None;
         }
         cx.set_active_drag_cursor_style(
@@ -232,13 +253,13 @@ impl ReorderableCollection {
             window,
         );
         if let Some(candidate) = target
-            && candidate.row == session.row
+            && candidate.row == session_row
         {
-            let selected_indices: Vec<_> = self.rows[session.row]
+            let selected_indices: Vec<_> = self.rows[session_row]
                 .items
                 .iter()
                 .enumerate()
-                .filter_map(|(index, item)| session.item_ids.iter().any(|id| id == &item.id).then_some(index))
+                .filter_map(|(index, item)| session_item_ids.iter().any(|id| id == &item.id).then_some(index))
                 .collect();
             if let (Some(first), Some(last)) = (selected_indices.first(), selected_indices.last())
                 && candidate.index >= *first
@@ -256,7 +277,49 @@ impl ReorderableCollection {
         }
     }
 
+    fn edge_scroll_target(&self, position: Point<Pixels>) -> Option<(usize, Pixels)> {
+        self.list_bounds.iter().enumerate().find_map(|(row, bounds)| {
+            if !bounds.contains(&position) {
+                return None;
+            }
+
+            let edge = px(REORDERABLE_EDGE_SCROLL_ZONE);
+            if position.y <= bounds.origin.y + edge {
+                Some((row, px(-REORDERABLE_EDGE_SCROLL_STEP)))
+            } else if position.y >= bounds.bottom() - edge {
+                Some((row, px(REORDERABLE_EDGE_SCROLL_STEP)))
+            } else {
+                None
+            }
+        })
+    }
+
+    fn schedule_auto_scroll(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.auto_scroll_scheduled {
+            return;
+        }
+        self.auto_scroll_scheduled = true;
+        cx.on_next_frame(window, |this, window, cx| {
+            this.auto_scroll_scheduled = false;
+            let Some((row, delta)) = this.auto_scroll else { return };
+            let Some(listbox) = this.listboxes[row].clone() else {
+                return;
+            };
+            let moved = listbox.update(cx, |listbox, cx| listbox.scroll_vertical_by(delta, cx));
+            if moved {
+                cx.notify();
+                if let Some(position) = this.drag_position {
+                    this.update_drop_target_at(position, window, cx);
+                }
+            } else {
+                this.auto_scroll = None;
+            }
+        });
+    }
+
     fn finish_drag(&mut self, _: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        self.drag_position = None;
+        self.auto_scroll = None;
         let Some(session) = self.dragging.take() else { return };
         let Some(mut target) = self.drop_target.take() else {
             cx.notify();
@@ -311,6 +374,8 @@ impl ReorderableCollection {
         if event.keystroke.key.as_str() != "escape" || self.dragging.take().is_none() {
             return;
         }
+        self.drag_position = None;
+        self.auto_scroll = None;
         window.prevent_default();
         cx.stop_propagation();
         self.drop_target = None;
