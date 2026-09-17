@@ -1,6 +1,6 @@
 name: Publish Dev Crates
 
-# Cuts a beta GitHub prerelease for the library crates.
+# Cuts an alpha GitHub prerelease for the library crates.
 # Consume via git tag (not crates.io).
 
 on:
@@ -135,7 +135,7 @@ jobs:
           body="$(cat <<EOF
           ## \`${VERSION}\`
 
-          Beta cut. Prefer **git tag** dependencies (crates.io later).
+          Alpha cut. Prefer **git tag** dependencies (crates.io later).
 
           ### Typical app
 

@@ -1,6 +1,6 @@
 # gpui-luma
 
-> **Early version.** This project is pre-release / beta. APIs, crate layout, and examples may change without notice.
+> **Early version.** This project is pre-release / alpha. APIs, crate layout, and examples may change without notice.
 
 GPUI component library. Requires a recent Rust stable toolchain (`rust-toolchain.toml` pins `stable`).
 
@@ -16,8 +16,8 @@ Library crates: depend on **`gpui-luma`** (SDK + look-core facade), then **one**
 
 ```toml
 [dependencies]
-luma = { package = "gpui-luma", git = "https://github.com/scottcg/gpui-luma", tag = "v0.9.0-beta.1" }
-luma-look-shadcn = { package = "gpui-luma-look-shadcn", git = "https://github.com/scottcg/gpui-luma", tag = "v0.9.0-beta.1" }
+luma = { package = "gpui-luma", git = "https://github.com/scottcg/gpui-luma", tag = "v0.1.0-alpha.1" }
+luma-look-shadcn = { package = "gpui-luma-look-shadcn", git = "https://github.com/scottcg/gpui-luma", tag = "v0.1.0-alpha.1" }
 ```
 
 Imports stay `use luma::…`.
