@@ -3,53 +3,46 @@ use std::sync::{Arc, RwLock};
 use gpui::{Bounds, Hsla, Image, Pixels, Window};
 
 use luma::controls::slider::{DomainTrackRenderer, SliderOrientation};
-use luma::infra::lock;
 
+use crate::domain_renderer::LockedDomain;
 use super::track_context::ColorArcTrackContext;
 use super::types::ColorArcDelegate;
 
 pub struct ColorArcDomainRenderer {
-    delegate: Arc<RwLock<Arc<dyn ColorArcDelegate>>>,
-    context: Arc<RwLock<ColorArcTrackContext>>,
+    inner: LockedDomain<dyn ColorArcDelegate, ColorArcTrackContext>,
 }
 
 impl ColorArcDomainRenderer {
     pub fn new(delegate: Arc<dyn ColorArcDelegate>, context: ColorArcTrackContext) -> Self {
-        Self { delegate: Arc::new(RwLock::new(delegate)), context: Arc::new(RwLock::new(context)) }
+        Self { inner: LockedDomain::new(delegate, context) }
     }
 
     pub fn context(&self) -> ColorArcTrackContext {
-        lock::read(&self.context).clone()
+        self.inner.context()
     }
 
     pub fn set_context(&self, context: ColorArcTrackContext) {
-        *lock::write(&self.context) = context;
+        self.inner.set_context(context);
     }
 
     pub fn set_delegate(&self, delegate: Arc<dyn ColorArcDelegate>) {
-        *lock::write(&self.delegate) = delegate;
+        self.inner.set_delegate(delegate);
     }
 
     pub fn shared_context(&self) -> Arc<RwLock<ColorArcTrackContext>> {
-        Arc::clone(&self.context)
+        self.inner.shared_context()
     }
 }
 
 impl DomainTrackRenderer for ColorArcDomainRenderer {
     fn paint(&self, bounds: Bounds<Pixels>, _orientation: SliderOrientation, reversed: bool, window: &mut Window) {
-        {
-            let mut context = lock::write(&self.context);
-            context.reversed = reversed;
-        }
-        let context = lock::read(&self.context);
-        let delegate = lock::read(&self.delegate).clone();
-        delegate.paint_domain_track(&context, bounds, window);
+        self.inner.with_context_mut(|context| context.reversed = reversed);
+        let context = self.inner.context();
+        self.inner.read_delegate().paint_domain_track(&context, bounds, window);
     }
 
     fn get_color_at_position(&self, position: f32) -> Option<Hsla> {
-        let context = lock::read(&self.context);
-        let delegate = lock::read(&self.delegate).clone();
-        Some(delegate.get_color_for_context(&context, position))
+        Some(self.inner.read_delegate().get_color_for_context(&self.inner.context(), position))
     }
 
     fn raster_image(
@@ -58,19 +51,15 @@ impl DomainTrackRenderer for ColorArcDomainRenderer {
         _orientation: SliderOrientation,
         reversed: bool,
     ) -> Option<Arc<Image>> {
-        {
-            let mut context = lock::write(&self.context);
-            context.reversed = reversed;
-        }
-        let context = lock::read(&self.context);
-        let delegate = lock::read(&self.delegate).clone();
+        self.inner.with_context_mut(|context| context.reversed = reversed);
+        let context = self.inner.context();
         let image_size = if bounds.size.width > gpui::px(0.0) && bounds.size.height > gpui::px(0.0) {
             bounds.size
         } else {
             let side = context.dial_size_px().max(1.0);
             gpui::size(gpui::px(side), gpui::px(side))
         };
-        delegate.raster_cached_image(&context, image_size)
+        self.inner.read_delegate().raster_cached_image(&context, image_size)
     }
 }
 
@@ -95,7 +84,7 @@ mod tests {
         let renderer = ColorArcDomainRenderer::new(Arc::new(StubDelegate), ColorArcTrackContext::default());
         let expected = renderer.get_color_at_position(0.25);
         let _ = catch_unwind(AssertUnwindSafe(|| {
-            let _guard = renderer.context.write().unwrap();
+            let _guard = renderer.inner.context_lock().write().unwrap();
             panic!("poison");
         }));
         assert_eq!(renderer.get_color_at_position(0.25), expected);
