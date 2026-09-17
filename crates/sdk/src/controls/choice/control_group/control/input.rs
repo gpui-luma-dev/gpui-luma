@@ -1,8 +1,11 @@
-use gpui::{App, Bounds, ClickEvent, Context, FocusOutEvent, MouseDownEvent, MouseUpEvent, Pixels, SharedString, Window};
+use gpui::{
+    App, Bounds, ClickEvent, Context, FocusOutEvent, Modifiers, MouseDownEvent, MouseUpEvent, Pixels, SharedString,
+    Window,
+};
 
 use super::super::model::{
     ControlGroupArrowAxis, ControlGroupFocusStrategy, ControlGroupFocusTarget, ControlGroupItemLike,
-    ControlGroupStateMode,
+    ControlGroupStateMode, ControlSelectionMode,
 };
 use super::super::template::ControlGroupTemplateHandlers;
 use super::selection::{
@@ -67,6 +70,15 @@ where
     }
 
     pub(super) fn commit_toggle_index(&mut self, index: usize, cx: &mut Context<Self>) -> bool {
+        self.commit_toggle_index_with_modifiers(index, Modifiers::default(), cx)
+    }
+
+    pub(super) fn commit_toggle_index_with_modifiers(
+        &mut self,
+        index: usize,
+        modifiers: Modifiers,
+        cx: &mut Context<Self>,
+    ) -> bool {
         if !self.can_use_item(index) {
             return false;
         }
@@ -77,7 +89,13 @@ where
 
         let item_id = item.id().clone();
         let current = self.model.effective_selected_ids();
-        let next_selected_ids = compute_next_selected_ids(&self.model.items, current, self.model.selection_mode, index);
+        let next_selected_ids = if self.model.selection_mode == ControlSelectionMode::Multiple
+            && !(modifiers.secondary() || modifiers.shift)
+        {
+            vec![item.id().clone()]
+        } else {
+            compute_next_selected_ids(&self.model.items, current, self.model.selection_mode, index)
+        };
         let selected = selected_ids_contain(&next_selected_ids, &item_id);
 
         if next_selected_ids == current {
@@ -337,7 +355,7 @@ where
             return;
         }
 
-        self.commit_toggle_index(index, cx);
+        self.commit_toggle_index_with_modifiers(index, event.modifiers(), cx);
     }
 
     pub(super) fn move_active(

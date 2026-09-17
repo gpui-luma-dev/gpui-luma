@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use gpui::{
     Bounds, Context, CursorStyle, DragMoveEvent, IntoElement, KeyDownEvent, MouseButton, MouseUpEvent, Pixels, Point,
@@ -7,6 +7,7 @@ use gpui::{
 use luma::controls::control_group::{ControlGroupEvent, ControlGroupItemRenderModel, ControlGroupItemTemplate};
 use luma::controls::listbox::ListBox as SdkListBox;
 use luma::infra::ElementExt;
+use luma::VisualTransition;
 use luma_look_shadcn::{ListBox, ShadcnLook, ShadcnRadius};
 
 #[derive(Clone)]
@@ -55,20 +56,40 @@ struct ReorderableDrag {
     cursor_offset: Point<Pixels>,
 }
 
+struct DropAnimation {
+    transition: VisualTransition,
+    offsets: [HashMap<SharedString, Pixels>; 2],
+}
+
 const SORTABLE_LISTBOX_VISIBLE_ITEMS: usize = 4;
 const SORTABLE_LISTBOX_ITEM_HEIGHT: f32 = 68.0;
 const SORTABLE_LISTBOX_HEIGHT: f32 = SORTABLE_LISTBOX_VISIBLE_ITEMS as f32 * SORTABLE_LISTBOX_ITEM_HEIGHT;
+const REORDERABLE_EDGE_SCROLL_ZONE: f32 = 56.0;
+const REORDERABLE_EDGE_SCROLL_STEP: f32 = 14.0;
 
 #[derive(Clone, Copy)]
 pub struct ReorderableCollectionOptions {
     pub allow_same_list_reordering: bool,
     pub source_drag_overlay: Option<gpui::Hsla>,
+    pub drop_selection_behavior: DropSelectionBehavior,
 }
 
 impl Default for ReorderableCollectionOptions {
     fn default() -> Self {
-        Self { allow_same_list_reordering: true, source_drag_overlay: Some(gpui::hsla(0.0, 0.0, 0.52, 0.58)) }
+        Self {
+            allow_same_list_reordering: true,
+            source_drag_overlay: Some(gpui::hsla(0.0, 0.0, 0.52, 0.58)),
+            drop_selection_behavior: DropSelectionBehavior::KeepDroppedItemsOnly,
+        }
     }
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DropSelectionBehavior {
+    KeepDroppedItemsOnly,
+    ClearAll,
+    PreserveExisting,
 }
 
 impl Render for ReorderableDrag {
@@ -117,6 +138,10 @@ pub struct ReorderableCollection {
     selected_ids: [Vec<SharedString>; 2],
     listboxes: [Option<SdkListBox>; 2],
     _subscriptions: Vec<Subscription>,
+    drag_position: Option<Point<Pixels>>,
+    auto_scroll: Option<(usize, Pixels)>,
+    auto_scroll_scheduled: bool,
+    drop_animation: Option<DropAnimation>,
 }
 
 impl ReorderableCollection {
@@ -159,6 +184,10 @@ impl ReorderableCollection {
             selected_ids: [Vec::new(), Vec::new()],
             listboxes: [None, None],
             _subscriptions: Vec::new(),
+            drag_position: None,
+            auto_scroll: None,
+            auto_scroll_scheduled: false,
+            drop_animation: None,
         }
     }
 
@@ -180,6 +209,8 @@ impl ReorderableCollection {
         self.selected_ids[drag.row] = drag.item_ids.clone();
         self.dragging = Some(drag.clone());
         self.drop_target = None;
+        self.drag_position = None;
+        self.auto_scroll = None;
         cx.notify();
         true
     }
@@ -195,11 +226,22 @@ impl ReorderableCollection {
         if drag.row != session.row {
             return;
         }
-        let position = event.event.position;
+        self.update_drop_target_at(event.event.position, window, cx);
+    }
+
+    fn update_drop_target_at(&mut self, position: Point<Pixels>, window: &mut Window, cx: &mut Context<Self>) {
+        let Some((session_row, session_item_ids)) =
+            self.dragging.as_ref().map(|session| (session.row, session.item_ids.clone()))
+        else {
+            return;
+        };
+        self.drag_position = Some(position);
+        self.auto_scroll = self.edge_scroll_target(position);
+        if self.auto_scroll.is_some() {
+            self.schedule_auto_scroll(window, cx);
+        }
         let mut target = self.item_bounds.iter().enumerate().find_map(|(row, bounds)| {
-            let Some(list_bounds) = self.list_bounds.get(row) else {
-                return None;
-            };
+            let list_bounds = self.list_bounds.get(row)?;
             if !list_bounds.contains(&position) {
                 return None;
             }
@@ -220,7 +262,7 @@ impl ReorderableCollection {
             let index = bounds.iter().position(|bound| position.y < bound.center().y).unwrap_or(bounds.len());
             Some(DropTarget { row, index })
         });
-        if !self.options.allow_same_list_reordering && target.is_some_and(|target| target.row == session.row) {
+        if !self.options.allow_same_list_reordering && target.is_some_and(|target| target.row == session_row) {
             target = None;
         }
         cx.set_active_drag_cursor_style(
@@ -232,13 +274,13 @@ impl ReorderableCollection {
             window,
         );
         if let Some(candidate) = target
-            && candidate.row == session.row
+            && candidate.row == session_row
         {
-            let selected_indices: Vec<_> = self.rows[session.row]
+            let selected_indices: Vec<_> = self.rows[session_row]
                 .items
                 .iter()
                 .enumerate()
-                .filter_map(|(index, item)| session.item_ids.iter().any(|id| id == &item.id).then_some(index))
+                .filter_map(|(index, item)| session_item_ids.iter().any(|id| id == &item.id).then_some(index))
                 .collect();
             if let (Some(first), Some(last)) = (selected_indices.first(), selected_indices.last())
                 && candidate.index >= *first
@@ -256,7 +298,49 @@ impl ReorderableCollection {
         }
     }
 
+    fn edge_scroll_target(&self, position: Point<Pixels>) -> Option<(usize, Pixels)> {
+        self.list_bounds.iter().enumerate().find_map(|(row, bounds)| {
+            if !bounds.contains(&position) {
+                return None;
+            }
+
+            let edge = px(REORDERABLE_EDGE_SCROLL_ZONE);
+            if position.y <= bounds.origin.y + edge {
+                Some((row, px(-REORDERABLE_EDGE_SCROLL_STEP)))
+            } else if position.y >= bounds.bottom() - edge {
+                Some((row, px(REORDERABLE_EDGE_SCROLL_STEP)))
+            } else {
+                None
+            }
+        })
+    }
+
+    fn schedule_auto_scroll(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.auto_scroll_scheduled {
+            return;
+        }
+        self.auto_scroll_scheduled = true;
+        cx.on_next_frame(window, |this, window, cx| {
+            this.auto_scroll_scheduled = false;
+            let Some((row, delta)) = this.auto_scroll else { return };
+            let Some(listbox) = this.listboxes[row].clone() else {
+                return;
+            };
+            let moved = listbox.update(cx, |listbox, cx| listbox.scroll_vertical_by(delta, cx));
+            if moved {
+                cx.notify();
+                if let Some(position) = this.drag_position {
+                    this.update_drop_target_at(position, window, cx);
+                }
+            } else {
+                this.auto_scroll = None;
+            }
+        });
+    }
+
     fn finish_drag(&mut self, _: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        self.drag_position = None;
+        self.auto_scroll = None;
         let Some(session) = self.dragging.take() else { return };
         let Some(mut target) = self.drop_target.take() else {
             cx.notify();
@@ -267,6 +351,9 @@ impl ReorderableCollection {
             return;
         }
 
+        let old_bounds = self.item_bounds.clone();
+        let old_ids: Vec<Vec<SharedString>> =
+            self.rows.iter().map(|row| row.items.iter().map(|item| item.id.clone()).collect()).collect();
         let source_items = &self.rows[session.row].items;
         let source_indices: Vec<_> = source_items
             .iter()
@@ -293,9 +380,21 @@ impl ReorderableCollection {
             self.rows[target.row].items.insert(target.index + offset, item);
         }
 
-        if target.row != session.row {
-            self.selected_ids[session.row].retain(|id| !session.item_ids.iter().any(|moved_id| moved_id == id));
-            self.selected_ids[target.row].extend(session.item_ids.iter().cloned());
+        self.start_drop_animation(&old_bounds, &old_ids);
+        match self.options.drop_selection_behavior {
+            DropSelectionBehavior::KeepDroppedItemsOnly => {
+                self.selected_ids.iter_mut().for_each(Vec::clear);
+                self.selected_ids[target.row] = session.item_ids.clone();
+            }
+            DropSelectionBehavior::ClearAll => {
+                self.selected_ids.iter_mut().for_each(Vec::clear);
+            }
+            DropSelectionBehavior::PreserveExisting => {
+                if target.row != session.row {
+                    self.selected_ids[session.row].retain(|id| !session.item_ids.iter().any(|moved_id| moved_id == id));
+                    self.selected_ids[target.row].extend(session.item_ids.iter().cloned());
+                }
+            }
         }
         self.sync_listboxes(cx);
         for (row, listbox) in self.listboxes.iter().enumerate() {
@@ -307,10 +406,57 @@ impl ReorderableCollection {
         cx.notify();
     }
 
+    fn start_drop_animation(&mut self, old_bounds: &[Vec<Bounds<Pixels>>], old_ids: &[Vec<SharedString>]) {
+        let mut offsets = [HashMap::new(), HashMap::new()];
+        for (row_index, row) in self.rows.iter().enumerate() {
+            let Some(bounds) = old_bounds.get(row_index) else {
+                continue;
+            };
+            let Some(old_row_ids) = old_ids.get(row_index) else {
+                continue;
+            };
+            let Some(first_bound) = bounds.first() else { continue };
+            let pitch = bounds
+                .get(1)
+                .map(|bound| bound.origin.y - first_bound.origin.y)
+                .unwrap_or(px(SORTABLE_LISTBOX_ITEM_HEIGHT));
+            for (new_index, item) in row.items.iter().enumerate() {
+                let Some(old_index) = old_row_ids.iter().position(|id| id == &item.id) else {
+                    continue;
+                };
+                let Some(old_origin) = bounds.get(old_index).map(|bound| bound.origin.y) else {
+                    continue;
+                };
+                let new_origin = first_bound.origin.y + px(pitch.as_f32() * new_index as f32);
+                let offset = old_origin - new_origin;
+                if offset.as_f32().abs() > 0.5 {
+                    offsets[row_index].insert(item.id.clone(), offset);
+                }
+            }
+        }
+
+        if offsets.iter().any(|row| !row.is_empty()) {
+            let mut transition = VisualTransition::new(1.0, Duration::from_millis(180));
+            transition.snap_to(0.0);
+            transition.set_target(1.0);
+            self.drop_animation = Some(DropAnimation { transition, offsets });
+        } else {
+            self.drop_animation = None;
+        }
+    }
+
+    fn drop_animation_offset(&self, row: usize, item_id: &SharedString) -> Option<Pixels> {
+        let animation = self.drop_animation.as_ref()?;
+        let offset = animation.offsets.get(row)?.get(item_id)?;
+        Some(px(animation.transition.interpolate(offset.as_f32(), 0.0)))
+    }
+
     fn cancel_drag(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         if event.keystroke.key.as_str() != "escape" || self.dragging.take().is_none() {
             return;
         }
+        self.drag_position = None;
+        self.auto_scroll = None;
         window.prevent_default();
         cx.stop_propagation();
         self.drop_target = None;
@@ -329,6 +475,18 @@ impl ReorderableCollection {
                         cx,
                     );
                 });
+            }
+        }
+    }
+
+    fn clear_other_selections(&mut self, selected_row: usize, cx: &mut Context<Self>) {
+        for row in 0..self.selected_ids.len() {
+            if row == selected_row || self.selected_ids[row].is_empty() {
+                continue;
+            }
+            self.selected_ids[row].clear();
+            if let Some(listbox) = self.listboxes[row].clone() {
+                listbox.update(cx, |listbox, cx| listbox.set_selected_ids(Vec::<SharedString>::new(), cx));
             }
         }
     }
@@ -427,6 +585,9 @@ impl ReorderableCollection {
                         });
                     })
                     .child(content);
+                if let Some(offset) = prototype.read(app).drop_animation_offset(row_index, &item_id) {
+                    element = element.top(offset);
+                }
                 let selection_host = start_host_seed.clone();
                 element = element.on_drag(drag, move |payload, cursor_offset, window, cx| {
                     let selected_ids = {
@@ -486,13 +647,24 @@ impl ReorderableCollection {
 }
 
 impl Render for ReorderableCollection {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if let Some(animation) = self.drop_animation.as_mut() {
+            let animating = animation.transition.sync();
+            if animating {
+                animation.transition.schedule_frame(window, cx);
+            } else {
+                self.drop_animation = None;
+            }
+        }
         if self.listboxes[0].is_none() {
             for row_index in 0..self.rows.len() {
                 let listbox = self.create_listbox(row_index, cx);
                 let subscription = cx.subscribe(&listbox, move |this, _, event, cx| {
                     if let ControlGroupEvent::Change { selected_ids, .. } = event {
                         this.selected_ids[row_index] = selected_ids.clone();
+                        if !selected_ids.is_empty() {
+                            this.clear_other_selections(row_index, cx);
+                        }
                         cx.notify();
                     }
                 });
