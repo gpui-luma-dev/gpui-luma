@@ -154,6 +154,28 @@ where
         true
     }
 
+    pub fn vertical_scroll_offset(&self) -> Pixels {
+        self.scroll_handle
+            .as_ref()
+            .map_or(px(0.0), |scroll_handle| (-scroll_handle.offset().y).max(px(0.0)))
+    }
+
+    pub fn vertical_scroll_max_offset(&self) -> Pixels {
+        self.scroll_handle
+            .as_ref()
+            .map_or(px(0.0), |scroll_handle| scroll_handle.max_offset().y.max(px(0.0)))
+    }
+
+    pub fn set_vertical_scroll_offset(&self, offset: Pixels, cx: &mut Context<Self>) {
+        let Some(scroll_handle) = self.scroll_handle.as_ref() else {
+            return;
+        };
+        let maximum = scroll_handle.max_offset().y.max(px(0.0));
+        let target = offset.clamp(px(0.0), maximum);
+        scroll_handle.set_offset(point(px(0.0), -target));
+        cx.notify();
+    }
+
     pub fn set_focus_strategy(&mut self, focus_strategy: ControlGroupFocusStrategy, cx: &mut Context<Self>) {
         if self.model.focus_strategy == focus_strategy {
             return;
