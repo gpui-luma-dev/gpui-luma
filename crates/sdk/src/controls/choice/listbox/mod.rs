@@ -1,8 +1,4 @@
-//! ListBox is a [`control_group`](crate::controls::control_group) preset with list-row chrome,
-//! not a separate interaction engine.
-//!
-//! LMTP here is template/theme/item chrome plus thin builders in [`model`]. Interaction
-//! lives on `ControlGroupControl` — there is no dedicated `control.rs`.
+//! ListBox is the SDK's flat, selectable collection control with list-row chrome.
 
 mod item_template;
 mod model;
@@ -18,9 +14,4 @@ pub use template::{
 };
 pub use theme::{
     DefaultListBoxTheme, ListBoxListLook, ListBoxRowLook, ListBoxRowPalette, ListBoxTheme, default_listbox_theme,
-};
-
-pub use crate::controls::control_group::{
-    ControlFocusState, ControlGroupBuilder, ControlGroupControl, ControlGroupEvent, ControlGroupItemState,
-    ControlGroupStateMode, ControlSelectionMode,
 };

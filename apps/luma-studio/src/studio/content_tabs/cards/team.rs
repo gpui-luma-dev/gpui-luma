@@ -137,7 +137,6 @@ fn member_row(
 fn role_menu_items() -> Vec<MenuItem> {
     vec![
         MenuItem::new("owner").label("Owner"),
-        MenuItem::new("developer").label("Developer"),
         MenuItem::new("billing").label("Billing"),
     ]
 }
