@@ -41,7 +41,6 @@ enum StyleGuideSection {
     Slider,
     TextField,
     TextArea,
-    Listbox,
     Table,
     TreeView,
     Accordion,
@@ -50,14 +49,13 @@ enum StyleGuideSection {
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 23] = [
+    const ALL: [Self; 22] = [
         Self::Accordion,
         Self::Buttons,
         Self::Checkbox,
         Self::Feedback,
         Self::IconButtons,
         Self::Table,
-        Self::Listbox,
         Self::Menus,
         Self::Pager,
         Self::Radio,
@@ -84,7 +82,6 @@ impl StyleGuideSection {
             Self::Feedback => "Feedback",
             Self::IconButtons => "Icon Button",
             Self::Table => "Table",
-            Self::Listbox => "Listbox",
             Self::Menus => "Menus",
             Self::Pager => "Pager",
             Self::Radio => "Radio",
@@ -135,8 +132,6 @@ declare_form! {
             slider_preview_tabs: Option<Entity<Tabs>> = None,
             slider_customization_preview: Option<Entity<sections::slider::customization::SliderCustomizationPreview>> =
                 None,
-            listbox_preview_tabs: Option<Entity<Tabs>> = None,
-            listbox_preview: Option<Entity<sections::listbox::ListboxPreview>> = None,
             table_preview_tabs: Option<Entity<Tabs>> = None,
             table_preview: Option<Entity<sections::table::TablePreview>> = None,
             tree_view_preview_tabs: Option<Entity<Tabs>> = None,
@@ -166,8 +161,6 @@ impl StyleGuidePanel {
         self.sync_scrollbar_preview_tabs(cx);
         self.sync_textfield_preview_tabs(cx);
         self.sync_textarea_preview_tabs(cx);
-        self.sync_listbox_preview_tabs(cx);
-        self.sync_listbox_preview(cx);
         self.sync_table_preview_tabs(cx);
         self.sync_table_preview(cx);
         self.sync_tree_view_preview_tabs(cx);
@@ -700,35 +693,6 @@ impl StyleGuidePanel {
         tabs
     }
 
-    fn listbox_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
-        if let Some(tabs) = self.listbox_preview_tabs.clone() {
-            return tabs;
-        }
-        let tabs = self.spawn_template_sizes_tabs("luma-studio-listbox-preview-tabs", cx);
-        self.listbox_preview_tabs = Some(tabs.clone());
-        tabs
-    }
-
-    fn sync_listbox_preview_tabs(&mut self, cx: &mut Context<Self>) {
-        self.sync_preview_tabs(self.listbox_preview_tabs.clone(), cx);
-    }
-
-    fn listbox_preview(&mut self, cx: &mut Context<Self>) -> Entity<sections::listbox::ListboxPreview> {
-        if let Some(preview) = self.listbox_preview.clone() {
-            return preview;
-        }
-        let preview = cx.new(|cx| sections::listbox::ListboxPreview::new(cx, self.look.clone()));
-        self.listbox_preview = Some(preview.clone());
-        preview
-    }
-
-    fn sync_listbox_preview(&mut self, cx: &mut Context<Self>) {
-        if let Some(preview) = self.listbox_preview.clone() {
-            let look = self.look.clone();
-            preview.update(cx, move |preview, cx| preview.sync_look(look, cx));
-        }
-    }
-
     fn table_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
         if let Some(tabs) = self.table_preview_tabs.clone() {
             return tabs;
@@ -864,8 +828,6 @@ impl Render for StyleGuidePanel {
         let _ = self.textarea_preview_tabs(cx);
         let _ = self.slider_preview_tabs(cx);
         let _ = self.slider_customization_preview(cx);
-        let _ = self.listbox_preview_tabs(cx);
-        let _ = self.listbox_preview(cx);
         let _ = self.table_preview_tabs(cx);
         let _ = self.table_preview(cx);
         let _ = self.tree_view_preview_tabs(cx);
@@ -1019,7 +981,6 @@ impl StyleGuidePanel {
                 | StyleGuideSection::Scrollbar
                 | StyleGuideSection::Slider
                 | StyleGuideSection::TextField
-                | StyleGuideSection::Listbox
                 | StyleGuideSection::Table
                 | StyleGuideSection::TreeView
                 | StyleGuideSection::Accordion
@@ -1115,12 +1076,6 @@ impl StyleGuidePanel {
                 self.look.clone(),
                 self.textarea_preview_tabs.clone().expect("textarea preview tabs"),
                 window,
-                cx,
-            ),
-            StyleGuideSection::Listbox => sections::listbox::render_listbox_template_section(
-                self.look.clone(),
-                self.listbox_preview_tabs.clone().expect("listbox preview tabs"),
-                self.listbox_preview.clone().expect("listbox preview"),
                 cx,
             ),
             StyleGuideSection::Table => sections::table::render_table_template_section(

@@ -3,28 +3,79 @@
 mod listbox {
     use std::sync::Arc;
 
+    use luma::theme::InteractionState;
     use luma_look_shadcn::ShadcnLook;
     use luma_look_shadcn_inspect::ShadcnInspect;
+    use lucide_svg_static::Icon as LucideIcon;
 
     use super::super::super::collection::{listbox_list_color_rows, listbox_row_color_rows};
-    use super::super::super::common::{listbox_list_enabled, listbox_list_focused, listbox_row_state};
+    use super::super::super::common::interaction_state;
     use super::super::super::metrics::listbox_layout_section;
-    use super::super::super::specs::{CHOICE_SIZES, LISTBOX_STATES, LISTBOX_VARIANTS};
+    use super::super::super::specs::COLOR_LAYOUT_CATEGORIES;
     use super::super::super::schema::{
         ControlInspectorResolver, ControlInspectorSpec, InspectorCategoryContent, InspectorSelection,
-        InspectorStateSpec, SharedInspectorResolver,
+        InspectorStateSpec, InspectorVariant, SharedInspectorResolver, InspectColorRow,
     };
 
+    static VARIANTS: [InspectorVariant; 2] = [
+        InspectorVariant { id: "vertical", label: "Vertical" },
+        InspectorVariant { id: "horizontal", label: "Horizontal" },
+    ];
+    static STATES: [InspectorStateSpec; 6] = [
+        InspectorStateSpec {
+            id: "default",
+            label: "Default",
+            icon: LucideIcon::Circle,
+            expanded_default: true,
+            categories: &COLOR_LAYOUT_CATEGORIES,
+        },
+        InspectorStateSpec {
+            id: "selected",
+            label: "Selected",
+            icon: LucideIcon::Check,
+            expanded_default: false,
+            categories: &COLOR_LAYOUT_CATEGORIES,
+        },
+        InspectorStateSpec {
+            id: "hover",
+            label: "Hover",
+            icon: LucideIcon::MousePointer2,
+            expanded_default: false,
+            categories: &COLOR_LAYOUT_CATEGORIES,
+        },
+        InspectorStateSpec {
+            id: "pressed",
+            label: "Pressed",
+            icon: LucideIcon::MousePointerClick,
+            expanded_default: false,
+            categories: &COLOR_LAYOUT_CATEGORIES,
+        },
+        InspectorStateSpec {
+            id: "keyboard-active",
+            label: "Keyboard Active",
+            icon: LucideIcon::Focus,
+            expanded_default: false,
+            categories: &COLOR_LAYOUT_CATEGORIES,
+        },
+        InspectorStateSpec {
+            id: "disabled",
+            label: "Disabled",
+            icon: LucideIcon::CircleOff,
+            expanded_default: false,
+            categories: &COLOR_LAYOUT_CATEGORIES,
+        },
+    ];
+
     pub static LISTBOX_INSPECTOR_SPEC: ControlInspectorSpec = ControlInspectorSpec {
-        control_label: "ListBox",
+        control_label: "ListBox composition",
         id_prefix: "listbox-theme-inspector",
         parts: &[],
-        variants: &LISTBOX_VARIANTS,
-        states: &LISTBOX_STATES,
-        sizes: &CHOICE_SIZES,
+        variants: &VARIANTS,
+        states: &STATES,
+        sizes: &[],
         value_modes: &[],
         default_part_id: "",
-        default_variant_id: "list",
+        default_variant_id: "vertical",
         default_size_id: "md",
         default_value_id: "",
     };
@@ -45,47 +96,38 @@ mod listbox {
             category_id: &str,
         ) -> InspectorCategoryContent {
             match category_id {
-                "color" => InspectorCategoryContent::Colors(resolve_color_rows(look, selection)),
                 "layout" => InspectorCategoryContent::Layout(listbox_layout_section(
                     look,
-                    "listbox-theme-inspector-box-model",
-                    selection.size_id,
+                    "listbox-composition-box-model",
+                    selection.variant_id,
                 )),
+                "color" => {
+                    let inspect = ShadcnInspect::new(look);
+                    let state = match selection.state_id {
+                        "selected" => InteractionState { focused: true, ..Default::default() },
+                        // Active navigation has an outline; selection alone supplies a filled background.
+                        "keyboard-active" => InteractionState::default(),
+                        other => interaction_state(other),
+                    };
+                    let mut rows = listbox_row_color_rows(&inspect.inspect_listbox_row_color_palette(state));
+                    rows.extend(listbox_list_color_rows(&inspect.inspect_listbox_list_color_palette(true, false)));
+                    if selection.state_id == "keyboard-active" {
+                        rows.push(InspectColorRow {
+                            label: "focus border",
+                            value: luma_look_shadcn::paint::focus_ring_color(&look.mode_tokens().catalog)
+                                .unwrap_or_else(|_| look.chrome().body_text),
+                            source: "ring".into(),
+                            detail: None,
+                        });
+                    }
+                    InspectorCategoryContent::Colors(rows)
+                }
                 _ => InspectorCategoryContent::Colors(Vec::new()),
             }
         }
 
-        fn state_applies(
-            &self,
-            _look: &ShadcnLook,
-            selection: InspectorSelection<'_>,
-            state: &InspectorStateSpec,
-        ) -> bool {
-            match selection.variant_id {
-                "list" => matches!(state.id, "enabled" | "disabled" | "focused"),
-                "row" => matches!(state.id, "default" | "hover" | "pressed" | "keyboard-active" | "disabled"),
-                _ => true,
-            }
-        }
-    }
-
-    fn resolve_color_rows(
-        look: &ShadcnLook,
-        selection: InspectorSelection<'_>,
-    ) -> Vec<super::super::super::schema::InspectColorRow> {
-        let inspect = ShadcnInspect::new(look);
-        match selection.variant_id {
-            "row" => {
-                let palette = inspect.inspect_listbox_row_color_palette(listbox_row_state(selection.state_id));
-                listbox_row_color_rows(&palette)
-            }
-            _ => {
-                let palette = inspect.inspect_listbox_list_color_palette(
-                    listbox_list_enabled(selection.state_id),
-                    listbox_list_focused(selection.state_id),
-                );
-                listbox_list_color_rows(&palette)
-            }
+        fn category_applies(&self, _look: &ShadcnLook, selection: InspectorSelection<'_>, category_id: &str) -> bool {
+            category_id != "layout" || selection.state_id == "default"
         }
     }
 }

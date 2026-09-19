@@ -1,7 +1,7 @@
 //! Inspect metadata for `listbox`.
 
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
-use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use luma::theme::{InteractionState, ThemeMode};
+use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct ListBoxListInspectPalette {
     pub background: ResolvedColor,
@@ -13,17 +13,6 @@ pub struct ListBoxListInspectPalette {
 pub struct ListBoxRowInspectPalette {
     pub background: ResolvedColor,
     pub label_color: ResolvedColor,
-}
-
-#[derive(Clone, Debug)]
-pub struct ListBoxInspectMetrics {
-    pub radius: ResolvedMetric,
-    pub padding_x: ResolvedMetric,
-    pub padding_y: ResolvedMetric,
-    pub row_gap: ResolvedMetric,
-    pub row_min_height: ResolvedMetric,
-    pub row_padding_x: ResolvedMetric,
-    pub row_padding_y: ResolvedMetric,
 }
 
 pub fn inspect_listbox_list_color_palette(
@@ -50,36 +39,6 @@ pub fn inspect_listbox_row_color_palette(
         luma_look_shadcn::tables::resolve_listbox_row_colors(&resolver, state.disabled, state.focused, state.layer())
             .unwrap_or_else(|_| luma_look_shadcn::tables::ListBoxRowColorTable::fallback());
     ListBoxRowInspectPalette { background: colors.background, label_color: colors.label_color }
-}
-
-pub fn inspect_listbox_metrics(
-    mode: &ShadcnModeTokens,
-    theme_mode: ThemeMode,
-    size: ControlSize,
-) -> ListBoxInspectMetrics {
-    use luma::theme::ListRowScale;
-
-    use luma_look_shadcn::catalog::SpacingField;
-    use crate::metrics::{derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};
-
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let metrics = ctx.metrics();
-    let catalog = ctx.catalog();
-    let list_scale = ListRowScale::compute(size, metrics, 1.0);
-    let size_key = crate::metrics::control_size_key(size);
-
-    ListBoxInspectMetrics {
-        radius: radius_metric(catalog, size, metrics.radius(size)),
-        padding_x: derived_metric("listbox padding x", 6.0),
-        padding_y: derived_metric(
-            format!("{size_key} list padding y = padding_y × 0.5"),
-            metrics.padding_y(size) * 0.5,
-        ),
-        row_gap: derived_metric(format!("{size_key} list row gap = padding_y × 0.25"), metrics.padding_y(size) * 0.25),
-        row_min_height: scaffold_control_metric(size_key, "row_min_height", list_scale.min_height),
-        row_padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, list_scale.padding_x),
-        row_padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, list_scale.padding_y),
-    }
 }
 
 #[cfg(test)]

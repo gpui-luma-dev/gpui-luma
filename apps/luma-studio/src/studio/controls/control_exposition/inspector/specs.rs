@@ -414,10 +414,7 @@ pub static POPUP_MENU_STATES: [InspectorStateSpec; 7] = [
     },
 ];
 
-pub static LISTBOX_VARIANTS: [InspectorVariant; 2] =
-    [InspectorVariant { id: "list", label: "List" }, InspectorVariant { id: "row", label: "Row" }];
-
-pub static LISTBOX_STATES: [InspectorStateSpec; 6] = [
+pub static TABLE_STATES: [InspectorStateSpec; 6] = [
     InspectorStateSpec {
         id: "default",
         label: "Default",
@@ -467,8 +464,6 @@ pub static TABLE_VARIANTS: [InspectorVariant; 3] = [
     InspectorVariant { id: "row", label: "Row" },
     InspectorVariant { id: "grid-cell", label: "Grid Cell" },
 ];
-
-pub static TABLE_STATES: [InspectorStateSpec; 6] = LISTBOX_STATES;
 
 pub static TABLE_ROW_VALUE_MODES: [InspectorValueMode; 2] = [
     InspectorValueMode { id: "unselected", label: "unselected" },

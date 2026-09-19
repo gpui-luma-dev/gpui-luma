@@ -1,8 +1,8 @@
 use luma::theme::ControlSize;
 use luma_look_shadcn::ShadcnLook;
 use luma_look_shadcn_inspect::{
-    AccordionInspectMetrics, ListBoxInspectMetrics, ShadcnInspect, SidebarInspectMetrics, TableInspectMetrics,
-    TabsInspectMetrics, TreeViewInspectMetrics,
+    AccordionInspectMetrics, ShadcnInspect, SidebarInspectMetrics, TableInspectMetrics, TabsInspectMetrics,
+    TreeViewInspectMetrics,
 };
 
 use super::super::box_model::InspectBoxModelSnapshot;
@@ -11,12 +11,46 @@ use super::super::provenance::metric_properties;
 use super::super::schema::{InspectLayoutSection, InspectPropertyRow};
 use super::layout_section;
 
-pub fn listbox_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
-    listbox_metrics_layout_section(
-        look,
-        diagram_id,
-        &ShadcnInspect::new(look).inspect_listbox_metrics(control_size(size_id)),
-    )
+pub fn listbox_layout_section(look: &ShadcnLook, diagram_id: &str, variant_id: &str) -> InspectLayoutSection {
+    use super::super::super::listbox::{horizontal, vertical};
+    let layout = if variant_id == "horizontal" {
+        horizontal::LAYOUT
+    } else {
+        vertical::LAYOUT
+    };
+    let source = "Studio composition · ListBoxSampleLayout";
+    let box_model = InspectBoxModelSnapshot {
+        height: layout.item_height,
+        padding_x: layout.item_padding,
+        padding_y: 0.0,
+        border_width: layout.border,
+        gap: 0.0,
+        radius: layout.radius,
+        focus_ring_width: 0.0,
+        focus_ring_offset: 0.0,
+    };
+    let mut metrics = vec![
+        InspectPropertyRow::new("item height", format!("{}px", layout.item_height), source),
+        InspectPropertyRow::new("item spacing", format!("{}px", layout.spacing), source),
+        InspectPropertyRow::new("viewport height (content)", format!("{}px", layout.viewport_height), source),
+        InspectPropertyRow::new("viewport inset x", format!("{}px each side", layout.inset_x), source),
+        InspectPropertyRow::new("viewport inset y", format!("{}px each side", layout.inset_y), source),
+        InspectPropertyRow::new("radius", format!("{}px", layout.radius), source),
+    ];
+    if variant_id == "horizontal" {
+        metrics.push(InspectPropertyRow::new(
+            "card width",
+            format!("{}px (fixed; does not shrink)", horizontal::CARD_WIDTH),
+            source,
+        ));
+    } else {
+        metrics.push(InspectPropertyRow::new(
+            "visible rows",
+            (layout.viewport_height / (layout.item_height + layout.spacing)).ceil().to_string(),
+            source,
+        ));
+    }
+    layout_section(look, diagram_id, box_model, None, metrics)
 }
 
 pub fn table_layout_section(
@@ -61,38 +95,6 @@ pub fn accordion_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &s
         &ShadcnInspect::new(look).inspect_accordion_metrics(control_size(size_id)),
     )
 }
-fn listbox_metrics_layout_section(
-    look: &ShadcnLook,
-    diagram_id: &str,
-    metrics: &ListBoxInspectMetrics,
-) -> InspectLayoutSection {
-    let box_model = InspectBoxModelSnapshot {
-        height: metrics.row_min_height.value_px,
-        padding_x: metrics.row_padding_x.value_px,
-        padding_y: metrics.row_padding_y.value_px,
-        border_width: 0.0,
-        gap: metrics.row_gap.value_px,
-        radius: metrics.radius.value_px,
-        focus_ring_width: 0.0,
-        focus_ring_offset: 0.0,
-    };
-    layout_section(
-        look,
-        diagram_id,
-        box_model,
-        None,
-        metric_properties(&[
-            ("radius", &metrics.radius),
-            ("padding x", &metrics.padding_x),
-            ("padding y", &metrics.padding_y),
-            ("row gap", &metrics.row_gap),
-            ("row min height", &metrics.row_min_height),
-            ("row padding x", &metrics.row_padding_x),
-            ("row padding y", &metrics.row_padding_y),
-        ]),
-    )
-}
-
 fn table_metrics_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,

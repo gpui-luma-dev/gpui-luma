@@ -668,23 +668,6 @@ impl ShadcnLook {
         templates::toolbar_theme(self.clone())
     }
 
-    pub fn listbox_template(
-        &self,
-    ) -> luma::controls::control_group::ControlGroupTemplate<luma::controls::listbox::ListBoxItem> {
-        templates::listbox_template(self.clone())
-    }
-
-    pub fn listbox_template_for_size(
-        &self,
-        size: luma::theme::ControlSize,
-    ) -> luma::controls::control_group::ControlGroupTemplate<luma::controls::listbox::ListBoxItem> {
-        luma::controls::listbox::listbox_template_with_theme_and_size(self.listbox_theme(), size)
-    }
-
-    pub fn listbox_theme(&self) -> Arc<dyn luma::controls::listbox::ListBoxTheme> {
-        templates::listbox_theme(self.clone())
-    }
-
     pub fn table_template(&self) -> Arc<dyn luma::controls::table::TableTemplate> {
         templates::table_template(self.clone())
     }

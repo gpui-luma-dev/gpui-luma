@@ -162,10 +162,10 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     ControlDocEntry {
         id: "listbox",
         title: "ListBox",
-        description: "Vertical or horizontal selectable lists built on control_group semantics. Supports single and multiple selection with keyboard roving focus.",
-        category: ControlCategory::Choice,
-        snippet: "shadcn::ListBox::new(\"fruits\").look(look.as_ref())\n    .items(items)\n    .selected_ids([\"apples\"])\n    .spawn(cx);",
-        section_order: 139,
+        description: "Keyed collection state with host-composed vertical rows and horizontal cards. Independent multi-select examples, keyboard navigation, and scoped composition inspectors.",
+        category: ControlCategory::Selection,
+        snippet: "let state = ListBoxState::try_new(items, |item| item.id, SelectionMode::Multiple)?;\n// Compose state.visible_items() with vstack! or hstack!.\n// Attach ListBoxBinding for focus, selection, and keyboard input.",
+        section_order: 305,
     },
     ControlDocEntry {
         id: "scrolling-table",

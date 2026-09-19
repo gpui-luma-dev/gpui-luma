@@ -14,26 +14,25 @@ use crate::controls::{
     ButtonInspectElevation, ButtonInspectMetrics, ButtonInspectPalette, ButtonInspectTypography, CardInspectMetrics,
     CheckboxInspectMetrics, CheckboxInspectPalette, ContextMenuInspectMetrics, ContextMenuInspectPalette,
     ControlGroupInspectMetrics, ControlGroupListInspectPalette, FloatingMenuInspectMetrics, FloatingMenuInspectPalette,
-    ListBoxInspectMetrics, ListBoxListInspectPalette, ListBoxRowInspectPalette, TableInspectMetrics,
-    TableInspectPalette, TableRowInspectPalette, SidebarContainerInspectPalette, SidebarInspectMetrics,
-    SidebarItemInspectPalette, SidebarSectionInspectPalette, OverlayWindowInspectMetrics, OverlayWindowInspectPalette,
-    PagerInspectMetrics, PagerShellInspectPalette, PopupMenuInspectMetrics, PopupMenuInspectPalette,
-    ProgressInspectMetrics, ProgressInspectPalette, RadioButtonInspectMetrics, RadioButtonInspectPalette,
-    ResizablePanelsInspectMetrics, ResizablePanelsInspectPalette, ScrollbarInspectMetrics, ScrollbarInspectPalette,
-    SelectorInspectMetrics, SelectorInspectPalette, SliderInspectMetrics, SliderInspectPalette,
-    SplitViewInspectMetrics, SplitViewInspectPalette, StepperInspectMetrics, StepperInspectPalette,
-    SwitchInspectMetrics, SwitchInspectPalette, TabsInspectMetrics, TabsItemInspectPalette, TabsListInspectPalette,
-    TextFieldInspectMetrics, TextFieldInspectPalette, ToolbarInspectMetrics, ToolbarInspectPalette,
-    TreeViewInspectMetrics, TreeViewRowInspectPalette, ColorChromeInspectSection, ColorChromeProfile,
-    inspect_accordion_content_color_palette, inspect_accordion_metrics, inspect_accordion_trigger_color_palette,
-    inspect_autocomplete_chrome_color_palette, inspect_autocomplete_menu_color_palette, inspect_autocomplete_metrics,
-    inspect_badge_color_palette, inspect_badge_metrics, inspect_button_color_palette, inspect_button_elevation,
-    inspect_button_metrics, inspect_button_typography, inspect_card_metrics, inspect_checkbox_color_palette,
-    inspect_checkbox_elevation, inspect_checkbox_metrics, inspect_context_menu_color_palette,
-    inspect_context_menu_metrics, inspect_control_group_list_color_palette, inspect_control_group_metrics,
-    inspect_floating_menu_color_palette, inspect_floating_menu_metrics, inspect_table_color_palette,
-    inspect_table_metrics, inspect_table_row_color_palette, inspect_listbox_list_color_palette,
-    inspect_listbox_metrics, inspect_listbox_row_color_palette, inspect_sidebar_branch_color_palette,
+    ListBoxListInspectPalette, ListBoxRowInspectPalette, TableInspectMetrics, TableInspectPalette,
+    TableRowInspectPalette, SidebarContainerInspectPalette, SidebarInspectMetrics, SidebarItemInspectPalette,
+    SidebarSectionInspectPalette, OverlayWindowInspectMetrics, OverlayWindowInspectPalette, PagerInspectMetrics,
+    PagerShellInspectPalette, PopupMenuInspectMetrics, PopupMenuInspectPalette, ProgressInspectMetrics,
+    ProgressInspectPalette, RadioButtonInspectMetrics, RadioButtonInspectPalette, ResizablePanelsInspectMetrics,
+    ResizablePanelsInspectPalette, ScrollbarInspectMetrics, ScrollbarInspectPalette, SelectorInspectMetrics,
+    SelectorInspectPalette, SliderInspectMetrics, SliderInspectPalette, SplitViewInspectMetrics,
+    SplitViewInspectPalette, StepperInspectMetrics, StepperInspectPalette, SwitchInspectMetrics, SwitchInspectPalette,
+    TabsInspectMetrics, TabsItemInspectPalette, TabsListInspectPalette, TextFieldInspectMetrics,
+    TextFieldInspectPalette, ToolbarInspectMetrics, ToolbarInspectPalette, TreeViewInspectMetrics,
+    TreeViewRowInspectPalette, ColorChromeInspectSection, ColorChromeProfile, inspect_accordion_content_color_palette,
+    inspect_accordion_metrics, inspect_accordion_trigger_color_palette, inspect_autocomplete_chrome_color_palette,
+    inspect_autocomplete_menu_color_palette, inspect_autocomplete_metrics, inspect_badge_color_palette,
+    inspect_badge_metrics, inspect_button_color_palette, inspect_button_elevation, inspect_button_metrics,
+    inspect_button_typography, inspect_card_metrics, inspect_checkbox_color_palette, inspect_checkbox_elevation,
+    inspect_checkbox_metrics, inspect_context_menu_color_palette, inspect_context_menu_metrics,
+    inspect_control_group_list_color_palette, inspect_control_group_metrics, inspect_floating_menu_color_palette,
+    inspect_floating_menu_metrics, inspect_table_color_palette, inspect_table_metrics, inspect_table_row_color_palette,
+    inspect_listbox_list_color_palette, inspect_listbox_row_color_palette, inspect_sidebar_branch_color_palette,
     inspect_sidebar_container_color_palette, inspect_sidebar_item_color_palette, inspect_sidebar_metrics,
     inspect_sidebar_section_color_palette, inspect_overlay_window_color_palette, inspect_overlay_window_metrics,
     inspect_pager_metrics, inspect_pager_shell_color_palette, inspect_popup_menu_color_palette,
@@ -394,10 +393,6 @@ impl<'a> ShadcnInspect<'a> {
 
     pub fn inspect_listbox_row_color_palette(&self, state: InteractionState) -> ListBoxRowInspectPalette {
         inspect_listbox_row_color_palette(&self.mode_tokens(), self.theme_mode(), state)
-    }
-
-    pub fn inspect_listbox_metrics(&self, size: ControlSize) -> ListBoxInspectMetrics {
-        inspect_listbox_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_tree_view_row_color_palette(&self, state: InteractionState) -> TreeViewRowInspectPalette {

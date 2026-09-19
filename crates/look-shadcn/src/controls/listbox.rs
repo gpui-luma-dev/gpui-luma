@@ -10,8 +10,9 @@
 //! | Focused row    | `accent`           |
 //! | Disabled label | `muted-foreground` |
 
-use luma::controls::listbox::{ListBoxListLook, ListBoxRowPalette};
-use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui::{Div, ElementId, Hsla, Stateful, div, px, prelude::*};
+use luma::controls::listbox::ListBoxItemState;
+use luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -20,6 +21,71 @@ use crate::stylesheet::{
     StylesheetConfig, embedded_stylesheet, find_listbox_list_color_rule, find_listbox_row_color_rule,
     resolve_listbox_list_color_rule, resolve_listbox_row_color_rule,
 };
+
+/// Look-owned styling for host-composed list surfaces; not an SDK theme.
+#[derive(Clone, Debug)]
+pub struct ListBoxSurfacePalette {
+    pub background: Hsla,
+    pub border: Hsla,
+}
+
+#[derive(Clone, Debug)]
+pub struct ListBoxRowPalette {
+    pub background: Hsla,
+    pub label_color: Hsla,
+    pub label_typography: LumaTextStyle,
+}
+
+impl crate::ShadcnLook {
+    /// Styled surface only. The host sets padding, dimensions, and scrolling.
+    pub fn listbox_surface(&self, id: impl Into<ElementId>) -> Stateful<Div> {
+        let look = listbox_surface_palette(&self.mode_tokens(), true);
+        div().id(id).bg(look.background).border_1().border_color(look.border)
+    }
+
+    /// Styled, content-free row surface. Attach SDK `ListBoxBinding` for input;
+    /// the host supplies arbitrary content and all layout dimensions.
+    pub fn listbox_row(&self, id: impl Into<ElementId>, state: ListBoxItemState, focus_visible: bool) -> Stateful<Div> {
+        let mode = self.mode_tokens();
+        let base = listbox_row_palette(
+            &mode,
+            state.selected,
+            InteractionState { disabled: !state.enabled, ..Default::default() },
+            ControlSize::Md,
+        );
+        let hover = listbox_row_palette(
+            &mode,
+            state.selected,
+            InteractionState { hovered: true, ..Default::default() },
+            ControlSize::Md,
+        );
+        let pressed = listbox_row_palette(
+            &mode,
+            state.selected,
+            InteractionState { pressed: true, ..Default::default() },
+            ControlSize::Md,
+        );
+        let border = if state.active && focus_visible {
+            crate::focus::focus_ring_or_fallback(&mode.catalog)
+        } else {
+            gpui::transparent_black()
+        };
+        div()
+            .id(id)
+            .bg(base.background)
+            .text_color(base.label_color)
+            .text_size(px(base.label_typography.size))
+            .line_height(px(base.label_typography.line_height))
+            .font_weight(base.label_typography.weight)
+            .border_1()
+            .border_color(border)
+            .when(state.enabled, |row| {
+                row.cursor_pointer()
+                    .hover(|style| style.bg(hover.background).text_color(hover.label_color))
+                    .active(|style| style.bg(pressed.background).text_color(pressed.label_color))
+            })
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct ListBoxListColorTable {
@@ -90,30 +156,22 @@ pub fn resolve_listbox_row_colors_with_stylesheet(
     Ok(ListBoxRowColorTable { label_color: colors.label_color, background: colors.background })
 }
 
-pub fn listbox_list_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: ControlSize) -> ListBoxListLook {
-    let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
-    let metrics = ctx.metrics();
+/// Color palette only; the host owns all surface geometry.
+pub fn listbox_surface_palette(mode: &ShadcnModeTokens, enabled: bool) -> ListBoxSurfacePalette {
+    let ctx = LookContext::new(mode, mode.theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_list");
     let colors = resolve_listbox_list_colors(&resolver, enabled).unwrap_or_else(|_| ListBoxListColorTable::fallback());
-
-    ListBoxListLook {
-        background: colors.background.hsla(),
-        border: colors.border.hsla(),
-        divider: colors.divider.hsla(),
-        radius: metrics.radius(size),
-        padding_x: 6.0,
-        padding_y: metrics.padding_y(size) * 0.5,
-        row_gap: metrics.padding_y(size) * 0.25,
-    }
+    ListBoxSurfacePalette { background: colors.background.hsla(), border: colors.border.hsla() }
 }
 
 pub fn listbox_row_palette(
     mode: &ShadcnModeTokens,
-    _selected: bool,
-    state: InteractionState,
+    selected: bool,
+    mut state: InteractionState,
     size: ControlSize,
 ) -> ListBoxRowPalette {
-    let ctx = LookContext::new(mode, ThemeMode::Light, state);
+    state.focused |= selected;
+    let ctx = LookContext::new(mode, mode.theme_mode, state);
     let typography = ctx.typography();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_row");
     let colors = resolve_listbox_row_colors(&resolver, state.disabled, state.focused, state.layer())
@@ -135,7 +193,7 @@ mod tests {
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
     use crate::provenance::LookResolver;
-    use super::{listbox_list_look, listbox_row_palette, resolve_listbox_row_colors};
+    use super::{listbox_surface_palette, listbox_row_palette, resolve_listbox_row_colors};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -159,7 +217,7 @@ mod tests {
     fn listbox_uses_input_border_and_accent_hover() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let list = listbox_list_look(&mode, true, false, ControlSize::Md);
+        let list = listbox_surface_palette(&mode, true);
         let row = listbox_row_palette(
             &mode,
             false,

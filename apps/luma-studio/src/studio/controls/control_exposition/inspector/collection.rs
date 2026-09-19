@@ -10,12 +10,7 @@ use super::provenance::color_row;
 use super::schema::InspectColorRow;
 
 pub fn listbox_list_color_rows(palette: &ListBoxListInspectPalette) -> Vec<InspectColorRow> {
-    let rows = vec![
-        color_row("background", &palette.background),
-        color_row("border", &palette.border),
-        color_row("divider", &palette.divider),
-    ];
-    rows
+    vec![color_row("viewport background", &palette.background), color_row("viewport border", &palette.border)]
 }
 
 pub fn listbox_row_color_rows(palette: &ListBoxRowInspectPalette) -> Vec<InspectColorRow> {

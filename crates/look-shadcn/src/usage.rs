@@ -241,8 +241,8 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "ListBox",
         parts: &[
-            part("list background", "background", &["enabled"], &["ListBoxListLook.background"]),
-            part("list border", "input", &["enabled"], &["ListBoxListLook.border"]),
+            part("list background", "background", &["enabled"], &["ListBoxSurfacePalette.background"]),
+            part("list border", "input", &["enabled"], &["ListBoxSurfacePalette.border"]),
             part("row hover", "accent", &["hovered"], &["ListBoxRowPalette.background"]),
         ],
     },

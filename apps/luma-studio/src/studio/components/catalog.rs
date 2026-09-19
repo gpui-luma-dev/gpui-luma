@@ -23,7 +23,6 @@ const COMMAND_ENTRIES: &[ComponentCatalogEntry] = &[
 const CHOICE_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "accordion", label: "Accordion" },
     ComponentCatalogEntry { id: "checkbox", label: "Checkbox" },
-    ComponentCatalogEntry { id: "listbox", label: "ListBox" },
     ComponentCatalogEntry { id: "paging-table", label: "Paging Table" },
     ComponentCatalogEntry { id: "pager", label: "Pager" },
     ComponentCatalogEntry { id: "radio-button", label: "Radio Button" },
@@ -90,6 +89,7 @@ const FEEDBACK_ENTRIES: &[ComponentCatalogEntry] = &[
 ];
 
 const SELECTION_ENTRIES: &[ComponentCatalogEntry] = &[
+    ComponentCatalogEntry { id: "listbox", label: "ListBox" },
     ComponentCatalogEntry { id: "autocomplete-textfield", label: "Autocomplete TextBox" },
     ComponentCatalogEntry { id: "combobox", label: "ComboBox" },
     ComponentCatalogEntry { id: "search-selector", label: "SearchSelector" },

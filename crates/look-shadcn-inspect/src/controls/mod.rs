@@ -65,8 +65,8 @@ pub use floating_menu::{
     inspect_floating_menu_metrics,
 };
 pub use listbox::{
-    ListBoxInspectMetrics, ListBoxListInspectPalette, ListBoxRowInspectPalette, inspect_listbox_list_color_palette,
-    inspect_listbox_metrics, inspect_listbox_row_color_palette,
+    ListBoxListInspectPalette, ListBoxRowInspectPalette, inspect_listbox_list_color_palette,
+    inspect_listbox_row_color_palette,
 };
 pub use table::{
     TableInspectMetrics, TableInspectPalette, TableRowInspectPalette, inspect_table_color_palette,

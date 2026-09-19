@@ -204,14 +204,6 @@ pub fn toolbar_variant(variant_id: &str) -> luma::controls::toolbar::ToolbarVari
     }
 }
 
-pub fn listbox_list_enabled(state_id: &str) -> bool {
-    state_id == "enabled" || state_id == "focused"
-}
-
-pub fn listbox_list_focused(state_id: &str) -> bool {
-    state_id == "focused"
-}
-
 pub fn listbox_row_state(state_id: &str) -> InteractionState {
     match state_id {
         "keyboard-active" => InteractionState { focused: true, ..InteractionState::default() },

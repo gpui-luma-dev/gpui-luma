@@ -13,6 +13,7 @@ mod behavior;
 mod text_selection;
 
 pub mod autocomplete;
+pub mod listbox;
 pub mod combobox;
 pub mod table;
 pub mod search_selector;

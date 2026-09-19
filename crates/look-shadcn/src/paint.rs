@@ -11,7 +11,7 @@ pub use crate::controls::context_menu::context_menu_look;
 pub use crate::controls::control_group::control_group_list_look;
 pub use crate::controls::floating_menu::floating_menu_look;
 pub use crate::controls::table::{table_look, table_row_palette};
-pub use crate::controls::listbox::{listbox_list_look, listbox_row_palette};
+pub use crate::controls::listbox::{listbox_surface_palette, listbox_row_palette, ListBoxSurfacePalette, ListBoxRowPalette};
 pub use crate::controls::overlay_window::overlay_window_look;
 pub use crate::controls::sidebar::{sidebar_branch_look, sidebar_container_look, sidebar_item_look, sidebar_section_look};
 pub use crate::controls::pager::pager_look;

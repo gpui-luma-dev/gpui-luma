@@ -4,7 +4,6 @@ pub(crate) mod checkbox;
 pub(crate) mod feedback;
 pub(crate) mod icon_buttons;
 pub(crate) mod table;
-pub(crate) mod listbox;
 pub(crate) mod menus;
 pub(crate) mod pager;
 pub(crate) mod radio;

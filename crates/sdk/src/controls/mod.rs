@@ -13,13 +13,13 @@ pub use button::icon_button;
 pub use button::family as button_family;
 pub use button::split_button;
 
-pub use choice::{checkbox, control_group, icon_group, listbox, radio_button, radio_group, switch, toggle, toolbar};
+pub use choice::{checkbox, control_group, icon_group, radio_button, radio_group, switch, toggle, toolbar};
 
 pub use text::{textarea, textfield};
 
 pub use overlay::{context_menu, floating_menu, overlay_window, popover_button, popup_menu, slide_panel};
 
-pub use selection::{autocomplete, combobox, table, search_selector, selection_panel, selector, selector_list};
+pub use selection::{autocomplete, combobox, listbox, table, search_selector, selection_panel, selector, selector_list};
 
 pub use navigation::{accordion, pager, sidebar, stepper, tabs, tree_view};
 
