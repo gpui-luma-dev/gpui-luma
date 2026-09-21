@@ -12,7 +12,7 @@ use super::super::schema::{InspectLayoutSection, InspectPropertyRow};
 use super::layout_section;
 
 pub fn listbox_layout_section(look: &ShadcnLook, diagram_id: &str, variant_id: &str) -> InspectLayoutSection {
-    use super::super::super::listbox::{horizontal, vertical};
+    use super::super::super::listbox::{horizontal, vertical, ITEM_CONTENT_GAP, VERTICAL_LIST_WIDTH};
     let layout = if variant_id == "horizontal" {
         horizontal::LAYOUT
     } else {
@@ -24,7 +24,7 @@ pub fn listbox_layout_section(look: &ShadcnLook, diagram_id: &str, variant_id: &
         padding_x: layout.item_padding,
         padding_y: 0.0,
         border_width: layout.border,
-        gap: 0.0,
+        gap: ITEM_CONTENT_GAP,
         radius: layout.radius,
         focus_ring_width: 0.0,
         focus_ring_offset: 0.0,
@@ -44,6 +44,11 @@ pub fn listbox_layout_section(look: &ShadcnLook, diagram_id: &str, variant_id: &
             source,
         ));
     } else {
+        metrics.push(InspectPropertyRow::new(
+            "list width (including insets and border)",
+            format!("{VERTICAL_LIST_WIDTH}px (fixed; does not shrink)"),
+            "Studio composition · VERTICAL_LIST_WIDTH",
+        ));
         metrics.push(InspectPropertyRow::new(
             "visible rows",
             (layout.viewport_height / (layout.item_height + layout.spacing)).ceil().to_string(),

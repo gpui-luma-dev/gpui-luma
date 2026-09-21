@@ -37,10 +37,17 @@ pub struct ListBoxRowPalette {
 }
 
 impl crate::ShadcnLook {
-    /// Styled surface only. The host sets padding, dimensions, and scrolling.
-    pub fn listbox_surface(&self, id: impl Into<ElementId>) -> Stateful<Div> {
-        let look = listbox_surface_palette(&self.mode_tokens(), true);
-        div().id(id).bg(look.background).border_1().border_color(look.border)
+    /// Styled surface with a focus border for both pointer and keyboard focus.
+    /// The host sets padding, dimensions, and scrolling.
+    pub fn listbox_surface(&self, id: impl Into<ElementId>, focused: bool) -> Stateful<Div> {
+        let mode = self.mode_tokens();
+        let look = listbox_surface_palette(&mode, true);
+        let border = if focused {
+            crate::focus::focus_ring_or_fallback(&mode.catalog)
+        } else {
+            look.border
+        };
+        div().id(id).bg(look.background).border_1().border_color(border)
     }
 
     /// Styled, content-free row surface. Attach SDK `ListBoxBinding` for input;

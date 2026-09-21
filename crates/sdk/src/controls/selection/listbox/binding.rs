@@ -3,7 +3,7 @@ use gpui::{
     prelude::*,
 };
 
-use super::{ListBoxInput, ListBoxItemState, ListBoxNavigation, SelectionMode};
+use super::{ListBoxInput, ListBoxItemState, ListBoxNavigation, ListBoxSelectionModifiers, SelectionMode};
 
 /// Physical key mapping belongs to the binding, not the collection state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -19,40 +19,53 @@ type InputHandler<M, K> = fn(&mut M, ListBoxInput<K>, &mut Window, &mut Context<
 /// events; keyboard events are handled only while the list itself holds focus.
 pub struct ListBoxBinding {
     focus: FocusHandle,
-    mode: SelectionMode,
     subscriptions: Vec<Subscription>,
 }
 
 impl ListBoxBinding {
-    /// Use the same selection mode as the bound collection state.
-    pub fn new(mode: SelectionMode, cx: &mut App) -> Self {
-        Self { focus: cx.focus_handle().tab_stop(true), mode, subscriptions: Vec::new() }
+    /// Create a stable focus/input binding. Selection policy remains in the model.
+    pub fn new(cx: &mut App) -> Self {
+        Self { focus: cx.focus_handle().tab_stop(true), subscriptions: Vec::new() }
     }
 
     pub fn focus_handle(&self) -> &FocusHandle {
         &self.focus
     }
 
+    /// Whether the host should paint the active item's keyboard focus indicator.
+    pub fn focus_visible(&self, window: &Window) -> bool {
+        self.focus.is_focused(window) && window.last_input_was_keyboard()
+    }
+
     /// Attach to a stable, host-owned viewport. Register focus subscriptions on
-    /// first render, then reuse them for the lifetime of the owning view.
+    /// first render, then reuse them for the lifetime of the owning view. Pass
+    /// the current state selection mode each render so runtime changes also
+    /// update keyboard shortcuts without replacing the focus handle.
     pub fn bind_root<M: 'static, K: 'static>(
         &mut self,
         root: Stateful<Div>,
         axis: ListBoxAxis,
+        mode: SelectionMode,
         window: &mut Window,
         cx: &mut Context<M>,
         on_input: InputHandler<M, K>,
     ) -> Stateful<Div> {
         if self.subscriptions.is_empty() {
-            self.subscriptions.push(cx.on_focus_in(&self.focus, window, move |owner, window, cx| {
-                on_input(owner, ListBoxInput::Focus(true), window, cx);
+            // GPUI delivers focus observers after painting. Defer model/event
+            // updates so their notifications request a new frame instead of
+            // leaving focus styling and wheel routing stale until another input.
+            self.subscriptions.push(cx.on_focus_in(&self.focus, window, move |_, window, cx| {
+                cx.defer_in(window, move |owner, window, cx| {
+                    on_input(owner, ListBoxInput::Focus(true), window, cx);
+                });
             }));
-            self.subscriptions.push(cx.on_focus_out(&self.focus, window, move |owner, _, window, cx| {
-                on_input(owner, ListBoxInput::Focus(false), window, cx);
+            self.subscriptions.push(cx.on_focus_out(&self.focus, window, move |_, _, window, cx| {
+                cx.defer_in(window, move |owner, window, cx| {
+                    on_input(owner, ListBoxInput::Focus(false), window, cx);
+                });
             }));
         }
         let focus = self.focus.clone();
-        let mode = self.mode;
         root.track_focus(&self.focus)
             .role(Role::ListBox)
             .aria_orientation(match axis {
@@ -100,7 +113,8 @@ impl ListBoxBinding {
             let input = if event.click_count() == 2 {
                 ListBoxInput::Activate(key.clone())
             } else {
-                ListBoxInput::Select(key.clone())
+                let modifiers = selection_modifiers(event.modifiers());
+                ListBoxInput::SelectWithModifiers { key: key.clone(), modifiers }
             };
             on_input(owner, input, window, cx);
             cx.stop_propagation();
@@ -115,7 +129,7 @@ fn key_input<K>(
     key: &str,
     modifiers: gpui::Modifiers,
 ) -> Option<ListBoxInput<K>> {
-    if mode == SelectionMode::Multiple
+    if mode.allows_multiple()
         && key.eq_ignore_ascii_case("a")
         && (modifiers.platform || modifiers.control)
         && !modifiers.alt
@@ -127,26 +141,101 @@ fn key_input<K>(
             ListBoxInput::SelectAll
         });
     }
-    if modifiers.modified() {
+    let selection = selection_modifiers(modifiers);
+    let extended_modifiers = mode == SelectionMode::Extended && !modifiers.alt && !modifiers.function;
+    if modifiers.modified() && !extended_modifiers {
         return None;
     }
-    Some(match key {
-        "up" if axis == ListBoxAxis::Vertical => ListBoxInput::Navigate(ListBoxNavigation::Previous),
-        "down" if axis == ListBoxAxis::Vertical => ListBoxInput::Navigate(ListBoxNavigation::Next),
-        "left" if axis == ListBoxAxis::Horizontal => ListBoxInput::Navigate(ListBoxNavigation::Previous),
-        "right" if axis == ListBoxAxis::Horizontal => ListBoxInput::Navigate(ListBoxNavigation::Next),
-        "home" => ListBoxInput::Navigate(ListBoxNavigation::First),
-        "end" => ListBoxInput::Navigate(ListBoxNavigation::Last),
-        "space" => ListBoxInput::SelectActive,
-        "enter" => ListBoxInput::ActivateActive,
-        _ => return None,
-    })
+    let direction = match key {
+        "up" if axis == ListBoxAxis::Vertical => Some(ListBoxNavigation::Previous),
+        "down" if axis == ListBoxAxis::Vertical => Some(ListBoxNavigation::Next),
+        "left" if axis == ListBoxAxis::Horizontal => Some(ListBoxNavigation::Previous),
+        "right" if axis == ListBoxAxis::Horizontal => Some(ListBoxNavigation::Next),
+        "home" => Some(ListBoxNavigation::First),
+        "end" => Some(ListBoxNavigation::Last),
+        _ => None,
+    };
+    if let Some(direction) = direction {
+        return Some(if selection.extend {
+            ListBoxInput::NavigateRange { direction, additive: selection.toggle }
+        } else {
+            ListBoxInput::Navigate(direction)
+        });
+    }
+    match key {
+        "space" if mode != SelectionMode::None => Some(if modifiers.modified() {
+            ListBoxInput::SelectActiveWithModifiers(selection)
+        } else {
+            ListBoxInput::SelectActive
+        }),
+        "enter" if !modifiers.modified() => Some(ListBoxInput::ActivateActive),
+        _ => None,
+    }
+}
+
+fn selection_modifiers(modifiers: gpui::Modifiers) -> ListBoxSelectionModifiers {
+    ListBoxSelectionModifiers { toggle: modifiers.platform || modifiers.control, extend: modifiers.shift }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use gpui::Modifiers;
+
+    #[test]
+    fn extended_keyboard_gestures_follow_axis_and_current_runtime_mode() {
+        use super::super::ListBoxState;
+        for (axis, next) in [(ListBoxAxis::Vertical, "down"), (ListBoxAxis::Horizontal, "right")] {
+            let mut state = ListBoxState::try_new(1..=5, |n| *n, SelectionMode::Extended).unwrap();
+            state.apply(ListBoxInput::Select(2));
+            let shift = Modifiers { shift: true, ..Default::default() };
+            let input = key_input(state.selection_mode(), axis, next, shift).unwrap();
+            assert_eq!(state.apply(input).reveal, Some(3));
+            assert_eq!(state.selected_keys().copied().collect::<Vec<_>>(), vec![2, 3]);
+            for toggle in [Modifiers { platform: true, ..shift }, Modifiers { control: true, ..shift }] {
+                assert!(matches!(
+                    key_input::<u32>(state.selection_mode(), axis, "end", toggle),
+                    Some(ListBoxInput::NavigateRange { direction: ListBoxNavigation::Last, additive: true })
+                ));
+            }
+            let toggle = Modifiers { control: true, ..Default::default() };
+            state.apply(key_input(state.selection_mode(), axis, "space", toggle).unwrap());
+            assert_eq!(state.selected_keys().copied().collect::<Vec<_>>(), vec![2]);
+            assert!(matches!(
+                key_input::<u32>(state.selection_mode(), axis, "a", toggle),
+                Some(ListBoxInput::SelectAll)
+            ));
+            state.set_selection_mode(SelectionMode::Multiple);
+            assert!(key_input::<u32>(state.selection_mode(), axis, next, shift).is_none());
+            state.set_selection_mode(SelectionMode::None);
+            assert!(key_input::<u32>(state.selection_mode(), axis, "space", Modifiers::default()).is_none());
+            assert!(key_input::<u32>(state.selection_mode(), axis, "a", toggle).is_none());
+            assert!(matches!(
+                key_input::<u32>(state.selection_mode(), axis, "enter", Modifiers::default()),
+                Some(ListBoxInput::ActivateActive)
+            ));
+        }
+    }
+
+    #[test]
+    fn modified_shortcuts_outside_selection_remain_available_to_ancestors() {
+        for key in ["escape", "tab", "c", "v", "x", "enter"] {
+            assert!(
+                key_input::<u32>(
+                    SelectionMode::Extended,
+                    ListBoxAxis::Vertical,
+                    key,
+                    Modifiers { platform: true, ..Default::default() }
+                )
+                .is_none()
+            );
+        }
+        for modifiers in
+            [Modifiers { alt: true, ..Default::default() }, Modifiers { function: true, ..Default::default() }]
+        {
+            assert!(key_input::<u32>(SelectionMode::Extended, ListBoxAxis::Vertical, "down", modifiers).is_none());
+        }
+    }
 
     #[test]
     fn selection_shortcuts_are_scoped_to_multiple_mode() {

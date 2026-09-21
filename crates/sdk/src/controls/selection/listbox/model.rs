@@ -5,10 +5,49 @@ use std::hash::Hash;
 /// Selection policy for pointer and keyboard input.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SelectionMode {
+    /// Navigation and activation without selection.
+    None,
     SingleRequired,
     SingleAllowNone,
     /// Clicking an item or pressing Space independently toggles its selection.
     Multiple,
+    /// Plain selection replaces; modifiers toggle or extend a keyed range.
+    Extended,
+}
+
+impl SelectionMode {
+    pub fn allows_multiple(self) -> bool {
+        matches!(self, Self::Multiple | Self::Extended)
+    }
+
+    fn is_single(self) -> bool {
+        matches!(self, Self::SingleRequired | Self::SingleAllowNone)
+    }
+}
+
+/// Runtime selection settings. Flags are retained across mode changes but only
+/// affect the modes documented on each field.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SelectionPolicy {
+    pub mode: SelectionMode,
+    /// Repeated selection clears the item in SingleAllowNone only.
+    pub toggle_off: bool,
+    /// Navigation selects its target in either single-selection mode.
+    /// Enabling this does not immediately change selection.
+    pub selection_follows_active: bool,
+}
+
+impl SelectionPolicy {
+    pub fn new(mode: SelectionMode) -> Self {
+        Self { mode, toggle_off: false, selection_follows_active: false }
+    }
+}
+
+/// Semantic modifiers; the binding maps physical platform keys to these flags.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct ListBoxSelectionModifiers {
+    pub toggle: bool,
+    pub extend: bool,
 }
 
 /// Invalid collection or programmatic selection. Failed operations are atomic.
@@ -19,11 +58,13 @@ pub enum ListBoxError {
     DisabledItem,
     SelectionRequired,
     TooManySelected,
+    SelectionDisabled,
 }
 
 impl fmt::Display for ListBoxError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
+            Self::SelectionDisabled => "listbox selection is disabled",
             Self::DuplicateKey => "listbox snapshot contains duplicate keys",
             Self::UnknownKey => "listbox selection key is not in the snapshot",
             Self::DisabledItem => "listbox selection targets a disabled item",
@@ -111,14 +152,26 @@ pub enum ListBoxNavigation {
 /// Semantic input, independent of physical layout and GPUI event types.
 #[derive(Clone, Debug)]
 pub enum ListBoxInput<K> {
-    /// Select one item, or toggle it in `Multiple` mode.
+    /// Select one item, toggle in `Multiple`, or move active only in `None`.
+    /// SingleAllowNone also toggles when the policy's toggle_off flag is enabled.
     Select(K),
     SelectActive,
-    /// Select every enabled item in `Multiple` mode.
+    /// Extended-mode modifiers; other modes retain their ordinary selection behavior.
+    SelectWithModifiers {
+        key: K,
+        modifiers: ListBoxSelectionModifiers,
+    },
+    SelectActiveWithModifiers(ListBoxSelectionModifiers),
+    /// Select every enabled item in `Multiple` or `Extended` mode.
     SelectAll,
     /// Clear selection unless an enabled item is required.
     ClearSelection,
     Navigate(ListBoxNavigation),
+    /// Extend from the fixed range anchor in Extended mode only.
+    NavigateRange {
+        direction: ListBoxNavigation,
+        additive: bool,
+    },
     Activate(K),
     ActivateActive,
     Focus(bool),
@@ -127,6 +180,7 @@ pub enum ListBoxInput<K> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum ListBoxEvent<K> {
+    SelectionPolicyChanged { policy: SelectionPolicy },
     SelectionChanged { selected: Vec<K>, active: Option<K> },
     ActiveItemChanged { active: Option<K> },
     ItemActivated { key: K },
@@ -144,12 +198,13 @@ pub struct ListBoxUpdate<K> {
 }
 
 /// Non-visual collection model with key-based selection. The initial projection
-/// is all snapshot items in source order; filtering and range selection are deferred.
+/// is all snapshot items in source order; filtering is deferred.
 pub struct ListBoxState<T, K> {
     snapshot: ListBoxSnapshot<T, K>,
     selected: HashSet<K>,
     active: Option<K>,
-    mode: SelectionMode,
+    policy: SelectionPolicy,
+    anchor: Option<K>,
     focused: bool,
 }
 
@@ -163,7 +218,14 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
     }
 
     pub fn from_snapshot(snapshot: ListBoxSnapshot<T, K>, mode: SelectionMode) -> Self {
-        let mut state = Self { snapshot, selected: HashSet::new(), active: None, mode, focused: false };
+        let mut state = Self {
+            snapshot,
+            selected: HashSet::new(),
+            active: None,
+            policy: SelectionPolicy::new(mode),
+            anchor: None,
+            focused: false,
+        };
         state.reconcile();
         state
     }
@@ -183,7 +245,48 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
     }
 
     pub fn selection_mode(&self) -> SelectionMode {
-        self.mode
+        self.policy.mode
+    }
+
+    pub fn selection_policy(&self) -> SelectionPolicy {
+        self.policy
+    }
+
+    pub fn anchor_key(&self) -> Option<&K> {
+        self.anchor.as_ref()
+    }
+
+    /// Change mode while retaining the other policy settings.
+    pub fn set_selection_mode(&mut self, mode: SelectionMode) -> ListBoxUpdate<K> {
+        self.set_selection_policy(SelectionPolicy { mode, ..self.policy })
+    }
+
+    /// Reconcile atomically: None clears selection; single modes retain the
+    /// selected active key or first selected source key. SingleRequired fills
+    /// an empty selection from the active item, then the first enabled item.
+    /// A changed policy clears the range anchor and preserves focus/active state.
+    pub fn set_selection_policy(&mut self, policy: SelectionPolicy) -> ListBoxUpdate<K> {
+        let previous = self.previous();
+        if self.policy != policy {
+            self.policy = policy;
+            self.anchor = None;
+            if policy.mode == SelectionMode::None {
+                self.selected.clear();
+            } else if policy.mode.is_single() && self.selected.len() > 1 {
+                let retained = self
+                    .active
+                    .as_ref()
+                    .filter(|key| self.selected.contains(*key))
+                    .cloned()
+                    .or_else(|| self.selected_key().cloned());
+                self.selected = retained.into_iter().collect();
+            }
+            if policy.mode == SelectionMode::SingleRequired && self.selected.is_empty() {
+                self.selected.extend(self.active.clone());
+            }
+            self.reconcile();
+        }
+        self.finish(previous)
     }
 
     pub fn active_key(&self) -> Option<&K> {
@@ -192,6 +295,12 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
 
     pub fn is_focused(&self) -> bool {
         self.focused
+    }
+
+    /// Position in `visible_items()` for the current snapshot. Do not retain
+    /// this index across snapshot replacement; keep the stable key instead.
+    pub fn visible_index(&self, key: &K) -> Option<usize> {
+        self.snapshot.indices.get(key).copied()
     }
 
     pub fn visible_items(&self) -> impl ExactSizeIterator<Item = ListBoxVisibleItem<'_, T, K>> {
@@ -218,6 +327,44 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
         let projection_changed = self.snapshot.keys != snapshot.keys;
         self.snapshot = snapshot;
         self.reconcile();
+        self.finish_replacement(previous, projection_changed)
+    }
+
+    /// Atomically replace the snapshot, selection, and active item. Validate keys
+    /// against the new snapshot before changing any state; duplicate selection
+    /// keys are deduplicated. `None` chooses the first selected enabled item,
+    /// then the first enabled item, or remains empty if none exists.
+    ///
+    /// Preserves focus and emits each changed aspect once, using final-state
+    /// payloads. Like `replace_snapshot`, always requests a content repaint;
+    /// scrolling remains a host decision through the returned update's `reveal`.
+    pub fn replace_snapshot_with_selection(
+        &mut self,
+        snapshot: ListBoxSnapshot<T, K>,
+        keys: impl IntoIterator<Item = K>,
+        active: Option<K>,
+    ) -> Result<ListBoxUpdate<K>, ListBoxError> {
+        let selected: HashSet<K> = keys.into_iter().collect();
+        Self::validate_selection(&snapshot, self.policy.mode, &selected)?;
+        if let Some(key) = &active {
+            if !snapshot.indices.contains_key(key) {
+                return Err(ListBoxError::UnknownKey);
+            }
+            if !snapshot.is_enabled(key) {
+                return Err(ListBoxError::DisabledItem);
+            }
+        }
+        let previous = self.previous();
+        let projection_changed = self.snapshot.keys != snapshot.keys;
+        self.snapshot = snapshot;
+        self.selected = selected;
+        self.active = active;
+        self.anchor = None;
+        self.reconcile();
+        Ok(self.finish_replacement(previous, projection_changed))
+    }
+
+    fn finish_replacement(&self, previous: Previous<K>, projection_changed: bool) -> ListBoxUpdate<K> {
         let mut update = self.finish(previous);
         update.changed = true;
         if projection_changed {
@@ -235,26 +382,39 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
 
     /// Atomically replace selection without moving the active item. Duplicate
     /// keys are deduplicated; invalid keys or a mode violation leave state intact.
+    /// Successful replacement clears the range anchor, even if membership matches.
     pub fn set_selected_keys(&mut self, keys: impl IntoIterator<Item = K>) -> Result<ListBoxUpdate<K>, ListBoxError> {
         let selected: HashSet<K> = keys.into_iter().collect();
-        for key in &selected {
-            if !self.snapshot.indices.contains_key(key) {
+        Self::validate_selection(&self.snapshot, self.policy.mode, &selected)?;
+        let previous = self.previous();
+        self.selected = selected;
+        self.anchor = None;
+        Ok(self.finish(previous))
+    }
+
+    fn validate_selection(
+        snapshot: &ListBoxSnapshot<T, K>,
+        mode: SelectionMode,
+        selected: &HashSet<K>,
+    ) -> Result<(), ListBoxError> {
+        for key in selected {
+            if !snapshot.indices.contains_key(key) {
                 return Err(ListBoxError::UnknownKey);
             }
-            if !self.snapshot.is_enabled(key) {
+            if !snapshot.is_enabled(key) {
                 return Err(ListBoxError::DisabledItem);
             }
         }
-        if self.mode != SelectionMode::Multiple && selected.len() > 1 {
+        if mode == SelectionMode::None && !selected.is_empty() {
+            return Err(ListBoxError::SelectionDisabled);
+        }
+        if !mode.allows_multiple() && selected.len() > 1 {
             return Err(ListBoxError::TooManySelected);
         }
-        if selected.is_empty() && self.mode == SelectionMode::SingleRequired && self.snapshot.first_enabled().is_some()
-        {
+        if selected.is_empty() && mode == SelectionMode::SingleRequired && snapshot.first_enabled().is_some() {
             return Err(ListBoxError::SelectionRequired);
         }
-        let previous = self.previous();
-        self.selected = selected;
-        Ok(self.finish(previous))
+        Ok(())
     }
 
     pub fn apply(&mut self, input: ListBoxInput<K>) -> ListBoxUpdate<K> {
@@ -262,26 +422,49 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
         let mut reveal = None;
         let mut activated = None;
         match input {
-            ListBoxInput::Select(key) => self.select_item(key),
+            ListBoxInput::Select(key) => self.select_item(key, ListBoxSelectionModifiers::default()),
+            ListBoxInput::SelectWithModifiers { key, modifiers } => self.select_item(key, modifiers),
+            ListBoxInput::SelectActiveWithModifiers(modifiers) => {
+                if let Some(key) = self.active.clone() {
+                    self.select_item(key, modifiers);
+                }
+            }
             ListBoxInput::SelectActive => {
                 if let Some(key) = self.active.clone() {
-                    self.select_item(key);
+                    self.select_item(key, ListBoxSelectionModifiers::default());
                 }
             }
             ListBoxInput::SelectAll => {
-                if self.mode == SelectionMode::Multiple {
+                if self.policy.mode.allows_multiple() {
+                    self.anchor = None;
                     self.selected =
                         self.snapshot.keys.iter().filter(|key| self.snapshot.is_enabled(key)).cloned().collect();
                 }
             }
             ListBoxInput::ClearSelection => {
-                if self.mode != SelectionMode::SingleRequired {
+                if self.policy.mode != SelectionMode::SingleRequired {
                     self.selected.clear();
+                    self.anchor = None;
                 }
             }
             ListBoxInput::Navigate(direction) => {
                 if let Some(key) = self.navigation_target(direction) {
                     self.active = Some(key.clone());
+                    if self.policy.mode == SelectionMode::Extended {
+                        self.anchor = Some(key.clone());
+                    }
+                    if self.policy.mode.is_single() && self.policy.selection_follows_active {
+                        self.selected.clear();
+                        self.selected.insert(key.clone());
+                    }
+                    reveal = Some(key);
+                }
+            }
+            ListBoxInput::NavigateRange { direction, additive } => {
+                if self.policy.mode == SelectionMode::Extended
+                    && let Some(key) = self.navigation_target(direction)
+                {
+                    self.select_item(key.clone(), ListBoxSelectionModifiers { toggle: additive, extend: true });
                     reveal = Some(key);
                 }
             }
@@ -301,24 +484,59 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
         update
     }
 
-    fn select_item(&mut self, key: K) {
+    fn select_item(&mut self, key: K, modifiers: ListBoxSelectionModifiers) {
         if !self.snapshot.is_enabled(&key) {
             return;
         }
-        if self.mode == SelectionMode::Multiple {
-            if !self.selected.remove(&key) {
-                self.selected.insert(key.clone());
+        match self.policy.mode {
+            SelectionMode::None => {}
+            SelectionMode::Extended if modifiers.extend => {
+                let anchor = self.anchor.clone().or_else(|| self.active.clone()).unwrap_or_else(|| key.clone());
+                // Both keys are enabled snapshot members after reconciliation.
+                if let (Some(start), Some(end)) = (self.visible_index(&anchor), self.visible_index(&key)) {
+                    if !modifiers.toggle {
+                        self.selected.clear();
+                    }
+                    for index in start.min(end)..=start.max(end) {
+                        if self.snapshot.enabled[index] {
+                            self.selected.insert(self.snapshot.keys[index].clone());
+                        }
+                    }
+                    self.anchor = Some(anchor);
+                }
             }
-        } else {
-            self.selected.clear();
-            self.selected.insert(key.clone());
+            SelectionMode::Multiple | SelectionMode::Extended
+                if self.policy.mode == SelectionMode::Multiple || modifiers.toggle =>
+            {
+                if !self.selected.remove(&key) {
+                    self.selected.insert(key.clone());
+                }
+                if self.policy.mode == SelectionMode::Extended {
+                    self.anchor = Some(key.clone());
+                }
+            }
+            _ => {
+                let toggle_off = self.policy.mode == SelectionMode::SingleAllowNone
+                    && self.policy.toggle_off
+                    && self.selected.contains(&key);
+                self.selected.clear();
+                if !toggle_off {
+                    self.selected.insert(key.clone());
+                }
+                if self.policy.mode == SelectionMode::Extended {
+                    self.anchor = Some(key.clone());
+                }
+            }
         }
         self.active = Some(key);
     }
 
     fn reconcile(&mut self) {
+        if self.anchor.as_ref().is_some_and(|key| !self.snapshot.is_enabled(key)) {
+            self.anchor = None;
+        }
         self.selected.retain(|key| self.snapshot.is_enabled(key));
-        if self.selected.is_empty() && self.mode == SelectionMode::SingleRequired {
+        if self.selected.is_empty() && self.policy.mode == SelectionMode::SingleRequired {
             self.selected.extend(self.snapshot.first_enabled());
         }
         if self.active.as_ref().is_none_or(|key| !self.snapshot.is_enabled(key)) {
@@ -338,26 +556,43 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
         target.map(|(_, key)| key.clone())
     }
 
-    fn previous(&self) -> (HashSet<K>, Option<K>, bool) {
-        (self.selected.clone(), self.active.clone(), self.focused)
+    fn previous(&self) -> Previous<K> {
+        Previous {
+            selected: self.selected.clone(),
+            active: self.active.clone(),
+            focused: self.focused,
+            anchor: self.anchor.clone(),
+            policy: self.policy,
+        }
     }
 
-    fn finish(&self, previous: (HashSet<K>, Option<K>, bool)) -> ListBoxUpdate<K> {
+    fn finish(&self, previous: Previous<K>) -> ListBoxUpdate<K> {
         let mut events = Vec::new();
-        if previous.0 != self.selected {
+        if previous.policy != self.policy {
+            events.push(ListBoxEvent::SelectionPolicyChanged { policy: self.policy });
+        }
+        if previous.selected != self.selected {
             events.push(ListBoxEvent::SelectionChanged {
                 selected: self.selected_keys().cloned().collect(),
                 active: self.active.clone(),
             });
         }
-        if previous.1 != self.active {
+        if previous.active != self.active {
             events.push(ListBoxEvent::ActiveItemChanged { active: self.active.clone() });
         }
-        if previous.2 != self.focused {
+        if previous.focused != self.focused {
             events.push(ListBoxEvent::FocusChanged { is_focused: self.focused });
         }
-        ListBoxUpdate { changed: !events.is_empty(), events, reveal: None }
+        ListBoxUpdate { changed: !events.is_empty() || previous.anchor != self.anchor, events, reveal: None }
     }
+}
+
+struct Previous<K> {
+    selected: HashSet<K>,
+    active: Option<K>,
+    focused: bool,
+    anchor: Option<K>,
+    policy: SelectionPolicy,
 }
 
 #[cfg(test)]
@@ -461,6 +696,98 @@ mod tests {
         assert_eq!(list.set_selected_keys([4, 2]).unwrap_err(), ListBoxError::DisabledItem);
         assert_eq!(selected(&list), vec![1, 3]);
         assert_eq!(list.active_key(), Some(&1));
+    }
+
+    #[test]
+    fn combined_replacement_emits_only_final_changes_in_contract_order() {
+        let mut list = multiple();
+        list.apply(ListBoxInput::Select(4));
+        list.apply(ListBoxInput::Focus(true));
+        let update = list
+            .replace_snapshot_with_selection(
+                ListBoxSnapshot::try_new([7, 8, 9], |item| *item).unwrap(),
+                [9, 7, 9],
+                Some(9),
+            )
+            .unwrap();
+        assert_eq!(
+            update.events,
+            vec![
+                ListBoxEvent::ProjectionChanged { visible_count: 3 },
+                ListBoxEvent::SelectionChanged { selected: vec![7, 9], active: Some(9) },
+                ListBoxEvent::ActiveItemChanged { active: Some(9) },
+            ]
+        );
+        assert!(update.changed);
+        assert!(list.is_focused());
+        assert_eq!(update.reveal, None);
+        let update = list
+            .replace_snapshot_with_selection(
+                ListBoxSnapshot::try_new([9, 8, 7], |item| *item).unwrap(),
+                [7, 9],
+                Some(9),
+            )
+            .unwrap();
+        assert_eq!(update.events, vec![ListBoxEvent::ProjectionChanged { visible_count: 3 }]);
+        let update = list
+            .replace_snapshot_with_selection(
+                ListBoxSnapshot::try_new([9, 8, 7], |item| *item).unwrap(),
+                [9, 7],
+                Some(9),
+            )
+            .unwrap();
+        assert!(update.changed); // Snapshot content can change even with identical keys.
+        assert!(update.events.is_empty());
+    }
+
+    #[test]
+    fn combined_replacement_validates_selection_and_active_before_commit() {
+        let mut list = multiple();
+        list.apply(ListBoxInput::Select(4));
+        list.apply(ListBoxInput::Focus(true));
+        for (keys, active, error) in [
+            (vec![7, 99], Some(7), ListBoxError::UnknownKey),
+            (vec![8], Some(7), ListBoxError::DisabledItem),
+            (vec![7], Some(99), ListBoxError::UnknownKey),
+            (vec![7], Some(8), ListBoxError::DisabledItem),
+        ] {
+            let snapshot = ListBoxSnapshot::try_with_enabled([7, 8], |item| *item, |item| *item != 8).unwrap();
+            assert_eq!(list.replace_snapshot_with_selection(snapshot, keys, active).unwrap_err(), error);
+            assert_eq!(list.snapshot().items(), &[1, 2, 3, 4]);
+            assert_eq!(selected(&list), vec![4]);
+            assert_eq!(list.active_key(), Some(&4));
+            assert!(list.is_focused());
+        }
+        for mode in [SelectionMode::SingleAllowNone, SelectionMode::SingleRequired] {
+            let mut list = ListBoxState::try_new([1], |item| *item, mode).unwrap();
+            let snapshot = ListBoxSnapshot::try_new([7, 8], |item| *item).unwrap();
+            assert_eq!(
+                list.replace_snapshot_with_selection(snapshot, [7, 8], Some(7)).unwrap_err(),
+                ListBoxError::TooManySelected
+            );
+            assert_eq!(list.snapshot().items(), &[1]);
+        }
+    }
+
+    #[test]
+    fn combined_replacement_respects_required_selection_and_active_fallback() {
+        let mut list = ListBoxState::try_new([1], |item| *item, SelectionMode::SingleRequired).unwrap();
+        let snapshot = ListBoxSnapshot::try_new([7, 8], |item| *item).unwrap();
+        assert_eq!(
+            list.replace_snapshot_with_selection(snapshot, [], None).unwrap_err(),
+            ListBoxError::SelectionRequired
+        );
+        assert_eq!(list.snapshot().items(), &[1]);
+        let snapshot = ListBoxSnapshot::try_new([7, 8], |item| *item).unwrap();
+        list.replace_snapshot_with_selection(snapshot, [8, 8], None).unwrap();
+        assert_eq!(list.active_key(), Some(&8));
+        let snapshot = ListBoxSnapshot::try_with_enabled([7, 8], |item| *item, |_| false).unwrap();
+        list.replace_snapshot_with_selection(snapshot, [], None).unwrap();
+        assert!(selected(&list).is_empty());
+        assert_eq!(list.active_key(), None);
+        list.replace_snapshot_with_selection(ListBoxSnapshot::try_new([], |item: &u32| *item).unwrap(), [], None)
+            .unwrap();
+        assert_eq!(list.active_key(), None);
     }
 
     #[test]

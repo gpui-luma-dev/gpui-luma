@@ -3,20 +3,21 @@
 use std::sync::Arc;
 
 use gpui::{
-    App, Context, Div, Entity, FontWeight, IntoElement, Render, RenderOnce, ScrollHandle, SharedString, Stateful,
-    Window, div, point, prelude::*, px,
+    App, Context, Div, Entity, IntoElement, Render, RenderOnce, SharedString, Stateful, Window, div, prelude::*, px,
 };
 use luma::controls::listbox::{
-    ListBoxAxis, ListBoxBinding, ListBoxInput, ListBoxSnapshot, ListBoxState, ListBoxVisibleItem, SelectionMode,
+    ListBoxAxis, ListBoxBinding, ListBoxInput, ListBoxScrollHandle, ListBoxSnapshot, ListBoxState, ListBoxVisibleItem,
+    SelectionMode, SelectionPolicy,
 };
-use luma::{hstack, vstack};
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use luma::hstack;
+use luma_look_shadcn::ShadcnLook;
 
-use super::{ListBoxSampleLayout, reveal_offset};
+use super::{ListBoxSampleLayout, ITEM_CONTENT_GAP};
+use super::presentation::{ExamplePresentation, SelectionMark};
 use super::super::event_stream::ControlEventStream;
 
 const ID: &str = "listbox-horizontal";
-pub(in super::super) const CARD_WIDTH: f32 = 112.0;
+pub(in super::super) const CARD_WIDTH: f32 = 136.0;
 pub(in super::super) const LAYOUT: ListBoxSampleLayout = ListBoxSampleLayout {
     item_height: 36.0,
     spacing: 8.0,
@@ -34,12 +35,10 @@ struct CardItem {
 }
 
 pub(super) struct HorizontalListExample {
-    look: Arc<ShadcnLook>,
+    presentation: ExamplePresentation,
     state: ListBoxState<CardItem, u32>,
     binding: ListBoxBinding,
-    scroll: ScrollHandle,
-    usable_width: f32,
-    event_stream: Entity<ControlEventStream>,
+    scroll: ListBoxScrollHandle<u32>,
 }
 
 impl HorizontalListExample {
@@ -48,38 +47,17 @@ impl HorizontalListExample {
         let snapshot = ListBoxSnapshot::try_with_enabled(items, |item| item.id, |item| item.id != 7)
             .expect("sample items have unique numeric keys");
         Self {
-            look,
-            state: ListBoxState::from_snapshot(snapshot, SelectionMode::Multiple),
-            binding: ListBoxBinding::new(SelectionMode::Multiple, cx),
-            scroll: ScrollHandle::new(),
-            usable_width: 0.0,
-            event_stream,
+            presentation: ExamplePresentation::new(look, "Horizontal", event_stream),
+            state: ListBoxState::from_snapshot(snapshot, SelectionMode::Extended),
+            binding: ListBoxBinding::new(cx),
+            scroll: ListBoxScrollHandle::default().require_focus_for_scroll(true),
         }
     }
 
     fn handle_input(&mut self, input: ListBoxInput<u32>, _window: &mut Window, cx: &mut Context<Self>) {
         let update = self.state.apply(input);
-        if let Some(key) = update.reveal {
-            self.reveal(key);
-        }
-        for event in &update.events {
-            let message = format!("Horizontal · ListBoxEvent::{event:?}");
-            self.event_stream.update(cx, |stream, cx| stream.append_line(&message, cx));
-        }
-        if update.changed || update.reveal.is_some() {
-            cx.notify();
-        }
-    }
-
-    fn reveal(&self, key: u32) {
-        let Some(index) = self.state.visible_items().find(|item| item.key == key).map(|item| item.visible_index) else {
-            return;
-        };
-        let offset = self.scroll.offset();
-        let (extent, viewport, current) = (CARD_WIDTH, self.usable_width, -offset.x.as_f32());
-        let start = index as f32 * (extent + LAYOUT.spacing);
-        let target = reveal_offset(current, viewport, start, extent);
-        self.scroll.set_offset(point(px(-target), offset.y));
+        self.scroll.handle_update(&update, cx);
+        self.presentation.record(&update.events, cx);
     }
 
     fn render_item(
@@ -89,23 +67,29 @@ impl HorizontalListExample {
         cx: &mut Context<Self>,
     ) -> SampleCard {
         let surface = self
+            .presentation
             .look
             .listbox_row((ID, item.key as u64), item.state, focus_visible)
             .aria_label(item.item.label.clone())
             .when(!item.state.enabled, |row| row.aria_description("Disabled"));
         let surface = self.binding.bind_row(surface, item.key, item.state, cx, Self::handle_input);
-        SampleCard::new(surface, item.item)
+        SampleCard::new(surface, item.item, item.state.selected)
+    }
+
+    pub(super) fn set_selection_policy(&mut self, policy: SelectionPolicy, cx: &mut Context<Self>) {
+        let update = self.state.set_selection_policy(policy);
+        self.scroll.handle_update(&update, cx);
+        self.presentation.record(&update.events, cx);
     }
 
     pub(super) fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
-        self.look = look;
-        cx.notify();
+        self.presentation.sync_look(look, cx);
     }
 }
 
 impl Render for HorizontalListExample {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let focus_visible = self.binding.focus_handle().is_focused(window) && window.last_input_was_keyboard();
+        let focus_visible = self.binding.focus_visible(window);
         let rows = self.state.visible_items().map(|item| self.render_item(item, focus_visible, cx)).collect::<Vec<_>>();
 
         let stack = hstack! {}
@@ -115,69 +99,20 @@ impl Render for HorizontalListExample {
             .min_w(px(0.0))
             .h(px(LAYOUT.viewport_height))
             .gap(px(LAYOUT.spacing))
-            .track_scroll(&self.scroll)
             .aria_label("Horizontal list")
-            .aria_description("Multiple selection. Click or Space toggles an item.")
+            .aria_description(format!("Selection mode: {:?}", self.state.selection_mode()))
             .children(rows);
-        let stack = self.binding.bind_root(stack, ListBoxAxis::Horizontal, window, cx, Self::handle_input);
-        let surface = self.render_surface(stack, cx);
-        vstack! { gap=8.0; self.render_header(), surface }.w_full().min_w(px(0.0))
-    }
-}
-
-impl HorizontalListExample {
-    fn render_surface(&self, stack: Stateful<Div>, cx: &Context<Self>) -> Stateful<Div> {
-        let entity = cx.entity().downgrade();
-        let measured_width = self.usable_width;
-        let measured_stack = div()
-            .w_full()
-            .min_w(px(0.0))
-            .on_children_prepainted(move |bounds, window, _cx| {
-                let Some(bounds) = bounds.first() else {
-                    return;
-                };
-                let width = bounds.size.width.as_f32();
-                if (width - measured_width).abs() > 0.1 {
-                    let entity = entity.clone();
-                    window.on_next_frame(move |_, cx| {
-                        let _ = entity.update(cx, |sample, cx| {
-                            if (sample.usable_width - width).abs() > 0.1 {
-                                sample.usable_width = width;
-                                if let Some(key) = sample.state.active_key().copied()
-                                    && sample.state.is_focused()
-                                {
-                                    sample.reveal(key);
-                                }
-                                cx.notify();
-                            }
-                        });
-                    });
-                }
-            })
-            .child(stack);
-        self.look
-            .listbox_surface("listbox-horizontal-surface")
-            .w_full()
-            .min_w(px(0.0))
-            .rounded(px(LAYOUT.radius))
-            .px(px(LAYOUT.inset_x))
-            .py(px(LAYOUT.inset_y))
-            // Let the child viewport scroll, then contain the wheel at either endpoint.
-            .on_scroll_wheel(|_, _, cx| cx.stop_propagation())
-            .child(measured_stack)
-    }
-
-    fn render_header(&self) -> impl IntoElement {
-        let selected_count = self.state.selected_keys().count();
-        let chrome = self.look.chrome();
-        let title_style = self.look.typography_scale(ShadcnTextSize::Sm);
-        let body_style = self.look.typography_scale(ShadcnTextSize::Xs);
-        hstack! { justify=between;
-            div().typography_style(title_style).font_weight(FontWeight::SEMIBOLD)
-                .text_color(chrome.title_text).child("Horizontal"),
-            div().typography_style(body_style).text_color(chrome.muted_text)
-                .child(format!("Selected: {selected_count}")),
-        }
+        let surface =
+            self.scroll.bind(self.presentation.surface(ID, LAYOUT, self.state.is_focused()), stack, &self.state);
+        let surface = self.binding.bind_root(
+            surface,
+            ListBoxAxis::Horizontal,
+            self.state.selection_mode(),
+            window,
+            cx,
+            Self::handle_input,
+        );
+        self.presentation.section(self.state.selected_keys().count(), surface)
     }
 }
 
@@ -185,11 +120,12 @@ impl HorizontalListExample {
 struct SampleCard {
     surface: Stateful<Div>,
     label: SharedString,
+    selected: bool,
 }
 
 impl SampleCard {
-    pub fn new(surface: Stateful<Div>, item: &CardItem) -> Self {
-        Self { surface, label: item.label.clone() }
+    pub fn new(surface: Stateful<Div>, item: &CardItem, selected: bool) -> Self {
+        Self { surface, label: item.label.clone(), selected }
     }
 }
 
@@ -198,12 +134,14 @@ impl RenderOnce for SampleCard {
         self.surface
             .flex()
             .items_center()
+            .gap(px(ITEM_CONTENT_GAP))
             .justify_center()
             .flex_shrink_0()
             .w(px(CARD_WIDTH))
             .h(px(LAYOUT.item_height))
             .px(px(LAYOUT.item_padding))
             .rounded(px(LAYOUT.radius))
+            .child(SelectionMark { selected: self.selected })
             .child(div().whitespace_nowrap().child(self.label))
     }
 }
