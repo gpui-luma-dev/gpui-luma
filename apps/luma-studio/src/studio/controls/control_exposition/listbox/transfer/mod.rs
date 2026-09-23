@@ -15,7 +15,7 @@ use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 use model::{Side, TransferModel};
 use item::{DragPreview, TransferRow};
 use luma_look_shadcn::ListBoxBuilder;
-use luma::controls::listbox::ListBoxLayout;
+use luma::controls::listbox::{ListBoxLayout, ListBoxVirtualization};
 use super::{ListBoxSampleLayout, VERTICAL_LIST_WIDTH};
 use super::presentation::ExamplePresentation;
 use super::super::event_stream::ControlEventStream;
@@ -135,6 +135,7 @@ impl TransferExample {
             |surface, item, _| TransferRow::new(surface, item),
         )
         .look(&presentation.look)
+        .virtualization(ListBoxVirtualization::Uniform { overscan: 2 })
         .layout(ListBoxLayout {
             item_height: LAYOUT.item_height,
             spacing: LAYOUT.spacing,

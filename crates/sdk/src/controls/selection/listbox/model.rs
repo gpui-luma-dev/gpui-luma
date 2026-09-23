@@ -174,6 +174,10 @@ pub enum ListBoxInput<K> {
     },
     Activate(K),
     ActivateActive,
+    /// Select the active item if needed, then activate it in one transaction.
+    /// Uses plain selection policy, but never toggles an existing selection off.
+    /// In `None` mode this only activates; an already-selected group is preserved.
+    ConfirmActive,
     Focus(bool),
 }
 
@@ -488,6 +492,14 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
                 }
             }
             ListBoxInput::ActivateActive => activated = self.active.clone(),
+            ListBoxInput::ConfirmActive => {
+                if let Some(key) = self.active.clone().filter(|key| self.snapshot.is_enabled(key)) {
+                    if !self.selected.contains(&key) {
+                        self.select_item(key.clone(), ListBoxSelectionModifiers::default());
+                    }
+                    activated = Some(key);
+                }
+            }
             ListBoxInput::Focus(focused) => self.focused = focused,
         }
         let mut update = self.finish(previous);

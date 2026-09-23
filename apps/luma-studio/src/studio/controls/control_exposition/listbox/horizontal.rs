@@ -10,7 +10,7 @@ use luma_look_shadcn::ShadcnLook;
 use super::{ListBoxSampleLayout};
 use super::presentation::{ExamplePresentation, SelectionMark};
 use super::markup::listbox;
-use luma::controls::listbox::ListBoxControl;
+use luma::controls::listbox::{ListBoxControl, ListBoxVirtualization};
 use super::super::event_stream::ControlEventStream;
 
 const ID: &str = "listbox-horizontal";
@@ -39,7 +39,7 @@ pub(super) struct HorizontalListExample {
 
 impl HorizontalListExample {
     pub(super) fn new(look: Arc<ShadcnLook>, event_stream: Entity<ControlEventStream>, cx: &mut Context<Self>) -> Self {
-        let items = (1..=20).map(|id| CardItem { id, label: format!("Card {id}").into() });
+        let items = (1..=1_000).map(|id| CardItem { id, label: format!("Card {id}").into() });
         let snapshot = ListBoxSnapshot::try_with_enabled(items, |item| item.id, |item| item.id != 7)
             .expect("sample items have unique numeric keys");
         Self {
@@ -51,7 +51,8 @@ impl HorizontalListExample {
                 |item| item.label.clone(),
                 cx,
             )
-            .require_focus_for_scroll(true),
+            .require_focus_for_scroll(true)
+            .virtualization(ListBoxVirtualization::Uniform { overscan: 2 }),
         }
     }
 

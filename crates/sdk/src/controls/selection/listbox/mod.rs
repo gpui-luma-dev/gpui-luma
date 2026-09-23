@@ -12,7 +12,9 @@ mod item_template;
 mod layout;
 mod model;
 mod scroll;
+mod virtualization;
 
+pub use virtualization::{ListBoxVirtualization, ListBoxVirtualWindow};
 pub use scroll::ListBoxScrollHandle;
 pub use control::{ListBoxControl, ListBoxInputHandler, ListBoxRenderParts};
 pub use item_template::{ListBoxItemRenderModel, ListBoxItemTemplate, make_listbox_item_template};

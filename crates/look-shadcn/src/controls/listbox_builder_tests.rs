@@ -20,6 +20,7 @@ struct Harness {
     scrolls: [ListBoxScrollHandle<u32>; 2],
     look: Arc<ShadcnLook>,
     dnd: bool,
+    virtualization: ListBoxVirtualization,
     previews: Rc<Cell<usize>>,
     events: Vec<DragDropEvent<usize, u32>>,
     drops: Vec<(usize, Option<u32>)>,
@@ -38,6 +39,7 @@ impl Harness {
             scrolls: std::array::from_fn(|_| ListBoxScrollHandle::default().require_focus_for_scroll(true)),
             look: Arc::new(ShadcnLook::built_in()),
             dnd,
+            virtualization: ListBoxVirtualization::Eager,
             previews: Rc::default(),
             events: Vec::new(),
             drops: Vec::new(),
@@ -79,7 +81,8 @@ impl Render for Harness {
                 |key| ("item", *key).into(),
                 |surface, _, _| surface.size_full(),
             )
-            .empty(div().size(px(20.0)));
+            .empty(div().size(px(20.0)))
+            .virtualization(self.virtualization);
             if self.dnd {
                 builder = builder.drag_and_drop(side, Self::drop, Self::event, move |_, _, _, cx| {
                     previews.set(previews.get() + 1);
@@ -182,4 +185,87 @@ fn empty_destination_accepts_append_and_escape_cancels_once() {
             assert_eq!(state.events.iter().filter(|event| matches!(event, DragDropEvent::DragEnded { .. })).count(), 1);
         });
     }
+}
+
+#[test]
+fn virtualized_group_drops_use_collection_gaps_after_rows_are_unmounted() {
+    use gpui::{ScrollDelta, ScrollWheelEvent, TouchPhase};
+    for same_list in [false, true] {
+        let mut app = TestAppContext::single();
+        let (view, cx) = app.add_window_view(|_, cx| {
+            let mut host = Harness::new(true, cx);
+            host.virtualization = ListBoxVirtualization::Uniform { overscan: 0 };
+            for (side, start) in [(0, 1), (1, 10_001)] {
+                host.lists[side].replace_snapshot(ListBoxSnapshot::try_new(start..start + 1_000, |n| *n).unwrap());
+                host.scrolls[side].set_drag_auto_scroll_speed(0.0);
+            }
+            host.lists[0].set_selected_keys([1, 2]).unwrap();
+            host
+        });
+        cx.update(|window, _| window.activate_window());
+        cx.run_until_parked();
+        let target_x = if same_list { 30.0 } else { 300.0 };
+        // Focus the destination to enable wheel input, without toggling a row.
+        cx.simulate_click(point(px(target_x), px(5.0)), Default::default());
+        if same_list {
+            // Begin the gesture before windowing out its source row.
+            cx.simulate_mouse_down(point(px(30.0), px(25.0)), MouseButton::Left, Default::default());
+            cx.simulate_mouse_move(point(px(60.0), px(25.0)), MouseButton::Left, Default::default());
+        }
+        cx.simulate_event(ScrollWheelEvent {
+            position: point(px(target_x), px(25.0)),
+            delta: ScrollDelta::Pixels(point(px(0.0), px(-400.0))),
+            modifiers: Default::default(),
+            touch_phase: TouchPhase::Moved,
+        });
+        cx.run_until_parked();
+        let last = cx.debug_bounds(if same_list { "left-item-14" } else { "right-item-14" }).unwrap();
+        // Bottom half of the last rendered row targets the NEXT collection key,
+        // even though that key has no rendered element (zero overscan).
+        let destination = point(px(target_x), last.bottom() - px(2.0));
+        if same_list {
+            cx.simulate_mouse_move(destination, MouseButton::Left, Default::default());
+        } else {
+            drag(cx, (target_x, f32::from(destination.y)));
+        }
+        cx.simulate_mouse_up(destination, MouseButton::Left, Default::default());
+        cx.update(|_, app| {
+            let host = view.read(app);
+            assert_eq!(host.drops, vec![(if same_list { 0 } else { 1 }, Some(if same_list { 16 } else { 10_016 }))]);
+            assert_eq!(host.events[0], DragDropEvent::DragStarted { source: 0, keys: vec![1, 2] });
+            assert_eq!(host.previews.get(), 1);
+            assert!(!app.has_active_drag());
+        });
+    }
+}
+
+#[test]
+fn virtualized_drag_auto_scroll_mounts_new_targets_without_focus() {
+    let mut app = TestAppContext::single();
+    let (view, cx) = app.add_window_view(|_, cx| {
+        let mut host = Harness::new(true, cx);
+        host.virtualization = ListBoxVirtualization::Uniform { overscan: 1 };
+        host.lists[1].replace_snapshot(ListBoxSnapshot::try_new(10_001..=11_000, |n| *n).unwrap());
+        host.lists[0].set_selected_keys([1, 2]).unwrap();
+        // Reach the endpoint on the first scheduled frame; no wall-clock sleeps.
+        host.scrolls[1].set_drag_auto_scroll_speed(10_000_000.0);
+        host
+    });
+    cx.update(|window, _| window.activate_window());
+    cx.run_until_parked();
+    drag(cx, (300.0, 202.0));
+    for _ in 0..4 {
+        cx.update(|window, app| window.simulate_next_frame(app));
+        cx.run_until_parked();
+    }
+    let last = cx.debug_bounds("right-item-999").expect("auto-scroll must render the destination's final row");
+    let viewport = cx.debug_bounds("right-viewport").unwrap();
+    assert_eq!(last.bottom(), viewport.bottom());
+    cx.update(|_, app| assert!(!view.read(app).lists[1].is_focused()));
+    cx.simulate_mouse_up(point(px(300.0), last.top() + px(2.0)), MouseButton::Left, Default::default());
+    cx.update(|_, app| {
+        let host = view.read(app);
+        assert_eq!(host.drops, vec![(1, Some(11_000))]);
+        assert_eq!(host.events[0], DragDropEvent::DragStarted { source: 0, keys: vec![1, 2] });
+    });
 }

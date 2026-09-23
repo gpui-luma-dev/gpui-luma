@@ -168,7 +168,7 @@ fn key_input<K>(
         } else {
             ListBoxInput::SelectActive
         }),
-        "enter" if !modifiers.modified() => Some(ListBoxInput::ActivateActive),
+        "enter" if !modifiers.modified() => Some(ListBoxInput::ConfirmActive),
         _ => None,
     }
 }
@@ -212,8 +212,54 @@ mod tests {
             assert!(key_input::<u32>(state.selection_mode(), axis, "a", toggle).is_none());
             assert!(matches!(
                 key_input::<u32>(state.selection_mode(), axis, "enter", Modifiers::default()),
-                Some(ListBoxInput::ActivateActive)
+                Some(ListBoxInput::ConfirmActive)
             ));
+        }
+    }
+
+    #[test]
+    fn return_selects_navigated_item_before_activation_without_toggling_off() {
+        use super::super::{ListBoxEvent, ListBoxSnapshot, ListBoxState, SelectionPolicy};
+        for (axis, next) in [(ListBoxAxis::Vertical, "down"), (ListBoxAxis::Horizontal, "right")] {
+            for mode in [
+                SelectionMode::SingleRequired,
+                SelectionMode::SingleAllowNone,
+                SelectionMode::Multiple,
+                SelectionMode::Extended,
+                SelectionMode::None,
+            ] {
+                let snapshot = ListBoxSnapshot::try_with_enabled(1..=3, |n| *n, |n| *n != 2).unwrap();
+                let mut state = ListBoxState::from_snapshot(snapshot, mode);
+                state.apply(ListBoxInput::Select(1));
+                state.set_selection_policy(SelectionPolicy { toggle_off: true, ..SelectionPolicy::new(mode) });
+                state.apply(key_input(mode, axis, next, Modifiers::default()).unwrap());
+                assert_eq!(state.active_key(), Some(&3));
+                assert!(!state.visible_items().find(|item| item.key == 3).unwrap().state.selected);
+                let update = state.apply(key_input(mode, axis, "enter", Modifiers::default()).unwrap());
+                let selected = match mode {
+                    SelectionMode::None => vec![],
+                    SelectionMode::Multiple => vec![1, 3],
+                    _ => vec![3],
+                };
+                assert_eq!(state.selected_keys().copied().collect::<Vec<_>>(), selected);
+                let mut expected = Vec::new();
+                if mode != SelectionMode::None {
+                    expected.push(ListBoxEvent::SelectionChanged { selected: selected.clone(), active: Some(3) });
+                }
+                expected.push(ListBoxEvent::ItemActivated { key: 3 });
+                assert_eq!(update.events, expected);
+                let repeated = state.apply(key_input(mode, axis, "enter", Modifiers::default()).unwrap());
+                assert!(!repeated.changed);
+                assert_eq!(repeated.events, vec![ListBoxEvent::ItemActivated { key: 3 }]);
+                assert_eq!(state.selected_keys().copied().collect::<Vec<_>>(), selected);
+                if mode.allows_multiple() {
+                    state.apply(ListBoxInput::SelectAll);
+                    state.apply(ListBoxInput::ConfirmActive);
+                    assert_eq!(state.selected_keys().copied().collect::<Vec<_>>(), vec![1, 3]);
+                }
+                state.replace_snapshot(ListBoxSnapshot::try_with_enabled([1], |n| *n, |_| false).unwrap());
+                assert!(state.apply(ListBoxInput::ConfirmActive).events.is_empty());
+            }
         }
     }
 

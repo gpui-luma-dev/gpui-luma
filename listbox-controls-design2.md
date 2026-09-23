@@ -38,7 +38,7 @@ now live in `luma::infra::drag_drop`; selection capture lives in `ListBoxState`.
 Studio uses these helpers while retaining domain collection mutation and visual
 composition. The user has tested the extracted SDK wiring and confirmed it working.
 
-### SDK and Look Migration — Implemented; Awaiting User Retest
+### SDK and Look Migration — User Verified
 
 The user tested the local builder and markup composition and approved migration
 of the reusable implementation. The macro implementation stays in the exposition
@@ -67,9 +67,9 @@ The builder's headless DnD dispatch tests moved to look-shadcn (its `test-suppor
 feature enables them). SDK tests cover geometry and existing ListBox behavior;
 Studio keeps macro integration, inspector geometry, and domain mutation tests.
 No macro is exported by the SDK or the look. The app has not been launched by
-the agent; manual migration testing remains with the user.
+the agent; the user confirmed the migrated implementation working.
 
-### Local Markup Adapter — User Verified; Migration Retest Pending
+### Local Markup Adapter — User Verified
 
 The two top exposition examples now read as nested `listbox!` → `scroll_view!`
 → stack declarations, with an inline `item_template` closure in each stack.
@@ -101,8 +101,9 @@ Template expressions are ordinary Rust and may use the existing `hstack!`,
 This is a local composition prototype, not a general UI language. Declaration
 order is fixed, sizing is explicit, and the markup currently targets these two
 non-DnD examples. The DnD pair continues to use the lower-level Shadcn builder.
-Relative-width card counts, variable-size flow, lazy layout, and virtualization
-are not introduced by this adapter.
+Relative-width card counts and variable-size flow are not introduced by this
+adapter. Phase 4 adds opt-in uniform-item virtualization underneath the same
+markup and template contract.
 
 Migration verification passes 40 SDK ListBox tests, four look tests (including
 three migrated headless builder/DnD tests), and 18 Studio ListBox tests. These
@@ -113,9 +114,9 @@ retention, and the existing transfer/reorder behavior.
 Both SDK ListBox doctests, Clippy across the three crates, and workspace formatting
 checks also pass.
 
-Still planned: filtered/sorted projections, layout helpers, custom auto-scroll
-curves, and virtualization. Sections below distinguish
-current behavior from these future contracts.
+Still planned: filtered/sorted projections, additional layout helpers, custom
+auto-scroll curves, and variable-height virtualization. Phase 4 below records the
+new uniform-item virtualization implementation and its verification status.
 
 ## Architectural Position
 
@@ -279,9 +280,8 @@ capabilities, not prerequisites for the initial Luma implementation.
 | selection behavior | key-based selection owned by `ListBoxState` |
 | list interaction events | `ListBoxEvent<K>` |
 
-The current implementation eagerly composes snapshot items. True
-virtualization is a later optimization and is not required to establish the
-composition or behavior boundary.
+Eager composition remains the default. Phase 4 adds opt-in uniform-item
+virtualization on both axes without changing the state or template contract.
 
 ## Core SDK Model
 
@@ -483,7 +483,8 @@ pass `state.selection_mode()` into `bind_root` each render):
 - one list focus handle/tab stop, with active item distinct from keyboard focus;
 - row clicks selecting the target and moving active state; selection alone
   does not imply `ItemActivated`;
-- explicit activation from Enter or a double-click, and selection from Space;
+- Enter selects the active item if needed, then emits activation in the same
+  transaction; double-click activates, while Space retains selection/toggle behavior;
 - host-configured vertical/horizontal key mapping to axis-agnostic commands;
 - focus-within tracking and an event boundary so nested SDK controls can handle
   input without also selecting or activating their containing row;
@@ -492,11 +493,14 @@ pass `state.selection_mode()` into `bind_root` each render):
   optional `ListBoxScrollHandle<K>` adapter.
 
 `ListBoxScrollHandle<K>` attaches to a host-provided surface and scrolling
-stack. The stack must have one direct child per visible item, in visible order.
+stack. In eager mode the stack must have one direct child per visible item, in
+visible order. Uniform virtualization instead uses the adapter's `virtual_window`
+and `bind_virtualized` path, with spacers for items outside the rendered range.
 It resolves reveal keys against the current snapshot and delegates measured
-scrolling on either axis to GPUI. It also contains wheel propagation and reveals
+scrolling on either axis to GPUI in eager mode; uniform virtualization calculates
+item offsets from fixed dimensions. It also contains wheel propagation and reveals
 the focused active item after viewport resize. Item dimensions, layout, and
-appearance remain host choices; the adapter needs no uniform-row arithmetic.
+appearance remain host choices; eager mode needs no uniform-row arithmetic.
 The host calls `handle_update` for repaint/reveal effects and delivers events to
 its own application code.
 
@@ -516,6 +520,13 @@ For double-click activation, apply selection only once for that gesture so
 toggle modes do not immediately undo the first click. Focus exit preserves
 selection and active state. The binding supplies focus semantics and state for
 accessible row presentation without requiring a universal visual template.
+
+Enter maps to `ConfirmActive`: an unselected active item follows the mode's
+plain selection policy (add in Multiple, replace in Extended/single modes).
+An already-selected item stays selected, preserving any selected group even
+with toggle-off enabled. None mode only activates. Any `SelectionChanged` event
+precedes `ItemActivated`; programmatic `Activate`/`ActivateActive` remain
+activation-only operations.
 
 App-owned layout containers may use `div`, `vstack!`, and `hstack!`. Interactive
 controls within rows use SDK controls and look factories such as `ShadcnLook`,
@@ -728,8 +739,8 @@ while owning independent selection and scrolling. The delivered foundation:
 
 1. `ListBoxState` owns a small set of typed items.
 2. The bounded vertical list is 250px wide including insets and border, and
-   shows five of twenty rows.
-3. The horizontal viewport contains twenty compact cards with 8px spacing,
+   shows five of 1,000 rows with uniform virtualization enabled.
+3. The horizontal viewport contains 1,000 compact cards with 8px spacing,
    36px height, and fixed 136px width, including a leading checkmark.
    Cards never shrink to fit the pane;
    narrower viewports show fewer cards and scroll to the remaining items.
@@ -836,15 +847,79 @@ Completed extraction:
 - nested interactive-child boundaries with headless dispatch regression coverage;
 - Studio migrated to the SDK helpers while retaining domain mutation and visuals.
 
-The extracted Studio wiring is confirmed working by the user. The subsequent
-migrated control and look-owned builder await user retesting; the macro stays local for review.
+The extracted Studio wiring and subsequent migrated control/look-owned builder
+are confirmed working by the user. The macro stays local for review.
 A customizable auto-scroll response function remains an optional future extension.
 
-### Phase 4: Performance Enhancements — Planned
+### Phase 4: Uniform Virtualization — Implemented; Awaiting User Testing
 
-- measured variable-height flow improvements;
-- opt-in uniform-row virtualization;
-- indexed height estimation if variable-height virtualization is needed.
+Uniform-item virtualization is opt-in on `ListBoxControl` and `ListBoxBuilder`:
+
+```rust
+.virtualization(ListBoxVirtualization::Uniform { overscan: 2 })
+```
+
+`ListBoxVirtualization::Eager` remains the default. The existing scroll adapter is
+extended; no separate public virtual-scroll-view control is introduced. The
+implementation supports fixed-height vertical rows and fixed-width horizontal
+cards, including spacing and viewport insets.
+
+- The SDK computes the viewport range plus a configurable item buffer on each
+  side. Leading/trailing spacers retain the full collection's scroll extent.
+  Invalid uniform geometry falls back to eager rendering.
+- The look-owned builder constructs templates, interaction bindings, and themed
+  rows only for that range. Range iteration skips directly into the snapshot.
+  Shadcn appearance remains entirely in the look.
+- Templates remain ordinary render-time callbacks, including borrowed local
+  captures. Durable state for interactive item content belongs in host models
+  or retained entities; off-screen element instances are not retained.
+- Selection, active keys, and range anchors still address the entire collection.
+  Keyboard reveal calculates an off-screen item's position without requiring its
+  element to exist. Resize, collection shrink, empty lists, focus-required wheel
+  routing, and endpoint containment retain their existing semantics.
+- DnD gaps resolve against the full collection, including the key after the last
+  rendered row. Group payloads survive source-row unmounting; drag auto-scroll
+  refreshes the render range and hit targets even in an unfocused destination.
+- The same GPUI scroll handle retains position. Actual viewport measurements
+  refine the range on the next scheduled frame at first layout and resizing;
+  normal wheel updates construct the new range using the updated offset.
+
+The existing vertical and horizontal exposition examples now each contain 1,000
+items and opt into a two-item buffer. Their markup, content templates, dimensions,
+selection controls, and inspectors are unchanged. The DnD pair also opts in while
+retaining ten initial items per list and five visible rows.
+
+A dedicated **Spectrum** example adds 10,000 typed color items in a 250px-wide,
+five-row viewport. Its named content template combines a five-band color swatch,
+a numbered label, hue/saturation metadata, and the selection checkmark. It uses
+extended selection and focus-required scrolling, with Home/End navigation for
+quick checks at both ends of the collection. The local markup macro and SDK
+virtualization API are reused without additional scrolling logic.
+
+The Spectrum example also shows live collection size, visible range (including
+partial rows), constructed range (including the buffer), and actual template
+calls for that render. The SDK scroll handle exposes a read-only snapshot via
+`rendered_window()` after composition. Diagnostics reuse existing geometry and
+rendering; they add no input listeners, event-tracker entries, or frame requests.
+Headless tests verify the readout through aligned and partial-row wheel scrolling
+and Home/End navigation. Manual validation of the readout remains pending.
+
+Headless checks cover bounded template construction with 10,000 items on both
+axes, off-screen extended selection/reveal, disabled-item navigation, resizing,
+large wheel jumps, focus loss and endpoints, snapshot shrink/empty/repopulation,
+same-list and cross-list group gap drops after rows leave the render range, and
+auto-scroll mounting new destination targets without focus. Geometry unit tests
+also cover 100,000 items, exact spacer extents, invalid inputs, and buffer overflow.
+Verification passes 45 SDK ListBox tests, nine look tests, 19 Studio ListBox tests,
+and two SDK doctests, plus Clippy across all three crates and workspace formatting.
+Studio has not been launched by the agent; manual testing remains with the user.
+
+Still deferred:
+
+- measured variable-height flow improvements and virtualization;
+- indexed height estimation if variable-height virtualization is needed;
+- data paging: collection snapshots remain fully resident, and full-collection
+  selection/transfer operations retain their existing costs.
 
 ## Explicit Non-Goals
 

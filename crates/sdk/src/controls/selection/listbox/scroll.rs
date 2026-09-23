@@ -5,14 +5,16 @@ use std::rc::Rc;
 use gpui::{Context, Div, DragMoveEvent, Pixels, ScrollHandle, Size, Stateful, div, prelude::*, px};
 
 use super::{
-    ListBoxAxis, ListBoxState, ListBoxUpdate,
+    ListBoxAxis, ListBoxState, ListBoxUpdate, ListBoxVirtualWindow,
+    virtualization::UniformMetrics,
     drag_scroll::{DragAutoScroll, DEFAULT_MAX_SPEED},
 };
 
 /// Optional scrolling adapter for a host-composed list. The host supplies the
 /// styled surface and scrolling stack, with one direct child per visible item
 /// in `visible_items()` order. GPUI measures the children, so either axis and
-/// variable item sizes work without host-written offset calculations.
+/// variable item sizes work without host-written offset calculations. Uniform
+/// virtualization uses `virtual_window` and `bind_virtualized` on this same handle.
 ///
 /// Keep one handle per list. This adapter contains wheel events at the surface
 /// and keeps the focused active item visible when the viewport resizes. It does
@@ -23,6 +25,7 @@ pub struct ListBoxScrollHandle<K> {
     viewport_size: Rc<Cell<Size<Pixels>>>,
     drag_scroll: Rc<DragAutoScroll>,
     require_focus_for_scroll: bool,
+    rendered_window: RefCell<Option<ListBoxVirtualWindow>>,
 }
 
 impl<K> Default for ListBoxScrollHandle<K> {
@@ -33,11 +36,19 @@ impl<K> Default for ListBoxScrollHandle<K> {
             viewport_size: Rc::default(),
             drag_scroll: Rc::default(),
             require_focus_for_scroll: false,
+            rendered_window: RefCell::new(None),
         }
     }
 }
 
 impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
+    /// Read-only geometry from the most recent virtualized composition, or
+    /// `None` for eager rendering. Read after building the list for diagnostics;
+    /// this neither measures layout nor requests a frame or consumes a reveal.
+    pub fn rendered_window(&self) -> Option<ListBoxVirtualWindow> {
+        self.rendered_window.borrow().clone()
+    }
+
     /// Require the existing list binding's focus before accepting wheel input.
     /// Defaults to false (hover scrolling). When true, an unfocused viewport
     /// passes wheel input to its ancestors; a focused list contains it even at
@@ -98,6 +109,41 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
         }
     }
 
+    /// Compute a uniform-item render window using the retained viewport and offset.
+    /// Invalid dimensions return `None`; callers should use eager composition.
+    /// Render only `range`, with the returned spacers as direct stack children.
+    /// Call [`Self::bind_virtualized`] with this window instead of `bind`.
+    pub fn virtual_window<T>(
+        &self,
+        state: &ListBoxState<T, K>,
+        axis: ListBoxAxis,
+        item_extent: f32,
+        gap: f32,
+        overscan: usize,
+    ) -> Option<ListBoxVirtualWindow> {
+        let metrics = UniformMetrics::new(axis, state.snapshot().items().len(), item_extent, gap, overscan)?;
+        let viewport = metrics.viewport_extent(self.viewport_size.get());
+        let reveal = if viewport > 0.0 && (!self.require_focus_for_scroll || state.is_focused()) {
+            self.take_reveal_index(state)
+        } else {
+            None
+        };
+        metrics.update_scroll(&self.scroll, viewport, reveal);
+        Some(metrics.window(metrics.offset(&self.scroll), viewport))
+    }
+
+    /// Attach a uniformly virtualized stack. Reveals use collection geometry,
+    /// not spacer/child indices; wheel policy and drag scrolling are unchanged.
+    pub fn bind_virtualized<T>(
+        &self,
+        surface: Stateful<Div>,
+        viewport: Stateful<Div>,
+        state: &ListBoxState<T, K>,
+        rendered: ListBoxVirtualWindow,
+    ) -> Stateful<Div> {
+        self.bind_inner(surface, viewport, state, Some(rendered))
+    }
+
     /// Attach the scrolling stack inside its surface. Resolve reveal keys at
     /// render time against the current snapshot, not against stale indices.
     pub fn bind<T>(
@@ -106,7 +152,22 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
         viewport: Stateful<Div>,
         state: &ListBoxState<T, K>,
     ) -> Stateful<Div> {
-        let (viewport, accepts_wheel) = self.bind_viewport(viewport, state);
+        self.bind_inner(surface, viewport, state, None)
+    }
+
+    fn bind_inner<T>(
+        &self,
+        surface: Stateful<Div>,
+        viewport: Stateful<Div>,
+        state: &ListBoxState<T, K>,
+        rendered: Option<ListBoxVirtualWindow>,
+    ) -> Stateful<Div> {
+        self.rendered_window.replace(rendered.clone());
+        let (viewport, accepts_wheel) = if rendered.is_some() {
+            self.track_viewport(viewport, state)
+        } else {
+            self.bind_viewport(viewport, state)
+        };
         let active_index = state.active_key().filter(|_| state.is_focused()).and_then(|key| state.visible_index(key));
         let scroll = self.scroll.clone();
         let viewport_size = self.viewport_size.clone();
@@ -116,10 +177,25 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
             .on_children_prepainted(move |bounds, window, _cx| {
                 let Some(bounds) = bounds.first() else { return };
                 let previous = viewport_size.replace(bounds.size);
-                if let Some(index) = resize_reveal(previous, bounds.size, active_index) {
-                    // The child has recorded its new viewport bounds. Let GPUI
-                    // reveal against those bounds on the following frame.
+                let reveal = resize_reveal(previous, bounds.size, active_index);
+                let needs_frame = if let Some(rendered) = &rendered {
+                    let metrics = rendered.metrics;
+                    let extent = metrics.viewport_extent(bounds.size);
+                    let previous_offset = scroll.offset();
+                    metrics.update_scroll(&scroll, extent, reveal);
+                    // Measurement is retained for the next render. Wheel input
+                    // already notifies the owning view; this also covers first
+                    // layout, resizing, and GPUI's post-layout offset clamping.
+                    previous != bounds.size
+                        || previous_offset != scroll.offset()
+                        || metrics.window(metrics.offset(&scroll), extent).range != rendered.range
+                } else if let Some(index) = reveal {
                     scroll.scroll_to_item(index);
+                    true
+                } else {
+                    false
+                };
+                if needs_frame {
                     let view = window.current_view();
                     window.on_next_frame(move |_, cx| cx.notify(view));
                 }
@@ -136,6 +212,11 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
         if accepts_wheel && let Some(index) = self.take_reveal_index(state) {
             self.scroll.scroll_to_item(index);
         }
+        self.track_viewport(viewport, state)
+    }
+
+    fn track_viewport<T>(&self, viewport: Stateful<Div>, state: &ListBoxState<T, K>) -> (Stateful<Div>, bool) {
+        let accepts_wheel = !self.require_focus_for_scroll || state.is_focused();
         // Hidden overflow keeps clipping, measured bounds, and the tracked
         // offset, but GPUI applies no wheel delta on either axis. Retaining
         // the handle also lets drag auto-scroll move an unfocused target.

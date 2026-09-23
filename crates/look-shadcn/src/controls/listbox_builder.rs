@@ -9,6 +9,10 @@
 #[path = "listbox_builder_tests.rs"]
 mod tests;
 
+#[cfg(all(test, feature = "test-support"))]
+#[path = "listbox_virtualization_tests.rs"]
+mod virtualization_tests;
+
 use std::hash::Hash;
 
 use gpui::{
@@ -17,7 +21,7 @@ use gpui::{
 };
 use luma::controls::listbox::{
     ListBoxAxis, ListBoxBinding, ListBoxControl, ListBoxFlow, ListBoxInput, ListBoxItemRenderModel, ListBoxLayout,
-    ListBoxScrollHandle, ListBoxState, ListBoxVisibleItem,
+    ListBoxScrollHandle, ListBoxState, ListBoxVisibleItem, ListBoxVirtualization,
 };
 use luma::infra::drag_drop::{
     DragDropElementExt, DragDropEvent, DropEdge, DropProposal, DropZone, KeyedDrag, KeyedDropTarget, bind_drag_source,
@@ -51,6 +55,7 @@ pub struct ListBoxBuilder<'a, M: 'static, T, K> {
     layout: ListBoxLayout,
     axis: ListBoxAxis,
     item_width: f32,
+    virtualization: ListBoxVirtualization,
     on_input: InputHandler<M, K>,
     item_id: fn(&K) -> ElementId,
     item: ItemRenderer<'a, T, K>,
@@ -81,6 +86,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             item: Box::new(move |surface, item_state, cx| item(surface, item_state, cx).into_any_element()),
             axis: ListBoxAxis::Vertical,
             item_width: 136.0,
+            virtualization: ListBoxVirtualization::default(),
             look: None,
             layout: ListBoxLayout {
                 item_height: 36.0,
@@ -111,6 +117,14 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
     pub fn horizontal(mut self, item_width: f32) -> Self {
         self.axis = ListBoxAxis::Horizontal;
         self.item_width = item_width;
+        self
+    }
+
+    /// Opt into uniform-item windowing on either axis. Eager is the default.
+    /// Templates run only for viewport/buffer items and may still borrow local
+    /// data. Durable item state belongs in host-owned models or entities.
+    pub fn virtualization(mut self, policy: ListBoxVirtualization) -> Self {
+        self.virtualization = policy;
         self
     }
 
@@ -213,9 +227,36 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             }
             surface
         };
-        let mut items = self.state.visible_items().peekable();
-        let mut rows = Vec::with_capacity(items.len());
-        while let Some(item) = items.next() {
+        let virtual_window = match self.virtualization {
+            ListBoxVirtualization::Eager => None,
+            ListBoxVirtualization::Uniform { overscan } => self.scroll.virtual_window(
+                self.state,
+                self.axis,
+                match self.axis {
+                    ListBoxAxis::Vertical => self.layout.item_height,
+                    ListBoxAxis::Horizontal => self.item_width,
+                },
+                self.layout.spacing,
+                overscan,
+            ),
+        };
+        let range = virtual_window
+            .as_ref()
+            .map_or(0..self.state.snapshot().items().len(), |window| window.range.clone());
+        // `nth` on the snapshot's mapped slice iterator skips directly to the
+        // range; off-screen items do not construct models, templates, or bindings.
+        let items = self.state.visible_items().skip(range.start).take(range.len());
+        let spacer = |extent: f32| {
+            div()
+                .flex_shrink_0()
+                .when(self.axis == ListBoxAxis::Vertical, |space| space.h(px(extent)).w_full())
+                .when(self.axis == ListBoxAxis::Horizontal, |space| space.w(px(extent)).h(px(self.layout.item_height)))
+        };
+        let mut rows = Vec::with_capacity(range.len() + 2);
+        if let Some(extent) = virtual_window.as_ref().and_then(|window| window.leading_space) {
+            rows.push(spacer(extent).into_any_element());
+        }
+        for item in items {
             let key = item.key.clone();
             let visible_index = item.visible_index;
             let surface = look.listbox_row((self.item_id)(&key), item.state, self.binding.focus_visible(window));
@@ -223,7 +264,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             if let Some(drag_drop) = &self.drag_drop {
                 surface = (drag_drop.row)(surface, item.item, &key, cx);
             }
-            // Exactly one measured child per visible item, including during drag.
+            // Stable keyed wrappers survive window movement; spacers have no bindings.
             let mut row = div()
                 .id((self.item_id)(&key))
                 .debug_selector(|| format!("{}-item-{visible_index}", self.id))
@@ -236,12 +277,15 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
                 .child((self.item)(surface, item, cx));
             if self.drag_drop.is_some() && cx.has_active_drag() {
                 row = row.child(insertion_target(Some(key), DropEdge::Before, cx)).child(insertion_target(
-                    items.peek().map(|item| item.key.clone()),
+                    self.state.visible_items().nth(visible_index + 1).map(|item| item.key),
                     DropEdge::After,
                     cx,
                 ));
             }
-            rows.push(row);
+            rows.push(row.into_any_element());
+        }
+        if let Some(extent) = virtual_window.as_ref().and_then(|window| window.trailing_space) {
+            rows.push(spacer(extent).into_any_element());
         }
         let mut viewport = vstack! {}
             .id(format!("{}-viewport", self.id))
@@ -275,7 +319,10 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         {
             surface = surface.child(div().absolute().inset_0().flex().items_center().justify_center().child(empty));
         }
-        let surface = self.scroll.bind(surface, viewport, self.state);
+        let surface = match virtual_window {
+            Some(rendered) => self.scroll.bind_virtualized(surface, viewport, self.state, rendered),
+            None => self.scroll.bind(surface, viewport, self.state),
+        };
         self.binding.bind_root(surface, self.axis, self.state.selection_mode(), window, cx, self.on_input)
     }
 }
@@ -323,7 +370,8 @@ impl ShadcnLook {
             },
         )
         .look(self)
-        .layout(layout);
+        .layout(layout)
+        .virtualization(parts.virtualization);
         let builder = match flow {
             ListBoxFlow::Vertical { .. } => builder,
             ListBoxFlow::Horizontal { item_width, .. } => builder.horizontal(item_width),

@@ -3,7 +3,10 @@
 use std::hash::Hash;
 use gpui::{App, Context, ElementId, SharedString, Window};
 
-use super::{ListBoxBinding, ListBoxInput, ListBoxScrollHandle, ListBoxState, ListBoxUpdate, SelectionPolicy};
+use super::{
+    ListBoxBinding, ListBoxInput, ListBoxScrollHandle, ListBoxState, ListBoxUpdate, ListBoxVirtualization,
+    SelectionPolicy,
+};
 
 /// Host callback for semantic input. Apply it to the control and deliver its events.
 pub type ListBoxInputHandler<M, K> = fn(&mut M, ListBoxInput<K>, &mut Window, &mut Context<M>);
@@ -19,6 +22,7 @@ pub struct ListBoxControl<M: 'static, T, K> {
     on_input: ListBoxInputHandler<M, K>,
     item_id: fn(&K) -> ElementId,
     item_label: fn(&T) -> SharedString,
+    virtualization: ListBoxVirtualization,
 }
 
 /// Borrowed integration point for look-owned builders. The binding is mutable
@@ -36,6 +40,8 @@ pub struct ListBoxRenderParts<'a, M: 'static, T, K> {
     pub item_id: fn(&K) -> ElementId,
     /// Accessible name of each item, independent of its visual template.
     pub item_label: fn(&T) -> SharedString,
+    /// Eager or opt-in uniform-item rendering.
+    pub virtualization: ListBoxVirtualization,
 }
 
 impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T, K> {
@@ -53,6 +59,7 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
             on_input,
             item_id,
             item_label,
+            virtualization: ListBoxVirtualization::default(),
             binding: ListBoxBinding::new(cx),
             scroll: ListBoxScrollHandle::default(),
         }
@@ -61,6 +68,14 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
     /// Opt into focus-required wheel routing. Defaults to hover scrolling.
     pub fn require_focus_for_scroll(mut self, required: bool) -> Self {
         self.scroll = self.scroll.require_focus_for_scroll(required);
+        self
+    }
+
+    /// Opt into uniform-item virtualization; eager rendering remains the default.
+    /// Item templates must keep durable state in their host/entities, since
+    /// off-screen element instances are not retained.
+    pub fn virtualization(mut self, policy: ListBoxVirtualization) -> Self {
+        self.virtualization = policy;
         self
     }
 
@@ -99,6 +114,7 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
             on_input: self.on_input,
             item_id: self.item_id,
             item_label: self.item_label,
+            virtualization: self.virtualization,
         }
     }
 }
