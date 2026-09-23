@@ -1,4 +1,4 @@
-//! Local prototype: assemble SDK ListBox bindings without owning domain data.
+//! Shadcn composition of SDK ListBox state, bindings, and optional DnD.
 //!
 //! Keep the state, binding, and scroll handle for the lifetime of the host. Build
 //! the surface each render; rebuilding must not reset focus or scroll position.
@@ -6,48 +6,51 @@
 //! a borrowed `.build(window, cx)` API, not a second entity owning the collection.
 
 #[cfg(all(test, feature = "test-support"))]
-#[path = "builder_tests.rs"]
+#[path = "listbox_builder_tests.rs"]
 mod tests;
 
-use std::{hash::Hash, sync::Arc};
+use std::hash::Hash;
 
 use gpui::{
     AnyElement, App, Axis, Context, Div, ElementId, Entity, EntityId, Hsla, Render, Stateful, Window, div, prelude::*,
     px,
 };
 use luma::controls::listbox::{
-    ListBoxAxis, ListBoxBinding, ListBoxInput, ListBoxScrollHandle, ListBoxState, ListBoxVisibleItem,
+    ListBoxAxis, ListBoxBinding, ListBoxControl, ListBoxFlow, ListBoxInput, ListBoxItemRenderModel, ListBoxLayout,
+    ListBoxScrollHandle, ListBoxState, ListBoxVisibleItem,
 };
 use luma::infra::drag_drop::{
     DragDropElementExt, DragDropEvent, DropEdge, DropProposal, DropZone, KeyedDrag, KeyedDropTarget, bind_drag_source,
 };
 use luma::vstack;
-use luma_look_shadcn::ShadcnLook;
+use crate::look::{ShadcnLook, resolve_look_from};
 
-use super::ListBoxSampleLayout;
+const CORNER_RADIUS: f32 = 8.0;
 
 type Surface = Stateful<Div>;
 type InputHandler<M, K> = fn(&mut M, ListBoxInput<K>, &mut Window, &mut Context<M>);
-type ItemRenderer<'a, T, K> = Box<dyn Fn(Surface, ListBoxVisibleItem<'_, T, K>) -> AnyElement + 'a>;
+type ItemRenderer<'a, T, K> = Box<dyn Fn(Surface, ListBoxVisibleItem<'_, T, K>, &mut App) -> AnyElement + 'a>;
 type DragRow<'a, M, T, K> = Box<dyn Fn(Surface, &T, &K, &mut Context<M>) -> Surface + 'a>;
 type DropTarget<'a, M, K> = Box<dyn Fn(Surface, Option<K>, &mut Context<M>) -> Surface + 'a>;
 
 struct DragDropBindings<'a, M: 'static, T, K> {
     row: DragRow<'a, M, T, K>,
     target: DropTarget<'a, M, K>,
-    viewport: Box<dyn Fn(Surface, EntityId) -> Surface + 'a>,
+    viewport: Box<dyn Fn(Surface, EntityId, ListBoxAxis) -> Surface + 'a>,
     highlight: Box<dyn Fn(Surface, EntityId, Hsla) -> Surface + 'a>,
 }
 
-/// Fixed-height vertical flow prototype, currently exercised by the DnD pair.
+/// Look-owned fixed-size list composition. Reuse SDK state and handles between renders.
 /// No DnD handlers or gap overlays are installed unless `drag_and_drop` is used.
-pub(super) struct ListBoxBuilder<'a, M: 'static, T, K> {
+pub struct ListBoxBuilder<'a, M: 'static, T, K> {
     id: &'static str,
-    look: Option<Arc<ShadcnLook>>,
+    look: Option<ShadcnLook>,
     state: &'a ListBoxState<T, K>,
     binding: &'a mut ListBoxBinding,
     scroll: &'a ListBoxScrollHandle<K>,
-    layout: ListBoxSampleLayout,
+    layout: ListBoxLayout,
+    axis: ListBoxAxis,
+    item_width: f32,
     on_input: InputHandler<M, K>,
     item_id: fn(&K) -> ElementId,
     item: ItemRenderer<'a, T, K>,
@@ -66,7 +69,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         scroll: &'a ListBoxScrollHandle<K>,
         on_input: InputHandler<M, K>,
         item_id: fn(&K) -> ElementId,
-        item: impl Fn(Surface, ListBoxVisibleItem<'_, T, K>) -> E + 'a,
+        item: impl Fn(Surface, ListBoxVisibleItem<'_, T, K>, &mut App) -> E + 'a,
     ) -> Self {
         Self {
             id,
@@ -75,17 +78,16 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             scroll,
             on_input,
             item_id,
-            item: Box::new(move |surface, item_state| item(surface, item_state).into_any_element()),
+            item: Box::new(move |surface, item_state, cx| item(surface, item_state, cx).into_any_element()),
+            axis: ListBoxAxis::Vertical,
+            item_width: 136.0,
             look: None,
-            layout: ListBoxSampleLayout {
+            layout: ListBoxLayout {
                 item_height: 36.0,
                 spacing: 4.0,
-                item_padding: 8.0,
                 viewport_height: 196.0,
                 inset_x: 8.0,
                 inset_y: 8.0,
-                radius: 8.0,
-                border: 1.0,
             },
             label: id,
             empty: None,
@@ -93,21 +95,32 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         }
     }
 
-    pub fn look(mut self, look: Arc<ShadcnLook>) -> Self {
-        self.look = Some(look);
+    /// Bind an explicit look, including live theme changes.
+    pub fn look(mut self, look: &ShadcnLook) -> Self {
+        self.look = Some(look.clone());
         self
     }
 
-    pub fn layout(mut self, layout: ListBoxSampleLayout) -> Self {
+    /// Set SDK geometry; appearance remains owned by this look.
+    pub fn layout(mut self, layout: ListBoxLayout) -> Self {
         self.layout = layout;
         self
     }
 
+    /// Fixed-width cards in an available-width horizontal viewport.
+    pub fn horizontal(mut self, item_width: f32) -> Self {
+        self.axis = ListBoxAxis::Horizontal;
+        self.item_width = item_width;
+        self
+    }
+
+    /// Accessible name of the list surface. Defaults to its ID.
     pub fn aria_label(mut self, label: &'static str) -> Self {
         self.label = label;
         self
     }
 
+    /// Content centered over an empty viewport.
     pub fn empty(mut self, content: impl IntoElement) -> Self {
         self.empty = Some(content.into_any_element());
         self
@@ -152,10 +165,8 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             target: Box::new(move |surface, before, cx| {
                 KeyedDropTarget::new(cx.entity_id(), list.clone(), before).bind(surface, cx, on_drop)
             }),
-            viewport: Box::new(move |surface, scope| {
-                scroll.bind_drag_auto_scroll(surface, ListBoxAxis::Vertical, move |drag: &KeyedDrag<S, K>| {
-                    drag.accepts(scope)
-                })
+            viewport: Box::new(move |surface, scope, axis| {
+                scroll.bind_drag_auto_scroll(surface, axis, move |drag: &KeyedDrag<S, K>| drag.accepts(scope))
             }),
             highlight: Box::new(move |surface, scope, color| {
                 surface.drag_over::<KeyedDrag<S, K>>(move |style, drag, _, _| {
@@ -170,15 +181,22 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         self
     }
 
+    /// Assemble one frame using the existing SDK bindings and scroll handle.
     pub fn build(self, window: &mut Window, cx: &mut Context<M>) -> Surface {
         let scope = cx.entity_id();
-        let look = self.look.as_ref().cloned().unwrap_or_else(|| Arc::new(ShadcnLook::built_in()));
+        let look = resolve_look_from(self.look.as_ref(), cx);
         let highlight = look.token_color("ring").unwrap_or(look.chrome().border);
         let insertion_target = |before: Option<K>, edge: DropEdge, cx: &mut Context<M>| {
             let zone = DropZone {
-                axis: Axis::Vertical,
+                axis: match self.axis {
+                    ListBoxAxis::Vertical => Axis::Vertical,
+                    ListBoxAxis::Horizontal => Axis::Horizontal,
+                },
                 edge,
-                item_extent: px(self.layout.item_height),
+                item_extent: px(match self.axis {
+                    ListBoxAxis::Vertical => self.layout.item_height,
+                    ListBoxAxis::Horizontal => self.item_width,
+                }),
                 following_gap: px(if before.is_some() { self.layout.spacing } else { 0.0 }),
                 marker_width: px(2.0),
             };
@@ -199,6 +217,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         let mut rows = Vec::with_capacity(items.len());
         while let Some(item) = items.next() {
             let key = item.key.clone();
+            let visible_index = item.visible_index;
             let surface = look.listbox_row((self.item_id)(&key), item.state, self.binding.focus_visible(window));
             let mut surface = self.binding.bind_row(surface, key.clone(), item.state, cx, self.on_input);
             if let Some(drag_drop) = &self.drag_drop {
@@ -207,12 +226,14 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             // Exactly one measured child per visible item, including during drag.
             let mut row = div()
                 .id((self.item_id)(&key))
+                .debug_selector(|| format!("{}-item-{visible_index}", self.id))
                 .relative()
-                .w_full()
+                .when(self.axis == ListBoxAxis::Vertical, |row| row.w_full())
+                .when(self.axis == ListBoxAxis::Horizontal, |row| row.w(px(self.item_width)))
                 .min_w(px(0.0))
                 .h(px(self.layout.item_height))
                 .flex_shrink_0()
-                .child((self.item)(surface, item));
+                .child((self.item)(surface, item, cx));
             if self.drag_drop.is_some() && cx.has_active_drag() {
                 row = row.child(insertion_target(Some(key), DropEdge::Before, cx)).child(insertion_target(
                     items.peek().map(|item| item.key.clone()),
@@ -224,21 +245,24 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         }
         let mut viewport = vstack! {}
             .id(format!("{}-viewport", self.id))
-            .overflow_y_scroll()
+            .debug_selector(|| format!("{}-viewport", self.id))
+            .when(self.axis == ListBoxAxis::Vertical, |viewport| viewport.overflow_y_scroll())
+            .when(self.axis == ListBoxAxis::Horizontal, |viewport| viewport.flex_row().overflow_x_scroll())
             .w_full()
             .min_w(px(0.0))
             .h(px(self.layout.viewport_height))
             .gap(px(self.layout.spacing))
             .children(rows);
         if let Some(drag_drop) = &self.drag_drop {
-            viewport = (drag_drop.viewport)(viewport, scope);
+            viewport = (drag_drop.viewport)(viewport, scope, self.axis);
         }
         let mut surface = look
             .listbox_surface(format!("{}-surface", self.id), self.state.is_focused())
+            .debug_selector(|| format!("{}-surface", self.id))
             .relative()
             .w_full()
             .min_w(px(0.0))
-            .rounded(px(self.layout.radius))
+            .rounded(px(CORNER_RADIUS))
             .px(px(self.layout.inset_x))
             .py(px(self.layout.inset_y))
             .aria_label(self.label);
@@ -252,7 +276,58 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             surface = surface.child(div().absolute().inset_0().flex().items_center().justify_center().child(empty));
         }
         let surface = self.scroll.bind(surface, viewport, self.state);
-        self.binding
-            .bind_root(surface, ListBoxAxis::Vertical, self.state.selection_mode(), window, cx, self.on_input)
+        self.binding.bind_root(surface, self.axis, self.state.selection_mode(), window, cx, self.on_input)
+    }
+}
+
+impl ShadcnLook {
+    /// Render a persistent SDK control with this look and an arbitrary content
+    /// template. The callback may borrow render-local data; it is not retained.
+    /// Keep the control across renders so focus and scroll position remain stable.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_listbox<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static, E: IntoElement>(
+        &self,
+        control: &mut ListBoxControl<M, T, K>,
+        id: &'static str,
+        flow: ListBoxFlow,
+        padding: (f32, f32),
+        template: impl Fn(&ListBoxItemRenderModel<'_, T>, &mut App) -> E,
+        window: &mut Window,
+        cx: &mut Context<M>,
+    ) -> Stateful<Div> {
+        let parts = control.render_parts();
+        let layout = flow.layout(padding);
+        let item_label = parts.item_label;
+        let mode = parts.state.selection_mode();
+        let builder = ListBoxBuilder::new(
+            id,
+            parts.state,
+            parts.binding,
+            parts.scroll,
+            parts.on_input,
+            parts.item_id,
+            |surface, item, cx| {
+                let model = ListBoxItemRenderModel {
+                    item: item.item,
+                    selected: item.state.selected,
+                    active: item.state.active,
+                    enabled: item.state.enabled,
+                };
+                surface
+                    .size_full()
+                    .rounded(px(CORNER_RADIUS))
+                    .overflow_hidden()
+                    .aria_label(item_label(item.item))
+                    .when(!item.state.enabled, |surface| surface.aria_description("Disabled"))
+                    .child(template(&model, cx))
+            },
+        )
+        .look(self)
+        .layout(layout);
+        let builder = match flow {
+            ListBoxFlow::Vertical { .. } => builder,
+            ListBoxFlow::Horizontal { item_width, .. } => builder.horizontal(item_width),
+        };
+        builder.build(window, cx).aria_description(format!("Selection mode: {mode:?}"))
     }
 }

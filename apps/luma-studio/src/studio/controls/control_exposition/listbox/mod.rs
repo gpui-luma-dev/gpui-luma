@@ -1,6 +1,6 @@
 //! Host-composed ListBox examples: vertical rows, horizontal cards, and transfers.
 
-mod builder;
+mod markup;
 pub(super) mod horizontal;
 mod presentation;
 mod selection_controls;

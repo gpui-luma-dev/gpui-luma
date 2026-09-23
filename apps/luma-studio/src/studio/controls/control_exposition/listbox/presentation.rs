@@ -9,7 +9,6 @@ use luma::{hstack, vstack};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 use lucide_svg_static::Icon as LucideIcon;
 
-use super::ListBoxSampleLayout;
 use super::super::event_stream::ControlEventStream;
 
 /// Always occupies the same space so toggling selection does not move the label.
@@ -54,16 +53,6 @@ impl ExamplePresentation {
     pub fn record_message<M: 'static>(&self, message: &str, cx: &mut Context<M>) {
         let message = format!("{} · {message}", self.title);
         self.event_stream.update(cx, |stream, cx| stream.append_line(&message, cx));
-    }
-
-    pub fn surface(&self, id: &'static str, layout: ListBoxSampleLayout, focused: bool) -> Stateful<Div> {
-        self.look
-            .listbox_surface(format!("{id}-surface"), focused)
-            .w_full()
-            .min_w(px(0.0))
-            .rounded(px(layout.radius))
-            .px(px(layout.inset_x))
-            .py(px(layout.inset_y))
     }
 
     pub fn section(&self, selected_count: usize, surface: Stateful<Div>) -> Div {

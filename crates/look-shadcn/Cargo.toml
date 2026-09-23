@@ -8,6 +8,10 @@ publish = false
 [lib]
 name = "luma_look_shadcn"
 
+[features]
+# Headless ListBox composition and DnD dispatch tests.
+test-support = ["luma/test-support"]
+
 [dependencies]
 gpui.workspace = true
 luma.workspace = true

@@ -38,34 +38,80 @@ now live in `luma::infra::drag_drop`; selection capture lives in `ListBoxState`.
 Studio uses these helpers while retaining domain collection mutation and visual
 composition. The user has tested the extracted SDK wiring and confirmed it working.
 
-### Local Builder Prototype — Awaiting User Testing
+### SDK and Look Migration — Implemented; Awaiting User Retest
 
-The DnD pair now uses `listbox/builder.rs`, a local `ListBoxBuilder` beside the
-exposition. It assembles look-styled rows, SDK input/focus bindings, the scrolling
-viewport, optional native drags, keyed gap targets, highlights, edge auto-scroll,
-and Escape cancellation. The named `TransferRow` and `DragPreview` remain in
-`transfer/item.rs`; domain mutation and lifecycle completion remain in the host.
-Event tracking consumes the SDK's typed notifications directly.
+The user tested the local builder and markup composition and approved migration
+of the reusable implementation. The macro implementation stays in the exposition
+for continued syntax review.
 
-This prototype borrows the existing state, binding, and scroll handle and finishes
-with `.build(window, cx)`. It does not spawn a second owner for either collection;
-the host retains stable focus/scroll handles and atomic cross-list commits.
-The builder currently covers fixed-height vertical flow, as used by the pair.
-The independent vertical and horizontal examples retain their own compositions.
-Omitting `.drag_and_drop(...)` leaves ordinary selection and scrolling bindings.
-Focus-required wheel scrolling and auto-scroll speed remain configured on the
-supplied SDK scroll handle.
+- **SDK (`controls::listbox`):** `ListBoxControl`, `ListBoxRenderParts`, fixed-item
+  `ListBoxFlow`/`ListBoxLayout`, `ListBoxItemRenderModel`, and the optional
+  `make_listbox_item_template` adapter. State, focus, scroll handles, and the host
+  input callback persist across renders. Layout describes geometry only; the SDK
+  has no Shadcn dependency or knowledge of Studio's inspector layout types.
+- **look-shadcn:** `ListBoxBuilder` and `ShadcnLook::render_listbox` compose SDK
+  bindings with the look's surfaces, selection/hover/focus appearance, corner
+  radius, insertion highlights, and optional DnD. Explicit `.look(&look)` follows
+  other look builders. The lower-level builder borrows host-owned state/handles
+  and finishes with `.build(window, cx)`.
+- **Exposition:** `markup.rs` retains the two `listbox!` grammar arms, calling the
+  look renderer with SDK flow values. Sample data, inline/named content templates,
+  event logging, inspector metrics, previews, and domain transfer rules stay here.
 
-Promotion to the SDK is deferred until the user tests the prototype and approves
-its usability. Before promotion, review the constructor/options, layout API,
-horizontal support, and theme ownership. No new SDK builder API is introduced.
+The DnD pair now uses the exported Shadcn builder. Domain mutation and lifecycle
+completion remain host-owned, preserving atomic cross-list updates. Omitting
+`.drag_and_drop(...)` installs ordinary selection and scrolling only. Direct SDK
+state mutations deliver rendering/reveal effects through `control.handle_update`.
 
-Automated verification: 15 transfer-model tests and three headless builder
-dispatch tests pass, including group capture, keyed gaps, same-list targets,
-empty destinations, cancellation, and ordinary selection with DnD omitted.
-Clippy passes with the Studio `test-support` feature. Changed Rust files are
-formatted; workspace formatting still reports only the existing `team.rs` issue.
-The agent has not launched Studio; manual testing remains with the user.
+The builder's headless DnD dispatch tests moved to look-shadcn (its `test-support`
+feature enables them). SDK tests cover geometry and existing ListBox behavior;
+Studio keeps macro integration, inspector geometry, and domain mutation tests.
+No macro is exported by the SDK or the look. The app has not been launched by
+the agent; manual migration testing remains with the user.
+
+### Local Markup Adapter — User Verified; Migration Retest Pending
+
+The two top exposition examples now read as nested `listbox!` → `scroll_view!`
+→ stack declarations, with an inline `item_template` closure in each stack.
+`markup.rs` implements two small `macro_rules!` arms over the migrated typed
+renderer and builder. The outer macro consumes the scroll and stack declarations;
+they are not additional global macros or extensions to the SDK's normal stack grammar.
+Template expressions are ordinary Rust and may use the existing `hstack!`,
+`vstack!`, GPUI elements, named components, and SDK controls.
+
+- The vertical example declares five visible items, 36px item height, and 4px
+  spacing. The adapter computes the 196px viewport; it never inspects the template
+  implementation to discover dimensions. The complete list remains 250px wide.
+- The horizontal example retains 136px cards, 36px height, and 8px spacing in
+  an available-width viewport, preserving the previously tested card sizing.
+- Each template receives `ListBoxItemRenderModel` (item, selected, active,
+  enabled) and `&mut App`, returning GPUI content. Named functions and inline
+  closures share the same contract. Named functions can return `Div` or
+  `AnyElement`, following existing SDK templates; an opaque Rust 2024 return
+  needs `impl IntoElement + use<>` to avoid capturing the input lifetimes.
+- Templates run during rendering and can borrow local data, with no imposed
+  `Send`, `Sync`, or `'static` closure requirement. Retained GPUI callbacks still
+  follow GPUI's ordinary ownership requirements.
+- The SDK `ListBoxControl` retains the existing SDK state, binding, scroll handle,
+  and host input callback across renders. Runtime policy changes, selection
+  events, disabled items, focus-required scrolling, and keyboard reveal remain
+  driven by the SDK. Shadcn factories style the interaction surface around the
+  template; templates do not receive or wire that surface.
+
+This is a local composition prototype, not a general UI language. Declaration
+order is fixed, sizing is explicit, and the markup currently targets these two
+non-DnD examples. The DnD pair continues to use the lower-level Shadcn builder.
+Relative-width card counts, variable-size flow, lazy layout, and virtualization
+are not introduced by this adapter.
+
+Migration verification passes 40 SDK ListBox tests, four look tests (including
+three migrated headless builder/DnD tests), and 18 Studio ListBox tests. These
+include rendering of the actual exposition to check inspector geometry, named
+and inline templates, keyboard selection/reveal on both axes, runtime policies,
+disabled-item skipping, empty collections, focus-based wheel routing with scroll
+retention, and the existing transfer/reorder behavior.
+Both SDK ListBox doctests, Clippy across the three crates, and workspace formatting
+checks also pass.
 
 Still planned: filtered/sorted projections, layout helpers, custom auto-scroll
 curves, and virtualization. Sections below distinguish
@@ -791,7 +837,7 @@ Completed extraction:
 - Studio migrated to the SDK helpers while retaining domain mutation and visuals.
 
 The extracted Studio wiring is confirmed working by the user. The subsequent
-local builder prototype awaits user testing before any SDK promotion.
+migrated control and look-owned builder await user retesting; the macro stays local for review.
 A customizable auto-scroll response function remains an optional future extension.
 
 ### Phase 4: Performance Enhancements — Planned
@@ -804,9 +850,9 @@ A customizable auto-scroll response function remains an optional future extensio
 
 The initial design does not require:
 
-- an SDK `ListBox<T, K>` visual builder (a local exposition prototype now exists);
+- a mandatory SDK visual shell (optional composition is provided by the look-owned builder);
 - a default row renderer;
-- injectable shell or item-template callbacks;
+- a general-purpose injectable shell framework;
 - an SDK-owned viewport or stack;
 - a universal styling preset for arbitrary domain values;
 - backward compatibility with the legacy visual ListBox API.
@@ -814,9 +860,9 @@ The initial design does not require:
 The legacy visual ListBox is removed, not retained as an optional shell for the
 new model. Existing legacy APIs do not constrain naming or behavior here.
 
-Repeated DnD composition has now justified an optional builder prototype, described
-above. It composes the existing behavior model; it does not replace that model
-or require other consumers to adopt a visual shell.
+Repeated DnD composition justified the optional look-owned builder and local
+markup adapter described above. These compose the existing behavior model without
+replacing it or requiring other consumers to adopt a visual shell.
 
 ## Acceptance Criteria
 

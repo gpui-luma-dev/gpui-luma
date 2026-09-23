@@ -164,7 +164,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "ListBox",
         description: "Keyed collection state with host-composed vertical rows and horizontal cards. Independent multi-select examples, keyboard navigation, and scoped composition inspectors.",
         category: ControlCategory::Selection,
-        snippet: "let state = ListBoxState::try_new(items, |item| item.id, SelectionMode::Multiple)?;\n// Compose state.visible_items() with vstack! or hstack!.\n// Attach ListBoxBinding for focus, selection, and keyboard input.",
+        snippet: "// Create once and retain as self.list.\nlet list = ListBoxControl::new(\n    ListBoxState::try_new(items, |item| item.id, SelectionMode::Multiple)?,\n    Self::handle_input, // Apply input with self.list.apply(input, cx); forward update.events.\n    |key| (\"items\", *key).into(),\n    |item| item.label.clone(),\n    cx,\n).require_focus_for_scroll(true);\n\n// Render with your own item template.\nlook.render_listbox(\n    &mut self.list,\n    \"items\",\n    ListBoxFlow::Vertical { visible_items: 5, item_height: 36.0, gap: 4.0 },\n    (16.0, 8.0),\n    |model, cx| render_item_card(model, cx),\n    window,\n    cx,\n)",
         section_order: 305,
     },
     ControlDocEntry {

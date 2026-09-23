@@ -1,5 +1,5 @@
-//! Exercise the local builder through a headless GPUI TestWindow, never Studio.
-use std::{cell::Cell, rc::Rc};
+//! Exercise Shadcn's SDK ListBox composition through a headless GPUI TestWindow.
+use std::{cell::Cell, rc::Rc, sync::Arc};
 
 use gpui::{MouseButton, TestAppContext, VisualTestContext, point};
 use luma::controls::listbox::{ListBoxSnapshot, SelectionMode};
@@ -77,7 +77,7 @@ impl Render for Harness {
                 &self.scrolls[side],
                 if side == 0 { Self::left_input } else { Self::right_input },
                 |key| ("item", *key).into(),
-                |surface, _| surface.size_full(),
+                |surface, _, _| surface.size_full(),
             )
             .empty(div().size(px(20.0)));
             if self.dnd {
@@ -87,7 +87,7 @@ impl Render for Harness {
                 });
             }
             // Theme may be supplied after DnD without freezing the old look.
-            builder.look(self.look.clone()).build(window, cx).w(px(250.0)).flex_shrink_0()
+            builder.look(&self.look).build(window, cx).w(px(250.0)).flex_shrink_0()
         });
         div().flex().gap(px(20.0)).children(lists)
     }

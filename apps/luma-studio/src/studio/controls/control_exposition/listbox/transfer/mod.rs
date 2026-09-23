@@ -14,7 +14,8 @@ use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use model::{Side, TransferModel};
 use item::{DragPreview, TransferRow};
-use super::builder::ListBoxBuilder;
+use luma_look_shadcn::ListBoxBuilder;
+use luma::controls::listbox::ListBoxLayout;
 use super::{ListBoxSampleLayout, VERTICAL_LIST_WIDTH};
 use super::presentation::ExamplePresentation;
 use super::super::event_stream::ControlEventStream;
@@ -131,10 +132,16 @@ impl TransferExample {
             &self.scrolls[index],
             on_input,
             |key| ("item", *key).into(),
-            TransferRow::new,
+            |surface, item, _| TransferRow::new(surface, item),
         )
-        .look(presentation.look.clone())
-        .layout(LAYOUT)
+        .look(&presentation.look)
+        .layout(ListBoxLayout {
+            item_height: LAYOUT.item_height,
+            spacing: LAYOUT.spacing,
+            viewport_height: LAYOUT.viewport_height,
+            inset_x: LAYOUT.inset_x,
+            inset_y: LAYOUT.inset_y,
+        })
         .aria_label(if side == Side::Left {
             "Left transfer list"
         } else {
