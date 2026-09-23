@@ -244,6 +244,20 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
         self.snapshot.keys.iter().filter(|key| self.selected.contains(*key))
     }
 
+    /// Capture the selected group in source order when dragging a selected item;
+    /// otherwise capture only the enabled target. No state or events are changed.
+    /// Unknown/disabled targets are not draggable. The host may impose further
+    /// domain-specific restrictions before creating a drag session.
+    pub fn drag_keys(&self, key: &K) -> Option<Vec<K>> {
+        self.snapshot.is_enabled(key).then(|| {
+            if self.selected.contains(key) {
+                self.selected_keys().cloned().collect()
+            } else {
+                vec![key.clone()]
+            }
+        })
+    }
+
     pub fn selection_mode(&self) -> SelectionMode {
         self.policy.mode
     }

@@ -2,19 +2,74 @@
 
 ## Status
 
-Proposed. This is a clean-slate replacement. The existing visual ListBox and
-its builders and templates will be removed. There is no backward-compatibility
-contract, compatibility adapter, or requirement to preserve its behavior.
+Implemented foundation with planned extensions. The clean-slate replacement is
+working in Luma Studio's **Selectors** category: independent vertical and
+horizontal examples, plus a pair demonstrating single/group transfers,
+same-list reordering, gap insertion, and configurable basic linear auto-scroll.
+The user has manually tested these interactions. Model tests cover selection,
+reconciliation, drop validation, and event production.
 
-Retain and adapt the ListBox inspectors with a narrower scope tied to the new
-exposition's concrete composition. Replace the old exposition wiring and place
-the new ListBox exposition in Luma Studio's **Selectors** category. Retain or
-adapt look and inspection support needed by that composition; remove obsolete
-theme APIs coupled only to the old visual control.
+The legacy visual ListBox, builders, and templates have been replaced without
+a compatibility layer. The inspectors remain, scoped to the exposition's
+concrete composition. Shared ControlGroup and selection infrastructure used by
+other controls remains independent.
 
-Update in-repository consumers to the new model. Shared ControlGroup and
-selection infrastructure used by other controls remains independent; removing
-ListBox does not imply removing those controls or their shared infrastructure.
+Selection modes now include no selection, both single modes, multiple toggle,
+and extended ranges, with runtime policy controls on the vertical/horizontal
+examples. The user has confirmed the new selection policies, focus-required
+wheel scrolling, and single-click focus exit are tested and working in Studio.
+
+### Local Commit Checkpoint — 2026-09-21
+
+The current implementation is a working checkpoint to commit locally before
+starting SDK DnD extraction. Completed and manually verified: the independent
+vertical/horizontal examples, retained inspectors, selection policies and their
+runtime controls, focus-aware wheel routing, and the DnD pair's single/group
+transfers, same-list reordering, gap insertion, auto-scroll, and event tracking.
+
+The latest automated verification passed 37 SDK ListBox tests, 15 Studio transfer
+tests, and Clippy for the SDK and Studio. Changed Rust files are formatted;
+workspace formatting still reports the unrelated existing `team.rs` issue.
+The app was tested by the user, not launched by the agent.
+
+The subsequent SDK DnD extraction is implemented. Shared sessions, keyed gap
+admission, drop proposals, lifecycle notifications, and nested-control boundaries
+now live in `luma::infra::drag_drop`; selection capture lives in `ListBoxState`.
+Studio uses these helpers while retaining domain collection mutation and visual
+composition. The user has tested the extracted SDK wiring and confirmed it working.
+
+### Local Builder Prototype — Awaiting User Testing
+
+The DnD pair now uses `listbox/builder.rs`, a local `ListBoxBuilder` beside the
+exposition. It assembles look-styled rows, SDK input/focus bindings, the scrolling
+viewport, optional native drags, keyed gap targets, highlights, edge auto-scroll,
+and Escape cancellation. The named `TransferRow` and `DragPreview` remain in
+`transfer/item.rs`; domain mutation and lifecycle completion remain in the host.
+Event tracking consumes the SDK's typed notifications directly.
+
+This prototype borrows the existing state, binding, and scroll handle and finishes
+with `.build(window, cx)`. It does not spawn a second owner for either collection;
+the host retains stable focus/scroll handles and atomic cross-list commits.
+The builder currently covers fixed-height vertical flow, as used by the pair.
+The independent vertical and horizontal examples retain their own compositions.
+Omitting `.drag_and_drop(...)` leaves ordinary selection and scrolling bindings.
+Focus-required wheel scrolling and auto-scroll speed remain configured on the
+supplied SDK scroll handle.
+
+Promotion to the SDK is deferred until the user tests the prototype and approves
+its usability. Before promotion, review the constructor/options, layout API,
+horizontal support, and theme ownership. No new SDK builder API is introduced.
+
+Automated verification: 15 transfer-model tests and three headless builder
+dispatch tests pass, including group capture, keyed gaps, same-list targets,
+empty destinations, cancellation, and ordinary selection with DnD omitted.
+Clippy passes with the Studio `test-support` feature. Changed Rust files are
+formatted; workspace formatting still reports only the existing `team.rs` issue.
+The agent has not launched Studio; manual testing remains with the user.
+
+Still planned: filtered/sorted projections, layout helpers, custom auto-scroll
+curves, and virtualization. Sections below distinguish
+current behavior from these future contracts.
 
 ## Architectural Position
 
@@ -25,8 +80,8 @@ control.
 The SDK owns the meaning and behavior of the collection:
 
 - item identity and owned collection snapshots;
-- visible-item projection after filtering or other host-defined transforms;
-- selection, active item, and anchor state;
+- visible-item iteration in snapshot order; filtered/sorted projections are planned;
+- selection, active item, and a stable-key range anchor;
 - activation and interaction events;
 - reusable focus, keyboard, and drag-and-drop mechanics as those capabilities
   are added.
@@ -108,6 +163,9 @@ mutate selection state.
 
 ### Horizontal Cards Sized to the Viewport
 
+This is a reference layout option, not the current Studio example. Studio uses
+fixed 136px cards; fitting five cards to a measured viewport remains a host choice.
+
 This SwiftUI example adds a useful layout case: the viewport width determines
 card width so five cards and their intervening gaps fit in the usable width.
 
@@ -172,10 +230,10 @@ capabilities, not prerequisites for the initial Luma implementation.
 | `.containerRelativeFrame(..., count:, spacing:)` | host measures viewport and calculates item extent |
 | `.safeAreaPadding` | host accounts for viewport insets in usable extent |
 | `.scrollTargetLayout()` / `.viewAligned` | optional host scroll-target registration and snapping |
-| selection behavior | `SelectionModel<K>` inside `ListBoxState` |
+| selection behavior | key-based selection owned by `ListBoxState` |
 | list interaction events | `ListBoxEvent<K>` |
 
-GPUI's initial implementation may eagerly compose visible snapshot items. True
+The current implementation eagerly composes snapshot items. True
 virtualization is a later optimization and is not required to establish the
 composition or behavior boundary.
 
@@ -184,9 +242,11 @@ composition or behavior boundary.
 ```rust
 pub struct ListBoxState<T, K> {
     snapshot: ListBoxSnapshot<T, K>,
-    selection: SelectionModel<K>,
-    projection: ListBoxProjection<K>,
-    // Private interaction policy and focus state are omitted here.
+    selected: HashSet<K>,
+    active: Option<K>,
+    policy: SelectionPolicy,
+    anchor: Option<K>,
+    focused: bool,
 }
 
 pub struct ListBoxVisibleItem<'a, T, K> {
@@ -204,10 +264,11 @@ viewport, and does not choose a row template.
 The host may store the state in a GPUI `Entity`, a parent view, or another
 appropriate owner. That lifecycle choice is separate from listbox behavior.
 
-The types above are API sketches. Snapshot, selection, and projection are
-read-only through accessors. All mutation goes through `ListBoxState`
+The types above show the current model shape. Snapshot and selection are
+read-only through accessors. There is no separate `SelectionModel` or configurable
+`ListBoxProjection` in this implementation. All mutation goes through `ListBoxState`
 operations so validation, reconciliation, and event production happen as one
-transaction. Do not expose mutable access to the internal `SelectionModel`.
+transaction. Internal selection membership is not exposed for mutation.
 
 `ListBoxItemState` exposes at least `selected`, `active`, and `enabled`.
 Pointer hover, pressed appearance, and focus-visible presentation belong to
@@ -219,7 +280,7 @@ Keys `K: Clone + Eq + Hash` must be stable and unique within a snapshot.
 `ListBoxSnapshot` owns its items and captures their keys on construction.
 Items are exposed by shared reference; replacing an item requires a snapshot
 update. A key change represents removal of the old item and insertion of a
-new item. Selection, active item, and anchor are reconciled on replacement.
+new item. Selection and active item are reconciled on replacement. The range anchor survives reordering and is cleared if its item is removed or disabled.
 
 Construction and replacement reject duplicate keys with a typed error rather
 than panicking or silently merging items. Failed updates leave the previous
@@ -242,20 +303,58 @@ pub enum SelectionMode {
 }
 ```
 
-- `None`: selection stays empty; active-item navigation and activation remain
-  available for enabled items.
+- `None`: selection stays empty; navigation and activation remain available.
 - `SingleRequired`: exactly one enabled source item is selected whenever one
   exists. With no enabled items, selection is empty.
-- `SingleAllowNone`: at most one enabled item is selected. An SDK policy controls
-  repeated-click behavior (`KeepSelected` by default or `ToggleOff`); the host
-  configures that policy rather than implementing selection logic itself.
+- `SingleAllowNone`: at most one enabled item is selected. Repeated clicks keep
+  it selected unless `toggle_off` is enabled; clearing selection is also an explicit operation.
 - `Multiple`: independent toggle selection.
-- `Extended`: desktop-style replacement, modifier toggle, and range selection.
+- `Extended`: plain click/Space replaces selection; Cmd/Ctrl toggles the target;
+  Shift selects an inclusive range, and Cmd/Ctrl+Shift adds the range. Disabled
+  items are skipped. Shift+arrows/Home/End extends the range and reveals its target.
+
+`SelectionPolicy { mode, toggle_off, selection_follows_active }` is configurable
+at runtime with `set_selection_policy`; `set_selection_mode` changes only mode.
+Both flags default to false. `toggle_off` applies only to `SingleAllowNone`.
+`selection_follows_active` selects subsequent navigation targets in either single
+mode; enabling it alone does not immediately change selection. Flags are retained
+but inactive in other modes.
+
+A policy change preserves focus and active item, clears the anchor, and reconciles
+selection atomically. `None` clears it. A transition to a single mode retains the
+selected active key, or the first selected source key. Entering `SingleRequired`
+with empty selection chooses the active enabled item, then the first enabled item.
+Empty/all-disabled snapshots remain unselected. Identical policy updates are no-ops.
+`SelectionPolicyChanged` reports a changed policy, followed by any selection change.
+Programmatic nonempty selection in `None` mode returns `SelectionDisabled`.
+
+Plain/toggle gestures establish the range anchor; ordinary navigation establishes
+it at the new active item. Shift gestures keep it fixed. With no anchor, use the
+pre-gesture active item or the target. Clear/select-all and successful explicit
+selection replacement clear the anchor. Failed replacements leave it intact. Anchor-only changes set `changed` without
+inventing selection events.
+
+```rust
+let update = state.set_selection_policy(SelectionPolicy {
+    mode: SelectionMode::SingleAllowNone,
+    toggle_off: true,
+    selection_follows_active: true,
+});
+scroll.handle_update(&update, cx);
+// Deliver update.events through the host's event handling.
+```
 
 Selection is key-based. The host resolves keys back to domain values when it
 needs to perform application work.
 
-Reconciliation and interaction rules:
+Current reconciliation removes selected keys that are removed or disabled.
+`SingleRequired` falls back to the first enabled item. A lost/disabled active
+item falls back to the first selected enabled item, then the first enabled item,
+or `None`. Navigation moves only the active item, skips disabled rows, and does
+not wrap. Selection events list keys in source order; reordering alone does not
+emit a selection event.
+
+Implemented range rules and planned projection reconciliation:
 
 - Filtering preserves selection of enabled source items, including hidden ones.
   Removing or disabling an item clears its selection. `SingleRequired` falls
@@ -278,6 +377,10 @@ Reconciliation and interaction rules:
 
 ### Visible Projection
 
+Currently `visible_items()` iterates every snapshot item in source order,
+including items outside the viewport. Source and visible indices are identical.
+There is no projection-replacement API yet. The following is the planned contract.
+
 The projection is an ordered subset of snapshot keys. The default projection
 contains every source key in source order. Hosts may supply an ordered key
 sequence produced by filtering, sorting, or another transform; a later filter
@@ -297,17 +400,25 @@ not to the core projection model.
 
 ## Mutation and Interaction Contract
 
-The model exposes operations for snapshot replacement, projection replacement,
-programmatic selection replacement, selection-policy changes, and semantic
-input. Semantic input includes row selection with modifiers, next/previous,
-first/last, explicit activation, and focus entry/exit. Input targets use keys;
-stale, hidden, or disabled row targets are ignored.
+The model currently exposes snapshot replacement, programmatic selection
+replacement, combined snapshot/selection/active replacement, and semantic input.
+Input includes select/toggle, modifier selection, range navigation, select-all/clear,
+next/previous, first/last, activation, and focus entry/exit. Targets use keys; stale
+or disabled row targets are ignored. Runtime policies are supported; projection
+replacement remains planned.
 
 Each successful mutation returns a `ListBoxUpdate<K>` containing a `changed`
-flag, ordered `ListBoxEvent<K>` values, and host effects such as
-`RevealItem { key }`. Invalid replacement data returns an error. Programmatic
-selection replacement rejects unknown, disabled, duplicate, or mode-incompatible
-keys; empty selection is invalid for `SingleRequired` when eligible items exist.
+flag, ordered `ListBoxEvent<K>` values, and an optional `reveal: Option<K>` scroll
+request. Invalid replacement data returns an error. Programmatic selection
+replacement deduplicates repeated keys and rejects unknown, disabled, or
+mode-incompatible keys; empty selection is invalid for `SingleRequired` when
+eligible items exist. Snapshot construction still rejects duplicate item keys.
+
+`replace_snapshot_with_selection(snapshot, keys, active)` validates selection
+and an explicit active key against the new snapshot before committing anything.
+It preserves focus and returns one final update. An `active` value of `None`
+chooses the first selected enabled item, then the first enabled item, or stays
+empty when none exists. The operation does not request scrolling automatically.
 
 The state commits and reconciles before returning the update. The GPUI owner
 forwards events to its event stream and calls `cx.notify()` when `changed` is
@@ -317,10 +428,10 @@ change events.
 
 ### GPUI Interaction Binding
 
-A small SDK binding translates GPUI input into semantic operations and applies
+The SDK binding translates GPUI input into semantic operations and applies
 updates through the owner. It does not create a viewport or choose row content.
-Establish its contract in Phase 1, implementing keyboard mapping, activation,
-and reveal effects in Phase 2:
+The current binding supplies (construct it with `ListBoxBinding::new(cx)` and
+pass `state.selection_mode()` into `bind_root` each render):
 
 - stable row element IDs scoped by list identity and item key;
 - one list focus handle/tab stop, with active item distinct from keyboard focus;
@@ -330,8 +441,30 @@ and reveal effects in Phase 2:
 - host-configured vertical/horizontal key mapping to axis-agnostic commands;
 - focus-within tracking and an event boundary so nested SDK controls can handle
   input without also selecting or activating their containing row;
-- `RevealItem` requests after keyboard movement, with the host resolving keys
-  to row bounds and scrolling its own viewport.
+- `reveal` requests after keyboard movement, with the host resolving keys
+  to row bounds and scrolling its own viewport, directly or through the
+  optional `ListBoxScrollHandle<K>` adapter.
+
+`ListBoxScrollHandle<K>` attaches to a host-provided surface and scrolling
+stack. The stack must have one direct child per visible item, in visible order.
+It resolves reveal keys against the current snapshot and delegates measured
+scrolling on either axis to GPUI. It also contains wheel propagation and reveals
+the focused active item after viewport resize. Item dimensions, layout, and
+appearance remain host choices; the adapter needs no uniform-row arithmetic.
+The host calls `handle_update` for repaint/reveal effects and delivers events to
+its own application code.
+
+Wheel scrolling defaults to hover targeting. A host can opt into
+`ListBoxScrollHandle::default().require_focus_for_scroll(true)` for lists
+embedded in a scrolling page, as all four Studio exposition lists do. This
+uses the existing binding's focus state: an unfocused list passes wheel input
+through to the page; a focused list contains wheel input at both endpoints.
+Wheel input outside the list still reaches the page. Bind the whole surface as
+the list root so clicking its padding also focuses it. Tab and Escape retain
+the SDK's existing focus-scope behavior; focus loss preserves selection and
+scroll position. The look paints a surface focus border for pointer and
+keyboard focus. Drag edge auto-scroll remains independent of focus. Pending
+item reveal requests wait until focus returns when this policy is enabled.
 
 For double-click activation, apply selection only once for that gesture so
 toggle modes do not immediately undo the first click. Focus exit preserves
@@ -349,6 +482,9 @@ Events communicate behavior without requiring the SDK to own visual elements:
 
 ```rust
 pub enum ListBoxEvent<K> {
+    SelectionPolicyChanged {
+        policy: SelectionPolicy,
+    },
     SelectionChanged {
         selected: Vec<K>,
         active: Option<K>,
@@ -372,7 +508,7 @@ The event contract describes what happened. The host decides how the event
 changes application data or presentation.
 
 For a transaction producing multiple events, order them as `ProjectionChanged`,
-`SelectionChanged`, `ActiveItemChanged`, `FocusChanged`, then `ItemActivated`.
+`SelectionPolicyChanged`, `SelectionChanged`, `ActiveItemChanged`, `FocusChanged`, then `ItemActivated`.
 Emit each change event at most once, only when that aspect changes. If both
 selection and active item change, emit both events; their payloads describe the
 same committed state. Programmatic mutations and reconciliation follow the
@@ -386,33 +522,95 @@ still marks the update as changed for rendering, without inventing a selection
 or projection change. Scroll requests are effects, not assertions that scrolling
 has already happened.
 
+Cross-list drops return one update per list. Destination snapshot, selection,
+and active item commit together through `replace_snapshot_with_selection`;
+source reconciliation also returns only its final changes. Both states are
+committed before the host delivers either update. A later GPUI focus change is
+a separate interaction, not an intermediate selection event from the drop.
+
+The Studio tracker formats typed SDK `DragDropEvent<S, K>` notifications alongside
+the ListBox state-change events. `S` identifies the host collection; `K` identifies
+an item. These notifications are independent of domain mutation:
+
+- `DragStarted`: once when GPUI starts the gesture, with source-list label and
+  captured keys; pressing the mouse without dragging does not emit it.
+- `ItemsRemoved` and `ItemsAdded`: one batch per source/destination for a committed
+  cross-list transfer, with keys in final list order and the other list's identity.
+- `ItemsReordered`: one batch for a changed same-list drop, with keys and gap.
+- `Dropped`: once for an accepted drop, identifying source, target, keys, requested
+  `before` anchor (`None` means append), and `changed`.
+- `DropRejected`: when validation rejects an owned drop, including its error.
+- `DragEnded`: once per started drag, with keys and outcome: `Transferred`,
+  `Reordered`, `Unchanged`, `Rejected`, or `Cancelled`.
+
+After a successful commit, final SDK state-change events precede the batch
+mutation notifications, `Dropped`, and `DragEnded`. Accepted no-op self-drops
+emit `Dropped { changed: false }` and `DragEnded`, without mutation notifications.
+Escape or release outside an accepted target ends the drag as `Cancelled`,
+without `Dropped` or mutation notifications. Native preview release supplies
+the cancellation fallback; an end guard prevents duplicate `DragEnded` entries.
+These notifications are separate from `ListBoxEvent`: shared DnD infrastructure
+uses host-provided collection identities and reports the result of a host commit.
+
 ## Drag-and-Drop Boundary
 
 ListBox is an early consumer of shared SDK drag-and-drop infrastructure, not
 the owner of all drag-and-drop mechanics.
 
-Shared SDK infrastructure should eventually provide:
+GPUI supplies native threshold detection, pointer tracking, hit testing, and
+preview lifetime. The SDK adds reusable mechanics without owning domain items:
 
-- drag threshold and lifecycle;
-- pointer tracking and cancellation;
-- bounds/hit testing;
-- previews and ghost handling;
-- edge auto-scroll;
-- extension of the basic interactive-child boundaries to drag gestures.
+- `ListBoxState::drag_keys(&key)` captures selected keys in source order when
+  starting on a selected row, otherwise only that enabled row. Unknown/disabled
+  targets return `None`; capture never mutates selection or the collection.
+- `KeyedDrag<S, K>` captures unique nonempty keys and a source collection ID.
+  A shared owner `EntityId` scopes cooperating lists. Pending, foreign, cancelled,
+  and completed sessions cannot enter drop targets or trigger auto-scroll.
+- `bind_drag_source` attaches GPUI dragging to a host surface, reports
+  `DragStarted`, and watches native preview release for cancellation. Clones share
+  a lifecycle guard, so every started session ends at most once.
+- `KeyedDropTarget` attaches scope admission and produces `DropProposal<S, K>`
+  with source, destination, captured keys, and a stable `before` key. `None`
+  means append, including empty destinations. Hosts validate keys against current
+  collections at commit time; proposals do not assert that keys still exist.
+- `DropZone` positions before/after half-item hit areas on either axis, including
+  the following gap and a marker kept visible at clipped viewport edges. The
+  host supplies item extent, gap, marker width, colors, and relative wrappers.
+- `DropProposal::committed(changed, ordered_keys)` produces typed batch/drop/end
+  notifications after a host commit. `rejected(error)` reports failure without
+  mutation. Deferred handlers must check `is_active()` before mutating; cancelled
+  or completed proposals cannot produce a second terminal notification.
+- `DragDropElementExt::drag_boundary()` wraps embedded interactive controls:
+  child clicks do not select the parent row, pointer gestures do not arm the
+  parent's drag, and child-owned native drags remain available.
+- `cancel_drag_on_escape()` handles the SDK Escape action while a native drag is
+  active, otherwise propagating to the normal enclosing focus scope.
 
-ListBox-specific policy should provide:
+Studio retains row/preview rendering, insertion-line colors, domain-specific
+acceptance and collection updates, destination selection/focus policy, and tracker
+formatting. Its `TransferModel::move_items` still validates and commits the two
+snapshots; no domain transfer logic was moved into the SDK. `ListBoxScrollHandle`
+continues to own measured reveal and configurable basic linear edge auto-scroll.
 
-- which items are draggable;
-- how the current selection becomes a drag session;
-- what `before`, `after`, empty-list, and disallowed targets mean;
-- which `ListBoxEvent` is emitted;
-- how the host mutates its collection after a drop.
+Typical host flow:
 
-The host remains responsible for applying a reorder or cross-list move to its
-domain collection and providing the next snapshot to `ListBoxState`.
+```rust
+// During composition, omit dragging for ineligible or domain-restricted rows.
+let drag = state.drag_keys(&key)
+    .and_then(|keys| KeyedDrag::new(scope_entity_id, source_list_id, keys));
+// Bind the host surface/preview with bind_drag_source and each keyed gap with
+// KeyedDropTarget::bind. In the drop handler, validate and mutate domain data,
+// deliver final ListBox updates, then report committed(...) or rejected(...).
+```
 
-This keeps the first DND implementation useful without making ListBox the
-place where reusable DND infrastructure is invented or hidden.
+Verification includes unchanged Studio transfer/reorder model tests and SDK
+session/notification/geometry tests. An opt-in `test-support` feature enables
+headless GPUI event-dispatch tests for nested children, native gap drops, outside
+release, and Escape cancellation; these use TestWindow and do not launch Studio.
+
+```sh
+cargo test -p gpui-luma-core --features test-support infra::drag_drop --offline
+```
 
 ## Layout and Viewport Policy
 
@@ -454,20 +652,18 @@ capabilities. They should be added only after the basic composition works.
 
 ## Studio Exposition and Inspectors
 
-The new ListBox exposition belongs in **Selectors**, alongside the other
-selector controls. Move its catalog entry from `ControlCategory::Choice` to
-`ControlCategory::Selection`, and update its description and code sample to
-show the new state-driven composition.
+The ListBox exposition is in **Selectors**, alongside the other selector
+controls, using `ControlCategory::Selection`. Its description and code sample
+show the state-driven composition.
 
-Keep the inspectors, adapting their existing infrastructure to the smaller
-surface actually demonstrated by the host:
+The retained inspectors describe the vertical and horizontal compositions:
 
 - inspect colors and interaction-state styling used by the exposition's row
   composition and any styled viewport;
 - inspect the row metrics, spacing, padding, and viewport dimensions actually
   used by that composition;
-- expose only applicable parts, states, and sizes; remove obsolete controls
-  and values that described the legacy visual ListBox.
+- expose applicable parts, states, and sizes for these compositions rather
+  than the legacy visual ListBox.
 
 Inspector values must come from the same look and layout inputs used to render
 the sample. Label host-owned layout values as composition settings. These
@@ -477,64 +673,128 @@ legacy APIs; the inspector capability remains part of the new exposition.
 
 ## Development Phases
 
-### Phase 1: Small Working Slice
+### Phase 1: Small Working Slice — Complete
 
-Implement and demonstrate exactly two single-select examples in Luma Studio's
-Selectors category: vertical rows and horizontal cards. Both use the same SDK
-state and input binding, with independent selection and scrolling.
+The initial slice delivered two single-select examples in Luma Studio's
+Selectors category: vertical rows and horizontal cards. They now default to extended
+selection with runtime policy controls, and Phase 3 added the DnD pair. All share SDK state/input mechanics
+while owning independent selection and scrolling. The delivered foundation:
 
-1. Create `ListBoxState` with a small set of typed items.
-2. Compose a bounded vertical viewport showing five of twenty rows.
-3. Compose a horizontal viewport with twenty compact cards, 8px spacing, and
-   36px card height and fixed 112px width. Cards never shrink to fit the pane;
+1. `ListBoxState` owns a small set of typed items.
+2. The bounded vertical list is 250px wide including insets and border, and
+   shows five of twenty rows.
+3. The horizontal viewport contains twenty compact cards with 8px spacing,
+   36px height, and fixed 136px width, including a leading checkmark.
+   Cards never shrink to fit the pane;
    narrower viewports show fewer cards and scroll to the remaining items.
-   Use named card and row components, keeping item presentation separate from
+   Named card and row components keep item presentation separate from
    list state, input binding, and exposition assembly.
-   Both examples contain wheel scrolling at their endpoints so it does not
-   propagate to the exposition pane.
-4. Compose the examples with `vstack!` and `hstack!`, respectively.
-5. Bind stable row IDs, list focus, clicks, basic keyboard navigation, and
-   activation through the SDK interaction binding. Reveal keyboard targets
-   through each host-owned viewport.
-6. Apply selection through `ListBoxState` and forward the returned update.
-7. Render the selected state and show labeled events from both examples.
-8. Retain scoped color and layout inspectors for both compositions.
+   Both examples require focus for wheel scrolling; unfocused wheel input
+   reaches the exposition pane. Focused lists contain scrolling at endpoints.
+4. The examples use `vstack!` and `hstack!`, respectively.
+5. The SDK interaction binding supplies stable row IDs, list focus, clicks,
+   keyboard navigation, and activation. The scroll adapter reveals keyboard
+   targets through each host-owned viewport.
+6. Selection goes through `ListBoxState`; owners forward the returned update.
+7. Both examples render selected state and show labeled events.
+8. Scoped color and layout inspectors remain available for both compositions.
 
-This phase is complete only when the result is visible and manually testable in
-Luma Studio, and model tests cover identity validation, selection reconciliation,
-and event production. Replace the old exposition, adapt its inspectors, and
-update consumers to remove dependencies on the old visual ListBox. Remove
-obsolete ListBox-specific APIs while retaining the look and inspection support
-used by the new composition; no compatibility layer is part of this phase.
+The examples are manually tested in Luma Studio. Model tests cover identity
+validation, selection reconciliation, and event production. The old visual
+ListBox and exposition wiring have been replaced; applicable look and inspector
+support remains. There is no compatibility layer.
 
-### Phase 2: Basic Variants
+### Phase 2: Basic Variants — Partially Complete
 
 The Studio examples now live in independent `vertical.rs` and `horizontal.rs`
 modules. Each owns its item type, item component, state, binding, layout, and
-scroll handling; neither is an axis variant of a shared example view. Both
-currently use `SelectionMode::Multiple` and display a selected-item count.
+scroll handle; neither is an axis variant of a shared example view. Both
+default to `SelectionMode::Extended` and display a selected-item count. A shared
+SDK selector and two checkboxes change policies on both examples at runtime;
+their item/selection/scroll states remain independent. The DnD pair retains
+`SelectionMode::Multiple`. Flags are enabled only in applicable modes.
+Each item reserves a leading Lucide checkmark slot: visible when selected and
+transparent otherwise, so selection stays distinct from hover without label movement.
 Selection events remain in source order; reorder-only changes do not emit a
-selection event. Extended Shift-range gestures remain a separate future mode.
+selection event. Extended Shift-range gestures now work in snapshot order.
+
+The SDK now supplies scroll/reveal mechanics through `ListBoxScrollHandle`.
+Studio's `ExamplePresentation` supplies headings, selected-count display,
+surface decoration, theme updates, and event logging. Inspector assembly stays
+in the exposition module. The independent examples compose these helpers and
+retain their own data and named row/card components.
 
 - multiple toggle selection (implemented): click or Space toggles an enabled
   item, Cmd/Ctrl+A selects all enabled items, and Cmd/Ctrl+Shift+A clears selection
   while keeping list focus. Escape leaves focus through the enclosing focus scope;
   programmatic `set_selected_keys` validates and replaces selection atomically;
-- visible-count and row-metric helpers;
-- filtering and active-item presentation;
-- extended selection and its anchor/modifier rules.
+- visible-count and row-metric helpers (planned);
+- filtered/sorted projection and active-item reconciliation (planned; active-item
+  presentation and keyboard reveal already work for the full snapshot);
+- extended selection and its anchor/modifier rules (implemented);
+- no-selection mode, single-select toggle-off, selection-following-navigation,
+  and runtime policy changes with final-state events (implemented).
 
-These variants reuse the same state and projection model. They do not require
-a visual ListBox builder.
+The selection work in this phase is complete and confirmed working by the user.
+The phase remains partially complete because layout helpers and projections
+are still planned.
 
-### Phase 3: Shared Interaction Infrastructure
+These variants use the same state. Filtered/sorted projection remains planned. They
+do not require a visual ListBox builder.
 
-- extend the existing row event boundaries for drag gestures;
-- drag lifecycle and pointer tracking;
-- listbox drop proposals and host mutation events;
-- edge auto-scroll and drag previews.
+### Phase 3: Shared Interaction Infrastructure — Extracted and User Verified
 
-### Phase 4: Performance Enhancements
+The first transfer example is a side-by-side pair under "Drag and drop" in
+the ListBox exposition. Each list is fixed at 250px wide including insets and
+border, and starts with ten items in a five-row viewport.
+Both lists support multiple selection. Dragging a selected row captures all
+selected keys; dragging an unselected row captures only that row. The preview
+shows the number of items when dragging a group. A valid drop inserts the group
+in source-list order at the indicated gap. A cross-list move selects only the
+transferred rows in the destination, and activates and reveals the first inserted row.
+Upper and lower row halves target the gaps before and after the row;
+the hovered gap displays an insertion line. Targets use stable destination keys
+so scrolling does not change their meaning. Dropping on unused surface space
+appends the group. Both replacement snapshots and the destination's final
+selection/active state are validated before source data is removed. Each list
+reports its final state changes once, in the documented event order.
+Same-list drops reorder the captured rows at the indicated gap, preserving
+selection and the active row. The gap is adjusted for removed rows, including
+when its anchor is part of the dragged group. Drops that leave the order unchanged
+are no-ops. Foreign and stale drops do not change either list. Empty lists remain
+drop targets; Escape cancels the active drag, and an outside release makes no
+data changes. GPUI supplies the drag lifecycle; the host owns cross-list mutation.
+The SDK scroll adapter provides opt-in edge auto-scroll for accepted drag payloads.
+Holding the pointer inside the top or bottom edge continuously scrolls the hovered
+list, with speed increasing toward the edge. The default maximum is 540 logical
+pixels per second. Developers can customize each list with
+`scroll.set_drag_auto_scroll_speed(720.0)`; zero disables movement, and invalid
+negative or non-finite values restore the default. Measured bounds and limits determine
+the scroll extent; leaving the edge, reaching an endpoint, dropping, or cancelling
+stops scrolling. Gap targets update as rows scroll under a stationary pointer.
+The same helper supports horizontal viewports. The exposition retains the
+independent vertical and horizontal examples.
+
+This is a **basic auto-scrolling function**: speed scales linearly with pointer
+depth into the edge zone, and displacement is speed multiplied by elapsed frame
+time. There is no temporal easing or inertia. The linear behavior is sufficient
+for now. A future refinement should allow developers to supply a speed/easing
+function while retaining the shared frame scheduling, cancellation, and bounds
+handling. Only maximum speed is currently configurable.
+
+Completed extraction:
+
+- selection-to-drag capture in ListBox state;
+- shared keyed sessions, gap targets, and host mutation proposals;
+- typed notifications with shared completion/cancellation guards;
+- nested interactive-child boundaries with headless dispatch regression coverage;
+- Studio migrated to the SDK helpers while retaining domain mutation and visuals.
+
+The extracted Studio wiring is confirmed working by the user. The subsequent
+local builder prototype awaits user testing before any SDK promotion.
+A customizable auto-scroll response function remains an optional future extension.
+
+### Phase 4: Performance Enhancements — Planned
 
 - measured variable-height flow improvements;
 - opt-in uniform-row virtualization;
@@ -544,24 +804,23 @@ a visual ListBox builder.
 
 The initial design does not require:
 
-- a `ListBox<T, K>` visual builder;
+- an SDK `ListBox<T, K>` visual builder (a local exposition prototype now exists);
 - a default row renderer;
 - injectable shell or item-template callbacks;
 - an SDK-owned viewport or stack;
 - a universal styling preset for arbitrary domain values;
-- full DND before the basic vertical composition is working;
 - backward compatibility with the legacy visual ListBox API.
 
 The legacy visual ListBox is removed, not retained as an optional shell for the
 new model. Existing legacy APIs do not constrain naming or behavior here.
 
-If repeated application composition later demonstrates a real need for a
-reusable visual shell, that can be designed separately. It should not be
-assumed as part of the behavior model.
+Repeated DnD composition has now justified an optional builder prototype, described
+above. It composes the existing behavior model; it does not replace that model
+or require other consumers to adopt a visual shell.
 
 ## Acceptance Criteria
 
-The design is working when:
+Implemented composition criteria:
 
 - the Luma Studio exposition appears in Selectors and visibly shows a scrolling
   vertical list;
@@ -571,16 +830,15 @@ The design is working when:
 - rows are composed by the host using `vstack!`;
 - clicking a row updates selection through `ListBoxState` and changes its visual state;
 - a `ListBoxEvent::SelectionChanged` appears in the event stream;
-- the same state model can later feed an explicit `hstack!` composition;
+- the same state model feeds the independent horizontal `hstack!` composition;
 - the SDK does not need to know what an arbitrary item looks like.
 
-Behavioral acceptance checks, as the corresponding phases land:
+Implemented behavioral checks:
 
-- duplicate snapshot keys and invalid projections fail without partial mutation;
+- duplicate snapshot keys and invalid selection/active replacements fail without
+  partial mutation; repeated programmatic selection keys are deduplicated;
 - snapshot replacement preserves stable-key selection and reconciles removal or
   disabled items, including empty and all-disabled collections;
-- filtering preserves hidden selection while reconciling active item and anchor;
-- sorted/filtered range selection follows projected order;
 - repeated clicks, programmatic updates, and reconciliation emit exactly the
   documented events, with no duplicate change events for no-op operations;
 - keyboard input respects focus and nested controls, and reveals the active row
@@ -588,3 +846,29 @@ Behavioral acceptance checks, as the corresponding phases land:
 - in-repository consumers compile against the replacement, with no dependency
   on removed visual ListBox APIs; retained inspectors use the new composition's
   look and layout inputs.
+
+Selection acceptance checks (unit-tested; user confirmed Studio behavior working):
+
+- Shift ranges expand, contract, reverse, and skip disabled rows on either axis;
+- Cmd/Ctrl toggles and additive ranges preserve other selections;
+- runtime mode changes reconcile once and update keyboard handling;
+- no-selection mode supports active navigation/activation without selecting;
+- toggle-off never violates required selection; navigation-following is opt-in;
+- range anchors survive reorder and reconcile removal/disable or explicit replacement.
+
+Pending acceptance checks for planned features:
+
+- invalid projections fail without partial mutation;
+- filtering preserves hidden selection while reconciling active item and anchor;
+- sorted/filtered range selection follows projected order;
+
+Completed DnD extraction acceptance checks (automated; user confirmed Studio behavior working):
+
+- selected-group capture is stable and excludes disabled/unknown drag origins;
+- foreign/inactive sessions are rejected, and terminal notifications occur once;
+- native row drags reach keyed before/after targets; outside release cancels;
+- Escape cancels a drag and otherwise retains ordinary focus-scope behavior;
+- nested child clicks/pointer gestures do not select or drag the row, while
+  child-owned native drags remain functional;
+- existing single/group transfers, reorders, no-op drops, and atomic rejection
+  tests still pass with host-owned collection mutation.

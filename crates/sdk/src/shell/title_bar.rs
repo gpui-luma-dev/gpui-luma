@@ -10,6 +10,30 @@ use lucide_svg_static::Icon as LucideIcon;
 pub const TITLE_BAR_HEIGHT: Pixels = px(34.0);
 const TITLE_BAR_DRAG_THRESHOLD_PX: f64 = 4.0;
 
+/// Check if the left mouse button is currently pressed at the OS level.
+///
+/// On macOS, `window.start_window_move()` delegates to `-[NSWindow performWindowDragWithEvent:]`,
+/// passing `[NSApp currentEvent]`. If the drag is initiated after the mouse button has already been
+/// released (e.g. rapid flick/click or delayed runloop dispatch), AppKit logs:
+/// "Warning: Window move completed without beginning".
+///
+/// Checking the real-time button state ensures we only initiate native window dragging while the
+/// left mouse button is physically held down.
+#[inline]
+pub fn is_left_mouse_down() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        unsafe extern "C" {
+            fn CGEventSourceButtonState(state_id: i32, button: u32) -> bool;
+        }
+        unsafe { CGEventSourceButtonState(0, 0) }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        true
+    }
+}
+
 /// Left inset before custom title-bar content (macOS traffic lights, etc.).
 #[cfg(target_os = "macos")]
 pub const TITLE_BAR_LEFT_PADDING: Pixels = px(80.0);
@@ -293,6 +317,13 @@ impl RenderOnce for TitleBar {
                 .on_mouse_down_out(window.listener_for(&state, |state, _, _, _| {
                     state.drag_start_position = None;
                 }))
+                // Clear drag tracking if the left mouse button was released outside the titlebar element.
+                .on_mouse_up_out(
+                    MouseButton::Left,
+                    window.listener_for(&state, |state, _, _, _| {
+                        state.drag_start_position = None;
+                    }),
+                )
                 .on_mouse_down(
                     MouseButton::Left,
                     window.listener_for(&state, |state, event: &MouseDownEvent, _, _| {
@@ -306,6 +337,14 @@ impl RenderOnce for TitleBar {
                     }),
                 )
                 .on_mouse_move(window.listener_for(&state, |state, event: &MouseMoveEvent, window, _| {
+                    // Only initiate window move if the user is actively dragging with the left button
+                    // and the button is physically held down. Calling `start_window_move` after button
+                    // release triggers macOS AppKit "Warning: Window move completed without beginning".
+                    if !event.dragging() || !is_left_mouse_down() {
+                        state.drag_start_position = None;
+                        return;
+                    }
+
                     if let Some(origin) = state.drag_start_position
                         && event.position.relative_to(&origin).magnitude() >= TITLE_BAR_DRAG_THRESHOLD_PX
                     {

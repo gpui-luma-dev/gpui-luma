@@ -2,7 +2,7 @@ use gpui::{
     Context, Hsla, MouseButton, MouseDownEvent, MouseMoveEvent, Pixels, Point, Render, Window, WindowControlArea, div,
     prelude::*, px,
 };
-use luma::shell::{TITLE_BAR_HEIGHT, TITLE_BAR_LEFT_PADDING};
+use luma::shell::{TITLE_BAR_HEIGHT, TITLE_BAR_LEFT_PADDING, is_left_mouse_down};
 
 const TITLE_BAR_DRAG_THRESHOLD_PX: f64 = 4.0;
 
@@ -57,6 +57,13 @@ impl Render for SplitColumn {
                     .on_mouse_down_out(window.listener_for(&state, |state, _, _, _| {
                         state.drag_start_position = None;
                     }))
+                    // Clear drag tracking if the left mouse button was released outside the titlebar element.
+                    .on_mouse_up_out(
+                        MouseButton::Left,
+                        window.listener_for(&state, |state, _, _, _| {
+                            state.drag_start_position = None;
+                        }),
+                    )
                     .on_mouse_down(
                         MouseButton::Left,
                         window.listener_for(&state, |state, event: &MouseDownEvent, _, _| {
@@ -70,6 +77,14 @@ impl Render for SplitColumn {
                         }),
                     )
                     .on_mouse_move(window.listener_for(&state, |state, event: &MouseMoveEvent, window, _| {
+                        // Only initiate window move if the user is actively dragging with the left button
+                        // and the button is physically held down. Calling `start_window_move` after button
+                        // release triggers macOS AppKit "Warning: Window move completed without beginning".
+                        if !event.dragging() || !is_left_mouse_down() {
+                            state.drag_start_position = None;
+                            return;
+                        }
+
                         if let Some(origin) = state.drag_start_position
                             && event.position.relative_to(&origin).magnitude() >= TITLE_BAR_DRAG_THRESHOLD_PX
                         {

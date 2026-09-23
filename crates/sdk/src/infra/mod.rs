@@ -2,6 +2,7 @@
 
 pub mod arc_shape;
 pub mod element_ext;
+pub mod drag_drop;
 pub mod field_label;
 pub mod icon;
 pub mod lock;

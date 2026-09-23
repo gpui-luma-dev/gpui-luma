@@ -194,3 +194,19 @@ fn single_toggle_off_and_follow_navigation_obey_required_selection() {
     list.apply(ListBoxInput::Navigate(ListBoxNavigation::Next));
     assert_eq!(selected(&list), vec![2]);
 }
+
+#[test]
+fn drag_capture_preserves_source_order_and_never_mutates_selection() {
+    let mut list = extended();
+    list.set_selected_keys([6, 2, 4]).unwrap();
+    let captured = list.drag_keys(&4).unwrap();
+    assert_eq!(captured, vec![2, 4, 6]);
+    assert_eq!(list.drag_keys(&5), Some(vec![5]));
+    assert_eq!(list.drag_keys(&3), None);
+    assert_eq!(list.drag_keys(&99), None);
+    assert_eq!(selected(&list), vec![2, 4, 6]);
+    list.apply(ListBoxInput::ClearSelection);
+    assert_eq!(captured, vec![2, 4, 6]);
+    list.set_selection_mode(SelectionMode::None);
+    assert_eq!(list.drag_keys(&4), Some(vec![4]));
+}

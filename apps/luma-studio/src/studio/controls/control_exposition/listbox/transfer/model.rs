@@ -40,12 +40,6 @@ impl TransferModel {
         }
     }
 
-    /// Drag the selection when starting on a selected row; otherwise just that row.
-    pub fn drag_keys(&self, source: Side, key: u32) -> Vec<u32> {
-        let selected: Vec<u32> = self.lists[source.index()].selected_keys().copied().collect();
-        if selected.contains(&key) { selected } else { vec![key] }
-    }
-
     /// Insert source items in their list order before a destination key, or append for `None`.
     /// Validate both snapshots before committing either. Keyed anchors remain
     /// correct after scrolling or changes earlier in the destination list.
@@ -149,7 +143,7 @@ mod tests {
     fn dragging_an_unselected_item_does_not_move_the_selected_item() {
         let mut model = TransferModel::new();
         model.lists[0].apply(ListBoxInput::Select(1));
-        let payload = model.drag_keys(Side::Left, 5);
+        let payload = model.lists[Side::Left.index()].drag_keys(&5).unwrap();
         assert_eq!(payload, vec![5]);
         model.move_items(Side::Left, Side::Right, &payload, None).unwrap();
         assert_eq!(model.lists[0].selected_key(), Some(&1));
@@ -177,12 +171,12 @@ mod tests {
     fn empty_list_accepts_a_returned_item_and_total_membership_is_preserved() {
         let mut model = TransferModel::new();
         model.lists[0].apply(ListBoxInput::SelectAll);
-        let payload = model.drag_keys(Side::Left, 5);
+        let payload = model.lists[Side::Left.index()].drag_keys(&5).unwrap();
         assert_eq!(payload.len(), 10);
         model.move_items(Side::Left, Side::Right, &payload, None).unwrap();
         assert!(keys(&model, Side::Left).is_empty());
         assert_eq!(keys(&model, Side::Right).len(), 20);
-        let payload = model.drag_keys(Side::Right, 10);
+        let payload = model.lists[Side::Right.index()].drag_keys(&10).unwrap();
         model.move_items(Side::Right, Side::Left, &payload, None).unwrap();
         assert_eq!(keys(&model, Side::Left), (1..=10).collect::<Vec<_>>());
         let mut all = keys(&model, Side::Left);
@@ -211,7 +205,7 @@ mod tests {
         for key in [7, 2, 4] {
             model.lists[0].apply(ListBoxInput::Select(key));
         }
-        let payload = model.drag_keys(Side::Left, 4);
+        let payload = model.lists[Side::Left.index()].drag_keys(&4).unwrap();
         assert_eq!(payload, vec![2, 4, 7]);
         assert_eq!(model.lists[0].selected_keys().copied().collect::<Vec<_>>(), payload);
         assert_eq!(keys(&model, Side::Left), (1..=10).collect::<Vec<_>>());
