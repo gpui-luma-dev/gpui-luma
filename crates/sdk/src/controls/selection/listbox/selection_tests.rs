@@ -58,6 +58,33 @@ fn toggle_sets_anchor_and_additive_range_keeps_other_selections() {
 }
 
 #[test]
+fn extended_plain_toggle_off_is_opt_in_and_preserves_ranges_and_confirmation() {
+    let mut list = extended();
+    list.apply(ListBoxInput::Select(2));
+    assert!(!list.apply(ListBoxInput::Select(2)).changed); // SDK default remains ordinary Extended.
+    list.set_selection_policy(SelectionPolicy { toggle_off: true, ..list.selection_policy() });
+    list.apply(gesture(5, true, false));
+    let update = list.apply(ListBoxInput::Select(5));
+    assert_eq!(selected(&list), vec![2]); // Only the clicked item is unchecked.
+    assert_eq!(list.active_key(), Some(&5));
+    assert_eq!(list.anchor_key(), Some(&5));
+    assert_eq!(update.events, vec![ListBoxEvent::SelectionChanged { selected: vec![2], active: Some(5) }]);
+    list.apply(gesture(2, false, true)); // Shift on a checked item still extends a range.
+    assert_eq!(selected(&list), vec![2, 4, 5]);
+    list.apply(ListBoxInput::ConfirmActive); // Enter never toggles off a checked item.
+    assert_eq!(selected(&list), vec![2, 4, 5]);
+    list.apply(ListBoxInput::SelectActive); // Space follows plain toggle-off policy.
+    assert_eq!(selected(&list), vec![4, 5]);
+    list.apply(ListBoxInput::Select(1)); // A new plain target still replaces the selection.
+    assert_eq!(selected(&list), vec![1]);
+    list.apply(ListBoxInput::Select(1));
+    assert!(selected(&list).is_empty());
+    list.set_selection_policy(SelectionPolicy { toggle_off: false, ..list.selection_policy() });
+    list.apply(ListBoxInput::Select(1));
+    assert!(!list.apply(ListBoxInput::Select(1)).changed);
+}
+
+#[test]
 fn keyboard_ranges_reveal_and_use_pre_gesture_active_after_anchor_reset() {
     let mut list = extended();
     list.apply(ListBoxInput::Navigate(ListBoxNavigation::Next));

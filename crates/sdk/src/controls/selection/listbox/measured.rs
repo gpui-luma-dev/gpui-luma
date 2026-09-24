@@ -63,6 +63,7 @@ impl HeightIndex {
 
 pub(super) struct MeasuredGeometry<K> {
     identity: Option<Arc<()>>,
+    projection_identity: Option<Arc<()>>,
     keys: Vec<K>,
     indices: HashMap<K, usize>,
     heights: HeightIndex,
@@ -82,6 +83,7 @@ impl<K> Default for MeasuredGeometry<K> {
     fn default() -> Self {
         Self {
             identity: None,
+            projection_identity: None,
             keys: Vec::new(),
             indices: HashMap::new(),
             heights: HeightIndex::default(),
@@ -117,6 +119,7 @@ impl<K: Clone + Eq + Hash> MeasuredGeometry<K> {
         self.overscan = overscan;
         let identity = &state.snapshot().identity;
         if self.identity.as_ref().is_some_and(|old| Arc::ptr_eq(old, identity))
+            && self.projection_identity.as_ref().is_some_and(|old| Arc::ptr_eq(old, state.projection_identity()))
             && self.gap == gap
             && self.estimate == estimate
         {
@@ -137,6 +140,7 @@ impl<K: Clone + Eq + Hash> MeasuredGeometry<K> {
         self.valid = vec![false; self.keys.len()];
         self.measured = 0;
         self.identity = Some(identity.clone());
+        self.projection_identity = Some(state.projection_identity().clone());
         self.gap = gap;
         self.estimate = estimate;
         if self.reveal.as_ref().is_some_and(|key| !self.indices.contains_key(key)) {

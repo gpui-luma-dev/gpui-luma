@@ -122,6 +122,62 @@ fn wheel(cx: &mut VisualTestContext, delta: f32) {
 }
 
 #[test]
+fn listbox_projection_renders_and_positions_visible_keys_on_both_axes() {
+    for horizontal in [false, true] {
+        for virtualized in [false, true] {
+            let mut app = TestAppContext::single();
+            let (view, cx) = app.add_window_view(|_, cx| Harness::new(horizontal, virtualized, cx));
+            settle(cx);
+            cx.update(|_, app| {
+                view.update(app, |host, cx| {
+                    host.list.apply(ListBoxInput::Select(1), cx);
+                    host.list.scroll_to_center(9_000, cx);
+                })
+            });
+            settle(cx);
+            cx.update(|_, app| {
+                view.update(app, |host, cx| {
+                    host.list.set_projection((1..=250).rev().map(|n| n * 2), cx).unwrap();
+                    host.list.scroll_to_center(200, cx);
+                })
+            });
+            assert_revealed(cx, "virtual-list-item-150", horizontal);
+            cx.update(|_, app| {
+                let host = view.read(app);
+                assert_eq!(host.list.state.snapshot().items().len(), 10_000);
+                assert_eq!(host.list.state.selected_key(), Some(&1));
+                assert_eq!(host.list.state.visible_index(&1), None);
+                let rows = host.rendered.borrow();
+                assert!(rows.contains(&200));
+                assert!(rows.iter().all(|n| n % 2 == 0 && *n <= 500));
+                assert!(rows.windows(2).all(|pair| pair[0] > pair[1]));
+                if virtualized {
+                    assert!(rows.len() <= 10);
+                }
+            });
+            let before = bounds(cx, "virtual-list-item-150");
+            cx.update(|_, app| view.update(app, |host, cx| host.list.scroll_to(1, cx)));
+            settle(cx);
+            assert_eq!(bounds(cx, "virtual-list-item-150"), before); // hidden key ignored
+            cx.update(|_, app| {
+                view.update(app, |host, cx| {
+                    host.list.set_projection([], cx).unwrap();
+                })
+            });
+            settle(cx);
+            cx.update(|_, app| {
+                view.update(app, |host, cx| {
+                    assert!(host.rendered.borrow().is_empty());
+                    host.list.reset_projection(cx);
+                    host.list.scroll_to(1, cx);
+                })
+            });
+            assert_revealed(cx, "virtual-list-item-0", horizontal);
+        }
+    }
+}
+
+#[test]
 fn listbox_virtualization_bounds_templates_and_reveals_offscreen_selection_on_both_axes() {
     for horizontal in [false, true] {
         let mut app = TestAppContext::single();

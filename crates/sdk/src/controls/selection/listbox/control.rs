@@ -4,8 +4,8 @@ use std::hash::Hash;
 use gpui::{App, Context, ElementId, SharedString, Window};
 
 use super::{
-    ListBoxBinding, ListBoxInput, ListBoxScrollHandle, ListBoxState, ListBoxUpdate, ListBoxVirtualization,
-    SelectionPolicy,
+    ListBoxBinding, ListBoxError, ListBoxInput, ListBoxScrollHandle, ListBoxState, ListBoxUpdate,
+    ListBoxVirtualization, SelectionPolicy,
 };
 
 /// Host callback for semantic input. Apply it to the control and deliver its events.
@@ -131,6 +131,25 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
     /// Reconcile a runtime policy change and queue its rendering/reveal effects.
     pub fn set_selection_policy(&mut self, policy: SelectionPolicy, cx: &mut Context<M>) -> ListBoxUpdate<K> {
         let update = self.state.set_selection_policy(policy);
+        self.handle_update(&update, cx);
+        update
+    }
+
+    /// Display an ordered subset of source keys and deliver rendering effects.
+    /// Hidden selections are preserved. Return events for host-owned delivery.
+    pub fn set_projection(
+        &mut self,
+        keys: impl IntoIterator<Item = K>,
+        cx: &mut Context<M>,
+    ) -> Result<ListBoxUpdate<K>, ListBoxError> {
+        let update = self.state.set_projection(keys)?;
+        self.handle_update(&update, cx);
+        Ok(update)
+    }
+
+    /// Restore source order and visibility, preserving keyed selection.
+    pub fn reset_projection(&mut self, cx: &mut Context<M>) -> ListBoxUpdate<K> {
+        let update = self.state.reset_projection();
         self.handle_update(&update, cx);
         update
     }

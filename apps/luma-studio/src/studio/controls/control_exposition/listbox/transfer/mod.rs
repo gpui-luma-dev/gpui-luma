@@ -7,7 +7,7 @@ mod item;
 use std::sync::Arc;
 
 use gpui::{Context, Div, Entity, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
-use luma::controls::listbox::{ListBoxBinding, ListBoxInput, ListBoxScrollHandle};
+use luma::controls::listbox::{ListBoxBinding, ListBoxInput, ListBoxScrollHandle, SelectionPolicy};
 use luma::infra::drag_drop::{DragDropElementExt, DragDropEvent, DropProposal};
 use luma::{hstack, vstack};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
@@ -46,14 +46,26 @@ pub(super) struct TransferExample {
 
 impl TransferExample {
     pub fn new(look: Arc<ShadcnLook>, events: Entity<ControlEventStream>, cx: &mut Context<Self>) -> Self {
+        let mut model = TransferModel::new();
+        for list in &mut model.lists {
+            list.set_selection_policy(super::selection_controls::DEFAULT_POLICY);
+        }
         Self {
-            model: TransferModel::new(),
+            model,
             bindings: Side::ALL.map(|_| ListBoxBinding::new(cx)),
             scrolls: Side::ALL.map(|_| ListBoxScrollHandle::default().require_focus_for_scroll(true)),
             presentations: [
                 ExamplePresentation::new(look.clone(), "Left", events.clone()),
                 ExamplePresentation::new(look, "Right", events),
             ],
+        }
+    }
+
+    pub(super) fn set_selection_policy(&mut self, policy: SelectionPolicy, cx: &mut Context<Self>) {
+        for (index, list) in self.model.lists.iter_mut().enumerate() {
+            let update = list.set_selection_policy(policy);
+            self.scrolls[index].handle_update(&update, cx);
+            self.presentations[index].record(&update.events, cx);
         }
     }
 

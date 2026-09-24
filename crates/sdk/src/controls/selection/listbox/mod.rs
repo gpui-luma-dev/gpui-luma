@@ -29,3 +29,6 @@ pub use model::{
 
 #[cfg(test)]
 mod selection_tests;
+
+#[cfg(test)]
+mod projection_tests;

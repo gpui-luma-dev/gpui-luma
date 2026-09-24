@@ -90,7 +90,7 @@ impl Render for Harness {
                     }
                 },
             )
-            .empty(div().size(px(20.0)))
+            .empty(div().debug_selector(move || format!("empty-{side}")).size(px(20.0)))
             .virtualization(self.virtualization);
             if content_sized {
                 builder = builder.content_sized();
@@ -112,6 +112,43 @@ fn drag(cx: &mut VisualTestContext, destination: (f32, f32)) {
     cx.simulate_mouse_down(point(px(30.0), px(25.0)), MouseButton::Left, Default::default());
     cx.simulate_mouse_move(point(px(60.0), px(25.0)), MouseButton::Left, Default::default());
     cx.simulate_mouse_move(point(px(destination.0), px(destination.1)), MouseButton::Left, Default::default());
+}
+
+#[test]
+fn projected_dnd_gaps_use_the_next_visible_key() {
+    for virtualization in [ListBoxVirtualization::Eager, ListBoxVirtualization::Uniform { overscan: 0 }] {
+        let mut app = TestAppContext::single();
+        let (view, cx) = app.add_window_view(|_, cx| {
+            let mut host = Harness::new(true, cx);
+            host.virtualization = virtualization;
+            host.lists[0].set_selected_keys([1, 2]).unwrap();
+            host.lists[0].set_projection([2, 1]).unwrap();
+            host.lists[1].set_projection([14, 12]).unwrap();
+            host
+        });
+        cx.run_until_parked();
+        drag(cx, (300.0, 38.0)); // lower half of key 14; the next visible key is 12
+        cx.simulate_mouse_up(point(px(300.0), px(38.0)), MouseButton::Left, Default::default());
+        cx.update(|_, app| {
+            let host = view.read(app);
+            assert_eq!(host.drops, vec![(1, Some(12))]);
+            assert_eq!(host.events[0], DragDropEvent::DragStarted { source: 0, keys: vec![1, 2] });
+        });
+    }
+}
+
+#[test]
+fn filtered_empty_view_shows_empty_content_without_removing_source_items() {
+    let mut app = TestAppContext::single();
+    let (view, cx) = app.add_window_view(|_, cx| {
+        let mut host = Harness::new(false, cx);
+        host.lists[0].set_projection([]).unwrap();
+        host
+    });
+    cx.run_until_parked();
+    assert!(cx.debug_bounds("empty-0").is_some());
+    assert!(cx.debug_bounds("empty-1").is_none());
+    cx.update(|_, app| assert_eq!(view.read(app).lists[0].snapshot().items().len(), 4));
 }
 
 #[test]

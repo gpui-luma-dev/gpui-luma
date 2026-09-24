@@ -103,6 +103,59 @@ fn wheel(cx: &mut VisualTestContext, delta: f32) {
 }
 
 #[test]
+fn listbox_projection_rebuilds_measured_geometry_without_replacing_source() {
+    for virtualized in [false, true] {
+        let mut app = TestAppContext::single();
+        let (view, cx) = app.add_window_view(|_, cx| Harness::new(virtualized, cx));
+        settle(cx);
+        cx.update(|_, app| {
+            view.update(app, |host, cx| {
+                host.list.apply(ListBoxInput::Select(1), cx);
+                host.list.scroll_to_center(990, cx);
+            })
+        });
+        settle(cx);
+        cx.update(|_, app| {
+            view.update(app, |host, cx| {
+                host.list.set_projection((1..=100).rev().map(|n| n * 7), cx).unwrap();
+                host.list.scroll_to_center(350, cx);
+            })
+        });
+        settle(cx);
+        let row = bounds(cx, "measured-list-item-50");
+        let viewport = bounds(cx, "measured-list-viewport");
+        assert!((row.center().y - viewport.center().y).abs() < px(1.0));
+        cx.update(|_, app| {
+            let host = view.read(app);
+            assert_eq!(host.list.state.snapshot().items().len(), 1_000);
+            assert_eq!(host.list.state.selected_key(), Some(&1));
+            let rendered = host.rendered.borrow();
+            assert!(rendered.contains(&350));
+            assert!(rendered.iter().all(|key| key % 7 == 0));
+            if virtualized {
+                assert!(rendered.len() < 15);
+            }
+        });
+        cx.update(|_, app| {
+            view.update(app, |host, cx| {
+                host.list.set_projection([], cx).unwrap();
+            })
+        });
+        settle(cx);
+        cx.update(|_, app| {
+            view.update(app, |host, cx| {
+                assert!(host.rendered.borrow().is_empty());
+                host.list.reset_projection(cx);
+                host.list.scroll_to_center(350, cx);
+            })
+        });
+        settle(cx);
+        let row = bounds(cx, "measured-list-item-349");
+        assert!((row.center().y - viewport.center().y).abs() < px(1.0));
+    }
+}
+
+#[test]
 fn listbox_content_height_wheel_reveal_resize_and_replacement() {
     for virtualized in [false, true] {
         let mut app = TestAppContext::single();

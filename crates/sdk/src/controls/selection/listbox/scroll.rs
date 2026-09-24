@@ -229,7 +229,7 @@ impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
         gap: f32,
         overscan: usize,
     ) -> Option<ListBoxVirtualWindow> {
-        let metrics = UniformMetrics::new(axis, state.snapshot().items().len(), item_extent, gap, overscan)?;
+        let metrics = UniformMetrics::new(axis, state.visible_items().len(), item_extent, gap, overscan)?;
         let viewport = metrics.viewport_extent(self.viewport_size.get());
         let reveal = if viewport > 0.0 && (!self.require_focus_for_scroll || state.is_focused()) {
             self.take_reveal_index(state)

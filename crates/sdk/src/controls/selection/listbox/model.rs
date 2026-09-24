@@ -2,6 +2,10 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::hash::Hash;
 
+#[path = "projection.rs"]
+mod projection;
+use projection::Projection;
+
 /// Selection policy for pointer and keyboard input.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SelectionMode {
@@ -30,7 +34,8 @@ impl SelectionMode {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SelectionPolicy {
     pub mode: SelectionMode,
-    /// Repeated selection clears the item in SingleAllowNone only.
+    /// Repeated plain selection unchecks the item in SingleAllowNone or Extended.
+    /// Extended preserves other selections; modifier/range gestures are unchanged.
     pub toggle_off: bool,
     /// Navigation selects its target in either single-selection mode.
     /// Enabling this does not immediately change selection.
@@ -50,7 +55,7 @@ pub struct ListBoxSelectionModifiers {
     pub extend: bool,
 }
 
-/// Invalid collection or programmatic selection. Failed operations are atomic.
+/// Invalid collection, projection, or programmatic selection. Failed operations are atomic.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ListBoxError {
     DuplicateKey,
@@ -59,14 +64,17 @@ pub enum ListBoxError {
     SelectionRequired,
     TooManySelected,
     SelectionDisabled,
+    /// An explicit active key is outside the replacement projection.
+    HiddenItem,
 }
 
 impl fmt::Display for ListBoxError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::SelectionDisabled => "listbox selection is disabled",
-            Self::DuplicateKey => "listbox snapshot contains duplicate keys",
-            Self::UnknownKey => "listbox selection key is not in the snapshot",
+            Self::DuplicateKey => "listbox snapshot or projection contains duplicate keys",
+            Self::UnknownKey => "listbox key is not in the snapshot",
+            Self::HiddenItem => "listbox active item is not in the projection",
             Self::DisabledItem => "listbox selection targets a disabled item",
             Self::TooManySelected => "listbox single-selection mode accepts at most one key",
             Self::SelectionRequired => "listbox requires an enabled item to remain selected",
@@ -156,7 +164,7 @@ pub enum ListBoxNavigation {
 #[derive(Clone, Debug)]
 pub enum ListBoxInput<K> {
     /// Select one item, toggle in `Multiple`, or move active only in `None`.
-    /// SingleAllowNone also toggles when the policy's toggle_off flag is enabled.
+    /// SingleAllowNone and Extended also uncheck selected items when toggle_off is enabled.
     Select(K),
     SelectActive,
     /// Extended-mode modifiers; other modes retain their ordinary selection behavior.
@@ -165,7 +173,8 @@ pub enum ListBoxInput<K> {
         modifiers: ListBoxSelectionModifiers,
     },
     SelectActiveWithModifiers(ListBoxSelectionModifiers),
-    /// Select every enabled item in `Multiple` or `Extended` mode.
+    /// Add every enabled visible item to selection in `Multiple` or `Extended` mode.
+    /// Existing hidden selections are retained.
     SelectAll,
     /// Clear selection unless an enabled item is required.
     ClearSelection,
@@ -205,9 +214,10 @@ pub struct ListBoxUpdate<K> {
 }
 
 /// Non-visual collection model with key-based selection. The initial projection
-/// is all snapshot items in source order; filtering is deferred.
+/// is all snapshot items in source order; hosts may supply a filtered/sorted view.
 pub struct ListBoxState<T, K> {
     snapshot: ListBoxSnapshot<T, K>,
+    projection: Projection<K>,
     selected: HashSet<K>,
     active: Option<K>,
     policy: SelectionPolicy,
@@ -226,6 +236,7 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
 
     pub fn from_snapshot(snapshot: ListBoxSnapshot<T, K>, mode: SelectionMode) -> Self {
         let mut state = Self {
+            projection: Projection::all(&snapshot),
             snapshot,
             selected: HashSet::new(),
             active: None,
@@ -253,10 +264,11 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
 
     /// Capture the selected group in source order when dragging a selected item;
     /// otherwise capture only the enabled target. No state or events are changed.
-    /// Unknown/disabled targets are not draggable. The host may impose further
+    /// Unknown/disabled/hidden targets are not draggable. Selected groups include
+    /// hidden selections in source order, consistent with `selected_keys`. The host may impose further
     /// domain-specific restrictions before creating a drag session.
     pub fn drag_keys(&self, key: &K) -> Option<Vec<K>> {
-        self.snapshot.is_enabled(key).then(|| {
+        self.is_visible_enabled(key).then(|| {
             if self.selected.contains(key) {
                 self.selected_keys().cloned().collect()
             } else {
@@ -319,19 +331,19 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
     }
 
     /// Position in `visible_items()` for the current snapshot. Do not retain
-    /// this index across snapshot replacement; keep the stable key instead.
+    /// this index across snapshot or projection replacement; keep the stable key instead.
     pub fn visible_index(&self, key: &K) -> Option<usize> {
-        self.snapshot.indices.get(key).copied()
+        self.projection.indices.get(key).copied()
     }
 
     pub fn visible_items(&self) -> impl ExactSizeIterator<Item = ListBoxVisibleItem<'_, T, K>> {
-        self.snapshot.items.iter().enumerate().map(|(index, item)| {
+        self.projection.source_indices.iter().enumerate().map(|(visible_index, &index)| {
             let key = &self.snapshot.keys[index];
             ListBoxVisibleItem {
                 key: key.clone(),
-                item,
+                item: &self.snapshot.items[index],
                 source_index: index,
-                visible_index: index,
+                visible_index,
                 state: ListBoxItemState {
                     selected: self.selected.contains(key),
                     active: self.active.as_ref() == Some(key),
@@ -343,10 +355,14 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
 
     /// Replace only with a successfully validated snapshot. Existing keys retain
     /// selection unless disabled. Content changes always request a render.
+    /// Resets visibility/order to the complete source. Use
+    /// `replace_snapshot_with_projection` to retain a filter or sort.
     pub fn replace_snapshot(&mut self, snapshot: ListBoxSnapshot<T, K>) -> ListBoxUpdate<K> {
         let previous = self.previous();
-        let projection_changed = self.snapshot.keys != snapshot.keys;
+        let projection = Projection::all(&snapshot);
+        let projection_changed = !self.projected_keys().eq(snapshot.keys.iter());
         self.snapshot = snapshot;
+        self.projection = projection;
         self.reconcile();
         self.finish_replacement(previous, projection_changed)
     }
@@ -359,30 +375,15 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
     /// Preserves focus and emits each changed aspect once, using final-state
     /// payloads. Like `replace_snapshot`, always requests a content repaint;
     /// scrolling remains a host decision through the returned update's `reveal`.
+    /// Resets to the complete source view; use
+    /// `replace_snapshot_with_projection_and_selection` to supply a filtered view.
     pub fn replace_snapshot_with_selection(
         &mut self,
         snapshot: ListBoxSnapshot<T, K>,
         keys: impl IntoIterator<Item = K>,
         active: Option<K>,
     ) -> Result<ListBoxUpdate<K>, ListBoxError> {
-        let selected: HashSet<K> = keys.into_iter().collect();
-        Self::validate_selection(&snapshot, self.policy.mode, &selected)?;
-        if let Some(key) = &active {
-            if !snapshot.indices.contains_key(key) {
-                return Err(ListBoxError::UnknownKey);
-            }
-            if !snapshot.is_enabled(key) {
-                return Err(ListBoxError::DisabledItem);
-            }
-        }
-        let previous = self.previous();
-        let projection_changed = self.snapshot.keys != snapshot.keys;
-        self.snapshot = snapshot;
-        self.selected = selected;
-        self.active = active;
-        self.anchor = None;
-        self.reconcile();
-        Ok(self.finish_replacement(previous, projection_changed))
+        self.replace_snapshot_with_projection_and_selection(snapshot, None, keys, active)
     }
 
     fn finish_replacement(&self, previous: Previous<K>, projection_changed: bool) -> ListBoxUpdate<K> {
@@ -391,7 +392,7 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
         if projection_changed {
             update
                 .events
-                .insert(0, ListBoxEvent::ProjectionChanged { visible_count: self.snapshot.items.len() });
+                .insert(0, ListBoxEvent::ProjectionChanged { visible_count: self.projection.source_indices.len() });
         }
         update
     }
@@ -458,8 +459,9 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
             ListBoxInput::SelectAll => {
                 if self.policy.mode.allows_multiple() {
                     self.anchor = None;
-                    self.selected =
-                        self.snapshot.keys.iter().filter(|key| self.snapshot.is_enabled(key)).cloned().collect();
+                    let visible: Vec<K> =
+                        self.projected_keys().filter(|key| self.snapshot.is_enabled(key)).cloned().collect();
+                    self.selected.extend(visible);
                 }
             }
             ListBoxInput::ClearSelection => {
@@ -490,7 +492,7 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
                 }
             }
             ListBoxInput::Activate(key) => {
-                if self.snapshot.is_enabled(&key) {
+                if self.is_visible_enabled(&key) {
                     activated = Some(key);
                 }
             }
@@ -514,19 +516,20 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
     }
 
     fn select_item(&mut self, key: K, modifiers: ListBoxSelectionModifiers) {
-        if !self.snapshot.is_enabled(&key) {
+        if !self.is_visible_enabled(&key) {
             return;
         }
         match self.policy.mode {
             SelectionMode::None => {}
             SelectionMode::Extended if modifiers.extend => {
                 let anchor = self.anchor.clone().or_else(|| self.active.clone()).unwrap_or_else(|| key.clone());
-                // Both keys are enabled snapshot members after reconciliation.
+                // Both keys are enabled projection members after reconciliation.
                 if let (Some(start), Some(end)) = (self.visible_index(&anchor), self.visible_index(&key)) {
                     if !modifiers.toggle {
                         self.selected.clear();
                     }
-                    for index in start.min(end)..=start.max(end) {
+                    for visible_index in start.min(end)..=start.max(end) {
+                        let index = self.projection.source_indices[visible_index];
                         if self.snapshot.enabled[index] {
                             self.selected.insert(self.snapshot.keys[index].clone());
                         }
@@ -535,7 +538,9 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
                 }
             }
             SelectionMode::Multiple | SelectionMode::Extended
-                if self.policy.mode == SelectionMode::Multiple || modifiers.toggle =>
+                if self.policy.mode == SelectionMode::Multiple
+                    || modifiers.toggle
+                    || (self.policy.toggle_off && self.selected.contains(&key)) =>
             {
                 if !self.selected.remove(&key) {
                     self.selected.insert(key.clone());
@@ -561,21 +566,26 @@ impl<T, K: Clone + Eq + Hash> ListBoxState<T, K> {
     }
 
     fn reconcile(&mut self) {
-        if self.anchor.as_ref().is_some_and(|key| !self.snapshot.is_enabled(key)) {
+        if self.anchor.as_ref().is_some_and(|key| !self.is_visible_enabled(key)) {
             self.anchor = None;
         }
         self.selected.retain(|key| self.snapshot.is_enabled(key));
         if self.selected.is_empty() && self.policy.mode == SelectionMode::SingleRequired {
             self.selected.extend(self.snapshot.first_enabled());
         }
-        if self.active.as_ref().is_none_or(|key| !self.snapshot.is_enabled(key)) {
-            self.active = self.selected_key().cloned().or_else(|| self.snapshot.first_enabled());
+        if self.active.as_ref().is_none_or(|key| !self.is_visible_enabled(key)) {
+            let active = self
+                .projected_keys()
+                .find(|key| self.selected.contains(*key) && self.snapshot.is_enabled(key))
+                .cloned()
+                .or_else(|| self.projected_keys().find(|key| self.snapshot.is_enabled(key)).cloned());
+            self.active = active;
         }
     }
 
     fn navigation_target(&self, direction: ListBoxNavigation) -> Option<K> {
-        let current = self.active.as_ref().and_then(|key| self.snapshot.indices.get(key)).copied();
-        let mut eligible = self.snapshot.keys.iter().enumerate().filter(|(i, _)| self.snapshot.enabled[*i]);
+        let current = self.active.as_ref().and_then(|key| self.visible_index(key));
+        let mut eligible = self.projected_keys().enumerate().filter(|(_, key)| self.snapshot.is_enabled(key));
         let target = match direction {
             ListBoxNavigation::First => eligible.next(),
             ListBoxNavigation::Last => eligible.next_back(),

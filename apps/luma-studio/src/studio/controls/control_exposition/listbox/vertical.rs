@@ -41,10 +41,12 @@ impl VerticalListExample {
         let items = (1..=1_000).map(|id| RowItem { id, label: format!("Item {id}").into() });
         let snapshot = ListBoxSnapshot::try_with_enabled(items, |item| item.id, |item| item.id != 7)
             .expect("sample items have unique numeric keys");
+        let mut state = ListBoxState::from_snapshot(snapshot, SelectionMode::Extended);
+        state.set_selection_policy(super::selection_controls::DEFAULT_POLICY);
         Self {
             presentation: ExamplePresentation::new(look, "Vertical", event_stream),
             list: ListBoxControl::new(
-                ListBoxState::from_snapshot(snapshot, SelectionMode::Extended),
+                state,
                 Self::handle_input,
                 |key| (ID, *key).into(),
                 |item| item.label.clone(),

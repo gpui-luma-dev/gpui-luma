@@ -7,7 +7,7 @@ use luma::controls::{
     selector::{Selector, SelectorEvent, SelectorItem},
     listbox::{
         ListBoxControl, ListBoxInput, ListBoxItemRenderModel, ListBoxState, ListBoxVirtualization,
-        ListBoxVirtualWindow, SelectionMode,
+        ListBoxVirtualWindow, SelectionMode, SelectionPolicy,
     },
 };
 use luma::{hstack, vstack};
@@ -76,8 +76,9 @@ impl NotesList {
         events: Entity<ControlEventStream>,
         cx: &mut Context<Self>,
     ) -> Self {
-        let state = ListBoxState::try_new((1..=ITEM_COUNT).map(Note::new), |item| item.id, SelectionMode::Extended)
+        let mut state = ListBoxState::try_new((1..=ITEM_COUNT).map(Note::new), |item| item.id, SelectionMode::Extended)
             .expect("sample note keys are unique");
+        state.set_selection_policy(super::selection_controls::DEFAULT_POLICY);
         Self {
             id,
             presentation: ExamplePresentation::new(look, title, events),
@@ -99,6 +100,11 @@ impl NotesList {
 
     fn input(&mut self, input: ListBoxInput<u32>, _: &mut Window, cx: &mut Context<Self>) {
         let update = self.list.apply(input, cx);
+        self.presentation.record(&update.events, cx);
+    }
+
+    fn set_selection_policy(&mut self, policy: SelectionPolicy, cx: &mut Context<Self>) {
+        let update = self.list.set_selection_policy(policy, cx);
         self.presentation.record(&update.events, cx);
     }
 
@@ -293,6 +299,12 @@ impl VariableHeightExample {
         }
     }
 
+    pub(super) fn set_selection_policy(&mut self, policy: SelectionPolicy, cx: &mut Context<Self>) {
+        for list in &self.lists {
+            list.update(cx, |list, cx| list.set_selection_policy(policy, cx));
+        }
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         for list in &self.lists {
@@ -363,6 +375,15 @@ mod tests {
             assert!(example.lists[1].read(app).template_calls < 15);
             assert_eq!(example.lists[0].read(app).stats.as_ref().unwrap().measured_items, Some(ITEM_COUNT as usize));
         });
+        cx.update(|window, _| window.activate_window());
+        for (index, row) in [eager, measured].into_iter().enumerate() {
+            cx.simulate_click(row.center(), Default::default());
+            settle(cx);
+            cx.update(|_, app| assert_eq!(view.read(app).lists[index].read(app).list.state.selected_key(), Some(&1)));
+            cx.simulate_click(row.center(), Default::default());
+            settle(cx);
+            cx.update(|_, app| assert_eq!(view.read(app).lists[index].read(app).list.state.selected_keys().count(), 0));
+        }
         // Exercise the actual subscriptions shared by the two SDK checkboxes.
         cx.update(|_, app| {
             view.read(app)

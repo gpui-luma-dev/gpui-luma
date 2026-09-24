@@ -4,6 +4,7 @@ use std::{cell::Cell, ops::Range, sync::Arc};
 use gpui::{Context, Div, Entity, Hsla, Render, SharedString, Window, div, hsla, prelude::*, px};
 use luma::controls::listbox::{
     ListBoxControl, ListBoxInput, ListBoxItemRenderModel, ListBoxState, ListBoxVirtualization, SelectionMode,
+    SelectionPolicy,
 };
 use luma::{hstack, vstack};
 use luma_color::ColorSwatch;
@@ -105,9 +106,10 @@ pub(super) struct SpectrumListExample {
 
 impl SpectrumListExample {
     pub(super) fn new(look: Arc<ShadcnLook>, events: Entity<ControlEventStream>, cx: &mut Context<Self>) -> Self {
-        let state =
+        let mut state =
             ListBoxState::try_new((1..=ITEM_COUNT).map(SpectrumItem::new), |item| item.id, SelectionMode::Extended)
                 .expect("spectrum items have unique numeric keys");
+        state.set_selection_policy(super::selection_controls::DEFAULT_POLICY);
         Self {
             stats: RenderStats::default(),
             presentation: ExamplePresentation::new(look, "Spectrum", events),
@@ -125,6 +127,11 @@ impl SpectrumListExample {
 
     fn handle_input(&mut self, input: ListBoxInput<u32>, _: &mut Window, cx: &mut Context<Self>) {
         let update = self.list.apply(input, cx);
+        self.presentation.record(&update.events, cx);
+    }
+
+    pub(super) fn set_selection_policy(&mut self, policy: SelectionPolicy, cx: &mut Context<Self>) {
+        let update = self.list.set_selection_policy(policy, cx);
         self.presentation.record(&update.events, cx);
     }
 
@@ -229,6 +236,10 @@ mod tests {
             assert_eq!(state.selected_keys().copied().collect::<Vec<_>>(), vec![2]);
             assert!(state.visible_items().find(|item| item.key == 2).unwrap().state.selected);
         });
+        let second = cx.debug_bounds("listbox-spectrum-item-1").unwrap();
+        cx.simulate_click(second.center(), Default::default());
+        settle(cx);
+        cx.update(|_, app| assert_eq!(view.read(app).list.state.selected_keys().count(), 0));
         for (delta, visible, constructed) in [(-12_000.0, 200..205, 198..207), (-30.0, 200..206, 198..208)] {
             cx.simulate_event(ScrollWheelEvent {
                 position: point(first.left() + px(30.0), first.top() + px(25.0)),

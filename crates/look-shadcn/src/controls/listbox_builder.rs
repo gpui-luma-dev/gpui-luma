@@ -268,10 +268,8 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
                 ),
             }
         };
-        let range = virtual_window
-            .as_ref()
-            .map_or(0..self.state.snapshot().items().len(), |window| window.range.clone());
-        // `nth` on the snapshot's mapped slice iterator skips directly to the
+        let range = virtual_window.as_ref().map_or(0..self.state.visible_items().len(), |window| window.range.clone());
+        // `nth` on the projection's mapped slice iterator skips directly to the
         // range; off-screen items do not construct models, templates, or bindings.
         let items = self.state.visible_items().skip(range.start).take(range.len());
         let spacer = |extent: f32| {
@@ -343,7 +341,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             surface = (drag_drop.highlight)(surface, scope, highlight);
             surface = (drag_drop.target)(surface, None, cx).cancel_drag_on_escape();
         }
-        if self.state.snapshot().items().is_empty()
+        if self.state.visible_items().len() == 0
             && let Some(empty) = self.empty
         {
             surface = surface.child(div().absolute().inset_0().flex().items_center().justify_center().child(empty));
