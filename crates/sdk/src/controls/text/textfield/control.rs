@@ -673,7 +673,7 @@ impl Focusable for TextFieldControl {
 impl Render for TextFieldControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         if !self.model.enabled && self.focus_handle.is_focused(window) {
-            window.blur();
+            window.blur(cx);
         }
 
         self.sync_focus(window, cx);
