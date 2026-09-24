@@ -78,6 +78,9 @@ impl std::error::Error for ListBoxError {}
 
 /// Owned items with identity and eligibility captured at construction.
 pub struct ListBoxSnapshot<T, K> {
+    // Allows layout caches to detect replacements without scanning every item
+    // on every render, including changed content under unchanged keys.
+    pub(super) identity: std::sync::Arc<()>,
     items: Vec<T>,
     keys: Vec<K>,
     enabled: Vec<bool>,
@@ -106,7 +109,7 @@ impl<T, K: Clone + Eq + Hash> ListBoxSnapshot<T, K> {
             keys.push(key);
             eligibility.push(enabled(item));
         }
-        Ok(Self { items, keys, enabled: eligibility, indices })
+        Ok(Self { identity: std::sync::Arc::new(()), items, keys, enabled: eligibility, indices })
     }
 
     pub fn items(&self) -> &[T] {

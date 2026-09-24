@@ -1,11 +1,11 @@
-//! Uniform-item windowing geometry. Selection continues to cover the full snapshot.
+//! Rendering policies and uniform-item windowing geometry. Selection continues to cover the full snapshot.
 use std::ops::Range;
 
 use gpui::{Pixels, ScrollHandle, Size, px};
 use super::ListBoxAxis;
 
-/// Rendering policy for fixed-size ListBox items. Eager rendering is the default.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+/// Rendering policy for ListBox items. Eager rendering is the default.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub enum ListBoxVirtualization {
     /// Construct every item on each render.
     #[default]
@@ -13,11 +13,16 @@ pub enum ListBoxVirtualization {
     /// Construct viewport items plus this many items on each side. Item extent
     /// must be positive and spacing nonnegative; invalid geometry falls back to eager.
     Uniform { overscan: usize },
+    /// Virtualize content-sized vertical rows using actual layout measurements.
+    /// Unmeasured rows start at a positive, finite estimate (invalid values use
+    /// 48px). Use with content-sized flow; fixed-size flow falls back to eager.
+    Measured { estimated_height: f32, overscan: usize },
 }
 
 /// One render's collection range and spacer geometry. Keep spacers as direct
 /// siblings of the items, with the same inter-child gap as the eager stack.
-/// Obtain this from [`super::ListBoxScrollHandle::virtual_window`].
+/// Obtain this from [`super::ListBoxScrollHandle::virtual_window`] or
+/// [`super::ListBoxScrollHandle::content_window`].
 #[derive(Clone, Debug)]
 pub struct ListBoxVirtualWindow {
     /// Indices into the full collection, including the overscan buffer.
@@ -29,7 +34,10 @@ pub struct ListBoxVirtualWindow {
     pub leading_space: Option<f32>,
     /// Trailing spacer extent, excluding the stack's preceding gap.
     pub trailing_space: Option<f32>,
-    pub(super) metrics: UniformMetrics,
+    /// Number of currently valid measured heights, for content-sized flow.
+    /// Other collection entries still use estimates. `None` for uniform flow.
+    pub measured_items: Option<usize>,
+    pub(super) metrics: Option<UniformMetrics>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -110,6 +118,30 @@ impl UniformMetrics {
         scroll.set_offset(offset);
     }
 
+    pub fn position_offset(self, offset: f32, viewport: f32, index: usize, center: bool) -> f32 {
+        self.clamped(
+            super::scroll::position_offset(offset, viewport, index as f32 * self.stride(), self.extent, center),
+            viewport,
+        )
+    }
+
+    pub fn position_item(self, scroll: &ScrollHandle, viewport: f32, index: usize, center: bool) {
+        let target = super::scroll::position_offset(
+            self.offset(scroll),
+            viewport,
+            index as f32 * self.stride(),
+            self.extent,
+            center,
+        );
+        let mut offset = scroll.offset();
+        let value = px(-self.clamped(target, viewport));
+        match self.axis {
+            ListBoxAxis::Vertical => offset.y = value,
+            ListBoxAxis::Horizontal => offset.x = value,
+        }
+        scroll.set_offset(offset);
+    }
+
     pub fn window(self, offset: f32, viewport: f32) -> ListBoxVirtualWindow {
         let offset = self.clamped(offset, viewport);
         let first = ((offset / self.stride()).floor() as usize).min(self.count.saturating_sub(1));
@@ -128,7 +160,8 @@ impl UniformMetrics {
             visible_range: visible_start..visible_end,
             leading_space: (start > 0).then(|| start as f32 * self.stride() - self.gap),
             trailing_space: (end < self.count).then(|| (self.count - end) as f32 * self.stride() - self.gap),
-            metrics: self,
+            measured_items: None,
+            metrics: Some(self),
         }
     }
 }

@@ -20,6 +20,7 @@ struct Harness {
     scrolls: [ListBoxScrollHandle<u32>; 2],
     look: Arc<ShadcnLook>,
     dnd: bool,
+    content_sized: bool,
     virtualization: ListBoxVirtualization,
     previews: Rc<Cell<usize>>,
     events: Vec<DragDropEvent<usize, u32>>,
@@ -39,6 +40,7 @@ impl Harness {
             scrolls: std::array::from_fn(|_| ListBoxScrollHandle::default().require_focus_for_scroll(true)),
             look: Arc::new(ShadcnLook::built_in()),
             dnd,
+            content_sized: false,
             virtualization: ListBoxVirtualization::Eager,
             previews: Rc::default(),
             events: Vec::new(),
@@ -70,6 +72,7 @@ impl Harness {
 
 impl Render for Harness {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let content_sized = self.content_sized;
         let lists = [0, 1].map(|side| {
             let previews = self.previews.clone();
             let mut builder = ListBoxBuilder::new(
@@ -79,10 +82,19 @@ impl Render for Harness {
                 &self.scrolls[side],
                 if side == 0 { Self::left_input } else { Self::right_input },
                 |key| ("item", *key).into(),
-                |surface, _, _| surface.size_full(),
+                |surface, item, _| {
+                    if content_sized {
+                        surface.w_full().child(div().h(px(if item.item % 2 == 0 { 90.0 } else { 60.0 })))
+                    } else {
+                        surface.size_full()
+                    }
+                },
             )
             .empty(div().size(px(20.0)))
             .virtualization(self.virtualization);
+            if content_sized {
+                builder = builder.content_sized();
+            }
             if self.dnd {
                 builder = builder.drag_and_drop(side, Self::drop, Self::event, move |_, _, _, cx| {
                     previews.set(previews.get() + 1);
@@ -268,4 +280,87 @@ fn virtualized_drag_auto_scroll_mounts_new_targets_without_focus() {
         assert_eq!(host.drops, vec![(1, Some(11_000))]);
         assert_eq!(host.events[0], DragDropEvent::DragStarted { source: 0, keys: vec![1, 2] });
     });
+}
+
+#[test]
+fn content_sized_drops_follow_actual_row_halves_in_both_rendering_modes() {
+    for virtualization in [
+        ListBoxVirtualization::Eager,
+        ListBoxVirtualization::Measured { estimated_height: 48.0, overscan: 1 },
+    ] {
+        for (side, after) in [(0, false), (0, true), (1, false), (1, true)] {
+            let mut app = TestAppContext::single();
+            let (view, cx) = app.add_window_view(|_, cx| {
+                let mut host = Harness::new(true, cx);
+                host.content_sized = true;
+                host.virtualization = virtualization;
+                host.lists[0].set_selected_keys([1, 2]).unwrap();
+                for scroll in &host.scrolls {
+                    scroll.set_drag_auto_scroll_speed(0.0);
+                }
+                host
+            });
+            for _ in 0..8 {
+                cx.run_until_parked();
+                cx.update(|window, app| window.simulate_next_frame(app));
+            }
+            // The 92px second row must have a 46px upper/lower target, not the
+            // builder's default 18px half-height. Stay well away from the seam.
+            let row = cx.debug_bounds(if side == 0 { "left-item-1" } else { "right-item-1" }).unwrap();
+            assert_eq!(row.size.height, px(92.0));
+            let destination = (
+                if side == 0 { 30.0 } else { 300.0 },
+                f32::from(row.top() + row.size.height * if after { 0.8 } else { 0.2 }),
+            );
+            drag(cx, destination);
+            cx.simulate_mouse_up(point(px(destination.0), px(destination.1)), MouseButton::Left, Default::default());
+            cx.update(|_, app| {
+                let host = view.read(app);
+                assert_eq!(
+                    host.drops,
+                    vec![(
+                        side,
+                        Some(if side == 0 {
+                            if after { 3 } else { 2 }
+                        } else if after {
+                            13
+                        } else {
+                            12
+                        })
+                    )]
+                );
+                assert_eq!(host.events[0], DragDropEvent::DragStarted { source: 0, keys: vec![1, 2] });
+            });
+        }
+    }
+}
+
+#[test]
+fn measured_drag_auto_scroll_mounts_targets_without_focus() {
+    let mut app = TestAppContext::single();
+    let (view, cx) = app.add_window_view(|_, cx| {
+        let mut host = Harness::new(true, cx);
+        host.content_sized = true;
+        host.virtualization = ListBoxVirtualization::Measured { estimated_height: 48.0, overscan: 1 };
+        host.lists[1].replace_snapshot(ListBoxSnapshot::try_new(10_001..=11_000, |n| *n).unwrap());
+        host.scrolls[1].set_drag_auto_scroll_speed(10_000_000.0);
+        host
+    });
+    cx.update(|window, _| window.activate_window());
+    for _ in 0..8 {
+        cx.run_until_parked();
+        cx.update(|window, app| window.simulate_next_frame(app));
+    }
+    drag(cx, (300.0, 202.0));
+    for _ in 0..12 {
+        cx.run_until_parked();
+        cx.update(|window, app| window.simulate_next_frame(app));
+    }
+    let last = cx.debug_bounds("right-item-999").unwrap();
+    assert_eq!(last.bottom(), cx.debug_bounds("right-viewport").unwrap().bottom());
+    cx.update(|_, app| assert!(!view.read(app).lists[1].is_focused()));
+    let destination = point(px(300.0), last.top() + px(5.0));
+    cx.simulate_mouse_move(destination, MouseButton::Left, Default::default());
+    cx.simulate_mouse_up(destination, MouseButton::Left, Default::default());
+    cx.update(|_, app| assert_eq!(view.read(app).drops, vec![(1, Some(11_000))]));
 }

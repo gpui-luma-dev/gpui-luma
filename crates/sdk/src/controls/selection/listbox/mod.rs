@@ -13,6 +13,7 @@ mod layout;
 mod model;
 mod scroll;
 mod virtualization;
+mod measured;
 
 pub use virtualization::{ListBoxVirtualization, ListBoxVirtualWindow};
 pub use scroll::ListBoxScrollHandle;

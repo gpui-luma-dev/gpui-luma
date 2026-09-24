@@ -133,7 +133,8 @@ impl Render for SelectionControls {
                 }
             };
             vstack! { gap=8.0;
-                div().child("Selection policies · Vertical and Horizontal").typography_style(self.look.typography_scale(ShadcnTextSize::Sm)),
+                div().child("Selection policies · Vertical and Horizontal")
+                    .typography_style(self.look.typography_scale(ShadcnTextSize::Sm)).text_color(self.look.chrome().title_text),
                 div().w(px(250.0)).child(self.mode.clone()),
                 div().flex().flex_wrap().gap(px(12.0)).child(self.toggle_off.clone()).child(self.follows_active.clone()),
                 div().typography_style(self.look.typography_scale(ShadcnTextSize::Xs)).text_color(self.look.chrome().muted_text).child(hint),

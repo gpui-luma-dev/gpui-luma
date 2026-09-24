@@ -234,3 +234,7 @@ mod tests {
         assert_eq!(look.thumb_background, catalog.color("border").expect("border"));
     }
 }
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "scroll_container_tests.rs"]
+mod scroll_container_tests;

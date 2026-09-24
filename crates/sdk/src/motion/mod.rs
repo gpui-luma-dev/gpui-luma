@@ -9,3 +9,5 @@ pub use animation::{
 };
 pub use overlay_presence::{OVERLAY_ENTER_SCALE_MIN, OverlayPresence, overlay_enter_offset, overlay_enter_scale};
 pub use popup_lifecycle::PopupLifecycle;
+
+pub(crate) use animation::ease_out_cubic;

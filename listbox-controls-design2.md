@@ -114,8 +114,9 @@ retention, and the existing transfer/reorder behavior.
 Both SDK ListBox doctests, Clippy across the three crates, and workspace formatting
 checks also pass.
 
-Still planned: filtered/sorted projections, additional layout helpers, custom
-auto-scroll curves, and variable-height virtualization. Phase 4 below records the
+Still planned: filtered/sorted projections, viewport-relative card sizing, custom
+auto-scroll curves. Scroll snapping has been removed at the user’s request (Phase 4c). Content-sized vertical rows now support
+both eager and measured virtualized rendering (see Phase 4b). Phase 4 below records the
 new uniform-item virtualization implementation and its verification status.
 
 ## Architectural Position
@@ -704,8 +705,8 @@ specifies layout slots, not the number of items in the collection or projection.
 If the usable extent cannot accommodate the gaps, the host must reduce spacing
 or the requested count; clamping alone cannot guarantee that the cards fit.
 
-Scroll snapping, variable-height measurement, and virtualization are separate
-capabilities. They should be added only after the basic composition works.
+Variable-height measurement and virtualization are independent capabilities.
+Scroll snapping was evaluated and removed (see Phase 4c).
 
 ## Studio Exposition and Inspectors
 
@@ -785,7 +786,8 @@ retain their own data and named row/card components.
   item, Cmd/Ctrl+A selects all enabled items, and Cmd/Ctrl+Shift+A clears selection
   while keeping list focus. Escape leaves focus through the enclosing focus scope;
   programmatic `set_selected_keys` validates and replaces selection atomically;
-- visible-count and row-metric helpers (planned);
+- fixed visible-count/row-metric helpers (implemented in `ListBoxFlow`);
+  viewport-relative card sizing remains planned;
 - filtered/sorted projection and active-item reconciliation (planned; active-item
   presentation and keyboard reveal already work for the full snapshot);
 - extended selection and its anchor/modifier rules (implemented);
@@ -793,8 +795,8 @@ retain their own data and named row/card components.
   and runtime policy changes with final-state events (implemented).
 
 The selection work in this phase is complete and confirmed working by the user.
-The phase remains partially complete because layout helpers and projections
-are still planned.
+The phase remains partially complete because viewport-relative sizing and
+projections are still planned.
 
 These variants use the same state. Filtered/sorted projection remains planned. They
 do not require a visual ListBox builder.
@@ -916,10 +918,146 @@ Studio has not been launched by the agent; manual testing remains with the user.
 
 Still deferred:
 
-- measured variable-height flow improvements and virtualization;
-- indexed height estimation if variable-height virtualization is needed;
+- horizontal content-sized width virtualization (vertical heights are implemented below);
+- filtered/sorted projections (next priority);
 - data paging: collection snapshots remain fully resident, and full-collection
   selection/transfer operations retain their existing costs.
+
+### Phase 4b: Content-Sized Vertical Rows — Implemented; User Verified
+
+Item templates determine height, and GPUI measures their outer row bounds at
+layout time. `ListBoxFlow::VerticalContent { viewport_height, gap }` supplies an
+explicit viewport height; it does not promise a fixed count of unequal rows.
+The look-owned builder also exposes `.content_sized()`. Content-sized surfaces
+fill the available width but do not force `h_full()` or a fixed row height.
+Templates should use natural height; empty rows have a 1px minimum for progress.
+
+The local markup keeps this choice next to the template:
+
+```rust
+scroll_view! { vertical;
+    viewport_height = 320.0;
+    vstack! {
+        gap = 4.0;
+        item_height = content;
+        item_template = |model, _cx| note_template(model, look, expanded);
+    }
+}
+```
+
+- **Eager:** construct all rows, measure their actual heights, and use measured
+  geometry for navigation/reveal and diagnostics.
+- **Virtualized:** opt into
+  `ListBoxVirtualization::Measured { estimated_height: 100.0, overscan: 2 }`.
+  Offscreen rows use estimates until constructed. This remains rendering
+  virtualization over a fully resident collection, without data fetching.
+- The same scroll adapter retains a key-indexed height cache and a prefix-sum
+  index with logarithmic height updates and offset lookup. Snapshot identity
+  avoids scanning the whole collection on ordinary renders. Snapshot replacement
+  rebuilds order and treats retained heights as estimates, since content under
+  the same key may have changed. Removed keys are discarded.
+- Actual bounds are read through the existing layout observer and scroll handle.
+  No new mouse/hover listeners or per-item events are introduced. A corrective
+  frame is requested only for changed measurements, geometry, or viewport size.
+- Measurement corrections retain the top row key and its pixel offset. Pending
+  keyboard reveal is resolved against the target's measured height. Rows taller
+  than the viewport align their top; estimates and spacer extents converge as
+  rows are measured. Width changes automatically invalidate cached measurements.
+- Hosts call `control.invalidate_measurements(Some(&key), cx)` for external
+  content changes or `None` for all rows, including typography/theme changes.
+  This is unnecessary for snapshot replacement. Mounted rows are remeasured
+  whenever they render; stale offscreen values remain estimates until revisited.
+- DnD halves use parent-relative bounds for content-sized rows, preserving keyed
+  before/after gaps and the existing auto-scroll adapter. Selection and domain
+  transfer rules are unchanged.
+- `rendered_window()` includes `measured_items` for content-sized flow, including
+  eager mode. The uniform fixed-size path retains its existing arithmetic.
+  Incompatible sizing/virtualization combinations fall back to eager composition;
+  nonpositive/nonfinite height estimates use 48px.
+
+Studio adds **Variable-height items** with two independently scrolling 1,000-note
+lists using the same named template: eager and virtualized. The template combines
+a selection mark, title, and naturally wrapping description. SDK checkboxes
+expand details and narrow both lists from 250px to 180px. Both display collection
+size, actual template calls, visible/constructed counts, and measured/estimated
+counts. Shadcn appearance stays in the look; markup stays local.
+
+Headless coverage checks real wrapping content in both modes, bounded virtual
+construction, focus-required wheel routing, resize anchoring, Home/End and Return,
+content expansion beyond the viewport and collapse at the collection end,
+snapshot shrink/empty/reorder, settled
+measurement frames, unequal-height DnD halves, and drag auto-scroll without focus.
+The actual Studio comparison is also rendered headlessly to verify its template,
+counts, and expansion/width subscriptions. The user confirmed this working locally;
+the agent has not launched Studio. Verification for Phase 4b passed 48 SDK ListBox tests,
+12 look tests, 20 Studio ListBox tests, Clippy across all three crates, and
+workspace formatting.
+
+### Phase 4c: Scroll Snapping — Removed
+
+Removed at the user's request after local testing. The SDK snapping API,
+settling timers/animation, alignment geometry, Studio selectors, and snapping-only
+tests have been deleted. Normal wheel scrolling, keyboard reveal, focus routing,
+drag auto-scroll, and user-verified variable-height support remain.
+
+Filtering/view projections are the next planned work. Scroll snapping is no longer
+part of the active implementation plan. SwiftUI examples above remain historical
+layout references, not a promise of snapping support.
+
+### Programmatic Item Positioning — Implemented; Smooth Variants Awaiting User Testing
+
+The host explicitly chooses the item and when to move the viewport:
+
+```rust
+list.scroll_to(item_key, cx);        // Make this item visible.
+list.scroll_to_center(item_key, cx); // Center this item in the viewport.
+
+// Animate the same positioning requests.
+list.scroll_to_smooth(item_key, cx);
+list.scroll_to_center_smooth(item_key, cx);
+```
+
+All four methods are available on `ListBoxControl` and on the lower-level
+`ListBoxScrollHandle`. They accept a stable item key, not a row index. Requests
+are resolved against the current collection during layout; the latest scroll
+request wins, and unknown or removed keys are ignored. They work without focus
+and do not change selection, active item, or focus, or emit selection events.
+
+`scroll_to` leaves fully visible items in place. An item larger than the viewport
+is positioned with its top (vertical) or left edge (horizontal) visible.
+`scroll_to_center` places the requested item's midpoint at the viewport midpoint
+on the scrolling axis, including oversized items. Both clamp at collection
+boundaries; exact centering near the beginning/end may therefore be impossible.
+
+Fixed eager and virtualized lists support both axes. Content-sized vertical lists
+use measured heights, first locating off-screen rows from estimates and correcting
+placement when their actual heights arrive. Once completed, a request has no effect
+on subsequent scrolling. The original methods remain immediate; the smooth
+variants use the shared scrolling layer's frame-driven 200ms ease-out animation.
+The shared `ScrollContainer` also exposes `set_vertical_offset_smooth(value, cx)`.
+Animation follows measured destination corrections and clamps to current content
+bounds. New positioning requests or user interaction interrupt it. This introduces
+no snapping policy. Keyboard navigation retains its existing bring-into-view behavior.
+
+Studio's **Variable-height items** comparison includes a **Target item** selector
+(Note 1, 7, 50, 500, or 1000), **Make visible**, and **Center in viewport** buttons.
+Both buttons apply to the eager and virtualized lists without changing selection.
+The **Smooth scrolling** checkbox (off by default) chooses animated positioning
+for both buttons. The user confirmed immediate positioning working locally;
+the smooth variants await local testing.
+Use the existing expansion and width controls to repeat the test after reflow.
+The fixture uses SDK selectors/buttons with Shadcn styling, and its subscriptions
+are covered by a headless test targeting off-screen notes in both lists.
+
+Headless tests cover requests before first layout, unfocused positioning, unchanged
+selection, fixed rows on both axes, measured off-screen and oversized rows, endpoint
+clamping, missing keys, reordering, repeated requests, and scrolling afterward.
+Smooth scrolling coverage checks intermediate offsets, exact final placement,
+off-screen measurement corrections, request replacement, and wheel interruption.
+The shared scroll container has separate clamping and interruption coverage.
+Verification passed 85 ListBox tests across SDK, look, and Studio, plus 9 scroll
+container tests, Clippy across all three crates, and workspace formatting.
+The agent has not launched Studio.
 
 ## Explicit Non-Goals
 

@@ -13,6 +13,10 @@ mod tests;
 #[path = "listbox_virtualization_tests.rs"]
 mod virtualization_tests;
 
+#[cfg(all(test, feature = "test-support"))]
+#[path = "listbox_measured_tests.rs"]
+mod measured_tests;
+
 use std::hash::Hash;
 
 use gpui::{
@@ -44,7 +48,7 @@ struct DragDropBindings<'a, M: 'static, T, K> {
     highlight: Box<dyn Fn(Surface, EntityId, Hsla) -> Surface + 'a>,
 }
 
-/// Look-owned fixed-size list composition. Reuse SDK state and handles between renders.
+/// Look-owned fixed-size or content-sized list composition. Reuse SDK state and handles between renders.
 /// No DnD handlers or gap overlays are installed unless `drag_and_drop` is used.
 pub struct ListBoxBuilder<'a, M: 'static, T, K> {
     id: &'static str,
@@ -55,6 +59,7 @@ pub struct ListBoxBuilder<'a, M: 'static, T, K> {
     layout: ListBoxLayout,
     axis: ListBoxAxis,
     item_width: f32,
+    content_sized: bool,
     virtualization: ListBoxVirtualization,
     on_input: InputHandler<M, K>,
     item_id: fn(&K) -> ElementId,
@@ -86,6 +91,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             item: Box::new(move |surface, item_state, cx| item(surface, item_state, cx).into_any_element()),
             axis: ListBoxAxis::Vertical,
             item_width: 136.0,
+            content_sized: false,
             virtualization: ListBoxVirtualization::default(),
             look: None,
             layout: ListBoxLayout {
@@ -120,7 +126,16 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         self
     }
 
-    /// Opt into uniform-item windowing on either axis. Eager is the default.
+    /// Let vertical row templates determine their height at the available width.
+    /// Use an explicit viewport height in `layout`. Templates must size naturally
+    /// rather than fill an unspecified height. Horizontal flow remains fixed-size.
+    pub fn content_sized(mut self) -> Self {
+        self.content_sized = true;
+        self
+    }
+
+    /// Opt into uniform windowing on either axis or measured vertical windowing.
+    /// Measured requires `content_sized`; incompatible policies fall back to eager.
     /// Templates run only for viewport/buffer items and may still borrow local
     /// data. Durable item state belongs in host-owned models or entities.
     pub fn virtualization(mut self, policy: ListBoxVirtualization) -> Self {
@@ -197,6 +212,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
 
     /// Assemble one frame using the existing SDK bindings and scroll handle.
     pub fn build(self, window: &mut Window, cx: &mut Context<M>) -> Surface {
+        let content_sized = self.content_sized && self.axis == ListBoxAxis::Vertical;
         let scope = cx.entity_id();
         let look = resolve_look_from(self.look.as_ref(), cx);
         let highlight = look.token_color("ring").unwrap_or(look.chrome().border);
@@ -214,31 +230,43 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
                 following_gap: px(if before.is_some() { self.layout.spacing } else { 0.0 }),
                 marker_width: px(2.0),
             };
-            let mut surface = zone
-                .apply(div().id(if edge == DropEdge::Before {
-                    "insert-before"
-                } else {
-                    "insert-after"
-                }))
-                .border_color(gpui::transparent_black());
+            let target = div().id(if edge == DropEdge::Before {
+                "insert-before"
+            } else {
+                "insert-after"
+            });
+            let mut surface = if content_sized {
+                zone.apply_measured(target)
+            } else {
+                zone.apply(target)
+            }
+            .border_color(gpui::transparent_black());
             if let Some(drag_drop) = &self.drag_drop {
                 surface = (drag_drop.highlight)(surface, scope, highlight);
                 surface = (drag_drop.target)(surface, before, cx);
             }
             surface
         };
-        let virtual_window = match self.virtualization {
-            ListBoxVirtualization::Eager => None,
-            ListBoxVirtualization::Uniform { overscan } => self.scroll.virtual_window(
-                self.state,
-                self.axis,
-                match self.axis {
-                    ListBoxAxis::Vertical => self.layout.item_height,
-                    ListBoxAxis::Horizontal => self.item_width,
-                },
-                self.layout.spacing,
-                overscan,
-            ),
+        let virtual_window = if content_sized {
+            let (estimate, buffer) = match self.virtualization {
+                ListBoxVirtualization::Measured { estimated_height, overscan } => (estimated_height, Some(overscan)),
+                _ => (48.0, None),
+            };
+            Some(self.scroll.content_window(self.state, estimate, self.layout.spacing, buffer))
+        } else {
+            match self.virtualization {
+                ListBoxVirtualization::Eager | ListBoxVirtualization::Measured { .. } => None,
+                ListBoxVirtualization::Uniform { overscan } => self.scroll.virtual_window(
+                    self.state,
+                    self.axis,
+                    match self.axis {
+                        ListBoxAxis::Vertical => self.layout.item_height,
+                        ListBoxAxis::Horizontal => self.item_width,
+                    },
+                    self.layout.spacing,
+                    overscan,
+                ),
+            }
         };
         let range = virtual_window
             .as_ref()
@@ -272,7 +300,8 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
                 .when(self.axis == ListBoxAxis::Vertical, |row| row.w_full())
                 .when(self.axis == ListBoxAxis::Horizontal, |row| row.w(px(self.item_width)))
                 .min_w(px(0.0))
-                .h(px(self.layout.item_height))
+                .when(!content_sized, |row| row.h(px(self.layout.item_height)))
+                .when(content_sized, |row| row.min_h(px(1.0)))
                 .flex_shrink_0()
                 .child((self.item)(surface, item, cx));
             if self.drag_drop.is_some() && cx.has_active_drag() {
@@ -344,6 +373,7 @@ impl ShadcnLook {
     ) -> Stateful<Div> {
         let parts = control.render_parts();
         let layout = flow.layout(padding);
+        let content_sized = matches!(flow, ListBoxFlow::VerticalContent { .. });
         let item_label = parts.item_label;
         let mode = parts.state.selection_mode();
         let builder = ListBoxBuilder::new(
@@ -361,7 +391,8 @@ impl ShadcnLook {
                     enabled: item.state.enabled,
                 };
                 surface
-                    .size_full()
+                    .w_full()
+                    .when(!content_sized, |surface| surface.h_full())
                     .rounded(px(CORNER_RADIUS))
                     .overflow_hidden()
                     .aria_label(item_label(item.item))
@@ -374,6 +405,7 @@ impl ShadcnLook {
         .virtualization(parts.virtualization);
         let builder = match flow {
             ListBoxFlow::Vertical { .. } => builder,
+            ListBoxFlow::VerticalContent { .. } => builder.content_sized(),
             ListBoxFlow::Horizontal { item_width, .. } => builder.horizontal(item_width),
         };
         builder.build(window, cx).aria_description(format!("Selection mode: {mode:?}"))

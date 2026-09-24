@@ -223,3 +223,145 @@ fn listbox_eager_rendering_remains_the_default() {
     });
     cx.update(|_, app| assert_eq!(view.read(app).rendered.borrow().len(), 20));
 }
+
+#[test]
+fn listbox_scroll_to_positions_the_requested_key_without_changing_selection() {
+    for horizontal in [false, true] {
+        for virtualized in [false, true] {
+            let mut app = TestAppContext::single();
+            let (view, cx) = app.add_window_view(|_, cx| {
+                let mut host = Harness::new(horizontal, virtualized, cx);
+                host.list.state.replace_snapshot(ListBoxSnapshot::try_new(1..=100, |n| *n).unwrap());
+                host.list.state.set_selected(Some(7)).unwrap();
+                // Request before the first viewport measurement, without focus.
+                host.list.scroll_to_center(50, cx);
+                host
+            });
+            settle(cx);
+            let viewport = bounds(cx, "virtual-list-viewport");
+            let row = bounds(cx, "virtual-list-item-49");
+            let center = |b: Bounds<Pixels>| {
+                if horizontal {
+                    (b.left() + b.right()) / 2.0
+                } else {
+                    (b.top() + b.bottom()) / 2.0
+                }
+            };
+            assert!(
+                (center(row) - center(viewport)).abs() < px(0.1),
+                "horizontal={horizontal}, virtual={virtualized}: {row:?} vs {viewport:?}"
+            );
+            cx.update(|_, app| view.update(app, |host, cx| host.list.scroll_to(50, cx)));
+            settle(cx);
+            assert_eq!(bounds(cx, "virtual-list-item-49"), row, "visible item should not move");
+            // Latest explicit request wins; requesting a missing key is a no-op.
+            cx.update(|_, app| {
+                view.update(app, |host, cx| {
+                    host.list.scroll_to(1, cx);
+                    host.list.scroll_to_center(100, cx);
+                })
+            });
+            assert_revealed(cx, "virtual-list-item-99", horizontal);
+            let last = bounds(cx, "virtual-list-item-99");
+            assert_eq!(
+                if horizontal { last.right() } else { last.bottom() },
+                if horizontal {
+                    viewport.right()
+                } else {
+                    viewport.bottom()
+                }
+            );
+            cx.update(|_, app| view.update(app, |host, cx| host.list.scroll_to_center(999, cx)));
+            settle(cx);
+            assert_eq!(bounds(cx, "virtual-list-item-99"), last);
+            // Resolve against the latest snapshot, not the index at request time.
+            cx.update(|_, app| {
+                view.update(app, |host, cx| {
+                    host.list.scroll_to(1, cx);
+                    let update =
+                        host.list.state.replace_snapshot(ListBoxSnapshot::try_new((1..=100).rev(), |n| *n).unwrap());
+                    host.list.handle_update(&update, cx);
+                })
+            });
+            assert_revealed(cx, "virtual-list-item-99", horizontal);
+            cx.update(|_, app| {
+                let state = &view.read(app).list.state;
+                assert_eq!(state.selected_key(), Some(&7));
+                assert!(!state.is_focused());
+            });
+        }
+    }
+}
+
+#[test]
+fn listbox_smooth_positions_animate_both_axes_and_yield_to_new_requests() {
+    for horizontal in [false, true] {
+        for virtualized in [false, true] {
+            let mut app = TestAppContext::single();
+            let (view, cx) = app.add_window_view(|_, cx| {
+                let mut host = Harness::new(horizontal, virtualized, cx);
+                host.list.state.replace_snapshot(ListBoxSnapshot::try_new(1..=100, |n| *n).unwrap());
+                host.list.state.set_selected(Some(7)).unwrap();
+                host
+            });
+            cx.update(|window, _| window.activate_window());
+            settle(cx);
+            cx.update(|_, app| view.update(app, |host, cx| host.list.scroll_to_center_smooth(50, cx)));
+            cx.run_until_parked();
+            let beginning = bounds(cx, "virtual-list-item-0");
+            advance_smooth(cx, 1);
+            let keys = cx.update(|_, app| view.read(app).rendered.borrow().clone());
+            let item_id: &'static str =
+                Box::leak(format!("virtual-list-item-{}", keys[keys.len() / 2] - 1).into_boxed_str());
+            let moving = bounds(cx, item_id);
+            advance_smooth(cx, 1);
+            if let Some(next) = cx.debug_bounds(item_id) {
+                assert!(if horizontal {
+                    next.left() < moving.left()
+                } else {
+                    next.top() < moving.top()
+                });
+            }
+            advance_smooth(cx, 24);
+            let viewport = bounds(cx, "virtual-list-viewport");
+            let row = bounds(cx, "virtual-list-item-49");
+            let error = if horizontal {
+                row.left() + row.right() - viewport.left() - viewport.right()
+            } else {
+                row.top() + row.bottom() - viewport.top() - viewport.bottom()
+            };
+            assert!(error.abs() < px(0.2));
+            assert_ne!(row, beginning);
+            // An immediate request supersedes the animator and stays in place.
+            cx.update(|_, app| view.update(app, |host, cx| host.list.scroll_to_smooth(100, cx)));
+            advance_smooth(cx, 2);
+            cx.update(|_, app| view.update(app, |host, cx| host.list.scroll_to(1, cx)));
+            advance_smooth(cx, 24);
+            assert_revealed(cx, "virtual-list-item-0", horizontal);
+            cx.update(|_, app| {
+                assert_eq!(view.read(app).list.state.selected_key(), Some(&7));
+                assert!(!view.read(app).list.state.is_focused());
+            });
+            // A wheel gesture stops the current motion at its current offset.
+            cx.simulate_click(point(px(30.0), px(25.0)), Default::default());
+            settle(cx);
+            cx.update(|_, app| view.update(app, |host, cx| host.list.scroll_to_center_smooth(50, cx)));
+            advance_smooth(cx, 3);
+            wheel(cx, -13.0);
+            let key = cx.update(|_, app| *view.read(app).rendered.borrow().first().unwrap());
+            let id: &'static str = Box::leak(format!("virtual-list-item-{}", key - 1).into_boxed_str());
+            let stopped = bounds(cx, id);
+            advance_smooth(cx, 24);
+            assert_eq!(bounds(cx, id), stopped);
+        }
+    }
+}
+
+fn advance_smooth(cx: &mut VisualTestContext, frames: usize) {
+    cx.run_until_parked();
+    for _ in 0..frames {
+        cx.executor().advance_clock(std::time::Duration::from_millis(16));
+        cx.update(|window, app| window.simulate_next_frame(app));
+        cx.run_until_parked();
+    }
+}

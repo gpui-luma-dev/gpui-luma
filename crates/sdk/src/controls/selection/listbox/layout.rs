@@ -1,4 +1,4 @@
-//! Fixed-item geometry, independent of appearance and item content.
+//! Item flow geometry, independent of appearance and item content.
 
 /// Physical list dimensions in logical pixels. Supply finite, nonnegative
 /// dimensions. Item content padding, chrome, colors, and radii belong to the host/look.
@@ -16,12 +16,15 @@ pub struct ListBoxLayout {
     pub inset_y: f32,
 }
 
-/// Explicit fixed-item flow. This never infers dimensions from a Rust template.
+/// Explicit item flow. This never infers dimensions from a Rust template.
 /// Horizontal flow fills the available viewport width with fixed-width cards.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ListBoxFlow {
     /// Reserve a viewport for this many equal-height items and intervening gaps.
     Vertical { visible_items: usize, item_height: f32, gap: f32 },
+    /// Vertical rows sized by their content at the available width.
+    /// The viewport has an explicit height, independent of row measurements.
+    VerticalContent { viewport_height: f32, gap: f32 },
     /// One horizontal row of equal-sized cards.
     Horizontal { item_width: f32, item_height: f32, gap: f32 },
 }
@@ -34,6 +37,7 @@ impl ListBoxFlow {
             Self::Vertical { visible_items, item_height, gap } => {
                 (item_height, gap, item_height * visible_items as f32 + gap * visible_items.saturating_sub(1) as f32)
             }
+            Self::VerticalContent { viewport_height, gap } => (0.0, gap, viewport_height),
             Self::Horizontal { item_height, gap, .. } => (item_height, gap, item_height),
         };
         ListBoxLayout { item_height: height, spacing: gap, viewport_height, inset_x: padding.0, inset_y: padding.1 }

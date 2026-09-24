@@ -40,7 +40,7 @@ pub struct ListBoxRenderParts<'a, M: 'static, T, K> {
     pub item_id: fn(&K) -> ElementId,
     /// Accessible name of each item, independent of its visual template.
     pub item_label: fn(&T) -> SharedString,
-    /// Eager or opt-in uniform-item rendering.
+    /// Eager or opt-in virtualized rendering.
     pub virtualization: ListBoxVirtualization,
 }
 
@@ -71,12 +71,47 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
         self
     }
 
-    /// Opt into uniform-item virtualization; eager rendering remains the default.
+    /// Opt into uniform or measured virtualization; eager rendering remains the default.
     /// Item templates must keep durable state in their host/entities, since
     /// off-screen element instances are not retained.
     pub fn virtualization(mut self, policy: ListBoxVirtualization) -> Self {
         self.virtualization = policy;
         self
+    }
+
+    /// Bring the item with this stable key into view on the next layout.
+    /// An already fully visible item does not move. Oversized items show their
+    /// leading edge. Does not change selection, active item, or focus; works
+    /// without focus. Unknown/removed keys are ignored. The latest request wins.
+    pub fn scroll_to(&self, item_key: K, cx: &mut Context<M>) {
+        self.scroll.scroll_to(item_key, cx);
+    }
+
+    /// Center this item's midpoint in the visible viewport on the next layout.
+    /// Uses the list's scrolling axis and clamps at collection boundaries, where
+    /// exact centering may be impossible. Does not change selection or focus.
+    /// This is a one-time request, not a scrolling or selection policy.
+    pub fn scroll_to_center(&self, item_key: K, cx: &mut Context<M>) {
+        self.scroll.scroll_to_center(item_key, cx);
+    }
+
+    /// Smoothly bring this item into view using shared scroll motion (200ms).
+    /// Does not change selection/focus. New input or another request cancels it.
+    pub fn scroll_to_smooth(&self, item_key: K, cx: &mut Context<M>) {
+        self.scroll.scroll_to_smooth(item_key, cx);
+    }
+
+    /// Smoothly center this item in the viewport, clamped at collection boundaries.
+    /// Measured/virtualized destinations track the item's actual layout.
+    pub fn scroll_to_center_smooth(&self, item_key: K, cx: &mut Context<M>) {
+        self.scroll.scroll_to_center_smooth(item_key, cx);
+    }
+
+    /// Invalidate one or all content-sized measurements after external content
+    /// or theme changes. Snapshot replacement and width changes are automatic.
+    pub fn invalidate_measurements(&self, key: Option<&K>, cx: &mut Context<M>) {
+        self.scroll.invalidate_measurements(key);
+        cx.notify();
     }
 
     /// Configure the existing basic linear edge-scrolling function, in logical

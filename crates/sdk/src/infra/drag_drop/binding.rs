@@ -1,5 +1,6 @@
 use gpui::{
     App, Axis, Context, Div, Entity, EntityId, MouseButton, Pixels, Point, Render, Stateful, Window, prelude::*, px,
+    relative,
 };
 use super::{DragDropEvent, DropProposal, KeyedDrag};
 
@@ -105,6 +106,28 @@ impl DropZone {
             (Axis::Horizontal, DropEdge::Before) => surface.top_0().bottom_0().left_0().w(extent).border_l(marker),
             (Axis::Horizontal, DropEdge::After) => {
                 surface.top_0().bottom_0().right(-extension).w(extent).border_r(marker)
+            }
+        }
+    }
+
+    /// Use the parent's actual laid-out size for the two row halves. Suitable
+    /// for content-sized items; `item_extent` is ignored. Gap/marker behavior
+    /// matches `apply`, including clipped trailing gaps.
+    pub fn apply_measured(self, surface: Stateful<Div>) -> Stateful<Div> {
+        let (_, extension, marker) = self.dimensions();
+        let surface = surface.absolute();
+        match (self.axis, self.edge) {
+            (Axis::Vertical, DropEdge::Before) => {
+                surface.left_0().right_0().top_0().bottom(relative(0.5)).border_t(marker)
+            }
+            (Axis::Vertical, DropEdge::After) => {
+                surface.left_0().right_0().top(relative(0.5)).bottom(-extension).border_b(marker)
+            }
+            (Axis::Horizontal, DropEdge::Before) => {
+                surface.top_0().bottom_0().left_0().right(relative(0.5)).border_l(marker)
+            }
+            (Axis::Horizontal, DropEdge::After) => {
+                surface.top_0().bottom_0().left(relative(0.5)).right(-extension).border_r(marker)
             }
         }
     }

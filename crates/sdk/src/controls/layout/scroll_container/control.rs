@@ -19,6 +19,8 @@ type ScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) +
 pub struct ScrollContainer {
     id: SharedString,
     scroll_handle: ScrollHandle,
+    motion: super::ScrollMotion,
+    pending_smooth: Rc<Cell<Option<f32>>>,
     scrollbar: Entity<Scrollbar>,
     scrollbar_width: Pixels,
     placement: ScrollbarPlacement,
@@ -43,6 +45,8 @@ impl ScrollContainer {
         Self {
             id,
             scroll_handle: ScrollHandle::new(),
+            motion: super::ScrollMotion::default(),
+            pending_smooth: Rc::default(),
             scrollbar,
             scrollbar_width: px(12.0),
             placement: ScrollbarPlacement::Inset,
@@ -106,7 +110,18 @@ impl ScrollContainer {
     }
 
     pub fn set_vertical_offset<T: 'static>(&self, value: f32, cx: &mut Context<T>) {
+        self.motion.cancel();
+        self.pending_smooth.set(None);
         self.scroll_handle.set_offset(point(px(0.0), px(-value.max(0.0))));
+        cx.notify();
+    }
+
+    /// Animate to a vertical offset in logical pixels, clamped to the content.
+    /// Uses the shared 200ms ease-out scroll motion. Wheel, pointer or keyboard
+    /// input and subsequent positioning requests interrupt it.
+    pub fn set_vertical_offset_smooth<T: 'static>(&self, value: f32, cx: &mut Context<T>) {
+        self.motion.cancel();
+        self.pending_smooth.set(value.is_finite().then_some(value.max(0.0)));
         cx.notify();
     }
 
@@ -206,9 +221,16 @@ impl ScrollContainer {
         let mut viewport = div()
             .on_children_prepainted({
                 let host_view = host_view.clone();
+                let motion = self.motion.clone();
+                let pending = self.pending_smooth.clone();
                 move |_: Vec<Bounds<Pixels>>, window: &mut Window, cx: &mut App| {
                     // `current_view` is only valid during layout/prepaint/paint.
                     host_view.set(Some(window.current_view()));
+                    if scroll_handle.bounds().size.height > px(0.0)
+                        && let Some(value) = pending.take()
+                    {
+                        motion.animate(scroll_handle.clone(), move |_| Some(point(px(0.0), px(-value))), window, cx);
+                    }
                     let max_scroll = scroll_handle.max_offset().y.as_f32().max(0.0);
                     if (last_max_scroll.get() - max_scroll).abs() > 0.5 {
                         last_max_scroll.set(max_scroll);
@@ -227,11 +249,15 @@ impl ScrollContainer {
             .track_scroll(&self.scroll_handle)
             .child(content);
 
-        if track_move || on_scroll_wheel.is_some() {
+        {
             let active_until = self.active_until.clone();
             let hide_task = self.hide_task.clone();
             let host_view = host_view.clone();
+            let motion = self.motion.clone();
+            let pending = self.pending_smooth.clone();
             viewport = viewport.on_scroll_wheel(move |event, window, cx| {
+                motion.cancel();
+                pending.set(None);
                 if track_move {
                     wake_on_move(&active_until, &hide_task, &host_view, cx);
                 }
@@ -241,7 +267,22 @@ impl ScrollContainer {
             });
         }
 
-        let mut root = div().id(self.id.clone()).relative().size_full();
+        let pointer_motion = self.motion.clone();
+        let pointer_pending = self.pending_smooth.clone();
+        let key_motion = self.motion.clone();
+        let key_pending = self.pending_smooth.clone();
+        let mut root = div()
+            .id(self.id.clone())
+            .relative()
+            .size_full()
+            .on_any_mouse_down(move |_, _, _| {
+                pointer_motion.cancel();
+                pointer_pending.set(None);
+            })
+            .on_key_down(move |_, _, _| {
+                key_motion.cancel();
+                key_pending.set(None);
+            });
 
         if track_hover {
             let hovered = self.hovered.clone();

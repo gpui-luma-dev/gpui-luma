@@ -4,9 +4,12 @@ use std::rc::Rc;
 
 use gpui::{Context, Div, DragMoveEvent, Pixels, ScrollHandle, Size, Stateful, div, prelude::*, px};
 
+use crate::controls::scroll_container::ScrollMotion;
+
 use super::{
     ListBoxAxis, ListBoxState, ListBoxUpdate, ListBoxVirtualWindow,
     virtualization::UniformMetrics,
+    measured::MeasuredGeometry,
     drag_scroll::{DragAutoScroll, DEFAULT_MAX_SPEED},
 };
 
@@ -14,7 +17,8 @@ use super::{
 /// styled surface and scrolling stack, with one direct child per visible item
 /// in `visible_items()` order. GPUI measures the children, so either axis and
 /// variable item sizes work without host-written offset calculations. Uniform
-/// virtualization uses `virtual_window` and `bind_virtualized` on this same handle.
+/// virtualization uses `virtual_window`; content-sized vertical rows use
+/// `content_window`. Both bind through `bind_virtualized` on this same handle.
 ///
 /// Keep one handle per list. This adapter contains wheel events at the surface
 /// and keeps the focused active item visible when the viewport resizes. It does
@@ -22,10 +26,16 @@ use super::{
 pub struct ListBoxScrollHandle<K> {
     scroll: ScrollHandle,
     pending_reveal: RefCell<Option<K>>,
+    pending_position: RefCell<Option<(K, bool)>>,
+    positioned: Cell<bool>,
+    smooth_requested: Cell<bool>,
+    pending_animation: RefCell<Option<(K, bool)>>,
+    motion: ScrollMotion,
     viewport_size: Rc<Cell<Size<Pixels>>>,
     drag_scroll: Rc<DragAutoScroll>,
     require_focus_for_scroll: bool,
     rendered_window: RefCell<Option<ListBoxVirtualWindow>>,
+    measured: Rc<RefCell<MeasuredGeometry<K>>>,
 }
 
 impl<K> Default for ListBoxScrollHandle<K> {
@@ -33,28 +43,121 @@ impl<K> Default for ListBoxScrollHandle<K> {
         Self {
             scroll: ScrollHandle::new(),
             pending_reveal: RefCell::new(None),
+            pending_position: RefCell::new(None),
+            positioned: Cell::new(false),
+            smooth_requested: Cell::new(false),
+            pending_animation: RefCell::new(None),
+            motion: ScrollMotion::default(),
             viewport_size: Rc::default(),
             drag_scroll: Rc::default(),
             require_focus_for_scroll: false,
             rendered_window: RefCell::new(None),
+            measured: Rc::default(),
         }
     }
 }
 
-impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
-    /// Read-only geometry from the most recent virtualized composition, or
-    /// `None` for eager rendering. Read after building the list for diagnostics;
+impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
+    /// Request a one-time reveal of this stable key, even without focus.
+    /// Fully visible items stay in place; oversized items show their leading
+    /// edge. Missing keys are ignored at layout. Selection is unchanged.
+    pub fn scroll_to<M: 'static>(&self, item_key: K, cx: &mut Context<M>) {
+        self.request_position(item_key, false, cx);
+    }
+
+    /// Center this item in the viewport, clamped at collection boundaries.
+    /// The latest request wins; layout resolves keys against the current data.
+    /// This does not select/focus the item or change subsequent wheel behavior.
+    pub fn scroll_to_center<M: 'static>(&self, item_key: K, cx: &mut Context<M>) {
+        self.request_position(item_key, true, cx);
+    }
+
+    /// Smooth counterpart of `scroll_to`, using the shared scroll animator.
+    /// New input or another positioning request interrupts the movement.
+    pub fn scroll_to_smooth<M: 'static>(&self, item_key: K, cx: &mut Context<M>) {
+        self.request_position(item_key, false, cx);
+        self.smooth_requested.set(true);
+    }
+
+    /// Smoothly center this specific item in the viewport. Selection is unchanged.
+    pub fn scroll_to_center_smooth<M: 'static>(&self, item_key: K, cx: &mut Context<M>) {
+        self.request_position(item_key, true, cx);
+        self.smooth_requested.set(true);
+    }
+
+    fn request_position<M: 'static>(&self, key: K, center: bool, cx: &mut Context<M>) {
+        self.motion.cancel();
+        self.smooth_requested.set(false);
+        self.pending_animation.borrow_mut().take();
+        self.pending_reveal.borrow_mut().take();
+        self.measured.borrow_mut().reveal = None;
+        *self.pending_position.borrow_mut() = Some((key, center));
+        cx.notify();
+    }
+
+    /// Read-only geometry from the most recent virtualized or content-sized
+    /// composition, or `None` for fixed-size eager rendering. Read after building the list for diagnostics;
     /// this neither measures layout nor requests a frame or consumes a reveal.
     pub fn rendered_window(&self) -> Option<ListBoxVirtualWindow> {
         self.rendered_window.borrow().clone()
+    }
+
+    /// Invalidate cached content heights after a host-owned content or typography
+    /// change. `None` invalidates all rows; otherwise only the supplied key.
+    /// Existing heights remain estimates until measured again. Notify the owner
+    /// after calling this. Snapshot replacement and viewport width changes are automatic.
+    pub fn invalidate_measurements(&self, key: Option<&K>) {
+        self.motion.cancel();
+        self.measured.borrow_mut().invalidate(key);
+    }
+
+    /// Compose content-sized vertical rows. `overscan: None` constructs all rows;
+    /// `Some(n)` uses measured/estimated heights to construct a viewport window.
+    /// Pass the result to `bind_virtualized`; templates remain ordinary GPUI content.
+    pub fn content_window<T>(
+        &self,
+        state: &ListBoxState<T, K>,
+        estimated_height: f32,
+        gap: f32,
+        overscan: Option<usize>,
+    ) -> ListBoxVirtualWindow {
+        let mut geometry = self.measured.borrow_mut();
+        let offset = -f32::from(self.scroll.offset().y) + std::mem::take(&mut geometry.correction);
+        let offset = geometry.prepare(state, estimated_height, gap, overscan, offset);
+        let viewport = f32::from(self.viewport_size.get().height);
+        if viewport > 0.0
+            && let Some((key, center)) = self.pending_position.borrow_mut().take()
+        {
+            if self.smooth_requested.replace(false) {
+                *self.pending_animation.borrow_mut() = state.visible_index(&key).map(|_| (key, center));
+            } else {
+                geometry.reveal = state.visible_index(&key).map(|_| key);
+                geometry.reveal_center = center;
+                geometry.reveal_unfocused = true;
+            }
+            self.positioned.set(true);
+        } else if !self.require_focus_for_scroll || state.is_focused() {
+            if let Some(key) = self.pending_reveal.borrow_mut().take() {
+                geometry.reveal = Some(key);
+                geometry.reveal_center = false;
+                geometry.reveal_unfocused = false;
+            }
+        } else if !geometry.reveal_unfocused {
+            geometry.reveal = None;
+        }
+        let offset = geometry.reveal_offset(offset, viewport);
+        let mut position = self.scroll.offset();
+        position.y = px(-offset);
+        self.scroll.set_offset(position);
+        geometry.window(offset, viewport)
     }
 
     /// Require the existing list binding's focus before accepting wheel input.
     /// Defaults to false (hover scrolling). When true, an unfocused viewport
     /// passes wheel input to its ancestors; a focused list contains it even at
     /// either endpoint. The host must deliver the binding's focus updates.
-    /// Drag auto-scroll remains available without focus. Pending item reveals
-    /// wait until focus returns, preserving the viewport on focus exit.
+    /// Drag auto-scroll remains available without focus. Pending keyboard reveals
+    /// wait until focus returns. Explicit `scroll_to` requests work without focus.
     pub fn require_focus_for_scroll(mut self, required: bool) -> Self {
         self.require_focus_for_scroll = required;
         self
@@ -93,8 +196,10 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
         accepts: impl Fn(&D) -> bool + 'static,
     ) -> Stateful<Div> {
         let controller = self.drag_scroll.clone();
+        let motion = self.motion.clone();
         let scroll = self.scroll.clone();
         viewport.on_drag_move(move |event: &DragMoveEvent<D>, window, cx| {
+            motion.cancel();
             controller.accepted.set(accepts(event.drag(cx)));
             controller.schedule(scroll.clone(), axis, window);
         })
@@ -103,6 +208,9 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
     /// Deliver rendering and reveal effects after committing an update to the
     /// model. The host still owns event delivery and application reactions.
     pub fn handle_update<M: 'static>(&self, update: &ListBoxUpdate<K>, cx: &mut Context<M>) {
+        if update.changed || update.reveal.is_some() {
+            self.motion.cancel();
+        }
         self.queue_reveal(update);
         if update.changed || update.reveal.is_some() {
             cx.notify();
@@ -129,10 +237,21 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
             None
         };
         metrics.update_scroll(&self.scroll, viewport, reveal);
+        if viewport > 0.0
+            && let Some((key, center)) = self.pending_position.borrow_mut().take()
+            && let Some(index) = state.visible_index(&key)
+        {
+            if self.smooth_requested.replace(false) {
+                *self.pending_animation.borrow_mut() = Some((key, center));
+            } else {
+                metrics.position_item(&self.scroll, viewport, index, center);
+            }
+            self.positioned.set(true);
+        }
         Some(metrics.window(metrics.offset(&self.scroll), viewport))
     }
 
-    /// Attach a uniformly virtualized stack. Reveals use collection geometry,
+    /// Attach a uniform or measured stack. Reveals use collection geometry,
     /// not spacer/child indices; wheel policy and drag scrolling are unchanged.
     pub fn bind_virtualized<T>(
         &self,
@@ -158,10 +277,41 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
     fn bind_inner<T>(
         &self,
         surface: Stateful<Div>,
-        viewport: Stateful<Div>,
+        mut viewport: Stateful<Div>,
         state: &ListBoxState<T, K>,
         rendered: Option<ListBoxVirtualWindow>,
     ) -> Stateful<Div> {
+        let axis = if viewport.interactivity().base_style.overflow.x == Some(gpui::Overflow::Scroll) {
+            ListBoxAxis::Horizontal
+        } else {
+            ListBoxAxis::Vertical
+        };
+        let explicit = if rendered.is_none() {
+            self.pending_position.borrow_mut().take().and_then(|(key, center)| {
+                let index = state.visible_index(&key)?;
+                if self.smooth_requested.replace(false) {
+                    *self.pending_animation.borrow_mut() = Some((key, center));
+                    None
+                } else {
+                    Some((index, center))
+                }
+            })
+        } else {
+            None
+        };
+        let animation_request = self
+            .pending_animation
+            .borrow_mut()
+            .take()
+            .and_then(|(key, center)| state.visible_index(&key).map(|index| (key, index, center)));
+        let motion = self.motion.clone();
+        let wheel_motion = motion.clone();
+        let pointer_motion = motion.clone();
+        let animation_metrics = rendered.as_ref().and_then(|window| window.metrics);
+        let animation_geometry =
+            rendered.as_ref().filter(|window| window.metrics.is_none()).map(|_| self.measured.clone());
+        let positioned =
+            self.positioned.replace(false) || explicit.is_some() || animation_request.is_some() || motion.is_active();
         self.rendered_window.replace(rendered.clone());
         let (viewport, accepts_wheel) = if rendered.is_some() {
             self.track_viewport(viewport, state)
@@ -171,15 +321,21 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
         let active_index = state.active_key().filter(|_| state.is_focused()).and_then(|key| state.visible_index(key));
         let scroll = self.scroll.clone();
         let viewport_size = self.viewport_size.clone();
+        let content_geometry = rendered.as_ref().filter(|window| window.metrics.is_none()).map(|window| {
+            let geometry = self.measured.clone();
+            let keys = geometry.borrow().keys_in(window.range.clone());
+            (geometry, keys, usize::from(window.leading_space.is_some()), -f32::from(scroll.offset().y))
+        });
         let measured_viewport = div()
             .w_full()
             .min_w(px(0.0))
-            .on_children_prepainted(move |bounds, window, _cx| {
+            .on_children_prepainted(move |bounds, window, cx| {
                 let Some(bounds) = bounds.first() else { return };
                 let previous = viewport_size.replace(bounds.size);
-                let reveal = resize_reveal(previous, bounds.size, active_index);
-                let needs_frame = if let Some(rendered) = &rendered {
-                    let metrics = rendered.metrics;
+                let reveal = resize_reveal(previous, bounds.size, active_index.filter(|_| !positioned));
+                let needs_frame = if let Some(rendered) = &rendered
+                    && let Some(metrics) = rendered.metrics
+                {
                     let extent = metrics.viewport_extent(bounds.size);
                     let previous_offset = scroll.offset();
                     metrics.update_scroll(&scroll, extent, reveal);
@@ -189,12 +345,99 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
                     previous != bounds.size
                         || previous_offset != scroll.offset()
                         || metrics.window(metrics.offset(&scroll), extent).range != rendered.range
+                } else if let Some((geometry, keys, skip, render_offset)) = &content_geometry {
+                    let actual_offset = -f32::from(scroll.offset().y);
+                    let mut geometry = geometry.borrow_mut();
+                    let changed = geometry.measure(
+                        keys.iter().enumerate().filter_map(|(i, key)| {
+                            scroll.bounds_for_item(i + skip).map(|row| (key.clone(), f32::from(row.size.height)))
+                        }),
+                        f32::from(bounds.size.width),
+                        *render_offset,
+                        f32::from(bounds.size.height),
+                    );
+                    // GPUI may already have clamped a shrinking collection.
+                    // Anchor against the pre-layout geometry, then apply the
+                    // correction relative to the actual post-layout offset.
+                    geometry.correction += *render_offset - actual_offset;
+                    previous != bounds.size || changed || geometry.correction.abs() > 0.01
+                } else if let Some((index, center)) = explicit {
+                    let previous_offset = scroll.offset();
+                    if let Some(row) = scroll.bounds_for_item(index) {
+                        let viewport = scroll.bounds();
+                        let mut offset = previous_offset;
+                        let (start, extent, visible, maximum, value) = match axis {
+                            ListBoxAxis::Vertical => (
+                                row.top() - viewport.top(),
+                                row.size.height,
+                                viewport.size.height,
+                                scroll.max_offset().y,
+                                &mut offset.y,
+                            ),
+                            ListBoxAxis::Horizontal => (
+                                row.left() - viewport.left(),
+                                row.size.width,
+                                viewport.size.width,
+                                scroll.max_offset().x,
+                                &mut offset.x,
+                            ),
+                        };
+                        *value = px(-position_offset(
+                            -f32::from(*value),
+                            f32::from(visible),
+                            f32::from(start),
+                            f32::from(extent),
+                            center,
+                        )
+                        .clamp(0.0, f32::from(maximum).max(0.0)));
+                        scroll.set_offset(offset);
+                    }
+                    scroll.offset() != previous_offset
                 } else if let Some(index) = reveal {
                     scroll.scroll_to_item(index);
                     true
                 } else {
                     false
                 };
+                if let Some((key, index, center)) = &animation_request {
+                    let (key, index, center) = (key.clone(), *index, *center);
+                    let geometry = animation_geometry.clone();
+                    let original = scroll.offset();
+                    motion.animate(
+                        scroll.clone(),
+                        move |scroll| {
+                            let viewport = scroll.bounds();
+                            let (offset, visible) = match axis {
+                                ListBoxAxis::Vertical => (-original.y.as_f32(), viewport.size.height.as_f32()),
+                                ListBoxAxis::Horizontal => (-original.x.as_f32(), viewport.size.width.as_f32()),
+                            };
+                            let target = if let Some(geometry) = &geometry {
+                                geometry.borrow().position_for_key(&key, offset, visible, center)?
+                            } else if let Some(metrics) = animation_metrics {
+                                metrics.position_offset(offset, visible, index, center)
+                            } else {
+                                let row = scroll.bounds_for_item(index)?;
+                                let (start, extent) = match axis {
+                                    ListBoxAxis::Vertical => {
+                                        ((row.top() - viewport.top()).as_f32(), row.size.height.as_f32())
+                                    }
+                                    ListBoxAxis::Horizontal => {
+                                        ((row.left() - viewport.left()).as_f32(), row.size.width.as_f32())
+                                    }
+                                };
+                                position_offset(offset, visible, start, extent, center)
+                            };
+                            let mut position = scroll.offset();
+                            match axis {
+                                ListBoxAxis::Vertical => position.y = px(-target),
+                                ListBoxAxis::Horizontal => position.x = px(-target),
+                            }
+                            Some(position)
+                        },
+                        window,
+                        cx,
+                    );
+                }
                 if needs_frame {
                     let view = window.current_view();
                     window.on_next_frame(move |_, cx| cx.notify(view));
@@ -203,7 +446,13 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
             .child(viewport);
         surface
             // Bubble after the child scrolls, including at either endpoint.
-            .when(accepts_wheel, |surface| surface.on_scroll_wheel(|_, _, cx| cx.stop_propagation()))
+            .on_any_mouse_down(move |_, _, _| pointer_motion.cancel())
+            .on_scroll_wheel(move |_, _, cx| {
+                wheel_motion.cancel();
+                if accepts_wheel {
+                    cx.stop_propagation();
+                }
+            })
             .child(measured_viewport)
     }
 
@@ -228,12 +477,28 @@ impl<K: Clone + Eq + Hash> ListBoxScrollHandle<K> {
 
     fn queue_reveal(&self, update: &ListBoxUpdate<K>) {
         if let Some(key) = &update.reveal {
+            self.motion.cancel();
+            self.pending_animation.borrow_mut().take();
+            self.pending_position.borrow_mut().take();
+            self.measured.borrow_mut().reveal = None;
             *self.pending_reveal.borrow_mut() = Some(key.clone());
         }
     }
 
     fn take_reveal_index<T>(&self, state: &ListBoxState<T, K>) -> Option<usize> {
         self.pending_reveal.borrow_mut().take().and_then(|key| state.visible_index(&key))
+    }
+}
+
+pub(super) fn position_offset(offset: f32, viewport: f32, start: f32, extent: f32, center: bool) -> f32 {
+    if center {
+        start + (extent - viewport) / 2.0
+    } else if start < offset || extent > viewport {
+        start
+    } else if start + extent > offset + viewport {
+        start + extent - viewport
+    } else {
+        offset
     }
 }
 
