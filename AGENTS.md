@@ -2,6 +2,10 @@
 
 Always answer concisely. Prefer short bullets. Do not give long explanations unless I ask.
 
+GUI applications:
+- Do not launch or run GUI applications without explicit user approval to launch them.
+- Approval to implement changes, build, or test does not authorize GUI launches, including startup or smoke tests.
+
 Before making changes:
 - Read the relevant source modules and repository instructions directly; do not rely only on summaries.
 - Inspect relevant Rust modules directly; do not rely only on summaries.

@@ -1,10 +1,9 @@
-//! CSS fixtures for look-crate tests. Kept local so the look crate does not depend
-//! on app demo assets.
+//! Test looks from the canonical fallback asset and local tweakcn fixtures.
 
 use crate::ShadcnLook;
 
-pub(crate) fn native_look() -> ShadcnLook {
-    ShadcnLook::from_css_str(include_str!("../tests/fixtures/native.css")).expect("native CSS fixture should parse")
+pub(crate) fn fallback_look() -> ShadcnLook {
+    ShadcnLook::from_css_str(crate::FALLBACK_CSS).expect("bundled fallback CSS should parse")
 }
 
 pub(crate) fn built_in_look(theme_id: &str) -> ShadcnLook {
