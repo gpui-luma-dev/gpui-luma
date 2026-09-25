@@ -140,14 +140,15 @@ impl ShadcnLook {
     pub fn built_in() -> Self {
         static BUILT_IN: std::sync::OnceLock<ShadcnLook> = std::sync::OnceLock::new();
         BUILT_IN
-            .get_or_init(|| {
-                Self::from_css_str(include_str!("../tests/fixtures/native.css"))
-                    .expect("bundled built-in CSS should parse")
-            })
+            .get_or_init(|| Self::from_css_str(crate::FALLBACK_CSS).expect("bundled built-in CSS should parse"))
             .clone()
     }
 
     /// Loads shadcn palette tokens from tweakcn-style CSS (`:root` / `.dark` custom properties).
+    ///
+    /// Creates an independently mutable look. For file-backed themes, the application
+    /// owns file access and must enforce any required path and input-size restrictions
+    /// before calling this parser. This method does not impose an input-size limit.
     pub fn from_css_str(source: &str) -> anyhow::Result<Self> {
         let catalog = parse_css_catalog(source)?;
         Ok(Self {
@@ -161,6 +162,10 @@ impl ShadcnLook {
         })
     }
 
+    /// Loads CSS palette tokens with an already parsed stylesheet.
+    ///
+    /// File access and input-size restrictions for CSS and TOML are application-owned;
+    /// parse the stylesheet text with [`StylesheetConfig::parse`].
     pub fn from_css_str_with_stylesheet(source: &str, stylesheet: StylesheetConfig) -> anyhow::Result<Self> {
         let catalog = parse_css_catalog(source)?;
         Ok(Self {
@@ -169,24 +174,6 @@ impl ShadcnLook {
                 mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)),
             }),
         })
-    }
-
-    pub fn from_css_path(path: impl AsRef<std::path::Path>) -> anyhow::Result<Self> {
-        let source = std::fs::read_to_string(path.as_ref())
-            .map_err(|err| anyhow::anyhow!("read shadcn theme css {}: {err}", path.as_ref().display()))?;
-        Self::from_css_str(&source)
-    }
-
-    pub fn from_css_path_with_stylesheet(
-        css_path: impl AsRef<std::path::Path>,
-        stylesheet_path: impl AsRef<std::path::Path>,
-    ) -> anyhow::Result<Self> {
-        let source = std::fs::read_to_string(css_path.as_ref())
-            .map_err(|err| anyhow::anyhow!("read shadcn theme css {}: {err}", css_path.as_ref().display()))?;
-        let stylesheet_source = std::fs::read_to_string(stylesheet_path.as_ref())
-            .map_err(|err| anyhow::anyhow!("read stylesheet {}: {err}", stylesheet_path.as_ref().display()))?;
-        let stylesheet = StylesheetConfig::parse(&stylesheet_source)?;
-        Self::from_css_str_with_stylesheet(&source, stylesheet)
     }
 
     fn snapshot(&self) -> Arc<ShadcnLookSnapshot> {
@@ -874,15 +861,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn native_look_resolves_primary_color() {
-        let look = crate::test_support::native_look();
+    fn fallback_look_resolves_primary_color() {
+        let look = crate::test_support::fallback_look();
         let primary = look.color(ShadcnToken::Primary);
         assert!(primary.a > 0.0);
     }
 
     #[test]
     fn radius_scales_from_base_token() {
-        let look = crate::test_support::native_look();
+        let look = crate::test_support::fallback_look();
         assert!(look.radius(ShadcnRadius::Lg) >= look.radius(ShadcnRadius::Sm));
     }
 
@@ -892,14 +879,14 @@ mod tests {
         let css = hsla_to_css_value(color);
         assert_eq!(css, "hsla(120 100% 50% / 0.000)");
 
-        let look = crate::test_support::native_look();
+        let look = crate::test_support::fallback_look();
         let overridden = look.with_color_overrides(&HashMap::from([(String::from("--accent"), color)]));
         assert_eq!(overridden.color(ShadcnToken::Accent).a, 0.0);
     }
 
     #[test]
     fn poisoned_snapshot_lock_does_not_abort_reads() {
-        let look = crate::test_support::native_look();
+        let look = crate::test_support::fallback_look();
         let expected = look.color(ShadcnToken::Primary);
         let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let _guard = look.state.snapshot.write().unwrap();

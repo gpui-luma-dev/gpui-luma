@@ -155,7 +155,7 @@ fn accordion_tables_cover_all_scale_fields_and_sources() {
 
 #[test]
 fn sidebar_metrics_and_focus_match_runtime() {
-    let look = ShadcnLook::from_css_str(include_str!("../tests/fixtures/native.css")).unwrap();
+    let look = ShadcnLook::from_css_str(luma_look_shadcn::FALLBACK_CSS).unwrap();
     for size in [ControlSize::Sm, ControlSize::Md, ControlSize::Lg] {
         let actual = ShadcnInspect::new(&look).inspect_sidebar_metrics(size);
         let section = paint::sidebar_section_look(&look);

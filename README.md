@@ -22,6 +22,13 @@ luma-look-shadcn = { package = "gpui-luma-look-shadcn", git = "https://github.co
 
 Imports stay `use luma::…`.
 
+Shadcn themes load from strings with `ShadcnLook::from_css_str`. The bundled fallback
+CSS is available as `luma_look_shadcn::FALLBACK_CSS`. The former `from_css_path` and
+`from_css_path_with_stylesheet` helpers have been removed: applications own file
+access and should enforce appropriate path and size restrictions before parsing.
+For custom stylesheet TOML, use `StylesheetConfig::parse`, then
+`ShadcnLook::from_css_str_with_stylesheet`. The string parsers do not impose size limits.
+
 ## Example programs
 
 **Luma Studio** — Shadcn look workbench (control docs, theme inspection):

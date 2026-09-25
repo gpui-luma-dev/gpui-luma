@@ -43,8 +43,7 @@ mod tests {
 
     #[test]
     fn inspect_default_badge_uses_primary_fill() {
-        let look = ShadcnLook::from_css_str(include_str!("../../tests/fixtures/native.css"))
-            .expect("native CSS fixture should parse");
+        let look = ShadcnLook::from_css_str(luma_look_shadcn::FALLBACK_CSS).expect("bundled fallback CSS should parse");
         let palette = inspect_badge_color_palette(&look, BadgeVariant::Default);
         assert_eq!(palette.background.value, look.color(ShadcnToken::Primary));
         assert!(matches!(
@@ -55,8 +54,7 @@ mod tests {
 
     #[test]
     fn inspect_badge_metrics_use_pill_radius() {
-        let look = ShadcnLook::from_css_str(include_str!("../../tests/fixtures/native.css"))
-            .expect("native CSS fixture should parse");
+        let look = ShadcnLook::from_css_str(luma_look_shadcn::FALLBACK_CSS).expect("bundled fallback CSS should parse");
         let mode = look.mode_tokens();
         let metrics =
             inspect_badge_metrics(mode.as_ref(), &look, BadgeVariant::Default, ControlSize::Md, ThemeMode::Light);

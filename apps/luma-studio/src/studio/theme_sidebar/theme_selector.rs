@@ -14,7 +14,7 @@ use luma::controls::search_selector::{
 use luma::controls::selector::SelectorTheme;
 use luma::theme::{InteractionState, StandardBoxScale};
 use luma_look_shadcn::ShadcnLook;
-use luma_app_common::{BuiltInTheme, built_in_look, native_look};
+use luma_app_common::{BuiltInTheme, built_in_look, fallback_look};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::theme::available_themes;
@@ -51,7 +51,7 @@ pub(crate) fn theme_selector_state(current_look: &ShadcnLook) -> (Vec<SelectionI
     let mut swatches = HashMap::new();
 
     let default_id = SharedString::from("default");
-    swatches.insert(default_id.clone(), swatches_for_look(&native_look_for_mode(current_look)));
+    swatches.insert(default_id.clone(), swatches_for_look(&fallback_look_for_mode(current_look)));
     let mut items = vec![SelectionItem::new(default_id, "Default")];
 
     for theme in available_themes() {
@@ -73,8 +73,8 @@ fn built_in_theme_selector_entry(
     Some((SharedString::from(theme.id), SharedString::from(theme.display_name()), swatches_for_look(&look)))
 }
 
-fn native_look_for_mode(current_look: &ShadcnLook) -> ShadcnLook {
-    let look = native_look();
+fn fallback_look_for_mode(current_look: &ShadcnLook) -> ShadcnLook {
+    let look = fallback_look();
     look.set_mode(current_look.mode());
     look
 }

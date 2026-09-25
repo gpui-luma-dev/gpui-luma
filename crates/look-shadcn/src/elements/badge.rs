@@ -278,7 +278,7 @@ mod tests {
     use super::*;
 
     fn sample_look() -> ShadcnLook {
-        crate::test_support::native_look()
+        crate::test_support::fallback_look()
     }
 
     #[test]

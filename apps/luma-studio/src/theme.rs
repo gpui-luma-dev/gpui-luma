@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use luma::theme::ThemeMode;
 use luma_look_shadcn::ShadcnLook;
-use luma_app_common::{BuiltInTheme, built_in_look, built_in_theme, built_in_themes, native_look};
+use luma_app_common::{BuiltInTheme, built_in_look, built_in_theme, built_in_themes, fallback_look};
 
 pub fn available_theme_names() -> Vec<String> {
     built_in_themes().iter().map(|theme| theme.id.to_string()).collect()
@@ -98,7 +98,7 @@ impl LumaStudioThemeChoice {
 
     pub fn shadcn_look(self) -> Arc<ShadcnLook> {
         match self {
-            Self::Default => Arc::new(native_look()),
+            Self::Default => Arc::new(fallback_look()),
             Self::Named(stem) => {
                 Arc::new(built_in_look(&stem).unwrap_or_else(|err| panic!("parse built-in shadcn theme {stem}: {err}")))
             }
