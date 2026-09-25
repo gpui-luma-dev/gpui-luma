@@ -17,7 +17,7 @@ use crate::stylesheet::{
     StylesheetConfig, embedded_stylesheet, find_card_color_rule, find_card_elevation_rule, resolve_card_color_rule,
     resolve_stylesheet_shadow_token,
 };
-use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnTextRole, ShadcnTextSize};
+use crate::tokens::{ShadcnFont, ShadcnTextRole, ShadcnTextSize};
 
 #[derive(Clone, Debug)]
 pub struct CardColorTable {
@@ -81,7 +81,7 @@ pub struct CardLook {
 pub fn card_look(theme: &ShadcnLook, size: ControlSize) -> CardLook {
     let tokens = theme.mode_tokens();
     let colors = resolve_card_colors(theme).unwrap_or_else(|_| CardColorTable::fallback());
-    let metrics = &tokens.metrics;
+    let geometry = crate::tables::metrics::resolve_card_metrics(theme, size);
     let typography = &tokens.typography;
     let shadow = card_elevation_shadow(&tokens.catalog, embedded_stylesheet());
 
@@ -92,11 +92,11 @@ pub fn card_look(theme: &ShadcnLook, size: ControlSize) -> CardLook {
         description_color: colors.muted_foreground.hsla(),
         body_color: colors.foreground.hsla(),
         shadow,
-        radius: theme.radius(ShadcnRadius::Lg),
-        padding: metrics.padding_x(size),
-        section_gap: metrics.gap(size),
-        header_gap: (metrics.gap(size) * 0.5).max(2.0),
-        body_gap: metrics.gap(size),
+        radius: geometry.radius.value_px,
+        padding: geometry.padding.value_px,
+        section_gap: geometry.section_gap.value_px,
+        header_gap: geometry.header_gap.value_px,
+        body_gap: geometry.body_gap.value_px,
         title: match size {
             ControlSize::Sm => typography.text.label,
             ControlSize::Md => theme.typography_role(ShadcnTextRole::H4),

@@ -11,24 +11,51 @@ use luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::look_context::LookContext;
 use super::floating_menu::floating_menu_look;
 use crate::provenance::ResolvedColor;
-use crate::resolve::{resolve_color_or_fallback, resolve_ghost_trigger_background, resolve_ghost_trigger_foreground};
 use crate::mode::ShadcnModeTokens;
+
+/// Effective context-menu trigger colors, including per-field missing-token fallbacks.
+#[derive(Clone, Debug)]
+pub struct ContextMenuColorTable {
+    pub background: ResolvedColor,
+    pub foreground: ResolvedColor,
+    pub border: ResolvedColor,
+}
+
+pub fn resolve_context_menu_colors(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    state: InteractionState,
+) -> ContextMenuColorTable {
+    let resolver = crate::LookResolver::new(&mode.catalog, theme_mode, "context_menu");
+    let background = if state.disabled {
+        resolver.resolve_decl("muted").unwrap_or_else(|_| ResolvedColor::transparent())
+    } else {
+        ResolvedColor::transparent()
+    };
+    let foreground = if state.disabled {
+        resolver.resolve_decl("muted-foreground")
+    } else if state.hovered || state.pressed {
+        resolver.resolve_first_decl(&["accent-foreground", "foreground"])
+    } else {
+        resolver.resolve_decl("foreground")
+    }
+    .unwrap_or_else(|_| ResolvedColor::fallback_foreground());
+    let border = resolver.resolve_decl("border").unwrap_or_else(|_| ResolvedColor::fallback_foreground());
+    ContextMenuColorTable { background, foreground, border }
+}
 
 pub fn context_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: InteractionState) -> ContextMenuLook {
     let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
-    let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let typography = ctx.typography();
     let size = ControlSize::Md;
-    let layer = state.layer();
+    let colors = resolve_context_menu_colors(mode, theme_mode, state);
 
     ContextMenuLook {
-        target_background: resolve_ghost_trigger_background(catalog, layer)
-            .unwrap_or_else(|_| gpui::hsla(0.0, 0.0, 0.0, 0.0)),
-        target_foreground: resolve_ghost_trigger_foreground(catalog, layer, state.disabled)
-            .unwrap_or_else(|_| ResolvedColor::fallback_foreground().hsla()),
-        target_border: resolve_color_or_fallback(catalog, "border"),
+        target_background: colors.background.hsla(),
+        target_foreground: colors.foreground.hsla(),
+        target_border: colors.border.hsla(),
         target_typography: typography.text.label,
         target_radius: metrics.radius(size),
         target_padding_x: metrics.padding_x(size),

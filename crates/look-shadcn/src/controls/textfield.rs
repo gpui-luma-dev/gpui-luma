@@ -112,6 +112,36 @@ pub(crate) fn textfield_elevation_shadow(
     if shadows.is_empty() { None } else { Some(shadows) }
 }
 
+/// Final textfield colors, including visible focus and dark input hover.
+pub fn resolve_textfield_palette(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnTextFieldStyle,
+    state: TextFieldState,
+    enabled: bool,
+) -> TextFieldColorTable {
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
+    let catalog = ctx.catalog();
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "textfield");
+    let mut colors = resolve_textfield_colors(&resolver, style, enabled, state.invalid, ctx.theme_mode)
+        .unwrap_or_else(|_| TextFieldColorTable::fallback());
+    if state.focused && state.focus_visible && !state.invalid && enabled {
+        if let Ok(focus_border) = resolver.resolve_decl("ring") {
+            colors.border = focus_border;
+        }
+    }
+    if style == ShadcnTextFieldStyle::Input
+        && theme_mode == ThemeMode::Dark
+        && enabled
+        && state.hovered
+        && let Ok(hover_fill) = resolver.resolve_decl("input/50")
+    {
+        colors.background = hover_fill;
+    }
+
+    colors
+}
+
 pub fn textfield_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
@@ -132,35 +162,17 @@ pub fn textfield_palette_for_size(
 ) -> TextFieldPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let stylesheet = embedded_stylesheet();
-    let catalog = ctx.catalog();
     let typography = ctx.typography();
-    let resolver = LookResolver::new(catalog, ctx.theme_mode, "textfield");
-    let mut colors = resolve_textfield_colors(&resolver, style, enabled, state.invalid, ctx.theme_mode)
-        .unwrap_or_else(|_| TextFieldColorTable::fallback());
-    if state.focused && state.focus_visible && !state.invalid && enabled {
-        if let Ok(focus_border) = resolver.resolve_decl("ring") {
-            colors.border = focus_border;
-        }
-    }
+    let colors = resolve_textfield_palette(mode, theme_mode, style, state, enabled);
     // Keep elevation in the look when disabled so SDK hosts can reserve projection
     // space; templates gate paint with `enabled` / `should_paint_shadow`.
     let shadow = textfield_elevation_shadow(&ctx, stylesheet, style);
-
-    let mut background = colors.background.hsla();
-    if style == ShadcnTextFieldStyle::Input
-        && theme_mode == ThemeMode::Dark
-        && enabled
-        && state.hovered
-        && let Ok(hover_fill) = resolver.resolve_decl("input/50")
-    {
-        background = hover_fill.hsla();
-    }
 
     let mut text_style = typography.text.body;
     apply_textfield_control_size_typography(&mut text_style, mode, size);
 
     TextFieldPalette {
-        background,
+        background: colors.background.hsla(),
         foreground: colors.foreground.hsla(),
         border: colors.border.hsla(),
         placeholder: colors.placeholder.hsla(),

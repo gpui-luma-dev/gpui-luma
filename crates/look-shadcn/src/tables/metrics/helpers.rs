@@ -1,9 +1,9 @@
-//! Shared inspect metric helpers.
+//! Source metadata for canonical runtime metric values.
 
 use luma::theme::ControlSize;
 
-use luma_look_shadcn::catalog::{CssTokenMap, SpacingField};
-use luma_look_shadcn::{MetricSource, ResolvedMetric};
+use crate::catalog::{CssTokenMap, SpacingField};
+use crate::{MetricSource, ResolvedMetric};
 
 pub fn control_size_key(size: ControlSize) -> &'static str {
     match size {
@@ -30,14 +30,14 @@ pub fn spacing_control_metric(
     field: SpacingField,
     value_px: f32,
 ) -> ResolvedMetric {
-    if catalog.get("spacing").is_some() {
+    if catalog.get("spacing").and_then(crate::catalog::parse_length_px).is_some() {
         let size_key = control_size_key(size);
         let field_label = match field {
             SpacingField::PaddingX => "padding_x",
             SpacingField::PaddingY => "padding_y",
             SpacingField::Gap => "gap",
         };
-        let multiplier = luma_look_shadcn::catalog::spacing_multiplier(size, field);
+        let multiplier = crate::catalog::spacing_multiplier(size, field);
         let multiplier_label = if (multiplier - multiplier.round()).abs() < f32::EPSILON {
             format!("{}", multiplier.round() as i32)
         } else {
@@ -60,7 +60,7 @@ pub fn spacing_control_metric(
 }
 
 pub fn radius_metric(catalog: &CssTokenMap, size: ControlSize, value_px: f32) -> ResolvedMetric {
-    if catalog.get("radius").is_some() {
+    if catalog.get("radius").and_then(crate::catalog::parse_length_px).is_some() {
         let (size_label, offset) = match size {
             ControlSize::Sm => ("sm", 4.0_f32),
             ControlSize::Md => ("md", 2.0_f32),
@@ -73,19 +73,15 @@ pub fn radius_metric(catalog: &CssTokenMap, size: ControlSize, value_px: f32) ->
         };
         ResolvedMetric {
             value_px,
-            source: MetricSource::Derived { note: format!("{size_label} = --radius − {offset_label}") },
+            source: MetricSource::Derived { note: format!("{size_label} = max(--radius − {offset_label}, 0px)") },
         }
     } else {
         scaffold_control_metric(control_size_key(size), "radius", value_px)
     }
 }
 
-pub fn pill_radius_metric(catalog: &CssTokenMap, value_px: f32) -> ResolvedMetric {
-    if catalog.get("radius").is_some() {
-        derived_metric("--radius (pill track)", value_px)
-    } else {
-        ResolvedMetric { value_px, source: MetricSource::Scaffold { path: "MetricTokens.radius.pill".into() } }
-    }
+pub fn pill_radius_metric(_catalog: &CssTokenMap, value_px: f32) -> ResolvedMetric {
+    ResolvedMetric { value_px, source: MetricSource::Scaffold { path: "MetricTokens.radius.pill".into() } }
 }
 
 pub fn focus_ring_width_metric(metrics: &luma::theme::MetricTokens) -> ResolvedMetric {

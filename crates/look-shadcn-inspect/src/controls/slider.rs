@@ -1,6 +1,6 @@
 //! Inspect metadata for `slider`.
 
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use luma::theme::{InteractionState, ThemeMode};
 use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnButtonStyle, ShadcnModeTokens};
 
 pub struct SliderInspectPalette {
@@ -39,23 +39,18 @@ pub fn inspect_slider_color_palette(
 }
 
 pub fn inspect_slider_metrics(mode: &ShadcnModeTokens, theme_mode: ThemeMode) -> SliderInspectMetrics {
-    use crate::metrics::{derived_metric, pill_radius_metric};
+    let table = luma_look_shadcn::tables::metrics::resolve_slider_metrics(mode, theme_mode);
+    table.into()
+}
 
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let look = luma_look_shadcn::paint::slider_look(
-        mode,
-        theme_mode,
-        ShadcnButtonStyle::Primary,
-        ControlSize::Md,
-        None,
-        InteractionState::default(),
-    );
-
-    SliderInspectMetrics {
-        width: derived_metric("slider demo width", look.width),
-        height: derived_metric("slider control height", look.height),
-        track_height: derived_metric("track rail height", look.track_height),
-        thumb_size: derived_metric("thumb diameter", look.thumb_size),
-        radius: pill_radius_metric(ctx.catalog(), look.radius),
+impl From<luma_look_shadcn::tables::metrics::SliderMetricTable> for SliderInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::SliderMetricTable) -> Self {
+        Self {
+            width: table.width,
+            height: table.height,
+            track_height: table.track_height,
+            thumb_size: table.thumb_size,
+            radius: table.radius,
+        }
     }
 }

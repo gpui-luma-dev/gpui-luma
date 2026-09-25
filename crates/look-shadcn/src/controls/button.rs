@@ -186,6 +186,49 @@ pub fn button_box_scale(
     }
 }
 
+/// Final button/toggle colors, including role normalization and focus border.
+pub fn resolve_button_palette(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    role: ButtonFamilyRole,
+    state: InteractionState,
+) -> ButtonColorPalette {
+    resolve_button_palette_with_stylesheet(
+        &LookContext::new(mode, theme_mode, state),
+        embedded_stylesheet(),
+        style,
+        role,
+    )
+}
+
+pub(crate) fn resolve_button_palette_with_stylesheet(
+    ctx: &LookContext,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
+    role: ButtonFamilyRole,
+) -> ButtonColorPalette {
+    let style = effective_button_style(style, role);
+    let layer = ctx.state.layer();
+    let theme_mode = ctx.theme_mode;
+    let selected =
+        matches!(role, ButtonFamilyRole::Toggle { selected: true }) && style != ShadcnButtonStyle::ContentOnly;
+
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "button_resolver");
+    let mut colors = resolve_button_colors_with_stylesheet(&resolver, stylesheet, style, layer, theme_mode, selected)
+        .unwrap_or_else(|_| ButtonColorPalette::fallback());
+    if (matches!(role, ButtonFamilyRole::Toggle { .. }) || style != ShadcnButtonStyle::ContentOnly)
+        && ctx.state.focused
+        && !ctx.state.disabled
+    {
+        if let Ok(focus_border) = resolver.resolve_decl("ring") {
+            colors.border = Some(focus_border);
+        }
+    }
+
+    colors
+}
+
 pub fn button_palette(
     ctx: &LookContext,
     stylesheet: &StylesheetConfig,
@@ -193,45 +236,22 @@ pub fn button_palette(
     role: ButtonFamilyRole,
     size: ControlSize,
 ) -> ButtonFamilyPalette {
-    let style = effective_button_style(style, role);
-    let layer = ctx.state.layer();
-    let theme_mode = ctx.theme_mode;
-    let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
-
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "button_resolver");
-    let mut colors = resolve_button_colors_with_stylesheet(&resolver, stylesheet, style, layer, theme_mode, selected)
-        .unwrap_or_else(|_| ButtonColorPalette::fallback());
-    if style != ShadcnButtonStyle::ContentOnly && ctx.state.focused && !ctx.state.disabled {
-        if let Ok(focus_border) = resolver.resolve_decl("ring") {
-            colors.border = Some(focus_border);
-        }
-    }
-
-    let size_metrics = stylesheet
-        .button
-        .metrics_for_size(size)
-        .map(|rule| resolve_button_metrics_rule(rule, ctx.metrics(), size));
+    let colors = resolve_button_palette_with_stylesheet(ctx, stylesheet, style, role);
 
     let background = colors.background.hsla();
     let foreground = colors.foreground.hsla();
     let border = colors.border.map(|color| color.hsla());
 
-    let mut typography = ctx.typography().text.label;
-    if let Some(metrics) = size_metrics {
-        let base_size = typography.size;
-        typography.size = metrics.font_size;
-        if base_size > 0.0 {
-            typography.line_height = metrics.font_size * (typography.line_height / base_size);
-        }
-    }
+    let typography =
+        crate::tables::typography::resolve_control_typography_with_stylesheet(ctx.tokens, stylesheet, size, false);
 
     ButtonFamilyPalette {
         background,
         foreground,
         muted_foreground: ctx.palette().app_muted_foreground,
         border,
-        typography,
-        font_family: ctx.typography().font.sans.family.clone().into(),
+        typography: typography.style,
+        font_family: typography.font_family,
     }
 }
 

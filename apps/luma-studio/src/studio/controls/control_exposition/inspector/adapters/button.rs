@@ -105,7 +105,7 @@ impl ControlInspectorResolver for ButtonInspectorAdapter {
             "color" => InspectorCategoryContent::Colors(resolve_color_rows(look, selection)),
             "layout" => InspectorCategoryContent::Layout(resolve_layout_section(look, selection)),
             "elevation" => InspectorCategoryContent::Elevation(resolve_elevation(look, selection)),
-            "typography" => InspectorCategoryContent::Typography(resolve_typography_rows(look)),
+            "typography" => InspectorCategoryContent::Typography(resolve_typography_rows(look, selection)),
             _ => InspectorCategoryContent::Colors(Vec::new()),
         }
     }
@@ -158,20 +158,8 @@ fn resolve_elevation(
     elevation_snapshot(&elevation, "resolved button look", "button.elevation_rules[].style")
 }
 
-fn resolve_typography_rows(look: &ShadcnLook) -> Vec<InspectPropertyRow> {
-    let typography = ShadcnInspect::new(look).inspect_button_typography();
-    vec![
-        InspectPropertyRow::new(
-            "font family",
-            typography.font_family.value.as_str(),
-            "typography.text.body.font_family",
-        ),
-        InspectPropertyRow::new("font size", typography.font_size.value.as_str(), "typography.text.body.size"),
-        InspectPropertyRow::new("font weight", typography.font_weight.value.as_str(), "typography.text.body.weight"),
-        InspectPropertyRow::new(
-            "line height",
-            typography.line_height.value.as_str(),
-            "typography.text.body.line_height",
-        ),
-    ]
+fn resolve_typography_rows(look: &ShadcnLook, selection: InspectorSelection<'_>) -> Vec<InspectPropertyRow> {
+    let typography = ShadcnInspect::new(look)
+        .inspect_button_typography_for_size(control_size(selection.size_id), button_role(selection));
+    super::super::provenance::typography_rows(&typography)
 }

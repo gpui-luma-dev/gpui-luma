@@ -11,11 +11,11 @@ thread_local! {
 
 /// Syncs SDK color-control chrome (field/slider/ring borders) from the active shadcn look.
 pub fn sync_color_control_theme(look: &ShadcnLook) {
-    let chrome = look.chrome();
+    let chrome = crate::tables::resolve_color_chrome(look);
 
     set_active_color_control_theme(ColorControlTheme::new(
-        chrome.border,
-        chrome.panel_background,
+        chrome.border.hsla(),
+        chrome.background.hsla(),
         matches!(look.mode(), ThemeMode::Dark),
     ));
 }

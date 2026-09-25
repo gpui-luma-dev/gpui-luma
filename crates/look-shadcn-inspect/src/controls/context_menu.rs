@@ -1,7 +1,7 @@
 //! Inspect metadata for `context_menu`.
 
 use luma::theme::{ControlSize, InteractionState, ThemeMode};
-use luma_look_shadcn::{LookContext, ShadcnModeTokens};
+use luma_look_shadcn::ShadcnModeTokens;
 
 pub struct ContextMenuInspectPalette {
     pub target_background: luma_look_shadcn::ResolvedColor,
@@ -25,22 +25,14 @@ pub fn inspect_context_menu_color_palette(
     state: InteractionState,
     size: ControlSize,
 ) -> ContextMenuInspectPalette {
-    use luma_look_shadcn::{ColorSource, LookResolver, ResolvedColor};
-
-    let ctx = LookContext::new(mode, theme_mode, state);
+    let colors = luma_look_shadcn::tables::resolve_context_menu_colors(mode, theme_mode, state);
     let menu = crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size);
-
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "context_menu_inspect");
-    let trigger_colors =
-        luma_look_shadcn::tables::resolve_ghost_trigger_colors(&resolver, state.layer(), state.disabled)
-            .unwrap_or_else(|_| luma_look_shadcn::tables::GhostTriggerColorTable::fallback());
-    let target_background = trigger_colors.background;
-    let target_foreground = trigger_colors.foreground;
-    let target_border = resolver.resolve_decl("border").unwrap_or_else(|_| ResolvedColor {
-        value: ctx.catalog().color("border").expect("border"),
-        source: ColorSource::CssVar { token: "border".into() },
-    });
-    ContextMenuInspectPalette { target_background, target_foreground, target_border, menu }
+    ContextMenuInspectPalette {
+        target_background: colors.background,
+        target_foreground: colors.foreground,
+        target_border: colors.border,
+        menu,
+    }
 }
 
 pub fn inspect_context_menu_metrics(
@@ -48,18 +40,18 @@ pub fn inspect_context_menu_metrics(
     theme_mode: ThemeMode,
     size: ControlSize,
 ) -> ContextMenuInspectMetrics {
-    use crate::metrics::{derived_metric, radius_metric, spacing_control_metric};
-    use luma_look_shadcn::catalog::SpacingField;
+    let table = luma_look_shadcn::tables::metrics::resolve_context_menu_metrics(mode, theme_mode, size);
+    table.into()
+}
 
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let look = luma_look_shadcn::paint::context_menu_look(mode, theme_mode, InteractionState::default());
-    let catalog = ctx.catalog();
-
-    ContextMenuInspectMetrics {
-        target_padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, look.target_padding_x),
-        target_padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, look.target_padding_y),
-        target_radius: radius_metric(catalog, size, look.target_radius),
-        target_min_width: derived_metric("context menu target min width", look.target_min_width),
-        menu: crate::controls::floating_menu::inspect_floating_menu_metrics(mode, theme_mode, size),
+impl From<luma_look_shadcn::tables::metrics::ContextMenuMetricTable> for ContextMenuInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::ContextMenuMetricTable) -> Self {
+        Self {
+            target_padding_x: table.target_padding_x,
+            target_padding_y: table.target_padding_y,
+            target_radius: table.target_radius,
+            target_min_width: table.target_min_width,
+            menu: table.menu.into(),
+        }
     }
 }

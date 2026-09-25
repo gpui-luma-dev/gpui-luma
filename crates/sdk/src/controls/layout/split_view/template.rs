@@ -7,13 +7,18 @@ use gpui::{
 
 use super::{SplitViewRenderModel, SplitViewSeparatorVisibility, control::SplitViewSeparatorDrag};
 
-const SEPARATOR_HITBOX_WIDTH: f32 = 20.0;
+/// Default separator geometry in logical pixels.
+pub const SEPARATOR_HITBOX_WIDTH: f32 = 20.0;
 const EXPAND_SEPARATOR_INSET_Y: f32 = 10.0;
 const EXPAND_SEPARATOR_CUE_LEFT: f32 = 2.0;
-const SEPARATOR_CUE_INSET_Y: f32 = 16.0;
-const SEPARATOR_CUE_RADIUS: f32 = 4.0;
-const SEPARATOR_CUE_WIDTH: f32 = 4.0;
-const SEPARATOR_CUE_HOVERED_WIDTH: f32 = 8.0;
+/// Default separator geometry in logical pixels.
+pub const SEPARATOR_CUE_INSET_Y: f32 = 16.0;
+/// Default separator geometry in logical pixels.
+pub const SEPARATOR_CUE_RADIUS: f32 = 4.0;
+/// Default separator geometry in logical pixels.
+pub const SEPARATOR_CUE_WIDTH: f32 = 4.0;
+/// Default separator geometry in logical pixels.
+pub const SEPARATOR_CUE_HOVERED_WIDTH: f32 = 8.0;
 const CENTERED_CUE_OFFSET_FACTOR: f32 = 0.5;
 
 pub type SplitViewHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;

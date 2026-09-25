@@ -12,31 +12,18 @@ struct ShadcnToolbarTheme {
 impl ToolbarTheme for ShadcnToolbarTheme {
     fn resolve(&self, enabled: bool, size: ControlSize, variant: ToolbarVariant) -> ToolbarLook {
         let tokens = self.theme.mode_tokens();
-        let metrics = &tokens.metrics;
-        let control = metrics.for_size(size);
-        let transparent = gpui::hsla(0.0, 0.0, 0.0, 0.0);
-
-        let (background, border) = match variant {
-            ToolbarVariant::Outline => {
-                let background = if enabled {
-                    tokens.palette.muted_background
-                } else {
-                    tokens.palette.disabled_background
-                };
-                (background, tokens.palette.border_default)
-            }
-            ToolbarVariant::Ghost => (transparent, transparent),
-        };
+        let metrics = crate::tables::metrics::resolve_toolbar_metrics(&tokens, self.theme.mode(), size);
+        let colors = crate::tables::resolve_toolbar_colors(&tokens, self.theme.mode(), enabled, variant);
 
         ToolbarLook {
-            background,
-            border,
-            separator: tokens.palette.border_default,
-            radius: metrics.radius.md,
-            padding_x: 6.0,
-            padding_y: 4.0,
-            gap: control.gap,
-            separator_height: control.height,
+            background: colors.background.hsla(),
+            border: colors.border.hsla(),
+            separator: colors.separator.hsla(),
+            radius: metrics.radius.value_px,
+            padding_x: metrics.padding_x.value_px,
+            padding_y: metrics.padding_y.value_px,
+            gap: metrics.gap.value_px,
+            separator_height: metrics.separator_height.value_px,
         }
     }
 }

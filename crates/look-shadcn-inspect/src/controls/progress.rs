@@ -34,16 +34,8 @@ pub fn inspect_progress_color_palette(
 }
 
 pub fn inspect_progress_metrics(mode: &ShadcnModeTokens, _theme_mode: ThemeMode) -> ProgressInspectMetrics {
-    use crate::metrics::derived_metric;
-
-    let look = luma_look_shadcn::paint::progress_look(mode, true, luma::theme::ControlSize::Md);
-
-    ProgressInspectMetrics {
-        size: derived_metric("progress ring diameter", look.size),
-        stroke_width: derived_metric("progress stroke width", look.stroke_width),
-        track_height: derived_metric("progress track height", look.track_height),
-        thumb_size: derived_metric("progress thumb size", look.thumb_size),
-    }
+    let table = luma_look_shadcn::tables::metrics::resolve_progress_metrics(mode, _theme_mode);
+    table.into()
 }
 
 #[cfg(test)]
@@ -81,5 +73,16 @@ mod tests {
         let metrics = inspect_progress_metrics(&mode, ThemeMode::Light);
         assert!(metrics.track_height.value_px > 0.0);
         assert!(metrics.thumb_size.value_px > 0.0);
+    }
+}
+
+impl From<luma_look_shadcn::tables::metrics::ProgressMetricTable> for ProgressInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::ProgressMetricTable) -> Self {
+        Self {
+            size: table.size,
+            stroke_width: table.stroke_width,
+            track_height: table.track_height,
+            thumb_size: table.thumb_size,
+        }
     }
 }

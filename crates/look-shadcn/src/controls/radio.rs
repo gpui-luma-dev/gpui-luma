@@ -70,6 +70,41 @@ pub fn resolve_radio_colors_with_stylesheet(
     })
 }
 
+/// Effective colors after style normalization, interaction policy, focus, and fallbacks.
+#[derive(Clone, Debug)]
+pub struct RadioResolvedColors {
+    pub indicator_background: ResolvedColor,
+    pub indicator_border: ResolvedColor,
+    pub dot_color: ResolvedColor,
+    pub label_color: ResolvedColor,
+}
+
+/// Resolves the same final colors used by rendering and inspection.
+pub fn resolve_radio_palette(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    selected: bool,
+    state: InteractionState,
+) -> RadioResolvedColors {
+    let indicator_style = if style == ShadcnButtonStyle::ContentOnly {
+        ShadcnButtonStyle::Primary
+    } else {
+        style
+    };
+    let resolver = LookResolver::new(&mode.catalog, theme_mode, "radio");
+    let colors = resolve_radio_colors(&resolver, indicator_style, selected, choice_indicator_color_layer(state))
+        .unwrap_or_else(|_| RadioColorTable::fallback());
+    let indicator_border =
+        super::choice_indicator::resolve_indicator_border(&resolver, style, selected, state, &colors.selection_ring);
+    RadioResolvedColors {
+        indicator_background: colors.indicator_background,
+        indicator_border,
+        dot_color: colors.dot_color,
+        label_color: colors.label_color,
+    }
+}
+
 pub fn radio_button_look(
     mode: &ShadcnModeTokens,
     style: ShadcnButtonStyle,
@@ -78,32 +113,18 @@ pub fn radio_button_look(
     size: ControlSize,
 ) -> RadioButtonPalette {
     let content_only = style == ShadcnButtonStyle::ContentOnly;
-    let indicator_style = if content_only {
-        ShadcnButtonStyle::Primary
-    } else {
-        style
-    };
     let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
     let typography = ctx.typography();
     let layer = choice_indicator_color_layer(state);
-    let resolver = LookResolver::new(catalog, ctx.theme_mode, "radio");
-    let colors = resolve_radio_colors(&resolver, indicator_style, selected, layer)
-        .unwrap_or_else(|_| RadioColorTable::fallback());
+    let colors = resolve_radio_palette(mode, ctx.theme_mode, style, selected, state);
 
-    let indicator_border = if !content_only && state.focused && !state.disabled {
-        crate::focus::focus_ring_or_fallback(catalog)
-    } else if selected && !state.disabled {
-        colors.selection_ring.hsla()
-    } else {
-        crate::resolve::resolve_color_or_fallback(catalog, "border")
-    };
     RadioButtonPalette {
         control_background: None,
         control_border: None,
         indicator_background: colors.indicator_background.hsla(),
-        indicator_border,
+        indicator_border: colors.indicator_border.hsla(),
         dot_color: colors.dot_color.hsla(),
         label_color: colors.label_color.hsla(),
         label_typography: {

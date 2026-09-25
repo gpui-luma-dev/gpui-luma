@@ -1,7 +1,7 @@
 //! Inspect metadata for `radio`.
 
 use luma::theme::{InteractionState, ThemeMode};
-use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens};
+use luma_look_shadcn::{ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens};
 
 pub struct RadioButtonInspectPalette {
     pub indicator_background: ResolvedColor,
@@ -17,21 +17,10 @@ pub fn inspect_radio_button_color_palette(
     selected: bool,
     state: InteractionState,
 ) -> RadioButtonInspectPalette {
-    let ctx = LookContext::new(mode, theme_mode, state);
-    let catalog = ctx.catalog();
-    let layer = state.layer();
-    let resolver = LookResolver::new(catalog, theme_mode, "radio_inspect");
-    let colors = luma_look_shadcn::tables::resolve_radio_colors(&resolver, style, selected, layer)
-        .unwrap_or_else(|_| luma_look_shadcn::tables::RadioColorTable::fallback());
-    let indicator_border = if selected && !state.disabled {
-        colors.selection_ring
-    } else {
-        resolver.resolve_decl("border").unwrap_or(colors.selection_ring)
-    };
-
+    let colors = luma_look_shadcn::tables::resolve_radio_palette(mode, theme_mode, style, selected, state);
     RadioButtonInspectPalette {
         indicator_background: colors.indicator_background,
-        indicator_border,
+        indicator_border: colors.indicator_border,
         dot_color: colors.dot_color,
         label_color: colors.label_color,
     }
@@ -54,38 +43,8 @@ pub fn inspect_radio_button_metrics(
     theme_mode: ThemeMode,
     size: luma::theme::ControlSize,
 ) -> RadioButtonInspectMetrics {
-    use luma::controls::radio_button::RadioScale;
-
-    use luma_look_shadcn::catalog::SpacingField;
-    use crate::metrics::{
-        border_width_metric, control_size_key, derived_metric, focus_ring_offset_metric, focus_ring_width_metric,
-        radius_metric, scaffold_control_metric, spacing_control_metric,
-    };
-
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let metrics = ctx.metrics();
-    let catalog = ctx.catalog();
-    let scale = RadioScale::compute(size, metrics, 1.0);
-    let size_key = control_size_key(size);
-    let ratio = match size {
-        luma::theme::ControlSize::Sm => 0.45,
-        luma::theme::ControlSize::Md => 0.50,
-        luma::theme::ControlSize::Lg => 0.55,
-    };
-
-    RadioButtonInspectMetrics {
-        height: scaffold_control_metric(size_key, "control_height", scale.height),
-        gap: spacing_control_metric(catalog, size, SpacingField::Gap, scale.gap),
-        indicator_size: derived_metric(
-            format!("{size_key} indicator = control_height × {ratio}"),
-            scale.indicator_size,
-        ),
-        dot_size: derived_metric(format!("{size_key} dot = control_height × 0.24"), scale.dot_size),
-        control_radius: radius_metric(catalog, size, scale.control_radius),
-        border_width: border_width_metric(metrics),
-        focus_ring_width: focus_ring_width_metric(metrics),
-        focus_ring_offset: focus_ring_offset_metric(metrics),
-    }
+    let table = luma_look_shadcn::tables::metrics::resolve_radio_button_metrics(mode, theme_mode, size);
+    table.into()
 }
 
 pub fn inspect_radio_button_elevation(
@@ -113,4 +72,19 @@ pub fn inspect_radio_button_elevation(
         look.indicator_shadow.as_ref(),
         button_style_key(style),
     )
+}
+
+impl From<luma_look_shadcn::tables::metrics::RadioButtonMetricTable> for RadioButtonInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::RadioButtonMetricTable) -> Self {
+        Self {
+            height: table.height,
+            gap: table.gap,
+            indicator_size: table.indicator_size,
+            dot_size: table.dot_size,
+            control_radius: table.control_radius,
+            border_width: table.border_width,
+            focus_ring_width: table.focus_ring_width,
+            focus_ring_offset: table.focus_ring_offset,
+        }
+    }
 }

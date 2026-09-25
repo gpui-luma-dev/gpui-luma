@@ -613,48 +613,54 @@ pub static TABS_NAVIGATION_STATES: [InspectorStateSpec; 6] = [
     },
 ];
 
+static ACCORDION_CATEGORIES: [InspectorCategory; 3] = [
+    InspectorCategory { id: "color", label: "Color", icon: LucideIcon::Palette, expanded_default: true },
+    InspectorCategory { id: "layout", label: "Layout", icon: LucideIcon::Ruler, expanded_default: true },
+    InspectorCategory { id: "typography", label: "Typography", icon: LucideIcon::TypeIcon, expanded_default: true },
+];
+
 pub static ACCORDION_STATES: [InspectorStateSpec; 6] = [
     InspectorStateSpec {
         id: "collapsed",
         label: "Collapsed",
         icon: LucideIcon::ChevronRight,
         expanded_default: false,
-        categories: &COLOR_LAYOUT_CATEGORIES,
+        categories: &ACCORDION_CATEGORIES,
     },
     InspectorStateSpec {
         id: "default",
         label: "Default",
         icon: LucideIcon::Circle,
         expanded_default: true,
-        categories: &COLOR_LAYOUT_CATEGORIES,
+        categories: &ACCORDION_CATEGORIES,
     },
     InspectorStateSpec {
         id: "disabled",
         label: "Disabled",
         icon: LucideIcon::CircleOff,
         expanded_default: false,
-        categories: &COLOR_LAYOUT_CATEGORIES,
+        categories: &ACCORDION_CATEGORIES,
     },
     InspectorStateSpec {
         id: "expanded",
         label: "Expanded",
         icon: LucideIcon::ChevronDown,
         expanded_default: false,
-        categories: &COLOR_LAYOUT_CATEGORIES,
+        categories: &ACCORDION_CATEGORIES,
     },
     InspectorStateSpec {
         id: "hover",
         label: "Hover",
         icon: LucideIcon::MousePointer2,
         expanded_default: false,
-        categories: &COLOR_LAYOUT_CATEGORIES,
+        categories: &ACCORDION_CATEGORIES,
     },
     InspectorStateSpec {
         id: "pressed",
         label: "Pressed",
         icon: LucideIcon::MousePointerClick,
         expanded_default: false,
-        categories: &COLOR_LAYOUT_CATEGORIES,
+        categories: &ACCORDION_CATEGORIES,
     },
 ];
 

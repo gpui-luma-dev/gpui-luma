@@ -9,3 +9,20 @@ pub(crate) fn choice_indicator_color_layer(state: InteractionState) -> Interacti
         InteractionLayer::Default
     }
 }
+
+/// Shared border precedence for checkbox and radio indicators.
+pub(crate) fn resolve_indicator_border(
+    resolver: &crate::LookResolver<'_>,
+    style: super::ShadcnButtonStyle,
+    selected: bool,
+    state: InteractionState,
+    selection: &crate::ResolvedColor,
+) -> crate::ResolvedColor {
+    if style != super::ShadcnButtonStyle::ContentOnly && state.focused && !state.disabled {
+        resolver.resolve_decl("ring").unwrap_or_else(|_| crate::ResolvedColor::fallback_foreground())
+    } else if selected && !state.disabled {
+        selection.clone()
+    } else {
+        resolver.resolve_decl("border").unwrap_or_else(|_| crate::ResolvedColor::fallback_foreground())
+    }
+}

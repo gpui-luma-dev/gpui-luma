@@ -3,14 +3,12 @@
 use gpui::{BoxShadow, Hsla};
 use luma::theme::{ControlSize, InteractionState, ThemeMode};
 use luma_look_shadcn::{
-    LookContext, LookResolver, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, ShadcnButtonStyle,
-    ShadcnModeTokens, TypographySource,
+    LookContext, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, ShadcnButtonStyle, ShadcnModeTokens,
 };
 use luma_look_shadcn::stylesheet::{embedded_stylesheet, find_button_elevation_rule, resolve_stylesheet_shadow_token};
 
 use luma::controls::button_family::ButtonFamilyRole;
 use luma::infra::shadow_layout::shadow_projection_extent;
-use luma_look_shadcn::catalog::SpacingField;
 
 pub struct ButtonInspectPalette {
     pub background: ResolvedColor,
@@ -25,17 +23,7 @@ pub fn inspect_button_color_palette(
     role: ButtonFamilyRole,
     state: InteractionState,
 ) -> ButtonInspectPalette {
-    let ctx = LookContext::new(mode, theme_mode, state);
-    let style = if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
-        ShadcnButtonStyle::Outline
-    } else {
-        style
-    };
-    let layer = state.layer();
-    let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "button_resolver");
-    let colors = luma_look_shadcn::tables::resolve_button_colors(&resolver, style, layer, theme_mode, selected)
-        .unwrap_or_else(|_| luma_look_shadcn::tables::ButtonColorPalette::fallback());
+    let colors = luma_look_shadcn::tables::resolve_button_palette(mode, theme_mode, style, role, state);
 
     let border = effective_border_resolved(&colors);
     ButtonInspectPalette { background: colors.background, foreground: colors.foreground, border }
@@ -62,36 +50,8 @@ pub fn inspect_button_metrics(
     size: ControlSize,
     state: InteractionState,
 ) -> ButtonInspectMetrics {
-    let look = luma_look_shadcn::paint::button_look(mode, theme_mode, style, role, size, state);
-    let ctx = LookContext::new(mode, theme_mode, state);
-    let metrics = ctx.metrics();
-    let catalog = ctx.catalog();
-
-    let size_key = control_size_key(size);
-
-    ButtonInspectMetrics {
-        height: scaffold_control_metric(size_key, "control_height", look.height),
-        icon_size: ResolvedMetric {
-            value_px: look.icon_size,
-            source: MetricSource::Constant { label: format!("style.toml [button.metrics.{size_key}].icon_size") },
-        },
-        padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, look.padding_x),
-        padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, look.padding_y),
-        gap: spacing_control_metric(catalog, size, SpacingField::Gap, look.gap),
-        radius: radius_metric(catalog, size, look.radius),
-        border_width: ResolvedMetric {
-            value_px: metrics.border_width.default,
-            source: MetricSource::Scaffold { path: "MetricTokens.border_width.default".into() },
-        },
-        focus_ring_width: ResolvedMetric {
-            value_px: metrics.focus.width,
-            source: MetricSource::Scaffold { path: "MetricTokens.focus.width".into() },
-        },
-        focus_ring_offset: focus_ring_offset_metric(
-            luma::controls::button_family::button_family_effective_border(look.border),
-            metrics,
-        ),
-    }
+    let table = luma_look_shadcn::tables::metrics::resolve_button_metrics(mode, theme_mode, style, role, size, state);
+    table.into()
 }
 
 #[derive(Clone, Debug)]
@@ -200,38 +160,40 @@ pub fn format_inspect_box_shadow_layer(layer: &ButtonInspectElevationLayer) -> S
     layer.css.clone()
 }
 
+/// Default medium text-button typography. Use the sized variant for other controls.
 pub fn inspect_button_typography(mode: &ShadcnModeTokens, theme_mode: ThemeMode) -> ButtonInspectTypography {
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let typography = ctx.typography();
-    let catalog = ctx.catalog();
-    let label = &typography.text.label;
-
-    ButtonInspectTypography {
-        font_family: typography_family_field(catalog, &typography.font.sans.family),
-        font_size: typography_scaffold_field("LumaTypography.text.label.size", label.size),
-        font_weight: typography_scaffold_field("LumaTypography.text.label.weight", label.weight.0),
-        line_height: typography_scaffold_field("LumaTypography.text.label.line_height", label.line_height),
-    }
+    inspect_button_typography_for_size(mode, theme_mode, ControlSize::Md, ButtonFamilyRole::Text)
 }
 
-fn typography_family_field(catalog: &luma_look_shadcn::catalog::CssTokenMap, family: &str) -> ResolvedTypography {
-    if catalog.get("font-sans").is_some() {
-        ResolvedTypography { value: family.to_string(), source: TypographySource::CssVar { token: "font-sans".into() } }
-    } else {
-        ResolvedTypography {
-            value: family.to_string(),
-            source: TypographySource::Scaffold { path: "LumaTypography.font.sans.family".into() },
+pub fn inspect_button_typography_for_size(
+    mode: &ShadcnModeTokens,
+    _theme_mode: ThemeMode,
+    size: ControlSize,
+    role: ButtonFamilyRole,
+) -> ButtonInspectTypography {
+    luma_look_shadcn::tables::typography::resolve_control_typography(
+        mode,
+        size,
+        matches!(role, ButtonFamilyRole::Toggle { .. }),
+    )
+    .into()
+}
+
+impl From<luma_look_shadcn::tables::typography::ControlTypographyTable> for ButtonInspectTypography {
+    fn from(table: luma_look_shadcn::tables::typography::ControlTypographyTable) -> Self {
+        Self {
+            font_family: ResolvedTypography { value: table.font_family.to_string(), source: table.font_family_source },
+            font_size: ResolvedTypography { value: table.style.size.to_string(), source: table.font_size_source },
+            font_weight: ResolvedTypography {
+                value: table.style.weight.0.to_string(),
+                source: table.font_weight_source,
+            },
+            line_height: ResolvedTypography {
+                value: table.style.line_height.to_string(),
+                source: table.line_height_source,
+            },
         }
     }
-}
-
-fn typography_scaffold_field(path: &str, value: f32) -> ResolvedTypography {
-    let display = if (value - value.round()).abs() < f32::EPSILON {
-        format!("{}", value.round() as i32)
-    } else {
-        format!("{value}")
-    };
-    ResolvedTypography { value: display, source: TypographySource::Scaffold { path: path.into() } }
 }
 
 fn effective_button_style(style: ShadcnButtonStyle, role: ButtonFamilyRole) -> ShadcnButtonStyle {
@@ -289,77 +251,6 @@ fn format_shadow_alpha(value: f32) -> String {
     formatted.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
-fn control_size_key(size: ControlSize) -> &'static str {
-    match size {
-        ControlSize::Sm => "sm",
-        ControlSize::Md => "md",
-        ControlSize::Lg => "lg",
-    }
-}
-
-fn scaffold_control_metric(size_key: &str, field: &str, value_px: f32) -> ResolvedMetric {
-    ResolvedMetric {
-        value_px,
-        source: MetricSource::Scaffold { path: format!("MetricTokens.control.{size_key}.{field}") },
-    }
-}
-
-fn spacing_control_metric(
-    catalog: &luma_look_shadcn::catalog::CssTokenMap,
-    size: ControlSize,
-    field: SpacingField,
-    value_px: f32,
-) -> ResolvedMetric {
-    if catalog.get("spacing").is_some() {
-        let size_key = control_size_key(size);
-        let field_label = match field {
-            SpacingField::PaddingX => "padding_x",
-            SpacingField::PaddingY => "padding_y",
-            SpacingField::Gap => "gap",
-        };
-        let multiplier = luma_look_shadcn::catalog::spacing_multiplier(size, field);
-        let multiplier_label = if (multiplier - multiplier.round()).abs() < f32::EPSILON {
-            format!("{}", multiplier.round() as i32)
-        } else {
-            format!("{multiplier}")
-        };
-        ResolvedMetric {
-            value_px,
-            source: MetricSource::Derived {
-                note: format!("{size_key} {field_label} = --spacing × {multiplier_label}"),
-            },
-        }
-    } else {
-        let field_label = match field {
-            SpacingField::PaddingX => "padding_x",
-            SpacingField::PaddingY => "padding_y",
-            SpacingField::Gap => "gap",
-        };
-        scaffold_control_metric(control_size_key(size), field_label, value_px)
-    }
-}
-
-fn radius_metric(catalog: &luma_look_shadcn::catalog::CssTokenMap, size: ControlSize, value_px: f32) -> ResolvedMetric {
-    if catalog.get("radius").is_some() {
-        let (size_label, offset) = match size {
-            ControlSize::Sm => ("sm", 4.0_f32),
-            ControlSize::Md => ("md", 2.0_f32),
-            ControlSize::Lg => ("lg", 0.0_f32),
-        };
-        let offset_label = if (offset - offset.round()).abs() < f32::EPSILON {
-            format!("{}px", offset.round() as i32)
-        } else {
-            format!("{offset}px")
-        };
-        ResolvedMetric {
-            value_px,
-            source: MetricSource::Derived { note: format!("{size_label} = --radius − {offset_label}") },
-        }
-    } else {
-        scaffold_control_metric(control_size_key(size), "radius", value_px)
-    }
-}
-
 fn effective_border_resolved(colors: &luma_look_shadcn::tables::ButtonColorPalette) -> ResolvedColor {
     use luma_look_shadcn::ColorSource;
 
@@ -368,19 +259,6 @@ fn effective_border_resolved(colors: &luma_look_shadcn::tables::ButtonColorPalet
     }
 
     ResolvedColor { value: gpui::hsla(0.0, 0.0, 0.0, 0.0), source: ColorSource::Transparent }
-}
-
-fn focus_ring_offset_metric(border: gpui::Hsla, metrics: &luma::theme::MetricTokens) -> ResolvedMetric {
-    let border_width = metrics.border_width.default;
-    let focus = metrics.focus.width;
-    if border.a <= 0.0 {
-        ResolvedMetric { value_px: 0.0, source: MetricSource::Derived { note: "inset · borderless".into() } }
-    } else {
-        ResolvedMetric {
-            value_px: border_width + focus,
-            source: MetricSource::Derived { note: "border_width.default + focus.width".into() },
-        }
-    }
 }
 
 #[cfg(test)]
@@ -495,7 +373,7 @@ mod tests {
     }
 
     #[test]
-    fn inspect_typography_uses_font_sans_catalog_and_scaffold_label_metrics() {
+    fn inspect_typography_uses_font_sans_catalog_and_resolved_button_size() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
         let typography = inspect_button_typography(&mode, ThemeMode::Light);
 
@@ -506,9 +384,25 @@ mod tests {
         assert_eq!(typography.font_family.value, "Outfit");
         assert!(matches!(
             typography.font_size.source,
-            luma_look_shadcn::TypographySource::Scaffold { ref path } if path.contains("label.size")
+            luma_look_shadcn::TypographySource::Constant { ref label } if label.contains("button.metrics.md")
         ));
-        assert_eq!(typography.font_size.value, "12.5");
-        assert_eq!(typography.line_height.value, "18");
+        assert_eq!(typography.font_size.value, "14");
+        assert_eq!(typography.line_height.value.parse::<f32>().unwrap(), 14.0 * (18.0 / 12.5));
+    }
+}
+
+impl From<luma_look_shadcn::tables::metrics::ButtonMetricTable> for ButtonInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::ButtonMetricTable) -> Self {
+        Self {
+            height: table.height,
+            icon_size: table.icon_size,
+            padding_x: table.padding_x,
+            padding_y: table.padding_y,
+            gap: table.gap,
+            radius: table.radius,
+            border_width: table.border_width,
+            focus_ring_width: table.focus_ring_width,
+            focus_ring_offset: table.focus_ring_offset,
+        }
     }
 }

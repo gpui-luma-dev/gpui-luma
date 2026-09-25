@@ -20,13 +20,8 @@ use crate::provenance::{LookResolver, ResolvedColor};
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
     StylesheetConfig, embedded_stylesheet, find_slider_color_rule, resolve_layered_elevation_shadow,
-    resolve_slider_color_rule, resolve_slider_metrics,
+    resolve_slider_color_rule,
 };
-
-const DEFAULT_SLIDER_WIDTH: f32 = 260.0;
-const DEFAULT_SLIDER_HEIGHT: f32 = 32.0;
-const DEFAULT_SLIDER_TRACK_HEIGHT: f32 = 8.0;
-const DEFAULT_SLIDER_THUMB_SIZE: f32 = 18.0;
 
 /// Shared corner-radius preset resolution for slider parts.
 ///
@@ -123,27 +118,13 @@ pub fn slider_look(
     let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
-    let metrics = ctx.metrics();
     let layer = state.layer();
     let stylesheet = embedded_stylesheet();
     let thumb_shadow = slider_elevation_shadow(catalog, stylesheet, layer);
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "slider");
     let colors = resolve_slider_colors(&resolver, style, layer).unwrap_or_else(|_| SliderColorTable::fallback());
-    let (width, height, track_height, resolved_thumb_size_px, radius) = stylesheet
-        .slider
-        .metrics_for_size(size)
-        .map(|rule| {
-            let m = resolve_slider_metrics(rule, metrics, size);
-            (m.width, m.height, m.track_height, m.thumb_size, m.radius)
-        })
-        .unwrap_or((
-            DEFAULT_SLIDER_WIDTH,
-            DEFAULT_SLIDER_HEIGHT,
-            DEFAULT_SLIDER_TRACK_HEIGHT,
-            DEFAULT_SLIDER_THUMB_SIZE,
-            metrics.radius.pill,
-        ));
-    let thumb_size = thumb_size.map(slider_thumb_size).unwrap_or(resolved_thumb_size_px);
+    let geometry = crate::tables::metrics::resolve_slider_metrics_for_size(mode, theme_mode, size);
+    let thumb_size = thumb_size.map(slider_thumb_size).unwrap_or(geometry.thumb_size.value_px);
 
     SliderLook {
         track_background: colors.track_background.hsla(),
@@ -151,11 +132,11 @@ pub fn slider_look(
         thumb_background: colors.thumb_background.hsla(),
         thumb_border: colors.thumb_border.hsla(),
         thumb_shadow,
-        width,
-        height,
-        track_height,
+        width: geometry.width.value_px,
+        height: geometry.height.value_px,
+        track_height: geometry.track_height.value_px,
         thumb_size,
-        radius,
+        radius: geometry.radius.value_px,
     }
 }
 

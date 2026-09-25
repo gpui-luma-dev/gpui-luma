@@ -108,7 +108,7 @@ pub(crate) fn typography_from_catalog(catalog: &CssTokenMap, mut scaffold: LumaT
     scaffold
 }
 
-fn parse_length_px(raw: &str) -> Option<f32> {
+pub(crate) fn parse_length_px(raw: &str) -> Option<f32> {
     let value = raw.trim();
     if let Some(rem) = value.strip_suffix("rem") {
         return rem.trim().parse::<f32>().ok().map(|n| n * 16.0);

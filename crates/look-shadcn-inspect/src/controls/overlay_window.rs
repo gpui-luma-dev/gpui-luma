@@ -43,24 +43,22 @@ pub fn inspect_overlay_window_metrics(
     size: ControlSize,
     mode: OverlayWindowMode,
 ) -> OverlayWindowInspectMetrics {
-    use crate::metrics::derived_metric;
-
-    let shell = luma_look_shadcn::paint::overlay_window_look(look, size, mode);
-    let size_key = match size {
-        ControlSize::Sm => "sm",
-        ControlSize::Md => "md",
-        ControlSize::Lg => "lg",
-    };
-
-    OverlayWindowInspectMetrics {
-        radius: derived_metric("overlay radius = radius.lg", shell.radius),
-        padding: derived_metric(format!("{size_key} overlay padding"), shell.padding),
-        min_width: derived_metric(format!("{size_key} overlay min width"), shell.min_width),
-        max_width: derived_metric(format!("{size_key} overlay max width"), shell.max_width),
-        estimated_height: derived_metric(format!("{size_key} overlay estimated height"), shell.estimated_height),
-    }
+    let table = luma_look_shadcn::tables::metrics::resolve_overlay_window_metrics(look, size, mode);
+    table.into()
 }
 
 fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
     ResolvedColor { value, source }
+}
+
+impl From<luma_look_shadcn::tables::metrics::OverlayWindowMetricTable> for OverlayWindowInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::OverlayWindowMetricTable) -> Self {
+        Self {
+            radius: table.radius,
+            padding: table.padding,
+            min_width: table.min_width,
+            max_width: table.max_width,
+            estimated_height: table.estimated_height,
+        }
+    }
 }

@@ -130,7 +130,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
             LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| super::theme::AccordionScale::compute(model.size, metrics, scale_factor),
+            |_| self.theme.resolve_scale(model.size, scale_factor),
         );
 
         let AccordionTemplateHandlers {

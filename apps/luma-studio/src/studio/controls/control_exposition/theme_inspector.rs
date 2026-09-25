@@ -897,7 +897,7 @@ fn inspector_selection<'a>(
     size_id: &'a str,
     value_id: &'a str,
 ) -> InspectorSelection<'a> {
-    InspectorSelection { part_id, variant_id, state_id, size_id, value_id }
+    InspectorSelection { part_id, variant_id, state_id, size_id, value_id, scale_factor: 1.0 }
 }
 
 impl LayoutSizeInspector {
@@ -948,14 +948,15 @@ impl LayoutSizeInspector {
 }
 
 impl Render for LayoutSizeInspector {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let selection = inspector_selection(
+    fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        let mut selection = inspector_selection(
             self.part_id.as_ref(),
             self.variant_id.as_ref(),
             self.state_id.as_ref(),
             self.active_size_id.as_ref(),
             "",
         );
+        selection.scale_factor = window.scale_factor();
         let content = self.resolver.resolve_category(&self.look, selection, "layout");
 
         div()

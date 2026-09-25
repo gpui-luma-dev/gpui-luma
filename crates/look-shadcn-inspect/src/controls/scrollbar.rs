@@ -40,24 +40,19 @@ pub fn inspect_scrollbar_metrics(
     orientation: ScrollbarOrientation,
     style: ScrollbarStyle,
 ) -> ScrollbarInspectMetrics {
-    use crate::metrics::{derived_metric, pill_radius_metric};
+    let table = luma_look_shadcn::tables::metrics::resolve_scrollbar_metrics(mode, theme_mode, orientation, style);
+    table.into()
+}
 
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let look = luma_look_shadcn::paint::scrollbar_look(
-        mode,
-        InteractionState::default(),
-        orientation,
-        luma::theme::ControlSize::Md,
-        style,
-    );
-    let catalog = ctx.catalog();
-
-    ScrollbarInspectMetrics {
-        length: derived_metric("gallery scrollbar demo length", look.length),
-        thickness: derived_metric("scrollbar chrome thickness", look.thickness),
-        track_thickness: derived_metric("track hit target", look.track_thickness),
-        thumb_thickness: derived_metric("thumb visual size", look.thumb_thickness),
-        min_thumb_length: derived_metric("minimum draggable thumb", look.min_thumb_length),
-        radius: pill_radius_metric(catalog, look.radius),
+impl From<luma_look_shadcn::tables::metrics::ScrollbarMetricTable> for ScrollbarInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::ScrollbarMetricTable) -> Self {
+        Self {
+            length: table.length,
+            thickness: table.thickness,
+            track_thickness: table.track_thickness,
+            thumb_thickness: table.thumb_thickness,
+            min_thumb_length: table.min_thumb_length,
+            radius: table.radius,
+        }
     }
 }

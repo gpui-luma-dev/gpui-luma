@@ -93,6 +93,18 @@ impl<'a> ShadcnInspect<'a> {
         inspect_button_typography(&self.mode_tokens(), self.theme_mode())
     }
 
+    pub fn inspect_button_typography_for_size(
+        &self,
+        size: ControlSize,
+        role: ButtonFamilyRole,
+    ) -> ButtonInspectTypography {
+        crate::inspect_button_typography_for_size(&self.mode_tokens(), self.theme_mode(), size, role)
+    }
+
+    pub fn inspect_accordion_typography(&self, size: ControlSize) -> ButtonInspectTypography {
+        luma_look_shadcn::tables::typography::resolve_control_typography(&self.mode_tokens(), size, false).into()
+    }
+
     pub fn inspect_button_elevation(
         &self,
         style: ShadcnButtonStyle,
@@ -385,6 +397,11 @@ impl<'a> ShadcnInspect<'a> {
 
     pub fn inspect_accordion_metrics(&self, size: ControlSize) -> AccordionInspectMetrics {
         inspect_accordion_metrics(&self.mode_tokens(), self.theme_mode(), size)
+    }
+
+    /// Inspect Accordion geometry at the rendering window's scale factor.
+    pub fn inspect_accordion_metrics_at_scale(&self, size: ControlSize, scale_factor: f32) -> AccordionInspectMetrics {
+        crate::inspect_accordion_metrics_at_scale(&self.mode_tokens(), self.theme_mode(), size, scale_factor)
     }
 
     pub fn inspect_listbox_list_color_palette(&self, enabled: bool, focused: bool) -> ListBoxListInspectPalette {

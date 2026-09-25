@@ -1,6 +1,6 @@
 //! Inspect metadata for `stepper`.
 
-use luma::theme::{ThemeMode, ControlSize};
+use luma::theme::ThemeMode;
 use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct StepperInspectPalette {
@@ -44,14 +44,8 @@ pub fn inspect_stepper_color_palette(
 }
 
 pub fn inspect_stepper_metrics(mode: &ShadcnModeTokens, _theme_mode: ThemeMode) -> StepperInspectMetrics {
-    use crate::metrics::derived_metric;
-
-    let look = luma_look_shadcn::paint::stepper_look(mode, true, ControlSize::Md);
-
-    StepperInspectMetrics {
-        step_badge_size: derived_metric("stepper badge size", look.step_badge_size),
-        track_thickness: derived_metric("stepper track thickness", look.track_thickness),
-    }
+    let table = luma_look_shadcn::tables::metrics::resolve_stepper_metrics(mode, _theme_mode);
+    table.into()
 }
 
 #[cfg(test)]
@@ -89,5 +83,11 @@ mod tests {
         let metrics = inspect_stepper_metrics(&mode, ThemeMode::Light);
         assert!(metrics.step_badge_size.value_px > 0.0);
         assert!(metrics.track_thickness.value_px > 0.0);
+    }
+}
+
+impl From<luma_look_shadcn::tables::metrics::StepperMetricTable> for StepperInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::StepperMetricTable) -> Self {
+        Self { step_badge_size: table.step_badge_size, track_thickness: table.track_thickness }
     }
 }

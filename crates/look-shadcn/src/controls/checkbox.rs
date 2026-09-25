@@ -65,6 +65,46 @@ pub fn resolve_checkbox_colors_with_stylesheet(
     })
 }
 
+/// Effective colors after style normalization, interaction policy, focus, and fallbacks.
+#[derive(Clone, Debug)]
+pub struct CheckboxResolvedColors {
+    pub indicator_background: ResolvedColor,
+    pub indicator_border: ResolvedColor,
+    pub checkmark_color: ResolvedColor,
+    pub label_color: ResolvedColor,
+}
+
+/// Resolves the same final colors used by rendering and inspection.
+pub fn resolve_checkbox_palette(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    checked: bool,
+    state: InteractionState,
+) -> CheckboxResolvedColors {
+    let indicator_style = if style == ShadcnButtonStyle::ContentOnly {
+        ShadcnButtonStyle::Primary
+    } else {
+        style
+    };
+    let resolver = LookResolver::new(&mode.catalog, theme_mode, "checkbox");
+    let colors = resolve_checkbox_colors(&resolver, indicator_style, checked, choice_indicator_color_layer(state))
+        .unwrap_or_else(|_| CheckboxColorTable::fallback());
+    let indicator_border = super::choice_indicator::resolve_indicator_border(
+        &resolver,
+        style,
+        checked,
+        state,
+        &colors.indicator_background,
+    );
+    CheckboxResolvedColors {
+        indicator_background: colors.indicator_background,
+        indicator_border,
+        checkmark_color: colors.checkmark_color,
+        label_color: colors.label_color,
+    }
+}
+
 pub fn checkbox_look(
     mode: &ShadcnModeTokens,
     style: ShadcnButtonStyle,
@@ -73,33 +113,18 @@ pub fn checkbox_look(
     size: ControlSize,
 ) -> CheckboxPalette {
     let content_only = style == ShadcnButtonStyle::ContentOnly;
-    let indicator_style = if content_only {
-        ShadcnButtonStyle::Primary
-    } else {
-        style
-    };
     let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
     let typography = ctx.typography();
     let layer = choice_indicator_color_layer(state);
-    let resolver = LookResolver::new(catalog, ctx.theme_mode, "checkbox");
-    let colors = resolve_checkbox_colors(&resolver, indicator_style, checked, layer)
-        .unwrap_or_else(|_| CheckboxColorTable::fallback());
-
-    let indicator_border = if !content_only && state.focused && !state.disabled {
-        crate::focus::focus_ring_or_fallback(catalog)
-    } else if checked && !state.disabled {
-        colors.indicator_background.hsla()
-    } else {
-        crate::resolve::resolve_color_or_fallback(catalog, "border")
-    };
+    let colors = resolve_checkbox_palette(mode, ctx.theme_mode, style, checked, state);
 
     CheckboxPalette {
         control_background: None,
         control_border: None,
         indicator_background: colors.indicator_background.hsla(),
-        indicator_border,
+        indicator_border: colors.indicator_border.hsla(),
         checkmark_color: colors.checkmark_color.hsla(),
         label_color: colors.label_color.hsla(),
         label_typography: {

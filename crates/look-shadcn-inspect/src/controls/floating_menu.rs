@@ -49,27 +49,22 @@ pub fn inspect_floating_menu_metrics(
     theme_mode: ThemeMode,
     size: ControlSize,
 ) -> FloatingMenuInspectMetrics {
-    use crate::metrics::{control_size_key, derived_metric, scaffold_control_metric, spacing_control_metric};
-    use luma_look_shadcn::catalog::SpacingField;
+    let table = luma_look_shadcn::tables::metrics::resolve_floating_menu_metrics(mode, theme_mode, size);
+    table.into()
+}
 
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let look = luma_look_shadcn::paint::floating_menu_look(mode, theme_mode, size);
-    let catalog = ctx.catalog();
-
-    FloatingMenuInspectMetrics {
-        radius: derived_metric("lg = --radius", look.radius),
-        padding: derived_metric("padding_y × 0.5", look.padding),
-        min_width: derived_metric("floating menu min width", look.min_width),
-        item_height: derived_metric("control_height × 0.9", look.item_height),
-        item_padding_x: derived_metric("padding_x × 0.75", look.item_padding_x),
-        item_gap: spacing_control_metric(catalog, size, SpacingField::Gap, look.item_gap),
-        item_icon_size: luma_look_shadcn::ResolvedMetric {
-            value_px: look.item_icon_size,
-            source: luma_look_shadcn::MetricSource::Constant {
-                label: format!("style.toml [button.metrics.{}].icon_size", control_size_key(size)),
-            },
-        },
-        item_radius: scaffold_control_metric("sm", "radius", look.item_radius),
-        submenu_offset_x: derived_metric("gap × 0.5", look.submenu_offset_x),
+impl From<luma_look_shadcn::tables::metrics::FloatingMenuMetricTable> for FloatingMenuInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::FloatingMenuMetricTable) -> Self {
+        Self {
+            radius: table.radius,
+            padding: table.padding,
+            min_width: table.min_width,
+            item_height: table.item_height,
+            item_padding_x: table.item_padding_x,
+            item_gap: table.item_gap,
+            item_icon_size: table.item_icon_size,
+            item_radius: table.item_radius,
+            submenu_offset_x: table.submenu_offset_x,
+        }
     }
 }
