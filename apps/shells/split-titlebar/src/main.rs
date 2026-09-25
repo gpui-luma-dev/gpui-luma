@@ -1,6 +1,8 @@
 mod app;
 mod app_shell;
 mod column;
+#[cfg(target_os = "macos")]
+mod backdrop;
 #[path = "assets/assets.rs"]
 mod assets;
 

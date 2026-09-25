@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FocusHandle, IntoElement, Render, Window, div, prelude::*, px};
+use gpui::{
+    Context, Entity, FocusHandle, Hsla, IntoElement, Render, Window, WindowBackgroundAppearance, div, prelude::*, px,
+    rgb, transparent_black,
+};
 use luma::controls::resizable_panels::{ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation};
 use luma::focus::LumaFocusScopeExt;
 use luma::theme::ThemeMode;
@@ -16,14 +19,15 @@ pub struct SplitTitlebarShellApp {
 }
 
 impl SplitTitlebarShellApp {
-    pub fn new(_window: &mut Window, cx: &mut Context<Self>, theme_choice: ShellThemeChoice) -> Self {
+    pub fn new(window: &mut Window, cx: &mut Context<Self>, theme_choice: ShellThemeChoice) -> Self {
         let focus_scope = cx.focus_handle();
         let look = theme_choice.shadcn_look();
         look.set_mode(ThemeMode::Dark);
         sync_color_control_theme(&look);
 
         let chrome = look.chrome();
-        let left_background = chrome.panel_background;
+        // Let the panel own the fill so its title bar and body share one transparency layer.
+        let left_background = transparent_black();
         let right_background = chrome.content_background;
 
         let left_column = cx.new(|_| SplitColumn::new(left_background, true));
@@ -54,7 +58,30 @@ impl SplitTitlebarShellApp {
             ])
             .spawn(cx);
 
-        Self { focus_scope, look, panels }
+        let mut app = Self { focus_scope, look, panels };
+        app.sync_window_background(window, cx);
+        cx.observe_window_activation(window, Self::sync_window_background).detach();
+        app
+    }
+
+    fn sync_window_background(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let mut background: Hsla = rgb(0x222222).into();
+        let appearance = if window.is_window_active() {
+            background.a = 0.9;
+            WindowBackgroundAppearance::Blurred
+        } else {
+            WindowBackgroundAppearance::Opaque
+        };
+        window.set_background_appearance(appearance);
+        #[cfg(target_os = "macos")]
+        if window.is_window_active()
+            && let Err(error) = crate::backdrop::configure_sidebar_blur(window)
+        {
+            eprintln!("failed to configure sidebar blur: {error:#}");
+        }
+        self.panels.update(cx, |panels, cx| {
+            panels.set_panel_background(0, Some(background), cx);
+        });
     }
 }
 

@@ -3717,6 +3717,8 @@ dependencies = [
  "gtk",
  "lucide-static-svg",
  "luma-shell-common",
+ "objc2-app-kit 0.3.2",
+ "raw-window-handle",
 ]
 
 [[package]]

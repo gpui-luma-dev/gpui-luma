@@ -14,5 +14,9 @@ gpui_platform = { workspace = true }
 luma-look-shadcn.workspace = true
 luma-shell-common = { path = "../common" }
 
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSResponder", "NSView", "NSVisualEffectView"] }
+raw-window-handle = { version = "0.6.2", features = ["std"] }
+
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = { version = "0.18" }
