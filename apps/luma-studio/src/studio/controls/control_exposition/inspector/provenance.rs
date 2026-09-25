@@ -69,3 +69,21 @@ pub fn elevation_snapshot(
         },
     }
 }
+
+/// Display typography metadata without reconstructing its source in Studio.
+pub fn typography_rows(typography: &luma_look_shadcn_inspect::ButtonInspectTypography) -> Vec<InspectPropertyRow> {
+    [
+        ("font family", &typography.font_family),
+        ("font size", &typography.font_size),
+        ("font weight", &typography.font_weight),
+        ("line height", &typography.line_height),
+    ]
+    .into_iter()
+    .map(|(label, field)| InspectPropertyRow {
+        label: label.into(),
+        value: field.value.clone(),
+        source: luma_look_shadcn_inspect::format_inspect_typography_source(&field.source),
+        detail: luma_look_shadcn_inspect::format_inspect_typography_provenance(&field.source),
+    })
+    .collect()
+}

@@ -38,21 +38,8 @@ pub fn inspect_resizable_panels_color_palette(
 }
 
 pub fn inspect_resizable_panels_metrics(handle_size: ResizeHandleSize) -> ResizablePanelsInspectMetrics {
-    use crate::metrics::derived_metric;
-
-    let metrics = handle_size.metrics();
-    let size_label = match handle_size {
-        ResizeHandleSize::Sm => "sm",
-        ResizeHandleSize::Md => "md",
-        ResizeHandleSize::Lg => "lg",
-    };
-
-    ResizablePanelsInspectMetrics {
-        lane_px: derived_metric(format!("{size_label} handle lane"), metrics.lane_px),
-        hit_target_px: derived_metric(format!("{size_label} handle hit target"), metrics.hit_target_px),
-        grip_cross_axis_px: derived_metric(format!("{size_label} grip cross axis"), metrics.grip_cross_axis_px),
-        grip_main_axis_px: derived_metric(format!("{size_label} grip main axis"), metrics.grip_main_axis_px),
-    }
+    let table = luma_look_shadcn::tables::metrics::resolve_resizable_panels_metrics(handle_size);
+    table.into()
 }
 
 #[cfg(test)]
@@ -92,5 +79,16 @@ mod tests {
     fn inspect_handle_metrics_follow_preset_sizes() {
         let metrics = inspect_resizable_panels_metrics(ResizeHandleSize::Md);
         assert!((metrics.lane_px.value_px - 12.0).abs() < f32::EPSILON);
+    }
+}
+
+impl From<luma_look_shadcn::tables::metrics::ResizablePanelsMetricTable> for ResizablePanelsInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::ResizablePanelsMetricTable) -> Self {
+        Self {
+            lane_px: table.lane_px,
+            hit_target_px: table.hit_target_px,
+            grip_cross_axis_px: table.grip_cross_axis_px,
+            grip_main_axis_px: table.grip_main_axis_px,
+        }
     }
 }

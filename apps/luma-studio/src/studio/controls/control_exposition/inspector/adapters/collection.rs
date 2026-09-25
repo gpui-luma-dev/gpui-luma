@@ -445,9 +445,18 @@ mod accordion {
                     look,
                     "accordion-theme-inspector-box-model",
                     selection.size_id,
+                    selection.scale_factor,
+                )),
+                "typography" => InspectorCategoryContent::Typography(super::super::super::provenance::typography_rows(
+                    &ShadcnInspect::new(look)
+                        .inspect_accordion_typography(super::super::super::common::control_size(selection.size_id)),
                 )),
                 _ => InspectorCategoryContent::Colors(Vec::new()),
             }
+        }
+
+        fn category_applies(&self, _look: &ShadcnLook, selection: InspectorSelection<'_>, category_id: &str) -> bool {
+            category_id != "typography" || selection.variant_id == "trigger"
         }
 
         fn state_applies(

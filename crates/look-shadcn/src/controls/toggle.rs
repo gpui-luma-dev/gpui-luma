@@ -3,12 +3,10 @@ use luma::theme::{ControlSize, InteractionState, StandardBoxScale, ThemeMode, sn
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::LookResolver;
 use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, resolve_button_metrics_rule};
 
 use super::button::{
-    ButtonColorPalette, ButtonRadiusPreset, ShadcnButtonStyle, button_box_scale, button_elevation_shadow,
-    effective_button_style_for_role, resolve_button_colors_with_stylesheet, resolve_button_radius_preset,
+    ButtonRadiusPreset, ShadcnButtonStyle, button_box_scale, button_elevation_shadow, resolve_button_radius_preset,
     toggle_elevation_shadow,
 };
 
@@ -60,12 +58,6 @@ pub fn toggle_look_semantic(
     }
     look.shadow = toggle_shadow(&ctx, stylesheet, style);
     look
-}
-
-/// Content-only toggles have no selected color chrome; styled toggles use their
-/// selected stylesheet state, including outline and ghost variants.
-fn toggle_color_selected(style: ShadcnButtonStyle, selected: bool) -> bool {
-    selected && !matches!(style, ShadcnButtonStyle::ContentOnly)
 }
 
 fn toggle_shadow(
@@ -138,53 +130,22 @@ pub fn toggle_palette(
     size: ControlSize,
 ) -> ButtonFamilyPalette {
     let role = ButtonFamilyRole::Toggle { selected };
-    let requested_style = style;
-    let effective_style = effective_button_style_for_role(requested_style, role);
-    let layer = ctx.state.layer();
-    let theme_mode = ctx.theme_mode;
-
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "toggle_resolver");
-    let color_selected = toggle_color_selected(requested_style, selected);
-    let mut colors = resolve_button_colors_with_stylesheet(
-        &resolver,
-        stylesheet,
-        effective_style,
-        layer,
-        theme_mode,
-        color_selected,
-    )
-    .unwrap_or_else(|_| ButtonColorPalette::fallback());
-    if ctx.state.focused && !ctx.state.disabled {
-        if let Ok(focus_border) = resolver.resolve_decl("ring") {
-            colors.border = Some(focus_border);
-        }
-    }
-
-    let size_metrics = stylesheet
-        .toggle
-        .metrics_for_size(size)
-        .map(|rule| resolve_button_metrics_rule(rule, ctx.metrics(), size));
+    let colors = super::button::resolve_button_palette_with_stylesheet(ctx, stylesheet, style, role);
 
     let background = colors.background.hsla();
     let foreground = colors.foreground.hsla();
     let border = colors.border.map(|color| color.hsla());
 
-    let mut typography = ctx.typography().text.label;
-    if let Some(metrics) = size_metrics {
-        let base_size = typography.size;
-        typography.size = metrics.font_size;
-        if base_size > 0.0 {
-            typography.line_height = metrics.font_size * (typography.line_height / base_size);
-        }
-    }
+    let typography =
+        crate::tables::typography::resolve_control_typography_with_stylesheet(ctx.tokens, stylesheet, size, true);
 
     ButtonFamilyPalette {
         background,
         foreground,
         muted_foreground: ctx.palette().app_muted_foreground,
         border,
-        typography,
-        font_family: ctx.typography().font.sans.family.clone().into(),
+        typography: typography.style,
+        font_family: typography.font_family,
     }
 }
 

@@ -106,13 +106,10 @@ pub fn accordion_trigger_palette(
 ) -> AccordionPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
-    let typography = ctx.typography();
+    let typography = crate::tables::typography::resolve_control_typography(mode, size, false);
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "accordion_trigger");
     let colors = resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| AccordionTriggerColorTable::fallback());
-
-    let mut trigger_typography = typography.text.label;
-    super::apply_button_metrics_typography(&mut trigger_typography, mode, size);
 
     AccordionPalette {
         background: colors.background.map(|color| color.hsla()),
@@ -120,8 +117,8 @@ pub fn accordion_trigger_palette(
         border_color: colors.border_color.hsla(),
         icon_color: colors.icon_color.hsla(),
         chevron_color: colors.chevron_color.hsla(),
-        typography: trigger_typography,
-        font_family: typography.font.sans.family.clone().into(),
+        typography: typography.style,
+        font_family: typography.font_family,
     }
 }
 

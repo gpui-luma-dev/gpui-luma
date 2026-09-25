@@ -35,7 +35,8 @@ pub use color_chrome::{
 };
 pub use accordion::{
     AccordionContentInspectPalette, AccordionInspectMetrics, AccordionTriggerInspectPalette,
-    inspect_accordion_content_color_palette, inspect_accordion_metrics, inspect_accordion_trigger_color_palette,
+    inspect_accordion_content_color_palette, inspect_accordion_metrics, inspect_accordion_metrics_at_scale,
+    inspect_accordion_trigger_color_palette,
 };
 pub use autocomplete::{
     AutocompleteChromeInspectPalette, AutocompleteInspectMetrics, inspect_autocomplete_chrome_color_palette,
@@ -45,7 +46,7 @@ pub use badge::{BadgeInspectMetrics, BadgeInspectPalette, inspect_badge_color_pa
 pub use button::{
     ButtonInspectElevation, ButtonInspectElevationLayer, ButtonInspectMetrics, ButtonInspectPalette,
     ButtonInspectTypography, format_inspect_box_shadow_layer, inspect_button_color_palette, inspect_button_elevation,
-    inspect_button_metrics, inspect_button_typography,
+    inspect_button_metrics, inspect_button_typography, inspect_button_typography_for_size,
 };
 pub use card::{CardInspectMetrics, inspect_card_metrics};
 pub use checkbox::{

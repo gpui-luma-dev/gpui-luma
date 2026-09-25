@@ -18,15 +18,8 @@ pub struct SplitViewInspectMetrics {
 }
 
 pub fn inspect_split_view_metrics() -> SplitViewInspectMetrics {
-    use crate::metrics::derived_metric;
-
-    SplitViewInspectMetrics {
-        separator_hitbox_width: derived_metric("split view separator hitbox width", 20.0),
-        separator_cue_width: derived_metric("split view separator cue width", 4.0),
-        separator_cue_hovered_width: derived_metric("split view separator cue hovered width", 8.0),
-        separator_cue_radius: derived_metric("split view separator cue radius", 4.0),
-        separator_cue_inset_y: derived_metric("split view separator cue inset y", 16.0),
-    }
+    let table = luma_look_shadcn::tables::metrics::resolve_split_view_metrics();
+    table.into()
 }
 
 pub fn inspect_split_view_color_palette(
@@ -74,5 +67,17 @@ mod tests {
         let metrics = inspect_split_view_metrics();
         assert!((metrics.separator_hitbox_width.value_px - 20.0).abs() < f32::EPSILON);
         assert!((metrics.separator_cue_hovered_width.value_px - 8.0).abs() < f32::EPSILON);
+    }
+}
+
+impl From<luma_look_shadcn::tables::metrics::SplitViewMetricTable> for SplitViewInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::SplitViewMetricTable) -> Self {
+        Self {
+            separator_hitbox_width: table.separator_hitbox_width,
+            separator_cue_width: table.separator_cue_width,
+            separator_cue_hovered_width: table.separator_cue_hovered_width,
+            separator_cue_radius: table.separator_cue_radius,
+            separator_cue_inset_y: table.separator_cue_inset_y,
+        }
     }
 }

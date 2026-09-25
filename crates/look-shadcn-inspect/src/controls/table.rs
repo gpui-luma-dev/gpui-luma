@@ -64,24 +64,19 @@ pub fn inspect_table_row_color_palette(
 }
 
 pub fn inspect_table_metrics(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: ControlSize) -> TableInspectMetrics {
-    use luma::theme::ListRowScale;
+    let table = luma_look_shadcn::tables::metrics::resolve_table_metrics(mode, theme_mode, size);
+    table.into()
+}
 
-    use luma_look_shadcn::catalog::SpacingField;
-    use crate::metrics::{control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};
-
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let metrics = ctx.metrics();
-    let catalog = ctx.catalog();
-    let look = luma_look_shadcn::paint::table_look(mode, true, false, size);
-    let row_scale = ListRowScale::compute(size, metrics, 1.0);
-    let size_key = control_size_key(size);
-
-    TableInspectMetrics {
-        radius: radius_metric(catalog, size, look.radius),
-        padding_x: derived_metric("list padding x", look.padding_x),
-        padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, look.padding_y),
-        row_min_height: scaffold_control_metric(size_key, "control_height", row_scale.min_height),
-        row_padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, row_scale.padding_x),
-        row_padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, row_scale.padding_y),
+impl From<luma_look_shadcn::tables::metrics::TableMetricTable> for TableInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::TableMetricTable) -> Self {
+        Self {
+            radius: table.radius,
+            padding_x: table.padding_x,
+            padding_y: table.padding_y,
+            row_min_height: table.row_min_height,
+            row_padding_x: table.row_padding_x,
+            row_padding_y: table.row_padding_y,
+        }
     }
 }

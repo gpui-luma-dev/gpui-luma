@@ -1,7 +1,7 @@
 //! Inspect metadata for `textfield`.
 
-use luma::theme::{InteractionState, ThemeMode};
-use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use luma::theme::ThemeMode;
+use luma_look_shadcn::{ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 use luma_look_shadcn::ShadcnTextFieldStyle;
 use luma::controls::textfield::TextFieldState;
@@ -24,16 +24,7 @@ pub fn inspect_textfield_color_palette(
     state: TextFieldState,
     enabled: bool,
 ) -> TextFieldInspectPalette {
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "textfield_inspect");
-    let mut colors =
-        luma_look_shadcn::tables::resolve_textfield_colors(&resolver, style, enabled, state.invalid, theme_mode)
-            .unwrap_or_else(|_| luma_look_shadcn::tables::TextFieldColorTable::fallback());
-    if state.focused && state.focus_visible && !state.invalid && enabled {
-        if let Ok(focus_border) = resolver.resolve_decl("ring") {
-            colors.border = focus_border;
-        }
-    }
+    let colors = luma_look_shadcn::tables::resolve_textfield_palette(mode, theme_mode, style, state, enabled);
 
     TextFieldInspectPalette {
         background: colors.background,
@@ -64,29 +55,8 @@ pub fn inspect_textfield_metrics(
     theme_mode: ThemeMode,
     size: luma::theme::ControlSize,
 ) -> TextFieldInspectMetrics {
-    use luma::theme::StandardBoxScale;
-
-    use crate::metrics::{
-        border_width_metric, control_size_key, focus_ring_offset_metric, focus_ring_width_metric, radius_metric,
-        scaffold_control_metric, spacing_control_metric,
-    };
-    use luma_look_shadcn::catalog::SpacingField;
-
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let catalog = ctx.catalog();
-    let metrics = ctx.metrics();
-    let scale = StandardBoxScale::compute(size, metrics, 1.0);
-
-    TextFieldInspectMetrics {
-        min_height: scaffold_control_metric(control_size_key(size), "control_height", scale.height),
-        icon_size: scaffold_control_metric(control_size_key(size), "icon_size", scale.icon_size),
-        padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, scale.padding_x),
-        padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, scale.padding_y),
-        radius: radius_metric(catalog, size, scale.radius),
-        border_width: border_width_metric(metrics),
-        focus_ring_width: focus_ring_width_metric(metrics),
-        focus_ring_offset: focus_ring_offset_metric(metrics),
-    }
+    let table = luma_look_shadcn::tables::metrics::resolve_textfield_metrics(mode, theme_mode, size);
+    table.into()
 }
 
 pub fn inspect_textfield_elevation(
@@ -156,5 +126,20 @@ mod tests {
                 .len(),
             16
         );
+    }
+}
+
+impl From<luma_look_shadcn::tables::metrics::TextFieldMetricTable> for TextFieldInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::TextFieldMetricTable) -> Self {
+        Self {
+            min_height: table.min_height,
+            icon_size: table.icon_size,
+            padding_x: table.padding_x,
+            padding_y: table.padding_y,
+            radius: table.radius,
+            border_width: table.border_width,
+            focus_ring_width: table.focus_ring_width,
+            focus_ring_offset: table.focus_ring_offset,
+        }
     }
 }

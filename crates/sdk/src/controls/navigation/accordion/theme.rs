@@ -57,6 +57,12 @@ pub trait AccordionTheme: Send + Sync {
     fn resolve_trigger(&self, state: InteractionState, size: ControlSize) -> AccordionPalette;
     fn resolve_content(&self, expanded: bool) -> AccordionContentPalette;
     fn metrics(&self) -> MetricTokens;
+
+    /// Resolve pixel-snapped layout. Themes may share this result with inspection tools.
+    /// The result must depend only on `metrics()`, `size`, and `scale_factor`, which key the layout cache.
+    fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> AccordionScale {
+        AccordionScale::compute(size, &self.metrics(), scale_factor)
+    }
 }
 
 #[derive(Clone, Debug, Default)]

@@ -199,30 +199,31 @@ pub fn sidebar_section_look(theme: &ShadcnLook) -> SidebarSectionLook {
     SidebarSectionLook {
         label_color: colors.label_color.hsla(),
         typography: theme.typography_scale(ShadcnTextSize::Xs),
-        height: 20.0,
+        height: crate::tables::metrics::resolve_sidebar_metrics(tokens.as_ref(), theme.mode(), ControlSize::Md)
+            .section_height
+            .value_px,
     }
 }
 
 fn base_item_look(_theme: &ShadcnLook, ctx: &LookContext, size: ControlSize) -> SidebarItemLook {
     let state = ctx.state;
-    let metrics = ctx.metrics();
     let typography = ctx.typography();
-    let size_metrics = metrics.for_size(size);
+    let resolved_metrics = crate::tables::metrics::resolve_sidebar_metrics(ctx.tokens, ctx.theme_mode, size);
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_item_base");
     let colors = resolve_sidebar_branch_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| SidebarBranchColorTable::fallback());
 
     SidebarItemLook {
         background: None,
-        focus_border: (state.focused && !state.disabled).then(|| crate::focus::focus_ring_or_fallback(ctx.catalog())),
+        focus_border: resolve_sidebar_focus_border(ctx.catalog(), ctx.theme_mode, state).map(|color| color.hsla()),
         foreground: colors.foreground.hsla(),
         icon_color: colors.icon_color.hsla(),
         typography: typography.text.label,
-        radius: metrics.radius(size),
-        height: 30.0,
-        padding_x: 8.0,
-        gap: size_metrics.gap,
-        icon_size: 16.0,
+        radius: resolved_metrics.item_radius.value_px,
+        height: resolved_metrics.item_height.value_px,
+        padding_x: resolved_metrics.item_padding_x.value_px,
+        gap: resolved_metrics.item_gap.value_px,
+        icon_size: resolved_metrics.item_icon_size.value_px,
     }
 }
 
@@ -333,4 +334,17 @@ mod tests {
 
         assert_eq!(look.focus_border, Some(crate::provenance::ResolvedColor::fallback_foreground().hsla()));
     }
+}
+
+/// Sidebar focus border with the same disabled-state and missing-token behavior as paint.
+pub fn resolve_sidebar_focus_border(
+    catalog: &crate::catalog::CssTokenMap,
+    theme_mode: ThemeMode,
+    state: InteractionState,
+) -> Option<ResolvedColor> {
+    (state.focused && !state.disabled).then(|| {
+        LookResolver::new(catalog, theme_mode, "sidebar_focus")
+            .resolve_decl("ring")
+            .unwrap_or_else(|_| ResolvedColor::fallback_foreground())
+    })
 }

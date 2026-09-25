@@ -1,16 +1,14 @@
 //! Inspect metadata for shared color-control chrome (slider, ring, arc, field, swatch, thumb).
 
+use crate::format_inspect_css_key;
 use gpui::{px, Hsla, Pixels};
 use luma_color::chrome_tokens::{disabled_overlay, slider_blocked_overlay, swatch_checkerboard_colors};
 use luma_color::color_arc::visual::default_color_arc_visual;
 use luma_color::color_ring::visual::default_color_ring_visual;
 use luma_color::color_slider::color_thumb::ThumbStyle;
 use luma_color::color_slider::visual::default_color_slider_visual;
-use luma::theme::{InteractionState, ThemeMode};
-use luma_look_shadcn::{
-    format_inspect_css_key, sync_color_control_theme, ColorSource, LookContext, LookResolver, MetricSource,
-    ResolvedColor, ResolvedMetric, ShadcnLook,
-};
+use luma::theme::ThemeMode;
+use luma_look_shadcn::{sync_color_control_theme, ColorSource, MetricSource, ResolvedColor, ResolvedMetric, ShadcnLook};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ColorChromeProfile {
@@ -60,11 +58,9 @@ pub fn inspect_color_chrome_sections(
 ) -> Vec<ColorChromeInspectSection> {
     sync_color_control_theme(look);
     let theme_mode = look.mode();
-    let mode = look.mode_tokens();
-    let ctx = LookContext::new(mode.as_ref(), theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "color_chrome_inspect");
-    let border = resolver.resolve_decl("border").unwrap_or_else(|_| fallback_border());
-    let background = resolver.resolve_first_decl(&["card", "background"]).unwrap_or_else(|_| fallback_background());
+    let colors = luma_look_shadcn::tables::resolve_color_chrome(look);
+    let border = colors.border;
+    let background = colors.background;
 
     let slider_enabled = default_color_slider_visual(true);
     let slider_disabled = default_color_slider_visual(false);
@@ -289,9 +285,9 @@ fn property_row(
 fn metric_property(label: &'static str, metric: ResolvedMetric) -> ColorChromeInspectPropertyRow {
     ColorChromeInspectPropertyRow {
         label,
-        value: luma_look_shadcn::format_metric_px(metric.value_px),
-        source: luma_look_shadcn::format_inspect_metric_source(&metric.source),
-        detail: luma_look_shadcn::format_inspect_metric_provenance(&metric.source),
+        value: crate::format_metric_px(metric.value_px),
+        source: crate::format_inspect_metric_source(&metric.source),
+        detail: crate::format_inspect_metric_provenance(&metric.source),
     }
 }
 
@@ -317,17 +313,6 @@ fn derived_disabled_overlay(background: &ResolvedColor, runtime_path: &'static s
 
 fn sdk_constant_color(path: &'static str, value: Hsla) -> ResolvedColor {
     ResolvedColor { value, source: ColorSource::Derived { note: format!("sdk constant · {path}") } }
-}
-
-fn fallback_border() -> ResolvedColor {
-    ResolvedColor { value: gpui::hsla(0., 0., 0.8, 1.), source: ColorSource::CssVar { token: "border".to_string() } }
-}
-
-fn fallback_background() -> ResolvedColor {
-    ResolvedColor {
-        value: gpui::hsla(0., 0., 1.0, 1.),
-        source: ColorSource::CssVar { token: "background".to_string() },
-    }
 }
 
 fn format_hsl(value: Hsla) -> String {

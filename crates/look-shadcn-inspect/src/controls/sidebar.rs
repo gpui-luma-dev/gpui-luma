@@ -3,8 +3,6 @@
 use luma::theme::{ControlSize, InteractionState, ThemeMode};
 use luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
-use luma_look_shadcn::catalog::SpacingField;
-
 pub struct SidebarContainerInspectPalette {
     pub background: ResolvedColor,
     pub foreground: ResolvedColor,
@@ -71,7 +69,7 @@ pub fn inspect_sidebar_branch_color_palette(
         .unwrap_or_else(|_| luma_look_shadcn::tables::SidebarBranchColorTable::fallback());
     SidebarItemInspectPalette {
         background: colors.background,
-        focus_border: state.focused.then(|| resolver.resolve_decl("ring").ok()).flatten(),
+        focus_border: luma_look_shadcn::tables::resolve_sidebar_focus_border(ctx.catalog(), theme_mode, state),
         foreground: colors.foreground,
         icon_color: colors.icon_color,
     }
@@ -90,7 +88,7 @@ pub fn inspect_sidebar_item_color_palette(
             .unwrap_or_else(|_| luma_look_shadcn::tables::SidebarItemColorTable::fallback());
     SidebarItemInspectPalette {
         background: colors.background,
-        focus_border: state.focused.then(|| resolver.resolve_decl("ring").ok()).flatten(),
+        focus_border: luma_look_shadcn::tables::resolve_sidebar_focus_border(ctx.catalog(), theme_mode, state),
         foreground: colors.foreground,
         icon_color: colors.icon_color,
     }
@@ -101,21 +99,8 @@ pub fn inspect_sidebar_metrics(
     theme_mode: ThemeMode,
     size: ControlSize,
 ) -> SidebarInspectMetrics {
-    use crate::metrics::{derived_metric, radius_metric, spacing_control_metric};
-
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let metrics = ctx.metrics();
-    let catalog = ctx.catalog();
-    let size_metrics = metrics.for_size(size);
-
-    SidebarInspectMetrics {
-        section_height: derived_metric("navigation sidebar section height", 20.0),
-        item_height: derived_metric("navigation sidebar item height", 30.0),
-        item_padding_x: derived_metric("navigation sidebar item padding x", 8.0),
-        item_gap: spacing_control_metric(catalog, size, SpacingField::Gap, size_metrics.gap),
-        item_radius: radius_metric(catalog, size, metrics.radius(size)),
-        item_icon_size: derived_metric("navigation sidebar icon size", 16.0),
-    }
+    let table = luma_look_shadcn::tables::metrics::resolve_sidebar_metrics(mode, theme_mode, size);
+    table.into()
 }
 
 #[cfg(test)]
@@ -158,5 +143,18 @@ mod tests {
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let palette = inspect_sidebar_container_color_palette(&mode, ThemeMode::Light);
         assert_eq!(palette.background.value, catalog.color("sidebar").expect("sidebar"));
+    }
+}
+
+impl From<luma_look_shadcn::tables::metrics::SidebarMetricTable> for SidebarInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::SidebarMetricTable) -> Self {
+        Self {
+            section_height: table.section_height,
+            item_height: table.item_height,
+            item_padding_x: table.item_padding_x,
+            item_gap: table.item_gap,
+            item_radius: table.item_radius,
+            item_icon_size: table.item_icon_size,
+        }
     }
 }

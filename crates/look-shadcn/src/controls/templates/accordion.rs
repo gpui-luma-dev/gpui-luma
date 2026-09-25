@@ -25,6 +25,16 @@ impl AccordionTheme for ShadcnAccordionTheme {
         accordion_content_palette(tokens.as_ref(), self.theme.mode(), expanded)
     }
 
+    fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> luma::controls::accordion::AccordionScale {
+        crate::tables::metrics::resolve_accordion_metrics(
+            &self.theme.mode_tokens(),
+            self.theme.mode(),
+            size,
+            scale_factor,
+        )
+        .scale()
+    }
+
     fn metrics(&self) -> luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }

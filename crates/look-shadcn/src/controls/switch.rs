@@ -128,6 +128,68 @@ fn apply_switch_radius(
     scale
 }
 
+/// Final switch colors shared by runtime and inspection.
+#[derive(Clone, Debug)]
+pub struct SwitchResolvedColors {
+    pub track_background: ResolvedColor,
+    pub track_border: ResolvedColor,
+    pub thumb_background: ResolvedColor,
+    pub thumb_border: ResolvedColor,
+    pub label_color: ResolvedColor,
+}
+
+pub fn resolve_switch_palette(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    on: bool,
+    state: InteractionState,
+) -> SwitchResolvedColors {
+    let content_only = style == ShadcnButtonStyle::ContentOnly;
+    let indicator_style = if content_only {
+        ShadcnButtonStyle::Primary
+    } else {
+        style
+    };
+    let ctx = LookContext::new(mode, theme_mode, state);
+    let catalog = ctx.catalog();
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "switch");
+    let colors = resolve_switch_colors(&resolver, indicator_style, on, state.disabled)
+        .unwrap_or_else(|_| SwitchColorTable::fallback());
+
+    let track_background = colors.track_background;
+    let track_border = if state.focused && !state.disabled {
+        resolver.resolve_decl("ring").unwrap_or_else(|_| ResolvedColor::fallback_foreground())
+    } else if on && !state.disabled {
+        track_background.clone()
+    } else {
+        resolver.resolve_decl("border").unwrap_or_else(|_| ResolvedColor::fallback_foreground())
+    };
+    let mut thumb_background = colors.thumb_background;
+    let mut thumb_border = if on && !state.disabled {
+        thumb_background.clone()
+    } else {
+        colors.thumb_border
+    };
+    if content_only {
+        let value = if theme_mode == ThemeMode::Dark {
+            gpui::hsla(0.0, 0.0, 0.0, 1.0)
+        } else {
+            gpui::hsla(0.0, 0.0, 1.0, 1.0)
+        };
+        thumb_background =
+            ResolvedColor { value, source: crate::ColorSource::Derived { note: "content-only thumb contrast".into() } };
+        thumb_border = thumb_background.clone();
+    }
+    SwitchResolvedColors {
+        track_background,
+        track_border,
+        thumb_background,
+        thumb_border,
+        label_color: colors.label_color,
+    }
+}
+
 pub fn switch_look(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
@@ -137,47 +199,16 @@ pub fn switch_look(
     size: ControlSize,
 ) -> SwitchPalette {
     let content_only = style == ShadcnButtonStyle::ContentOnly;
-    let indicator_style = if content_only {
-        ShadcnButtonStyle::Primary
-    } else {
-        style
-    };
     let ctx = LookContext::new(mode, theme_mode, state);
-    let state = ctx.state;
     let catalog = ctx.catalog();
     let typography = ctx.typography();
     let layer = state.layer();
-    let resolver = LookResolver::new(catalog, ctx.theme_mode, "switch");
-    let colors = resolve_switch_colors(&resolver, indicator_style, on, state.disabled)
-        .unwrap_or_else(|_| SwitchColorTable::fallback());
-
-    let track_background = colors.track_background.hsla();
-    let track_border = if state.focused && !state.disabled {
-        crate::focus::focus_ring_or_fallback(catalog)
-    } else if on && !state.disabled {
-        track_background
-    } else {
-        crate::resolve::resolve_color_or_fallback(catalog, "border")
-    };
-    let mut thumb_background = colors.thumb_background.hsla();
-    let mut thumb_border = if on && !state.disabled {
-        thumb_background
-    } else {
-        colors.thumb_border.hsla()
-    };
-    if content_only {
-        thumb_background = if theme_mode == ThemeMode::Dark {
-            gpui::hsla(0.0, 0.0, 0.0, 1.0)
-        } else {
-            gpui::hsla(0.0, 0.0, 1.0, 1.0)
-        };
-        thumb_border = thumb_background;
-    }
+    let colors = resolve_switch_palette(mode, theme_mode, style, on, state);
     SwitchPalette {
-        track_background,
-        track_border,
-        thumb_background,
-        thumb_border,
+        track_background: colors.track_background.hsla(),
+        track_border: colors.track_border.hsla(),
+        thumb_background: colors.thumb_background.hsla(),
+        thumb_border: colors.thumb_border.hsla(),
         thumb_shadow: if content_only {
             Vec::new()
         } else {

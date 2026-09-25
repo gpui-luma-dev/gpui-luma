@@ -1,4 +1,4 @@
-//! Public color-table resolvers for downstream inspect tooling.
+//! Shared color, metric, and typography resolution for rendering and inspection.
 //!
 //! Rule metadata lives in [`crate::stylesheet`] and is keyed by [`crate::embedded_stylesheet`].
 
@@ -38,3 +38,28 @@ pub use crate::controls::tabs::{
 };
 pub use crate::controls::textfield::{resolve_textfield_colors, TextFieldColorTable};
 pub use crate::controls::tree_view::{resolve_tree_view_row_colors, TreeViewRowColorTable};
+
+pub use crate::controls::checkbox::{resolve_checkbox_palette, CheckboxResolvedColors};
+pub use crate::controls::radio::{resolve_radio_palette, RadioResolvedColors};
+
+/// Shared metric values and source metadata.
+pub mod metrics;
+
+pub use crate::controls::button::resolve_button_palette;
+
+pub use crate::controls::sidebar::resolve_sidebar_focus_border;
+
+pub use crate::controls::switch::{resolve_switch_palette, SwitchResolvedColors};
+
+/// Typed typography shared by rendering and inspection.
+pub mod typography;
+
+pub use crate::controls::textfield::resolve_textfield_palette;
+
+pub use crate::controls::context_menu::{resolve_context_menu_colors, ContextMenuColorTable};
+
+mod toolbar;
+pub use toolbar::{resolve_toolbar_colors, ToolbarColorTable};
+
+mod color_chrome;
+pub use color_chrome::{resolve_color_chrome, ColorChromeTable};

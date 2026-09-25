@@ -93,11 +93,16 @@ pub fn sidebar_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str
 pub fn tabs_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
     tabs_metrics_layout_section(look, diagram_id, &ShadcnInspect::new(look).inspect_tabs_metrics(control_size(size_id)))
 }
-pub fn accordion_layout_section(look: &ShadcnLook, diagram_id: &str, size_id: &str) -> InspectLayoutSection {
+pub fn accordion_layout_section(
+    look: &ShadcnLook,
+    diagram_id: &str,
+    size_id: &str,
+    scale_factor: f32,
+) -> InspectLayoutSection {
     accordion_metrics_layout_section(
         look,
         diagram_id,
-        &ShadcnInspect::new(look).inspect_accordion_metrics(control_size(size_id)),
+        &ShadcnInspect::new(look).inspect_accordion_metrics_at_scale(control_size(size_id), scale_factor),
     )
 }
 fn table_metrics_layout_section(
@@ -249,7 +254,6 @@ fn sidebar_metrics_layout_section(
             ("section height", &metrics.section_height),
             ("item height", &metrics.item_height),
             ("item padding x", &metrics.item_padding_x),
-            ("item gap", &metrics.item_gap),
             ("item radius", &metrics.item_radius),
             ("item icon size", &metrics.item_icon_size),
         ]),
@@ -312,6 +316,7 @@ fn accordion_metrics_layout_section(
             ("padding y", &metrics.padding_y),
             ("content padding y", &metrics.content_padding_y),
             ("radius", &metrics.radius),
+            ("item gap", &metrics.item_gap),
             ("inner gap", &metrics.inner_gap),
             ("icon size", &metrics.icon_size),
             ("chevron size", &metrics.chevron_size),

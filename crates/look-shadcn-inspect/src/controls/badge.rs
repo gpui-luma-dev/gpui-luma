@@ -1,9 +1,7 @@
 //! Inspect metadata for `badge`.
 
 use luma::theme::{ControlSize, ThemeMode};
-use luma_look_shadcn::{BadgeVariant, ResolvedColor, ResolvedMetric, ShadcnLook, ShadcnModeTokens, ShadcnSize};
-
-use crate::metrics::{derived_metric, pill_radius_metric, spacing_control_metric};
+use luma_look_shadcn::{BadgeVariant, ResolvedColor, ResolvedMetric, ShadcnLook, ShadcnModeTokens};
 
 pub struct BadgeInspectPalette {
     pub background: ResolvedColor,
@@ -34,33 +32,8 @@ pub fn inspect_badge_metrics(
     size: ControlSize,
     _theme_mode: ThemeMode,
 ) -> BadgeInspectMetrics {
-    let look = luma_look_shadcn::badge_look(
-        look,
-        variant,
-        match size {
-            ControlSize::Sm => ShadcnSize::Sm,
-            ControlSize::Md => ShadcnSize::Md,
-            ControlSize::Lg => ShadcnSize::Lg,
-        },
-    );
-
-    BadgeInspectMetrics {
-        min_height: derived_metric("badge min height", look.min_height),
-        padding_x: spacing_control_metric(
-            &mode.catalog,
-            size,
-            luma_look_shadcn::catalog::SpacingField::PaddingX,
-            look.padding_x,
-        ),
-        padding_y: derived_metric("badge vertical inset from typography", look.padding_y),
-        gap: spacing_control_metric(&mode.catalog, size, luma_look_shadcn::catalog::SpacingField::Gap, look.gap),
-        icon_size: derived_metric("badge icon size follows typography size", look.icon_size),
-        radius: pill_radius_metric(metrics_catalog(mode), look.radius),
-    }
-}
-
-fn metrics_catalog(mode: &ShadcnModeTokens) -> &luma_look_shadcn::catalog::CssTokenMap {
-    &mode.catalog
+    let table = luma_look_shadcn::tables::metrics::resolve_badge_metrics(mode, look, variant, size, _theme_mode);
+    table.into()
 }
 
 #[cfg(test)]
@@ -88,5 +61,18 @@ mod tests {
         let metrics =
             inspect_badge_metrics(mode.as_ref(), &look, BadgeVariant::Default, ControlSize::Md, ThemeMode::Light);
         assert!(metrics.radius.value_px >= mode.metrics.radius.pill - f32::EPSILON);
+    }
+}
+
+impl From<luma_look_shadcn::tables::metrics::BadgeMetricTable> for BadgeInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::BadgeMetricTable) -> Self {
+        Self {
+            min_height: table.min_height,
+            padding_x: table.padding_x,
+            padding_y: table.padding_y,
+            gap: table.gap,
+            icon_size: table.icon_size,
+            radius: table.radius,
+        }
     }
 }

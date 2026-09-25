@@ -70,6 +70,7 @@ pub struct InspectorSelection<'a> {
     pub state_id: &'a str,
     pub size_id: &'a str,
     pub value_id: &'a str,
+    pub scale_factor: f32,
 }
 
 #[derive(Clone, Debug)]

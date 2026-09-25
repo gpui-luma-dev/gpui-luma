@@ -24,6 +24,7 @@ pub struct AccordionInspectMetrics {
     pub padding_y: ResolvedMetric,
     pub content_padding_y: ResolvedMetric,
     pub radius: ResolvedMetric,
+    pub item_gap: ResolvedMetric,
     pub inner_gap: ResolvedMetric,
     pub icon_size: ResolvedMetric,
     pub chevron_size: ResolvedMetric,
@@ -64,30 +65,18 @@ pub fn inspect_accordion_metrics(
     theme_mode: ThemeMode,
     size: luma::theme::ControlSize,
 ) -> AccordionInspectMetrics {
-    use luma::controls::accordion::AccordionScale;
+    inspect_accordion_metrics_at_scale(mode, theme_mode, size, 1.0)
+}
 
-    use luma_look_shadcn::catalog::SpacingField;
-    use crate::metrics::{control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};
-
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let metrics = ctx.metrics();
-    let catalog = ctx.catalog();
-    let scale = AccordionScale::compute(size, metrics, 1.0);
-    let size_key = control_size_key(size);
-
-    AccordionInspectMetrics {
-        trigger_height: scaffold_control_metric(size_key, "control_height", scale.trigger_height),
-        padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, scale.padding_x),
-        padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, scale.padding_y),
-        content_padding_y: derived_metric(
-            format!("{size_key} content padding y = padding_y × 1.5"),
-            scale.content_padding_y,
-        ),
-        radius: radius_metric(catalog, size, scale.radius),
-        inner_gap: spacing_control_metric(catalog, size, SpacingField::Gap, scale.inner_gap),
-        icon_size: derived_metric("accordion icon size", scale.icon_size),
-        chevron_size: derived_metric("accordion chevron size", scale.chevron_size),
-    }
+/// Inspect the same pixel-snapped geometry rendered at the window scale factor.
+pub fn inspect_accordion_metrics_at_scale(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    size: luma::theme::ControlSize,
+    scale_factor: f32,
+) -> AccordionInspectMetrics {
+    let table = luma_look_shadcn::tables::metrics::resolve_accordion_metrics(mode, theme_mode, size, scale_factor);
+    table.into()
 }
 
 #[cfg(test)]
@@ -128,5 +117,21 @@ mod tests {
             palette.foreground.source,
             ColorSource::CssVar { ref token } if token == "accent-foreground"
         ));
+    }
+}
+
+impl From<luma_look_shadcn::tables::metrics::AccordionMetricTable> for AccordionInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::AccordionMetricTable) -> Self {
+        Self {
+            trigger_height: table.trigger_height,
+            padding_x: table.padding_x,
+            padding_y: table.padding_y,
+            content_padding_y: table.content_padding_y,
+            radius: table.radius,
+            item_gap: table.item_gap,
+            inner_gap: table.inner_gap,
+            icon_size: table.icon_size,
+            chevron_size: table.chevron_size,
+        }
     }
 }

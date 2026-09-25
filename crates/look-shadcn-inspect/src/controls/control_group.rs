@@ -33,18 +33,8 @@ pub fn inspect_control_group_metrics(
     theme_mode: ThemeMode,
     size: ControlSize,
 ) -> ControlGroupInspectMetrics {
-    use crate::metrics::{derived_metric, radius_metric};
-
-    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let catalog = ctx.catalog();
-    let look = luma_look_shadcn::paint::control_group_list_look(mode, true);
-
-    ControlGroupInspectMetrics {
-        radius: radius_metric(catalog, size, look.radius),
-        padding_x: derived_metric("control group padding x", look.padding_x),
-        padding_y: derived_metric("control group padding y", look.padding_y),
-        gap: derived_metric("control group gap", look.gap),
-    }
+    let table = luma_look_shadcn::tables::metrics::resolve_control_group_metrics(mode, theme_mode, size);
+    table.into()
 }
 
 #[cfg(test)]
@@ -70,5 +60,11 @@ mod tests {
         let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
         let palette = inspect_control_group_list_color_palette(&mode, ThemeMode::Light, false);
         assert_eq!(palette.background.value, muted_foreground);
+    }
+}
+
+impl From<luma_look_shadcn::tables::metrics::ControlGroupMetricTable> for ControlGroupInspectMetrics {
+    fn from(table: luma_look_shadcn::tables::metrics::ControlGroupMetricTable) -> Self {
+        Self { radius: table.radius, padding_x: table.padding_x, padding_y: table.padding_y, gap: table.gap }
     }
 }
