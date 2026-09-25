@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, Context, Entity, FocusHandle, IntoElement, ParentElement, Render, Subscription, Window, div,
+    AnyElement, Context, Entity, FocusHandle, Hsla, IntoElement, ParentElement, Render, Subscription, Window, div,
     prelude::*, px,
 };
 use luma::controls::button::{Button, ButtonEvent};
@@ -115,8 +115,9 @@ impl Render for IconRailShellApp {
             split_view.set_panes(
                 render_pane(move || sidebar.clone()),
                 render_pane(move || {
+                    let background = look.sidebar_theme().resolve_container().background;
                     wrap_content_pane(
-                        icon_rail_content_pane(toggle_button.clone()),
+                        icon_rail_content_pane(toggle_button.clone(), background),
                         pane_focus.clone(),
                         &look,
                         sans_family.clone(),
@@ -135,14 +136,15 @@ impl Render for IconRailShellApp {
     }
 }
 
-fn icon_rail_content_pane(toggle_button: Entity<Button<()>>) -> AnyElement {
+fn icon_rail_content_pane(toggle_button: Entity<Button<()>>, background: Hsla) -> AnyElement {
     div()
         .size_full()
+        .bg(background)
         .flex()
         .flex_col()
         .gap_3()
         .p_3()
         .child(toggle_button)
-        .child(div().flex_1().min_h_0().child(content::shell_content_pane()))
+        .child(div().flex_1().min_h_0().child(content::shell_content_pane_with_background(background)))
         .into_any_element()
 }
