@@ -1,9 +1,14 @@
-use gpui::{AnyElement, IntoElement, ParentElement, Styled, div, px, rgb};
+use gpui::{AnyElement, Hsla, IntoElement, ParentElement, Styled, div, px, rgb};
 
 pub fn shell_content_pane() -> AnyElement {
+    shell_content_pane_with_background(rgb(0x000000).into())
+}
+
+/// Render the shared content with a custom outer background fill.
+pub fn shell_content_pane_with_background(background: Hsla) -> AnyElement {
     div()
         .size_full()
-        .bg(rgb(0x000000))
+        .bg(background)
         .p(px(10.0))
         .child(
             div()

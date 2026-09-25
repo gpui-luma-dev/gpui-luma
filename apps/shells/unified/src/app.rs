@@ -88,7 +88,13 @@ impl Render for UnifiedShellApp {
             split_view.set_panes(
                 render_pane(move || sidebar.clone()),
                 render_pane(move || {
-                    wrap_content_pane(content::shell_content_pane(), pane_focus.clone(), &look, sans_family.clone())
+                    let background = look.sidebar_theme().resolve_container().background;
+                    wrap_content_pane(
+                        content::shell_content_pane_with_background(background),
+                        pane_focus.clone(),
+                        &look,
+                        sans_family.clone(),
+                    )
                 }),
                 cx,
             );
