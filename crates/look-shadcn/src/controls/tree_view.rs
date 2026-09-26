@@ -5,11 +5,12 @@
 //! | Row label      | `sidebar-foreground`               |
 //! | Row hover bg   | `sidebar-accent` (layer)         |
 //! | Row pressed bg | `accent` (layer)                   |
+//! | Selected row bg / fg | `primary` / `primary-foreground` |
 //! | Disabled label | `muted-foreground`                 |
 //! | Icon / chevron | `sidebar-foreground`               |
 
 use luma::controls::tree_view::TreeViewPalette;
-use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use luma::theme::{ControlSize, InteractionLayer, InteractionState};
 
 use super::apply_button_metrics_typography;
 
@@ -66,11 +67,11 @@ pub fn resolve_tree_view_row_colors_with_stylesheet(
 
 pub fn tree_view_row_palette(
     mode: &ShadcnModeTokens,
-    _selected: bool,
+    selected: bool,
     state: InteractionState,
     size: ControlSize,
 ) -> TreeViewPalette {
-    let ctx = LookContext::new(mode, ThemeMode::Light, state);
+    let ctx = LookContext::new(mode, mode.theme_mode, state);
     let typography = ctx.typography();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tree_view_row");
     let colors = resolve_tree_view_row_colors(&resolver, state.disabled, state.layer())
@@ -79,11 +80,28 @@ pub fn tree_view_row_palette(
     let mut row_typography = typography.text.label;
     apply_button_metrics_typography(&mut row_typography, mode, size);
 
+    // Selection persists independently of hover and the active keyboard row.
+    // Keep the matching foreground on labels and icons for themed contrast.
+    let selected = selected && !state.disabled;
+    let foreground = if selected {
+        mode.palette.selected_foreground
+    } else {
+        colors.foreground.hsla()
+    };
+
     TreeViewPalette {
-        background: colors.background.map(|color| color.hsla()),
-        foreground: colors.foreground.hsla(),
-        icon_color: colors.icon_color.hsla(),
-        chevron_color: colors.chevron_color.hsla(),
+        background: if selected {
+            Some(mode.palette.selected_background)
+        } else {
+            colors.background.map(|color| color.hsla())
+        },
+        foreground,
+        icon_color: if selected { foreground } else { colors.icon_color.hsla() },
+        chevron_color: if selected {
+            foreground
+        } else {
+            colors.chevron_color.hsla()
+        },
         typography: row_typography,
         font_family: typography.font.sans.family.clone().into(),
     }
@@ -137,5 +155,30 @@ mod tests {
             .background
             .map(|color| color.hsla());
         assert_eq!(palette.background, expected);
+    }
+
+    #[test]
+    fn tree_view_selection_remains_visible_without_hover_or_focus_in_both_modes() {
+        for theme_mode in [ThemeMode::Light, ThemeMode::Dark] {
+            let mode = ShadcnModeTokens::from_catalog(sample_catalog(), theme_mode).expect("catalog");
+            for state in [
+                luma::theme::InteractionState::default(),
+                luma::theme::InteractionState { hovered: true, ..Default::default() },
+                luma::theme::InteractionState { pressed: true, ..Default::default() },
+            ] {
+                let selected = tree_view_row_palette(&mode, true, state, ControlSize::Md);
+                assert_eq!(selected.background, Some(mode.palette.selected_background));
+                assert_eq!(selected.foreground, mode.palette.selected_foreground);
+                assert_eq!(selected.icon_color, selected.foreground);
+                assert_eq!(selected.chevron_color, selected.foreground);
+            }
+            let idle = tree_view_row_palette(&mode, false, Default::default(), ControlSize::Md);
+            assert_eq!(idle.background, None);
+            let disabled = luma::theme::InteractionState { disabled: true, ..Default::default() };
+            let selected = tree_view_row_palette(&mode, true, disabled, ControlSize::Md);
+            let unselected = tree_view_row_palette(&mode, false, disabled, ControlSize::Md);
+            assert_eq!(selected.background, unselected.background);
+            assert_eq!(selected.foreground, unselected.foreground);
+        }
     }
 }

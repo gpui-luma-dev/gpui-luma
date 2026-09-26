@@ -88,14 +88,7 @@ fn edge_scroll_offset(
         ListBoxAxis::Vertical => (pointer.y - bounds.top(), bounds.size.height, maximum.y, &mut offset.y),
         ListBoxAxis::Horizontal => (pointer.x - bounds.left(), bounds.size.width, maximum.x, &mut offset.x),
     };
-    let edge = 32.0_f32.min(f32::from(extent) / 4.0);
-    if edge <= 0.0 {
-        return offset;
-    }
-    let leading = ((edge - f32::from(position)) / edge).clamp(0.0, 1.0);
-    let trailing = ((edge - f32::from(extent - position)) / edge).clamp(0.0, 1.0);
-    // Linear edge response; cap long frames and clamp to measured limits.
-    let delta = (leading - trailing) * max_speed * elapsed.as_secs_f32().min(0.05);
+    let delta = -crate::infra::drag_drop::edge_scroll_delta(f32::from(position), f32::from(extent), elapsed, max_speed);
     *value = px((f32::from(*value) + delta).clamp(-f32::from(limit).max(0.0), 0.0));
     offset
 }

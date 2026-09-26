@@ -43,6 +43,8 @@ pub enum ControlKeyProfile {
     ScrollOffset,
     Menu,
     Selector,
+    TreeView,
+    TreeViewExtended,
     ContextMenu,
     Navigation,
     TabList,
@@ -57,6 +59,8 @@ impl ControlKeyProfile {
             Self::ScrollOffset => SCROLL_OFFSET_CONTEXT,
             Self::Menu => MENU_CONTROL_CONTEXT,
             Self::Selector => SELECTOR_CONTROL_CONTEXT,
+            Self::TreeView => "LumaTreeView",
+            Self::TreeViewExtended => "LumaTreeViewExtended",
             Self::ContextMenu => CONTEXT_MENU_CONTROL_CONTEXT,
             Self::Navigation => NAVIGATION_CONTEXT,
             Self::TabList => TAB_LIST_CONTEXT,
@@ -122,6 +126,30 @@ impl ControlKeyProfile {
                 KeyBinding::new("enter", ActivateControl, Some(context)),
                 KeyBinding::new("space", ActivateControl, Some(context)),
             ],
+            Self::TreeView => vec![
+                KeyBinding::new("escape", crate::focus::EscapeFocus, Some(context)),
+                KeyBinding::new("down", SelectNextItem, Some(context)),
+                KeyBinding::new("up", SelectPreviousItem, Some(context)),
+                KeyBinding::new("pagedown", IncreaseValueLarge, Some(context)),
+                KeyBinding::new("pageup", DecreaseValueLarge, Some(context)),
+                KeyBinding::new("home", SelectFirstItem, Some(context)),
+                KeyBinding::new("end", SelectLastItem, Some(context)),
+                KeyBinding::new("cmd-up", SelectFirstItem, Some(context)),
+                KeyBinding::new("cmd-down", SelectLastItem, Some(context)),
+                KeyBinding::new("ctrl-a", SelectFirstItem, Some(context)),
+                KeyBinding::new("ctrl-e", SelectLastItem, Some(context)),
+                KeyBinding::new("right", crate::controls::tree_view::ExpandNode, Some(context)),
+                KeyBinding::new("left", crate::controls::tree_view::CollapseNode, Some(context)),
+                KeyBinding::new("enter", ActivateControl, Some(context)),
+                KeyBinding::new("space", ActivateControl, Some(context)),
+            ],
+            Self::TreeViewExtended => vec![
+                KeyBinding::new("escape", crate::focus::EscapeFocus, Some(context)),
+                KeyBinding::new("pagedown", IncreaseValueLarge, Some(context)),
+                KeyBinding::new("pageup", DecreaseValueLarge, Some(context)),
+                KeyBinding::new("right", crate::controls::tree_view::ExpandNode, Some(context)),
+                KeyBinding::new("left", crate::controls::tree_view::CollapseNode, Some(context)),
+            ],
             Self::ContextMenu => vec![
                 KeyBinding::new("shift-f10", OpenContextMenu, Some(context)),
                 KeyBinding::new("menu", OpenContextMenu, Some(context)),
@@ -182,6 +210,8 @@ pub fn default_control_key_bindings() -> Vec<KeyBinding> {
         ControlKeyProfile::ScrollOffset,
         ControlKeyProfile::Menu,
         ControlKeyProfile::Selector,
+        ControlKeyProfile::TreeView,
+        ControlKeyProfile::TreeViewExtended,
         ControlKeyProfile::ContextMenu,
         ControlKeyProfile::Navigation,
         ControlKeyProfile::TabList,
@@ -203,7 +233,7 @@ mod tests {
 
     #[test]
     fn default_control_key_bindings_are_parseable() {
-        assert_eq!(default_control_key_bindings().len(), 83);
+        assert_eq!(default_control_key_bindings().len(), 103);
     }
 
     #[test]
@@ -214,6 +244,8 @@ mod tests {
         assert_eq!(ControlKeyProfile::ScrollOffset.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::Menu.default_bindings().len(), 12);
         assert_eq!(ControlKeyProfile::Selector.default_bindings().len(), 12);
+        assert_eq!(ControlKeyProfile::TreeView.default_bindings().len(), 15);
+        assert_eq!(ControlKeyProfile::TreeViewExtended.default_bindings().len(), 5);
         assert_eq!(ControlKeyProfile::ContextMenu.default_bindings().len(), 14);
         assert_eq!(ControlKeyProfile::Navigation.default_bindings().len(), 12);
         assert_eq!(ControlKeyProfile::TabList.default_bindings().len(), 12);

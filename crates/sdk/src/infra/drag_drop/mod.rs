@@ -221,3 +221,14 @@ mod tests;
 
 #[cfg(all(test, feature = "test-support"))]
 mod dispatch_tests;
+
+/// Shared linear edge response in content coordinates; positive moves forward.
+pub(crate) fn edge_scroll_delta(position: f32, extent: f32, elapsed: std::time::Duration, max_speed: f32) -> f32 {
+    let edge = 32.0_f32.min(extent / 4.0);
+    if edge <= 0.0 {
+        return 0.0;
+    }
+    let leading = ((edge - position) / edge).clamp(0.0, 1.0);
+    let trailing = ((edge - (extent - position)) / edge).clamp(0.0, 1.0);
+    (trailing - leading) * max_speed * elapsed.as_secs_f32().min(0.05)
+}

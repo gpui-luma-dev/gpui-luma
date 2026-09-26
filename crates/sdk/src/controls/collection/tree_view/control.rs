@@ -10,15 +10,29 @@ use super::{
     TreeViewTemplateHandlers,
 };
 use crate::motion::DisclosureMotion;
+use crate::infra::drag_drop::DragDropElementExt;
 use crate::infra::state::{CompositeItemState, ControlFocusState};
 use crate::key_handling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
 use crate::theme::observe_theme_revision;
+use super::state::TreeIndex;
+use super::TreeViewError;
 
 const EXPAND_VISIBLE_EPSILON: f32 = 0.001;
+// Tiny animated rows can defeat viewport virtualization. Large simultaneous
+// transitions settle before layout instead of constructing thousands of rows.
+const MAX_ANIMATED_DESCENDANTS: usize = 256;
 
-gpui::actions!(tree_view, [ExpandNode, CollapseNode]);
+mod viewport;
+mod selection;
+mod position;
+mod projection;
+mod drag;
+mod transfer;
+pub use transfer::TreeViewSubtreeState;
+
+gpui::actions!(tree_view, [ExpandNode, CollapseNode, SelectAllNodes, ClearSelectedNodes]);
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
@@ -26,6 +40,9 @@ pub enum TreeViewEvent<T>
 where
     T: Clone,
 {
+    DragDrop(super::TreeViewDragEvent),
+    NodeActivated { node_id: SharedString, data: T },
+    SelectionPolicyChanged { policy: super::TreeViewSelectionPolicy },
     NodeExpanded { node_id: SharedString, data: T },
     NodeCollapsed { node_id: SharedString, data: T },
     SelectionChanged { selected_ids: HashSet<SharedString> },
@@ -58,17 +75,31 @@ pub struct TreeViewControl<T>
 where
     T: Clone + Send + Sync + 'static,
 {
-    model: TreeViewModel<T>,
+    pub(super) model: TreeViewModel<T>,
+    pub(super) revision: u64,
+    pub(super) drag_revision: Option<u64>,
+    drag_scroll_scheduled: bool,
+    drag_scroll_last_frame: Option<std::time::Instant>,
     focus_handle: FocusHandle,
     focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
     list_state: ListState,
+    position: Option<position::PositionRequest>,
+    position_frame_scheduled: bool,
+    scrollbar: Option<gpui::Entity<crate::controls::scrollbar::Scrollbar>>,
+    _scrollbar_subscription: Option<Subscription>,
+    scrollbar_active: bool,
+    scrollbar_hide_task: Option<gpui::Task<()>>,
+    scrollbar_scrollable: bool,
+    viewport_offset: Option<gpui::ListOffset>,
+    projection: super::projection::Projection,
     expanded_ids: HashSet<SharedString>,
     expand_transitions: HashMap<SharedString, DisclosureMotion>,
     selected_ids: HashSet<SharedString>,
     active_node_id: Option<SharedString>,
-    hovered_index: Option<usize>,
-    pressed_index: Option<usize>,
+    selection_anchor: Option<SharedString>,
+    hovered_node_id: Option<SharedString>,
+    pub(super) pressed_node_id: Option<SharedString>,
     flat_cache: Vec<FlatNodeWrapper<T>>,
     emitted_scroll_top_index: usize,
     emitted_focused: bool,
@@ -83,19 +114,47 @@ where
     pub(crate) fn from_builder(builder: TreeViewBuilder<T>, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
+        let scrollbar = builder.model.scrollbar_template.as_ref().map(|template| {
+            crate::controls::scrollbar::Scrollbar::new(format!("{}-scrollbar", builder.model.id))
+                .vertical()
+                .template(template.clone())
+                .spawn(cx)
+        });
+        let scrollbar_subscription = scrollbar
+            .as_ref()
+            .map(|scrollbar| cx.subscribe(scrollbar, |this, _, event, cx| this.handle_scrollbar(event, cx)));
 
+        let projection = super::projection::Projection::new(
+            &builder.model.items,
+            builder.model.filter.as_ref(),
+            builder.model.sort.as_ref(),
+        );
         let mut control = Self {
             model: builder.model,
+            revision: 0,
+            drag_revision: None,
+            drag_scroll_scheduled: false,
+            drag_scroll_last_frame: None,
             focus_handle: cx.focus_handle().tab_stop(enabled),
             focus_in_subscription: None,
             focus_out_subscription: None,
             list_state: ListState::new(0, ListAlignment::Top, px(480.0)),
+            position: None,
+            position_frame_scheduled: false,
+            scrollbar,
+            _scrollbar_subscription: scrollbar_subscription,
+            scrollbar_active: false,
+            scrollbar_hide_task: None,
+            scrollbar_scrollable: false,
+            viewport_offset: None,
+            projection,
             expanded_ids: HashSet::new(),
             expand_transitions: HashMap::new(),
             selected_ids: HashSet::new(),
             active_node_id: None,
-            hovered_index: None,
-            pressed_index: None,
+            selection_anchor: None,
+            hovered_node_id: None,
+            pressed_node_id: None,
             flat_cache: Vec::new(),
             emitted_scroll_top_index: 0,
             emitted_focused: false,
@@ -103,7 +162,7 @@ where
 
         control.populate_initial_expands();
         control.sync_expand_transitions_for_tree();
-        control.rebuild_flat_cache(None, cx);
+        control.rebuild_flat_cache(cx);
 
         control
     }
@@ -120,42 +179,150 @@ where
         self.active_node_id.as_ref()
     }
 
+    /// Effective expansion, including ancestor paths opened by a filter.
     pub fn is_expanded(&self, node_id: &SharedString) -> bool {
-        self.expanded_ids.contains(node_id)
+        self.expanded_ids.contains(node_id) || self.projection.forced_expanded.contains(node_id)
     }
 
+    /// Reset items, selection, active state, and expansion. Duplicate IDs leave
+    /// the control unchanged; use [`Self::try_set_items`] to handle errors.
     pub fn set_items(&mut self, items: impl IntoIterator<Item = TreeNode<T>>, cx: &mut Context<Self>) {
-        self.model.items = items.into_iter().collect();
-        self.selected_ids.clear();
-        self.active_node_id = None;
-        self.hovered_index = None;
-        self.pressed_index = None;
-        self.expanded_ids.clear();
+        let _ = self.try_set_items(items, cx);
+    }
+
+    /// Validated counterpart of [`Self::set_items`]. Invalid data changes nothing.
+    pub fn try_set_items(
+        &mut self,
+        items: impl IntoIterator<Item = TreeNode<T>>,
+        cx: &mut Context<Self>,
+    ) -> Result<(), TreeViewError> {
+        self.update_items(items.into_iter().collect(), false, cx)
+    }
+
+    /// Replace loaded data while preserving state by ID. Selected enabled nodes
+    /// remain selected even under collapsed parents. Surviving branches retain
+    /// user expansion; only new branches use `initially_expanded`.
+    ///
+    /// Active state falls back to a visible enabled ancestor, then the nearest
+    /// displayed enabled row. An inactive tree stays inactive. Selection and
+    /// active events are emitted only when changed, with final-state payloads.
+    /// Expansion hints are applied without synthetic expand/collapse events.
+    /// All IDs are validated before mutation. Content always repaints, and the
+    /// top row's key/offset is retained when that row remains displayed.
+    pub fn replace_items(
+        &mut self,
+        items: impl IntoIterator<Item = TreeNode<T>>,
+        cx: &mut Context<Self>,
+    ) -> Result<(), TreeViewError> {
+        self.update_items(items.into_iter().collect(), true, cx)
+    }
+
+    fn update_items(
+        &mut self,
+        items: Vec<TreeNode<T>>,
+        preserve: bool,
+        cx: &mut Context<Self>,
+    ) -> Result<(), TreeViewError> {
+        let index = TreeIndex::new(&items)?;
+        self.cancel_position();
+        let selected_before = self.selected_ids.clone();
+        let active_before = self.active_node_id.clone();
+        let expanded = if preserve {
+            index.reconcile_expanded(&self.model.index, &self.expanded_ids)
+        } else {
+            index.initial_expanded()
+        };
+        let projection =
+            super::projection::Projection::new(&items, self.model.filter.as_ref(), self.model.sort.as_ref());
+        let active = if preserve {
+            index.reconcile_active(
+                &self.model.index,
+                active_before.as_ref(),
+                &self.visible_ids(),
+                &projection.visible(&items, &expanded),
+            )
+        } else {
+            None
+        };
+        self.selection_anchor = if preserve {
+            index.reconcile_active(
+                &self.model.index,
+                self.selection_anchor.as_ref(),
+                &self.visible_ids(),
+                &projection.visible(&items, &expanded),
+            )
+        } else {
+            None
+        };
+        let old_top = self.list_state.logical_scroll_top();
+        let top_id = self.flat_cache.get(old_top.item_ix).map(|node| node.id.clone());
+        self.clear_hovered_node_id(cx);
+        self.pressed_node_id = None;
+        self.selected_ids.retain(|id| preserve && index.nodes.get(id).is_some_and(|info| info.enabled));
+        self.active_node_id = active;
+        self.expanded_ids = expanded;
+        self.revision = self.revision.wrapping_add(1);
+        self.model.items = items;
+        self.model.index = index;
+        self.projection = projection;
+        // Replacement settles old geometry; motion tied to old ancestry must
+        // not leave removed/reparented descendants in the visible cache.
         self.expand_transitions.clear();
-        self.populate_initial_expands();
         self.sync_expand_transitions_for_tree();
-        self.rebuild_flat_cache(None, cx);
+        self.rebuild_flat_cache(cx);
+        // Same-count updates can change content, depth, and custom row heights.
+        self.list_state.reset(self.flat_cache.len());
+        if preserve && let Some(index) = top_id.as_ref().and_then(|id| self.flat_index_for_id(id)) {
+            self.list_state.scroll_to(gpui::ListOffset { item_ix: index, ..old_top });
+        }
+        if selected_before != self.selected_ids {
+            cx.emit(TreeViewEvent::SelectionChanged { selected_ids: self.selected_ids.clone() });
+        }
+        if active_before != self.active_node_id {
+            cx.emit(TreeViewEvent::ActiveNodeChanged { node_id: self.active_node_id.clone() });
+        }
+        self.emit_scroll_changed_if_needed(cx);
+        Ok(())
     }
 
     pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
         if self.model.animated == animated {
             return;
         }
+        self.cancel_position();
         self.model.animated = animated;
-        for transition in self.expand_transitions.values_mut() {
+        for (id, transition) in &mut self.expand_transitions {
             transition.set_animated(animated);
+            transition.set_target(if self.expanded_ids.contains(id) { 1.0 } else { 0.0 });
         }
+        self.rebuild_flat_cache(cx);
+        self.list_state.remeasure();
         cx.notify();
     }
 
     pub fn set_size(&mut self, size: crate::theme::ControlSize, cx: &mut Context<Self>) {
+        self.cancel_position();
         self.model.size = size;
+        self.list_state.remeasure();
         cx.notify();
     }
 
     pub fn set_template(&mut self, template: std::sync::Arc<dyn super::TreeViewTemplate<T>>, cx: &mut Context<Self>) {
+        self.cancel_position();
         self.model.template = template;
+        self.list_state.remeasure();
         cx.notify();
+    }
+
+    /// Refresh the look of an existing scrollbar; does not add a viewport.
+    pub fn set_scrollbar_template(
+        &mut self,
+        template: std::sync::Arc<dyn crate::controls::scrollbar::ScrollbarTemplate>,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(scrollbar) = &self.scrollbar {
+            scrollbar.update(cx, |scrollbar, cx| scrollbar.set_template(template, cx));
+        }
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
@@ -163,14 +330,15 @@ where
             return;
         }
 
+        self.cancel_position();
         self.model.enabled = enabled;
         self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
         self.focus_in_subscription = None;
         self.focus_out_subscription = None;
 
         if !enabled {
-            self.clear_hovered_index(cx);
-            self.pressed_index = None;
+            self.clear_hovered_node_id(cx);
+            self.pressed_node_id = None;
             self.emit_focus_changed(false, cx);
         }
 
@@ -180,7 +348,13 @@ where
 
     pub fn expand(&mut self, node_id: impl Into<SharedString>, cx: &mut Context<Self>) {
         let node_id = node_id.into();
-        let splice_anchor = self.flat_index_for_id(&node_id);
+        if !self.model.index.nodes.get(&node_id).is_some_and(|info| info.branch) {
+            return;
+        }
+        if self.projection.forced_expanded.contains(&node_id) {
+            return;
+        }
+        self.cancel_position();
         let already_expanded = self.expanded_ids.contains(&node_id);
         if !already_expanded {
             self.expanded_ids.insert(node_id.clone());
@@ -193,7 +367,7 @@ where
         self.set_expand_target(&node_id, 1.0);
 
         if !was_visible {
-            self.rebuild_flat_cache(splice_anchor, cx);
+            self.rebuild_flat_cache(cx);
         } else {
             cx.notify();
         }
@@ -201,6 +375,10 @@ where
 
     pub fn collapse(&mut self, node_id: impl Into<SharedString>, cx: &mut Context<Self>) {
         let node_id = node_id.into();
+        if self.projection.forced_expanded.contains(&node_id) {
+            return;
+        }
+        self.cancel_position();
         let was_expanded = self.expanded_ids.remove(&node_id);
         if !was_expanded && !self.branch_children_visible(&node_id) {
             return;
@@ -211,10 +389,33 @@ where
         }
 
         self.set_expand_target(&node_id, 0.0);
+        let visible = self.visible_ids();
+        self.selection_anchor = self.model.index.reconcile_active(
+            &self.model.index,
+            self.selection_anchor.as_ref(),
+            &self.flat_cache.iter().map(|row| row.id.clone()).collect::<Vec<_>>(),
+            &visible,
+        );
+        let next_active = self.model.index.reconcile_active(
+            &self.model.index,
+            self.active_node_id.as_ref(),
+            &self.flat_cache.iter().map(|row| row.id.clone()).collect::<Vec<_>>(),
+            &visible,
+        );
+        if self.active_node_id != next_active {
+            self.active_node_id = next_active.clone();
+            cx.emit(TreeViewEvent::ActiveNodeChanged { node_id: next_active });
+        }
+        self.refresh_flat_motion_factors();
+        if self.hovered_node_id.as_ref().is_some_and(|id| !visible.contains(id)) {
+            self.clear_hovered_node_id(cx);
+        }
+        if self.pressed_node_id.as_ref().is_some_and(|id| !visible.contains(id)) {
+            self.pressed_node_id = None;
+        }
 
         if !self.model.animated {
-            let splice_anchor = self.flat_index_for_id(&node_id);
-            self.rebuild_flat_cache(splice_anchor, cx);
+            self.rebuild_flat_cache(cx);
         } else {
             cx.notify();
         }
@@ -222,7 +423,7 @@ where
 
     pub fn toggle_expand(&mut self, node_id: impl Into<SharedString>, cx: &mut Context<Self>) {
         let node_id = node_id.into();
-        if self.expanded_ids.contains(&node_id) {
+        if self.is_expanded(&node_id) {
             self.collapse(node_id, cx);
         } else {
             self.expand(node_id, cx);
@@ -230,7 +431,7 @@ where
     }
 
     pub fn select_node_by_id(&mut self, node_id: impl Into<SharedString>, cx: &mut Context<Self>) {
-        if matches!(self.model.selection_mode, TreeViewSelectionMode::None) {
+        if matches!(self.model.selection_policy.mode, TreeViewSelectionMode::None) {
             return;
         }
 
@@ -239,28 +440,23 @@ where
             return;
         }
 
+        if self.model.selection_policy.mode == TreeViewSelectionMode::Extended {
+            self.selection_anchor = Some(node_id.clone());
+        }
+        let selection_changed = self.selected_ids.len() != 1 || !self.selected_ids.contains(&node_id);
         self.selected_ids.clear();
         self.selected_ids.insert(node_id.clone());
         if let Some(idx) = self.flat_index_for_id(&node_id) {
             self.set_active_index(Some(idx), false, cx);
         }
-        cx.emit(TreeViewEvent::SelectionChanged { selected_ids: self.selected_ids.clone() });
+        if selection_changed {
+            cx.emit(TreeViewEvent::SelectionChanged { selected_ids: self.selected_ids.clone() });
+        }
         cx.notify();
     }
 
     fn populate_initial_expands(&mut self) {
-        fn traverse<T>(node: &TreeNode<T>, expanded: &mut HashSet<SharedString>) {
-            if node.initially_expanded {
-                expanded.insert(node.id.clone());
-            }
-            for child in &node.children {
-                traverse(child, expanded);
-            }
-        }
-
-        for item in &self.model.items {
-            traverse(item, &mut self.expanded_ids);
-        }
+        self.expanded_ids = self.model.index.initial_expanded();
     }
 
     fn sync_expand_transitions_for_tree(&mut self) {
@@ -294,6 +490,9 @@ where
     }
 
     fn expand_progress_for(&self, node_id: &SharedString) -> f32 {
+        if self.projection.forced_expanded.contains(node_id) {
+            return 1.0;
+        }
         self.expand_transitions
             .get(node_id)
             .map(DisclosureMotion::progress)
@@ -326,82 +525,72 @@ where
     }
 
     fn desired_flat_count(&self) -> usize {
-        fn count_visible<T>(
-            node: &TreeNode<T>,
-            expanded: &HashSet<SharedString>,
-            transitions: &HashMap<SharedString, DisclosureMotion>,
-        ) -> usize {
-            let expand_progress = transitions
-                .get(&node.id)
-                .map(DisclosureMotion::progress)
-                .unwrap_or_else(|| if expanded.contains(&node.id) { 1.0 } else { 0.0 });
-            let show_children = expand_progress > EXPAND_VISIBLE_EPSILON
-                || transitions.get(&node.id).is_some_and(DisclosureMotion::is_animating);
-
-            let mut total = 1;
-            if show_children {
-                for child in &node.children {
-                    total += count_visible(child, expanded, transitions);
-                }
-            }
-            total
-        }
-
-        self.model
-            .items
-            .iter()
-            .map(|item| count_visible(item, &self.expanded_ids, &self.expand_transitions))
-            .sum()
+        let mut count = 0;
+        self.visit_projected_rows(|_, _, _, _, _| count += 1);
+        count
     }
 
-    /// Rebuilds the flattened row list. When `splice_anchor` is the flat index of an
-    /// expanded/collapsed branch, list scroll position is preserved via [`ListState::splice`]
-    /// instead of [`ListState::reset`].
-    fn rebuild_flat_cache(&mut self, splice_anchor: Option<usize>, cx: &mut Context<Self>) {
-        let old_count = self.flat_cache.len();
+    fn settle_large_expansions(&mut self) -> bool {
+        let mut affected = 0;
+        let mut ancestors = vec![false];
+        self.projection.visit(&self.model.items, |node, depth| {
+            let inherited = ancestors[depth];
+            if inherited {
+                affected += 1;
+            }
+            ancestors.truncate(depth + 1);
+            ancestors
+                .push(inherited || self.expand_transitions.get(&node.id).is_some_and(DisclosureMotion::is_animating));
+            affected <= MAX_ANIMATED_DESCENDANTS && self.branch_children_visible(&node.id)
+        });
+        if affected <= MAX_ANIMATED_DESCENDANTS {
+            return false;
+        }
+        for (id, motion) in &mut self.expand_transitions {
+            if motion.is_animating() {
+                *motion =
+                    DisclosureMotion::new(if self.expanded_ids.contains(id) { 1.0 } else { 0.0 }, self.model.animated);
+            }
+        }
+        true
+    }
+
+    /// Splice the changed keyed range, retaining unaffected measurements and
+    /// scroll anchors even when multiple branches finish animating together.
+    fn rebuild_flat_cache(&mut self, cx: &mut Context<Self>) {
+        let old_ids: Vec<_> = self.flat_cache.iter().map(|node| node.id.clone()).collect();
+        let old_top = self.list_state.logical_scroll_top();
+        let top_id = old_ids.get(old_top.item_ix).cloned();
         let active_before = self.active_node_id.clone();
         let mut flat = Vec::new();
 
-        fn flatten<T: Clone>(
-            node: &TreeNode<T>,
-            depth: usize,
-            expanded: &HashSet<SharedString>,
-            transitions: &HashMap<SharedString, DisclosureMotion>,
-            ancestor_height_factor: f32,
-            flat: &mut Vec<FlatNodeWrapper<T>>,
-        ) {
-            let has_children = !node.children.is_empty() || node.is_branch;
-            let expand_progress = transitions
-                .get(&node.id)
-                .map(DisclosureMotion::progress)
-                .unwrap_or_else(|| if expanded.contains(&node.id) { 1.0 } else { 0.0 });
-
+        self.visit_projected_rows(|node, depth, expand_progress, row_height_factor, enabled| {
             flat.push(FlatNodeWrapper {
                 id: node.id.clone(),
                 label: node.label.clone(),
                 icon: node.icon,
                 depth,
-                has_children,
-                enabled: node.enabled,
+                has_children: !node.children.is_empty() || node.is_branch,
+                enabled,
                 expand_progress,
-                row_height_factor: ancestor_height_factor,
+                row_height_factor,
                 data: node.data.clone(),
             });
-
-            let show_children = expand_progress > EXPAND_VISIBLE_EPSILON
-                || transitions.get(&node.id).is_some_and(DisclosureMotion::is_animating);
-            if show_children {
-                let child_factor = (ancestor_height_factor * expand_progress).clamp(0.0, 1.0);
-                for child in &node.children {
-                    flatten(child, depth + 1, expanded, transitions, child_factor, flat);
-                }
-            }
+        });
+        if self
+            .hovered_node_id
+            .as_ref()
+            .is_some_and(|id| !flat.iter().any(|node| &node.id == id && node.enabled))
+        {
+            self.clear_hovered_node_id(cx);
         }
-
-        for item in &self.model.items {
-            flatten(item, 0, &self.expanded_ids, &self.expand_transitions, 1.0, &mut flat);
+        if self
+            .pressed_node_id
+            .as_ref()
+            .is_some_and(|id| !flat.iter().any(|node| &node.id == id && node.enabled))
+        {
+            self.pressed_node_id = None;
         }
-
         self.flat_cache = flat;
 
         if let Some(active_id) = active_before
@@ -411,68 +600,40 @@ where
             cx.emit(TreeViewEvent::ActiveNodeChanged { node_id: None });
         }
 
-        self.sync_list_state_after_flat_change(old_count, splice_anchor);
+        self.sync_list_state_after_flat_change(&old_ids);
+        if let Some(index) = top_id.as_ref().and_then(|id| self.flat_index_for_id(id)) {
+            // A single splice can encompass multiple completing branches;
+            // preserve a surviving key inside that changed range too.
+            self.list_state.scroll_to(gpui::ListOffset { item_ix: index, ..old_top });
+        }
         cx.notify();
     }
 
     fn refresh_flat_motion_factors(&mut self) {
-        fn walk<T: Clone>(
-            node: &TreeNode<T>,
-            expanded: &HashSet<SharedString>,
-            transitions: &HashMap<SharedString, DisclosureMotion>,
-            ancestor_height_factor: f32,
-            flat: &mut [FlatNodeWrapper<T>],
-            index: &mut usize,
-        ) {
-            if *index >= flat.len() {
-                return;
-            }
-
-            let expand_progress = transitions
-                .get(&node.id)
-                .map(DisclosureMotion::progress)
-                .unwrap_or_else(|| if expanded.contains(&node.id) { 1.0 } else { 0.0 });
-
-            flat[*index].expand_progress = expand_progress;
-            flat[*index].row_height_factor = ancestor_height_factor;
-            *index += 1;
-
-            let show_children = expand_progress > EXPAND_VISIBLE_EPSILON
-                || transitions.get(&node.id).is_some_and(DisclosureMotion::is_animating);
-            if show_children {
-                let child_factor = (ancestor_height_factor * expand_progress).clamp(0.0, 1.0);
-                for child in &node.children {
-                    walk(child, expanded, transitions, child_factor, flat, index);
-                }
-            }
+        // Traverse exactly the same projected order as row construction. No
+        // domain data is cloned while updating animation geometry.
+        let mut factors = Vec::with_capacity(self.flat_cache.len());
+        self.visit_projected_rows(|_, _, progress, height, enabled| factors.push((progress, height, enabled)));
+        for (row, (progress, height, enabled)) in self.flat_cache.iter_mut().zip(factors) {
+            row.expand_progress = progress;
+            row.row_height_factor = height;
+            row.enabled = enabled;
         }
-
-        let mut index = 0;
-        for item in &self.model.items {
-            walk(item, &self.expanded_ids, &self.expand_transitions, 1.0, &mut self.flat_cache, &mut index);
-        }
+        self.list_state.remeasure_items(0..self.flat_cache.len());
     }
 
-    fn sync_list_state_after_flat_change(&mut self, old_count: usize, splice_anchor: Option<usize>) {
-        let new_count = self.flat_cache.len();
-        if new_count == old_count {
-            return;
-        }
-
-        match splice_anchor {
-            Some(toggle_idx) if toggle_idx < old_count => {
-                if new_count > old_count {
-                    self.list_state.splice(toggle_idx + 1..toggle_idx + 1, new_count - old_count);
-                } else {
-                    let removed = old_count - new_count;
-                    self.list_state.splice(toggle_idx + 1..toggle_idx + 1 + removed, 0);
-                }
-            }
-            _ => {
-                if self.list_state.item_count() != new_count {
-                    self.list_state.reset(new_count);
-                }
-            }
+    fn sync_list_state_after_flat_change(&mut self, old_ids: &[SharedString]) {
+        let prefix = old_ids.iter().zip(&self.flat_cache).take_while(|(id, row)| **id == row.id).count();
+        let suffix = old_ids[prefix..]
+            .iter()
+            .rev()
+            .zip(self.flat_cache[prefix..].iter().rev())
+            .take_while(|(id, row)| **id == row.id)
+            .count();
+        let removed_end = old_ids.len() - suffix;
+        let inserted = self.flat_cache.len() - prefix - suffix;
+        if prefix != removed_end || inserted != 0 {
+            self.list_state.splice(prefix..removed_end, inserted);
         }
     }
 
@@ -497,10 +658,13 @@ where
     }
 
     fn set_active_index(&mut self, index: Option<usize>, scroll: bool, cx: &mut Context<Self>) -> bool {
+        if scroll {
+            self.cancel_position();
+        }
         let next = index.and_then(|idx| self.flat_cache.get(idx).map(|node| node.id.clone()));
         if self.active_node_id == next {
             if scroll && let Some(idx) = index {
-                self.list_state.scroll_to_reveal_item(idx);
+                self.reveal_item(idx);
                 self.emit_scroll_changed_if_needed(cx);
             }
             return false;
@@ -508,7 +672,7 @@ where
 
         self.active_node_id = next.clone();
         if scroll && let Some(idx) = index {
-            self.list_state.scroll_to_reveal_item(idx);
+            self.reveal_item(idx);
             self.emit_scroll_changed_if_needed(cx);
         }
         cx.emit(TreeViewEvent::ActiveNodeChanged { node_id: next });
@@ -526,7 +690,7 @@ where
         }
 
         let id = wrapper.id.clone();
-        if self.expanded_ids.contains(&id) {
+        if self.is_expanded(&id) {
             self.collapse(id, cx);
         } else {
             self.expand(id, cx);
@@ -542,8 +706,8 @@ where
         let item_enabled = self.model.enabled && node.enabled;
         let selected = self.selected_ids.contains(&node.id);
         let active = self.active_node_id.as_ref() == Some(&node.id);
-        let hovered = item_enabled && self.hovered_index == Some(index);
-        let pressed = item_enabled && self.pressed_index == Some(index);
+        let hovered = item_enabled && self.hovered_node_id.as_ref() == Some(&node.id);
+        let pressed = item_enabled && self.pressed_node_id.as_ref() == Some(&node.id);
 
         let state = CompositeItemState {
             hovered,
@@ -560,7 +724,7 @@ where
             icon: node.icon,
             depth: node.depth,
             has_children: node.has_children,
-            expanded: self.expanded_ids.contains(&node.id),
+            expanded: self.is_expanded(&node.id),
             expand_progress: node.expand_progress,
             disclosure_icons: &self.model.disclosure_icons,
             row_height_factor: node.row_height_factor,
@@ -570,7 +734,33 @@ where
             data: &node.data,
         };
 
-        self.model.template.render_node(&render_node, self.template_row_handlers(index, cx), window, cx)
+        let handlers = self.template_row_handlers(node.id.clone(), cx);
+        let callback = if node.has_children {
+            &self.model.branch_content
+        } else {
+            &self.model.leaf_content
+        };
+        let content = if let Some(callback) = callback {
+            let content = callback(&render_node, window, cx);
+            self.model.template.render_node_with_content(&render_node, handlers, content, window, cx)
+        } else {
+            self.model.template.render_node(&render_node, handlers, window, cx)
+        };
+        let id = node.id.clone();
+        let label = node.label.clone();
+        let row_id = format!("{}/node/{}", self.model.id, id);
+        let row = div()
+            .id(row_id.clone())
+            .debug_selector(move || row_id.clone())
+            .relative()
+            .role(gpui::Role::TreeItem)
+            .aria_level(node.depth + 1)
+            .aria_label(label.clone())
+            .aria_selected(selected)
+            .when(node.has_children, |row| row.aria_expanded(render_node.expanded))
+            .when(active, |row| row.aria_active_descendant())
+            .child(content);
+        self.bind_row_drag(row, id, label, index, cx).into_any_element()
     }
 
     fn handle_row_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
@@ -578,83 +768,89 @@ where
             return;
         }
 
+        let node_id = self.flat_cache[index].id.clone();
         if hovered {
-            if self.hovered_index != Some(index) {
-                self.clear_hovered_index(cx);
-                self.hovered_index = Some(index);
+            if self.hovered_node_id.as_ref() != Some(&node_id) {
+                self.clear_hovered_node_id(cx);
+                self.hovered_node_id = Some(node_id.clone());
                 let node_id = self.flat_cache[index].id.clone();
                 cx.emit(TreeViewEvent::RowHoverChanged { node_id, index, hovered: true });
                 cx.notify();
             }
-        } else if self.hovered_index == Some(index) {
-            self.clear_hovered_index(cx);
-            if self.pressed_index == Some(index) {
-                self.pressed_index = None;
+        } else if self.hovered_node_id.as_ref() == Some(&node_id) {
+            self.clear_hovered_node_id(cx);
+            if self.pressed_node_id.as_ref() == Some(&node_id) {
+                self.pressed_node_id = None;
             }
             cx.notify();
         }
     }
 
-    fn template_row_handlers(&self, idx: usize, cx: &mut Context<Self>) -> TreeViewTemplateHandlers {
+    fn template_row_handlers(&self, node_id: SharedString, cx: &mut Context<Self>) -> TreeViewTemplateHandlers {
+        let hover_id = node_id.clone();
+        let press_id = node_id.clone();
+        let disclosure_id = node_id.clone();
         TreeViewTemplateHandlers {
+            disclosure: Box::new(cx.listener(move |this, event: &ClickEvent, window, cx| {
+                cx.stop_propagation();
+                let Some(idx) = this.flat_index_for_id(&disclosure_id) else {
+                    return;
+                };
+                if event.click_count() != 1 || !this.model.enabled || !this.flat_cache[idx].enabled {
+                    return;
+                }
+                this.cancel_position();
+                this.focus_handle.focus(window, cx);
+                this.toggle_node_at_index(idx, cx);
+                if this.model.expand_on_row_click {
+                    this.select_with_modifiers(idx, event.modifiers(), cx);
+                }
+            })),
             hover: Box::new(cx.listener(move |this, hovered: &bool, _, cx| {
-                this.handle_row_hover(idx, *hovered, cx);
+                if let Some(idx) = this.flat_index_for_id(&hover_id) {
+                    this.handle_row_hover(idx, *hovered, cx);
+                }
             })),
             mouse_down: Box::new(cx.listener(move |this, _, window, cx| {
+                let Some(idx) = this.flat_index_for_id(&press_id) else {
+                    return;
+                };
                 if this.model.enabled && this.flat_cache.get(idx).is_some_and(|node| node.enabled) {
-                    this.pressed_index = Some(idx);
+                    this.cancel_position();
+                    this.prepare_selection_anchor();
+                    this.pressed_node_id = Some(press_id.clone());
                     this.set_active_index(Some(idx), false, cx);
                     this.focus_handle.focus(window, cx);
+                    this.emit_focus_changed(true, cx);
                     cx.notify();
                 }
             })),
             mouse_up: Box::new(cx.listener(move |this, _, _, cx| {
-                this.pressed_index = None;
+                this.pressed_node_id = None;
                 cx.notify();
             })),
             click: Box::new(cx.listener(move |this, event: &ClickEvent, _, cx| {
                 if event.click_count() != 1 {
                     return;
                 }
+                let Some(idx) = this.flat_index_for_id(&node_id) else {
+                    return;
+                };
+                if !this.model.enabled || !this.flat_cache[idx].enabled {
+                    return;
+                }
 
                 let is_branch = this.flat_cache.get(idx).is_some_and(|node| node.has_children);
-                if is_branch {
+                if is_branch && this.model.expand_on_row_click {
                     this.toggle_node_at_index(idx, cx);
                 }
-                this.handle_node_select(idx, cx);
+                this.select_with_modifiers(idx, event.modifiers(), cx);
             })),
         }
     }
 
     fn handle_node_select(&mut self, idx: usize, cx: &mut Context<Self>) {
-        if idx >= self.flat_cache.len() {
-            return;
-        }
-
-        let node = &self.flat_cache[idx];
-        if !self.model.enabled || !node.enabled {
-            return;
-        }
-
-        let id = node.id.clone();
-        match self.model.selection_mode {
-            TreeViewSelectionMode::None => {}
-            TreeViewSelectionMode::Single => {
-                self.selected_ids.clear();
-                self.selected_ids.insert(id);
-            }
-            TreeViewSelectionMode::Multiple => {
-                if self.selected_ids.contains(&id) {
-                    self.selected_ids.remove(&id);
-                } else {
-                    self.selected_ids.insert(id);
-                }
-            }
-        }
-
-        self.set_active_index(Some(idx), false, cx);
-        cx.emit(TreeViewEvent::SelectionChanged { selected_ids: self.selected_ids.clone() });
-        cx.notify();
+        self.select_with_modifiers(idx, gpui::Modifiers::default(), cx);
     }
 
     fn move_active(&mut self, direction: TreeDirection, cx: &mut Context<Self>) {
@@ -663,9 +859,20 @@ where
         }
 
         let current = self.active_node_id.as_ref().and_then(|id| self.flat_index_for_id(id));
-        let next = next_enabled_flat_index(&self.flat_cache, current, direction);
+        let next = if self.model.wrap_navigation {
+            next_enabled_flat_index(&self.flat_cache, current, direction)
+        } else {
+            match (direction, current) {
+                (TreeDirection::Next, Some(index)) => {
+                    ((index + 1)..self.flat_cache.len()).find(|&i| self.flat_cache[i].enabled)
+                }
+                (TreeDirection::Previous, Some(index)) => (0..index).rev().find(|&i| self.flat_cache[i].enabled),
+                (TreeDirection::Next, None) => first_enabled_flat_index(&self.flat_cache),
+                (TreeDirection::Previous, None) => last_enabled_flat_index(&self.flat_cache),
+            }
+        };
         if let Some(idx) = next {
-            self.set_active_index(Some(idx), true, cx);
+            self.navigate_selection(Some(idx), cx);
             cx.notify();
         }
     }
@@ -683,7 +890,7 @@ where
             return;
         }
         if let Some(idx) = first_enabled_flat_index(&self.flat_cache) {
-            self.set_active_index(Some(idx), true, cx);
+            self.navigate_selection(Some(idx), cx);
             cx.notify();
         }
     }
@@ -693,12 +900,15 @@ where
             return;
         }
         if let Some(idx) = last_enabled_flat_index(&self.flat_cache) {
-            self.set_active_index(Some(idx), true, cx);
+            self.navigate_selection(Some(idx), cx);
             cx.notify();
         }
     }
 
     fn handle_expand_focused_node(&mut self, _: &ExpandNode, _: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
         let Some(active_id) = self.active_node_id.clone() else {
             return;
         };
@@ -711,18 +921,25 @@ where
             return;
         }
 
-        if !self.expanded_ids.contains(&active_id) {
+        if !self.is_expanded(&active_id) {
             self.toggle_node_at_index(idx, cx);
             return;
         }
 
-        if idx + 1 < self.flat_cache.len() {
-            self.set_active_index(Some(idx + 1), true, cx);
+        let depth = node.depth;
+        let child = ((idx + 1)..self.flat_cache.len())
+            .take_while(|&i| self.flat_cache[i].depth > depth)
+            .find(|&i| self.flat_cache[i].depth == depth + 1 && self.flat_cache[i].enabled);
+        if let Some(child) = child {
+            self.navigate_selection(Some(child), cx);
             cx.notify();
         }
     }
 
     fn handle_collapse_focused_node(&mut self, _: &CollapseNode, _: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
         let Some(active_id) = self.active_node_id.clone() else {
             return;
         };
@@ -731,7 +948,7 @@ where
         };
 
         let node = &self.flat_cache[idx];
-        if node.has_children && self.expanded_ids.contains(&active_id) {
+        if node.has_children && self.is_expanded(&active_id) && !self.projection.forced_expanded.contains(&active_id) {
             self.toggle_node_at_index(idx, cx);
             return;
         }
@@ -740,12 +957,16 @@ where
             return;
         }
 
-        let current_depth = node.depth;
+        let mut current_depth = node.depth;
         let mut search_idx = idx;
         while search_idx > 0 {
             search_idx -= 1;
             if self.flat_cache[search_idx].depth < current_depth {
-                self.set_active_index(Some(search_idx), true, cx);
+                current_depth = self.flat_cache[search_idx].depth;
+                if !self.flat_cache[search_idx].enabled {
+                    continue;
+                }
+                self.navigate_selection(Some(search_idx), cx);
                 cx.notify();
                 break;
             }
@@ -753,6 +974,9 @@ where
     }
 
     fn handle_activate(&mut self, _: &ActivateControl, _: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
         let Some(active_id) = self.active_node_id.clone() else {
             return;
         };
@@ -760,6 +984,10 @@ where
             return;
         };
 
+        if self.model.selection_policy.mode == TreeViewSelectionMode::Extended {
+            self.activate_node(idx, cx);
+            return;
+        }
         if self.flat_cache.get(idx).is_some_and(|node| node.has_children) {
             self.toggle_node_at_index(idx, cx);
         } else {
@@ -767,17 +995,11 @@ where
         }
     }
 
-    fn clear_hovered_index(&mut self, cx: &mut Context<Self>) {
-        if let Some(index) = self.hovered_index.take()
-            && let Some(node) = self.flat_cache.get(index)
+    fn clear_hovered_node_id(&mut self, cx: &mut Context<Self>) {
+        if let Some(node_id) = self.hovered_node_id.take()
+            && let Some(index) = self.flat_index_for_id(&node_id)
         {
-            cx.emit(TreeViewEvent::RowHoverChanged { node_id: node.id.clone(), index, hovered: false });
-        }
-    }
-
-    fn handle_scroll_wheel(&mut self, _event: &ScrollWheelEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.model.enabled && self.emit_scroll_changed_if_needed(cx) {
-            cx.notify();
+            cx.emit(TreeViewEvent::RowHoverChanged { node_id, index, hovered: false });
         }
     }
 
@@ -831,16 +1053,23 @@ where
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         if self.focus_in_subscription.is_none() {
             let focus_handle = self.focus_handle.clone();
-            self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
+            self.focus_in_subscription = Some(cx.on_focus_in(&focus_handle, window, |_, window, cx| {
+                cx.defer_in(window, |tree, window, cx| tree.handle_focus_in(window, cx));
+            }));
         }
         if self.focus_out_subscription.is_none() {
             let focus_handle = self.focus_handle.clone();
-            self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
+            self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, |_, event, window, cx| {
+                cx.defer_in(window, move |tree, window, cx| tree.handle_focus_out(event, window, cx));
+            }));
         }
 
-        let (was_animating, is_animating) = self.sync_expand_transitions();
+        let (was_animating, mut is_animating) = self.sync_expand_transitions();
+        if is_animating && self.settle_large_expansions() {
+            is_animating = false;
+        }
         if self.desired_flat_count() != self.flat_cache.len() {
-            self.rebuild_flat_cache(None, cx);
+            self.rebuild_flat_cache(cx);
         } else if was_animating || is_animating {
             self.refresh_flat_motion_factors();
         }
@@ -852,21 +1081,31 @@ where
             cx.notify();
         }
 
+        self.schedule_position_frame(window, cx);
         let render_model = TreeViewRenderModel {
             id: &self.model.id,
-            selection_mode: self.model.selection_mode,
+            selection_mode: self.model.selection_policy.mode,
             enabled: self.model.enabled,
             size: self.model.size,
             focus: ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window),
         };
 
-        let body = list(self.list_state.clone(), cx.processor(Self::render_row)).size_full().into_any_element();
+        let body = self.render_viewport(window, cx);
 
         self.model
             .template
             .render(&render_model, body, window, cx)
+            .role(gpui::Role::Tree)
+            .cancel_drag_on_escape()
             .track_focus(&self.focus_handle)
-            .key_context(ControlKeyProfile::Selector.context())
+            .key_context(if self.model.selection_policy.mode == TreeViewSelectionMode::Extended {
+                ControlKeyProfile::TreeViewExtended.context()
+            } else {
+                ControlKeyProfile::TreeView.context()
+            })
+            .on_key_down(cx.listener(Self::handle_selection_key))
+            .on_action(cx.listener(Self::handle_select_all))
+            .on_action(cx.listener(Self::handle_clear_selection))
             .on_action(cx.listener(Self::handle_previous))
             .on_action(cx.listener(Self::handle_next))
             .on_action(cx.listener(Self::handle_first))
@@ -874,7 +1113,13 @@ where
             .on_action(cx.listener(Self::handle_expand_focused_node))
             .on_action(cx.listener(Self::handle_collapse_focused_node))
             .on_action(cx.listener(Self::handle_activate))
-            .on_scroll_wheel(cx.listener(Self::handle_scroll_wheel))
+            .on_mouse_down_out(cx.listener(|this, _, window, cx| {
+                if this.focus_handle.contains_focused(window, cx) {
+                    window.blur(cx);
+                    this.emit_focus_changed(false, cx);
+                    cx.notify();
+                }
+            }))
     }
 }
 
@@ -968,3 +1213,31 @@ mod tests {
         assert_eq!(next_enabled_flat_index(&flat, Some(2), TreeDirection::Next), Some(0));
     }
 }
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "state_tests.rs"]
+mod state_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "viewport_tests.rs"]
+mod viewport_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "drag_tests.rs"]
+mod drag_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "projection_tests.rs"]
+mod projection_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "position_tests.rs"]
+mod position_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "selection_tests.rs"]
+mod selection_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "scale_tests.rs"]
+mod scale_tests;

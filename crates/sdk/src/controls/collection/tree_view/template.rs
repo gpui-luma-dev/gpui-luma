@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, FontWeight, MouseDownEvent, MouseUpEvent, Stateful, Window, div, prelude::*, px,
+    AnyElement, App, ClickEvent, Div, FontWeight, MouseDownEvent, MouseUpEvent, Stateful, Window, SharedString, div,
+    prelude::*, px,
 };
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -19,6 +20,8 @@ pub struct TreeViewTemplateHandlers {
     pub mouse_down: TreeViewMouseDownHandler,
     pub mouse_up: TreeViewMouseUpHandler,
     pub click: TreeViewClickHandler,
+    /// Independent disclosure gesture; the row shell prevents row selection/drag.
+    pub disclosure: TreeViewClickHandler,
 }
 
 pub type TreeViewTemplateModifier =
@@ -43,6 +46,35 @@ where
         window: &mut Window,
         cx: &mut App,
     ) -> AnyElement;
+
+    /// Content-only customization. Legacy full templates retain their renderer
+    /// unless they opt into this seam; the built-in and Shadcn templates support it.
+    fn render_node_with_content(
+        &self,
+        node: &FlatTreeNode<'_, T>,
+        handlers: TreeViewTemplateHandlers,
+        _content: AnyElement,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> AnyElement {
+        self.render_node(node, handlers, window, cx)
+    }
+
+    /// Stable, noninteractive preview; content callbacks are not rebuilt during drag.
+    fn render_drag_preview(
+        &self,
+        label: SharedString,
+        _size: crate::theme::ControlSize,
+        _window: &mut Window,
+        _cx: &mut App,
+    ) -> AnyElement {
+        div().px_3().py_1().child(label).into_any_element()
+    }
+
+    /// Color used by the SDK's keyed drop markers and preview outline.
+    fn drop_color(&self, _size: crate::theme::ControlSize) -> gpui::Hsla {
+        gpui::rgb(0x64748b).into()
+    }
 }
 
 pub struct ThemedTreeViewTemplate {
@@ -126,6 +158,28 @@ where
     ) -> AnyElement {
         self.base.render_node(node, handlers, window, cx)
     }
+    fn render_node_with_content(
+        &self,
+        node: &FlatTreeNode<'_, T>,
+        handlers: TreeViewTemplateHandlers,
+        content: AnyElement,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> AnyElement {
+        self.base.render_node_with_content(node, handlers, content, window, cx)
+    }
+    fn render_drag_preview(
+        &self,
+        label: SharedString,
+        size: crate::theme::ControlSize,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> AnyElement {
+        self.base.render_drag_preview(label, size, window, cx)
+    }
+    fn drop_color(&self, size: crate::theme::ControlSize) -> gpui::Hsla {
+        self.base.drop_color(size)
+    }
 }
 
 impl<T> TreeViewTemplate<T> for ThemedTreeViewTemplate
@@ -146,6 +200,56 @@ where
         &self,
         node: &FlatTreeNode<'_, T>,
         handlers: TreeViewTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> AnyElement {
+        self.render_row(node, handlers, None, window, cx)
+    }
+    fn render_node_with_content(
+        &self,
+        node: &FlatTreeNode<'_, T>,
+        handlers: TreeViewTemplateHandlers,
+        content: AnyElement,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> AnyElement {
+        self.render_row(node, handlers, Some(content), window, cx)
+    }
+    fn render_drag_preview(
+        &self,
+        label: SharedString,
+        size: crate::theme::ControlSize,
+        _window: &mut Window,
+        _cx: &mut App,
+    ) -> AnyElement {
+        let palette =
+            self.theme
+                .resolve_row(crate::theme::InteractionState { hovered: true, ..Default::default() }, true, size);
+        div()
+            .px_3()
+            .py_1()
+            .rounded_md()
+            .border_1()
+            .border_color(palette.chevron_color)
+            .when_some(palette.background, |preview, color| preview.bg(color))
+            .text_color(palette.foreground)
+            .font_family(palette.font_family)
+            .text_size(px(palette.typography.size))
+            .shadow_sm()
+            .child(label)
+            .into_any_element()
+    }
+    fn drop_color(&self, size: crate::theme::ControlSize) -> gpui::Hsla {
+        self.theme.resolve_row(Default::default(), true, size).chevron_color
+    }
+}
+
+impl ThemedTreeViewTemplate {
+    fn render_row<T: Send + Sync + 'static>(
+        &self,
+        node: &FlatTreeNode<'_, T>,
+        handlers: TreeViewTemplateHandlers,
+        content: Option<AnyElement>,
         window: &mut Window,
         cx: &mut App,
     ) -> AnyElement {
@@ -197,12 +301,16 @@ where
         }
 
         if node.has_children {
+            let debug_id = format!("tree-disclosure-{}", node.id);
             let chevron = div()
                 .id(format!("{}-chevron", node.id))
+                .debug_selector(move || debug_id.clone())
                 .size(px(chevron_size))
                 .flex()
                 .items_center()
                 .justify_center()
+                .on_mouse_down(gpui::MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .when(node.enabled, |chevron| chevron.on_click(handlers.disclosure))
                 .child(render_disclosure_icon(
                     node.disclosure_icons,
                     node.expand_progress.clamp(0.0, 1.0),
@@ -228,7 +336,10 @@ where
         });
         row = row.child(render_icon(display_icon, palette.icon_color, icon_size));
         row = row.child(div().w(px(scale.inner_gap)));
-        row = row.child(div().flex_1().truncate().child(node.label.clone()));
+        row = row.child(match content {
+            Some(content) => div().flex_1().min_w(px(0.0)).child(content),
+            None => div().flex_1().truncate().child(node.label.clone()),
+        });
 
         row.into_any_element()
     }
