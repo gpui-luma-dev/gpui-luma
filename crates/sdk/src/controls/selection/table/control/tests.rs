@@ -1,7 +1,7 @@
 //! Headless GPUI TestWindow tests; no platform application is launched.
 use std::{cell::RefCell, rc::Rc};
 
-use gpui::{Entity, Modifiers, TestAppContext, VisualTestContext, point};
+use gpui::{AppContext, Entity, Modifiers, TestAppContext, VisualTestContext, point};
 
 use super::*;
 
@@ -270,4 +270,299 @@ fn checkbox_style_table_keeps_keyboard_selection() {
     });
     cx.simulate_keystrokes("space down space");
     cx.update(|_, app| assert_eq!(table.read(app).selected_indices(), &[1, 2]));
+}
+
+fn start_drag(cx: &mut VisualTestContext, y: f32) {
+    cx.simulate_mouse_down(point(px(400.0), px(y)), gpui::MouseButton::Left, Default::default());
+    cx.simulate_mouse_move(point(px(420.0), px(y)), gpui::MouseButton::Left, Default::default());
+    cx.update(|_, app| assert!(app.has_active_drag()));
+}
+fn drop_at(cx: &mut VisualTestContext, y: f32) {
+    cx.simulate_mouse_move(point(px(420.0), px(y)), gpui::MouseButton::Left, Default::default());
+    cx.simulate_mouse_up(point(px(420.0), px(y)), gpui::MouseButton::Left, Default::default());
+    cx.run_until_parked();
+}
+
+#[test]
+fn native_group_drag_preserves_identity_focus_anchor_and_emits_once() {
+    use crate::infra::drag_drop::{DragDropEvent, DragEndReason};
+    let mut app = TestAppContext::single();
+    let (table, cx) = setup(&mut app, 8, TableSelectionMode::Extended);
+    table.update(cx, |table, cx| {
+        table.set_row_reordering(true, cx).unwrap();
+        table.set_selected_keys(["1", "4"], cx).unwrap();
+        table.set_active_index(Some(1), cx);
+        table.selection_anchor = Some(4);
+    });
+    let events = Rc::new(RefCell::new(Vec::new()));
+    cx.update(|_, app| {
+        let events = events.clone();
+        app.subscribe(&table, move |_, event: &TableEvent, _| events.borrow_mut().push(event.clone()))
+            .detach();
+    });
+    start_drag(cx, 45.0);
+    cx.update(|_, app| {
+        assert_eq!(table.read(app).items().iter().map(|row| row.id).collect::<Vec<_>>(), (0..8).collect::<Vec<_>>())
+    });
+    cx.simulate_mouse_move(point(px(420.0), px(5.0)), gpui::MouseButton::Left, Default::default());
+    cx.update(|_, app| assert_eq!(app.active_drag_cursor_style(), Some(gpui::CursorStyle::ClosedHand)));
+    drop_at(cx, 5.0);
+    cx.update(|window, app| {
+        let table = table.read(app);
+        assert_eq!(table.items().iter().map(|row| row.id).collect::<Vec<_>>(), [1, 4, 0, 2, 3, 5, 6, 7]);
+        assert_eq!(table.selected_indices(), &[0, 1]);
+        assert_eq!(table.active_index(), Some(0));
+        assert_eq!(table.selection_anchor, Some(1));
+        assert!(table.focus_handle.is_focused(window));
+    });
+    assert_eq!(
+        events
+            .borrow()
+            .iter()
+            .filter(|event| matches!(event, TableEvent::RowDrag(DragDropEvent::ItemsReordered { .. })))
+            .count(),
+        1
+    );
+    assert_eq!(
+        events
+            .borrow()
+            .iter()
+            .filter(|event| matches!(
+                event,
+                TableEvent::RowDrag(DragDropEvent::DragEnded { reason: DragEndReason::Reordered, .. })
+            ))
+            .count(),
+        1
+    );
+    assert!(!events.borrow().iter().any(|event| matches!(event, TableEvent::SelectedKeysChanged { .. })));
+}
+
+#[test]
+fn native_unselected_row_noop_rejection_and_cancellation() {
+    let mut app = TestAppContext::single();
+    let (table, cx) = setup(&mut app, 5, TableSelectionMode::Extended);
+    table.update(cx, |table, cx| {
+        table.set_row_reordering(true, cx).unwrap();
+        table.set_selected_keys(["1", "2"], cx).unwrap();
+    });
+    start_drag(cx, 135.0);
+    drop_at(cx, 5.0);
+    cx.update(|_, app| {
+        let table = table.read(app);
+        assert_eq!(table.items().iter().map(|row| row.id).collect::<Vec<_>>(), [4, 0, 1, 2, 3]);
+        assert_eq!(table.selected_keys(), vec![SharedString::from("1"), "2".into()]);
+    });
+    start_drag(cx, 15.0);
+    cx.simulate_mouse_move(point(px(420.0), px(25.0)), gpui::MouseButton::Left, Default::default());
+    cx.update(|_, app| assert_eq!(app.active_drag_cursor_style(), Some(gpui::CursorStyle::OperationNotAllowed)));
+    drop_at(cx, 25.0);
+    table.update(cx, |table, _| {
+        table.set_row_drop_handler(|table, proposal, _, cx| table.reject_row_drop(proposal, "owner rejects", cx))
+    });
+    start_drag(cx, 15.0);
+    drop_at(cx, 115.0);
+    start_drag(cx, 15.0);
+    cx.simulate_keystrokes("escape");
+    cx.update(|_, app| assert!(!app.has_active_drag()));
+    start_drag(cx, 15.0);
+    drop_at(cx, 400.0);
+    cx.update(|_, app| {
+        assert_eq!(table.read(app).items().iter().map(|row| row.id).collect::<Vec<_>>(), [4, 0, 1, 2, 3]);
+        assert!(table.read(app).active_row_drag.is_none());
+    });
+}
+
+#[test]
+fn replacement_and_disabling_invalidate_pending_proposals() {
+    for disable in [false, true] {
+        let mut app = TestAppContext::single();
+        let (table, cx) = setup(&mut app, 5, TableSelectionMode::Extended);
+        table.update(cx, |table, cx| table.set_row_reordering(true, cx).unwrap());
+        start_drag(cx, 45.0);
+        table.update(cx, |table, cx| {
+            let drag = table.active_row_drag.clone().unwrap();
+            let proposal = drag.propose(cx.entity_id(), cx.entity_id(), None).unwrap();
+            if disable {
+                table.set_row_reordering(false, cx).unwrap();
+            } else {
+                table.set_items(rows(0), cx).unwrap();
+            }
+            assert!(!proposal.is_active());
+            assert!(table.commit_row_drop(&proposal, cx).is_err());
+            assert_eq!(table.items().len(), if disable { 5 } else { 0 });
+        });
+        drop_at(cx, 5.0);
+    }
+}
+
+#[test]
+fn paged_drop_uses_dataset_gap_and_keeps_current_page() {
+    let mut app = TestAppContext::single();
+    let (table, cx) = setup(&mut app, 12, TableSelectionMode::Extended);
+    table.update(cx, |table, cx| {
+        table.set_row_reordering(true, cx).unwrap();
+        table.set_scroll_mode(TableScrollMode::Paged { page_size: 5 }, cx);
+        table.set_selected_keys(["1", "6"], cx).unwrap();
+        table.set_page(1, cx);
+    });
+    start_drag(cx, 45.0);
+    drop_at(cx, 145.0);
+    cx.update(|_, app| {
+        let table = table.read(app);
+        assert_eq!(table.items().iter().map(|row| row.id).collect::<Vec<_>>(), [0, 2, 3, 4, 5, 7, 8, 9, 1, 6, 10, 11]);
+        assert_eq!(table.current_page(), 1);
+        assert_eq!(table.selected_indices(), &[8, 9]);
+    });
+}
+
+#[test]
+fn preview_stays_beside_pointer_and_stationary_edge_scrolls_virtualized_rows() {
+    let mut app = TestAppContext::single();
+    let (table, cx) = setup(&mut app, 100, TableSelectionMode::Extended);
+    table.update(cx, |table, cx| table.set_row_reordering(true, cx).unwrap());
+    start_drag(cx, 45.0);
+    let preview = cx.debug_bounds("table-row-drag-preview").unwrap();
+    assert_eq!(preview.left(), px(432.0));
+    assert_eq!(preview.top(), px(57.0));
+    cx.simulate_mouse_move(point(px(420.0), px(148.0)), gpui::MouseButton::Left, Default::default());
+    let offset = |cx: &mut VisualTestContext| {
+        cx.update(|_, app| {
+            let top = table.read(app).list_state.logical_scroll_top();
+            top.item_ix as f32 * 30.0 + top.offset_in_item.as_f32()
+        })
+    };
+    let before = offset(cx);
+    for _ in 0..3 {
+        cx.executor().advance_clock(std::time::Duration::from_millis(16));
+        cx.update(|window, app| window.simulate_next_frame(app));
+        cx.run_until_parked();
+    }
+    assert!(offset(cx) > before);
+    // Wheel/programmatic scrolling during the drag exposes new keyed gaps.
+    table.update(cx, |table, cx| {
+        table.list_state.scroll_to(ListOffset { item_ix: 80, offset_in_item: px(0.0) });
+        cx.notify();
+    });
+    drop_at(cx, 75.0);
+    cx.update(|_, app| {
+        let table = table.read(app);
+        assert!(table.items().iter().position(|row| row.id == 1).unwrap() >= 80);
+        assert!(table.list_state.logical_scroll_top().item_ix >= 80);
+    });
+    let stopped = offset(cx);
+    for _ in 0..3 {
+        cx.executor().advance_clock(std::time::Duration::from_millis(16));
+        cx.update(|window, app| window.simulate_next_frame(app));
+        cx.run_until_parked();
+    }
+    assert_eq!(offset(cx), stopped);
+}
+
+#[test]
+fn custom_measured_rows_respect_nested_drag_boundaries() {
+    use gpui::{div, prelude::*};
+    use crate::infra::drag_drop::DragDropElementExt;
+    let mut app = TestAppContext::single();
+    let (table, cx) = setup(&mut app, 5, TableSelectionMode::Extended);
+    table.update(cx, |table, cx| {
+        table.set_row_reordering(true, cx).unwrap();
+        table.model.visible_row_height = None;
+        table.set_row_template_fn(
+            |model, _, _, _| {
+                div()
+                    .w_full()
+                    .h(px(if model.row.id == 1 { 60.0 } else { 40.0 }))
+                    .child(div().id("embedded").w(px(100.0)).h_full().drag_boundary().child("child"))
+            },
+            cx,
+        );
+    });
+    cx.simulate_click(point(px(20.0), px(20.0)), Default::default());
+    cx.simulate_mouse_down(point(px(20.0), px(20.0)), gpui::MouseButton::Left, Default::default());
+    cx.simulate_mouse_move(point(px(60.0), px(20.0)), gpui::MouseButton::Left, Default::default());
+    cx.update(|_, app| {
+        assert!(!app.has_active_drag());
+        assert!(table.read(app).selected_keys().is_empty());
+    });
+    cx.simulate_mouse_up(point(px(60.0), px(20.0)), gpui::MouseButton::Left, Default::default());
+    start_drag(cx, 20.0);
+    // Second row is 60px high; its bottom half resolves AFTER it.
+    drop_at(cx, 85.0);
+    cx.update(|_, app| {
+        assert_eq!(table.read(app).items().iter().map(|row| row.id).collect::<Vec<_>>(), [1, 0, 2, 3, 4])
+    });
+}
+
+#[test]
+fn opt_in_and_disabled_rows_never_arm_a_drag() {
+    for index in [1, 3] {
+        let mut app = TestAppContext::single();
+        let (table, cx) = setup(&mut app, 5, TableSelectionMode::Extended);
+        if index == 3 {
+            table.update(cx, |table, cx| table.set_row_reordering(true, cx).unwrap());
+        }
+        cx.simulate_mouse_down(
+            point(px(400.0), px(index as f32 * 30.0 + 15.0)),
+            gpui::MouseButton::Left,
+            Default::default(),
+        );
+        cx.simulate_mouse_move(point(px(420.0), px(5.0)), gpui::MouseButton::Left, Default::default());
+        cx.update(|_, app| assert!(!app.has_active_drag()));
+    }
+    let mut app = TestAppContext::single();
+    let (table, cx) = setup(&mut app, 0, TableSelectionMode::Extended);
+    table.update(cx, |table, cx| {
+        table.row_key = None;
+        assert_eq!(table.set_row_reordering(true, cx), Err(TableReorderError::KeysNotConfigured));
+        assert!(!table.row_reordering());
+    });
+}
+
+#[test]
+fn owner_accepts_once_and_foreign_proposals_cannot_change_another_table() {
+    use crate::infra::drag_drop::{DragDropEvent, DragEndReason};
+    let mut app = TestAppContext::single();
+    let (table, cx) = setup(&mut app, 5, TableSelectionMode::Extended);
+    let events = Rc::new(RefCell::new(Vec::new()));
+    let other = cx.new(|cx| {
+        let mut table = TableControl::from_builder(TableBuilder::new_typed("other").items(rows(5)), cx);
+        table.set_row_key(|row| row.id.to_string(), cx).unwrap();
+        table.set_row_reordering(true, cx).unwrap();
+        table
+    });
+    table.update(cx, |table, cx| {
+        table.set_row_reordering(true, cx).unwrap();
+        table.set_row_drop_handler(move |table, proposal, _, cx| {
+            other.update(cx, |other, cx| {
+                assert_eq!(other.commit_row_drop(proposal, cx), Err(TableReorderError::InvalidSession));
+                assert_eq!(other.items()[0].id, 0);
+            });
+            assert!(proposal.is_active());
+            assert!(!table.commit_row_drop(proposal, cx).unwrap());
+            assert_eq!(table.commit_row_drop(proposal, cx), Err(TableReorderError::InvalidSession));
+        });
+    });
+    cx.update(|_, app| {
+        let events = events.clone();
+        app.subscribe(&table, move |_, event: &TableEvent, _| events.borrow_mut().push(event.clone()))
+            .detach();
+    });
+    start_drag(cx, 45.0);
+    drop_at(cx, 55.0);
+    let events = events.borrow();
+    assert_eq!(
+        events
+            .iter()
+            .filter(|event| matches!(
+                event,
+                TableEvent::RowDrag(DragDropEvent::DragEnded { reason: DragEndReason::Unchanged, .. })
+            ))
+            .count(),
+        1
+    );
+    assert!(
+        !events
+            .iter()
+            .any(|event| matches!(event, TableEvent::RowDrag(DragDropEvent::ItemsReordered { .. })))
+    );
 }

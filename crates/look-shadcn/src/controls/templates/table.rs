@@ -11,6 +11,18 @@ struct ShadcnTableTheme {
 }
 
 impl TableTheme for ShadcnTableTheme {
+    fn resolve_drag(&self, size: ControlSize) -> luma::controls::table::TableDragLook {
+        let tokens = self.theme.mode_tokens();
+        let palette = &tokens.palette;
+        luma::controls::table::TableDragLook {
+            background: self.theme.token_color("popover").unwrap_or(palette.panel_background),
+            foreground: self.theme.token_color("popover-foreground").unwrap_or(palette.body_text),
+            valid_marker: self.theme.token_color("ring").unwrap_or(palette.focus_ring),
+            invalid_marker: self.theme.token_color("destructive").unwrap_or(palette.destructive_background),
+            radius: tokens.metrics.radius(size),
+        }
+    }
+
     fn resolve_look(&self, enabled: bool, focused: bool, size: ControlSize) -> luma::controls::table::TableLook {
         let tokens = self.theme.mode_tokens();
         table_look(tokens.as_ref(), enabled, focused, size)

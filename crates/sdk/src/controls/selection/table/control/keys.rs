@@ -62,6 +62,7 @@ impl<T: 'static> TableControl<T> {
     {
         let key: RowKeyFn<T> = Arc::new(move |row| key(row).into());
         let keys = collect_keys(&self.model.items, key.as_ref())?;
+        self.cancel_row_drag(cx);
         let previous = self.selection_snapshot();
         self.row_key = Some(key);
         self.row_keys = keys;

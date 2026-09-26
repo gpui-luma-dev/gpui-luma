@@ -3,6 +3,9 @@ mod render;
 mod selection;
 mod viewport;
 mod keys;
+mod reorder;
+mod drag;
+pub use reorder::{TableReorderError, TableRowDrop, TableRowDragEvent};
 
 #[cfg(all(test, feature = "test-support"))]
 mod tests;
@@ -28,6 +31,8 @@ use self::selection::normalize_model;
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum TableEvent {
+    /// Shared drag lifecycle, emitted after any committed data/selection update.
+    RowDrag(TableRowDragEvent),
     SelectionChanged {
         selected_indices: Vec<usize>,
     },
@@ -79,6 +84,10 @@ where
     row_key: Option<keys::RowKeyFn<T>>,
     row_keys: Vec<SharedString>,
     selection_anchor: Option<usize>,
+    row_reordering: bool,
+    active_row_drag: Option<reorder::RowDrag>,
+    row_drop_handler: Option<reorder::DropHandler<T>>,
+    drag_scroll_scheduled: bool,
 }
 
 impl<T> EventEmitter<TableEvent> for TableControl<T> where T: 'static {}
@@ -126,6 +135,10 @@ where
             row_key: None,
             row_keys: Vec::new(),
             selection_anchor: None,
+            row_reordering: false,
+            active_row_drag: None,
+            row_drop_handler: None,
+            drag_scroll_scheduled: false,
         }
     }
 
@@ -185,6 +198,7 @@ where
     ) -> Result<(), TableSelectionError> {
         let items: Vec<T> = items.into_iter().collect();
         let keys = self.row_key.as_ref().map(|key| keys::collect_keys(&items, key.as_ref())).transpose()?;
+        self.cancel_row_drag(cx);
         let previous = self.selection_snapshot();
         let previous_page = self.current_page;
         if let Some(keys) = keys {
@@ -357,6 +371,9 @@ where
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if !enabled {
+            self.cancel_row_drag(cx);
+        }
         if self.model.enabled == enabled {
             return;
         }
