@@ -46,22 +46,63 @@ where
         true
     }
 
-    pub(super) fn commit_select_index(&mut self, index: usize, cx: &mut Context<Self>) -> bool {
+    pub(super) fn select_index(&mut self, index: usize, toggle: bool, extend: bool, cx: &mut Context<Self>) -> bool {
         if !self.can_use_item(index) {
             return false;
         }
-
-        let next = compute_next_selected_indices(self.model.selection_mode, &self.model.selected_indices, index);
-        if next == self.model.selected_indices {
-            return false;
+        let previous = self.selection_snapshot();
+        let before = self.model.selected_indices.clone();
+        if self.model.selection_mode == TableSelectionMode::Extended {
+            if extend {
+                let anchor = *self.selection_anchor.get_or_insert(self.model.active_index.unwrap_or(index));
+                let range = (anchor.min(index)..=anchor.max(index)).filter(|&row| self.can_use_item(row));
+                let mut selected = if toggle {
+                    self.model.selected_indices.clone()
+                } else {
+                    Vec::new()
+                };
+                selected.extend(range);
+                selected.sort_unstable();
+                selected.dedup();
+                self.model.selected_indices = selected;
+            } else {
+                self.selection_anchor = Some(index);
+                self.model.selected_indices = if toggle {
+                    compute_next_selected_indices(TableSelectionMode::Multiple, &self.model.selected_indices, index)
+                } else {
+                    vec![index]
+                };
+            }
+        } else {
+            self.model.selected_indices =
+                compute_next_selected_indices(self.model.selection_mode, &self.model.selected_indices, index);
         }
-
-        self.model.selected_indices = next.clone();
-        self.model.active_index =
-            normalize_active_index(Some(index), self.model.items.as_slice(), self.model.row_enabled.as_ref(), &next);
-        cx.emit(TableEvent::SelectionChanged { selected_indices: next });
+        self.model.active_index = Some(index);
+        self.ensure_page_for_index(index, cx);
+        self.scroll_active_into_view_if_needed(index, cx);
+        self.emit_selection_changes(previous, cx);
         cx.notify();
-        true
+        before != self.model.selected_indices
+    }
+
+    fn scroll_active_into_view_if_needed(&mut self, index: usize, cx: &mut Context<Self>) {
+        if !self.is_paged() {
+            self.scroll_active_into_view(index, None, cx);
+        }
+    }
+
+    pub(super) fn select_all(&mut self, clear: bool, cx: &mut Context<Self>) {
+        if !self.model.enabled
+            || !matches!(self.model.selection_mode, TableSelectionMode::Multiple | TableSelectionMode::Extended)
+        {
+            return;
+        }
+        let indices: Vec<_> = if clear {
+            Vec::new()
+        } else {
+            (0..self.model.items.len()).filter(|&index| self.can_use_item(index)).collect()
+        };
+        self.set_selected_indices(indices, cx);
     }
 
     pub(super) fn can_use_item(&self, index: usize) -> bool {
@@ -100,7 +141,7 @@ pub(crate) fn normalize_selected_indices<T>(
     }
 
     for index in selected_indices.iter().copied() {
-        if index >= items.len() || !row_enabled(&items[index]) || normalized.contains(&index) {
+        if index >= items.len() || !row_enabled(&items[index]) {
             continue;
         }
 
@@ -110,6 +151,8 @@ pub(crate) fn normalize_selected_indices<T>(
         }
     }
 
+    normalized.sort_unstable();
+    normalized.dedup();
     normalized
 }
 
@@ -177,7 +220,7 @@ pub(super) fn compute_next_selected_indices(
 ) -> Vec<usize> {
     match selection_mode {
         TableSelectionMode::None => Vec::new(),
-        TableSelectionMode::Single => vec![toggled_index],
+        TableSelectionMode::Single | TableSelectionMode::Extended => vec![toggled_index],
         TableSelectionMode::Multiple => {
             let mut next = current.to_vec();
             if let Some(position) = next.iter().position(|index| *index == toggled_index) {

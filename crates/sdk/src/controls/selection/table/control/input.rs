@@ -1,7 +1,7 @@
 use gpui::{ClickEvent, Context, FocusOutEvent, MouseDownEvent, MouseUpEvent, ScrollWheelEvent, TouchPhase, Window, px};
 
 use super::selection::{TableDirection, next_enabled_index};
-use super::{TableControl, TableEvent};
+use super::{TableControl, TableEvent, TableSelectionMode};
 use crate::key_handling::{
     ActivateControl, DecreaseValueLarge, IncreaseValueLarge, SelectFirstItem, SelectLastItem, SelectNextItem,
     SelectPreviousItem,
@@ -11,6 +11,70 @@ impl<T> TableControl<T>
 where
     T: 'static,
 {
+    /// Only table-owned keys while the table itself has focus. Embedded controls
+    /// keep their shortcuts and Space activation.
+    pub(super) fn handle_key_down(&mut self, event: &gpui::KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.focus_handle.is_focused(window) {
+            return;
+        }
+        let modifiers = event.keystroke.modifiers;
+        let key = event.keystroke.key.as_str();
+        let toggle = modifiers.platform || modifiers.control;
+        let extended = self.model.selection_mode == TableSelectionMode::Extended;
+        if modifiers.alt || modifiers.function {
+            return;
+        }
+        if toggle
+            && key.eq_ignore_ascii_case("a")
+            && matches!(self.model.selection_mode, TableSelectionMode::Multiple | TableSelectionMode::Extended)
+        {
+            self.select_all(modifiers.shift, cx);
+        } else if extended && modifiers.shift && matches!(key, "up" | "down" | "home" | "end") {
+            self.clear_pointer_interaction(cx);
+            let next = match key {
+                "home" => super::selection::first_enabled_index(&self.model.items, self.model.row_enabled.as_ref()),
+                "end" => super::selection::last_enabled_index(&self.model.items, self.model.row_enabled.as_ref()),
+                _ => next_enabled_index(
+                    &self.model.items,
+                    self.model.row_enabled.as_ref(),
+                    self.model.active_index,
+                    if key == "up" {
+                        TableDirection::Previous
+                    } else {
+                        TableDirection::Next
+                    },
+                ),
+            };
+            if let Some(index) = next {
+                self.select_index(index, toggle, true, cx);
+            }
+        } else if extended && key == "space" {
+            if let Some(index) = self.model.active_index {
+                self.select_index(index, toggle, modifiers.shift, cx);
+            }
+        } else if modifiers.shift {
+            return;
+        } else if modifiers.platform && matches!(key, "up" | "down") {
+            self.move_active_to_boundary(key == "up", cx);
+        } else if modifiers.control && matches!(key, "a" | "e") {
+            self.move_active_to_boundary(key == "a", cx);
+        } else if toggle && !(extended && matches!(key, "up" | "down" | "home" | "end")) {
+            return;
+        } else {
+            match key {
+                "up" => self.move_active(TableDirection::Previous, cx),
+                "down" => self.move_active(TableDirection::Next, cx),
+                "home" => self.move_active_to_boundary(true, cx),
+                "end" => self.move_active_to_boundary(false, cx),
+                "space" | "enter" => self.handle_activate_control(&ActivateControl, window, cx),
+                "pageup" => self.handle_decrease_value_large(&DecreaseValueLarge, window, cx),
+                "pagedown" => self.handle_increase_value_large(&IncreaseValueLarge, window, cx),
+                _ => return,
+            }
+        }
+        cx.stop_propagation();
+    }
+
     pub(super) fn clear_pointer_interaction(&mut self, cx: &mut Context<Self>) {
         if self.hovered_index.is_none() && self.pressed_index.is_none() {
             return;
@@ -57,7 +121,6 @@ where
     ) {
         if self.can_use_item(index) {
             self.pressed_index = Some(index);
-            self.set_active_index_internal(Some(index), None, cx);
             self.focus_handle.focus(window, cx);
             cx.notify();
         }
@@ -75,13 +138,21 @@ where
             return;
         }
 
-        self.set_active_index_internal(Some(index), None, cx);
+        if !self.can_use_item(index) {
+            return;
+        }
         if self.model.select_on_row_click {
-            self.commit_select_index(index, cx);
+            let modifiers = event.modifiers();
+            self.select_index(index, modifiers.platform || modifiers.control, modifiers.shift, cx);
+        } else {
+            self.set_active_index_internal(Some(index), None, cx);
         }
     }
 
     pub(super) fn move_active(&mut self, direction: TableDirection, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
         self.clear_pointer_interaction(cx);
         if let Some(next_index) = next_enabled_index(
             self.model.items.as_slice(),
@@ -94,6 +165,9 @@ where
     }
 
     pub(super) fn move_active_to_boundary(&mut self, first: bool, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
         self.clear_pointer_interaction(cx);
         let len = self.model.items.len();
         if len == 0 {
@@ -137,10 +211,8 @@ where
         cx: &mut Context<Self>,
     ) {
         self.clear_pointer_interaction(cx);
-        if self.model.select_on_row_click
-            && let Some(index) = self.model.active_index
-        {
-            self.commit_select_index(index, cx);
+        if let Some(index) = self.model.active_index {
+            self.select_index(index, false, false, cx);
         }
     }
 

@@ -1,10 +1,13 @@
-//! Scrolling table control exposition — scrollable task grid with fixed viewport.
+//! Scrolling table control exposition — task grid that fills the available pane.
 
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::table::{TableSelectionMode, Table, TableEvent};
-use luma::{column, column_emphasis, scrolling_table};
+use luma::controls::table::{Table, TableEvent};
+use luma::controls::button::{Button, ButtonEvent};
+use luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
+use luma::infra::presenter::HasPresenter;
+use luma::{column, column_emphasis};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
@@ -14,12 +17,10 @@ use super::collection_theme_inspectors::TableThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::table_demo::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
+use super::table_demo::{Task, build_task_rows, email_column, status_cell, tag_pill};
 use super::inspector::{TableInspectorAdapter, TABLE_INSPECTOR_SPEC};
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-
-const DEFAULT_VISIBLE_ROWS: usize = 25;
 
 pub struct ScrollingTableControlExposition {
     look: Arc<ShadcnLook>,
@@ -34,14 +35,15 @@ struct ScrollingTableExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     table: Table<Task>,
-    selected_indices: Vec<usize>,
+    sort_button: Entity<Button>,
+    select_button: Entity<Button>,
     event_stream: Entity<ControlEventStream>,
+    details: Entity<AccordionControl>,
 }
 
 impl ScrollingTableExpositionLeftPane {
     fn handle_list_event(&mut self, event: &TableEvent, cx: &mut Context<Self>) {
-        if let TableEvent::SelectionChanged { selected_indices } = event {
-            self.selected_indices = selected_indices.clone();
+        if matches!(event, TableEvent::SelectionChanged { .. } | TableEvent::SelectedKeysChanged { .. }) {
             cx.notify();
         }
     }
@@ -49,64 +51,70 @@ impl ScrollingTableExpositionLeftPane {
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.table.update(cx, |_, cx| cx.notify());
+        self.sort_button.update(cx, |_, cx| cx.notify());
+        self.select_button.update(cx, |_, cx| cx.notify());
+        self.details.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
     }
 }
 
 impl Render for ScrollingTableExpositionLeftPane {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
             let chrome = look.chrome();
 
             let preview = div()
-                .w_full()
-                .max_w(px(760.0))
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
                 .flex()
                 .flex_col()
                 .items_start()
                 .gap(px(16.0))
                 .child(
                     div()
+                        .w_full()
+                        .min_w(px(0.0))
+                        .flex_none()
                         .flex()
                         .flex_col()
                         .gap(px(4.0))
+                        .child(div().text_lg().text_color(chrome.title_text).child(self.entry.title))
                         .child(
                             div()
                                 .text_sm()
                                 .text_color(chrome.muted_text)
-                                .child("Scrollable task grid with a fixed viewport and row snap scrolling."),
+                                .child("Task grid fills the pane and resizes with the window."),
                         )
                         .child(
                             div()
+                                .w_full()
+                                .truncate()
                                 .text_sm()
                                 .text_color(chrome.body_text)
-                                .child(selected_summary(&self.selected_indices)),
+                                .child(format!("Selected task IDs: {}", self.table.read(cx).selected_keys().iter().map(|key| key.as_ref()).collect::<Vec<_>>().join(", "))),
                         )
                         .child(
                             div()
                                 .text_sm()
                                 .text_color(chrome.muted_text)
-                                .child("Keyboard: Arrow keys move the active row. Enter or Space selects it."),
+                                .child("Click selects; Ctrl/Cmd-click toggles; Shift-click or Shift+arrows extends. Ctrl/Cmd+A selects all; add Shift to clear."),
                         ),
                 )
-                .child(self.table.clone())
-                .child(self.event_stream.clone());
+                .child(div().flex_none().flex().gap(px(8.0)).child(self.sort_button.clone()).child(self.select_button.clone()))
+                .child(div().w_full().flex_none().child(self.details.clone()))
+                .child(div().w_full().flex_1().min_h(px(0.0)).overflow_hidden().child(self.table.clone()));
 
             div()
                 .id("controls-doc-scrolling-table-left-pane")
                 .size_full()
                 .min_h(px(0.0))
                 .min_w(px(0.0))
-                .overflow_y_scroll()
-                .child(render_control_exposition_card(
-                    look,
-                    self.entry,
-                    preview.into_any_element(),
-                    None,
-                    ControlExpositionLayout::BORDERLESS,
-                ))
+                .p(px(16.0))
+                .overflow_hidden()
+                .child(preview)
         })
     }
 }
@@ -116,18 +124,17 @@ impl ScrollingTableControlExposition {
         let entry = *catalog_entry("scrolling-table").expect("scrolling-table catalog entry");
 
         let tasks = build_task_rows();
-        let table = scrolling_table! {
-            table_theme = look.table_theme();
-            id = "controls-doc-table-scroll";
-            items = tasks;
-            selection = TableSelectionMode::Single;
-            selected_index = 1;
-            active_index = 1;
-            row_label = |row| row.title.clone();
-            row_enabled = |row| row.enabled;
-            visible_rows = DEFAULT_VISIBLE_ROWS;
-            scroll_snap = true;
-            grid_view = {
+        let table = luma_look_shadcn::Table::new("controls-doc-table-scroll")
+            .look(&look)
+            .items(tasks)
+            .extended()
+            .selected_index(1)
+            .active_index(1)
+            .row_label(|row: &Task| row.title.clone())
+            .row_enabled(|row| row.enabled)
+            .fill_height()
+            .scroll_snap(true)
+            .grid_view([
                 column_emphasis!("Task", width = 108 => |row: &Task| row.id.clone()),
                 column!("Title" => |row: &Task| {
                     div()
@@ -159,8 +166,8 @@ impl ScrollingTableControlExposition {
                             16.0,
                         ))
                 }),
-            };
-            row_template = |model, cells, _window, _cx| {
+            ])
+            .with_row_template(|model, cells, _window, _cx| {
                 div()
                     .w_full()
                     .flex()
@@ -173,9 +180,40 @@ impl ScrollingTableControlExposition {
                     .line_height(px(model.look.label_typography.line_height))
                     .font_weight(model.look.label_typography.weight)
                     .child(cells)
-            };
-        }
-        .spawn(cx);
+            })
+            .spawn(cx);
+        table.update(cx, |table, cx| table.set_row_key(|row| row.id.clone(), cx)).expect("unique task IDs");
+        let sort_button = luma_look_shadcn::Button::new("table-sort")
+            .look(&look)
+            .outline()
+            .label("Reverse row order")
+            .spawn(cx);
+        let select_button = luma_look_shadcn::Button::new("table-owner-selection")
+            .look(&look)
+            .outline()
+            .label("Select tasks 1–3")
+            .spawn(cx);
+        let sort_subscription = cx.subscribe(&sort_button, {
+            let table = table.clone();
+            move |_, _, event, cx| {
+                if matches!(event, ButtonEvent::Click) {
+                    table.update(cx, |table, cx| {
+                        let rows: Vec<_> = table.items().iter().rev().cloned().collect();
+                        table.set_items(rows, cx).expect("unique task IDs");
+                    });
+                }
+            }
+        });
+        let select_subscription = cx.subscribe(&select_button, {
+            let table = table.clone();
+            move |_, _, event, cx| {
+                if matches!(event, ButtonEvent::Click) {
+                    table
+                        .update(cx, |table, cx| table.set_selected_keys(["T-0001", "T-0002", "T-0003"], cx))
+                        .expect("enabled task IDs");
+                }
+            }
+        });
 
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
@@ -186,12 +224,45 @@ impl ScrollingTableControlExposition {
             )
         });
 
-        let left_pane = cx.new(|_| ScrollingTableExpositionLeftPane {
-            look: look.clone(),
-            entry,
-            table: table.clone(),
-            selected_indices: vec![1],
-            event_stream: event_stream.clone(),
+        let left_pane = cx.new(|cx: &mut Context<ScrollingTableExpositionLeftPane>| {
+            let pane = cx.entity().downgrade();
+            let details = luma_look_shadcn::Accordion::new("scrolling-table-details")
+                .look(&look)
+                .single()
+                .collapsible(true)
+                .animated(false)
+                .item(AccordionItem::new(
+                    "details",
+                    AccordionTrigger::new("Events and code sample"),
+                    AccordionContent::custom(move |_, cx| {
+                        let Some(pane) = pane.upgrade() else {
+                            return div().into_any_element();
+                        };
+                        let pane = pane.read(cx);
+                        div()
+                            .id("scrolling-table-details-content")
+                            .max_h(px(240.0))
+                            .overflow_y_scroll()
+                            .child(render_control_exposition_card(
+                                &pane.look,
+                                pane.entry,
+                                pane.event_stream.clone().into_any_element(),
+                                None,
+                                ControlExpositionLayout::BORDERLESS_NO_HEADING,
+                            ))
+                            .into_any_element()
+                    }),
+                ))
+                .spawn(cx);
+            ScrollingTableExpositionLeftPane {
+                look: look.clone(),
+                entry,
+                table: table.clone(),
+                sort_button,
+                select_button,
+                event_stream: event_stream.clone(),
+                details,
+            }
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
@@ -216,7 +287,14 @@ impl ScrollingTableControlExposition {
             }
         });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![subscription] }
+        Self {
+            look,
+            entry,
+            left_pane,
+            theme_inspector,
+            inspector_split,
+            _subscriptions: vec![subscription, sort_subscription, select_subscription],
+        }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
@@ -261,6 +339,7 @@ fn format_table_event(event: &TableEvent) -> Option<String> {
         TableEvent::SelectionChanged { selected_indices } => {
             Some(format!("TableEvent::SelectionChanged {{ selected_indices: {selected_indices:?} }}"))
         }
+        TableEvent::SelectedKeysChanged { selected_keys } => Some(format!("Selected task IDs: {selected_keys:?}")),
         TableEvent::ActiveIndexChanged { active_index } => {
             Some(format!("TableEvent::ActiveIndexChanged {{ active_index: {active_index:?} }}"))
         }

@@ -170,9 +170,9 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     ControlDocEntry {
         id: "scrolling-table",
         title: "Scrolling Table",
-        description: "Virtualized task grid with fixed viewport, column templates, row snap scrolling, and keyboard selection. Ideal for long datasets that scroll in place.",
+        description: "Virtualized task grid that fills the pane, with column templates, row snap scrolling, and range selection. Resizes with the window.",
         category: ControlCategory::Choice,
-        snippet: "scrolling_table! {\n    table_theme = look.table_theme();\n    id = \"tasks\";\n    items = rows;\n    visible_rows = 25;\n    scroll_snap = true;\n    grid_view = { /* columns */ };\n}.spawn(cx);",
+        snippet: "shadcn::Table::new(\"tasks\")\n    .look(&look)\n    .items(rows)\n    .extended()\n    .fill_height()\n    .scroll_snap(true)\n    .grid_view(columns)\n    .spawn(cx);",
         section_order: 140,
     },
     ControlDocEntry {
