@@ -7,6 +7,7 @@ pub enum ControlCategory {
     Color,
     ColorCompositions,
     Selection,
+    Collection,
     NavigationPanels,
     OverlaysDialogs,
 }
@@ -123,7 +124,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         id: "tree-view",
         title: "Tree View",
         description: "Virtualized hierarchical list for file explorers and nested navigation. Supports expand/collapse, single selection, and keyboard traversal.",
-        category: ControlCategory::Choice,
+        category: ControlCategory::Collection,
         snippet: "shadcn::TreeView::new(\"files\").look(look.as_ref())\n    .items(tree_nodes)\n    .selection_mode(TreeViewSelectionMode::Single)\n    .spawn(cx);",
         section_order: 134,
     },
@@ -163,7 +164,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         id: "listbox",
         title: "ListBox",
         description: "Keyed collection state with host-composed vertical rows and horizontal cards. Independent multi-select examples, keyboard navigation, and scoped composition inspectors.",
-        category: ControlCategory::Selection,
+        category: ControlCategory::Collection,
         snippet: "// Create once and retain as self.list.\nlet list = ListBoxControl::new(\n    ListBoxState::try_new(items, |item| item.id, SelectionMode::Multiple)?,\n    Self::handle_input, // Apply input with self.list.apply(input, cx); forward update.events.\n    |key| (\"items\", *key).into(),\n    |item| item.label.clone(),\n    cx,\n).require_focus_for_scroll(true);\n\n// Render with your own item template.\nlook.render_listbox(\n    &mut self.list,\n    \"items\",\n    ListBoxFlow::Vertical { visible_items: 5, item_height: 36.0, gap: 4.0 },\n    (16.0, 8.0),\n    |model, cx| render_item_card(model, cx),\n    window,\n    cx,\n)",
         section_order: 305,
     },
@@ -171,7 +172,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         id: "scrolling-table",
         title: "Scrolling Table",
         description: "Virtualized task grid that fills the pane, with column templates, row snap scrolling, range selection, and drag reordering. Resizes with the window.",
-        category: ControlCategory::Choice,
+        category: ControlCategory::Collection,
         snippet: "let table = shadcn::Table::new(\"tasks\")\n    .look(&look)\n    .items(rows)\n    .extended()\n    .fill_height()\n    .scroll_snap(true)\n    .grid_view(columns)\n    .spawn(cx);\ntable.update(cx, |table, cx| {\n    table.set_row_key(|row| row.id.clone(), cx).expect(\"unique IDs\");\n    table.set_row_reordering(true, cx).expect(\"keyed table\");\n});",
         section_order: 140,
     },
@@ -179,7 +180,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         id: "paging-table",
         title: "Paging Table",
         description: "Grid table with selected-group drag reordering and an embedded pager toolbar. Page size and pager style stay wired to Table page commands for prev/next navigation.",
-        category: ControlCategory::Choice,
+        category: ControlCategory::Collection,
         snippet: "let table = paging_table! {\n    table_theme = look.table_theme();\n    id = \"tasks\";\n    items = rows;\n    page_size = 10;\n    selection = TableSelectionMode::Extended;\n    pager = shadcn::Pager::new(\"pager\").look(look.as_ref()).style(PagerStyle::MinimalEdge).into_sdk_builder(cx);\n    grid_view = { /* columns */ };\n}.spawn(cx);\nlet list = table.read(cx).list().clone();\nlist.update(cx, |table, cx| {\n    table.set_row_key(|row| row.id.clone(), cx).expect(\"unique IDs\");\n    table.set_row_reordering(true, cx).expect(\"keyed table\");\n});",
         section_order: 140,
     },
@@ -503,4 +504,38 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
 
 pub fn catalog_entry(id: &str) -> Option<&'static ControlDocEntry> {
     CONTROL_CATALOG.iter().find(|entry| entry.id == id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::studio::components::catalog::{catalog_group, controls_exposition_id, groups_for_column};
+
+    #[test]
+    fn collection_menu_and_documentation_agree() {
+        let expected = ["listbox", "paging-table", "scrolling-table", "tree-view"];
+        let group = catalog_group("collection").unwrap();
+        assert_eq!(group.label, "COLLECTION");
+        assert_eq!(group.entries.iter().map(|entry| entry.id).collect::<Vec<_>>(), expected);
+
+        let mut documented: Vec<_> = CONTROL_CATALOG
+            .iter()
+            .filter(|entry| entry.category == ControlCategory::Collection)
+            .map(|entry| entry.id)
+            .collect();
+        documented.sort_unstable();
+        assert_eq!(documented, expected);
+
+        // Check the actual dropdown columns, including duplicate or missing groups.
+        let groups: Vec<_> = (0..4).flat_map(groups_for_column).collect();
+        assert_eq!(groups.iter().filter(|group| group.id == "collection").count(), 1);
+        for id in expected {
+            let entries: Vec<_> =
+                groups.iter().flat_map(|group| group.entries.iter()).filter(|entry| entry.id == id).collect();
+            assert_eq!(entries.len(), 1, "dropdown entry {id}");
+            // Stable exposition IDs also preserve the picker's active-entry match.
+            assert_eq!(controls_exposition_id(id), Some(id));
+            assert_eq!(catalog_entry(id).unwrap().title, entries[0].label);
+        }
+    }
 }

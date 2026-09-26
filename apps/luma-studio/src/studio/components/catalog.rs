@@ -23,14 +23,18 @@ const COMMAND_ENTRIES: &[ComponentCatalogEntry] = &[
 const CHOICE_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "accordion", label: "Accordion" },
     ComponentCatalogEntry { id: "checkbox", label: "Checkbox" },
-    ComponentCatalogEntry { id: "paging-table", label: "Paging Table" },
     ComponentCatalogEntry { id: "pager", label: "Pager" },
     ComponentCatalogEntry { id: "radio-button", label: "Radio Button" },
     ComponentCatalogEntry { id: "radio-group", label: "Radio Group" },
-    ComponentCatalogEntry { id: "scrolling-table", label: "Scrolling Table" },
     ComponentCatalogEntry { id: "switch", label: "Switch" },
     ComponentCatalogEntry { id: "toggle", label: "Toggle" },
     ComponentCatalogEntry { id: "toggle-group", label: "Toggle Group" },
+];
+
+const COLLECTION_ENTRIES: &[ComponentCatalogEntry] = &[
+    ComponentCatalogEntry { id: "listbox", label: "ListBox" },
+    ComponentCatalogEntry { id: "paging-table", label: "Paging Table" },
+    ComponentCatalogEntry { id: "scrolling-table", label: "Scrolling Table" },
     ComponentCatalogEntry { id: "tree-view", label: "Tree View" },
 ];
 
@@ -89,7 +93,6 @@ const FEEDBACK_ENTRIES: &[ComponentCatalogEntry] = &[
 ];
 
 const SELECTION_ENTRIES: &[ComponentCatalogEntry] = &[
-    ComponentCatalogEntry { id: "listbox", label: "ListBox" },
     ComponentCatalogEntry { id: "autocomplete-textfield", label: "Autocomplete TextBox" },
     ComponentCatalogEntry { id: "combobox", label: "ComboBox" },
     ComponentCatalogEntry { id: "search-selector", label: "SearchSelector" },
@@ -106,6 +109,12 @@ const PROTOTYPES_ENTRIES: &[ComponentCatalogEntry] = &[
 pub const COMPONENT_CATALOG: &[ComponentCatalogGroup] = &[
     ComponentCatalogGroup { id: "command", label: "COMMAND", icon: LucideIcon::Command, entries: COMMAND_ENTRIES },
     ComponentCatalogGroup { id: "choice", label: "CHOICE", icon: LucideIcon::ListChecks, entries: CHOICE_ENTRIES },
+    ComponentCatalogGroup {
+        id: "collection",
+        label: "COLLECTION",
+        icon: LucideIcon::Table,
+        entries: COLLECTION_ENTRIES,
+    },
     ComponentCatalogGroup { id: "input", label: "INPUT", icon: LucideIcon::SlidersHorizontal, entries: INPUT_ENTRIES },
     ComponentCatalogGroup { id: "color", label: "COLOR", icon: LucideIcon::Palette, entries: COLOR_ENTRIES },
     ComponentCatalogGroup {
@@ -142,11 +151,11 @@ pub const COMPONENT_CATALOG: &[ComponentCatalogGroup] = &[
     },
 ];
 
-/// Height-balanced columns (~15–17 lines each). `COMPONENT_CATALOG` order is unchanged;
-/// within each column, categories appear in that same order.
+/// Height-balanced columns (~15–18 lines each), with each category shown once.
+/// Group IDs define the category order within each column.
 const COLUMN_GROUP_IDS: [&[&str]; 4] = [
     &["command", "input", "selection"],
-    &["choice", "prototypes"],
+    &["choice", "collection", "prototypes"],
     &["color", "color-compositions", "menu"],
     &["layout", "navigation", "feedback"],
 ];

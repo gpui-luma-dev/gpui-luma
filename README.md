@@ -22,6 +22,14 @@ luma-look-shadcn = { package = "gpui-luma-look-shadcn", git = "https://github.co
 
 Imports stay `use luma::…`.
 
+Collection controls live in `luma::controls::collection`: `listbox` for flat
+collections, `table` for tabular records, and `tree_view` for hierarchies. Value
+pickers remain in `selection`; destination and section controls remain in
+`navigation`. Short imports such as `luma::controls::table` still work, as do the
+previous `selection::{table, listbox}` and `navigation::tree_view` paths. Studio's
+Controls dropdown groups ListBox, Paging Table, Scrolling Table, and Tree View
+under Collection.
+
 Shadcn themes load from strings with `ShadcnLook::from_css_str`. The bundled fallback
 CSS is available as `luma_look_shadcn::FALLBACK_CSS`. The former `from_css_path` and
 `from_css_path_with_stylesheet` helpers have been removed: applications own file

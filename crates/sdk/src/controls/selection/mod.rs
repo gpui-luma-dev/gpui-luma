@@ -6,17 +6,18 @@
 //! - [`selector_list`] — shared item-list template/chrome used by selector, combobox,
 //!   and autocomplete; **not** a spawnable control
 //!
-//! Related spawnables in this family: [`combobox`], [`autocomplete`], [`search_selector`],
-//! [`table`].
+//! Related spawnables in this family: [`combobox`], [`autocomplete`], [`search_selector`].
+//! Record-oriented lists and tables belong to [`super::collection`].
 
 mod behavior;
 mod text_selection;
 
 pub mod autocomplete;
-pub mod listbox;
 pub mod combobox;
-pub mod table;
 pub mod search_selector;
 pub mod selection_panel;
 pub mod selector;
 pub mod selector_list;
+
+/// Compatibility exports; collection controls now live in [`super::collection`].
+pub use super::collection::{listbox, table};

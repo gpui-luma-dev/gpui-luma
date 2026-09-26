@@ -2,6 +2,7 @@
 
 pub mod button;
 pub mod choice;
+pub mod collection;
 pub mod layout;
 pub mod navigation;
 pub mod overlay;
@@ -19,9 +20,11 @@ pub use text::{textarea, textfield};
 
 pub use overlay::{context_menu, floating_menu, overlay_window, popover_button, popup_menu, slide_panel};
 
-pub use selection::{autocomplete, combobox, listbox, table, search_selector, selection_panel, selector, selector_list};
+pub use collection::{listbox, table, tree_view};
 
-pub use navigation::{accordion, pager, sidebar, stepper, tabs, tree_view};
+pub use selection::{autocomplete, combobox, search_selector, selection_panel, selector, selector_list};
+
+pub use navigation::{accordion, pager, sidebar, stepper, tabs};
 
 pub use layout::{dock_splitter, popup_scroll_surface, resizable_panels, scroll_container, scrollbar, split_view};
 pub use layout::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
