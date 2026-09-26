@@ -8,6 +8,7 @@ use luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::table::{TableColumn, TableColumnCellTemplate, TableControl, TableEvent, TableRowRenderModel};
 use luma::infra::menu_item::MenuItem;
+use luma::infra::drag_drop::DragDropElementExt;
 use luma::controls::popup_menu::PopupMenu;
 use luma::infra::presenter::HasPresenter;
 use luma_look_shadcn as shadcn;
@@ -31,6 +32,8 @@ fn payments_row_height(size: shadcn::ShadcnSize) -> f32 {
 
 #[derive(Clone)]
 struct PaymentRow {
+    /// Immutable sample record identity, independent of its current row position.
+    id: usize,
     status: &'static str,
     email: SharedString,
     amount: SharedString,
@@ -65,6 +68,11 @@ impl PaymentsPanel {
             .grid_view(payment_columns(Arc::clone(&row_checkboxes), Arc::clone(&row_menus)))
             .spawn(cx);
 
+        table.update(cx, |table, cx| {
+            table.set_row_key(|row| row.id.to_string(), cx).expect("unique payment IDs");
+            table.set_row_reordering(true, cx).expect("keyed payments table");
+        });
+
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&table, |panel, _, event, cx| {
             match event {
@@ -78,10 +86,10 @@ impl PaymentsPanel {
             cx.notify();
         }));
 
-        for (index, checkbox) in row_checkboxes.iter().enumerate() {
+        for (id, checkbox) in row_checkboxes.iter().enumerate() {
             subscriptions.push(cx.subscribe(checkbox, move |panel, _, event, cx| {
                 if matches!(event, CheckboxEvent::Change { .. }) {
-                    panel.toggle_row_selection(index, cx);
+                    panel.toggle_row_selection(id, cx);
                 }
             }));
         }
@@ -120,16 +128,18 @@ impl PaymentsPanel {
         }
     }
 
-    fn toggle_row_selection(&mut self, index: usize, cx: &mut Context<Self>) {
+    fn toggle_row_selection(&mut self, id: usize, cx: &mut Context<Self>) {
         self.table.update(cx, |list, cx| {
-            list.toggle_selected_index(index, cx);
+            if let Some(index) = list.items().iter().position(|row| row.id == id) {
+                list.toggle_selected_index(index, cx);
+            }
         });
     }
 
     fn sync_checkboxes_from_list(&self, cx: &mut Context<Self>) {
-        let selected: Vec<_> = self.table.read(cx).selected_indices().to_vec();
-        for (index, checkbox) in self.row_checkboxes.iter().enumerate() {
-            let checked = selected.contains(&index);
+        let selected: Vec<_> = self.table.read(cx).selected_items().iter().map(|row| row.id).collect();
+        for (id, checkbox) in self.row_checkboxes.iter().enumerate() {
+            let checked = selected.contains(&id);
             checkbox.update(cx, |button, cx| {
                 if *button.data() != checked {
                     button.set_data(checked, cx);
@@ -158,7 +168,7 @@ impl Render for PaymentsPanel {
             &self.look,
             PAYMENTS_CARD_WIDTH,
             "Payments",
-            "Manage your payments.",
+            "Select payments with the checkboxes, then drag a row to reorder.",
             move |_, _| {
                 vstack! {
                     gap=12;
@@ -262,41 +272,104 @@ fn status_icon_cell(status: &'static str) -> impl IntoElement {
 
 fn selection_checkbox_column(row_checkboxes: Arc<Vec<Checkbox>>) -> TableColumnCellTemplate<PaymentRow> {
     Arc::new(move |model: &TableRowRenderModel<'_, PaymentRow>, _, _| {
-        row_checkboxes[model.index].clone().into_any_element()
+        let id = model.row.id;
+        div()
+            .id("payment-checkbox-boundary")
+            .debug_selector(move || format!("payments-checkbox-{id}"))
+            .drag_boundary()
+            .child(row_checkboxes[id].clone())
+            .into_any_element()
     })
 }
 
 fn row_menu_column(row_menus: Arc<Vec<Entity<PopupMenu>>>) -> TableColumnCellTemplate<PaymentRow> {
     Arc::new(move |model: &TableRowRenderModel<'_, PaymentRow>, _, _| {
+        let id = model.row.id;
         div()
+            .id("payment-menu-boundary")
+            .debug_selector(move || format!("payments-menu-{id}"))
+            .drag_boundary()
             .w_full()
             .flex()
             .items_center()
             .justify_center()
-            .child(row_menus[model.index].clone())
+            .child(row_menus[id].clone())
             .into_any_element()
     })
 }
 
 fn sample_payments() -> Vec<PaymentRow> {
     vec![
-        PaymentRow { status: "Success", email: "ken99@example.com".into(), amount: "$316.00".into() },
-        PaymentRow { status: "Success", email: "abe45@example.com".into(), amount: "$242.00".into() },
-        PaymentRow { status: "Processing", email: "Mason@example.com".into(), amount: "$837.00".into() },
-        PaymentRow { status: "Failed", email: "so456@example.com".into(), amount: "$721.00".into() },
-        PaymentRow { status: "Pending", email: "lee39@example.com".into(), amount: "$150.00".into() },
-        PaymentRow { status: "Success", email: "ashain@example.com".into(), amount: "$410.00".into() },
-        PaymentRow { status: "Success", email: "noah12@example.com".into(), amount: "$529.00".into() },
-        PaymentRow { status: "Processing", email: "ava88@example.com".into(), amount: "$198.00".into() },
-        PaymentRow { status: "Pending", email: "mia27@example.com".into(), amount: "$364.00".into() },
-        PaymentRow { status: "Failed", email: "liam63@example.com".into(), amount: "$912.00".into() },
-        PaymentRow { status: "Success", email: "emma14@example.com".into(), amount: "$275.00".into() },
-        PaymentRow { status: "Processing", email: "oliver52@example.com".into(), amount: "$648.00".into() },
-        PaymentRow { status: "Success", email: "sophia31@example.com".into(), amount: "$483.00".into() },
-        PaymentRow { status: "Pending", email: "james76@example.com".into(), amount: "$207.00".into() },
-        PaymentRow { status: "Failed", email: "amelia08@example.com".into(), amount: "$756.00".into() },
-        PaymentRow { status: "Success", email: "henry45@example.com".into(), amount: "$331.00".into() },
-        PaymentRow { status: "Processing", email: "isla19@example.com".into(), amount: "$584.00".into() },
-        PaymentRow { status: "Success", email: "charlie67@example.com".into(), amount: "$429.00".into() },
+        PaymentRow { id: 0, status: "Success", email: "ken99@example.com".into(), amount: "$316.00".into() },
+        PaymentRow { id: 1, status: "Success", email: "abe45@example.com".into(), amount: "$242.00".into() },
+        PaymentRow { id: 2, status: "Processing", email: "Mason@example.com".into(), amount: "$837.00".into() },
+        PaymentRow { id: 3, status: "Failed", email: "so456@example.com".into(), amount: "$721.00".into() },
+        PaymentRow { id: 4, status: "Pending", email: "lee39@example.com".into(), amount: "$150.00".into() },
+        PaymentRow { id: 5, status: "Success", email: "ashain@example.com".into(), amount: "$410.00".into() },
+        PaymentRow { id: 6, status: "Success", email: "noah12@example.com".into(), amount: "$529.00".into() },
+        PaymentRow { id: 7, status: "Processing", email: "ava88@example.com".into(), amount: "$198.00".into() },
+        PaymentRow { id: 8, status: "Pending", email: "mia27@example.com".into(), amount: "$364.00".into() },
+        PaymentRow { id: 9, status: "Failed", email: "liam63@example.com".into(), amount: "$912.00".into() },
+        PaymentRow { id: 10, status: "Success", email: "emma14@example.com".into(), amount: "$275.00".into() },
+        PaymentRow { id: 11, status: "Processing", email: "oliver52@example.com".into(), amount: "$648.00".into() },
+        PaymentRow { id: 12, status: "Success", email: "sophia31@example.com".into(), amount: "$483.00".into() },
+        PaymentRow { id: 13, status: "Pending", email: "james76@example.com".into(), amount: "$207.00".into() },
+        PaymentRow { id: 14, status: "Failed", email: "amelia08@example.com".into(), amount: "$756.00".into() },
+        PaymentRow { id: 15, status: "Success", email: "henry45@example.com".into(), amount: "$331.00".into() },
+        PaymentRow { id: 16, status: "Processing", email: "isla19@example.com".into(), amount: "$584.00".into() },
+        PaymentRow { id: 17, status: "Success", email: "charlie67@example.com".into(), amount: "$429.00".into() },
     ]
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod tests {
+    use super::*;
+    use gpui::{MouseButton, TestAppContext, point};
+
+    #[test]
+    fn payment_checkboxes_follow_records_after_group_reorder() {
+        let mut app = TestAppContext::single();
+        let (panel, cx) = app
+            .add_window_view(|_, cx| PaymentsPanel::new(cx, Arc::new(ShadcnLook::built_in()), shadcn::ShadcnSize::Sm));
+        cx.update(|window, _| window.activate_window());
+        cx.run_until_parked();
+        for selector in ["payments-checkbox-1", "payments-checkbox-2"] {
+            let checkbox = cx.debug_bounds(selector).unwrap();
+            cx.simulate_click(checkbox.center(), Default::default());
+        }
+        let source = cx.debug_bounds("payments-checkbox-1").unwrap();
+        let target = cx.debug_bounds("payments-checkbox-0").unwrap();
+        let source = point(source.right() + px(120.0), source.center().y);
+        let target = point(source.x, target.top() + px(1.0));
+        cx.simulate_mouse_down(source, MouseButton::Left, Default::default());
+        cx.simulate_mouse_move(source + point(px(20.0), px(0.0)), MouseButton::Left, Default::default());
+        cx.update(|_, app| assert!(app.has_active_drag()));
+        cx.simulate_mouse_move(target, MouseButton::Left, Default::default());
+        cx.simulate_mouse_up(target, MouseButton::Left, Default::default());
+        cx.update(|_, app| {
+            let panel = panel.read(app);
+            let table = panel.table.read(app);
+            assert_eq!(table.items().iter().take(3).map(|row| row.id).collect::<Vec<_>>(), [1, 2, 0]);
+            assert_eq!(table.selected_keys(), vec![SharedString::from("1"), "2".into()]);
+            assert_eq!(panel.selected_count, 2);
+            for (id, checkbox) in panel.row_checkboxes.iter().enumerate() {
+                assert_eq!(*checkbox.read(app).data(), id == 1 || id == 2);
+            }
+        });
+        // The moved checkbox must toggle its record, not its former row position.
+        let moved = cx.debug_bounds("payments-checkbox-1").unwrap();
+        cx.simulate_click(moved.center(), Default::default());
+        cx.update(|_, app| {
+            assert_eq!(panel.read(app).table.read(app).selected_keys(), vec![SharedString::from("2")]);
+            assert_eq!(panel.read(app).selected_count, 1);
+        });
+        // Embedded checkbox and menu gestures must not start a row drag.
+        for selector in ["payments-checkbox-1", "payments-menu-1"] {
+            let control = cx.debug_bounds(selector).unwrap().center();
+            cx.simulate_mouse_down(control, MouseButton::Left, Default::default());
+            cx.simulate_mouse_move(control + point(px(20.0), px(0.0)), MouseButton::Left, Default::default());
+            cx.update(|_, app| assert!(!app.has_active_drag()));
+            cx.simulate_mouse_up(control + point(px(20.0), px(0.0)), MouseButton::Left, Default::default());
+        }
+    }
 }

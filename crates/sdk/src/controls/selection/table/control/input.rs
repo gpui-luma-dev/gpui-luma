@@ -17,6 +17,12 @@ where
         if !self.model.enabled || !self.focus_handle.is_focused(window) {
             return;
         }
+        if event.keystroke.key == "escape" && self.active_row_drag.is_some() {
+            self.cancel_row_drag(cx);
+            cx.stop_active_drag(window);
+            cx.stop_propagation();
+            return;
+        }
         let modifiers = event.keystroke.modifiers;
         let key = event.keystroke.key.as_str();
         let toggle = modifiers.platform || modifiers.control;

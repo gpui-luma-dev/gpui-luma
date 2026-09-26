@@ -139,6 +139,11 @@ impl<S: Clone, K: Clone> DropProposal<S, K> {
     pub fn before(&self) -> Option<&K> {
         self.before.as_ref()
     }
+    /// Whether this proposal belongs to this exact captured session.
+    pub fn is_from(&self, drag: &KeyedDrag<S, K>) -> bool {
+        Rc::ptr_eq(&self.drag.phase, &drag.phase)
+    }
+
     pub fn is_active(&self) -> bool {
         self.drag.phase.get() == Phase::Active
     }

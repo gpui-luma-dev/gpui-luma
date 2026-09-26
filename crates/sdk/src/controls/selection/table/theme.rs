@@ -53,7 +53,30 @@ pub struct TableRowLook {
     pub label_baseline_shift: f32,
 }
 
+/// Theme-owned visuals for the compact drag preview and insertion feedback.
+#[derive(Clone, Debug)]
+pub struct TableDragLook {
+    pub background: Hsla,
+    pub foreground: Hsla,
+    pub valid_marker: Hsla,
+    pub invalid_marker: Hsla,
+    pub radius: f32,
+}
+
 pub trait TableTheme: Send + Sync {
+    /// Defaults to existing theme surfaces; themes can supply semantic accents.
+    fn resolve_drag(&self, size: ControlSize) -> TableDragLook {
+        let look = self.resolve_look(true, true, size);
+        let invalid = self.resolve_row(false, InteractionState { invalid: true, ..Default::default() }, size);
+        TableDragLook {
+            background: look.header_background,
+            foreground: look.header_label_color,
+            valid_marker: look.border,
+            invalid_marker: invalid.label_color,
+            radius: look.radius,
+        }
+    }
+
     fn resolve_look(&self, enabled: bool, focused: bool, size: ControlSize) -> TableLook;
     fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> TableRowPalette;
     fn metrics(&self) -> MetricTokens;
@@ -87,6 +110,17 @@ impl DefaultTableTheme {
 }
 
 impl TableTheme for DefaultTableTheme {
+    fn resolve_drag(&self, size: ControlSize) -> TableDragLook {
+        let palette = &self.tokens.palette;
+        TableDragLook {
+            background: palette.surface.floating.background,
+            foreground: palette.surface.floating.foreground,
+            valid_marker: palette.focus.ring,
+            invalid_marker: palette.form.input.invalid_border,
+            radius: self.tokens.metrics.radius(size),
+        }
+    }
+
     fn resolve_look(&self, enabled: bool, _focused: bool, size: ControlSize) -> TableLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;

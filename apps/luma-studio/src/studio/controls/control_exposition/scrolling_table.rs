@@ -86,7 +86,7 @@ impl Render for ScrollingTableExpositionLeftPane {
                             div()
                                 .text_sm()
                                 .text_color(chrome.muted_text)
-                                .child("Task grid fills the pane and resizes with the window."),
+                                .child("Drag a row or selected group to reorder. Hold near an edge to scroll; Escape cancels."),
                         )
                         .child(
                             div()
@@ -183,6 +183,7 @@ impl ScrollingTableControlExposition {
             })
             .spawn(cx);
         table.update(cx, |table, cx| table.set_row_key(|row| row.id.clone(), cx)).expect("unique task IDs");
+        table.update(cx, |table, cx| table.set_row_reordering(true, cx)).expect("keyed table");
         let sort_button = luma_look_shadcn::Button::new("table-sort")
             .look(&look)
             .outline()
@@ -336,6 +337,7 @@ impl Render for ScrollingTableControlExposition {
 
 fn format_table_event(event: &TableEvent) -> Option<String> {
     match event {
+        TableEvent::RowDrag(event) => Some(format!("{event:?}")),
         TableEvent::SelectionChanged { selected_indices } => {
             Some(format!("TableEvent::SelectionChanged {{ selected_indices: {selected_indices:?} }}"))
         }

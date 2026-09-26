@@ -173,7 +173,7 @@ where
             this.handle_item_click(index, event, cx);
         }));
 
-        row.into_any_element()
+        self.bind_row_drag(row, index, cx).into_any_element()
     }
 }
 
@@ -211,6 +211,7 @@ where
             .render(&render_model, header, body, window, cx)
             .track_focus(&self.focus_handle)
             .key_context("LumaTableControl")
+            .on_drag_move(cx.listener(Self::handle_drag_move))
             .on_key_down(cx.listener(Self::handle_key_down))
             .on_action(cx.listener(Self::handle_select_previous_item))
             .on_action(cx.listener(Self::handle_select_next_item))

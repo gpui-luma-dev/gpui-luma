@@ -170,17 +170,17 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     ControlDocEntry {
         id: "scrolling-table",
         title: "Scrolling Table",
-        description: "Virtualized task grid that fills the pane, with column templates, row snap scrolling, and range selection. Resizes with the window.",
+        description: "Virtualized task grid that fills the pane, with column templates, row snap scrolling, range selection, and drag reordering. Resizes with the window.",
         category: ControlCategory::Choice,
-        snippet: "shadcn::Table::new(\"tasks\")\n    .look(&look)\n    .items(rows)\n    .extended()\n    .fill_height()\n    .scroll_snap(true)\n    .grid_view(columns)\n    .spawn(cx);",
+        snippet: "let table = shadcn::Table::new(\"tasks\")\n    .look(&look)\n    .items(rows)\n    .extended()\n    .fill_height()\n    .scroll_snap(true)\n    .grid_view(columns)\n    .spawn(cx);\ntable.update(cx, |table, cx| {\n    table.set_row_key(|row| row.id.clone(), cx).expect(\"unique IDs\");\n    table.set_row_reordering(true, cx).expect(\"keyed table\");\n});",
         section_order: 140,
     },
     ControlDocEntry {
         id: "paging-table",
         title: "Paging Table",
-        description: "Grid table with embedded pager toolbar. Page size and pager style stay wired to Table page commands for prev/next navigation.",
+        description: "Grid table with selected-group drag reordering and an embedded pager toolbar. Page size and pager style stay wired to Table page commands for prev/next navigation.",
         category: ControlCategory::Choice,
-        snippet: "paging_table! {\n    table_theme = look.table_theme();\n    id = \"tasks\";\n    items = rows;\n    page_size = 10;\n    pager = shadcn::Pager::new(\"pager\").look(look.as_ref()).style(PagerStyle::MinimalEdge).into_sdk_builder(cx);\n    grid_view = { /* columns */ };\n}.spawn(cx);",
+        snippet: "let table = paging_table! {\n    table_theme = look.table_theme();\n    id = \"tasks\";\n    items = rows;\n    page_size = 10;\n    selection = TableSelectionMode::Extended;\n    pager = shadcn::Pager::new(\"pager\").look(look.as_ref()).style(PagerStyle::MinimalEdge).into_sdk_builder(cx);\n    grid_view = { /* columns */ };\n}.spawn(cx);\nlet list = table.read(cx).list().clone();\nlist.update(cx, |table, cx| {\n    table.set_row_key(|row| row.id.clone(), cx).expect(\"unique IDs\");\n    table.set_row_reordering(true, cx).expect(\"keyed table\");\n});",
         section_order: 140,
     },
     ControlDocEntry {

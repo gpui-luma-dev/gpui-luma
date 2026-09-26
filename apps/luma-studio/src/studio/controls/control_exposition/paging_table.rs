@@ -16,7 +16,7 @@ use super::collection_theme_inspectors::TableThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::table_demo::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
+use super::table_demo::{Task, build_task_rows, email_column, status_cell, tag_pill};
 use super::inspector::{TableInspectorAdapter, TABLE_INSPECTOR_SPEC};
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
@@ -36,14 +36,12 @@ struct PagingTableExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     table: PagingTable<Task>,
-    selected_indices: Vec<usize>,
     event_stream: Entity<ControlEventStream>,
 }
 
 impl PagingTableExpositionLeftPane {
     fn handle_list_event(&mut self, event: &TableEvent, cx: &mut Context<Self>) {
-        if let TableEvent::SelectionChanged { selected_indices } = event {
-            self.selected_indices = selected_indices.clone();
+        if matches!(event, TableEvent::SelectionChanged { .. } | TableEvent::SelectedKeysChanged { .. }) {
             cx.notify();
         }
     }
@@ -57,7 +55,7 @@ impl PagingTableExpositionLeftPane {
 }
 
 impl Render for PagingTableExpositionLeftPane {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
             let chrome = look.chrome();
@@ -78,19 +76,19 @@ impl Render for PagingTableExpositionLeftPane {
                             div()
                                 .text_sm()
                                 .text_color(chrome.muted_text)
-                                .child("Paged task grid with the SDK paging toolbar wired to Table commands."),
+                                .child("Drag rows or a selected group to reorder at a gap on this page. Escape cancels."),
                         )
                         .child(
                             div()
                                 .text_sm()
                                 .text_color(chrome.body_text)
-                                .child(selected_summary(&self.selected_indices)),
+                                .child(format!("Selected task IDs: {}", self.table.read(cx).list().read(cx).selected_keys().iter().map(|key| key.as_ref()).collect::<Vec<_>>().join(", "))),
                         )
                         .child(
                             div()
                                 .text_sm()
                                 .text_color(chrome.muted_text)
-                                .child("Keyboard: Arrow keys move the active row. Enter or Space selects it."),
+                                .child("Ctrl/Cmd-click toggles rows; Shift-click extends selection. Dragging does not switch pages."),
                         ),
                 )
                 .child(self.table.clone())
@@ -127,7 +125,7 @@ impl PagingTableControlExposition {
                 .style(PagerStyle::MinimalEdge)
                 .page_size(DEFAULT_PAGE_SIZE)
                 .into_sdk_builder(cx);
-            selection = TableSelectionMode::Single;
+            selection = TableSelectionMode::Extended;
             selected_index = 1;
             active_index = 1;
             row_label = |row| row.title.clone();
@@ -182,6 +180,12 @@ impl PagingTableControlExposition {
         }
         .spawn(cx);
 
+        let list = table.read(cx).list().clone();
+        list.update(cx, |table, cx| {
+            table.set_row_key(|row| row.id.clone(), cx).expect("unique task IDs");
+            table.set_row_reordering(true, cx).expect("keyed table");
+        });
+
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
@@ -195,7 +199,6 @@ impl PagingTableControlExposition {
             look: look.clone(),
             entry,
             table: table.clone(),
-            selected_indices: vec![1],
             event_stream: event_stream.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
@@ -263,6 +266,8 @@ impl Render for PagingTableControlExposition {
 
 fn format_table_event(event: &TableEvent) -> Option<String> {
     match event {
+        TableEvent::RowDrag(event) => Some(format!("{event:?}")),
+        TableEvent::SelectedKeysChanged { selected_keys } => Some(format!("Selected task IDs: {selected_keys:?}")),
         TableEvent::SelectionChanged { selected_indices } => {
             Some(format!("TableEvent::SelectionChanged {{ selected_indices: {selected_indices:?} }}"))
         }

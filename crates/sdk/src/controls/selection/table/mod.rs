@@ -28,6 +28,31 @@
 //! additions to the original API; exhaustive mode matches and row replacement
 //! callers should handle them.
 
+//! # Row reordering
+//!
+//! After `set_row_key`, opt in with `set_row_reordering(true, cx)`. Dragging a
+//! selected row moves all selected rows in dataset order; dragging an unselected
+//! row moves only that row and preserves the selection. Disabled rows cannot be
+//! dragged. Before/after gaps are resolved against current keys. Unchanged gaps
+//! show invalid feedback and complete without a mutation. Escape or release
+//! outside a gap cancels. Replacing items/keys or disabling reordering invalidates
+//! the captured session. Keys must remain stable for the lifetime of each record.
+//!
+//! The default drop commits synchronously. `set_row_drop_handler` lets an owner
+//! call `commit_row_drop` or `reject_row_drop` synchronously; validation runs again
+//! at commit. `TableEvent::RowDrag` exposes the shared start, reorder, drop/reject
+//! and end lifecycle. Read `row_keys()` / `items()` after `ItemsReordered` to persist
+//! the final order. Row data does not need to implement `Clone`.
+//!
+//! Scrolling and virtualized tables support edge auto-scroll. Paged tables use
+//! visible-page gaps in the full dataset (including selected rows on other pages)
+//! without switching pages during the drag. Table has no native sort/filter/group
+//! projection: owners must disable reordering while an external transformation
+//! makes displayed order non-authoritative. Cross-table and hierarchical moves
+//! are unsupported. Wrap nested interactive cells with
+//! [`crate::infra::drag_drop::DragDropElementExt::drag_boundary`] so their clicks
+//! and drags do not arm the row. Themes own preview and valid/invalid marker colors.
+
 mod control;
 mod column_template;
 mod layout;
@@ -38,7 +63,7 @@ mod row;
 mod template;
 mod theme;
 
-pub use control::{TableControl, TableEvent, TableSelectionError};
+pub use control::{TableControl, TableEvent, TableSelectionError, TableReorderError, TableRowDrop, TableRowDragEvent};
 pub use paging::{PagingTable, PagingTableControl, PagingTableBuilder};
 pub use column_template::{
     TableColumnRenderModel, column_template_with_modifier, default_emphasis_column_template,
@@ -58,7 +83,9 @@ pub use model::{
 pub use template::{
     DefaultTableShellTemplate, TableTemplate, TableTemplateModifier, default_table_template, table_template_with_theme,
 };
-pub use theme::{DefaultTableTheme, TableLook, TableRowLook, TableRowPalette, TableTheme, default_table_theme};
+pub use theme::{
+    DefaultTableTheme, TableDragLook, TableLook, TableRowLook, TableRowPalette, TableTheme, default_table_theme,
+};
 
 use gpui::{Entity, SharedString};
 

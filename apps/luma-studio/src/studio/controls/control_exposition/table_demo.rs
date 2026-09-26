@@ -79,11 +79,3 @@ pub(super) fn status_cell(status: &'static str) -> impl IntoElement {
         .child(div().text_color(color).child(luma::infra::icon::lucide_icon(icon, color, 16.0)))
         .child(div().flex_1().min_w(px(0.0)).truncate().child(status))
 }
-
-pub(super) fn selected_summary(selected_indices: &[usize]) -> String {
-    if let Some(&index) = selected_indices.first() {
-        format!("Selected row index: {index} (Task T-{index:04})")
-    } else {
-        "No row selected".to_string()
-    }
-}
