@@ -5,6 +5,7 @@ mod viewport;
 mod keys;
 mod reorder;
 mod drag;
+mod resize;
 pub use reorder::{TableReorderError, TableRowDrop, TableRowDragEvent};
 
 #[cfg(all(test, feature = "test-support"))]
@@ -88,6 +89,9 @@ where
     active_row_drag: Option<reorder::RowDrag>,
     row_drop_handler: Option<reorder::DropHandler<T>>,
     drag_scroll_scheduled: bool,
+    measured_column_widths: Vec<f32>,
+    measured_header_width: f32,
+    column_resize: Option<resize::ColumnResize>,
 }
 
 impl<T> EventEmitter<TableEvent> for TableControl<T> where T: 'static {}
@@ -139,6 +143,9 @@ where
             active_row_drag: None,
             row_drop_handler: None,
             drag_scroll_scheduled: false,
+            measured_column_widths: Vec::new(),
+            measured_header_width: 0.0,
+            column_resize: None,
         }
     }
 
@@ -373,6 +380,7 @@ where
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         if !enabled {
             self.cancel_row_drag(cx);
+            self.cancel_column_resize(cx);
         }
         if self.model.enabled == enabled {
             return;
@@ -421,6 +429,8 @@ where
     }
 
     pub fn set_header_template(&mut self, header_template: Option<TableHeaderTemplate>, cx: &mut Context<Self>) {
+        self.cancel_column_resize(cx);
+        self.model.grid_header = false;
         self.model.header_template = header_template;
         cx.notify();
     }
@@ -430,12 +440,16 @@ where
         F: for<'a> Fn(&TableRenderModel<'a>, &mut Window, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
+        self.cancel_column_resize(cx);
+        self.model.grid_header = false;
         self.model.header_template = Some(make_table_header_template(template));
         cx.notify();
     }
 
     pub fn clear_header_template(&mut self, cx: &mut Context<Self>) {
-        if self.model.header_template.is_some() {
+        if self.model.grid_header || self.model.header_template.is_some() {
+            self.cancel_column_resize(cx);
+            self.model.grid_header = false;
             self.model.header_template = None;
             cx.notify();
         }

@@ -47,7 +47,7 @@ where
     pub(super) fn render_model(&self, window: &Window, cx: &mut Context<Self>) -> TableRenderModel<'_> {
         let look = self.resolve_look(window);
         let row_look = self.resolve_row_look(window, cx);
-        let has_header = self.model.header_template.is_some();
+        let has_header = self.model.grid_header || self.model.header_template.is_some();
         let visible_rows =
             effective_visible_rows(self.model.visible_rows, self.model.scroll_mode, self.model.fill_height);
         let row_height = visible_row_height(&row_look, self.model.visible_row_height);
@@ -192,11 +192,11 @@ where
         }
 
         let render_model = self.render_model(window, cx);
-        let header = self
-            .model
-            .header_template
-            .as_ref()
-            .map(|header_template| header_template(&render_model, window, cx));
+        let header = if self.model.grid_header {
+            Some(self.render_grid_header(&render_model.look, cx))
+        } else {
+            self.model.header_template.as_ref().map(|template| template(&render_model, window, cx))
+        };
         let mut list_element = list(self.list_state.clone(), cx.processor(Self::render_row));
         if let Some(body_rows_height) = render_model.body_rows_height {
             list_element = list_element.h(px(body_rows_height)).w_full();
@@ -212,6 +212,9 @@ where
             .track_focus(&self.focus_handle)
             .key_context("LumaTableControl")
             .on_drag_move(cx.listener(Self::handle_drag_move))
+            .on_drag_move(cx.listener(Self::handle_column_resize_move))
+            .on_mouse_up(MouseButton::Left, cx.listener(Self::finish_column_resize))
+            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::finish_column_resize))
             .on_key_down(cx.listener(Self::handle_key_down))
             .on_action(cx.listener(Self::handle_select_previous_item))
             .on_action(cx.listener(Self::handle_select_next_item))

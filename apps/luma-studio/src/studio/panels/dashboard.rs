@@ -102,7 +102,7 @@ impl DashboardPanel {
                             dashboard_muted_text,
                             16.0,
                         ))
-                }),
+                }).resizable(false),
             };
             row_template = |model, cells, _window, _cx| {
                 div()
@@ -118,6 +118,7 @@ impl DashboardPanel {
             };
         }
         .fill_height()
+        .column_resizing(true)
         .spawn(cx);
 
         let list = table.read(cx).list().clone();
@@ -268,4 +269,73 @@ fn sidebar_toggle_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPres
             gpui::svg().size(px(16.0)).text_color(color).path(path.clone()).into_any_element()
         }
     })
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod tests {
+    use super::*;
+    use gpui::{MouseButton, TestAppContext, point, size};
+
+    #[test]
+    fn dashboard_column_handles_resize_on_first_drag() {
+        // Exercise the visible divider and both sides, not just the invisible
+        // center of a handle. Start unfocused, as the real dashboard does.
+        for selector in ["table-column-0", "table-column-1", "table-column-2"] {
+            for hit_offset in [-3.0, 0.0, 3.0] {
+                let mut app = TestAppContext::single();
+                let (panel, cx) =
+                    app.add_window_view(|_, cx| DashboardPanel::new(cx, Arc::new(ShadcnLook::built_in())));
+                cx.update(|window, _| window.activate_window());
+                cx.simulate_resize(size(px(1400.0), px(900.0)));
+                cx.run_until_parked();
+                let before = cx.debug_bounds(selector).unwrap();
+                let start = point(before.right() + px(hit_offset), before.center().y);
+                cx.simulate_mouse_down(start, MouseButton::Left, Default::default());
+                for offset in 1..=40 {
+                    cx.simulate_mouse_move(
+                        start + point(px(offset as f32), px(0.0)),
+                        MouseButton::Left,
+                        Default::default(),
+                    );
+                    cx.run_until_parked();
+                }
+                let after = cx.debug_bounds(selector).unwrap();
+                assert!(
+                    (after.size.width - before.size.width - px(40.0)).abs() < px(1.0),
+                    "{selector}, hit offset {hit_offset}: before {before:?}, after {after:?}"
+                );
+                cx.simulate_mouse_up(start + point(px(40.0), px(0.0)), MouseButton::Left, Default::default());
+                cx.update(|_, app| {
+                    let table = panel.read(app).table.read(app).list().read(app);
+                    assert_eq!(table.selected_keys(), [gpui::SharedString::from("T-0001")]);
+                });
+            }
+        }
+    }
+    #[test]
+    fn dashboard_resizes_when_sidebars_leave_title_collapsed() {
+        let mut app = TestAppContext::single();
+        let (_, cx) = app.add_window_view(|_, cx| DashboardPanel::new(cx, Arc::new(ShadcnLook::built_in())));
+        cx.update(|window, _| window.activate_window());
+        // Dashboard width remaining in the default 1200px Studio window after
+        // the 360px theme sidebar; Dashboard includes its own property sidebar.
+        cx.simulate_resize(size(px(840.0), px(700.0)));
+        cx.run_until_parked();
+        assert_eq!(cx.debug_bounds("table-column-1").unwrap().size.width, px(0.0));
+        for selector in ["table-column-2", "table-column-1"] {
+            let before = cx.debug_bounds(selector).unwrap();
+            let start = point(before.right(), before.center().y);
+            cx.simulate_mouse_down(start, MouseButton::Left, Default::default());
+            for offset in 1..=40 {
+                cx.simulate_mouse_move(
+                    start + point(px(offset as f32), px(0.0)),
+                    MouseButton::Left,
+                    Default::default(),
+                );
+            }
+            cx.simulate_mouse_up(start + point(px(40.0), px(0.0)), MouseButton::Left, Default::default());
+            let after = cx.debug_bounds(selector).unwrap();
+            assert!(after.size.width > before.size.width + px(30.0), "{selector}: before {before:?}, after {after:?}");
+        }
+    }
 }
