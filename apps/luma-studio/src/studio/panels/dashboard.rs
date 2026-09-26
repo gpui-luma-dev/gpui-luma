@@ -120,6 +120,12 @@ impl DashboardPanel {
         .fill_height()
         .spawn(cx);
 
+        let list = table.read(cx).list().clone();
+        list.update(cx, |table, cx| {
+            table.set_row_key(|row| row.id.clone(), cx).expect("unique task IDs");
+            table.set_row_reordering(true, cx).expect("keyed table");
+        });
+
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&sidebar, |panel, _, event: &SidebarEvent, cx| {
             if let SidebarEvent::OpenChanged { open, .. } = event {
