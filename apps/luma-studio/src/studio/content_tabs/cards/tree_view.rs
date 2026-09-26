@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::scroll_container::ScrollContainer;
-use luma::controls::scrollbar::ScrollbarEvent;
 use luma::controls::tree_view::{TreeNode, TreeViewControl, TreeViewEvent, TreeViewSelectionMode};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 use luma_look_shadcn as shadcn;
@@ -19,7 +17,7 @@ const TREE_DEPTH: usize = 5;
 
 pub struct TreeViewPanel {
     look: Arc<ShadcnLook>,
-    shell: Entity<TreeViewScrollShell>,
+    tree: Entity<TreeViewControl<SharedString>>,
     last_event: SharedString,
     _subscriptions: Vec<Subscription>,
 }
@@ -32,14 +30,12 @@ impl TreeViewPanel {
             .items(mock_file_tree())
             .spawn(cx);
 
-        let shell = cx.new(|cx| TreeViewScrollShell::new(look.clone(), tree, cx));
-
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&shell.read(cx).tree(), |panel, _, event, cx| {
+        subscriptions.push(cx.subscribe(&tree, |panel, _, event, cx| {
             panel.handle_event(event, cx);
         }));
 
-        Self { look, shell, last_event: "None".into(), _subscriptions: subscriptions }
+        Self { look, tree, last_event: "None".into(), _subscriptions: subscriptions }
     }
 
     fn handle_event(&mut self, event: &TreeViewEvent<SharedString>, cx: &mut Context<Self>) {
@@ -59,7 +55,7 @@ impl TreeViewPanel {
 impl Render for TreeViewPanel {
     fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
-        let shell = self.shell.clone();
+        let tree = self.tree.clone();
         let last_event = self.last_event.clone();
         let hint_style = self.look.typography_scale(ShadcnTextSize::Sm);
 
@@ -87,7 +83,7 @@ impl Render for TreeViewPanel {
                         .border_1()
                         .border_color(chrome.border)
                         .bg(chrome.content_background)
-                        .child(shell.clone()),
+                        .child(tree.clone()),
                     div()
                         .typography_style(hint_style)
                         .text_color(chrome.muted_text)
@@ -100,39 +96,6 @@ impl Render for TreeViewPanel {
             window,
             _cx,
         )
-    }
-}
-
-struct TreeViewScrollShell {
-    scroll: ScrollContainer,
-    tree: Entity<TreeViewControl<SharedString>>,
-    _subscriptions: Vec<Subscription>,
-}
-
-impl TreeViewScrollShell {
-    fn new(look: Arc<ShadcnLook>, tree: Entity<TreeViewControl<SharedString>>, cx: &mut Context<Self>) -> Self {
-        let scroll = ScrollContainer::new("studio-tree-scroll", look.scrollbar_template(), cx);
-        let scrollbar = scroll.scrollbar();
-        let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {
-            if let ScrollbarEvent::Change { value } = event {
-                this.scroll.set_vertical_offset(*value, cx);
-            }
-        })];
-
-        Self { scroll, tree, _subscriptions: subscriptions }
-    }
-
-    fn tree(&self) -> Entity<TreeViewControl<SharedString>> {
-        self.tree.clone()
-    }
-}
-
-impl Render for TreeViewScrollShell {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.scroll.sync_scrollbar(cx);
-
-        self.scroll
-            .render(div().id("studio-tree-scroll-content").size_full().child(self.tree.clone()).into_any_element())
     }
 }
 

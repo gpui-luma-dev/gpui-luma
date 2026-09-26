@@ -6,7 +6,7 @@ use gpui::{App, EntityId, Pixels, Task, px};
 
 use super::model::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 
-const AUTO_HIDE_TIMEOUT: Duration = Duration::from_millis(1250);
+pub(crate) const AUTO_HIDE_TIMEOUT: Duration = Duration::from_millis(1250);
 
 pub(super) fn viewport_right_inset(
     scrollable: bool,

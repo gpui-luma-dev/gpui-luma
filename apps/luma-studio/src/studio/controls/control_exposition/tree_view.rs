@@ -1,10 +1,11 @@
-//! Tree view control exposition — gallery-aligned virtualized file tree with scroll shell.
+//! Tree view control exposition — virtualized file tree with an integrated scrollbar.
 
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::scroll_container::ScrollContainer;
-use luma::controls::scrollbar::ScrollbarEvent;
+use luma::controls::button::{Button, ButtonEvent};
+use luma::controls::ScrollbarVisibility;
+use luma::infra::presenter::HasPresenter;
 use luma::controls::tree_view::{TreeNode, TreeView, TreeViewEvent, TreeViewSelectionMode};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn as shadcn;
@@ -22,6 +23,12 @@ use super::inspector::{TreeViewInspectorAdapter, TREE_VIEW_INSPECTOR_SPEC};
 
 const TREE_DEPTH: usize = 5;
 
+mod state_updates;
+mod positioning;
+mod selection;
+mod scale;
+mod workspaces;
+
 pub struct TreeViewControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
@@ -34,21 +41,47 @@ pub struct TreeViewControlExposition {
 struct TreeViewExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    shell: Entity<TreeViewScrollShell>,
+    tree: TreeView<SharedString>,
     event_stream: Entity<ControlEventStream>,
+    state_updates: Entity<state_updates::StateUpdates>,
+    workspaces: Entity<workspaces::Workspaces>,
+    positioning: Entity<positioning::Positioning>,
+    selection: Entity<selection::Selection>,
+    scale: Entity<scale::Scale>,
+    scrollbar_options: Vec<Entity<Button>>,
+    scrollbar_visibility: ScrollbarVisibility,
+    _subscriptions: Vec<Subscription>,
 }
 
 impl TreeViewExpositionLeftPane {
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.shell.update(cx, |shell, cx| shell.sync_look(look.clone(), cx));
+        self.tree.update(cx, |tree, cx| {
+            tree.set_template(look.tree_view_template(), cx);
+            tree.set_scrollbar_template(look.scrollbar_template(), cx);
+        });
+        for button in &self.scrollbar_options {
+            button.update(cx, |_, cx| cx.notify());
+        }
+        self.scale.update(cx, |fixture, cx| fixture.sync_look(look.clone(), cx));
+        self.selection.update(cx, |fixture, cx| fixture.sync_look(look.clone(), cx));
+        self.positioning.update(cx, |fixture, cx| fixture.sync_look(look.clone(), cx));
+        self.workspaces.update(cx, |fixture, cx| fixture.sync_look(look.clone(), cx));
+        self.state_updates.update(cx, |fixture, cx| fixture.sync_look(look.clone(), cx));
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
     }
 }
 
 impl Render for TreeViewExpositionLeftPane {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        for (button, visibility) in self.scrollbar_options.iter().zip([
+            ScrollbarVisibility::AutoHide,
+            ScrollbarVisibility::Hidden,
+            ScrollbarVisibility::AlwaysVisible,
+        ]) {
+            button.update(cx, |button, cx| button.set_enabled(visibility != self.scrollbar_visibility, cx));
+        }
         with_look(&self.look, || {
             let chrome = self.look.chrome();
             let preview =
@@ -59,8 +92,16 @@ impl Render for TreeViewExpositionLeftPane {
                     .items_center()
                     .gap(px(12.0))
                     .child(div().text_size(px(12.0)).text_color(chrome.muted_text).child(format!(
-                        "Mock tree: {TREE_DEPTH} levels deep — click branch rows to expand or collapse"
+                        "Mock tree: {TREE_DEPTH} levels deep — click to focus, then scroll. Arrow keys navigate; Home/End jump."
                     )))
+                    .child(div().text_size(px(12.0)).text_color(chrome.muted_text).child(format!(
+                        "Scrollbar: {}", match self.scrollbar_visibility {
+                            ScrollbarVisibility::AutoHide => "While scrolling",
+                            ScrollbarVisibility::Hidden => "Never",
+                            ScrollbarVisibility::AlwaysVisible => "Always",
+                        }
+                    )))
+                    .child(div().flex().gap(px(8.0)).children(self.scrollbar_options.iter().cloned()))
                     .child(
                         div()
                             .w(px(360.0))
@@ -73,9 +114,14 @@ impl Render for TreeViewExpositionLeftPane {
                             .border_1()
                             .border_color(chrome.border)
                             .bg(chrome.panel_background)
-                            .child(self.shell.clone()),
+                            .child(self.tree.clone()),
                     )
-                    .child(self.event_stream.clone());
+                    .child(self.event_stream.clone())
+                    .child(self.state_updates.clone())
+                    .child(self.workspaces.clone())
+                    .child(self.positioning.clone())
+                    .child(self.selection.clone())
+                    .child(self.scale.clone());
 
             div()
                 .id("controls-doc-tree-view-left-pane")
@@ -88,7 +134,7 @@ impl Render for TreeViewExpositionLeftPane {
                     self.entry,
                     preview.into_any_element(),
                     None,
-                    ControlExpositionLayout::BORDERLESS,
+                    ControlExpositionLayout { skip_snippet: true, ..ControlExpositionLayout::BORDERLESS },
                 ))
         })
     }
@@ -101,10 +147,11 @@ impl TreeViewControlExposition {
         let tree = shadcn::TreeView::new("controls-doc-tree-view")
             .look(look.as_ref())
             .selection_mode(TreeViewSelectionMode::Single)
-            .items(mock_file_tree())
+            .require_focus_for_scroll(true)
+            .wrap_navigation(false)
+            .try_items(mock_file_tree())
+            .expect("mock file tree IDs are unique")
             .spawn(cx);
-
-        let shell = cx.new(|cx| TreeViewScrollShell::new(look.clone(), tree.clone(), cx));
 
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
@@ -115,11 +162,49 @@ impl TreeViewControlExposition {
             )
         });
 
-        let left_pane = cx.new(|_| TreeViewExpositionLeftPane {
-            look: look.clone(),
-            entry,
-            shell: shell.clone(),
-            event_stream: event_stream.clone(),
+        let scale = cx.new(|cx| scale::Scale::new(look.clone(), cx));
+        let selection = cx.new(|cx| selection::Selection::new(look.clone(), cx));
+        let positioning = cx.new(|cx| positioning::Positioning::new(look.clone(), cx));
+        let workspaces = cx.new(|cx| workspaces::Workspaces::new(look.clone(), cx));
+        let state_updates = cx.new(|cx| state_updates::StateUpdates::new(look.clone(), cx));
+        let left_pane = cx.new(|cx| {
+            let mut subscriptions = Vec::new();
+            let scrollbar_options = [
+                ("auto", "While scrolling", ScrollbarVisibility::AutoHide),
+                ("hidden", "Never", ScrollbarVisibility::Hidden),
+                ("always", "Always", ScrollbarVisibility::AlwaysVisible),
+            ]
+            .into_iter()
+            .map(|(id, label, visibility)| {
+                let button =
+                    shadcn::Button::new(format!("tree-scrollbar-{id}")).look(&look).secondary().label(label).spawn(cx);
+                subscriptions.push(cx.subscribe(
+                    &button,
+                    move |pane: &mut TreeViewExpositionLeftPane, _, event, cx| {
+                        if matches!(event, ButtonEvent::Click) {
+                            pane.tree.update(cx, |tree, cx| tree.set_scrollbar_visibility(visibility, cx));
+                            pane.scrollbar_visibility = visibility;
+                            cx.notify();
+                        }
+                    },
+                ));
+                button
+            })
+            .collect();
+            TreeViewExpositionLeftPane {
+                look: look.clone(),
+                entry,
+                tree: tree.clone(),
+                event_stream: event_stream.clone(),
+                state_updates,
+                workspaces,
+                positioning,
+                selection,
+                scale,
+                scrollbar_options,
+                scrollbar_visibility: ScrollbarVisibility::AutoHide,
+                _subscriptions: subscriptions,
+            }
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
@@ -182,43 +267,6 @@ impl Render for TreeViewControlExposition {
     }
 }
 
-struct TreeViewScrollShell {
-    look: Arc<ShadcnLook>,
-    scroll: ScrollContainer,
-    tree: TreeView<SharedString>,
-    _subscriptions: Vec<Subscription>,
-}
-
-impl TreeViewScrollShell {
-    fn new(look: Arc<ShadcnLook>, tree: TreeView<SharedString>, cx: &mut Context<Self>) -> Self {
-        let scroll = ScrollContainer::new("controls-doc-tree-scroll", look.scrollbar_template(), cx);
-        let scrollbar = scroll.scrollbar();
-        let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {
-            if let ScrollbarEvent::Change { value } = event {
-                this.scroll.set_vertical_offset(*value, cx);
-            }
-        })];
-
-        Self { look, scroll, tree, _subscriptions: subscriptions }
-    }
-
-    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
-        self.look = look;
-        self.tree.update(cx, |_, cx| cx.notify());
-        cx.notify();
-    }
-}
-
-impl Render for TreeViewScrollShell {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.scroll.sync_scrollbar(cx);
-
-        self.scroll.render(
-            div().id("controls-doc-tree-scroll-content").size_full().child(self.tree.clone()).into_any_element(),
-        )
-    }
-}
-
 fn format_tree_view_event(event: &TreeViewEvent<SharedString>) -> Option<String> {
     match event {
         TreeViewEvent::NodeExpanded { node_id, .. } => {
@@ -228,7 +276,8 @@ fn format_tree_view_event(event: &TreeViewEvent<SharedString>) -> Option<String>
             Some(format!("TreeViewEvent::NodeCollapsed {{ node_id: \"{node_id}\" }}"))
         }
         TreeViewEvent::SelectionChanged { selected_ids } => {
-            let ids: Vec<_> = selected_ids.iter().map(|id| id.as_ref()).collect();
+            let mut ids: Vec<_> = selected_ids.iter().map(|id| id.as_ref()).collect();
+            ids.sort_unstable();
             Some(format!("TreeViewEvent::SelectionChanged {{ selected_ids: {ids:?} }}"))
         }
         TreeViewEvent::ActiveNodeChanged { node_id } => Some(match node_id {
@@ -238,6 +287,12 @@ fn format_tree_view_event(event: &TreeViewEvent<SharedString>) -> Option<String>
         TreeViewEvent::FocusChanged { focused } => {
             Some(format!("TreeViewEvent::FocusChanged {{ focused: {focused} }}"))
         }
+        TreeViewEvent::ScrollChanged { top_index } => {
+            Some(format!("TreeViewEvent::ScrollChanged {{ top_index: {top_index} }}"))
+        }
+        TreeViewEvent::RowHoverChanged { node_id, index, hovered } => Some(format!(
+            "TreeViewEvent::RowHoverChanged {{ node_id: {node_id:?}, index: {index}, hovered: {hovered} }}"
+        )),
         _ => None,
     }
 }
@@ -266,5 +321,6 @@ fn mock_branch(prefix: &str, depth: usize) -> TreeNode<SharedString> {
 
     TreeNode::new(id.clone(), format!("Folder {prefix}"), id)
         .icon(LucideIcon::Folder)
+        .expanded(true)
         .children(children)
 }

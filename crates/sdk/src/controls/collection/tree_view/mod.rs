@@ -1,10 +1,22 @@
 mod control;
+mod drag;
+pub use drag::{
+    TreeDropLocation, TreeDropPosition, TreeDropProposal, TreeViewDragDrop, TreeViewDragEvent, TreeDragEndReason,
+};
 mod model;
+mod projection;
+mod state;
 mod template;
 mod theme;
 
-pub use control::{CollapseNode, ExpandNode, TreeViewControl, TreeViewEvent};
-pub use model::{FlatTreeNode, TreeNode, TreeViewBuilder, TreeViewModel, TreeViewRenderModel, TreeViewSelectionMode};
+pub use control::{
+    TreeViewSubtreeState, CollapseNode, ExpandNode, SelectAllNodes, ClearSelectedNodes, TreeViewControl, TreeViewEvent,
+};
+pub use model::{
+    FlatTreeNode, TreeNode, TreeViewBuilder, TreeViewModel, TreeViewRenderModel, TreeViewSelectionMode,
+    TreeViewSelectionPolicy,
+};
+pub use state::TreeViewError;
 pub use template::{
     TreeViewTemplate, TreeViewTemplateHandlers, TreeViewTemplateModifier, ThemedTreeViewTemplate,
     default_tree_view_template,

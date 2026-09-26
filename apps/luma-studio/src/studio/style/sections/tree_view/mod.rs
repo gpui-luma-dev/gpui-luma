@@ -33,7 +33,11 @@ impl TreeViewPreview {
         let template = look.tree_view_template::<SharedString>();
         for tree in [&self.sm, &self.md, &self.lg, &self.template] {
             let template = template.clone();
-            tree.update(cx, move |tree, cx| tree.set_template(template, cx));
+            let scrollbar_template = look.scrollbar_template();
+            tree.update(cx, move |tree, cx| {
+                tree.set_template(template, cx);
+                tree.set_scrollbar_template(scrollbar_template, cx);
+            });
         }
         cx.notify();
     }

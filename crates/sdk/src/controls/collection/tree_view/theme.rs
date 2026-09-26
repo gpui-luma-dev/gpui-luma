@@ -67,12 +67,14 @@ impl DefaultTreeViewTheme {
 }
 
 impl TreeViewTheme for DefaultTreeViewTheme {
-    fn resolve_row(&self, state: InteractionState, _selected: bool, size: ControlSize) -> TreeViewPalette {
+    fn resolve_row(&self, state: InteractionState, selected: bool, size: ControlSize) -> TreeViewPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
         let layer = state.layer();
 
+        let selected = selected && !state.disabled;
         let background = match layer {
+            _ if selected => Some(palette.navigation.selected_background),
             InteractionLayer::Disabled | InteractionLayer::Default => None,
             InteractionLayer::Hovered => Some(palette.navigation.hover_background),
             InteractionLayer::Pressed => Some(palette.state.pressed.background),
@@ -80,6 +82,8 @@ impl TreeViewTheme for DefaultTreeViewTheme {
 
         let foreground = if state.disabled {
             palette.state.disabled.foreground
+        } else if selected {
+            palette.navigation.selected_foreground
         } else {
             palette.app.foreground
         };
@@ -90,8 +94,16 @@ impl TreeViewTheme for DefaultTreeViewTheme {
         TreeViewPalette {
             background,
             foreground,
-            icon_color: palette.navigation.muted_foreground,
-            chevron_color: palette.navigation.muted_foreground,
+            icon_color: if selected {
+                foreground
+            } else {
+                palette.navigation.muted_foreground
+            },
+            chevron_color: if selected {
+                foreground
+            } else {
+                palette.navigation.muted_foreground
+            },
             typography: row_typography,
             font_family: typography.font.sans.family.clone().into(),
         }
@@ -104,8 +116,33 @@ impl TreeViewTheme for DefaultTreeViewTheme {
 
 #[cfg(test)]
 mod tests {
-    use super::TreeViewScale;
-    use crate::theme::{ControlSize, MetricTokens};
+    use super::{DefaultTreeViewTheme, TreeViewScale, TreeViewTheme};
+    use crate::theme::{ControlSize, InteractionState, MetricTokens, ThemeTokens};
+
+    #[test]
+    fn selected_rows_remain_highlighted_without_hover_or_focus() {
+        for tokens in [ThemeTokens::light(), ThemeTokens::dark()] {
+            let theme = DefaultTreeViewTheme::new(tokens.clone());
+            for state in [
+                InteractionState::default(),
+                InteractionState { hovered: true, ..Default::default() },
+                InteractionState { pressed: true, ..Default::default() },
+            ] {
+                let selected = theme.resolve_row(state, true, ControlSize::Md);
+                assert_eq!(selected.background, Some(tokens.palette.navigation.selected_background));
+                assert_eq!(selected.foreground, tokens.palette.navigation.selected_foreground);
+                assert_eq!(selected.icon_color, selected.foreground);
+                assert_eq!(selected.chevron_color, selected.foreground);
+            }
+            assert_eq!(theme.resolve_row(InteractionState::default(), false, ControlSize::Md).background, None);
+            let disabled = InteractionState { disabled: true, ..Default::default() };
+            assert_eq!(theme.resolve_row(disabled, true, ControlSize::Md).background, None);
+            assert_eq!(
+                theme.resolve_row(disabled, true, ControlSize::Md).foreground,
+                tokens.palette.state.disabled.foreground
+            );
+        }
+    }
 
     #[test]
     fn affordance_sizes_follow_control_size_scale() {
