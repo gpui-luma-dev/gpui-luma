@@ -566,3 +566,259 @@ fn owner_accepts_once_and_foreign_proposals_cannot_change_another_table() {
             .any(|event| matches!(event, TableEvent::RowDrag(DragDropEvent::ItemsReordered { .. })))
     );
 }
+
+fn resizable_grid(
+    app: &mut TestAppContext,
+    enabled: bool,
+    extra_fill: bool,
+) -> (Entity<TableControl<Row>>, &mut VisualTestContext) {
+    use gpui::{div, prelude::*};
+    use super::super::model::TableColumn;
+    let column = |index: usize| {
+        move |row: &Row| {
+            let id = row.id;
+            div().w_full().h(px(20.0)).debug_selector(move || format!("cell-{id}-{index}"))
+        }
+    };
+    let (table, cx) = app.add_window_view(|_, cx| {
+        let mut table = TableControl::from_builder(
+            TableBuilder::new_typed("resizable-grid")
+                .items(rows(12))
+                .row_label(|row| row.id.to_string())
+                .selected_index(1)
+                .active_index(1)
+                .paged(5)
+                .visible_row_height(30.0_f32)
+                .column_resizing(enabled)
+                .grid_view([
+                    TableColumn::fixed("ID", 120.0, column(0)),
+                    TableColumn::fill("Title", column(1)),
+                    if extra_fill {
+                        TableColumn::fill("Status", column(2))
+                    } else {
+                        TableColumn::fixed("Status", 140.0, column(2))
+                    },
+                    TableColumn::fixed_control("", 44.0, column(3)),
+                ])
+                .with_row_template(|_, cells, _, _| div().w_full().child(cells)),
+            cx,
+        );
+        table.set_row_key(|row| row.id.to_string(), cx).unwrap();
+        table.set_row_reordering(true, cx).unwrap();
+        table
+    });
+    cx.update(|window, app| {
+        window.activate_window();
+        table.read(app).focus_handle.clone().focus(window, app);
+    });
+    cx.run_until_parked();
+    (table, cx)
+}
+
+fn resize_column(cx: &mut VisualTestContext, index: usize, delta: f32) -> gpui::Point<gpui::Pixels> {
+    let start = cx
+        .debug_bounds(["table-column-resize-0", "table-column-resize-1", "table-column-resize-2"][index])
+        .unwrap()
+        .center();
+    cx.simulate_mouse_down(start, gpui::MouseButton::Left, Default::default());
+    cx.simulate_mouse_move(start + point(px(10.0), px(0.0)), gpui::MouseButton::Left, Default::default());
+    let end = start + point(px(delta), px(0.0));
+    cx.simulate_mouse_move(end, gpui::MouseButton::Left, Default::default());
+    cx.run_until_parked();
+    end
+}
+
+fn assert_grid_alignment(cx: &mut VisualTestContext, row: usize) {
+    for index in 0..4 {
+        let header = cx
+            .debug_bounds(["table-column-0", "table-column-1", "table-column-2", "table-column-3"][index])
+            .unwrap();
+        let cell = cx
+            .debug_bounds(if row == 0 {
+                ["cell-0-0", "cell-0-1", "cell-0-2", "cell-0-3"][index]
+            } else {
+                ["cell-5-0", "cell-5-1", "cell-5-2", "cell-5-3"][index]
+            })
+            .unwrap();
+        let padding = if index == 3 { 0.0 } else { 12.0 };
+        assert!((cell.left() - header.left() - px(padding)).abs() < px(1.0));
+        assert!((cell.size.width - header.size.width + px(padding * 2.0)).abs() < px(1.0));
+    }
+}
+
+#[test]
+fn column_resize_keeps_header_rows_paging_and_row_drag_in_sync() {
+    let mut app = TestAppContext::single();
+    let (table, cx) = resizable_grid(&mut app, true, false);
+    assert_grid_alignment(cx, 0);
+    let before = cx.update(|_, app| table.read(app).measured_column_widths.clone());
+    let end = resize_column(cx, 0, 40.0);
+    assert_grid_alignment(cx, 0);
+    cx.update(|_, app| {
+        let grid = table.read(app);
+        let after = &grid.measured_column_widths;
+        assert!((after[0] - before[0] - 40.0).abs() < 1.0);
+        assert!((after[1] - before[1] + 40.0).abs() < 1.0);
+        assert_eq!(&after[2..], &before[2..]);
+        assert_eq!(grid.selected_keys(), [SharedString::from("1")]);
+        assert_eq!(grid.active_index(), Some(1));
+        assert!(grid.active_row_drag.is_none());
+    });
+    cx.simulate_mouse_up(end, gpui::MouseButton::Left, Default::default());
+    table.update(cx, |table, cx| table.set_page(1, cx));
+    cx.run_until_parked();
+    assert_grid_alignment(cx, 5);
+    cx.update(|_, app| {
+        assert!(table.read(app).column_resize.is_none());
+        assert_eq!(table.read(app).measured_column_widths[0], 160.0);
+    });
+    // Row dragging still works after resizing, with the page's dataset indices.
+    let start = cx.debug_bounds("cell-6-1").unwrap().center();
+    let target = cx.debug_bounds("cell-5-1").unwrap();
+    cx.simulate_mouse_down(start, gpui::MouseButton::Left, Default::default());
+    cx.simulate_mouse_move(start + point(px(20.0), px(0.0)), gpui::MouseButton::Left, Default::default());
+    let end = point(start.x, target.top() + px(1.0));
+    cx.simulate_mouse_move(end, gpui::MouseButton::Left, Default::default());
+    cx.simulate_mouse_up(end, gpui::MouseButton::Left, Default::default());
+    cx.update(|_, app| {
+        assert_eq!(table.read(app).items()[5].id, 6);
+        assert_eq!(table.read(app).current_page(), 1);
+    });
+}
+
+#[test]
+fn column_resize_clamps_cancels_and_finishes_outside_table() {
+    let mut app = TestAppContext::single();
+    let (table, cx) = resizable_grid(&mut app, true, false);
+    let before = cx.update(|_, app| table.read(app).measured_column_widths.clone());
+    resize_column(cx, 0, -1000.0);
+    cx.update(|_, app| assert_eq!(table.read(app).measured_column_widths[0], 48.0));
+    cx.simulate_keystrokes("escape");
+    cx.run_until_parked();
+    cx.update(|_, app| {
+        assert_eq!(table.read(app).measured_column_widths, before);
+        assert!(!app.has_active_drag());
+    });
+    resize_column(cx, 1, 1000.0);
+    cx.update(|_, app| assert_eq!(table.read(app).measured_column_widths[2], 48.0));
+    cx.simulate_mouse_up(point(px(2000.0), px(1000.0)), gpui::MouseButton::Left, Default::default());
+    cx.update(|_, app| assert!(table.read(app).column_resize.is_none()));
+}
+
+#[test]
+fn column_resize_handles_require_opt_in_and_resizable_neighbors() {
+    let mut app = TestAppContext::single();
+    let (_, cx) = resizable_grid(&mut app, false, false);
+    assert!(cx.debug_bounds("table-column-resize-0").is_none());
+    let mut app = TestAppContext::single();
+    let (table, cx) = resizable_grid(&mut app, true, false);
+    assert!(cx.debug_bounds("table-column-resize-2").is_none());
+    let before = cx.update(|_, app| table.read(app).measured_column_widths.clone());
+    resize_column(cx, 0, 30.0);
+    table.update(cx, |table, cx| table.set_enabled(false, cx));
+    cx.run_until_parked();
+    cx.update(|_, app| assert_eq!(table.read(app).measured_column_widths, before));
+    assert!(cx.debug_bounds("table-column-resize-0").is_none());
+}
+
+#[test]
+fn resizing_fill_columns_preserves_other_columns_and_flexible_layout() {
+    let mut app = TestAppContext::single();
+    let (table, cx) = resizable_grid(&mut app, true, true);
+    let before = cx.update(|_, app| table.read(app).measured_column_widths.clone());
+    let end = resize_column(cx, 1, 30.0);
+    cx.simulate_mouse_up(end, gpui::MouseButton::Left, Default::default());
+    assert_grid_alignment(cx, 0);
+    cx.update(|_, app| {
+        let widths = &table.read(app).measured_column_widths;
+        assert_eq!(widths[0], before[0]);
+        assert_eq!(widths[3], before[3]);
+        assert!((widths[1] - before[1] - 30.0).abs() < 1.0);
+        assert!((widths[2] - before[2] + 30.0).abs() < 1.0);
+    });
+    // Resizing a fixed/fill pair must leave the other fill column stationary.
+    let before = cx.update(|_, app| table.read(app).measured_column_widths.clone());
+    let end = resize_column(cx, 0, 25.0);
+    cx.simulate_mouse_up(end, gpui::MouseButton::Left, Default::default());
+    cx.update(|_, app| assert!((table.read(app).measured_column_widths[2] - before[2]).abs() < 1.0));
+    assert_grid_alignment(cx, 0);
+}
+
+#[test]
+fn column_resize_keeps_fill_ratios_on_viewport_changes() {
+    let mut app = TestAppContext::single();
+    let (table, cx) = resizable_grid(&mut app, true, true);
+    let end = resize_column(cx, 1, 30.0);
+    cx.simulate_mouse_up(end, gpui::MouseButton::Left, Default::default());
+    let before = cx.update(|_, app| table.read(app).measured_column_widths.clone());
+    let viewport = cx.update(|window, _| window.viewport_size());
+    cx.simulate_resize(gpui::size(viewport.width + px(200.0), viewport.height));
+    cx.run_until_parked();
+    assert_grid_alignment(cx, 0);
+    cx.update(|_, app| {
+        let widths = &table.read(app).measured_column_widths;
+        assert_eq!(widths[0], before[0]);
+        assert_eq!(widths[3], before[3]);
+        assert!((widths.iter().sum::<f32>() - before.iter().sum::<f32>() - 200.0).abs() < 1.0);
+        assert!((widths[1] / widths[2] - before[1] / before[2]).abs() < 0.01);
+    });
+    // Changing the viewport mid-drag rolls back captured widths.
+    resize_column(cx, 0, 25.0);
+    cx.simulate_resize(viewport);
+    cx.run_until_parked();
+    cx.update(|_, app| {
+        let grid = table.read(app);
+        assert!(grid.column_resize.is_none());
+        for (width, expected) in grid.measured_column_widths.iter().zip(before) {
+            assert!((width - expected).abs() < 1.0, "actual {:?}, expected {}", grid.measured_column_widths, expected);
+        }
+    });
+}
+
+#[test]
+fn fixed_column_resize_and_custom_header_override() {
+    use gpui::{div, prelude::*};
+    use super::super::model::TableColumnWidth;
+    let mut app = TestAppContext::single();
+    let (table, cx) = resizable_grid(&mut app, true, false);
+    table.update(cx, |table, cx| {
+        table.model.columns[1].width = TableColumnWidth::Fixed(180.0);
+        cx.notify();
+    });
+    cx.run_until_parked();
+    let end = resize_column(cx, 0, 25.0);
+    cx.simulate_mouse_up(end, gpui::MouseButton::Left, Default::default());
+    cx.update(|_, app| {
+        assert_eq!(table.read(app).measured_column_widths, [145.0, 155.0, 140.0, 44.0]);
+    });
+    assert_grid_alignment(cx, 0);
+    table.update(cx, |table, cx| {
+        table.set_header_template_fn(|_, _, _| div().h(px(20.0)).debug_selector(|| "custom-header".into()), cx);
+    });
+    cx.run_until_parked();
+    assert!(cx.debug_bounds("custom-header").is_some());
+    assert!(cx.debug_bounds("table-column-resize-0").is_none());
+    table.update(cx, |table, cx| table.clear_header_template(cx));
+    cx.run_until_parked();
+    assert!(cx.debug_bounds("custom-header").is_none());
+}
+
+#[test]
+fn collapsed_fill_column_does_not_disable_other_resize_handles() {
+    let mut app = TestAppContext::single();
+    let (table, cx) = resizable_grid(&mut app, true, false);
+    // Fixed columns consume the entire viewport, as with both Studio sidebars open.
+    cx.simulate_resize(gpui::size(px(302.0), px(400.0)));
+    cx.run_until_parked();
+    cx.update(|_, app| assert_eq!(table.read(app).measured_column_widths[1], 0.0));
+    let end = resize_column(cx, 1, 30.0);
+    cx.simulate_mouse_up(end, gpui::MouseButton::Left, Default::default());
+    cx.update(|_, app| {
+        let widths = &table.read(app).measured_column_widths;
+        assert_eq!(widths[1], 26.0);
+        assert_eq!(widths[2], 110.0);
+    });
+    cx.simulate_resize(gpui::size(px(600.0), px(400.0)));
+    cx.run_until_parked();
+    cx.update(|_, app| assert!(table.read(app).measured_column_widths[1] > 30.0));
+}

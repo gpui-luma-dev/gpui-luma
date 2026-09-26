@@ -185,6 +185,12 @@ impl<T: 'static> PagingTableBuilder<T> {
         self
     }
 
+    /// Enable manual resizing between adjacent resizable grid columns.
+    pub fn column_resizing(mut self, enabled: bool) -> Self {
+        self.list_builder = self.list_builder.column_resizing(enabled);
+        self
+    }
+
     pub fn spawn(self, cx: &mut impl AppContext) -> PagingTable<T> {
         let fill_height = self.list_builder.model.fill_height;
         let list = cx.new(|cx| TableControl::from_builder(self.list_builder, cx));

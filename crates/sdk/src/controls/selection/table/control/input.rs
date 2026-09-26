@@ -17,6 +17,12 @@ where
         if !self.model.enabled || !self.focus_handle.is_focused(window) {
             return;
         }
+        if event.keystroke.key == "escape" && self.column_resize.is_some() {
+            self.cancel_column_resize(cx);
+            cx.stop_active_drag(window);
+            cx.stop_propagation();
+            return;
+        }
         if event.keystroke.key == "escape" && self.active_row_drag.is_some() {
             self.cancel_row_drag(cx);
             cx.stop_active_drag(window);
@@ -320,6 +326,7 @@ where
     }
 
     pub(super) fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        self.cancel_column_resize(cx);
         if self.emit_focus_changed(false, cx) {
             cx.notify();
         }

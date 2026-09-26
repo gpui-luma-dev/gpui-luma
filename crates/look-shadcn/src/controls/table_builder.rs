@@ -184,6 +184,12 @@ where
         self
     }
 
+    /// Enable manual resizing between adjacent resizable grid columns.
+    pub fn column_resizing(mut self, enabled: bool) -> Self {
+        self.builder = self.builder.column_resizing(enabled);
+        self
+    }
+
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<TableControl<T>> {
         let look = resolve_look_from(self.look.as_ref(), cx);
         self.into_sdk_builder(look).spawn(cx)

@@ -178,7 +178,9 @@ where
     T: 'static,
 {
     header: SharedString,
-    width: TableColumnWidth,
+    pub(super) width: TableColumnWidth,
+    pub(super) fill_weight: f32,
+    pub(super) resizable: bool,
     cell_layout: TableColumnCellLayout,
     cell_template: TableColumnCellTemplate<T>,
 }
@@ -191,6 +193,8 @@ where
         Self {
             header: self.header.clone(),
             width: self.width,
+            fill_weight: self.fill_weight,
+            resizable: self.resizable,
             cell_layout: self.cell_layout,
             cell_template: self.cell_template.clone(),
         }
@@ -206,7 +210,14 @@ where
         width: TableColumnWidth,
         cell_template: TableColumnCellTemplate<T>,
     ) -> Self {
-        Self { header: header.into(), width, cell_layout: TableColumnCellLayout::Text, cell_template }
+        Self {
+            header: header.into(),
+            width,
+            fill_weight: 1.0,
+            resizable: true,
+            cell_layout: TableColumnCellLayout::Text,
+            cell_template,
+        }
     }
 
     pub fn fixed(
@@ -235,6 +246,8 @@ where
         Self {
             header: header.into(),
             width: TableColumnWidth::Fixed(width),
+            fill_weight: 1.0,
+            resizable: cell_layout != TableColumnCellLayout::Control,
             cell_layout,
             cell_template: cell_template.into_cell_template(),
         }
@@ -244,9 +257,19 @@ where
         Self {
             header: header.into(),
             width: TableColumnWidth::Fill,
+            fill_weight: 1.0,
+            resizable: true,
             cell_layout: TableColumnCellLayout::Text,
             cell_template: cell_template.into_cell_template(),
         }
+    }
+
+    /// Allow this column to participate in adjacent-column resizing.
+    /// Text columns default to true; fixed control columns default to false.
+    /// The table must also opt in with `column_resizing(true)`.
+    pub fn resizable(mut self, resizable: bool) -> Self {
+        self.resizable = resizable;
+        self
     }
 
     pub fn cell_layout(&self) -> TableColumnCellLayout {
@@ -286,6 +309,8 @@ where
     pub(crate) row_enabled: TableEnabledFn<T>,
     pub(crate) template: Arc<dyn TableTemplate>,
     pub(crate) header_template: Option<TableHeaderTemplate>,
+    pub(crate) grid_header: bool,
+    pub(crate) column_resizing: bool,
     pub(crate) row_template: Option<TableRowTemplate<T>>,
     pub(crate) theme: Arc<dyn TableTheme>,
     pub(crate) look_override: Option<TableLookOverride>,
@@ -353,6 +378,8 @@ where
                 row_enabled: Arc::new(|_| true),
                 template: default_table_template(),
                 header_template: None,
+                grid_header: false,
+                column_resizing: false,
                 row_template: None,
                 theme: default_table_theme(),
                 look_override: None,
@@ -535,6 +562,7 @@ where
     }
 
     pub fn header_template(mut self, header_template: TableHeaderTemplate) -> Self {
+        self.model.grid_header = false;
         self.model.header_template = Some(header_template);
         self
     }
@@ -544,6 +572,7 @@ where
         F: for<'a> Fn(&TableRenderModel<'a>, &mut Window, &mut App) -> E + Send + Sync + 'static,
         E: gpui::IntoElement + 'static,
     {
+        self.model.grid_header = false;
         self.model.header_template = Some(make_table_header_template(template));
         self
     }
@@ -563,12 +592,17 @@ where
     }
 
     pub fn grid_view(mut self, columns: impl IntoIterator<Item = TableColumn<T>>) -> Self {
-        let columns: Vec<TableColumn<T>> = columns.into_iter().collect();
-        let header_columns = columns.clone();
-        self.model.columns = columns;
+        self.model.columns = columns.into_iter().collect();
+        self.model.grid_header = true;
+        self.model.header_template = None;
+        self
+    }
 
-        self.model.header_template =
-            Some(make_table_header_template(move |_model, _window, _cx| render_grid_view_header(&header_columns)));
+    /// Enable manual resizing between adjacent resizable grid columns.
+    /// Dragging preserves their combined width and keeps fill columns flexible.
+    /// Custom header templates do not receive resize handles. Defaults to false.
+    pub fn column_resizing(mut self, enabled: bool) -> Self {
+        self.model.column_resizing = enabled;
         self
     }
 
@@ -608,23 +642,6 @@ where
     }
 }
 
-fn render_grid_view_header<T>(columns: &[TableColumn<T>]) -> AnyElement
-where
-    T: 'static,
-{
-    let mut row = div().w_full().flex().items_center();
-
-    for column in columns {
-        row = row.child(render_grid_view_header_column_slot(
-            column.width(),
-            column.cell_layout(),
-            column.header().clone().into_any_element(),
-        ));
-    }
-
-    row.into_any_element()
-}
-
 pub(crate) fn render_grid_view_cells<T>(
     model: &TableRowRenderModel<'_, T>,
     columns: &[TableColumn<T>],
@@ -639,6 +656,7 @@ where
     for column in columns {
         cells = cells.child(render_grid_view_column_slot(
             column.width(),
+            column.fill_weight,
             column.cell_layout(),
             column.render_cell(model, window, cx),
         ));
@@ -649,6 +667,7 @@ where
 
 fn render_grid_view_column_slot(
     width: TableColumnWidth,
+    fill_weight: f32,
     cell_layout: TableColumnCellLayout,
     content: AnyElement,
 ) -> AnyElement {
@@ -670,6 +689,7 @@ fn render_grid_view_column_slot(
             .into_any_element(),
         (TableColumnWidth::Fill, TableColumnCellLayout::Control) => div()
             .flex_1()
+            .flex_grow(fill_weight)
             .min_w(px(0.0))
             .flex()
             .items_center()
@@ -678,17 +698,19 @@ fn render_grid_view_column_slot(
             .into_any_element(),
         (TableColumnWidth::Fill, TableColumnCellLayout::Text) => div()
             .flex_1()
+            .flex_grow(fill_weight)
             .min_w(px(0.0))
             .child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
             .into_any_element(),
     }
 }
 
-fn render_grid_view_header_column_slot(
+pub(super) fn render_grid_view_header_column_slot(
     width: TableColumnWidth,
+    fill_weight: f32,
     cell_layout: TableColumnCellLayout,
     content: AnyElement,
-) -> AnyElement {
+) -> Div {
     match (width, cell_layout) {
         (TableColumnWidth::Fixed(width), TableColumnCellLayout::Control) => div()
             .w(px(width))
@@ -697,8 +719,7 @@ fn render_grid_view_header_column_slot(
             .flex()
             .items_center()
             .justify_center()
-            .child(content)
-            .into_any_element(),
+            .child(content),
         (TableColumnWidth::Fixed(width), TableColumnCellLayout::Text) => div()
             .w(px(width))
             .min_w(px(width))
@@ -706,24 +727,23 @@ fn render_grid_view_header_column_slot(
             .flex()
             .items_center()
             .justify_center()
-            .child(grid_view_header_label_slot(content))
-            .into_any_element(),
+            .child(grid_view_header_label_slot(content)),
         (TableColumnWidth::Fill, TableColumnCellLayout::Control) => div()
             .flex_1()
+            .flex_grow(fill_weight)
             .min_w(px(0.0))
             .flex()
             .items_center()
             .justify_center()
-            .child(content)
-            .into_any_element(),
+            .child(content),
         (TableColumnWidth::Fill, TableColumnCellLayout::Text) => div()
             .flex_1()
+            .flex_grow(fill_weight)
             .min_w(px(0.0))
             .flex()
             .items_center()
             .justify_center()
-            .child(grid_view_header_label_slot(content))
-            .into_any_element(),
+            .child(grid_view_header_label_slot(content)),
     }
 }
 

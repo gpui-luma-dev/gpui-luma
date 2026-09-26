@@ -53,6 +53,20 @@
 //! [`crate::infra::drag_drop::DragDropElementExt::drag_boundary`] so their clicks
 //! and drags do not arm the row. Themes own preview and valid/invalid marker colors.
 
+//! # Manual column resizing
+//!
+//! Opt in with [`TableBuilder::column_resizing`] (also available on the paging
+//! and Shadcn builders). Drag a grid header's right divider to resize that column
+//! and its neighbor, preserving their combined width. Both must be resizable;
+//! [`TableColumn::resizable`] can lock action columns. Fixed control columns are
+//! locked by default. Dragging cannot shrink a column below 48px, or below its
+//! starting width if already narrower. Fill columns continue sharing available
+//! space when the viewport changes. Widths live on the table for its lifetime.
+//!
+//! Escape, focus loss, disabling the table, or a viewport change during a drag
+//! restores the original widths. Mouse release commits, including outside the
+//! table. Custom header templates own their interactions and get no handles.
+
 mod control;
 mod column_template;
 mod layout;
