@@ -2,6 +2,12 @@ mod input;
 mod render;
 mod selection;
 mod viewport;
+mod keys;
+
+#[cfg(all(test, feature = "test-support"))]
+mod tests;
+
+pub use keys::TableSelectionError;
 
 use gpui::{
     App, Context, EventEmitter, Focusable, IntoElement, ListOffset, ListState, SharedString, Subscription, Window, px,
@@ -22,14 +28,36 @@ use self::selection::normalize_model;
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum TableEvent {
-    SelectionChanged { selected_indices: Vec<usize> },
-    ActiveIndexChanged { active_index: Option<usize> },
-    PageChanged { page: usize },
-    PageSizeChanged { page_size: usize },
-    ScrollChanged { top_index: usize },
-    FocusChanged { focused: bool },
-    RowHoverChanged { index: usize, hovered: bool },
-    EnabledChanged { enabled: bool },
+    SelectionChanged {
+        selected_indices: Vec<usize>,
+    },
+    /// Stable selected identities, emitted only when membership changes.
+    /// Requires [`TableControl::set_row_key`]. Order follows the current rows.
+    SelectedKeysChanged {
+        selected_keys: Vec<SharedString>,
+    },
+    ActiveIndexChanged {
+        active_index: Option<usize>,
+    },
+    PageChanged {
+        page: usize,
+    },
+    PageSizeChanged {
+        page_size: usize,
+    },
+    ScrollChanged {
+        top_index: usize,
+    },
+    FocusChanged {
+        focused: bool,
+    },
+    RowHoverChanged {
+        index: usize,
+        hovered: bool,
+    },
+    EnabledChanged {
+        enabled: bool,
+    },
 }
 
 pub struct TableControl<T>
@@ -48,6 +76,9 @@ where
     emitted_focused: bool,
     /// When fill-height + paged, row height stretched so `page_size` rows fill the viewport.
     fill_row_height: Option<f32>,
+    row_key: Option<keys::RowKeyFn<T>>,
+    row_keys: Vec<SharedString>,
+    selection_anchor: Option<usize>,
 }
 
 impl<T> EventEmitter<TableEvent> for TableControl<T> where T: 'static {}
@@ -92,6 +123,9 @@ where
             emitted_scroll_top_index: 0,
             emitted_focused: false,
             fill_row_height: None,
+            row_key: None,
+            row_keys: Vec::new(),
+            selection_anchor: None,
         }
     }
 
@@ -142,30 +176,64 @@ where
         self.model.selected_indices.iter().filter_map(|index| self.model.items.get(*index)).collect()
     }
 
-    pub fn set_items(&mut self, items: impl IntoIterator<Item = T>, cx: &mut Context<Self>) {
-        self.model.items = items.into_iter().collect();
+    /// Replace rows, retaining selected/active identities when keys are configured.
+    /// Duplicate keys reject the whole update. Unkeyed tables retain indices.
+    pub fn set_items(
+        &mut self,
+        items: impl IntoIterator<Item = T>,
+        cx: &mut Context<Self>,
+    ) -> Result<(), TableSelectionError> {
+        let items: Vec<T> = items.into_iter().collect();
+        let keys = self.row_key.as_ref().map(|key| keys::collect_keys(&items, key.as_ref())).transpose()?;
+        let previous = self.selection_snapshot();
+        let previous_page = self.current_page;
+        if let Some(keys) = keys {
+            self.remap_selection(&keys);
+            self.row_keys = keys;
+        } else {
+            self.selection_anchor = None;
+        }
+        self.model.items = items;
         self.hovered_index = None;
         self.pressed_index = None;
         self.current_page = clamp_page(self.current_page, self.model.items.len(), self.page_size().unwrap_or(1));
         self.sync_list_state();
         normalize_model(&mut self.model);
-        cx.notify();
-    }
-
-    pub fn set_selected_indices(&mut self, selected_indices: impl IntoIterator<Item = usize>, cx: &mut Context<Self>) {
-        let previous = self.model.selected_indices.clone();
-        self.model.selected_indices = selected_indices.into_iter().collect();
-        normalize_model(&mut self.model);
-        let next = self.model.selected_indices.clone();
-        if next != previous {
-            cx.emit(TableEvent::SelectionChanged { selected_indices: next });
+        self.selection_anchor = self
+            .selection_anchor
+            .filter(|&index| self.model.items.get(index).is_some_and(|row| self.model.row_is_enabled(row)));
+        self.list_state.remeasure();
+        self.emit_selection_changes(previous, cx);
+        if previous_page != self.current_page {
+            cx.emit(TableEvent::PageChanged { page: self.current_page });
         }
         cx.notify();
+        Ok(())
     }
 
-    /// Toggles selection for `index` using the same rules as a row click.
+    /// Owner-driven replacement. Preserves focus, active row and scroll position;
+    /// invalid/disabled indices are discarded and Single keeps the first valid row.
+    /// Changed membership resets the range anchor; an owner echo preserves it.
+    pub fn set_selected_indices(&mut self, selected_indices: impl IntoIterator<Item = usize>, cx: &mut Context<Self>) {
+        let previous = self.selection_snapshot();
+        let next = selection::normalize_selected_indices(
+            self.model.selection_mode,
+            &self.model.items,
+            self.model.row_enabled.as_ref(),
+            &selected_indices.into_iter().collect::<Vec<_>>(),
+        );
+        if next == self.model.selected_indices {
+            return;
+        }
+        self.model.selected_indices = next;
+        self.selection_anchor = None;
+        self.emit_selection_changes(previous, cx);
+        cx.notify();
+    }
+
+    /// Toggles a row in Multiple/Extended; selects it in Single.
     pub fn toggle_selected_index(&mut self, index: usize, cx: &mut Context<Self>) -> bool {
-        self.commit_select_index(index, cx)
+        self.select_index(index, true, false, cx)
     }
 
     pub fn set_active_index(&mut self, active_index: Option<usize>, cx: &mut Context<Self>) {
@@ -177,8 +245,11 @@ where
             return;
         }
 
+        let previous = self.selection_snapshot();
         self.model.selection_mode = selection_mode;
+        self.selection_anchor = None;
         normalize_model(&mut self.model);
+        self.emit_selection_changes(previous, cx);
         cx.notify();
     }
 

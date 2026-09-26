@@ -8,7 +8,6 @@ use super::super::row::render_table_row;
 use super::super::theme::{TableLook, TableRowLook};
 use super::TableControl;
 use crate::infra::state::ControlFocusState;
-use crate::key_handling::ControlKeyProfile;
 use crate::theme::{InteractionState, LayoutCacheKey, ListRowScale, LumaLayoutCacheExt};
 
 impl<T> TableControl<T>
@@ -89,7 +88,7 @@ where
 
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
         let enabled = self.model.enabled && self.model.row_is_enabled(item);
-        let selected = self.model.selected_indices.contains(&index);
+        let selected = self.model.selected_indices.binary_search(&index).is_ok();
         let active = self.model.active_index == Some(index);
         let hovered = enabled && self.hovered_index == Some(index);
         let pressed = enabled && self.pressed_index == Some(index);
@@ -147,7 +146,11 @@ where
 
         let row_height = self.fill_row_height.or(self.model.visible_row_height);
         let row = render_table_row(
-            format!("{}-row-{}", self.model.id, index),
+            format!(
+                "{}-row-{}",
+                self.model.id,
+                self.row_keys.get(index).cloned().unwrap_or_else(|| index.to_string().into())
+            ),
             content,
             look,
             enabled,
@@ -207,7 +210,8 @@ where
             .template
             .render(&render_model, header, body, window, cx)
             .track_focus(&self.focus_handle)
-            .key_context(ControlKeyProfile::Selector.context())
+            .key_context("LumaTableControl")
+            .on_key_down(cx.listener(Self::handle_key_down))
             .on_action(cx.listener(Self::handle_select_previous_item))
             .on_action(cx.listener(Self::handle_select_next_item))
             .on_action(cx.listener(Self::handle_decrease_value_large))

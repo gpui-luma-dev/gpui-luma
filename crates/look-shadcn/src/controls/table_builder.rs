@@ -66,6 +66,11 @@ where
         self
     }
 
+    pub fn extended(mut self) -> Self {
+        self.builder = self.builder.extended();
+        self
+    }
+
     pub fn no_selection(mut self) -> Self {
         self.builder = self.builder.no_selection();
         self

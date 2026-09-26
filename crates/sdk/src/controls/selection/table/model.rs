@@ -38,7 +38,10 @@ pub enum TableSelectionMode {
     None,
     #[default]
     Single,
+    /// Each click or Space independently toggles a row.
     Multiple,
+    /// Plain selection replaces; Ctrl/Cmd toggles; Shift extends a range.
+    Extended,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -273,7 +276,7 @@ where
     pub(crate) selected_indices: Vec<usize>,
     pub(crate) active_index: Option<usize>,
     pub(crate) selection_mode: TableSelectionMode,
-    /// When `false`, row clicks update the active row only; selection changes via [`TableControl::set_selected_indices`] / [`TableControl::toggle_selected_index`].
+    /// When `false`, row clicks update the active row only; keyboard and owner selection remain available.
     pub(crate) select_on_row_click: bool,
     pub(crate) enabled: bool,
     pub(crate) size: ControlSize,
@@ -387,12 +390,18 @@ where
         self
     }
 
+    pub fn extended(mut self) -> Self {
+        self.model.selection_mode = TableSelectionMode::Extended;
+        self
+    }
+
     pub fn no_selection(mut self) -> Self {
         self.model.selection_mode = TableSelectionMode::None;
         self
     }
 
-    /// Data-table style: keep [`TableSelectionMode::Multiple`] but toggle selection only from embedded controls (e.g. row checkboxes).
+    /// Data-table style: row clicks only move the active row. Selection remains
+    /// available through the keyboard and embedded controls (e.g. row checkboxes).
     pub fn select_on_row_click(mut self, select_on_row_click: bool) -> Self {
         self.model.select_on_row_click = select_on_row_click;
         self
