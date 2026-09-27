@@ -41,6 +41,11 @@ impl PopupScrollSurface {
         self.snap_to_rows = enabled;
     }
 
+    /// Current viewport offset, independent of delayed scrollbar geometry updates.
+    pub fn vertical_offset(&self) -> Pixels {
+        self.container.vertical_offset()
+    }
+
     pub fn scrollbar(&self) -> Entity<Scrollbar> {
         self.container.scrollbar()
     }
@@ -100,7 +105,13 @@ impl PopupScrollSurface {
 
         let current = self.container.vertical_offset().as_f32();
         let max = self.container.max_vertical_offset().as_f32();
-        let target = self.quantize_offset((current - delta).clamp(0.0, max));
+        let target = (current - delta).clamp(0.0, max);
+        // Keep exact boundaries reachable and do not quantize trackpad/fractional input.
+        let target = if event.delta.precise() || target == 0.0 || target == max {
+            target
+        } else {
+            self.quantize_offset(target).clamp(0.0, max)
+        };
         if (target - current).abs() <= f32::EPSILON {
             return false;
         }
@@ -109,12 +120,38 @@ impl PopupScrollSurface {
         true
     }
 
+    /// Pointer-scrolling composition without an owner wheel callback.
     pub fn render(&self, content: AnyElement) -> AnyElement {
         if !self.scrolling_enabled {
             return div().w_full().child(content).into_any_element();
         }
-
         div().h(self.viewport_height).w_full().child(self.container.render(content)).into_any_element()
+    }
+
+    /// Clip and position content while the composite handles wheel input once.
+    pub fn render_without_wheel(&self, content: AnyElement) -> AnyElement {
+        if !self.scrolling_enabled {
+            return div().w_full().child(content).into_any_element();
+        }
+        if !self.scrolling_enabled {
+            return div().w_full().child(content).into_any_element();
+        }
+
+        div()
+            .h(self.viewport_height)
+            .w_full()
+            .child(self.container.render_without_wheel(content))
+            .into_any_element()
+    }
+
+    /// Bind the owner's callback inside the popup hitbox, including anchored popups.
+    /// The outer composite must not install the same callback a second time.
+    pub fn render_with_scroll_wheel(
+        &self,
+        content: AnyElement,
+        handler: impl Fn(&ScrollWheelEvent, &mut gpui::Window, &mut gpui::App) + 'static,
+    ) -> AnyElement {
+        div().w_full().on_scroll_wheel(handler).child(self.render_without_wheel(content)).into_any_element()
     }
 
     fn quantize_offset(&self, value: f32) -> f32 {

@@ -71,6 +71,42 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
         self
     }
 
+    /// Override focus behavior independently of wheel routing.
+    pub fn pointer_focus_policy(mut self, policy: crate::interaction::PointerFocusPolicy) -> Self {
+        self.binding.set_pointer_focus_policy(policy);
+        self
+    }
+
+    /// Configure wheel eligibility without changing boundary behavior.
+    pub fn wheel_scroll_policy(self, policy: crate::interaction::WheelScrollPolicy) -> Self {
+        self.scroll.set_wheel_scroll_policy(policy);
+        self
+    }
+    /// Change policy without resetting list state.
+    pub fn set_wheel_scroll_policy(&self, policy: crate::interaction::WheelScrollPolicy) {
+        self.scroll.set_wheel_scroll_policy(policy);
+    }
+
+    /// Configure the retained scroll adapter.
+    pub fn scroll_boundary_policy(self, policy: crate::interaction::ScrollBoundaryPolicy) -> Self {
+        self.scroll.set_scroll_boundary_policy(policy);
+        self
+    }
+    /// Change policy without resetting list state.
+    pub fn set_scroll_boundary_policy(&self, policy: crate::interaction::ScrollBoundaryPolicy) {
+        self.scroll.set_scroll_boundary_policy(policy);
+    }
+
+    /// Configure the retained scroll adapter.
+    pub fn wheel_focus_scope(self, policy: crate::interaction::WheelFocusScope) -> Self {
+        self.scroll.set_wheel_focus_scope(policy);
+        self
+    }
+    /// Change policy without resetting list state.
+    pub fn set_wheel_focus_scope(&self, policy: crate::interaction::WheelFocusScope) {
+        self.scroll.set_wheel_focus_scope(policy);
+    }
+
     /// Opt into uniform or measured virtualization; eager rendering remains the default.
     /// Item templates must keep durable state in their host/entities, since
     /// off-screen element instances are not retained.
@@ -161,6 +197,7 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
 
     /// Borrow existing state/handles for composition without recreating them.
     pub fn render_parts(&mut self) -> ListBoxRenderParts<'_, M, T, K> {
+        self.scroll.set_wheel_focus_owner(self.binding.focus_handle().clone());
         ListBoxRenderParts {
             state: &self.state,
             binding: &mut self.binding,

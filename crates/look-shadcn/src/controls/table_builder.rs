@@ -96,6 +96,30 @@ where
         self
     }
 
+    /// Override the SDK interaction policy.
+    /// Override focus behavior independently of wheel routing.
+    pub fn pointer_focus_policy(mut self, policy: luma::interaction::PointerFocusPolicy) -> Self {
+        self.builder = self.builder.pointer_focus_policy(policy);
+        self
+    }
+
+    pub fn wheel_scroll_policy(mut self, policy: luma::interaction::WheelScrollPolicy) -> Self {
+        self.builder = self.builder.wheel_scroll_policy(policy);
+        self
+    }
+
+    /// Override the SDK interaction policy.
+    pub fn scroll_boundary_policy(mut self, policy: luma::interaction::ScrollBoundaryPolicy) -> Self {
+        self.builder = self.builder.scroll_boundary_policy(policy);
+        self
+    }
+
+    /// Override the SDK interaction policy.
+    pub fn wheel_focus_scope(mut self, policy: luma::interaction::WheelFocusScope) -> Self {
+        self.builder = self.builder.wheel_focus_scope(policy);
+        self
+    }
+
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.builder = self.builder.enabled(enabled);
         self
@@ -220,4 +244,23 @@ mod tests {
             .row_label(|row| row.clone())
             .into_sdk_builder(look);
     }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn forwards_independent_wheel_policies_after_look_synthesis() {
+    use luma::interaction::{WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
+    let mut app = gpui::TestAppContext::single();
+    let control = Table::<usize>::new("policy")
+        .wheel_scroll_policy(WheelScrollPolicy::PassThrough)
+        .scroll_boundary_policy(ScrollBoundaryPolicy::Chain)
+        .wheel_focus_scope(WheelFocusScope::Owner)
+        .into_sdk_builder(ShadcnLook::built_in())
+        .spawn(&mut app);
+    control.read_with(&app, |view, _| {
+        let policy = view.scroll_interaction();
+        assert_eq!(policy.wheel, WheelScrollPolicy::PassThrough);
+        assert_eq!(policy.boundary, ScrollBoundaryPolicy::Chain);
+        assert_eq!(policy.focus_scope, WheelFocusScope::Owner);
+    });
 }

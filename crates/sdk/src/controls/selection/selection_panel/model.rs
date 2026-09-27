@@ -1,3 +1,4 @@
+use crate::interaction::{ScrollInteraction, WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
 use std::sync::Arc;
 
 use gpui::{App, AppContext, Entity, IntoElement, ParentElement, SharedString, Styled};
@@ -111,6 +112,20 @@ impl SelectionPanelPath {
 
 pub type SelectionPanelLookProvider = Arc<dyn Fn(ControlSize) -> SelectionPanelLook + Send + Sync + 'static>;
 
+/// Role selects the default hover behavior, not wheel eligibility or focus ownership.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SelectionPanelRole {
+    #[default]
+    Embedded,
+    Popup,
+}
+/// Explicit hover override. Hover never acquires focus or commits selection.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum HoverActivationPolicy {
+    PreserveActive,
+    FollowPointer,
+}
+
 #[derive(Clone)]
 pub struct SelectionPanelModel<T>
 where
@@ -123,6 +138,10 @@ where
     pub(crate) selected_source_index: Option<usize>,
     pub(crate) open: bool,
     pub(crate) enabled: bool,
+    pub(crate) scroll_interaction: ScrollInteraction,
+    pub(crate) pointer_focus: crate::interaction::PointerFocusPolicy,
+    pub(crate) role: SelectionPanelRole,
+    pub(crate) hover_activation: Option<HoverActivationPolicy>,
     pub(crate) show_selection_marker: bool,
     pub(crate) icons: SelectionStatusIcons,
     pub(crate) scrolling: bool,
@@ -149,6 +168,17 @@ where
 {
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self { model: default_selection_panel_model(id), initial_active_visible_index: None }
+    }
+
+    /// Select role defaults; an explicit hover policy takes precedence in either order.
+    pub fn role(mut self, role: SelectionPanelRole) -> Self {
+        self.model.role = role;
+        self
+    }
+    /// Override hover-to-active independently of role and scrolling.
+    pub fn hover_activation_policy(mut self, policy: HoverActivationPolicy) -> Self {
+        self.model.hover_activation = Some(policy);
+        self
     }
 
     pub fn panel_id(mut self, panel_id: impl Into<SharedString>) -> Self {
@@ -185,6 +215,30 @@ where
 
     pub fn open(mut self, open: bool) -> Self {
         self.model.open = open;
+        self
+    }
+
+    /// Configure pointer_focus independently of wheel and keyboard ownership.
+    pub fn pointer_focus_policy(mut self, policy: crate::interaction::PointerFocusPolicy) -> Self {
+        self.model.pointer_focus = policy;
+        self
+    }
+
+    /// Override wheel without changing other interaction settings.
+    pub fn wheel_scroll_policy(mut self, policy: WheelScrollPolicy) -> Self {
+        self.model.scroll_interaction.wheel = policy;
+        self
+    }
+
+    /// Override boundary without changing other interaction settings.
+    pub fn scroll_boundary_policy(mut self, policy: ScrollBoundaryPolicy) -> Self {
+        self.model.scroll_interaction.boundary = policy;
+        self
+    }
+
+    /// Override focus_scope without changing other interaction settings.
+    pub fn wheel_focus_scope(mut self, policy: WheelFocusScope) -> Self {
+        self.model.scroll_interaction.focus_scope = policy;
         self
     }
 
@@ -313,6 +367,10 @@ where
         selected_source_index: None,
         open: true,
         enabled: true,
+        scroll_interaction: ScrollInteraction::VIEWPORT,
+        pointer_focus: Default::default(),
+        role: SelectionPanelRole::Embedded,
+        hover_activation: None,
         show_selection_marker: true,
         icons: SelectionStatusIcons::default(),
         scrolling: true,

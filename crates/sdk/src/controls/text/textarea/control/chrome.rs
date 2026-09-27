@@ -1,3 +1,4 @@
+use gpui::Focusable;
 use gpui::{
     Context, DragMoveEvent, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Render, SharedString, Window, div,
     prelude::*, px,
@@ -130,6 +131,13 @@ impl Render for TextArea {
             0.0
         };
         let show_scrollbar = self.is_scrollable();
+        if !show_scrollbar && self.scrollbar.read(cx).focus_handle(cx).is_focused(window) {
+            if self.model.enabled {
+                self.focus_handle.focus(window, cx);
+            } else {
+                window.blur(cx);
+            }
+        }
         let scrollbar_width = px(12.0);
         let resize_handle = div()
             .id(format!("{}-resize-handle", self.model.id))

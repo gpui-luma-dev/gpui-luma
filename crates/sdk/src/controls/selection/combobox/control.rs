@@ -450,18 +450,47 @@ impl ComboBoxControl {
         self.trigger_bounds = Some(*bounds);
     }
 
-    fn handle_popup_scroll_wheel(&mut self, event: &ScrollWheelEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if !self.behavior.state.open || self.behavior.state.filtered.is_empty() {
+    /// Update popup wheel without rebuilding its editor or selection.
+    pub fn set_wheel_scroll_policy(&mut self, policy: crate::interaction::WheelScrollPolicy, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.wheel = policy;
+        cx.notify();
+    }
+
+    /// Update popup boundary without rebuilding its editor or selection.
+    pub fn set_scroll_boundary_policy(
+        &mut self,
+        policy: crate::interaction::ScrollBoundaryPolicy,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.scroll_interaction.boundary = policy;
+        cx.notify();
+    }
+
+    /// Update popup focus_scope without rebuilding its editor or selection.
+    pub fn set_wheel_focus_scope(&mut self, policy: crate::interaction::WheelFocusScope, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.focus_scope = policy;
+        cx.notify();
+    }
+
+    fn handle_popup_scroll_wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+        use gpui::Focusable;
+        if !self.model.enabled || !self.behavior.state.open || self.behavior.state.filtered.is_empty() {
             return;
         }
-
+        let policy = self.model.scroll_interaction;
+        let owner = self.textfield.read(cx).focus_handle(cx);
+        let bar = self.popup_surface.scrollbar().read(cx).focus_handle(cx);
+        if !policy.wheel.accepts(policy.focus_scope.focused(&owner, Some(&bar), window, cx)) {
+            return;
+        }
+        if crate::interaction::wheel_delta(event, px(20.0), false).is_none() {
+            return;
+        }
         let moved = self.popup_surface.scroll_wheel(event, cx);
         if moved {
             cx.notify();
         }
-
-        let delta_y = event.delta.pixel_delta(px(20.0)).y.as_f32();
-        if delta_y.is_finite() && delta_y.abs() > f32::EPSILON {
+        if policy.boundary.consumes(moved) {
             cx.stop_propagation();
         }
     }
@@ -673,7 +702,10 @@ impl Render for ComboBoxControl {
                     item_template: self.model.item_template.as_ref(),
                     popup_bounds: self.trigger_bounds,
                     popup_look: look.clone(),
-                    list_content: self.popup_surface.render(list_content.into_any_element()),
+                    list_content: self.popup_surface.render_with_scroll_wheel(
+                        list_content.into_any_element(),
+                        cx.listener(Self::handle_popup_scroll_wheel),
+                    ),
                 },
                 cx,
             );
@@ -685,7 +717,8 @@ impl Render for ComboBoxControl {
 
         let handlers = ComboBoxTemplateHandlers {
             key_down: Box::new(cx.listener(Self::handle_key_down)),
-            scroll_wheel: Box::new(cx.listener(Self::handle_popup_scroll_wheel)),
+            // The popup surface owns wheel dispatch, even outside the trigger bounds.
+            scroll_wheel: Box::new(|_, _, _| {}),
             clear_click: Box::new(cx.listener(Self::handle_clear_click)),
             trigger_click: Box::new(cx.listener(Self::handle_trigger_click)),
             trigger_mouse_down: Box::new(cx.listener(Self::handle_trigger_mouse_down)),
@@ -711,4 +744,57 @@ impl Render for ComboBoxControl {
 
         self.model.template.render(render_model, handlers, window, cx)
     }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn popup_wheel_applies_once_and_pass_through_reaches_page() {
+    use gpui::{Focusable, ScrollDelta, ScrollHandle, TestAppContext, point};
+    use crate::interaction::{ScrollBoundaryPolicy, WheelScrollPolicy};
+    use crate::interaction_tests::Page;
+    let mut app = TestAppContext::single();
+    let (page, cx) = app.add_window_view(|window, cx| {
+        window.activate_window();
+        Page {
+            child: ComboBoxBuilder::new(
+                "popup-wheel",
+                (0..40).map(|i| super::behavior::SelectionItem::new(i.to_string(), format!("Item {i}"))),
+            )
+            .spawn(cx),
+            scroll: ScrollHandle::new(),
+            focus: cx.focus_handle(),
+        }
+    });
+    cx.run_until_parked();
+    let combo = cx.update(|window, app| {
+        let combo = page.read(app).child.clone();
+        combo.read(app).textfield.read(app).focus_handle(app).focus(window, app);
+        combo
+    });
+    combo.update(cx, |combo, cx| combo.open_popup_with_all_items(cx));
+    cx.run_until_parked();
+    let position = cx.update(|_, app| {
+        let bounds = combo.read(app).trigger_bounds.unwrap();
+        point(bounds.left() + px(30.0), bounds.bottom() + px(40.0))
+    });
+    let event =
+        ScrollWheelEvent { position, delta: ScrollDelta::Pixels(point(px(0.0), px(-25.0))), ..Default::default() };
+    cx.simulate_event(event.clone());
+    cx.run_until_parked();
+    cx.update(|window, app| {
+        assert_eq!(combo.read(app).popup_surface.vertical_offset(), px(25.0));
+        assert_eq!(page.read(app).scroll.offset().y, px(0.0));
+        assert!(combo.read(app).textfield.read(app).focus_handle(app).is_focused(window));
+    });
+    combo.update(cx, |combo, cx| {
+        combo.set_wheel_scroll_policy(WheelScrollPolicy::PassThrough, cx);
+        combo.set_scroll_boundary_policy(ScrollBoundaryPolicy::Contain, cx);
+    });
+    cx.run_until_parked();
+    cx.simulate_event(event);
+    cx.run_until_parked();
+    cx.update(|_, app| {
+        assert_eq!(combo.read(app).popup_surface.vertical_offset(), px(25.0));
+        assert!(page.read(app).scroll.offset().y < px(0.0));
+    });
 }

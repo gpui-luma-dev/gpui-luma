@@ -1,3 +1,4 @@
+use crate::interaction::{ScrollInteraction, WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
 use std::cell::{Cell, RefCell};
 use std::hash::Hash;
 use std::rc::Rc;
@@ -33,7 +34,8 @@ pub struct ListBoxScrollHandle<K> {
     motion: ScrollMotion,
     viewport_size: Rc<Cell<Size<Pixels>>>,
     drag_scroll: Rc<DragAutoScroll>,
-    require_focus_for_scroll: bool,
+    policy: Rc<Cell<ScrollInteraction>>,
+    focus_owner: Rc<RefCell<Option<gpui::FocusHandle>>>,
     rendered_window: RefCell<Option<ListBoxVirtualWindow>>,
     measured: Rc<RefCell<MeasuredGeometry<K>>>,
 }
@@ -50,7 +52,8 @@ impl<K> Default for ListBoxScrollHandle<K> {
             motion: ScrollMotion::default(),
             viewport_size: Rc::default(),
             drag_scroll: Rc::default(),
-            require_focus_for_scroll: false,
+            policy: Rc::new(Cell::new(ScrollInteraction::VIEWPORT)),
+            focus_owner: Rc::default(),
             rendered_window: RefCell::new(None),
             measured: Rc::default(),
         }
@@ -136,7 +139,7 @@ impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
                 geometry.reveal_unfocused = true;
             }
             self.positioned.set(true);
-        } else if !self.require_focus_for_scroll || state.is_focused() {
+        } else if state.is_focused() {
             if let Some(key) = self.pending_reveal.borrow_mut().take() {
                 geometry.reveal = Some(key);
                 geometry.reveal_center = false;
@@ -152,15 +155,55 @@ impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
         geometry.window(offset, viewport)
     }
 
-    /// Require the existing list binding's focus before accepting wheel input.
-    /// Defaults to false (hover scrolling). When true, an unfocused viewport
-    /// passes wheel input to its ancestors; a focused list contains it even at
-    /// either endpoint. The host must deliver the binding's focus updates.
-    /// Drag auto-scroll remains available without focus. Pending keyboard reveals
-    /// wait until focus returns. Explicit `scroll_to` requests work without focus.
-    pub fn require_focus_for_scroll(mut self, required: bool) -> Self {
-        self.require_focus_for_scroll = required;
+    /// Compatibility alias for `wheel_scroll_policy`; leaves boundary behavior unchanged.
+    pub fn require_focus_for_scroll(self, required: bool) -> Self {
+        self.wheel_scroll_policy(required.into())
+    }
+
+    /// Supply the real owner when composing a list manually. Look builders do this automatically.
+    pub fn set_wheel_focus_owner(&self, owner: gpui::FocusHandle) {
+        *self.focus_owner.borrow_mut() = Some(owner);
+    }
+
+    /// Current wheel settings.
+    pub fn scroll_interaction(&self) -> ScrollInteraction {
+        self.policy.get()
+    }
+
+    /// Configure wheel independently of other settings.
+    pub fn wheel_scroll_policy(self, policy: WheelScrollPolicy) -> Self {
+        self.set_wheel_scroll_policy(policy);
         self
+    }
+    /// Update wheel for the next wheel event; retained selection/position are unchanged.
+    pub fn set_wheel_scroll_policy(&self, policy: WheelScrollPolicy) {
+        let mut current = self.policy.get();
+        current.wheel = policy;
+        self.policy.set(current);
+    }
+
+    /// Configure boundary independently of other settings.
+    pub fn scroll_boundary_policy(self, policy: ScrollBoundaryPolicy) -> Self {
+        self.set_scroll_boundary_policy(policy);
+        self
+    }
+    /// Update boundary for the next wheel event; retained selection/position are unchanged.
+    pub fn set_scroll_boundary_policy(&self, policy: ScrollBoundaryPolicy) {
+        let mut current = self.policy.get();
+        current.boundary = policy;
+        self.policy.set(current);
+    }
+
+    /// Configure focus_scope independently of other settings.
+    pub fn wheel_focus_scope(self, policy: WheelFocusScope) -> Self {
+        self.set_wheel_focus_scope(policy);
+        self
+    }
+    /// Update focus_scope for the next wheel event; retained selection/position are unchanged.
+    pub fn set_wheel_focus_scope(&self, policy: WheelFocusScope) {
+        let mut current = self.policy.get();
+        current.focus_scope = policy;
+        self.policy.set(current);
     }
 
     /// Set maximum drag auto-scroll speed in logical pixels per second, per list.
@@ -231,7 +274,7 @@ impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
     ) -> Option<ListBoxVirtualWindow> {
         let metrics = UniformMetrics::new(axis, state.visible_items().len(), item_extent, gap, overscan)?;
         let viewport = metrics.viewport_extent(self.viewport_size.get());
-        let reveal = if viewport > 0.0 && (!self.require_focus_for_scroll || state.is_focused()) {
+        let reveal = if viewport > 0.0 && (state.is_focused()) {
             self.take_reveal_index(state)
         } else {
             None
@@ -313,7 +356,7 @@ impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
         let positioned =
             self.positioned.replace(false) || explicit.is_some() || animation_request.is_some() || motion.is_active();
         self.rendered_window.replace(rendered.clone());
-        let (viewport, accepts_wheel) = if rendered.is_some() {
+        let (viewport, _accepts_wheel) = if rendered.is_some() {
             self.track_viewport(viewport, state)
         } else {
             self.bind_viewport(viewport, state)
@@ -394,8 +437,7 @@ impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
                     }
                     scroll.offset() != previous_offset
                 } else if let Some(index) = reveal {
-                    scroll.scroll_to_item(index);
-                    true
+                    position_eager_item(&scroll, axis, index)
                 } else {
                     false
                 };
@@ -444,34 +486,60 @@ impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
                 }
             })
             .child(viewport);
+        let wheel_scroll = self.scroll.clone();
+        let wheel_policy = self.policy.clone();
+        let wheel_owner = self.focus_owner.clone();
+        let focused = state.is_focused();
         surface
-            // Bubble after the child scrolls, including at either endpoint.
             .on_any_mouse_down(move |_, _, _| pointer_motion.cancel())
-            .on_scroll_wheel(move |_, _, cx| {
+            .on_scroll_wheel(move |event, window, cx| {
+                let policy = wheel_policy.get();
+                let focused = wheel_owner
+                    .borrow()
+                    .as_ref()
+                    .map_or(focused, |owner| policy.focus_scope.focused(owner, None, window, cx));
+                if !policy.wheel.accepts(focused) {
+                    return;
+                }
+                let Some(delta) =
+                    crate::interaction::wheel_delta(event, window.line_height(), axis == ListBoxAxis::Horizontal)
+                else {
+                    return;
+                };
                 wheel_motion.cancel();
-                if accepts_wheel {
+                let moved = crate::interaction::scroll_handle_by(&wheel_scroll, delta, axis == ListBoxAxis::Horizontal);
+                if moved {
+                    window.refresh();
+                }
+                if policy.boundary.consumes(moved) {
                     cx.stop_propagation();
                 }
             })
             .child(measured_viewport)
     }
 
-    fn bind_viewport<T>(&self, viewport: Stateful<Div>, state: &ListBoxState<T, K>) -> (Stateful<Div>, bool) {
-        let accepts_wheel = !self.require_focus_for_scroll || state.is_focused();
-        if accepts_wheel && let Some(index) = self.take_reveal_index(state) {
-            self.scroll.scroll_to_item(index);
+    fn bind_viewport<T>(&self, mut viewport: Stateful<Div>, state: &ListBoxState<T, K>) -> (Stateful<Div>, bool) {
+        if state.is_focused()
+            && let Some(index) = self.take_reveal_index(state)
+        {
+            let horizontal = viewport.interactivity().base_style.overflow.x == Some(gpui::Overflow::Scroll);
+            position_eager_item(
+                &self.scroll,
+                if horizontal {
+                    ListBoxAxis::Horizontal
+                } else {
+                    ListBoxAxis::Vertical
+                },
+                index,
+            );
         }
         self.track_viewport(viewport, state)
     }
 
     fn track_viewport<T>(&self, viewport: Stateful<Div>, state: &ListBoxState<T, K>) -> (Stateful<Div>, bool) {
-        let accepts_wheel = !self.require_focus_for_scroll || state.is_focused();
-        // Hidden overflow keeps clipping, measured bounds, and the tracked
-        // offset, but GPUI applies no wheel delta on either axis. Retaining
-        // the handle also lets drag auto-scroll move an unfocused target.
         (
-            viewport.when(!accepts_wheel, |viewport| viewport.overflow_hidden()).track_scroll(&self.scroll),
-            accepts_wheel,
+            viewport.overflow_hidden().track_scroll(&self.scroll),
+            self.policy.get().wheel.accepts(state.is_focused()),
         )
     }
 
@@ -488,6 +556,36 @@ impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
     fn take_reveal_index<T>(&self, state: &ListBoxState<T, K>) -> Option<usize> {
         self.pending_reveal.borrow_mut().take().and_then(|key| state.visible_index(&key))
     }
+}
+
+// Native scroll_to_item only reveals axes with Overflow::Scroll. Wheel routing
+// deliberately uses Hidden, so reveal explicitly using the retained geometry.
+fn position_eager_item(scroll: &ScrollHandle, axis: ListBoxAxis, index: usize) -> bool {
+    let Some(row) = scroll.bounds_for_item(index) else {
+        return false;
+    };
+    let viewport = scroll.bounds();
+    let old = scroll.offset();
+    let mut next = old;
+    let (start, extent, visible, maximum, value) = match axis {
+        ListBoxAxis::Vertical => (
+            (row.top() - viewport.top()).as_f32(),
+            row.size.height.as_f32(),
+            viewport.size.height.as_f32(),
+            scroll.max_offset().y.as_f32(),
+            &mut next.y,
+        ),
+        ListBoxAxis::Horizontal => (
+            (row.left() - viewport.left()).as_f32(),
+            row.size.width.as_f32(),
+            viewport.size.width.as_f32(),
+            scroll.max_offset().x.as_f32(),
+            &mut next.x,
+        ),
+    };
+    *value = px(-position_offset(-value.as_f32(), visible, start, extent, false).clamp(0.0, maximum.max(0.0)));
+    scroll.set_offset(next);
+    old != next
 }
 
 pub(super) fn position_offset(offset: f32, viewport: f32, start: f32, extent: f32, center: bool) -> f32 {
@@ -535,12 +633,10 @@ mod tests {
                     let (mut viewport, accepts_wheel) = scroll.bind_viewport(viewport, &state);
                     assert_eq!(accepts_wheel, !require_focus || focused);
                     let overflow = &viewport.interactivity().base_style.overflow;
-                    if accepts_wheel {
-                        assert_eq!(if horizontal { overflow.x } else { overflow.y }, Some(gpui::Overflow::Scroll));
+                    assert_eq!(overflow.x, Some(gpui::Overflow::Hidden));
+                    assert_eq!(overflow.y, Some(gpui::Overflow::Hidden));
+                    if focused {
                         assert!(scroll.pending_reveal.borrow().is_none());
-                    } else {
-                        assert_eq!(overflow.x, Some(gpui::Overflow::Hidden));
-                        assert_eq!(overflow.y, Some(gpui::Overflow::Hidden));
                     }
                     assert_eq!(scroll.scroll.offset(), offset);
                 }
@@ -593,5 +689,67 @@ mod tests {
         assert_eq!(resize_reveal(initial, size(px(300.0), px(100.0)), Some(8)), Some(8));
         assert_eq!(resize_reveal(initial, initial, Some(8)), None);
         assert_eq!(resize_reveal(initial, size(px(200.0), px(100.0)), None), None);
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod dispatch_tests {
+    use super::*;
+    use super::super::{ListBoxBinding, ListBoxInput, SelectionMode};
+    use gpui::{App, AppContext, Focusable, Render, Window};
+    struct List {
+        state: ListBoxState<u32, u32>,
+        binding: ListBoxBinding,
+        scroll: ListBoxScrollHandle<u32>,
+    }
+    impl Focusable for List {
+        fn focus_handle(&self, _: &App) -> gpui::FocusHandle {
+            self.binding.focus_handle().clone()
+        }
+    }
+    impl List {
+        fn input(&mut self, input: ListBoxInput<u32>, _: &mut Window, cx: &mut Context<Self>) {
+            let update = self.state.apply(input);
+            self.scroll.handle_update(&update, cx);
+        }
+    }
+    impl Render for List {
+        fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+            self.scroll.set_wheel_focus_owner(self.binding.focus_handle().clone());
+            let surface = self.binding.bind_root(
+                div().id("matrix-list").w_full().h(px(150.0)),
+                ListBoxAxis::Vertical,
+                SelectionMode::SingleAllowNone,
+                window,
+                cx,
+                Self::input,
+            );
+            let viewport = div().id("matrix-list-viewport").w_full().h(px(150.0)).overflow_y_scroll().child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .children((0..100).map(|i| div().h(px(30.0)).flex_shrink_0().child(i.to_string()))),
+            );
+            self.scroll.bind(surface, viewport, &self.state)
+        }
+    }
+    #[test]
+    fn wheel_policy_dispatch_matrix() {
+        crate::interaction_tests::matrix(
+            |policy, cx| {
+                cx.new(|cx| List {
+                    state: ListBoxState::try_new(0..100, |i| *i, SelectionMode::SingleAllowNone).unwrap(),
+                    binding: ListBoxBinding::new(cx),
+                    scroll: ListBoxScrollHandle::default()
+                        .wheel_scroll_policy(policy.wheel)
+                        .scroll_boundary_policy(policy.boundary),
+                })
+            },
+            |view, _| -view.scroll.scroll.offset().y.as_f32(),
+            |view, cx| {
+                view.scroll.scroll.set_offset(gpui::point(px(0.0), -view.scroll.scroll.max_offset().y));
+                cx.notify();
+            },
+        );
     }
 }

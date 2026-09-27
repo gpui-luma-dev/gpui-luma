@@ -15,8 +15,8 @@ pub use item_template::{
     make_selection_panel_item_template,
 };
 pub use model::{
-    SelectionPanelBuilder, SelectionPanelLookProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
-    SelectionPanelPath, new,
+    SelectionPanelRole, HoverActivationPolicy, SelectionPanelBuilder, SelectionPanelLookProvider, SelectionPanelItem,
+    SelectionPanelItemLike, SelectionPanelModel, SelectionPanelPath, new,
 };
 pub use template::{
     SelectionPanelClickHandler, SelectionPanelHoverHandler, SelectionPanelModifier, SelectionPanelMouseDownHandler,

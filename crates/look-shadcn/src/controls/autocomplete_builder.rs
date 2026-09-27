@@ -35,6 +35,24 @@ impl Autocomplete {
         self
     }
 
+    /// Configure popup wheel routing independently.
+    pub fn wheel_scroll_policy(mut self, policy: luma::interaction::WheelScrollPolicy) -> Self {
+        self.builder = self.builder.wheel_scroll_policy(policy);
+        self
+    }
+
+    /// Configure popup wheel routing independently.
+    pub fn scroll_boundary_policy(mut self, policy: luma::interaction::ScrollBoundaryPolicy) -> Self {
+        self.builder = self.builder.scroll_boundary_policy(policy);
+        self
+    }
+
+    /// Configure popup wheel routing independently.
+    pub fn wheel_focus_scope(mut self, policy: luma::interaction::WheelFocusScope) -> Self {
+        self.builder = self.builder.wheel_focus_scope(policy);
+        self
+    }
+
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.builder = self.builder.enabled(enabled);
         self

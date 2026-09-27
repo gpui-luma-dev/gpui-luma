@@ -242,7 +242,7 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
                                         .rounded(px(model.popup_look.radius))
                                         .shadow(model.popup_look.shadow.clone())
                                         .overflow_hidden()
-                                        .occlude()
+                                        .block_mouse_except_scroll()
                                         .child(div().opacity(model.presence.opacity()).child(popup_content)),
                                 ),
                         )

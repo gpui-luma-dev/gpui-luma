@@ -80,6 +80,7 @@ where
     current_page: usize,
     emitted_scroll_top_index: usize,
     emitted_focused: bool,
+    wheel_gesture_active: bool,
     /// When fill-height + paged, row height stretched so `page_size` rows fill the viewport.
     fill_row_height: Option<f32>,
     row_key: Option<keys::RowKeyFn<T>>,
@@ -112,6 +113,34 @@ where
         TableBuilder::new_typed(id)
     }
 
+    /// Current wheel settings. Keyboard ownership is independent.
+    pub fn scroll_interaction(&self) -> crate::interaction::ScrollInteraction {
+        self.model.scroll_interaction
+    }
+
+    /// Change wheel without resetting focus, selection or position.
+    pub fn set_wheel_scroll_policy(&mut self, policy: crate::interaction::WheelScrollPolicy, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.wheel = policy;
+        self.wheel_gesture_active = false;
+        cx.notify();
+    }
+
+    /// Change boundary without resetting focus, selection or position.
+    pub fn set_scroll_boundary_policy(
+        &mut self,
+        policy: crate::interaction::ScrollBoundaryPolicy,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.scroll_interaction.boundary = policy;
+        cx.notify();
+    }
+
+    /// Change focus_scope without resetting focus, selection or position.
+    pub fn set_wheel_focus_scope(&mut self, policy: crate::interaction::WheelFocusScope, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.focus_scope = policy;
+        cx.notify();
+    }
+
     pub(crate) fn from_builder(mut builder: TableBuilder<T>, cx: &mut Context<Self>) -> Self {
         normalize_model(&mut builder.model);
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
@@ -135,6 +164,7 @@ where
             current_page: 0,
             emitted_scroll_top_index: 0,
             emitted_focused: false,
+            wheel_gesture_active: false,
             fill_row_height: None,
             row_key: None,
             row_keys: Vec::new(),
@@ -484,4 +514,26 @@ where
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
         self.focus_handle.clone()
     }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn wheel_policy_dispatch_matrix() {
+    crate::interaction_tests::matrix(
+        |policy, cx| {
+            TableBuilder::new_typed("matrix-table")
+                .items(0..100)
+                .row_label(|i| i.to_string())
+                .visible_rows(4)
+                .visible_row_height(30.0_f32)
+                .wheel_scroll_policy(policy.wheel)
+                .scroll_boundary_policy(policy.boundary)
+                .spawn(cx)
+        },
+        |view, _cx| -view.list_state.scroll_px_offset_for_scrollbar().y.as_f32(),
+        |view, cx| {
+            view.list_state.scroll_to(gpui::ListOffset { item_ix: 99, offset_in_item: px(0.0) });
+            cx.notify();
+        },
+    );
 }

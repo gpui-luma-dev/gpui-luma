@@ -22,6 +22,9 @@ luma-look-shadcn = { package = "gpui-luma-look-shadcn", git = "https://github.co
 
 Imports stay `use luma::…`.
 
+See [desktop input policies](docs/desktop-interactions.md) for independent wheel
+eligibility, boundary propagation, pointer focus, and hover activation settings.
+
 Collection controls live in `luma::controls::collection`: `listbox` for flat
 collections, `table` for tabular records, and `tree_view` for hierarchies. Value
 pickers remain in `selection`; destination and section controls remain in

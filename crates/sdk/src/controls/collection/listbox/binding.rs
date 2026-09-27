@@ -19,13 +19,23 @@ type InputHandler<M, K> = fn(&mut M, ListBoxInput<K>, &mut Window, &mut Context<
 /// events; keyboard events are handled only while the list itself holds focus.
 pub struct ListBoxBinding {
     focus: FocusHandle,
+    pointer_focus: crate::interaction::PointerFocusPolicy,
     subscriptions: Vec<Subscription>,
 }
 
 impl ListBoxBinding {
     /// Create a stable focus/input binding. Selection policy remains in the model.
     pub fn new(cx: &mut App) -> Self {
-        Self { focus: cx.focus_handle().tab_stop(true), subscriptions: Vec::new() }
+        Self {
+            focus: cx.focus_handle().tab_stop(true),
+            pointer_focus: Default::default(),
+            subscriptions: Vec::new(),
+        }
+    }
+
+    /// Configure focus acquisition on row press, independently of wheel input.
+    pub fn set_pointer_focus_policy(&mut self, policy: crate::interaction::PointerFocusPolicy) {
+        self.pointer_focus = policy;
     }
 
     pub fn focus_handle(&self) -> &FocusHandle {
@@ -102,8 +112,9 @@ impl ListBoxBinding {
             return row;
         }
         let focus = self.focus.clone();
+        let pointer_focus = self.pointer_focus;
         row.on_mouse_down(MouseButton::Left, move |_, window, cx| {
-            focus.focus(window, cx);
+            pointer_focus.apply(&focus, window, cx);
             cx.stop_propagation();
         })
         .on_click(cx.listener(move |owner, event: &ClickEvent, window, cx| {

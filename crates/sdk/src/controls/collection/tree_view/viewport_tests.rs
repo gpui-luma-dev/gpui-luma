@@ -398,3 +398,121 @@ fn auto_hide_ignores_rejected_wheel_and_keeps_the_bar_during_a_long_drag() {
         assert_eq!(page.read(app).focus_exits, 0);
     });
 }
+
+#[test]
+fn runtime_policies_empty_content_and_programmatic_reveal_are_independent() {
+    use crate::interaction::{WheelScrollPolicy, ScrollBoundaryPolicy};
+    let mut app = TestAppContext::single();
+    let (page, cx) = setup(&mut app, false);
+    let tree = cx.update(|_, app| page.read(app).tree.clone());
+    tree.update(cx, |tree, cx| tree.set_wheel_scroll_policy(WheelScrollPolicy::PassThrough, cx));
+    cx.run_until_parked();
+    wheel(cx, -40.0);
+    cx.update(|_, app| {
+        assert_eq!(tree.read(app).list_state.logical_scroll_top().item_ix, 0);
+        assert!(page.read(app).scroll.offset().y < px(0.0));
+        page.read(app).scroll.set_offset(point(px(0.0), px(0.0)));
+    });
+    tree.update(cx, |tree, cx| {
+        tree.reveal_item(80);
+        cx.notify();
+    });
+    cx.run_until_parked();
+    cx.update(|window, app| {
+        assert!(tree.read(app).list_state.logical_scroll_top().item_ix > 0);
+        assert!(!tree.read(app).focus_handle.is_focused(window));
+        assert!(tree.read(app).selected_ids().is_empty());
+    });
+    tree.update(cx, |tree, cx| {
+        tree.set_items([], cx);
+        tree.set_wheel_scroll_policy(WheelScrollPolicy::Pointer, cx);
+    });
+    cx.run_until_parked();
+    wheel(cx, -30.0);
+    cx.update(|_, app| assert_eq!(page.read(app).scroll.offset().y, px(0.0)));
+    tree.update(cx, |tree, cx| tree.set_scroll_boundary_policy(ScrollBoundaryPolicy::Chain, cx));
+    cx.run_until_parked();
+    wheel(cx, -30.0);
+    cx.update(|_, app| assert!(page.read(app).scroll.offset().y < px(0.0)));
+}
+
+#[test]
+fn scrollbar_focus_scope_is_independent_of_keyboard_navigation() {
+    use crate::interaction::WheelFocusScope;
+    let mut app = TestAppContext::single();
+    let (page, cx) = setup(&mut app, true);
+    let tree = cx.update(|_, app| page.read(app).tree.clone());
+    cx.update(|window, app| {
+        let handle = tree.read(app).scrollbar.as_ref().unwrap().read(app).focus_handle(app);
+        handle.focus(window, app);
+    });
+    cx.run_until_parked();
+    wheel(cx, -30.0);
+    cx.update(|_, app| {
+        assert_eq!(page.read(app).scroll.offset().y, px(0.0));
+        assert!(tree.read(app).list_state.scroll_px_offset_for_scrollbar().y < px(0.0));
+    });
+    tree.update(cx, |tree, cx| tree.set_wheel_focus_scope(WheelFocusScope::Owner, cx));
+    cx.run_until_parked();
+    let before = cx.update(|_, app| tree.read(app).list_state.logical_scroll_top());
+    wheel(cx, -30.0);
+    cx.update(|_, app| {
+        let after = tree.read(app).list_state.logical_scroll_top();
+        assert_eq!((after.item_ix, after.offset_in_item), (before.item_ix, before.offset_in_item));
+        assert!(page.read(app).scroll.offset().y < px(0.0));
+        assert!(tree.read(app).selected_ids().is_empty());
+    });
+}
+
+#[test]
+fn embedded_editor_focus_does_not_authorize_tree_keys_or_default_wheel() {
+    use crate::interaction::{WheelFocusScope, WheelScrollPolicy};
+    use crate::controls::textfield::TextFieldBuilder;
+    let mut app = TestAppContext::single();
+    let field = TextFieldBuilder::new("embedded-editor").value("editable").spawn(&mut app);
+    let (page, cx) = app.add_window_view(|window, cx| {
+        window.activate_window();
+        crate::key_handling::bind_default_control_keys(cx);
+        let editor = field.clone();
+        let tree = TreeViewBuilder::new("nested-focus-tree")
+            .items((0..100).map(|i| node(&i.to_string())))
+            .animated(false)
+            .wheel_scroll_policy(WheelScrollPolicy::RequireFocus)
+            .leaf_content(move |node, _, _| {
+                if node.id.as_ref() == "0" {
+                    editor.clone().into_any_element()
+                } else {
+                    div().child(node.label.clone()).into_any_element()
+                }
+            })
+            .spawn(cx);
+        let subscription = cx.subscribe(&tree, |_: &mut Page, _, _, _| {});
+        Page { tree, scroll: ScrollHandle::new(), focus_exits: 0, tree_height: 120.0, _subscription: subscription }
+    });
+    cx.run_until_parked();
+    cx.update(|window, app| field.read(app).focus_handle(app).focus(window, app));
+    cx.run_until_parked();
+    wheel(cx, -30.0);
+    cx.update(|_, app| {
+        let page = page.read(app);
+        assert_eq!(page.tree.read(app).list_state.logical_scroll_top().item_ix, 0);
+        assert!(page.scroll.offset().y < px(0.0));
+        page.scroll.set_offset(point(px(0.0), px(0.0)));
+    });
+    let tree = cx.update(|_, app| page.read(app).tree.clone());
+    tree.update(cx, |tree, cx| tree.set_wheel_focus_scope(WheelFocusScope::Descendants, cx));
+    page.update(cx, |_, cx| cx.notify());
+    cx.run_until_parked();
+    cx.simulate_keystrokes("down");
+    cx.run_until_parked();
+    cx.update(|window, app| {
+        assert!(field.read(app).focus_handle(app).is_focused(window));
+        assert!(tree.read(app).active_node_id().is_none());
+        assert!(tree.read(app).selected_ids().is_empty());
+    });
+    wheel(cx, -30.0);
+    cx.update(|_, app| {
+        assert!(tree.read(app).list_state.scroll_px_offset_for_scrollbar().y < px(0.0));
+        assert_eq!(page.read(app).scroll.offset().y, px(0.0));
+    });
+}

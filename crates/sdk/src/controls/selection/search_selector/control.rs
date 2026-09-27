@@ -305,7 +305,7 @@ impl SearchSelectorControl {
         }
     }
 
-    fn handle_item_click(&mut self, index: usize, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_item_click(&mut self, index: usize, event: &ClickEvent, window: &mut Window, cx: &mut Context<Self>) {
         if !self.model.enabled || event.is_keyboard() || !self.behavior.state.open {
             return;
         }
@@ -314,6 +314,7 @@ impl SearchSelectorControl {
             && self.model.items.get(item_index).is_some_and(|item| item.enabled)
         {
             self.select_item(item_index, false, cx);
+            self.restore_trigger_focus(window, cx);
         }
     }
 
@@ -355,6 +356,7 @@ impl SearchSelectorControl {
                 let was_open = self.behavior.state.open;
                 self.behavior.apply(SelectionEvent::Escape, &self.model.items);
                 self.emit_open_changed_if_needed(was_open, true, cx);
+                self.restore_trigger_focus(window, cx);
                 cx.notify();
                 window.prevent_default();
                 cx.stop_propagation();
@@ -422,6 +424,9 @@ impl SearchSelectorControl {
                 cx.stop_propagation();
             }
             _ => {}
+        }
+        if !self.behavior.state.open {
+            self.restore_trigger_focus(window, cx);
         }
     }
 
@@ -502,18 +507,47 @@ impl SearchSelectorControl {
         self.trigger_bounds = Some(*bounds);
     }
 
-    fn handle_popup_scroll_wheel(&mut self, event: &ScrollWheelEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if !self.behavior.state.open {
+    /// Update popup wheel without rebuilding its editor or selection.
+    pub fn set_wheel_scroll_policy(&mut self, policy: crate::interaction::WheelScrollPolicy, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.wheel = policy;
+        cx.notify();
+    }
+
+    /// Update popup boundary without rebuilding its editor or selection.
+    pub fn set_scroll_boundary_policy(
+        &mut self,
+        policy: crate::interaction::ScrollBoundaryPolicy,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.scroll_interaction.boundary = policy;
+        cx.notify();
+    }
+
+    /// Update popup focus_scope without rebuilding its editor or selection.
+    pub fn set_wheel_focus_scope(&mut self, policy: crate::interaction::WheelFocusScope, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.focus_scope = policy;
+        cx.notify();
+    }
+
+    fn handle_popup_scroll_wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+        use gpui::Focusable;
+        if !self.model.enabled || !self.behavior.state.open || self.behavior.state.filtered.is_empty() {
             return;
         }
-
+        let policy = self.model.scroll_interaction;
+        let owner = self.popup_search_textfield.read(cx).focus_handle(cx);
+        let bar = self.popup_surface.scrollbar().read(cx).focus_handle(cx);
+        if !policy.wheel.accepts(policy.focus_scope.focused(&owner, Some(&bar), window, cx)) {
+            return;
+        }
+        if crate::interaction::wheel_delta(event, px(20.0), false).is_none() {
+            return;
+        }
         let moved = self.popup_surface.scroll_wheel(event, cx);
         if moved {
             cx.notify();
         }
-
-        let delta_y = event.delta.pixel_delta(px(20.0)).y.as_f32();
-        if delta_y.is_finite() && delta_y.abs() > f32::EPSILON {
+        if policy.boundary.consumes(moved) {
             cx.stop_propagation();
         }
     }
@@ -629,6 +663,12 @@ impl SearchSelectorControl {
         true
     }
 
+    fn restore_trigger_focus(&self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.model.enabled && self.popup_search_textfield.read(cx).focus_handle(cx).is_focused(window) {
+            self.interaction.focus_handle().focus(window, cx);
+        }
+    }
+
     fn focus_popup_search(&self, window: &mut Window, cx: &mut Context<Self>) {
         let focus_handle = self.popup_search_textfield.read(cx).focus_handle(cx);
         focus_handle.focus(window, cx);
@@ -648,6 +688,11 @@ impl Render for SearchSelectorControl {
         self.presence.sync();
         self.presence.schedule_frame(window, cx);
         self.sync_disabled_state(cx);
+        if !self.model.enabled && self.interaction.focus_handle().contains_focused(window, cx) {
+            window.blur(cx);
+        } else if !self.behavior.state.open {
+            self.restore_trigger_focus(window, cx);
+        }
 
         let trigger_focused = self.interaction.focus_handle().is_focused(window);
         let autocomplete_look = self.model.autocomplete_theme.resolve(self.model.size);
@@ -784,7 +829,9 @@ impl Render for SearchSelectorControl {
                     popup_bounds: self.trigger_bounds,
                     popup_look: look.clone(),
                     search_content: Some(self.popup_search_textfield.clone().into_any_element()),
-                    list_content: self.popup_surface.render(list_content),
+                    list_content: self
+                        .popup_surface
+                        .render_with_scroll_wheel(list_content, cx.listener(Self::handle_popup_scroll_wheel)),
                 },
                 cx,
             );
@@ -796,7 +843,8 @@ impl Render for SearchSelectorControl {
 
         let handlers = SearchSelectorTemplateHandlers {
             key_down: Box::new(cx.listener(Self::handle_key_down)),
-            scroll_wheel: Box::new(cx.listener(Self::handle_popup_scroll_wheel)),
+            // The popup surface owns wheel dispatch, even outside the trigger bounds.
+            scroll_wheel: Box::new(|_, _, _| {}),
             trigger_click: Box::new(cx.listener(Self::handle_trigger_click)),
             trigger_hover: Box::new(cx.listener(Self::handle_trigger_hover)),
             trigger_mouse_down: Box::new(cx.listener(Self::handle_trigger_mouse_down)),
@@ -854,7 +902,12 @@ impl Render for SearchSelectorControl {
                 self.model
                     .template
                     .render(render_model, handlers, window, cx)
-                    .track_focus(self.interaction.focus_handle()),
+                    .track_focus(self.interaction.focus_handle())
+                    .capture_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
+                        if this.behavior.state.open && event.keystroke.key == "escape" {
+                            this.handle_key_down(event, window, cx);
+                        }
+                    })),
             )
             .into_any_element()
     }
@@ -877,4 +930,35 @@ fn max_visible_rows_for_viewport(
         .as_f32();
     let list_area = (available_below - POPUP_SEARCH_CHROME_HEIGHT - (look.padding * 2.0)).max(look.item_height);
     ((list_area / look.item_height).floor() as usize).max(min_visible_rows).max(1)
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn escape_from_popup_search_restores_trigger_focus() {
+    use gpui::{TestAppContext, point};
+    for key in ["escape", "enter"] {
+        let mut app = TestAppContext::single();
+        let (selector, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            SearchSelectorControl::from_builder(
+                SearchSelectorBuilder::new("restore-search", [super::behavior::SelectionItem::new("one", "One")]),
+                cx,
+            )
+        });
+        cx.run_until_parked();
+        cx.simulate_click(point(px(25.0), px(15.0)), Default::default());
+        cx.run_until_parked();
+        cx.update(|window, app| {
+            let selector = selector.read(app);
+            assert!(selector.behavior.state.open);
+            assert!(selector.popup_search_textfield.read(app).focus_handle(app).is_focused(window));
+        });
+        cx.simulate_keystrokes(key);
+        cx.run_until_parked();
+        cx.update(|window, app| {
+            let selector = selector.read(app);
+            assert!(!selector.behavior.state.open);
+            assert!(selector.interaction.focus_handle().is_focused(window));
+        });
+    }
 }

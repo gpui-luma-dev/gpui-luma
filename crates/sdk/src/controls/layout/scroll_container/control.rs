@@ -18,6 +18,8 @@ type ScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) +
 #[derive(Clone)]
 pub struct ScrollContainer {
     id: SharedString,
+    policy: Rc<Cell<crate::interaction::ScrollInteraction>>,
+    focus_owner: Option<gpui::FocusHandle>,
     scroll_handle: ScrollHandle,
     motion: super::ScrollMotion,
     pending_smooth: Rc<Cell<Option<f32>>>,
@@ -44,6 +46,8 @@ impl ScrollContainer {
 
         Self {
             id,
+            policy: Rc::new(Cell::new(crate::interaction::ScrollInteraction::DOCUMENT)),
+            focus_owner: None,
             scroll_handle: ScrollHandle::new(),
             motion: super::ScrollMotion::default(),
             pending_smooth: Rc::default(),
@@ -58,6 +62,48 @@ impl ScrollContainer {
             active_until: Rc::new(Cell::new(None)),
             hide_task: Rc::new(RefCell::new(None)),
         }
+    }
+
+    /// Explicit owner for RequireFocus. Without one, RequireFocus passes through.
+    pub fn wheel_focus_owner(mut self, owner: gpui::FocusHandle) -> Self {
+        self.focus_owner = Some(owner);
+        self
+    }
+
+    /// Configure wheel independently.
+    pub fn wheel_scroll_policy(self, policy: crate::interaction::WheelScrollPolicy) -> Self {
+        self.set_wheel_scroll_policy(policy);
+        self
+    }
+    /// Change wheel routing without discarding position or motion.
+    pub fn set_wheel_scroll_policy(&self, policy: crate::interaction::WheelScrollPolicy) {
+        let mut current = self.policy.get();
+        current.wheel = policy;
+        self.policy.set(current);
+    }
+
+    /// Configure boundary independently.
+    pub fn scroll_boundary_policy(self, policy: crate::interaction::ScrollBoundaryPolicy) -> Self {
+        self.set_scroll_boundary_policy(policy);
+        self
+    }
+    /// Change wheel routing without discarding position or motion.
+    pub fn set_scroll_boundary_policy(&self, policy: crate::interaction::ScrollBoundaryPolicy) {
+        let mut current = self.policy.get();
+        current.boundary = policy;
+        self.policy.set(current);
+    }
+
+    /// Configure focus_scope independently.
+    pub fn wheel_focus_scope(self, policy: crate::interaction::WheelFocusScope) -> Self {
+        self.set_wheel_focus_scope(policy);
+        self
+    }
+    /// Change wheel routing without discarding position or motion.
+    pub fn set_wheel_focus_scope(&self, policy: crate::interaction::WheelFocusScope) {
+        let mut current = self.policy.get();
+        current.focus_scope = policy;
+        self.policy.set(current);
     }
 
     pub fn placement(mut self, placement: ScrollbarPlacement) -> Self {
@@ -234,7 +280,17 @@ impl ScrollContainer {
                 let host_view = host_view.clone();
                 let motion = self.motion.clone();
                 let pending = self.pending_smooth.clone();
+                let scrollbar = self.scrollbar.clone();
+                let focus_owner = self.focus_owner.clone();
                 move |_: Vec<Bounds<Pixels>>, window: &mut Window, cx: &mut App| {
+                    use gpui::Focusable;
+                    if !show_scrollbar && scrollbar.read(cx).focus_handle(cx).is_focused(window) {
+                        if let Some(owner) = &focus_owner {
+                            owner.focus(window, cx);
+                        } else {
+                            window.blur(cx);
+                        }
+                    }
                     // `current_view` is only valid during layout/prepaint/paint.
                     host_view.set(Some(window.current_view()));
                     if scroll_handle.bounds().size.height > px(0.0)
@@ -255,8 +311,7 @@ impl ScrollContainer {
             .bottom(px(0.0))
             .left(px(0.0))
             .right(viewport_right)
-            .overflow_y_scroll()
-            .when(!accepts_wheel, |viewport| viewport.overflow_hidden())
+            .overflow_hidden()
             .scrollbar_width(px(0.0))
             .track_scroll(&self.scroll_handle)
             .child(content);
@@ -267,7 +322,26 @@ impl ScrollContainer {
             let host_view = host_view.clone();
             let motion = self.motion.clone();
             let pending = self.pending_smooth.clone();
+            let scroll = self.scroll_handle.clone();
+            let policy = self.policy.clone();
+            let focus_owner = self.focus_owner.clone();
+            let scrollbar = self.scrollbar.clone();
             viewport = viewport.on_scroll_wheel(move |event, window, cx| {
+                use gpui::Focusable;
+                let policy = policy.get();
+                let focused = focus_owner.as_ref().is_some_and(|owner| {
+                    policy.focus_scope.focused(owner, Some(&scrollbar.read(cx).focus_handle(cx)), window, cx)
+                });
+                if !policy.wheel.accepts(focused) {
+                    return;
+                }
+                let Some(delta) = crate::interaction::wheel_delta(event, window.line_height(), false) else {
+                    return;
+                };
+                let moved = crate::interaction::scroll_handle_by(&scroll, delta, false);
+                if moved {
+                    notify_host(&host_view, cx);
+                }
                 motion.cancel();
                 pending.set(None);
                 if track_move {
@@ -275,6 +349,9 @@ impl ScrollContainer {
                 }
                 if let Some(handler) = &on_scroll_wheel {
                     handler(event, window, cx);
+                }
+                if policy.boundary.consumes(moved) {
+                    cx.stop_propagation();
                 }
             });
         }
@@ -332,5 +409,48 @@ impl ScrollContainer {
                     .child(self.scrollbar.clone()),
             )
         })
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod dispatch_tests {
+    use super::*;
+    use gpui::{FocusHandle, Focusable, Render};
+    struct View {
+        container: ScrollContainer,
+        focus: FocusHandle,
+    }
+    impl Focusable for View {
+        fn focus_handle(&self, _: &App) -> FocusHandle {
+            self.focus.clone()
+        }
+    }
+    impl Render for View {
+        fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+            self.container.sync_scrollbar(cx);
+            div()
+                .id("container-test")
+                .size_full()
+                .track_focus(&self.focus)
+                .child(self.container.render(div().h(px(3000.0)).w_full().into_any_element()))
+        }
+    }
+    #[test]
+    fn wheel_policy_dispatch_matrix() {
+        crate::interaction_tests::matrix(
+            |policy, cx| {
+                cx.new(|cx| {
+                    let focus = cx.focus_handle();
+                    let container =
+                        ScrollContainer::new("container", crate::controls::scrollbar::default_scrollbar_template(), cx)
+                            .wheel_focus_owner(focus.clone())
+                            .wheel_scroll_policy(policy.wheel)
+                            .scroll_boundary_policy(policy.boundary);
+                    View { container, focus }
+                })
+            },
+            |view, _| view.container.vertical_offset().as_f32(),
+            |view, cx| view.container.set_vertical_offset(view.container.max_vertical_offset().as_f32(), cx),
+        );
     }
 }

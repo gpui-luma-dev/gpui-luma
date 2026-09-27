@@ -822,3 +822,31 @@ fn collapsed_fill_column_does_not_disable_other_resize_handles() {
     cx.run_until_parked();
     cx.update(|_, app| assert!(table.read(app).measured_column_widths[1] > 30.0));
 }
+
+#[test]
+fn paged_table_passes_wheel_without_advancing_page() {
+    use crate::interaction_tests::{Page, wheel};
+    let mut app = TestAppContext::single();
+    let (page, cx) = app.add_window_view(|window, cx| {
+        window.activate_window();
+        Page {
+            child: TableBuilder::new_typed("paged-wheel")
+                .items(rows(30))
+                .row_label(|row| row.id.to_string())
+                .paged(4)
+                .visible_row_height(30.0_f32)
+                .spawn(cx),
+            scroll: gpui::ScrollHandle::new(),
+            focus: cx.focus_handle(),
+        }
+    });
+    cx.run_until_parked();
+    wheel(cx, 0.0, -40.0);
+    cx.update(|_, app| {
+        let page = page.read(app);
+        let table = page.child.read(app);
+        assert_eq!(table.current_page, 0);
+        assert_eq!(table.list_state.logical_scroll_top().item_ix, 0);
+        assert!(page.scroll.offset().y < px(0.0));
+    });
+}

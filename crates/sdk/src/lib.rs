@@ -7,6 +7,7 @@ pub mod infra;
 pub mod motion;
 pub mod controls;
 pub mod focus;
+pub mod interaction;
 pub mod init;
 pub mod key_handling;
 pub mod layouts;
@@ -20,3 +21,6 @@ pub use motion::{
 };
 pub use init::init;
 pub use layouts::{DockPanel, GridLayout, GridTrack, LayerStack, WideMiddle, WideMiddleLayout, spawn_wide_middle};
+
+#[cfg(all(test, feature = "test-support"))]
+mod interaction_tests;
