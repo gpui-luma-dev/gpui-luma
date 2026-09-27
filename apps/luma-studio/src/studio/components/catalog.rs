@@ -54,15 +54,6 @@ const COLOR_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "color-multi-mixer", label: "Multi Mixer" },
 ];
 
-const COLOR_COMPOSITIONS_ENTRIES: &[ComponentCatalogEntry] = &[
-    ComponentCatalogEntry { id: "color-harmonies", label: "Color Harmonies" },
-    ComponentCatalogEntry { id: "color-picker", label: "Color Picker" },
-    ComponentCatalogEntry { id: "color-hsv-plane", label: "HSV Plane" },
-    ComponentCatalogEntry { id: "color-hsv-wheel", label: "HSV Wheel" },
-    ComponentCatalogEntry { id: "color-split-ring", label: "Split Ring" },
-    ComponentCatalogEntry { id: "color-sv-triangle", label: "SV Triangle" },
-];
-
 const MENU_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "context-menu", label: "Context Menu" },
     ComponentCatalogEntry { id: "floating-menu", label: "Floating Menu" },
@@ -117,12 +108,6 @@ pub const COMPONENT_CATALOG: &[ComponentCatalogGroup] = &[
     },
     ComponentCatalogGroup { id: "input", label: "INPUT", icon: LucideIcon::SlidersHorizontal, entries: INPUT_ENTRIES },
     ComponentCatalogGroup { id: "color", label: "COLOR", icon: LucideIcon::Palette, entries: COLOR_ENTRIES },
-    ComponentCatalogGroup {
-        id: "color-compositions",
-        label: "COLOR COMPOSITIONS",
-        icon: LucideIcon::Blend,
-        entries: COLOR_COMPOSITIONS_ENTRIES,
-    },
     ComponentCatalogGroup { id: "menu", label: "MENU", icon: LucideIcon::Menu, entries: MENU_ENTRIES },
     ComponentCatalogGroup { id: "layout", label: "LAYOUT", icon: LucideIcon::Columns2, entries: LAYOUT_ENTRIES },
     ComponentCatalogGroup {
@@ -151,12 +136,12 @@ pub const COMPONENT_CATALOG: &[ComponentCatalogGroup] = &[
     },
 ];
 
-/// Height-balanced columns (~15–18 lines each), with each category shown once.
+/// Catalog columns, with each category shown once.
 /// Group IDs define the category order within each column.
 const COLUMN_GROUP_IDS: [&[&str]; 4] = [
     &["command", "input", "selection"],
     &["choice", "collection", "prototypes"],
-    &["color", "color-compositions", "menu"],
+    &["color", "menu"],
     &["layout", "navigation", "feedback"],
 ];
 
@@ -208,13 +193,7 @@ pub fn controls_exposition_id(gallery_id: &str) -> Option<&'static str> {
         "color-field" => Some("color-field"),
         "color-ring" => Some("color-ring"),
         "color-arc" => Some("color-arc"),
-        "color-picker" => Some("color-picker"),
-        "color-hsv-plane" => Some("color-hsv-plane"),
-        "color-hsv-wheel" => Some("color-hsv-wheel"),
-        "color-sv-triangle" => Some("color-sv-triangle"),
-        "color-split-ring" => Some("color-split-ring"),
         "color-multi-mixer" => Some("color-multi-mixer"),
-        "color-harmonies" => Some("color-harmonies"),
         "color-slider-revealed" => Some("color-slider-revealed"),
         "dialog-modal" => Some("modal-overlay"),
         "dialog-modeless" => Some("modeless-overlay"),

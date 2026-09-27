@@ -5,6 +5,10 @@ edition = "2024"
 license = "Apache-2.0"
 publish = false
 
+[features]
+# Headless exposition and event-log tests; does not launch Color Viz.
+test-support = ["luma/test-support"]
+
 [dependencies]
 anyhow = { workspace = true }
 gpui = { workspace = true }

@@ -5,22 +5,19 @@ use std::sync::Arc;
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma_color::color_field::{ColorFieldEvent, ColorFieldState};
 use luma_color::color_slider::color_spec::Hsv;
-use luma_color::color_slider::{
-    ChannelDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing,
-};
-use luma_color::composition::{ColorCompositionSync, CompositionSize};
+use luma_color::color_slider::{ChannelDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value};
+use luma_color::composition::ColorCompositionSync;
 use luma::controls::slider::SliderControl;
 use luma::theme::ControlSize;
-use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
 use super::super::color_exposition_common::{
-    composition_demo_card_width, composition_size_label, composition_title_text_size,
-    render_composition_readout_footer, slider_labeled_row_compact_sized, COMPOSITION_PRIMARY_READOUT_GAP,
+    composition_demo_card_width, render_composition_readout_footer, slider_labeled_row_compact_sized,
+    COMPOSITION_PRIMARY_READOUT_GAP,
 };
 
 pub struct HsvPlaneDemo {
     look: Arc<ShadcnLook>,
-    composition_size: CompositionSize,
     metrics: HsvPlaneMetrics,
     sync: ColorCompositionSync,
     hsv: Hsv,
@@ -39,8 +36,8 @@ struct HsvPlaneMetrics {
 }
 
 impl HsvPlaneMetrics {
-    fn resolve(size: CompositionSize) -> Self {
-        Self { plane_size: size.resolve_primary(220.0, 280.0, 340.0) }
+    fn new() -> Self {
+        Self { plane_size: 228.0 }
     }
 
     fn card_width(self) -> f32 {
@@ -49,57 +46,44 @@ impl HsvPlaneMetrics {
 }
 
 impl HsvPlaneDemo {
-    pub fn card_width_for(size: CompositionSize) -> f32 {
-        HsvPlaneMetrics::resolve(size).card_width()
+    pub fn card_width() -> f32 {
+        HsvPlaneMetrics::new().card_width()
     }
 
-    pub fn with_size(look: Arc<ShadcnLook>, size: CompositionSize, cx: &mut Context<Self>) -> Self {
+    pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let initial_hsv = Hsv { h: 266.0, s: 0.78, v: 0.76, a: 1.0 };
-        let metrics = HsvPlaneMetrics::resolve(size);
-        let size_label = composition_size_label(size);
+        let metrics = HsvPlaneMetrics::new();
 
         let plane = cx.new(|_| {
-            ColorFieldState::hue_saturation_value(
-                format!("controls-doc-hsv-plane-{size_label}"),
-                initial_hsv,
-                sizing::THUMB_SIZE_MEDIUM,
-            )
-            .raster_image_prewarmed_square(metrics.plane_size)
-            .rounded(px(0.0))
+            ColorFieldState::hue_saturation_value("controls-doc-hsv-plane", initial_hsv, 20.0)
+                .raster_image_prewarmed_square(metrics.plane_size)
+                .rounded(px(0.0))
         });
-        let slider_h = ColorSliderBuilder::hue(format!("controls-doc-hsv-plane-h-{size_label}"), initial_hsv.h)
+        let slider_h = ColorSliderBuilder::hue("controls-doc-hsv-plane-h", initial_hsv.h)
             .horizontal()
             .rounded(px(0.0))
             .thumb_small()
             .thumb_square()
             .size(ControlSize::Sm)
             .spawn(cx);
-        let slider_s_builder = ColorSliderBuilder::channel(
-            format!("controls-doc-hsv-plane-s-{size_label}"),
-            initial_hsv.s,
-            initial_hsv,
-            Hsv::SATURATION,
-        )
-        .expect("HSV saturation delegate should be valid")
-        .horizontal()
-        .rounded(px(0.0))
-        .thumb_small()
-        .thumb_square()
-        .size(ControlSize::Sm);
+        let slider_s_builder =
+            ColorSliderBuilder::channel("controls-doc-hsv-plane-s", initial_hsv.s, initial_hsv, Hsv::SATURATION)
+                .expect("HSV saturation delegate should be valid")
+                .horizontal()
+                .rounded(px(0.0))
+                .thumb_small()
+                .thumb_square()
+                .size(ControlSize::Sm);
         let slider_s_domain = slider_s_builder.domain_renderer();
         let slider_s = slider_s_builder.spawn(cx);
-        let slider_v_builder = ColorSliderBuilder::channel(
-            format!("controls-doc-hsv-plane-v-{size_label}"),
-            initial_hsv.v,
-            initial_hsv,
-            Hsv::VALUE,
-        )
-        .expect("HSV value delegate should be valid")
-        .horizontal()
-        .rounded(px(0.0))
-        .thumb_small()
-        .thumb_square()
-        .size(ControlSize::Sm);
+        let slider_v_builder =
+            ColorSliderBuilder::channel("controls-doc-hsv-plane-v", initial_hsv.v, initial_hsv, Hsv::VALUE)
+                .expect("HSV value delegate should be valid")
+                .horizontal()
+                .rounded(px(0.0))
+                .thumb_small()
+                .thumb_square()
+                .size(ControlSize::Sm);
         let slider_v_domain = slider_v_builder.domain_renderer();
         let slider_v = slider_v_builder.spawn(cx);
 
@@ -152,7 +136,6 @@ impl HsvPlaneDemo {
 
         Self {
             look,
-            composition_size: size,
             metrics,
             sync: ColorCompositionSync::new(),
             hsv: initial_hsv,
@@ -223,7 +206,7 @@ impl Render for HsvPlaneDemo {
         let hsla = self.hsv.to_hsla_ext();
         let plane_size = self.metrics.plane_size;
         let look = &self.look;
-        let text_size = composition_title_text_size(self.composition_size);
+        let text_size = ShadcnTextSize::Base;
 
         div()
             .w(px(plane_size))

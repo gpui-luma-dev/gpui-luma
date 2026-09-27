@@ -1,17 +1,24 @@
 //! Shared layout and readout helpers for color control expositions.
 
 use gpui::{FontWeight, Hsla, div, prelude::*, px};
+use luma_color::ColorSwatch;
 use luma_color::color_field::ColorFieldEvent;
 use luma::controls::slider::SliderEvent;
-use luma::{GridLayout, GridTrack};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnRadius, ShadcnTextRole, ShadcnTextSize};
 
-/// Fixed label column for compact slider rows (gallery color-slider-revealed layout).
-const SLIDER_LABEL_WIDTH: f32 = 74.0;
-/// Wider label column for multi-mixer channel names like "Blue-Yellow (b*)".
-const SLIDER_LABEL_WIDTH_WIDE: f32 = 118.0;
-const SLIDER_GRID_GAP_X: f32 = 12.0;
-const SLIDER_GRID_GAP_Y: f32 = 12.0;
+/// Inner demo-card horizontal padding (`render_demo_card` default).
+pub(super) const COMPOSITION_DEMO_CARD_PADDING_X: f32 = 18.0;
+pub(super) const COMPOSITION_PRIMARY_READOUT_GAP: f32 = 10.0;
+pub(super) const COMPOSITION_READOUT_ROW_GAP: f32 = 4.0;
+pub(super) const COMPOSITION_READOUT_SWATCH_HEIGHT: f32 = 24.0;
+
+pub(super) fn composition_demo_card_width(content_width: f32) -> f32 {
+    content_width + COMPOSITION_DEMO_CARD_PADDING_X * 2.0
+}
+
+pub(super) fn composition_card_width(content_width: f32, horizontal_padding: f32) -> f32 {
+    content_width + horizontal_padding * 2.0
+}
 
 pub(super) fn composition_card_radius(look: &ShadcnLook) -> f32 {
     look.radius(ShadcnRadius::Xl)
@@ -84,64 +91,6 @@ pub(super) fn render_demo_card_with_padding(
         .into_any_element()
 }
 
-pub(super) fn render_field_card(
-    look: &ShadcnLook,
-    title: &'static str,
-    description: &'static str,
-    width_px: f32,
-    content: impl IntoElement,
-) -> gpui::AnyElement {
-    render_field_card_with_padding(look, title, description, width_px, 18.0, 18.0, content)
-}
-
-pub(super) fn render_field_card_with_padding(
-    look: &ShadcnLook,
-    title: &'static str,
-    description: &'static str,
-    width_px: f32,
-    horizontal_padding: f32,
-    vertical_padding: f32,
-    content: impl IntoElement,
-) -> gpui::AnyElement {
-    let chrome = look.chrome();
-    let title_style = look.typography_scale(ShadcnTextSize::Sm);
-    let description_style = look.typography_scale(ShadcnTextSize::Xs);
-
-    div()
-        .w(px(width_px))
-        .max_w_full()
-        .min_h(px(180.0))
-        .flex()
-        .flex_col()
-        .gap(px(14.0))
-        .rounded(px(composition_card_radius(look)))
-        .border_1()
-        .border_color(chrome.border)
-        .bg(chrome.panel_background)
-        .px(px(horizontal_padding))
-        .py(px(vertical_padding))
-        .child(
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(3.0))
-                .child(
-                    div()
-                        .typography_style(title_style)
-                        .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(chrome.title_text)
-                        .child(title),
-                )
-                .child(div().typography_style(description_style).text_color(chrome.muted_text).child(description)),
-        )
-        .child(content)
-        .into_any_element()
-}
-
-pub(super) fn detail_row(look: &ShadcnLook, label: &'static str, value: String) -> gpui::AnyElement {
-    detail_row_sized(look, label, value, ShadcnTextSize::Xs)
-}
-
 pub(super) fn detail_row_sized(
     look: &ShadcnLook,
     label: &'static str,
@@ -177,8 +126,38 @@ pub(super) fn detail_row_sized(
         .into_any_element()
 }
 
-pub(super) fn control_label(look: &ShadcnLook, label: &'static str) -> gpui::AnyElement {
-    control_label_sized(look, label, ShadcnTextSize::Xs)
+/// Compact Hex/HSLA footer shared by ring/plane compositions.
+///
+/// `preview_width`: when set, renders a thin swatch strip matching the primary control width.
+pub(super) fn render_composition_readout_footer(
+    look: &ShadcnLook,
+    color: Hsla,
+    text_size: ShadcnTextSize,
+    preview_width: Option<f32>,
+) -> gpui::AnyElement {
+    let radius = px(composition_inset_radius(look));
+    let hex = format_hex_color(color);
+    let hsla = format_compact_hsla(color);
+
+    let mut footer = div().w_full().flex().flex_col().gap(px(COMPOSITION_READOUT_ROW_GAP));
+
+    if let Some(width) = preview_width {
+        footer = footer.child(
+            div().w_full().flex().justify_center().child(
+                div().w(px(width)).child(
+                    ColorSwatch::new(color)
+                        .checkerboard(false)
+                        .height(px(COMPOSITION_READOUT_SWATCH_HEIGHT))
+                        .rounded(radius),
+                ),
+            ),
+        );
+    }
+
+    footer
+        .child(detail_row_sized(look, "Hex", hex, text_size))
+        .child(detail_row_sized(look, "HSLA", hsla, text_size))
+        .into_any_element()
 }
 
 pub(super) fn control_label_sized(
@@ -196,58 +175,29 @@ pub(super) fn control_label_sized(
         .into_any_element()
 }
 
-pub(super) fn centered_field(content: impl gpui::IntoElement) -> gpui::AnyElement {
-    div().w_full().flex().items_center().justify_center().child(content).into_any_element()
+pub(super) fn format_hsl_label(color: Hsla) -> String {
+    format!(
+        "{} {}% {}%",
+        rounded_channel(color.h * 360.0),
+        rounded_channel(color.s * 100.0),
+        rounded_channel(color.l * 100.0)
+    )
 }
 
-pub(super) fn slider_labeled_row(
+pub(super) fn slider_labeled_row_compact_sized(
     look: &ShadcnLook,
     label: &'static str,
     slider: gpui::Entity<luma::controls::slider::SliderControl>,
-) -> gpui::AnyElement {
-    slider_labeled_row_with_width(look, label, slider, SLIDER_LABEL_WIDTH)
-}
-
-pub(super) fn slider_labeled_row_wide(
-    look: &ShadcnLook,
-    label: &'static str,
-    slider: gpui::Entity<luma::controls::slider::SliderControl>,
-) -> gpui::AnyElement {
-    slider_labeled_row_with_width(look, label, slider, SLIDER_LABEL_WIDTH_WIDE)
-}
-
-fn slider_labeled_row_with_width(
-    look: &ShadcnLook,
-    label: &'static str,
-    slider: gpui::Entity<luma::controls::slider::SliderControl>,
-    label_width: f32,
+    label_text_size: ShadcnTextSize,
 ) -> gpui::AnyElement {
     div()
         .w_full()
         .flex()
         .items_center()
-        .gap(px(12.0))
-        .child(div().flex_shrink_0().w(px(label_width)).child(control_label(look, label)))
+        .gap(px(8.0))
+        .child(div().flex_shrink_0().child(control_label_sized(look, label, label_text_size)))
         .child(div().flex_1().min_w(px(0.0)).child(slider))
         .into_any_element()
-}
-
-pub(super) fn slider_grid_stack<const N: usize>(
-    look: &ShadcnLook,
-    rows: [(&'static str, gpui::Entity<luma::controls::slider::SliderControl>); N],
-) -> gpui::AnyElement {
-    let mut grid = GridLayout::new()
-        .rows(N)
-        .columns([GridTrack::Px(SLIDER_LABEL_WIDTH), GridTrack::Star(1.0)])
-        .gap_x(SLIDER_GRID_GAP_X)
-        .gap_y(SLIDER_GRID_GAP_Y);
-
-    for (row, (label, slider)) in rows.into_iter().enumerate() {
-        grid = grid.child(control_label(look, label), row, 0);
-        grid = grid.child(div().min_w(px(0.0)).w_full().child(slider), row, 1);
-    }
-
-    grid.into_any_element()
 }
 
 pub(super) fn format_color_field_event(event: &ColorFieldEvent) -> Option<String> {

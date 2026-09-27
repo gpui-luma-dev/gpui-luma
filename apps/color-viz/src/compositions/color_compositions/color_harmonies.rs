@@ -11,11 +11,9 @@ use gpui::{
 use luma_color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, HslWheelModel};
 use luma_color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingTrackContext, LightnessRingDelegate, primary_slider_value,
-    sizing,
 };
 use luma_color::color_slider::color_spec::Hsv;
-use luma_color::composition::{ColorCompositionSync, CompositionSize};
-use luma_color::style::Size;
+use luma_color::composition::ColorCompositionSync;
 use luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use luma::controls::slider::SliderControl;
 use luma::controls::textfield::{TextField, TextFieldEvent};
@@ -24,22 +22,7 @@ use luma_look_shadcn::prelude::*;
 use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
-use super::super::color_exposition_common::{composition_demo_card_width, composition_size_label, format_hsl_label};
-
-pub fn composition_title_text_size(size: CompositionSize) -> ShadcnTextSize {
-    super::super::color_exposition_common::composition_title_text_size(size)
-}
-
-pub fn composition_caption_text_size(size: CompositionSize) -> ShadcnTextSize {
-    super::super::color_exposition_common::composition_caption_text_size(size)
-}
-
-pub fn composition_control_size(size: CompositionSize) -> ShadcnSize {
-    match size {
-        CompositionSize::Sm => ShadcnSize::Sm,
-        CompositionSize::Md | CompositionSize::Lg | CompositionSize::Custom(_) => ShadcnSize::Md,
-    }
-}
+use super::super::color_exposition_common::{composition_demo_card_width, format_hsl_label};
 
 const COMPONENT_GAP_PX: f32 = 20.0;
 const ROW_GAP_PX: f32 = 12.0;
@@ -51,7 +34,6 @@ const COMBINATION_LABEL_RESERVE: f32 = 88.0;
 
 pub struct ColorHarmoniesDemo {
     look: Arc<ShadcnLook>,
-    composition_size: CompositionSize,
     metrics: ColorHarmoniesMetrics,
     sync: ColorCompositionSync,
     wheel: Entity<ColorFieldState>,
@@ -83,8 +65,8 @@ impl ColorHarmoniesMetrics {
         color_row_width.max(combination_row_width)
     }
 
-    fn resolve(size: CompositionSize) -> Self {
-        let mut metrics = Self::resolve_proportional(size);
+    fn new() -> Self {
+        let mut metrics = Self::proportional();
         let content_width = Self::form_content_width();
         let wheel_block = metrics.ring_size + metrics.ring_canvas_padding;
         if wheel_block < content_width {
@@ -94,10 +76,10 @@ impl ColorHarmoniesMetrics {
         metrics
     }
 
-    fn resolve_proportional(size: CompositionSize) -> Self {
-        let ring_size = size.resolve_primary(220.0, 300.0, 380.0);
+    fn proportional() -> Self {
+        let ring_size: f32 = 238.0;
         let scale = ring_size / 300.0;
-        let ring_thickness = sizing::RING_THICKNESS_MEDIUM * scale;
+        let ring_thickness = 20.0 * scale;
         let ring_to_wheel_inner_gap = (12.0 * scale).max(8.0);
         let wheel_size = (ring_size - 2.0 * ring_thickness - ring_to_wheel_inner_gap).max(40.0);
 
@@ -139,19 +121,17 @@ impl ColorHarmoniesMetrics {
 }
 
 impl ColorHarmoniesDemo {
-    pub fn card_width_for(size: CompositionSize) -> f32 {
-        ColorHarmoniesMetrics::resolve(size).card_width()
+    pub fn card_width() -> f32 {
+        ColorHarmoniesMetrics::new().card_width()
     }
 
-    pub fn with_size(look: Arc<ShadcnLook>, size: CompositionSize, cx: &mut Context<Self>) -> Self {
+    pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let color: Hsla = rgb(0x47c424).into();
-        let metrics = ColorHarmoniesMetrics::resolve(size);
-        let size_label = composition_size_label(size);
-        let control_size = composition_control_size(size);
+        let metrics = ColorHarmoniesMetrics::new();
 
         let wheel = cx.new(|_| {
             ColorFieldState::new(
-                format!("controls-doc-color-harmonies-wheel-{size_label}"),
+                "controls-doc-color-harmonies-wheel",
                 hsla_to_wheel_hsv(color),
                 Arc::new(CircleDomain),
                 Arc::new(HslWheelModel),
@@ -160,32 +140,28 @@ impl ColorHarmoniesDemo {
             .inside_field()
             .raster_image_prewarmed_square(metrics.wheel_size())
         });
-        let lightness_builder = ColorRingBuilder::lightness(
-            format!("controls-doc-color-harmonies-lightness-{size_label}"),
-            color.l,
-            color.h * 360.0,
-            color.s,
-        )
-        .size(Size::Size(px(metrics.ring_size)))
-        .ring_thickness(metrics.ring_thickness)
-        .thumb_size(metrics.ring_thumb_size)
-        .allow_inner_target(true)
-        .rotation_degrees(180.0);
+        let lightness_builder =
+            ColorRingBuilder::lightness("controls-doc-color-harmonies-lightness", color.l, color.h * 360.0, color.s)
+                .size(px(metrics.ring_size))
+                .ring_thickness(metrics.ring_thickness)
+                .thumb_size(metrics.ring_thumb_size)
+                .allow_inner_target(true)
+                .rotation_degrees(180.0);
         let lightness_renderer = lightness_builder.domain_renderer();
         let lightness_context = lightness_builder.track_context();
         let lightness_ring = lightness_builder.spawn(cx);
-        let harmony_menu = shadcn::Selector::new(format!("controls-doc-color-harmonies-harmony-{size_label}"))
+        let harmony_menu = shadcn::Selector::new("controls-doc-color-harmonies-harmony")
             .look(look.as_ref())
             .label("Combination")
-            .size(control_size)
+            .size(ShadcnSize::Md)
             .items(color_combination_items())
             .selected_id(ColorCombination::Tetradic.id())
             .spawn(cx);
-        let color_input = shadcn::TextField::new(format!("controls-doc-color-harmonies-input-{size_label}"))
+        let color_input = shadcn::TextField::new("controls-doc-color-harmonies-input")
             .look(look.as_ref())
             .value(format_hsl_input(color))
             .placeholder("hsl(120 50% 40%) or #006081")
-            .size(control_size)
+            .size(ShadcnSize::Md)
             .full_width(true)
             .spawn(cx);
 
@@ -241,7 +217,6 @@ impl ColorHarmoniesDemo {
 
         Self {
             look,
-            composition_size: size,
             metrics,
             sync: ColorCompositionSync::new(),
             wheel,
@@ -317,7 +292,7 @@ impl Render for ColorHarmoniesDemo {
         let title_text = look.chrome().title_text;
         let border = look.chrome().border;
         let metrics = self.metrics;
-        let label_text_size = composition_title_text_size(self.composition_size);
+        let label_text_size = ShadcnTextSize::Base;
 
         render_combinations_body(
             look,

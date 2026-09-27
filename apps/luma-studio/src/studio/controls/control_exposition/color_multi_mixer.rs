@@ -8,7 +8,9 @@ use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::color_compositions::multi_mixer::MultiMixerDemo;
+mod demo;
+
+use demo::MultiMixerDemo;
 use super::color_exposition_common::{format_slider_event, render_demo_section};
 use super::event_stream::ControlEventStream;
 use super::model::{ControlExpositionLayout};

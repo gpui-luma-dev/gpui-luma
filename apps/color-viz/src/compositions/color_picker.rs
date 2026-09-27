@@ -6,67 +6,53 @@ use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma_color::ColorSwatch;
 use luma_color::color_field::{ColorFieldEvent, ColorFieldState};
 use luma_color::color_slider::color_spec::Hsv;
-use luma_color::color_slider::{AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing};
-use luma_color::composition::{ColorCompositionSync, CompositionSize};
+use luma_color::color_slider::{AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value};
+use luma_color::composition::ColorCompositionSync;
 use luma::controls::slider::{SliderControl, SliderEvent};
 use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn::{ShadcnLook, ShadcnRadius};
 
-use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::color_exposition_common::{
-    composition_caption_text_size, composition_card_width, composition_inset_radius, composition_size_label,
-    composition_title_text_size, detail_row_sized, format_color_field_event, format_compact_hsla, format_hex_color,
-    format_slider_event, render_demo_section, render_labeled_demo_card_with_padding,
+    composition_card_width, composition_inset_radius, detail_row_sized, format_color_field_event, format_compact_hsla,
+    format_hex_color, format_slider_event, render_demo_section, render_demo_card_with_padding,
 };
 use super::event_stream::ControlEventStream;
-use super::model::{ControlExpositionLayout};
-use super::template::render_control_exposition_card;
+use super::template::render_composition_exposition;
 
 const PICKER_HORIZONTAL_PADDING: f32 = 25.0;
 const PICKER_VERTICAL_PADDING: f32 = 18.0;
 
 pub struct ColorPickerControlExposition {
     look: Arc<ShadcnLook>,
-    entry: ControlDocEntry,
-    state_sm: Entity<ColorPickerDemo>,
-    state_md: Entity<ColorPickerDemo>,
-    state_lg: Entity<ColorPickerDemo>,
+    state: Entity<ColorPickerDemo>,
     event_stream: Entity<ControlEventStream>,
     _subscriptions: Vec<Subscription>,
 }
 
 impl ColorPickerControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let entry = *catalog_entry("color-picker").expect("color-picker catalog entry");
+        luma::theme::observe_theme_revision(cx, |this, cx| this.sync_look(this.look.clone(), cx)).detach();
 
-        let state_sm = cx.new(|cx| ColorPickerDemo::with_size(look.clone(), CompositionSize::Sm, cx));
-        let state_md = cx.new(|cx| ColorPickerDemo::with_size(look.clone(), CompositionSize::Md, cx));
-        let state_lg = cx.new(|cx| ColorPickerDemo::with_size(look.clone(), CompositionSize::Lg, cx));
+        let state = cx.new(|cx| ColorPickerDemo::new(look.clone(), cx));
 
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
                 look.clone(),
                 "controls-color-picker-event-log",
-                "Edit the medium picker; ColorFieldEvent and SliderEvent variants appear below.",
+                "Edit the picker; ColorFieldEvent and SliderEvent variants appear below.",
             )
         });
 
-        let subscriptions = wire_picker_events(&state_md, &event_stream, cx);
+        let subscriptions = wire_picker_events(&state, &event_stream, cx);
 
-        Self { look, entry, state_sm, state_md, state_lg, event_stream, _subscriptions: subscriptions }
-    }
-
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
+        Self { look, state, event_stream, _subscriptions: subscriptions }
     }
 
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        for state in [&self.state_sm, &self.state_md, &self.state_lg] {
-            state.update(cx, |demo, cx| demo.sync_look(look.clone(), cx));
-        }
+        self.state.update(cx, |demo, cx| demo.sync_look(look, cx));
         self.event_stream.update(cx, |stream, cx| stream.sync_look(self.look.clone(), cx));
         cx.notify();
     }
@@ -87,62 +73,23 @@ impl Render for ColorPickerControlExposition {
                     look,
                     "Photoshop-style Picker",
                     "A composed picker built from the migrated field and slider primitives.",
-                    div()
-                        .flex()
-                        .flex_wrap()
-                        .items_start()
-                        .gap(px(16.0))
-                        .child(render_labeled_demo_card_with_padding(
-                            look,
-                            "Sm",
-                            "Compact composition metrics.",
-                            ColorPickerDemo::card_width_for(CompositionSize::Sm, PICKER_HORIZONTAL_PADDING),
-                            PICKER_HORIZONTAL_PADDING,
-                            PICKER_VERTICAL_PADDING,
-                            composition_title_text_size(CompositionSize::Sm),
-                            composition_caption_text_size(CompositionSize::Sm),
-                            self.state_sm.clone(),
-                        ))
-                        .child(render_labeled_demo_card_with_padding(
-                            look,
-                            "Md",
-                            "Default composition metrics.",
-                            ColorPickerDemo::card_width_for(CompositionSize::Md, PICKER_HORIZONTAL_PADDING),
-                            PICKER_HORIZONTAL_PADDING,
-                            PICKER_VERTICAL_PADDING,
-                            composition_title_text_size(CompositionSize::Md),
-                            composition_caption_text_size(CompositionSize::Md),
-                            self.state_md.clone(),
-                        ))
-                        .child(render_labeled_demo_card_with_padding(
-                            look,
-                            "Lg",
-                            "Expanded composition metrics.",
-                            ColorPickerDemo::card_width_for(CompositionSize::Lg, PICKER_HORIZONTAL_PADDING),
-                            PICKER_HORIZONTAL_PADDING,
-                            PICKER_VERTICAL_PADDING,
-                            composition_title_text_size(CompositionSize::Lg),
-                            composition_caption_text_size(CompositionSize::Lg),
-                            self.state_lg.clone(),
-                        ))
-                        .into_any_element(),
+                    render_demo_card_with_padding(
+                        look,
+                        ColorPickerDemo::card_width(PICKER_HORIZONTAL_PADDING),
+                        PICKER_HORIZONTAL_PADDING,
+                        PICKER_VERTICAL_PADDING,
+                        self.state.clone(),
+                    ),
                 ))
                 .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                None,
-                ControlExpositionLayout::BORDERLESS_NO_HEADING,
-            )
+            render_composition_exposition("color-picker", preview.into_any_element())
         })
     }
 }
 
 struct ColorPickerDemo {
     look: Arc<ShadcnLook>,
-    composition_size: CompositionSize,
     metrics: ColorPickerMetrics,
     sync: ColorCompositionSync,
     field: Entity<ColorFieldState>,
@@ -160,8 +107,8 @@ struct ColorPickerMetrics {
 }
 
 impl ColorPickerMetrics {
-    fn resolve(size: CompositionSize) -> Self {
-        let control_width = size.resolve_primary(220.0, 260.0, 320.0);
+    fn new() -> Self {
+        let control_width: f32 = 218.0;
         let scale = control_width / 260.0;
         Self { control_width, swatch_height: (44.0 * scale).max(32.0) }
     }
@@ -172,36 +119,30 @@ impl ColorPickerMetrics {
 }
 
 impl ColorPickerDemo {
-    pub fn card_width_for(size: CompositionSize, horizontal_padding: f32) -> f32 {
-        ColorPickerMetrics::resolve(size).card_width(horizontal_padding)
+    pub fn card_width(horizontal_padding: f32) -> f32 {
+        ColorPickerMetrics::new().card_width(horizontal_padding)
     }
 
-    fn with_size(look: Arc<ShadcnLook>, size: CompositionSize, cx: &mut Context<Self>) -> Self {
+    fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let hsv = Hsv { h: 12.0, s: 0.78, v: 0.86, a: 0.92 };
-        let metrics = ColorPickerMetrics::resolve(size);
+        let metrics = ColorPickerMetrics::new();
 
-        let size_label = composition_size_label(size);
         let field_radius = px(look.radius(ShadcnRadius::Sm));
 
         let field = cx.new(move |_| {
-            ColorFieldState::saturation_value(
-                format!("controls-doc-color-picker-field-{size_label}"),
-                hsv,
-                sizing::THUMB_SIZE_MEDIUM,
-            )
-            .rounded(field_radius)
-            .vector()
+            ColorFieldState::saturation_value("controls-doc-color-picker-field", hsv, 20.0)
+                .rounded(field_radius)
+                .vector()
         });
-        let hue_slider = ColorSliderBuilder::hue(format!("controls-doc-color-picker-hue-{size_label}"), hsv.h)
+        let hue_slider = ColorSliderBuilder::hue("controls-doc-color-picker-hue", hsv.h)
             .size(ControlSize::Sm)
             .thumb_medium()
             .edge_to_edge()
             .spawn(cx);
-        let alpha_builder =
-            ColorSliderBuilder::alpha(format!("controls-doc-color-picker-alpha-{size_label}"), hsv.a, hsv)
-                .size(ControlSize::Sm)
-                .thumb_medium()
-                .edge_to_edge();
+        let alpha_builder = ColorSliderBuilder::alpha("controls-doc-color-picker-alpha", hsv.a, hsv)
+            .size(ControlSize::Sm)
+            .thumb_medium()
+            .edge_to_edge();
         let alpha_domain = alpha_builder.domain_renderer();
         let alpha_slider = alpha_builder.spawn(cx);
 
@@ -246,7 +187,6 @@ impl ColorPickerDemo {
 
         Self {
             look,
-            composition_size: size,
             metrics,
             field,
             hue_slider,
@@ -293,7 +233,7 @@ impl Render for ColorPickerDemo {
         let control_width = self.metrics.control_width;
         let swatch_height = self.metrics.swatch_height;
         let look = &self.look;
-        let text_size = composition_title_text_size(self.composition_size);
+        let text_size = ShadcnTextSize::Base;
 
         div()
             .w_full()
@@ -355,4 +295,66 @@ fn wire_picker_events(
             }
         }),
     ]
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod tests {
+    use super::*;
+    use gpui::{Focusable, TestAppContext};
+    use luma::controls::tabs::TabsEvent;
+    use super::super::{ColorCompositions, EXAMPLES};
+
+    #[test]
+    fn composition_pages_render_and_preserve_picker_edits_when_switching() {
+        let mut app = TestAppContext::single();
+        app.update(|cx| {
+            luma::init(cx).expect("initialize SDK");
+            luma::key_handling::bind_default_control_keys(cx);
+        });
+        let (gallery, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            ColorCompositions::new(Arc::new(ShadcnLook::built_in()), cx)
+        });
+        cx.run_until_parked();
+        let (picker, tabs) = cx.update(|_, cx| {
+            let gallery = gallery.read(cx);
+            (
+                gallery.pages[0].clone().downcast::<ColorPickerControlExposition>().expect("picker page"),
+                gallery.tabs.clone(),
+            )
+        });
+        let (state, events, hue_slider, before) = cx.update(|window, cx| {
+            let picker = picker.read(cx);
+            let state = picker.state.clone();
+            let events = picker.event_stream.clone();
+            let demo = state.read(cx);
+            let slider = demo.hue_slider.clone();
+            let before = demo.hsv.h;
+            slider.read(cx).focus_handle(cx).focus(window, cx);
+            (state, events, slider, before)
+        });
+        cx.simulate_keystrokes("right");
+        cx.run_until_parked();
+        let edited = cx.update(|_, cx| state.read(cx).hsv);
+        assert!(edited.h > before, "the copied hue slider must still update the composed picker");
+
+        for (index, (id, label)) in EXAMPLES.iter().enumerate() {
+            tabs.update(cx, |tabs, cx| {
+                tabs.set_active(*id, cx);
+                cx.emit(TabsEvent::Activate { tab_id: (*id).into(), label: (*label).into() });
+            });
+            cx.run_until_parked();
+            cx.update(|_, cx| assert_eq!(gallery.read(cx).active, index));
+        }
+        tabs.update(cx, |tabs, cx| {
+            tabs.set_active("picker", cx);
+            cx.emit(TabsEvent::Activate { tab_id: "picker".into(), label: "Color Picker".into() });
+        });
+        cx.run_until_parked();
+        cx.update(|_, cx| {
+            assert_eq!(state.read(cx).hsv, edited);
+            assert_eq!(picker.read(cx).event_stream, events);
+            assert_eq!(state.read(cx).hue_slider, hue_slider);
+        });
+    }
 }
