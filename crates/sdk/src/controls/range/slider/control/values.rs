@@ -7,6 +7,33 @@ use super::motion::sync_thumb_preview;
 use super::{SliderControl, SliderEvent};
 
 impl SliderControl {
+    pub(super) fn handle_position_step_key_down(
+        &mut self,
+        event: &gpui::KeyDownEvent,
+        window: &mut gpui::Window,
+        cx: &mut Context<Self>,
+    ) {
+        let modifiers = event.keystroke.modifiers;
+        if !self.model.enabled
+            || !self.interaction.focus_handle().is_focused(window)
+            || !modifiers.shift
+            || modifiers.control
+            || modifiers.platform
+            || modifiers.alt
+            || modifiers.function
+        {
+            return;
+        }
+        let direction = match event.keystroke.key.as_str() {
+            "right" | "up" => 1.0,
+            "left" | "down" => -1.0,
+            _ => return,
+        };
+        self.adjust_value(direction * self.model.step * 10.0, cx);
+        window.prevent_default();
+        cx.stop_propagation();
+    }
+
     pub(super) fn select_thumb(&mut self, thumb_id: ThumbId, emit: bool, cx: &mut Context<Self>) -> bool {
         if self.active_thumb_id == Some(thumb_id) {
             return false;
@@ -102,8 +129,32 @@ impl SliderControl {
             return;
         };
 
+        if let Some(step) = self.model.keyboard_position_step
+            && self.model.allowed_intervals.is_empty()
+        {
+            let Some(thumb) = self.model.thumbs.iter().find(|thumb| thumb.id == thumb_id) else {
+                return;
+            };
+            let next =
+                thumb.position + layout::oriented_step_delta(delta / self.model.step * step, self.model.reversed);
+            let next = if self.model.wrapping {
+                next.rem_euclid(1.0)
+            } else {
+                next.clamp(0.0, 1.0)
+            };
+            // Immediate angular steps avoid interpolating the long way across the wrap seam.
+            if self.set_thumb_position_internal(thumb_id, next, true, false, cx) {
+                let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
+                cx.emit(SliderEvent::Release { thumb_id, value });
+            }
+            return;
+        }
+
         let current = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
-        let next = if self.model.wrapping && self.model.allowed_intervals.is_empty() {
+        let next = if self.model.wrapping
+            && self.model.allowed_intervals.is_empty()
+            && self.model.value_map.as_ref().is_none_or(|map| map.wraps_value())
+        {
             input::wrap_and_snap(
                 current + layout::oriented_step_delta(delta, self.model.reversed),
                 self.model.range,
@@ -136,6 +187,34 @@ impl SliderControl {
         if self.set_thumb_value_internal(thumb_id, value, true, true, cx) {
             let value = self.thumb_value(thumb_id).unwrap_or(value);
             cx.emit(SliderEvent::Release { thumb_id, value });
+        }
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod keyboard_tests {
+    use super::*;
+    use gpui::{Focusable, TestAppContext};
+    use crate::controls::slider::SliderBuilder;
+
+    #[test]
+    fn ordinary_and_value_constrained_sliders_retain_scalar_steps() {
+        for constrained in [false, true] {
+            let mut app = TestAppContext::single();
+            let (slider, cx) = app.add_window_view(|window, cx| {
+                window.activate_window();
+                crate::key_handling::bind_default_control_keys(cx);
+                let mut builder = SliderBuilder::new("scalar").range(0.0..100.0).step(5.0).value(20.0);
+                if constrained {
+                    builder = builder.keyboard_position_step(0.01).allowed_intervals(vec![20.0..=40.0]);
+                }
+                SliderControl::from_builder(builder, cx)
+            });
+            cx.run_until_parked();
+            cx.update(|window, app| slider.read(app).focus_handle(app).focus(window, app));
+            cx.simulate_keystrokes("right");
+            cx.run_until_parked();
+            cx.update(|_, app| assert_eq!(slider.read(app).value(), 25.0));
         }
     }
 }

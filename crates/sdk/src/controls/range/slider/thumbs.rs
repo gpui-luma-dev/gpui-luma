@@ -95,7 +95,10 @@ fn constrain_position(
 }
 
 pub fn constrain_thumb_value(value: f32, model: &SliderModel) -> f32 {
-    if model.wrapping && model.allowed_intervals.is_empty() {
+    if model.wrapping
+        && model.allowed_intervals.is_empty()
+        && model.value_map.as_ref().is_none_or(|map| map.wraps_value())
+    {
         wrap_and_snap(value, model.range, model.step)
     } else {
         clamp_and_snap_value(value, &model.allowed_intervals, model.range, model.step)
@@ -166,6 +169,7 @@ mod tests {
             thumb_size: None,
             range: ControlRange::new(0.0, 100.0),
             step: 1.0,
+            keyboard_position_step: None,
             thumbs,
             allowed_intervals: Vec::new(),
             track_intervals: None,

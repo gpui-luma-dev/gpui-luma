@@ -207,8 +207,12 @@ impl ColorField {
                  ev: &MouseDownEvent,
                  window: &mut Window,
                  cx: &mut Context<ColorFieldState>| {
-                    if !state.contains_pointer(ev.position) {
+                    if state.disabled || !state.contains_pointer(ev.position) {
                         return;
+                    }
+                    state.finish_keyboard_adjustment(cx);
+                    if state.pointer_focus == luma::interaction::PointerFocusPolicy::Focus {
+                        state.focus_handle(cx).focus(window, cx);
                     }
                     state.begin_interaction(cx);
                     cx.stop_propagation();
@@ -275,6 +279,7 @@ impl RenderOnce for ColorField {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let state_entity = self.state.clone();
         let entity_id = state_entity.entity_id();
+        let focus_handle = state_entity.update(cx, |state, cx| state.prepare_focus(window, cx));
         let state = state_entity.read(cx);
         let domain = state.domain.clone();
         let model = state.model.clone();
@@ -284,6 +289,9 @@ impl RenderOnce for ColorField {
 
         let root = div()
             .id(state.id.clone())
+            .track_focus(&focus_handle)
+            .on_key_down(window.listener_for(&state_entity, ColorFieldState::handle_key_down))
+            .on_key_up(window.listener_for(&state_entity, ColorFieldState::handle_key_up))
             .size_full()
             .relative()
             .when(layout.disabled, |this| this.cursor_not_allowed().opacity(0.5))

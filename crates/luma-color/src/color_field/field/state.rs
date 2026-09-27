@@ -105,6 +105,8 @@ struct FieldImageCacheKey {
     samples: u16,
 }
 
+/// Field interaction events. Release ends a pointer gesture or a keyboard adjustment
+/// that changed the value; keyboard adjustments do not emit drag events.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum ColorFieldEvent {
@@ -130,6 +132,14 @@ pub struct ColorFieldState {
     pub samples_per_axis: usize,
     pub mouse_behavior: ColorFieldMouseBehavior,
     pub disabled: bool,
+    pub(super) focus_handle: std::cell::OnceCell<FocusHandle>,
+    pub(super) blur_subscription: Option<Subscription>,
+    pub(super) tab_stop: bool,
+    pub(super) pointer_focus: luma::interaction::PointerFocusPolicy,
+    pub(super) keyboard_step: f32,
+    pub(super) keyboard_large_step: f32,
+    pub(super) held_arrows: u8,
+    pub(super) keyboard_changed: bool,
     interaction_active: bool,
     window_cursor_claimed: bool,
     hover_inside_domain: bool,
@@ -171,6 +181,14 @@ impl ColorFieldState {
             samples_per_axis: 180,
             mouse_behavior: ColorFieldMouseBehavior::default(),
             disabled: false,
+            focus_handle: std::cell::OnceCell::new(),
+            blur_subscription: None,
+            tab_stop: true,
+            pointer_focus: luma::interaction::PointerFocusPolicy::Focus,
+            keyboard_step: 0.01,
+            keyboard_large_step: 0.1,
+            held_arrows: 0,
+            keyboard_changed: false,
             interaction_active: false,
             window_cursor_claimed: false,
             hover_inside_domain: false,
@@ -319,6 +337,7 @@ impl ColorFieldState {
             a: hsv.a.clamp(0.0, 1.0),
         };
         if self.hsv != clamped {
+            self.finish_keyboard_adjustment(cx);
             self.hsv = clamped;
             // Programmatic updates (slider clicks, reset) should repaint immediately
             // without waiting for a follow-up input event to refresh raster cache.
@@ -338,6 +357,7 @@ impl ColorFieldState {
 
     #[allow(dead_code)]
     pub fn set_domain(&mut self, domain: Arc<dyn FieldDomain2D>, cx: &mut Context<Self>) {
+        self.finish_keyboard_adjustment(cx);
         self.domain = domain;
         self.image_cache = None;
         cx.notify();
@@ -345,6 +365,7 @@ impl ColorFieldState {
 
     #[allow(dead_code)]
     pub fn set_model(&mut self, model: Arc<dyn ColorFieldModel2D>, cx: &mut Context<Self>) {
+        self.finish_keyboard_adjustment(cx);
         self.model = model;
         self.image_cache = None;
         cx.notify();
@@ -427,6 +448,7 @@ impl ColorFieldState {
         if self.disabled != disabled {
             self.disabled = disabled;
             if disabled {
+                self.finish_keyboard_adjustment(cx);
                 self.end_interaction(cx);
                 self.emit_hover_changed(false, cx);
             }

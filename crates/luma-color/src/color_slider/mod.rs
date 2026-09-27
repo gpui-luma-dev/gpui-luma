@@ -11,6 +11,9 @@ pub mod track_context;
 pub mod types;
 pub mod visual;
 
+#[cfg(all(test, feature = "test-support"))]
+mod pointer_tests;
+
 #[allow(unused_imports)]
 pub use color_spec::{ColorSpecification, Hsl, RgbaSpec};
 pub use oklch_spec::Oklch;

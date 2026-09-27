@@ -132,9 +132,22 @@ Source inspection, not native-platform verification:
   focus contexts. Their current panels have no independent scrolling viewport.
 - Commands, sliders, scrollbars, tabs, ControlGroup, and split handles retain
   existing interaction and styling. No wheel-to-value behavior is added.
-- ColorField remains pointer-only. A separate follow-up needs a real focus handle,
-  accessible value semantics, and keyboard movement in its color domain. No
-  keyboard accessibility is claimed here. SplitButton follow-ups remain in #31.
+- ColorField owns a real focus handle and is one Tab stop when enabled. Pointer
+  press focuses and changes color in the same gesture; `pointer_focus_policy`
+  supports Preserve, and `tab_stop(false)` opts out of traversal independently.
+  Unmodified arrows move spatially by 1% of the normalized field; Shift+Arrow
+  uses 10%. `keyboard_steps(normal, large)` overrides these fractions, accepting
+  finite values in (0, 1] and retaining the prior value for invalid arguments.
+  Movement uses the existing model and domain constraints, including nonrectangular
+  fields. Only the field's own focus accepts these keys; wheel input passes through.
+  Changes emit `Change`, with one `Release` after all adjustment arrows are released
+  or the adjustment ends through blur, disabling, pointer interaction, or a
+  programmatic value/model/domain replacement. Mirroring the same value does not
+  end an adjustment. Boundary
+  attempts with no value change emit neither event. Keyboard input never emits drag
+  events. Focus styling is unchanged. Screen-reader roles, value announcements,
+  and accessible adjustment actions remain an explicit follow-up; full accessibility
+  support is not claimed. SplitButton follow-ups remain in #31.
 
 ## Verification
 
