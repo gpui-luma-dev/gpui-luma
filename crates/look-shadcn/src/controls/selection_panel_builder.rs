@@ -135,6 +135,21 @@ where
         self
     }
 
+    /// Always show, hide, or auto-hide the panel scrollbar.
+    pub fn scrollbar_visibility(mut self, visibility: luma::controls::scroll_container::ScrollbarVisibility) -> Self {
+        self.builder = self.builder.scrollbar_visibility(visibility);
+        self
+    }
+
+    /// Choose hover, timed scroll activity, or both for auto-hiding chrome.
+    pub fn scrollbar_auto_hide_activate(
+        mut self,
+        activate: luma::controls::scroll_container::ScrollbarAutoHideActivate,
+    ) -> Self {
+        self.builder = self.builder.scrollbar_auto_hide_activate(activate);
+        self
+    }
+
     pub fn min_visible_rows(mut self, min_visible_rows: usize) -> Self {
         self.builder = self.builder.min_visible_rows(min_visible_rows);
         self

@@ -11,7 +11,8 @@ pub use item_template::{SelectorItemRenderModel, SelectorItemTemplate, make_sele
 pub use items_template::{
     DefaultSelectorItemsTemplate, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplate,
     SelectorItemsTemplateHandlers, SelectorItemsTemplateModifier, SelectorPanelClickHandler, SelectorPanelHoverHandler,
-    SelectorPanelMouseDownHandler, default_selector_items_panel_look, default_selector_items_template,
+    SelectorPanelMouseDownHandler, SelectorPanelScrollWheelHandler, default_selector_items_panel_look,
+    default_selector_items_template,
 };
 pub use model::{SelectorItem, SelectorItemLike, SelectorPath, normalize_selector_items};
 pub(crate) use items_template::items_template_with_modifier;

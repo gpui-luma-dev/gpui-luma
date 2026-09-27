@@ -64,9 +64,12 @@ pub fn default_selector_items_panel_look(tokens: &ThemeTokens, size: ControlSize
 pub type SelectorPanelClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type SelectorPanelHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type SelectorPanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+pub type SelectorPanelScrollWheelHandler = Box<dyn Fn(&gpui::ScrollWheelEvent, &mut Window, &mut App) + 'static>;
 
 #[derive(Default)]
 pub struct SelectorItemsTemplateHandlers {
+    /// Policy-aware handler. Pair with the render model's retained scroll handle.
+    pub scroll_wheel: Option<SelectorPanelScrollWheelHandler>,
     pub item_hovers: Vec<SelectorPanelHoverHandler>,
     pub item_mouse_downs: Vec<SelectorPanelMouseDownHandler>,
     pub item_clicks: Vec<SelectorPanelClickHandler>,
@@ -88,6 +91,9 @@ where
     pub look: SelectorItemsPanelLook,
     pub max_height: Pixels,
     pub scrolling: bool,
+    /// Custom panels should track this handle and disable native wheel movement when the handler is supplied.
+    /// None preserves standalone template scrolling for previews and legacy hosts.
+    pub scroll_handle: Option<&'a gpui::ScrollHandle>,
     pub selection_icon: &'a IconSource,
 }
 
@@ -188,13 +194,17 @@ where
         handlers: SelectorItemsTemplateHandlers,
         cx: &mut App,
     ) -> Stateful<Div> {
-        let SelectorItemsTemplateHandlers { item_hovers, item_mouse_downs, item_clicks } = handlers;
+        let SelectorItemsTemplateHandlers { item_hovers, item_mouse_downs, item_clicks, scroll_wheel } = handlers;
         let look = model.look.clone();
         let content_max_height = (model.max_height - px(look.padding * 2.0)).max(px(look.item_height));
         let mut rows = div().id(format!("{}-rows", model.menu_id)).relative().flex().flex_col().w_full();
 
         if model.scrolling {
             rows = rows.max_h(content_max_height).overflow_y_scroll();
+        }
+        let policy_routing = model.scroll_handle.is_some() && scroll_wheel.is_some();
+        if let Some(handle) = model.scroll_handle.filter(|_| policy_routing) {
+            rows = rows.overflow_hidden().track_scroll(handle);
         }
 
         let mut mouse_downs = item_mouse_downs.into_iter();
@@ -284,7 +294,9 @@ where
             .rounded(px(look.radius))
             .shadow(look.shadow.clone())
             .overflow_hidden()
-            .occlude()
+            .when(policy_routing, |root| root.block_mouse_except_scroll())
+            .when(!policy_routing, |root| root.occlude())
+            .when_some(scroll_wheel, |root, handler| root.on_scroll_wheel(handler))
             .on_mouse_down(MouseButton::Left, |_, _, cx| {
                 cx.stop_propagation();
             })

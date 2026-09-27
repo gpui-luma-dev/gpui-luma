@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma::controls::selection_panel::{SelectionPanelControl, SelectionPanelEvent, SelectionPanelItem};
+use luma::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarVisibility};
 use luma::theme::ControlSize;
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn as shadcn;
@@ -100,6 +101,8 @@ impl SelectionPanelControlExposition {
             .panel_id("controls-doc-selection-panel-popup")
             .items(items)
             .scrolling(true)
+            .scrollbar_visibility(ScrollbarVisibility::AutoHide)
+            .scrollbar_auto_hide_activate(ScrollbarAutoHideActivate::Move)
             .look_provider(wide_panel_look)
             .visible_row_limits(5, 5)
             .selected_source_index(Some(1))

@@ -627,6 +627,7 @@ fn render_selector_selector_trigger(
     let label = SharedString::from("Select state");
     let items = selector_trigger_items().into_iter().collect::<Vec<_>>();
     let model = SelectorRenderModel {
+        popup_scroll: None,
         id,
         label: &label,
         selected_index: state.selector_selected.then_some(1),
@@ -749,6 +750,7 @@ fn render_selector_popup_preview(
         SelectorTemplateControl::Selector => default_selector_items_template()
             .render(
                 &SelectorItemsRenderModel {
+                    scroll_handle: None,
                     menu_id: &popup_id,
                     selector_id: id,
                     items: &items,

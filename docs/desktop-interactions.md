@@ -13,7 +13,7 @@ explicit no-styling instruction.
 | TextArea, ScrollContainer | Pointer | Chain | Feedback |
 | Embedded SelectionPanel | Pointer | Contain | Feedback; preserves active item |
 | Popup SelectionPanel | Pointer | Contain | Follows pointer while panel owns focus |
-| ComboBox, SearchSelector, Autocomplete popup | Pointer while open and enabled | Contain | Existing candidate highlighting |
+| Selector, ComboBox, SearchSelector, Autocomplete popup | Pointer while open and enabled | Contain | Existing candidate highlighting |
 | Paged Table | Passes through | No wheel page changes | Feedback |
 
 An embedded viewport does not infer policy from its ancestors. The host explicitly
@@ -44,8 +44,8 @@ momentum. A zero gesture-end event may finish Table snapping but is not consumed
 
 ## Construction, compatibility, and runtime changes
 
-TreeView, ListBox, Table, TextArea, SelectionPanel, ScrollContainer, and the three
-editable popup selectors expose independent wheel/boundary/focus-scope settings.
+TreeView, ListBox, Table, TextArea, SelectionPanel, ScrollContainer, Selector, and
+the three editable popup selectors expose independent wheel/boundary/focus-scope settings.
 Shadcn builders forward these settings; Radix uses SDK builders for these families.
 
 ```rust,ignore
@@ -114,6 +114,13 @@ Callbacks are attached inside the popup, where wheel events occur. Popup hitboxe
 continue to block pointer interaction behind them but permit policy-selected
 wheel propagation. Custom templates must preserve that distinction.
 
+Selector templates forward `popup_scroll` and `popup_scroll_wheel` to the items
+panel's `scroll_handle` and `scroll_wheel`. Custom panels must track that handle,
+disable native wheel movement, and permit wheel propagation through their popup
+hitbox. The default panel does this automatically. Standalone previews with no
+handle or handler retain native scrolling. Selector resets its popup offset on
+close, matching the previous native viewport's behavior.
+
 SearchSelector returns focus to its trigger after Escape/selection only when its
 own popup search still owns focus. Outside dismissal does not steal focus from
 another control. Disabling a focused collection releases focus. Disappearing
@@ -121,9 +128,6 @@ scrollbars return focus to the owning viewport (or blur for an ownerless contain
 
 Source inspection, not native-platform verification:
 
-- Plain Selector retains its separate native scrolling template and popup
-  containment. Its wheel-policy integration remains a selector-template follow-up
-  under #78; this implementation does not claim that API coverage.
 - Popup/context menus retain legitimate hover/submenu behavior and existing menu
   focus contexts. Their current panels have no independent scrolling viewport.
 - Commands, sliders, scrollbars, tabs, ControlGroup, and split handles retain
@@ -139,6 +143,9 @@ matrix for all six viewport families, checking child and parent offsets and focu
 Additional regressions cover popup single application/pass-through, Escape and
 selection restoration, embedded/popup hover, descendant focus, legacy precedence,
 runtime changes, builder forwarding, and existing positioning/virtualization/DnD.
+Plain Selector also covers the wheel/focus/boundary matrix, empty and short
+popups, live policy changes, click/keyboard selection, and unchanged popup
+geometry, scrolling, and reopening compared with its legacy native template.
 
 Native GUI/device checks remain unperformed: no GUI launch was authorized. Pixel
 and line events are simulated; physical trackpad momentum, window activation,

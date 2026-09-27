@@ -123,7 +123,9 @@ where
         }
 
         let mut popup_surface =
-            PopupScrollSurface::new(format!("{}-scroll-surface", model.id), model.scrollbar_template.clone(), cx);
+            PopupScrollSurface::new(format!("{}-scroll-surface", model.id), model.scrollbar_template.clone(), cx)
+                .scrollbar_visibility(model.scrollbar_visibility)
+                .scrollbar_auto_hide_activate(model.scrollbar_auto_hide_activate);
         popup_surface.set_scrolling_enabled(model.scrolling);
         popup_surface.set_snap_to_rows(true);
 
@@ -791,6 +793,61 @@ mod interaction_tests {
     use super::*;
     use gpui::{MouseMoveEvent, TestAppContext, point};
     use std::{cell::RefCell, rc::Rc};
+
+    #[test]
+    fn scrollbar_visibility_and_timed_reveal_follow_accepted_wheel_input() {
+        use crate::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarVisibility};
+        use crate::controls::scrollbar::{ThemedScrollbarTemplate, default_scrollbar_theme};
+        use crate::interaction::WheelScrollPolicy;
+        for visibility in
+            [ScrollbarVisibility::AlwaysVisible, ScrollbarVisibility::Hidden, ScrollbarVisibility::AutoHide]
+        {
+            for wheel in [WheelScrollPolicy::Pointer, WheelScrollPolicy::PassThrough] {
+                let mut app = TestAppContext::single();
+                let (panel, cx) = app.add_window_view(|window, cx| {
+                    window.activate_window();
+                    SelectionPanelControl::from_builder(
+                        SelectionPanelBuilder::new("visibility-panel")
+                            .items((0..20).map(|i| SelectionPanelItem::new(i.to_string())))
+                            .selected_source_index(Some(0))
+                            .visible_row_limits(4, 4)
+                            .wheel_scroll_policy(wheel)
+                            .scrollbar_visibility(visibility)
+                            .scrollbar_auto_hide_activate(ScrollbarAutoHideActivate::Move)
+                            .scrollbar_template(std::sync::Arc::new(
+                                ThemedScrollbarTemplate::new(default_scrollbar_theme())
+                                    .with_modifier(|root, _| root.debug_selector(|| "panel-scrollbar".into())),
+                            )),
+                        cx,
+                    )
+                });
+                cx.run_until_parked();
+                let always = visibility == ScrollbarVisibility::AlwaysVisible;
+                assert_eq!(cx.debug_bounds("panel-scrollbar").is_some(), always);
+                cx.simulate_event(MouseMoveEvent { position: point(px(35.0), px(55.0)), ..Default::default() });
+                cx.run_until_parked();
+                assert_eq!(cx.debug_bounds("panel-scrollbar").is_some(), always);
+                crate::interaction_tests::wheel(cx, 0.0, -30.0);
+                let accepted = wheel == WheelScrollPolicy::Pointer;
+                assert_eq!(
+                    cx.debug_bounds("panel-scrollbar").is_some(),
+                    always || (accepted && visibility == ScrollbarVisibility::AutoHide)
+                );
+                cx.update(|_, app| {
+                    let panel = panel.read(app);
+                    assert_eq!(panel.popup_surface.vertical_offset(), px(if accepted { 30.0 } else { 0.0 }));
+                    assert_eq!(panel.model.selected_source_index, Some(0));
+                });
+                if accepted && visibility == ScrollbarVisibility::AutoHide {
+                    // Chrome deadlines use real time; the test executor separately drives the timer.
+                    std::thread::sleep(std::time::Duration::from_millis(1300));
+                    cx.executor().advance_clock(std::time::Duration::from_millis(1300));
+                    cx.run_until_parked();
+                    assert!(cx.debug_bounds("panel-scrollbar").is_none());
+                }
+            }
+        }
+    }
 
     #[test]
     fn embedded_hover_preserves_active_selection_position_and_focus_click_acts_once() {

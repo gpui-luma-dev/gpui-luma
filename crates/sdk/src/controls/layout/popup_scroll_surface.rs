@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, AppContext, Context, Entity, Pixels, ScrollWheelEvent, SharedString, div, prelude::*, px};
 
-use crate::controls::scroll_container::ScrollContainer;
+use crate::controls::scroll_container::{ScrollContainer, ScrollbarAutoHideActivate, ScrollbarVisibility};
 use crate::controls::scrollbar::{Scrollbar, ScrollbarTemplate};
 
 #[derive(Clone)]
@@ -35,6 +35,18 @@ impl PopupScrollSurface {
 
     pub fn set_scrolling_enabled(&mut self, enabled: bool) {
         self.scrolling_enabled = enabled;
+    }
+
+    /// Choose when scrollbar chrome is visible; scrolling remains enabled independently.
+    pub fn scrollbar_visibility(mut self, visibility: ScrollbarVisibility) -> Self {
+        self.container = self.container.visibility(visibility);
+        self
+    }
+
+    /// Choose hover, timed scroll activity, or both for auto-hiding chrome.
+    pub fn scrollbar_auto_hide_activate(mut self, activate: ScrollbarAutoHideActivate) -> Self {
+        self.container = self.container.auto_hide_activate(activate);
+        self
     }
 
     pub fn set_snap_to_rows(&mut self, enabled: bool) {
@@ -102,6 +114,8 @@ impl PopupScrollSurface {
         if !delta.is_finite() || delta.abs() <= f32::EPSILON {
             return false;
         }
+
+        self.container.reveal_on_scroll(cx);
 
         let current = self.container.vertical_offset().as_f32();
         let max = self.container.max_vertical_offset().as_f32();

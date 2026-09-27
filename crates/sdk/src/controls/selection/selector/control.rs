@@ -42,6 +42,7 @@ where
     focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
     emitted_focused: bool,
+    popup_scroll: gpui::ScrollHandle,
 }
 
 impl<T> EventEmitter<SelectorEvent> for Selector<T> where T: SelectorItemLike + 'static {}
@@ -86,6 +87,61 @@ where
             focus_in_subscription: None,
             focus_out_subscription: None,
             emitted_focused: false,
+            popup_scroll: gpui::ScrollHandle::new(),
+        }
+    }
+
+    /// Current independent popup wheel settings.
+    pub fn scroll_interaction(&self) -> crate::interaction::ScrollInteraction {
+        self.model.scroll_interaction
+    }
+
+    /// Update wheel eligibility without rebuilding the popup or changing its selection/offset.
+    pub fn set_wheel_scroll_policy(&mut self, policy: crate::interaction::WheelScrollPolicy, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.wheel = policy;
+        cx.notify();
+    }
+
+    /// Update boundary behavior independently of wheel eligibility.
+    pub fn set_scroll_boundary_policy(
+        &mut self,
+        policy: crate::interaction::ScrollBoundaryPolicy,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.scroll_interaction.boundary = policy;
+        cx.notify();
+    }
+
+    /// Update which real focus owners qualify, without transferring focus.
+    pub fn set_wheel_focus_scope(&mut self, policy: crate::interaction::WheelFocusScope, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.focus_scope = policy;
+        cx.notify();
+    }
+
+    fn handle_popup_scroll_wheel(
+        &mut self,
+        event: &gpui::ScrollWheelEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let policy = self.model.scroll_interaction;
+        if !self.model.enabled
+            || !self.open
+            || !policy.wheel.accepts(policy.focus_scope.focused(self.interaction.focus_handle(), None, window, cx))
+        {
+            return;
+        }
+        let Some(delta) = crate::interaction::wheel_delta(event, window.line_height(), false) else {
+            return;
+        };
+        // Popup padding contains applicable input by default, but only its row viewport moves.
+        let moved = self.popup_scroll.bounds().contains(&event.position)
+            && crate::interaction::scroll_handle_by(&self.popup_scroll, delta, false);
+        if moved {
+            cx.notify();
+        }
+        if policy.boundary.consumes(moved) {
+            cx.stop_propagation();
         }
     }
 
@@ -188,6 +244,7 @@ where
             items: &self.model.items,
             open: self.open,
             presence: self.presence,
+            popup_scroll: Some(&self.popup_scroll),
             trigger_bounds: self.trigger_bounds,
             placement: self.model.placement,
             active_path: self.active_index.map(crate::controls::selector_list::SelectorPath::Item),
@@ -216,6 +273,7 @@ where
         let click_entity = entity.clone();
 
         SelectorTemplateHandlers {
+            popup_scroll_wheel: Some(Box::new(cx.listener(Self::handle_popup_scroll_wheel))),
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
             trigger_click: Box::new(cx.listener(Self::handle_trigger_click)),
             trigger_hover: Box::new(cx.listener(Self::handle_hover)),
@@ -299,6 +357,8 @@ where
 
     fn close_menu(&mut self) {
         self.open = false;
+        // The native popup viewport previously discarded its offset when unmounted.
+        self.popup_scroll.set_offset(gpui::point(gpui::px(0.0), gpui::px(0.0)));
         self.presence.set_open_with_animation(false, false);
         self.active_index = None;
     }
@@ -677,3 +737,7 @@ mod tests {
         assert_eq!(label.as_ref(), "Retro Arcade");
     }
 }
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "wheel_tests.rs"]
+mod wheel_tests;

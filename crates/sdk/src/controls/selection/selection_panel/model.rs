@@ -12,6 +12,7 @@ use super::template::{SelectionPanelRenderModel, template_with_modifier};
 use crate::infra::icon::IconSource;
 use crate::infra::icon::SelectionStatusIcons;
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
+use crate::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarVisibility};
 
 use super::template::{SelectionPanelTemplate, default_selection_panel_template};
 use super::theme::{SelectionPanelLook, default_selection_panel_look};
@@ -145,6 +146,8 @@ where
     pub(crate) show_selection_marker: bool,
     pub(crate) icons: SelectionStatusIcons,
     pub(crate) scrolling: bool,
+    pub(crate) scrollbar_visibility: ScrollbarVisibility,
+    pub(crate) scrollbar_auto_hide_activate: ScrollbarAutoHideActivate,
     pub(crate) min_visible_rows: usize,
     pub(crate) max_visible_rows: usize,
     pub(crate) size: ControlSize,
@@ -262,6 +265,18 @@ where
         self
     }
 
+    /// Always show, hide, or auto-hide the scrollbar. Defaults to AlwaysVisible.
+    pub fn scrollbar_visibility(mut self, visibility: ScrollbarVisibility) -> Self {
+        self.model.scrollbar_visibility = visibility;
+        self
+    }
+
+    /// Choose what reveals auto-hiding chrome. Move hides after the existing idle timeout.
+    pub fn scrollbar_auto_hide_activate(mut self, activate: ScrollbarAutoHideActivate) -> Self {
+        self.model.scrollbar_auto_hide_activate = activate;
+        self
+    }
+
     pub fn min_visible_rows(mut self, min_visible_rows: usize) -> Self {
         self.model.min_visible_rows = min_visible_rows.max(1);
         if self.model.max_visible_rows < self.model.min_visible_rows {
@@ -374,6 +389,8 @@ where
         show_selection_marker: true,
         icons: SelectionStatusIcons::default(),
         scrolling: true,
+        scrollbar_visibility: ScrollbarVisibility::default(),
+        scrollbar_auto_hide_activate: ScrollbarAutoHideActivate::default(),
         min_visible_rows: 1,
         max_visible_rows: 7,
         size: ControlSize::Md,

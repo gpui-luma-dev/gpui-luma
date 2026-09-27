@@ -151,6 +151,13 @@ impl ScrollContainer {
         self.auto_hide_activate
     }
 
+    /// Reveal timed chrome when a composite owner handles wheel movement itself.
+    pub(crate) fn reveal_on_scroll(&self, cx: &mut App) {
+        if self.visibility == ScrollbarVisibility::AutoHide && self.auto_hide_activate.listens_to_move() {
+            wake_on_move(&self.active_until, &self.hide_task, &self.host_view, cx);
+        }
+    }
+
     pub fn scrollbar(&self) -> Entity<Scrollbar> {
         self.scrollbar.clone()
     }
