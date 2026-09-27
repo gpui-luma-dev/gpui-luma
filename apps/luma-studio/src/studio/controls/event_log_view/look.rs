@@ -17,8 +17,13 @@ impl EventLogTheme for ShadcnEventLogTheme {
         self.look.mode_tokens().metrics
     }
 
-    fn resolve_look(&self, rows: usize, scale: &StandardBoxScale) -> super::theme::EventLogLook {
-        let textarea = self.look.textarea_theme().resolve_look(TextAreaState::default(), true, ControlSize::Md, scale);
+    fn resolve_look(&self, rows: usize, scale: &StandardBoxScale, focused: bool) -> super::theme::EventLogLook {
+        let textarea = self.look.textarea_theme().resolve_look(
+            TextAreaState { focused, focus_visible: focused, ..Default::default() },
+            true,
+            ControlSize::Md,
+            scale,
+        );
         let typography = self.look.typography_scale(ShadcnTextSize::Xs);
 
         compose_event_log_look(

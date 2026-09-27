@@ -187,7 +187,7 @@ impl ScrollContainer {
     }
 
     pub fn render(&self, content: AnyElement) -> Stateful<gpui::Div> {
-        self.render_internal(content, None)
+        self.render_internal(content, None, true)
     }
 
     pub fn render_with_scroll_wheel(
@@ -195,10 +195,21 @@ impl ScrollContainer {
         content: AnyElement,
         on_scroll_wheel: impl Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static,
     ) -> Stateful<gpui::Div> {
-        self.render_internal(content, Some(Box::new(on_scroll_wheel)))
+        self.render_internal(content, Some(Box::new(on_scroll_wheel)), true)
     }
 
-    fn render_internal(&self, content: AnyElement, on_scroll_wheel: Option<ScrollWheelHandler>) -> Stateful<gpui::Div> {
+    /// Keep clipping, positioning and scrollbar interaction, but pass wheel input
+    /// to ancestors without moving the viewport or cancelling pending motion.
+    pub fn render_without_wheel(&self, content: AnyElement) -> Stateful<gpui::Div> {
+        self.render_internal(content, None, false)
+    }
+
+    fn render_internal(
+        &self,
+        content: AnyElement,
+        on_scroll_wheel: Option<ScrollWheelHandler>,
+        accepts_wheel: bool,
+    ) -> Stateful<gpui::Div> {
         let scrollable = self.scroll_handle.max_offset().y.as_f32() > 0.5;
         let viewport_right = viewport_right_inset(scrollable, self.placement, self.visibility, self.scrollbar_width);
         let scroll_handle = self.scroll_handle.clone();
@@ -245,11 +256,12 @@ impl ScrollContainer {
             .left(px(0.0))
             .right(viewport_right)
             .overflow_y_scroll()
+            .when(!accepts_wheel, |viewport| viewport.overflow_hidden())
             .scrollbar_width(px(0.0))
             .track_scroll(&self.scroll_handle)
             .child(content);
 
-        {
+        if accepts_wheel {
             let active_until = self.active_until.clone();
             let hide_task = self.hide_task.clone();
             let host_view = host_view.clone();

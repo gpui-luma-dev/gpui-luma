@@ -20,7 +20,7 @@ pub struct EventLogLook {
 pub trait EventLogTheme: Send + Sync {
     fn metrics(&self) -> MetricTokens;
 
-    fn resolve_look(&self, rows: usize, scale: &StandardBoxScale) -> EventLogLook;
+    fn resolve_look(&self, rows: usize, scale: &StandardBoxScale, focused: bool) -> EventLogLook;
 }
 
 pub fn compose_event_log_look(

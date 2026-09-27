@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AppContext, Entity, SharedString};
+use gpui::{AppContext, Entity, FocusHandle, SharedString};
 
 use luma::controls::scrollbar::ScrollbarTemplate;
 
@@ -24,6 +24,7 @@ pub struct EventLogViewRenderModel<'a> {
     pub placeholder: &'a SharedString,
     pub full_width: bool,
     pub look: super::theme::EventLogLook,
+    pub focus_handle: &'a FocusHandle,
 }
 
 pub struct EventLogViewBuilder {

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{App, Div, ScrollWheelEvent, Stateful, Window, div, prelude::*, px};
+use gpui::{App, Div, KeyDownEvent, MouseButton, MouseDownEvent, ScrollWheelEvent, Stateful, Window, div, prelude::*, px};
 
 use luma::controls::scroll_container::ScrollContainer;
 use luma_look_shadcn::LumaTypographyExt;
@@ -10,7 +10,12 @@ use super::theme::EventLogTheme;
 
 type ScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
 
+type MouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+type KeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
+
 pub struct EventLogViewTemplateHandlers {
+    pub mouse_down: MouseDownHandler,
+    pub key_down: KeyDownHandler,
     pub scroll_wheel: ScrollWheelHandler,
 }
 
@@ -52,6 +57,8 @@ impl EventLogViewTemplate for ThemedEventLogViewTemplate {
 
         let content = div()
             .id(format!("{}-content", model.id))
+            .min_h(px(look.min_height))
+            .on_mouse_down(MouseButton::Left, handlers.mouse_down)
             .w_full()
             .px(px(look.padding_x))
             .py(px(look.padding_y))
@@ -71,6 +78,9 @@ impl EventLogViewTemplate for ThemedEventLogViewTemplate {
 
         let mut root = div()
             .id(model.id.clone())
+            .track_focus(model.focus_handle)
+            .on_key_down(handlers.key_down)
+            .on_scroll_wheel(handlers.scroll_wheel)
             .overflow_hidden()
             .rounded(px(look.radius))
             .border(px(look.border_width))
@@ -80,8 +90,9 @@ impl EventLogViewTemplate for ThemedEventLogViewTemplate {
             .min_h(px(look.min_height))
             .when(model.full_width, |element| element.w_full());
 
-        root =
-            root.child(scroll.render_with_scroll_wheel(content, handlers.scroll_wheel).w_full().h(px(look.min_height)));
+        // The control applies wheel input only after checking its live focus.
+        let viewport = scroll.render_without_wheel(content);
+        root = root.child(viewport.w_full().h(px(look.min_height)));
         root
     }
 }
