@@ -1,8 +1,10 @@
+#[cfg(all(test, feature = "test-support"))]
+use gpui::ScrollWheelEvent;
 use std::collections::{HashMap, HashSet};
 
 use gpui::{
     App, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, FocusHandle, IntoElement, ListAlignment,
-    ListState, Render, ScrollWheelEvent, SharedString, Subscription, Window, div, list, prelude::*, px,
+    ListState, Render, SharedString, Subscription, Window, div, list, prelude::*, px,
 };
 
 use super::{
@@ -111,6 +113,33 @@ impl<T> TreeViewControl<T>
 where
     T: Clone + Send + Sync + 'static,
 {
+    /// Current wheel settings. Keyboard ownership is independent.
+    pub fn scroll_interaction(&self) -> crate::interaction::ScrollInteraction {
+        self.model.scroll_interaction
+    }
+
+    /// Change wheel without resetting focus, selection or position.
+    pub fn set_wheel_scroll_policy(&mut self, policy: crate::interaction::WheelScrollPolicy, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.wheel = policy;
+        cx.notify();
+    }
+
+    /// Change boundary without resetting focus, selection or position.
+    pub fn set_scroll_boundary_policy(
+        &mut self,
+        policy: crate::interaction::ScrollBoundaryPolicy,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.scroll_interaction.boundary = policy;
+        cx.notify();
+    }
+
+    /// Change focus_scope without resetting focus, selection or position.
+    pub fn set_wheel_focus_scope(&mut self, policy: crate::interaction::WheelFocusScope, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.focus_scope = policy;
+        cx.notify();
+    }
+
     pub(crate) fn from_builder(builder: TreeViewBuilder<T>, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
@@ -800,7 +829,7 @@ where
                     return;
                 }
                 this.cancel_position();
-                this.focus_handle.focus(window, cx);
+                this.model.pointer_focus.apply(&this.focus_handle, window, cx);
                 this.toggle_node_at_index(idx, cx);
                 if this.model.expand_on_row_click {
                     this.select_with_modifiers(idx, event.modifiers(), cx);
@@ -820,8 +849,8 @@ where
                     this.prepare_selection_anchor();
                     this.pressed_node_id = Some(press_id.clone());
                     this.set_active_index(Some(idx), false, cx);
-                    this.focus_handle.focus(window, cx);
-                    this.emit_focus_changed(true, cx);
+                    this.model.pointer_focus.apply(&this.focus_handle, window, cx);
+                    this.emit_focus_changed(this.focus_handle.is_focused(window), cx);
                     cx.notify();
                 }
             })),
@@ -1051,6 +1080,9 @@ where
     T: Clone + Send + Sync + 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if !self.model.enabled && self.focus_handle.contains_focused(window, cx) {
+            window.blur(cx);
+        }
         if self.focus_in_subscription.is_none() {
             let focus_handle = self.focus_handle.clone();
             self.focus_in_subscription = Some(cx.on_focus_in(&focus_handle, window, |_, window, cx| {
@@ -1104,15 +1136,69 @@ where
                 ControlKeyProfile::TreeView.context()
             })
             .on_key_down(cx.listener(Self::handle_selection_key))
-            .on_action(cx.listener(Self::handle_select_all))
-            .on_action(cx.listener(Self::handle_clear_selection))
-            .on_action(cx.listener(Self::handle_previous))
-            .on_action(cx.listener(Self::handle_next))
-            .on_action(cx.listener(Self::handle_first))
-            .on_action(cx.listener(Self::handle_last))
-            .on_action(cx.listener(Self::handle_expand_focused_node))
-            .on_action(cx.listener(Self::handle_collapse_focused_node))
-            .on_action(cx.listener(Self::handle_activate))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_select_all(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_clear_selection(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_previous(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_next(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_first(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_last(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_expand_focused_node(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_collapse_focused_node(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_activate(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
             .on_mouse_down_out(cx.listener(|this, _, window, cx| {
                 if this.focus_handle.contains_focused(window, cx) {
                     window.blur(cx);
@@ -1241,3 +1327,23 @@ mod selection_tests;
 #[cfg(all(test, feature = "test-support"))]
 #[path = "scale_tests.rs"]
 mod scale_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn wheel_policy_dispatch_matrix() {
+    crate::interaction_tests::matrix(
+        |policy, cx| {
+            TreeViewBuilder::new("matrix-tree")
+                .items((0..100).map(|i| TreeNode::new(i.to_string(), i.to_string(), ())))
+                .animated(false)
+                .wheel_scroll_policy(policy.wheel)
+                .scroll_boundary_policy(policy.boundary)
+                .spawn(cx)
+        },
+        |view, _cx| -view.list_state.scroll_px_offset_for_scrollbar().y.as_f32(),
+        |view, cx| {
+            view.list_state.scroll_to(gpui::ListOffset { item_ix: 99, offset_in_item: px(0.0) });
+            cx.notify();
+        },
+    );
+}

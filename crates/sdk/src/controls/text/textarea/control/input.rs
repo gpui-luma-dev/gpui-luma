@@ -1,3 +1,4 @@
+use gpui::Focusable;
 use std::{ops::Range, time::Duration};
 
 use gpui::{
@@ -102,7 +103,7 @@ impl TextArea {
         }
 
         self.suppress_select_all_on_next_focus = true;
-        self.focus_handle.focus(window, cx);
+        self.model.pointer_focus.apply(&self.focus_handle, window, cx);
         let chars = self.model.value.chars().collect::<Vec<_>>();
         let len = chars.len();
         let index = self.char_offset_for_point(event.position).min(len);
@@ -185,23 +186,34 @@ impl TextArea {
     pub(super) fn handle_scroll_wheel(
         &mut self,
         event: &ScrollWheelEvent,
-        _window: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if !self.model.enabled {
+        let policy = self.model.scroll_interaction;
+        let bar = self.scrollbar.read(cx).focus_handle(cx);
+        if !self.model.enabled
+            || !policy.wheel.accepts(policy.focus_scope.focused(&self.focus_handle, Some(&bar), window, cx))
+        {
             return;
         }
-
         let line_height = self.layout_cache.as_ref().map(|cache| cache.line_height).unwrap_or(px(20.0));
-        let delta = event.delta.pixel_delta(line_height).y;
-        if self.scroll_by(delta) {
+        let Some(delta) = crate::interaction::wheel_delta(event, line_height, false) else {
+            return;
+        };
+        let moved = self.scroll_by(-delta);
+        if moved {
             self.pause_caret_blink(cx);
-            cx.stop_propagation();
             cx.notify();
+        }
+        if policy.boundary.consumes(moved) {
+            cx.stop_propagation();
         }
     }
 
     pub(super) fn handle_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.focus_handle.is_focused(window) {
+            return;
+        }
         if !self.model.enabled {
             cx.stop_propagation();
             return;

@@ -10,19 +10,16 @@ use luma_color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingTrackContext, HueRingDelegate, primary_slider_value,
 };
 use luma_color::color_slider::color_spec::Hsv;
-use luma_color::composition::{ColorCompositionSync, CompositionSize};
-use luma_color::style::Size;
+use luma_color::composition::ColorCompositionSync;
 use luma::controls::slider::SliderControl;
-use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
 use super::super::color_exposition_common::{
-    composition_demo_card_width, composition_size_label, composition_title_text_size,
-    render_composition_readout_footer, COMPOSITION_PRIMARY_READOUT_GAP,
+    composition_demo_card_width, render_composition_readout_footer, COMPOSITION_PRIMARY_READOUT_GAP,
 };
 
 pub struct SplitRingDemo {
     look: Arc<ShadcnLook>,
-    composition_size: CompositionSize,
     metrics: SplitRingMetrics,
     sync: ColorCompositionSync,
     saturation_arc: Entity<SliderControl>,
@@ -58,8 +55,8 @@ impl SplitRingMetrics {
     const ARC_GAP_DEGREES: f32 = 8.0;
     const ARC_ROTATION_DEGREES: f32 = 90.0;
 
-    fn resolve(size: CompositionSize) -> Self {
-        let outer_size = size.resolve_primary(220.0, 300.0, 380.0);
+    fn new() -> Self {
+        let outer_size: f32 = 238.0;
         let scale = outer_size / 300.0;
         Self {
             outer_size,
@@ -101,21 +98,20 @@ impl SplitRingMetrics {
 }
 
 impl SplitRingDemo {
-    pub fn card_width_for(size: CompositionSize) -> f32 {
-        SplitRingMetrics::resolve(size).card_width()
+    pub fn card_width() -> f32 {
+        SplitRingMetrics::new().card_width()
     }
 
-    pub fn with_size(look: Arc<ShadcnLook>, size: CompositionSize, cx: &mut Context<Self>) -> Self {
+    pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let init_color = hsla(18.0 / 360.0, 0.85, 0.49, 1.0);
         let hue_degrees = init_color.h * 360.0;
         let saturation = init_color.s;
         let lightness = init_color.l;
         let hsv_value = Hsv::from_hsla_ext(init_color).v;
-        let metrics = SplitRingMetrics::resolve(size);
-        let size_label = composition_size_label(size);
+        let metrics = SplitRingMetrics::new();
 
         let saturation_builder = ColorArcBuilder::saturation_with_renderer(
-            format!("controls-doc-split-ring-saturation-{size_label}"),
+            "controls-doc-split-ring-saturation",
             saturation,
             hue_degrees,
             hsv_value,
@@ -123,7 +119,7 @@ impl SplitRingDemo {
         )
         .range(0.0..1.0)
         .step(0.001)
-        .size(Size::Size(px(metrics.outer_size)))
+        .size(px(metrics.outer_size))
         .start_degrees(90.0 + SplitRingMetrics::ARC_ROTATION_DEGREES + SplitRingMetrics::ARC_GAP_DEGREES * 0.5)
         .sweep_degrees(metrics.arc_sweep_degrees())
         .arc_thickness(metrics.track_width)
@@ -133,7 +129,7 @@ impl SplitRingDemo {
         let saturation_arc = saturation_builder.spawn(cx);
 
         let lightness_builder = ColorArcBuilder::lightness_with_renderer(
-            format!("controls-doc-split-ring-lightness-{size_label}"),
+            "controls-doc-split-ring-lightness",
             lightness,
             hue_degrees,
             saturation,
@@ -141,7 +137,7 @@ impl SplitRingDemo {
         )
         .range(0.0..1.0)
         .step(0.001)
-        .size(Size::Size(px(metrics.outer_size)))
+        .size(px(metrics.outer_size))
         .start_degrees(270.0 + SplitRingMetrics::ARC_ROTATION_DEGREES + SplitRingMetrics::ARC_GAP_DEGREES * 0.5)
         .sweep_degrees(metrics.arc_sweep_degrees())
         .arc_thickness(metrics.track_width)
@@ -150,15 +146,10 @@ impl SplitRingDemo {
         let lightness_context = lightness_builder.track_context();
         let lightness_arc = lightness_builder.spawn(cx);
 
-        let hue_ring_builder = ColorRingBuilder::hue(
-            format!("controls-doc-split-ring-hue-{size_label}"),
-            hue_degrees,
-            saturation,
-            lightness,
-        )
-        .size(Size::Size(px(metrics.ring_size())))
-        .ring_thickness(metrics.track_width)
-        .thumb_size(metrics.track_width);
+        let hue_ring_builder = ColorRingBuilder::hue("controls-doc-split-ring-hue", hue_degrees, saturation, lightness)
+            .size(px(metrics.ring_size()))
+            .ring_thickness(metrics.track_width)
+            .thumb_size(metrics.track_width);
         let hue_ring_renderer = hue_ring_builder.domain_renderer();
         let hue_ring_context = hue_ring_builder.track_context();
         let hue_ring = hue_ring_builder.spawn(cx);
@@ -201,7 +192,6 @@ impl SplitRingDemo {
 
         let this = Self {
             look,
-            composition_size: size,
             metrics,
             sync: ColorCompositionSync::new(),
             saturation_arc,
@@ -283,7 +273,7 @@ impl Render for SplitRingDemo {
         let group_width = self.metrics.frame_size();
         let arc_offset = self.metrics.arc_horizontal_offset;
         let look = &self.look;
-        let text_size = composition_title_text_size(self.composition_size);
+        let text_size = ShadcnTextSize::Base;
 
         let group_left = (primary_width - group_width) * 0.5;
         let group_top = (primary_width - self.metrics.outer_size) * 0.5;

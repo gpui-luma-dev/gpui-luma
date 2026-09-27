@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{App, Context, IntoElement, MouseDownEvent, Render, Window, div, prelude::*};
+use gpui::{App, Context, IntoElement, MouseDownEvent, MouseMoveEvent, Render, Window, canvas, div, prelude::*};
 
 use super::super::model::{build_render_segments_at, SliderRenderModel, ThumbId, TrackPresentation};
 use super::super::SliderTemplateHandlers;
@@ -94,12 +94,32 @@ impl Render for SliderControl {
             .expect("slider always has a thumb");
 
         div()
+            .when(self.interaction.is_pressed() && !self.model.strategy.is_angular(), |root| {
+                let entity = cx.entity();
+                // Track presses do not start GPUI's thumb drag. Keep following the pointer outside the track.
+                root.child(
+                    canvas(
+                        |_, _, _| (),
+                        move |_, _, window, _| {
+                            window.on_mouse_event(move |event: &MouseMoveEvent, phase, window, cx| {
+                                if phase.bubble() {
+                                    entity.update(cx, |slider, cx| slider.handle_mouse_move(event, window, cx));
+                                }
+                            });
+                        },
+                    )
+                    .absolute(),
+                )
+            })
             .child(
                 self.model
                     .template
                     .render(&model, handlers, active_thumb_id, window, cx)
                     .track_focus(self.interaction.focus_handle())
                     .key_context(ControlKeyProfile::RangeValue.context())
+                    .when(self.model.keyboard_position_step.is_some(), |root| {
+                        root.on_key_down(cx.listener(Self::handle_position_step_key_down))
+                    })
                     .on_action(cx.listener(Self::handle_decrease_value))
                     .on_action(cx.listener(Self::handle_increase_value))
                     .on_action(cx.listener(Self::handle_decrease_value_large))

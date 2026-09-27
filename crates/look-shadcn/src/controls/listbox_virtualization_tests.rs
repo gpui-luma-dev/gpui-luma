@@ -111,10 +111,14 @@ fn assert_revealed(cx: &mut VisualTestContext, selector: &'static str, horizonta
     }
 }
 
-fn wheel(cx: &mut VisualTestContext, delta: f32) {
+fn wheel(cx: &mut VisualTestContext, horizontal: bool, delta: f32) {
     cx.simulate_event(ScrollWheelEvent {
         position: point(px(30.0), px(25.0)),
-        delta: ScrollDelta::Pixels(point(px(0.0), px(delta))),
+        delta: ScrollDelta::Pixels(if horizontal {
+            point(px(delta), px(0.0))
+        } else {
+            point(px(0.0), px(delta))
+        }),
         modifiers: Default::default(),
         touch_phase: TouchPhase::Moved,
     });
@@ -224,19 +228,19 @@ fn listbox_virtualization_wheel_focus_endpoints_and_snapshot_shrink() {
         cx.update(|window, _| window.activate_window());
         settle(cx);
         let first = bounds(cx, "virtual-list-item-0");
-        wheel(cx, -10_000.0);
+        wheel(cx, horizontal, -10_000.0);
         assert_eq!(bounds(cx, "virtual-list-item-0"), first);
         cx.simulate_click(point(px(30.0), px(25.0)), Default::default());
-        wheel(cx, -10_000.0);
+        wheel(cx, horizontal, -10_000.0);
         cx.update(|_, app| {
             let host = view.read(app);
             assert_eq!(host.parent_wheels, 1);
             assert!(!host.rendered.borrow().contains(&1));
             assert!(host.rendered.borrow().len() <= 10);
         });
-        wheel(cx, -10_000_000.0);
+        wheel(cx, horizontal, -10_000_000.0);
         assert_revealed(cx, "virtual-list-item-9999", horizontal);
-        wheel(cx, -100.0);
+        wheel(cx, horizontal, -100.0);
         assert_revealed(cx, "virtual-list-item-9999", horizontal);
         cx.update(|_, app| assert_eq!(view.read(app).parent_wheels, 1));
         cx.update(|window, app| {
@@ -244,7 +248,7 @@ fn listbox_virtualization_wheel_focus_endpoints_and_snapshot_shrink() {
             elsewhere.focus(window, app);
         });
         settle(cx);
-        wheel(cx, 500.0);
+        wheel(cx, horizontal, 500.0);
         assert_revealed(cx, "virtual-list-item-9999", horizontal);
         cx.update(|_, app| assert_eq!(view.read(app).parent_wheels, 2));
         for count in [3, 0, 20] {
@@ -403,7 +407,7 @@ fn listbox_smooth_positions_animate_both_axes_and_yield_to_new_requests() {
             settle(cx);
             cx.update(|_, app| view.update(app, |host, cx| host.list.scroll_to_center_smooth(50, cx)));
             advance_smooth(cx, 3);
-            wheel(cx, -13.0);
+            wheel(cx, horizontal, -13.0);
             let key = cx.update(|_, app| *view.read(app).rendered.borrow().first().unwrap());
             let id: &'static str = Box::leak(format!("virtual-list-item-{}", key - 1).into_boxed_str());
             let stopped = bounds(cx, id);

@@ -103,7 +103,7 @@ impl SearchSelectorPanelTemplate for DefaultSearchSelectorPanelTemplate {
                             .rounded(px(look.radius))
                             .shadow(look.shadow)
                             .overflow_hidden()
-                            .occlude()
+                            .block_mouse_except_scroll()
                             .child(panel_content),
                     ),
             )
@@ -120,7 +120,7 @@ impl SearchSelectorPanelTemplate for DefaultSearchSelectorPanelTemplate {
             .rounded(px(look.radius))
             .shadow(look.shadow)
             .overflow_hidden()
-            .occlude()
+            .block_mouse_except_scroll()
             .child(panel_content)
             .into_any_element()
     }

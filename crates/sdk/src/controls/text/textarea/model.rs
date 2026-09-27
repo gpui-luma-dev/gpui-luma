@@ -1,3 +1,4 @@
+use crate::interaction::{ScrollInteraction, WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
 use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
@@ -17,6 +18,8 @@ pub struct TextAreaModel {
     pub(crate) placeholder: SharedString,
     pub(crate) value: SharedString,
     pub(crate) enabled: bool,
+    pub(crate) scroll_interaction: ScrollInteraction,
+    pub(crate) pointer_focus: crate::interaction::PointerFocusPolicy,
     pub(crate) full_width: bool,
     pub(crate) size: ControlSize,
     pub(crate) rows: usize,
@@ -66,6 +69,8 @@ impl TextAreaBuilder {
                 placeholder: SharedString::default(),
                 value: SharedString::default(),
                 enabled: true,
+                scroll_interaction: ScrollInteraction::DOCUMENT,
+                pointer_focus: Default::default(),
                 full_width: false,
                 size: ControlSize::Md,
                 rows: 4,
@@ -88,6 +93,30 @@ impl TextAreaBuilder {
 
     pub fn value(mut self, value: impl Into<SharedString>) -> Self {
         self.model.value = value.into();
+        self
+    }
+
+    /// Configure pointer_focus independently of wheel and keyboard ownership.
+    pub fn pointer_focus_policy(mut self, policy: crate::interaction::PointerFocusPolicy) -> Self {
+        self.model.pointer_focus = policy;
+        self
+    }
+
+    /// Override wheel without changing other interaction settings.
+    pub fn wheel_scroll_policy(mut self, policy: WheelScrollPolicy) -> Self {
+        self.model.scroll_interaction.wheel = policy;
+        self
+    }
+
+    /// Override boundary without changing other interaction settings.
+    pub fn scroll_boundary_policy(mut self, policy: ScrollBoundaryPolicy) -> Self {
+        self.model.scroll_interaction.boundary = policy;
+        self
+    }
+
+    /// Override focus_scope without changing other interaction settings.
+    pub fn wheel_focus_scope(mut self, policy: WheelFocusScope) -> Self {
+        self.model.scroll_interaction.focus_scope = policy;
         self
     }
 

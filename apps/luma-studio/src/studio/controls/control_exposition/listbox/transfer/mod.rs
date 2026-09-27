@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use gpui::{Context, Div, Entity, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
 use luma::controls::listbox::{ListBoxBinding, ListBoxInput, ListBoxScrollHandle, SelectionPolicy};
+use luma::interaction::{ScrollBoundaryPolicy, WheelScrollPolicy};
 use luma::infra::drag_drop::{DragDropElementExt, DragDropEvent, DropProposal};
 use luma::{hstack, vstack};
 use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
@@ -53,7 +54,14 @@ impl TransferExample {
         Self {
             model,
             bindings: Side::ALL.map(|_| ListBoxBinding::new(cx)),
-            scrolls: Side::ALL.map(|_| ListBoxScrollHandle::default().require_focus_for_scroll(true)),
+            scrolls: [
+                ListBoxScrollHandle::default()
+                    .wheel_scroll_policy(WheelScrollPolicy::Pointer)
+                    .scroll_boundary_policy(ScrollBoundaryPolicy::Chain),
+                ListBoxScrollHandle::default()
+                    .wheel_scroll_policy(WheelScrollPolicy::RequireFocus)
+                    .scroll_boundary_policy(ScrollBoundaryPolicy::Contain),
+            ],
             presentations: [
                 ExamplePresentation::new(look.clone(), "Left", events.clone()),
                 ExamplePresentation::new(look, "Right", events),
@@ -169,7 +177,11 @@ impl TransferExample {
             presentation.section(self.model.lists[index].selected_keys().count(), surface),
             div().typography_style(presentation.look.typography_scale(ShadcnTextSize::Xs))
                 .text_color(presentation.look.chrome().muted_text)
-                .child(format!("{} items", self.model.lists[index].snapshot().items().len())),
+                .child(format!("{} items · {}", self.model.lists[index].snapshot().items().len(), if side == Side::Left {
+                    "Pointer/Chain"
+                } else {
+                    "RequireFocus/Contain"
+                })),
         }
         .w(px(VERTICAL_LIST_WIDTH))
         .flex_shrink_0()

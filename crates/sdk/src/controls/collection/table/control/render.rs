@@ -182,6 +182,9 @@ where
     T: 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if !self.model.enabled && self.focus_handle.contains_focused(window, cx) {
+            window.blur(cx);
+        }
         if self.focus_in_subscription.is_none() {
             let focus_handle = self.focus_handle.clone();
             self.focus_in_subscription = Some(cx.on_focus(&focus_handle, window, Self::handle_focus_in));
@@ -191,6 +194,12 @@ where
             self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
         }
 
+        let policy = self.model.scroll_interaction;
+        if !self.model.enabled
+            || !policy.wheel.accepts(policy.focus_scope.focused(&self.focus_handle, None, window, cx))
+        {
+            self.wheel_gesture_active = false;
+        }
         let render_model = self.render_model(window, cx);
         let header = if self.model.grid_header {
             Some(self.render_grid_header(&render_model.look, cx))
@@ -203,9 +212,27 @@ where
         } else {
             list_element = list_element.size_full();
         }
-        let body = list_element.into_any_element();
+        let focus = self.focus_handle.clone();
+        let policy = self.model.scroll_interaction;
+        let enabled = self.model.enabled && !self.is_paged();
+        let owner = cx.entity().downgrade();
+        let routing = crate::interaction::list_wheel_routing(
+            self.list_state.clone(),
+            move |window, cx| enabled && policy.wheel.accepts(policy.focus_scope.focused(&focus, None, window, cx)),
+            policy.boundary,
+            move |event, window, cx| {
+                let _ = owner.update(cx, |table, cx| table.handle_scroll_wheel(event, window, cx));
+            },
+        );
+        let body = div()
+            .relative()
+            .w_full()
+            .when(render_model.body_rows_height.is_none(), |body| body.h_full())
+            .child(routing)
+            .child(list_element)
+            .into_any_element();
 
-        let mut shell = self
+        let shell = self
             .model
             .template
             .render(&render_model, header, body, window, cx)
@@ -216,17 +243,55 @@ where
             .on_mouse_up(MouseButton::Left, cx.listener(Self::finish_column_resize))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::finish_column_resize))
             .on_key_down(cx.listener(Self::handle_key_down))
-            .on_action(cx.listener(Self::handle_select_previous_item))
-            .on_action(cx.listener(Self::handle_select_next_item))
-            .on_action(cx.listener(Self::handle_decrease_value_large))
-            .on_action(cx.listener(Self::handle_increase_value_large))
-            .on_action(cx.listener(Self::handle_select_first_item))
-            .on_action(cx.listener(Self::handle_select_last_item))
-            .on_action(cx.listener(Self::handle_activate_control));
-
-        if !self.is_paged() {
-            shell = shell.on_scroll_wheel(cx.listener(Self::handle_scroll_wheel));
-        }
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_select_previous_item(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_select_next_item(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_decrease_value_large(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_increase_value_large(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_select_first_item(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_select_last_item(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }))
+            .on_action(cx.listener(|this, event, window, cx| {
+                if this.model.enabled && this.focus_handle.is_focused(window) {
+                    this.handle_activate_control(event, window, cx);
+                } else {
+                    cx.propagate();
+                }
+            }));
 
         let sync_page_size = self.should_sync_page_size_to_viewport();
         let entity = cx.entity();

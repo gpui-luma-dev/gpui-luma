@@ -25,6 +25,7 @@ where
     selected_id: Option<SharedString>,
     size: ShadcnSize,
     enabled: bool,
+    scroll_interaction: luma::interaction::ScrollInteraction,
     invalid: bool,
     tab_stop: bool,
     placement: SelectorPlacement,
@@ -54,6 +55,7 @@ where
             selected_id: None,
             size: ShadcnSize::Md,
             enabled: true,
+            scroll_interaction: luma::interaction::ScrollInteraction::VIEWPORT,
             invalid: false,
             tab_stop: true,
             placement: SelectorPlacement::Smart,
@@ -114,6 +116,24 @@ where
         self
     }
 
+    /// Choose popup wheel eligibility without changing focus or boundary behavior.
+    pub fn wheel_scroll_policy(mut self, policy: luma::interaction::WheelScrollPolicy) -> Self {
+        self.scroll_interaction.wheel = policy;
+        self
+    }
+
+    /// Choose containment or whole-event chaining independently of wheel eligibility.
+    pub fn scroll_boundary_policy(mut self, policy: luma::interaction::ScrollBoundaryPolicy) -> Self {
+        self.scroll_interaction.boundary = policy;
+        self
+    }
+
+    /// Choose which actual focus owners qualify for focus-required wheel input.
+    pub fn wheel_focus_scope(mut self, policy: luma::interaction::WheelFocusScope) -> Self {
+        self.scroll_interaction.focus_scope = policy;
+        self
+    }
+
     pub fn invalid(mut self, invalid: bool) -> Self {
         self.invalid = invalid;
         self
@@ -171,6 +191,9 @@ where
             .items(self.items)
             .size(self.size.control_size())
             .enabled(self.enabled)
+            .wheel_scroll_policy(self.scroll_interaction.wheel)
+            .scroll_boundary_policy(self.scroll_interaction.boundary)
+            .wheel_focus_scope(self.scroll_interaction.focus_scope)
             .invalid(self.invalid)
             .tab_stop(self.tab_stop)
             .placement(self.placement)
@@ -241,4 +264,23 @@ mod tests {
             .selected_id("one")
             .into_sdk_builder(look);
     }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn forwards_popup_wheel_overrides_after_look_synthesis() {
+    use luma::interaction::{ScrollBoundaryPolicy, WheelFocusScope, WheelScrollPolicy};
+    let mut app = gpui::TestAppContext::single();
+    let control = Selector::new("policy")
+        .wheel_scroll_policy(WheelScrollPolicy::PassThrough)
+        .scroll_boundary_policy(ScrollBoundaryPolicy::Chain)
+        .wheel_focus_scope(WheelFocusScope::Descendants)
+        .into_sdk_builder(ShadcnLook::built_in())
+        .spawn(&mut app);
+    control.read_with(&app, |view, _| {
+        let policy = view.scroll_interaction();
+        assert_eq!(policy.wheel, WheelScrollPolicy::PassThrough);
+        assert_eq!(policy.boundary, ScrollBoundaryPolicy::Chain);
+        assert_eq!(policy.focus_scope, WheelFocusScope::Descendants);
+    });
 }

@@ -20,6 +20,8 @@ luma = { package = "gpui-luma", git = "https://github.com/scottcg/gpui-luma", ta
 luma-look-shadcn = { package = "gpui-luma-look-shadcn", git = "https://github.com/scottcg/gpui-luma", tag = "v0.1.0-alpha.1" }
 ```
 
+Imports stay `use luma::…`.
+
 Shadcn themes load from strings with `ShadcnLook::from_css_str`. The bundled fallback
 CSS is available as `luma_look_shadcn::FALLBACK_CSS`. The former `from_css_path` and
 `from_css_path_with_stylesheet` helpers have been removed: applications own file

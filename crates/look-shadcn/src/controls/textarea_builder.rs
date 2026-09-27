@@ -20,6 +20,8 @@ pub struct TextArea {
     placeholder: SharedString,
     value: SharedString,
     enabled: bool,
+    pointer_focus: luma::interaction::PointerFocusPolicy,
+    scroll_interaction: luma::interaction::ScrollInteraction,
     full_width: bool,
     rows: usize,
     clean_on_escape: bool,
@@ -41,6 +43,8 @@ impl TextArea {
             placeholder: SharedString::default(),
             value: SharedString::default(),
             enabled: true,
+            pointer_focus: Default::default(),
+            scroll_interaction: luma::interaction::ScrollInteraction::DOCUMENT,
             full_width: false,
             rows: 4,
             clean_on_escape: false,
@@ -92,6 +96,30 @@ impl TextArea {
 
     pub fn value(mut self, value: impl Into<SharedString>) -> Self {
         self.value = value.into();
+        self
+    }
+
+    /// Override the SDK interaction policy.
+    /// Override pointer_focus independently of wheel routing.
+    pub fn pointer_focus_policy(mut self, policy: luma::interaction::PointerFocusPolicy) -> Self {
+        self.pointer_focus = policy;
+        self
+    }
+
+    pub fn wheel_scroll_policy(mut self, policy: luma::interaction::WheelScrollPolicy) -> Self {
+        self.scroll_interaction.wheel = policy;
+        self
+    }
+
+    /// Override the SDK interaction policy.
+    pub fn scroll_boundary_policy(mut self, policy: luma::interaction::ScrollBoundaryPolicy) -> Self {
+        self.scroll_interaction.boundary = policy;
+        self
+    }
+
+    /// Override the SDK interaction policy.
+    pub fn wheel_focus_scope(mut self, policy: luma::interaction::WheelFocusScope) -> Self {
+        self.scroll_interaction.focus_scope = policy;
         self
     }
 
@@ -179,6 +207,10 @@ impl TextArea {
             .placeholder(self.placeholder)
             .value(self.value)
             .enabled(self.enabled)
+            .pointer_focus_policy(self.pointer_focus)
+            .wheel_scroll_policy(self.scroll_interaction.wheel)
+            .scroll_boundary_policy(self.scroll_interaction.boundary)
+            .wheel_focus_scope(self.scroll_interaction.focus_scope)
             .full_width(self.full_width)
             .size(self.size.control_size())
             .rows(self.rows)
@@ -225,4 +257,23 @@ mod tests {
             .with_template_modifier(|root, _| root)
             .into_sdk_builder(look);
     }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn forwards_independent_wheel_policies_after_look_synthesis() {
+    use luma::interaction::{WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
+    let mut app = gpui::TestAppContext::single();
+    let control = TextArea::new("policy")
+        .wheel_scroll_policy(WheelScrollPolicy::PassThrough)
+        .scroll_boundary_policy(ScrollBoundaryPolicy::Chain)
+        .wheel_focus_scope(WheelFocusScope::Owner)
+        .into_sdk_builder(ShadcnLook::built_in())
+        .spawn(&mut app);
+    control.read_with(&app, |view, _| {
+        let policy = view.scroll_interaction();
+        assert_eq!(policy.wheel, WheelScrollPolicy::PassThrough);
+        assert_eq!(policy.boundary, ScrollBoundaryPolicy::Chain);
+        assert_eq!(policy.focus_scope, WheelFocusScope::Owner);
+    });
 }

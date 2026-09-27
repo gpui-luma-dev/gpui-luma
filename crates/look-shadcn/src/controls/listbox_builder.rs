@@ -210,8 +210,33 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         self
     }
 
+    /// Override focus behavior independently of wheel routing.
+    pub fn pointer_focus_policy(self, policy: luma::interaction::PointerFocusPolicy) -> Self {
+        self.binding.set_pointer_focus_policy(policy);
+        self
+    }
+
+    /// Configure wheel eligibility without changing boundary behavior.
+    pub fn wheel_scroll_policy(self, policy: luma::interaction::WheelScrollPolicy) -> Self {
+        self.scroll.set_wheel_scroll_policy(policy);
+        self
+    }
+
+    /// Override this retained list's interaction settings.
+    pub fn scroll_boundary_policy(self, policy: luma::interaction::ScrollBoundaryPolicy) -> Self {
+        self.scroll.set_scroll_boundary_policy(policy);
+        self
+    }
+
+    /// Override this retained list's interaction settings.
+    pub fn wheel_focus_scope(self, policy: luma::interaction::WheelFocusScope) -> Self {
+        self.scroll.set_wheel_focus_scope(policy);
+        self
+    }
+
     /// Assemble one frame using the existing SDK bindings and scroll handle.
     pub fn build(self, window: &mut Window, cx: &mut Context<M>) -> Surface {
+        self.scroll.set_wheel_focus_owner(self.binding.focus_handle().clone());
         let content_sized = self.content_sized && self.axis == ListBoxAxis::Vertical;
         let scope = cx.entity_id();
         let look = resolve_look_from(self.look.as_ref(), cx);

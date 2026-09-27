@@ -1,5 +1,5 @@
 //! One ListState owns native wheel input, keyboard reveal, and scrollbar geometry.
-use gpui::{AnyElement, DispatchPhase, HitboxBehavior, canvas, point};
+use gpui::{AnyElement, DispatchPhase, canvas, point};
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::ScrollbarVisibility;
 use crate::controls::scroll_container::AUTO_HIDE_TIMEOUT;
@@ -105,18 +105,28 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
     pub(super) fn render_viewport(&self, window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
         let state = self.list_state.clone();
         let focus = self.focus_handle.clone();
-        let required = self.model.require_focus_for_scroll;
+        let policy = self.model.scroll_interaction;
+        let scrollbar_focus = self.scrollbar.as_ref().map(|bar| bar.read(cx).focus_handle(cx));
         let enabled = self.model.enabled;
         let owner = cx.entity().downgrade();
-        // Register before List::paint: capture snapshots the live position;
-        // bubble runs after the native list and before the enclosing page.
-        // GPUI 1.21 has no wheel-enable hook on List. Restoring a rejected wheel
-        // here retains measured geometry, never paints an intermediate offset,
-        // and lets the original event continue to its ancestors. Do not attach
-        // a native ListState scroll callback: it would see the transient offset.
-        let routing = canvas(
-            |bounds, window, _| window.insert_hitbox(bounds, HitboxBehavior::Normal),
-            move |bounds, hitbox, window, cx| {
+        let routing_owner = owner.clone();
+        let routing = crate::interaction::list_wheel_routing(
+            state,
+            move |window, cx| {
+                enabled
+                    && policy.wheel.accepts(policy.focus_scope.focused(&focus, scrollbar_focus.as_ref(), window, cx))
+            },
+            policy.boundary,
+            move |_, _, cx| {
+                let _ = routing_owner.update(cx, |tree, cx| {
+                    tree.cancel_position();
+                    tree.wake_scrollbar(cx);
+                });
+            },
+        );
+        let layout = canvas(
+            |_, _, _| (),
+            move |bounds, _, window, cx| {
                 let pointer_owner = owner.clone();
                 window.on_mouse_event(move |event: &gpui::MouseDownEvent, phase, _, cx| {
                     if phase == DispatchPhase::Capture && bounds.contains(&event.position) {
@@ -126,25 +136,6 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
                 let layout_owner = owner.clone();
                 cx.defer(move |cx| {
                     let _ = layout_owner.update(cx, |tree, cx| tree.sync_viewport(cx));
-                });
-                let mut rejected_offset = None;
-                window.on_mouse_event(move |_: &ScrollWheelEvent, phase, window, cx| {
-                    if !hitbox.should_handle_scroll(window) {
-                        return;
-                    }
-                    let accepts = enabled && (!required || focus.contains_focused(window, cx));
-                    if phase == DispatchPhase::Capture {
-                        rejected_offset = (!accepts).then(|| state.logical_scroll_top());
-                        if accepts {
-                            let _ = owner.update(cx, |tree, _| tree.cancel_position());
-                        }
-                    } else if let Some(offset) = rejected_offset.take() {
-                        state.scroll_to(offset);
-                    } else if accepts {
-                        let _ = owner.update(cx, |tree, cx| tree.wake_scrollbar(cx));
-                        // Includes endpoints and horizontal deltas, matching ListBox.
-                        cx.stop_propagation();
-                    }
                 });
             },
         )
@@ -159,6 +150,7 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
             .min_w(px(0.0))
             .h_full()
             .overflow_hidden()
+            .child(layout)
             .child(routing)
             .child(list(self.list_state.clone(), cx.processor(Self::render_row)).size_full());
         let body = self.bind_drag_viewport(body, cx);

@@ -1,3 +1,4 @@
+use crate::interaction::{ScrollInteraction, WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, AppContext, Div, Entity, ListAlignment, SharedString, Stateful, Window, div, prelude::*, px};
@@ -302,6 +303,8 @@ where
     /// When `false`, row clicks update the active row only; keyboard and owner selection remain available.
     pub(crate) select_on_row_click: bool,
     pub(crate) enabled: bool,
+    pub(crate) scroll_interaction: ScrollInteraction,
+    pub(crate) pointer_focus: crate::interaction::PointerFocusPolicy,
     pub(crate) size: ControlSize,
     pub(crate) alignment: ListAlignment,
     pub(crate) overdraw: f32,
@@ -371,6 +374,8 @@ where
                 selection_mode: TableSelectionMode::Single,
                 select_on_row_click: true,
                 enabled: true,
+                scroll_interaction: ScrollInteraction::VIEWPORT,
+                pointer_focus: Default::default(),
                 size: ControlSize::Md,
                 alignment: ListAlignment::Top,
                 overdraw: 480.0,
@@ -446,6 +451,30 @@ where
 
     pub fn active_index(mut self, active_index: usize) -> Self {
         self.model.active_index = Some(active_index);
+        self
+    }
+
+    /// Configure pointer_focus independently of wheel and keyboard ownership.
+    pub fn pointer_focus_policy(mut self, policy: crate::interaction::PointerFocusPolicy) -> Self {
+        self.model.pointer_focus = policy;
+        self
+    }
+
+    /// Override wheel without changing other interaction settings.
+    pub fn wheel_scroll_policy(mut self, policy: WheelScrollPolicy) -> Self {
+        self.model.scroll_interaction.wheel = policy;
+        self
+    }
+
+    /// Override boundary without changing other interaction settings.
+    pub fn scroll_boundary_policy(mut self, policy: ScrollBoundaryPolicy) -> Self {
+        self.model.scroll_interaction.boundary = policy;
+        self
+    }
+
+    /// Override focus_scope without changing other interaction settings.
+    pub fn wheel_focus_scope(mut self, policy: WheelFocusScope) -> Self {
+        self.model.scroll_interaction.focus_scope = policy;
         self
     }
 

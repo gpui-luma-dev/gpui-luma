@@ -1,3 +1,8 @@
+//! Color rings use angular arrow-key steps: 1 degree normally and 10 with Shift.
+//! `ColorRingBuilder::keyboard_step_degrees` changes the angular increment;
+//! `step` retains its scalar-value snapping role. Arrows preserve the current
+//! side of mirrored saturation/lightness rings and wrap through the angular seam.
+
 pub mod builder;
 pub(crate) mod common;
 pub mod delegates;
@@ -9,6 +14,9 @@ pub mod template;
 pub mod track_context;
 pub mod types;
 pub mod visual;
+
+#[cfg(all(test, feature = "test-support"))]
+mod keyboard_tests;
 
 pub use builder::ColorRingBuilder;
 pub use delegates::HueRingDelegate;

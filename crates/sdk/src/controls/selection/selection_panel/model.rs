@@ -1,3 +1,4 @@
+use crate::interaction::{ScrollInteraction, WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
 use std::sync::Arc;
 
 use gpui::{App, AppContext, Entity, IntoElement, ParentElement, SharedString, Styled};
@@ -11,6 +12,7 @@ use super::template::{SelectionPanelRenderModel, template_with_modifier};
 use crate::infra::icon::IconSource;
 use crate::infra::icon::SelectionStatusIcons;
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
+use crate::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarVisibility};
 
 use super::template::{SelectionPanelTemplate, default_selection_panel_template};
 use super::theme::{SelectionPanelLook, default_selection_panel_look};
@@ -111,6 +113,20 @@ impl SelectionPanelPath {
 
 pub type SelectionPanelLookProvider = Arc<dyn Fn(ControlSize) -> SelectionPanelLook + Send + Sync + 'static>;
 
+/// Role selects the default hover behavior, not wheel eligibility or focus ownership.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SelectionPanelRole {
+    #[default]
+    Embedded,
+    Popup,
+}
+/// Explicit hover override. Hover never acquires focus or commits selection.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum HoverActivationPolicy {
+    PreserveActive,
+    FollowPointer,
+}
+
 #[derive(Clone)]
 pub struct SelectionPanelModel<T>
 where
@@ -123,9 +139,15 @@ where
     pub(crate) selected_source_index: Option<usize>,
     pub(crate) open: bool,
     pub(crate) enabled: bool,
+    pub(crate) scroll_interaction: ScrollInteraction,
+    pub(crate) pointer_focus: crate::interaction::PointerFocusPolicy,
+    pub(crate) role: SelectionPanelRole,
+    pub(crate) hover_activation: Option<HoverActivationPolicy>,
     pub(crate) show_selection_marker: bool,
     pub(crate) icons: SelectionStatusIcons,
     pub(crate) scrolling: bool,
+    pub(crate) scrollbar_visibility: ScrollbarVisibility,
+    pub(crate) scrollbar_auto_hide_activate: ScrollbarAutoHideActivate,
     pub(crate) min_visible_rows: usize,
     pub(crate) max_visible_rows: usize,
     pub(crate) size: ControlSize,
@@ -149,6 +171,17 @@ where
 {
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self { model: default_selection_panel_model(id), initial_active_visible_index: None }
+    }
+
+    /// Select role defaults; an explicit hover policy takes precedence in either order.
+    pub fn role(mut self, role: SelectionPanelRole) -> Self {
+        self.model.role = role;
+        self
+    }
+    /// Override hover-to-active independently of role and scrolling.
+    pub fn hover_activation_policy(mut self, policy: HoverActivationPolicy) -> Self {
+        self.model.hover_activation = Some(policy);
+        self
     }
 
     pub fn panel_id(mut self, panel_id: impl Into<SharedString>) -> Self {
@@ -188,6 +221,30 @@ where
         self
     }
 
+    /// Configure pointer_focus independently of wheel and keyboard ownership.
+    pub fn pointer_focus_policy(mut self, policy: crate::interaction::PointerFocusPolicy) -> Self {
+        self.model.pointer_focus = policy;
+        self
+    }
+
+    /// Override wheel without changing other interaction settings.
+    pub fn wheel_scroll_policy(mut self, policy: WheelScrollPolicy) -> Self {
+        self.model.scroll_interaction.wheel = policy;
+        self
+    }
+
+    /// Override boundary without changing other interaction settings.
+    pub fn scroll_boundary_policy(mut self, policy: ScrollBoundaryPolicy) -> Self {
+        self.model.scroll_interaction.boundary = policy;
+        self
+    }
+
+    /// Override focus_scope without changing other interaction settings.
+    pub fn wheel_focus_scope(mut self, policy: WheelFocusScope) -> Self {
+        self.model.scroll_interaction.focus_scope = policy;
+        self
+    }
+
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
         self
@@ -205,6 +262,18 @@ where
 
     pub fn scrolling(mut self, scrolling: bool) -> Self {
         self.model.scrolling = scrolling;
+        self
+    }
+
+    /// Always show, hide, or auto-hide the scrollbar. Defaults to AlwaysVisible.
+    pub fn scrollbar_visibility(mut self, visibility: ScrollbarVisibility) -> Self {
+        self.model.scrollbar_visibility = visibility;
+        self
+    }
+
+    /// Choose what reveals auto-hiding chrome. Move hides after the existing idle timeout.
+    pub fn scrollbar_auto_hide_activate(mut self, activate: ScrollbarAutoHideActivate) -> Self {
+        self.model.scrollbar_auto_hide_activate = activate;
         self
     }
 
@@ -313,9 +382,15 @@ where
         selected_source_index: None,
         open: true,
         enabled: true,
+        scroll_interaction: ScrollInteraction::VIEWPORT,
+        pointer_focus: Default::default(),
+        role: SelectionPanelRole::Embedded,
+        hover_activation: None,
         show_selection_marker: true,
         icons: SelectionStatusIcons::default(),
         scrolling: true,
+        scrollbar_visibility: ScrollbarVisibility::default(),
+        scrollbar_auto_hide_activate: ScrollbarAutoHideActivate::default(),
         min_visible_rows: 1,
         max_visible_rows: 7,
         size: ControlSize::Md,

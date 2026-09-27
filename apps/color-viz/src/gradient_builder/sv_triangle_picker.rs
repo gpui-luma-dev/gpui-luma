@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Hsla, Render, Subscription, div, prelude::*, px};
-use luma_color::composition::{ColorCompositionSync, CompositionSize};
+use luma_color::composition::ColorCompositionSync;
 use luma_color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
 use luma_color::color_field::model::ColorFieldModelKind;
-use luma_color::color_ring::{ColorRingBuilder, primary_slider_value, sizing};
+use luma_color::color_ring::{ColorRingBuilder, primary_slider_value};
 use luma_color::color_slider::color_spec::Hsv as SdkHsv;
-use luma_color::style::Size;
 use luma::controls::slider::{SliderControl, SliderEvent};
 
 use super::color::{hsla_to_sdk_hsv, sdk_hsv_to_hsla};
@@ -29,12 +28,12 @@ struct SvTrianglePickerMetrics {
 }
 
 impl SvTrianglePickerMetrics {
-    fn resolve(size: CompositionSize) -> Self {
-        let ring_size = size.resolve_primary(160.0, 220.0, 300.0);
+    fn new() -> Self {
+        let ring_size: f32 = 174.0;
         let scale = ring_size / 220.0;
         Self {
             ring_size,
-            ring_thickness: sizing::RING_THICKNESS_MEDIUM * scale,
+            ring_thickness: 20.0 * scale,
             thumb_size: (12.0 * scale).max(10.0),
             inner_gap: (2.0 * scale).max(2.0),
         }
@@ -47,17 +46,12 @@ impl SvTrianglePickerMetrics {
 }
 
 impl SvTrianglePicker {
-    #[allow(dead_code)]
     pub fn new(initial: Hsla, cx: &mut Context<Self>) -> Self {
-        Self::with_size(initial, CompositionSize::Md, cx)
-    }
-
-    pub fn with_size(initial: Hsla, size: CompositionSize, cx: &mut Context<Self>) -> Self {
         let initial_hsv = hsla_to_sdk_hsv(initial);
-        let metrics = SvTrianglePickerMetrics::resolve(size);
+        let metrics = SvTrianglePickerMetrics::new();
 
         let ring = ColorRingBuilder::hue("color-viz-sv-picker-ring", initial_hsv.h, 1.0, 0.5)
-            .size(Size::Size(px(metrics.ring_size)))
+            .size(px(metrics.ring_size))
             .ring_thickness(metrics.ring_thickness)
             .thumb_size(metrics.thumb_size)
             .spawn(cx);

@@ -95,6 +95,12 @@ pub trait SliderValueMapping: Send + Sync + 'static {
     fn value_to_position(&self, value: f32, range: ControlRange) -> f32;
 
     fn position_to_value(&self, position: f32, range: ControlRange) -> f32;
+
+    /// Whether scalar values wrap when the track wraps (default: true).
+    /// Mirrored mappings can return false to preserve their maximum value on a circular track.
+    fn wraps_value(&self) -> bool {
+        true
+    }
 }
 
 pub trait RadialHitTarget: Send + Sync + 'static {
@@ -163,6 +169,7 @@ pub struct SliderModel {
     pub(crate) thumb_size: Option<SliderThumbSize>,
     pub(crate) range: ControlRange,
     pub(crate) step: f32,
+    pub(crate) keyboard_position_step: Option<f32>,
     pub(crate) thumbs: Vec<SliderThumbValue>,
     pub(crate) allowed_intervals: Vec<RangeInclusive<f32>>,
     /// Optional intervals used only for blocked-track rendering.
@@ -220,6 +227,7 @@ impl SliderBuilder {
                 thumb_size: None,
                 range: ControlRange::default(),
                 step: 1.0,
+                keyboard_position_step: None,
                 thumbs: vec![SliderThumbValue {
                     id: thumb_id,
                     position: 0.0,
@@ -339,6 +347,17 @@ impl SliderBuilder {
     pub fn step(mut self, step: impl Into<f64>) -> Self {
         self.model.step = normalized_step(value_from_input(step));
         self.sync_primary_thumb_position();
+        self
+    }
+
+    /// Opt into immediate arrow steps in normalized track position instead of value space.
+    /// Useful for rings with multiple positions for the same value. Shift uses ten steps.
+    /// Finite fractions in (0, 1] are accepted; invalid values retain the previous setting.
+    /// Controls with allowed value intervals retain value-based stepping.
+    pub fn keyboard_position_step(mut self, step: f32) -> Self {
+        if step.is_finite() && step > 0.0 && step <= 1.0 {
+            self.model.keyboard_position_step = Some(step);
+        }
         self
     }
 
@@ -487,7 +506,10 @@ pub(crate) fn position_for_value(model: &SliderModel, value: f32) -> f32 {
 }
 
 pub(crate) fn constrain_primary_value(value: f32, model: &SliderModel) -> f32 {
-    if model.wrapping && model.allowed_intervals.is_empty() {
+    if model.wrapping
+        && model.allowed_intervals.is_empty()
+        && model.value_map.as_ref().is_none_or(|map| map.wraps_value())
+    {
         wrap_and_snap(value, model.range, model.step)
     } else {
         clamp_and_snap_value(value, &model.allowed_intervals, model.range, model.step)

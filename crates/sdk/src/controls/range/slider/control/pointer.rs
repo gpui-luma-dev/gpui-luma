@@ -222,14 +222,22 @@ impl SliderControl {
             return;
         }
 
-        let SliderInputStrategy::Angular { min_angle, max_angle } = self.model.strategy else {
-            return;
-        };
         let Some(bounds) = self.track_bounds else {
             return;
         };
 
         let Some(thumb_id) = self.active_or_primary_thumb_id() else {
+            return;
+        };
+        let SliderInputStrategy::Angular { min_angle, max_angle } = self.model.strategy else {
+            if let Some(percentage) =
+                percentage_from_position(self.model.strategy, self.model.reversed, bounds, event.position)
+            {
+                let constrained = self.constrained_position_for_raw_position(percentage);
+                if self.set_thumb_position_internal(thumb_id, constrained, true, false, cx) {
+                    cx.stop_propagation();
+                }
+            }
             return;
         };
         if let Some(pointer_angle) = angle_from_position(bounds, event.position) {
@@ -417,5 +425,43 @@ mod tests {
     fn reversed_pointer_round_trips_display_position() {
         let raw = layout::position_from_pointer(0.2, true);
         assert!((layout::display_position(raw, true) - 0.2).abs() <= f32::EPSILON);
+    }
+
+    #[cfg(feature = "test-support")]
+    #[test]
+    fn vertical_track_press_continues_dragging_outside_track() {
+        use super::SliderControl;
+        use crate::controls::slider::SliderBuilder;
+        use gpui::{MouseButton, MouseDownEvent, MouseMoveEvent, TestAppContext};
+
+        for reversed in [false, true] {
+            let mut app = TestAppContext::single();
+            let (slider, cx) = app.add_window_view(|window, cx| {
+                window.activate_window();
+                SliderControl::from_builder(
+                    SliderBuilder::new("vertical").vertical().reversed(reversed).range(0.0..100.0).value(10.0),
+                    cx,
+                )
+            });
+            let bounds = cx.update(|_, app| slider.read(app).track_bounds.unwrap());
+            let at = |fraction| point(bounds.center().x, bounds.bottom() - bounds.size.height * fraction);
+            cx.simulate_event(MouseDownEvent {
+                button: MouseButton::Left,
+                position: at(0.4),
+                click_count: 1,
+                ..Default::default()
+            });
+            let mut outside = at(0.7);
+            outside.x += px(80.0);
+            cx.simulate_event(MouseMoveEvent {
+                position: outside,
+                pressed_button: Some(MouseButton::Left),
+                ..Default::default()
+            });
+            cx.update(|_, app| {
+                let expected = if reversed { 30.0 } else { 70.0 };
+                assert!((slider.read(app).value() - expected).abs() < 0.01);
+            });
+        }
     }
 }

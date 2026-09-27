@@ -1,3 +1,4 @@
+use crate::interaction::{ScrollInteraction, WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
 use std::{sync::Arc, rc::Rc};
 
 /// Owned UI content callback; captures need not be Send or Sync.
@@ -136,7 +137,8 @@ where
     pub(super) branch_content: Option<TreeViewContent<T>>,
     pub(super) leaf_content: Option<TreeViewContent<T>>,
     pub(super) expand_on_row_click: bool,
-    pub(super) require_focus_for_scroll: bool,
+    pub(crate) scroll_interaction: ScrollInteraction,
+    pub(crate) pointer_focus: crate::interaction::PointerFocusPolicy,
     pub(super) wrap_navigation: bool,
     pub(super) scrollbar_visibility: crate::controls::ScrollbarVisibility,
     pub(super) scrollbar_template: Option<Arc<dyn crate::controls::scrollbar::ScrollbarTemplate>>,
@@ -179,7 +181,8 @@ where
                 branch_content: None,
                 leaf_content: None,
                 expand_on_row_click: true,
-                require_focus_for_scroll: false,
+                scroll_interaction: ScrollInteraction::VIEWPORT,
+                pointer_focus: Default::default(),
                 wrap_navigation: true,
                 scrollbar_visibility: crate::controls::ScrollbarVisibility::AutoHide,
                 scrollbar_template: None,
@@ -231,6 +234,30 @@ where
     /// Configure optional plain-click deselection and Single-mode keyboard selection.
     pub fn selection_policy(mut self, policy: TreeViewSelectionPolicy) -> Self {
         self.model.selection_policy = policy;
+        self
+    }
+
+    /// Configure pointer_focus independently of wheel and keyboard ownership.
+    pub fn pointer_focus_policy(mut self, policy: crate::interaction::PointerFocusPolicy) -> Self {
+        self.model.pointer_focus = policy;
+        self
+    }
+
+    /// Override wheel without changing other interaction settings.
+    pub fn wheel_scroll_policy(mut self, policy: WheelScrollPolicy) -> Self {
+        self.model.scroll_interaction.wheel = policy;
+        self
+    }
+
+    /// Override boundary without changing other interaction settings.
+    pub fn scroll_boundary_policy(mut self, policy: ScrollBoundaryPolicy) -> Self {
+        self.model.scroll_interaction.boundary = policy;
+        self
+    }
+
+    /// Override focus_scope without changing other interaction settings.
+    pub fn wheel_focus_scope(mut self, policy: WheelFocusScope) -> Self {
+        self.model.scroll_interaction.focus_scope = policy;
         self
     }
 
@@ -287,10 +314,10 @@ where
         self
     }
 
-    /// When true, unfocused wheel input scrolls ancestors. Focused input stays
-    /// in the tree even at its endpoints. Defaults to hover scrolling (false).
+    /// Compatibility alias: true selects RequireFocus, false selects Pointer.
+    /// Leaves boundary policy unchanged; the last explicit wheel setter wins.
     pub fn require_focus_for_scroll(mut self, required: bool) -> Self {
-        self.model.require_focus_for_scroll = required;
+        self.model.scroll_interaction.wheel = required.into();
         self
     }
 

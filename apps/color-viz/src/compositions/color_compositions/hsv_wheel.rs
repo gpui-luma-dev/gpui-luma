@@ -5,21 +5,18 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma_color::color_field::{ColorFieldEvent, ColorFieldState};
-use luma_color::color_ring::{ColorRingBuilder, primary_slider_value, sizing};
+use luma_color::color_ring::{ColorRingBuilder, primary_slider_value};
 use luma_color::color_slider::color_spec::Hsv;
-use luma_color::composition::{ColorCompositionSync, CompositionSize};
-use luma_color::style::Size;
+use luma_color::composition::ColorCompositionSync;
 use luma::controls::slider::SliderControl;
-use luma_look_shadcn::ShadcnLook;
+use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
 use super::super::color_exposition_common::{
-    composition_demo_card_width, composition_size_label, composition_title_text_size,
-    render_composition_readout_footer, COMPOSITION_PRIMARY_READOUT_GAP,
+    composition_demo_card_width, render_composition_readout_footer, COMPOSITION_PRIMARY_READOUT_GAP,
 };
 
 pub struct HsvWheelDemo {
     look: Arc<ShadcnLook>,
-    composition_size: CompositionSize,
     metrics: HsvWheelMetrics,
     sync: ColorCompositionSync,
     color_ring: Entity<SliderControl>,
@@ -37,12 +34,12 @@ struct HsvWheelMetrics {
 }
 
 impl HsvWheelMetrics {
-    fn resolve(size: CompositionSize) -> Self {
-        let ring_outer_size = size.resolve_primary(220.0, 300.0, 380.0);
+    fn new() -> Self {
+        let ring_outer_size: f32 = 238.0;
         let scale = ring_outer_size / 300.0;
         Self {
             ring_outer_size,
-            ring_thickness: sizing::RING_THICKNESS_MEDIUM * scale,
+            ring_thickness: 20.0 * scale,
             ring_thumb_size: (16.0 * scale).max(12.0),
             inner_gap: (8.0 * scale).max(6.0),
         }
@@ -59,29 +56,24 @@ impl HsvWheelMetrics {
 }
 
 impl HsvWheelDemo {
-    pub fn card_width_for(size: CompositionSize) -> f32 {
-        HsvWheelMetrics::resolve(size).card_width()
+    pub fn card_width() -> f32 {
+        HsvWheelMetrics::new().card_width()
     }
 
-    pub fn with_size(look: Arc<ShadcnLook>, size: CompositionSize, cx: &mut Context<Self>) -> Self {
+    pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let hsv = Hsv { h: 220.0, s: 0.88, v: 0.6, a: 1.0 };
-        let metrics = HsvWheelMetrics::resolve(size);
-        let size_label = composition_size_label(size);
+        let metrics = HsvWheelMetrics::new();
 
-        let color_ring = ColorRingBuilder::hue(format!("controls-doc-hsv-wheel-ring-{size_label}"), hsv.h, 1.0, 0.5)
-            .size(Size::Size(px(metrics.ring_outer_size)))
+        let color_ring = ColorRingBuilder::hue("controls-doc-hsv-wheel-ring", hsv.h, 1.0, 0.5)
+            .size(px(metrics.ring_outer_size))
             .ring_thickness(metrics.ring_thickness)
             .thumb_size(metrics.ring_thumb_size)
             .spawn(cx);
         let plane_sv = cx.new(|_| {
-            ColorFieldState::saturation_value(
-                format!("controls-doc-hsv-wheel-plane-{size_label}"),
-                hsv,
-                metrics.ring_thumb_size,
-            )
-            .rounded(px(0.0))
-            .no_border()
-            .edge_to_edge()
+            ColorFieldState::saturation_value("controls-doc-hsv-wheel-plane", hsv, metrics.ring_thumb_size)
+                .rounded(px(0.0))
+                .no_border()
+                .edge_to_edge()
         });
 
         let subscriptions = vec![
@@ -113,7 +105,6 @@ impl HsvWheelDemo {
 
         Self {
             look,
-            composition_size: size,
             metrics,
             sync: ColorCompositionSync::new(),
             color_ring,
@@ -154,7 +145,7 @@ impl Render for HsvWheelDemo {
         let plane_half = plane_size / 2.0;
         let color = self.hsv.to_hsla_ext();
         let look = &self.look;
-        let text_size = composition_title_text_size(self.composition_size);
+        let text_size = ShadcnTextSize::Base;
 
         div()
             .w_full()

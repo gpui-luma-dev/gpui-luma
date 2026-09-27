@@ -273,18 +273,47 @@ impl AutocompleteControl {
         self.trigger_bounds = Some(*bounds);
     }
 
-    fn handle_popup_scroll_wheel(&mut self, event: &ScrollWheelEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if !self.behavior.state.open || self.behavior.state.filtered.is_empty() {
+    /// Update popup wheel without rebuilding its editor or selection.
+    pub fn set_wheel_scroll_policy(&mut self, policy: crate::interaction::WheelScrollPolicy, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.wheel = policy;
+        cx.notify();
+    }
+
+    /// Update popup boundary without rebuilding its editor or selection.
+    pub fn set_scroll_boundary_policy(
+        &mut self,
+        policy: crate::interaction::ScrollBoundaryPolicy,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.scroll_interaction.boundary = policy;
+        cx.notify();
+    }
+
+    /// Update popup focus_scope without rebuilding its editor or selection.
+    pub fn set_wheel_focus_scope(&mut self, policy: crate::interaction::WheelFocusScope, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.focus_scope = policy;
+        cx.notify();
+    }
+
+    fn handle_popup_scroll_wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+        use gpui::Focusable;
+        if !self.model.enabled || !self.behavior.state.open || self.behavior.state.filtered.is_empty() {
             return;
         }
-
+        let policy = self.model.scroll_interaction;
+        let owner = self.textfield.read(cx).focus_handle(cx);
+        let bar = self.popup_surface.scrollbar().read(cx).focus_handle(cx);
+        if !policy.wheel.accepts(policy.focus_scope.focused(&owner, Some(&bar), window, cx)) {
+            return;
+        }
+        if crate::interaction::wheel_delta(event, px(20.0), false).is_none() {
+            return;
+        }
         let moved = self.popup_surface.scroll_wheel(event, cx);
         if moved {
             cx.notify();
         }
-
-        let delta_y = event.delta.pixel_delta(px(20.0)).y.as_f32();
-        if delta_y.is_finite() && delta_y.abs() > f32::EPSILON {
+        if policy.boundary.consumes(moved) {
             cx.stop_propagation();
         }
     }
@@ -465,14 +494,18 @@ impl Render for AutocompleteControl {
                 AutocompleteItemsTemplateHandlers { item_hovers, item_clicks },
             );
 
-            Some(self.popup_surface.render(menu_content.into_any_element()))
+            Some(self.popup_surface.render_with_scroll_wheel(
+                menu_content.into_any_element(),
+                cx.listener(Self::handle_popup_scroll_wheel),
+            ))
         } else {
             None
         };
 
         let handlers = AutocompleteTemplateHandlers {
             key_down: Box::new(cx.listener(Self::handle_key_down)),
-            scroll_wheel: Box::new(cx.listener(Self::handle_popup_scroll_wheel)),
+            // The popup surface owns wheel dispatch, even outside the trigger bounds.
+            scroll_wheel: Box::new(|_, _, _| {}),
             clear_click: Box::new(cx.listener(Self::handle_clear_click)),
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
         };

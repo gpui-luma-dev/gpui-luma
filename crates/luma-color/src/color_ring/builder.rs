@@ -33,6 +33,7 @@ impl ColorRingBuilder {
             slider: new_slider(id)
                 .angular(min_angle, max_angle)
                 .wrapping(true)
+                .keyboard_position_step(1.0 / 360.0)
                 .domain()
                 .domain_track(domain_renderer.clone())
                 .radial_hit_target(Arc::new(ColorRingHitTarget::new(track_context.clone())))
@@ -133,6 +134,13 @@ impl ColorRingBuilder {
         self
     }
 
+    /// Set the arrow-key angular increment (default: 1 degree; Shift uses ten increments).
+    /// Pointer value snapping remains controlled by `step`. Invalid angles are ignored.
+    pub fn keyboard_step_degrees(mut self, degrees: f32) -> Self {
+        self.slider = self.slider.keyboard_position_step(degrees / 360.0);
+        self
+    }
+
     pub fn value(mut self, value: impl Into<f64>) -> Self {
         self.initial_value = value_from_input(value);
         self
@@ -228,6 +236,10 @@ impl ColorRingBuilder {
 struct MirroredSaturationValueMap;
 
 impl SliderValueMapping for MirroredSaturationValueMap {
+    fn wraps_value(&self) -> bool {
+        false
+    }
+
     fn value_to_position(&self, value: f32, range: ControlRange) -> f32 {
         let pct = range.percentage(value);
         super::common::position_from_mirrored_saturation(pct)
@@ -242,6 +254,10 @@ impl SliderValueMapping for MirroredSaturationValueMap {
 struct MirroredLightnessValueMap;
 
 impl SliderValueMapping for MirroredLightnessValueMap {
+    fn wraps_value(&self) -> bool {
+        false
+    }
+
     fn value_to_position(&self, value: f32, range: ControlRange) -> f32 {
         let pct = range.percentage(value);
         super::common::position_from_mirrored_lightness(pct)

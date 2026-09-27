@@ -2,6 +2,9 @@
 
 pub use crate::infra::icon::{DisclosureIcons, IconSource, SelectionStatusIcons};
 pub use crate::infra::presenter::{ControlPresenter, HasPresenter};
+pub use crate::interaction::{
+    PointerFocusPolicy, ScrollBoundaryPolicy, ScrollInteraction, WheelFocusScope, WheelScrollPolicy,
+};
 pub use crate::theme::{ControlSize, InteractionState};
 
 pub use crate::controls::accordion::{Accordion, AccordionBuilder, AccordionEvent};

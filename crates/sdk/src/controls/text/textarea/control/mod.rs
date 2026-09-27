@@ -97,6 +97,33 @@ impl TextArea {
         TextAreaBuilder::new(id)
     }
 
+    /// Current wheel settings. Keyboard ownership is independent.
+    pub fn scroll_interaction(&self) -> crate::interaction::ScrollInteraction {
+        self.model.scroll_interaction
+    }
+
+    /// Change wheel without resetting focus, selection or position.
+    pub fn set_wheel_scroll_policy(&mut self, policy: crate::interaction::WheelScrollPolicy, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.wheel = policy;
+        cx.notify();
+    }
+
+    /// Change boundary without resetting focus, selection or position.
+    pub fn set_scroll_boundary_policy(
+        &mut self,
+        policy: crate::interaction::ScrollBoundaryPolicy,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.scroll_interaction.boundary = policy;
+        cx.notify();
+    }
+
+    /// Change focus_scope without resetting focus, selection or position.
+    pub fn set_wheel_focus_scope(&mut self, policy: crate::interaction::WheelFocusScope, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.focus_scope = policy;
+        cx.notify();
+    }
+
     pub(crate) fn from_builder(builder: TextAreaBuilder, cx: &mut Context<Self>) -> Self {
         let mut state = TextAreaState { cursor: builder.model.value.chars().count(), ..Default::default() };
         let initial_rows = builder.model.rows.max(1);
@@ -382,4 +409,55 @@ impl Focusable for TextArea {
     fn focus_handle(&self, _cx: &App) -> FocusHandle {
         self.focus_handle.clone()
     }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn wheel_policy_dispatch_matrix() {
+    crate::interaction_tests::matrix(
+        |policy, cx| {
+            TextAreaBuilder::new("matrix-textarea")
+                .value((0..100).map(|i| format!("line {i}\n")).collect::<String>())
+                .rows(4)
+                .wheel_scroll_policy(policy.wheel)
+                .scroll_boundary_policy(policy.boundary)
+                .spawn(cx)
+        },
+        |view, _cx| view.vertical_scroll.as_f32(),
+        |view, cx| {
+            view.vertical_scroll = px(100_000.0);
+            view.clamp_vertical_scroll_to_cache();
+            cx.notify();
+        },
+    );
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn scrollbar_focus_does_not_allow_ancestor_text_editing() {
+    let mut app = gpui::TestAppContext::single();
+    let (editor, cx) = app.add_window_view(|window, cx| {
+        window.activate_window();
+        TextArea::from_builder(TextAreaBuilder::new("scrollbar-key-owner").value("line\n".repeat(40)).rows(3), cx)
+    });
+    cx.run_until_parked();
+    let original = cx.update(|window, app| {
+        let view = editor.read(app);
+        let focus = view.scrollbar.read(app).focus_handle(app);
+        let original = view.model.value.clone();
+        focus.focus(window, app);
+        original
+    });
+    cx.run_until_parked();
+    cx.simulate_keystrokes("backspace");
+    cx.update(|window, app| {
+        let view = editor.read(app);
+        assert!(view.scrollbar.read(app).focus_handle(app).is_focused(window));
+        assert_eq!(view.model.value, original);
+        let focus = view.focus_handle.clone();
+        focus.focus(window, app);
+    });
+    cx.run_until_parked();
+    cx.simulate_keystrokes("backspace");
+    cx.update(|_, app| assert_ne!(editor.read(app).model.value, original));
 }

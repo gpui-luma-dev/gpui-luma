@@ -133,7 +133,7 @@ where
     ) {
         if self.can_use_item(index) {
             self.pressed_index = Some(index);
-            self.focus_handle.focus(window, cx);
+            self.model.pointer_focus.apply(&self.focus_handle, window, cx);
             cx.notify();
         }
     }
@@ -288,11 +288,17 @@ where
 
         let delta_y = event.delta.pixel_delta(px(20.0)).y;
         let is_scroll_end = matches!(event.touch_phase, TouchPhase::Ended);
+        if is_scroll_end {
+            if !self.wheel_gesture_active {
+                return;
+            }
+            self.wheel_gesture_active = false;
+        } else if delta_y != px(0.0) {
+            self.wheel_gesture_active = event.delta.precise();
+        }
         if delta_y == px(0.0) && !is_scroll_end {
             return;
         }
-
-        cx.stop_propagation();
 
         if !self.is_scroll_snap() {
             if self.emit_scroll_changed_if_needed(cx) {

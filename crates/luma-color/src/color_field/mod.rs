@@ -1,3 +1,13 @@
+//! Two-dimensional color fields with pointer and keyboard adjustment.
+//!
+//! Enabled fields are one Tab stop and focus on pointer press by default.
+//! Arrows move spatially by 1% of the normalized field; Shift+Arrow uses 10%.
+//! `ColorFieldState::keyboard_steps`, `tab_stop`, and `pointer_focus_policy`
+//! configure these behaviors. Only the field's own focus accepts adjustment keys.
+//! Wheel input passes through. Keyboard edits emit `Change` and one final `Release`,
+//! without pointer drag events. Focus does not alter the field's appearance.
+//! Screen-reader semantics remain a separate follow-up.
+
 pub mod control;
 pub mod domain;
 pub mod field;

@@ -39,6 +39,7 @@ where
     pub(crate) label: SharedString,
     pub(crate) items: Vec<T>,
     pub(crate) enabled: bool,
+    pub(crate) scroll_interaction: crate::interaction::ScrollInteraction,
     pub(crate) invalid: bool,
     pub(crate) tab_stop: bool,
     pub(crate) size: ControlSize,
@@ -76,6 +77,8 @@ where
     pub items: &'a [T],
     pub open: bool,
     pub presence: OverlayPresence,
+    /// Retained popup geometry. Custom templates must pair this with the popup wheel handler.
+    pub popup_scroll: Option<&'a gpui::ScrollHandle>,
     pub trigger_bounds: Option<Bounds<Pixels>>,
     pub placement: SelectorPlacement,
     pub active_path: Option<SelectorPath>,
@@ -112,6 +115,7 @@ where
                 id,
                 items: Vec::new(),
                 enabled: true,
+                scroll_interaction: crate::interaction::ScrollInteraction::VIEWPORT,
                 invalid: false,
                 tab_stop: true,
                 size: ControlSize::Md,
@@ -169,6 +173,24 @@ where
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    /// Choose popup wheel eligibility. Defaults to pointer scrolling without acquiring focus.
+    pub fn wheel_scroll_policy(mut self, policy: crate::interaction::WheelScrollPolicy) -> Self {
+        self.model.scroll_interaction.wheel = policy;
+        self
+    }
+
+    /// Choose containment or whole-event chaining independently of wheel eligibility.
+    pub fn scroll_boundary_policy(mut self, policy: crate::interaction::ScrollBoundaryPolicy) -> Self {
+        self.model.scroll_interaction.boundary = policy;
+        self
+    }
+
+    /// Choose which real focus handles qualify for RequireFocus. No row gains focus implicitly.
+    pub fn wheel_focus_scope(mut self, policy: crate::interaction::WheelFocusScope) -> Self {
+        self.model.scroll_interaction.focus_scope = policy;
         self
     }
 

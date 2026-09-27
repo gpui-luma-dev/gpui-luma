@@ -22,6 +22,7 @@ pub struct AutocompleteModel {
     pub(crate) items: Vec<SelectionItem>,
     pub(crate) placeholder: SharedString,
     pub(crate) enabled: bool,
+    pub(crate) scroll_interaction: crate::interaction::ScrollInteraction,
     pub(crate) invalid: bool,
     pub(crate) size: ControlSize,
     pub(crate) full_width: bool,
@@ -47,6 +48,7 @@ impl AutocompleteBuilder {
                 items: items.into_iter().collect(),
                 placeholder: SharedString::from("Type to filter…"),
                 enabled: true,
+                scroll_interaction: crate::interaction::ScrollInteraction::VIEWPORT,
                 invalid: false,
                 size: ControlSize::Md,
                 full_width: true,
@@ -69,6 +71,24 @@ impl AutocompleteBuilder {
 
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.model.placeholder = placeholder.into();
+        self
+    }
+
+    /// Configure popup wheel independently; wheel input never focuses a row.
+    pub fn wheel_scroll_policy(mut self, policy: crate::interaction::WheelScrollPolicy) -> Self {
+        self.model.scroll_interaction.wheel = policy;
+        self
+    }
+
+    /// Configure popup boundary independently; wheel input never focuses a row.
+    pub fn scroll_boundary_policy(mut self, policy: crate::interaction::ScrollBoundaryPolicy) -> Self {
+        self.model.scroll_interaction.boundary = policy;
+        self
+    }
+
+    /// Configure popup focus_scope independently; wheel input never focuses a row.
+    pub fn wheel_focus_scope(mut self, policy: crate::interaction::WheelFocusScope) -> Self {
+        self.model.scroll_interaction.focus_scope = policy;
         self
     }
 

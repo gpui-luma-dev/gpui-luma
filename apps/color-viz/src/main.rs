@@ -3,6 +3,7 @@
 mod app;
 
 mod app_shell;
+mod compositions;
 mod gradient_builder;
 mod theme;
 #[path = "assets/assets.rs"]

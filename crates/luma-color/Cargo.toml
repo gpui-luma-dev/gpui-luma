@@ -8,6 +8,9 @@ publish = false
 [lib]
 name = "luma_color"
 
+[features]
+test-support = ["luma/test-support"]
+
 [dependencies]
 gpui.workspace = true
 luma.workspace = true

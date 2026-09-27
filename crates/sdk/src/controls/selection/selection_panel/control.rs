@@ -7,8 +7,8 @@ use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use crate::controls::scrollbar::{ScrollbarEvent, ScrollbarTemplate};
 use super::item_template::{SelectionPanelItemTemplate, make_selection_panel_item_template};
 use super::model::{
-    SelectionPanelBuilder, SelectionPanelLookProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
-    default_selection_panel_model,
+    SelectionPanelRole, HoverActivationPolicy, SelectionPanelBuilder, SelectionPanelLookProvider, SelectionPanelItem,
+    SelectionPanelItemLike, SelectionPanelModel, default_selection_panel_model,
 };
 use super::template::SelectionPanelTemplate;
 use super::template::{
@@ -76,6 +76,39 @@ where
         cx.new(|cx| Self::from_model(model, None, cx))
     }
 
+    /// Current wheel settings. Keyboard ownership is independent.
+    pub fn scroll_interaction(&self) -> crate::interaction::ScrollInteraction {
+        self.model.scroll_interaction
+    }
+
+    /// Change wheel without resetting focus, selection or position.
+    pub fn set_wheel_scroll_policy(&mut self, policy: crate::interaction::WheelScrollPolicy, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.wheel = policy;
+        cx.notify();
+    }
+
+    /// Change boundary without resetting focus, selection or position.
+    pub fn set_scroll_boundary_policy(
+        &mut self,
+        policy: crate::interaction::ScrollBoundaryPolicy,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.scroll_interaction.boundary = policy;
+        cx.notify();
+    }
+
+    /// Change focus_scope without resetting focus, selection or position.
+    pub fn set_wheel_focus_scope(&mut self, policy: crate::interaction::WheelFocusScope, cx: &mut Context<Self>) {
+        self.model.scroll_interaction.focus_scope = policy;
+        cx.notify();
+    }
+
+    /// Change hover behavior without changing focus, selection or active item.
+    pub fn set_hover_activation_policy(&mut self, policy: HoverActivationPolicy, cx: &mut Context<Self>) {
+        self.model.hover_activation = Some(policy);
+        cx.notify();
+    }
+
     pub(crate) fn from_builder(builder: SelectionPanelBuilder<T>, cx: &mut Context<Self>) -> Self {
         Self::from_model(builder.model, builder.initial_active_visible_index, cx)
     }
@@ -90,7 +123,9 @@ where
         }
 
         let mut popup_surface =
-            PopupScrollSurface::new(format!("{}-scroll-surface", model.id), model.scrollbar_template.clone(), cx);
+            PopupScrollSurface::new(format!("{}-scroll-surface", model.id), model.scrollbar_template.clone(), cx)
+                .scrollbar_visibility(model.scrollbar_visibility)
+                .scrollbar_auto_hide_activate(model.scrollbar_auto_hide_activate);
         popup_surface.set_scrolling_enabled(model.scrolling);
         popup_surface.set_snap_to_rows(true);
 
@@ -278,7 +313,9 @@ where
             return false;
         };
 
-        self.model.enabled && self.model.items.get(source_index).is_some_and(SelectionPanelItemLike::is_enabled)
+        self.model.enabled
+            && self.model.open
+            && self.model.items.get(source_index).is_some_and(SelectionPanelItemLike::is_enabled)
     }
 
     fn emit_activate_for_visible_index(&mut self, visible_index: usize, cx: &mut Context<Self>) {
@@ -338,7 +375,7 @@ where
         }
     }
 
-    fn handle_item_hover(&mut self, visible_index: usize, hovered: bool, cx: &mut Context<Self>) {
+    fn handle_item_hover(&mut self, visible_index: usize, hovered: bool, window: &Window, cx: &mut Context<Self>) {
         if !self.can_use_visible_index(visible_index) {
             return;
         }
@@ -346,8 +383,16 @@ where
         let next = if hovered { Some(visible_index) } else { None };
 
         if self.state.set_hovered_visible_index(next) {
-            if hovered {
-                self.state.set_active_visible_index(Some(visible_index));
+            let follows = self.model.hover_activation.unwrap_or(match self.model.role {
+                SelectionPanelRole::Embedded => HoverActivationPolicy::PreserveActive,
+                SelectionPanelRole::Popup => HoverActivationPolicy::FollowPointer,
+            }) == HoverActivationPolicy::FollowPointer;
+            if hovered
+                && follows
+                && (self.model.hover_activation.is_some() || self.focus_handle.is_focused(window))
+                && self.model.open
+                && self.state.set_active_visible_index(Some(visible_index))
+            {
                 self.popup_surface.ensure_item_visible(visible_index, cx);
                 cx.emit(SelectionPanelEvent::ActiveIndexChanged { visible_index: self.state.active_visible_index() });
             }
@@ -369,9 +414,10 @@ where
         }
 
         self.pressed_visible_index = Some(visible_index);
-        self.state.set_active_visible_index(Some(visible_index));
-        self.focus_handle.focus(window, cx);
-        cx.emit(SelectionPanelEvent::ActiveIndexChanged { visible_index: self.state.active_visible_index() });
+        if self.state.set_active_visible_index(Some(visible_index)) {
+            cx.emit(SelectionPanelEvent::ActiveIndexChanged { visible_index: self.state.active_visible_index() });
+        }
+        self.model.pointer_focus.apply(&self.focus_handle, window, cx);
         cx.notify();
     }
 
@@ -395,13 +441,24 @@ where
         self.emit_activate_for_visible_index(visible_index, cx);
     }
 
-    fn handle_scroll_wheel(&mut self, event: &ScrollWheelEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.popup_surface.scroll_wheel(event, cx) {
+    fn handle_scroll_wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+        let policy = self.model.scroll_interaction;
+        let bar = self.popup_surface.scrollbar().read(cx).focus_handle(cx);
+        if !self.model.enabled
+            || !self.model.open
+            || !self.model.scrolling
+            || !policy.wheel.accepts(policy.focus_scope.focused(&self.focus_handle, Some(&bar), window, cx))
+        {
+            return;
+        }
+        if crate::interaction::wheel_delta(event, px(20.0), false).is_none() {
+            return;
+        }
+        let moved = self.popup_surface.scroll_wheel(event, cx);
+        if moved {
             cx.notify();
         }
-
-        let delta_y = event.delta.pixel_delta(px(20.0)).y.as_f32();
-        if delta_y.is_finite() && delta_y.abs() > f32::EPSILON {
+        if policy.boundary.consumes(moved) {
             cx.stop_propagation();
         }
     }
@@ -427,29 +484,53 @@ where
         }
     }
 
-    fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.model.open || !self.focus_handle.is_focused(window) {
+            cx.propagate();
+            return;
+        }
         self.move_active(SelectionPanelStepDirection::Previous, cx);
     }
 
-    fn handle_select_next_item(&mut self, _: &SelectNextItem, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_select_next_item(&mut self, _: &SelectNextItem, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.model.open || !self.focus_handle.is_focused(window) {
+            cx.propagate();
+            return;
+        }
         self.move_active(SelectionPanelStepDirection::Next, cx);
     }
 
-    fn handle_select_first_item(&mut self, _: &SelectFirstItem, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_select_first_item(&mut self, _: &SelectFirstItem, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.model.open || !self.focus_handle.is_focused(window) {
+            cx.propagate();
+            return;
+        }
         self.move_active_to_boundary(true, cx);
     }
 
-    fn handle_select_last_item(&mut self, _: &SelectLastItem, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_select_last_item(&mut self, _: &SelectLastItem, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.model.open || !self.focus_handle.is_focused(window) {
+            cx.propagate();
+            return;
+        }
         self.move_active_to_boundary(false, cx);
     }
 
-    fn handle_activate_control(&mut self, _: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_activate_control(&mut self, _: &ActivateControl, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.model.open || !self.focus_handle.is_focused(window) {
+            cx.propagate();
+            return;
+        }
         if let Some(active_visible_index) = self.state.active_visible_index() {
             self.emit_activate_for_visible_index(active_visible_index, cx);
         }
     }
 
-    fn handle_page_down(&mut self, _: &IncreaseValueLarge, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_page_down(&mut self, _: &IncreaseValueLarge, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.model.open || !self.focus_handle.is_focused(window) {
+            cx.propagate();
+            return;
+        }
         if !self.model.enabled || self.model.visible_indices.is_empty() {
             return;
         }
@@ -465,7 +546,11 @@ where
         }
     }
 
-    fn handle_page_up(&mut self, _: &DecreaseValueLarge, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_page_up(&mut self, _: &DecreaseValueLarge, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.model.open || !self.focus_handle.is_focused(window) {
+            cx.propagate();
+            return;
+        }
         if !self.model.enabled || self.model.visible_indices.is_empty() {
             return;
         }
@@ -494,8 +579,8 @@ where
     ) {
         let hover_handlers = (0..self.model.visible_indices.len())
             .map(|visible_index| {
-                Box::new(cx.listener(move |this, hovered, _window, cx| {
-                    this.handle_item_hover(visible_index, *hovered, cx);
+                Box::new(cx.listener(move |this, hovered, window, cx| {
+                    this.handle_item_hover(visible_index, *hovered, window, cx);
                 })) as SelectionPanelHoverHandler
             })
             .collect::<Vec<_>>();
@@ -589,6 +674,9 @@ where
     T: SelectionPanelItemLike + 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if !self.model.enabled && self.focus_handle.contains_focused(window, cx) {
+            window.blur(cx);
+        }
         self.clamp_state();
         if self.focus_in_subscription.is_none() {
             self.focus_in_subscription = Some(cx.on_focus(&self.focus_handle, window, Self::handle_focus_in));
@@ -646,7 +734,7 @@ where
         );
 
         let rows_content = if allow_scrolling {
-            self.popup_surface.render(rows.into_any_element())
+            self.popup_surface.render_without_wheel(rows.into_any_element())
         } else {
             rows.into_any_element()
         };
@@ -661,7 +749,7 @@ where
             .border_color(look.border)
             .rounded(px(look.radius))
             .shadow(look.shadow.clone())
-            .occlude()
+            .block_mouse_except_scroll()
             .child(rows_content);
 
         div()
@@ -677,5 +765,178 @@ where
             .on_action(cx.listener(Self::handle_page_down))
             .on_action(cx.listener(Self::handle_activate_control))
             .child(panel_shell)
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn wheel_policy_dispatch_matrix() {
+    crate::interaction_tests::matrix(
+        |policy, cx| {
+            SelectionPanelBuilder::new("matrix-panel")
+                .items((0..100).map(|i| SelectionPanelItem::new(i.to_string())))
+                .visible_row_limits(4, 4)
+                .wheel_scroll_policy(policy.wheel)
+                .scroll_boundary_policy(policy.boundary)
+                .spawn(cx)
+        },
+        |view, _cx| view.popup_surface.vertical_offset().as_f32(),
+        |view, cx| {
+            view.popup_surface.set_vertical_offset(100_000.0, cx);
+            cx.notify();
+        },
+    );
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod interaction_tests {
+    use super::*;
+    use gpui::{MouseMoveEvent, TestAppContext, point};
+    use std::{cell::RefCell, rc::Rc};
+
+    #[test]
+    fn scrollbar_visibility_and_timed_reveal_follow_accepted_wheel_input() {
+        use crate::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarVisibility};
+        use crate::controls::scrollbar::{ThemedScrollbarTemplate, default_scrollbar_theme};
+        use crate::interaction::WheelScrollPolicy;
+        for visibility in
+            [ScrollbarVisibility::AlwaysVisible, ScrollbarVisibility::Hidden, ScrollbarVisibility::AutoHide]
+        {
+            for wheel in [WheelScrollPolicy::Pointer, WheelScrollPolicy::PassThrough] {
+                let mut app = TestAppContext::single();
+                let (panel, cx) = app.add_window_view(|window, cx| {
+                    window.activate_window();
+                    SelectionPanelControl::from_builder(
+                        SelectionPanelBuilder::new("visibility-panel")
+                            .items((0..20).map(|i| SelectionPanelItem::new(i.to_string())))
+                            .selected_source_index(Some(0))
+                            .visible_row_limits(4, 4)
+                            .wheel_scroll_policy(wheel)
+                            .scrollbar_visibility(visibility)
+                            .scrollbar_auto_hide_activate(ScrollbarAutoHideActivate::Move)
+                            .scrollbar_template(std::sync::Arc::new(
+                                ThemedScrollbarTemplate::new(default_scrollbar_theme())
+                                    .with_modifier(|root, _| root.debug_selector(|| "panel-scrollbar".into())),
+                            )),
+                        cx,
+                    )
+                });
+                cx.run_until_parked();
+                let always = visibility == ScrollbarVisibility::AlwaysVisible;
+                assert_eq!(cx.debug_bounds("panel-scrollbar").is_some(), always);
+                cx.simulate_event(MouseMoveEvent { position: point(px(35.0), px(55.0)), ..Default::default() });
+                cx.run_until_parked();
+                assert_eq!(cx.debug_bounds("panel-scrollbar").is_some(), always);
+                crate::interaction_tests::wheel(cx, 0.0, -30.0);
+                let accepted = wheel == WheelScrollPolicy::Pointer;
+                assert_eq!(
+                    cx.debug_bounds("panel-scrollbar").is_some(),
+                    always || (accepted && visibility == ScrollbarVisibility::AutoHide)
+                );
+                cx.update(|_, app| {
+                    let panel = panel.read(app);
+                    assert_eq!(panel.popup_surface.vertical_offset(), px(if accepted { 30.0 } else { 0.0 }));
+                    assert_eq!(panel.model.selected_source_index, Some(0));
+                });
+                if accepted && visibility == ScrollbarVisibility::AutoHide {
+                    // Chrome deadlines use real time; the test executor separately drives the timer.
+                    std::thread::sleep(std::time::Duration::from_millis(1300));
+                    cx.executor().advance_clock(std::time::Duration::from_millis(1300));
+                    cx.run_until_parked();
+                    assert!(cx.debug_bounds("panel-scrollbar").is_none());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn embedded_hover_preserves_active_selection_position_and_focus_click_acts_once() {
+        let mut app = TestAppContext::single();
+        let events = Rc::new(RefCell::new(Vec::new()));
+        let (panel, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            SelectionPanelControl::from_builder(
+                SelectionPanelBuilder::new("hover-panel")
+                    .items((0..20).map(|i| SelectionPanelItem::new(i.to_string())))
+                    .active_visible_index(Some(0))
+                    .selected_source_index(Some(0))
+                    .visible_row_limits(4, 4),
+                cx,
+            )
+        });
+        let _subscription = cx.update(|_, app| {
+            app.subscribe(&panel, {
+                let events = events.clone();
+                move |_, event, _| events.borrow_mut().push(event.clone())
+            })
+        });
+        cx.run_until_parked();
+        cx.simulate_event(MouseMoveEvent { position: point(px(35.0), px(55.0)), ..Default::default() });
+        cx.run_until_parked();
+        cx.update(|window, app| {
+            let panel = panel.read(app);
+            assert!(!panel.focus_handle.is_focused(window));
+            assert_eq!(panel.state.active_visible_index(), Some(0));
+            assert_eq!(panel.model.selected_source_index, Some(0));
+            assert_eq!(panel.popup_surface.vertical_offset(), px(0.0));
+            assert!(panel.state.hovered_visible_index().is_some());
+        });
+        assert!(!events.borrow().iter().any(|e| matches!(e, SelectionPanelEvent::ActiveIndexChanged { .. })));
+        cx.simulate_click(point(px(35.0), px(55.0)), Default::default());
+        cx.run_until_parked();
+        cx.update(|window, app| assert!(panel.read(app).focus_handle.is_focused(window)));
+        assert_eq!(events.borrow().iter().filter(|e| matches!(e, SelectionPanelEvent::ActivateRow { .. })).count(), 1);
+        assert_eq!(
+            events
+                .borrow()
+                .iter()
+                .filter(|e| matches!(e, SelectionPanelEvent::ActiveIndexChanged { .. }))
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn role_defaults_explicit_hover_override_and_pointer_focus_override() {
+        for override_policy in
+            [None, Some(HoverActivationPolicy::PreserveActive), Some(HoverActivationPolicy::FollowPointer)]
+        {
+            let mut app = TestAppContext::single();
+            let (panel, cx) = app.add_window_view(|window, cx| {
+                window.activate_window();
+                let mut builder = SelectionPanelBuilder::new("popup-panel")
+                    .items((0..5).map(|i| SelectionPanelItem::new(i.to_string())))
+                    .active_visible_index(Some(0))
+                    .role(SelectionPanelRole::Popup)
+                    .pointer_focus_policy(crate::interaction::PointerFocusPolicy::Preserve);
+                if let Some(policy) = override_policy {
+                    builder = builder.hover_activation_policy(policy);
+                }
+                SelectionPanelControl::from_builder(builder, cx)
+            });
+            cx.run_until_parked();
+            cx.update(|window, app| panel.read(app).focus_handle.clone().focus(window, app));
+            cx.run_until_parked();
+            cx.simulate_event(MouseMoveEvent { position: point(px(35.0), px(55.0)), ..Default::default() });
+            cx.run_until_parked();
+            cx.update(|_, app| {
+                assert_eq!(
+                    panel.read(app).state.active_visible_index() != Some(0),
+                    override_policy != Some(HoverActivationPolicy::PreserveActive)
+                )
+            });
+            let elsewhere = cx.update(|window, app| {
+                let handle = app.focus_handle();
+                handle.focus(window, app);
+                handle
+            });
+            cx.run_until_parked();
+            cx.simulate_click(point(px(35.0), px(55.0)), Default::default());
+            cx.run_until_parked();
+            cx.update(|window, app| {
+                assert!(!panel.read(app).focus_handle.is_focused(window));
+                assert!(elsewhere.is_focused(window));
+            });
+        }
     }
 }

@@ -94,7 +94,7 @@ impl ComboBoxPanelTemplate for DefaultComboBoxPanelTemplate {
                             .rounded(px(look.radius))
                             .shadow(look.shadow)
                             .overflow_hidden()
-                            .occlude()
+                            .block_mouse_except_scroll()
                             .child(model.list_content),
                     ),
             )
@@ -112,7 +112,7 @@ impl ComboBoxPanelTemplate for DefaultComboBoxPanelTemplate {
             .rounded(px(look.radius))
             .shadow(look.shadow)
             .overflow_hidden()
-            .occlude()
+            .block_mouse_except_scroll()
             .child(model.list_content)
             .into_any_element()
     }

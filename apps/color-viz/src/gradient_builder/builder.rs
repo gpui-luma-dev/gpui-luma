@@ -4,7 +4,6 @@ use std::time::Instant;
 
 use gpui::{AppContext, Bounds, Context, Entity, Pixels, RenderImage, Size, Subscription, px, size};
 use luma_color::color_slider::{ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext};
-use luma_color::composition::CompositionSize;
 use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::selector::{Selector, SelectorEvent};
 use luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy, ThumbId};
@@ -139,7 +138,7 @@ impl GradientBuilder {
             .items(mesh_aspect_ratio_items())
             .selected_id("3:4")
             .spawn(cx);
-        let color_picker = cx.new(|cx| SvTrianglePicker::with_size(start, CompositionSize::Md, cx));
+        let color_picker = cx.new(|cx| SvTrianglePicker::new(start, cx));
         let mesh_grid_preset = MeshGridPreset::SampleThreeByFour;
         let mesh_aspect_ratio_preset = MeshAspectRatioPreset::ThreeByFour;
 

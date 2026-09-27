@@ -32,6 +32,8 @@ pub type SelectorTemplateModifier<T> =
     Box<dyn for<'a> Fn(Stateful<Div>, &SelectorRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static>;
 
 pub struct SelectorTemplateHandlers {
+    /// Bind inside the popup with `SelectorRenderModel::popup_scroll`, without native wheel movement.
+    pub popup_scroll_wheel: Option<crate::controls::selector_list::SelectorPanelScrollWheelHandler>,
     pub trigger_bounds: SelectorBoundsHandler,
     pub trigger_click: SelectorClickHandler,
     pub trigger_hover: SelectorHoverHandler,
@@ -53,6 +55,7 @@ fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
 impl Default for SelectorTemplateHandlers {
     fn default() -> Self {
         Self {
+            popup_scroll_wheel: None,
             trigger_bounds: Box::new(noop_bounds),
             trigger_click: Box::new(noop_click),
             trigger_hover: Box::new(noop_hover),
@@ -214,6 +217,7 @@ where
         cx: &mut App,
     ) -> Stateful<Div> {
         let SelectorTemplateHandlers {
+            popup_scroll_wheel,
             trigger_bounds,
             trigger_click,
             trigger_hover,
@@ -404,9 +408,15 @@ where
                     look: look.items_panel.clone(),
                     max_height: popup_metrics.max_height,
                     scrolling: popup_metrics.scrolling,
+                    scroll_handle: model.popup_scroll,
                     selection_icon: &model.icons.selected,
                 },
-                SelectorItemsTemplateHandlers { item_hovers, item_mouse_downs, item_clicks },
+                SelectorItemsTemplateHandlers {
+                    item_hovers,
+                    item_mouse_downs,
+                    item_clicks,
+                    scroll_wheel: popup_scroll_wheel,
+                },
                 cx,
             );
             let overlay = anchored()
