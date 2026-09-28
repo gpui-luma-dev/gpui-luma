@@ -52,6 +52,7 @@ impl Render for AccordionPanel {
     fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
         let accordion = self.accordion.clone();
+        let look = self.look.clone();
         let last_event = self.last_event.clone();
         let event_style = self.look.typography_scale(ShadcnTextSize::Sm);
 
@@ -61,14 +62,17 @@ impl Render for AccordionPanel {
             ACCORDION_CARD_WIDTH,
             "Settings",
             "Single-expansion accordion with icons.",
-            move |_, _| {
+            move |_, cx| {
                 vstack! {
                     gap=12;
-                    div()
-                        .w_full()
+                    shadcn::Frame::new("studio-accordion-frame")
+                        .look(&look)
+                        .h_auto()
+                        .bg(gpui::transparent_black())
                         .rounded(px(8.0))
                         .overflow_hidden()
-                        .child(accordion.clone()),
+                        .child(accordion.clone())
+                        .render(cx),
                     div()
                         .typography_style(event_style)
                         .text_color(chrome.muted_text)

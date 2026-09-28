@@ -1,7 +1,8 @@
 //! Shadcn composition of SDK ListBox state, bindings, and optional DnD.
 //!
 //! Keep the state, binding, and scroll handle for the lifetime of the host. Build
-//! the surface each render; rebuilding must not reset focus or scroll position.
+//! the SDK Frame each render for outer decoration and inset. Focus, selection,
+//! and scrolling stay in the ListBox bindings; rebuilding must not reset them.
 //! Item content and drop commits remain application choices. This is deliberately
 //! a borrowed `.build(window, cx)` API, not a second entity owning the collection.
 
@@ -23,6 +24,7 @@ use gpui::{
     AnyElement, App, Axis, Context, Div, ElementId, Entity, EntityId, Hsla, Render, Stateful, Window, div, prelude::*,
     px,
 };
+use luma::controls::frame::FrameBuilder;
 use luma::controls::listbox::{
     ListBoxAxis, ListBoxBinding, ListBoxControl, ListBoxFlow, ListBoxInput, ListBoxItemRenderModel, ListBoxLayout,
     ListBoxScrollHandle, ListBoxState, ListBoxVisibleItem, ListBoxVirtualization,
@@ -352,15 +354,25 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         if let Some(drag_drop) = &self.drag_drop {
             viewport = (drag_drop.viewport)(viewport, scope, self.axis);
         }
-        let mut surface = look
-            .listbox_surface(format!("{}-surface", self.id), self.state.is_focused())
-            .debug_selector(|| format!("{}-surface", self.id))
-            .relative()
-            .w_full()
-            .min_w(px(0.0))
+        let mode = look.mode_tokens();
+        let palette = super::listbox::listbox_surface_palette(&mode, true);
+        let border = if self.state.is_focused() {
+            crate::focus::focus_ring_or_fallback(&mode.catalog)
+        } else {
+            palette.border
+        };
+        let mut surface = FrameBuilder::new(format!("{}-surface", self.id))
+            // The viewport plus inset determines height, not Frame's full-size default.
+            .h_auto()
+            .bg(palette.background)
+            .border_1()
+            .border_color(border)
             .rounded(px(CORNER_RADIUS))
             .px(px(self.layout.inset_x))
             .py(px(self.layout.inset_y))
+            .render(cx)
+            .debug_selector(|| format!("{}-surface", self.id))
+            .relative()
             .aria_label(self.label);
         if let Some(drag_drop) = &self.drag_drop {
             surface = (drag_drop.highlight)(surface, scope, highlight);

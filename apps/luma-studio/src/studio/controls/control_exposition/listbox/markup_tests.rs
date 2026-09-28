@@ -28,6 +28,10 @@ fn exposition_geometry_matches_inspector_metrics() {
     let first = bounds(cx, "listbox-vertical-item-0");
     let second = bounds(cx, "listbox-vertical-item-1");
     assert_eq!(surface.size.width, px(super::super::VERTICAL_LIST_WIDTH));
+    assert_eq!(
+        surface.size.height,
+        px(vertical::LAYOUT.viewport_height + 2.0 * (vertical::LAYOUT.inset_y + vertical::LAYOUT.border)),
+    );
     assert_eq!(viewport.size.height, px(vertical::LAYOUT.viewport_height));
     assert_eq!(first.size.height, px(vertical::LAYOUT.item_height));
     assert_eq!(second.origin.y - first.origin.y - first.size.height, px(vertical::LAYOUT.spacing));
@@ -40,6 +44,10 @@ fn exposition_geometry_matches_inspector_metrics() {
         let events = cx.new(|cx| ControlEventStream::new(cx, look.clone(), "events", ""));
         horizontal::HorizontalListExample::new(look, events, cx)
     });
+    assert_eq!(
+        bounds(cx, "listbox-horizontal-surface").size.height,
+        px(horizontal::LAYOUT.viewport_height + 2.0 * (horizontal::LAYOUT.inset_y + horizontal::LAYOUT.border)),
+    );
     let first = bounds(cx, "listbox-horizontal-item-0");
     let second = bounds(cx, "listbox-horizontal-item-1");
     assert_eq!(first.size.width, px(horizontal::CARD_WIDTH));
