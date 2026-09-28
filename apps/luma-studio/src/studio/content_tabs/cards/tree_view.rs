@@ -56,6 +56,7 @@ impl Render for TreeViewPanel {
     fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
         let tree = self.tree.clone();
+        let look = self.look.clone();
         let last_event = self.last_event.clone();
         let hint_style = self.look.typography_scale(ShadcnTextSize::Sm);
 
@@ -65,7 +66,7 @@ impl Render for TreeViewPanel {
             TREE_VIEW_CARD_WIDTH,
             "File Explorer",
             "Virtualized tree view for hierarchical data.",
-            move |_, _| {
+            move |_, cx| {
                 vstack! {
                     gap=12;
                     div()
@@ -74,16 +75,17 @@ impl Render for TreeViewPanel {
                         .child(format!(
                             "Mock tree: {TREE_DEPTH} levels deep — click branch rows to expand or collapse"
                         )),
-                    div()
+                    shadcn::Frame::new("studio-tree-view-frame")
+                        .look(&look)
                         .w_full()
                         .h(px(TREE_VIEW_HEIGHT_PX))
                         .min_h(px(0.0))
                         .overflow_hidden()
                         .rounded(px(8.0))
                         .border_1()
-                        .border_color(chrome.border)
                         .bg(chrome.content_background)
-                        .child(tree.clone()),
+                        .child(tree.clone())
+                        .render(cx),
                     div()
                         .typography_style(hint_style)
                         .text_color(chrome.muted_text)

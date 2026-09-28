@@ -103,7 +103,8 @@ impl Render for TreeViewExpositionLeftPane {
                     )))
                     .child(div().flex().gap(px(8.0)).children(self.scrollbar_options.iter().cloned()))
                     .child(
-                        div()
+                        shadcn::Frame::new("tree-preview-frame")
+                            .look(&self.look)
                             .w(px(360.0))
                             .h(px(480.0))
                             .flex()
@@ -112,9 +113,8 @@ impl Render for TreeViewExpositionLeftPane {
                             .overflow_hidden()
                             .rounded(px(8.0))
                             .border_1()
-                            .border_color(chrome.border)
-                            .bg(chrome.panel_background)
-                            .child(self.tree.clone()),
+                            .child(self.tree.clone())
+                            .render(cx),
                     )
                     .child(self.event_stream.clone())
                     .child(self.state_updates.clone())

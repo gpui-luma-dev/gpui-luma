@@ -230,7 +230,7 @@ impl Render for Scale {
                 .child(div().text_size(px(12.0)).text_color(chrome.muted_text).child(format!("10,117 loaded · {} displayed · {} selected",tree.visible_ids().len(),tree.selected_ids().len())))
                 .child(div().text_size(px(12.0)).text_color(chrome.muted_text).child(sample))
                 .child(div().text_size(px(12.0)).text_color(chrome.muted_text).child("Unique rows counts distinct IDs rendered since reset; template calls include repeated builds. Sample after each action. These counters measure row construction, not total data traversal or native frame rate."))
-                .child(div().w(px(420.0)).h(px(280.0)).overflow_hidden().border_1().border_color(chrome.border).rounded(px(8.0)).bg(chrome.panel_background).child(self.tree.clone()))
+                .child(shadcn::Frame::new("tree-scale-frame").look(&self.look).w(px(420.0)).h(px(280.0)).overflow_hidden().border_1().rounded(px(8.0)).child(self.tree.clone()).render(cx))
                 .child(self.events.clone())
         })
     }
