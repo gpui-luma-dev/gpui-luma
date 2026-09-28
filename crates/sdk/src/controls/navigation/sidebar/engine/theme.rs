@@ -5,14 +5,6 @@ use gpui::Hsla;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
-pub struct SidebarContainerLook {
-    pub background: Hsla,
-    pub foreground: Hsla,
-    pub border: Hsla,
-    pub radius: f32,
-}
-
-#[derive(Clone, Copy, Debug)]
 pub struct SidebarSectionLook {
     pub label_color: Hsla,
     pub typography: LumaTextStyle,
@@ -34,7 +26,7 @@ pub struct SidebarItemLook {
 }
 
 pub trait SidebarTheme: Send + Sync {
-    fn resolve_container(&self) -> SidebarContainerLook;
+    fn foreground(&self) -> Hsla;
     fn resolve_section(&self) -> SidebarSectionLook;
     fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> SidebarItemLook;
     fn resolve_item(&self, selected: bool, state: InteractionState, size: ControlSize) -> SidebarItemLook;
@@ -87,15 +79,8 @@ impl DefaultSidebarTheme {
 }
 
 impl SidebarTheme for DefaultSidebarTheme {
-    fn resolve_container(&self) -> SidebarContainerLook {
-        let navigation = &self.tokens.palette.navigation;
-
-        SidebarContainerLook {
-            background: navigation.background,
-            foreground: navigation.foreground,
-            border: navigation.border,
-            radius: self.tokens.metrics.radius.lg,
-        }
+    fn foreground(&self) -> Hsla {
+        self.tokens.palette.navigation.foreground
     }
 
     fn resolve_section(&self) -> SidebarSectionLook {

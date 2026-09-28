@@ -1,6 +1,7 @@
 //! Navigation sidebar control exposition — `SidebarControl` preview and event log.
 
 use std::cell::Cell;
+use luma::motion::VisualTransition;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -11,7 +12,7 @@ use luma::infra::menu_item::MenuItem;
 use luma::controls::popup_menu::{HasPresenter, PopupMenu, PopupMenuEvent, PopupMenuPlacement};
 use luma::infra::presenter::ControlPresenter;
 use luma::controls::scroll_container::ScrollbarAutoHideActivate;
-use luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
+use luma::controls::sidebar::{SidebarPresentation, SidebarControl, SidebarEvent};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn as shadcn;
 use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
@@ -102,6 +103,7 @@ struct SidebarExpositionLeftPane {
     sidebar_toggle: IconButton,
     user_menu: Entity<PopupMenu>,
     control_open: Rc<Cell<bool>>,
+    width_transition: VisualTransition,
     event_stream: Entity<ControlEventStream>,
 }
 
@@ -141,7 +143,10 @@ impl SidebarExpositionLeftPane {
 }
 
 impl Render for SidebarExpositionLeftPane {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        self.width_transition.set_target(if self.control_open.get() { 1.0 } else { 0.0 });
+        self.width_transition.sync();
+        self.width_transition.schedule_frame(window, cx);
         self.sync_sidebar_toggle_icon(cx);
         self.sync_user_menu_trigger(cx);
 
@@ -149,7 +154,7 @@ impl Render for SidebarExpositionLeftPane {
             let look = &self.look;
             let metrics = look.sidebar_metric_scale();
             let control_width =
-                self.sidebar_control.read(cx).animated_width(metrics.width_expanded, metrics.width_icon_rail);
+                self.width_transition.interpolate_pixels(metrics.width_icon_rail, metrics.width_expanded);
 
             let preview = div()
                 .w_full()
@@ -160,7 +165,11 @@ impl Render for SidebarExpositionLeftPane {
                 .child(preview_shell(
                     look,
                     control_width,
-                    self.sidebar_control.clone().into_any_element(),
+                    shadcn::Frame::sidebar("exposition-nav-frame")
+                        .look(look)
+                        .child(self.sidebar_control.clone())
+                        .render(cx)
+                        .into_any_element(),
                     self.sidebar_toggle.clone(),
                     self.user_menu.clone(),
                 ))
@@ -214,6 +223,7 @@ impl SidebarControlExposition {
             sidebar_toggle: sidebar_toggle.clone(),
             user_menu: user_menu.clone(),
             control_open: control_open.clone(),
+            width_transition: VisualTransition::default(),
             event_stream: event_stream.clone(),
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
@@ -239,8 +249,8 @@ impl SidebarControlExposition {
             let event_stream = event_stream.clone();
             let left_pane = left_pane.clone();
             move |_, _, event: &SidebarEvent, cx| {
-                if let SidebarEvent::OpenChanged { open, .. } = event {
-                    control_open_cell.set(*open);
+                if let SidebarEvent::PresentationChanged { presentation } = event {
+                    control_open_cell.set(*presentation == SidebarPresentation::Expanded);
                     left_pane.update(cx, |_, cx| cx.notify());
                 }
                 if let Some(line) = format_sidebar_control_event(event) {
@@ -252,7 +262,14 @@ impl SidebarControlExposition {
             let sidebar_control = sidebar_control.clone();
             move |_, _, event: &ButtonEvent, cx| {
                 if matches!(event, ButtonEvent::Click) {
-                    sidebar_control.update(cx, |sidebar, cx| sidebar.toggle_open(cx));
+                    sidebar_control.update(cx, |sidebar, cx| {
+                        let presentation = if sidebar.presentation() == SidebarPresentation::Expanded {
+                            SidebarPresentation::Icons
+                        } else {
+                            SidebarPresentation::Expanded
+                        };
+                        sidebar.set_presentation(presentation, cx);
+                    });
                 }
             }
         });
@@ -463,8 +480,6 @@ fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControl
 
     shadcn::Sidebar::new("controls-doc-sidebar-control")
         .look(look.as_ref())
-        .default_open(true)
-        .collapsible(SidebarCollapsible::Icon)
         .auto_hide_scrollbar(true)
         .auto_hide_scrollbar_activate(ScrollbarAutoHideActivate::Move)
         .sidebar(
@@ -474,8 +489,7 @@ fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControl
                     shadcn::Sidebar::content()
                         .group(shadcn::Sidebar::group().label("Pinned").menu(pinned_menu))
                         .group(shadcn::Sidebar::group().label("Properties").menu(properties_menu)),
-                )
-                .rail(shadcn::Sidebar::rail()),
+                ),
         )
         .overlay_scrollbar(true)
         .spawn(cx)
@@ -553,12 +567,10 @@ fn property_leaf_menu_item(
 
 fn format_sidebar_control_event(event: &SidebarEvent) -> Option<String> {
     match event {
-        SidebarEvent::OpenChanged { open, collapsible } => {
-            Some(format!("SidebarEvent::OpenChanged {{ open: {open}, collapsible: {collapsible:?} }}"))
+        SidebarEvent::PresentationChanged { presentation } => {
+            Some(format!("SidebarEvent::PresentationChanged {{ presentation: {presentation:?} }}"))
         }
-        SidebarEvent::Dismissed => Some("SidebarEvent::Dismissed".to_string()),
         SidebarEvent::Select { id } => Some(format!("SidebarEvent::Select {{ id: \"{id}\" }}")),
-        SidebarEvent::Activate { id } => Some(format!("SidebarEvent::Activate {{ id: \"{id}\" }}")),
         SidebarEvent::ItemFocused { id } => Some(format!("SidebarEvent::ItemFocused {{ id: \"{id}\" }}")),
         SidebarEvent::HoverChanged { id } => Some(match id {
             Some(id) => format!("SidebarEvent::HoverChanged {{ id: Some(\"{id}\") }}"),
@@ -570,7 +582,6 @@ fn format_sidebar_control_event(event: &SidebarEvent) -> Option<String> {
         SidebarEvent::EnabledChanged { enabled } => {
             Some(format!("SidebarEvent::EnabledChanged {{ enabled: {enabled} }}"))
         }
-        SidebarEvent::ResizeStart | SidebarEvent::Resized { .. } | SidebarEvent::ResizeEnd { .. } => None,
         _ => None,
     }
 }

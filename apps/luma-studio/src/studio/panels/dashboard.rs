@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use luma::motion::VisualTransition;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use luma::controls::button::{ButtonContentContext, ButtonEvent, ControlIcon};
@@ -6,7 +7,7 @@ use luma::controls::icon_button::IconButton;
 use luma::controls::table::{TableSelectionMode, TableEvent, PagingTable};
 use luma::controls::pager::PagerStyle;
 use luma::infra::presenter::ControlPresenter;
-use luma::controls::sidebar::{SidebarCollapsible, SidebarControl, SidebarEvent};
+use luma::controls::sidebar::{SidebarPresentation, SidebarControl};
 use luma::{column, column_emphasis, paging_table};
 use luma_look_shadcn::prelude::*;
 use luma_look_shadcn as shadcn;
@@ -27,6 +28,7 @@ pub struct DashboardPanel {
     sidebar_toggle: IconButton,
     table: PagingTable<Task>,
     sidebar_open: bool,
+    sidebar_transition: VisualTransition,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -34,13 +36,8 @@ impl DashboardPanel {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let sidebar = shadcn::Sidebar::new("studio-dashboard-nav")
             .look(look.as_ref())
-            .default_open(true)
-            .collapsible(SidebarCollapsible::Icon)
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
-            .sidebar(
-                property_sidebar(&look, "studio-dashboard-nav-panel", "Properties", "Task workspace")
-                    .rail(shadcn::Sidebar::rail()),
-            )
+            .sidebar(property_sidebar(&look, "studio-dashboard-nav-panel", "Properties", "Task workspace"))
             .spawn(cx);
 
         let sidebar_toggle = shadcn::Button::icon_button("studio-dashboard-sidebar-toggle", LucideIcon::PanelLeft)
@@ -128,23 +125,32 @@ impl DashboardPanel {
         });
 
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&sidebar, |panel, _, event: &SidebarEvent, cx| {
-            if let SidebarEvent::OpenChanged { open, .. } = event {
-                panel.sidebar_open = *open;
-                cx.notify();
-            }
-        }));
         subscriptions.push(cx.observe(&sidebar, |_, _, cx| cx.notify()));
         subscriptions.push(cx.subscribe(&sidebar_toggle, |panel, _, event, cx| {
             if matches!(event, ButtonEvent::Click) {
-                panel.sidebar.update(cx, |sidebar, cx| sidebar.toggle_open(cx));
+                panel.sidebar_open = !panel.sidebar_open;
+                let presentation = if panel.sidebar_open {
+                    SidebarPresentation::Expanded
+                } else {
+                    SidebarPresentation::Icons
+                };
+                panel.sidebar.update(cx, |sidebar, cx| sidebar.set_presentation(presentation, cx));
+                cx.notify();
             }
         }));
         subscriptions.push(cx.subscribe(&table, |_, _, _: &TableEvent, cx| {
             cx.notify();
         }));
 
-        Self { look, sidebar, sidebar_toggle, table, sidebar_open: true, _subscriptions: subscriptions }
+        Self {
+            look,
+            sidebar,
+            sidebar_toggle,
+            table,
+            sidebar_open: true,
+            sidebar_transition: VisualTransition::default(),
+            _subscriptions: subscriptions,
+        }
     }
 
     fn sync_sidebar_toggle_icon(&self, cx: &mut Context<Self>) {
@@ -160,7 +166,10 @@ impl DashboardPanel {
 }
 
 impl Render for DashboardPanel {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.sidebar_transition.set_target(if self.sidebar_open { 1.0 } else { 0.0 });
+        self.sidebar_transition.sync();
+        self.sidebar_transition.schedule_frame(window, cx);
         self.sync_sidebar_toggle_icon(cx);
 
         with_look(&self.look, || {
@@ -168,8 +177,8 @@ impl Render for DashboardPanel {
             let chrome = look.chrome();
             let metrics = look.sidebar_metric_scale();
             let shell_radius = look.radius(ShadcnRadius::Lg);
-            let content_radius = look.mode_tokens().metrics.radius.lg;
-            let sidebar_width = self.sidebar.read(cx).animated_width(metrics.width_expanded, metrics.width_icon_rail);
+            let sidebar_width =
+                self.sidebar_transition.interpolate_pixels(metrics.width_icon_rail, metrics.width_expanded);
             let sidebar_bg = look.token_color("sidebar").unwrap_or(chrome.panel_background);
             let title_style = look.typography_scale(ShadcnTextSize::Lg);
 
@@ -194,7 +203,12 @@ impl Render for DashboardPanel {
                             .flex_col()
                             .overflow_hidden()
                             .child(
-                                div().flex_1().min_h(px(0.0)).w_full().overflow_hidden().child(self.sidebar.clone()),
+                                div().flex_1().min_h(px(0.0)).w_full().overflow_hidden().child(
+                                    shadcn::Frame::sidebar("dashboard-nav-frame")
+                                        .look(look)
+                                        .child(self.sidebar.clone())
+                                        .render(cx),
+                                ),
                             ),
                     )
                     .child(
@@ -205,16 +219,14 @@ impl Render for DashboardPanel {
                             .h_full()
                             .p(px(CONTENT_INSET_PX))
                             .child(
-                                div()
-                                    .size_full()
-                                    .min_h(px(0.0))
+                                shadcn::Frame::new("studio-dashboard-content-card")
+                                    .look(look)
+                                    .bg(chrome.content_background)
+                                    .border_1()
                                     .flex()
                                     .flex_col()
                                     .overflow_hidden()
-                                    .rounded(px(content_radius))
-                                    .border_1()
-                                    .border_color(chrome.border)
-                                    .bg(chrome.content_background)
+                                    .render(cx)
                                     .child(
                                         div()
                                             .id("studio-dashboard-list-header")

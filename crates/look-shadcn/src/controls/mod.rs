@@ -85,6 +85,8 @@ pub use scrollbar_builder::Scrollbar;
 pub use search_selector_builder::SearchSelector;
 pub use selection_panel_builder::SelectionPanel;
 pub use selector_builder::Selector;
+mod frame;
+pub use frame::Frame;
 pub use sidebar_builder::Sidebar;
 pub use slider_builder::Slider;
 pub use stepper_builder::Stepper;

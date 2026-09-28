@@ -10,7 +10,7 @@ use luma::controls::resizable_panels::{
     PanelHideMode, ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizeCollapseBehavior,
     ResizeCollapseDirection, ResizeCollapseMode, ResizeHandleVisibility,
 };
-use luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
+use luma::controls::sidebar::{SidebarPresentation};
 use luma::theme::ThemeMode;
 use luma_look_shadcn::{self as shadcn, ShadcnLook};
 use luma_shell_common::{
@@ -32,7 +32,7 @@ pub struct Shell2026App {
     focus_scope: FocusHandle,
     look: Arc<ShadcnLook>,
     panels: Entity<ResizablePanels>,
-    rail: Entity<SidebarControl>,
+    rail: Entity<luma::controls::frame::FrameControl>,
     sidebar_width: Pixels,
     titlebar: TitlebarControls,
     _subscriptions: Vec<Subscription>,
@@ -113,13 +113,26 @@ impl Render for Shell2026App {
                     .mt(CANVAS_TOP_INSET)
                     .mr(CANVAS_EDGE_INSET)
                     .mb(CANVAS_EDGE_INSET)
+                    .relative()
                     .rounded(CANVAS_RADIUS)
                     .overflow_hidden()
                     .border(CANVAS_BORDER)
                     .border_color(canvas_border_color(&self.look))
                     // Paint the canvas here: GPUI cannot clip child fills to rounded corners.
                     .bg(chrome.content_background)
-                    .child(self.panels.clone()),
+                    .child(
+                        div()
+                            .debug_selector(|| "shell-2026-sidebar-fill".into())
+                            .absolute()
+                            .top_0()
+                            .bottom_0()
+                            .left_0()
+                            .w(self.sidebar_width)
+                            .rounded_tl(CANVAS_RADIUS - CANVAS_BORDER)
+                            .rounded_bl(CANVAS_RADIUS - CANVAS_BORDER)
+                            .bg(self.look.token_color("sidebar").unwrap_or(chrome.panel_background)),
+                    )
+                    .child(div().relative().size_full().child(self.panels.clone())),
             );
         render_app_root(
             &self.focus_scope,
@@ -130,7 +143,7 @@ impl Render for Shell2026App {
     }
 }
 
-fn spawn_rail(look: &Arc<ShadcnLook>, cx: &mut Context<Shell2026App>) -> Entity<SidebarControl> {
+fn spawn_rail(look: &Arc<ShadcnLook>, cx: &mut Context<Shell2026App>) -> Entity<luma::controls::frame::FrameControl> {
     let mut menu = shadcn::Sidebar::menu("shell-2026-destinations");
     for (id, label, icon) in [
         ("home", "Home", Icon::House),
@@ -143,15 +156,10 @@ fn spawn_rail(look: &Arc<ShadcnLook>, cx: &mut Context<Shell2026App>) -> Entity<
         menu = menu.item(shadcn::Sidebar::menu_item(id, label).icon(icon).active(id == "home"));
     }
     // Keep the rail in icon mode independently of the inner resizable sidebar.
-    let rail_look = look.clone();
-    SidebarControl::new("shell-2026-rail")
-        .template(look.sidebar_template())
-        .panel_template(look.sidebar_panel_template())
-        .scrollbar_template(look.scrollbar_template())
-        .with_panel_template_modifier(move |root| root.bg(shell_background(&rail_look)))
-        .default_open(false)
+    let navigation = shadcn::Sidebar::new("shell-2026-rail")
+        .look(look)
+        .presentation(SidebarPresentation::Icons)
         .animated(false)
-        .collapsible(SidebarCollapsible::Icon)
         .auto_hide_scrollbar(true)
         .sidebar(
             shadcn::Sidebar::panel("shell-2026-rail-panel")
@@ -162,21 +170,18 @@ fn spawn_rail(look: &Arc<ShadcnLook>, cx: &mut Context<Shell2026App>) -> Entity<
                         .child(shadcn::Sidebar::menu_item("profile", "Profile").icon(Icon::CircleUser)),
                 ),
         )
+        .spawn(cx);
+    shadcn::Frame::sidebar("shell-2026-rail-frame")
+        .look(look)
+        .bg(transparent_black())
+        .rounded(px(0.0))
+        .child(navigation)
         .spawn(cx)
 }
 
 fn spawn_panels(look: &ShadcnLook, cx: &mut Context<Shell2026App>) -> Entity<ResizablePanels> {
-    let sidebar = SidebarControl::new("shell-2026-sidebar")
-        .template(look.sidebar_template())
-        .panel_template(look.sidebar_panel_template())
-        .scrollbar_template(look.scrollbar_template())
-        .with_panel_template_modifier(|root| {
-            // Only the outside corners belong to the shared canvas outline.
-            root.rounded_none()
-                .rounded_tl(CANVAS_RADIUS - CANVAS_BORDER)
-                .rounded_bl(CANVAS_RADIUS - CANVAS_BORDER)
-        })
-        .collapsible(SidebarCollapsible::None)
+    let sidebar = shadcn::Sidebar::new("shell-2026-sidebar")
+        .look(look)
         .sidebar(shadcn::Sidebar::panel("shell-2026-sidebar-panel"))
         .spawn(cx);
     look.resizable_panels("shell-2026-panels")
@@ -188,15 +193,13 @@ fn spawn_panels(look: &ShadcnLook, cx: &mut Context<Shell2026App>) -> Entity<Res
             ResizeCollapseDirection::Left,
         )))
         .panel(
-            ResizablePanelSpec::new_render(move || sidebar.clone())
-                .bg(transparent_black())
+            ResizablePanelSpec::new_render(move || div().size_full().p(px(8.0)).child(sidebar.clone()))
                 .size(INITIAL_SIDEBAR_WIDTH)
                 .min(MIN_SIDEBAR_WIDTH)
                 .max(MAX_SIDEBAR_WIDTH),
         )
         .panel(
             ResizablePanelSpec::new_render(|| div().debug_selector(|| "shell-2026-workspace".into()).size_full())
-                .bg(transparent_black())
                 .weight(1.0)
                 .min(MIN_WORKSPACE_WIDTH),
         )

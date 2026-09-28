@@ -1,18 +1,14 @@
-use std::rc::Rc;
 use std::sync::Arc;
 
-use gpui::{AnyElement, AppContext, Entity, IntoElement, SharedString};
+use gpui::{AppContext, Entity, SharedString};
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::control::SidebarControl;
 use super::engine::{NavNode, SidebarPanelTemplate, default_sidebar_panel_template, modified_sidebar_panel_template};
-use super::template::{SidebarTemplate, default_sidebar_template};
-use super::theme::{SidebarCollapsible, SidebarVariant};
+use super::theme::SidebarPresentation;
 use crate::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 use crate::infra::icon::DisclosureIcons;
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
-
-pub type SidebarPaneRender = Rc<dyn Fn() -> AnyElement>;
 
 #[derive(Clone)]
 pub struct SidebarMenuItemModel {
@@ -57,40 +53,23 @@ pub struct SidebarFooterModel {
     pub(crate) items: Vec<SidebarMenuItemModel>,
 }
 
-#[derive(Clone, Copy, Debug, Default)]
-pub struct SidebarRailModel {
-    pub(crate) _enabled: bool,
-}
-
 #[derive(Clone)]
 pub struct SidebarPanelModel {
     pub(crate) id: SharedString,
     pub(crate) header: Option<SidebarHeaderModel>,
     pub(crate) content: Option<SidebarContentModel>,
     pub(crate) footer: Option<SidebarFooterModel>,
-    pub(crate) rail: Option<SidebarRailModel>,
     pub(crate) disclosure_icons: DisclosureIcons,
-}
-
-#[derive(Clone)]
-pub struct SidebarInsetModel {
-    pub(crate) header: Option<SidebarPaneRender>,
-    pub(crate) content: Option<SidebarPaneRender>,
-    pub(crate) footer: Option<SidebarPaneRender>,
 }
 
 #[derive(Clone)]
 pub struct SidebarControlModel {
     pub(crate) id: SharedString,
-    pub(crate) default_open: bool,
-    pub(crate) collapsible: SidebarCollapsible,
-    pub(crate) variant: SidebarVariant,
+    pub(crate) presentation: SidebarPresentation,
     pub(crate) enabled: bool,
     pub(crate) animated: bool,
     pub(crate) selected_id: Option<SharedString>,
     pub(crate) sidebar: Option<SidebarPanelModel>,
-    pub(crate) inset: Option<SidebarInsetModel>,
-    pub(crate) template: Arc<dyn SidebarTemplate>,
     pub(crate) panel_template: Arc<dyn SidebarPanelTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) scrollbar_placement: ScrollbarPlacement,
@@ -321,26 +300,6 @@ impl Default for SidebarFooterBuilder {
     }
 }
 
-pub struct SidebarRailBuilder {
-    model: SidebarRailModel,
-}
-
-impl SidebarRailBuilder {
-    pub fn new() -> Self {
-        Self { model: SidebarRailModel { _enabled: true } }
-    }
-
-    pub(crate) fn build(self) -> SidebarRailModel {
-        self.model
-    }
-}
-
-impl Default for SidebarRailBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 pub struct SidebarBuilder {
     model: SidebarPanelModel,
 }
@@ -353,7 +312,6 @@ impl SidebarBuilder {
                 header: None,
                 content: None,
                 footer: None,
-                rail: None,
                 disclosure_icons: DisclosureIcons::default(),
             },
         }
@@ -374,11 +332,6 @@ impl SidebarBuilder {
         self
     }
 
-    pub fn rail(mut self, rail: SidebarRailBuilder) -> Self {
-        self.model.rail = Some(rail.build());
-        self
-    }
-
     /// Sets the expanded and collapsed disclosure icons for nested menu rows.
     pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
         self.model.disclosure_icons = icons;
@@ -387,53 +340,6 @@ impl SidebarBuilder {
 
     pub fn build(self) -> SidebarPanelModel {
         self.model
-    }
-}
-
-pub struct SidebarInsetBuilder {
-    model: SidebarInsetModel,
-}
-
-impl SidebarInsetBuilder {
-    pub fn new() -> Self {
-        Self { model: SidebarInsetModel { header: None, content: None, footer: None } }
-    }
-
-    pub fn header<E, F>(mut self, render: F) -> Self
-    where
-        E: IntoElement,
-        F: Fn() -> E + 'static,
-    {
-        self.model.header = Some(pane_render(render));
-        self
-    }
-
-    pub fn content<E, F>(mut self, render: F) -> Self
-    where
-        E: IntoElement,
-        F: Fn() -> E + 'static,
-    {
-        self.model.content = Some(pane_render(render));
-        self
-    }
-
-    pub fn footer<E, F>(mut self, render: F) -> Self
-    where
-        E: IntoElement,
-        F: Fn() -> E + 'static,
-    {
-        self.model.footer = Some(pane_render(render));
-        self
-    }
-
-    pub(crate) fn build(self) -> SidebarInsetModel {
-        self.model
-    }
-}
-
-impl Default for SidebarInsetBuilder {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -446,15 +352,11 @@ impl SidebarControlBuilder {
         Self {
             model: SidebarControlModel {
                 id: id.into(),
-                default_open: true,
-                collapsible: SidebarCollapsible::Icon,
-                variant: SidebarVariant::Sidebar,
+                presentation: SidebarPresentation::Expanded,
                 enabled: true,
                 animated: true,
                 selected_id: None,
                 sidebar: None,
-                inset: None,
-                template: default_sidebar_template(),
                 panel_template: default_sidebar_panel_template(),
                 scrollbar_template: default_scrollbar_template(),
                 scrollbar_placement: ScrollbarPlacement::Inset,
@@ -464,18 +366,9 @@ impl SidebarControlBuilder {
         }
     }
 
-    pub fn default_open(mut self, open: bool) -> Self {
-        self.model.default_open = open;
-        self
-    }
-
-    pub fn collapsible(mut self, collapsible: SidebarCollapsible) -> Self {
-        self.model.collapsible = collapsible;
-        self
-    }
-
-    pub fn variant(mut self, variant: SidebarVariant) -> Self {
-        self.model.variant = variant;
+    /// Select expanded rows or an icon rail, independently of host visibility.
+    pub fn presentation(mut self, presentation: SidebarPresentation) -> Self {
+        self.model.presentation = presentation;
         self
     }
 
@@ -496,16 +389,6 @@ impl SidebarControlBuilder {
 
     pub fn sidebar(mut self, sidebar: SidebarBuilder) -> Self {
         self.model.sidebar = Some(sidebar.build());
-        self
-    }
-
-    pub fn inset(mut self, inset: SidebarInsetBuilder) -> Self {
-        self.model.inset = Some(inset.build());
-        self
-    }
-
-    pub fn template(mut self, template: Arc<dyn SidebarTemplate>) -> Self {
-        self.model.template = template;
         self
     }
 
@@ -563,14 +446,6 @@ impl SidebarControlBuilder {
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<SidebarControl> {
         cx.new(|cx| SidebarControl::from_builder(self, cx))
     }
-}
-
-pub fn pane_render<E, F>(render: F) -> SidebarPaneRender
-where
-    E: IntoElement,
-    F: Fn() -> E + 'static,
-{
-    Rc::new(move || render().into_any_element())
 }
 
 pub(crate) fn find_active_id(panel: &SidebarPanelModel) -> Option<SharedString> {

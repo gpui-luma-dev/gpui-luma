@@ -378,7 +378,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     ControlDocEntry {
         id: "sidebar",
         title: "Sidebar",
-        description: "Hierarchical sidebar composition via SidebarControl — header, grouped menus, footer, and optional icon rail. Emits SidebarEvent for selection, collapse, and hover.",
+        description: "Bare sidebar navigation with header, grouped menus, footer, and expanded/icon presentation. Wrap in Frame for container styling; the host owns width and visibility.",
         category: ControlCategory::NavigationPanels,
         snippet: r#"fn spawn_sidebar_control(
     look: &Arc<ShadcnLook>,
@@ -408,8 +408,6 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     }
 
     shadcn::Sidebar::new("controls-doc-sidebar-control").look(look.as_ref())
-        .default_open(true)
-        .collapsible(SidebarCollapsible::Icon)
         .auto_hide_scrollbar(true)
         .auto_hide_scrollbar_activate(ScrollbarAutoHideActivate::Move)
         .sidebar(
@@ -428,7 +426,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
                                 .menu(properties_menu),
                         ),
                 )
-                .rail(shadcn::Sidebar::rail()),
+                ,
         )
         .overlay_scrollbar(true)
         .spawn(cx)

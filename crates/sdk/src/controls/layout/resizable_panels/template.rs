@@ -170,8 +170,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         for (index, panel) in model.panels.iter().enumerate() {
             let main_axis_px = model.panel_sizes_px.get(index).copied().unwrap_or(0.0);
             let main_size = px(main_axis_px.max(0.0));
-            panels_row =
-                panels_row.child(render_panel(model.orientation, panel, main_size, provisional_weight_layout, look));
+            panels_row = panels_row.child(render_panel(model.orientation, panel, main_size, provisional_weight_layout));
         }
 
         track = track.child(panels_row);
@@ -226,13 +225,10 @@ fn render_panel(
     panel: &ResizablePanelSpec,
     main_size: Pixels,
     provisional_weight_layout: bool,
-    look: &ResizablePanelsLook,
 ) -> impl IntoElement {
     let mut panel_node = div().overflow_hidden().child((panel.render.clone())());
     if let Some(background) = panel.background {
         panel_node = panel_node.bg(background);
-    } else {
-        panel_node = panel_node.bg(look.border);
     }
     if provisional_weight_layout && matches!(panel.size, PanelSize::Weight(_)) {
         let weight = panel_flex_weight(panel);
