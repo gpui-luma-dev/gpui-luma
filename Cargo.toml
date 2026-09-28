@@ -4,9 +4,7 @@ members = [
   "crates/sdk",
   "crates/gpui-luma",
   "crates/luma-color",
-  "crates/look-core",
   "crates/look-shadcn",
-  "crates/look-shadcn-inspect",
   "crates/look-radix",
   "apps/common",
   "apps/luma-studio",
@@ -14,9 +12,6 @@ members = [
   "apps/neumorphic-demo",
   "apps/color-viz",
   "apps/shells/common",
-  "apps/shells/unified",
-  "apps/shells/inset",
-  "apps/shells/icon-rail",
   "apps/shells/detached",
   "apps/shells/split-titlebar",
   "apps/shells/vscode",
@@ -25,7 +20,7 @@ members = [
 default-members = ["crates/gpui-luma", "apps/luma-studio", "apps/neumorphic-demo", "apps/color-viz"]
 
 [workspace.package]
-version = "0.1.0-alpha.1"
+version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
 publish = false
@@ -35,9 +30,7 @@ anyhow = "1"
 luma = { package = "gpui-luma-core", path = "crates/sdk" }
 gpui-luma = { path = "crates/gpui-luma" }
 luma-color = { package = "gpui-luma-color", path = "crates/luma-color" }
-luma-look-core = { package = "gpui-luma-look-core", path = "crates/look-core" }
 luma-look-shadcn = { package = "gpui-luma-look-shadcn", path = "crates/look-shadcn" }
-luma-look-shadcn-inspect = { package = "gpui-luma-look-shadcn-inspect", path = "crates/look-shadcn-inspect" }
 luma-look-radix = { package = "gpui-luma-look-radix", path = "crates/look-radix" }
 luma-app-common = { path = "apps/common" }
 gpui = { package = "gpui-unofficial", version = "1.21.0" }
@@ -79,15 +72,6 @@ opt-level = 1
 opt-level = 1
 
 [profile.dev.package.luma-radix-studio]
-opt-level = 1
-
-[profile.dev.package.luma-shell-unified]
-opt-level = 1
-
-[profile.dev.package.luma-shell-inset]
-opt-level = 1
-
-[profile.dev.package.luma-shell-icon-rail]
 opt-level = 1
 
 [profile.dev.package.luma-shell-detached]

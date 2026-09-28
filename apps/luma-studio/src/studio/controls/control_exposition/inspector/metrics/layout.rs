@@ -1,5 +1,5 @@
 use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn_inspect::{
+use luma_look_shadcn::inspect::{
     BadgeInspectMetrics, PagerInspectMetrics, ResizablePanelsInspectMetrics, ShadcnInspect, SplitViewInspectMetrics,
     ToolbarInspectMetrics,
 };
@@ -125,7 +125,7 @@ fn pager_shell_metrics_layout_section(
     rows.push(InspectPropertyRow::new(
         "requested font family",
         metrics.font_family.value.as_str(),
-        luma_look_shadcn_inspect::format_inspect_typography_source(&metrics.font_family.source),
+        luma_look_shadcn::inspect::format_inspect_typography_source(&metrics.font_family.source),
     ));
     rows.push(super::super::provenance::metric_row("shadow projection extent", &metrics.reserved_shadow_extent));
 
@@ -157,7 +157,7 @@ fn pager_button_metrics_layout_section(
     rows.push(InspectPropertyRow::new(
         "requested font family",
         metrics.font_family.value.as_str(),
-        luma_look_shadcn_inspect::format_inspect_typography_source(&metrics.font_family.source),
+        luma_look_shadcn::inspect::format_inspect_typography_source(&metrics.font_family.source),
     ));
     rows.push(super::super::provenance::metric_row("shadow projection extent", &metrics.reserved_shadow_extent));
     rows.push(InspectPropertyRow::new(

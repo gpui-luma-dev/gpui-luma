@@ -3,7 +3,7 @@
 use gpui::{AnyElement, Div, FontWeight, Hsla, IntoElement, SharedString, div, hsla, px, prelude::*};
 use luma::theme::LumaTextStyle;
 use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn_inspect::{
+use luma_look_shadcn::inspect::{
     ButtonInspectMetrics, CheckboxInspectMetrics, RadioButtonInspectMetrics, SwitchInspectMetrics,
 };
 
@@ -203,7 +203,7 @@ impl InspectBoxModelSnapshot {
         }
     }
 
-    pub fn from_textfield_metrics(metrics: &luma_look_shadcn_inspect::TextFieldInspectMetrics) -> Self {
+    pub fn from_textfield_metrics(metrics: &luma_look_shadcn::inspect::TextFieldInspectMetrics) -> Self {
         Self {
             height: metrics.min_height.value_px,
             padding_x: metrics.padding_x.value_px,
@@ -216,7 +216,7 @@ impl InspectBoxModelSnapshot {
         }
     }
 
-    pub fn from_badge_metrics(metrics: &luma_look_shadcn_inspect::BadgeInspectMetrics) -> Self {
+    pub fn from_badge_metrics(metrics: &luma_look_shadcn::inspect::BadgeInspectMetrics) -> Self {
         Self {
             height: metrics.min_height.value_px,
             padding_x: metrics.padding_x.value_px,

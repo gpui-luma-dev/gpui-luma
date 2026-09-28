@@ -2416,15 +2416,14 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma"
-version = "0.1.0-alpha.1"
+version = "0.1.0"
 dependencies = [
  "gpui-luma-core",
- "gpui-luma-look-core",
 ]
 
 [[package]]
 name = "gpui-luma-color"
-version = "0.1.0-alpha.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "gpui-luma-core",
@@ -2437,7 +2436,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-core"
-version = "0.1.0-alpha.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "darling",
@@ -2451,19 +2450,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "gpui-luma-look-core"
-version = "0.1.0-alpha.1"
-dependencies = [
- "gpui-luma-core",
- "gpui-unofficial",
-]
-
-[[package]]
 name = "gpui-luma-look-radix"
-version = "0.1.0-alpha.1"
+version = "0.1.0"
 dependencies = [
  "gpui-luma-core",
- "gpui-luma-look-core",
  "gpui-unofficial",
  "image",
  "smallvec",
@@ -2472,28 +2462,16 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-look-shadcn"
-version = "0.1.0-alpha.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "gpui-luma-color",
  "gpui-luma-core",
- "gpui-luma-look-core",
  "gpui-unofficial",
  "lucide-static-svg",
  "palette",
  "serde",
  "toml 0.8.23",
-]
-
-[[package]]
-name = "gpui-luma-look-shadcn-inspect"
-version = "0.1.0-alpha.1"
-dependencies = [
- "anyhow",
- "gpui-luma-color",
- "gpui-luma-core",
- "gpui-luma-look-shadcn",
- "gpui-unofficial",
 ]
 
 [[package]]
@@ -3692,34 +3670,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "luma-shell-icon-rail"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "gpui-luma-core",
- "gpui-luma-look-shadcn",
- "gpui-platform-gpui-unofficial",
- "gpui-unofficial",
- "gtk",
- "lucide-static-svg",
- "luma-shell-common",
-]
-
-[[package]]
-name = "luma-shell-inset"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "gpui-luma-core",
- "gpui-luma-look-shadcn",
- "gpui-platform-gpui-unofficial",
- "gpui-unofficial",
- "gtk",
- "lucide-static-svg",
- "luma-shell-common",
-]
-
-[[package]]
 name = "luma-shell-split-titlebar"
 version = "0.1.0"
 dependencies = [
@@ -3733,20 +3683,6 @@ dependencies = [
  "luma-shell-common",
  "objc2-app-kit 0.3.2",
  "raw-window-handle",
-]
-
-[[package]]
-name = "luma-shell-unified"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "gpui-luma-core",
- "gpui-luma-look-shadcn",
- "gpui-platform-gpui-unofficial",
- "gpui-unofficial",
- "gtk",
- "lucide-static-svg",
- "luma-shell-common",
 ]
 
 [[package]]
@@ -3771,7 +3707,6 @@ dependencies = [
  "gpui-luma-color",
  "gpui-luma-core",
  "gpui-luma-look-shadcn",
- "gpui-luma-look-shadcn-inspect",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",

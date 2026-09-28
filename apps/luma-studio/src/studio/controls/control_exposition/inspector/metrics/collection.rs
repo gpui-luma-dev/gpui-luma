@@ -1,6 +1,6 @@
 use luma::theme::ControlSize;
 use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn_inspect::{
+use luma_look_shadcn::inspect::{
     AccordionInspectMetrics, ShadcnInspect, SidebarInspectMetrics, TableInspectMetrics, TabsInspectMetrics,
     TreeViewInspectMetrics,
 };

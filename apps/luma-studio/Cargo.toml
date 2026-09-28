@@ -15,8 +15,7 @@ gpui = { workspace = true }
 luma.workspace = true
 luma-color.workspace = true
 luma-app-common.workspace = true
-luma-look-shadcn.workspace = true
-luma-look-shadcn-inspect.workspace = true
+luma-look-shadcn = { workspace = true, features = ["inspect"] }
 lucide-svg-static.workspace = true
 gpui_platform = { workspace = true }
 font-kit.workspace = true

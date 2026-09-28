@@ -12,7 +12,6 @@ name = "luma_look_radix"
 gpui.workspace = true
 image.workspace = true
 luma.workspace = true
-luma-look-core.workspace = true
 smallvec.workspace = true
 tiny-skia.workspace = true
 

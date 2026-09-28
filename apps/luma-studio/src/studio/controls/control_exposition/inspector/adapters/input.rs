@@ -5,7 +5,7 @@ mod textfield_menu {
 
     use luma::controls::textfield::TextFieldState;
     use luma_look_shadcn::{ShadcnLook, ShadcnTextFieldStyle};
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::input::{floating_menu_color_rows, textfield_color_rows_prefixed};
     use super::super::super::metrics::textfield_menu_layout_section;
@@ -59,7 +59,7 @@ mod textfield {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::{
         textfield_elevation_applies, textfield_enabled, textfield_state, textfield_variant_style,
@@ -140,7 +140,7 @@ mod textarea {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::{
         textfield_elevation_applies, textfield_enabled, textfield_variant_style, textarea_state,
@@ -221,7 +221,7 @@ mod autocomplete {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::input::{autocomplete_chrome_color_rows, floating_menu_color_rows};
     use super::super::super::metrics::autocomplete_layout_section;
@@ -337,7 +337,7 @@ mod selector {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
     use lucide_svg_static::Icon as LucideIcon;
     use luma::theme::InteractionState;
 

@@ -8,7 +8,7 @@ use std::sync::{
 
 use gpui::{Background, Global, Hsla, linear_color_stop, linear_gradient};
 use luma::theme::{MetricTokens, ThemeMode};
-use luma_look_core::ResolvedColor;
+use luma::theme::provenance::ResolvedColor;
 
 use crate::button::ClassicButtonParams;
 use crate::palette::{PaletteSlot, Accent, Gray, ThemePalettes, scale_pair};

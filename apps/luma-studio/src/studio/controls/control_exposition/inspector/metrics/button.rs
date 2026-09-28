@@ -1,7 +1,7 @@
 use luma::controls::button_family::ButtonFamilyRole;
 use luma::theme::{ControlSize, InteractionState};
 use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
-use luma_look_shadcn_inspect::{ButtonInspectMetrics, ShadcnInspect};
+use luma_look_shadcn::inspect::{ButtonInspectMetrics, ShadcnInspect};
 
 use super::super::box_model::InspectBoxModelSnapshot;
 use super::super::occupation::{button_family_occupation, occupation_metric_properties};

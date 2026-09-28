@@ -1,4 +1,4 @@
-use luma_look_shadcn_inspect::{
+use luma_look_shadcn::inspect::{
     ButtonInspectElevation, ResolvedColor, ResolvedMetric, format_inspect_box_shadow_layer, format_inspect_css_key,
     format_inspect_metric_provenance, format_inspect_metric_source, format_inspect_provenance, format_metric_px,
 };
@@ -71,7 +71,7 @@ pub fn elevation_snapshot(
 }
 
 /// Display typography metadata without reconstructing its source in Studio.
-pub fn typography_rows(typography: &luma_look_shadcn_inspect::ButtonInspectTypography) -> Vec<InspectPropertyRow> {
+pub fn typography_rows(typography: &luma_look_shadcn::inspect::ButtonInspectTypography) -> Vec<InspectPropertyRow> {
     [
         ("font family", &typography.font_family),
         ("font size", &typography.font_size),
@@ -82,8 +82,8 @@ pub fn typography_rows(typography: &luma_look_shadcn_inspect::ButtonInspectTypog
     .map(|(label, field)| InspectPropertyRow {
         label: label.into(),
         value: field.value.clone(),
-        source: luma_look_shadcn_inspect::format_inspect_typography_source(&field.source),
-        detail: luma_look_shadcn_inspect::format_inspect_typography_provenance(&field.source),
+        source: luma_look_shadcn::inspect::format_inspect_typography_source(&field.source),
+        detail: luma_look_shadcn::inspect::format_inspect_typography_provenance(&field.source),
     })
     .collect()
 }

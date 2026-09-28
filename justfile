@@ -31,21 +31,6 @@ color-viz:
 color-viz-rel:
     MTL_HUD_ENABLED=1 cargo run -p luma-color-viz --release -- retro-arcade
 
-# graph-viz app is not in the workspace currently
-# graph-viz:
-#     cargo run -p luma-graph-viz -- awesome-open-claw
-
-# SplitView shell demos (apps/shells/)
-
-shell:
-    cargo run -p luma-shell-unified -- default
-
-shell-inset:
-    cargo run -p luma-shell-inset -- default
-
-shell-rail:
-    cargo run -p luma-shell-icon-rail -- default
-
 shell-detached:
     cargo run -p luma-shell-detached -- default
 

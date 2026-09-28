@@ -1,10 +1,10 @@
 use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn_inspect::{inspect_color_chrome_sections, ColorChromeInspectSection};
+use luma_look_shadcn::inspect::{inspect_color_chrome_sections, ColorChromeInspectSection};
 
 use super::provenance::color_row;
 use super::schema::{InspectColorRow, InspectPropertyRow};
 
-pub use luma_look_shadcn_inspect::{
+pub use luma_look_shadcn::inspect::{
     ColorChromeProfile, COLOR_ARC_CHROME_PROFILES, COLOR_FIELD_CHROME_PROFILES, COLOR_RING_CHROME_PROFILES,
     COLOR_SLIDER_CHROME_PROFILES,
 };
@@ -19,7 +19,7 @@ pub struct ColorChromeSection {
 
 pub fn resolve_color_chrome_sections(
     look: &ShadcnLook,
-    profiles: &[luma_look_shadcn_inspect::ColorChromeProfile],
+    profiles: &[luma_look_shadcn::inspect::ColorChromeProfile],
 ) -> Vec<ColorChromeSection> {
     inspect_color_chrome_sections(look, profiles).into_iter().map(convert_section).collect()
 }

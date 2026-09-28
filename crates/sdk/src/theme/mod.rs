@@ -1,3 +1,4 @@
+pub mod provenance;
 pub mod cache;
 pub mod interaction;
 pub mod scales;

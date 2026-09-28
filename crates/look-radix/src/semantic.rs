@@ -52,7 +52,7 @@ impl SemanticRole {
         }
     }
 
-    pub fn resolve(self, scales: ModeScales, mode: ThemeMode) -> luma_look_core::ResolvedColor {
+    pub fn resolve(self, scales: ModeScales, mode: ThemeMode) -> luma::theme::provenance::ResolvedColor {
         let map = self.mapping(mode);
         scales.resolved(map.family, map.step)
     }

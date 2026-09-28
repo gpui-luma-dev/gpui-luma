@@ -1,4 +1,4 @@
-use luma_look_shadcn_inspect::{
+use luma_look_shadcn::inspect::{
     AccordionContentInspectPalette, AccordionTriggerInspectPalette, ListBoxListInspectPalette,
     ListBoxRowInspectPalette, TableInspectPalette, TableRowInspectPalette, SidebarContainerInspectPalette,
     SidebarItemInspectPalette, SidebarSectionInspectPalette, PagerShellInspectPalette, ResizablePanelsInspectPalette,
