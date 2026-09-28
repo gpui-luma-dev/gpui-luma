@@ -2,6 +2,8 @@ mod collapse;
 mod input;
 mod render;
 mod sizes;
+#[cfg(all(test, feature = "test-support"))]
+mod tests;
 
 use gpui::{Context, EventEmitter, FocusHandle, Hsla, IntoElement, Pixels, Render, SharedString, Subscription, Window};
 
@@ -33,6 +35,8 @@ impl Render for ResizablePanelsHandleDrag {
 #[non_exhaustive]
 pub enum ResizablePanelsEvent {
     ResizeStart,
+    /// Current visible panel sizes, including animation frames and parent layout changes.
+    /// Use this to keep external layout elements aligned with the panels.
     SizesChanged {
         sizes_px: Vec<f32>,
     },
@@ -160,6 +164,18 @@ impl ResizablePanels {
             return;
         }
         self.measured_size = Some(size);
+        let previous_sizes = self.panel_sizes_px.clone();
+        self.refresh_panel_sizes_px();
+        if previous_sizes != self.panel_sizes_px {
+            // Measurement runs during prepaint. Notify dependent chrome after layout,
+            // just as animation frames defer their size events after render.
+            let entity = cx.entity();
+            cx.defer(move |cx| {
+                entity.update(cx, |this, cx| {
+                    cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: this.panel_sizes_px.clone() });
+                });
+            });
+        }
         cx.notify();
     }
 
@@ -441,11 +457,25 @@ impl ResizablePanels {
         cx.notify();
     }
 
-    /// Restores a panel previously hidden with [`Self::hide_panel`].
+    /// Restores a panel hidden with [`Self::hide_panel`] or collapsed by double-click.
     pub fn show_panel(&mut self, panel_index: usize, cx: &mut Context<Self>) {
-        let Some(restore) = self.panel_hide_restore.get(panel_index).and_then(Option::as_ref).cloned() else {
+        let restore = self.panel_hide_restore.get(panel_index).and_then(Option::as_ref).cloned().or_else(|| {
+            self.collapse_restore.iter().flatten().find(|restore| restore.target_index == panel_index).cloned()
+        });
+        let Some(restore) = restore else {
             return;
         };
+        if !self.is_panel_hidden(panel_index) {
+            let animated = self.model.animated
+                && self.model.panels.len() == 2
+                && (self.transitions[panel_index].is_animating() || self.transitions[panel_index].progress() < 1.0);
+            if self.apply_restore_state(restore, !animated, cx) && animated {
+                self.transitions[panel_index].set_target(1.0);
+                self.refresh_panel_sizes_px();
+                cx.emit(ResizablePanelsEvent::ResizeStart);
+            }
+            return;
+        }
         // When animated, suppress settle events here — render defers them when the transition ends.
         if self.apply_restore_state(restore, !self.model.animated, cx) {
             if let Some(panel_restore) = self.panel_hide_restore.get_mut(panel_index) {
@@ -462,7 +492,9 @@ impl ResizablePanels {
     }
 
     pub fn toggle_panel_hidden(&mut self, panel_index: usize, mode: PanelHideMode, cx: &mut Context<Self>) {
-        if self.is_panel_hidden(panel_index) {
+        if self.is_panel_hidden(panel_index)
+            || self.collapse_restore.iter().flatten().any(|restore| restore.target_index == panel_index)
+        {
             self.show_panel(panel_index, cx);
         } else {
             self.hide_panel(panel_index, mode, cx);

@@ -66,14 +66,17 @@ impl Render for ResizablePanels {
         self.refresh_panel_sizes_px();
 
         // Never emit from render — subscribers (e.g. studio layout refresh) must not re-enter
-        // layout while the element tree is being built. Defer settle events to the effect cycle.
-        if was_animating && !now_animating {
+        // layout while the element tree is being built. Publish each animation frame
+        // in the effect cycle so dependent chrome can follow the visible pane sizes.
+        if was_animating {
             let sizes_px = self.panel_sizes_px.clone();
             let entity = cx.entity();
             cx.defer(move |cx| {
                 entity.update(cx, |_, cx| {
                     cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
-                    cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+                    if !now_animating {
+                        cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+                    }
                 });
             });
         }
