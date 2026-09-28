@@ -40,6 +40,9 @@ impl ResizablePanels {
         }
 
         self.clear_pair_restore_state(index, cx);
+        // Direct dragging takes over from any complete-collapse transition.
+        self.transitions[index].snap_to(1.0);
+        self.transitions[index + 1].snap_to(1.0);
         let content_main_px = self.drag_content_axis_size_px();
         apply_pair_delta_px(&self.model.panels, &mut self.layout_states, index, delta_px, content_main_px)
     }
@@ -71,28 +74,20 @@ impl ResizablePanels {
             let p1 = self.transitions[1].progress();
 
             if p0 < 1.0 || self.transitions[0].is_animating() {
-                let full_w0 = if self.is_panel_hidden(0) {
-                    self.panel_hide_restore
-                        .first()
-                        .and_then(|opt| opt.as_ref())
-                        .map(|r| r.left_px)
-                        .unwrap_or(raw_sizes[0])
-                } else {
-                    raw_sizes[0]
-                };
+                let full_w0 = self.panel_hide_restore[0]
+                    .as_ref()
+                    .or_else(|| self.collapse_restore.iter().flatten().find(|restore| restore.target_index == 0))
+                    .map(|restore| restore.left_px)
+                    .unwrap_or(raw_sizes[0]);
                 let w0 = full_w0 * p0;
                 animated_sizes[0] = w0;
                 animated_sizes[1] = (total_axis - w0).max(0.0);
             } else if p1 < 1.0 || self.transitions[1].is_animating() {
-                let full_w1 = if self.is_panel_hidden(1) {
-                    self.panel_hide_restore
-                        .get(1)
-                        .and_then(|opt| opt.as_ref())
-                        .map(|r| r.right_px)
-                        .unwrap_or(raw_sizes[1])
-                } else {
-                    raw_sizes[1]
-                };
+                let full_w1 = self.panel_hide_restore[1]
+                    .as_ref()
+                    .or_else(|| self.collapse_restore.iter().flatten().find(|restore| restore.target_index == 1))
+                    .map(|restore| restore.right_px)
+                    .unwrap_or(raw_sizes[1]);
                 let w1 = full_w1 * p1;
                 animated_sizes[1] = w1;
                 animated_sizes[0] = (total_axis - w1).max(0.0);

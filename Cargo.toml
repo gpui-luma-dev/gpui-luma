@@ -20,6 +20,7 @@ members = [
   "apps/shells/detached",
   "apps/shells/split-titlebar",
   "apps/shells/vscode",
+  "apps/shells/shell-2026",
 ]
 default-members = ["crates/gpui-luma", "apps/luma-studio", "apps/neumorphic-demo", "apps/color-viz"]
 
@@ -93,6 +94,9 @@ opt-level = 1
 opt-level = 1
 
 [profile.dev.package.luma-shell-split-titlebar]
+opt-level = 1
+
+[profile.dev.package.luma-shell-2026]
 opt-level = 1
 
 [profile.dev.package.luma-shell-vscode]

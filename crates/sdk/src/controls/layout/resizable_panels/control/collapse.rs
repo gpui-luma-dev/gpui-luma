@@ -1,6 +1,6 @@
 use gpui::Context;
 
-use super::super::math::apply_pair_collapse_px;
+use super::super::math::{apply_pair_collapse_px, solve_layout_px_with_min_overrides};
 use super::super::model::{PanelLayoutState, ResizeCollapseDirection, ResizeCollapseMode, ResizablePanelsOrientation};
 use super::{ResizablePanels, ResizablePanelsEvent};
 
@@ -107,13 +107,21 @@ impl ResizablePanels {
     }
 
     pub(super) fn current_restore_state(&self, handle_index: usize, target_index: usize) -> CollapseRestoreState {
+        // Save the full layout, not an in-flight animated width, so reversing a
+        // transition does not multiply its current progress into the width twice.
+        let sizes = solve_layout_px_with_min_overrides(
+            &self.model.panels,
+            &self.layout_states,
+            &self.collapsed_min_overrides,
+            self.content_axis_size_px(),
+        );
         CollapseRestoreState {
             handle_index,
             target_index,
             left_state: self.layout_states[handle_index],
             right_state: self.layout_states[handle_index + 1],
-            left_px: self.panel_sizes_px.get(handle_index).copied().unwrap_or(0.0),
-            right_px: self.panel_sizes_px.get(handle_index + 1).copied().unwrap_or(0.0),
+            left_px: sizes.get(handle_index).copied().unwrap_or(0.0),
+            right_px: sizes.get(handle_index + 1).copied().unwrap_or(0.0),
             left_min_override: self.collapsed_min_overrides.get(handle_index).copied().unwrap_or(false),
             right_min_override: self.collapsed_min_overrides.get(handle_index + 1).copied().unwrap_or(false),
             content_axis_px: self.content_axis_size_px(),
@@ -183,6 +191,12 @@ impl ResizablePanels {
             .filter(|restore| restore.handle_index == index && restore.target_index == target_index)
             .cloned()
         {
+            if self.model.animated
+                && (self.transitions[target_index].is_animating() || self.transitions[target_index].progress() < 1.0)
+            {
+                self.show_panel(target_index, cx);
+                return true;
+            }
             return self.apply_restore_state(restore, true, cx);
         }
 
@@ -207,11 +221,18 @@ impl ResizablePanels {
         if let Some(collapse_restore) = self.collapse_restore.get_mut(index) {
             *collapse_restore = Some(restore);
         }
+        let animated =
+            self.model.animated && behavior.mode == ResizeCollapseMode::Completely && self.model.panels.len() == 2;
+        if animated {
+            self.transitions[target_index].set_target(0.0);
+        }
         self.refresh_panel_sizes_px();
         let sizes_px = self.panel_sizes_px.clone();
         cx.emit(ResizablePanelsEvent::ResizeStart);
-        cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
-        cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+        if !animated {
+            cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
+            cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+        }
         cx.notify();
         true
     }

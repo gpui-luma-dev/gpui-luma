@@ -48,6 +48,7 @@ type CloseWindowHandler = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;
 #[derive(IntoElement)]
 pub struct TitleBar {
     style: StyleRefinement,
+    height: Pixels,
     children: Vec<AnyElement>,
     on_close_window: Option<CloseWindowHandler>,
     background_color: Option<Hsla>,
@@ -60,6 +61,7 @@ impl TitleBar {
     pub fn new() -> Self {
         Self {
             style: StyleRefinement::default(),
+            height: TITLE_BAR_HEIGHT,
             children: Vec::new(),
             on_close_window: None,
             background_color: None,
@@ -75,6 +77,13 @@ impl TitleBar {
             appears_transparent: true,
             traffic_light_position: Some(point(px(9.0), px(9.0))),
         }
+    }
+
+    /// Set the title bar height. Defaults to [`TITLE_BAR_HEIGHT`].
+    /// Adjust native traffic-light positioning in the window options when needed.
+    pub fn height(mut self, height: Pixels) -> Self {
+        self.height = height;
+        self
     }
 
     /// Set custom close-window behavior.
@@ -309,7 +318,7 @@ impl RenderOnce for TitleBar {
                 .flex_row()
                 .items_center()
                 .justify_between()
-                .h(TITLE_BAR_HEIGHT)
+                .h(self.height)
                 .pl(TITLE_BAR_LEFT_PADDING)
                 .border_b_1()
                 .border_color(border_color)

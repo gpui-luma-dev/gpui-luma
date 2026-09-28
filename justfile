@@ -55,6 +55,9 @@ shell-titlebar:
 shell-vscode:
     cargo run -p luma-shell-vscode -- default
 
+shell-2026:
+    cargo run -p luma-shell-2026 -- default
+
 loc:
     tokei --types Rust
 

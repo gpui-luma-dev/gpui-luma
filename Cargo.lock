@@ -3649,6 +3649,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "luma-shell-2026"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui-luma-core",
+ "gpui-luma-look-shadcn",
+ "gpui-platform-gpui-unofficial",
+ "gpui-unofficial",
+ "gtk",
+ "lucide-static-svg",
+ "luma-shell-common",
+]
+
+[[package]]
 name = "luma-shell-common"
 version = "0.1.0"
 dependencies = [
