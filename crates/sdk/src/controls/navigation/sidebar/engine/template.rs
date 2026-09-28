@@ -17,7 +17,6 @@ use crate::infra::ElementExt;
 use super::{SidebarTheme, default_sidebar_theme};
 
 const CONTAINER_GAP: f32 = 8.0;
-const CONTAINER_PADDING: f32 = 8.0;
 const REGION_GAP: f32 = 4.0;
 const HEADER_REGION_PADDING_BOTTOM: f32 = 8.0;
 const FOOTER_REGION_PADDING_TOP: f32 = 8.0;
@@ -174,7 +173,6 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let container = self.theme.resolve_container();
         let SidebarPanelTemplateHandlers {
             mut row_bounds,
             mut row_hovers,
@@ -200,10 +198,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
             .flex()
             .flex_col()
             .gap(px(CONTAINER_GAP))
-            .p(px(CONTAINER_PADDING))
-            .rounded(px(container.radius))
-            .bg(container.background)
-            .text_color(container.foreground);
+            .text_color(self.theme.foreground());
 
         if model.collapsed {
             root = root.child(

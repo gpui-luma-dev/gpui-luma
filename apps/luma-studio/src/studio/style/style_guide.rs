@@ -6,7 +6,7 @@ use gpui::{
     AnyElement, App, Context, Entity, FontWeight, IntoElement, KeyDownEvent, MouseButton, Pixels, Render, ScrollHandle,
     ScrollWheelEvent, Window, div, point, prelude::*, px,
 };
-use luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
+use luma::controls::sidebar::SidebarControl;
 use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
 use luma::infra::ElementExt;
 use luma::{declare_form};
@@ -200,18 +200,13 @@ impl StyleGuidePanel {
         let look = self.look.clone();
         let sidebar = shadcn::Sidebar::new("luma-studio-style-guide-sidebar-preview")
             .look(look.as_ref())
-            .default_open(true)
-            .collapsible(SidebarCollapsible::Icon)
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
-            .sidebar(
-                property_sidebar(
-                    &look,
-                    "luma-studio-style-guide-sidebar-preview-panel",
-                    "Properties",
-                    "Task workspace",
-                )
-                .rail(shadcn::Sidebar::rail()),
-            )
+            .sidebar(property_sidebar(
+                &look,
+                "luma-studio-style-guide-sidebar-preview-panel",
+                "Properties",
+                "Task workspace",
+            ))
             .spawn(cx);
 
         self.sidebar_preview = Some(sidebar.clone());
@@ -230,8 +225,7 @@ impl StyleGuidePanel {
                         "luma-studio-style-guide-sidebar-preview-panel",
                         "Properties",
                         "Task workspace",
-                    )
-                    .rail(shadcn::Sidebar::rail()),
+                    ),
                     cx,
                 );
                 sidebar.set_selected_id(INITIAL_PROPERTY_SELECTION_ID, cx);
@@ -993,6 +987,7 @@ impl StyleGuidePanel {
             StyleGuideSection::Sidebar => sections::sidebar::render_sidebar_template_section(
                 self.sidebar_preview.clone().expect("sidebar preview"),
                 self.look.as_ref(),
+                cx,
             ),
             StyleGuideSection::Feedback => {
                 sections::feedback::render_feedback_template_section(self.look.clone(), window, cx)

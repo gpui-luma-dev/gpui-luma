@@ -21,6 +21,4 @@ pub use template::{
     default_sidebar_panel_template,
 };
 pub(crate) use template::modified_sidebar_panel_template;
-pub use theme::{
-    DefaultSidebarTheme, SidebarContainerLook, SidebarItemLook, SidebarSectionLook, SidebarTheme, default_sidebar_theme,
-};
+pub use theme::{DefaultSidebarTheme, SidebarItemLook, SidebarSectionLook, SidebarTheme, default_sidebar_theme};

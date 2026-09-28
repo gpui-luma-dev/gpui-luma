@@ -11,6 +11,7 @@ fn assert_aligned(cx: &mut VisualTestContext) {
         (separator.origin.x - workspace.origin.x).abs() <= px(1.0),
         "separator {separator:?}, workspace {workspace:?}"
     );
+    assert_eq!(cx.debug_bounds("shell-2026-sidebar-fill").unwrap().right(), workspace.left());
     assert!(separator.bottom() < workspace.top(), "the two separators must remain disconnected");
     assert_eq!(cx.debug_bounds("shell-2026-rail-bounds").unwrap().size.width, RAIL_WIDTH);
     assert_eq!(cx.debug_bounds("shell-2026-rail-bounds").unwrap().top(), SHELL_TITLEBAR_HEIGHT);

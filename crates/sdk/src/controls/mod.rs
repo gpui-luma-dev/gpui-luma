@@ -26,7 +26,7 @@ pub use selection::{autocomplete, combobox, search_selector, selection_panel, se
 
 pub use navigation::{accordion, pager, sidebar, stepper, tabs};
 
-pub use layout::{dock_splitter, popup_scroll_surface, resizable_panels, scroll_container, scrollbar, split_view};
+pub use layout::{frame, dock_splitter, popup_scroll_surface, resizable_panels, scroll_container, scrollbar, split_view};
 pub use layout::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 
 pub use range::{progress, slider};

@@ -178,8 +178,6 @@ pub fn resolve_sidebar_metrics(rule: &SidebarMetricsRule, metrics: &MetricTokens
         width_expanded: resolve(&rule.width_expanded, defaults.width_expanded),
         width_icon_rail: resolve(&rule.width_icon_rail, defaults.width_icon_rail),
         width_mobile: resolve(&rule.width_mobile, defaults.width_mobile),
-        padding_expanded: resolve(&rule.padding_expanded, defaults.padding_expanded),
-        padding_icon_rail: resolve(&rule.padding_icon_rail, defaults.padding_icon_rail),
         item_height: resolve(&rule.item_height, defaults.item_height),
         icon_size: resolve(&rule.icon_size, defaults.icon_size),
         rail_hit_width: resolve(&rule.rail_hit_width, defaults.rail_hit_width),
@@ -279,7 +277,6 @@ mod tests {
         assert_eq!(scale.width_expanded, px(256.0));
         assert_eq!(scale.width_icon_rail, px(48.0));
         assert_eq!(scale.width_mobile, px(288.0));
-        assert_eq!(scale.padding_expanded, px(12.0));
         assert_eq!(scale.item_height, px(32.0));
         assert_eq!(scale.icon_size, px(16.0));
     }

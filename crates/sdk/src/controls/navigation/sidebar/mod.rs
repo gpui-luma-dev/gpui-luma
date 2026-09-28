@@ -2,26 +2,21 @@ mod control;
 /// Internal flush-list presentation engine (former `navigation_sidebar`).
 mod engine;
 mod model;
-mod template;
 mod theme;
 
 pub use control::{SidebarControl, SidebarEvent};
 pub use model::{
     SidebarBuilder, SidebarContentBuilder, SidebarControlBuilder, SidebarControlModel, SidebarFooterBuilder,
-    SidebarGroupBuilder, SidebarHeaderBuilder, SidebarInsetBuilder, SidebarInsetModel, SidebarMenuBuilder,
-    SidebarMenuItemBuilder, SidebarMenuItemModel, SidebarMenuModel, SidebarMenuSubBuilder, SidebarPaneRender,
-    SidebarPanelModel, SidebarRailBuilder, pane_render,
+    SidebarGroupBuilder, SidebarHeaderBuilder, SidebarMenuBuilder, SidebarMenuItemBuilder, SidebarMenuItemModel,
+    SidebarMenuModel, SidebarMenuSubBuilder, SidebarPanelModel,
 };
-pub use template::{
-    DefaultSidebarTemplate, SidebarRenderModel, SidebarTemplate, default_sidebar_template, render_inset_column,
-};
-pub use theme::{SidebarCollapsible, SidebarMetricScale, SidebarVariant};
+pub use theme::{SidebarMetricScale, SidebarPresentation};
 
 // Look-bound flush theme / template surface (presentation engine).
 pub use engine::{
-    DefaultSidebarTheme, SidebarContainerLook, SidebarItemLook, SidebarSectionLook, SidebarPanelTemplate,
-    SidebarPanelTemplateHandlers, SidebarPanelTemplateModifier, SidebarTheme, ThemedSidebarPanelTemplate,
-    default_sidebar_panel_template, default_sidebar_theme,
+    DefaultSidebarTheme, SidebarItemLook, SidebarSectionLook, SidebarPanelTemplate, SidebarPanelTemplateHandlers,
+    SidebarPanelTemplateModifier, SidebarTheme, ThemedSidebarPanelTemplate, default_sidebar_panel_template,
+    default_sidebar_theme,
 };
 
 use gpui::SharedString;
@@ -60,12 +55,4 @@ pub fn sidebar_menu_sub() -> SidebarMenuSubBuilder {
 
 pub fn sidebar_footer() -> SidebarFooterBuilder {
     SidebarFooterBuilder::new()
-}
-
-pub fn sidebar_rail() -> SidebarRailBuilder {
-    SidebarRailBuilder::new()
-}
-
-pub fn sidebar_inset() -> SidebarInsetBuilder {
-    SidebarInsetBuilder::new()
 }

@@ -28,10 +28,6 @@ pub struct SidebarMetricsRule {
     pub width_icon_rail: String,
     #[serde(default = "sidebar_metric_width_mobile")]
     pub width_mobile: String,
-    #[serde(default = "sidebar_metric_padding_expanded")]
-    pub padding_expanded: String,
-    #[serde(default = "sidebar_metric_padding_icon_rail")]
-    pub padding_icon_rail: String,
     #[serde(default = "sidebar_metric_item_height")]
     pub item_height: String,
     #[serde(default = "sidebar_metric_icon_size")]
@@ -48,8 +44,6 @@ impl Default for SidebarMetricsRule {
             width_expanded: sidebar_metric_width_expanded(),
             width_icon_rail: sidebar_metric_width_icon_rail(),
             width_mobile: sidebar_metric_width_mobile(),
-            padding_expanded: sidebar_metric_padding_expanded(),
-            padding_icon_rail: sidebar_metric_padding_icon_rail(),
             item_height: sidebar_metric_item_height(),
             icon_size: sidebar_metric_icon_size(),
             rail_hit_width: sidebar_metric_rail_hit_width(),
@@ -66,12 +60,6 @@ fn sidebar_metric_width_icon_rail() -> String {
 }
 fn sidebar_metric_width_mobile() -> String {
     "18rem".into()
-}
-fn sidebar_metric_padding_expanded() -> String {
-    "0.75rem".into()
-}
-fn sidebar_metric_padding_icon_rail() -> String {
-    "0.375rem".into()
 }
 fn sidebar_metric_item_height() -> String {
     "2rem".into()

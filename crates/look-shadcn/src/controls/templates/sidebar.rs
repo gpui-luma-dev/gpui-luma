@@ -1,10 +1,6 @@
 use std::sync::Arc;
 
-use gpui::prelude::*;
-use luma::controls::sidebar::{
-    DefaultSidebarTemplate, SidebarPanelTemplate, SidebarRenderModel, SidebarTemplate, SidebarTheme,
-    ThemedSidebarPanelTemplate,
-};
+use luma::controls::sidebar::{SidebarPanelTemplate, SidebarTheme, ThemedSidebarPanelTemplate};
 use luma::theme::{ControlSize, InteractionState};
 
 use super::floating_menu::floating_menu_theme;
@@ -16,9 +12,8 @@ struct ShadcnSidebarTheme {
 }
 
 impl SidebarTheme for ShadcnSidebarTheme {
-    fn resolve_container(&self) -> luma::controls::sidebar::SidebarContainerLook {
-        let tokens = self.theme.mode_tokens();
-        sidebar_container_look(tokens.as_ref())
+    fn foreground(&self) -> gpui::Hsla {
+        sidebar_container_look(self.theme.mode_tokens().as_ref()).foreground
     }
 
     fn resolve_section(&self) -> luma::controls::sidebar::SidebarSectionLook {
@@ -49,68 +44,6 @@ pub fn sidebar_panel_template(theme: ShadcnLook) -> Arc<dyn SidebarPanelTemplate
         Arc::new(ShadcnSidebarTheme { theme: theme.clone() }),
         menu_theme,
     ))
-}
-
-pub fn sidebar_template(theme: ShadcnLook) -> Arc<dyn SidebarTemplate> {
-    Arc::new(ThemedSidebarTemplate { theme: theme.clone() })
-}
-
-struct ThemedSidebarTemplate {
-    theme: ShadcnLook,
-}
-
-impl SidebarTemplate for ThemedSidebarTemplate {
-    fn render(
-        &self,
-        model: SidebarRenderModel<'_>,
-        panel: gpui::AnyElement,
-        inset: Option<gpui::AnyElement>,
-    ) -> gpui::Stateful<gpui::Div> {
-        if inset.is_none() {
-            return DefaultSidebarTemplate.render(model, panel, None);
-        }
-
-        let show_panel = match model.collapsible {
-            luma::controls::sidebar::SidebarCollapsible::Offcanvas => model.open,
-            luma::controls::sidebar::SidebarCollapsible::None
-            | luma::controls::sidebar::SidebarCollapsible::Icon
-            | luma::controls::sidebar::SidebarCollapsible::Responsive => true,
-        };
-        let mut root = gpui::div()
-            .id(gpui::SharedString::from(format!("{}-shell", model.id)))
-            .flex()
-            .flex_row()
-            .size_full()
-            .min_w(gpui::px(0.0))
-            .min_h(gpui::px(0.0));
-        if show_panel {
-            root = root.child(
-                gpui::div()
-                    .id(gpui::SharedString::from(format!("{}-panel", model.id)))
-                    .flex_none()
-                    .h_full()
-                    .child(panel),
-            );
-        }
-        if let Some(inset) = inset {
-            let radius = self.theme.mode_tokens().metrics.radius.lg;
-            root = root.child(
-                gpui::div()
-                    .id(gpui::SharedString::from(format!("{}-inset", model.id)))
-                    .flex()
-                    .flex_col()
-                    .flex_1()
-                    .min_w(gpui::px(0.0))
-                    .min_h(gpui::px(0.0))
-                    .h_full()
-                    .rounded(gpui::px(radius))
-                    .overflow_hidden()
-                    .bg(self.theme.chrome().content_background)
-                    .child(inset),
-            );
-        }
-        root
-    }
 }
 
 pub fn sidebar_theme(theme: ShadcnLook) -> Arc<dyn SidebarTheme> {

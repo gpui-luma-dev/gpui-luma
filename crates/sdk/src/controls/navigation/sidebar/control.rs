@@ -1,15 +1,12 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, EventEmitter, IntoElement, Pixels, Render, SharedString, Subscription, Window};
+use gpui::{Context, Entity, EventEmitter, IntoElement, Render, SharedString, Subscription, Window};
 
 use super::engine::{SidebarPanelEngine, SidebarPanelEngineEvent, SidebarPanelTemplate};
 use super::model::{
-    SidebarBuilder, SidebarControlBuilder, SidebarControlModel, SidebarInsetModel, SidebarPanelModel, find_active_id,
-    panel_to_nav_nodes,
+    SidebarBuilder, SidebarControlBuilder, SidebarControlModel, SidebarPanelModel, find_active_id, panel_to_nav_nodes,
 };
-use super::template::{SidebarRenderModel, SidebarTemplate, render_inset_column};
-use super::theme::{SidebarCollapsible, SidebarVariant};
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use super::theme::SidebarPresentation;
 use crate::controls::scrollbar::ScrollbarTemplate;
 use crate::theme::observe_theme_revision;
 
@@ -17,17 +14,10 @@ use crate::theme::observe_theme_revision;
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum SidebarEvent {
-    /// Fired when sidebar expands, collapses to icon rail, or slides offcanvas.
-    OpenChanged { open: bool, collapsible: SidebarCollapsible },
-
-    /// Fired when the mobile drawer or offcanvas sidebar is dismissed.
-    Dismissed,
-
+    /// Navigation presentation changed; host pane visibility is independent.
+    PresentationChanged { presentation: SidebarPresentation },
     /// Fired when an item or sub-item is selected.
     Select { id: SharedString },
-
-    /// Fired when an item action button (e.g. "+") is activated.
-    Activate { id: SharedString },
 
     /// Fired when keyboard or pointer focus moves to an item.
     ItemFocused { id: SharedString },
@@ -38,30 +28,14 @@ pub enum SidebarEvent {
     /// Fired when a sub-menu branch expands or collapses.
     SubMenuToggle { id: SharedString, open: bool },
 
-    /// Fired when rail drag resizing begins.
-    ResizeStart,
-
-    /// Fired during interactive rail drag-resizing.
-    Resized { width: Pixels },
-
-    /// Fired when rail drag resizing completes.
-    ResizeEnd { width: Pixels },
-
     /// Fired when sidebar enabled state changes.
     EnabledChanged { enabled: bool },
 }
 
-/// Root layout controller for the Shadcn-style sidebar composition.
-///
-/// Panel chrome and flush menu rows are rendered by the internal flush presentation
-/// engine so visual parity with the former SidebarPanelEngine is preserved.
+/// Bare navigation. The host owns pane geometry; use a Frame for container styling.
 pub struct SidebarControl {
     model: SidebarControlModel,
-    open: bool,
-    transition: VisualTransition,
     panel: Entity<SidebarPanelEngine>,
-    inset: Option<SidebarInsetModel>,
-    template: Arc<dyn SidebarTemplate>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -75,7 +49,6 @@ impl SidebarControl {
 
     pub(crate) fn from_builder(builder: SidebarControlBuilder, cx: &mut Context<Self>) -> Self {
         let mut model = builder.model;
-        let open = model.default_open;
 
         if model.selected_id.is_none()
             && let Some(panel) = &model.sidebar
@@ -83,63 +56,29 @@ impl SidebarControl {
             model.selected_id = find_active_id(panel);
         }
 
-        let panel = spawn_panel_engine(&model, open, cx);
-        let inset = model.inset.clone();
+        let panel = spawn_panel_engine(&model, cx);
 
         let mut subscriptions = vec![observe_theme_revision(cx, |_, cx| cx.notify())];
         subscriptions.push(cx.subscribe(&panel, |this, _, event: &SidebarPanelEngineEvent, cx| {
             this.handle_panel_engine_event(event, cx);
         }));
 
-        let duration = if model.animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            std::time::Duration::ZERO
-        };
-        let transition = VisualTransition::new(if open { 1.0 } else { 0.0 }, duration);
-        let template = model.template.clone();
-
-        Self { model, open, transition, panel, inset, template, _subscriptions: subscriptions }
+        Self { model, panel, _subscriptions: subscriptions }
     }
 
-    pub fn open(&self) -> bool {
-        self.open
+    pub fn presentation(&self) -> SidebarPresentation {
+        self.model.presentation
     }
 
-    /// Returns current expand/collapse transition progress (range `0.0`..`1.0`).
-    pub fn transition_progress(&self) -> f32 {
-        self.transition.progress()
-    }
-
-    /// Returns interpolated sidebar width based on transition progress between `rail_width` and `expanded_width`.
-    pub fn animated_width(&self, expanded_width: Pixels, rail_width: Pixels) -> Pixels {
-        self.transition.interpolate_pixels(rail_width, expanded_width)
-    }
-
-    pub fn collapsible(&self) -> SidebarCollapsible {
-        self.model.collapsible
-    }
-
-    pub fn variant(&self) -> SidebarVariant {
-        self.model.variant
-    }
-
-    pub fn set_open(&mut self, open: bool, cx: &mut Context<Self>) {
-        if self.open == open {
+    pub fn set_presentation(&mut self, presentation: SidebarPresentation, cx: &mut Context<Self>) {
+        if self.model.presentation == presentation {
             return;
         }
-        self.open = open;
-        self.transition.set_target(if open { 1.0 } else { 0.0 });
-        self.sync_panel_collapsed_state(cx);
-        cx.emit(SidebarEvent::OpenChanged { open, collapsible: self.model.collapsible });
-        if !open && matches!(self.model.collapsible, SidebarCollapsible::Offcanvas) {
-            cx.emit(SidebarEvent::Dismissed);
-        }
+        self.model.presentation = presentation;
+        self.panel
+            .update(cx, |panel, cx| panel.set_collapsed(presentation == SidebarPresentation::Icons, cx));
+        cx.emit(SidebarEvent::PresentationChanged { presentation });
         cx.notify();
-    }
-
-    pub fn toggle_open(&mut self, cx: &mut Context<Self>) {
-        self.set_open(!self.open, cx);
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
@@ -206,18 +145,6 @@ impl SidebarControl {
         cx.notify();
     }
 
-    fn sync_panel_collapsed_state(&mut self, cx: &mut Context<Self>) {
-        let collapsed = match self.model.collapsible {
-            SidebarCollapsible::Icon | SidebarCollapsible::Responsive => !self.open,
-            SidebarCollapsible::Offcanvas | SidebarCollapsible::None => false,
-        };
-        self.panel.update(cx, |panel, cx| {
-            if panel.collapsed() != collapsed {
-                panel.set_collapsed(collapsed, cx);
-            }
-        });
-    }
-
     fn handle_panel_engine_event(&mut self, event: &SidebarPanelEngineEvent, cx: &mut Context<Self>) {
         match event {
             SidebarPanelEngineEvent::Activate { node_id, .. } => {
@@ -227,15 +154,7 @@ impl SidebarControl {
             SidebarPanelEngineEvent::BranchExpandedChanged { node_id, expanded } => {
                 cx.emit(SidebarEvent::SubMenuToggle { id: node_id.clone(), open: *expanded });
             }
-            SidebarPanelEngineEvent::CollapsedChanged { collapsed } => {
-                let open = !*collapsed;
-                if self.open != open {
-                    self.open = open;
-                    self.transition.set_target(if open { 1.0 } else { 0.0 });
-                    cx.emit(SidebarEvent::OpenChanged { open, collapsible: self.model.collapsible });
-                    cx.notify();
-                }
-            }
+            SidebarPanelEngineEvent::CollapsedChanged { .. } => {}
             SidebarPanelEngineEvent::ItemFocused { node_id, .. } => {
                 cx.emit(SidebarEvent::ItemFocused { id: node_id.clone() });
             }
@@ -258,39 +177,12 @@ impl SidebarControl {
 }
 
 impl Render for SidebarControl {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let was_animating = self.transition.is_animating();
-        let _ = self.transition.sync();
-        self.transition.schedule_frame(window, cx);
-        if was_animating || self.transition.is_animating() {
-            cx.notify();
-        }
-
-        let inset = self
-            .inset
-            .as_ref()
-            .map(|inset| render_inset_column(inset.header.as_ref(), inset.content.as_ref(), inset.footer.as_ref()));
-
-        self.template.render(
-            SidebarRenderModel {
-                id: &self.model.id,
-                open: self.open,
-                collapsible: self.model.collapsible,
-                variant: self.model.variant,
-                enabled: self.model.enabled,
-                has_inset: self.inset.is_some(),
-            },
-            self.panel.clone().into_any_element(),
-            inset,
-        )
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        self.panel.clone()
     }
 }
 
-fn spawn_panel_engine(
-    model: &SidebarControlModel,
-    open: bool,
-    cx: &mut Context<SidebarControl>,
-) -> Entity<SidebarPanelEngine> {
+fn spawn_panel_engine(model: &SidebarControlModel, cx: &mut Context<SidebarControl>) -> Entity<SidebarPanelEngine> {
     let panel_model = model.sidebar.clone();
     let panel_id = panel_model
         .as_ref()
@@ -305,16 +197,11 @@ fn spawn_panel_engine(
 
     let (nodes, footer_nodes) = panel_model.as_ref().map(panel_to_nav_nodes).unwrap_or_default();
 
-    let collapsed = match model.collapsible {
-        SidebarCollapsible::Icon | SidebarCollapsible::Responsive => !open,
-        SidebarCollapsible::Offcanvas | SidebarCollapsible::None => false,
-    };
-
     let mut builder = SidebarPanelEngine::new(panel_id)
         .enabled(model.enabled)
         .animated(model.animated)
         .disclosure_icons(panel_model.as_ref().map(|panel| panel.disclosure_icons.clone()).unwrap_or_default())
-        .collapsed(collapsed)
+        .collapsed(model.presentation == SidebarPresentation::Icons)
         .template(model.panel_template.clone())
         .scrollbar_template(model.scrollbar_template.clone())
         .scrollbar_placement(model.scrollbar_placement)
@@ -334,4 +221,55 @@ fn spawn_panel_engine(
     }
 
     builder.spawn(cx)
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod tests {
+    use super::*;
+    use gpui::{TestAppContext, point, prelude::*, px};
+    use crate::controls::sidebar::{sidebar, sidebar_content, sidebar_group, sidebar_menu, sidebar_menu_item};
+    use lucide_svg_static::Icon;
+
+    #[test]
+    fn bare_navigation_preserves_selection_across_presentations() {
+        let mut app = TestAppContext::single();
+        let (sidebar, cx) = app.add_window_view(|_, cx| {
+            SidebarControl::from_builder(
+                SidebarControl::new("nav")
+                    .animated(false)
+                    .with_panel_template_modifier(|mut root| {
+                        assert!(root.style().background.is_none());
+                        assert!(root.style().padding.left.is_none());
+                        assert!(root.style().corner_radii.top_left.is_none());
+                        root.debug_selector(|| "bare-nav".into())
+                    })
+                    .sidebar(
+                        sidebar("content").content(
+                            sidebar_content().group(
+                                sidebar_group().menu(
+                                    sidebar_menu("main")
+                                        .item(sidebar_menu_item("first", "First").icon(Icon::House))
+                                        .item(sidebar_menu_item("second", "Second").icon(Icon::Folder).active(true)),
+                                ),
+                            ),
+                        ),
+                    ),
+                cx,
+            )
+        });
+        cx.run_until_parked();
+        let bounds = cx.debug_bounds("bare-nav").unwrap();
+        cx.simulate_click(point(bounds.left() + px(40.0), bounds.top() + px(15.0)), Default::default());
+        cx.run_until_parked();
+        for presentation in [SidebarPresentation::Icons, SidebarPresentation::Expanded] {
+            sidebar.update(cx, |sidebar, cx| sidebar.set_presentation(presentation, cx));
+            cx.run_until_parked();
+            cx.update(|_, app| {
+                let sidebar = sidebar.read(app);
+                assert_eq!(sidebar.presentation(), presentation);
+                assert_eq!(sidebar.model.selected_id.as_deref(), Some("first"));
+                assert_eq!(sidebar.panel.read(app).collapsed(), presentation == SidebarPresentation::Icons);
+            });
+        }
+    }
 }

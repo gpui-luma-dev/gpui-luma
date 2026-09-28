@@ -13,7 +13,7 @@
 //! | Selected fg       | `sidebar-primary-foreground`       |
 //! | Focus ring        | `sidebar-ring`                     |
 
-use luma::controls::sidebar::{SidebarContainerLook, SidebarItemLook, SidebarSectionLook};
+use luma::controls::sidebar::{SidebarItemLook, SidebarSectionLook};
 use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
@@ -347,4 +347,13 @@ pub fn resolve_sidebar_focus_border(
             .resolve_decl("ring")
             .unwrap_or_else(|_| ResolvedColor::fallback_foreground())
     })
+}
+
+/// Theme colors used by standalone sidebar frames, separate from navigation items.
+#[derive(Clone, Copy, Debug)]
+pub struct SidebarContainerLook {
+    pub background: gpui::Hsla,
+    pub foreground: gpui::Hsla,
+    pub border: gpui::Hsla,
+    pub radius: f32,
 }

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, SharedString};
-use luma::controls::sidebar::{SidebarCollapsible, SidebarControl};
+use luma::controls::sidebar::SidebarControl;
 use luma_look_shadcn::ShadcnLook;
 use luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
@@ -98,8 +98,6 @@ pub fn spawn_properties_sidebar<T: 'static>(
 
     shadcn::Sidebar::new(id)
         .look(look.as_ref())
-        .default_open(true)
-        .collapsible(SidebarCollapsible::Icon)
         .sidebar(
             shadcn::Sidebar::panel(panel_id)
                 .header(shadcn::Sidebar::header().title("Properties").subtitle("Rectangle / Prominent card"))
@@ -108,8 +106,7 @@ pub fn spawn_properties_sidebar<T: 'static>(
                         .group(shadcn::Sidebar::group().label("Pinned").menu(pinned_menu))
                         .group(shadcn::Sidebar::group().label("Properties").menu(properties_menu)),
                 )
-                .footer(footer)
-                .rail(shadcn::Sidebar::rail()),
+                .footer(footer),
         )
         .spawn(cx)
 }

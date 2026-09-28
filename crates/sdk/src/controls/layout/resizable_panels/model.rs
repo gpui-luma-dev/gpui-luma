@@ -175,7 +175,7 @@ pub struct ResizablePanelSpec {
     pub size: PanelSize,
     pub min_px: Option<f32>,
     pub max_px: Option<f32>,
-    /// Panel background used by the shell and the overlay handle halves on this edge.
+    /// Optional pane fill; `None` leaves the host background visible.
     pub background: Option<Hsla>,
     pub render: PanelRender,
 }
@@ -196,7 +196,7 @@ impl ResizablePanelSpec {
         }
     }
 
-    /// Background color for this pane (required for overlay-handle shells).
+    /// Explicit background color for this pane.
     pub fn bg(mut self, background: Hsla) -> Self {
         self.background = Some(background);
         self

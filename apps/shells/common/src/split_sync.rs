@@ -1,5 +1,5 @@
 use gpui::{Context, Entity, Subscription};
-use luma::controls::sidebar::{SidebarControl, SidebarEvent};
+use luma::controls::sidebar::{SidebarControl, SidebarPresentation};
 use luma::controls::split_view::{SplitView, SplitViewEvent};
 
 pub fn wire_split_nav_sync<T: 'static>(
@@ -13,18 +13,14 @@ pub fn wire_split_nav_sync<T: 'static>(
         move |_, _, event: &SplitViewEvent, cx| {
             if let SplitViewEvent::CollapsedChanged { collapsed } = event {
                 sidebar.update(cx, |sidebar, cx| {
-                    sidebar.set_open(!*collapsed, cx);
-                });
-            }
-        }
-    }));
-
-    subscriptions.push(cx.subscribe(&sidebar, {
-        let split_view = split_view.clone();
-        move |_, _, event: &SidebarEvent, cx| {
-            if let SidebarEvent::OpenChanged { open, .. } = event {
-                split_view.update(cx, |split_view, cx| {
-                    split_view.set_collapsed(!*open, cx);
+                    sidebar.set_presentation(
+                        if *collapsed {
+                            SidebarPresentation::Icons
+                        } else {
+                            SidebarPresentation::Expanded
+                        },
+                        cx,
+                    );
                 });
             }
         }

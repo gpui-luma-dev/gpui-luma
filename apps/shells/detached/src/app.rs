@@ -6,7 +6,6 @@ use gpui::{
 };
 use luma::controls::button::ButtonEvent;
 use luma::controls::icon_button::IconButton;
-use luma::controls::sidebar::SidebarControl;
 use luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
 use luma::theme::ThemeMode;
 use luma_look_shadcn as shadcn;
@@ -31,7 +30,7 @@ pub struct DetachedShellApp {
     pane_focus: FocusHandle,
     look: Arc<ShadcnLook>,
     split_view: Entity<SplitView>,
-    sidebar: Entity<SidebarControl>,
+    sidebar: Entity<luma::controls::frame::FrameControl>,
     toggle_button: IconButton,
     theme_toggle_button: IconButton,
     _subscriptions: Vec<Subscription>,
@@ -81,6 +80,12 @@ impl DetachedShellApp {
             }
         }));
 
+        let sidebar = shadcn::Frame::sidebar("detached-sidebar-frame")
+            .look(&look)
+            .rounded(px(16.0))
+            .overflow_hidden()
+            .child(sidebar)
+            .spawn(cx);
         Self {
             focus_scope,
             pane_focus,
@@ -136,12 +141,8 @@ impl Render for DetachedShellApp {
     }
 }
 
-fn detached_nav_pane_with_sidebar(sidebar: Entity<SidebarControl>) -> AnyElement {
-    div()
-        .size_full()
-        .p(px(SIDEBAR_PADDING))
-        .child(div().size_full().rounded(px(16.0)).bg(rgb(0x242835)).overflow_hidden().child(sidebar))
-        .into_any_element()
+fn detached_nav_pane_with_sidebar(sidebar: Entity<luma::controls::frame::FrameControl>) -> AnyElement {
+    div().size_full().p(px(SIDEBAR_PADDING)).child(sidebar).into_any_element()
 }
 
 fn detached_content_pane(toggle_button: IconButton) -> AnyElement {

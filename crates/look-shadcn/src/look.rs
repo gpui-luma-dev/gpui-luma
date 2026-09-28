@@ -620,10 +620,6 @@ impl ShadcnLook {
         templates::sidebar_panel_template(self.clone())
     }
 
-    pub fn sidebar_template(&self) -> Arc<dyn luma::controls::sidebar::SidebarTemplate> {
-        templates::sidebar_template(self.clone())
-    }
-
     pub fn sidebar_theme(&self) -> Arc<dyn luma::controls::sidebar::SidebarTheme> {
         templates::sidebar_theme(self.clone())
     }

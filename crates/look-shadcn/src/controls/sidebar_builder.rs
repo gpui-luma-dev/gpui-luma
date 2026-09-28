@@ -1,11 +1,23 @@
-//! Look-owned sidebar builder. Spawn synthesizes the SDK [`luma::controls::sidebar::SidebarControl`].
+//! Bare sidebar navigation. Width and visibility belong to the host.
+//!
+//! ```no_run
+//! use gpui::{Context, Entity};
+//! use luma::controls::sidebar::SidebarBuilder;
+//! use luma_look_shadcn::{Frame, ShadcnLook, Sidebar};
+//!
+//! fn standalone<M: 'static>(
+//!     look: &ShadcnLook, content: SidebarBuilder, cx: &mut Context<M>,
+//! ) -> Entity<luma::controls::frame::FrameControl> {
+//!     let navigation = Sidebar::new("nav").look(look).sidebar(content).spawn(cx);
+//!     Frame::sidebar("nav-frame").look(look).child(navigation).spawn(cx)
+//! }
+//! ```
 
 use gpui::{Context, Entity, SharedString};
 use luma::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 use luma::controls::sidebar::{
-    SidebarBuilder, SidebarCollapsible, SidebarContentBuilder, SidebarControlBuilder, SidebarFooterBuilder,
-    SidebarGroupBuilder, SidebarHeaderBuilder, SidebarInsetBuilder, SidebarMenuBuilder, SidebarMenuItemBuilder,
-    SidebarMenuSubBuilder, SidebarRailBuilder, SidebarVariant,
+    SidebarBuilder, SidebarContentBuilder, SidebarControlBuilder, SidebarFooterBuilder, SidebarGroupBuilder,
+    SidebarHeaderBuilder, SidebarMenuBuilder, SidebarMenuItemBuilder, SidebarMenuSubBuilder, SidebarPresentation,
 };
 
 use crate::look::{ShadcnLook, resolve_look_from};
@@ -27,18 +39,8 @@ impl Sidebar {
         self
     }
 
-    pub fn default_open(mut self, open: bool) -> Self {
-        self.builder = self.builder.default_open(open);
-        self
-    }
-
-    pub fn collapsible(mut self, collapsible: SidebarCollapsible) -> Self {
-        self.builder = self.builder.collapsible(collapsible);
-        self
-    }
-
-    pub fn variant(mut self, variant: SidebarVariant) -> Self {
-        self.builder = self.builder.variant(variant);
+    pub fn presentation(mut self, presentation: SidebarPresentation) -> Self {
+        self.builder = self.builder.presentation(presentation);
         self
     }
 
@@ -59,11 +61,6 @@ impl Sidebar {
 
     pub fn sidebar(mut self, sidebar: SidebarBuilder) -> Self {
         self.builder = self.builder.sidebar(sidebar);
-        self
-    }
-
-    pub fn inset(mut self, inset: SidebarInsetBuilder) -> Self {
-        self.builder = self.builder.inset(inset);
         self
     }
 
@@ -95,7 +92,6 @@ impl Sidebar {
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::sidebar::SidebarControl> {
         let look = resolve_look_from(self.look.as_ref(), cx);
         self.builder
-            .template(look.sidebar_template())
             .panel_template(look.sidebar_panel_template())
             .scrollbar_template(look.scrollbar_template())
             .spawn(cx)
@@ -131,14 +127,6 @@ impl Sidebar {
 
     pub fn footer() -> SidebarFooterBuilder {
         luma::controls::sidebar::sidebar_footer()
-    }
-
-    pub fn rail() -> SidebarRailBuilder {
-        luma::controls::sidebar::sidebar_rail()
-    }
-
-    pub fn inset_pane() -> SidebarInsetBuilder {
-        luma::controls::sidebar::sidebar_inset()
     }
 }
 
