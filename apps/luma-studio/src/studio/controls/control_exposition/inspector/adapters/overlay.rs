@@ -4,7 +4,7 @@ mod popup_menu {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::{control_size, interaction_state, popup_menu_trigger_style};
     use super::super::super::input::trigger_color_rows;
@@ -83,7 +83,7 @@ mod popup_menu {
     }
 
     fn resolve_panel_color_rows(
-        palette: &luma_look_shadcn_inspect::FloatingMenuInspectPalette,
+        palette: &luma_look_shadcn::inspect::FloatingMenuInspectPalette,
         state_id: &str,
     ) -> Vec<InspectColorRow> {
         match state_id {
@@ -152,7 +152,7 @@ mod context_menu {
 
     use luma::theme::ControlSize;
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::interaction_state;
     use super::super::super::input::{floating_menu_palette_rows, trigger_color_rows};
@@ -227,7 +227,7 @@ mod floating_menu {
 
     use luma::theme::ControlSize;
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::input::floating_menu_palette_rows;
     use super::super::super::metrics::floating_menu_layout_section;
@@ -299,7 +299,7 @@ mod overlay_window {
     use luma::controls::overlay_window::OverlayWindowMode;
     use luma::theme::ControlSize;
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::input::overlay_window_palette_rows;
     use super::super::super::metrics::overlay_window_layout_section;
@@ -383,7 +383,7 @@ mod selection_panel {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::control_size;
     use super::super::super::metrics::floating_menu_layout_section;

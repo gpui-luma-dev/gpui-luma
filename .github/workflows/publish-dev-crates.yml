@@ -1,6 +1,6 @@
-name: Publish Dev Crates
+name: Release Library Crates
 
-# Cuts an alpha GitHub prerelease for the library crates.
+# Creates a GitHub release for the library crates.
 # Consume via git tag (not crates.io).
 
 on:
@@ -14,16 +14,14 @@ env:
   LIB_PACKAGES: >-
     gpui-luma-core
     gpui-luma-color
-    gpui-luma-look-core
     gpui-luma-look-radix
     gpui-luma-look-shadcn
-    gpui-luma-look-shadcn-inspect
     gpui-luma
 
 jobs:
   publish:
     name: Verify, tag, and release
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
       - name: Checkout repository
@@ -75,13 +73,19 @@ jobs:
           # shellcheck disable=SC2086
           cargo clippy \
             $(printf -- '--package %s ' ${LIB_PACKAGES}) \
-            --all-targets
+            --all-targets --all-features
 
       - name: Check library crates
         run: |
           # shellcheck disable=SC2086
           cargo check \
             $(printf -- '--package %s ' ${LIB_PACKAGES})
+
+      - name: Test library crates (including inspection and headless support)
+        run: |
+          cargo test \
+            $(printf -- '--package %s ' ${LIB_PACKAGES}) \
+            --all-features
 
       - name: Build source archive
         env:
@@ -100,15 +104,12 @@ jobs:
               "gpui-luma",
               "gpui-luma-core",
               "gpui-luma-color",
-              "gpui-luma-look-core",
               "gpui-luma-look-radix",
               "gpui-luma-look-shadcn"
             ],
             "distribution": "git-tag"
           }
           EOF
-          # Strip leading indentation from the heredoc
-          sed -i 's/^          //' dist/manifest.json
           cat dist/manifest.json
 
       - name: Create annotated tag
@@ -125,7 +126,7 @@ jobs:
             git push origin "refs/tags/${TAG}"
           fi
 
-      - name: Create GitHub prerelease
+      - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.meta.outputs.tag }}
@@ -135,11 +136,11 @@ jobs:
           body="$(cat <<EOF
           ## \`${VERSION}\`
 
-          Alpha cut. Prefer **git tag** dependencies (crates.io later).
+          Use **git tag** dependencies (crates.io later).
 
           ### Typical app
 
-          Depend on the \`gpui-luma\` facade (SDK + look-core), then **one** look:
+          Depend on the \`gpui-luma\` facade (SDK + shared look contracts), then **one** look:
 
           \`\`\`toml
           [dependencies]
@@ -149,9 +150,11 @@ jobs:
           # optional: luma-color = { package = "gpui-luma-color", git = "https://github.com/${{ github.repository }}", tag = "${TAG}" }
           \`\`\`
 
+          Optional Shadcn inspection tooling: enable its \`inspect\` feature and use \`luma_look_shadcn::inspect\`.
+
           Imports remain \`use luma::…\`.
 
-          Also in this tag: \`gpui-luma-core\`, \`gpui-luma-look-core\`, \`gpui-luma-color\`, \`gpui-luma-look-shadcn\`, \`gpui-luma-look-radix\`.
+          Also in this tag: \`gpui-luma-core\`, \`gpui-luma-color\`, \`gpui-luma-look-shadcn\`, \`gpui-luma-look-radix\`.
           EOF
           )"
           body="$(printf '%s\n' "${body}" | sed 's/^          //')"
@@ -167,7 +170,6 @@ jobs:
             gh release create "${TAG}" \
               --title "${TAG}" \
               --notes "${body}" \
-              --prerelease \
               "dist/gpui-luma-${TAG}.tar.gz" \
               "dist/gpui-luma-${TAG}.tar.gz.sha256" \
               dist/manifest.json

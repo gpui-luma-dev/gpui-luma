@@ -1,6 +1,6 @@
 use luma::theme::ControlSize;
 use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn_inspect::{
+use luma_look_shadcn::inspect::{
     AutocompleteChromeInspectPalette, FloatingMenuInspectPalette, OverlayWindowInspectPalette, ShadcnInspect,
     TextFieldInspectPalette,
 };

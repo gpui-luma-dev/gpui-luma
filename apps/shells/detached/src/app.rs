@@ -22,6 +22,10 @@ use luma_shell_common::{
 };
 use lucide_svg_static::Icon as LucideIcon;
 
+const SIDEBAR_PADDING: f32 = 10.0;
+// Keep the icon rail inside the detached card visible when collapsed.
+const SIDEBAR_COLLAPSED_WIDTH: f32 = 56.0 + 2.0 * SIDEBAR_PADDING;
+
 pub struct DetachedShellApp {
     focus_scope: FocusHandle,
     pane_focus: FocusHandle,
@@ -53,6 +57,7 @@ impl DetachedShellApp {
             .sidebar_width(px(560.0))
             .sidebar_min_width(px(200.0))
             .sidebar_max_width(px(840.0))
+            .sidebar_collapsed_width(px(SIDEBAR_COLLAPSED_WIDTH))
             .separator_visibility(SplitViewSeparatorVisibility::Hover)
             .spawn(cx);
 
@@ -134,7 +139,7 @@ impl Render for DetachedShellApp {
 fn detached_nav_pane_with_sidebar(sidebar: Entity<SidebarControl>) -> AnyElement {
     div()
         .size_full()
-        .p(px(10.0))
+        .p(px(SIDEBAR_PADDING))
         .child(div().size_full().rounded(px(16.0)).bg(rgb(0x242835)).overflow_hidden().child(sidebar))
         .into_any_element()
 }

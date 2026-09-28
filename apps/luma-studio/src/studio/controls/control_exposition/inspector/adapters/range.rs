@@ -4,7 +4,7 @@ mod slider {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::interaction_state;
     use super::super::super::metrics::slider_layout_section;
@@ -73,7 +73,7 @@ mod progress {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::progress_enabled;
     use super::super::super::metrics::{progress_circular_layout_section, progress_linear_layout_section};
@@ -147,7 +147,7 @@ mod stepper {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::stepper_enabled;
     use super::super::super::metrics::{stepper_horizontal_layout_section, stepper_vertical_layout_section};
@@ -226,7 +226,7 @@ mod scrollbar {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::{interaction_state, scrollbar_style};
     use super::super::super::metrics::scrollbar_layout_section;

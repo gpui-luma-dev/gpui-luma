@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use luma::controls::button_family::ButtonFamilyRole;
 use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn_inspect::ShadcnInspect;
+use luma_look_shadcn::inspect::ShadcnInspect;
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::super::common::{button_variant_style, control_size, interaction_state};

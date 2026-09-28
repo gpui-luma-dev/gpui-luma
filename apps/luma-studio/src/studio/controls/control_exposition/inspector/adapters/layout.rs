@@ -4,7 +4,7 @@ mod split_view {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::collection::split_view_color_rows;
     use super::super::super::common::progress_enabled;
@@ -69,7 +69,7 @@ mod resizable_panels {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::collection::resizable_panels_color_rows;
     use super::super::super::common::interaction_state;
@@ -136,7 +136,7 @@ mod toolbar {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::collection::toolbar_shell_color_rows;
     use super::super::super::common::{progress_enabled, toolbar_variant};
@@ -204,7 +204,7 @@ mod pager {
 
     use luma_look_shadcn::ShadcnButtonStyle;
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::collection::pager_shell_color_rows;
     use super::super::super::common::{interaction_state, pager_button_role, pager_shell_enabled, pager_style};
@@ -312,7 +312,7 @@ mod badge {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::badge_variant;
     use super::super::super::metrics::badge_layout_section;

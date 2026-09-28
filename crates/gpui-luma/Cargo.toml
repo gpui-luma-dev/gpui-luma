@@ -4,7 +4,7 @@ version.workspace = true
 edition = "2024"
 license = "Apache-2.0"
 publish = false
-description = "GPUI-Luma foundation: SDK controls plus look-core contracts"
+description = "GPUI-Luma foundation: controls, layouts, themes, and shared look contracts"
 
 [lib]
 name = "luma"
@@ -12,7 +12,6 @@ name = "luma"
 [dependencies]
 # Renamed so this facade can keep rustc crate name `luma` for consumers.
 sdk = { package = "gpui-luma-core", path = "../sdk" }
-luma-look-core = { package = "gpui-luma-look-core", path = "../look-core" }
 
 [lints]
 workspace = true

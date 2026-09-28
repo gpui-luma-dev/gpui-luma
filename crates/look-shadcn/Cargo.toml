@@ -9,6 +9,8 @@ publish = false
 name = "luma_look_shadcn"
 
 [features]
+# Optional inspection data and formatting for developer tools.
+inspect = []
 # Headless ListBox composition and DnD dispatch tests.
 test-support = ["luma/test-support"]
 
@@ -16,7 +18,6 @@ test-support = ["luma/test-support"]
 gpui.workspace = true
 luma.workspace = true
 luma-color.workspace = true
-luma-look-core.workspace = true
 anyhow.workspace = true
 serde = { workspace = true, features = ["derive"] }
 toml.workspace = true

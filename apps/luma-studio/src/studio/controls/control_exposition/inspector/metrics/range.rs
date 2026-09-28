@@ -1,6 +1,6 @@
 use luma::controls::scrollbar::ScrollbarOrientation;
 use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn_inspect::{
+use luma_look_shadcn::inspect::{
     ProgressInspectMetrics, ScrollbarInspectMetrics, ShadcnInspect, SliderInspectMetrics, StepperInspectMetrics,
 };
 

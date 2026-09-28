@@ -4,7 +4,7 @@ mod checkbox {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::{
         choice_elevation_applies, choice_indicator_only, choice_variant_style, interaction_state, value_flag,
@@ -108,7 +108,7 @@ mod radio_button {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::{
         choice_elevation_applies, choice_indicator_only, choice_variant_style, interaction_state, value_flag,
@@ -212,7 +212,7 @@ mod switch {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::{choice_elevation_applies, choice_variant_style, interaction_state, value_flag};
     use super::super::super::metrics::switch_layout_section;
@@ -314,7 +314,7 @@ mod toggle {
 
     use luma::controls::button_family::ButtonFamilyRole;
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::common::{choice_variant_style, interaction_state, value_flag};
     use super::super::super::metrics::toggle_layout_section;

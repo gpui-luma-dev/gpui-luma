@@ -261,7 +261,7 @@ mod tests {
         assert_eq!(accent_9.hsla(), crate::colors::parse_color("#3e63dd"));
         assert_eq!(gray_9.hsla(), crate::colors::parse_color("#8b8d98"));
         match accent_9.source {
-            luma_look_core::ColorSource::ScaleStep { family, step } => {
+            luma::theme::provenance::ColorSource::ScaleStep { family, step } => {
                 assert_eq!(family, "indigo");
                 assert_eq!(step, 9);
             }

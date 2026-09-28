@@ -5,7 +5,7 @@ mod listbox {
 
     use luma::theme::InteractionState;
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
     use lucide_svg_static::Icon as LucideIcon;
 
     use super::super::super::collection::{listbox_list_color_rows, listbox_row_color_rows};
@@ -137,7 +137,7 @@ mod table {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::collection::{table_row_color_rows, table_surface_color_rows};
     use super::super::super::common::{table_row_selected, listbox_row_state, progress_enabled};
@@ -235,7 +235,7 @@ mod tree_view {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::collection::tree_view_row_color_rows;
     use super::super::super::common::{interaction_state, listbox_row_state};
@@ -306,7 +306,7 @@ mod tabs {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::collection::{tabs_item_color_rows, tabs_list_color_rows};
     use super::super::super::common::{interaction_state, progress_enabled, tabs_active};
@@ -399,7 +399,7 @@ mod accordion {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::collection::{accordion_content_color_rows, accordion_trigger_color_rows};
     use super::super::super::common::{accordion_content_expanded, interaction_state};
@@ -493,7 +493,7 @@ mod sidebar {
     use std::sync::Arc;
 
     use luma_look_shadcn::ShadcnLook;
-    use luma_look_shadcn_inspect::ShadcnInspect;
+    use luma_look_shadcn::inspect::ShadcnInspect;
 
     use super::super::super::collection::{
         sidebar_container_color_rows, sidebar_item_color_rows, sidebar_section_color_rows,
