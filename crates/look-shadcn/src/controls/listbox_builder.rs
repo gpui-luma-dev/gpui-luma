@@ -364,6 +364,8 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         let mut surface = FrameBuilder::new(format!("{}-surface", self.id))
             // The viewport plus inset determines height, not Frame's full-size default.
             .h_auto()
+            // Keep flex parents from shrinking the surface below its fixed viewport.
+            .min_h(gpui::Length::Auto)
             .bg(palette.background)
             .border_1()
             .border_color(border)
