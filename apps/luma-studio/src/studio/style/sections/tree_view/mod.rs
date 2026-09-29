@@ -75,33 +75,34 @@ pub(crate) fn render_tree_view_template_section(
             .child(div().w_full().flex().justify_start().child(preview_tabs))
             .child(div().w_full().h(px(1.0)).bg(chrome.border))
             .child(div().w_full().flex().justify_center().mt(px(16.0)).child(match active_tab.as_ref() {
-                "sizes" => render_sizes_body(preview, chrome.muted_text, chrome.border),
-                _ => render_template_body(preview, chrome.muted_text, chrome.border),
+                "sizes" => render_sizes_body(preview, chrome.muted_text, cx),
+                _ => render_template_body(preview, chrome.muted_text, cx),
             }))
             .into_any_element(),
     )
 }
 
-fn render_template_body(preview: &TreeViewPreview, muted: gpui::Hsla, border: gpui::Hsla) -> AnyElement {
-    size_column("Template", muted, border, preview.template.clone(), 260.0)
+fn render_template_body(preview: &TreeViewPreview, muted: gpui::Hsla, cx: &App) -> AnyElement {
+    size_column("Template", muted, &preview.look, cx, preview.template.clone(), 260.0)
 }
 
-fn render_sizes_body(preview: &TreeViewPreview, muted: gpui::Hsla, border: gpui::Hsla) -> AnyElement {
+fn render_sizes_body(preview: &TreeViewPreview, muted: gpui::Hsla, cx: &App) -> AnyElement {
     div()
         .flex()
         .flex_wrap()
         .items_start()
         .gap(px(16.0))
-        .child(size_column("Sm", muted, border, preview.sm.clone(), 220.0))
-        .child(size_column("Md", muted, border, preview.md.clone(), 220.0))
-        .child(size_column("Lg", muted, border, preview.lg.clone(), 220.0))
+        .child(size_column("Sm", muted, &preview.look, cx, preview.sm.clone(), 220.0))
+        .child(size_column("Md", muted, &preview.look, cx, preview.md.clone(), 220.0))
+        .child(size_column("Lg", muted, &preview.look, cx, preview.lg.clone(), 220.0))
         .into_any_element()
 }
 
 fn size_column(
     label: &'static str,
     muted: gpui::Hsla,
-    border: gpui::Hsla,
+    look: &ShadcnLook,
+    cx: &App,
     tree: TreeView<SharedString>,
     width: f32,
 ) -> AnyElement {
@@ -119,14 +120,16 @@ fn size_column(
                 .child(label),
         )
         .child(
-            div()
+            shadcn::Frame::new(format!("tree-size-{label}-frame"))
+                .look(look)
+                .bg(gpui::transparent_black())
                 .w_full()
                 .h(px(200.0))
                 .rounded(px(6.0))
                 .border_1()
-                .border_color(border)
                 .overflow_hidden()
-                .child(tree),
+                .child(tree)
+                .render(cx),
         )
         .into_any_element()
 }

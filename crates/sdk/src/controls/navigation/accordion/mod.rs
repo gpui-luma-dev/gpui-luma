@@ -1,3 +1,9 @@
+//! An undecorated stack of expandable sections. Compose it inside a
+//! [`FrameBuilder`](crate::controls::frame::FrameBuilder) for an optional enclosure;
+//! use `h_auto()` so the frame follows expansion instead of filling its parent.
+//! Item dividers, trigger states, content padding, and animated clipping belong
+//! to Accordion, independently of the frame's outer decoration and inset.
+
 mod control;
 mod model;
 mod template;

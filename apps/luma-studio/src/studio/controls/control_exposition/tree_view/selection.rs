@@ -275,7 +275,7 @@ impl Render for Selection {
                 .child(div().flex().flex_wrap().gap(px(8.0)).child(self.toggle_off.clone()).child(self.follows_active.clone()))
                 .child(self.search.clone())
                 .child(div().text_size(px(12.0)).text_color(chrome.muted_text).child(status))
-                .child(div().w(px(360.0)).h(px(280.0)).overflow_hidden().border_1().border_color(chrome.border).rounded(px(8.0)).bg(chrome.panel_background).child(self.tree.clone()))
+                .child(shadcn::Frame::new("tree-selection-frame").look(&self.look).w(px(360.0)).h(px(280.0)).overflow_hidden().border_1().rounded(px(8.0)).child(self.tree.clone()).render(cx))
                 .child(self.events.clone())
         })
     }

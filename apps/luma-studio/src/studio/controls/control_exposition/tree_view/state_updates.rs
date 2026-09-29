@@ -161,15 +161,15 @@ impl Render for StateUpdates {
                 .child(div().text_color(chrome.title_text).child("State-preserving updates"))
                 .child(div().flex().flex_wrap().gap(px(8.0)).children(self.buttons.iter().cloned()))
                 .child(
-                    div()
+                    shadcn::Frame::new("tree-state-updates-frame")
+                        .look(&self.look)
                         .w(px(360.0))
                         .h(px(220.0))
                         .overflow_hidden()
                         .border_1()
-                        .border_color(chrome.border)
                         .rounded(px(8.0))
-                        .bg(chrome.panel_background)
-                        .child(self.tree.clone()),
+                        .child(self.tree.clone())
+                        .render(cx),
                 )
                 .child(self.events.clone())
         })

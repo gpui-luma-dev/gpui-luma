@@ -401,3 +401,46 @@ fn measured_drag_auto_scroll_mounts_targets_without_focus() {
     cx.simulate_mouse_up(destination, MouseButton::Left, Default::default());
     cx.update(|_, app| assert_eq!(view.read(app).drops, vec![(1, Some(11_000))]));
 }
+
+#[test]
+fn constrained_flex_column_preserves_surface_height_around_viewport() {
+    struct ConstrainedList {
+        state: ListBoxState<u32, u32>,
+        binding: ListBoxBinding,
+        scroll: ListBoxScrollHandle<u32>,
+        look: ShadcnLook,
+    }
+
+    impl Render for ConstrainedList {
+        fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+            let surface = ListBoxBuilder::new(
+                "constrained-list",
+                &self.state,
+                &mut self.binding,
+                &self.scroll,
+                |_, _, _, _| {},
+                |key| ("item", *key).into(),
+                |surface, _, _| surface.size_full(),
+            )
+            .look(&self.look)
+            .build(window, cx);
+            // Leave flex shrinking enabled: the surface must contain its viewport.
+            div().w(px(250.0)).h(px(100.0)).flex().flex_col().child(surface)
+        }
+    }
+
+    let mut app = TestAppContext::single();
+    let (_, cx) = app.add_window_view(|_, cx| ConstrainedList {
+        state: ListBoxState::from_snapshot(ListBoxSnapshot::try_new(1..=4, |n| *n).unwrap(), SelectionMode::Multiple),
+        binding: ListBoxBinding::new(cx),
+        scroll: ListBoxScrollHandle::default(),
+        look: ShadcnLook::built_in(),
+    });
+    cx.run_until_parked();
+    let surface = cx.debug_bounds("constrained-list-surface").unwrap();
+    let viewport = cx.debug_bounds("constrained-list-viewport").unwrap();
+    assert_eq!(viewport.size.height, px(196.0));
+    assert_eq!(surface.size.height, px(214.0));
+    assert_eq!(viewport.top() - surface.top(), px(9.0));
+    assert_eq!(surface.bottom() - viewport.bottom(), px(9.0));
+}

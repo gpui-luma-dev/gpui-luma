@@ -323,14 +323,14 @@ impl Render for Workspaces {
                                 "Archive"
                             }))
                             .child(
-                                div()
+                                shadcn::Frame::new(format!("workspace-tree-frame-{i}"))
+                                    .look(&self.look)
                                     .h(px(300.0))
                                     .border_1()
                                     .rounded_md()
-                                    .border_color(chrome.border)
-                                    .bg(chrome.panel_background)
                                     .overflow_hidden()
-                                    .child(tree.clone()),
+                                    .child(tree.clone())
+                                    .render(cx),
                             )
                             .child(div().text_size(px(12.0)).text_color(chrome.muted_text)
                                 .child(format!("{summary} · {} selected ({hidden} hidden)", state.selected_ids().len())))

@@ -167,7 +167,7 @@ impl Render for Positioning {
                 .child(div().text_size(px(12.0)).text_color(chrome.muted_text).child(
                     "Choose a target and movement, then Go. A hidden document needs “Open ancestors”. Close & show folder returns to Example folder and closes it."))
                 .child(div().flex().flex_wrap().gap(px(8.0)).child(self.target.clone()).child(self.movement.clone()).children(self.buttons.iter().cloned()))
-                .child(div().w(px(360.0)).h(px(240.0)).overflow_hidden().border_1().border_color(chrome.border).rounded(px(8.0)).bg(chrome.panel_background).child(self.tree.clone()))
+                .child(shadcn::Frame::new("tree-positioning-frame").look(&self.look).w(px(360.0)).h(px(240.0)).overflow_hidden().border_1().rounded(px(8.0)).child(self.tree.clone()).render(cx))
                 .child(self.events.clone())
         })
     }
