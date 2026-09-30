@@ -1,19 +1,28 @@
 //! Custom Palette tab — seed editor, scale grid, and control preview canvas.
 
+mod home_controls;
+mod icon_samples;
+mod preview_toolbar;
+mod signup_mesh;
+mod task_samples;
+
+pub(crate) use signup_mesh::{MeshCache, MeshRequest};
+
 use std::sync::Arc;
 
 use gpui::{App, Context, Entity, Hsla, ImageSource, IntoElement, RenderImage, SharedString, div, img, prelude::*, px};
 use luma::controls::button::Button;
-use luma::controls::checkbox::Checkbox;
 use luma::controls::popup_menu::PopupMenu;
-use luma::controls::switch::Switch;
 use luma::controls::textfield::TextField;
-use luma::controls::toggle::Toggle;
+use luma::controls::radio_group::{RadioGroup, RadioGroupItem};
+use luma::controls::tree_view::TreeView;
+use luma::controls::tabs::Tabs;
 use luma::infra::ElementExt;
 use luma::{GridLayout, GridTrack, WideMiddle, WideMiddleLayout, hstack, vstack};
-use luma_look_radix::{PaletteSlot, Look, SCALE_LEN, ScaleFamily, SignupStage, ThemePalettes};
+use luma_look_radix::{Look, SCALE_LEN, ScaleFamily};
 
 use crate::app::RadixStudioApp;
+use self::signup_mesh::SignupStage;
 use crate::controls::ColorTextField;
 
 /// Side columns stay compact; center is wider for the signup stage.
@@ -38,32 +47,15 @@ const SCALE_LEGEND_GROUPS: &[(&str, usize)] = &[
     ("Accessible text", 2),
 ];
 
-pub struct PreviewControls {
-    pub search_field: TextField,
-    pub search_submit: Entity<Button>,
-    pub sign_up_name: TextField,
-    pub sign_up_email: TextField,
-    pub sign_up_password: TextField,
-    pub create_account: Entity<Button>,
-    pub continue_github: Entity<Button>,
-    pub soft_demo: Entity<Button>,
-    pub outline_demo: Entity<Button>,
-    pub ghost_demo: Entity<Button>,
-    pub preview_switch: Switch,
-    pub task_a: Checkbox,
-    pub task_b: Checkbox,
-    pub task_c: Checkbox,
-}
+pub use home_controls::PreviewControls;
 
 pub struct PageArgs<'a> {
     pub look: &'a Arc<Look>,
-    pub light_toggle: Toggle,
-    pub dark_toggle: Toggle,
+    pub mode_selector: RadioGroup<RadioGroupItem>,
     pub accent_field: Entity<ColorTextField>,
     pub gray_field: Entity<ColorTextField>,
     pub background_field: Entity<ColorTextField>,
     pub copy_menu: Entity<PopupMenu>,
-    pub palette_reset: Entity<Button>,
     pub preview_layout: Entity<WideMiddle>,
     pub mesh_image: Option<Arc<RenderImage>>,
     pub app: Entity<RadixStudioApp>,
@@ -73,19 +65,16 @@ pub struct PageArgs<'a> {
     pub muted: Hsla,
     pub fg: Hsla,
     pub accent: Hsla,
-    pub is_dark: bool,
 }
 
 pub fn page(args: PageArgs<'_>, cx: &mut Context<RadixStudioApp>) -> gpui::AnyElement {
     let PageArgs {
         look,
-        light_toggle,
-        dark_toggle,
+        mode_selector,
         accent_field,
         gray_field,
         background_field,
         copy_menu,
-        palette_reset,
         preview_layout,
         mesh_image,
         app,
@@ -95,29 +84,25 @@ pub fn page(args: PageArgs<'_>, cx: &mut Context<RadixStudioApp>) -> gpui::AnyEl
         muted,
         fg,
         accent,
-        is_dark,
     } = args;
 
     vstack! {
         gap=28;
         header_block(fg),
-        mode_toggle(light_toggle, dark_toggle, surface, border, is_dark, accent),
+        div().mx_auto().child(mode_selector),
         seed_row(SeedRow {
             accent_field,
             gray_field,
             background_field,
             copy_menu,
-            palette_reset,
-            palettes: look.palettes(),
             accent,
             gray: look.resolve_step(ScaleFamily::Gray, 8).hsla(),
             background: look.resolve_step(ScaleFamily::Gray, 1).hsla(),
             border,
             muted,
-            fg,
         }),
         scale_section(look, muted, cx),
-        preview_section(look, mesh_image, app, preview_layout, cx, controls, surface, border, muted, fg, accent),
+        preview_section(look, mesh_image, app, preview_layout, cx, controls, surface, border, muted, fg),
     }
     .into_any_element()
 }
@@ -139,85 +124,34 @@ fn header_block(fg: Hsla) -> impl IntoElement {
     .w_full()
 }
 
-fn mode_toggle(
-    light: Toggle,
-    dark: Toggle,
-    surface: Hsla,
-    border: Hsla,
-    is_dark: bool,
-    accent: Hsla,
-) -> impl IntoElement {
-    let _ = (is_dark, accent);
-    hstack! {
-        gap=4 align=center;
-        light,
-        dark,
-    }
-    .mx_auto()
-    .p_1()
-    .rounded_lg()
-    .border_1()
-    .border_color(border)
-    .bg(surface)
-}
-
 struct SeedRow {
     accent_field: Entity<ColorTextField>,
     gray_field: Entity<ColorTextField>,
     background_field: Entity<ColorTextField>,
     copy_menu: Entity<PopupMenu>,
-    palette_reset: Entity<Button>,
-    palettes: ThemePalettes,
     accent: Hsla,
     gray: Hsla,
     background: Hsla,
     border: Hsla,
     muted: Hsla,
-    fg: Hsla,
 }
 
 fn seed_row(row: SeedRow) -> impl IntoElement {
-    let SeedRow {
-        accent_field,
-        gray_field,
-        background_field,
-        copy_menu,
-        palette_reset,
-        palettes,
-        accent,
-        gray,
-        background,
-        border,
-        muted,
-        fg,
-    } = row;
+    let SeedRow { accent_field, gray_field, background_field, copy_menu, accent, gray, background, border, muted } =
+        row;
 
     vstack! {
         gap=10 align=center;
-        draft_origin(palettes, muted, fg),
         hstack! {
             gap=16 align=end justify=center;
             seed_field("Accent", accent_field, accent, border, muted),
             seed_field("Gray", gray_field, gray, border, muted),
             seed_field("Background", background_field, background, border, muted),
-            div().pt_5().child(copy_menu),
-            div().pt_5().child(palette_reset),
+            // Align the visible button face; its SDK root reserves extra focus-ring space.
+            div().h(px(ColorTextField::HEIGHT)).flex().items_center().child(copy_menu),
         },
     }
     .w_full()
-}
-
-/// Says which palettes the draft is on, and whether it has drifted off them.
-fn draft_origin(palettes: ThemePalettes, muted: Hsla, fg: Hsla) -> impl IntoElement {
-    let named = |slot: PaletteSlot| SharedString::from(slot.label());
-
-    hstack! {
-        gap=6 align=center;
-        div().text_xs().text_color(muted).child("Editing"),
-        div().text_xs().font_weight(gpui::FontWeight::SEMIBOLD).text_color(fg).child(named(palettes.accent)),
-        div().text_xs().text_color(muted).child("on"),
-        div().text_xs().font_weight(gpui::FontWeight::SEMIBOLD).text_color(fg).child(named(palettes.gray)),
-    }
 }
 
 fn seed_field(
@@ -312,54 +246,44 @@ fn preview_section(
     border: Hsla,
     muted: Hsla,
     fg: Hsla,
-    accent: Hsla,
 ) -> impl IntoElement {
     WideMiddleLayout::new(
         preview_layout,
-        preview_column_left(
-            controls.search_field,
-            controls.search_submit,
-            controls.preview_switch,
-            controls.task_a,
-            controls.task_b,
-            controls.task_c,
-            surface,
-            border,
-            muted,
-            fg,
-            accent,
-        ),
-        preview_column_center(
-            look,
-            mesh_image,
-            app,
-            controls.sign_up_name,
-            controls.sign_up_email,
-            controls.sign_up_password,
-            controls.create_account,
-            controls.continue_github,
-            border,
-            muted,
-            fg,
-        ),
-        preview_column_right(controls.soft_demo, controls.outline_demo, controls.ghost_demo, muted, fg, accent),
+        preview_column_left(look, controls.tree, controls.search_field, controls.search_submit, controls.icon_samples),
+        vstack! {
+            gap=14;
+            hstack! {
+                gap=12 align=center;
+                controls.toolbar,
+                controls.actions,
+            }.w_full().flex_wrap(),
+            preview_column_center(
+                look,
+                mesh_image,
+                app,
+                controls.sign_up_name,
+                controls.sign_up_email,
+                controls.sign_up_password,
+                controls.create_account,
+                controls.continue_github,
+                border,
+                muted,
+                fg,
+            ),
+        }
+        .w_full(),
+        preview_column_right(look, controls.tabs, controls.task_samples, surface),
     )
     .build(cx)
 }
 
 #[allow(clippy::too_many_arguments)]
 fn preview_column_left(
+    look: &Look,
+    tree: TreeView<()>,
     search_field: TextField,
     search_submit: Entity<Button>,
-    preview_switch: Switch,
-    task_a: Checkbox,
-    task_b: Checkbox,
-    task_c: Checkbox,
-    surface: Hsla,
-    border: Hsla,
-    muted: Hsla,
-    fg: Hsla,
-    accent: Hsla,
+    icon_samples: icon_samples::IconSamples,
 ) -> impl IntoElement {
     vstack! {
         gap=14;
@@ -369,24 +293,15 @@ fn preview_column_left(
             search_submit,
         }
         .w_full(),
-        alert_card(accent, muted, fg),
-        div()
-            .w_full()
-            .rounded_lg()
-            .border_1()
-            .border_color(border)
-            .bg(surface)
-            .p_3()
-            .child(
-                vstack! {
-                    gap=10;
-                    preview_switch,
-                    task_a,
-                    task_b,
-                    task_c,
-                }
-                .w_full(),
-            ),
+        alert_card(look),
+        super::shared::tree_view::panel(tree, look),
+        div().flex().flex_wrap().gap(px(12.0)).children([
+            luma_look_radix::Badge::new(look, "Fully-featured").pill().into_any_element(),
+            luma_look_radix::Badge::new(look, "Built with Radix").variant(luma_look_radix::BadgeVariant::Surface).pill().into_any_element(),
+            luma_look_radix::Badge::new(look, "Open source").variant(luma_look_radix::BadgeVariant::Outline).pill().into_any_element(),
+        ]),
+        icon_samples.render(),
+        super::shared::card_samples::home(look),
     }
     .w_full()
 }
@@ -471,17 +386,14 @@ fn preview_column_center(
         .overflow_hidden()
         .relative()
         .bg(stage_fill)
-        .on_prepaint(move |bounds, window, cx| {
+        .on_prepaint(move |bounds, _window, cx| {
             let width_px = bounds.size.width.as_f32().max(1.0);
             let height_px = bounds.size.height.as_f32().max(1.0);
             let scale = (SIGNUP_MESH_MAX_SIDE / width_px.max(height_px)).min(1.0);
             let width = (width_px * scale).round().max(1.0) as u32;
             let height = (height_px * scale).round().max(1.0) as u32;
             app.update(cx, |this, cx| {
-                if this.ensure_signup_mesh_cache(width, height) {
-                    window.refresh();
-                    cx.notify();
-                }
+                this.request_signup_mesh(width, height, cx);
             });
         })
         .when_some(mesh_image, |this, image| {
@@ -498,25 +410,50 @@ fn preview_column_center(
 }
 
 fn preview_column_right(
-    soft: Entity<Button>,
-    outline: Entity<Button>,
-    ghost: Entity<Button>,
-    muted: Hsla,
-    fg: Hsla,
-    accent: Hsla,
+    look: &Look,
+    tabs: Entity<Tabs>,
+    tasks: task_samples::TaskSamples,
+    surface: Hsla,
 ) -> impl IntoElement {
     vstack! {
         gap=14;
-        typography_block(muted, fg, accent),
-        hstack! {
-            gap=8;
-            soft,
-            outline,
-            ghost,
-        }
-        .w_full(),
+        tabs,
+        avatar_samples(look),
+        typography_block(look),
+        tasks.render(surface),
     }
     .w_full()
+}
+
+/// Local sample composition; Avatar owns its geometry and palette treatment.
+fn avatar_samples(look: &Look) -> impl IntoElement {
+    use luma::controls::button::ControlIcon;
+    use luma_look_radix::{Avatar, AvatarVariant, Radius};
+
+    let rows = [AvatarVariant::Solid, AvatarVariant::Soft];
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(16.0))
+        .w_full()
+        .max_w(px(300.0))
+        .mx_auto()
+        .children(rows.into_iter().map(|variant| {
+            let avatar = |text| Avatar::new(look, text).variant(variant).radius(Radius::Full);
+            let people = || ControlIcon::SvgPath("assets/avatars/people.svg".into());
+            // Spacing contracts in narrow side columns while preserving the avatar size.
+            div()
+                .flex()
+                .items_center()
+                .justify_between()
+                .w_full()
+                .child(avatar("V").image("assets/avatars/portrait.jpg"))
+                .child(avatar("V").image("assets/avatars/portrait.jpg"))
+                .child(avatar("V"))
+                .child(avatar("BG"))
+                .child(avatar("").icon(people()))
+                .child(avatar("").icon(people()).high_contrast(true))
+        }))
 }
 
 fn labeled_field(label: &'static str, field: TextField, muted: Hsla) -> impl IntoElement {
@@ -528,35 +465,44 @@ fn labeled_field(label: &'static str, field: TextField, muted: Hsla) -> impl Int
     .w_full()
 }
 
-fn alert_card(accent: Hsla, muted: Hsla, fg: Hsla) -> impl IntoElement {
-    div()
-        .w_full()
-        .rounded_lg()
-        .p_3()
-        .bg(gpui::hsla(accent.h, accent.s * 0.35, (accent.l * 0.35).clamp(0.12, 0.35), 1.0))
-        .border_1()
-        .border_color(accent)
-        .child(hstack! {
-            gap=10 align=start;
-            div().text_sm().text_color(accent).child("i"),
-            vstack! {
-                gap=2;
-                div().text_sm().text_color(fg).child("Please upgrade to the new version."),
-                div().text_xs().text_color(muted).child("Accent soft surface preview"),
-            },
-        })
+fn alert_card(look: &Look) -> impl IntoElement {
+    luma_look_radix::callout(
+        look,
+        "Please upgrade to the new version.",
+        luma::controls::button::ControlIcon::SvgPath("assets/react-icons/info-circled.svg".into()),
+    )
 }
 
-fn typography_block(muted: Hsla, fg: Hsla, accent: Hsla) -> impl IntoElement {
+/// Local typography sample: identical content in accent and neutral treatments.
+fn typography_block(look: &Look) -> impl IntoElement {
     vstack! {
-        gap=8;
-        div().text_sm().text_color(fg).child(
-            "Susan Kare is an artist and graphic designer known for creating many of the interface elements for the Apple Macintosh in the 1980s."
-        ),
-        div().text_sm().text_color(muted).child(
-            "She also designed icons and typefaces for NeXT, IBM, and Microsoft."
-        ),
-        div().text_sm().text_color(accent).child("Learn more →"),
+        gap=16;
+        biography_quote(look, ScaleFamily::Color),
+        biography_quote(look, ScaleFamily::Gray),
     }
     .w_full()
+}
+
+fn biography_quote(look: &Look, family: ScaleFamily) -> impl IntoElement {
+    const TEXT: &str = "Susan Kare is an American graphic designer and artist, who contributed interface elements and typefaces for the first Apple Macintosh personal computer from 1983 to 1986.";
+    let (body, emphasis) = match family {
+        ScaleFamily::Gray => {
+            (look.resolve_step(ScaleFamily::Gray, 11).hsla(), look.resolve_step(ScaleFamily::Gray, 12).hsla())
+        }
+        _ => (look.resolve_step(ScaleFamily::Gray, 12).hsla(), look.resolve_step(family, 11).hsla()),
+    };
+    let highlights =
+        ["graphic designer", "interface", "typefaces", "Apple Macintosh"].into_iter().filter_map(|phrase| {
+            TEXT.find(phrase).map(|start| {
+                (start..start + phrase.len(), gpui::HighlightStyle { color: Some(emphasis), ..Default::default() })
+            })
+        });
+    div()
+        .w_full()
+        .border_l(px(3.0))
+        .border_color(look.resolve_step(family, 6).hsla())
+        .pl(px(12.0))
+        .text_sm()
+        .text_color(body)
+        .child(gpui::StyledText::new(TEXT).with_highlights(highlights))
 }

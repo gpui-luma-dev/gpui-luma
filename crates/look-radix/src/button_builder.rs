@@ -21,6 +21,7 @@ pub struct Button<D = ()> {
     size: ButtonSize,
     radius: Radius,
     icon: Option<ControlIcon>,
+    icon_size: Option<f32>,
     role: ButtonFamilyRole,
     enabled: bool,
     tab_stop: bool,
@@ -40,6 +41,7 @@ impl Button<()> {
             size: ButtonSize::default(),
             radius: Radius::default(),
             icon: None,
+            icon_size: None,
             role: ButtonFamilyRole::Text,
             enabled: true,
             tab_stop: true,
@@ -63,6 +65,7 @@ impl Button<()> {
             size: self.size,
             radius: self.radius,
             icon: self.icon,
+            icon_size: self.icon_size,
             role: self.role,
             enabled: self.enabled,
             tab_stop: self.tab_stop,
@@ -148,6 +151,15 @@ impl<D: Clone + 'static> Button<D> {
         self
     }
 
+    /// Override the icon and its SDK layout slot in logical pixels.
+    /// The button's outer dimensions still follow its size.
+    pub fn icon_size(mut self, size: f32) -> Self {
+        if size.is_finite() && size >= 0.0 {
+            self.icon_size = Some(size);
+        }
+        self
+    }
+
     pub fn role(mut self, role: ButtonFamilyRole) -> Self {
         self.role = role;
         self
@@ -185,9 +197,21 @@ impl<D: Clone + 'static> Button<D> {
         resolve_look(self.look.as_ref(), cx.try_global::<Look>())
     }
 
+    fn look_source(&self, look: &Look) -> luma::controls::button::ButtonLookSource<D> {
+        let geometry = button_look_for(look, self.variant, self.paint, self.size, self.radius);
+        let icon_size = self.icon_size;
+        std::sync::Arc::new(move |model| {
+            let mut resolved = geometry(model);
+            if let Some(size) = icon_size {
+                resolved.icon_size = size;
+            }
+            resolved
+        })
+    }
+
     fn into_sdk_builder(self, look: Look) -> ButtonBuilder<D> {
         let template = button_template(&look, self.variant, self.paint);
-        let geometry = button_look_for(&look, self.variant, self.paint, self.size, self.radius);
+        let geometry = self.look_source(&look);
         let mut builder = luma::controls::button::Button::new(self.id)
             .typed(self.data)
             .template(template)
@@ -228,6 +252,32 @@ mod tests {
 
     fn primary(look: &Look) -> gpui::Hsla {
         look.resolve_role(crate::semantic::SemanticRole::Primary).hsla()
+    }
+
+    #[test]
+    fn icon_size_override_updates_the_sdk_slot_without_resizing_the_button() {
+        let look = Look::built_in();
+        let button = Button::new("toolbar-icon")
+            .ghost_quiet()
+            .gray()
+            .size(ButtonSize::One)
+            .role(ButtonFamilyRole::Icon)
+            .icon_size(20.0)
+            .typed(());
+        for mode in [luma::theme::ThemeMode::Light, luma::theme::ThemeMode::Dark] {
+            look.set_mode(mode);
+            for focused in [false, true] {
+                let model = ButtonRenderModel::<()> {
+                    role: ButtonFamilyRole::Icon,
+                    state: luma::theme::InteractionState { focused, ..Default::default() },
+                    ..Default::default()
+                };
+                let resolved = button.look_source(&look)(&model);
+                assert_eq!(resolved.icon_size, 20.0);
+                assert_eq!(resolved.height, 24.0);
+                assert!(resolved.border.is_none());
+            }
+        }
     }
 
     #[test]

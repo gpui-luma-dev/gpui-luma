@@ -9,6 +9,14 @@ pub struct Assets;
 
 impl AssetSource for Assets {
     fn load(&self, path: &str) -> Result<Option<Cow<'static, [u8]>>> {
+        let avatar: Option<&'static [u8]> = match path.trim_start_matches('/') {
+            "assets/avatars/portrait.jpg" => Some(include_bytes!("avatars/portrait.jpg")),
+            "assets/avatars/people.svg" => Some(include_bytes!("avatars/people.svg")),
+            _ => None,
+        };
+        if let Some(bytes) = avatar {
+            return Ok(Some(Cow::Borrowed(bytes)));
+        }
         Ok(react_icon_asset_bytes(path).or_else(|| lucide_asset_bytes(path)).map(Cow::Borrowed))
     }
 

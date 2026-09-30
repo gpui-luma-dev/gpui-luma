@@ -1,0 +1,55 @@
+//! SDK toolbar and Actions menu above the signup preview.
+
+use gpui::{Context, Entity};
+use luma::controls::button::ControlIcon;
+use luma::controls::popup_menu::PopupMenu;
+use luma::controls::toolbar::Toolbar;
+use luma::infra::menu_item::MenuItem;
+use luma_look_radix::{self as radix, Look};
+
+pub fn spawn<T: 'static>(look: &Look, cx: &mut Context<T>) -> (Toolbar, Entity<PopupMenu>) {
+    let mut toolbar = radix::Toolbar::new("signup-preview-toolbar").look(look);
+    for (index, (icon, label)) in [
+        ("plus", "Add"),
+        ("grid", "Grid"),
+        ("square", "Box"),
+        ("component-1", "Component"),
+        ("dots-horizontal", "More"),
+        ("text", "Text"),
+        ("font-italic", "Italic"),
+        ("lightning-bolt", "Interactions"),
+        ("scissors", "Slice"),
+        ("cube", "3D"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        if matches!(index, 1 | 5 | 8) {
+            toolbar = toolbar.separator(format!("preview-tools-separator-{index}"));
+        }
+        let id = format!("preview-tool-{icon}");
+        toolbar = toolbar.command(id, label, ControlIcon::SvgPath(format!("assets/react-icons/{icon}.svg").into()));
+    }
+    let toolbar = toolbar.spawn(cx);
+    let actions = radix::PopupMenu::new("signup-preview-actions")
+        .look(look)
+        .outline()
+        .label("Actions")
+        .items([
+            MenuItem::new("copy").label("Copy"),
+            MenuItem::new("paste").label("Paste"),
+            MenuItem::new("paste-replace").label("Paste to replace"),
+            MenuItem::new("layers").label("Layers").submenu([
+                MenuItem::new("bring-front").label("Bring to front"),
+                MenuItem::new("send-back").label("Send to back"),
+            ]),
+            MenuItem::new("boolean-groups").label("Boolean groups").submenu([
+                MenuItem::new("union").label("Union"),
+                MenuItem::new("subtract").label("Subtract"),
+                MenuItem::new("intersect").label("Intersect"),
+                MenuItem::new("exclude").label("Exclude"),
+            ]),
+        ])
+        .spawn(cx);
+    (toolbar, actions)
+}

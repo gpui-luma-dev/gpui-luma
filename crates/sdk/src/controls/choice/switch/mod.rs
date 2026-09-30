@@ -238,6 +238,11 @@ pub struct SwitchBuilder {
 }
 
 impl SwitchBuilder {
+    /// Render only the switch track, without the label or its spacing.
+    pub fn without_label(self) -> Self {
+        Self { button: self.button.role(crate::controls::button_family::ButtonFamilyRole::Icon), ..self }
+    }
+
     pub fn with_data(self, checked: bool) -> Self {
         Self { button: self.button.with_data(SwitchData::new(checked)), ..self }
     }
@@ -387,6 +392,17 @@ mod tests {
     use gpui::div;
 
     use super::*;
+
+    #[test]
+    fn switch_without_label_preserves_checked_state() {
+        let builder = new("unlabeled").with_data(true).without_label();
+        assert_eq!(builder.button.model.role, crate::controls::button_family::ButtonFamilyRole::Icon);
+        assert_eq!(builder.button.model.data, SwitchData::new(true));
+        assert_eq!(
+            new("labeled").label("Notifications").button.model.role,
+            crate::controls::button_family::ButtonFamilyRole::Text
+        );
+    }
 
     #[test]
     fn switch_builder_sets_slot_content_track_length_and_orientation() {

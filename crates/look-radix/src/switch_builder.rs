@@ -174,6 +174,8 @@ impl Switch {
         }
         if let Some(content) = self.content {
             HasPresenter::set_presenter(&mut builder, content);
+        } else {
+            builder = builder.without_label();
         }
         builder
     }

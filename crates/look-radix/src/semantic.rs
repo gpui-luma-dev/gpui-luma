@@ -1,10 +1,10 @@
-//! Semantic role → scale family + step mappings for the radix stub.
+//! Semantic role → scale family + step mappings for the Radix look.
 
 use luma::theme::ThemeMode;
 
 use crate::scale::{ModeScales, ScaleFamily, ScaleStep};
 
-/// Look-agnostic semantic slots used by stub recipes (not Shadcn token names).
+/// Semantic slots resolved through the Radix color and gray scales.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum SemanticRole {
     Background,

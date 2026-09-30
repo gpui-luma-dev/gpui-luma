@@ -6,6 +6,9 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
+image.workspace = true
+smallvec.workspace = true
+tiny-skia.workspace = true
 anyhow = { workspace = true }
 gpui = { workspace = true }
 gpui_platform = { workspace = true }

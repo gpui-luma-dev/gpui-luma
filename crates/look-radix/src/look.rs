@@ -12,8 +12,9 @@ use luma::theme::provenance::ResolvedColor;
 
 use crate::button::ClassicButtonParams;
 use crate::palette::{PaletteSlot, Accent, Gray, ThemePalettes, scale_pair};
-use crate::scale::{ModeScales, ScaleFamily, ScalePair, ScaleStep, color_scale_from_seed};
+use crate::scale::{ModeScales, ScaleFamily, ScalePair, ScaleStep};
 use crate::semantic::SemanticRole;
+use crate::{CustomColors, generate_colors};
 
 /// Canonical page wash: color step 3 at the top, settling to gray step 1.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -47,60 +48,26 @@ impl PageBackground {
     }
 }
 
-/// Signup / panel stage behind elevated cards (Radix Colors custom palette).
+/// Shared palette and control styling state; cloning shares state, `fork` copies it.
 ///
-/// HTML equivalent: `background: var(--gray-2)` plus an accent mesh SVG at ~0.6 opacity.
-/// Mesh paints use the **color** scale (Radix `--accent-*`) against `--color-background`.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct SignupStage {
-    /// Gray fill behind the card (`--gray-2`).
-    pub fill_step: ScaleStep,
-    /// Elevated card face (`--color-background` / gray 1).
-    pub card_step: ScaleStep,
-    /// Overall mesh layer opacity.
-    pub mesh_opacity: f32,
-}
-
-impl Default for SignupStage {
-    fn default() -> Self {
-        Self { fill_step: 2, card_step: 1, mesh_opacity: 0.6 }
-    }
-}
-
-/// Soft mesh tints taken from the Radix signup SVG radial stops (`accent-1/2/3/5/7/9`).
-#[derive(Clone, Copy, Debug)]
-pub struct SignupMeshColors {
-    pub background: Hsla,
-    pub accent_1: Hsla,
-    pub accent_2: Hsla,
-    pub accent_3: Hsla,
-    pub accent_5: Hsla,
-    pub accent_7: Hsla,
-    pub accent_9: Hsla,
-}
-
-impl SignupStage {
-    pub fn fill(self, look: &Look) -> Hsla {
-        look.resolve_step(ScaleFamily::Gray, self.fill_step).hsla()
-    }
-
-    pub fn card(self, look: &Look) -> Hsla {
-        look.resolve_step(ScaleFamily::Gray, self.card_step).hsla()
-    }
-
-    pub fn mesh_colors(self, look: &Look) -> SignupMeshColors {
-        SignupMeshColors {
-            background: look.resolve_role(SemanticRole::Background).hsla(),
-            accent_1: look.resolve_step(ScaleFamily::Color, 1).hsla(),
-            accent_2: look.resolve_step(ScaleFamily::Color, 2).hsla(),
-            accent_3: look.resolve_step(ScaleFamily::Color, 3).hsla(),
-            accent_5: look.resolve_step(ScaleFamily::Color, 5).hsla(),
-            accent_7: look.resolve_step(ScaleFamily::Color, 7).hsla(),
-            accent_9: look.resolve_step(ScaleFamily::Color, 9).hsla(),
-        }
-    }
-}
-
+/// # Redrawing after changes
+/// Setters update state and revision only: they do **not** send GPUI notifications.
+/// Notify the owning view and any independently rendered control entities that use
+/// this look. Controls resolve new colors on their next render. Rebuild passive
+/// elements (Avatar, Badge, Card) in the owning view's render method.
+///
+/// ```no_run
+/// use gpui::{Context, Entity};
+/// use luma::controls::button::Button;
+/// use luma::theme::ThemeMode;
+/// use luma_look_radix::Look;
+///
+/// fn change_mode<M: 'static>(look: &Look, button: &Entity<Button>, cx: &mut Context<M>) {
+///     look.set_mode(ThemeMode::Dark);
+///     button.update(cx, |_, cx| cx.notify()); // repeat for affected child entities
+///     cx.notify(); // rebuild the owner's passive elements and layout
+/// }
+/// ```
 #[derive(Clone)]
 pub struct Look {
     state: Arc<LookState>,
@@ -121,11 +88,13 @@ pub(crate) fn resolve_look(explicit: Option<&Look>, ambient: Option<&Look>) -> L
 
 struct LookState {
     scales: RwLock<ScalePair>,
-    palettes: RwLock<ThemePalettes>,
+    palettes: RwLock<[ThemePalettes; 2]>,
+    custom_contrast: RwLock<[Option<Hsla>; 2]>,
     metrics: MetricTokens,
     mode: AtomicU8,
     classic_shadow: RwLock<ClassicButtonParams>,
-    /// Bumped on mode change so callers can observe cheaply if desired.
+    tabs_style: RwLock<crate::tabs::TabsStyle>,
+    /// Bumped by look setters; polling does not schedule GPUI redraws.
     revision: RwLock<u64>,
 }
 
@@ -138,7 +107,7 @@ impl Look {
     pub fn from_palettes(accent: Accent, gray: Gray, metrics: MetricTokens, mode: ThemeMode) -> Self {
         let look = Self::new(scale_pair(accent, gray), metrics, mode);
         if let Ok(mut palettes) = look.state.palettes.write() {
-            *palettes = ThemePalettes::named(accent, gray);
+            *palettes = [ThemePalettes::named(accent, gray); 2];
         }
         look
     }
@@ -148,10 +117,12 @@ impl Look {
         Self {
             state: Arc::new(LookState {
                 scales: RwLock::new(scales),
-                palettes: RwLock::new(ThemePalettes { accent: PaletteSlot::Custom, gray: PaletteSlot::Custom }),
+                palettes: RwLock::new([ThemePalettes { accent: PaletteSlot::Custom, gray: PaletteSlot::Custom }; 2]),
+                custom_contrast: RwLock::new([None; 2]),
                 metrics,
                 mode: AtomicU8::new(mode_to_u8(mode)),
                 classic_shadow: RwLock::new(ClassicButtonParams::default()),
+                tabs_style: RwLock::new(crate::tabs::TabsStyle::default()),
                 revision: RwLock::new(0),
             }),
         }
@@ -159,23 +130,42 @@ impl Look {
 
     /// An independent copy of this look's scales, palettes, metrics, mode, and tuning.
     ///
-    /// Cloning a [`Look`] shares one mutable state, so every control repaints together.
+    /// Cloning a [`Look`] shares mutable state; callers still notify affected views.
     /// Forking is how a screen can edit a palette without touching the rest of the app.
     pub fn fork(&self) -> Self {
         let scales = *self.state.scales.read().unwrap_or_else(|poisoned| poisoned.into_inner());
         let forked = Self::new(scales, self.metrics(), self.mode());
         if let Ok(mut palettes) = forked.state.palettes.write() {
-            *palettes = self.palettes();
+            *palettes = *self.state.palettes.read().unwrap_or_else(|poisoned| poisoned.into_inner());
         }
         if let Ok(mut classic) = forked.state.classic_shadow.write() {
             *classic = self.classic_params();
         }
+        if let Ok(mut tabs) = forked.state.tabs_style.write() {
+            *tabs = self.tabs_style();
+        }
+        if let Ok(mut contrast) = forked.state.custom_contrast.write() {
+            *contrast = *self.state.custom_contrast.read().unwrap_or_else(|poisoned| poisoned.into_inner());
+        }
         forked
+    }
+
+    /// Shared tab geometry, baseline, and indicator settings for this look.
+    pub fn tabs_style(&self) -> crate::tabs::TabsStyle {
+        *self.state.tabs_style.read().unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// Update tab defaults for subsequent renders. Notify affected views; see [`Look`].
+    pub fn set_tabs_style(&self, style: crate::tabs::TabsStyle) {
+        if let Ok(mut current) = self.state.tabs_style.write() {
+            *current = style;
+        }
+        self.bump_revision();
     }
 
     /// Palettes currently in use, for readouts and pickers.
     pub fn palettes(&self) -> ThemePalettes {
-        *self.state.palettes.read().unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.state.palettes.read().unwrap_or_else(|poisoned| poisoned.into_inner())[mode_to_u8(self.mode()) as usize]
     }
 
     /// Palette name behind one family, so swatches can report `indigo 9` over `color 9`.
@@ -183,13 +173,17 @@ impl Look {
         self.scales().family(family).palette()
     }
 
-    /// Repaints every control from a different named pair.
+    /// Select a named palette pair for subsequent renders.
+    /// Notify affected views after changing it; see [`Look`].
     pub fn set_palettes(&self, accent: Accent, gray: Gray) {
         if let Ok(mut scales) = self.state.scales.write() {
             *scales = scale_pair(accent, gray);
         }
         if let Ok(mut palettes) = self.state.palettes.write() {
-            *palettes = ThemePalettes::named(accent, gray);
+            *palettes = [ThemePalettes::named(accent, gray); 2];
+        }
+        if let Ok(mut contrast) = self.state.custom_contrast.write() {
+            *contrast = [None; 2];
         }
         self.bump_revision();
     }
@@ -200,6 +194,7 @@ impl Look {
     }
 
     /// Retunes the Classic bubble for every button resolved from this look.
+    /// Notify affected views after changing it; see [`Look`].
     pub fn set_classic_params(&self, params: ClassicButtonParams) {
         if let Ok(mut current) = self.state.classic_shadow.write() {
             *current = params;
@@ -213,6 +208,7 @@ impl Look {
         mode_from_u8(self.state.mode.load(Ordering::Relaxed))
     }
 
+    /// Change the active mode. Notify affected views afterward; see [`Look`].
     pub fn set_mode(&self, mode: ThemeMode) {
         self.state.mode.store(mode_to_u8(mode), Ordering::Relaxed);
         if let Ok(mut rev) = self.state.revision.write() {
@@ -220,18 +216,62 @@ impl Look {
         }
     }
 
-    /// Rebuilds both chromatic mode scales from the supplied color-9 anchor.
-    ///
-    /// The accent slot stops being a named palette; the gray slot keeps its name.
+    /// Rebuilds both accent scales using Radix's custom-color generator.
+    /// Uses each mode's current gray step 8 and background; leaves gray unchanged.
+    /// Notify affected views after changing it; see [`Look`].
     pub fn set_accent_seed(&self, seed: Hsla) {
-        if let Ok(mut scales) = self.state.scales.write() {
-            scales.light.color = color_scale_from_seed(seed, ThemeMode::Light);
-            scales.dark.color = color_scale_from_seed(seed, ThemeMode::Dark);
+        let pair = *self.state.scales.read().unwrap_or_else(|poisoned| poisoned.into_inner());
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            let scales = pair.for_mode(mode);
+            let generated = generate_colors(
+                CustomColors { accent: seed, gray: scales.gray.step(8), background: scales.gray.step(1) },
+                mode,
+            );
+            if let Ok(mut scales) = self.state.scales.write() {
+                match mode {
+                    ThemeMode::Light => scales.light.color = generated.accent,
+                    ThemeMode::Dark => scales.dark.color = generated.accent,
+                }
+            }
+            if let Ok(mut contrast) = self.state.custom_contrast.write() {
+                contrast[mode_to_u8(mode) as usize] = Some(generated.accent_contrast);
+            }
         }
         if let Ok(mut palettes) = self.state.palettes.write() {
-            palettes.accent = PaletteSlot::Custom;
+            for palette in palettes.iter_mut() {
+                palette.accent = PaletteSlot::Custom;
+            }
         }
         self.bump_revision();
+    }
+
+    /// Regenerates the active mode's accent and gray scales from all three seed colors.
+    /// The caller owns editor state and must notify affected views; see [`Look`].
+    /// The background affects scale generation; page composition stays with the caller.
+    pub fn set_custom_colors(&self, inputs: CustomColors) {
+        let mode = self.mode();
+        let generated = generate_colors(inputs, mode);
+        if let Ok(mut pair) = self.state.scales.write() {
+            let scales = match mode {
+                ThemeMode::Light => &mut pair.light,
+                ThemeMode::Dark => &mut pair.dark,
+            };
+            scales.color = generated.accent;
+            scales.gray = generated.gray;
+        }
+        if let Ok(mut contrast) = self.state.custom_contrast.write() {
+            contrast[mode_to_u8(mode) as usize] = Some(generated.accent_contrast);
+        }
+        if let Ok(mut palettes) = self.state.palettes.write() {
+            palettes[mode_to_u8(mode) as usize] =
+                ThemePalettes { accent: PaletteSlot::Custom, gray: PaletteSlot::Custom };
+        }
+        self.bump_revision();
+    }
+
+    fn custom_contrast(&self) -> Option<Hsla> {
+        self.state.custom_contrast.read().unwrap_or_else(|poisoned| poisoned.into_inner())
+            [mode_to_u8(self.mode()) as usize]
     }
 
     fn bump_revision(&self) {
@@ -257,8 +297,13 @@ impl Look {
     }
 
     pub fn resolve_role(&self, role: SemanticRole) -> ResolvedColor {
-        if role == SemanticRole::PrimaryForeground && self.accent_uses_dark_solid_contrast() {
-            return self.dark_solid_contrast();
+        if role == SemanticRole::PrimaryForeground {
+            if let Some(contrast) = self.custom_contrast() {
+                return ResolvedColor::authored(contrast, "custom-accent-contrast");
+            }
+            if self.accent_uses_dark_solid_contrast() {
+                return self.dark_solid_contrast();
+            }
         }
         role.resolve(self.scales(), self.mode())
     }
@@ -273,8 +318,10 @@ impl Look {
             PaletteSlot::Named(name) => {
                 Accent::ALL.iter().any(|accent| accent.as_str() == name && accent.uses_dark_solid_contrast())
             }
-            // Custom seeds: treat a light solid face like Radix's bright accents.
-            PaletteSlot::Custom => self.resolve_step(ScaleFamily::Color, 9).hsla().l >= 0.68,
+            PaletteSlot::Custom => self
+                .custom_contrast()
+                .map(|color| color.l < 0.5)
+                .unwrap_or_else(|| self.resolve_step(ScaleFamily::Color, 9).hsla().l >= 0.68),
         }
     }
 
@@ -292,11 +339,6 @@ impl Look {
     /// Default page background recipe: **color #3 → gray #1**, settling at ⅓.
     pub fn page_background(&self) -> Background {
         PageBackground::default().paint(self)
-    }
-
-    /// Signup stage recipe: gray-2 fill + color-scale mesh tokens + gray-1 card.
-    pub fn signup_stage(&self) -> SignupStage {
-        SignupStage::default()
     }
 }
 
@@ -365,6 +407,30 @@ mod tests {
     }
 
     #[test]
+    fn custom_palette_is_mode_local_and_fork_copies_contrast() {
+        let look = Look::from_palettes(Accent::Yellow, Gray::Auto, Default::default(), ThemeMode::Light);
+        let original = look.resolve_step(ScaleFamily::Color, 9).hsla();
+        let light_contrast = look.resolve_role(SemanticRole::PrimaryForeground).hsla();
+        look.set_mode(ThemeMode::Dark);
+        look.set_custom_colors(CustomColors {
+            accent: gpui::rgb(0xffff00).into(),
+            gray: gpui::rgb(0x888888).into(),
+            background: gpui::black(),
+        });
+        let dark_contrast = look.resolve_role(SemanticRole::PrimaryForeground).hsla();
+        assert!(dark_contrast.l < 0.5);
+        assert_eq!(look.fork().resolve_role(SemanticRole::PrimaryForeground).hsla(), dark_contrast);
+        look.set_mode(ThemeMode::Light);
+        assert_eq!(look.palettes(), ThemePalettes::named(Accent::Yellow, Gray::Auto));
+        assert_eq!(look.resolve_step(ScaleFamily::Color, 9).hsla(), original);
+        assert_eq!(look.resolve_role(SemanticRole::PrimaryForeground).hsla(), light_contrast);
+        look.set_palettes(Accent::Indigo, Gray::Auto);
+        look.set_mode(ThemeMode::Dark);
+        assert!(look.custom_contrast().is_none());
+        assert_eq!(look.palettes(), ThemePalettes::named(Accent::Indigo, Gray::Auto));
+    }
+
+    #[test]
     fn page_background_mixes_color_and_gray() {
         let look = Look::built_in();
         let recipe = PageBackground::default();
@@ -374,16 +440,5 @@ mod tests {
         assert_eq!(from, color_3);
         assert_eq!(to, gray_1);
         assert_ne!(from.s, to.s);
-    }
-
-    #[test]
-    fn signup_stage_uses_gray_fill_and_color_mesh() {
-        let look = Look::built_in();
-        let stage = look.signup_stage();
-        assert_eq!(stage.fill(&look), look.resolve_step(ScaleFamily::Gray, 2).hsla());
-        assert_eq!(stage.card(&look), look.resolve_step(ScaleFamily::Gray, 1).hsla());
-        let mesh = stage.mesh_colors(&look);
-        assert_eq!(mesh.accent_3, look.resolve_step(ScaleFamily::Color, 3).hsla());
-        assert_ne!(mesh.accent_9.s, stage.fill(&look).s);
     }
 }

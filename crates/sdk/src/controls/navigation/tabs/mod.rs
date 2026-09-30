@@ -17,6 +17,6 @@ pub use template::{
     resolve_tabs_uniform_item_width,
 };
 
-pub use theme::{DefaultTabsTheme, TabsItemLook, TabsListLook, TabsTheme, default_tabs_theme};
+pub use theme::{DefaultTabsTheme, TabsBaseline, TabsItemLook, TabsListLook, TabsTheme, default_tabs_theme};
 
 pub use crate::infra::state::{CompositeItemState as TabsItemState, ControlFocusState};

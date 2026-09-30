@@ -21,6 +21,7 @@ const THEME_ICON_SIZE: f32 = 15.0;
 pub enum ScreenNavEvent {
     Change { tab: RadixStudioTab },
     ModeChange { mode: ThemeMode },
+    ResetTheme,
 }
 
 pub struct ScreenNav {
@@ -32,13 +33,15 @@ pub struct ScreenNav {
     style_guide: Toggle,
     developer: Toggle,
     theme_toggle: Entity<Button>,
+    theme_reset: Entity<Button>,
     _subscriptions: Vec<Subscription>,
 }
 
 impl EventEmitter<ScreenNavEvent> for ScreenNav {}
 
 impl ScreenNav {
-    pub fn new(look: &Arc<Look>, cx: &mut Context<Self>) -> Self {
+    /// Page navigation uses the app look; theme actions follow the editable palette.
+    pub fn new(look: &Arc<Look>, action_look: &Arc<Look>, cx: &mut Context<Self>) -> Self {
         let custom_palette = radix::Toggle::new("page-custom-palette")
             .look(look)
             .page()
@@ -55,25 +58,37 @@ impl ScreenNav {
             .spawn(cx);
         let developer =
             radix::Toggle::new("page-developer").look(look).page().with_data(false).label("Developer").spawn(cx);
-        // Quiet ghost: transparent at rest, soft fill on hover, no focus ring. A `Toggle`
-        // would paint the accent fill in its selected state, so the mode lives in the look.
-        let icon_look = Arc::clone(look);
+        let icon_look = Arc::clone(action_look);
         let theme_toggle = radix::Button::new("screen-nav-theme")
-            .look(look)
+            .look(action_look)
             .ghost_quiet()
             .content(move |model, _| {
-                let color = model.look.foreground;
                 let name = match icon_look.mode() {
                     ThemeMode::Dark => "moon",
                     ThemeMode::Light => "sun",
                 };
                 icon_named(name)
-                    .map(|icon| react_icon(icon, color, THEME_ICON_SIZE))
+                    .map(|icon| react_icon(icon, model.look.foreground, THEME_ICON_SIZE))
+                    .unwrap_or_else(|| div().into_any_element())
+            })
+            .spawn(cx);
+
+        let theme_reset = radix::Button::new("screen-nav-reset-theme")
+            .look(action_look)
+            .ghost_quiet()
+            .content(|model, _| {
+                icon_named("reset")
+                    .map(|icon| react_icon(icon, model.look.foreground, THEME_ICON_SIZE))
                     .unwrap_or_else(|| div().into_any_element())
             })
             .spawn(cx);
 
         let mut subscriptions = Vec::new();
+        subscriptions.push(cx.subscribe(&theme_reset, |_, _, event: &ButtonEvent, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                cx.emit(ScreenNavEvent::ResetTheme);
+            }
+        }));
         subscriptions.push(cx.subscribe(&custom_palette, |this, _, event: &ToggleEvent, cx| {
             if let ToggleEvent::Change { selected: true } = event {
                 this.select(RadixStudioTab::CustomPalette, cx);
@@ -100,14 +115,13 @@ impl ScreenNav {
             }
         }));
         subscriptions.push(cx.subscribe(&theme_toggle, |this, _, event: &ButtonEvent, cx| {
-            if !matches!(event, ButtonEvent::Click) {
-                return;
+            if matches!(event, ButtonEvent::Click) {
+                let mode = match this.look.mode() {
+                    ThemeMode::Dark => ThemeMode::Light,
+                    ThemeMode::Light => ThemeMode::Dark,
+                };
+                cx.emit(ScreenNavEvent::ModeChange { mode });
             }
-            let mode = match this.look.mode() {
-                ThemeMode::Dark => ThemeMode::Light,
-                ThemeMode::Light => ThemeMode::Dark,
-            };
-            cx.emit(ScreenNavEvent::ModeChange { mode });
         }));
 
         Self {
@@ -119,6 +133,7 @@ impl ScreenNav {
             style_guide,
             developer,
             theme_toggle,
+            theme_reset,
             _subscriptions: subscriptions,
         }
     }
@@ -142,9 +157,10 @@ impl ScreenNav {
         cx.notify();
     }
 
-    /// Repaints the theme face when the mode changes elsewhere (e.g. the palette screen toggles).
-    /// The face reads the look, so only a notify is needed.
-    pub fn mode_changed(&mut self, cx: &mut Context<Self>) {
+    /// Shared Look mutation does not invalidate independently rendered button entities.
+    pub fn theme_changed(&mut self, cx: &mut Context<Self>) {
+        self.theme_toggle.update(cx, |_, cx| cx.notify());
+        self.theme_reset.update(cx, |_, cx| cx.notify());
         cx.notify();
     }
 }
@@ -165,6 +181,14 @@ impl Render for ScreenNav {
                 self.style_guide.clone(),
                 self.developer.clone(),
             })
-            .child(div().flex_1().flex().flex_row().justify_end().child(self.theme_toggle.clone()))
+            .child(
+                div()
+                    .flex_1()
+                    .flex()
+                    .flex_row()
+                    .justify_end()
+                    .child(self.theme_reset.clone())
+                    .child(self.theme_toggle.clone()),
+            )
     }
 }

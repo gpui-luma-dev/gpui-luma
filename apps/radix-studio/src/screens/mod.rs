@@ -7,3 +7,4 @@ pub mod custom_palette;
 pub mod developer;
 pub mod icons;
 pub mod style_guide;
+mod shared;

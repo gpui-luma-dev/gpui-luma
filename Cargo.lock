@@ -2455,9 +2455,6 @@ version = "0.1.0"
 dependencies = [
  "gpui-luma-core",
  "gpui-unofficial",
- "image",
- "smallvec",
- "tiny-skia",
 ]
 
 [[package]]
@@ -3623,7 +3620,10 @@ dependencies = [
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
+ "image",
  "lucide-static-svg",
+ "smallvec",
+ "tiny-skia",
 ]
 
 [[package]]

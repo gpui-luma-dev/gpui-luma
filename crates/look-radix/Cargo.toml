@@ -10,10 +10,7 @@ name = "luma_look_radix"
 
 [dependencies]
 gpui.workspace = true
-image.workspace = true
 luma.workspace = true
-smallvec.workspace = true
-tiny-skia.workspace = true
 
 [lints]
 workspace = true

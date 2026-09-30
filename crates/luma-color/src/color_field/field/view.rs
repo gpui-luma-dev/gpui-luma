@@ -159,17 +159,20 @@ impl ColorField {
                         state.update_cursor_state(pointer, hovered, external_drag_active, window, &hitbox);
                     });
 
-                    // Continue updating while dragging even if pointer moves outside
-                    // this element's hitbox.
+                    // Capture before popover/overlay bubble handlers can stop propagation.
+                    // An active gesture continues outside this element's hitbox.
                     window.on_mouse_event({
                         let state_entity = state_entity.clone();
                         move |ev: &MouseMoveEvent, phase, window, cx| {
-                            if !phase.bubble() {
+                            if !phase.capture() {
                                 return;
                             }
 
                             state_entity.update(cx, |state, cx| {
-                                state.handle_active_move(ev.position, window, cx);
+                                if state.is_interaction_active() {
+                                    state.handle_active_move(ev.position, window, cx);
+                                    cx.stop_propagation();
+                                }
                             });
                         }
                     });
@@ -178,11 +181,14 @@ impl ColorField {
                     window.on_mouse_event({
                         let state_entity = state_entity.clone();
                         move |ev: &MouseUpEvent, phase, window, cx| {
-                            if !phase.bubble() {
+                            if !phase.capture() || ev.button != MouseButton::Left {
                                 return;
                             }
                             state_entity.update(cx, |state, cx| {
-                                state.handle_pointer_release(ev.position, window, cx);
+                                if state.is_interaction_active() {
+                                    state.handle_pointer_release(ev.position, window, cx);
+                                    cx.stop_propagation();
+                                }
                             });
                         }
                     });
