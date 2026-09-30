@@ -332,7 +332,7 @@ impl ClassicShadowEditor {
         let reset = radix::Button::new("classic-shadow-reset").look(look).soft().label("Reset").spawn(cx);
         subscriptions.push(cx.subscribe(&reset, |this, _, event: &ButtonEvent, cx| {
             if matches!(event, ButtonEvent::Click) {
-                this.set_params(ClassicButtonParams::default(), cx);
+                this.reset(cx);
             }
         }));
 
@@ -362,6 +362,10 @@ impl ClassicShadowEditor {
         }));
 
         Self { look: Arc::clone(look), params, sliders, preview, reset, copy, copied, _subscriptions: subscriptions }
+    }
+
+    pub(crate) fn reset(&mut self, cx: &mut Context<Self>) {
+        self.set_params(ClassicButtonParams::default(), cx);
     }
 
     fn set_field(&mut self, field: Field, value: f32, cx: &mut Context<Self>) {

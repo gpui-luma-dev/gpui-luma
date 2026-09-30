@@ -26,10 +26,33 @@ pub struct TabsItemLook {
     pub indicator_height: f32,
 }
 
+/// Full-list rule painted behind the active indicator without consuming layout space.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TabsBaseline {
+    pub color: Hsla,
+    pub height: f32,
+    pub inset_x: f32,
+    /// Distance above the bottom of the list, in logical pixels.
+    pub bottom: f32,
+}
+
 pub trait TabsTheme: Send + Sync {
     fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsListLook;
     fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsItemLook;
     fn font_family(&self) -> SharedString;
+    /// Optional horizontal/vertical padding for an inset label background.
+    /// Horizontal padding is taken from the trigger padding, preserving its width.
+    fn content_padding(&self, _size: ControlSize) -> Option<(f32, f32)> {
+        None
+    }
+    /// Independent of the selected-tab indicator. Absent by default.
+    fn baseline(&self, _enabled: bool, _size: ControlSize) -> Option<TabsBaseline> {
+        None
+    }
+    /// Override the active indicator's inset; `None` retains the item padding inset.
+    fn indicator_inset(&self, _size: ControlSize) -> Option<f32> {
+        None
+    }
 }
 
 #[derive(Clone, Debug, Default)]

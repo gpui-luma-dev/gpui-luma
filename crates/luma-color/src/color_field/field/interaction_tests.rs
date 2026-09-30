@@ -17,6 +17,9 @@ struct Page {
     after: FocusHandle,
     scroll: ScrollHandle,
     ancestor_keys: usize,
+    block_bubble_pointer: bool,
+    hue: Option<Entity<luma::controls::slider::SliderControl>>,
+    bubbled_moves: usize,
 }
 impl Render for Page {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -26,11 +29,26 @@ impl Render for Page {
             .h(px(300.0))
             .luma_focus_scope(&self.scope)
             .on_key_down(cx.listener(|page, _, _, _| page.ancestor_keys += 1))
+            .on_mouse_move(cx.listener(|page, _, _, cx| {
+                page.bubbled_moves += 1;
+                if page.block_bubble_pointer {
+                    cx.stop_propagation();
+                }
+            }))
+            .on_mouse_up(
+                gpui::MouseButton::Left,
+                cx.listener(|page, _, _, cx| {
+                    if page.block_bubble_pointer {
+                        cx.stop_propagation();
+                    }
+                }),
+            )
             .overflow_y_scroll()
             .track_scroll(&self.scroll)
             .child(div().id("before").track_focus(&self.before).h(px(10.0)))
             .child(div().w(px(200.0)).h(px(200.0)).child(self.field.clone()))
             .child(div().id("after").track_focus(&self.after).h(px(10.0)))
+            .when_some(self.hue.clone(), |root, hue| root.child(div().h(px(24.0)).w(px(200.0)).child(hue)))
             .child(div().h(px(1000.0)))
     }
 }
@@ -56,6 +74,9 @@ fn setup(
             after: cx.focus_handle().tab_stop(true),
             scroll: ScrollHandle::new(),
             ancestor_keys: 0,
+            block_bubble_pointer: false,
+            hue: None,
+            bubbled_moves: 0,
         }
     });
     cx.run_until_parked();
@@ -277,4 +298,107 @@ fn wheel_model_moves_spatially_and_preserves_value_and_alpha() {
         assert!((after.1 - before.1).abs() < 0.00001);
         assert_eq!((state.hsv.v, state.hsv.a), (initial().v, initial().a));
     });
+}
+
+#[test]
+fn pointer_drag_tracks_outside_with_bubble_blocker_until_left_release() {
+    use gpui::{MouseButton, MouseDownEvent, MouseUpEvent};
+    let mut app = TestAppContext::single();
+    let (page, cx, field) = setup(&mut app, state());
+    page.update(cx, |page, cx| {
+        page.block_bubble_pointer = true;
+        cx.notify();
+    });
+    cx.run_until_parked();
+    let (log, _subscription) = events(&field, cx);
+    cx.simulate_event(MouseDownEvent {
+        position: point(px(100.0), px(100.0)),
+        button: MouseButton::Left,
+        click_count: 1,
+        ..Default::default()
+    });
+    cx.run_until_parked();
+    let outside = point(px(250.0), px(50.0));
+    cx.simulate_event(MouseMoveEvent {
+        position: outside,
+        pressed_button: Some(MouseButton::Left),
+        ..Default::default()
+    });
+    cx.run_until_parked();
+    cx.update(|_, app| {
+        let state = field.read(app);
+        assert!(state.is_interaction_active());
+        assert_eq!(state.hsv.s, 1.0);
+    });
+    cx.simulate_event(MouseUpEvent { position: outside, button: MouseButton::Right, ..Default::default() });
+    cx.run_until_parked();
+    cx.update(|_, app| assert!(field.read(app).is_interaction_active()));
+    cx.simulate_event(MouseUpEvent { position: outside, button: MouseButton::Left, ..Default::default() });
+    cx.run_until_parked();
+    let released = cx.update(|_, app| {
+        assert!(!field.read(app).is_interaction_active());
+        field.read(app).hsv
+    });
+    assert_eq!(releases(&log.borrow()), 1);
+    cx.simulate_event(MouseMoveEvent { position: point(px(20.0), px(150.0)), ..Default::default() });
+    cx.run_until_parked();
+    cx.update(|_, app| assert_eq!(field.read(app).hsv, released));
+}
+
+#[test]
+fn field_drag_over_hue_slider_owns_moves_and_release() {
+    use gpui::{MouseButton, MouseDownEvent, MouseUpEvent};
+    use crate::color_slider::ColorSliderBuilder;
+    let mut app = TestAppContext::single();
+    let (page, cx, field) = setup(&mut app, state());
+    let hue = page.update(cx, |page, cx| {
+        let hue = ColorSliderBuilder::hue("neighbor-hue", 120.0).spawn(cx);
+        page.hue = Some(hue.clone());
+        cx.notify();
+        hue
+    });
+    cx.run_until_parked();
+    cx.simulate_event(MouseDownEvent {
+        position: point(px(100.0), px(100.0)),
+        button: MouseButton::Left,
+        click_count: 1,
+        ..Default::default()
+    });
+    cx.run_until_parked();
+    let before = cx.update(|_, app| page.read(app).bubbled_moves);
+    for x in [30.0, 100.0, 180.0] {
+        cx.simulate_event(MouseMoveEvent {
+            position: point(px(x), px(230.0)),
+            pressed_button: Some(MouseButton::Left),
+            ..Default::default()
+        });
+        cx.run_until_parked();
+        cx.update(|_, app| {
+            assert!(field.read(app).is_interaction_active());
+            assert_eq!(field.read(app).hsv.v, 0.0);
+            assert_eq!(hue.read(app).value(), 120.0);
+            assert_eq!(page.read(app).bubbled_moves, before);
+        });
+    }
+    cx.simulate_event(MouseUpEvent {
+        position: point(px(180.0), px(230.0)),
+        button: MouseButton::Left,
+        ..Default::default()
+    });
+    cx.run_until_parked();
+    cx.update(|_, app| assert!(!field.read(app).is_interaction_active()));
+    // A fresh press can now operate the neighboring hue slider normally.
+    cx.simulate_event(MouseDownEvent {
+        position: point(px(170.0), px(230.0)),
+        button: MouseButton::Left,
+        click_count: 1,
+        ..Default::default()
+    });
+    cx.simulate_event(MouseUpEvent {
+        position: point(px(170.0), px(230.0)),
+        button: MouseButton::Left,
+        ..Default::default()
+    });
+    cx.run_until_parked();
+    cx.update(|_, app| assert_ne!(hue.read(app).value(), 120.0));
 }

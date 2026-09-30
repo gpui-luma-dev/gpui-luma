@@ -13,11 +13,66 @@ use tiny_skia::{
     Color, FillRule, GradientStop, Paint, Path, PathBuilder, Pixmap, Point, RadialGradient, SpreadMode, Transform,
 };
 
-use crate::look::{Look, SignupMeshColors, SignupStage};
+use luma_look_radix::{Look, ScaleFamily, ScaleStep, SemanticRole};
+
+/// Signup / panel stage behind elevated cards (Radix Colors custom palette).
+///
+/// HTML equivalent: `background: var(--gray-2)` plus an accent mesh SVG at ~0.6 opacity.
+/// Mesh paints use the **color** scale (Radix `--accent-*`) against `--color-background`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SignupStage {
+    /// Gray fill behind the card (`--gray-2`).
+    pub fill_step: ScaleStep,
+    /// Elevated card face (`--color-background` / gray 1).
+    pub card_step: ScaleStep,
+    /// Overall mesh layer opacity.
+    pub mesh_opacity: f32,
+}
+
+impl Default for SignupStage {
+    fn default() -> Self {
+        Self { fill_step: 2, card_step: 1, mesh_opacity: 0.6 }
+    }
+}
+
+/// Soft mesh tints taken from the Radix signup SVG radial stops (`accent-1/2/3/5/7/9`).
+#[derive(Clone, Copy, Debug)]
+pub struct SignupMeshColors {
+    pub background: Hsla,
+    pub accent_1: Hsla,
+    pub accent_2: Hsla,
+    pub accent_3: Hsla,
+    pub accent_5: Hsla,
+    pub accent_7: Hsla,
+    pub accent_9: Hsla,
+}
+
+impl SignupStage {
+    pub fn fill(self, look: &Look) -> Hsla {
+        look.resolve_step(ScaleFamily::Gray, self.fill_step).hsla()
+    }
+
+    pub fn card(self, look: &Look) -> Hsla {
+        look.resolve_step(ScaleFamily::Gray, self.card_step).hsla()
+    }
+
+    pub fn mesh_colors(self, look: &Look) -> SignupMeshColors {
+        SignupMeshColors {
+            background: look.resolve_role(SemanticRole::Background).hsla(),
+            accent_1: look.resolve_step(ScaleFamily::Color, 1).hsla(),
+            accent_2: look.resolve_step(ScaleFamily::Color, 2).hsla(),
+            accent_3: look.resolve_step(ScaleFamily::Color, 3).hsla(),
+            accent_5: look.resolve_step(ScaleFamily::Color, 5).hsla(),
+            accent_7: look.resolve_step(ScaleFamily::Color, 7).hsla(),
+            accent_9: look.resolve_step(ScaleFamily::Color, 9).hsla(),
+        }
+    }
+}
 
 /// Logical SVG viewBox.
 pub const MESH_VIEWBOX_W: f32 = 2560.0;
-pub const MESH_VIEWBOX_H: f32 = 1920.0;
+#[cfg(test)]
+const MESH_VIEWBOX_H: f32 = 1920.0;
 
 /// Display recipe from the web: oversized + shifted into the stage.
 pub const MESH_DISPLAY_WIDTH_FRAC: f32 = 2.4;
@@ -39,7 +94,8 @@ impl SignupMeshCacheKey {
 }
 
 /// Rasterize the full SVG viewBox into `width`×`height`.
-pub fn rasterize_signup_mesh(colors: &SignupMeshColors, width: u32, height: u32) -> Option<Arc<RenderImage>> {
+#[cfg(test)]
+fn rasterize_signup_mesh(colors: &SignupMeshColors, width: u32, height: u32) -> Option<Arc<RenderImage>> {
     let world = Transform::from_scale(width as f32 / MESH_VIEWBOX_W, height as f32 / MESH_VIEWBOX_H);
     rasterize_signup_mesh_with_world(colors, width, height, world)
 }
@@ -395,6 +451,17 @@ mod tests {
     use super::*;
 
     #[test]
+    fn signup_stage_uses_gray_fill_and_color_mesh() {
+        let look = Look::built_in();
+        let stage = SignupStage::default();
+        assert_eq!(stage.fill(&look), look.resolve_step(ScaleFamily::Gray, 2).hsla());
+        assert_eq!(stage.card(&look), look.resolve_step(ScaleFamily::Gray, 1).hsla());
+        let mesh = stage.mesh_colors(&look);
+        assert_eq!(mesh.accent_3, look.resolve_step(ScaleFamily::Color, 3).hsla());
+        assert_ne!(mesh.accent_9.s, stage.fill(&look).s);
+    }
+
+    #[test]
     fn parses_all_mesh_paths() {
         for layer in MESH_LAYERS {
             assert!(parse_svg_path(layer.d).is_some(), "failed: {}", &layer.d[..32]);
@@ -405,6 +472,7 @@ mod tests {
     fn rasterize_produces_image() {
         let look = Look::built_in();
         assert!(rasterize_signup_mesh_for_look(&look, 320, 240).is_some());
+        assert!(rasterize_signup_mesh(&SignupStage::default().mesh_colors(&look), 320, 240).is_some());
     }
 
     #[test]

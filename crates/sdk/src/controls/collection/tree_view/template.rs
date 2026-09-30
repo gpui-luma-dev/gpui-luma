@@ -270,6 +270,7 @@ impl ThemedTreeViewTemplate {
 
         let mut row = div()
             .id(format!("{}-row", node.id))
+            .relative()
             .flex()
             .items_center()
             .w_full()
@@ -340,6 +341,10 @@ impl ThemedTreeViewTemplate {
             Some(content) => div().flex_1().min_w(px(0.0)).child(content),
             None => div().flex_1().truncate().child(node.label.clone()),
         });
+
+        if let Some(color) = self.theme.row_outline(node.state.interaction_state(), node.size) {
+            row = row.child(div().absolute().inset_0().rounded(px(scale.radius)).border_1().border_color(color));
+        }
 
         row.into_any_element()
     }

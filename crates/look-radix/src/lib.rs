@@ -2,13 +2,14 @@
 //!
 //! Vertical slice: 12-step scales, semantic roles, look-owned [`Button`] / [`Checkbox`] /
 //! [`Radio`] / [`Switch`] / [`TextField`] / [`TextArea`] / [`Slider`] / [`Tabs`] /
-//! [`Toggle`] / [`PopupMenu`], and a theme adapter for overlay window.
+//! [`Toggle`] / [`PopupMenu`] / [`TreeView`] / [`Toolbar`], plus [`callout`] and an overlay-window theme.
 //! No Shadcn token or variant names. Does not require SDK API changes.
 
 mod button;
 mod button_builder;
 mod button_layout;
 mod colors;
+mod custom_colors;
 mod checkbox;
 mod checkbox_builder;
 mod ext;
@@ -21,7 +22,6 @@ mod radio;
 mod radio_builder;
 mod scale;
 mod semantic;
-mod signup_mesh;
 mod slider;
 mod slider_builder;
 mod switch;
@@ -36,6 +36,10 @@ mod toggle;
 mod toggle_builder;
 mod tone;
 mod typography;
+mod tree_view;
+mod toolbar;
+mod toolbar_builder;
+mod callout;
 
 pub use button::{
     ClassicButtonParams, Paint, ButtonVariant, button_family_theme, button_family_theme_with, button_look_for,
@@ -51,7 +55,7 @@ pub use checkbox::{
 };
 pub use checkbox_builder::Checkbox;
 pub use ext::LookControlExt;
-pub use look::{PageBackground, Look, SignupMeshColors, SignupStage};
+pub use look::{PageBackground, Look};
 pub use overlay_window::overlay_window_theme;
 pub use palette::{PaletteSlot, Accent, Gray, ThemePalettes, scale_pair};
 pub use popup_menu::{PopupMenuVariant, popup_menu_template, popup_menu_theme};
@@ -63,10 +67,7 @@ pub use radio::{
 pub use radio_builder::Radio;
 pub use scale::{CUSTOM_PALETTE, ColorScale, ModeScales, SCALE_LEN, ScaleFamily, ScalePair, ScaleStep};
 pub use semantic::{SemanticMapping, SemanticRole};
-pub use signup_mesh::{
-    MESH_DISPLAY_LEFT_FRAC, MESH_DISPLAY_WIDTH_FRAC, MESH_VIEWBOX_H, MESH_VIEWBOX_W, SignupMeshCacheKey,
-    rasterize_signup_mesh, rasterize_signup_mesh_for_look, rasterize_signup_mesh_stage,
-};
+
 pub use slider::{SliderSize, SliderVariant, slider_template, slider_theme, slider_theme_with};
 pub use slider_builder::Slider;
 pub use switch::{
@@ -74,7 +75,10 @@ pub use switch::{
     switch_theme, switch_theme_for, switch_theme_with,
 };
 pub use switch_builder::Switch;
-pub use tabs::{TabsSize, TabsVariant, tabs_template, tabs_template_for, tabs_theme, tabs_theme_for};
+pub use tabs::{
+    TabsBaselineStyle, TabsMetrics, TabsStyle, TabsSize, TabsVariant, tabs_template, tabs_template_for, tabs_theme,
+    tabs_theme_for,
+};
 pub use tabs_builder::Tabs;
 pub use textarea::{TextAreaSize, textarea_template, textarea_theme, textarea_theme_with};
 pub use textarea_builder::TextArea;
@@ -83,3 +87,21 @@ pub use textfield_builder::TextField;
 pub use toggle::{page_toggle_template, toggle_template, toggle_template_for};
 pub use toggle_builder::Toggle;
 pub use tone::Tone;
+pub use tree_view::{TreeView, tree_view_frame, tree_view_template, tree_view_theme};
+pub use toolbar::{toolbar_template, toolbar_theme};
+pub use toolbar_builder::Toolbar;
+pub use callout::callout;
+
+mod segmented;
+pub use segmented::segmented_radio_template;
+
+mod badge;
+pub use badge::{Badge, BadgeSize, BadgeVariant};
+
+pub use custom_colors::{CustomColors, GeneratedColors, generate_colors};
+
+mod avatar;
+pub use avatar::{Avatar, AvatarSize, AvatarVariant};
+
+mod card;
+pub use card::{Card, CardSize, CardVariant};

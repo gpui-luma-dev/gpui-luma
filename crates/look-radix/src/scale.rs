@@ -1,4 +1,4 @@
-//! Hand-authored 12-step scales (Radix-shaped dual space: color + gray).
+//! Twelve-step Radix scales (named or generated; color + gray).
 //!
 //! Radix Themes always carry at least:
 //! - a chromatic **color** scale (12 steps)
@@ -109,39 +109,28 @@ impl ScalePair {
     }
 }
 
-/// Generates a Radix-shaped chromatic scale anchored at color step 9.
-///
-/// The curves intentionally vary by mode: light themes spend more of the scale
-/// above the anchor, while dark themes spend more of it below the anchor.
-pub fn color_scale_from_seed(seed: Hsla, mode: ThemeMode) -> ColorScale {
-    const LIGHTNESS_OFFSETS: [f32; SCALE_LEN] =
-        [0.54, 0.50, 0.45, 0.38, 0.28, 0.18, 0.08, 0.03, 0.0, -0.07, -0.15, -0.25];
-    const SATURATION_FACTORS: [f32; SCALE_LEN] = [1.0, 0.98, 0.95, 0.90, 0.85, 0.80, 0.75, 0.72, 1.0, 1.03, 1.07, 1.10];
-
-    let offsets = match mode {
-        ThemeMode::Light => LIGHTNESS_OFFSETS,
-        ThemeMode::Dark => LIGHTNESS_OFFSETS.map(|offset| -offset),
-    };
-    let steps = std::array::from_fn(|index| {
-        if index == 8 {
-            return seed;
-        }
-        gpui::hsla(
-            seed.h,
-            (seed.s * SATURATION_FACTORS[index]).clamp(0.0, 1.0),
-            (seed.l + offsets[index]).clamp(0.0, 1.0),
-            seed.a,
-        )
-    });
-    ColorScale::new(steps)
-}
-
 #[cfg(test)]
 mod tests {
     use gpui::hsla;
 
     use super::*;
     use crate::palette::{Accent, Gray, scale_pair};
+
+    fn color_scale_from_seed(seed: Hsla, mode: ThemeMode) -> ColorScale {
+        crate::generate_colors(
+            crate::CustomColors {
+                accent: seed,
+                gray: gpui::rgb(0x8b8d98).into(),
+                background: if mode == ThemeMode::Light {
+                    gpui::white()
+                } else {
+                    gpui::black()
+                },
+            },
+            mode,
+        )
+        .accent
+    }
 
     fn indigo_slate() -> ScalePair {
         scale_pair(Accent::Indigo, Gray::Auto)
@@ -187,7 +176,12 @@ mod tests {
     #[test]
     fn generated_color_scale_preserves_step_nine_seed() {
         let seed = hsla(0.58, 0.72, 0.58, 1.0);
-        assert_eq!(color_scale_from_seed(seed, ThemeMode::Light).step(9), seed);
-        assert_eq!(color_scale_from_seed(seed, ThemeMode::Dark).step(9), seed);
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            let actual: gpui::Rgba = color_scale_from_seed(seed, mode).step(9).into();
+            let expected: gpui::Rgba = seed.into();
+            assert!((actual.r - expected.r).abs() <= 1.0 / 255.0);
+            assert!((actual.g - expected.g).abs() <= 1.0 / 255.0);
+            assert!((actual.b - expected.b).abs() <= 1.0 / 255.0);
+        }
     }
 }

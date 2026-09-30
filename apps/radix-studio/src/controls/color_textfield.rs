@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{
-    App, Context, Entity, EventEmitter, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*,
-    px,
+    Context, Entity, EventEmitter, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px,
 };
 use luma::controls::button::{Button, ButtonEvent};
 use luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
@@ -16,6 +15,9 @@ use luma_color::composition::ColorCompositionSync;
 use luma_color::{ColorSwatchButtonTemplate, ColorSwatchData};
 use luma_look_radix::{Look, SemanticRole};
 use luma_look_radix as radix;
+
+const SWATCH_SIZE: f32 = 16.0;
+const SWATCH_RADIUS: f32 = 2.0;
 
 #[derive(Clone, Debug)]
 pub enum ColorTextFieldEvent {
@@ -42,23 +44,24 @@ impl EventEmitter<ButtonEvent> for ColorTextField {}
 impl EventEmitter<ColorTextFieldEvent> for ColorTextField {}
 
 impl ColorTextField {
-    pub fn new(
-        look: Arc<Look>,
-        id: impl Into<SharedString>,
-        color: Hsla,
-        value: impl Into<String>,
-        cx: &mut Context<Self>,
-    ) -> Self {
+    pub const HEIGHT: f32 = 32.0;
+
+    pub fn new(look: Arc<Look>, id: impl Into<SharedString>, color: Hsla, cx: &mut Context<Self>) -> Self {
         let id = id.into();
-        let value = value.into();
         let hsv = Hsv::from_hsla_ext(color);
 
         let swatch = Button::new(format!("{id}-swatch"))
-            .typed(ColorSwatchData { color, size: 32.0, radius: 3.0, open: false, checkerboard: false })
+            .typed(ColorSwatchData {
+                color,
+                size: SWATCH_SIZE,
+                radius: SWATCH_RADIUS,
+                open: false,
+                checkerboard: false,
+            })
             .template(Arc::new(ColorSwatchButtonTemplate))
             .tab_stop(false)
             .spawn(cx);
-        let field = embedded_textfield(&look, format!("{id}-field"), value, cx);
+        let field = embedded_textfield(&look, format!("{id}-field"), format_hex(color), cx);
         let picker_field = cx.new(|_| {
             ColorFieldState::saturation_value(format!("{id}-picker-sv"), hsv, sizing::THUMB_SIZE_MEDIUM)
                 .no_border()
@@ -155,17 +158,10 @@ impl ColorTextField {
         }
     }
 
-    pub fn set_value(&self, value: impl Into<String>, cx: &mut App) {
-        self.field.update(cx, |field, cx| field.set_value(value, cx));
-    }
-
     pub fn set_color(&mut self, color: Hsla, cx: &mut Context<Self>) {
         self.color = color;
         self.hsv = Hsv::from_hsla_ext(color);
-        self.swatch.update(cx, |swatch, cx| {
-            swatch.set_data(ColorSwatchData { color, size: 32.0, radius: 3.0, open: false, checkerboard: false }, cx);
-        });
-        self.sync_picker(cx);
+        self.sync_fields(cx);
         cx.notify();
     }
 
@@ -177,14 +173,35 @@ impl ColorTextField {
 
     fn apply_hsv(&mut self, cx: &mut Context<Self>) {
         let color = self.hsv.to_hsla_ext();
-        self.set_color(color, cx);
+        // Keep HSV as the gesture source: converting black/gray back from HSL
+        // discards hue (and at black, saturation), moving the hue slider spuriously.
+        self.color = color;
+        self.sync_fields(cx);
+        cx.notify();
         cx.emit(ColorTextFieldEvent::Change { color });
     }
 
-    fn sync_picker(&self, cx: &mut Context<Self>) {
+    fn sync_fields(&self, cx: &mut Context<Self>) {
+        let color = self.color;
+        self.swatch.update(cx, |swatch, cx| {
+            swatch.set_data(
+                ColorSwatchData { color, size: SWATCH_SIZE, radius: SWATCH_RADIUS, open: false, checkerboard: false },
+                cx,
+            );
+        });
+
         self.picker_field.update(cx, |field, cx| field.set_hsv(self.hsv, cx));
         self.sync.sync_slider_value(&self.hue_slider, self.hsv.h, cx);
-        self.picker_hex.update(cx, |field, cx| field.set_value(format_hex(self.color), cx));
+        let hex = format_hex(self.color);
+        // Both text fields represent the same selected color as the swatch.
+        // Avoid resetting the caret when the text is already synchronized.
+        for field in [&self.field, &self.picker_hex] {
+            field.update(cx, |field, cx| {
+                if field.value().as_ref() != hex {
+                    field.set_value(hex.clone(), cx);
+                }
+            });
+        }
     }
 }
 
@@ -199,16 +216,16 @@ impl Render for ColorTextField {
 
         div()
             .id(self.id.clone())
-            .h(px(40.0))
+            .h(px(Self::HEIGHT))
             .w_full()
             .flex()
             .items_center()
             .gap(px(8.0))
-            .px(px(6.0))
+            .px(px(7.0))
             .bg(background)
             .border_1()
             .border_color(border)
-            .rounded_md()
+            .rounded(px(4.0))
             .child(self.popover.clone())
             .child(div().min_w(px(0.0)).flex_1().child(self.field.clone()))
     }
@@ -230,6 +247,9 @@ fn embedded_textfield(
             field.shadow = None;
             field.padding_x = 0.0;
             field.padding_y = 0.0;
+            // The enclosing color field supplies the chrome and vertical spacing.
+            // Center the text line itself alongside the 16px swatch.
+            field.min_height = field.typography.line_height;
             field.radius = 0.0;
             field.border_width = 0.0;
             field

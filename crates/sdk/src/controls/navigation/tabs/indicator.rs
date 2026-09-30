@@ -72,9 +72,13 @@ impl TabsIndicatorMotionInner {
     }
 
     fn set_metrics(&mut self, padding_x: f32, height: f32, color: Option<Hsla>) {
+        let inset_changed = self.padding_x != padding_x;
         self.padding_x = padding_x;
         self.height = height;
         self.color = color;
+        if inset_changed && let Some(bounds) = self.pending_item_bounds {
+            self.apply_item_bounds(bounds, false);
+        }
     }
 
     fn set_list_bounds(&mut self, bounds: Bounds<Pixels>) {
@@ -241,6 +245,18 @@ mod tests {
         let rect = indicator_rect_from_bounds(item, list, 8.0);
         assert_eq!(rect.left, 28.0);
         assert_eq!(rect.width, 64.0);
+    }
+
+    #[test]
+    fn changing_indicator_inset_updates_existing_geometry() {
+        let motion = TabsIndicatorMotion::new(false);
+        motion.set_list_bounds(Bounds::new(point(px(10.0), px(20.0)), size(px(400.0), px(40.0))));
+        motion.set_metrics(8.0, 2.0, Some(gpui::black()));
+        motion.apply_item_bounds(Bounds::new(point(px(30.0), px(20.0)), size(px(80.0), px(40.0))), false);
+        assert_eq!(motion.display_rect_for_test(), TabsIndicatorRect { left: 28.0, width: 64.0 });
+        motion.set_metrics(0.0, 3.0, Some(gpui::black()));
+        assert_eq!(motion.display_rect_for_test(), TabsIndicatorRect { left: 20.0, width: 80.0 });
+        assert_eq!(motion.paint().unwrap().height, 3.0);
     }
 
     #[test]

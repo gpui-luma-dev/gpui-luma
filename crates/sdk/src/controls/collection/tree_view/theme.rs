@@ -46,6 +46,10 @@ pub struct TreeViewPalette {
 
 pub trait TreeViewTheme: Send + Sync {
     fn resolve_row(&self, state: InteractionState, selected: bool, size: ControlSize) -> TreeViewPalette;
+    /// Optional inset row outline, painted without changing row geometry.
+    fn row_outline(&self, _state: InteractionState, _size: ControlSize) -> Option<Hsla> {
+        None
+    }
     fn metrics(&self) -> MetricTokens;
 }
 

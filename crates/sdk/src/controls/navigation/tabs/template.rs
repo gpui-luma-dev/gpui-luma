@@ -252,7 +252,11 @@ impl TabsTemplate for ThemedTabsTemplate {
         if let Some(motion) = model.indicator_motion {
             let look =
                 active_look.unwrap_or_else(|| self.theme.resolve_item(true, InteractionState::default(), model.size));
-            motion.set_metrics(look.padding_x, look.indicator_height, look.indicator);
+            motion.set_metrics(
+                self.theme.indicator_inset(model.size).unwrap_or(look.padding_x),
+                look.indicator_height,
+                look.indicator,
+            );
         }
 
         let mut root = div()
@@ -279,13 +283,26 @@ impl TabsTemplate for ThemedTabsTemplate {
             root = root.border_1().border_color(border);
         }
 
+        if let Some(baseline) = self.theme.baseline(model.enabled, model.size) {
+            root = root.child(
+                div()
+                    .absolute()
+                    .left(px(baseline.inset_x.max(0.0)))
+                    .right(px(baseline.inset_x.max(0.0)))
+                    .bottom(px(baseline.bottom))
+                    .h(px(baseline.height.max(0.0)))
+                    .bg(baseline.color),
+            );
+        }
+
         for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
             let look = self.theme.resolve_item(item.active, item.state.interaction_state(), model.size);
-            let mut tab = render_tab_button_with_style(
+            let mut tab = render_tab_button_with_content_padding(
                 model.id,
                 item,
                 TabsItemButtonStyle::new(look, self.theme.font_family(), model.size)
                     .disclosure_icons(model.disclosure_icons.clone()),
+                self.theme.content_padding(model.size),
                 window,
                 cx,
             )
@@ -302,8 +319,7 @@ impl TabsTemplate for ThemedTabsTemplate {
             root = root.child(tab);
         }
 
-        if let Some(indicator) = model.indicator.or_else(|| model.indicator_motion.and_then(TabsIndicatorMotion::paint))
-        {
+        if let Some(indicator) = model.indicator_motion.and_then(TabsIndicatorMotion::paint).or(model.indicator) {
             root = root.child(
                 div()
                     .absolute()
@@ -501,8 +517,27 @@ pub fn render_tab_button_with_style(
     window: &mut Window,
     cx: &mut App,
 ) -> Stateful<Div> {
+    render_tab_button_with_content_padding(navigation_id, item, style, None, window, cx)
+}
+
+fn render_tab_button_with_content_padding(
+    navigation_id: &SharedString,
+    item: &TabsRenderItem<'_>,
+    style: TabsItemButtonStyle,
+    content_padding: Option<(f32, f32)>,
+    window: &mut Window,
+    cx: &mut App,
+) -> Stateful<Div> {
     tab_button_template().render(
-        &tab_button_model(navigation_id, item, style.look, style.font_family, style.size, style.disclosure_icons),
+        &tab_button_model(
+            navigation_id,
+            item,
+            style.look,
+            style.font_family,
+            style.size,
+            style.disclosure_icons,
+            content_padding,
+        ),
         window,
         cx,
     )
@@ -511,11 +546,17 @@ pub fn render_tab_button_with_style(
 fn tab_button_model(
     navigation_id: &SharedString,
     item: &TabsRenderItem<'_>,
-    look: TabsItemLook,
+    mut look: TabsItemLook,
     font_family: SharedString,
     size: ControlSize,
     disclosure_icons: DisclosureIcons,
+    content_padding: Option<(f32, f32)>,
 ) -> ButtonRenderModel<TabsButtonData> {
+    let inner_background = content_padding.map(|(x, y)| {
+        let x = x.clamp(0.0, look.padding_x.max(0.0));
+        look.padding_x -= x;
+        (x, y.max(0.0), look.background.take(), look.radius)
+    });
     let label = item.label.clone();
     let leading_accessory = item.leading_accessory.cloned();
     let trailing_accessory = item.trailing_accessory.cloned();
@@ -527,6 +568,12 @@ fn tab_button_model(
         icon: None,
         content: Arc::new(move |model, _| {
             let mut label_content = div().flex().items_center().gap(px(TAB_ACCESSORY_GAP));
+            if let Some((x, y, background, radius)) = inner_background {
+                label_content = label_content.px(px(x)).py(px(y)).rounded(px(radius));
+                if let Some(background) = background {
+                    label_content = label_content.bg(background);
+                }
+            }
             if let Some(accessory) = &leading_accessory {
                 label_content = label_content.child(render_accessory(
                     accessory,
