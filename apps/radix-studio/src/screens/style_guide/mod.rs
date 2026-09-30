@@ -1,5 +1,8 @@
 //! Style Guide tab screen.
 
+mod state;
+pub use state::State;
+
 mod avatars;
 mod badges;
 mod buttons;
@@ -31,6 +34,7 @@ use super::section::section;
 
 pub use tabs::TabsExamples;
 
+#[derive(Clone)]
 pub struct PreviewTabs {
     pub avatars: Entity<Tabs>,
     pub badges: Entity<Tabs>,
@@ -183,12 +187,12 @@ pub fn page(
                 vstack! {
                     gap=8;
                     div().text_sm().text_color(muted).child("Interactive"),
-                    super::tree_view::panel(tree, look),
+                    super::shared::tree_view::panel(tree, look),
                 }.w(px(320.0)).into_any_element(),
                 vstack! {
                     gap=8;
                     div().text_sm().text_color(muted).child("Disabled"),
-                    super::tree_view::panel(disabled_tree, look),
+                    super::shared::tree_view::panel(disabled_tree, look),
                 }.w(px(320.0)).into_any_element(),
             ]).into_any_element(),
         ),

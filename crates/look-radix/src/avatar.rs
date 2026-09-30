@@ -1,6 +1,7 @@
 //! Non-interactive, look-owned Radix Avatar: image with a short-text or icon fallback.
-//! Geometry follows https://www.radix-ui.com/themes/docs/components/avatar.
+//! Geometry follows the [Radix Avatar reference](https://www.radix-ui.com/themes/docs/components/avatar).
 
+use std::sync::Arc;
 use gpui::{AnyElement, Div, FontWeight, Hsla, ImageSource, IntoElement, SharedString, div, img, prelude::*, px};
 use luma::controls::button::ControlIcon;
 use crate::{Look, Radius, Tone};
@@ -74,6 +75,21 @@ enum Fallback {
     Icon(ControlIcon),
 }
 
+/// Resolved Avatar geometry, typography, and colors in logical pixels.
+#[derive(Clone, Debug)]
+pub struct AvatarStyle {
+    pub diameter: f32,
+    pub radius: f32,
+    pub icon_size: f32,
+    pub font_size: f32,
+    pub line_height: f32,
+    pub font_weight: FontWeight,
+    pub font_family: SharedString,
+    pub background: Hsla,
+    pub foreground: Hsla,
+}
+type StyleOverride = Arc<dyn Fn(&mut AvatarStyle) + Send + Sync>;
+
 /// A display element, not a button. Rebuild it with the owning view when the look changes.
 #[derive(Clone)]
 pub struct Avatar {
@@ -85,6 +101,7 @@ pub struct Avatar {
     high_contrast: bool,
     size: AvatarSize,
     radius: Radius,
+    style_override: Option<StyleOverride>,
 }
 impl Avatar {
     /// Short text is uppercased and limited to two Unicode characters.
@@ -98,6 +115,7 @@ impl Avatar {
             high_contrast: false,
             size: AvatarSize::Three,
             radius: Radius::Medium,
+            style_override: None,
         }
     }
     /// Image is cropped to cover the avatar. Text/icon remains its loading/error fallback.
@@ -130,6 +148,42 @@ impl Avatar {
         self
     }
 
+    /// Adjust resolved appearance locally, preserving palette updates for untouched colors.
+    /// Later calls replace the previous override.
+    /// ```
+    /// use luma_look_radix::{Avatar, Look};
+    /// let avatar = Avatar::new(&Look::built_in(), "BG").style_override(|style| {
+    ///     style.icon_size = 20.0;
+    ///     style.font_size = 15.0;
+    ///     style.line_height = 18.0;
+    /// });
+    /// ```
+    pub fn style_override(mut self, customize: impl Fn(&mut AvatarStyle) + Send + Sync + 'static) -> Self {
+        self.style_override = Some(Arc::new(customize));
+        self
+    }
+
+    /// Resolve current palette and size defaults, then apply the local override.
+    pub fn resolve_style(&self) -> AvatarStyle {
+        let (background, foreground) = self.colors();
+        let font_size = self.size.font_size(matches!(&self.fallback, Fallback::Text(text) if text.chars().count() > 1));
+        let mut style = AvatarStyle {
+            diameter: self.size.diameter(),
+            radius: self.size.corner_radius(self.radius),
+            icon_size: self.size.diameter() * 0.6,
+            font_size,
+            line_height: font_size,
+            font_weight: FontWeight::MEDIUM,
+            font_family: crate::typography::font_family(&self.look),
+            background,
+            foreground,
+        };
+        if let Some(customize) = &self.style_override {
+            customize(&mut style);
+        }
+        style
+    }
+
     fn colors(&self) -> (Hsla, Hsla) {
         let step = |n| self.tone.step(&self.look, n);
         match (self.variant, self.high_contrast) {
@@ -138,18 +192,15 @@ impl Avatar {
             (AvatarVariant::Soft, high) => (step(3), step(if high { 12 } else { 11 })),
         }
     }
-    fn fallback_element(&self) -> AnyElement {
-        let (background, foreground) = self.colors();
-        let font_size = self.size.font_size(matches!(&self.fallback, Fallback::Text(text) if text.chars().count() > 1));
+    fn fallback_element(&self, style: &AvatarStyle) -> AnyElement {
+        let foreground = style.foreground;
         let content = match &self.fallback {
             Fallback::Text(text) => div().child(text.clone()).into_any_element(),
-            Fallback::Icon(ControlIcon::SvgPath(path)) => gpui::svg()
-                .path(path.clone())
-                .size(px(self.size.diameter() * 0.6))
-                .text_color(foreground)
-                .into_any_element(),
+            Fallback::Icon(ControlIcon::SvgPath(path)) => {
+                gpui::svg().path(path.clone()).size(px(style.icon_size)).text_color(foreground).into_any_element()
+            }
             Fallback::Icon(ControlIcon::Lucide(icon)) => {
-                luma::infra::icon::lucide_icon(*icon, foreground, self.size.diameter() * 0.6)
+                luma::infra::icon::lucide_icon(*icon, foreground, style.icon_size)
             }
         };
         div()
@@ -157,13 +208,13 @@ impl Avatar {
             .flex()
             .items_center()
             .justify_center()
-            .bg(background)
-            .rounded(px(self.size.corner_radius(self.radius)))
+            .bg(style.background)
+            .rounded(px(style.radius))
             .text_color(foreground)
-            .font_family(crate::typography::font_family(&self.look))
-            .font_weight(FontWeight::MEDIUM)
-            .text_size(px(font_size))
-            .line_height(px(font_size))
+            .font_family(style.font_family.clone())
+            .font_weight(style.font_weight)
+            .text_size(px(style.font_size))
+            .line_height(px(style.line_height))
             .child(content)
             .into_any_element()
     }
@@ -174,23 +225,26 @@ fn short_text(text: SharedString) -> SharedString {
 impl IntoElement for Avatar {
     type Element = Div;
     fn into_element(mut self) -> Div {
+        let style = self.resolve_style();
         let content = if let Some(source) = self.image.take() {
             let loading = self.clone();
             let failure = self.clone();
+            let loading_style = style.clone();
+            let failure_style = style.clone();
             img(source)
                 .size_full()
-                .rounded(px(self.size.corner_radius(self.radius)))
+                .rounded(px(style.radius))
                 .object_fit(gpui::ObjectFit::Cover)
-                .with_loading(move || loading.fallback_element())
-                .with_fallback(move || failure.fallback_element())
+                .with_loading(move || loading.fallback_element(&loading_style))
+                .with_fallback(move || failure.fallback_element(&failure_style))
                 .into_any_element()
         } else {
-            self.fallback_element()
+            self.fallback_element(&style)
         };
         div()
-            .size(px(self.size.diameter()))
+            .size(px(style.diameter))
             .flex_none()
-            .rounded(px(self.size.corner_radius(self.radius)))
+            .rounded(px(style.radius))
             .overflow_hidden()
             .child(content)
     }
@@ -199,6 +253,27 @@ impl IntoElement for Avatar {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn local_override_preserves_live_palette_and_does_not_change_siblings() {
+        let look = Look::built_in();
+        let custom = Avatar::new(&look, "BG").style_override(|style| {
+            style.icon_size = 20.0;
+            style.font_weight = FontWeight::BOLD;
+            style.diameter = 48.0;
+        });
+        let normal = Avatar::new(&look, "BG");
+        let before = custom.resolve_style().background;
+        look.set_mode(luma::theme::ThemeMode::Dark);
+        let style = custom.resolve_style();
+        assert_ne!(style.background, before);
+        assert_eq!(style.background, normal.resolve_style().background);
+        assert_eq!(style.icon_size, 20.0);
+        assert_eq!(style.diameter, 48.0);
+        assert_eq!(style.font_weight, FontWeight::BOLD);
+        assert_eq!(normal.resolve_style().diameter, 40.0);
+        assert_eq!(normal.resolve_style().font_weight, FontWeight::MEDIUM);
+    }
+
     #[test]
     fn sizes_and_radius_match_radix() {
         for (size, diameter) in

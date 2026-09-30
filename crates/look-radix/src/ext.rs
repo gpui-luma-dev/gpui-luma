@@ -27,12 +27,14 @@ use crate::tabs::TabsVariant;
 use crate::textfield::TextFieldVariant;
 use crate::tone::Tone;
 
-/// Constructs SDK controls pre-bound to [`Look`] variants.
+/// Low-level template factories and the look-bound overlay-window builder.
 ///
 /// Interactive controls spawn through look-owned builders
 /// ([`crate::Button`], [`crate::Checkbox`], [`crate::Radio`], [`crate::Switch`],
 /// [`crate::TextField`], [`crate::TextArea`], [`crate::Slider`], [`crate::Tabs`],
-/// [`crate::Toggle`], [`crate::PopupMenu`]), not this trait.
+/// [`crate::Toggle`], [`crate::PopupMenu`], [`crate::Toolbar`], [`crate::TreeView`]).
+/// Use this trait for direct SDK composition or forced-state previews.
+/// See the crate-level customization guide for choosing the appropriate extension point.
 pub trait LookControlExt {
     /// Bare button template for previews that force state / paint axes.
     fn button_template(&self, variant: ButtonVariant, paint: Paint) -> Arc<dyn ButtonTemplate<()>>;

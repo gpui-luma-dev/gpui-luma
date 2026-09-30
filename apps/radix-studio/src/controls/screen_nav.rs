@@ -40,7 +40,8 @@ pub struct ScreenNav {
 impl EventEmitter<ScreenNavEvent> for ScreenNav {}
 
 impl ScreenNav {
-    pub fn new(look: &Arc<Look>, cx: &mut Context<Self>) -> Self {
+    /// Page navigation uses the app look; theme actions follow the editable palette.
+    pub fn new(look: &Arc<Look>, action_look: &Arc<Look>, cx: &mut Context<Self>) -> Self {
         let custom_palette = radix::Toggle::new("page-custom-palette")
             .look(look)
             .page()
@@ -57,9 +58,9 @@ impl ScreenNav {
             .spawn(cx);
         let developer =
             radix::Toggle::new("page-developer").look(look).page().with_data(false).label("Developer").spawn(cx);
-        let icon_look = Arc::clone(look);
+        let icon_look = Arc::clone(action_look);
         let theme_toggle = radix::Button::new("screen-nav-theme")
-            .look(look)
+            .look(action_look)
             .ghost_quiet()
             .content(move |model, _| {
                 let name = match icon_look.mode() {
@@ -73,7 +74,7 @@ impl ScreenNav {
             .spawn(cx);
 
         let theme_reset = radix::Button::new("screen-nav-reset-theme")
-            .look(look)
+            .look(action_look)
             .ghost_quiet()
             .content(|model, _| {
                 icon_named("reset")
@@ -156,9 +157,10 @@ impl ScreenNav {
         cx.notify();
     }
 
-    /// Repaints the theme face when the mode changes elsewhere (e.g. the palette screen toggles).
-    pub fn mode_changed(&mut self, cx: &mut Context<Self>) {
+    /// Shared Look mutation does not invalidate independently rendered button entities.
+    pub fn theme_changed(&mut self, cx: &mut Context<Self>) {
         self.theme_toggle.update(cx, |_, cx| cx.notify());
+        self.theme_reset.update(cx, |_, cx| cx.notify());
         cx.notify();
     }
 }

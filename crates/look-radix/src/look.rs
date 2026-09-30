@@ -48,6 +48,26 @@ impl PageBackground {
     }
 }
 
+/// Shared palette and control styling state; cloning shares state, `fork` copies it.
+///
+/// # Redrawing after changes
+/// Setters update state and revision only: they do **not** send GPUI notifications.
+/// Notify the owning view and any independently rendered control entities that use
+/// this look. Controls resolve new colors on their next render. Rebuild passive
+/// elements (Avatar, Badge, Card) in the owning view's render method.
+///
+/// ```no_run
+/// use gpui::{Context, Entity};
+/// use luma::controls::button::Button;
+/// use luma::theme::ThemeMode;
+/// use luma_look_radix::Look;
+///
+/// fn change_mode<M: 'static>(look: &Look, button: &Entity<Button>, cx: &mut Context<M>) {
+///     look.set_mode(ThemeMode::Dark);
+///     button.update(cx, |_, cx| cx.notify()); // repeat for affected child entities
+///     cx.notify(); // rebuild the owner's passive elements and layout
+/// }
+/// ```
 #[derive(Clone)]
 pub struct Look {
     state: Arc<LookState>,
@@ -74,7 +94,7 @@ struct LookState {
     mode: AtomicU8,
     classic_shadow: RwLock<ClassicButtonParams>,
     tabs_style: RwLock<crate::tabs::TabsStyle>,
-    /// Bumped on mode change so callers can observe cheaply if desired.
+    /// Bumped by look setters; polling does not schedule GPUI redraws.
     revision: RwLock<u64>,
 }
 
@@ -110,7 +130,7 @@ impl Look {
 
     /// An independent copy of this look's scales, palettes, metrics, mode, and tuning.
     ///
-    /// Cloning a [`Look`] shares one mutable state, so every control repaints together.
+    /// Cloning a [`Look`] shares mutable state; callers still notify affected views.
     /// Forking is how a screen can edit a palette without touching the rest of the app.
     pub fn fork(&self) -> Self {
         let scales = *self.state.scales.read().unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -135,7 +155,7 @@ impl Look {
         *self.state.tabs_style.read().unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    /// Update all tab themes bound to this look. Notify the owning view after changing it.
+    /// Update tab defaults for subsequent renders. Notify affected views; see [`Look`].
     pub fn set_tabs_style(&self, style: crate::tabs::TabsStyle) {
         if let Ok(mut current) = self.state.tabs_style.write() {
             *current = style;
@@ -153,7 +173,8 @@ impl Look {
         self.scales().family(family).palette()
     }
 
-    /// Repaints every control from a different named pair.
+    /// Select a named palette pair for subsequent renders.
+    /// Notify affected views after changing it; see [`Look`].
     pub fn set_palettes(&self, accent: Accent, gray: Gray) {
         if let Ok(mut scales) = self.state.scales.write() {
             *scales = scale_pair(accent, gray);
@@ -173,6 +194,7 @@ impl Look {
     }
 
     /// Retunes the Classic bubble for every button resolved from this look.
+    /// Notify affected views after changing it; see [`Look`].
     pub fn set_classic_params(&self, params: ClassicButtonParams) {
         if let Ok(mut current) = self.state.classic_shadow.write() {
             *current = params;
@@ -186,6 +208,7 @@ impl Look {
         mode_from_u8(self.state.mode.load(Ordering::Relaxed))
     }
 
+    /// Change the active mode. Notify affected views afterward; see [`Look`].
     pub fn set_mode(&self, mode: ThemeMode) {
         self.state.mode.store(mode_to_u8(mode), Ordering::Relaxed);
         if let Ok(mut rev) = self.state.revision.write() {
@@ -195,6 +218,7 @@ impl Look {
 
     /// Rebuilds both accent scales using Radix's custom-color generator.
     /// Uses each mode's current gray step 8 and background; leaves gray unchanged.
+    /// Notify affected views after changing it; see [`Look`].
     pub fn set_accent_seed(&self, seed: Hsla) {
         let pair = *self.state.scales.read().unwrap_or_else(|poisoned| poisoned.into_inner());
         for mode in [ThemeMode::Light, ThemeMode::Dark] {
@@ -222,7 +246,7 @@ impl Look {
     }
 
     /// Regenerates the active mode's accent and gray scales from all three seed colors.
-    /// The caller owns editor state and should notify views after changing the look.
+    /// The caller owns editor state and must notify affected views; see [`Look`].
     /// The background affects scale generation; page composition stays with the caller.
     pub fn set_custom_colors(&self, inputs: CustomColors) {
         let mode = self.mode();

@@ -14,7 +14,7 @@ pub fn matrix(look: &Look, muted: Hsla) -> AnyElement {
             // Reserve the ghost's cancelled padding so matrix columns stay aligned.
             let sample = div()
                 .when(variant == CardVariant::Ghost, |el| el.p(px(size.padding())))
-                .child(super::super::card_samples::profile(look, variant, size));
+                .child(super::super::shared::card_samples::profile(look, variant, size));
             grid = grid.child(sample, row + 1, column + 1);
         }
     }

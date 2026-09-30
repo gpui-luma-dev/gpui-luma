@@ -1,6 +1,7 @@
 //! Look-owned, non-interactive content container with Radix Card treatments.
 //! Size metrics follow the Radix Themes Card; application content stays external.
-use gpui::{AnyElement, BoxShadow, Div, IntoElement, div, point, prelude::*, px};
+use std::sync::Arc;
+use gpui::{Hsla, SharedString, AnyElement, BoxShadow, Div, IntoElement, div, point, prelude::*, px};
 use luma::theme::ThemeMode;
 use crate::{Look, Tone};
 
@@ -53,6 +54,21 @@ impl CardSize {
     }
 }
 
+/// Resolved Card appearance. An override is applied after palette/size resolution
+/// each time the element is built, so untouched colors continue to follow the look.
+#[derive(Clone, Debug)]
+pub struct CardStyle {
+    pub padding: f32,
+    pub radius: f32,
+    /// Ghost defaults to negative padding; set to zero to retain layout space.
+    pub margin: f32,
+    pub background: Option<Hsla>,
+    pub foreground: Hsla,
+    pub font_family: SharedString,
+    pub shadows: Vec<BoxShadow>,
+}
+type StyleOverride = Arc<dyn Fn(&mut CardStyle) + Send + Sync>;
+
 /// A passive content surface. Use SDK controls inside it for interactive content.
 /// Ghost cancels its padding with negative margins, as in Radix Themes.
 pub struct Card {
@@ -60,10 +76,17 @@ pub struct Card {
     variant: CardVariant,
     size: CardSize,
     children: Vec<AnyElement>,
+    style_override: Option<StyleOverride>,
 }
 impl Card {
     pub fn new(look: &Look) -> Self {
-        Self { look: look.clone(), variant: CardVariant::default(), size: CardSize::default(), children: Vec::new() }
+        Self {
+            look: look.clone(),
+            variant: CardVariant::default(),
+            size: CardSize::default(),
+            children: Vec::new(),
+            style_override: None,
+        }
     }
     pub fn variant(mut self, variant: CardVariant) -> Self {
         self.variant = variant;
@@ -73,25 +96,41 @@ impl Card {
         self.size = size;
         self
     }
+    /// Adjust resolved appearance locally; later calls replace the previous override.
+    /// ```
+    /// use luma_look_radix::{Card, Look};
+    /// let card = Card::new(&Look::built_in()).style_override(|style| {
+    ///     style.padding = 20.0;
+    ///     style.radius = 10.0;
+    ///     style.shadows.clear();
+    /// });
+    /// ```
+    pub fn style_override(mut self, customize: impl Fn(&mut CardStyle) + Send + Sync + 'static) -> Self {
+        self.style_override = Some(Arc::new(customize));
+        self
+    }
 }
 impl ParentElement for Card {
     fn extend(&mut self, elements: impl IntoIterator<Item = AnyElement>) {
         self.children.extend(elements);
     }
 }
-impl IntoElement for Card {
-    type Element = Div;
-    fn into_element(self) -> Div {
+impl Card {
+    /// Resolve current palette and size defaults, then apply the local override.
+    pub fn resolve_style(&self) -> CardStyle {
         let gray = |step| Tone::Gray.step(&self.look, step);
         let dark = self.look.mode() == ThemeMode::Dark;
-        let mut card = div()
-            .relative()
-            .p(px(self.size.padding()))
-            .rounded(px(self.size.radius()))
-            .font_family(crate::typography::font_family(&self.look))
-            .text_color(gray(12));
+        let mut style = CardStyle {
+            padding: self.size.padding(),
+            radius: self.size.radius(),
+            margin: 0.0,
+            background: None,
+            foreground: gray(12),
+            font_family: crate::typography::font_family(&self.look),
+            shadows: Vec::new(),
+        };
         if self.variant == CardVariant::Ghost {
-            card = card.m(px(-self.size.padding()));
+            style.margin = -self.size.padding();
         } else {
             // Solid scale equivalents of Radix's panel and translucent neutral borders.
             let edge = gray(match self.variant {
@@ -121,8 +160,52 @@ impl IntoElement for Card {
                     });
                 }
             }
-            card = card.bg(gray(if dark { 2 } else { 1 })).shadow(shadows);
+            style.background = Some(gray(if dark { 2 } else { 1 }));
+            style.shadows = shadows;
         }
-        card.children(self.children)
+        if let Some(customize) = &self.style_override {
+            customize(&mut style);
+        }
+        style
+    }
+}
+
+impl IntoElement for Card {
+    type Element = Div;
+    fn into_element(self) -> Div {
+        let style = self.resolve_style();
+        div()
+            .relative()
+            .p(px(style.padding))
+            .m(px(style.margin))
+            .rounded(px(style.radius))
+            .font_family(style.font_family)
+            .text_color(style.foreground)
+            .when_some(style.background, |card, background| card.bg(background))
+            .shadow(style.shadows)
+            .children(self.children)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn local_override_preserves_live_palette_and_default_elevation() {
+        let look = Look::built_in();
+        let custom = Card::new(&look).variant(CardVariant::Classic).style_override(|style| {
+            style.padding = 20.0;
+            style.shadows.clear();
+        });
+        let normal = Card::new(&look).variant(CardVariant::Classic);
+        let before = custom.resolve_style().background;
+        look.set_mode(ThemeMode::Dark);
+        let style = custom.resolve_style();
+        assert_ne!(style.background, before);
+        assert_eq!(style.background, normal.resolve_style().background);
+        assert!(style.shadows.is_empty());
+        assert!(!normal.resolve_style().shadows.is_empty());
+        assert_eq!(style.padding, 20.0);
+        assert_eq!(normal.resolve_style().padding, 12.0);
     }
 }

@@ -1,5 +1,13 @@
 //! Custom Palette tab — seed editor, scale grid, and control preview canvas.
 
+mod home_controls;
+mod icon_samples;
+mod preview_toolbar;
+mod signup_mesh;
+mod task_samples;
+
+pub(crate) use signup_mesh::{MeshCache, MeshRequest};
+
 use std::sync::Arc;
 
 use gpui::{App, Context, Entity, Hsla, ImageSource, IntoElement, RenderImage, SharedString, div, img, prelude::*, px};
@@ -8,14 +16,13 @@ use luma::controls::popup_menu::PopupMenu;
 use luma::controls::textfield::TextField;
 use luma::controls::radio_group::{RadioGroup, RadioGroupItem};
 use luma::controls::tree_view::TreeView;
-use luma::controls::toolbar::Toolbar;
 use luma::controls::tabs::Tabs;
 use luma::infra::ElementExt;
 use luma::{GridLayout, GridTrack, WideMiddle, WideMiddleLayout, hstack, vstack};
 use luma_look_radix::{Look, SCALE_LEN, ScaleFamily};
 
 use crate::app::RadixStudioApp;
-use crate::signup_mesh::SignupStage;
+use self::signup_mesh::SignupStage;
 use crate::controls::ColorTextField;
 
 /// Side columns stay compact; center is wider for the signup stage.
@@ -40,21 +47,7 @@ const SCALE_LEGEND_GROUPS: &[(&str, usize)] = &[
     ("Accessible text", 2),
 ];
 
-pub struct PreviewControls {
-    pub tabs: Entity<Tabs>,
-    pub toolbar: Toolbar,
-    pub actions: Entity<PopupMenu>,
-    pub tree: TreeView<()>,
-    pub search_field: TextField,
-    pub search_submit: Entity<Button>,
-    pub sign_up_name: TextField,
-    pub sign_up_email: TextField,
-    pub sign_up_password: TextField,
-    pub create_account: Entity<Button>,
-    pub continue_github: Entity<Button>,
-    pub icon_samples: super::icon_samples::IconSamples,
-    pub task_samples: super::task_samples::TaskSamples,
-}
+pub use home_controls::PreviewControls;
 
 pub struct PageArgs<'a> {
     pub look: &'a Arc<Look>,
@@ -290,7 +283,7 @@ fn preview_column_left(
     tree: TreeView<()>,
     search_field: TextField,
     search_submit: Entity<Button>,
-    icon_samples: super::icon_samples::IconSamples,
+    icon_samples: icon_samples::IconSamples,
 ) -> impl IntoElement {
     vstack! {
         gap=14;
@@ -301,14 +294,14 @@ fn preview_column_left(
         }
         .w_full(),
         alert_card(look),
-        super::tree_view::panel(tree, look),
+        super::shared::tree_view::panel(tree, look),
         div().flex().flex_wrap().gap(px(12.0)).children([
             luma_look_radix::Badge::new(look, "Fully-featured").pill().into_any_element(),
             luma_look_radix::Badge::new(look, "Built with Radix").variant(luma_look_radix::BadgeVariant::Surface).pill().into_any_element(),
             luma_look_radix::Badge::new(look, "Open source").variant(luma_look_radix::BadgeVariant::Outline).pill().into_any_element(),
         ]),
         icon_samples.render(),
-        super::card_samples::home(look),
+        super::shared::card_samples::home(look),
     }
     .w_full()
 }
@@ -393,18 +386,14 @@ fn preview_column_center(
         .overflow_hidden()
         .relative()
         .bg(stage_fill)
-        .on_prepaint(move |bounds, window, cx| {
+        .on_prepaint(move |bounds, _window, cx| {
             let width_px = bounds.size.width.as_f32().max(1.0);
             let height_px = bounds.size.height.as_f32().max(1.0);
             let scale = (SIGNUP_MESH_MAX_SIDE / width_px.max(height_px)).min(1.0);
             let width = (width_px * scale).round().max(1.0) as u32;
             let height = (height_px * scale).round().max(1.0) as u32;
             app.update(cx, |this, cx| {
-                if this.ensure_signup_mesh_cache(width, height) {
-                    // This frame already captured the old image during render.
-                    // Invalidate on the next frame, outside the current prepaint.
-                    cx.on_next_frame(window, |_, _, cx| cx.notify());
-                }
+                this.request_signup_mesh(width, height, cx);
             });
         })
         .when_some(mesh_image, |this, image| {
@@ -423,7 +412,7 @@ fn preview_column_center(
 fn preview_column_right(
     look: &Look,
     tabs: Entity<Tabs>,
-    tasks: super::task_samples::TaskSamples,
+    tasks: task_samples::TaskSamples,
     surface: Hsla,
 ) -> impl IntoElement {
     vstack! {

@@ -7,7 +7,6 @@ mod color_hex;
 mod controls;
 mod screens;
 mod tabs;
-mod signup_mesh;
 
 use assets::Assets;
 use gpui::{actions, App, KeyBinding, Menu, MenuItem};

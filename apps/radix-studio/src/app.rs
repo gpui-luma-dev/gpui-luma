@@ -2,16 +2,12 @@
 
 use std::sync::{Arc, Mutex};
 
-use gpui::{App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, Subscription, Window, div, prelude::*, px};
-use luma::controls::button::{Button, ButtonEvent};
+use gpui::{App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, Subscription, Task, Window, div, prelude::*, px};
+use luma::controls::button::ButtonEvent;
 use luma::controls::overlay_window::{OverlayWindow, OverlayWindowMode, OverlayWindowPosition};
 use luma::controls::popup_menu::PopupMenu;
-use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
-use luma::controls::textfield::TextField;
 use luma::controls::radio_group::{RadioGroup, RadioGroupItem, RadioGroupEvent};
 use crate::controls::theme_mode;
-use luma::controls::tree_view::TreeView;
-use luma::controls::toolbar::Toolbar;
 use luma::focus::LumaFocusScopeExt;
 use luma::infra::menu_item::MenuItem;
 use luma::infra::presenter::HasPresenter;
@@ -22,11 +18,11 @@ use luma_look_radix::{Accent, Gray, Look, LookControlExt, ScaleFamily, SemanticR
 use luma_look_radix as radix;
 
 use crate::color_hex::format_hex;
-use crate::signup_mesh::{SignupMeshCacheKey, rasterize_signup_mesh_for_look};
+use crate::screens::custom_palette::{MeshCache, MeshRequest};
 use crate::controls::{
     ClassicShadowEditor, ClassicShadowEditorEvent, ColorTextField, ColorTextFieldEvent, ScreenNav, ScreenNavEvent,
 };
-use crate::screens::{colors, custom_palette, developer, icons, style_guide, tree_view};
+use crate::screens::{colors, custom_palette, developer, icons, style_guide};
 use crate::tabs::RadixStudioTab;
 
 const CONTENT_MAX_W: f32 = 1280.0;
@@ -101,36 +97,14 @@ pub struct RadixStudioApp {
     gray_field: Entity<ColorTextField>,
     background_field: Entity<ColorTextField>,
     copy_menu: Entity<PopupMenu>,
-    search_field: TextField,
-    search_submit: Entity<Button>,
-    sign_up_name: TextField,
-    sign_up_email: TextField,
-    sign_up_password: TextField,
-    create_account: Entity<Button>,
-    continue_github: Entity<Button>,
-    icon_samples: crate::screens::icon_samples::IconSamples,
-    task_samples: crate::screens::task_samples::TaskSamples,
-    preview_tree: TreeView<()>,
-    preview_toolbar: Toolbar,
-    preview_actions: Entity<PopupMenu>,
-    preview_tabs: Entity<Tabs>,
-    guide_tabs: style_guide::TabsExamples,
-    guide_tree: TreeView<()>,
-    guide_tree_disabled: TreeView<()>,
+    home: custom_palette::PreviewControls,
+    style_guide: Option<style_guide::State>,
     shadow_editor: Entity<ClassicShadowEditor>,
-    avatars_preview_tabs: Option<Entity<Tabs>>,
-    badges_preview_tabs: Option<Entity<Tabs>>,
-    buttons_preview_tabs: Option<Entity<Tabs>>,
-    checkboxes_preview_tabs: Option<Entity<Tabs>>,
-    radios_preview_tabs: Option<Entity<Tabs>>,
-    switches_preview_tabs: Option<Entity<Tabs>>,
-    textfields_preview_tabs: Option<Entity<Tabs>>,
-    textareas_preview_tabs: Option<Entity<Tabs>>,
-    sliders_preview_tabs: Option<Entity<Tabs>>,
     swatch_info: Arc<Mutex<Option<SwatchSelection>>>,
     swatch_overlay: OverlayWindow,
     preview_layout: Entity<WideMiddle>,
-    signup_mesh_cache: Option<(SignupMeshCacheKey, Arc<RenderImage>)>,
+    signup_mesh_cache: MeshCache,
+    signup_mesh_task: Option<Task<()>>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -149,25 +123,8 @@ impl RadixStudioApp {
         palette_edits.apply(&theme, &draft);
 
         let mode_selector = theme_mode::spawn("palette-mode", &draft, cx);
-        let screen_nav = cx.new(|cx| ScreenNav::new(&theme, cx));
-        let preview_tree = tree_view::spawn("palette-tree", &draft, true, cx);
-        let (preview_toolbar, preview_actions) = crate::screens::preview_toolbar::spawn(&draft, cx);
-        let preview_tabs = radix::Tabs::new("palette-preview-tabs")
-            .look(&draft)
-            .line()
-            .with_template_modifier(|root, _| root.w_full())
-            .items([
-                TabsItem::new("themes").label("Themes"),
-                TabsItem::new("primitives").label("Primitives"),
-                TabsItem::new("icons").label("Icons"),
-                TabsItem::new("colors").label("Colors"),
-            ])
-            .active("themes")
-            .spawn(cx);
-        let guide_tabs = style_guide::TabsExamples::spawn(&theme, cx);
-        let guide_tree = tree_view::spawn("guide-tree", &theme, true, cx);
-        let guide_tree_disabled = tree_view::spawn("guide-tree-disabled", &theme, false, cx);
-
+        let screen_nav = cx.new(|cx| ScreenNav::new(&theme, &draft, cx));
+        let home = custom_palette::PreviewControls::spawn(&draft, cx);
         let accent_color = seed_colors.accent;
         let gray_color = seed_colors.gray;
         let background_color = seed_colors.background;
@@ -182,8 +139,8 @@ impl RadixStudioApp {
                 let ColorTextFieldEvent::Change { color } = event;
                 this.palette_edits.set(this.draft.mode(), index, *color);
                 this.palette_edits.apply(&this.theme, &this.draft);
-                this.signup_mesh_cache = None;
-                this.notify_preview_controls(cx);
+                this.home.notify(cx);
+                this.screen_nav.update(cx, |nav, cx| nav.theme_changed(cx));
                 cx.notify();
             }));
         }
@@ -199,33 +156,6 @@ impl RadixStudioApp {
                 MenuItem::new("copy-hex").label("Copy hex values"),
             ])
             .spawn(cx);
-
-        let search_field = radix::TextField::new("preview-search").look(&draft).placeholder("Search…").spawn(cx);
-        let search_submit = radix::Button::new("preview-search-submit").look(&draft).solid().label("Submit").spawn(cx);
-
-        let sign_up_name = radix::TextField::new("signup-name").look(&draft).placeholder("Full name").spawn(cx);
-        let sign_up_email = radix::TextField::new("signup-email").look(&draft).placeholder("Email").spawn(cx);
-        let sign_up_password = radix::TextField::new("signup-password").look(&draft).placeholder("Password").spawn(cx);
-        let create_account = radix::Button::new("signup-create").look(&draft).solid().label("Create account").spawn(cx);
-        let continue_github = radix::Button::new("signup-github")
-            .look(&draft)
-            .outline()
-            .content(|model, _| {
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(model.look.gap))
-                    .child(
-                        gpui::svg()
-                            .path("assets/react-icons/github-logo.svg")
-                            .size(px(model.look.icon_size))
-                            .text_color(model.look.foreground),
-                    )
-                    .child("Continue with GitHub")
-            })
-            .spawn(cx);
-        let icon_samples = crate::screens::icon_samples::IconSamples::spawn(&draft, cx);
-        let task_samples = crate::screens::task_samples::TaskSamples::spawn(&draft, cx);
 
         let swatch_info = Arc::new(Mutex::new(None::<SwatchSelection>));
         let swatch_close = radix::Button::new("swatch-info-close").look(&draft).ghost().label("Close").spawn(cx);
@@ -300,36 +230,14 @@ impl RadixStudioApp {
             gray_field,
             background_field,
             copy_menu,
-            search_field,
-            search_submit,
-            sign_up_name,
-            sign_up_email,
-            sign_up_password,
-            create_account,
-            continue_github,
-            icon_samples,
-            task_samples,
-            preview_tree,
-            preview_toolbar,
-            preview_actions,
-            preview_tabs,
-            guide_tabs,
-            guide_tree,
-            guide_tree_disabled,
+            home,
+            style_guide: None,
             shadow_editor,
-            avatars_preview_tabs: None,
-            badges_preview_tabs: None,
-            buttons_preview_tabs: None,
-            checkboxes_preview_tabs: None,
-            radios_preview_tabs: None,
-            switches_preview_tabs: None,
-            textfields_preview_tabs: None,
-            textareas_preview_tabs: None,
-            sliders_preview_tabs: None,
             swatch_info,
             swatch_overlay,
             preview_layout,
-            signup_mesh_cache: None,
+            signup_mesh_cache: MeshCache::default(),
+            signup_mesh_task: None,
             _subscriptions: subscriptions,
         }
     }
@@ -338,239 +246,13 @@ impl RadixStudioApp {
         self.screen_nav.read(cx).active()
     }
 
-    fn avatars_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
-        if let Some(tabs) = self.avatars_preview_tabs.clone() {
-            return tabs;
-        }
-
-        let tabs = radix::Tabs::new("radix-studio-avatars-preview-tabs")
-            .look(&self.theme)
-            .items([
-                TabsItem::new("template-preview").label("Template Preview"),
-                TabsItem::new("colors").label("Colors"),
-                TabsItem::new("all-sizes").label("All Sizes"),
-            ])
-            .active("template-preview")
-            .width_mode(TabsWidthMode::Intrinsic)
-            .with_template_modifier(|root, _| root.w_full())
-            .spawn(cx);
-
-        self._subscriptions.push(cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
-            cx.notify();
-        }));
-
-        self.avatars_preview_tabs = Some(tabs.clone());
-        tabs
-    }
-
-    fn badges_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
-        if let Some(tabs) = self.badges_preview_tabs.clone() {
-            return tabs;
-        }
-
-        let tabs = radix::Tabs::new("radix-studio-badges-preview-tabs")
-            .look(&self.theme)
-            .items([
-                TabsItem::new("template-preview").label("Template Preview"),
-                TabsItem::new("colors").label("Colors"),
-                TabsItem::new("all-sizes").label("All Sizes"),
-            ])
-            .active("template-preview")
-            .width_mode(TabsWidthMode::Intrinsic)
-            .with_template_modifier(|root, _| root.w_full())
-            .spawn(cx);
-
-        self._subscriptions.push(cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
-            cx.notify();
-        }));
-
-        self.badges_preview_tabs = Some(tabs.clone());
-        tabs
-    }
-
-    fn buttons_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
-        if let Some(tabs) = self.buttons_preview_tabs.clone() {
-            return tabs;
-        }
-
-        let tabs = radix::Tabs::new("radix-studio-buttons-preview-tabs")
-            .look(&self.theme)
-            .items([
-                TabsItem::new("template-preview").label("Template Preview"),
-                TabsItem::new("colors").label("Colors"),
-                TabsItem::new("all-sizes").label("All Sizes"),
-            ])
-            .active("template-preview")
-            .width_mode(TabsWidthMode::Intrinsic)
-            .with_template_modifier(|root, _| root.w_full())
-            .spawn(cx);
-
-        self._subscriptions.push(cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
-            cx.notify();
-        }));
-
-        self.buttons_preview_tabs = Some(tabs.clone());
-        tabs
-    }
-
-    fn checkboxes_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
-        if let Some(tabs) = self.checkboxes_preview_tabs.clone() {
-            return tabs;
-        }
-
-        let tabs = radix::Tabs::new("radix-studio-checkboxes-preview-tabs")
-            .look(&self.theme)
-            .items([
-                TabsItem::new("template-preview").label("Template Preview"),
-                TabsItem::new("colors").label("Colors"),
-                TabsItem::new("all-sizes").label("All Sizes"),
-            ])
-            .active("template-preview")
-            .width_mode(TabsWidthMode::Intrinsic)
-            .with_template_modifier(|root, _| root.w_full())
-            .spawn(cx);
-
-        self._subscriptions.push(cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
-            cx.notify();
-        }));
-
-        self.checkboxes_preview_tabs = Some(tabs.clone());
-        tabs
-    }
-
-    fn radios_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
-        if let Some(tabs) = self.radios_preview_tabs.clone() {
-            return tabs;
-        }
-
-        let tabs = radix::Tabs::new("radix-studio-radios-preview-tabs")
-            .look(&self.theme)
-            .items([
-                TabsItem::new("template-preview").label("Template Preview"),
-                TabsItem::new("colors").label("Colors"),
-                TabsItem::new("all-sizes").label("All Sizes"),
-            ])
-            .active("template-preview")
-            .width_mode(TabsWidthMode::Intrinsic)
-            .with_template_modifier(|root, _| root.w_full())
-            .spawn(cx);
-
-        self._subscriptions.push(cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
-            cx.notify();
-        }));
-
-        self.radios_preview_tabs = Some(tabs.clone());
-        tabs
-    }
-
-    fn switches_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
-        if let Some(tabs) = self.switches_preview_tabs.clone() {
-            return tabs;
-        }
-
-        let tabs = radix::Tabs::new("radix-studio-switches-preview-tabs")
-            .look(&self.theme)
-            .items([
-                TabsItem::new("template-preview").label("Template Preview"),
-                TabsItem::new("colors").label("Colors"),
-                TabsItem::new("all-sizes").label("All Sizes"),
-            ])
-            .active("template-preview")
-            .width_mode(TabsWidthMode::Intrinsic)
-            .with_template_modifier(|root, _| root.w_full())
-            .spawn(cx);
-
-        self._subscriptions.push(cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
-            cx.notify();
-        }));
-
-        self.switches_preview_tabs = Some(tabs.clone());
-        tabs
-    }
-
-    fn textfields_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
-        if let Some(tabs) = self.textfields_preview_tabs.clone() {
-            return tabs;
-        }
-
-        let tabs = radix::Tabs::new("radix-studio-textfields-preview-tabs")
-            .look(&self.theme)
-            .items([
-                TabsItem::new("template-preview").label("Template Preview"),
-                TabsItem::new("colors").label("Colors"),
-                TabsItem::new("all-sizes").label("All Sizes"),
-            ])
-            .active("template-preview")
-            .width_mode(TabsWidthMode::Intrinsic)
-            .with_template_modifier(|root, _| root.w_full())
-            .spawn(cx);
-
-        self._subscriptions.push(cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
-            cx.notify();
-        }));
-
-        self.textfields_preview_tabs = Some(tabs.clone());
-        tabs
-    }
-
-    fn textareas_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
-        if let Some(tabs) = self.textareas_preview_tabs.clone() {
-            return tabs;
-        }
-
-        let tabs = radix::Tabs::new("radix-studio-textareas-preview-tabs")
-            .look(&self.theme)
-            .items([
-                TabsItem::new("template-preview").label("Template Preview"),
-                TabsItem::new("colors").label("Colors"),
-                TabsItem::new("all-sizes").label("All Sizes"),
-            ])
-            .active("template-preview")
-            .width_mode(TabsWidthMode::Intrinsic)
-            .with_template_modifier(|root, _| root.w_full())
-            .spawn(cx);
-
-        self._subscriptions.push(cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
-            cx.notify();
-        }));
-
-        self.textareas_preview_tabs = Some(tabs.clone());
-        tabs
-    }
-
-    fn sliders_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<Tabs> {
-        if let Some(tabs) = self.sliders_preview_tabs.clone() {
-            return tabs;
-        }
-
-        let tabs = radix::Tabs::new("radix-studio-sliders-preview-tabs")
-            .look(&self.theme)
-            .items([
-                TabsItem::new("template-preview").label("Template Preview"),
-                TabsItem::new("colors").label("Colors"),
-                TabsItem::new("all-sizes").label("All Sizes"),
-            ])
-            .active("template-preview")
-            .width_mode(TabsWidthMode::Intrinsic)
-            .with_template_modifier(|root, _| root.w_full())
-            .spawn(cx);
-
-        self._subscriptions.push(cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
-            cx.notify();
-        }));
-
-        self.sliders_preview_tabs = Some(tabs.clone());
-        tabs
-    }
-
     fn set_mode(&mut self, mode: ThemeMode, cx: &mut Context<Self>) {
         self.theme.set_mode(mode);
         self.draft.set_mode(mode);
         self.draft.set_palettes(self.theme_accent, self.theme_gray);
         self.palette_edits.apply(&self.theme, &self.draft);
-        self.signup_mesh_cache = None;
         self.mode_selector.update(cx, |group, cx| group.set_selected(theme_mode::mode_id(mode), cx));
-        self.screen_nav.update(cx, |nav, cx| nav.mode_changed(cx));
+        self.screen_nav.update(cx, |nav, cx| nav.theme_changed(cx));
         self.sync_seed_fields(cx);
         cx.notify();
     }
@@ -585,35 +267,37 @@ impl RadixStudioApp {
         self.set_mode(STARTUP_MODE, cx);
     }
 
-    pub fn ensure_signup_mesh_cache(&mut self, width: u32, height: u32) -> bool {
-        if width == 0 || height == 0 {
-            return false;
-        }
-        let key = SignupMeshCacheKey::for_look(&self.draft, width, height);
-        if self.signup_mesh_cache.as_ref().is_some_and(|(cached, _)| *cached == key) {
-            return false;
-        }
-        let Some(image) = rasterize_signup_mesh_for_look(&self.draft, width, height) else {
-            return false;
+    /// Prepaint supplies dimensions only; all raster work runs off the UI thread.
+    pub fn request_signup_mesh(&mut self, width: u32, height: u32, cx: &mut Context<Self>) {
+        let Some(mut request) = self.signup_mesh_cache.request(MeshRequest::for_look(&self.draft, width, height))
+        else {
+            return;
         };
-        self.signup_mesh_cache = Some((key, image));
-        true
+        self.signup_mesh_task = Some(cx.spawn(async move |this, cx| {
+            loop {
+                let image = cx.background_executor().spawn(async move { request.render() }).await;
+                let next = this.update(cx, |this, cx| {
+                    let next = this.signup_mesh_cache.complete(request.key, image);
+                    if next.is_none() {
+                        this.signup_mesh_task = None;
+                        cx.notify();
+                    }
+                    next
+                });
+                match next {
+                    Ok(Some(latest)) => request = latest,
+                    _ => break,
+                }
+            }
+        }));
     }
 
     fn cached_signup_mesh(&self) -> Option<Arc<RenderImage>> {
-        self.signup_mesh_cache.as_ref().map(|(_, image)| Arc::clone(image))
-    }
-
-    fn notify_preview_controls(&self, cx: &mut Context<Self>) {
-        self.icon_samples.notify(cx);
-        self.task_samples.notify(cx);
-        self.preview_toolbar.update(cx, |toolbar, cx| toolbar.notify_items(cx));
-        self.preview_actions.update(cx, |_, cx| cx.notify());
-        self.preview_tabs.update(cx, |_, cx| cx.notify());
+        self.signup_mesh_cache.image()
     }
 
     fn sync_seed_fields(&self, cx: &mut Context<Self>) {
-        self.notify_preview_controls(cx);
+        self.home.notify(cx);
         let colors = self.palette_edits.colors(&self.theme);
         self.accent_field.update(cx, |field, cx| field.set_color(colors.accent, cx));
         self.gray_field.update(cx, |field, cx| field.set_color(colors.gray, cx));
@@ -747,21 +431,7 @@ impl Render for RadixStudioApp {
                                         preview_layout: self.preview_layout.clone(),
                                         mesh_image: self.cached_signup_mesh(),
                                         app: cx.entity(),
-                                        controls: custom_palette::PreviewControls {
-                                            search_field: self.search_field.clone(),
-                                            search_submit: self.search_submit.clone(),
-                                            sign_up_name: self.sign_up_name.clone(),
-                                            sign_up_email: self.sign_up_email.clone(),
-                                            sign_up_password: self.sign_up_password.clone(),
-                                            create_account: self.create_account.clone(),
-                                            continue_github: self.continue_github.clone(),
-                                            icon_samples: self.icon_samples.clone(),
-                                            task_samples: self.task_samples.clone(),
-                                            tree: self.preview_tree.clone(),
-                                            toolbar: self.preview_toolbar.clone(),
-                                            actions: self.preview_actions.clone(),
-                                            tabs: self.preview_tabs.clone(),
-                                        },
+                                        controls: self.home.clone(),
                                         surface: draft_chrome.surface,
                                         border: draft_chrome.border,
                                         muted: draft_chrome.muted,
@@ -773,19 +443,8 @@ impl Render for RadixStudioApp {
                                 RadixStudioTab::Colors => colors::page(&self.theme, fg, muted),
                                 RadixStudioTab::Icons => icons::page(fg, muted, surface),
                                 RadixStudioTab::StyleGuide => {
-                                    let tabs = style_guide::PreviewTabs {
-                                        avatars: self.avatars_preview_tabs(cx),
-                                        badges: self.badges_preview_tabs(cx),
-                                        examples: self.guide_tabs.clone(),
-                                        buttons: self.buttons_preview_tabs(cx),
-                                        checkboxes: self.checkboxes_preview_tabs(cx),
-                                        radios: self.radios_preview_tabs(cx),
-                                        switches: self.switches_preview_tabs(cx),
-                                        textfields: self.textfields_preview_tabs(cx),
-                                        textareas: self.textareas_preview_tabs(cx),
-                                        sliders: self.sliders_preview_tabs(cx),
-                                    };
-                                    style_guide::page(&self.theme, tabs, self.guide_tree.clone(), self.guide_tree_disabled.clone(), window, cx)
+                                    let guide = self.style_guide.get_or_insert_with(|| style_guide::State::new(&self.theme, cx));
+                                    guide.render(&self.theme, window, cx)
                                 }
                                 RadixStudioTab::Developer => {
                                     developer::page(&self.theme, self.shadow_editor.clone())

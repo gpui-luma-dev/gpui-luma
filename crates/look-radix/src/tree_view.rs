@@ -69,7 +69,8 @@ impl TreeViewTheme for RadixTreeViewTheme {
     }
 }
 
-/// Live theme adapter; changes to this look also repaint tree rows.
+/// Live theme adapter; rows resolve current colors when rendered.
+/// Notify affected views after mutating the look; see [`Look`].
 pub fn tree_view_theme(look: &Look) -> Arc<dyn TreeViewTheme> {
     Arc::new(RadixTreeViewTheme { look: look.clone() })
 }

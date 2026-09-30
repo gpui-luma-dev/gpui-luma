@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use crate::color_hex::{format_hex, parse_hex};
+
 use gpui::{
     Context, Entity, EventEmitter, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px,
 };
@@ -255,24 +257,4 @@ fn embedded_textfield(
             field
         })
         .spawn(cx)
-}
-
-fn parse_hex(value: &str) -> Option<Hsla> {
-    let value = value.trim();
-    let value = value.strip_prefix('#').unwrap_or(value);
-    if value.len() != 6 {
-        return None;
-    }
-    let rgb = u32::from_str_radix(value, 16).ok()?;
-    Some(gpui::rgb(rgb).into())
-}
-
-fn format_hex(color: Hsla) -> String {
-    let rgb = color.to_rgb();
-    format!(
-        "{:02X}{:02X}{:02X}",
-        (rgb.r * 255.0).round() as u8,
-        (rgb.g * 255.0).round() as u8,
-        (rgb.b * 255.0).round() as u8
-    )
 }

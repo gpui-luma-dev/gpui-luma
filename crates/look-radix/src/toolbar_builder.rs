@@ -6,9 +6,7 @@ use luma::controls::button_family::ButtonFamilyRole;
 use luma::controls::toolbar::{ToolbarBuilder, ToolbarItem};
 use luma::theme::ControlSize;
 
-use crate::{Button, ButtonSize, Look, toolbar_template};
-
-const ICON_SIZE: f32 = 16.0;
+use crate::{Button, ButtonSize, Look, ToolbarStyle, toolbar_template_with};
 
 enum Item {
     Command { id: SharedString, label: SharedString, icon: ControlIcon },
@@ -21,15 +19,53 @@ pub struct Toolbar {
     id: SharedString,
     look: Option<Look>,
     items: Vec<Item>,
+    style: ToolbarStyle,
+    size: ControlSize,
+    command_size: ButtonSize,
+    icon_size: f32,
 }
 
 impl Toolbar {
     pub fn new(id: impl Into<SharedString>) -> Self {
-        Self { id: id.into(), look: None, items: Vec::new() }
+        Self {
+            id: id.into(),
+            look: None,
+            items: Vec::new(),
+            style: ToolbarStyle::default(),
+            size: ControlSize::Sm,
+            command_size: ButtonSize::One,
+            icon_size: 16.0,
+        }
     }
 
     pub fn look(mut self, look: &Look) -> Self {
         self.look = Some(look.clone());
+        self
+    }
+
+    /// Shell spacing and radius; applies to this toolbar only.
+    pub fn style(mut self, style: ToolbarStyle) -> Self {
+        self.style = style;
+        self
+    }
+
+    /// SDK shell size, including the reference height for separators.
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.size = size;
+        self
+    }
+
+    /// Size of buttons created by `command`; hosted items keep their own sizing.
+    pub fn command_size(mut self, size: ButtonSize) -> Self {
+        self.command_size = size;
+        self
+    }
+
+    /// Logical icon size for generated command buttons. Hosted items are unchanged.
+    pub fn icon_size(mut self, size: f32) -> Self {
+        if size.is_finite() && size >= 0.0 {
+            self.icon_size = size;
+        }
         self
     }
 
@@ -66,19 +102,19 @@ impl Toolbar {
                         .look(&look)
                         .ghost_quiet()
                         .gray()
-                        .size(ButtonSize::One)
+                        .size(self.command_size)
                         .role(ButtonFamilyRole::Icon)
                         .tab_stop(false)
                         .icon(icon)
-                        .icon_size(ICON_SIZE)
+                        .icon_size(self.icon_size)
                         .spawn(cx);
                     ToolbarItem::command_button(id, button, cx).label(label)
                 }
             })
             .collect::<Vec<_>>();
         ToolbarBuilder::new(self.id)
-            .template(toolbar_template(&look))
-            .size(ControlSize::Sm)
+            .template(toolbar_template_with(&look, self.style))
+            .size(self.size)
             .items(items)
             .spawn(cx)
     }

@@ -4,7 +4,7 @@
 //! gray-2 stage + accent radial fills on diamond paths, displayed at ~0.6 opacity
 //! with `width: 240%; margin-left: 70%`.
 
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use gpui::{Hsla, RenderImage};
 use image::{Frame, ImageBuffer, Rgba};
@@ -82,14 +82,79 @@ pub const MESH_DISPLAY_LEFT_FRAC: f32 = 0.7;
 pub struct SignupMeshCacheKey {
     pub width: u32,
     pub height: u32,
-    pub look_revision: u64,
     pub color_fingerprint: u64,
 }
 
 impl SignupMeshCacheKey {
     pub fn for_look(look: &Look, width: u32, height: u32) -> Self {
         let colors = SignupStage::default().mesh_colors(look);
-        Self { width, height, look_revision: look.revision(), color_fingerprint: fingerprint_mesh_colors(&colors) }
+        Self { width, height, color_fingerprint: fingerprint_mesh_colors(&colors) }
+    }
+}
+
+/// Immutable snapshot passed to the background executor; never reads a live Look.
+#[derive(Clone, Copy)]
+pub struct MeshRequest {
+    pub key: SignupMeshCacheKey,
+    pub colors: SignupMeshColors,
+}
+impl MeshRequest {
+    pub fn for_look(look: &Look, width: u32, height: u32) -> Self {
+        Self {
+            key: SignupMeshCacheKey::for_look(look, width, height),
+            colors: SignupStage::default().mesh_colors(look),
+        }
+    }
+    pub fn render(self) -> Option<Arc<RenderImage>> {
+        rasterize_signup_mesh_stage(&self.colors, self.key.width, self.key.height)
+    }
+}
+
+/// One in-flight job plus the newest desired snapshot. Keep the previous image
+/// visible until its replacement is ready; obsolete results are never published.
+#[derive(Default)]
+pub struct MeshCache {
+    desired: Option<MeshRequest>,
+    running: bool,
+    failed: Option<SignupMeshCacheKey>,
+    rendered: Option<(SignupMeshCacheKey, Arc<RenderImage>)>,
+}
+impl MeshCache {
+    pub fn image(&self) -> Option<Arc<RenderImage>> {
+        self.rendered.as_ref().map(|(_, image)| Arc::clone(image))
+    }
+    pub fn request(&mut self, request: MeshRequest) -> Option<MeshRequest> {
+        if request.key.width == 0 || request.key.height == 0 {
+            return None;
+        }
+        self.desired = Some(request);
+        if self.running
+            || self.failed == Some(request.key)
+            || self.rendered.as_ref().is_some_and(|(key, _)| *key == request.key)
+        {
+            return None;
+        }
+        self.running = true;
+        Some(request)
+    }
+    /// Returns the latest replacement job, if the completed job became obsolete.
+    pub fn complete(&mut self, key: SignupMeshCacheKey, image: Option<Arc<RenderImage>>) -> Option<MeshRequest> {
+        let next = self.desired.filter(|desired| desired.key != key);
+        if let Some(next) = next {
+            if !self.rendered.as_ref().is_some_and(|(cached, _)| *cached == next.key) {
+                return Some(next);
+            }
+        } else if let Some(image) = image {
+            self.rendered = Some((key, image));
+            self.failed = None;
+        }
+        if self.desired.is_some_and(|desired| desired.key == key)
+            && !self.rendered.as_ref().is_some_and(|(cached, _)| *cached == key)
+        {
+            self.failed = Some(key);
+        }
+        self.running = false;
+        None
     }
 }
 
@@ -116,6 +181,11 @@ pub fn rasterize_signup_mesh_stage(colors: &SignupMeshColors, width: u32, height
     rasterize_signup_mesh_with_world(colors, width, height, world)
 }
 
+// Geometry is immutable across palette changes and resizes. Preserve parse failure
+// as None rather than panicking during initialization.
+static MESH_PATHS: LazyLock<Option<Vec<Path>>> =
+    LazyLock::new(|| MESH_LAYERS.iter().map(|layer| parse_svg_path(layer.d)).collect());
+
 fn rasterize_signup_mesh_with_world(
     colors: &SignupMeshColors,
     width: u32,
@@ -129,8 +199,7 @@ fn rasterize_signup_mesh_with_world(
     let mut pixmap = Pixmap::new(width, height)?;
     pixmap.fill(Color::TRANSPARENT);
 
-    for layer in MESH_LAYERS.iter() {
-        let path = parse_svg_path(layer.d)?;
+    for (layer, path) in MESH_LAYERS.iter().zip(MESH_PATHS.as_ref()?.iter()) {
         let stops = layer
             .stops
             .iter()
@@ -151,14 +220,15 @@ fn rasterize_signup_mesh_with_world(
         let mut paint = Paint::default();
         paint.shader = shader;
         paint.anti_alias = true;
-        pixmap.fill_path(&path, &paint, FillRule::Winding, world, None);
+        pixmap.fill_path(path, &paint, FillRule::Winding, world, None);
     }
 
     pixmap_to_render_image(pixmap)
 }
 
 /// Convenience: resolve mesh colors from a look and rasterize for a stage-sized pixmap.
-pub fn rasterize_signup_mesh_for_look(look: &Look, width: u32, height: u32) -> Option<Arc<RenderImage>> {
+#[cfg(test)]
+fn rasterize_signup_mesh_for_look(look: &Look, width: u32, height: u32) -> Option<Arc<RenderImage>> {
     let colors = SignupStage::default().mesh_colors(look);
     rasterize_signup_mesh_stage(&colors, width, height)
 }
@@ -449,6 +519,58 @@ fn read_number(chars: &mut std::iter::Peekable<std::str::Chars<'_>>) -> Option<f
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mesh_jobs_coalesce_and_never_publish_obsolete_results() {
+        let look = Look::built_in();
+        let first = MeshRequest::for_look(&look, 32, 24);
+        let intermediate = MeshRequest::for_look(&look, 33, 24);
+        let latest = MeshRequest::for_look(&look, 34, 24);
+        let mut cache = MeshCache::default();
+        assert!(cache.request(first).is_some());
+        assert!(cache.request(intermediate).is_none());
+        assert!(cache.request(latest).is_none());
+        let next = cache.complete(first.key, first.render()).expect("latest job");
+        assert_eq!(next.key, latest.key);
+        assert!(cache.image().is_none(), "obsolete result was discarded");
+        assert!(cache.complete(next.key, next.render()).is_none());
+        let image = cache.image().expect("latest image");
+        assert!(cache.request(latest).is_none(), "unchanged inputs reuse the cache");
+        assert!(cache.request(first).is_some());
+        assert!(Arc::ptr_eq(&image, &cache.image().expect("retained image")));
+        assert!(cache.request(latest).is_none());
+        assert!(cache.complete(first.key, first.render()).is_none());
+        assert!(Arc::ptr_eq(&image, &cache.image().expect("return to cached image")));
+    }
+
+    #[test]
+    fn mesh_cache_ignores_unrelated_look_changes_and_stops_failed_retries() {
+        let look = Look::built_in();
+        let first = MeshRequest::for_look(&look, 32, 24);
+        look.set_classic_params(Default::default());
+        assert_eq!(first.key, MeshRequest::for_look(&look, 32, 24).key);
+        look.set_mode(luma::theme::ThemeMode::Dark);
+        assert_ne!(first.key, MeshRequest::for_look(&look, 32, 24).key);
+        let mut cache = MeshCache::default();
+        assert!(cache.request(first).is_some());
+        assert!(cache.complete(first.key, None).is_none());
+        assert!(cache.request(first).is_none(), "do not retry a failed image on every frame");
+        assert!(cache.request(MeshRequest::for_look(&look, 32, 24)).is_some());
+    }
+
+    /// Headless timing probe: run explicitly with --ignored --nocapture.
+    #[test]
+    #[ignore]
+    fn profile_mesh_rasterization() {
+        let colors = SignupStage::default().mesh_colors(&Look::built_in());
+        for (width, height) in [(435, 500), (835, 960)] {
+            let start = std::time::Instant::now();
+            for _ in 0..30 {
+                std::hint::black_box(rasterize_signup_mesh_stage(&colors, width, height).expect("mesh"));
+            }
+            eprintln!("mesh {width}x{height}: {:?} per frame", start.elapsed() / 30);
+        }
+    }
 
     #[test]
     fn signup_stage_uses_gray_fill_and_color_mesh() {
