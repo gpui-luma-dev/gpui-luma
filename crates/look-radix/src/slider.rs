@@ -120,9 +120,9 @@ impl SliderTheme for SliderThemeAdapter {
         };
 
         let thumb_bg = if state.disabled {
-            gray(3)
+            look.light_gray_step(3)
         } else {
-            look.resolve_role(SemanticRole::Background).hsla()
+            gpui::white()
         };
 
         let thumb_border = if state.disabled {
@@ -242,6 +242,27 @@ pub fn slider_template(look: &Look, variant: SliderVariant) -> Arc<dyn SliderTem
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn thumbs_keep_light_colors_in_dark_mode() {
+        let look = Look::built_in();
+        for variant in SliderVariant::ALL {
+            let theme = slider_theme_with(&look, variant);
+            for state in [
+                InteractionState::default(),
+                InteractionState { hovered: true, ..Default::default() },
+                InteractionState { pressed: true, ..Default::default() },
+                InteractionState { focused: true, ..Default::default() },
+                InteractionState { disabled: true, ..Default::default() },
+            ] {
+                look.set_mode(luma::theme::ThemeMode::Light);
+                let light = theme.resolve(ControlSize::Md, None, state);
+                look.set_mode(luma::theme::ThemeMode::Dark);
+                let dark = theme.resolve(ControlSize::Md, None, state);
+                assert_eq!(light.thumb_background, dark.thumb_background);
+            }
+        }
+    }
 
     #[test]
     fn surface_fill_uses_primary() {

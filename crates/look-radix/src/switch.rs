@@ -153,7 +153,7 @@ impl SwitchTheme for SwitchThemeAdapter {
         };
         let step = |n| look.resolve_step(family, n).hsla();
         let gray = |n| look.resolve_step(ScaleFamily::Gray, n).hsla();
-        let white = look.resolve_role(SemanticRole::Background).hsla();
+        let white = gpui::white();
 
         let accent_on = if high_contrast {
             step(12)
@@ -163,7 +163,8 @@ impl SwitchTheme for SwitchThemeAdapter {
         let soft_on = if high_contrast { step(6) } else { step(4) };
 
         let (track_background, mut track_border, thumb_background, thumb_border, thumb_shadow) = if state.disabled {
-            (alpha(gray(3), 0.55), alpha(gray(3), 0.55), gray(2), gray(2), thumb_shadow(false))
+            let thumb = look.light_gray_step(2);
+            (alpha(gray(3), 0.55), alpha(gray(3), 0.55), thumb, thumb, thumb_shadow(false))
         } else {
             match (self.variant, on) {
                 (SwitchVariant::Surface, false) => {
@@ -262,6 +263,30 @@ mod tests {
     fn palette(variant: SwitchVariant, on: bool) -> SwitchPalette {
         let look = Look::built_in();
         switch_theme_with(&look, variant, Paint::accent()).resolve(on, InteractionState::default(), ControlSize::Md)
+    }
+
+    #[test]
+    fn thumbs_keep_light_colors_in_dark_mode() {
+        let look = Look::built_in();
+        for variant in [SwitchVariant::Classic, SwitchVariant::Surface, SwitchVariant::Soft] {
+            let theme = switch_theme_with(&look, variant, Paint::accent());
+            for state in [
+                InteractionState::default(),
+                InteractionState { hovered: true, ..Default::default() },
+                InteractionState { pressed: true, ..Default::default() },
+                InteractionState { focused: true, ..Default::default() },
+                InteractionState { disabled: true, ..Default::default() },
+            ] {
+                for on in [false, true] {
+                    look.set_mode(luma::theme::ThemeMode::Light);
+                    let light = theme.resolve(on, state, ControlSize::Md);
+                    look.set_mode(luma::theme::ThemeMode::Dark);
+                    let dark = theme.resolve(on, state, ControlSize::Md);
+                    assert_eq!(light.thumb_background, dark.thumb_background);
+                    assert_eq!(light.thumb_border, dark.thumb_border);
+                }
+            }
+        }
     }
 
     #[test]

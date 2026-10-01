@@ -308,6 +308,11 @@ impl Look {
         role.resolve(self.scales(), self.mode())
     }
 
+    /// Control thumbs retain their light palette in both theme modes.
+    pub(crate) fn light_gray_step(&self, step: ScaleStep) -> Hsla {
+        self.state.scales.read().unwrap_or_else(|poisoned| poisoned.into_inner()).light.gray.step(step)
+    }
+
     pub fn resolve_step(&self, family: ScaleFamily, step: ScaleStep) -> ResolvedColor {
         self.scales().resolved(family, step)
     }
