@@ -1,5 +1,7 @@
 # gpui-luma-look-shadcn
 
+Source repository: [gpui-luma-dev/gpui-luma](https://github.com/gpui-luma-dev/gpui-luma).
+
 Shadcn theme and look adapter for **GPUI-Luma** ([gpui-luma.dev](https://gpui-luma.dev)).
 
 Provides token resolution, CSS stylesheet ingestion, shadow ladders, light/dark mode transitions, and concrete control builders adhering to the Shadcn design language.

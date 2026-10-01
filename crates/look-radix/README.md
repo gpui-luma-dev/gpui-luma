@@ -1,5 +1,7 @@
 # gpui-luma-look-radix
 
+Source repository: [gpui-luma-dev/gpui-luma](https://github.com/gpui-luma-dev/gpui-luma).
+
 Radix theme and look adapter for **GPUI-Luma** ([gpui-luma.dev](https://gpui-luma.dev)).
 
 Provides palette scales, semantic token resolution, custom color generation, light/dark mode handling, and concrete control builders adhering to the Radix design language.

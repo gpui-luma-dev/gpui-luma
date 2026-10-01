@@ -1,9 +1,10 @@
 name: Build Luma Studio Executables
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
@@ -26,8 +27,8 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact_name: luma-studio-windows-x64
 
-          # Windows ARM64 (Native for Parallels / Windows on ARM)
-          - os: windows-latest
+          # Windows ARM64 (native runner)
+          - os: windows-11-arm
             target: aarch64-pc-windows-msvc
             artifact_name: luma-studio-windows-arm64
 
@@ -46,7 +47,7 @@ jobs:
           key: ${{ matrix.target }}
 
       - name: Build luma-studio
-        run: cargo build --release --package luma-studio --target ${{ matrix.target }}
+        run: cargo build --locked --release --package luma-studio --target ${{ matrix.target }}
 
       - name: Prepare macOS executable archive
         if: runner.os == 'macOS'
@@ -68,4 +69,5 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_name }}.zip
+          if-no-files-found: error
           retention-days: 7

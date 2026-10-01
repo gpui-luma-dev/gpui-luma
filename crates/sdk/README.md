@@ -1,5 +1,7 @@
 # gpui-luma
 
+Source repository: [gpui-luma-dev/gpui-luma](https://github.com/gpui-luma-dev/gpui-luma).
+
 Lookless control SDK and interaction engine for **GPUI-Luma** ([gpui-luma.dev](https://gpui-luma.dev)).
 
 Provides component logic, event routing, keyboard navigation, focus management, drag-and-drop, and theme contracts independent of any visual theme or styling adapter.

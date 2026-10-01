@@ -1,5 +1,7 @@
 # gpui-luma-color
 
+Source repository: [gpui-luma-dev/gpui-luma](https://github.com/gpui-luma-dev/gpui-luma).
+
 Color system primitives and interactive controls for **GPUI-Luma** ([gpui-luma.dev](https://gpui-luma.dev)).
 
 Provides domain renderers, checkerboard painting, palette calculations, and interactive color manipulation components built on the lookless Luma SDK.
