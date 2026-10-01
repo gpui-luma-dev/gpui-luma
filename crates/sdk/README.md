@@ -18,5 +18,22 @@ Provides component logic, event routing, keyboard navigation, focus management, 
 Depend on `gpui-luma` directly and choose a look adapter for styled controls:
 
 ```sh
-cargo add gpui-luma --rename luma --git https://github.com/scottcg/gpui-luma
+cargo add gpui-luma --rename luma
 ```
+Choose a look adapter:
+
+```sh
+cargo add gpui-luma-look-shadcn --rename luma-look-shadcn
+# Or:
+cargo add gpui-luma-look-radix --rename luma-look-radix
+```
+
+The package is named `gpui-luma`; Rust imports use `luma`.
+
+Build your application with `cargo check` or `cargo build`. In this repository,
+check the SDK with `cargo check -p gpui-luma`.
+
+## License
+
+Apache-2.0; see [LICENSE](LICENSE). Bundled third-party assets retain their
+licenses; see the files under `licenses/`.

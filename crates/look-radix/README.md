@@ -14,14 +14,18 @@ Provides palette scales, semantic token resolution, custom color generation, lig
 ## Installation
 
 ```sh
-cargo add gpui-luma --rename luma --git https://github.com/scottcg/gpui-luma
-cargo add gpui-luma-look-radix --rename luma-look-radix --git https://github.com/scottcg/gpui-luma
+cargo add gpui-luma --rename luma
+cargo add gpui-luma-look-radix --rename luma-look-radix
+cargo add gpui-unofficial --rename gpui
 ```
+
+The package is named `gpui-luma-look-radix`; Rust imports use `luma_look_radix`.
 
 ## Quick Start
 
 ```rust,no_run
-use gpui::*;
+use gpui::{Context, Entity};
+use luma::infra::presenter::HasPresenter;
 use luma_look_radix::{Look, Button, ButtonSize};
 
 fn save_button<M: 'static>(look: &Look, cx: &mut Context<M>) -> Entity<luma::controls::button::Button> {
@@ -33,3 +37,16 @@ fn save_button<M: 'static>(look: &Look, cx: &mut Context<M>) -> Entity<luma::con
         .spawn(cx)
 }
 ```
+
+Use `Look::built_in()` to create the default look. Pass a reference to that look
+to builders so controls share the same palette and styling settings.
+
+## Build
+
+In your application, run `cargo check` or `cargo build`.
+From the Luma repository, run `cargo check -p gpui-luma-look-radix`.
+
+## License
+
+Apache-2.0. See `LICENSE` in the package. Radix and Color.js attribution is in
+`src/custom_colors/LICENSES.txt`.

@@ -15,6 +15,31 @@ Provides domain renderers, checkerboard painting, palette calculations, and inte
 ## Installation
 
 ```sh
-cargo add gpui-luma --rename luma --git https://github.com/scottcg/gpui-luma
-cargo add gpui-luma-color --rename luma-color --git https://github.com/scottcg/gpui-luma
+cargo add gpui-luma --rename luma
+cargo add gpui-luma-color --rename luma-color
+cargo add gpui-unofficial --rename gpui
 ```
+
+The package is named `gpui-luma-color`; Rust imports use `luma_color`.
+
+## Usage
+
+Create a swatch to include in a GPUI view:
+
+```rust,no_run
+use gpui::hsla;
+use luma_color::ColorSwatch;
+
+fn accent_swatch() -> ColorSwatch {
+    ColorSwatch::new(hsla(0.6, 0.8, 0.5, 1.0))
+}
+```
+
+## Build
+
+In your application, run `cargo check` or `cargo build`.
+From the Luma repository, run `cargo check -p gpui-luma-color`.
+
+## License
+
+Apache-2.0. See `LICENSE` in the package.

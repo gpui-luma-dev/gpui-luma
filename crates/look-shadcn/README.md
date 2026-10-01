@@ -13,18 +13,48 @@ Provides token resolution, CSS stylesheet ingestion, shadow ladders, light/dark 
 ## Installation
 
 ```sh
-cargo add gpui-luma --rename luma --git https://github.com/scottcg/gpui-luma
-cargo add gpui-luma-look-shadcn --rename luma-look-shadcn --git https://github.com/scottcg/gpui-luma
+cargo add gpui-luma --rename luma
+cargo add gpui-luma-look-shadcn --rename luma-look-shadcn
+cargo add gpui-unofficial --rename gpui
 ```
+
+The package is named `gpui-luma-look-shadcn`; Rust imports use `luma_look_shadcn`.
 
 ## Quick Start
 
 ```rust,no_run
-use gpui::*;
+use gpui::{Context, Entity};
+use luma::infra::presenter::HasPresenter;
 use luma_look_shadcn::{ShadcnLook, Button, ShadcnSize};
 
-fn render_save_button(cx: &mut App) {
-    let look = ShadcnLook::built_in();
-    // Use look builders to construct and spawn controls
+fn save_button<M: 'static>(
+    look: &ShadcnLook,
+    cx: &mut Context<M>,
+) -> Entity<luma::controls::button::Button> {
+    Button::new("save")
+        .look(look)
+        .primary()
+        .size(ShadcnSize::Md)
+        .label("Save")
+        .spawn(cx)
 }
 ```
+
+Use `ShadcnLook::built_in()` for the bundled fallback theme, or
+`ShadcnLook::from_css_str` to parse your application's theme CSS.
+
+To enable optional theme inspection:
+
+```sh
+cargo add gpui-luma-look-shadcn --rename luma-look-shadcn --features inspect
+```
+
+## Build
+
+In your application, run `cargo check` or `cargo build`.
+From the Luma repository, run `cargo check -p gpui-luma-look-shadcn`.
+
+## License
+
+Apache-2.0. See `LICENSE` in the package. Third-party material retains its
+own license terms.
