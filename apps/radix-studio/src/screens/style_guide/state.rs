@@ -29,6 +29,7 @@ impl State {
             textfields: navigation("textfields"),
             textareas: navigation("textareas"),
             sliders: navigation("sliders"),
+            progress: navigation("progress"),
             examples: TabsExamples::spawn(look, cx),
         };
         Self {

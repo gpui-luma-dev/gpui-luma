@@ -1,0 +1,11 @@
+Lucide icons are supplied by lucide-static-svg 1.46.0, not vendored SVG files.
+These third-party terms are separate from the project Apache-2.0 license.
+Carry these license texts into distributions containing the icons or wrapper.
+
+LICENSE-lucide.txt (ISC and Feather MIT):
+https://github.com/lucide-icons/lucide/blob/1.46.0/LICENSE
+
+LICENSE-lucide-static-svg.txt (upstream wrapper notice):
+https://github.com/scottcg/lucide-svg-static/blob/27b6648161171bf8132e200b213d654f7920b5da/LICENSE
+
+Retrieved 2026-10-01.

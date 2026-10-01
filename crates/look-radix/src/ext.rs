@@ -41,6 +41,12 @@ pub trait LookControlExt {
     fn textfield_template(&self, variant: TextFieldVariant) -> Arc<dyn TextFieldTemplate>;
     fn textarea_template(&self, variant: TextFieldVariant) -> Arc<dyn TextAreaTemplate>;
     fn slider_template(&self, variant: SliderVariant) -> Arc<dyn SliderTemplate>;
+    fn progress_template(
+        &self,
+        variant: crate::ProgressVariant,
+        paint: Paint,
+        radius: Radius,
+    ) -> Arc<dyn luma::controls::progress::ProgressTemplate>;
     /// Bare template for previews that render forced states instead of live controls.
     fn checkbox_template(&self, variant: CheckboxVariant) -> Arc<dyn ButtonTemplate<CheckboxData>>;
     fn checkbox_template_with(&self, variant: CheckboxVariant, paint: Paint) -> Arc<dyn ButtonTemplate<CheckboxData>>;
@@ -72,6 +78,11 @@ pub trait LookControlExt {
     fn tabs_template_for(&self, variant: TabsVariant) -> Arc<dyn TabsTemplate>;
     /// Bare template for previews that render forced states instead of live controls.
     fn popup_menu_template(&self, variant: PopupMenuVariant, tone: Tone) -> Arc<dyn PopupMenuTemplate>;
+    fn context_menu_template(
+        &self,
+        variant: crate::ContextMenuVariant,
+        tone: Tone,
+    ) -> Arc<dyn luma::controls::context_menu::ContextMenuTemplate>;
     fn overlay_window(&self, id: impl Into<SharedString>) -> OverlayWindowBuilder;
 }
 
@@ -90,6 +101,15 @@ impl LookControlExt for Look {
 
     fn slider_template(&self, variant: SliderVariant) -> Arc<dyn SliderTemplate> {
         crate::slider::slider_template(self, variant)
+    }
+
+    fn progress_template(
+        &self,
+        variant: crate::ProgressVariant,
+        paint: Paint,
+        radius: Radius,
+    ) -> Arc<dyn luma::controls::progress::ProgressTemplate> {
+        crate::progress_template(self, variant, paint, radius)
     }
 
     fn checkbox_template(&self, variant: CheckboxVariant) -> Arc<dyn ButtonTemplate<CheckboxData>> {
@@ -155,6 +175,14 @@ impl LookControlExt for Look {
 
     fn popup_menu_template(&self, variant: PopupMenuVariant, tone: Tone) -> Arc<dyn PopupMenuTemplate> {
         crate::popup_menu::popup_menu_template(self, variant, tone)
+    }
+
+    fn context_menu_template(
+        &self,
+        variant: crate::ContextMenuVariant,
+        tone: Tone,
+    ) -> Arc<dyn luma::controls::context_menu::ContextMenuTemplate> {
+        crate::context_menu_template(self, variant, tone)
     }
 
     fn overlay_window(&self, id: impl Into<SharedString>) -> OverlayWindowBuilder {

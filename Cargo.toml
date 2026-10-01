@@ -35,11 +35,11 @@ luma-color = { package = "gpui-luma-color", path = "crates/luma-color" }
 luma-look-shadcn = { package = "gpui-luma-look-shadcn", path = "crates/look-shadcn" }
 luma-look-radix = { package = "gpui-luma-look-radix", path = "crates/look-radix" }
 luma-app-common = { path = "apps/common" }
-gpui = { package = "gpui-unofficial", version = "1.21.0" }
+gpui = { package = "gpui-unofficial", version = "1.22.0" }
 lucide-svg-static = { package = "lucide-static-svg", version = "1.45.0" }
 gpui_platform = {
   package = "gpui-platform-gpui-unofficial",
-  version = "1.21.0",
+  version = "1.22.0",
   features = ["font-kit"],
 }
 image = "0.25"

@@ -1,0 +1,27 @@
+Font license sources
+
+OFL.txt files were retrieved from the URLs below on 2026-10-01.
+Upstream license text is preserved. Additional copyright notices at the
+start of some files preserve the bundled font metadata when it differs.
+Existing license files were not replaced.
+
+antic/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/antic/OFL.txt
+architects-daughter/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/architectsdaughter/OFL.txt
+crimson-pro/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/crimsonpro/OFL.txt
+dm-sans/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/dmsans/OFL.txt
+fira-code/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/firacode/OFL.txt
+ibm-plex-mono/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/ibmplexmono/OFL.txt
+inter/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/inter/OFL.txt
+jetbrains-mono/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/jetbrainsmono/OFL.txt
+libre-baskerville/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/librebaskerville/OFL.txt
+merriweather/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/merriweather/OFL.txt
+montserrat/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/OFL.txt
+noto-serif-thai/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/notoserifthai/OFL.txt
+open-sans/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/opensans/OFL.txt
+outfit/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/outfit/OFL.txt
+playfair-display/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/OFL.txt
+poppins/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/OFL.txt
+raleway/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/raleway/OFL.txt
+sorts-mill-goudy/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/sortsmillgoudy/OFL.txt
+source-serif-4/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/sourceserif4/OFL.txt
+space-mono/OFL.txt: https://raw.githubusercontent.com/google/fonts/main/ofl/spacemono/OFL.txt

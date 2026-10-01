@@ -109,7 +109,7 @@ impl PopupMenuTheme for PopupMenuThemeAdapter {
     }
 }
 
-fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: Tone) -> FloatingMenuLook {
+pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: Tone) -> FloatingMenuLook {
     let metrics = look.metrics();
     let (item_hover_background, item_hover_foreground) = match variant {
         PopupMenuVariant::Solid => (tone.step(look, 9), tone.contrast(look)),

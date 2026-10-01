@@ -9,7 +9,8 @@
 //! - Display: [`Avatar`], [`Badge`], [`Card`], and [`callout`].
 //! - Actions and choices: [`Button`], [`Checkbox`], [`Radio`], [`Switch`], [`Toggle`].
 //! - Input: [`TextField`], [`TextArea`], [`Slider`].
-//! - Navigation and collections: [`Tabs`], [`Toolbar`], [`PopupMenu`], [`TreeView`].
+//! - Progress: [`Progress`] (Surface / Soft bars, sizes 1–3).
+//! - Navigation and collections: [`Tabs`], [`Toolbar`], [`PopupMenu`], [`ContextMenu`], [`TreeView`].
 //! - Composition: [`segmented_radio_template`] and [`LookControlExt::overlay_window`].
 //!
 //! # Start with a control builder
@@ -93,12 +94,16 @@ mod checkbox;
 mod checkbox_builder;
 mod colors;
 mod custom_colors;
+mod context_menu;
+mod context_menu_builder;
 mod ext;
 mod look;
 mod overlay_window;
 mod palette;
 mod popup_menu;
 mod popup_menu_builder;
+mod progress;
+mod progress_builder;
 mod radio;
 mod radio_builder;
 mod scale;
@@ -142,6 +147,8 @@ pub use button::{
 };
 pub use button_builder::Button;
 pub use callout::callout;
+pub use context_menu::{ContextMenuVariant, context_menu_template, context_menu_theme};
+pub use context_menu_builder::ContextMenu;
 pub use card::{Card, CardSize, CardStyle, CardVariant};
 pub use checkbox::{
     CheckboxSize, CheckboxVariant, checkbox_scale_for, checkbox_template, checkbox_template_for, checkbox_theme,
@@ -150,6 +157,10 @@ pub use checkbox::{
 pub use checkbox_builder::Checkbox;
 pub use popup_menu::{PopupMenuVariant, popup_menu_template, popup_menu_theme};
 pub use popup_menu_builder::PopupMenu;
+pub use progress::{
+    ProgressSize, ProgressVariant, progress_template, progress_theme, progress_theme_with, resolve_progress_radius,
+};
+pub use progress_builder::Progress;
 pub use radio::{
     RadioSize, RadioVariant, radio_scale_for, radio_template, radio_template_for, radio_theme, radio_theme_for,
     radio_theme_with,

@@ -2,7 +2,10 @@
 
 use std::sync::{Arc, Mutex};
 
-use gpui::{App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, Subscription, Task, Window, div, prelude::*, px};
+use gpui::{
+    App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, ScrollHandle, Subscription, Task, Window, div,
+    prelude::*, px,
+};
 use luma::controls::button::ButtonEvent;
 use luma::controls::overlay_window::{OverlayWindow, OverlayWindowMode, OverlayWindowPosition};
 use luma::controls::popup_menu::PopupMenu;
@@ -26,6 +29,7 @@ use crate::screens::{colors, custom_palette, developer, icons, style_guide};
 use crate::tabs::RadixStudioTab;
 
 const CONTENT_MAX_W: f32 = 1280.0;
+const CONTROL_BAR_FADE_DISTANCE: f32 = 96.0;
 const STARTUP_MODE: ThemeMode = ThemeMode::Dark;
 
 #[derive(Clone, Debug)]
@@ -92,6 +96,7 @@ pub struct RadixStudioApp {
     theme_gray: Gray,
     palette_edits: PaletteEdits,
     screen_nav: Entity<ScreenNav>,
+    page_scroll: ScrollHandle,
     mode_selector: RadioGroup<RadioGroupItem>,
     accent_field: Entity<ColorTextField>,
     gray_field: Entity<ColorTextField>,
@@ -200,7 +205,10 @@ impl RadixStudioApp {
             }
         }));
         subscriptions.push(cx.subscribe(&screen_nav, |this, _, event: &ScreenNavEvent, cx| match event {
-            ScreenNavEvent::Change { .. } => cx.notify(),
+            ScreenNavEvent::Change { .. } => {
+                this.page_scroll.set_offset(gpui::point(px(0.0), px(0.0)));
+                cx.notify();
+            }
             ScreenNavEvent::ModeChange { mode } => this.set_mode(*mode, cx),
             ScreenNavEvent::ResetTheme => this.reset_theme(cx),
         }));
@@ -225,6 +233,7 @@ impl RadixStudioApp {
             theme_gray,
             palette_edits,
             screen_nav,
+            page_scroll: ScrollHandle::new(),
             mode_selector,
             accent_field,
             gray_field,
@@ -361,6 +370,12 @@ impl Render for RadixStudioApp {
         let muted = self.muted();
         let draft_chrome = self.draft_chrome();
         let active_tab = self.active_tab(cx);
+        // Fade with scroll distance so scrolling back to the top reverses smoothly.
+        let progress = (f32::from(-self.page_scroll.offset().y) / CONTROL_BAR_FADE_DISTANCE).clamp(0.0, 1.0);
+        let opacity = progress * progress * (3.0 - 2.0 * progress);
+        let background = self.theme.resolve_role(SemanticRole::Background).hsla();
+        let bar_background = Hsla { a: background.a * opacity, ..background };
+        let bar_border = Hsla { a: border.a * opacity, ..border };
         let page_background = match active_tab {
             RadixStudioTab::Colors => colors::page_background(self.theme.mode()),
             // The draft owns this page, so its wash tracks the palette being edited.
@@ -395,68 +410,80 @@ impl Render for RadixStudioApp {
         dock_panel! {
             top: title_bar,
             fill: div()
-                    .id("radix-studio-scroll")
-                    .relative()
-                    .size_full()
-                    .min_h_0()
-                    .flex()
-                    .flex_col()
-                    .overflow_y_scroll()
-                    .when(active_tab == RadixStudioTab::Icons, |d| {
-                        d.child(icons::hero_decoration(fg))
-                    })
-                    .child(
-                        // Full-window width so the theme toggle sits at the far right edge,
-                        // outside the max-width content column below.
-                        div()
+                .size_full()
+                .min_h_0()
+                .flex()
+                .flex_col()
+                .child(
+                    // Navigation and theme actions stay outside the page's scroll viewport.
+                    div()
+                        .id("radix-studio-control-bar")
+                        .w_full()
+                        .flex_none()
+                        .px_8()
+                        .py_2()
+                        .border_b_1()
+                        .border_color(bar_border)
+                        .bg(bar_background)
+                        .child(self.screen_nav.clone()),
+                )
+                .child(
+                    div()
+                        .id("radix-studio-scroll")
+                        .relative()
+                        .flex_1()
+                        .w_full()
+                        .min_h_0()
+                        .flex()
+                        .flex_col()
+                        .overflow_y_scroll()
+                        .track_scroll(&self.page_scroll)
+                        .when(active_tab == RadixStudioTab::Icons, |d| {
+                            d.child(icons::hero_decoration(fg))
+                        })
+                        .child(
+                            vstack! {
+                                gap=28;
+                                match active_tab {
+                                    RadixStudioTab::CustomPalette => custom_palette::page(
+                                        custom_palette::PageArgs {
+                                            look: &self.draft,
+                                            mode_selector: self.mode_selector.clone(),
+                                            accent_field: self.accent_field.clone(),
+                                            gray_field: self.gray_field.clone(),
+                                            background_field: self.background_field.clone(),
+                                            copy_menu: self.copy_menu.clone(),
+                                            preview_layout: self.preview_layout.clone(),
+                                            mesh_image: self.cached_signup_mesh(),
+                                            app: cx.entity(),
+                                            controls: self.home.clone(),
+                                            surface: draft_chrome.surface,
+                                            border: draft_chrome.border,
+                                            muted: draft_chrome.muted,
+                                            fg: draft_chrome.fg,
+                                            accent: draft_chrome.accent,
+                                        },
+                                        cx,
+                                    ),
+                                    RadixStudioTab::Colors => colors::page(&self.theme, fg, muted),
+                                    RadixStudioTab::Icons => icons::page(fg, muted, surface),
+                                    RadixStudioTab::StyleGuide => {
+                                        let guide = self.style_guide.get_or_insert_with(|| style_guide::State::new(&self.theme, cx));
+                                        guide.render(&self.theme, window, cx)
+                                    }
+                                    RadixStudioTab::Developer => {
+                                        developer::page(&self.theme, self.shadow_editor.clone())
+                                    }
+                                },
+                            }
                             .relative()
                             .w_full()
-                            .px_8()
-                            .pt_2()
-                            .pb(px(28.0))
-                            .child(self.screen_nav.clone()),
+                            .max_w(px(CONTENT_MAX_W))
+                        .mx_auto()
+                        .px_8()
+                        .pt(px(20.0))
+                        .pb_8(),
                     )
-                    .child(
-                        vstack! {
-                            gap=28;
-                            match active_tab {
-                                RadixStudioTab::CustomPalette => custom_palette::page(
-                                    custom_palette::PageArgs {
-                                        look: &self.draft,
-                                        mode_selector: self.mode_selector.clone(),
-                                        accent_field: self.accent_field.clone(),
-                                        gray_field: self.gray_field.clone(),
-                                        background_field: self.background_field.clone(),
-                                        copy_menu: self.copy_menu.clone(),
-                                        preview_layout: self.preview_layout.clone(),
-                                        mesh_image: self.cached_signup_mesh(),
-                                        app: cx.entity(),
-                                        controls: self.home.clone(),
-                                        surface: draft_chrome.surface,
-                                        border: draft_chrome.border,
-                                        muted: draft_chrome.muted,
-                                        fg: draft_chrome.fg,
-                                        accent: draft_chrome.accent,
-                                    },
-                                    cx,
-                                ),
-                                RadixStudioTab::Colors => colors::page(&self.theme, fg, muted),
-                                RadixStudioTab::Icons => icons::page(fg, muted, surface),
-                                RadixStudioTab::StyleGuide => {
-                                    let guide = self.style_guide.get_or_insert_with(|| style_guide::State::new(&self.theme, cx));
-                                    guide.render(&self.theme, window, cx)
-                                }
-                                RadixStudioTab::Developer => {
-                                    developer::page(&self.theme, self.shadow_editor.clone())
-                                }
-                            },
-                        }
-                        .relative()
-                        .w_full()
-                        .max_w(px(CONTENT_MAX_W))
-                    .mx_auto()
-                    .px_8()
-                    .pb_8(),
                 )
                 .child(self.swatch_overlay.clone()),
         }

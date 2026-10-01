@@ -8,11 +8,13 @@ mod badges;
 mod buttons;
 mod cards;
 mod checkboxes;
+mod context_menus;
 mod high_contrast;
 mod matrix_grid;
 mod menus;
 mod palettes;
 mod preview_handlers;
+mod progress;
 mod radios;
 mod sliders;
 mod states;
@@ -46,6 +48,7 @@ pub struct PreviewTabs {
     pub textfields: Entity<Tabs>,
     pub textareas: Entity<Tabs>,
     pub sliders: Entity<Tabs>,
+    pub progress: Entity<Tabs>,
 }
 
 pub fn page(
@@ -117,6 +120,12 @@ pub fn page(
             checkboxes::tabbed(look, tabs.checkboxes, fg, muted, border, window, cx),
         ),
         section(
+            "Context Menu",
+            "Template preview · Solid and Soft, in accent and gray.",
+            fg, muted, border,
+            context_menus::preview(look, fg),
+        ),
+        section(
             "Menu",
             format!(
                 "Popup menu triggers on {accent}, with a {gray}-locked pair for the neutral slot."
@@ -125,7 +134,14 @@ pub fn page(
             muted,
             border,
             menus::matrix(look, &menus::RADIX_VARIANTS, fg, muted, window, cx),
-        ),        section(
+        ),
+        section(
+            "Progress",
+            "Surface and Soft; sizes 1–3, high contrast, and all five radius options.",
+            fg, muted, border,
+            progress::tabbed(look, tabs.progress, fg, muted, border, window, cx),
+        ),
+        section(
             "Radio",
             format!(
                 "Radix variants on {accent}, across interaction states. Each cell pairs unselected and selected."
