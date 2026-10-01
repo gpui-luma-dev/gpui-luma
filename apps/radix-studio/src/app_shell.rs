@@ -4,7 +4,7 @@ use luma::shell::TitleBar;
 use crate::app::RadixStudioApp;
 
 pub fn open(cx: &mut App) -> anyhow::Result<()> {
-    let bounds = Bounds::centered(None, size(px(1550.0), px(900.0)), cx);
+    let bounds = Bounds::centered(None, size(px(1300.0), px(800.0)), cx);
 
     cx.open_window(
         WindowOptions {
