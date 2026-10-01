@@ -13,10 +13,9 @@ Provides palette scales, semantic token resolution, custom color generation, lig
 
 ## Installation
 
-```toml
-[dependencies]
-luma = { package = "gpui-luma", version = "0.1.0" }
-luma-look-radix = { package = "gpui-luma-look-radix", version = "0.1.0" }
+```sh
+cargo add gpui-luma --rename luma --git https://github.com/scottcg/gpui-luma
+cargo add gpui-luma-look-radix --rename luma-look-radix --git https://github.com/scottcg/gpui-luma
 ```
 
 ## Quick Start

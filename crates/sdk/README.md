@@ -1,4 +1,4 @@
-# gpui-luma-core
+# gpui-luma
 
 Lookless control SDK and interaction engine for **GPUI-Luma** ([gpui-luma.dev](https://gpui-luma.dev)).
 
@@ -15,9 +15,8 @@ Provides component logic, event routing, keyboard navigation, focus management, 
 
 ## Usage
 
-Most applications depend on the [`gpui-luma`](https://crates.io/crates/gpui-luma) facade crate instead of referencing `gpui-luma-core` directly:
+Depend on `gpui-luma` directly and choose a look adapter for styled controls:
 
-```toml
-[dependencies]
-luma = { package = "gpui-luma", version = "0.1.0" }
+```sh
+cargo add gpui-luma --rename luma --git https://github.com/scottcg/gpui-luma
 ```

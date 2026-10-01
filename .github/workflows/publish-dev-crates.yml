@@ -12,7 +12,6 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   LIB_PACKAGES: >-
-    gpui-luma-core
     gpui-luma-color
     gpui-luma-look-radix
     gpui-luma-look-shadcn
@@ -102,7 +101,6 @@ jobs:
             "commit": "${GITHUB_SHA}",
             "packages": [
               "gpui-luma",
-              "gpui-luma-core",
               "gpui-luma-color",
               "gpui-luma-look-radix",
               "gpui-luma-look-shadcn"
@@ -140,7 +138,7 @@ jobs:
 
           ### Typical app
 
-          Depend on the \`gpui-luma\` facade (SDK + shared look contracts), then **one** look:
+          Depend on \`gpui-luma\` (SDK + shared look contracts), then **one** look:
 
           \`\`\`toml
           [dependencies]
@@ -154,7 +152,7 @@ jobs:
 
           Imports remain \`use luma::…\`.
 
-          Also in this tag: \`gpui-luma-core\`, \`gpui-luma-color\`, \`gpui-luma-look-shadcn\`, \`gpui-luma-look-radix\`.
+          Also in this tag: \`gpui-luma-color\`, \`gpui-luma-look-shadcn\`, \`gpui-luma-look-radix\`.
           EOF
           )"
           body="$(printf '%s\n' "${body}" | sed 's/^          //')"

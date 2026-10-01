@@ -3,9 +3,12 @@ name = "gpui-luma-look-radix"
 version.workspace = true
 edition = "2024"
 license = "Apache-2.0"
-publish = false
+publish = ["crates-io"]
+description = "Radix themes, color scales, and styled controls for GPUI-Luma"
 repository.workspace = true
 homepage.workspace = true
+keywords = ["gpui", "gui", "radix", "themes", "widgets"]
+categories = ["gui"]
 
 [lib]
 name = "luma_look_radix"

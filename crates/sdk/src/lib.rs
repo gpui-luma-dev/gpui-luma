@@ -1,4 +1,7 @@
-//! GPUI-Luma SDK crate.
+//! GPUI-Luma controls, layouts, themes, and shared look contracts.
+//!
+//! Pick a look crate in your app: `gpui-luma-look-shadcn` or
+//! `gpui-luma-look-radix`.
 
 #[macro_use]
 pub mod macros;
@@ -20,6 +23,7 @@ pub use motion::{
     overlay_enter_scale,
 };
 pub use init::init;
+pub use theme::provenance::*;
 pub use layouts::{DockPanel, GridLayout, GridTrack, LayerStack, WideMiddle, WideMiddleLayout, spawn_wide_middle};
 
 #[cfg(all(test, feature = "test-support"))]

@@ -12,10 +12,9 @@ Provides token resolution, CSS stylesheet ingestion, shadow ladders, light/dark 
 
 ## Installation
 
-```toml
-[dependencies]
-luma = { package = "gpui-luma", version = "0.1.0" }
-luma-look-shadcn = { package = "gpui-luma-look-shadcn", version = "0.1.0" }
+```sh
+cargo add gpui-luma --rename luma --git https://github.com/scottcg/gpui-luma
+cargo add gpui-luma-look-shadcn --rename luma-look-shadcn --git https://github.com/scottcg/gpui-luma
 ```
 
 ## Quick Start

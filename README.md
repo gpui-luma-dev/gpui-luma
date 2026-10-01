@@ -12,15 +12,15 @@ cd gpui-luma
 cargo build
 ```
 
-Library crates: depend on **`gpui-luma`** (SDK + look-core facade), then **one** look — `gpui-luma-look-shadcn` *or* `gpui-luma-look-radix`. Optional: `gpui-luma-color`.
+Library crates: depend on **`gpui-luma`** (controls, layouts, and shared look contracts), then **one** look — `gpui-luma-look-shadcn` *or* `gpui-luma-look-radix`. Optional: `gpui-luma-color`.
 
-```toml
-[dependencies]
-luma = { package = "gpui-luma", git = "https://github.com/scottcg/gpui-luma", tag = "v0.1.0-alpha.1" }
-luma-look-shadcn = { package = "gpui-luma-look-shadcn", git = "https://github.com/scottcg/gpui-luma", tag = "v0.1.0-alpha.1" }
+```sh
+cargo add gpui-luma --rename luma --git https://github.com/scottcg/gpui-luma
+cargo add gpui-luma-look-shadcn --rename luma-look-shadcn --git https://github.com/scottcg/gpui-luma
+# Or choose gpui-luma-look-radix instead.
 ```
 
-Imports stay `use luma::…`.
+Import the SDK with `use luma::…`.
 
 Shadcn themes load from strings with `ShadcnLook::from_css_str`. The bundled fallback
 CSS is available as `luma_look_shadcn::FALLBACK_CSS`. The former `from_css_path` and

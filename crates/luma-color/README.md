@@ -14,8 +14,7 @@ Provides domain renderers, checkerboard painting, palette calculations, and inte
 
 ## Installation
 
-```toml
-[dependencies]
-luma = { package = "gpui-luma", version = "0.1.0" }
-luma-color = { package = "gpui-luma-color", version = "0.1.0" }
+```sh
+cargo add gpui-luma --rename luma --git https://github.com/scottcg/gpui-luma
+cargo add gpui-luma-color --rename luma-color --git https://github.com/scottcg/gpui-luma
 ```
