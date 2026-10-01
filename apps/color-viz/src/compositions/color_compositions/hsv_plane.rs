@@ -3,13 +3,13 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma_color::color_field::{ColorFieldEvent, ColorFieldState};
-use luma_color::color_slider::color_spec::Hsv;
-use luma_color::color_slider::{ChannelDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value};
-use luma_color::composition::ColorCompositionSync;
-use luma::controls::slider::SliderControl;
-use luma::theme::ControlSize;
-use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldState};
+use gpui_luma_color::color_slider::color_spec::Hsv;
+use gpui_luma_color::color_slider::{ChannelDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value};
+use gpui_luma_color::composition::ColorCompositionSync;
+use gpui_luma::controls::slider::SliderControl;
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
 use super::super::color_exposition_common::{
     composition_demo_card_width, render_composition_readout_footer, slider_labeled_row_compact_sized,

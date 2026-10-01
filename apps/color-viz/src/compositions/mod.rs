@@ -15,10 +15,10 @@ mod template;
 use std::sync::Arc;
 
 use gpui::{AnyView, Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::scroll_container::ScrollContainer;
-use luma::controls::scrollbar::ScrollbarEvent;
-use luma::controls::tabs::{Tabs, TabsEvent, TabsItem};
-use luma_look_shadcn::{self as shadcn, ShadcnLook};
+use gpui_luma::controls::scroll_container::ScrollContainer;
+use gpui_luma::controls::scrollbar::ScrollbarEvent;
+use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem};
+use gpui_luma_look_shadcn::{self as shadcn, ShadcnLook};
 
 use color_harmonies::ColorHarmoniesControlExposition;
 use color_hsv_plane::ColorHsvPlaneControlExposition;

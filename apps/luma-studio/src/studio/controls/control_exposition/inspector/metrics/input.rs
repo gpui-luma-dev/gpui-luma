@@ -1,5 +1,5 @@
-use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn::inspect::{
+use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::inspect::{
     AutocompleteInspectMetrics, FloatingMenuInspectMetrics, ShadcnInspect, TextFieldInspectMetrics,
 };
 
@@ -65,7 +65,7 @@ fn textfield_metrics_layout_section(
 fn selector_metrics_layout_section(
     look: &ShadcnLook,
     diagram_id: &str,
-    metrics: &luma_look_shadcn::inspect::SelectorInspectMetrics,
+    metrics: &gpui_luma_look_shadcn::inspect::SelectorInspectMetrics,
 ) -> InspectLayoutSection {
     let trigger_box = InspectBoxModelSnapshot::from_button_metrics(&metrics.trigger);
     let rows = metric_properties(&[

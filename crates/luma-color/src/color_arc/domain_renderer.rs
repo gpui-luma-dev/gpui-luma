@@ -2,7 +2,7 @@ use std::sync::{Arc, RwLock};
 
 use gpui::{Bounds, Hsla, Image, Pixels, Window};
 
-use luma::controls::slider::{DomainTrackRenderer, SliderOrientation};
+use gpui_luma::controls::slider::{DomainTrackRenderer, SliderOrientation};
 
 use crate::domain_renderer::LockedDomain;
 use super::track_context::ColorArcTrackContext;

@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 use gpui::{AnyElement, Div, FontWeight, Hsla, ImageSource, IntoElement, SharedString, div, img, prelude::*, px};
-use luma::controls::button::ControlIcon;
+use gpui_luma::controls::button::ControlIcon;
 use crate::{Look, Radius, Tone};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -151,7 +151,7 @@ impl Avatar {
     /// Adjust resolved appearance locally, preserving palette updates for untouched colors.
     /// Later calls replace the previous override.
     /// ```
-    /// use luma_look_radix::{Avatar, Look};
+    /// use gpui_luma_look_radix::{Avatar, Look};
     /// let avatar = Avatar::new(&Look::built_in(), "BG").style_override(|style| {
     ///     style.icon_size = 20.0;
     ///     style.font_size = 15.0;
@@ -200,7 +200,7 @@ impl Avatar {
                 gpui::svg().path(path.clone()).size(px(style.icon_size)).text_color(foreground).into_any_element()
             }
             Fallback::Icon(ControlIcon::Lucide(icon)) => {
-                luma::infra::icon::lucide_icon(*icon, foreground, style.icon_size)
+                gpui_luma::infra::icon::lucide_icon(*icon, foreground, style.icon_size)
             }
         };
         div()
@@ -263,7 +263,7 @@ mod tests {
         });
         let normal = Avatar::new(&look, "BG");
         let before = custom.resolve_style().background;
-        look.set_mode(luma::theme::ThemeMode::Dark);
+        look.set_mode(gpui_luma::theme::ThemeMode::Dark);
         let style = custom.resolve_style();
         assert_ne!(style.background, before);
         assert_eq!(style.background, normal.resolve_style().background);
@@ -291,7 +291,7 @@ mod tests {
     #[test]
     fn colors_follow_mode_tone_and_contrast() {
         let look = Look::built_in();
-        for mode in [luma::theme::ThemeMode::Light, luma::theme::ThemeMode::Dark] {
+        for mode in [gpui_luma::theme::ThemeMode::Light, gpui_luma::theme::ThemeMode::Dark] {
             look.set_mode(mode);
             for tone in [Tone::Accent, Tone::Gray] {
                 for variant in AvatarVariant::ALL {

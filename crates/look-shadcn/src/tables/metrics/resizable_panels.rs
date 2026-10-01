@@ -1,7 +1,7 @@
 //! Shared resizable panels metric resolution.
 
 use crate::ResolvedMetric;
-use luma::controls::resizable_panels::ResizeHandleSize;
+use gpui_luma::controls::resizable_panels::ResizeHandleSize;
 
 #[derive(Clone, Debug)]
 pub struct ResizablePanelsMetricTable {

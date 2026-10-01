@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use luma::controls::dock_splitter::DockSplitterTheme;
+use gpui_luma::controls::dock_splitter::DockSplitterTheme;
 
 use crate::look::ShadcnLook;
 
@@ -13,12 +13,12 @@ struct ShadcnDockSplitterTheme {
 }
 
 impl DockSplitterTheme for ShadcnDockSplitterTheme {
-    fn resolve(&self, enabled: bool) -> luma::controls::dock_splitter::DockSplitterLook {
+    fn resolve(&self, enabled: bool) -> gpui_luma::controls::dock_splitter::DockSplitterLook {
         let tokens = self.theme.mode_tokens();
         let border = tokens.palette.border_default;
         let disabled = tokens.palette.disabled_foreground;
 
-        luma::controls::dock_splitter::DockSplitterLook {
+        gpui_luma::controls::dock_splitter::DockSplitterLook {
             line_color: if enabled { border } else { disabled },
             hover_color: if enabled { border } else { disabled },
             thumb_color: if enabled {

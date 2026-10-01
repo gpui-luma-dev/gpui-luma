@@ -7,8 +7,8 @@
 //! | Selected    | `muted`               |
 //! | Keyboard active | `muted`           |
 
-use luma::controls::table::{TableLook, TableRowPalette};
-use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::controls::table::{TableLook, TableRowPalette};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -155,9 +155,9 @@ pub fn table_row_palette(
 mod tests {
 
     use std::collections::BTreeMap;
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
 
-    use luma::theme::{ControlSize, InteractionState};
+    use gpui_luma::theme::{ControlSize, InteractionState};
 
     use crate::catalog::CssTokenMap;
     use crate::color::with_alpha;

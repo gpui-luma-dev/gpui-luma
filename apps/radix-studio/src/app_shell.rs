@@ -1,5 +1,5 @@
 use gpui::{App, AppContext, Bounds, WindowBounds, WindowOptions, px, size};
-use luma::shell::TitleBar;
+use gpui_luma::shell::TitleBar;
 
 use crate::app::RadixStudioApp;
 

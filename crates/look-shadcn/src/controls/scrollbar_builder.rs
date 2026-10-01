@@ -1,8 +1,8 @@
-//! Look-owned scrollbar builder. Spawn synthesizes the SDK [`luma::controls::scrollbar::Scrollbar`].
+//! Look-owned scrollbar builder. Spawn synthesizes the SDK [`gpui_luma::controls::scrollbar::Scrollbar`].
 
 use gpui::{Context, Entity, SharedString};
-use luma::controls::scrollbar::{ScrollbarBuilder, ScrollbarOrientation, ScrollbarStyle};
-use luma::infra::value::ControlRange;
+use gpui_luma::controls::scrollbar::{ScrollbarBuilder, ScrollbarOrientation, ScrollbarStyle};
+use gpui_luma::infra::value::ControlRange;
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
 
@@ -18,7 +18,7 @@ impl Scrollbar {
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
             look: None,
-            builder: luma::controls::scrollbar::Scrollbar::new(id),
+            builder: gpui_luma::controls::scrollbar::Scrollbar::new(id),
             custom_template: false,
             size: ShadcnSize::Md,
         }
@@ -100,13 +100,13 @@ impl Scrollbar {
         self
     }
 
-    pub fn template(mut self, template: std::sync::Arc<dyn luma::controls::scrollbar::ScrollbarTemplate>) -> Self {
+    pub fn template(mut self, template: std::sync::Arc<dyn gpui_luma::controls::scrollbar::ScrollbarTemplate>) -> Self {
         self.custom_template = true;
         self.builder = self.builder.template(template);
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::scrollbar::Scrollbar> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::scrollbar::Scrollbar> {
         let look = resolve_look_from(self.look.as_ref(), cx);
         self.into_sdk_builder(look).spawn(cx)
     }

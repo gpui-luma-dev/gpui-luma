@@ -1,9 +1,9 @@
 //! Look-owned sizing for Shadcn control builders.
 //!
 //! Callers author [`ShadcnSize`] on look-owned builders. Spawn maps to SDK
-//! [`luma::theme::ControlSize`] inside `.into_sdk_builder(...)`.
+//! [`gpui_luma::theme::ControlSize`] inside `.into_sdk_builder(...)`.
 
-use luma::theme::ControlSize;
+use gpui_luma::theme::ControlSize;
 
 /// Shadcn size axis (`sm` / `default` / `lg`). Default is [`Self::Md`].
 ///

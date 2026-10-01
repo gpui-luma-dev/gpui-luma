@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use luma::theme::{ControlSize, InteractionLayer};
+use gpui_luma::theme::{ControlSize, InteractionLayer};
 use serde::Deserialize;
 
 use super::{LayeredElevationRule, matches_optional_layer};

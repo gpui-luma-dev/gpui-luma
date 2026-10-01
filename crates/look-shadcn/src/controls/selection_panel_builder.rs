@@ -1,11 +1,11 @@
-//! Look-owned selection-panel builder. Spawn synthesizes the SDK [`luma::controls::selection_panel::SelectionPanelControl`].
+//! Look-owned selection-panel builder. Spawn synthesizes the SDK [`gpui_luma::controls::selection_panel::SelectionPanelControl`].
 
 use gpui::{App, Context, Entity, IntoElement, SharedString};
-use luma::controls::selection_panel::{
+use gpui_luma::controls::selection_panel::{
     SelectionPanelBuilder, SelectionPanelControl, SelectionPanelItem, SelectionPanelItemLike,
     SelectionPanelItemRenderModel, SelectionPanelLookProvider,
 };
-use luma::infra::icon::SelectionStatusIcons;
+use gpui_luma::infra::icon::SelectionStatusIcons;
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
 
@@ -82,35 +82,38 @@ where
 
     /// Override the SDK interaction policy.
     /// Override focus behavior independently of wheel routing.
-    pub fn pointer_focus_policy(mut self, policy: luma::interaction::PointerFocusPolicy) -> Self {
+    pub fn pointer_focus_policy(mut self, policy: gpui_luma::interaction::PointerFocusPolicy) -> Self {
         self.builder = self.builder.pointer_focus_policy(policy);
         self
     }
 
-    pub fn wheel_scroll_policy(mut self, policy: luma::interaction::WheelScrollPolicy) -> Self {
+    pub fn wheel_scroll_policy(mut self, policy: gpui_luma::interaction::WheelScrollPolicy) -> Self {
         self.builder = self.builder.wheel_scroll_policy(policy);
         self
     }
 
     /// Override the SDK interaction policy.
-    pub fn scroll_boundary_policy(mut self, policy: luma::interaction::ScrollBoundaryPolicy) -> Self {
+    pub fn scroll_boundary_policy(mut self, policy: gpui_luma::interaction::ScrollBoundaryPolicy) -> Self {
         self.builder = self.builder.scroll_boundary_policy(policy);
         self
     }
 
     /// Override the SDK interaction policy.
-    pub fn wheel_focus_scope(mut self, policy: luma::interaction::WheelFocusScope) -> Self {
+    pub fn wheel_focus_scope(mut self, policy: gpui_luma::interaction::WheelFocusScope) -> Self {
         self.builder = self.builder.wheel_focus_scope(policy);
         self
     }
 
     /// Select embedded or popup hover defaults.
-    pub fn role(mut self, role: luma::controls::selection_panel::SelectionPanelRole) -> Self {
+    pub fn role(mut self, role: gpui_luma::controls::selection_panel::SelectionPanelRole) -> Self {
         self.builder = self.builder.role(role);
         self
     }
     /// Explicitly override hover activation; does not focus or select.
-    pub fn hover_activation_policy(mut self, policy: luma::controls::selection_panel::HoverActivationPolicy) -> Self {
+    pub fn hover_activation_policy(
+        mut self,
+        policy: gpui_luma::controls::selection_panel::HoverActivationPolicy,
+    ) -> Self {
         self.builder = self.builder.hover_activation_policy(policy);
         self
     }
@@ -136,7 +139,10 @@ where
     }
 
     /// Always show, hide, or auto-hide the panel scrollbar.
-    pub fn scrollbar_visibility(mut self, visibility: luma::controls::scroll_container::ScrollbarVisibility) -> Self {
+    pub fn scrollbar_visibility(
+        mut self,
+        visibility: gpui_luma::controls::scroll_container::ScrollbarVisibility,
+    ) -> Self {
         self.builder = self.builder.scrollbar_visibility(visibility);
         self
     }
@@ -144,7 +150,7 @@ where
     /// Choose hover, timed scroll activity, or both for auto-hiding chrome.
     pub fn scrollbar_auto_hide_activate(
         mut self,
-        activate: luma::controls::scroll_container::ScrollbarAutoHideActivate,
+        activate: gpui_luma::controls::scroll_container::ScrollbarAutoHideActivate,
     ) -> Self {
         self.builder = self.builder.scrollbar_auto_hide_activate(activate);
         self
@@ -239,7 +245,7 @@ mod tests {
 #[cfg(all(test, feature = "test-support"))]
 #[test]
 fn forwards_independent_wheel_policies_after_look_synthesis() {
-    use luma::interaction::{WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
+    use gpui_luma::interaction::{WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
     let mut app = gpui::TestAppContext::single();
     let control = SelectionPanel::new("policy")
         .wheel_scroll_policy(WheelScrollPolicy::PassThrough)

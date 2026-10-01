@@ -1,10 +1,10 @@
 //! Shared button metric resolution.
 
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::{LookContext, ResolvedMetric, ShadcnModeTokens};
 use crate::catalog::SpacingField;
 use crate::{MetricSource, ShadcnButtonStyle};
-use luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
 use super::helpers::{control_size_key, spacing_control_metric};
 
 #[derive(Clone, Debug)]
@@ -75,13 +75,13 @@ pub fn resolve_button_metrics(
             source: MetricSource::Scaffold { path: "MetricTokens.focus.width".into() },
         },
         focus_ring_offset: focus_ring_offset_metric(
-            luma::controls::button_family::button_family_effective_border(look.border),
+            gpui_luma::controls::button_family::button_family_effective_border(look.border),
             metrics,
         ),
     }
 }
 
-fn focus_ring_offset_metric(border: gpui::Hsla, metrics: &luma::theme::MetricTokens) -> ResolvedMetric {
+fn focus_ring_offset_metric(border: gpui::Hsla, metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
     let border_width = metrics.border_width.default;
     let focus = metrics.focus.width;
     if border.a <= 0.0 {

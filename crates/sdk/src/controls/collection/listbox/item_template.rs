@@ -24,7 +24,7 @@ pub type ListBoxItemTemplate<'a, T> = Box<dyn for<'b> Fn(&ListBoxItemRenderModel
 ///
 /// ```
 /// use gpui::{div, prelude::*};
-/// use luma::controls::listbox::{ListBoxItemRenderModel, make_listbox_item_template};
+/// use gpui_luma::controls::listbox::{ListBoxItemRenderModel, make_listbox_item_template};
 /// let template = make_listbox_item_template(
 ///     |model: &ListBoxItemRenderModel<'_, String>, _cx| div().child(model.item.clone())
 /// );

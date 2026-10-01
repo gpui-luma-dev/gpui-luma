@@ -1,7 +1,9 @@
-use luma::controls::button_family::ButtonFamilyRole;
-use luma::theme::InteractionState;
-use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn::inspect::{CheckboxInspectMetrics, RadioButtonInspectMetrics, ShadcnInspect, SwitchInspectMetrics};
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::theme::InteractionState;
+use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::inspect::{
+    CheckboxInspectMetrics, RadioButtonInspectMetrics, ShadcnInspect, SwitchInspectMetrics,
+};
 
 use super::super::box_model::InspectBoxModelSnapshot;
 use super::super::common::{choice_variant_style, control_size};

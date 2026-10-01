@@ -1,6 +1,6 @@
 //! Shared progress metric resolution.
 
-use luma::theme::ThemeMode;
+use gpui_luma::theme::ThemeMode;
 use crate::ShadcnModeTokens;
 
 #[derive(Clone, Debug)]
@@ -14,7 +14,7 @@ pub struct ProgressMetricTable {
 pub fn resolve_progress_metrics(mode: &ShadcnModeTokens, _theme_mode: ThemeMode) -> ProgressMetricTable {
     use super::helpers::derived_metric;
 
-    let look = crate::paint::progress_look(mode, true, luma::theme::ControlSize::Md);
+    let look = crate::paint::progress_look(mode, true, gpui_luma::theme::ControlSize::Md);
 
     ProgressMetricTable {
         size: derived_metric("progress ring diameter", look.size),

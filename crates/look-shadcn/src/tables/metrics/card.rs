@@ -1,6 +1,6 @@
 //! Shared card metric resolution.
 
-use luma::theme::ControlSize;
+use gpui_luma::theme::ControlSize;
 use crate::{LookContext, ResolvedMetric};
 use crate::catalog::SpacingField;
 use crate::{ShadcnLook, ShadcnRadius};

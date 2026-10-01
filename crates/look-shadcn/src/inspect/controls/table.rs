@@ -1,6 +1,6 @@
 //! Inspect metadata for `table`.
 
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct TableInspectPalette {

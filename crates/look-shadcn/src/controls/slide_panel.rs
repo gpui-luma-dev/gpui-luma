@@ -1,7 +1,7 @@
 use gpui::Hsla;
 
-use luma::controls::resizable_panels::ResizablePanelsLook;
-use luma::theme::InteractionState;
+use gpui_luma::controls::resizable_panels::ResizablePanelsLook;
+use gpui_luma::theme::InteractionState;
 
 use crate::ShadcnLook;
 

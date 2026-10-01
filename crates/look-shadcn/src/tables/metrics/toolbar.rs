@@ -1,6 +1,6 @@
 //! Shared toolbar metric resolution.
 
-use luma::theme::{ControlSize, ThemeMode};
+use gpui_luma::theme::{ControlSize, ThemeMode};
 use crate::{LookContext, ResolvedMetric, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]

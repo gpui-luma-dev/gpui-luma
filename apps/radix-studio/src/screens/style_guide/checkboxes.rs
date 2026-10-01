@@ -8,12 +8,12 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, Hsla, IntoElement, SharedString, Window, div, prelude::*, px};
-use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
-use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use luma::controls::checkbox::CheckboxData;
-use luma::controls::tabs::Tabs;
-use luma::{hstack, vstack};
-use luma_look_radix::{Accent, Paint, CheckboxSize, CheckboxVariant, Gray, Look, LookControlExt, Radius, ScaleFamily};
+use gpui_luma::controls::button::{ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::controls::checkbox::CheckboxData;
+use gpui_luma::controls::tabs::Tabs;
+use gpui_luma::{hstack, vstack};
+use gpui_luma_look_radix::{Accent, Paint, CheckboxSize, CheckboxVariant, Gray, Look, LookControlExt, Radius, ScaleFamily};
 
 use super::matrix_grid::{
     COL_GAP, centered, column_header, corner_label, empty_corner, equal_data_columns, fixed_grid, preview_tabbed,
@@ -269,7 +269,7 @@ fn render_checkbox(
     id: &str,
     checked: bool,
     size: ButtonSize,
-    state: luma::theme::InteractionState,
+    state: gpui_luma::theme::InteractionState,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {

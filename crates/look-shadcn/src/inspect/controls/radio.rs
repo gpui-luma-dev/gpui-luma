@@ -1,6 +1,6 @@
 //! Inspect metadata for `radio`.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens};
 
 pub struct RadioButtonInspectPalette {
@@ -41,7 +41,7 @@ pub struct RadioButtonInspectMetrics {
 pub fn inspect_radio_button_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    size: luma::theme::ControlSize,
+    size: gpui_luma::theme::ControlSize,
 ) -> RadioButtonInspectMetrics {
     let table = crate::tables::metrics::resolve_radio_button_metrics(mode, theme_mode, size);
     table.into()
@@ -54,7 +54,7 @@ pub fn inspect_radio_button_elevation(
     selected: bool,
     state: InteractionState,
 ) -> crate::inspect::controls::button::ButtonInspectElevation {
-    use luma::theme::ControlSize;
+    use gpui_luma::theme::ControlSize;
     use crate::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
     use crate::inspect::controls::button::{button_style_key, inspect_layered_elevation};
 

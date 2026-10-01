@@ -1,6 +1,6 @@
 use gpui::{Hsla, black};
-use luma::controls::overlay_window::{OverlayWindowLook, OverlayWindowMode};
-use luma::theme::ControlSize;
+use gpui_luma::controls::overlay_window::{OverlayWindowLook, OverlayWindowMode};
+use gpui_luma::theme::ControlSize;
 
 use crate::look::ShadcnLook;
 use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnToken};

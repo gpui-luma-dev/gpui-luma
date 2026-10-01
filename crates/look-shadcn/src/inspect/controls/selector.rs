@@ -1,8 +1,8 @@
 //! Inspect metadata for `selector`.
 
-use luma::controls::button_family::ButtonFamilyRole;
-use luma::controls::selector::SelectorTriggerStyle;
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::selector::SelectorTriggerStyle;
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::{ResolvedColor, ShadcnButtonStyle, ShadcnModeTokens};
 
 use super::button::{inspect_button_color_palette, inspect_button_metrics};

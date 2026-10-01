@@ -1,7 +1,7 @@
-//! Look-owned selector builder. Spawn synthesizes the SDK [`luma::controls::selector::Selector`].
+//! Look-owned selector builder. Spawn synthesizes the SDK [`gpui_luma::controls::selector::Selector`].
 
 use gpui::{App, Context, Div, Entity, IntoElement, SharedString, Stateful};
-use luma::controls::selector::{
+use gpui_luma::controls::selector::{
     SelectorBuilder, SelectorIcons, SelectorItem, SelectorItemLike, SelectorItemRenderModel, SelectorPlacement,
     SelectorRenderModel, SelectorTriggerStyle,
 };
@@ -25,7 +25,7 @@ where
     selected_id: Option<SharedString>,
     size: ShadcnSize,
     enabled: bool,
-    scroll_interaction: luma::interaction::ScrollInteraction,
+    scroll_interaction: gpui_luma::interaction::ScrollInteraction,
     invalid: bool,
     tab_stop: bool,
     placement: SelectorPlacement,
@@ -55,7 +55,7 @@ where
             selected_id: None,
             size: ShadcnSize::Md,
             enabled: true,
-            scroll_interaction: luma::interaction::ScrollInteraction::VIEWPORT,
+            scroll_interaction: gpui_luma::interaction::ScrollInteraction::VIEWPORT,
             invalid: false,
             tab_stop: true,
             placement: SelectorPlacement::Smart,
@@ -117,19 +117,19 @@ where
     }
 
     /// Choose popup wheel eligibility without changing focus or boundary behavior.
-    pub fn wheel_scroll_policy(mut self, policy: luma::interaction::WheelScrollPolicy) -> Self {
+    pub fn wheel_scroll_policy(mut self, policy: gpui_luma::interaction::WheelScrollPolicy) -> Self {
         self.scroll_interaction.wheel = policy;
         self
     }
 
     /// Choose containment or whole-event chaining independently of wheel eligibility.
-    pub fn scroll_boundary_policy(mut self, policy: luma::interaction::ScrollBoundaryPolicy) -> Self {
+    pub fn scroll_boundary_policy(mut self, policy: gpui_luma::interaction::ScrollBoundaryPolicy) -> Self {
         self.scroll_interaction.boundary = policy;
         self
     }
 
     /// Choose which actual focus owners qualify for focus-required wheel input.
-    pub fn wheel_focus_scope(mut self, policy: luma::interaction::WheelFocusScope) -> Self {
+    pub fn wheel_focus_scope(mut self, policy: gpui_luma::interaction::WheelFocusScope) -> Self {
         self.scroll_interaction.focus_scope = policy;
         self
     }
@@ -176,7 +176,7 @@ where
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::selector::Selector<T>> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::selector::Selector<T>> {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -186,7 +186,7 @@ where
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> SelectorBuilder<T> {
-        let mut builder = luma::controls::selector::Selector::new_typed(self.id)
+        let mut builder = gpui_luma::controls::selector::Selector::new_typed(self.id)
             .template(look.selector_template())
             .items(self.items)
             .size(self.size.control_size())
@@ -269,7 +269,7 @@ mod tests {
 #[cfg(all(test, feature = "test-support"))]
 #[test]
 fn forwards_popup_wheel_overrides_after_look_synthesis() {
-    use luma::interaction::{ScrollBoundaryPolicy, WheelFocusScope, WheelScrollPolicy};
+    use gpui_luma::interaction::{ScrollBoundaryPolicy, WheelFocusScope, WheelScrollPolicy};
     let mut app = gpui::TestAppContext::single();
     let control = Selector::new("policy")
         .wheel_scroll_policy(WheelScrollPolicy::PassThrough)

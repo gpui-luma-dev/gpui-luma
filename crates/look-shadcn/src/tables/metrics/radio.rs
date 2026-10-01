@@ -1,6 +1,6 @@
 //! Shared radio metric resolution.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{LookContext, ResolvedMetric, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]
@@ -18,9 +18,9 @@ pub struct RadioButtonMetricTable {
 pub fn resolve_radio_button_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    size: luma::theme::ControlSize,
+    size: gpui_luma::theme::ControlSize,
 ) -> RadioButtonMetricTable {
-    use luma::controls::radio_button::RadioScale;
+    use gpui_luma::controls::radio_button::RadioScale;
 
     use crate::catalog::SpacingField;
     use super::helpers::{

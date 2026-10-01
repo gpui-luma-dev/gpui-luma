@@ -1,9 +1,9 @@
-//! Look-owned table builder. Spawn synthesizes the SDK [`luma::controls::table::Table`].
+//! Look-owned table builder. Spawn synthesizes the SDK [`gpui_luma::controls::table::Table`].
 
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, ListAlignment, SharedString, Window};
-use luma::controls::table::{
+use gpui_luma::controls::table::{
     TableSelectionMode, TableBuilder, TableColumn, TableControl, TableRowRenderModel, TableTemplate, TableTheme,
 };
 use crate::look::{ShadcnLook, resolve_look_from};
@@ -28,7 +28,7 @@ where
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
             look: None,
-            builder: luma::controls::table::new_typed(id),
+            builder: gpui_luma::controls::table::new_typed(id),
             custom_template: false,
             custom_theme: false,
             size: ShadcnSize::Md,
@@ -98,24 +98,24 @@ where
 
     /// Override the SDK interaction policy.
     /// Override focus behavior independently of wheel routing.
-    pub fn pointer_focus_policy(mut self, policy: luma::interaction::PointerFocusPolicy) -> Self {
+    pub fn pointer_focus_policy(mut self, policy: gpui_luma::interaction::PointerFocusPolicy) -> Self {
         self.builder = self.builder.pointer_focus_policy(policy);
         self
     }
 
-    pub fn wheel_scroll_policy(mut self, policy: luma::interaction::WheelScrollPolicy) -> Self {
+    pub fn wheel_scroll_policy(mut self, policy: gpui_luma::interaction::WheelScrollPolicy) -> Self {
         self.builder = self.builder.wheel_scroll_policy(policy);
         self
     }
 
     /// Override the SDK interaction policy.
-    pub fn scroll_boundary_policy(mut self, policy: luma::interaction::ScrollBoundaryPolicy) -> Self {
+    pub fn scroll_boundary_policy(mut self, policy: gpui_luma::interaction::ScrollBoundaryPolicy) -> Self {
         self.builder = self.builder.scroll_boundary_policy(policy);
         self
     }
 
     /// Override the SDK interaction policy.
-    pub fn wheel_focus_scope(mut self, policy: luma::interaction::WheelFocusScope) -> Self {
+    pub fn wheel_focus_scope(mut self, policy: gpui_luma::interaction::WheelFocusScope) -> Self {
         self.builder = self.builder.wheel_focus_scope(policy);
         self
     }
@@ -249,7 +249,7 @@ mod tests {
 #[cfg(all(test, feature = "test-support"))]
 #[test]
 fn forwards_independent_wheel_policies_after_look_synthesis() {
-    use luma::interaction::{WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
+    use gpui_luma::interaction::{WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
     let mut app = gpui::TestAppContext::single();
     let control = Table::<usize>::new("policy")
         .wheel_scroll_policy(WheelScrollPolicy::PassThrough)

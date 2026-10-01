@@ -1,5 +1,7 @@
-use luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_look};
-use luma::theme::{ControlSize, InteractionState, StandardBoxScale, ThemeMode, snap_to_pixel};
+use gpui_luma::controls::button_family::{
+    ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_look,
+};
+use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale, ThemeMode, snap_to_pixel};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -158,7 +160,7 @@ mod tests {
     use crate::catalog::CssTokenMap;
     use crate::controls::button::ButtonRadiusPreset;
     use crate::mode::ShadcnModeTokens;
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
 
     fn retro_arcade_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([

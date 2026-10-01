@@ -3,10 +3,10 @@
 use std::sync::Arc;
 
 use gpui::{Context, Div, SharedString, div, prelude::*};
-use luma::controls::tree_view::{
+use gpui_luma::controls::tree_view::{
     TreeNode, TreeViewBuilder, TreeViewPalette, TreeViewTemplate, TreeViewTheme, ThemedTreeViewTemplate,
 };
-use luma::theme::{ControlSize, InteractionState, MetricTokens};
+use gpui_luma::theme::{ControlSize, InteractionState, MetricTokens};
 
 use crate::{Look, ScaleFamily};
 
@@ -107,7 +107,7 @@ impl<T: Clone + Send + Sync + 'static> TreeView<T> {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> luma::controls::tree_view::TreeView<T> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::tree_view::TreeView<T> {
         let look = crate::look::resolve_look(self.look.as_ref(), cx.try_global::<Look>());
         self.builder.template(tree_view_template(&look)).spawn(cx)
     }
@@ -116,7 +116,7 @@ impl<T: Clone + Send + Sync + 'static> TreeView<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
 
     #[test]
     fn rows_follow_mode_and_custom_accent_changes() {

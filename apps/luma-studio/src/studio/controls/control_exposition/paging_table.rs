@@ -3,12 +3,12 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::table::{TableSelectionMode, TableEvent, PagingTable};
-use luma::controls::pager::PagerStyle;
-use luma::{column, column_emphasis, paging_table};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::table::{TableSelectionMode, TableEvent, PagingTable};
+use gpui_luma::controls::pager::PagerStyle;
+use gpui_luma::{column, column_emphasis, paging_table};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -156,7 +156,7 @@ impl PagingTableControlExposition {
                         .flex()
                         .items_center()
                         .justify_center()
-                        .child(luma::infra::icon::lucide_icon(
+                        .child(gpui_luma::infra::icon::lucide_icon(
                             LucideIcon::EllipsisVertical,
                             gpui::hsla(0.0, 0.0, 0.5, 1.0),
                             16.0,

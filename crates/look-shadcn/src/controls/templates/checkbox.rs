@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use luma::controls::button::ButtonTemplate;
-use luma::controls::checkbox::{CheckboxData, CheckboxTheme, ThemedCheckboxTemplate};
-use luma::theme::{ControlSize, InteractionState};
+use gpui_luma::controls::button::ButtonTemplate;
+use gpui_luma::controls::checkbox::{CheckboxData, CheckboxTheme, ThemedCheckboxTemplate};
+use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::controls::button::ShadcnButtonStyle;
 use crate::controls::checkbox::checkbox_look;
@@ -19,12 +19,12 @@ impl CheckboxTheme for ShadcnStyledCheckboxTheme {
         checked: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> luma::controls::checkbox::CheckboxPalette {
+    ) -> gpui_luma::controls::checkbox::CheckboxPalette {
         let tokens = self.theme.mode_tokens();
         checkbox_look(tokens.as_ref(), self.style, checked, state, size)
     }
 
-    fn metrics(&self) -> luma::theme::MetricTokens {
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }

@@ -1,6 +1,6 @@
 //! Shared switch metric resolution.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{LookContext, ResolvedMetric, ShadcnModeTokens};
 use crate::ShadcnButtonStyle;
 
@@ -21,7 +21,7 @@ pub fn resolve_switch_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     style: ShadcnButtonStyle,
-    size: luma::theme::ControlSize,
+    size: gpui_luma::theme::ControlSize,
 ) -> SwitchMetricTable {
     use crate::catalog::SpacingField;
     use crate::paint::switch_scale;

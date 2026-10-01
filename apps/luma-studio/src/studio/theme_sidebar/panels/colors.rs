@@ -2,11 +2,11 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
-use luma::controls::textfield::{TextField, TextFieldEvent, TextFieldLook, TextFieldLookOverride};
-use luma::vstack;
-use luma_look_shadcn::{ShadcnFont, ShadcnLook};
-use luma_look_shadcn as shadcn;
+use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
+use gpui_luma::controls::textfield::{TextField, TextFieldEvent, TextFieldLook, TextFieldLookOverride};
+use gpui_luma::vstack;
+use gpui_luma_look_shadcn::{ShadcnFont, ShadcnLook};
+use gpui_luma_look_shadcn as shadcn;
 
 use super::super::model::TOKEN_CATEGORIES;
 use super::super::parsing::effective_token_color;

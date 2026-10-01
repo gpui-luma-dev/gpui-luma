@@ -21,11 +21,11 @@
 //!
 //! ```no_run
 //! use gpui::{Context, Entity};
-//! use luma::infra::presenter::HasPresenter;
-//! use luma_look_radix::{Button, ButtonSize, Look};
+//! use gpui_luma::infra::presenter::HasPresenter;
+//! use gpui_luma_look_radix::{Button, ButtonSize, Look};
 //!
 //! fn save_button<M: 'static>(look: &Look, cx: &mut Context<M>)
-//!     -> Entity<luma::controls::button::Button>
+//!     -> Entity<gpui_luma::controls::button::Button>
 //! {
 //!     Button::new("save").look(look).solid().size(ButtonSize::Two)
 //!         .label("Save").spawn(cx)
@@ -40,7 +40,7 @@
 //! | Need | Extension point |
 //! | --- | --- |
 //! | Standard control appearance | Builder options such as `variant`, `size`, `tone`, and `radius`, where supported |
-//! | Application-specific label/icon composition | Presenter via [`luma::infra::presenter::HasPresenter::content`] |
+//! | Application-specific label/icon composition | Presenter via [`gpui_luma::infra::presenter::HasPresenter::content`] |
 //! | Local button/tab layout | [`Button::with_template_modifier`] or [`Tabs::with_template_modifier`] |
 //! | Local display styling | [`Avatar::style_override`] and [`Card::style_override`] |
 //! | Local toolbar geometry | [`Toolbar::style`], [`Toolbar::command_size`], [`Toolbar::icon_size`] |
@@ -53,7 +53,7 @@
 //! so the remaining colors still follow mode and palette changes.
 //!
 //! ```
-//! use luma_look_radix::{Card, CardVariant, Look};
+//! use gpui_luma_look_radix::{Card, CardVariant, Look};
 //! let look = Look::built_in();
 //! let card = Card::new(&look).variant(CardVariant::Classic)
 //!     .style_override(|style| style.padding = 20.0);

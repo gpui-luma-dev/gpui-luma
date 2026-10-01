@@ -1,6 +1,6 @@
 //! Shared tree view metric resolution.
 
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::{LookContext, ResolvedMetric, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]
@@ -19,7 +19,7 @@ pub fn resolve_tree_view_metrics(
     theme_mode: ThemeMode,
     size: ControlSize,
 ) -> TreeViewMetricTable {
-    use luma::controls::tree_view::TreeViewScale;
+    use gpui_luma::controls::tree_view::TreeViewScale;
 
     use crate::catalog::SpacingField;
     use super::helpers::{control_size_key, derived_metric, radius_metric, spacing_control_metric};

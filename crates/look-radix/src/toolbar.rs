@@ -2,8 +2,10 @@
 
 use std::sync::Arc;
 
-use luma::controls::toolbar::{ToolbarLook, ToolbarTemplate, ToolbarTheme, ToolbarVariant, toolbar_template_with_theme};
-use luma::theme::ControlSize;
+use gpui_luma::controls::toolbar::{
+    ToolbarLook, ToolbarTemplate, ToolbarTheme, ToolbarVariant, toolbar_template_with_theme,
+};
+use gpui_luma::theme::ControlSize;
 
 use crate::{Look, ScaleFamily};
 
@@ -75,7 +77,7 @@ pub fn toolbar_template(look: &Look) -> Arc<dyn ToolbarTemplate> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
 
     #[test]
     fn custom_geometry_keeps_palette_resolution_and_defaults_independent() {

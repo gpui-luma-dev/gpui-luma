@@ -1,13 +1,13 @@
-//! Look-owned search-selector builder. Spawn synthesizes the SDK [`luma::controls::search_selector::SearchSelector`].
+//! Look-owned search-selector builder. Spawn synthesizes the SDK [`gpui_luma::controls::search_selector::SearchSelector`].
 
 use std::sync::Arc;
 
 use gpui::{App, Context, Entity, IntoElement, SharedString};
-use luma::controls::search_selector::{
+use gpui_luma::controls::search_selector::{
     SearchSelectorBuilder, SearchSelectorControl, SearchSelectorItemRenderModel, SearchSelectorPanelTemplate,
     SearchSelectorTemplate, SelectionItem,
 };
-use luma::controls::selector::SelectorTriggerStyle;
+use gpui_luma::controls::selector::SelectorTriggerStyle;
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
 
@@ -20,7 +20,7 @@ pub struct SearchSelector {
 
 impl SearchSelector {
     pub fn new(id: impl Into<SharedString>, items: impl IntoIterator<Item = SelectionItem>) -> Self {
-        Self { look: None, builder: luma::controls::search_selector::new(id, items), size: ShadcnSize::Md }
+        Self { look: None, builder: gpui_luma::controls::search_selector::new(id, items), size: ShadcnSize::Md }
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
@@ -45,19 +45,19 @@ impl SearchSelector {
     }
 
     /// Configure popup wheel routing independently.
-    pub fn wheel_scroll_policy(mut self, policy: luma::interaction::WheelScrollPolicy) -> Self {
+    pub fn wheel_scroll_policy(mut self, policy: gpui_luma::interaction::WheelScrollPolicy) -> Self {
         self.builder = self.builder.wheel_scroll_policy(policy);
         self
     }
 
     /// Configure popup wheel routing independently.
-    pub fn scroll_boundary_policy(mut self, policy: luma::interaction::ScrollBoundaryPolicy) -> Self {
+    pub fn scroll_boundary_policy(mut self, policy: gpui_luma::interaction::ScrollBoundaryPolicy) -> Self {
         self.builder = self.builder.scroll_boundary_policy(policy);
         self
     }
 
     /// Configure popup wheel routing independently.
-    pub fn wheel_focus_scope(mut self, policy: luma::interaction::WheelFocusScope) -> Self {
+    pub fn wheel_focus_scope(mut self, policy: gpui_luma::interaction::WheelFocusScope) -> Self {
         self.builder = self.builder.wheel_focus_scope(policy);
         self
     }

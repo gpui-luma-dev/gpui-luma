@@ -1,12 +1,12 @@
-//! Look-owned accordion builder. Spawn synthesizes the SDK [`luma::controls::accordion::Accordion`].
+//! Look-owned accordion builder. Spawn synthesizes the SDK [`gpui_luma::controls::accordion::Accordion`].
 
 use std::sync::Arc;
 
 use gpui::{Context, Entity, SharedString};
-use luma::controls::accordion::{
+use gpui_luma::controls::accordion::{
     AccordionBuilder, AccordionControl, AccordionItem, AccordionSelectionMode, AccordionTemplate,
 };
-use luma::infra::icon::DisclosureIcons;
+use gpui_luma::infra::icon::DisclosureIcons;
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
 
@@ -22,7 +22,7 @@ impl Accordion {
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
             look: None,
-            builder: luma::controls::accordion::new(id),
+            builder: gpui_luma::controls::accordion::new(id),
             custom_template: false,
             size: ShadcnSize::Md,
         }
@@ -138,7 +138,7 @@ impl Accordion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::controls::accordion::{AccordionContent, AccordionTrigger};
+    use gpui_luma::controls::accordion::{AccordionContent, AccordionTrigger};
 
     #[test]
     fn into_sdk_builder_does_not_panic() {

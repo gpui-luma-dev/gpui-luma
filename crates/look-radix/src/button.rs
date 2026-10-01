@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{Background, BoxShadow, Hsla, SharedString, black, linear_color_stop, linear_gradient, point, prelude::*, px};
-use luma::controls::button::{ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate};
-use luma::controls::button_family::{
+use gpui_luma::controls::button::{ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate};
+use gpui_luma::controls::button_family::{
     ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, compose_button_family_look,
 };
-use luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale};
 use gpui::FontWeight;
 
 use crate::button_layout::{ButtonSize, Radius, apply_button_box, button_box_for};
@@ -128,7 +128,7 @@ pub fn button_look_for<D: 'static>(
     paint: Paint,
     size: ButtonSize,
     radius: Radius,
-) -> luma::controls::button::ButtonLookSource<D> {
+) -> gpui_luma::controls::button::ButtonLookSource<D> {
     let look = look.clone();
     Arc::new(move |model| {
         let palette = resolve_button_palette(&look, variant, paint, model.role, model.state);
@@ -167,12 +167,12 @@ fn resolve_button_palette(
     let (mut background, mut foreground, mut border) = if page {
         if selected {
             match look.mode() {
-                luma::theme::ThemeMode::Light => (
+                gpui_luma::theme::ThemeMode::Light => (
                     look.resolve_role(SemanticRole::Foreground).hsla(),
                     look.resolve_role(SemanticRole::Background).hsla(),
                     None,
                 ),
-                luma::theme::ThemeMode::Dark => (
+                gpui_luma::theme::ThemeMode::Dark => (
                     look.resolve_role(SemanticRole::PrimaryForeground).hsla(),
                     look.resolve_role(SemanticRole::Background).hsla(),
                     None,
@@ -509,7 +509,7 @@ fn transparent() -> Hsla {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::InteractionState;
+    use gpui_luma::theme::InteractionState;
 
     #[test]
     fn solid_default_uses_primary_steps() {
@@ -594,7 +594,7 @@ mod tests {
             crate::palette::Accent::Lime,
             crate::palette::Gray::Auto,
             Default::default(),
-            luma::theme::ThemeMode::Light,
+            gpui_luma::theme::ThemeMode::Light,
         );
         let theme = button_family_theme_with(&look, ButtonVariant::Classic, Paint::accent());
         let palette = theme.resolve(ButtonFamilyRole::Text, ControlSize::Md, InteractionState::default());

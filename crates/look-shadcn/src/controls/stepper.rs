@@ -1,7 +1,7 @@
 //! Stepper — accent track + accent-foreground fill (same color elements as progress).
 
-use luma::controls::stepper::StepperLook;
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::controls::stepper::StepperLook;
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::controls::progress::ProgressColorTable;
 use crate::look_context::LookContext;
@@ -135,7 +135,7 @@ pub fn stepper_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -
 mod tests {
     use std::collections::BTreeMap;
 
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -165,7 +165,7 @@ mod tests {
     fn stepper_uses_accent_track_and_accent_foreground_fill() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look = stepper_look(&mode, true, luma::theme::ControlSize::Md);
+        let look = stepper_look(&mode, true, gpui_luma::theme::ControlSize::Md);
 
         assert_eq!(look.complete_bg, catalog.color("accent-foreground").expect("accent-foreground"));
         assert_eq!(look.complete_fg, catalog.color("accent").expect("accent"));
@@ -177,7 +177,7 @@ mod tests {
     fn disabled_stepper_complete_badge_has_checkmark_contrast() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look = stepper_look(&mode, false, luma::theme::ControlSize::Md);
+        let look = stepper_look(&mode, false, gpui_luma::theme::ControlSize::Md);
 
         assert_eq!(look.complete_bg, catalog.color("muted").expect("muted"));
         assert_eq!(look.complete_fg, catalog.color("muted-foreground").expect("muted-foreground"));
@@ -187,8 +187,8 @@ mod tests {
     #[test]
     fn stepper_size_changes_badge_metrics() {
         let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
-        let small = stepper_look(&mode, true, luma::theme::ControlSize::Sm);
-        let large = stepper_look(&mode, true, luma::theme::ControlSize::Lg);
+        let small = stepper_look(&mode, true, gpui_luma::theme::ControlSize::Sm);
+        let large = stepper_look(&mode, true, gpui_luma::theme::ControlSize::Lg);
 
         assert!(small.step_badge_size < large.step_badge_size);
     }

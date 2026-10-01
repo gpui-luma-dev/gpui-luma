@@ -3,10 +3,10 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma_color::color_field::ColorFieldEvent;
-use luma::controls::slider::SliderEvent;
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma_color::color_field::ColorFieldEvent;
+use gpui_luma::controls::slider::SliderEvent;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::color_compositions::hsv_plane::HsvPlaneDemo;
 use super::color_exposition_common::{format_color_field_event, format_slider_event, render_demo_section, render_demo_card};
@@ -22,7 +22,7 @@ pub struct ColorHsvPlaneControlExposition {
 
 impl ColorHsvPlaneControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        luma::theme::observe_theme_revision(cx, |this, cx| this.sync_look(this.look.clone(), cx)).detach();
+        gpui_luma::theme::observe_theme_revision(cx, |this, cx| this.sync_look(this.look.clone(), cx)).detach();
 
         let state = cx.new(|cx| HsvPlaneDemo::new(look.clone(), cx));
 

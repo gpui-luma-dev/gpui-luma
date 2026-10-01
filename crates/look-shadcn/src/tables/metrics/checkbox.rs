@@ -1,6 +1,6 @@
 //! Shared checkbox metric resolution.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{LookContext, ResolvedMetric, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]
@@ -19,9 +19,9 @@ pub struct CheckboxMetricTable {
 pub fn resolve_checkbox_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    size: luma::theme::ControlSize,
+    size: gpui_luma::theme::ControlSize,
 ) -> CheckboxMetricTable {
-    use luma::controls::checkbox::CheckboxScale;
+    use gpui_luma::controls::checkbox::CheckboxScale;
 
     use crate::catalog::SpacingField;
     use super::helpers::{

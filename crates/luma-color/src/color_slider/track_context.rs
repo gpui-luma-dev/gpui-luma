@@ -1,6 +1,6 @@
 use gpui::{AbsoluteLength, CornersRefinement};
 
-use luma::controls::slider::SliderOrientation;
+use gpui_luma::controls::slider::SliderOrientation;
 
 use super::types::{Axis, ColorInterpolation};
 

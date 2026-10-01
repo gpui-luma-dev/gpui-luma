@@ -7,16 +7,16 @@ mod item;
 use std::sync::Arc;
 
 use gpui::{Context, Div, Entity, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
-use luma::controls::listbox::{ListBoxBinding, ListBoxInput, ListBoxScrollHandle, SelectionPolicy};
-use luma::interaction::{ScrollBoundaryPolicy, WheelScrollPolicy};
-use luma::infra::drag_drop::{DragDropElementExt, DragDropEvent, DropProposal};
-use luma::{hstack, vstack};
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use gpui_luma::controls::listbox::{ListBoxBinding, ListBoxInput, ListBoxScrollHandle, SelectionPolicy};
+use gpui_luma::interaction::{ScrollBoundaryPolicy, WheelScrollPolicy};
+use gpui_luma::infra::drag_drop::{DragDropElementExt, DragDropEvent, DropProposal};
+use gpui_luma::{hstack, vstack};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use model::{Side, TransferModel};
 use item::{DragPreview, TransferRow};
-use luma_look_shadcn::ListBoxBuilder;
-use luma::controls::listbox::{ListBoxLayout, ListBoxVirtualization};
+use gpui_luma_look_shadcn::ListBoxBuilder;
+use gpui_luma::controls::listbox::{ListBoxLayout, ListBoxVirtualization};
 use super::{ListBoxSampleLayout, VERTICAL_LIST_WIDTH};
 use super::presentation::ExamplePresentation;
 use super::super::event_stream::ControlEventStream;

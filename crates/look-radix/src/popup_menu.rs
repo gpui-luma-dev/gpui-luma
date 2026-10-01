@@ -3,12 +3,12 @@
 use std::sync::Arc;
 
 use gpui::{BoxShadow, FontWeight, black, point, px};
-use luma::controls::floating_menu::FloatingMenuLook;
-use luma::controls::popup_menu::{
+use gpui_luma::controls::floating_menu::FloatingMenuLook;
+use gpui_luma::controls::popup_menu::{
     PopupMenuPalette, PopupMenuTemplate, PopupMenuTheme, PopupMenuTriggerMetrics, PopupMenuTriggerStyle,
     ThemedPopupMenuTemplate, compose_popup_menu_look,
 };
-use luma::theme::{InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale};
+use gpui_luma::theme::{InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale};
 
 use crate::look::Look;
 use crate::semantic::SemanticRole;
@@ -99,7 +99,7 @@ impl PopupMenuTheme for PopupMenuThemeAdapter {
         state: InteractionState,
         scale_factor: f32,
         _cx: &mut gpui::App,
-    ) -> luma::controls::popup_menu::PopupMenuLook {
+    ) -> gpui_luma::controls::popup_menu::PopupMenuLook {
         let scale = StandardBoxScale::compute(metrics.size, &self.metrics(), scale_factor);
         let mut look = compose_popup_menu_look(&self.resolve(trigger_style, metrics, state), &scale);
         if let Some(radius) = metrics.trigger_radius_override {

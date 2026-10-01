@@ -1,6 +1,6 @@
 //! Shared badge metric resolution.
 
-use luma::theme::{ControlSize, ThemeMode};
+use gpui_luma::theme::{ControlSize, ThemeMode};
 use crate::{ResolvedMetric, ShadcnModeTokens};
 use crate::{BadgeVariant, ShadcnLook, ShadcnSize};
 use super::helpers::{derived_metric, pill_radius_metric, spacing_control_metric};

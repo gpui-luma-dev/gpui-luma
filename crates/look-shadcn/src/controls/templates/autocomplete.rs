@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use luma::controls::autocomplete::AutocompleteTheme;
-use luma::theme::ControlSize;
+use gpui_luma::controls::autocomplete::AutocompleteTheme;
+use gpui_luma::theme::ControlSize;
 
 use crate::controls::autocomplete::autocomplete_textbox_look;
 use crate::look::ShadcnLook;
@@ -11,7 +11,7 @@ struct ShadcnAutocompleteTheme {
 }
 
 impl AutocompleteTheme for ShadcnAutocompleteTheme {
-    fn resolve(&self, size: ControlSize) -> luma::controls::autocomplete::AutocompleteLook {
+    fn resolve(&self, size: ControlSize) -> gpui_luma::controls::autocomplete::AutocompleteLook {
         let tokens = self.theme.mode_tokens();
         autocomplete_textbox_look(tokens.as_ref(), self.theme.mode(), size)
     }

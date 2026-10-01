@@ -1,8 +1,8 @@
 //! Radix context menus use the same panel and item treatments as popup menus.
 use std::sync::Arc;
 use gpui::FontWeight;
-use luma::controls::context_menu::{ContextMenuLook, ContextMenuTemplate, ContextMenuTheme, ThemedContextMenuTemplate};
-use luma::theme::{InteractionState, LumaTextStyle, MetricTokens};
+use gpui_luma::controls::context_menu::{ContextMenuLook, ContextMenuTemplate, ContextMenuTheme, ThemedContextMenuTemplate};
+use gpui_luma::theme::{InteractionState, LumaTextStyle, MetricTokens};
 use crate::{Look, SemanticRole, Tone};
 
 /// Solid or Soft highlighted items, shared with Radix popup menus.
@@ -54,7 +54,7 @@ pub fn context_menu_template(look: &Look, variant: ContextMenuVariant, tone: Ton
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
     #[test]
     fn menu_matches_popup_styling_in_both_modes_and_tones() {
         let look = Look::built_in();

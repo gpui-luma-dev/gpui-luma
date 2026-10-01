@@ -1,7 +1,7 @@
 //! Host-owned query/sort, SDK-owned projection and selection.
 use std::sync::Arc;
 use gpui::{Context, Div, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::{
+use gpui_luma::controls::{
     listbox::{
         ListBoxControl, ListBoxInput, ListBoxItemRenderModel, ListBoxState, ListBoxVirtualization, SelectionMode,
         SelectionPolicy,
@@ -9,8 +9,8 @@ use luma::controls::{
     selector::{Selector, SelectorEvent, SelectorItem},
     textfield::{TextField, TextFieldEvent},
 };
-use luma::{hstack, vstack};
-use luma_look_shadcn::{self as shadcn, LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use gpui_luma::{hstack, vstack};
+use gpui_luma_look_shadcn::{self as shadcn, LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 use super::{
     VERTICAL_LIST_WIDTH,
     markup::listbox,

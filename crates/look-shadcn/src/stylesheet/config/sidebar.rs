@@ -1,4 +1,4 @@
-use luma::theme::{InteractionLayer};
+use gpui_luma::theme::{InteractionLayer};
 use serde::Deserialize;
 
 use super::{matches_optional_bool, matches_optional_layer};
@@ -17,7 +17,7 @@ pub struct SidebarStylesheet {
     pub item: SidebarItemStylesheet,
 }
 
-/// Layout metrics for [`luma::controls::sidebar::SidebarMetricScale`].
+/// Layout metrics for [`gpui_luma::controls::sidebar::SidebarMetricScale`].
 ///
 /// Values accept bare numbers, `px`, or `rem` (1rem = 16px).
 #[derive(Debug, Deserialize, Clone)]

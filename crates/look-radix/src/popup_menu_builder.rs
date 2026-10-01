@@ -1,14 +1,14 @@
-//! Look-owned popup-menu builder. Spawn synthesizes the SDK [`luma::controls::popup_menu::PopupMenu`].
+//! Look-owned popup-menu builder. Spawn synthesizes the SDK [`gpui_luma::controls::popup_menu::PopupMenu`].
 
 use gpui::{App, Context, Div, Entity, SharedString, Stateful};
-use luma::controls::button::ControlIcon;
-use luma::controls::popup_menu::{
+use gpui_luma::controls::button::ControlIcon;
+use gpui_luma::controls::popup_menu::{
     PopupMenuBuilder, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateModifier, PopupMenuTriggerModel,
     PopupMenuTriggerStyle,
 };
-use luma::infra::icon::DisclosureIcons;
-use luma::infra::menu_item::MenuItem;
-use luma::infra::presenter::{ControlPresenter, HasPresenter};
+use gpui_luma::infra::icon::DisclosureIcons;
+use gpui_luma::infra::menu_item::MenuItem;
+use gpui_luma::infra::presenter::{ControlPresenter, HasPresenter};
 
 use crate::button_layout::ButtonSize;
 use crate::look::{Look, resolve_look};
@@ -196,7 +196,7 @@ impl PopupMenu {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::popup_menu::PopupMenu> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::popup_menu::PopupMenu> {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -207,7 +207,7 @@ impl PopupMenu {
 
     fn into_sdk_builder(self, look: Look) -> PopupMenuBuilder {
         let template = popup_menu_template(&look, self.variant, self.tone);
-        let mut builder = luma::controls::popup_menu::PopupMenu::new(self.id)
+        let mut builder = gpui_luma::controls::popup_menu::PopupMenu::new(self.id)
             .template(template)
             .size(self.size.control_size())
             .menu_size(self.menu_size.control_size())
@@ -251,7 +251,7 @@ impl HasPresenter<PopupMenuTriggerModel> for PopupMenu {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::ControlSize;
+    use gpui_luma::theme::ControlSize;
 
     #[test]
     fn size_maps_to_sdk_control_size() {

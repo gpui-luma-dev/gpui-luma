@@ -1,10 +1,10 @@
 //! Look-owned toolbar composition, including its icon-button recipe.
 
 use gpui::{Context, SharedString};
-use luma::controls::button::ControlIcon;
-use luma::controls::button_family::ButtonFamilyRole;
-use luma::controls::toolbar::{ToolbarBuilder, ToolbarItem};
-use luma::theme::ControlSize;
+use gpui_luma::controls::button::ControlIcon;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::toolbar::{ToolbarBuilder, ToolbarItem};
+use gpui_luma::theme::ControlSize;
 
 use crate::{Button, ButtonSize, Look, ToolbarStyle, toolbar_template_with};
 
@@ -90,7 +90,7 @@ impl Toolbar {
         self.item(ToolbarItem::separator(id))
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> luma::controls::toolbar::Toolbar {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::toolbar::Toolbar {
         let look = crate::look::resolve_look(self.look.as_ref(), cx.try_global::<Look>());
         let items = self
             .items

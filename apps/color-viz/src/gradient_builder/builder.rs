@@ -3,14 +3,14 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use gpui::{AppContext, Bounds, Context, Entity, Pixels, RenderImage, Size, Subscription, px, size};
-use luma_color::color_slider::{ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext};
-use luma::controls::button::{Button, ButtonEvent};
-use luma::controls::selector::{Selector, SelectorEvent};
-use luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy, ThumbId};
-use luma::controls::tabs::{Tabs, TabsEvent, TabsWidthMode};
-use luma::theme::{ControlSize, ThemeMode};
-use luma_look_shadcn::{ShadcnLook};
-use luma_look_shadcn as shadcn;
+use gpui_luma_color::color_slider::{ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext};
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::selector::{Selector, SelectorEvent};
+use gpui_luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy, ThumbId};
+use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsWidthMode};
+use gpui_luma::theme::{ControlSize, ThemeMode};
+use gpui_luma_look_shadcn::{ShadcnLook};
+use gpui_luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 mod actions;

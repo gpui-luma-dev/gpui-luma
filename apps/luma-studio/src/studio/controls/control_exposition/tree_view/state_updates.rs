@@ -2,10 +2,10 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::button::{Button, ButtonEvent};
-use luma::controls::tree_view::{TreeNode, TreeView};
-use luma::infra::presenter::HasPresenter;
-use luma_look_shadcn::{self as shadcn, ShadcnLook, prelude::*};
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::tree_view::{TreeNode, TreeView};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma_look_shadcn::{self as shadcn, ShadcnLook, prelude::*};
 
 use super::super::event_stream::ControlEventStream;
 

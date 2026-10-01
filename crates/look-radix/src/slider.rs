@@ -8,8 +8,8 @@
 use std::sync::Arc;
 
 use gpui::{BoxShadow, Hsla, point, px};
-use luma::controls::slider::{SliderLook, SliderTemplate, SliderTheme, SliderThumbSize, ThemedSliderTemplate};
-use luma::theme::{ControlSize, InteractionLayer, InteractionState};
+use gpui_luma::controls::slider::{SliderLook, SliderTemplate, SliderTheme, SliderThumbSize, ThemedSliderTemplate};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState};
 
 use crate::look::Look;
 use crate::scale::ScaleFamily;
@@ -255,9 +255,9 @@ mod tests {
                 InteractionState { focused: true, ..Default::default() },
                 InteractionState { disabled: true, ..Default::default() },
             ] {
-                look.set_mode(luma::theme::ThemeMode::Light);
+                look.set_mode(gpui_luma::theme::ThemeMode::Light);
                 let light = theme.resolve(ControlSize::Md, None, state);
-                look.set_mode(luma::theme::ThemeMode::Dark);
+                look.set_mode(gpui_luma::theme::ThemeMode::Dark);
                 let dark = theme.resolve(ControlSize::Md, None, state);
                 assert_eq!(light.thumb_background, dark.thumb_background);
             }

@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, SharedString, Window, div, prelude::*, px};
-use luma::controls::button_family::ButtonSize;
-use luma::controls::button::{ButtonContentContext, ButtonRenderModel};
-use luma::controls::checkbox::CheckboxData;
-use luma::controls::radio_button::RadioButtonData;
-use luma::controls::switch::SwitchData;
-use luma::controls::tabs::Tabs;
-use luma::theme::InteractionState;
-use luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
+use gpui_luma::controls::button_family::ButtonSize;
+use gpui_luma::controls::button::{ButtonContentContext, ButtonRenderModel};
+use gpui_luma::controls::checkbox::CheckboxData;
+use gpui_luma::controls::radio_button::RadioButtonData;
+use gpui_luma::controls::switch::SwitchData;
+use gpui_luma::controls::tabs::Tabs;
+use gpui_luma::theme::InteractionState;
+use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 
 use crate::studio::style::shared::button_matrix::{
     BUTTON_SIZES, BUTTON_TABLE_RADIUS_COLUMN_WIDTH, BUTTON_TABLE_SIZE_HEADER_HEIGHT,
@@ -39,24 +39,26 @@ impl ChoiceTemplateControl {
 
     pub(crate) fn radio_content(
         self,
-    ) -> luma::controls::button::ControlPresenter<ButtonContentContext<RadioButtonData>> {
+    ) -> gpui_luma::controls::button::ControlPresenter<ButtonContentContext<RadioButtonData>> {
         Arc::new(move |_, _| div().into_any_element())
     }
 
     pub(crate) fn checkbox_content(
         self,
-    ) -> luma::controls::button::ControlPresenter<ButtonContentContext<CheckboxData>> {
+    ) -> gpui_luma::controls::button::ControlPresenter<ButtonContentContext<CheckboxData>> {
         Arc::new(move |_, _| div().into_any_element())
     }
 
-    pub(crate) fn switch_content(self) -> luma::controls::button::ControlPresenter<ButtonContentContext<SwitchData>> {
+    pub(crate) fn switch_content(
+        self,
+    ) -> gpui_luma::controls::button::ControlPresenter<ButtonContentContext<SwitchData>> {
         Arc::new(move |_, _| div().into_any_element())
     }
 
-    pub(crate) fn role(self) -> luma::controls::button_family::ButtonFamilyRole {
+    pub(crate) fn role(self) -> gpui_luma::controls::button_family::ButtonFamilyRole {
         match self {
-            Self::Checkbox | Self::Radio => luma::controls::button_family::ButtonFamilyRole::Icon,
-            Self::Switch => luma::controls::button_family::ButtonFamilyRole::Text,
+            Self::Checkbox | Self::Radio => gpui_luma::controls::button_family::ButtonFamilyRole::Icon,
+            Self::Switch => gpui_luma::controls::button_family::ButtonFamilyRole::Text,
         }
     }
 }
@@ -210,8 +212,8 @@ fn render_choice_size_cell(
     ));
     let radius_override = radius.map(|preset| {
         let tokens = look.mode_tokens();
-        let scale = luma_look_shadcn::paint::switch_scale(tokens.as_ref(), look.mode(), style, size, 1.0);
-        luma_look_shadcn::paint::resolve_switch_radius_preset(preset, &tokens.metrics, scale.track_height)
+        let scale = gpui_luma_look_shadcn::paint::switch_scale(tokens.as_ref(), look.mode(), style, size, 1.0);
+        gpui_luma_look_shadcn::paint::resolve_switch_radius_preset(preset, &tokens.metrics, scale.track_height)
     });
 
     match control {

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use luma::theme::{InteractionLayer};
+use gpui_luma::theme::{InteractionLayer};
 use serde::Deserialize;
 
 use super::matches_optional_layer;

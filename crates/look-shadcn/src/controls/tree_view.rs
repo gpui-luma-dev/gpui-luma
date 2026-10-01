@@ -9,8 +9,8 @@
 //! | Disabled label | `muted-foreground`                 |
 //! | Icon / chevron | `sidebar-foreground`               |
 
-use luma::controls::tree_view::TreeViewPalette;
-use luma::theme::{ControlSize, InteractionLayer, InteractionState};
+use gpui_luma::controls::tree_view::TreeViewPalette;
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState};
 
 use super::apply_button_metrics_typography;
 
@@ -112,7 +112,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use luma::theme::{ControlSize, InteractionLayer, ThemeMode};
+    use gpui_luma::theme::{ControlSize, InteractionLayer, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -146,7 +146,7 @@ mod tests {
         let palette = tree_view_row_palette(
             &mode,
             false,
-            luma::theme::InteractionState { hovered: true, ..Default::default() },
+            gpui_luma::theme::InteractionState { hovered: true, ..Default::default() },
             ControlSize::Md,
         );
         let resolver = LookResolver::new(&catalog, ThemeMode::Light, "test");
@@ -162,9 +162,9 @@ mod tests {
         for theme_mode in [ThemeMode::Light, ThemeMode::Dark] {
             let mode = ShadcnModeTokens::from_catalog(sample_catalog(), theme_mode).expect("catalog");
             for state in [
-                luma::theme::InteractionState::default(),
-                luma::theme::InteractionState { hovered: true, ..Default::default() },
-                luma::theme::InteractionState { pressed: true, ..Default::default() },
+                gpui_luma::theme::InteractionState::default(),
+                gpui_luma::theme::InteractionState { hovered: true, ..Default::default() },
+                gpui_luma::theme::InteractionState { pressed: true, ..Default::default() },
             ] {
                 let selected = tree_view_row_palette(&mode, true, state, ControlSize::Md);
                 assert_eq!(selected.background, Some(mode.palette.selected_background));
@@ -174,7 +174,7 @@ mod tests {
             }
             let idle = tree_view_row_palette(&mode, false, Default::default(), ControlSize::Md);
             assert_eq!(idle.background, None);
-            let disabled = luma::theme::InteractionState { disabled: true, ..Default::default() };
+            let disabled = gpui_luma::theme::InteractionState { disabled: true, ..Default::default() };
             let selected = tree_view_row_palette(&mode, true, disabled, ControlSize::Md);
             let unselected = tree_view_row_palette(&mode, false, disabled, ControlSize::Md);
             assert_eq!(selected.background, unselected.background);

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use luma::controls::tabs::{TabsTemplate, TabsTheme, ThemedTabsTemplate};
-use luma::theme::{ControlSize, InteractionState};
+use gpui_luma::controls::tabs::{TabsTemplate, TabsTheme, ThemedTabsTemplate};
+use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::controls::tabs::{tabs_item_look, tabs_list_look};
 use crate::look::ShadcnLook;
@@ -11,7 +11,7 @@ struct ShadcnTabsTheme {
 }
 
 impl TabsTheme for ShadcnTabsTheme {
-    fn resolve_list(&self, enabled: bool, size: ControlSize) -> luma::controls::tabs::TabsListLook {
+    fn resolve_list(&self, enabled: bool, size: ControlSize) -> gpui_luma::controls::tabs::TabsListLook {
         let tokens = self.theme.mode_tokens();
         tabs_list_look(tokens.as_ref(), enabled, size)
     }
@@ -21,7 +21,7 @@ impl TabsTheme for ShadcnTabsTheme {
         active: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> luma::controls::tabs::TabsItemLook {
+    ) -> gpui_luma::controls::tabs::TabsItemLook {
         let tokens = self.theme.mode_tokens();
         tabs_item_look(tokens.as_ref(), active, state, size)
     }

@@ -11,12 +11,12 @@ use gpui::{
     AnyElement, ClipboardItem, Context, Entity, EventEmitter, FontWeight, Hsla, IntoElement, Render, Subscription,
     Window, div, prelude::*, px,
 };
-use luma::controls::button::{Button, ButtonEvent};
-use luma::controls::slider::{Slider, SliderEvent};
-use luma::infra::presenter::HasPresenter;
-use luma::{hstack, vstack};
-use luma_look_radix as radix;
-use luma_look_radix::{ClassicButtonParams, ButtonSize, Look, SemanticRole};
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::slider::{Slider, SliderEvent};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::{hstack, vstack};
+use gpui_luma_look_radix as radix;
+use gpui_luma_look_radix::{ClassicButtonParams, ButtonSize, Look, SemanticRole};
 
 use crate::assets::{icon_named, react_icon};
 

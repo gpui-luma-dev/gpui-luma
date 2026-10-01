@@ -8,14 +8,14 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, Hsla, IntoElement, SharedString, Window, div, prelude::*, px};
-use luma::controls::slider::{
+use gpui_luma::controls::slider::{
     SliderInputStrategy, SliderRenderModel, SliderTemplate, SliderThumbPolicy, SliderThumbRole, SliderThumbValue,
     ThumbId, TrackPresentation, build_track_segments,
 };
-use luma::controls::tabs::Tabs;
-use luma::infra::value::ControlRange;
-use luma::theme::ControlSize;
-use luma_look_radix::{Accent, Gray, Look, LookControlExt, SliderVariant, ScaleFamily};
+use gpui_luma::controls::tabs::Tabs;
+use gpui_luma::infra::value::ControlRange;
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_radix::{Accent, Gray, Look, LookControlExt, SliderVariant, ScaleFamily};
 
 use super::matrix_grid::{
     COL_GAP, centered, column_header, empty_corner, equal_data_columns, fixed_grid, preview_tabbed, row_label,

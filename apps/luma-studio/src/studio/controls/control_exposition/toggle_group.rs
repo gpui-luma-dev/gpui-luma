@@ -3,14 +3,14 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Hsla, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::icon_group::{IconGroup, IconGroupEvent, IconGroupItem};
-use luma::controls::control_group::{
+use gpui_luma::controls::icon_group::{IconGroup, IconGroupEvent, IconGroupItem};
+use gpui_luma::controls::control_group::{
     ControlGroupItemLike, ControlGroupItemTemplate, animated_toggle_button_item_template,
     make_control_group_item_template,
 };
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
@@ -188,7 +188,7 @@ fn icon_group(
         .item_template(theme_aware_toggle_item_template(look.clone(), style))
         .with_item_layout(move |mut items, _, _, _| {
             let group_look = look.control_group_theme().resolve_list(true);
-            luma::hstack![
+            gpui_luma::hstack![
                 gap = 6 align = center;
                 items.take("top"),
                 items.take("bottom"),
@@ -215,7 +215,11 @@ fn theme_aware_toggle_item_template(
     make_control_group_item_template(move |item, window, cx| {
         let button_template = look.animated_toggle_item_template(style);
         animated_toggle_button_item_template(button_template, true, |item: &IconGroupItem| {
-            luma::infra::icon::lucide_icon(placement_icon(item.id().as_ref()), gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0)
+            gpui_luma::infra::icon::lucide_icon(
+                placement_icon(item.id().as_ref()),
+                gpui::hsla(0.0, 0.0, 1.0, 1.0),
+                16.0,
+            )
         })(item, window, cx)
     })
 }

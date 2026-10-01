@@ -40,7 +40,7 @@ fn embedded() -> &'static StylesheetConfig {
 mod tests {
     use super::*;
     use crate::elements::BadgeVariant;
-    use luma::theme::{InteractionLayer, ThemeMode};
+    use gpui_luma::theme::{InteractionLayer, ThemeMode};
 
     #[test]
     fn embedded_stylesheet_parses() {

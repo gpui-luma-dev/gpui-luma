@@ -6,8 +6,8 @@
 //! | Separator (hover) | `border-hover`     |
 //! | Disabled          | `muted-foreground` |
 
-use luma::controls::split_view::SplitViewLook;
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::controls::split_view::SplitViewLook;
+use gpui_luma::theme::{InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -59,7 +59,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;

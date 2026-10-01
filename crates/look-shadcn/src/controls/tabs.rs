@@ -8,8 +8,8 @@
 //! | Disabled label    | `muted-foreground`            |
 //! | Disabled list bg  | `muted`                       |
 
-use luma::controls::tabs::{TabsItemLook, TabsListLook};
-use luma::theme::{ControlSize, InteractionLayer, InteractionState};
+use gpui_luma::controls::tabs::{TabsItemLook, TabsListLook};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -134,7 +134,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use luma::theme::{ControlSize, InteractionState, ThemeMode};
+    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;

@@ -1,7 +1,7 @@
 //! Content determines row height; the scroll adapter only measures its result.
 use std::{cell::RefCell, rc::Rc};
 use gpui::{Bounds, Pixels, ScrollDelta, ScrollWheelEvent, TestAppContext, TouchPhase, VisualTestContext, point};
-use luma::controls::listbox::{ListBoxSnapshot, SelectionMode};
+use gpui_luma::controls::listbox::{ListBoxSnapshot, SelectionMode};
 use super::*;
 
 struct Harness {

@@ -7,9 +7,9 @@
 use std::sync::Arc;
 
 use gpui::{BoxShadow, Hsla, point, px};
-use luma::controls::button::ButtonTemplate;
-use luma::controls::checkbox::{CheckboxPalette, CheckboxScale, CheckboxTheme, ThemedCheckboxTemplate};
-use luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens};
+use gpui_luma::controls::button::ButtonTemplate;
+use gpui_luma::controls::checkbox::{CheckboxPalette, CheckboxScale, CheckboxTheme, ThemedCheckboxTemplate};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens};
 
 use crate::button::Paint;
 use crate::button_layout::Radius;
@@ -279,7 +279,7 @@ pub fn checkbox_template(
     look: &Look,
     variant: CheckboxVariant,
     paint: Paint,
-) -> Arc<dyn ButtonTemplate<luma::controls::checkbox::CheckboxData>> {
+) -> Arc<dyn ButtonTemplate<gpui_luma::controls::checkbox::CheckboxData>> {
     Arc::new(ThemedCheckboxTemplate::new(checkbox_theme_with(look, variant, paint)))
 }
 
@@ -289,7 +289,7 @@ pub fn checkbox_template_for(
     paint: Paint,
     size: CheckboxSize,
     radius: Radius,
-) -> Arc<dyn ButtonTemplate<luma::controls::checkbox::CheckboxData>> {
+) -> Arc<dyn ButtonTemplate<gpui_luma::controls::checkbox::CheckboxData>> {
     Arc::new(ThemedCheckboxTemplate::new(checkbox_theme_for(look, variant, paint, size, radius)))
 }
 

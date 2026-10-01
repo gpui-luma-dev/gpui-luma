@@ -1,6 +1,6 @@
 //! Inspect metadata for `accordion`.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct AccordionTriggerInspectPalette {
@@ -63,7 +63,7 @@ pub fn inspect_accordion_content_color_palette(
 pub fn inspect_accordion_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    size: luma::theme::ControlSize,
+    size: gpui_luma::theme::ControlSize,
 ) -> AccordionInspectMetrics {
     inspect_accordion_metrics_at_scale(mode, theme_mode, size, 1.0)
 }
@@ -72,7 +72,7 @@ pub fn inspect_accordion_metrics(
 pub fn inspect_accordion_metrics_at_scale(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    size: luma::theme::ControlSize,
+    size: gpui_luma::theme::ControlSize,
     scale_factor: f32,
 ) -> AccordionInspectMetrics {
     let table = crate::tables::metrics::resolve_accordion_metrics(mode, theme_mode, size, scale_factor);

@@ -1,8 +1,8 @@
-//! Look-owned toggle builder. Spawn synthesizes the SDK [`luma::controls::toggle::Toggle`].
+//! Look-owned toggle builder. Spawn synthesizes the SDK [`gpui_luma::controls::toggle::Toggle`].
 
 use gpui::{App, Context, SharedString};
-use luma::controls::button::{ButtonContentContext, ControlIcon, ControlPresenter, HasPresenter};
-use luma::controls::toggle::{ToggleBuilder, ToggleData};
+use gpui_luma::controls::button::{ButtonContentContext, ControlIcon, ControlPresenter, HasPresenter};
+use gpui_luma::controls::toggle::{ToggleBuilder, ToggleData};
 use super::button::ShadcnButtonStyle;
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
@@ -125,7 +125,7 @@ impl Toggle {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> luma::controls::toggle::Toggle {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::toggle::Toggle {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -136,7 +136,7 @@ impl Toggle {
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ToggleBuilder {
         let template = look.toggle_template(self.style);
-        let mut builder = luma::controls::toggle::new(self.id)
+        let mut builder = gpui_luma::controls::toggle::new(self.id)
             .template(template)
             .size(self.size.control_size())
             .with_data(self.selected)
@@ -171,7 +171,7 @@ impl HasPresenter<ButtonContentContext<ToggleData>> for Toggle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::controls::button::HasPresenter;
+    use gpui_luma::controls::button::HasPresenter;
 
     #[test]
     fn with_data_keeps_shadcn_axes() {

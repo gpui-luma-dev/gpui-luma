@@ -10,9 +10,6 @@ homepage.workspace = true
 keywords = ["gpui", "gui", "ui", "widgets", "desktop"]
 categories = ["gui"]
 
-[lib]
-name = "luma"
-
 [features]
 # Headless GPUI event-dispatch regression tests; does not launch Studio.
 test-support = ["gpui/test-support"]

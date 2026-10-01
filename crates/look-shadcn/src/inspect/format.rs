@@ -1,6 +1,6 @@
 //! Display formatting for inspection source metadata.
 
-use luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionLayer;
 use crate::{ColorSource, MetricSource, TypographySource};
 
 /// Full CSS custom-property form, e.g. `--accent/50`.

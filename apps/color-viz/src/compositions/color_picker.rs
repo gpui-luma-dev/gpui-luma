@@ -3,15 +3,15 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma_color::ColorSwatch;
-use luma_color::color_field::{ColorFieldEvent, ColorFieldState};
-use luma_color::color_slider::color_spec::Hsv;
-use luma_color::color_slider::{AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value};
-use luma_color::composition::ColorCompositionSync;
-use luma::controls::slider::{SliderControl, SliderEvent};
-use luma::theme::ControlSize;
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::{ShadcnLook, ShadcnRadius};
+use gpui_luma_color::ColorSwatch;
+use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldState};
+use gpui_luma_color::color_slider::color_spec::Hsv;
+use gpui_luma_color::color_slider::{AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value};
+use gpui_luma_color::composition::ColorCompositionSync;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnRadius};
 
 use super::color_exposition_common::{
     composition_card_width, composition_inset_radius, detail_row_sized, format_color_field_event, format_compact_hsla,
@@ -32,7 +32,7 @@ pub struct ColorPickerControlExposition {
 
 impl ColorPickerControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        luma::theme::observe_theme_revision(cx, |this, cx| this.sync_look(this.look.clone(), cx)).detach();
+        gpui_luma::theme::observe_theme_revision(cx, |this, cx| this.sync_look(this.look.clone(), cx)).detach();
 
         let state = cx.new(|cx| ColorPickerDemo::new(look.clone(), cx));
 
@@ -301,15 +301,15 @@ fn wire_picker_events(
 mod tests {
     use super::*;
     use gpui::{Focusable, TestAppContext};
-    use luma::controls::tabs::TabsEvent;
+    use gpui_luma::controls::tabs::TabsEvent;
     use super::super::{ColorCompositions, EXAMPLES};
 
     #[test]
     fn composition_pages_render_and_preserve_picker_edits_when_switching() {
         let mut app = TestAppContext::single();
         app.update(|cx| {
-            luma::init(cx).expect("initialize SDK");
-            luma::key_handling::bind_default_control_keys(cx);
+            gpui_luma::init(cx).expect("initialize SDK");
+            gpui_luma::key_handling::bind_default_control_keys(cx);
         });
         let (gallery, cx) = app.add_window_view(|window, cx| {
             window.activate_window();

@@ -3,12 +3,12 @@
 use std::sync::Arc;
 
 use gpui::{FontWeight, Hsla, SharedString};
-use luma::controls::tabs::{TabsBaseline, TabsItemLook, TabsListLook, TabsTemplate, TabsTheme, ThemedTabsTemplate};
-use luma::theme::{ControlSize, InteractionState, LumaTextStyle};
+use gpui_luma::controls::tabs::{TabsBaseline, TabsItemLook, TabsListLook, TabsTemplate, TabsTheme, ThemedTabsTemplate};
+use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle};
 
 use crate::look::Look;
 use crate::button::{ButtonVariant, Paint, button_family_theme_with};
-use luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
 use crate::scale::ScaleFamily;
 use crate::semantic::SemanticRole;
 use crate::typography::font_family;
@@ -88,7 +88,7 @@ impl Default for TabsBaselineStyle {
 /// Look-wide tab tokens. The baseline and selected indicator can be tuned separately.
 ///
 /// ```
-/// let look = luma_look_radix::Look::built_in();
+/// let look = gpui_luma_look_radix::Look::built_in();
 /// let mut style = look.tabs_style();
 /// if let Some(baseline) = &mut style.baseline {
 ///     baseline.height = 2.0;
@@ -252,14 +252,14 @@ pub fn tabs_template_for(look: &Look, variant: TabsVariant) -> Arc<dyn TabsTempl
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::ControlSize;
+    use gpui_luma::theme::ControlSize;
 
     #[test]
     fn line_hover_and_press_use_gray_ghost_palette() {
         let look = Look::built_in();
         let tabs = tabs_theme(&look);
         let ghost = button_family_theme_with(&look, ButtonVariant::Ghost, Paint::gray());
-        for mode in [luma::theme::ThemeMode::Light, luma::theme::ThemeMode::Dark] {
+        for mode in [gpui_luma::theme::ThemeMode::Light, gpui_luma::theme::ThemeMode::Dark] {
             look.set_mode(mode);
             for state in [
                 InteractionState { hovered: true, ..Default::default() },
@@ -296,7 +296,7 @@ mod tests {
         let mut style = look.tabs_style();
         style.baseline = Some(TabsBaselineStyle { height: 3.0, inset_x: 12.0, bottom: 4.0, gray_step: 8, color: None });
         look.set_tabs_style(style);
-        for mode in [luma::theme::ThemeMode::Light, luma::theme::ThemeMode::Dark] {
+        for mode in [gpui_luma::theme::ThemeMode::Light, gpui_luma::theme::ThemeMode::Dark] {
             look.set_mode(mode);
             let baseline = theme.baseline(true, ControlSize::Md).unwrap();
             assert_eq!((baseline.height, baseline.inset_x, baseline.bottom), (3.0, 12.0, 4.0));

@@ -1,10 +1,10 @@
 use gpui::{Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::tabs::{Tabs, TabsEvent, TabsItem};
-use luma_color::style::{ColorControlTheme, set_active_color_control_theme};
-use luma::focus::LumaFocusScopeExt;
-use luma::shell::TitleBar;
-use luma::theme::ThemeMode;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem};
+use gpui_luma_color::style::{ColorControlTheme, set_active_color_control_theme};
+use gpui_luma::focus::LumaFocusScopeExt;
+use gpui_luma::shell::TitleBar;
+use gpui_luma::theme::ThemeMode;
+use gpui_luma_look_shadcn::ShadcnLook;
 use std::sync::Arc;
 
 use crate::gradient_builder::GradientBuilder;
@@ -28,7 +28,7 @@ impl ColorVizApp {
         look.set_mode(ThemeMode::Dark);
         sync_color_control_theme(&look);
         let gradient_builder = cx.new(|cx| GradientBuilder::new(look.clone(), cx));
-        let tabs = luma_look_shadcn::Tabs::new("color-viz-workspace-tabs")
+        let tabs = gpui_luma_look_shadcn::Tabs::new("color-viz-workspace-tabs")
             .look(look.as_ref())
             .items([
                 TabsItem::new("gradients").label("Gradient Builder"),
@@ -120,7 +120,7 @@ mod tests {
     #[test]
     fn workspace_navigation_loads_compositions_once_and_retains_both_workspaces() {
         let mut app = TestAppContext::single();
-        app.update(|cx| luma::init(cx).expect("initialize SDK"));
+        app.update(|cx| gpui_luma::init(cx).expect("initialize SDK"));
         let (view, cx) = app.add_window_view(|window, cx| ColorVizApp::new(window, cx, ColorVizThemeChoice::Default));
         cx.run_until_parked();
         let (tabs, gradients) = cx.update(|_, cx| {

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTreeViewTemplate};
-use luma::theme::{ControlSize, InteractionState};
+use gpui_luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTreeViewTemplate};
+use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::controls::tree_view::tree_view_row_palette;
 use crate::look::ShadcnLook;
@@ -16,12 +16,12 @@ impl TreeViewTheme for ShadcnTreeViewTheme {
         state: InteractionState,
         selected: bool,
         size: ControlSize,
-    ) -> luma::controls::tree_view::TreeViewPalette {
+    ) -> gpui_luma::controls::tree_view::TreeViewPalette {
         let tokens = self.theme.mode_tokens();
         tree_view_row_palette(tokens.as_ref(), selected, state, size)
     }
 
-    fn metrics(&self) -> luma::theme::MetricTokens {
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }

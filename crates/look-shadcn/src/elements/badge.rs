@@ -1,6 +1,6 @@
 use gpui::{Div, FontWeight, IntoElement, SharedString, div, px, prelude::*};
-use luma::infra::icon::{IconSource, lucide_icon};
-use luma::theme::LumaTextStyle;
+use gpui_luma::infra::icon::{IconSource, lucide_icon};
+use gpui_luma::theme::LumaTextStyle;
 
 use crate::look::ShadcnLook;
 use crate::size::ShadcnSize;
@@ -293,7 +293,7 @@ mod tests {
     #[test]
     fn outline_badge_uses_border_in_dark_mode() {
         let shadcn = sample_look();
-        shadcn.set_mode(luma::theme::ThemeMode::Dark);
+        shadcn.set_mode(gpui_luma::theme::ThemeMode::Dark);
         let look = badge_look(&shadcn, BadgeVariant::Outline, ShadcnSize::Md);
 
         assert_eq!(look.foreground, shadcn.color(ShadcnToken::Foreground));

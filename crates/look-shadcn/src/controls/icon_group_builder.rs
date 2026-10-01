@@ -1,11 +1,11 @@
 //! Look-owned icon-group builder. Spawn synthesizes the SDK icon-group control-group.
 
 use gpui::{App, Context, Entity, IntoElement, SharedString, px, prelude::*};
-use luma::controls::control_group::{
+use gpui_luma::controls::control_group::{
     ControlGroupBuilder, ControlGroupControl, ControlGroupItemLike, ControlGroupItemTemplate, ControlGroupRenderModel,
     ControlGroupTemplate, control_group_template_with_theme,
 };
-use luma::controls::icon_group::{self, IconGroupItem};
+use gpui_luma::controls::icon_group::{self, IconGroupItem};
 
 use crate::look::{ShadcnLook, resolve_look_from};
 
@@ -130,7 +130,7 @@ where
     pub fn with_item_layout<F, E>(mut self, layout: F) -> Self
     where
         F: for<'a> Fn(
-                luma::controls::control_group::ControlGroupItemElements,
+                gpui_luma::controls::control_group::ControlGroupItemElements,
                 &ControlGroupRenderModel<'a, T>,
                 &mut gpui::Window,
                 &mut App,

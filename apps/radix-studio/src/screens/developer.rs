@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Entity, IntoElement, prelude::*};
-use luma::vstack;
-use luma_look_radix::{Look, SemanticRole};
+use gpui_luma::vstack;
+use gpui_luma_look_radix::{Look, SemanticRole};
 
 use super::section::section;
 use crate::controls::ClassicShadowEditor;

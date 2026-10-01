@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::accordion::{AccordionContent, AccordionControl, AccordionEvent, AccordionItem, AccordionTrigger};
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
-use luma_look_shadcn as shadcn;
-use luma::{vstack};
+use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionEvent, AccordionItem, AccordionTrigger};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma::{vstack};
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::common::titled_card;

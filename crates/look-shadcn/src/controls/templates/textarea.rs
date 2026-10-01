@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use luma::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
-use luma::theme::{ControlSize, StandardBoxScale};
+use gpui_luma::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
+use gpui_luma::theme::{ControlSize, StandardBoxScale};
 
 use crate::look::ShadcnLook;
 
@@ -12,9 +12,9 @@ struct ShadcnTextAreaTheme {
 impl TextAreaTheme for ShadcnTextAreaTheme {
     fn resolve(
         &self,
-        state: luma::controls::textarea::TextAreaState,
+        state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
-    ) -> luma::controls::textarea::TextAreaPalette {
+    ) -> gpui_luma::controls::textarea::TextAreaPalette {
         let tokens = self.theme.mode_tokens();
         crate::controls::textarea::textarea_palette(
             tokens.as_ref(),
@@ -25,17 +25,17 @@ impl TextAreaTheme for ShadcnTextAreaTheme {
         )
     }
 
-    fn metrics(&self) -> luma::theme::MetricTokens {
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
     fn resolve_look(
         &self,
-        state: luma::controls::textarea::TextAreaState,
+        state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> luma::controls::textarea::TextAreaLook {
+    ) -> gpui_luma::controls::textarea::TextAreaLook {
         let tokens = self.theme.mode_tokens();
         crate::controls::textarea::textarea_look(
             tokens.as_ref(),
@@ -49,7 +49,7 @@ impl TextAreaTheme for ShadcnTextAreaTheme {
     }
 }
 
-pub fn textarea_template(theme: ShadcnLook) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
+pub fn textarea_template(theme: ShadcnLook) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
     Arc::new(ThemedTextAreaTemplate::new(textarea_theme(theme.clone())))
 }
 
@@ -64,9 +64,9 @@ struct ShadcnSurfaceTextAreaTheme {
 impl TextAreaTheme for ShadcnSurfaceTextAreaTheme {
     fn resolve(
         &self,
-        state: luma::controls::textarea::TextAreaState,
+        state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
-    ) -> luma::controls::textarea::TextAreaPalette {
+    ) -> gpui_luma::controls::textarea::TextAreaPalette {
         let tokens = self.theme.mode_tokens();
         crate::controls::textarea::textarea_palette(
             tokens.as_ref(),
@@ -77,17 +77,17 @@ impl TextAreaTheme for ShadcnSurfaceTextAreaTheme {
         )
     }
 
-    fn metrics(&self) -> luma::theme::MetricTokens {
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
     fn resolve_look(
         &self,
-        state: luma::controls::textarea::TextAreaState,
+        state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> luma::controls::textarea::TextAreaLook {
+    ) -> gpui_luma::controls::textarea::TextAreaLook {
         let tokens = self.theme.mode_tokens();
         crate::controls::textarea::textarea_look(
             tokens.as_ref(),
@@ -116,9 +116,9 @@ struct ShadcnInputTextAreaTheme {
 impl TextAreaTheme for ShadcnInputTextAreaTheme {
     fn resolve(
         &self,
-        state: luma::controls::textarea::TextAreaState,
+        state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
-    ) -> luma::controls::textarea::TextAreaPalette {
+    ) -> gpui_luma::controls::textarea::TextAreaPalette {
         let tokens = self.theme.mode_tokens();
         crate::controls::textarea::textarea_palette(
             tokens.as_ref(),
@@ -129,17 +129,17 @@ impl TextAreaTheme for ShadcnInputTextAreaTheme {
         )
     }
 
-    fn metrics(&self) -> luma::theme::MetricTokens {
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
     fn resolve_look(
         &self,
-        state: luma::controls::textarea::TextAreaState,
+        state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> luma::controls::textarea::TextAreaLook {
+    ) -> gpui_luma::controls::textarea::TextAreaLook {
         let tokens = self.theme.mode_tokens();
         crate::controls::textarea::textarea_look(
             tokens.as_ref(),
@@ -157,16 +157,16 @@ pub fn input_textarea_theme(theme: ShadcnLook) -> Arc<dyn TextAreaTheme> {
     Arc::new(ShadcnInputTextAreaTheme { theme: theme.clone() })
 }
 
-pub fn input_textarea_template(theme: ShadcnLook) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
+pub fn input_textarea_template(theme: ShadcnLook) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
     Arc::new(ThemedTextAreaTemplate::new(input_textarea_theme(theme.clone())))
 }
 
 impl TextAreaTheme for ShadcnPrimaryTextAreaTheme {
     fn resolve(
         &self,
-        state: luma::controls::textarea::TextAreaState,
+        state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
-    ) -> luma::controls::textarea::TextAreaPalette {
+    ) -> gpui_luma::controls::textarea::TextAreaPalette {
         let tokens = self.theme.mode_tokens();
         crate::controls::textarea::textarea_palette(
             tokens.as_ref(),
@@ -177,17 +177,17 @@ impl TextAreaTheme for ShadcnPrimaryTextAreaTheme {
         )
     }
 
-    fn metrics(&self) -> luma::theme::MetricTokens {
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
     fn resolve_look(
         &self,
-        state: luma::controls::textarea::TextAreaState,
+        state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
         size: ControlSize,
         scale: &StandardBoxScale,
-    ) -> luma::controls::textarea::TextAreaLook {
+    ) -> gpui_luma::controls::textarea::TextAreaLook {
         let tokens = self.theme.mode_tokens();
         crate::controls::textarea::textarea_look(
             tokens.as_ref(),
@@ -205,6 +205,6 @@ pub fn primary_textarea_theme(theme: ShadcnLook) -> Arc<dyn TextAreaTheme> {
     Arc::new(ShadcnPrimaryTextAreaTheme { theme: theme.clone() })
 }
 
-pub fn primary_textarea_template(theme: ShadcnLook) -> Arc<dyn luma::controls::textarea::TextAreaTemplate> {
+pub fn primary_textarea_template(theme: ShadcnLook) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
     Arc::new(ThemedTextAreaTemplate::new(primary_textarea_theme(theme.clone())))
 }

@@ -1,4 +1,4 @@
-use luma::theme::{ControlSize, InteractionLayer};
+use gpui_luma::theme::{ControlSize, InteractionLayer};
 use serde::Deserialize;
 
 use super::selector::interaction_layer_key;

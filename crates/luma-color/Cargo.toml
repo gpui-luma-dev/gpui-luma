@@ -10,15 +10,12 @@ homepage.workspace = true
 keywords = ["gpui", "gui", "color", "color-picker", "widgets"]
 categories = ["gui", "graphics"]
 
-[lib]
-name = "luma_color"
-
 [features]
-test-support = ["luma/test-support"]
+test-support = ["gpui-luma/test-support"]
 
 [dependencies]
 gpui.workspace = true
-luma.workspace = true
+gpui-luma.workspace = true
 anyhow.workspace = true
 tiny-skia.workspace = true
 palette.workspace = true

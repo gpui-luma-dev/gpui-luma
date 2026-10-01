@@ -1,6 +1,6 @@
 //! Inspect metadata for `stepper`.
 
-use luma::theme::ThemeMode;
+use gpui_luma::theme::ThemeMode;
 use crate::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct StepperInspectPalette {
@@ -26,7 +26,7 @@ pub fn inspect_stepper_color_palette(
     theme_mode: ThemeMode,
     enabled: bool,
 ) -> StepperInspectPalette {
-    let ctx = LookContext::new(mode, theme_mode, luma::theme::InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "stepper_inspect");
     let palette = crate::tables::resolve_stepper_colors(&resolver, enabled)
         .unwrap_or_else(|_| crate::tables::StepperColorTable::fallback());

@@ -1,10 +1,10 @@
-//! Look-owned text-field builder. Spawn synthesizes the SDK [`luma::controls::textfield::TextField`].
+//! Look-owned text-field builder. Spawn synthesizes the SDK [`gpui_luma::controls::textfield::TextField`].
 
 use std::sync::Arc;
 
 use gpui::{App, Context, Div, SharedString, Stateful};
-use luma::controls::button::ControlIcon;
-use luma::controls::textfield::{
+use gpui_luma::controls::button::ControlIcon;
+use gpui_luma::controls::textfield::{
     TextFieldBuilder, TextFieldLook, TextFieldLookOverride, TextFieldRenderModel, ThemedTextFieldTemplate, Validator,
 };
 use super::textfield::ShadcnTextFieldStyle;
@@ -52,7 +52,7 @@ impl TextField {
             clean_on_escape: false,
             select_all_on_tab_focus: false,
             propagate_home_end_to_parent: false,
-            max_clipboard_paste_bytes: Some(luma::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
+            max_clipboard_paste_bytes: Some(gpui_luma::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
             validator: None,
             look_override: None,
             modifiers: Vec::new(),
@@ -168,7 +168,7 @@ impl TextField {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> luma::controls::textfield::TextField {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::textfield::TextField {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -184,7 +184,7 @@ impl TextField {
             ShadcnTextFieldStyle::Primary => look.primary_textfield_template(),
             ShadcnTextFieldStyle::Surface => Arc::new(ThemedTextFieldTemplate::new(look.surface_textfield_theme())),
         };
-        let mut builder = luma::controls::textfield::new(self.id)
+        let mut builder = gpui_luma::controls::textfield::new(self.id)
             .template(template)
             .placeholder(self.placeholder)
             .value(self.value)

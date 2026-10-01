@@ -8,8 +8,8 @@
 //! | `ring`   | `@outline_layer` fill + `@action_layer` ring + `@action_foreground` dot |
 //! | `dot`    | `@outline_layer` fill + `border` ring + `@action_layer` dot |
 
-use luma::controls::radio_button::RadioButtonPalette;
-use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::controls::radio_button::RadioButtonPalette;
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use super::apply_button_metrics_typography;
 
@@ -159,7 +159,7 @@ mod tests {
     use crate::resolve::resolve_color;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
 
     fn retro_arcade_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([

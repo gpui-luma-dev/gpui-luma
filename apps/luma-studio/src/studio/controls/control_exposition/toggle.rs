@@ -3,12 +3,12 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::infra::icon::lucide_icon;
-use luma::infra::presenter::HasPresenter;
-use luma::controls::toggle::{Toggle, ToggleEvent};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::infra::icon::lucide_icon;
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};

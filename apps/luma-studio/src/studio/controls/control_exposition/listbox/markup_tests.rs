@@ -2,12 +2,12 @@
 use std::{cell::Cell, rc::Rc};
 
 use gpui::{Bounds, Pixels, ScrollDelta, ScrollWheelEvent, TestAppContext, TouchPhase, VisualTestContext, div, point};
-use luma::controls::listbox::{ListBoxEvent, ListBoxSnapshot, SelectionMode};
+use gpui_luma::controls::listbox::{ListBoxEvent, ListBoxSnapshot, SelectionMode};
 
 use std::sync::Arc;
 use gpui::{App, Context, Div, Window, prelude::*, px};
-use luma::controls::listbox::{ListBoxControl, ListBoxInput, ListBoxItemRenderModel, ListBoxState, SelectionPolicy};
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::listbox::{ListBoxControl, ListBoxInput, ListBoxItemRenderModel, ListBoxState, SelectionPolicy};
+use gpui_luma_look_shadcn::ShadcnLook;
 use super::super::{horizontal, vertical};
 use super::super::super::event_stream::ControlEventStream;
 

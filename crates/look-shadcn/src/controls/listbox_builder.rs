@@ -24,15 +24,15 @@ use gpui::{
     AnyElement, App, Axis, Context, Div, ElementId, Entity, EntityId, Hsla, Render, Stateful, Window, div, prelude::*,
     px,
 };
-use luma::controls::frame::FrameBuilder;
-use luma::controls::listbox::{
+use gpui_luma::controls::frame::FrameBuilder;
+use gpui_luma::controls::listbox::{
     ListBoxAxis, ListBoxBinding, ListBoxControl, ListBoxFlow, ListBoxInput, ListBoxItemRenderModel, ListBoxLayout,
     ListBoxScrollHandle, ListBoxState, ListBoxVisibleItem, ListBoxVirtualization,
 };
-use luma::infra::drag_drop::{
+use gpui_luma::infra::drag_drop::{
     DragDropElementExt, DragDropEvent, DropEdge, DropProposal, DropZone, KeyedDrag, KeyedDropTarget, bind_drag_source,
 };
-use luma::vstack;
+use gpui_luma::vstack;
 use crate::look::{ShadcnLook, resolve_look_from};
 
 const CORNER_RADIUS: f32 = 8.0;
@@ -213,25 +213,25 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
     }
 
     /// Override focus behavior independently of wheel routing.
-    pub fn pointer_focus_policy(self, policy: luma::interaction::PointerFocusPolicy) -> Self {
+    pub fn pointer_focus_policy(self, policy: gpui_luma::interaction::PointerFocusPolicy) -> Self {
         self.binding.set_pointer_focus_policy(policy);
         self
     }
 
     /// Configure wheel eligibility without changing boundary behavior.
-    pub fn wheel_scroll_policy(self, policy: luma::interaction::WheelScrollPolicy) -> Self {
+    pub fn wheel_scroll_policy(self, policy: gpui_luma::interaction::WheelScrollPolicy) -> Self {
         self.scroll.set_wheel_scroll_policy(policy);
         self
     }
 
     /// Override this retained list's interaction settings.
-    pub fn scroll_boundary_policy(self, policy: luma::interaction::ScrollBoundaryPolicy) -> Self {
+    pub fn scroll_boundary_policy(self, policy: gpui_luma::interaction::ScrollBoundaryPolicy) -> Self {
         self.scroll.set_scroll_boundary_policy(policy);
         self
     }
 
     /// Override this retained list's interaction settings.
-    pub fn wheel_focus_scope(self, policy: luma::interaction::WheelFocusScope) -> Self {
+    pub fn wheel_focus_scope(self, policy: gpui_luma::interaction::WheelFocusScope) -> Self {
         self.scroll.set_wheel_focus_scope(policy);
         self
     }

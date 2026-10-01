@@ -5,13 +5,13 @@ use std::sync::Arc;
 
 use gpui::{App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, px};
 use gpui::prelude::*;
-use luma::controls::accordion::{
+use gpui_luma::controls::accordion::{
     AccordionContent, AccordionControl, AccordionItem, AccordionSelectionMode, AccordionTrigger,
 };
-use luma::controls::tabs::{Tabs, TabsEvent, TabsItem};
-use luma::theme::ThemeMode;
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook};
-use luma_look_shadcn as shadcn;
+use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem};
+use gpui_luma::theme::ThemeMode;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook};
+use gpui_luma_look_shadcn as shadcn;
 
 use super::inspector::{
     ControlInspectorSpec, InspectorCategory, InspectorPart, InspectorSelection, InspectorStateSpec, InspectorVariant,

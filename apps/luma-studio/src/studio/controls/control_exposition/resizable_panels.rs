@@ -5,14 +5,14 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, Render, Subscription, Window, div, prelude::*, px, transparent_black};
-use luma::controls::button::{Button, ButtonEvent, HasPresenter};
-use luma::controls::resizable_panels::{
+use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::controls::resizable_panels::{
     ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation, ResizeHandleSize,
 };
-use luma::resizable_panels;
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use gpui_luma::resizable_panels;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
@@ -445,7 +445,11 @@ impl ResizablePanelsControlExposition {
                 }
                 left_pane.update(cx, |pane, cx| {
                     pane.animated_panels.update(cx, |panels, cx| {
-                        panels.toggle_panel_hidden(0, luma::controls::resizable_panels::PanelHideMode::Completely, cx);
+                        panels.toggle_panel_hidden(
+                            0,
+                            gpui_luma::controls::resizable_panels::PanelHideMode::Completely,
+                            cx,
+                        );
                     });
                 });
             }
@@ -468,7 +472,11 @@ impl ResizablePanelsControlExposition {
                 }
                 left_pane.update(cx, |pane, cx| {
                     pane.instant_panels.update(cx, |panels, cx| {
-                        panels.toggle_panel_hidden(0, luma::controls::resizable_panels::PanelHideMode::Completely, cx);
+                        panels.toggle_panel_hidden(
+                            0,
+                            gpui_luma::controls::resizable_panels::PanelHideMode::Completely,
+                            cx,
+                        );
                     });
                 });
             }

@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, prelude::*};
-use luma::infra::menu_item::MenuItem;
-use luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::ShadcnLook;
-use luma::{declare_form, form_field, vstack};
+use gpui_luma::infra::menu_item::MenuItem;
+use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma::{declare_form, form_field, vstack};
 
 use super::common::titled_card;
 

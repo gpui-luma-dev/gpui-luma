@@ -2,7 +2,7 @@
 //! Size metrics follow the Radix Themes Card; application content stays external.
 use std::sync::Arc;
 use gpui::{Hsla, SharedString, AnyElement, BoxShadow, Div, IntoElement, div, point, prelude::*, px};
-use luma::theme::ThemeMode;
+use gpui_luma::theme::ThemeMode;
 use crate::{Look, Tone};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -98,7 +98,7 @@ impl Card {
     }
     /// Adjust resolved appearance locally; later calls replace the previous override.
     /// ```
-    /// use luma_look_radix::{Card, Look};
+    /// use gpui_luma_look_radix::{Card, Look};
     /// let card = Card::new(&Look::built_in()).style_override(|style| {
     ///     style.padding = 20.0;
     ///     style.radius = 10.0;

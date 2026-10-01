@@ -1,6 +1,6 @@
 //! Home-screen control construction. Bind every example explicitly to the draft look.
 use gpui::{Context, Entity, div, prelude::*, px};
-use luma::controls::{
+use gpui_luma::controls::{
     button::Button,
     popup_menu::PopupMenu,
     tabs::{Tabs, TabsItem},
@@ -8,8 +8,8 @@ use luma::controls::{
     toolbar::Toolbar,
     tree_view::TreeView,
 };
-use luma::infra::presenter::HasPresenter;
-use luma_look_radix::{self as radix, Look};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma_look_radix::{self as radix, Look};
 use super::super::shared::tree_view;
 
 #[derive(Clone)]

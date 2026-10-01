@@ -1,6 +1,6 @@
 use gpui::{AnyElement, Entity, IntoElement, div, prelude::*, px};
-use luma::controls::sidebar::SidebarControl;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::sidebar::SidebarControl;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::shared::shell::section_shell_with_width;
 
@@ -23,11 +23,9 @@ pub(crate) fn render_sidebar_template_section(
             .w_full()
             .flex()
             .justify_start()
-            .child(
-                div().w(px(300.0)).h(px(520.0)).overflow_hidden().child(
-                    luma_look_shadcn::Frame::sidebar("sidebar-preview-frame").look(look).child(sidebar).render(cx),
-                ),
-            )
+            .child(div().w(px(300.0)).h(px(520.0)).overflow_hidden().child(
+                gpui_luma_look_shadcn::Frame::sidebar("sidebar-preview-frame").look(look).child(sidebar).render(cx),
+            ))
             .into_any_element(),
     )
 }

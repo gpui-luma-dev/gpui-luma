@@ -1,6 +1,6 @@
 //! Inspect metadata for `switch`.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens};
 
 pub struct SwitchInspectPalette {
@@ -45,7 +45,7 @@ pub fn inspect_switch_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     style: ShadcnButtonStyle,
-    size: luma::theme::ControlSize,
+    size: gpui_luma::theme::ControlSize,
 ) -> SwitchInspectMetrics {
     let table = crate::tables::metrics::resolve_switch_metrics(mode, theme_mode, style, size);
     table.into()
@@ -58,7 +58,7 @@ pub fn inspect_switch_elevation(
     on: bool,
     state: InteractionState,
 ) -> crate::inspect::controls::button::ButtonInspectElevation {
-    use luma::theme::ControlSize;
+    use gpui_luma::theme::ControlSize;
     use crate::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
     use crate::inspect::controls::button::{button_style_key, inspect_layered_elevation};
 

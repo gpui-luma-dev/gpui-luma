@@ -4,19 +4,19 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::infra::menu_item::MenuItem;
-use luma::controls::popup_menu::{
+use gpui_luma::infra::menu_item::MenuItem;
+use gpui_luma::controls::popup_menu::{
     ControlFocusState, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate, PopupMenuTemplateHandlers,
     PopupMenuTriggerModel, PopupMenuTriggerStyle,
 };
-use luma::motion::overlay_presence::OverlayPresence;
-use luma::infra::presenter::HasPresenter;
-use luma::theme::{ControlSize, InteractionState};
-use luma::{hstack, vstack};
-use luma::controls::split_button::{SplitButton, SplitButtonEvent};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::{ShadcnLook};
+use gpui_luma::motion::overlay_presence::OverlayPresence;
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::theme::{ControlSize, InteractionState};
+use gpui_luma::{hstack, vstack};
+use gpui_luma::controls::split_button::{SplitButton, SplitButtonEvent};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::{ShadcnLook};
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::event_stream::ControlEventStream;
@@ -102,7 +102,7 @@ impl SplitButtonControlExposition {
             .content(|model: &PopupMenuTriggerModel, _| {
                 hstack! {
                     gap=6 align=center;
-                    luma::infra::icon::lucide_icon(LucideIcon::Pencil, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0),
+                    gpui_luma::infra::icon::lucide_icon(LucideIcon::Pencil, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0),
                     div().child(model.label.clone()),
                 }
             })
@@ -276,7 +276,7 @@ fn render_split_button_content_code(look: &ShadcnLook) -> AnyElement {
                 .font_family(controls_mono_font())
                 .text_color(chrome.muted_text)
                 .child(
-                    "use luma::infra::icon::lucide_icon;\nuse luma::controls::popup_menu::PopupMenuTriggerModel;\nuse luma::infra::presenter::HasPresenter;\n\nlet open = shadcn::SplitButton::new(\"open\").look(look.as_ref()).primary()\n    .label(\"Label\")\n    .content(|model: &PopupMenuTriggerModel, _| {\n        hstack! {\n            gap = 6.0;\n            align = center;\n            lucide_icon(LucideIcon::Pencil, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0),\n            div().child(model.label.clone()),\n        }\n    })\n    .items(items)\n    .spawn(cx);",
+                    "use gpui_luma::infra::icon::lucide_icon;\nuse gpui_luma::controls::popup_menu::PopupMenuTriggerModel;\nuse gpui_luma::infra::presenter::HasPresenter;\n\nlet open = shadcn::SplitButton::new(\"open\").look(look.as_ref()).primary()\n    .label(\"Label\")\n    .content(|model: &PopupMenuTriggerModel, _| {\n        hstack! {\n            gap = 6.0;\n            align = center;\n            lucide_icon(LucideIcon::Pencil, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0),\n            div().child(model.label.clone()),\n        }\n    })\n    .items(items)\n    .spawn(cx);",
                 ),
         )
         .into_any_element()
@@ -361,7 +361,7 @@ fn render_split_button_template_cell(
         icon_only: false,
         icon: None,
         end_icon: None,
-        disclosure_icons: &luma::infra::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
+        disclosure_icons: &gpui_luma::infra::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
         full_width: false,
         without_elevation: false,
         split: true,

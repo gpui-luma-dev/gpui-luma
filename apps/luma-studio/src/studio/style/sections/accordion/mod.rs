@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use luma::controls::accordion::{
+use gpui_luma::controls::accordion::{
     Accordion, AccordionContent, AccordionItem, AccordionItemRenderModel, AccordionRenderModel, AccordionSelectionMode,
     AccordionTemplate, AccordionTemplateHandlers, AccordionTrigger,
 };
-use luma::infra::state::{CompositeItemState, ControlFocusState};
-use luma::controls::tabs::Tabs;
-use luma::theme::ControlSize;
-use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn as shadcn;
+use gpui_luma::infra::state::{CompositeItemState, ControlFocusState};
+use gpui_luma::controls::tabs::Tabs;
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::style::shared::button_matrix::render_icon_button_state_header_cell;
@@ -204,7 +204,7 @@ fn render_accordion_state_cell(
         content_padding_top: None,
         content_padding_bottom: None,
         trigger_min_height: None,
-        disclosure_icons: &luma::infra::icon::DisclosureIcons::default(),
+        disclosure_icons: &gpui_luma::infra::icon::DisclosureIcons::default(),
         trigger_padding_y: None,
         focus,
     };
@@ -229,30 +229,39 @@ fn noop_template_handlers(count: usize) -> AccordionTemplateHandlers {
 
 fn accordion_template_state_samples() -> [ButtonStateSample; 5] {
     [
-        ButtonStateSample { id: "default", header: "default", state: luma::theme::InteractionState::default() },
+        ButtonStateSample { id: "default", header: "default", state: gpui_luma::theme::InteractionState::default() },
         ButtonStateSample {
             id: "hover",
             header: "hover",
-            state: luma::theme::InteractionState { hovered: true, ..luma::theme::InteractionState::default() },
+            state: gpui_luma::theme::InteractionState {
+                hovered: true,
+                ..gpui_luma::theme::InteractionState::default()
+            },
         },
         ButtonStateSample {
             id: "focused",
             header: "focused",
-            state: luma::theme::InteractionState { focused: true, ..luma::theme::InteractionState::default() },
+            state: gpui_luma::theme::InteractionState {
+                focused: true,
+                ..gpui_luma::theme::InteractionState::default()
+            },
         },
         ButtonStateSample {
             id: "pressed",
             header: "pressed",
-            state: luma::theme::InteractionState {
+            state: gpui_luma::theme::InteractionState {
                 hovered: true,
                 pressed: true,
-                ..luma::theme::InteractionState::default()
+                ..gpui_luma::theme::InteractionState::default()
             },
         },
         ButtonStateSample {
             id: "disabled",
             header: "disabled",
-            state: luma::theme::InteractionState { disabled: true, ..luma::theme::InteractionState::default() },
+            state: gpui_luma::theme::InteractionState {
+                disabled: true,
+                ..gpui_luma::theme::InteractionState::default()
+            },
         },
     ]
 }

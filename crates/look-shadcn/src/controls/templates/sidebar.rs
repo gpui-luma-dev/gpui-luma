@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use luma::controls::sidebar::{SidebarPanelTemplate, SidebarTheme, ThemedSidebarPanelTemplate};
-use luma::theme::{ControlSize, InteractionState};
+use gpui_luma::controls::sidebar::{SidebarPanelTemplate, SidebarTheme, ThemedSidebarPanelTemplate};
+use gpui_luma::theme::{ControlSize, InteractionState};
 
 use super::floating_menu::floating_menu_theme;
 use crate::controls::sidebar::{sidebar_branch_look, sidebar_container_look, sidebar_item_look, sidebar_section_look};
@@ -16,11 +16,15 @@ impl SidebarTheme for ShadcnSidebarTheme {
         sidebar_container_look(self.theme.mode_tokens().as_ref()).foreground
     }
 
-    fn resolve_section(&self) -> luma::controls::sidebar::SidebarSectionLook {
+    fn resolve_section(&self) -> gpui_luma::controls::sidebar::SidebarSectionLook {
         sidebar_section_look(&self.theme)
     }
 
-    fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> luma::controls::sidebar::SidebarItemLook {
+    fn resolve_branch(
+        &self,
+        state: InteractionState,
+        size: ControlSize,
+    ) -> gpui_luma::controls::sidebar::SidebarItemLook {
         sidebar_branch_look(&self.theme, state, size)
     }
 
@@ -29,11 +33,11 @@ impl SidebarTheme for ShadcnSidebarTheme {
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> luma::controls::sidebar::SidebarItemLook {
+    ) -> gpui_luma::controls::sidebar::SidebarItemLook {
         sidebar_item_look(&self.theme, selected, state, size)
     }
 
-    fn metrics(&self) -> luma::theme::MetricTokens {
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }

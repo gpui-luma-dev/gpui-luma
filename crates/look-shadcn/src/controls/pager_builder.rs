@@ -1,7 +1,9 @@
-//! Look-owned pager builder. Spawn synthesizes the SDK [`luma::controls::pager::Pager`].
+//! Look-owned pager builder. Spawn synthesizes the SDK [`gpui_luma::controls::pager::Pager`].
 
 use gpui::{App, Context, Entity, SharedString};
-use luma::controls::pager::{PagerBuilder, PagerControl, PagerIcons, PagerInfoSlot, PagerStyle, PagerTemplateParameters};
+use gpui_luma::controls::pager::{
+    PagerBuilder, PagerControl, PagerIcons, PagerInfoSlot, PagerStyle, PagerTemplateParameters,
+};
 
 use crate::look::{ShadcnLook, resolve_look_from};
 
@@ -13,7 +15,7 @@ pub struct Pager {
 
 impl Pager {
     pub fn new(id: impl Into<SharedString>) -> Self {
-        Self { look: None, builder: luma::controls::pager::new(id) }
+        Self { look: None, builder: gpui_luma::controls::pager::new(id) }
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.

@@ -2,18 +2,18 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use lucide_svg_static::Icon as LucideIcon;
-use luma::column_numeric;
-use luma::column_text;
-use luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use luma::controls::button::{Button, ButtonEvent};
-use luma::controls::table::{TableColumn, TableColumnCellTemplate, TableControl, TableEvent, TableRowRenderModel};
-use luma::infra::menu_item::MenuItem;
-use luma::infra::drag_drop::DragDropElementExt;
-use luma::controls::popup_menu::PopupMenu;
-use luma::infra::presenter::HasPresenter;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::ShadcnLook;
-use luma::{hstack, vstack};
+use gpui_luma::column_numeric;
+use gpui_luma::column_text;
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::table::{TableColumn, TableColumnCellTemplate, TableControl, TableEvent, TableRowRenderModel};
+use gpui_luma::infra::menu_item::MenuItem;
+use gpui_luma::infra::drag_drop::DragDropElementExt;
+use gpui_luma::controls::popup_menu::PopupMenu;
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma::{hstack, vstack};
 
 use super::common::titled_card;
 
@@ -267,7 +267,7 @@ fn status_icon_cell(status: &'static str) -> impl IntoElement {
         .flex()
         .items_center()
         .justify_center()
-        .child(luma::infra::icon::lucide_icon(icon, color, 16.0))
+        .child(gpui_luma::infra::icon::lucide_icon(icon, color, 16.0))
 }
 
 fn selection_checkbox_column(row_checkboxes: Arc<Vec<Checkbox>>) -> TableColumnCellTemplate<PaymentRow> {

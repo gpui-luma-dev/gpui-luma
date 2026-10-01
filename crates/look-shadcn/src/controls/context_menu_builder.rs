@@ -1,8 +1,8 @@
-//! Look-owned context-menu builder. Spawn synthesizes the SDK [`luma::controls::context_menu::ContextMenu`].
+//! Look-owned context-menu builder. Spawn synthesizes the SDK [`gpui_luma::controls::context_menu::ContextMenu`].
 
 use gpui::{App, Context, Div, Entity, IntoElement, SharedString, Stateful};
-use luma::controls::context_menu::{ContextMenuBuilder, ContextMenuRenderModel};
-use luma::infra::menu_item::MenuItem;
+use gpui_luma::controls::context_menu::{ContextMenuBuilder, ContextMenuRenderModel};
+use gpui_luma::infra::menu_item::MenuItem;
 
 use crate::look::{ShadcnLook, resolve_look_from};
 
@@ -15,7 +15,7 @@ pub struct ContextMenu {
     label: Option<SharedString>,
     items: Vec<MenuItem>,
     enabled: bool,
-    target: Option<luma::controls::context_menu::ContextMenuTargetContent>,
+    target: Option<gpui_luma::controls::context_menu::ContextMenuTargetContent>,
     modifiers: Vec<ContextMenuModifier>,
 }
 
@@ -75,7 +75,7 @@ impl ContextMenu {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::context_menu::ContextMenu> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::context_menu::ContextMenu> {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -85,7 +85,7 @@ impl ContextMenu {
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ContextMenuBuilder {
-        let mut builder = luma::controls::context_menu::ContextMenu::new(self.id)
+        let mut builder = gpui_luma::controls::context_menu::ContextMenu::new(self.id)
             .template(look.context_menu_template())
             .items(self.items)
             .enabled(self.enabled);

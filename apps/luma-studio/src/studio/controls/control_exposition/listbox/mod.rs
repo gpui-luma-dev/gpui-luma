@@ -13,8 +13,8 @@ pub(super) mod vertical;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use luma::vstack;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::vstack;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use horizontal::HorizontalListExample;
 use filtering::FilteringExample;

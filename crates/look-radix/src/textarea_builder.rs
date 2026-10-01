@@ -1,10 +1,10 @@
-//! Look-owned text-area builder. Spawn synthesizes the SDK [`luma::controls::textarea::TextArea`].
+//! Look-owned text-area builder. Spawn synthesizes the SDK [`gpui_luma::controls::textarea::TextArea`].
 
 use std::sync::Arc;
 
 use gpui::{App, Context, Div, Entity, SharedString, Stateful};
-use luma::controls::textarea::{TextAreaBuilder, TextAreaLook, TextAreaRenderModel, Validator};
-use luma::infra::icon::IconSource;
+use gpui_luma::controls::textarea::{TextAreaBuilder, TextAreaLook, TextAreaRenderModel, Validator};
+use gpui_luma::infra::icon::IconSource;
 
 use crate::look::{Look, resolve_look};
 use crate::textarea::{TextAreaSize, textarea_template};
@@ -46,7 +46,7 @@ impl TextArea {
             rows: 4,
             clean_on_escape: false,
             select_all_on_tab_focus: false,
-            max_clipboard_paste_bytes: Some(luma::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
+            max_clipboard_paste_bytes: Some(gpui_luma::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
             resize_handle_icon: None,
             validator: None,
             look_override: None,
@@ -149,7 +149,7 @@ impl TextArea {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::textarea::TextArea> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::textarea::TextArea> {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -160,7 +160,7 @@ impl TextArea {
 
     fn into_sdk_builder(self, look: Look) -> TextAreaBuilder {
         let template = textarea_template(&look, self.variant);
-        let mut builder = luma::controls::textarea::TextArea::new(self.id)
+        let mut builder = gpui_luma::controls::textarea::TextArea::new(self.id)
             .template(template)
             .placeholder(self.placeholder)
             .value(self.value)
@@ -190,7 +190,7 @@ impl TextArea {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::ControlSize;
+    use gpui_luma::theme::ControlSize;
 
     #[test]
     fn size_maps_to_sdk_control_size() {

@@ -1,8 +1,8 @@
 //! Shared scrollbar metric resolution.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{LookContext, ShadcnModeTokens};
-use luma::controls::scrollbar::{ScrollbarOrientation, ScrollbarStyle};
+use gpui_luma::controls::scrollbar::{ScrollbarOrientation, ScrollbarStyle};
 
 #[derive(Clone, Debug)]
 pub struct ScrollbarMetricTable {
@@ -27,7 +27,7 @@ pub fn resolve_scrollbar_metrics(
         mode,
         InteractionState::default(),
         orientation,
-        luma::theme::ControlSize::Md,
+        gpui_luma::theme::ControlSize::Md,
         style,
     );
     let catalog = ctx.catalog();

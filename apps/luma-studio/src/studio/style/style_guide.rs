@@ -6,13 +6,13 @@ use gpui::{
     AnyElement, App, Context, Entity, FontWeight, IntoElement, KeyDownEvent, MouseButton, Pixels, Render, ScrollHandle,
     ScrollWheelEvent, Window, div, point, prelude::*, px,
 };
-use luma::controls::sidebar::SidebarControl;
-use luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
-use luma::infra::ElementExt;
-use luma::{declare_form};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::{ShadcnLook};
+use gpui_luma::controls::sidebar::SidebarControl;
+use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
+use gpui_luma::infra::ElementExt;
+use gpui_luma::{declare_form};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::{ShadcnLook};
 use crate::studio::panels::sidebar::{INITIAL_PROPERTY_SELECTION_ID, property_sidebar};
 use crate::studio::style::sections;
 use crate::studio::style::shared::callout::render_sparse_catalog_callout;

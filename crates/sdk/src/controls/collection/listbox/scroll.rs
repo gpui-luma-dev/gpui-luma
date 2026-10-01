@@ -213,7 +213,7 @@ impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
     /// Changes are read on the next drag-scroll frame, including during a drag.
     ///
     /// ```
-    /// use luma::controls::listbox::ListBoxScrollHandle;
+    /// use gpui_luma::controls::listbox::ListBoxScrollHandle;
     /// let scroll = ListBoxScrollHandle::<u32>::default();
     /// scroll.set_drag_auto_scroll_speed(720.0);
     /// ```

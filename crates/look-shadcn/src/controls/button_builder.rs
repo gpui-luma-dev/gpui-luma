@@ -1,11 +1,11 @@
-//! Look-owned button builder. Spawn synthesizes the SDK [`luma::controls::button::Button`].
+//! Look-owned button builder. Spawn synthesizes the SDK [`gpui_luma::controls::button::Button`].
 
 use gpui::{App, Context, Div, Entity, SharedString, Stateful};
-use luma::controls::button::{
+use gpui_luma::controls::button::{
     ButtonBuilder, ButtonContentContext, ButtonRenderModel, ButtonTemplateModifier, ControlIcon, ControlPresenter,
     DefaultButtonTemplate, HasPresenter,
 };
-use luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
 use super::button::{ButtonRadiusPreset, ShadcnButtonStyle, button_look_semantic};
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
@@ -170,7 +170,7 @@ impl<D: Clone + 'static> Button<D> {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::button::Button<D>> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::button::Button<D>> {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -186,7 +186,7 @@ impl<D: Clone + 'static> Button<D> {
             look.clone(),
             style,
         )));
-        let mut builder = luma::controls::button::Button::new(self.id)
+        let mut builder = gpui_luma::controls::button::Button::new(self.id)
             .typed(self.data)
             .template(template)
             .size(self.size.control_size())
@@ -236,7 +236,7 @@ impl<D: 'static> HasPresenter<ButtonContentContext<D>> for Button<D> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::controls::button::HasPresenter;
+    use gpui_luma::controls::button::HasPresenter;
 
     #[test]
     fn default_style_is_secondary() {

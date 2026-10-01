@@ -7,9 +7,9 @@
 use std::sync::Arc;
 
 use gpui::{BoxShadow, Hsla, point, px};
-use luma::controls::button::ButtonTemplate;
-use luma::controls::radio_button::{RadioButtonPalette, RadioButtonTheme, RadioScale, ThemedRadioButtonTemplate};
-use luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens};
+use gpui_luma::controls::button::ButtonTemplate;
+use gpui_luma::controls::radio_button::{RadioButtonPalette, RadioButtonTheme, RadioScale, ThemedRadioButtonTemplate};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens};
 
 use crate::button::Paint;
 use crate::look::Look;
@@ -232,7 +232,7 @@ pub fn radio_template(
     look: &Look,
     variant: RadioVariant,
     paint: Paint,
-) -> Arc<dyn ButtonTemplate<luma::controls::radio_button::RadioButtonData>> {
+) -> Arc<dyn ButtonTemplate<gpui_luma::controls::radio_button::RadioButtonData>> {
     Arc::new(ThemedRadioButtonTemplate::new(radio_theme_with(look, variant, paint)))
 }
 
@@ -241,7 +241,7 @@ pub fn radio_template_for(
     variant: RadioVariant,
     paint: Paint,
     size: RadioSize,
-) -> Arc<dyn ButtonTemplate<luma::controls::radio_button::RadioButtonData>> {
+) -> Arc<dyn ButtonTemplate<gpui_luma::controls::radio_button::RadioButtonData>> {
     Arc::new(ThemedRadioButtonTemplate::new(radio_theme_for(look, variant, paint, size)))
 }
 

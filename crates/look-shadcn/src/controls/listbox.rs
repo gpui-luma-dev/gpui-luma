@@ -11,8 +11,8 @@
 //! | Disabled label | `muted-foreground` |
 
 use gpui::{Div, ElementId, Hsla, Stateful, div, px, prelude::*};
-use luma::controls::listbox::ListBoxItemState;
-use luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle};
+use gpui_luma::controls::listbox::ListBoxItemState;
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -182,7 +182,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use luma::theme::{ControlSize, InteractionLayer, ThemeMode};
+    use gpui_luma::theme::{ControlSize, InteractionLayer, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -215,7 +215,7 @@ mod tests {
         let row = listbox_row_palette(
             &mode,
             false,
-            luma::theme::InteractionState { hovered: true, ..Default::default() },
+            gpui_luma::theme::InteractionState { hovered: true, ..Default::default() },
             ControlSize::Md,
         );
 

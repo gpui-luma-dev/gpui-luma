@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, IntoElement, RenderOnce, Window, div, prelude::*, px, relative};
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::control_exposition::template::controls_mono_font;
 

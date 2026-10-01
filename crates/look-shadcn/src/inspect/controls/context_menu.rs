@@ -1,6 +1,6 @@
 //! Inspect metadata for `context_menu`.
 
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::ShadcnModeTokens;
 
 pub struct ContextMenuInspectPalette {

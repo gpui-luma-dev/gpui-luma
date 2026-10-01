@@ -5,17 +5,17 @@ use std::sync::Arc;
 use gpui::{
     AnyElement, App, Context, Entity, FontWeight, Hsla, IntoElement, Render, SharedString, Window, div, prelude::*, px,
 };
-use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use luma::controls::button::{Button, ButtonContentContext, ButtonEvent, ButtonRenderModel, ButtonTemplate};
-use luma::infra::presenter::HasPresenter;
-use luma::controls::slider::{Slider, SliderEvent};
-use luma::controls::textfield::{TextField, TextFieldEvent, Validator};
-use luma::controls::toggle::{Toggle, ToggleEvent};
-use luma::theme::{InteractionState, LumaChrome};
-use luma::{hstack, vstack};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::controls::button::{Button, ButtonContentContext, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::controls::slider::{Slider, SliderEvent};
+use gpui_luma::controls::textfield::{TextField, TextFieldEvent, Validator};
+use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
+use gpui_luma::theme::{InteractionState, LumaChrome};
+use gpui_luma::{hstack, vstack};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::color_exposition_common::format_compact_hsla;
@@ -733,7 +733,7 @@ fn render_button_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("controls-doc-shadow-preview-{}", sample.id));
     let label = SharedString::from("Button");
-    let content: luma::controls::button::ControlPresenter<ButtonContentContext<()>> =
+    let content: gpui_luma::controls::button::ControlPresenter<ButtonContentContext<()>> =
         Arc::new(move |_: &ButtonContentContext<()>, _| div().child(label.clone()).into_any_element());
     let model = ButtonRenderModel {
         id,

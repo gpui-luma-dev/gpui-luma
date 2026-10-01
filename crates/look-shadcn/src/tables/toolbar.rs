@@ -1,6 +1,6 @@
 //! Toolbar palette resolution shared by runtime and inspection.
-use luma::controls::toolbar::ToolbarVariant;
-use luma::theme::ThemeMode;
+use gpui_luma::controls::toolbar::ToolbarVariant;
+use gpui_luma::theme::ThemeMode;
 use crate::{ColorSource, LookContext, ResolvedColor, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]

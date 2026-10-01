@@ -14,21 +14,21 @@ Provides palette scales, semantic token resolution, custom color generation, lig
 ## Installation
 
 ```sh
-cargo add gpui-luma --rename luma
-cargo add gpui-luma-look-radix --rename luma-look-radix
+cargo add gpui-luma
+cargo add gpui-luma-look-radix
 cargo add gpui-unofficial --rename gpui
 ```
 
-The package is named `gpui-luma-look-radix`; Rust imports use `luma_look_radix`.
+The package is named `gpui-luma-look-radix`; Rust imports use `gpui_luma_look_radix`.
 
 ## Quick Start
 
 ```rust,no_run
 use gpui::{Context, Entity};
-use luma::infra::presenter::HasPresenter;
-use luma_look_radix::{Look, Button, ButtonSize};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma_look_radix::{Look, Button, ButtonSize};
 
-fn save_button<M: 'static>(look: &Look, cx: &mut Context<M>) -> Entity<luma::controls::button::Button> {
+fn save_button<M: 'static>(look: &Look, cx: &mut Context<M>) -> Entity<gpui_luma::controls::button::Button> {
     Button::new("save")
         .look(look)
         .solid()

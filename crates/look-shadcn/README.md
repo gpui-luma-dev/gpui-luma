@@ -13,24 +13,24 @@ Provides token resolution, CSS stylesheet ingestion, shadow ladders, light/dark 
 ## Installation
 
 ```sh
-cargo add gpui-luma --rename luma
-cargo add gpui-luma-look-shadcn --rename luma-look-shadcn
+cargo add gpui-luma
+cargo add gpui-luma-look-shadcn
 cargo add gpui-unofficial --rename gpui
 ```
 
-The package is named `gpui-luma-look-shadcn`; Rust imports use `luma_look_shadcn`.
+The package is named `gpui-luma-look-shadcn`; Rust imports use `gpui_luma_look_shadcn`.
 
 ## Quick Start
 
 ```rust,no_run
 use gpui::{Context, Entity};
-use luma::infra::presenter::HasPresenter;
-use luma_look_shadcn::{ShadcnLook, Button, ShadcnSize};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma_look_shadcn::{ShadcnLook, Button, ShadcnSize};
 
 fn save_button<M: 'static>(
     look: &ShadcnLook,
     cx: &mut Context<M>,
-) -> Entity<luma::controls::button::Button> {
+) -> Entity<gpui_luma::controls::button::Button> {
     Button::new("save")
         .look(look)
         .primary()
@@ -46,7 +46,7 @@ Use `ShadcnLook::built_in()` for the bundled fallback theme, or
 To enable optional theme inspection:
 
 ```sh
-cargo add gpui-luma-look-shadcn --rename luma-look-shadcn --features inspect
+cargo add gpui-luma-look-shadcn --features inspect
 ```
 
 ## Build

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use luma::controls::slider::{
+use gpui_luma::controls::slider::{
     SliderTemplate, SliderTheme, ThemedAngularDialTemplate, ThemedCircularRingTemplate, ThemedSliderTemplate,
 };
-use luma::theme::InteractionState;
+use gpui_luma::theme::InteractionState;
 
 use crate::controls::button::ShadcnButtonStyle;
 use crate::controls::slider::slider_look;
@@ -25,23 +25,23 @@ struct ShadcnSliderTheme {
 impl SliderTheme for ShadcnSliderTheme {
     fn resolve(
         &self,
-        size: luma::theme::ControlSize,
-        thumb_size: Option<luma::controls::slider::SliderThumbSize>,
+        size: gpui_luma::theme::ControlSize,
+        thumb_size: Option<gpui_luma::controls::slider::SliderThumbSize>,
         state: InteractionState,
-    ) -> luma::controls::slider::SliderLook {
+    ) -> gpui_luma::controls::slider::SliderLook {
         let tokens = self.theme.mode_tokens();
         slider_look(tokens.as_ref(), self.theme.mode(), self.style, size, thumb_size, state)
     }
 }
 
-pub fn slider_template(theme: ShadcnLook) -> Arc<dyn luma::controls::slider::SliderTemplate> {
+pub fn slider_template(theme: ShadcnLook) -> Arc<dyn gpui_luma::controls::slider::SliderTemplate> {
     slider_template_with_style(theme, ShadcnButtonStyle::Primary)
 }
 
 pub fn slider_template_with_style(
     theme: ShadcnLook,
     style: ShadcnButtonStyle,
-) -> Arc<dyn luma::controls::slider::SliderTemplate> {
+) -> Arc<dyn gpui_luma::controls::slider::SliderTemplate> {
     Arc::new(ThemedSliderTemplate::new(slider_theme_with_style(theme, style)))
 }
 

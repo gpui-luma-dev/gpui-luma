@@ -2,9 +2,9 @@ use std::sync::{Arc, RwLock};
 
 use gpui::{AbsoluteLength, AppContext, CornersRefinement, Entity, SharedString};
 
-use luma::controls::slider::{SliderBuilder, SliderControl, SliderThumbSize, new as new_slider};
-use luma::infra::value::{ControlRange, value_from_input};
-use luma::theme::ControlSize;
+use gpui_luma::controls::slider::{SliderBuilder, SliderControl, SliderThumbSize, new as new_slider};
+use gpui_luma::infra::value::{ControlRange, value_from_input};
+use gpui_luma::theme::ControlSize;
 
 use super::color_spec::{ColorSpecification, slider_step_for_channel};
 use super::color_thumb::ThumbShape;
@@ -13,7 +13,7 @@ use super::domain_renderer::ColorSliderDomainRenderer;
 use super::types::{Axis, ColorInterpolation, ColorSliderDelegate, ThumbPosition, ThumbSize};
 use super::template::{ColorSliderTemplateConfig, color_slider_template};
 use super::track_context::ColorSliderTrackContext;
-use luma::controls::slider::SliderThumbPolicy;
+use gpui_luma::controls::slider::SliderThumbPolicy;
 
 /// Builder for a unified [`Slider`] entity configured as a color spectrum slider.
 pub struct ColorSliderBuilder {

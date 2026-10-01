@@ -1,6 +1,6 @@
 //! Inspection regression tests: compare public inspection output to rendered looks.
-use luma::controls::button_family::ButtonFamilyRole;
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::{ColorSource, MetricSource, ShadcnButtonStyle, ShadcnLook, ShadcnModeTokens};
 use crate::paint;
 use crate::inspect::*;
@@ -92,7 +92,7 @@ fn button_and_toggle_tables_match_runtime_including_focus_and_typography() {
                         assert_eq!(actual.foreground.value, painted.foreground);
                         assert_eq!(
                             actual.border.value,
-                            luma::controls::button_family::button_family_effective_border(painted.border)
+                            gpui_luma::controls::button_family::button_family_effective_border(painted.border)
                         );
                         let metrics = inspect_button_metrics(&mode, theme_mode, style, role, size, state);
                         assert_eq!(metrics.height.value_px, painted.height);
@@ -110,7 +110,7 @@ fn button_and_toggle_tables_match_runtime_including_focus_and_typography() {
 
 #[test]
 fn accordion_tables_cover_all_scale_fields_and_sources() {
-    use luma::controls::accordion::AccordionScale;
+    use gpui_luma::controls::accordion::AccordionScale;
     for theme_mode in [ThemeMode::Light, ThemeMode::Dark] {
         for spacing in [None, Some("0.3rem"), Some("invalid")] {
             let mut catalog = crate::inspect::test_support::sample_catalog();
@@ -201,7 +201,7 @@ fn slider_inspection_matches_paint() {
 
 #[test]
 fn textfield_hover_focus_invalid_and_missing_tokens_match_runtime() {
-    use luma::controls::textfield::TextFieldState;
+    use gpui_luma::controls::textfield::TextFieldState;
     use crate::ShadcnTextFieldStyle;
     for theme_mode in [ThemeMode::Light, ThemeMode::Dark] {
         for missing in [None, Some("ring"), Some("input")] {

@@ -4,10 +4,12 @@ use gpui::{
     Context, Entity, FocusHandle, Hsla, IntoElement, Render, Window, WindowBackgroundAppearance, div, prelude::*, px,
     rgb, transparent_black,
 };
-use luma::controls::resizable_panels::{ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation};
-use luma::focus::LumaFocusScopeExt;
-use luma::theme::ThemeMode;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::resizable_panels::{
+    ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
+};
+use gpui_luma::focus::LumaFocusScopeExt;
+use gpui_luma::theme::ThemeMode;
+use gpui_luma_look_shadcn::ShadcnLook;
 use luma_shell_common::theme::{ShellThemeChoice, sync_color_control_theme};
 
 use crate::column::SplitColumn;

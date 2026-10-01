@@ -13,7 +13,7 @@ pub struct SplitViewMetricTable {
 
 pub fn resolve_split_view_metrics() -> SplitViewMetricTable {
     use super::helpers::derived_metric;
-    use luma::controls::split_view::*;
+    use gpui_luma::controls::split_view::*;
 
     SplitViewMetricTable {
         separator_hitbox_width: derived_metric("split view separator hitbox width", SEPARATOR_HITBOX_WIDTH),

@@ -27,10 +27,10 @@ mod textfields;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, IntoElement, Window, div, prelude::*, px};
-use luma::controls::tabs::Tabs;
-use luma::controls::tree_view::TreeView;
-use luma::vstack;
-use luma_look_radix::{Look, ScaleFamily, SemanticRole};
+use gpui_luma::controls::tabs::Tabs;
+use gpui_luma::controls::tree_view::TreeView;
+use gpui_luma::vstack;
+use gpui_luma_look_radix::{Look, ScaleFamily, SemanticRole};
 
 use super::section::section;
 

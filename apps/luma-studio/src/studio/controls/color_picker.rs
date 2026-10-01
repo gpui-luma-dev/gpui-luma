@@ -4,17 +4,19 @@ use gpui::{
     AnyElement, App, ClipboardItem, Context, Entity, EventEmitter, Hsla, IntoElement, Render, Subscription, Window,
     div, prelude::*, px, size,
 };
-use luma_color::{ColorSwatchButtonTemplate, ColorSwatchData};
-use luma::controls::button::{Button, ButtonEvent, HasPresenter};
-use luma_color::color_field::{ColorFieldEvent, ColorFieldState};
-use luma_color::color_slider::color_spec::Hsv;
-use luma_color::color_slider::{AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing};
-use luma_color::composition::ColorCompositionSync;
-use luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
-use luma::controls::slider::{SliderControl, SliderEvent};
-use luma::theme::ControlSize;
-use luma_look_shadcn::{ShadcnLook, ShadcnSize};
-use luma_look_shadcn as shadcn;
+use gpui_luma_color::{ColorSwatchButtonTemplate, ColorSwatchData};
+use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldState};
+use gpui_luma_color::color_slider::color_spec::Hsv;
+use gpui_luma_color::color_slider::{
+    AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing,
+};
+use gpui_luma_color::composition::ColorCompositionSync;
+use gpui_luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnSize};
+use gpui_luma_look_shadcn as shadcn;
 
 use crate::studio::color_format::format_compact_hsla;
 

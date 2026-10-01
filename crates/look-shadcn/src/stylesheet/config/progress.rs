@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use luma::theme::{ControlSize};
+use gpui_luma::theme::{ControlSize};
 use serde::Deserialize;
 
 use super::{EnabledColorRule, control_size_key, find_enabled_color_rule};

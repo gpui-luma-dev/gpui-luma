@@ -1,7 +1,7 @@
 //! Inspect metadata for `overlay_window`.
 
-use luma::controls::overlay_window::OverlayWindowMode;
-use luma::theme::ControlSize;
+use gpui_luma::controls::overlay_window::OverlayWindowMode;
+use gpui_luma::theme::ControlSize;
 use crate::{ColorSource, ResolvedColor, ResolvedMetric, ShadcnLook};
 
 #[derive(Clone, Debug)]

@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use gpui::{App, Context, FocusHandle, Focusable, KeyDownEvent, Render, ScrollWheelEvent, Subscription, Window, px};
 
-use luma::controls::scroll_container::ScrollContainer;
-use luma::controls::scrollbar::ScrollbarEvent;
-use luma::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, observe_theme_revision};
+use gpui_luma::controls::scroll_container::ScrollContainer;
+use gpui_luma::controls::scrollbar::ScrollbarEvent;
+use gpui_luma::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, observe_theme_revision};
 
 use super::model::{EventLogViewBuilder, EventLogViewModel, EventLogViewRenderModel};
 use super::template::{EventLogViewTemplate, EventLogViewTemplateHandlers, default_event_log_template};
@@ -153,8 +153,8 @@ impl EventLogView {
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.model.theme.metrics(),
-            LayoutCacheKey { size: luma::theme::ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(luma::theme::ControlSize::Md, metrics, scale_factor),
+            LayoutCacheKey { size: gpui_luma::theme::ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(gpui_luma::theme::ControlSize::Md, metrics, scale_factor),
         );
         self.resolved_look(&scale, false).typography.line_height
     }
@@ -193,8 +193,8 @@ impl Render for EventLogView {
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.model.theme.metrics(),
-            LayoutCacheKey { size: luma::theme::ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(luma::theme::ControlSize::Md, metrics, scale_factor),
+            LayoutCacheKey { size: gpui_luma::theme::ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(gpui_luma::theme::ControlSize::Md, metrics, scale_factor),
         );
         let look = self.resolved_look(&scale, focused);
 

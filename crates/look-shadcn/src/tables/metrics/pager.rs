@@ -2,8 +2,8 @@
 
 use crate::ResolvedMetric;
 use crate::{ShadcnLook, ResolvedTypography, TypographySource};
-use luma::controls::{button_family::ButtonFamilyRole, pager::PagerStyle};
-use luma::infra::shadow_layout::shadow_projection_extent;
+use gpui_luma::controls::{button_family::ButtonFamilyRole, pager::PagerStyle};
+use gpui_luma::infra::shadow_layout::shadow_projection_extent;
 
 #[derive(Clone, Debug)]
 pub struct PagerMetricTable {
@@ -26,8 +26,8 @@ pub fn resolve_pager_metrics(look: &ShadcnLook, style: PagerStyle) -> PagerMetri
     let style_label = pager_style_label(style);
     let button = look.resolve_outline_button(
         ButtonFamilyRole::Toggle { selected: false },
-        luma::theme::ControlSize::Sm,
-        luma::theme::InteractionState::default(),
+        gpui_luma::theme::ControlSize::Sm,
+        gpui_luma::theme::InteractionState::default(),
     );
     let reserved_shadow_extent = shadow_projection_extent(button.shadow.as_deref(), 1.0, true);
 

@@ -1,6 +1,6 @@
 //! Inspect metadata for `slider`.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{LookContext, LookResolver, ResolvedColor, ShadcnButtonStyle, ShadcnModeTokens};
 
 pub struct SliderInspectPalette {

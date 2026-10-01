@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use luma::controls::accordion::{AccordionTemplate, AccordionTheme, ThemedAccordionTemplate};
-use luma::theme::{ControlSize, InteractionState};
+use gpui_luma::controls::accordion::{AccordionTemplate, AccordionTheme, ThemedAccordionTemplate};
+use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::controls::accordion::{accordion_content_palette, accordion_trigger_palette};
 use crate::look::ShadcnLook;
@@ -15,17 +15,17 @@ impl AccordionTheme for ShadcnAccordionTheme {
         &self,
         state: InteractionState,
         size: ControlSize,
-    ) -> luma::controls::accordion::AccordionPalette {
+    ) -> gpui_luma::controls::accordion::AccordionPalette {
         let tokens = self.theme.mode_tokens();
         accordion_trigger_palette(tokens.as_ref(), self.theme.mode(), state, size)
     }
 
-    fn resolve_content(&self, expanded: bool) -> luma::controls::accordion::AccordionContentPalette {
+    fn resolve_content(&self, expanded: bool) -> gpui_luma::controls::accordion::AccordionContentPalette {
         let tokens = self.theme.mode_tokens();
         accordion_content_palette(tokens.as_ref(), self.theme.mode(), expanded)
     }
 
-    fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> luma::controls::accordion::AccordionScale {
+    fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> gpui_luma::controls::accordion::AccordionScale {
         crate::tables::metrics::resolve_accordion_metrics(
             &self.theme.mode_tokens(),
             self.theme.mode(),
@@ -35,7 +35,7 @@ impl AccordionTheme for ShadcnAccordionTheme {
         .scale()
     }
 
-    fn metrics(&self) -> luma::theme::MetricTokens {
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 }

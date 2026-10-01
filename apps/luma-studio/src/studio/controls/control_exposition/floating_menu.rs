@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use gpui::{App, ClickEvent, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
-use luma::controls::floating_menu::{
+use gpui_luma::controls::floating_menu::{
     FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuLook, render_floating_menu,
 };
-use luma::infra::menu_item::MenuItem;
-use luma::infra::state::MenuPath;
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::infra::menu_item::MenuItem;
+use gpui_luma::infra::state::MenuPath;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};

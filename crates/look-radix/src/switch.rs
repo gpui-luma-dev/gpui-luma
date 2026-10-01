@@ -7,9 +7,9 @@
 use std::sync::Arc;
 
 use gpui::{BoxShadow, Hsla, point, px};
-use luma::controls::button::ButtonTemplate;
-use luma::controls::switch::{SwitchPalette, SwitchScale, SwitchTheme, ThemedSwitchTemplate};
-use luma::theme::{ControlSize, InteractionState, MetricTokens};
+use gpui_luma::controls::button::ButtonTemplate;
+use gpui_luma::controls::switch::{SwitchPalette, SwitchScale, SwitchTheme, ThemedSwitchTemplate};
+use gpui_luma::theme::{ControlSize, InteractionState, MetricTokens};
 
 use crate::button::Paint;
 use crate::button_layout::Radius;
@@ -242,7 +242,7 @@ pub fn switch_template(
     look: &Look,
     variant: SwitchVariant,
     paint: Paint,
-) -> Arc<dyn ButtonTemplate<luma::controls::switch::SwitchData>> {
+) -> Arc<dyn ButtonTemplate<gpui_luma::controls::switch::SwitchData>> {
     Arc::new(ThemedSwitchTemplate::new(switch_theme_with(look, variant, paint)))
 }
 
@@ -252,7 +252,7 @@ pub fn switch_template_for(
     paint: Paint,
     size: SwitchSize,
     radius: Radius,
-) -> Arc<dyn ButtonTemplate<luma::controls::switch::SwitchData>> {
+) -> Arc<dyn ButtonTemplate<gpui_luma::controls::switch::SwitchData>> {
     Arc::new(ThemedSwitchTemplate::new(switch_theme_for(look, variant, paint, size, radius)))
 }
 
@@ -278,9 +278,9 @@ mod tests {
                 InteractionState { disabled: true, ..Default::default() },
             ] {
                 for on in [false, true] {
-                    look.set_mode(luma::theme::ThemeMode::Light);
+                    look.set_mode(gpui_luma::theme::ThemeMode::Light);
                     let light = theme.resolve(on, state, ControlSize::Md);
-                    look.set_mode(luma::theme::ThemeMode::Dark);
+                    look.set_mode(gpui_luma::theme::ThemeMode::Dark);
                     let dark = theme.resolve(on, state, ControlSize::Md);
                     assert_eq!(light.thumb_background, dark.thumb_background);
                     assert_eq!(light.thumb_border, dark.thumb_border);

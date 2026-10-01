@@ -6,16 +6,16 @@ use gpui::{
     AnyElement, App, Context, Entity, FocusHandle, Focusable, FontWeight, Hsla, IntoElement, MouseDownEvent,
     MouseUpEvent, Overflow, Render, Subscription, Window, div, prelude::*, px,
 };
-use luma::controls::button::{Button, ButtonEvent, HasPresenter};
-use luma::controls::slide_panel::{
+use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::controls::slide_panel::{
     SlidePanelEdge, SlidePanelOverlayHandlers, SlidePanelResizeDrag, SlidePanelResizeHandlers, SlidePanelSizeConfig,
     SlidePanelState, SlidePanelTopAnchor, render_slide_panel_overlay,
 };
-use luma::controls::toggle::{Toggle, ToggleEvent};
-use luma::{flow, hstack, vstack};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::{ShadcnLook, slide_panel_background, slide_panel_panels_look};
+use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
+use gpui_luma::{flow, hstack, vstack};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::{ShadcnLook, slide_panel_background, slide_panel_panels_look};
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};

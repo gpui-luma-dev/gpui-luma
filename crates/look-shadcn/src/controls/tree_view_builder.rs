@@ -1,11 +1,11 @@
-//! Look-owned tree-view builder. Spawn synthesizes the SDK [`luma::controls::tree_view::TreeView`].
+//! Look-owned tree-view builder. Spawn synthesizes the SDK [`gpui_luma::controls::tree_view::TreeView`].
 
 use std::sync::Arc;
 
 use gpui::{Context, Entity, SharedString};
-use luma::controls::tree_view::{TreeNode, TreeViewBuilder, TreeViewControl, TreeViewSelectionMode, TreeViewTemplate};
-use luma::infra::icon::DisclosureIcons;
-use luma::controls::tree_view::TreeViewError;
+use gpui_luma::controls::tree_view::{TreeNode, TreeViewBuilder, TreeViewControl, TreeViewSelectionMode, TreeViewTemplate};
+use gpui_luma::infra::icon::DisclosureIcons;
+use gpui_luma::controls::tree_view::TreeViewError;
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
 
@@ -27,7 +27,7 @@ where
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
             look: None,
-            builder: luma::controls::tree_view::new(id),
+            builder: gpui_luma::controls::tree_view::new(id),
             custom_template: false,
             size: ShadcnSize::Md,
         }
@@ -70,31 +70,31 @@ where
     }
 
     /// Configure selection mode, repeated-click deselection and keyboard selection.
-    pub fn selection_policy(mut self, policy: luma::controls::tree_view::TreeViewSelectionPolicy) -> Self {
+    pub fn selection_policy(mut self, policy: gpui_luma::controls::tree_view::TreeViewSelectionPolicy) -> Self {
         self.builder = self.builder.selection_policy(policy);
         self
     }
 
     /// Override the SDK interaction policy.
     /// Override focus behavior independently of wheel routing.
-    pub fn pointer_focus_policy(mut self, policy: luma::interaction::PointerFocusPolicy) -> Self {
+    pub fn pointer_focus_policy(mut self, policy: gpui_luma::interaction::PointerFocusPolicy) -> Self {
         self.builder = self.builder.pointer_focus_policy(policy);
         self
     }
 
-    pub fn wheel_scroll_policy(mut self, policy: luma::interaction::WheelScrollPolicy) -> Self {
+    pub fn wheel_scroll_policy(mut self, policy: gpui_luma::interaction::WheelScrollPolicy) -> Self {
         self.builder = self.builder.wheel_scroll_policy(policy);
         self
     }
 
     /// Override the SDK interaction policy.
-    pub fn scroll_boundary_policy(mut self, policy: luma::interaction::ScrollBoundaryPolicy) -> Self {
+    pub fn scroll_boundary_policy(mut self, policy: gpui_luma::interaction::ScrollBoundaryPolicy) -> Self {
         self.builder = self.builder.scroll_boundary_policy(policy);
         self
     }
 
     /// Override the SDK interaction policy.
-    pub fn wheel_focus_scope(mut self, policy: luma::interaction::WheelFocusScope) -> Self {
+    pub fn wheel_focus_scope(mut self, policy: gpui_luma::interaction::WheelFocusScope) -> Self {
         self.builder = self.builder.wheel_focus_scope(policy);
         self
     }
@@ -129,14 +129,14 @@ where
     }
 
     /// Set scrollbar chrome visibility. AutoHide (the default) shows while scrolling.
-    pub fn scrollbar_visibility(mut self, visibility: luma::controls::ScrollbarVisibility) -> Self {
+    pub fn scrollbar_visibility(mut self, visibility: gpui_luma::controls::ScrollbarVisibility) -> Self {
         self.builder = self.builder.scrollbar_visibility(visibility);
         self
     }
 
     /// Enable scoped dragging and host-owned drop transactions.
     /// The configuration can opt into dragging selected groups.
-    pub fn drag_drop(mut self, config: luma::controls::tree_view::TreeViewDragDrop<T>) -> Self {
+    pub fn drag_drop(mut self, config: gpui_luma::controls::tree_view::TreeViewDragDrop<T>) -> Self {
         self.builder = self.builder.drag_drop(config);
         self
     }
@@ -144,7 +144,7 @@ where
     /// Named or inline content inside the Shadcn branch row shell.
     pub fn branch_content<F, E>(mut self, content: F) -> Self
     where
-        F: Fn(&luma::controls::tree_view::FlatTreeNode<'_, T>, &mut gpui::Window, &mut gpui::App) -> E + 'static,
+        F: Fn(&gpui_luma::controls::tree_view::FlatTreeNode<'_, T>, &mut gpui::Window, &mut gpui::App) -> E + 'static,
         E: gpui::IntoElement + 'static,
     {
         self.builder = self.builder.branch_content(content);
@@ -154,7 +154,7 @@ where
     /// Named or inline content inside the Shadcn leaf row shell.
     pub fn leaf_content<F, E>(mut self, content: F) -> Self
     where
-        F: Fn(&luma::controls::tree_view::FlatTreeNode<'_, T>, &mut gpui::Window, &mut gpui::App) -> E + 'static,
+        F: Fn(&gpui_luma::controls::tree_view::FlatTreeNode<'_, T>, &mut gpui::Window, &mut gpui::App) -> E + 'static,
         E: gpui::IntoElement + 'static,
     {
         self.builder = self.builder.leaf_content(content);
@@ -210,7 +210,7 @@ mod tests {
 #[cfg(all(test, feature = "test-support"))]
 #[test]
 fn forwards_independent_wheel_policies_after_look_synthesis() {
-    use luma::interaction::{WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
+    use gpui_luma::interaction::{WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
     let mut app = gpui::TestAppContext::single();
     let control = TreeView::<()>::new("policy")
         .wheel_scroll_policy(WheelScrollPolicy::PassThrough)

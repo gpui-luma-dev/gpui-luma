@@ -1,15 +1,15 @@
-//! Look-owned slider builder. Spawn synthesizes the SDK [`luma::controls::slider::Slider`].
+//! Look-owned slider builder. Spawn synthesizes the SDK [`gpui_luma::controls::slider::Slider`].
 
 use std::ops::RangeInclusive;
 use std::sync::Arc;
 
 use gpui::{App, Context, Div, Hsla, SharedString, Stateful, px};
-use luma::controls::slider::{
+use gpui_luma::controls::slider::{
     SliderBuilder, SliderOrientation, SliderRenderModel, SliderTemplate, SliderTemplateModifier, SliderThumbPolicy,
     TrackPresentation,
 };
-use luma::infra::value::ControlRange;
-use luma::theme::InteractionState;
+use gpui_luma::infra::value::ControlRange;
+use gpui_luma::theme::InteractionState;
 
 use super::button::{ButtonRadiusPreset, ShadcnButtonStyle};
 use super::slider::{resolve_slider_thumb_radius_preset, resolve_slider_track_radius_preset, slider_look};
@@ -190,7 +190,7 @@ impl Slider {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> luma::controls::slider::Slider {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::slider::Slider {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -201,7 +201,7 @@ impl Slider {
 
     fn into_sdk_builder(self, look: ShadcnLook) -> SliderBuilder {
         let template = self.template.unwrap_or_else(|| look.slider_template_with_style(self.style));
-        let mut builder = luma::controls::slider::new(self.id)
+        let mut builder = gpui_luma::controls::slider::new(self.id)
             .template(template)
             .size(self.size.control_size())
             .range(self.range)

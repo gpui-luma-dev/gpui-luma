@@ -6,8 +6,8 @@
 //! | Checked  | `{style}`       | `{style}-foreground`   |
 //! | Disabled | `muted`         | `muted-foreground`     |
 
-use luma::controls::checkbox::CheckboxPalette;
-use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::controls::checkbox::CheckboxPalette;
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use super::apply_button_metrics_typography;
 
@@ -158,7 +158,7 @@ mod tests {
     use super::*;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
 
     fn retro_arcade_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([

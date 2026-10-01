@@ -2,8 +2,8 @@
 
 use std::sync::Arc;
 use gpui::{IntoElement, div, prelude::*, px};
-use luma::controls::control_group::{ControlGroupItemHandlerExt, ControlGroupItemLike};
-use luma::controls::radio_group::RadioGroupTemplate;
+use gpui_luma::controls::control_group::{ControlGroupItemHandlerExt, ControlGroupItemLike};
+use gpui_luma::controls::radio_group::RadioGroupTemplate;
 use crate::{Look, ScaleFamily};
 
 /// Horizontal radio-group template with a shared track and selected segment.

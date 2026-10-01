@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use luma::controls::button::{ButtonTemplate, DefaultButtonTemplate};
-use luma::controls::button_family::ButtonFamilyRole;
-use luma::controls::toggle::{ToggleData, apply_toggle_progress_chrome};
+use gpui_luma::controls::button::{ButtonTemplate, DefaultButtonTemplate};
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::toggle::{ToggleData, apply_toggle_progress_chrome};
 
 use crate::button::{ButtonVariant, Paint, button_family_theme_with};
 use crate::look::Look;

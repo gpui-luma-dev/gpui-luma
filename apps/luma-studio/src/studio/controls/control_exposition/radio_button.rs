@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::infra::presenter::HasPresenter;
-use luma::controls::radio_button::{RadioButton, RadioButtonEvent};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::controls::radio_button::{RadioButton, RadioButtonEvent};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;

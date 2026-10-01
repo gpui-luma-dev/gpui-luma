@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use luma::controls::resizable_panels::ResizablePanelsTheme;
-use luma::theme::InteractionState;
+use gpui_luma::controls::resizable_panels::ResizablePanelsTheme;
+use gpui_luma::theme::InteractionState;
 
 use crate::controls::resizable_panels::resizable_panels_look;
 use crate::look::ShadcnLook;
@@ -15,7 +15,7 @@ struct ShadcnResizablePanelsTheme {
 }
 
 impl ResizablePanelsTheme for ShadcnResizablePanelsTheme {
-    fn resolve(&self, state: InteractionState) -> luma::controls::resizable_panels::ResizablePanelsLook {
+    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::resizable_panels::ResizablePanelsLook {
         let tokens = self.theme.mode_tokens();
         resizable_panels_look(tokens.as_ref(), self.theme.mode(), state)
     }

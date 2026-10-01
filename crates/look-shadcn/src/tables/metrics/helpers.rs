@@ -1,6 +1,6 @@
 //! Source metadata for canonical runtime metric values.
 
-use luma::theme::ControlSize;
+use gpui_luma::theme::ControlSize;
 
 use crate::catalog::{CssTokenMap, SpacingField};
 use crate::{MetricSource, ResolvedMetric};
@@ -84,20 +84,20 @@ pub fn pill_radius_metric(_catalog: &CssTokenMap, value_px: f32) -> ResolvedMetr
     ResolvedMetric { value_px, source: MetricSource::Scaffold { path: "MetricTokens.radius.pill".into() } }
 }
 
-pub fn focus_ring_width_metric(metrics: &luma::theme::MetricTokens) -> ResolvedMetric {
+pub fn focus_ring_width_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
     ResolvedMetric {
         value_px: metrics.focus.width,
         source: MetricSource::Scaffold { path: "MetricTokens.focus.width".into() },
     }
 }
 
-pub fn focus_ring_offset_metric(metrics: &luma::theme::MetricTokens) -> ResolvedMetric {
+pub fn focus_ring_offset_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
     let border = metrics.border_width.default;
     let focus = metrics.focus.width;
     derived_metric("border_width.default + focus.width", border + focus)
 }
 
-pub fn border_width_metric(metrics: &luma::theme::MetricTokens) -> ResolvedMetric {
+pub fn border_width_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
     ResolvedMetric {
         value_px: metrics.border_width.default,
         source: MetricSource::Scaffold { path: "MetricTokens.border_width.default".into() },

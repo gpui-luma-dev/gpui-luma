@@ -6,7 +6,7 @@ use gpui::{
     AnyElement, App, AppContext, BoxShadow, Context, Div, Entity, Hsla, IntoElement, Render, SharedString, Stateful,
     Window, div, prelude::*, px,
 };
-use luma::theme::{ControlSize, LumaTextStyle, observe_theme_revision};
+use gpui_luma::theme::{ControlSize, LumaTextStyle, observe_theme_revision};
 
 use crate::look::ShadcnLook;
 use crate::look_context::LookContext;
@@ -358,7 +358,7 @@ fn renderer_from_element(element: impl IntoElement + Clone + Send + Sync + 'stat
 
 #[cfg(test)]
 mod tests {
-    use luma::theme::ControlSize;
+    use gpui_luma::theme::ControlSize;
 
     use crate::look::ShadcnLook;
     use crate::tokens::ShadcnToken;

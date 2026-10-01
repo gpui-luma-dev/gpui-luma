@@ -9,14 +9,14 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Bounds, ClickEvent, IntoElement, MouseDownEvent, MouseUpEvent, Pixels};
 use gpui::{Hsla, SharedString, Window, div, prelude::*, px};
-use luma::controls::button_family::ButtonSize;
-use luma::controls::popup_menu::{
+use gpui_luma::controls::button_family::ButtonSize;
+use gpui_luma::controls::popup_menu::{
     ControlFocusState, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate, PopupMenuTemplateHandlers,
     PopupMenuTriggerStyle,
 };
-use luma::infra::icon::DisclosureIcons;
-use luma::infra::menu_item::MenuItem;
-use luma_look_radix::{Look, LookControlExt, PopupMenuVariant, Tone, ScaleFamily};
+use gpui_luma::infra::icon::DisclosureIcons;
+use gpui_luma::infra::menu_item::MenuItem;
+use gpui_luma_look_radix::{Look, LookControlExt, PopupMenuVariant, Tone, ScaleFamily};
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::states::{self, StateSample};
@@ -137,7 +137,7 @@ fn state_cell(
         items: &items,
         open: false,
         disclosure_progress: 0.0,
-        presence: luma::OverlayPresence::new(false, false),
+        presence: gpui_luma::OverlayPresence::new(false, false),
         submenu_transition: None,
         highlight: None,
         trigger_bounds: None,

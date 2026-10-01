@@ -1,8 +1,8 @@
-//! Look-owned radio-group builder. Spawn synthesizes the SDK [`luma::controls::radio_group::RadioGroup`].
+//! Look-owned radio-group builder. Spawn synthesizes the SDK [`gpui_luma::controls::radio_group::RadioGroup`].
 
 use gpui::{Context, SharedString};
-use luma::controls::control_group::{ControlGroupItemLike, ControlGroupTemplate};
-use luma::controls::radio_group::{
+use gpui_luma::controls::control_group::{ControlGroupItemLike, ControlGroupTemplate};
+use gpui_luma::controls::radio_group::{
     RadioGroupBuilder, RadioGroupLayout, radio_group_button_item_element_template, radio_group_buttons_template,
 };
 
@@ -30,7 +30,7 @@ where
             look: None,
             style: ShadcnButtonStyle::Primary,
             horizontal: false,
-            builder: luma::controls::radio_group::new(id),
+            builder: gpui_luma::controls::radio_group::new(id),
             custom_template: false,
         }
     }
@@ -40,7 +40,7 @@ where
             look: None,
             style: ShadcnButtonStyle::Primary,
             horizontal: true,
-            builder: luma::controls::radio_group::horizontal(id),
+            builder: gpui_luma::controls::radio_group::horizontal(id),
             custom_template: false,
         }
     }
@@ -97,7 +97,7 @@ where
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> luma::controls::radio_group::RadioGroup<T> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::radio_group::RadioGroup<T> {
         let look = resolve_look_from(self.look.as_ref(), cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -121,7 +121,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::controls::radio_group::RadioGroupItem;
+    use gpui_luma::controls::radio_group::RadioGroupItem;
 
     #[test]
     fn into_sdk_builder_does_not_panic() {

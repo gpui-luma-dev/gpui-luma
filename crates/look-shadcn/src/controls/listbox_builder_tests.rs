@@ -2,8 +2,8 @@
 use std::{cell::Cell, rc::Rc, sync::Arc};
 
 use gpui::{MouseButton, TestAppContext, VisualTestContext, point};
-use luma::controls::listbox::{ListBoxSnapshot, SelectionMode};
-use luma::infra::drag_drop::DragEndReason;
+use gpui_luma::controls::listbox::{ListBoxSnapshot, SelectionMode};
+use gpui_luma::infra::drag_drop::DragEndReason;
 
 use super::*;
 
@@ -29,7 +29,7 @@ struct Harness {
 
 impl Harness {
     fn new(dnd: bool, cx: &mut Context<Self>) -> Self {
-        luma::focus::bind_default_focus_keys(cx);
+        gpui_luma::focus::bind_default_focus_keys(cx);
         Self {
             lists: [0, 10].map(|offset| {
                 let snapshot =

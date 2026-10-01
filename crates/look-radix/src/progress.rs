@@ -1,8 +1,10 @@
 //! Radix progress bar styling and SDK template adapter.
 use std::sync::Arc;
 use gpui::{App, BoxShadow, Div, Stateful, Window, div, point, prelude::*, px, relative};
-use luma::controls::progress::{ProgressLook, ProgressOrientation, ProgressRenderModel, ProgressTemplate, ProgressTheme};
-use luma::theme::ControlSize;
+use gpui_luma::controls::progress::{
+    ProgressLook, ProgressOrientation, ProgressRenderModel, ProgressTemplate, ProgressTheme,
+};
+use gpui_luma::theme::ControlSize;
 use crate::{Look, Paint, Radius, ScaleFamily, Tone};
 
 /// Radix progress bar variants.
@@ -185,7 +187,7 @@ pub fn progress_template(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
     #[test]
     fn sizes_and_radii_match_radix_geometry() {
         for size in ProgressSize::ALL {

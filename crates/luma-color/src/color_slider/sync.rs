@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{App, Entity};
 
-use luma::controls::slider::{SliderControl, SliderEvent};
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 
 use super::domain_renderer::ColorSliderDomainRenderer;
 use super::types::ColorSliderDelegate;

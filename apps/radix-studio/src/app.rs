@@ -6,19 +6,19 @@ use gpui::{
     App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, ScrollHandle, Subscription, Task, Window, div,
     prelude::*, px,
 };
-use luma::controls::button::ButtonEvent;
-use luma::controls::overlay_window::{OverlayWindow, OverlayWindowMode, OverlayWindowPosition};
-use luma::controls::popup_menu::PopupMenu;
-use luma::controls::radio_group::{RadioGroup, RadioGroupItem, RadioGroupEvent};
+use gpui_luma::controls::button::ButtonEvent;
+use gpui_luma::controls::overlay_window::{OverlayWindow, OverlayWindowMode, OverlayWindowPosition};
+use gpui_luma::controls::popup_menu::PopupMenu;
+use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem, RadioGroupEvent};
 use crate::controls::theme_mode;
-use luma::focus::LumaFocusScopeExt;
-use luma::infra::menu_item::MenuItem;
-use luma::infra::presenter::HasPresenter;
-use luma::shell::TitleBar;
-use luma::theme::ThemeMode;
-use luma::{WideMiddle, dock_panel, spawn_wide_middle, vstack};
-use luma_look_radix::{Accent, Gray, Look, LookControlExt, ScaleFamily, SemanticRole};
-use luma_look_radix as radix;
+use gpui_luma::focus::LumaFocusScopeExt;
+use gpui_luma::infra::menu_item::MenuItem;
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::shell::TitleBar;
+use gpui_luma::theme::ThemeMode;
+use gpui_luma::{WideMiddle, dock_panel, spawn_wide_middle, vstack};
+use gpui_luma_look_radix::{Accent, Gray, Look, LookControlExt, ScaleFamily, SemanticRole};
+use gpui_luma_look_radix as radix;
 
 use crate::color_hex::format_hex;
 use crate::screens::custom_palette::{MeshCache, MeshRequest};

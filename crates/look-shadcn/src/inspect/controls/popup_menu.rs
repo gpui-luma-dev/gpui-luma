@@ -1,8 +1,8 @@
 //! Inspect metadata for `popup_menu`.
 
-use luma::controls::button_family::ButtonFamilyRole;
-use luma::controls::popup_menu::PopupMenuTriggerStyle;
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::popup_menu::PopupMenuTriggerStyle;
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::{ResolvedColor, ShadcnButtonStyle, ShadcnModeTokens};
 
 use super::button::{inspect_button_color_palette, inspect_button_metrics};

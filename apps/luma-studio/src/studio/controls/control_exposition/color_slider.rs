@@ -3,16 +3,16 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Hsla, Render, Subscription, Window, div, prelude::*, px};
-use luma_color::ColorSwatch;
-use luma_color::color_slider::color_spec::{Hsl, RgbaSpec};
-use luma_color::color_slider::{
+use gpui_luma_color::ColorSwatch;
+use gpui_luma_color::color_slider::color_spec::{Hsl, RgbaSpec};
+use gpui_luma_color::color_slider::{
     AlphaDelegate, ChannelDelegate, ColorInterpolation, ColorSliderBuilder, ColorSliderDomainRenderer,
     ColorSpecification, refresh_color_slider, update_domain_delegate,
 };
-use luma::controls::slider::{SliderControl, SliderEvent};
-use luma::theme::ControlSize;
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::color_chrome_exposition::{

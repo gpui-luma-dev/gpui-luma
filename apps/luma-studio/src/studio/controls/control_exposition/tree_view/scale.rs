@@ -6,15 +6,15 @@ use std::{
 use gpui::{
     AnyElement, App, Context, Div, Entity, Render, SharedString, Stateful, Subscription, Window, div, prelude::*, px,
 };
-use luma::controls::{
+use gpui_luma::controls::{
     button::{Button, ButtonEvent},
     tree_view::{
         FlatTreeNode, TreeNode, TreeView, TreeViewEvent, TreeViewRenderModel, TreeViewTemplate,
         TreeViewTemplateHandlers,
     },
 };
-use luma::infra::presenter::HasPresenter;
-use luma_look_shadcn::{self as shadcn, ShadcnLook, prelude::*};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma_look_shadcn::{self as shadcn, ShadcnLook, prelude::*};
 use super::ControlEventStream;
 
 #[derive(Default)]

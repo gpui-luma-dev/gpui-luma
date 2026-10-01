@@ -5,8 +5,8 @@
 //! | Target | ghost (accent-foreground on hover) |
 //! | Menu   | floating menu surface              |
 
-use luma::controls::context_menu::ContextMenuLook;
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::controls::context_menu::ContextMenuLook;
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use super::floating_menu::floating_menu_look;
@@ -69,7 +69,7 @@ pub fn context_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: 
 mod tests {
     use std::collections::BTreeMap;
 
-    use luma::theme::{InteractionState, ThemeMode};
+    use gpui_luma::theme::{InteractionState, ThemeMode};
 
     use super::context_menu_look;
     use crate::catalog::CssTokenMap;

@@ -1,6 +1,6 @@
 //! Shared textfield metric resolution.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{LookContext, ResolvedMetric, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]
@@ -18,9 +18,9 @@ pub struct TextFieldMetricTable {
 pub fn resolve_textfield_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    size: luma::theme::ControlSize,
+    size: gpui_luma::theme::ControlSize,
 ) -> TextFieldMetricTable {
-    use luma::theme::StandardBoxScale;
+    use gpui_luma::theme::StandardBoxScale;
 
     use super::helpers::{
         border_width_metric, control_size_key, focus_ring_offset_metric, focus_ring_width_metric, radius_metric,

@@ -8,19 +8,19 @@ use gpui::{
     AnyElement, Context, Entity, FontWeight, Hsla, Render, Subscription, Window, div, hsla, prelude::*, px, rgb,
     transparent_black,
 };
-use luma_color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, HslWheelModel};
-use luma_color::color_ring::{
+use gpui_luma_color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, HslWheelModel};
+use gpui_luma_color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingTrackContext, LightnessRingDelegate, primary_slider_value,
 };
-use luma_color::color_slider::color_spec::Hsv;
-use luma_color::composition::ColorCompositionSync;
-use luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
-use luma::controls::slider::SliderControl;
-use luma::controls::textfield::{TextField, TextFieldEvent};
-use luma::vstack;
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use gpui_luma_color::color_slider::color_spec::Hsv;
+use gpui_luma_color::composition::ColorCompositionSync;
+use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
+use gpui_luma::controls::slider::SliderControl;
+use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
+use gpui_luma::vstack;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
 use super::super::color_exposition_common::{composition_demo_card_width, format_hsl_label};
 

@@ -3,7 +3,7 @@ use gpui::{
     Context, Render, Window, TestAppContext, VisualTestContext, ScrollWheelEvent, ScrollDelta, TouchPhase, div, px,
     point, prelude::*,
 };
-use luma::controls::scroll_container::ScrollContainer;
+use gpui_luma::controls::scroll_container::ScrollContainer;
 use crate::ShadcnLook;
 
 struct Harness {

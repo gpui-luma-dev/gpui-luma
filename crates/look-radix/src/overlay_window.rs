@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use gpui::{BoxShadow, FontWeight, SharedString, black, point, px};
-use luma::controls::overlay_window::{OverlayWindowLook, OverlayWindowMode, OverlayWindowTheme};
-use luma::theme::{ControlSize, LumaTextStyle};
+use gpui_luma::controls::overlay_window::{OverlayWindowLook, OverlayWindowMode, OverlayWindowTheme};
+use gpui_luma::theme::{ControlSize, LumaTextStyle};
 
 use crate::look::Look;
 use crate::semantic::SemanticRole;

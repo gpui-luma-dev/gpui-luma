@@ -13,8 +13,8 @@
 //! | Selected fg       | `sidebar-primary-foreground`       |
 //! | Focus ring        | `sidebar-ring`                     |
 
-use luma::controls::sidebar::{SidebarItemLook, SidebarSectionLook};
-use luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::controls::sidebar::{SidebarItemLook, SidebarSectionLook};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -267,7 +267,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use luma::theme::{ControlSize, InteractionState, ThemeMode};
+    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::look::ShadcnLook;

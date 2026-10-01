@@ -4,11 +4,11 @@ use gpui::{
     ClickEvent, Context, Anchor, Corners, HitboxBehavior, ImageSource, MouseButton, MouseDownEvent, MouseMoveEvent,
     MouseUpEvent, Pixels, Render, Window, anchored, canvas, deferred, div, img, point, prelude::*, px, relative, size,
 };
-use luma::infra::{ElementExt, StyledExt};
-use luma::theme::LumaTextStyle;
-use luma::{form_field, hstack, vstack};
-use luma_look_shadcn::{LumaTypographyExt, ShadcnTextSize};
-use luma_look_shadcn as shadcn;
+use gpui_luma::infra::{ElementExt, StyledExt};
+use gpui_luma::theme::LumaTextStyle;
+use gpui_luma::{form_field, hstack, vstack};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnTextSize};
+use gpui_luma_look_shadcn as shadcn;
 
 use super::super::color::{format_hex_color, format_percent};
 use super::super::paint::paint_gradient_preview;
@@ -465,7 +465,7 @@ fn render_stop_row(
     delete_button: Option<Entity<Button>>,
     label_style: LumaTextStyle,
     value_style: LumaTextStyle,
-    chrome: luma::theme::LumaChrome,
+    chrome: gpui_luma::theme::LumaChrome,
     builder: Entity<GradientBuilder>,
 ) -> impl IntoElement {
     let border = chrome.border;
@@ -568,7 +568,7 @@ fn render_mesh_controls(
     mesh_aspect_ratio_preset: MeshAspectRatioPreset,
     mesh_aspect_ratio_selector: Entity<Selector>,
     mesh_reset_button: Entity<Button>,
-    chrome: luma::theme::LumaChrome,
+    chrome: gpui_luma::theme::LumaChrome,
     card_bg: gpui::Hsla,
     info_label_style: LumaTextStyle,
     info_value_style: LumaTextStyle,
@@ -672,7 +672,7 @@ fn render_mesh_controls(
 fn render_mesh_background_row(
     background: gpui::Hsla,
     label_style: LumaTextStyle,
-    chrome: luma::theme::LumaChrome,
+    chrome: gpui_luma::theme::LumaChrome,
     builder: Entity<GradientBuilder>,
 ) -> impl IntoElement {
     let bounds_builder = builder.clone();
@@ -731,7 +731,7 @@ fn render_mesh_point_row(
     point: MeshPoint,
     selected: bool,
     label_style: LumaTextStyle,
-    chrome: luma::theme::LumaChrome,
+    chrome: gpui_luma::theme::LumaChrome,
     builder: Entity<GradientBuilder>,
 ) -> impl IntoElement {
     let bounds_builder = builder.clone();

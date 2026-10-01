@@ -1,6 +1,6 @@
 //! Shared accordion metric resolution.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{LookContext, ResolvedMetric, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]
@@ -19,10 +19,10 @@ pub struct AccordionMetricTable {
 pub fn resolve_accordion_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    size: luma::theme::ControlSize,
+    size: gpui_luma::theme::ControlSize,
     scale_factor: f32,
 ) -> AccordionMetricTable {
-    use luma::controls::accordion::AccordionScale;
+    use gpui_luma::controls::accordion::AccordionScale;
 
     use crate::catalog::SpacingField;
     use super::helpers::{control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};
@@ -51,8 +51,8 @@ pub fn resolve_accordion_metrics(
 
 impl AccordionMetricTable {
     /// Converts the complete resolved table to the SDK layout contract.
-    pub fn scale(&self) -> luma::controls::accordion::AccordionScale {
-        luma::controls::accordion::AccordionScale {
+    pub fn scale(&self) -> gpui_luma::controls::accordion::AccordionScale {
+        gpui_luma::controls::accordion::AccordionScale {
             trigger_height: self.trigger_height.value_px,
             padding_x: self.padding_x.value_px,
             padding_y: self.padding_y.value_px,

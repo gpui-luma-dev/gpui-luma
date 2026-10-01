@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use luma::controls::selection_panel::SelectionPanelLookProvider;
+use gpui_luma::controls::selection_panel::SelectionPanelLookProvider;
 
 use crate::controls::selection_panel::selection_panel_look;
 use crate::look::ShadcnLook;

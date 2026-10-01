@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use luma::controls::button::{Button, ControlIcon};
-use luma::controls::textfield::TextField;
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
-use luma::{declare_form, hstack, vstack};
+use gpui_luma::controls::button::{Button, ControlIcon};
+use gpui_luma::controls::textfield::TextField;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use gpui_luma::{declare_form, hstack, vstack};
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::common::{avatar, AvatarSize, card, message_bubble};

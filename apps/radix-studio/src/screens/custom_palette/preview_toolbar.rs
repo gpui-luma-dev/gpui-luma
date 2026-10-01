@@ -1,11 +1,11 @@
 //! SDK toolbar and Actions menu above the signup preview.
 
 use gpui::{Context, Entity};
-use luma::controls::button::ControlIcon;
-use luma::controls::popup_menu::PopupMenu;
-use luma::controls::toolbar::Toolbar;
-use luma::infra::menu_item::MenuItem;
-use luma_look_radix::{self as radix, Look};
+use gpui_luma::controls::button::ControlIcon;
+use gpui_luma::controls::popup_menu::PopupMenu;
+use gpui_luma::controls::toolbar::Toolbar;
+use gpui_luma::infra::menu_item::MenuItem;
+use gpui_luma_look_radix::{self as radix, Look};
 
 pub fn spawn<T: 'static>(look: &Look, cx: &mut Context<T>) -> (Toolbar, Entity<PopupMenu>) {
     let mut toolbar = radix::Toolbar::new("signup-preview-toolbar").look(look);

@@ -15,7 +15,7 @@ font-download = ["dep:google-fonts"]
 [dependencies]
 anyhow = { workspace = true }
 gpui = { workspace = true }
-luma-look-shadcn.workspace = true
+gpui-luma-look-shadcn.workspace = true
 google-fonts = { version = "0.1.5", default-features = false, features = ["full"], optional = true }
 tracing = "0.1"
 

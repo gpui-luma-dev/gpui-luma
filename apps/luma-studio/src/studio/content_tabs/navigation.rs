@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use gpui::{App, Div, Hsla, Stateful, Window, div, prelude::*, px};
-use luma::infra::ElementExt;
-use luma::controls::control_group::ControlGroupItemHandlerExt;
-use luma::controls::tabs::{
+use gpui_luma::infra::ElementExt;
+use gpui_luma::controls::control_group::ControlGroupItemHandlerExt;
+use gpui_luma::controls::tabs::{
     TabsIndicatorMotion, TabsRenderModel, TabsTemplate, TabsTemplateHandlers, TabsTheme, render_tab_button,
     resolve_tabs_uniform_item_width,
 };
-use luma::theme::{ControlSize, InteractionState};
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::theme::{ControlSize, InteractionState};
+use gpui_luma_look_shadcn::ShadcnLook;
 
 pub fn luma_studio_tabs_template(look: Arc<ShadcnLook>, tab_size: ControlSize) -> Arc<dyn TabsTemplate> {
     let full_bar_color = look.token_color("border").unwrap_or(look.chrome().border);

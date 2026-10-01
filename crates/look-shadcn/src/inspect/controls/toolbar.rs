@@ -1,7 +1,7 @@
 //! Inspect metadata for `toolbar`.
 
-use luma::controls::toolbar::ToolbarVariant;
-use luma::theme::{ControlSize, ThemeMode};
+use gpui_luma::controls::toolbar::ToolbarVariant;
+use gpui_luma::theme::{ControlSize, ThemeMode};
 use crate::{ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]

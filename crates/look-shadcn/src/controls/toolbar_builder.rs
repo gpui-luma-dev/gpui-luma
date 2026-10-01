@@ -1,8 +1,8 @@
-//! Look-owned toolbar builder. Spawn synthesizes the SDK [`luma::controls::toolbar::ToolbarControl`].
+//! Look-owned toolbar builder. Spawn synthesizes the SDK [`gpui_luma::controls::toolbar::ToolbarControl`].
 
 use gpui::{App, Context, Div, Entity, SharedString, Stateful};
-use luma::controls::control_group::ControlGroupFocusStrategy;
-use luma::controls::toolbar::{ToolbarBuilder, ToolbarItem, ToolbarRenderModel, ToolbarVariant};
+use gpui_luma::controls::control_group::ControlGroupFocusStrategy;
+use gpui_luma::controls::toolbar::{ToolbarBuilder, ToolbarItem, ToolbarRenderModel, ToolbarVariant};
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
 
@@ -98,7 +98,7 @@ impl Toolbar {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::toolbar::ToolbarControl> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::toolbar::ToolbarControl> {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -108,7 +108,7 @@ impl Toolbar {
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ToolbarBuilder {
-        let mut builder = luma::controls::toolbar::new(self.id)
+        let mut builder = gpui_luma::controls::toolbar::new(self.id)
             .template(look.toolbar_template())
             .items(self.items)
             .enabled(self.enabled)

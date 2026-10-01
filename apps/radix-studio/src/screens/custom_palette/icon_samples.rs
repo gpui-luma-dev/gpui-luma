@@ -1,10 +1,10 @@
 //! Local palette preview: five Radix icon-button variants and off/on switches.
 
 use gpui::{Context, Entity, IntoElement, div, prelude::*, px};
-use luma::controls::button::{Button, ControlIcon};
-use luma::controls::button_family::ButtonFamilyRole;
-use luma::controls::switch::Switch;
-use luma_look_radix::{self as radix, ButtonVariant, Look};
+use gpui_luma::controls::button::{Button, ControlIcon};
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::switch::Switch;
+use gpui_luma_look_radix::{self as radix, ButtonVariant, Look};
 
 #[derive(Clone)]
 pub struct IconSamples {

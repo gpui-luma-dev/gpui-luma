@@ -2415,7 +2415,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "darling",
@@ -2430,7 +2430,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-color"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "gpui-luma",
@@ -2443,7 +2443,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-look-radix"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "gpui-luma",
  "gpui-unofficial",
@@ -2451,7 +2451,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-look-shadcn"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "gpui-luma",

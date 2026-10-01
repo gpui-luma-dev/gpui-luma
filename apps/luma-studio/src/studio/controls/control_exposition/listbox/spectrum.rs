@@ -2,13 +2,13 @@
 use std::{cell::Cell, ops::Range, sync::Arc};
 
 use gpui::{Context, Div, Entity, Hsla, Render, SharedString, Window, div, hsla, prelude::*, px};
-use luma::controls::listbox::{
+use gpui_luma::controls::listbox::{
     ListBoxControl, ListBoxInput, ListBoxItemRenderModel, ListBoxState, ListBoxVirtualization, SelectionMode,
     SelectionPolicy,
 };
-use luma::{hstack, vstack};
-use luma_color::ColorSwatch;
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use gpui_luma::{hstack, vstack};
+use gpui_luma_color::ColorSwatch;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use super::{
     VERTICAL_LIST_WIDTH,

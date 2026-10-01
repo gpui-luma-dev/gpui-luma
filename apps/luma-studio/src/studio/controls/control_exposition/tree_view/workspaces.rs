@@ -5,15 +5,15 @@ use std::{
     sync::Arc,
 };
 use gpui::{App, Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::button::{Button, ButtonEvent};
-use luma::controls::textfield::{TextField, TextFieldEvent};
-use luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
-use luma::controls::tree_view::{
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
+use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
+use gpui_luma::controls::tree_view::{
     FlatTreeNode, TreeNode, TreeView, TreeViewBuilder, TreeViewDragDrop, TreeDropProposal, TreeDropLocation,
     TreeDropPosition, TreeViewSelectionMode, TreeViewEvent, TreeViewDragEvent, TreeDragEndReason,
 };
-use luma::infra::{drag_drop::DragDropElementExt, presenter::HasPresenter};
-use luma_look_shadcn::{self as shadcn, ShadcnLook, prelude::*};
+use gpui_luma::infra::{drag_drop::DragDropElementExt, presenter::HasPresenter};
+use gpui_luma_look_shadcn::{self as shadcn, ShadcnLook, prelude::*};
 use lucide_svg_static::Icon;
 use super::ControlEventStream;
 

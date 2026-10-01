@@ -1,7 +1,7 @@
 //! The same content-sized template in eager and measured-virtualized lists.
 use std::{cell::Cell, sync::Arc};
 use gpui::{Context, Div, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::{
+use gpui_luma::controls::{
     checkbox::{Checkbox, CheckboxEvent},
     button::{Button, ButtonEvent},
     selector::{Selector, SelectorEvent, SelectorItem},
@@ -10,10 +10,10 @@ use luma::controls::{
         ListBoxVirtualWindow, SelectionMode, SelectionPolicy,
     },
 };
-use luma::{hstack, vstack};
-use luma::infra::presenter::HasPresenter;
-use luma_look_shadcn::{self as shadcn, LumaTypographyExt, ShadcnLook, ShadcnTextSize};
-use luma_look_shadcn::prelude::*;
+use gpui_luma::{hstack, vstack};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma_look_shadcn::{self as shadcn, LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use gpui_luma_look_shadcn::prelude::*;
 use super::{
     markup::listbox,
     presentation::{ExamplePresentation, SelectionMark},

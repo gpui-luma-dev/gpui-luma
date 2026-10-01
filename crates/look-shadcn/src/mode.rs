@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use luma::theme::{InteractionLayer, LumaTypography, MetricTokens, ThemeMode};
+use gpui_luma::theme::{InteractionLayer, LumaTypography, MetricTokens, ThemeMode};
 
 use crate::catalog::{CssTokenMap, metrics_from_catalog, typography_from_catalog};
 use crate::palette::ShadcnPalette;

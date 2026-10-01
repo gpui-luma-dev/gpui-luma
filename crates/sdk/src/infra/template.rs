@@ -50,9 +50,9 @@ where
 ///
 /// Usage:
 /// ```rust
-/// # use luma::define_control_template;
-/// # use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
-/// # use luma::controls::checkbox::{CheckboxData, CheckboxTheme, default_checkbox_theme};
+/// # use gpui_luma::define_control_template;
+/// # use gpui_luma::controls::button::{ButtonRenderModel, ButtonTemplate};
+/// # use gpui_luma::controls::checkbox::{CheckboxData, CheckboxTheme, default_checkbox_theme};
 /// define_control_template!(
 ///     ThemedCheckboxTemplate,
 ///     dyn CheckboxTheme,

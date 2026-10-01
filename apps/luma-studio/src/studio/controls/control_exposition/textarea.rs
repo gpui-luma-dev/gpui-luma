@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use luma::controls::button::{Button, ButtonEvent};
-use luma::infra::presenter::HasPresenter;
-use luma::controls::textarea::{TextArea, TextAreaEvent, Validator};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::controls::textarea::{TextArea, TextAreaEvent, Validator};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;

@@ -12,9 +12,9 @@ tiny-skia.workspace = true
 anyhow = { workspace = true }
 gpui = { workspace = true }
 gpui_platform = { workspace = true }
-luma.workspace = true
-luma-color.workspace = true
-luma-look-radix.workspace = true
+gpui-luma.workspace = true
+gpui-luma-color.workspace = true
+gpui-luma-look-radix.workspace = true
 lucide-svg-static.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]

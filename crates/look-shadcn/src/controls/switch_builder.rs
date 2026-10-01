@@ -1,8 +1,8 @@
-//! Look-owned switch builder. Spawn synthesizes the SDK [`luma::controls::switch::Switch`].
+//! Look-owned switch builder. Spawn synthesizes the SDK [`gpui_luma::controls::switch::Switch`].
 
 use gpui::{App, Context, IntoElement, Pixels, SharedString};
-use luma::controls::button::{ButtonContentContext, ControlPresenter, HasPresenter};
-use luma::controls::switch::{SwitchBuilder, SwitchData, SwitchOrientation};
+use gpui_luma::controls::button::{ButtonContentContext, ControlPresenter, HasPresenter};
+use gpui_luma::controls::switch::{SwitchBuilder, SwitchData, SwitchOrientation};
 use super::button::ShadcnButtonStyle;
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
@@ -173,7 +173,7 @@ impl Switch {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> luma::controls::switch::Switch {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::switch::Switch {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -184,7 +184,7 @@ impl Switch {
 
     fn into_sdk_builder(self, look: ShadcnLook) -> SwitchBuilder {
         let template = look.switch_template(self.style);
-        let mut builder = luma::controls::switch::new(self.id)
+        let mut builder = gpui_luma::controls::switch::new(self.id)
             .template(template)
             .size(self.size.control_size())
             .with_data(self.checked)
@@ -230,7 +230,7 @@ impl HasPresenter<ButtonContentContext<SwitchData>> for Switch {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::controls::button::HasPresenter;
+    use gpui_luma::controls::button::HasPresenter;
 
     #[test]
     fn with_data_keeps_shadcn_axes() {

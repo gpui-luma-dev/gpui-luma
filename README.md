@@ -15,15 +15,15 @@ cargo build
 Library crates: depend on **`gpui-luma`** (controls, layouts, and shared look contracts), then **one** look — `gpui-luma-look-shadcn` *or* `gpui-luma-look-radix`. Optional: `gpui-luma-color`.
 
 ```sh
-cargo add gpui-luma --rename luma --git https://github.com/scottcg/gpui-luma
-cargo add gpui-luma-look-shadcn --rename luma-look-shadcn --git https://github.com/scottcg/gpui-luma
+cargo add gpui-luma
+cargo add gpui-luma-look-shadcn
 # Or choose gpui-luma-look-radix instead.
 ```
 
-Import the SDK with `use luma::…`.
+Import the SDK with `use gpui_luma::…`.
 
 Shadcn themes load from strings with `ShadcnLook::from_css_str`. The bundled fallback
-CSS is available as `luma_look_shadcn::FALLBACK_CSS`. The former `from_css_path` and
+CSS is available as `gpui_luma_look_shadcn::FALLBACK_CSS`. The former `from_css_path` and
 `from_css_path_with_stylesheet` helpers have been removed: applications own file
 access and should enforce appropriate path and size restrictions before parsing.
 For custom stylesheet TOML, use `StylesheetConfig::parse`, then

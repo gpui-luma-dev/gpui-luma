@@ -147,7 +147,7 @@ impl IntoElement for Badge {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
     #[test]
     fn variants_follow_both_tones_and_modes() {
         let look = Look::built_in();

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Pixels, ScrollHandle, Size, Window, div, point, prelude::*, px};
-use luma::infra::ElementExt;
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::infra::ElementExt;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::components::catalog::first_controls_exposition_id;
 

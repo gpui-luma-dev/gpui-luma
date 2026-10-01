@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, SharedString, Window};
-use luma::controls::control_group::{
+use gpui_luma::controls::control_group::{
     ControlGroupBuilder, ControlGroupControl, ControlGroupItem, ControlGroupItemLike, ControlGroupItemRenderModel,
     ControlGroupItemVisualContext, MenuChoiceRowContentFn,
 };
@@ -36,7 +36,7 @@ where
     T: ControlGroupItemLike + 'static,
 {
     pub fn new(id: impl Into<SharedString>) -> Self {
-        Self { look: None, builder: luma::controls::control_group::new(id).active_descendant(), menu_row: None }
+        Self { look: None, builder: gpui_luma::controls::control_group::new(id).active_descendant(), menu_row: None }
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.

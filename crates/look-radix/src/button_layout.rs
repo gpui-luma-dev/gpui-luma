@@ -6,8 +6,8 @@
 //! - radius from `--radius-{size}` × `--radius-factor`, or pill when `full`
 
 use gpui::FontWeight;
-use luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole};
-use luma::theme::{ControlSize, ControlMetricTokens, LumaTextStyle, MetricTokens, RadiusTokens};
+use gpui_luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole};
+use gpui_luma::theme::{ControlSize, ControlMetricTokens, LumaTextStyle, MetricTokens, RadiusTokens};
 
 /// Radix `size` prop on Button. Default is [`Self::Two`].
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]

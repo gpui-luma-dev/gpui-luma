@@ -1,10 +1,12 @@
-//! Look-owned text-field builder. Spawn synthesizes the SDK [`luma::controls::textfield::TextField`].
+//! Look-owned text-field builder. Spawn synthesizes the SDK [`gpui_luma::controls::textfield::TextField`].
 
 use std::sync::Arc;
 
 use gpui::{App, Context, Div, SharedString, Stateful};
-use luma::controls::button::ControlIcon;
-use luma::controls::textfield::{TextFieldBuilder, TextFieldLook, TextFieldLookOverride, TextFieldRenderModel, Validator};
+use gpui_luma::controls::button::ControlIcon;
+use gpui_luma::controls::textfield::{
+    TextFieldBuilder, TextFieldLook, TextFieldLookOverride, TextFieldRenderModel, Validator,
+};
 
 use crate::look::{Look, resolve_look};
 use crate::textfield::{TextFieldSize, TextFieldVariant, textfield_template};
@@ -50,7 +52,7 @@ impl TextField {
             clean_on_escape: false,
             select_all_on_tab_focus: false,
             propagate_home_end_to_parent: false,
-            max_clipboard_paste_bytes: Some(luma::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
+            max_clipboard_paste_bytes: Some(gpui_luma::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
             validator: None,
             look_override: None,
             modifiers: Vec::new(),
@@ -162,7 +164,7 @@ impl TextField {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> luma::controls::textfield::TextField {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::textfield::TextField {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -173,7 +175,7 @@ impl TextField {
 
     fn into_sdk_builder(self, look: Look) -> TextFieldBuilder {
         let template = textfield_template(&look, self.variant);
-        let mut builder = luma::controls::textfield::new(self.id)
+        let mut builder = gpui_luma::controls::textfield::new(self.id)
             .template(template)
             .placeholder(self.placeholder)
             .value(self.value)
@@ -207,7 +209,7 @@ impl TextField {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::ControlSize;
+    use gpui_luma::theme::ControlSize;
 
     #[test]
     fn size_maps_to_sdk_control_size() {

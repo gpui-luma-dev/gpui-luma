@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, Window};
-use luma::controls::tabs::Tabs;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::tabs::Tabs;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::shared::choice_matrix::{ChoiceTemplateControl, render_choice_control_template_matrix_section};
 

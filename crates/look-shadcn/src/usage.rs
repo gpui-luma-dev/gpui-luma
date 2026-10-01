@@ -1,6 +1,6 @@
 //! Shadcn CSS token usage metadata for gallery sidebars and theme docs.
 
-use luma::theme::{ThemePartUsage, ThemeUsage};
+use gpui_luma::theme::{ThemePartUsage, ThemeUsage};
 
 pub fn all_shadcn_theme_usages() -> &'static [&'static ThemeUsage] {
     RADIX_THEME_USAGES

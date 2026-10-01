@@ -1,4 +1,4 @@
-use luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionLayer;
 
 use crate::controls::ShadcnButtonStyle;
 use crate::provenance::{LookResolver, ResolvedColor};

@@ -1,11 +1,11 @@
-//! Look-owned button builder. Spawn synthesizes the SDK [`luma::controls::button::Button`].
+//! Look-owned button builder. Spawn synthesizes the SDK [`gpui_luma::controls::button::Button`].
 
 use gpui::{App, Context, Div, Entity, SharedString, Stateful};
-use luma::controls::button::{
+use gpui_luma::controls::button::{
     ButtonBuilder, ButtonContentContext, ButtonRenderModel, ButtonTemplateModifier, ControlIcon, ControlPresenter,
     HasPresenter,
 };
-use luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
 
 use crate::button::{Paint, ButtonVariant, button_look_for, button_template};
 use crate::button_layout::{ButtonSize, Radius};
@@ -188,7 +188,7 @@ impl<D: Clone + 'static> Button<D> {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::button::Button<D>> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::button::Button<D>> {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -197,7 +197,7 @@ impl<D: Clone + 'static> Button<D> {
         resolve_look(self.look.as_ref(), cx.try_global::<Look>())
     }
 
-    fn look_source(&self, look: &Look) -> luma::controls::button::ButtonLookSource<D> {
+    fn look_source(&self, look: &Look) -> gpui_luma::controls::button::ButtonLookSource<D> {
         let geometry = button_look_for(look, self.variant, self.paint, self.size, self.radius);
         let icon_size = self.icon_size;
         std::sync::Arc::new(move |model| {
@@ -212,7 +212,7 @@ impl<D: Clone + 'static> Button<D> {
     fn into_sdk_builder(self, look: Look) -> ButtonBuilder<D> {
         let template = button_template(&look, self.variant, self.paint);
         let geometry = self.look_source(&look);
-        let mut builder = luma::controls::button::Button::new(self.id)
+        let mut builder = gpui_luma::controls::button::Button::new(self.id)
             .typed(self.data)
             .template(template)
             .with_look(move |model| geometry(model))
@@ -247,8 +247,8 @@ mod tests {
     use super::*;
     use crate::button_layout::button_box_for;
     use crate::look::resolve_look;
-    use luma::controls::button::HasPresenter;
-    use luma::theme::ControlSize;
+    use gpui_luma::controls::button::HasPresenter;
+    use gpui_luma::theme::ControlSize;
 
     fn primary(look: &Look) -> gpui::Hsla {
         look.resolve_role(crate::semantic::SemanticRole::Primary).hsla()
@@ -264,12 +264,12 @@ mod tests {
             .role(ButtonFamilyRole::Icon)
             .icon_size(20.0)
             .typed(());
-        for mode in [luma::theme::ThemeMode::Light, luma::theme::ThemeMode::Dark] {
+        for mode in [gpui_luma::theme::ThemeMode::Light, gpui_luma::theme::ThemeMode::Dark] {
             look.set_mode(mode);
             for focused in [false, true] {
                 let model = ButtonRenderModel::<()> {
                     role: ButtonFamilyRole::Icon,
-                    state: luma::theme::InteractionState { focused, ..Default::default() },
+                    state: gpui_luma::theme::InteractionState { focused, ..Default::default() },
                     ..Default::default()
                 };
                 let resolved = button.look_source(&look)(&model);

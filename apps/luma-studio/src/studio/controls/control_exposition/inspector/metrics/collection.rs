@@ -1,6 +1,6 @@
-use luma::theme::ControlSize;
-use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn::inspect::{
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::inspect::{
     AccordionInspectMetrics, ShadcnInspect, SidebarInspectMetrics, TableInspectMetrics, TabsInspectMetrics,
     TreeViewInspectMetrics,
 };

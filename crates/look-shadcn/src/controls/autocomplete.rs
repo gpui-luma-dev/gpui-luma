@@ -1,7 +1,7 @@
 //! Autocomplete / combobox chrome — textfield + floating menu tokens.
 
-use luma::controls::autocomplete::AutocompleteLook;
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::controls::autocomplete::AutocompleteLook;
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -77,9 +77,9 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
 
-    use luma::theme::ControlSize;
+    use gpui_luma::theme::ControlSize;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;

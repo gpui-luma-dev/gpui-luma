@@ -1,7 +1,7 @@
 //! Icons tab screen.
 
 use gpui::{Bounds, Hsla, IntoElement, PathBuilder, Pixels, Point, Window, canvas, div, point, prelude::*, px};
-use luma::vstack;
+use gpui_luma::vstack;
 
 use crate::assets::{ICON_GROUPS, icon_named, react_icon};
 

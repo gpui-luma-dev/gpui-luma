@@ -3,13 +3,13 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, EventEmitter, IntoElement, Render, Subscription, Window, div, prelude::*};
-use luma::controls::button::{Button, ButtonEvent};
-use luma::controls::toggle::{Toggle, ToggleEvent};
-use luma::hstack;
-use luma::infra::presenter::HasPresenter;
-use luma::theme::ThemeMode;
-use luma_look_radix::Look;
-use luma_look_radix as radix;
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
+use gpui_luma::hstack;
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::theme::ThemeMode;
+use gpui_luma_look_radix::Look;
+use gpui_luma_look_radix as radix;
 
 use crate::assets::{icon_named, react_icon};
 use crate::tabs::RadixStudioTab;

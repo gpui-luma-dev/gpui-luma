@@ -1,8 +1,8 @@
 //! Shared overlay window metric resolution.
 
-use luma::theme::ControlSize;
+use gpui_luma::theme::ControlSize;
 use crate::ResolvedMetric;
-use luma::controls::overlay_window::OverlayWindowMode;
+use gpui_luma::controls::overlay_window::OverlayWindowMode;
 use crate::ShadcnLook;
 
 #[derive(Clone, Debug)]

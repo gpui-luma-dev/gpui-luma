@@ -5,18 +5,18 @@ use crate::color_hex::{format_hex, parse_hex};
 use gpui::{
     Context, Entity, EventEmitter, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px,
 };
-use luma::controls::button::{Button, ButtonEvent};
-use luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
-use luma::controls::slider::{SliderControl, SliderEvent};
-use luma::controls::textfield::{TextField, TextFieldEvent};
-use luma::theme::ControlSize;
-use luma_color::color_field::{ColorFieldEvent, ColorFieldState};
-use luma_color::color_slider::color_spec::Hsv;
-use luma_color::color_slider::{ColorSliderBuilder, primary_slider_value, sizing};
-use luma_color::composition::ColorCompositionSync;
-use luma_color::{ColorSwatchButtonTemplate, ColorSwatchData};
-use luma_look_radix::{Look, SemanticRole};
-use luma_look_radix as radix;
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
+use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
+use gpui_luma::theme::ControlSize;
+use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldState};
+use gpui_luma_color::color_slider::color_spec::Hsv;
+use gpui_luma_color::color_slider::{ColorSliderBuilder, primary_slider_value, sizing};
+use gpui_luma_color::composition::ColorCompositionSync;
+use gpui_luma_color::{ColorSwatchButtonTemplate, ColorSwatchData};
+use gpui_luma_look_radix::{Look, SemanticRole};
+use gpui_luma_look_radix as radix;
 
 const SWATCH_SIZE: f32 = 16.0;
 const SWATCH_RADIUS: f32 = 2.0;

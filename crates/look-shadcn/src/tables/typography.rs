@@ -1,6 +1,6 @@
 //! Resolved runtime text style and its source metadata.
 use gpui::SharedString;
-use luma::theme::{ControlSize, LumaTextStyle};
+use gpui_luma::theme::{ControlSize, LumaTextStyle};
 use crate::{ShadcnModeTokens, TypographySource};
 use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, resolve_button_metrics_rule};
 

@@ -1,11 +1,11 @@
 //! Colors tab screen — Radix Colors catalog matrix.
 
 use gpui::{Hsla, div, hsla, linear_color_stop, linear_gradient, prelude::*, px};
-use luma::hstack;
-use luma::vstack;
-use luma::theme::ThemeMode;
-use luma_color::ColorSwatch;
-use luma_look_radix::{BLACK_ALPHA_STEPS, Look, WHITE_ALPHA_STEPS, color_families, parse_color};
+use gpui_luma::hstack;
+use gpui_luma::vstack;
+use gpui_luma::theme::ThemeMode;
+use gpui_luma_color::ColorSwatch;
+use gpui_luma_look_radix::{BLACK_ALPHA_STEPS, Look, WHITE_ALPHA_STEPS, color_families, parse_color};
 
 const COLOR_MATRIX_LABEL_W: f32 = 112.0;
 const COLOR_MATRIX_CELL_W: f32 = 95.0;
@@ -87,7 +87,7 @@ fn page_gradient(start: Hsla, end: Hsla) -> gpui::Background {
     linear_gradient(180.0, linear_color_stop(start, 0.0), linear_color_stop(end, 1.0 / 3.0))
 }
 
-fn color_catalog_row(family: &luma_look_radix::RawColorScale, muted: Hsla) -> gpui::Div {
+fn color_catalog_row(family: &gpui_luma_look_radix::RawColorScale, muted: Hsla) -> gpui::Div {
     let mut row = hstack! {
         gap=3;
         div().w(px(COLOR_MATRIX_LABEL_W)).flex_none().text_sm().text_color(muted).child(family.family),
@@ -117,7 +117,7 @@ fn alpha_catalog_row(label: &'static str, values: &[&'static str; 12], muted: Hs
                 .justify_center()
                 .child(
                     ColorSwatch::new(parse_color(value))
-                        .size(luma::theme::ControlSize::Lg)
+                        .size(gpui_luma::theme::ControlSize::Lg)
                         .height(px(COLOR_MATRIX_CELL_H))
                         .rounded(px(0.0))
                         .bordered(false)

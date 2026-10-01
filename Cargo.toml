@@ -19,7 +19,7 @@ members = [
 default-members = ["crates/sdk", "apps/luma-studio", "apps/neumorphic-demo", "apps/color-viz"]
 
 [workspace.package]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/scottcg/gpui-luma"
@@ -28,10 +28,10 @@ publish = false
 
 [workspace.dependencies]
 anyhow = "1"
-luma = { package = "gpui-luma", version = "0.1", path = "crates/sdk" }
-luma-color = { package = "gpui-luma-color", version = "0.1", path = "crates/luma-color" }
-luma-look-shadcn = { package = "gpui-luma-look-shadcn", version = "0.1", path = "crates/look-shadcn" }
-luma-look-radix = { package = "gpui-luma-look-radix", version = "0.1", path = "crates/look-radix" }
+gpui-luma = { version = "0.1.2", path = "crates/sdk" }
+gpui-luma-color = { version = "0.1.2", path = "crates/luma-color" }
+gpui-luma-look-shadcn = { version = "0.1.2", path = "crates/look-shadcn" }
+gpui-luma-look-radix = { version = "0.1.2", path = "crates/look-radix" }
 luma-app-common = { path = "apps/common" }
 gpui = { package = "gpui-unofficial", version = "1.22.0" }
 lucide-svg-static = { package = "lucide-static-svg", version = "1.45.0" }

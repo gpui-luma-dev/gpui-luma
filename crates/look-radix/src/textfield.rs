@@ -5,11 +5,11 @@
 use std::sync::Arc;
 
 use gpui::{BoxShadow, FontWeight, SharedString, point, px};
-use luma::controls::textfield::{
+use gpui_luma::controls::textfield::{
     TextFieldLook, TextFieldPalette, TextFieldState, TextFieldTemplate, TextFieldTheme, ThemedTextFieldTemplate,
     compose_textfield_look,
 };
-use luma::theme::{ControlSize, LumaTextStyle, MetricTokens, StandardBoxScale};
+use gpui_luma::theme::{ControlSize, LumaTextStyle, MetricTokens, StandardBoxScale};
 
 use crate::look::Look;
 use crate::scale::ScaleFamily;

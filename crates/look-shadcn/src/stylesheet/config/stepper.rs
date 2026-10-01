@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use luma::theme::{ControlSize};
+use gpui_luma::theme::{ControlSize};
 use serde::Deserialize;
 
 use super::control_size_key;

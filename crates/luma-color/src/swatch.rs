@@ -10,8 +10,8 @@ use gpui::{prelude::*, *};
 use crate::checkerboard_paint::{DEFAULT_CHECKERBOARD_SQUARE_SIZE, paint_masked_checkerboard};
 use crate::chrome_tokens::swatch_checkerboard_colors;
 use crate::style::ActiveTheme;
-use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
-use luma::theme::ControlSize;
+use gpui_luma::controls::button::{ButtonRenderModel, ButtonTemplate};
+use gpui_luma::theme::ControlSize;
 
 /// Typed payload for a button-backed color swatch.
 #[derive(Clone, Debug, PartialEq)]

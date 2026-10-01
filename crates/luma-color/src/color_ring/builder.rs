@@ -3,8 +3,8 @@ use std::sync::{Arc, RwLock};
 use gpui::{AppContext, Entity, Hsla, SharedString};
 
 use crate::style::Size;
-use luma::controls::slider::{SliderBuilder, SliderControl, SliderValueMapping, new as new_slider};
-use luma::infra::value::{ControlRange, value_from_input};
+use gpui_luma::controls::slider::{SliderBuilder, SliderControl, SliderValueMapping, new as new_slider};
+use gpui_luma::infra::value::{ControlRange, value_from_input};
 
 use super::delegates::{HueRingDelegate, LightnessRingDelegate, SaturationRingDelegate};
 use super::domain_renderer::ColorRingDomainRenderer;
@@ -228,7 +228,7 @@ impl ColorRingBuilder {
     fn sync_angular_strategy(&mut self) {
         let (min_angle, max_angle) = self.track_context.angle_range();
         self.slider
-            .set_strategy(luma::controls::slider::SliderInputStrategy::Angular { min_angle, max_angle });
+            .set_strategy(gpui_luma::controls::slider::SliderInputStrategy::Angular { min_angle, max_angle });
     }
 }
 

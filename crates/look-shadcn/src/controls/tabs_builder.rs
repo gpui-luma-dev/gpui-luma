@@ -1,10 +1,10 @@
-//! Look-owned tabs builder. Spawn synthesizes the SDK [`luma::controls::tabs::Tabs`].
+//! Look-owned tabs builder. Spawn synthesizes the SDK [`gpui_luma::controls::tabs::Tabs`].
 
 use std::sync::Arc;
 
 use gpui::{App, Context, Div, Entity, SharedString, Stateful};
-use luma::controls::tabs::{TabsBuilder, TabsItem, TabsRenderModel, TabsTemplate, TabsWidthMode};
-use luma::infra::icon::DisclosureIcons;
+use gpui_luma::controls::tabs::{TabsBuilder, TabsItem, TabsRenderModel, TabsTemplate, TabsWidthMode};
+use gpui_luma::infra::icon::DisclosureIcons;
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
 
@@ -101,7 +101,7 @@ impl Tabs {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::tabs::Tabs> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::tabs::Tabs> {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -112,7 +112,7 @@ impl Tabs {
 
     fn into_sdk_builder(self, look: ShadcnLook) -> TabsBuilder {
         let template = self.template.unwrap_or_else(|| look.tabs_template());
-        let mut builder = luma::controls::tabs::Tabs::new(self.id)
+        let mut builder = gpui_luma::controls::tabs::Tabs::new(self.id)
             .template(template)
             .size(self.size.control_size())
             .width_mode(self.width_mode)

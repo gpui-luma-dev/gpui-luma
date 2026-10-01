@@ -1,6 +1,6 @@
 //! Inspect metadata for `progress`.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct ProgressInspectPalette {

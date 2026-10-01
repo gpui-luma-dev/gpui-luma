@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
-use luma::controls::textarea::{
+use gpui_luma::controls::textarea::{
     TextAreaLook, TextAreaPalette, TextAreaState, TextAreaTemplate, TextAreaTheme, ThemedTextAreaTemplate,
     compose_textarea_look,
 };
-use luma::theme::{ControlSize, MetricTokens, StandardBoxScale};
+use gpui_luma::theme::{ControlSize, MetricTokens, StandardBoxScale};
 
 use crate::look::Look;
 use crate::textfield::{TextFieldVariant, resolve_text_chrome_palette};

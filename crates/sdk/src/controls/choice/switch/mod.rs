@@ -230,7 +230,7 @@ pub enum SwitchOrientation {
 /// Builder for [`Switch`] controls.
 ///
 /// Apps should spawn through a look-owned builder (for example
-/// `luma_look_shadcn::Switch::new(...)`) rather than constructing this type
+/// `gpui_luma_look_shadcn::Switch::new(...)`) rather than constructing this type
 /// directly or styling [`ButtonBuilder<SwitchData>`] as a checkbox.
 pub struct SwitchBuilder {
     button: ButtonBuilder<SwitchData>,

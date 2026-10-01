@@ -15,7 +15,7 @@ mod matrices;
 
 use std::sync::LazyLock;
 use gpui::Hsla;
-use luma::theme::ThemeMode;
+use gpui_luma::theme::ThemeMode;
 use crate::ColorScale;
 use color::Color;
 

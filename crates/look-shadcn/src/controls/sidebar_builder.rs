@@ -2,20 +2,20 @@
 //!
 //! ```no_run
 //! use gpui::{Context, Entity};
-//! use luma::controls::sidebar::SidebarBuilder;
-//! use luma_look_shadcn::{Frame, ShadcnLook, Sidebar};
+//! use gpui_luma::controls::sidebar::SidebarBuilder;
+//! use gpui_luma_look_shadcn::{Frame, ShadcnLook, Sidebar};
 //!
 //! fn standalone<M: 'static>(
 //!     look: &ShadcnLook, content: SidebarBuilder, cx: &mut Context<M>,
-//! ) -> Entity<luma::controls::frame::FrameControl> {
+//! ) -> Entity<gpui_luma::controls::frame::FrameControl> {
 //!     let navigation = Sidebar::new("nav").look(look).sidebar(content).spawn(cx);
 //!     Frame::sidebar("nav-frame").look(look).child(navigation).spawn(cx)
 //! }
 //! ```
 
 use gpui::{Context, Entity, SharedString};
-use luma::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
-use luma::controls::sidebar::{
+use gpui_luma::controls::scroll_container::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
+use gpui_luma::controls::sidebar::{
     SidebarBuilder, SidebarContentBuilder, SidebarControlBuilder, SidebarFooterBuilder, SidebarGroupBuilder,
     SidebarHeaderBuilder, SidebarMenuBuilder, SidebarMenuItemBuilder, SidebarMenuSubBuilder, SidebarPresentation,
 };
@@ -30,7 +30,7 @@ pub struct Sidebar {
 
 impl Sidebar {
     pub fn new(id: impl Into<SharedString>) -> Self {
-        Self { look: None, builder: luma::controls::sidebar::SidebarControl::new(id) }
+        Self { look: None, builder: gpui_luma::controls::sidebar::SidebarControl::new(id) }
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
@@ -89,7 +89,7 @@ impl Sidebar {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<luma::controls::sidebar::SidebarControl> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::sidebar::SidebarControl> {
         let look = resolve_look_from(self.look.as_ref(), cx);
         self.builder
             .panel_template(look.sidebar_panel_template())
@@ -98,35 +98,35 @@ impl Sidebar {
     }
 
     pub fn panel(id: impl Into<SharedString>) -> SidebarBuilder {
-        luma::controls::sidebar::sidebar(id)
+        gpui_luma::controls::sidebar::sidebar(id)
     }
 
     pub fn header() -> SidebarHeaderBuilder {
-        luma::controls::sidebar::sidebar_header()
+        gpui_luma::controls::sidebar::sidebar_header()
     }
 
     pub fn content() -> SidebarContentBuilder {
-        luma::controls::sidebar::sidebar_content()
+        gpui_luma::controls::sidebar::sidebar_content()
     }
 
     pub fn group() -> SidebarGroupBuilder {
-        luma::controls::sidebar::sidebar_group()
+        gpui_luma::controls::sidebar::sidebar_group()
     }
 
     pub fn menu(id: impl Into<SharedString>) -> SidebarMenuBuilder {
-        luma::controls::sidebar::sidebar_menu(id)
+        gpui_luma::controls::sidebar::sidebar_menu(id)
     }
 
     pub fn menu_item(id: impl Into<SharedString>, label: impl Into<SharedString>) -> SidebarMenuItemBuilder {
-        luma::controls::sidebar::sidebar_menu_item(id, label)
+        gpui_luma::controls::sidebar::sidebar_menu_item(id, label)
     }
 
     pub fn menu_sub() -> SidebarMenuSubBuilder {
-        luma::controls::sidebar::sidebar_menu_sub()
+        gpui_luma::controls::sidebar::sidebar_menu_sub()
     }
 
     pub fn footer() -> SidebarFooterBuilder {
-        luma::controls::sidebar::sidebar_footer()
+        gpui_luma::controls::sidebar::sidebar_footer()
     }
 }
 

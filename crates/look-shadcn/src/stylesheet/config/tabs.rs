@@ -1,4 +1,4 @@
-use luma::theme::{InteractionLayer};
+use gpui_luma::theme::{InteractionLayer};
 use serde::Deserialize;
 
 use super::{EnabledColorRule, find_enabled_color_rule, matches_optional_bool, matches_optional_layer};

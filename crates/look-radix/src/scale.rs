@@ -8,8 +8,8 @@
 //! Page chrome often mixes families (e.g. color step 3 → gray step 1).
 
 use gpui::Hsla;
-use luma::theme::ThemeMode;
-use luma::theme::provenance::ResolvedColor;
+use gpui_luma::theme::ThemeMode;
+use gpui_luma::theme::provenance::ResolvedColor;
 
 /// 1-based Radix-style scale step (`1`…`12`).
 pub type ScaleStep = u8;
@@ -157,7 +157,7 @@ mod tests {
     fn seeded_scales_report_custom_provenance() {
         let seeded = color_scale_from_seed(hsla(0.58, 0.72, 0.58, 1.0), ThemeMode::Light);
         match seeded.resolved(9).source {
-            luma::theme::provenance::ColorSource::ScaleStep { family, step } => {
+            gpui_luma::theme::provenance::ColorSource::ScaleStep { family, step } => {
                 assert_eq!(family, CUSTOM_PALETTE);
                 assert_eq!(step, 9);
             }

@@ -6,10 +6,10 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, FontWeight, Hsla, IntoElement, SharedString, Window, div, prelude::*, px};
-use luma::controls::button::{ButtonRenderModel, ButtonTemplate};
-use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use luma::hstack;
-use luma_look_radix::{Paint, ButtonVariant, Look, LookControlExt};
+use gpui_luma::controls::button::{ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::hstack;
+use gpui_luma_look_radix::{Paint, ButtonVariant, Look, LookControlExt};
 
 use super::buttons::{RADIX_VARIANTS, VariantDef};
 

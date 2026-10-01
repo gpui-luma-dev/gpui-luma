@@ -1,6 +1,6 @@
 //! Shared ControlSize → font-size mapping from `button.metrics`.
 
-use luma::theme::{ControlSize, LumaTextStyle};
+use gpui_luma::theme::{ControlSize, LumaTextStyle};
 
 use crate::mode::ShadcnModeTokens;
 use crate::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};

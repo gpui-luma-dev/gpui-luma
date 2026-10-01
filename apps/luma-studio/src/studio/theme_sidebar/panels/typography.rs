@@ -5,17 +5,17 @@ use gpui::{
     AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Stateful, Subscription, Window, div,
     prelude::*, px,
 };
-use luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
-use luma::controls::search_selector::{
+use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
+use gpui_luma::controls::search_selector::{
     SearchSelector, SearchSelectorEvent, SearchSelectorItemRenderModel, SearchSelectorItemTemplate,
     SearchSelectorRenderModel, SearchSelectorTemplate, SearchSelectorTemplateHandlers, SelectionItem,
     default_search_selector_template, make_search_selector_item_template,
 };
-use luma::vstack;
+use gpui_luma::vstack;
 use crate::studio::font_catalog::{FontCatalog, FontSlot};
 use crate::studio::font_family_match::{clean_css_family_name, match_css_named_family};
-use luma_look_shadcn::{ShadcnFont, ShadcnLook};
-use luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::{ShadcnFont, ShadcnLook};
+use gpui_luma_look_shadcn as shadcn;
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::super::model::TYPOGRAPHY_CATEGORIES;
@@ -267,7 +267,7 @@ impl TypographyPanel {
         &self,
         role: &FontFamilyRole,
         search_selector: &SearchSelector,
-        label_typography: luma::theme::LumaTextStyle,
+        label_typography: gpui_luma::theme::LumaTextStyle,
         label_color: gpui::Hsla,
     ) -> AnyElement {
         vstack! {
@@ -456,7 +456,7 @@ fn font_item_template_element_with_loaded(
         .child(item.item.label.clone());
     let mut content = div().flex().items_center().justify_between().flex_1().child(label);
     if is_loaded {
-        content = content.child(div().ml_2().child(luma::infra::icon::lucide_icon(
+        content = content.child(div().ml_2().child(gpui_luma::infra::icon::lucide_icon(
             LucideIcon::Check,
             gpui::hsla(0.38, 0.65, 0.48, 1.0),
             14.0,

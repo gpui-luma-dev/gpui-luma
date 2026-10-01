@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px};
-use luma::controls::textarea::{
+use gpui_luma::controls::textarea::{
     TextAreaLineMetric, TextAreaRenderModel, TextAreaState, TextAreaTemplate, TextAreaTheme, ThemedTextAreaTemplate,
 };
-use luma::controls::tabs::Tabs;
-use luma::theme::{ControlSize, StandardBoxScale};
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::tabs::Tabs;
+use gpui_luma::theme::{ControlSize, StandardBoxScale};
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::shared::preview_handlers::input_textarea_handlers;
 use crate::studio::style::shared::shadow_matrix::{ShadowPreviewShape, render_shadow_token_matrix};
@@ -251,7 +251,7 @@ fn input_textarea_shape_metric(
     end: usize,
     text: String,
     line_ix: usize,
-    look: &luma::controls::textarea::TextAreaLook,
+    look: &gpui_luma::controls::textarea::TextAreaLook,
     window: &mut Window,
 ) -> TextAreaLineMetric {
     let run = TextRun {
@@ -292,7 +292,7 @@ fn input_textarea_look(
     state: TextAreaState,
     enabled: bool,
     window: &Window,
-) -> luma::controls::textarea::TextAreaLook {
+) -> gpui_luma::controls::textarea::TextAreaLook {
     let scale = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), window.scale_factor());
     theme.resolve_look(state, enabled, ControlSize::Md, &scale)
 }

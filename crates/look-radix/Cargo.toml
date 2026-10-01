@@ -10,12 +10,9 @@ homepage.workspace = true
 keywords = ["gpui", "gui", "radix", "themes", "widgets"]
 categories = ["gui"]
 
-[lib]
-name = "luma_look_radix"
-
 [dependencies]
 gpui.workspace = true
-luma.workspace = true
+gpui-luma.workspace = true
 
 [lints]
 workspace = true

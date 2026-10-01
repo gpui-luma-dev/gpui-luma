@@ -1,10 +1,10 @@
 //! Shared layout and readout helpers for color control expositions.
 
 use gpui::{FontWeight, Hsla, div, prelude::*, px};
-use luma_color::ColorSwatch;
-use luma_color::color_field::ColorFieldEvent;
-use luma::controls::slider::SliderEvent;
-use luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnRadius, ShadcnTextRole, ShadcnTextSize};
+use gpui_luma_color::ColorSwatch;
+use gpui_luma_color::color_field::ColorFieldEvent;
+use gpui_luma::controls::slider::SliderEvent;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnRadius, ShadcnTextRole, ShadcnTextSize};
 
 /// Inner demo-card horizontal padding (`render_demo_card` default).
 pub(super) const COMPOSITION_DEMO_CARD_PADDING_X: f32 = 18.0;
@@ -187,7 +187,7 @@ pub(super) fn format_hsl_label(color: Hsla) -> String {
 pub(super) fn slider_labeled_row_compact_sized(
     look: &ShadcnLook,
     label: &'static str,
-    slider: gpui::Entity<luma::controls::slider::SliderControl>,
+    slider: gpui::Entity<gpui_luma::controls::slider::SliderControl>,
     label_text_size: ShadcnTextSize,
 ) -> gpui::AnyElement {
     div()

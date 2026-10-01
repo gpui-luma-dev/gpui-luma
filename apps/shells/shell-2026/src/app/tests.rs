@@ -1,6 +1,6 @@
 use super::*;
 use super::titlebar::{CLOSED_TITLEBAR_WIDTH, titlebar_compartment_width};
-use luma::shell::TITLE_BAR_LEFT_PADDING;
+use gpui_luma::shell::TITLE_BAR_LEFT_PADDING;
 use gpui::{MouseButton, MouseDownEvent, TestAppContext, VisualTestContext, point};
 
 fn assert_aligned(cx: &mut VisualTestContext) {
@@ -21,7 +21,7 @@ fn assert_aligned(cx: &mut VisualTestContext) {
 fn rendered_separator_tracks_drag_and_restores_from_both_collapse_paths() {
     let mut app = TestAppContext::single();
     let (view, cx) = app.add_window_view(|window, cx| {
-        luma::init(cx).unwrap();
+        gpui_luma::init(cx).unwrap();
         Shell2026App::new(window, cx, ShellThemeChoice::Default)
     });
     assert_aligned(cx);

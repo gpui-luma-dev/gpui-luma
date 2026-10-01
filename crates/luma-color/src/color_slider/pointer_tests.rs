@@ -3,7 +3,7 @@ use gpui::{
     Bounds, Context, Entity, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point,
     Render, TestAppContext, VisualTestContext, Window, div, point, prelude::*, px,
 };
-use luma::controls::slider::{
+use gpui_luma::controls::slider::{
     SliderControl, SliderEvent, SliderRenderModel, SliderTemplate, SliderTemplateHandlers, ThumbId,
 };
 use std::{

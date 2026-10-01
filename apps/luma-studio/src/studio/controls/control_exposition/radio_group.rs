@@ -3,13 +3,13 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Div, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::control_group::ControlGroupItemElementTemplate;
-use luma::controls::radio_group::{
+use gpui_luma::controls::control_group::ControlGroupItemElementTemplate;
+use gpui_luma::controls::radio_group::{
     self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, SelectionMode,
 };
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
@@ -393,7 +393,7 @@ fn delivery_window_items() -> [DeliveryWindowItem; DELIVERY_OPTION_COUNT] {
 fn delivery_window_card(
     item: &DeliveryWindowItem,
     selected: bool,
-    state: luma::infra::state::CompositeItemState,
+    state: gpui_luma::infra::state::CompositeItemState,
     theme: &DeliveryWindowTheme,
 ) -> Div {
     let day = &item.day;

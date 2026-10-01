@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Hsla, Render, Subscription, div, prelude::*, px};
-use luma_color::composition::ColorCompositionSync;
-use luma_color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
-use luma_color::color_field::model::ColorFieldModelKind;
-use luma_color::color_ring::{ColorRingBuilder, primary_slider_value};
-use luma_color::color_slider::color_spec::Hsv as SdkHsv;
-use luma::controls::slider::{SliderControl, SliderEvent};
+use gpui_luma_color::composition::ColorCompositionSync;
+use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
+use gpui_luma_color::color_field::model::ColorFieldModelKind;
+use gpui_luma_color::color_ring::{ColorRingBuilder, primary_slider_value};
+use gpui_luma_color::color_slider::color_spec::Hsv as SdkHsv;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 
 use super::color::{hsla_to_sdk_hsv, sdk_hsv_to_hsla};
 

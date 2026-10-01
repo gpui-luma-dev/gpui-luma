@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use luma::controls::button::ButtonTemplate;
-use luma::controls::switch::{SwitchData, SwitchTheme, ThemedSwitchTemplate};
-use luma::theme::{ControlSize, InteractionState};
+use gpui_luma::controls::button::ButtonTemplate;
+use gpui_luma::controls::switch::{SwitchData, SwitchTheme, ThemedSwitchTemplate};
+use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::controls::button::ShadcnButtonStyle;
 use crate::controls::switch::{switch_look, switch_scale};
@@ -14,16 +14,21 @@ struct ShadcnStyledSwitchTheme {
 }
 
 impl SwitchTheme for ShadcnStyledSwitchTheme {
-    fn resolve(&self, on: bool, state: InteractionState, size: ControlSize) -> luma::controls::switch::SwitchPalette {
+    fn resolve(
+        &self,
+        on: bool,
+        state: InteractionState,
+        size: ControlSize,
+    ) -> gpui_luma::controls::switch::SwitchPalette {
         let tokens = self.theme.mode_tokens();
         switch_look(tokens.as_ref(), self.theme.mode(), self.style, on, state, size)
     }
 
-    fn metrics(&self) -> luma::theme::MetricTokens {
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
 
-    fn scale(&self, size: ControlSize, scale_factor: f32) -> luma::controls::switch::SwitchScale {
+    fn scale(&self, size: ControlSize, scale_factor: f32) -> gpui_luma::controls::switch::SwitchScale {
         let tokens = self.theme.mode_tokens();
         switch_scale(tokens.as_ref(), self.theme.mode(), self.style, size, scale_factor)
     }

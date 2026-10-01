@@ -1,11 +1,11 @@
 //! Persistent guide controls and subscriptions, created on the first visit.
 use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, Subscription, Window, prelude::*};
-use luma::controls::{
+use gpui_luma::controls::{
     tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode},
     tree_view::TreeView,
 };
-use luma_look_radix::Look;
+use gpui_luma_look_radix::Look;
 use super::{PreviewTabs, TabsExamples};
 
 pub struct State {
@@ -51,7 +51,7 @@ fn preview_navigation<M: 'static>(
     subscriptions: &mut Vec<Subscription>,
     cx: &mut Context<M>,
 ) -> Entity<Tabs> {
-    let tabs = luma_look_radix::Tabs::new(format!("radix-studio-{name}-preview-tabs"))
+    let tabs = gpui_luma_look_radix::Tabs::new(format!("radix-studio-{name}-preview-tabs"))
         .look(look)
         .items([
             TabsItem::new("template-preview").label("Template Preview"),

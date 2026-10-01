@@ -1,6 +1,6 @@
 //! Inspect metadata for `badge`.
 
-use luma::theme::{ControlSize, ThemeMode};
+use gpui_luma::theme::{ControlSize, ThemeMode};
 use crate::{BadgeVariant, ResolvedColor, ResolvedMetric, ShadcnLook, ShadcnModeTokens};
 
 pub struct BadgeInspectPalette {

@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use luma::controls::button::{Button, ButtonEvent};
-use luma::controls::pager::{Pager, PagerEvent, PagerStyle};
-use luma::infra::presenter::HasPresenter;
-use luma::{vstack, wrappanel};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnTextSize};
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::pager::{Pager, PagerEvent, PagerStyle};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::{vstack, wrappanel};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnTextSize};
 
 use crate::studio::style::shared::shell::section_shell_with_width;
 
@@ -370,7 +370,7 @@ fn render_sample(
     label: &'static str,
     pager: Pager,
     muted_text: gpui::Hsla,
-    label_style: luma::theme::LumaTextStyle,
+    label_style: gpui_luma::theme::LumaTextStyle,
 ) -> AnyElement {
     div()
         .w_full()

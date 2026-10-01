@@ -1,9 +1,9 @@
-//! Look-owned checkbox builder. Spawn synthesizes the SDK [`luma::controls::checkbox::Checkbox`].
+//! Look-owned checkbox builder. Spawn synthesizes the SDK [`gpui_luma::controls::checkbox::Checkbox`].
 
 use gpui::{App, Context, SharedString};
-use luma::controls::button::{ButtonContentContext, ControlPresenter, HasPresenter};
-use luma::controls::checkbox::{CheckboxBuilder, CheckboxData};
-use luma::infra::icon::SelectionStatusIcons;
+use gpui_luma::controls::button::{ButtonContentContext, ControlPresenter, HasPresenter};
+use gpui_luma::controls::checkbox::{CheckboxBuilder, CheckboxData};
+use gpui_luma::infra::icon::SelectionStatusIcons;
 use super::button::ShadcnButtonStyle;
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
@@ -126,7 +126,7 @@ impl Checkbox {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> luma::controls::checkbox::Checkbox {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::checkbox::Checkbox {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -137,7 +137,7 @@ impl Checkbox {
 
     fn into_sdk_builder(self, look: ShadcnLook) -> CheckboxBuilder {
         let template = look.checkbox_template(self.style);
-        let mut builder = luma::controls::checkbox::new(self.id)
+        let mut builder = gpui_luma::controls::checkbox::new(self.id)
             .template(template)
             .size(self.size.control_size())
             .with_data(self.checked)
@@ -172,7 +172,7 @@ impl HasPresenter<ButtonContentContext<CheckboxData>> for Checkbox {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::controls::button::HasPresenter;
+    use gpui_luma::controls::button::HasPresenter;
 
     #[test]
     fn with_data_keeps_shadcn_axes() {

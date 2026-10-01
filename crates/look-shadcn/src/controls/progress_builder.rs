@@ -1,7 +1,7 @@
-//! Look-owned progress builder. Spawn synthesizes the SDK [`luma::controls::progress::Progress`].
+//! Look-owned progress builder. Spawn synthesizes the SDK [`gpui_luma::controls::progress::Progress`].
 
-use luma::controls::progress::{ProgressBuilder, ProgressDirection, ProgressOrientation};
-use luma::infra::value::ControlRange;
+use gpui_luma::controls::progress::{ProgressBuilder, ProgressDirection, ProgressOrientation};
+use gpui_luma::infra::value::ControlRange;
 use gpui::{Context, SharedString};
 
 use crate::look::{ShadcnLook, resolve_look_from};
@@ -17,11 +17,16 @@ pub struct Progress {
 
 impl Progress {
     pub fn new(id: impl Into<SharedString>) -> Self {
-        Self { look: None, linear: false, builder: luma::controls::progress::new(id), size: ShadcnSize::Md }
+        Self { look: None, linear: false, builder: gpui_luma::controls::progress::new(id), size: ShadcnSize::Md }
     }
 
     pub fn linear(id: impl Into<SharedString>) -> Self {
-        Self { look: None, linear: true, builder: luma::controls::progress::new(id).linear(), size: ShadcnSize::Md }
+        Self {
+            look: None,
+            linear: true,
+            builder: gpui_luma::controls::progress::new(id).linear(),
+            size: ShadcnSize::Md,
+        }
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
@@ -87,7 +92,7 @@ impl Progress {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> luma::controls::progress::Progress {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::progress::Progress {
         let look = resolve_look_from(self.look.as_ref(), cx);
         self.into_sdk_builder(look).spawn(cx)
     }

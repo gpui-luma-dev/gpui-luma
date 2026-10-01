@@ -1,6 +1,6 @@
 //! Shared table metric resolution.
 
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::{LookContext, ResolvedMetric, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]
@@ -14,7 +14,7 @@ pub struct TableMetricTable {
 }
 
 pub fn resolve_table_metrics(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: ControlSize) -> TableMetricTable {
-    use luma::theme::ListRowScale;
+    use gpui_luma::theme::ListRowScale;
 
     use crate::catalog::SpacingField;
     use super::helpers::{control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};

@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, Hsla, IntoElement, SharedString, div, prelude::*, px};
-use luma::controls::tabs::{
+use gpui_luma::controls::tabs::{
     Tabs, TabsEvent, TabsItem, TabsTheme, TabsListLook, TabsItemLook, TabsBaseline, ThemedTabsTemplate,
 };
-use luma::theme::{ControlSize, InteractionState};
-use luma_look_radix::{Accent, Gray, Look, ScaleFamily, TabsSize};
+use gpui_luma::theme::{ControlSize, InteractionState};
+use gpui_luma_look_radix::{Accent, Gray, Look, ScaleFamily, TabsSize};
 
 use super::matrix_grid::{preview_tabbed, fixed_grid, equal_data_columns};
 
@@ -20,7 +20,7 @@ pub struct TabsExamples {
 }
 
 fn example<M: 'static>(id: String, look: &Look, size: TabsSize, enabled: bool, cx: &mut Context<M>) -> Entity<Tabs> {
-    luma_look_radix::Tabs::new(id)
+    gpui_luma_look_radix::Tabs::new(id)
         .look(look)
         .line()
         .size(size)
@@ -38,7 +38,7 @@ fn example<M: 'static>(id: String, look: &Look, size: TabsSize, enabled: bool, c
 
 impl TabsExamples {
     pub fn spawn<M: 'static>(look: &Look, cx: &mut Context<M>) -> Self {
-        let navigation = luma_look_radix::Tabs::new("guide-tabs-preview-navigation")
+        let navigation = gpui_luma_look_radix::Tabs::new("guide-tabs-preview-navigation")
             .look(look)
             .with_template_modifier(|root, _| root.w_full())
             .items([
@@ -153,7 +153,7 @@ impl TabsTheme for ContrastTabsTheme {
 }
 
 fn color_example<M: 'static>(id: String, look: &Look, contrast: bool, cx: &mut Context<M>) -> Entity<Tabs> {
-    let base = luma_look_radix::tabs_theme(look);
+    let base = gpui_luma_look_radix::tabs_theme(look);
     let theme: Arc<dyn TabsTheme> = if contrast {
         Arc::new(ContrastTabsTheme { base, look: look.clone() })
     } else {
@@ -170,12 +170,12 @@ fn color_example<M: 'static>(id: String, look: &Look, contrast: bool, cx: &mut C
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::ThemeMode;
+    use gpui_luma::theme::ThemeMode;
 
     #[test]
     fn contrast_indicator_tracks_palette_and_mode_without_changing_labels() {
         let look = Look::built_in();
-        let base = luma_look_radix::tabs_theme(&look);
+        let base = gpui_luma_look_radix::tabs_theme(&look);
         let contrast = ContrastTabsTheme { base: base.clone(), look: look.clone() };
         for accent in [Accent::Gold, Accent::Bronze] {
             look.set_palettes(accent, Gray::Auto);

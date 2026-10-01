@@ -1,15 +1,15 @@
 //! Inspect metadata for `textarea` (delegates to textfield).
 
-use luma::controls::textarea::TextAreaState;
-use luma::theme::{ControlSize, ThemeMode};
+use gpui_luma::controls::textarea::TextAreaState;
+use gpui_luma::theme::{ControlSize, ThemeMode};
 use crate::{ShadcnModeTokens, ShadcnTextFieldStyle};
 
 use super::textfield::{
     TextFieldInspectMetrics, TextFieldInspectPalette, inspect_textfield_color_palette, inspect_textfield_metrics,
 };
 
-fn textfield_state_from(state: TextAreaState) -> luma::controls::textfield::TextFieldState {
-    luma::controls::textfield::TextFieldState {
+fn textfield_state_from(state: TextAreaState) -> gpui_luma::controls::textfield::TextFieldState {
+    gpui_luma::controls::textfield::TextFieldState {
         hovered: state.hovered,
         focused: state.focused,
         focus_visible: state.focus_visible,

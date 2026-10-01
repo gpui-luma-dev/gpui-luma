@@ -1,6 +1,6 @@
 //! Shared stepper metric resolution.
 
-use luma::theme::{ControlSize, ThemeMode};
+use gpui_luma::theme::{ControlSize, ThemeMode};
 use crate::ShadcnModeTokens;
 
 #[derive(Clone, Debug)]

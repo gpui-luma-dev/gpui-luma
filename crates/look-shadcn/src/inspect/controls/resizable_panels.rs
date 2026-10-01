@@ -1,9 +1,9 @@
 //! Inspect metadata for `resizable_panels`.
 
-use luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
-use luma::controls::resizable_panels::ResizeHandleSize;
+use gpui_luma::controls::resizable_panels::ResizeHandleSize;
 
 pub struct ResizablePanelsInspectPalette {
     pub border: ResolvedColor,
@@ -46,7 +46,7 @@ pub fn inspect_resizable_panels_metrics(handle_size: ResizeHandleSize) -> Resiza
 mod tests {
     use super::*;
     use crate::inspect::test_support::sample_catalog;
-    use luma::theme::InteractionLayer;
+    use gpui_luma::theme::InteractionLayer;
 
     #[test]
     fn resizable_panels_metadata_covers_enabled_and_disabled_paths() {
@@ -59,7 +59,7 @@ mod tests {
         let palette = inspect_resizable_panels_color_palette(
             &mode,
             ThemeMode::Light,
-            luma::theme::InteractionState { hovered: true, ..Default::default() },
+            gpui_luma::theme::InteractionState { hovered: true, ..Default::default() },
         );
         let resolver = LookResolver::new(&mode.catalog, ThemeMode::Light, "test");
         let expected = crate::tables::resolve_resizable_panels_colors(&resolver, false, InteractionLayer::Hovered)

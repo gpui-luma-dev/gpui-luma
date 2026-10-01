@@ -3,13 +3,13 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use luma::controls::listbox::{SelectionMode, SelectionPolicy};
-use luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
-use luma::infra::presenter::HasPresenter;
-use luma::vstack;
-use luma_look_shadcn::{self as shadcn, ShadcnLook, LumaTypographyExt, ShadcnTextSize};
-use luma_look_shadcn::prelude::*;
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use gpui_luma::controls::listbox::{SelectionMode, SelectionPolicy};
+use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::vstack;
+use gpui_luma_look_shadcn::{self as shadcn, ShadcnLook, LumaTypographyExt, ShadcnTextSize};
+use gpui_luma_look_shadcn::prelude::*;
 
 pub(super) const DEFAULT_POLICY: SelectionPolicy =
     SelectionPolicy { mode: SelectionMode::Extended, toggle_off: true, selection_follows_active: false };

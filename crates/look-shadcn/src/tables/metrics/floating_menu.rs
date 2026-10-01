@@ -1,6 +1,6 @@
 //! Shared floating menu metric resolution.
 
-use luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::{LookContext, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]

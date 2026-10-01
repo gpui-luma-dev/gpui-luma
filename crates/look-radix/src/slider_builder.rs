@@ -1,10 +1,10 @@
-//! Look-owned slider builder. Spawn synthesizes the SDK [`luma::controls::slider::Slider`].
+//! Look-owned slider builder. Spawn synthesizes the SDK [`gpui_luma::controls::slider::Slider`].
 
 use gpui::{App, Context, Div, SharedString, Stateful};
-use luma::controls::slider::{
+use gpui_luma::controls::slider::{
     SliderBuilder, SliderOrientation, SliderRenderModel, SliderTemplateModifier, SliderThumbPolicy, TrackPresentation,
 };
-use luma::infra::value::ControlRange;
+use gpui_luma::infra::value::ControlRange;
 
 use crate::look::{Look, resolve_look};
 use crate::slider::{SliderSize, SliderVariant, slider_template};
@@ -152,7 +152,7 @@ impl Slider {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> luma::controls::slider::Slider {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::slider::Slider {
         let look = self.resolve_look(cx);
         self.into_sdk_builder(look).spawn(cx)
     }
@@ -163,7 +163,7 @@ impl Slider {
 
     fn into_sdk_builder(self, look: Look) -> SliderBuilder {
         let template = slider_template(&look, self.variant);
-        let mut builder = luma::controls::slider::new(self.id)
+        let mut builder = gpui_luma::controls::slider::new(self.id)
             .template(template)
             .size(self.size.control_size())
             .range(self.range)
@@ -196,7 +196,7 @@ impl Slider {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use luma::theme::ControlSize;
+    use gpui_luma::theme::ControlSize;
 
     #[test]
     fn size_maps_to_sdk_control_size() {

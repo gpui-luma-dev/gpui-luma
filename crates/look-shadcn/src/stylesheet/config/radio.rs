@@ -1,4 +1,4 @@
-use luma::theme::{InteractionLayer};
+use gpui_luma::theme::{InteractionLayer};
 use serde::Deserialize;
 
 use crate::controls::ShadcnButtonStyle;

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use luma::controls::toolbar::{ThemedToolbarTemplate, ToolbarLook, ToolbarTemplate, ToolbarTheme, ToolbarVariant};
-use luma::theme::ControlSize;
+use gpui_luma::controls::toolbar::{ThemedToolbarTemplate, ToolbarLook, ToolbarTemplate, ToolbarTheme, ToolbarVariant};
+use gpui_luma::theme::ControlSize;
 
 use crate::look::ShadcnLook;
 

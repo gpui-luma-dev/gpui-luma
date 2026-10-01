@@ -3,14 +3,14 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use luma::controls::listbox::{ListBoxInput, ListBoxSnapshot, ListBoxState, SelectionMode, SelectionPolicy};
-use luma::hstack;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::listbox::{ListBoxInput, ListBoxSnapshot, ListBoxState, SelectionMode, SelectionPolicy};
+use gpui_luma::hstack;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::{ListBoxSampleLayout};
 use super::presentation::{ExamplePresentation, SelectionMark};
 use super::markup::listbox;
-use luma::controls::listbox::{ListBoxControl, ListBoxVirtualization};
+use gpui_luma::controls::listbox::{ListBoxControl, ListBoxVirtualization};
 use super::super::event_stream::ControlEventStream;
 
 const ID: &str = "listbox-horizontal";

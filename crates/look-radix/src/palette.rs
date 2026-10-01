@@ -5,7 +5,7 @@
 //! recommended pairing). Both resolve to real `@radix-ui/colors` steps, so `indigo` here is
 //! Radix's indigo rather than an approximation of it.
 
-use luma::theme::ThemeMode;
+use gpui_luma::theme::ThemeMode;
 
 use crate::colors::family_steps;
 use crate::scale::{CUSTOM_PALETTE, ColorScale, ModeScales, ScalePair};
@@ -261,7 +261,7 @@ mod tests {
         assert_eq!(accent_9.hsla(), crate::colors::parse_color("#3e63dd"));
         assert_eq!(gray_9.hsla(), crate::colors::parse_color("#8b8d98"));
         match accent_9.source {
-            luma::theme::provenance::ColorSource::ScaleStep { family, step } => {
+            gpui_luma::theme::provenance::ColorSource::ScaleStep { family, step } => {
                 assert_eq!(family, "indigo");
                 assert_eq!(step, 9);
             }

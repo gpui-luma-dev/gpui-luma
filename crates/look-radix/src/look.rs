@@ -7,8 +7,8 @@ use std::sync::{
 };
 
 use gpui::{Background, Global, Hsla, linear_color_stop, linear_gradient};
-use luma::theme::{MetricTokens, ThemeMode};
-use luma::theme::provenance::ResolvedColor;
+use gpui_luma::theme::{MetricTokens, ThemeMode};
+use gpui_luma::theme::provenance::ResolvedColor;
 
 use crate::button::ClassicButtonParams;
 use crate::palette::{PaletteSlot, Accent, Gray, ThemePalettes, scale_pair};
@@ -58,9 +58,9 @@ impl PageBackground {
 ///
 /// ```no_run
 /// use gpui::{Context, Entity};
-/// use luma::controls::button::Button;
-/// use luma::theme::ThemeMode;
-/// use luma_look_radix::Look;
+/// use gpui_luma::controls::button::Button;
+/// use gpui_luma::theme::ThemeMode;
+/// use gpui_luma_look_radix::Look;
 ///
 /// fn change_mode<M: 'static>(look: &Look, button: &Entity<Button>, cx: &mut Context<M>) {
 ///     look.set_mode(ThemeMode::Dark);

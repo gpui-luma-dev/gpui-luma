@@ -1,17 +1,17 @@
 use std::sync::Arc;
-use luma::motion::VisualTransition;
+use gpui_luma::motion::VisualTransition;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use luma::controls::button::{ButtonContentContext, ButtonEvent, ControlIcon};
-use luma::controls::icon_button::IconButton;
-use luma::controls::table::{TableSelectionMode, TableEvent, PagingTable};
-use luma::controls::pager::PagerStyle;
-use luma::infra::presenter::ControlPresenter;
-use luma::controls::sidebar::{SidebarPresentation, SidebarControl};
-use luma::{column, column_emphasis, paging_table};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::{ShadcnLook, ShadcnTextSize, with_look};
+use gpui_luma::controls::button::{ButtonContentContext, ButtonEvent, ControlIcon};
+use gpui_luma::controls::icon_button::IconButton;
+use gpui_luma::controls::table::{TableSelectionMode, TableEvent, PagingTable};
+use gpui_luma::controls::pager::PagerStyle;
+use gpui_luma::infra::presenter::ControlPresenter;
+use gpui_luma::controls::sidebar::{SidebarPresentation, SidebarControl};
+use gpui_luma::{column, column_emphasis, paging_table};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize, with_look};
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::sidebar::{INITIAL_PROPERTY_SELECTION_ID, property_sidebar};
@@ -94,7 +94,7 @@ impl DashboardPanel {
                         .flex()
                         .items_center()
                         .justify_center()
-                        .child(luma::infra::icon::lucide_icon(
+                        .child(gpui_luma::infra::icon::lucide_icon(
                             LucideIcon::EllipsisVertical,
                             dashboard_muted_text,
                             16.0,
@@ -275,7 +275,7 @@ impl Render for DashboardPanel {
 fn sidebar_toggle_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonContentContext<()>> {
     Arc::new(move |_, _| match &icon {
         ControlIcon::Lucide(lucide) => {
-            div().child(luma::infra::icon::lucide_icon(*lucide, color, 16.0)).into_any_element()
+            div().child(gpui_luma::infra::icon::lucide_icon(*lucide, color, 16.0)).into_any_element()
         }
         ControlIcon::SvgPath(path) => {
             gpui::svg().size(px(16.0)).text_color(color).path(path.clone()).into_any_element()

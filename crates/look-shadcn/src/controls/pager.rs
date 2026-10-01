@@ -1,7 +1,7 @@
 use gpui::FontWeight;
-use luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole};
-use luma::controls::pager::{PagerLook, PagerStyle};
-use luma::theme::{ControlSize, InteractionState};
+use gpui_luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole};
+use gpui_luma::controls::pager::{PagerLook, PagerStyle};
+use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::look::ShadcnLook;
 

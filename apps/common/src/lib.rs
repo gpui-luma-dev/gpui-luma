@@ -8,10 +8,10 @@ mod fonts;
 
 pub use built_in::{BuiltInTheme, built_in_theme, built_in_themes};
 pub use fonts::{GEIST_MONO_FAMILY, JETBRAINS_MONO_FAMILY, RAJDHANI_FAMILY, register, register_all};
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 /// Canonical fallback theme CSS bundled by the shadcn look crate.
-pub use luma_look_shadcn::FALLBACK_CSS;
+pub use gpui_luma_look_shadcn::FALLBACK_CSS;
 
 /// Independently mutable look parsed from [`FALLBACK_CSS`].
 ///

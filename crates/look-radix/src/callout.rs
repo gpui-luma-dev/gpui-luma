@@ -1,7 +1,7 @@
 //! Soft informational callout built from the current Radix accent scale.
 
 use gpui::{Div, SharedString, div, prelude::*, px, svg};
-use luma::controls::button::ControlIcon;
+use gpui_luma::controls::button::ControlIcon;
 
 use crate::{Look, ScaleFamily};
 

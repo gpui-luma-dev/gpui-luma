@@ -3,15 +3,15 @@
 use std::sync::Arc;
 
 use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
-use luma::controls::button::{Button, ButtonEvent};
-use luma::infra::icon::SelectionStatusIcons;
-use luma::infra::presenter::HasPresenter;
-use luma::controls::progress::ProgressDirection;
-use luma::controls::stepper::{StepState, Stepper, StepperLabelPlacement, StepperRenderModel, StepperTemplate};
-use luma::theme::ControlSize;
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::infra::icon::SelectionStatusIcons;
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::controls::progress::ProgressDirection;
+use gpui_luma::controls::stepper::{StepState, Stepper, StepperLabelPlacement, StepperRenderModel, StepperTemplate};
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};

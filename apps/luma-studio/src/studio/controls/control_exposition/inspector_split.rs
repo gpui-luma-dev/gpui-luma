@@ -3,16 +3,16 @@ use std::sync::Arc;
 use gpui::{
     AnyElement, Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px, transparent_black,
 };
-use luma::controls::button::{ButtonContentContext, ButtonEvent};
-use luma::controls::icon_button::IconButton;
-use luma::infra::presenter::ControlPresenter;
-use luma::controls::resizable_panels::{
+use gpui_luma::controls::button::{ButtonContentContext, ButtonEvent};
+use gpui_luma::controls::icon_button::IconButton;
+use gpui_luma::infra::presenter::ControlPresenter;
+use gpui_luma::controls::resizable_panels::{
     PanelHideMode, ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation,
     ResizeHandleSize, ResizeHandleVisibility,
 };
-use luma_look_shadcn::ShadcnLook;
-use luma_look_shadcn as shadcn;
-use luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_shadcn::prelude::*;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::app::LumaStudioApp;
@@ -162,7 +162,7 @@ impl InspectorSplitShell {
 fn inspector_toggle_presenter(color: gpui::Hsla) -> ControlPresenter<ButtonContentContext<()>> {
     std::sync::Arc::new(move |_, _| {
         div()
-            .child(luma::infra::icon::lucide_icon(LucideIcon::InspectionPanel, color, 16.0))
+            .child(gpui_luma::infra::icon::lucide_icon(LucideIcon::InspectionPanel, color, 16.0))
             .into_any_element()
     })
 }

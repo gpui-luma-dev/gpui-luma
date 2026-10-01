@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, FontWeight, IntoElement, Render, Subscription, Window, div, prelude::*, px};
-use luma::theme::ThemeMode;
-use luma::{hstack, vstack};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::{ShadcnLook, ShadcnModeTokens, ShadcnTextRole, ShadcnTextSize};
+use gpui_luma::theme::ThemeMode;
+use gpui_luma::{hstack, vstack};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnModeTokens, ShadcnTextRole, ShadcnTextSize};
 
 use crate::studio::export::token_css_name;
 use crate::studio::overrides::StudioOverrides;
@@ -266,9 +266,9 @@ fn token_color_for_mode(
 
 fn render_palette_sections(
     palette: ModePalette,
-    section_style: luma::theme::LumaTextStyle,
-    row_label_style: luma::theme::LumaTextStyle,
-    code_style: luma::theme::LumaTextStyle,
+    section_style: gpui_luma::theme::LumaTextStyle,
+    row_label_style: gpui_luma::theme::LumaTextStyle,
+    code_style: gpui_luma::theme::LumaTextStyle,
 ) -> AnyElement {
     let ModePalette { title_text, muted_text, sections } = palette;
 
@@ -288,9 +288,9 @@ fn render_section(
     section: PaletteSection,
     title_text: gpui::Hsla,
     muted_text: gpui::Hsla,
-    section_style: luma::theme::LumaTextStyle,
-    row_label_style: luma::theme::LumaTextStyle,
-    code_style: luma::theme::LumaTextStyle,
+    section_style: gpui_luma::theme::LumaTextStyle,
+    row_label_style: gpui_luma::theme::LumaTextStyle,
+    code_style: gpui_luma::theme::LumaTextStyle,
 ) -> AnyElement {
     vstack! {
         gap=12;
@@ -310,8 +310,8 @@ fn render_token_cell(
     row: TokenSwatchRow,
     title_text: gpui::Hsla,
     muted_text: gpui::Hsla,
-    row_label_style: luma::theme::LumaTextStyle,
-    code_style: luma::theme::LumaTextStyle,
+    row_label_style: gpui_luma::theme::LumaTextStyle,
+    code_style: gpui_luma::theme::LumaTextStyle,
 ) -> AnyElement {
     hstack! {
         gap=PALETTE_CELL_INNER_GAP align=center;

@@ -4,7 +4,7 @@
 mod colors_data;
 
 use gpui::{Hsla, hsla};
-use luma::theme::ThemeMode;
+use gpui_luma::theme::ThemeMode;
 
 pub use colors_data::{BLACK_ALPHA_STEPS, DARK_FAMILIES, LIGHT_FAMILIES, COLORS_VERSION, WHITE_ALPHA_STEPS};
 pub use colors_data::{RawColorScale, ColorValueKind};

@@ -2,21 +2,21 @@ use std::cell::Cell;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Window, div, prelude::*, px, transparent_black};
-use luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use luma::controls::button::{Button, ButtonRenderModel, ButtonTemplate};
-use luma::controls::control_group::{ControlGroupItemElementTemplate, ControlGroupItemRenderModel};
-use luma::infra::presenter::HasPresenter;
-use luma::controls::radio_button::{RadioButtonData, ThemedRadioButtonTemplate};
-use luma::controls::radio_group::{RadioGroup, RadioGroupItemLike, horizontal as horizontal_radio_group};
-use luma::controls::textarea::TextArea;
-use luma::controls::textfield::TextField;
-use luma::theme::{InteractionLayer, LumaTextStyle};
-use luma_look_shadcn::ShadcnToken;
-use luma_look_shadcn as shadcn;
-use luma::{declare_form, form_field, hstack, vstack};
-use luma_look_shadcn::prelude::*;
-use luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use gpui_luma::controls::button::{Button, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::control_group::{ControlGroupItemElementTemplate, ControlGroupItemRenderModel};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::controls::radio_button::{RadioButtonData, ThemedRadioButtonTemplate};
+use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItemLike, horizontal as horizontal_radio_group};
+use gpui_luma::controls::textarea::TextArea;
+use gpui_luma::controls::textfield::TextField;
+use gpui_luma::theme::{InteractionLayer, LumaTextStyle};
+use gpui_luma_look_shadcn::ShadcnToken;
+use gpui_luma_look_shadcn as shadcn;
+use gpui_luma::{declare_form, form_field, hstack, vstack};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
 use super::common::titled_card;
 
