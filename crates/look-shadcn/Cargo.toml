@@ -4,6 +4,8 @@ version.workspace = true
 edition = "2024"
 license = "Apache-2.0"
 publish = false
+repository.workspace = true
+homepage.workspace = true
 
 [lib]
 name = "luma_look_shadcn"

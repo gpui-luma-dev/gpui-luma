@@ -33,12 +33,16 @@ For custom stylesheet TOML, use `StylesheetConfig::parse`, then
 
 **Luma Studio** — Shadcn look workbench (control docs, theme inspection):
 
+![Luma Studio](docs/screenshots/luma-shadcn.png)
+
 ```bash
 cargo run -p luma-studio
 # or: just luma-studio
 ```
 
 **Luma Radix Studio** — Radix look stub workbench:
+
+![Luma Radix Studio](docs/screenshots/luma-radix.png)
 
 ```bash
 cargo run -p luma-radix-studio

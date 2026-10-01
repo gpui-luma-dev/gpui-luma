@@ -23,6 +23,8 @@ default-members = ["crates/gpui-luma", "apps/luma-studio", "apps/neumorphic-demo
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
+repository = "https://github.com/scottcg/gpui-luma"
+homepage = "https://gpui-luma.dev"
 publish = false
 
 [workspace.dependencies]
