@@ -18,7 +18,7 @@ impl HeightIndex {
         for (index, value) in values.iter().enumerate() {
             let i = index + 1;
             sums[i] += value;
-            let parent = i + (i & i.wrapping_neg());
+            let parent = i + i.isolate_lowest_one();
             if parent < sums.len() {
                 sums[parent] += sums[i];
             }
@@ -41,7 +41,7 @@ impl HeightIndex {
         let mut i = index + 1;
         while i < self.sums.len() {
             self.sums[i] += delta;
-            i += i & i.wrapping_neg();
+            i += i.isolate_lowest_one();
         }
     }
 

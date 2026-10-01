@@ -1,4 +1,4 @@
-use gpui::{App, Context, Div, Render, SharedString, Stateful, WeakEntity, Window, div, prelude::*, px, relative};
+use gpui::{App, Context, Div, Render, SharedString, Stateful, WeakEntity, Window, div, px, relative};
 use crate::infra::drag_drop::{DragDropElementExt, DragDropEvent, bind_drag_source};
 use super::super::drag::TreeDrag;
 use super::super::{TreeDropLocation, TreeDropPosition, TreeDropProposal, TreeViewDragEvent, TreeDragEndReason};
