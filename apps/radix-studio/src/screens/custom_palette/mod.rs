@@ -3,6 +3,7 @@
 mod home_controls;
 mod icon_samples;
 mod preview_toolbar;
+mod tooltip_examples;
 mod signup_mesh;
 mod task_samples;
 
@@ -249,7 +250,14 @@ fn preview_section(
 ) -> impl IntoElement {
     WideMiddleLayout::new(
         preview_layout,
-        preview_column_left(look, controls.tree, controls.search_field, controls.search_submit, controls.icon_samples),
+        preview_column_left(
+            look,
+            controls.tree,
+            controls.search_field,
+            controls.search_submit,
+            controls.tooltip_slider,
+            controls.icon_samples,
+        ),
         vstack! {
             gap=14;
             hstack! {
@@ -283,6 +291,7 @@ fn preview_column_left(
     tree: TreeView<()>,
     search_field: TextField,
     search_submit: Entity<Button>,
+    tooltip_slider: gpui_luma::controls::slider::Slider,
     icon_samples: icon_samples::IconSamples,
 ) -> impl IntoElement {
     vstack! {
@@ -293,6 +302,9 @@ fn preview_column_left(
             search_submit,
         }
         .w_full(),
+        div().flex().flex_col().gap(px(8.0))
+            .child(div().text_size(px(12.0)).child("Tooltip experiment · hover or focus"))
+            .child(tooltip_slider),
         alert_card(look),
         super::shared::tree_view::panel(tree, look),
         div().flex().flex_wrap().gap(px(12.0)).children([

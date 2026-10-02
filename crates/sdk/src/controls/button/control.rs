@@ -1,3 +1,4 @@
+use crate::infra::attachments::{AttachmentHost, AttachmentTarget};
 use std::sync::Arc;
 
 use gpui::{
@@ -17,6 +18,7 @@ use crate::theme::observe_theme_revision;
 pub struct Button<D = ()> {
     pub(crate) model: super::model::ButtonModel<D>,
     command: CommandCore,
+    attachments: AttachmentHost,
     focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
 }
@@ -44,6 +46,7 @@ impl<D: Clone + 'static> Button<D> {
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
             model: builder.model,
+            attachments: AttachmentHost::with_accessible_role(gpui::Role::Button),
             command: CommandCore::new_with_tab_stop(enabled, tab_stop, cx),
             focus_in_subscription: None,
             focus_out_subscription: None,
@@ -110,10 +113,16 @@ impl<D: Clone + 'static> Button<D> {
     }
 
     fn handle_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.model.enabled && !event.is_keyboard() {
+            self.attachments.dismiss(cx);
+        }
         self.command.handle_click(self.model.enabled, event, cx);
     }
 
     fn handle_activate_control(&mut self, event: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.model.enabled {
+            self.attachments.dismiss(cx);
+        }
         self.command.handle_activate_control(self.model.enabled, event, cx);
     }
 
@@ -169,9 +178,8 @@ impl<D: Clone + 'static> Render for Button<D> {
 
         div()
             .child(
-                self.model
-                    .template
-                    .render(&model, window, cx)
+                self.attachments
+                    .render(self.model.template.render(&model, window, cx), model.state, cx)
                     .track_focus(self.command.focus_handle())
                     .key_context(ControlKeyProfile::Command.context())
                     .on_action(cx.listener(Self::handle_activate_control))
@@ -196,5 +204,14 @@ impl<D: Clone + 'static> IntoElement for Button<D> {
 impl<D: Clone + 'static> From<Button<D>> for AnyElement {
     fn from(button: Button<D>) -> Self {
         button.into_element()
+    }
+}
+
+impl<D: 'static> AttachmentTarget for Button<D> {
+    fn attachments(&self) -> &AttachmentHost {
+        &self.attachments
+    }
+    fn attachments_mut(&mut self) -> &mut AttachmentHost {
+        &mut self.attachments
     }
 }

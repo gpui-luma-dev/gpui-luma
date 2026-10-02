@@ -269,3 +269,5 @@ mod tests {
         assert_eq!(RadioButtonData::new(false).progress, 0.0);
     }
 }
+
+crate::infra::attachments::delegate_tooltips!(RadioButtonControl, gpui::Role::RadioButton);

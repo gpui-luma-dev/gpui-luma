@@ -5,6 +5,9 @@ edition = "2024"
 license = "Apache-2.0"
 publish = false
 
+[features]
+test-support = ["gpui-luma/test-support"]
+
 [dependencies]
 image.workspace = true
 smallvec.workspace = true

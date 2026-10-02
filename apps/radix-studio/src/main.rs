@@ -21,6 +21,8 @@ fn main() {
     let app = gpui_platform::application().with_assets(Assets);
 
     app.run(|cx| {
+        // Keep the pointer visible for keyboard actions such as tooltip dismissal.
+        cx.set_cursor_hide_mode(gpui::CursorHideMode::OnTyping);
         cx.on_action(quit);
         cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
         cx.set_menus([Menu::new("Radix Studio").items([MenuItem::action("Quit", Quit)])]);

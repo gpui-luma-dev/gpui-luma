@@ -112,9 +112,8 @@ impl Render for SliderControl {
                 )
             })
             .child(
-                self.model
-                    .template
-                    .render(&model, handlers, active_thumb_id, window, cx)
+                self.attachments
+                    .render(self.model.template.render(&model, handlers, active_thumb_id, window, cx), model.state, cx)
                     .track_focus(self.interaction.focus_handle())
                     .key_context(ControlKeyProfile::RangeValue.context())
                     .when(self.model.keyboard_position_step.is_some(), |root| {

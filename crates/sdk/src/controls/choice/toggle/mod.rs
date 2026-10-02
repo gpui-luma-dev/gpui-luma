@@ -348,3 +348,5 @@ mod tests {
         assert_eq!(ToggleData::new(false).progress, 0.0);
     }
 }
+
+crate::infra::attachments::delegate_tooltips!(ToggleControl, gpui::Role::Button);

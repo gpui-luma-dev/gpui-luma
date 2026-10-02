@@ -1,5 +1,6 @@
 //! Look-owned radio builder. Spawn synthesizes the SDK [`gpui_luma::controls::radio_button::RadioButton`].
 
+use gpui_luma::infra::attachments::TooltipEntityExt;
 use gpui::{App, Context, SharedString};
 use gpui_luma::controls::button::{ButtonContentContext, ControlPresenter, HasPresenter};
 use gpui_luma::controls::button_family::ButtonFamilyRole;
@@ -132,7 +133,8 @@ impl Radio {
 
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::radio_button::RadioButton {
         let look = self.resolve_look(cx);
-        self.into_sdk_builder(look).spawn(cx)
+        let theme = crate::tooltip::tooltip_theme(&look);
+        self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
     }
 
     fn resolve_look(&self, cx: &App) -> Look {

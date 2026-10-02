@@ -430,3 +430,5 @@ mod tests {
         assert_eq!(SwitchData::new(false).progress, 0.0);
     }
 }
+
+crate::infra::attachments::delegate_tooltips!(SwitchControl, gpui::Role::Switch);

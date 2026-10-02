@@ -23,6 +23,7 @@ mod table;
 mod tabs;
 mod textareas;
 mod textfields;
+mod tooltips;
 
 use std::sync::Arc;
 
@@ -49,6 +50,7 @@ pub struct PreviewTabs {
     pub textareas: Entity<Tabs>,
     pub sliders: Entity<Tabs>,
     pub progress: Entity<Tabs>,
+    pub(crate) tooltips: tooltips::TooltipExamples,
 }
 
 pub fn page(
@@ -192,6 +194,12 @@ pub fn page(
             muted,
             border,
             textfields::tabbed(look, tabs.textfields, fg, muted, border, window, cx),
+        ),
+        section(
+            "Tooltips",
+            "Standard Radix help, shortcut hints and wrapping. Hover a button or Tab to it to open the live tooltip.",
+            fg, muted, border,
+            tabs.tooltips.render(look),
         ),
         section(
             "Tree View",

@@ -2,10 +2,13 @@
 
 use gpui::{Context, Entity};
 use gpui_luma::controls::button::ControlIcon;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::controls::popup_menu::PopupMenu;
-use gpui_luma::controls::toolbar::Toolbar;
+use gpui_luma::controls::toolbar::{Toolbar, ToolbarItem};
 use gpui_luma::infra::menu_item::MenuItem;
-use gpui_luma_look_radix::{self as radix, Look};
+use gpui_luma_look_radix::{self as radix, ButtonSize, Look};
+
+use gpui_luma::prelude::TooltipEntityExt;
 
 pub fn spawn<T: 'static>(look: &Look, cx: &mut Context<T>) -> (Toolbar, Entity<PopupMenu>) {
     let mut toolbar = radix::Toolbar::new("signup-preview-toolbar").look(look);
@@ -16,7 +19,7 @@ pub fn spawn<T: 'static>(look: &Look, cx: &mut Context<T>) -> (Toolbar, Entity<P
         ("component-1", "Component"),
         ("dots-horizontal", "More"),
         ("text", "Text"),
-        ("font-italic", "Italic"),
+        ("font-italic", "Typography"),
         ("lightning-bolt", "Interactions"),
         ("scissors", "Slice"),
         ("cube", "3D"),
@@ -28,7 +31,18 @@ pub fn spawn<T: 'static>(look: &Look, cx: &mut Context<T>) -> (Toolbar, Entity<P
             toolbar = toolbar.separator(format!("preview-tools-separator-{index}"));
         }
         let id = format!("preview-tool-{icon}");
-        toolbar = toolbar.command(id, label, ControlIcon::SvgPath(format!("assets/react-icons/{icon}.svg").into()));
+        let button = radix::Button::new(id.clone())
+            .look(look)
+            .ghost_quiet()
+            .gray()
+            .size(ButtonSize::One)
+            .role(ButtonFamilyRole::Icon)
+            .tab_stop(false)
+            .icon(ControlIcon::SvgPath(format!("assets/react-icons/{icon}.svg").into()))
+            .icon_size(16.0)
+            .spawn(cx)
+            .help(label, cx);
+        toolbar = toolbar.item(ToolbarItem::command_button(id, button, cx).label(label));
     }
     let toolbar = toolbar.spawn(cx);
     let actions = radix::PopupMenu::new("signup-preview-actions")

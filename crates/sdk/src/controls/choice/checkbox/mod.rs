@@ -291,3 +291,5 @@ mod tests {
         assert_eq!(CheckboxData::new(false).progress, 0.0);
     }
 }
+
+crate::infra::attachments::delegate_tooltips!(CheckboxControl, gpui::Role::CheckBox);

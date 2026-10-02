@@ -1,5 +1,7 @@
 //! Radix Studio app shell — shared state, page routing, and window chrome.
 
+use gpui_luma::prelude::TooltipEntityExt;
+
 use std::sync::{Arc, Mutex};
 
 use gpui::{
@@ -105,6 +107,7 @@ pub struct RadixStudioApp {
     home: custom_palette::PreviewControls,
     style_guide: Option<style_guide::State>,
     shadow_editor: Entity<ClassicShadowEditor>,
+    developer: Option<developer::State>,
     swatch_info: Arc<Mutex<Option<SwatchSelection>>>,
     swatch_overlay: OverlayWindow,
     preview_layout: Entity<WideMiddle>,
@@ -133,10 +136,15 @@ impl RadixStudioApp {
         let accent_color = seed_colors.accent;
         let gray_color = seed_colors.gray;
         let background_color = seed_colors.background;
-        let accent_field = cx.new(|cx| ColorTextField::new(Arc::clone(&draft), "seed-accent", accent_color, cx));
-        let gray_field = cx.new(|cx| ColorTextField::new(Arc::clone(&draft), "seed-gray", gray_color, cx));
-        let background_field =
-            cx.new(|cx| ColorTextField::new(Arc::clone(&draft), "seed-background", background_color, cx));
+        let accent_field = cx
+            .new(|cx| ColorTextField::new(Arc::clone(&draft), "seed-accent", accent_color, cx))
+            .help("Accent seed color. Click the swatch to pick a color or enter a hex value.", cx);
+        let gray_field = cx
+            .new(|cx| ColorTextField::new(Arc::clone(&draft), "seed-gray", gray_color, cx))
+            .help("Gray seed color for neutral surfaces and text. Click the swatch or enter a hex value.", cx);
+        let background_field = cx
+            .new(|cx| ColorTextField::new(Arc::clone(&draft), "seed-background", background_color, cx))
+            .help("Background seed color. Click the swatch to pick a color or enter a hex value.", cx);
 
         let mut subscriptions = Vec::new();
         for (index, field) in [(0, &accent_field), (1, &gray_field), (2, &background_field)] {
@@ -241,6 +249,7 @@ impl RadixStudioApp {
             copy_menu,
             home,
             style_guide: None,
+            developer: None,
             shadow_editor,
             swatch_info,
             swatch_overlay,
@@ -472,7 +481,8 @@ impl Render for RadixStudioApp {
                                         guide.render(&self.theme, window, cx)
                                     }
                                     RadixStudioTab::Developer => {
-                                        developer::page(&self.theme, self.shadow_editor.clone())
+                                        self.developer.get_or_insert_with(|| developer::State::new(&self.theme, cx))
+                                            .render(&self.theme, self.shadow_editor.clone(), cx)
                                     }
                                 },
                             }

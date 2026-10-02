@@ -12,3 +12,5 @@ pub mod overlay_window;
 pub mod popover_button;
 pub mod popup_menu;
 pub mod slide_panel;
+
+pub mod tooltip;

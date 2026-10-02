@@ -122,6 +122,7 @@ mod textfield_builder;
 mod toggle;
 mod toggle_builder;
 mod tone;
+mod tooltip;
 mod toolbar;
 mod toolbar_builder;
 mod tree_view;
@@ -192,3 +193,5 @@ pub use tree_view::{TreeView, tree_view_frame, tree_view_template, tree_view_the
 pub use ext::LookControlExt;
 pub use overlay_window::overlay_window_theme;
 pub use segmented::segmented_radio_template;
+
+pub use tooltip::tooltip_theme;
