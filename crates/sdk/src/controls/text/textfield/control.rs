@@ -690,21 +690,30 @@ impl Render for TextFieldControl {
         let has_prefix_icon = self.model.prefix_icon.is_some();
         let horizontal_scroll = self.horizontal_scroll;
 
+        let input_root = self.model.template.render(
+            &self.render_model_with_offsets(layout_preview.character_offsets.clone(), look),
+            self.template_handlers(cx),
+            window,
+            cx,
+        );
+        let input_root = self
+            .attachments
+            .render(
+                input_root,
+                InteractionState {
+                    hovered: self.state.hovered,
+                    focused: self.state.focused,
+                    disabled: !self.model.enabled,
+                    ..Default::default()
+                },
+                cx,
+            )
+            .track_focus(&self.focus_handle)
+            .tab_stop(self.model.enabled && self.model.tab_stop);
         let root = div()
             .relative()
             .id(format!("{}-theme-{}", self.model.id, self.theme_epoch))
-            .child(
-                self.model
-                    .template
-                    .render(
-                        &self.render_model_with_offsets(layout_preview.character_offsets.clone(), look),
-                        self.template_handlers(cx),
-                        window,
-                        cx,
-                    )
-                    .track_focus(&self.focus_handle)
-                    .tab_stop(self.model.enabled && self.model.tab_stop),
-            )
+            .child(input_root)
             .child(
                 canvas(
                     move |bounds, window, _| {
@@ -757,18 +766,7 @@ impl Render for TextFieldControl {
                 .absolute()
                 .size_full(),
             );
-        self.attachments
-            .render(
-                root,
-                InteractionState {
-                    hovered: self.state.hovered,
-                    focused: self.state.focused,
-                    disabled: !self.model.enabled,
-                    ..Default::default()
-                },
-                cx,
-            )
-            .into_any_element()
+        root.into_any_element()
     }
 }
 

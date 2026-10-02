@@ -75,6 +75,11 @@ impl ToggleControl {
         button_builder.model.data = ToggleData { selected, progress };
         button_builder.model.role = ButtonFamilyRole::Toggle { selected };
         let button = button_builder.spawn(cx);
+        button.update(cx, |button, _| {
+            let host = crate::infra::attachments::AttachmentTarget::attachments_mut(button);
+            host.set_accessible_role(gpui::Role::Button);
+            host.set_checked(selected);
+        });
         let subscription = cx.subscribe(&button, Self::handle_button_event);
 
         Self { selected, animated, transition, button, _subscriptions: vec![subscription] }
@@ -84,6 +89,7 @@ impl ToggleControl {
         let data = ToggleData { selected: self.selected, progress: self.transition.progress() };
         let role = ButtonFamilyRole::Toggle { selected: self.selected };
         self.button.update(cx, |button, cx| {
+            crate::infra::attachments::AttachmentTarget::attachments_mut(button).set_checked(self.selected);
             let role_changed = button.model.role != role;
             let data_changed = button.data() != &data;
             if !role_changed && !data_changed {

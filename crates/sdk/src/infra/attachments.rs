@@ -1,6 +1,6 @@
 //! Shared owner storage and entity modifiers for attached behavior.
 use std::sync::Arc;
-use gpui::{App, Bounds, Context, Div, Entity, AppContext, Pixels, SharedString, Stateful, prelude::*};
+use gpui::{App, Bounds, Context, Div, Entity, AppContext, Pixels, SharedString, Stateful, Element, prelude::*};
 use crate::{
     controls::tooltip::{Attachment, Tooltip, TooltipTheme, default_tooltip_theme},
     theme::InteractionState,
@@ -21,6 +21,7 @@ pub trait AttachmentTarget: Sized + 'static {
 pub struct AttachmentHost {
     tooltip: Option<Attachment>,
     accessible_role: Option<gpui::Role>,
+    checked: Option<bool>,
     tooltip_theme: Option<Arc<dyn TooltipTheme>>,
 }
 
@@ -31,6 +32,10 @@ impl AttachmentHost {
 
     pub(crate) fn set_accessible_role(&mut self, role: gpui::Role) {
         self.accessible_role = Some(role);
+    }
+
+    pub(crate) fn set_checked(&mut self, checked: bool) {
+        self.checked = Some(checked);
     }
 
     /// Bind the control's look. Explicit tooltip themes override this default.
@@ -46,12 +51,20 @@ impl AttachmentHost {
         state: InteractionState,
         cx: &Context<T>,
     ) -> Stateful<Div> {
+        let root = match (root.a11y_role(), self.accessible_role) {
+            (None, Some(role)) => root.role(role),
+            _ => root,
+        };
+        let root = match self.checked {
+            Some(checked) => root.aria_toggled(if checked {
+                gpui::Toggled::True
+            } else {
+                gpui::Toggled::False
+            }),
+            None => root,
+        };
         match &self.tooltip {
             Some(tip) => {
-                let root = match self.accessible_role {
-                    Some(role) => root.role(role),
-                    None => root,
-                };
                 let root = match tip.description(cx) {
                     Some(description) => root.aria_description(description),
                     None => root,
@@ -165,6 +178,12 @@ impl<T: AttachmentTarget> TooltipEntityExt for Entity<T> {
     }
 }
 
+#[cfg(all(test, feature = "test-support"))]
+pub(crate) fn assert_control_semantics(host: &AttachmentHost, role: gpui::Role, checked: bool) {
+    assert_eq!(host.accessible_role, Some(role));
+    assert_eq!(host.checked, Some(checked));
+}
+
 // Button-backed controls forward attachments to their existing interactive owner.
 // Invoke inside the control module so the inner button stays private.
 macro_rules! delegate_tooltips {
@@ -182,11 +201,7 @@ macro_rules! delegate_tooltips {
                 self.tooltip(crate::controls::tooltip::Tooltip::new(text), cx)
             }
             fn tooltip(self, tooltip: crate::controls::tooltip::Tooltip, cx: &mut gpui::App) -> Self {
-                let button = self.read(cx).button.clone();
-                button.update(cx, |owner, _| {
-                    crate::infra::attachments::AttachmentTarget::attachments_mut(owner).set_accessible_role($role);
-                });
-                button.tooltip(tooltip, cx);
+                self.read(cx).button.clone().tooltip(tooltip, cx);
                 self
             }
             fn clear_tooltip(self, cx: &mut gpui::App) -> Self {
@@ -219,7 +234,9 @@ macro_rules! delegate_tooltips {
                 cx.run_until_parked();
                 cx.update(|_, app| {
                     let button = control.read(app).button.clone();
-                    assert_eq!(button.read(app).attachments().description(app).as_deref(), Some("Choice help"));
+                    let host = button.read(app).attachments();
+                    assert_eq!(host.description(app).as_deref(), Some("Choice help"));
+                    crate::infra::attachments::assert_control_semantics(host, $role, false);
                 });
                 cx.simulate_event(gpui::MouseMoveEvent {
                     position: gpui::point(gpui::px(10.0), gpui::px(10.0)),
@@ -233,7 +250,9 @@ macro_rules! delegate_tooltips {
                 cx.update(|_, app| {
                     assert!(*control.read(app).data());
                     control.clone().clear_tooltip(app);
-                    assert!(control.read(app).button.read(app).attachments().description(app).is_none());
+                    let host = control.read(app).button.read(app).attachments();
+                    assert!(host.description(app).is_none());
+                    crate::infra::attachments::assert_control_semantics(host, $role, true);
                 });
             }
         }
@@ -268,6 +287,168 @@ mod tests {
                 cx.new(|cx| SliderControl::from_builder(SliderBuilder::new("range"), cx)).help("Slider help", cx);
             assert!(slider.read(cx).attachments().tooltip.is_some());
         });
+    }
+
+    #[test]
+    fn keyboard_dismissal_is_scoped_to_the_presenting_window() {
+        use std::{sync::Mutex, time::Duration};
+        use crate::controls::tooltip::{TooltipEvent, TooltipDismissal};
+        let mut app = TestAppContext::single();
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let log = events.clone();
+        let (button, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            Button::from_builder(Button::new("window-a"), cx)
+        });
+        let window_a = cx.update(|window, app| {
+            button.clone().tooltip(
+                Tooltip::new("A")
+                    .delay(Duration::ZERO)
+                    .dismissal(TooltipDismissal::Permanently)
+                    .on_event(move |event| log.lock().unwrap().push(event)),
+                app,
+            );
+            window.window_handle()
+        });
+        cx.simulate_event(gpui::MouseMoveEvent {
+            position: gpui::point(gpui::px(10.0), gpui::px(10.0)),
+            ..Default::default()
+        });
+        cx.run_until_parked();
+        assert_eq!(events.lock().unwrap().as_slice(), &[TooltipEvent::Shown]);
+        let (_, other) = app.add_window_view(|_, cx| Button::from_builder(Button::new("window-b"), cx));
+        other.simulate_keystrokes("escape enter space");
+        other.run_until_parked();
+        assert_eq!(events.lock().unwrap().as_slice(), &[TooltipEvent::Shown]);
+        let mut original = gpui::VisualTestContext::from_window(window_a, &app);
+        original.simulate_keystrokes("escape");
+        original.run_until_parked();
+        assert_eq!(events.lock().unwrap().as_slice(), &[TooltipEvent::Shown, TooltipEvent::Hidden]);
+    }
+
+    #[test]
+    fn removing_cached_target_cancels_visible_and_pending_help() {
+        use gpui::{Render, Window, IntoElement, div, ParentElement};
+        use std::{sync::Mutex, time::Duration};
+        use crate::controls::tooltip::TooltipEvent;
+        struct Page {
+            button: Entity<Button>,
+            show: bool,
+        }
+        impl Render for Page {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div().when(self.show, |root| root.child(self.button.clone()))
+            }
+        }
+        let mut app = TestAppContext::single();
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let log = events.clone();
+        let (page, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            Page {
+                button: Button::new("cached-target").spawn(cx).tooltip(
+                    Tooltip::new("Cached")
+                        .delay(Duration::from_millis(100))
+                        .on_event(move |event| log.lock().unwrap().push(event)),
+                    cx,
+                ),
+                show: true,
+            }
+        });
+        let hover = |cx: &mut gpui::VisualTestContext| {
+            cx.simulate_event(gpui::MouseMoveEvent {
+                position: gpui::point(gpui::px(10.0), gpui::px(10.0)),
+                ..Default::default()
+            });
+            cx.run_until_parked();
+        };
+        let show = |cx: &mut gpui::VisualTestContext, visible| {
+            cx.update(|_, app| {
+                page.update(app, |page, cx| {
+                    page.show = visible;
+                    cx.notify();
+                })
+            });
+            cx.run_until_parked();
+            // Flush entity releases queued by the completed frame.
+            cx.update(|_, _| {});
+            cx.run_until_parked();
+        };
+        hover(cx);
+        show(cx, false);
+        cx.executor().advance_clock(Duration::from_millis(100));
+        cx.run_until_parked();
+        assert!(events.lock().unwrap().is_empty());
+        show(cx, true);
+        hover(cx);
+        cx.executor().advance_clock(Duration::from_millis(100));
+        cx.run_until_parked();
+        assert_eq!(events.lock().unwrap().as_slice(), &[TooltipEvent::Shown]);
+        show(cx, false);
+        assert_eq!(events.lock().unwrap().as_slice(), &[TooltipEvent::Shown, TooltipEvent::Hidden]);
+        show(cx, true);
+        hover(cx);
+        assert_eq!(events.lock().unwrap().len(), 2);
+        cx.executor().advance_clock(Duration::from_millis(100));
+        cx.run_until_parked();
+        assert_eq!(events.lock().unwrap().last(), Some(&TooltipEvent::Shown));
+        cx.deactivate_window();
+        cx.run_until_parked();
+        assert_eq!(events.lock().unwrap().last(), Some(&TooltipEvent::Hidden));
+        cx.update(|window, _| window.activate_window());
+        hover(cx);
+        cx.executor().advance_clock(Duration::from_millis(100));
+        cx.run_until_parked();
+        assert_eq!(events.lock().unwrap().last(), Some(&TooltipEvent::Shown));
+        cx.simulate_visibility_change(gpui::WindowVisibility::Hidden);
+        cx.run_until_parked();
+        assert_eq!(events.lock().unwrap().last(), Some(&TooltipEvent::Hidden));
+        let count = events.lock().unwrap().len();
+        cx.executor().advance_clock(Duration::from_secs(1));
+        cx.run_until_parked();
+        assert_eq!(events.lock().unwrap().len(), count);
+    }
+
+    #[test]
+    fn help_preserves_semantics_and_checked_state_after_clear() {
+        use gpui::{Render, Window, IntoElement};
+        struct Page {
+            button: Entity<Button>,
+            description: Option<&'static str>,
+        }
+        impl Render for Page {
+            fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+                self.button.update(cx, |button, cx| {
+                    let root = button.attachments().render(
+                        gpui::div().id("semantic-target").role(gpui::Role::Switch).aria_label("Notifications"),
+                        InteractionState::default(),
+                        cx,
+                    );
+                    assert_eq!(root.a11y_role(), Some(gpui::Role::Switch));
+                    let mut node = gpui::accesskit::Node::new(gpui::Role::Switch);
+                    root.write_a11y_info(&mut node);
+                    assert_eq!(node.label(), Some("Notifications"));
+                    assert_eq!(node.description(), self.description);
+                    assert_eq!(node.toggled(), Some(gpui::Toggled::True));
+                    root
+                })
+            }
+        }
+        let mut app = TestAppContext::single();
+        let (page, cx) = app.add_window_view(|_, cx| {
+            let button = Button::new("semantic-target").spawn(cx).help("Additional help", cx);
+            button.update(cx, |button, _| button.attachments_mut().set_checked(true));
+            Page { button, description: Some("Additional help") }
+        });
+        cx.run_until_parked();
+        cx.update(|_, app| {
+            page.update(app, |page, cx| {
+                page.button.clone().clear_tooltip(cx);
+                page.description = None;
+                cx.notify();
+            });
+        });
+        cx.run_until_parked();
     }
 
     #[test]

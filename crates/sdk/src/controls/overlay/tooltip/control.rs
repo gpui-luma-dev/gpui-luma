@@ -1,9 +1,9 @@
 use std::{rc::Rc, sync::Arc};
 
 use gpui::{
-    AnyTooltip, AppContext, AvailableSpace, Bounds, Context, Div, Entity, HitboxBehavior, IntoElement, App, WeakEntity,
-    MouseDownEvent, MouseMoveEvent, PathBuilder, Pixels, Point, Render, ScrollWheelEvent, Size, Stateful, Subscription,
-    Task, Window, canvas, point, prelude::*, px,
+    AnyWindowHandle, AnyTooltip, AppContext, AvailableSpace, Bounds, Context, Div, Entity, HitboxBehavior, IntoElement,
+    App, WeakEntity, MouseDownEvent, MouseMoveEvent, PathBuilder, Pixels, Point, Render, ScrollWheelEvent, Size,
+    Stateful, Subscription, Task, Window, canvas, point, prelude::*, px,
 };
 use crate::theme::InteractionState;
 use crate::infra::attachments::AttachmentTarget;
@@ -29,6 +29,10 @@ impl Attachment {
             controller: cx.new(|cx| Controller {
                 config,
                 theme,
+                window: None,
+                _presence_release: None,
+                _window_activation: None,
+                _window_visibility: None,
                 state: Activation::default(),
                 target: Bounds::default(),
                 bubble: Bounds::default(),
@@ -41,6 +45,9 @@ impl Attachment {
                     cx.notify();
                 }),
                 _keystrokes: cx.observe_keystrokes(|tip: &mut Controller, event, window, _| {
+                    if tip.window != Some(window.window_handle()) {
+                        return;
+                    }
                     if matches!(event.keystroke.key.as_str(), "escape" | "enter" | "space") {
                         if event.keystroke.key == "escape"
                             && tip.config.dismissal == TooltipDismissal::Permanently
@@ -94,7 +101,19 @@ impl Attachment {
         root.relative().child(
             canvas(
                 move |bounds, window, cx| {
+                    // GPUI releases keyed state when its element leaves the rendered tree,
+                    // even if the owning control entity remains cached.
+                    let presence =
+                        window.use_keyed_state(format!("tooltip-presence-{:?}", controller.entity_id()), cx, |_, _| ());
                     controller.update(cx, |tip, cx| {
+                        tip.bind_window(window, cx);
+                        if tip._presence_release.is_none() {
+                            tip._presence_release = Some(cx.observe_release(&presence, |tip, _, cx| {
+                                tip.reset_trigger();
+                                tip._presence_release = None;
+                                cx.notify();
+                            }));
+                        }
                         let moved = tip.owner_bounds != bounds && tip.owner_bounds.size != Size::default();
                         tip.owner_bounds = bounds;
                         tip.target =
@@ -241,6 +260,10 @@ impl Activation {
 struct Controller {
     config: Tooltip,
     theme: Arc<dyn TooltipTheme>,
+    window: Option<AnyWindowHandle>,
+    _presence_release: Option<Subscription>,
+    _window_activation: Option<Subscription>,
+    _window_visibility: Option<Subscription>,
     owner_bounds: Bounds<Pixels>,
     state: Activation,
     target: Bounds<Pixels>,
@@ -253,6 +276,37 @@ struct Controller {
 }
 
 impl Controller {
+    fn reset_trigger(&mut self) {
+        self.state.dismiss();
+        self.state.hovered = false;
+        self.state.focused = false;
+        self.state.suppressed = false;
+        self.hidden();
+        self.pending = None;
+        self.owner_bounds = Bounds::default();
+    }
+
+    fn bind_window(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.window == Some(window.window_handle()) {
+            return;
+        }
+        self.reset_trigger();
+        self.window = Some(window.window_handle());
+        self._presence_release = None;
+        self._window_activation = Some(cx.observe_window_activation(window, |tip, window, _| {
+            if !window.is_window_active() {
+                tip.reset_trigger();
+                window.refresh();
+            }
+        }));
+        self._window_visibility = Some(cx.observe_window_visibility(window, |tip, visibility, window, _| {
+            if !visibility.is_visible() {
+                tip.reset_trigger();
+                window.refresh();
+            }
+        }));
+    }
+
     fn hidden(&mut self) {
         self.expiry = None;
         if self.presented {
@@ -284,6 +338,7 @@ impl Controller {
         // Keyboard input can clear GPUI's hover flag while the pointer remains
         // over the owner. Escape suppression must survive that modality change.
         let hovered = hovered || (self.state.suppressed && self.owner_bounds.contains(&window.mouse_position()));
+        let enabled = enabled && window.is_window_active() && window.is_visible();
         let previous = self.state.visible;
         let can_open = self.state.can_open(self.config.once);
         let transition = self.state.sync(

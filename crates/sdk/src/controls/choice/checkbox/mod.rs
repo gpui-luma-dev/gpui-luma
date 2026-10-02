@@ -85,6 +85,11 @@ impl CheckboxControl {
         let mut button_builder = builder.button;
         button_builder.model.data = CheckboxData { checked, progress, icons: button_builder.model.data.icons.clone() };
         let button = button_builder.spawn(cx);
+        button.update(cx, |button, _| {
+            let host = crate::infra::attachments::AttachmentTarget::attachments_mut(button);
+            host.set_accessible_role(gpui::Role::CheckBox);
+            host.set_checked(checked);
+        });
         let subscription = cx.subscribe(&button, Self::handle_button_event);
 
         Self { checked, animated, transition, button, _subscriptions: vec![subscription] }
@@ -94,6 +99,7 @@ impl CheckboxControl {
         let icons = self.button.read(cx).data().icons.clone();
         let data = CheckboxData { checked: self.checked, progress: self.transition.progress(), icons };
         self.button.update(cx, |button, cx| {
+            crate::infra::attachments::AttachmentTarget::attachments_mut(button).set_checked(self.checked);
             if button.data() == &data {
                 return;
             }

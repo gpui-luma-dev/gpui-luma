@@ -75,6 +75,11 @@ impl SwitchControl {
         let mut button_builder = builder.button;
         button_builder.model.data = SwitchData { checked: on, progress };
         let button = button_builder.spawn(cx);
+        button.update(cx, |button, _| {
+            let host = crate::infra::attachments::AttachmentTarget::attachments_mut(button);
+            host.set_accessible_role(gpui::Role::Switch);
+            host.set_checked(on);
+        });
         let subscription = cx.subscribe(&button, Self::handle_button_event);
 
         Self { on, animated, transition, button, _subscriptions: vec![subscription] }
@@ -83,6 +88,7 @@ impl SwitchControl {
     fn push_button_data(&mut self, cx: &mut Context<Self>) {
         let data = SwitchData { checked: self.on, progress: self.transition.progress() };
         self.button.update(cx, |button, cx| {
+            crate::infra::attachments::AttachmentTarget::attachments_mut(button).set_checked(self.on);
             if button.data() == &data {
                 return;
             }
