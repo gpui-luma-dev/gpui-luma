@@ -20,6 +20,7 @@ pub trait AttachmentTarget: Sized + 'static {
 #[derive(Default)]
 pub struct AttachmentHost {
     tooltip: Option<Attachment>,
+    blocked: bool,
     accessible_role: Option<gpui::Role>,
     checked: Option<bool>,
     tooltip_theme: Option<Arc<dyn TooltipTheme>>,
@@ -38,6 +39,11 @@ impl AttachmentHost {
         self.checked = Some(checked);
     }
 
+    // Composite controls can suppress input help while their popup owns interaction.
+    pub(crate) fn set_blocked(&mut self, blocked: bool) {
+        self.blocked = blocked;
+    }
+
     /// Bind the control's look. Explicit tooltip themes override this default.
     pub fn set_tooltip_theme(&mut self, theme: Arc<dyn TooltipTheme>) {
         self.tooltip_theme = Some(theme);
@@ -48,9 +54,10 @@ impl AttachmentHost {
     pub fn render<T: AttachmentTarget>(
         &self,
         root: Stateful<Div>,
-        state: InteractionState,
+        mut state: InteractionState,
         cx: &Context<T>,
     ) -> Stateful<Div> {
+        state.disabled |= self.blocked;
         let root = match (root.a11y_role(), self.accessible_role) {
             (None, Some(role)) => root.role(role),
             _ => root,

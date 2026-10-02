@@ -178,7 +178,9 @@ where
 
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::selector::Selector<T>> {
         let look = self.resolve_look(cx);
-        self.into_sdk_builder(look).spawn(cx)
+        use gpui_luma::infra::attachments::TooltipEntityExt;
+        let theme = crate::tooltip_theme(&look);
+        self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
     }
 
     fn resolve_look(&self, cx: &App) -> ShadcnLook {

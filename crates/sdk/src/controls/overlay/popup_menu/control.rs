@@ -1,3 +1,4 @@
+use crate::infra::attachments::{AttachmentHost, AttachmentTarget};
 use gpui::{
     App, Bounds, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
     MouseUpEvent, Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
@@ -36,6 +37,7 @@ pub enum PopupMenuEvent {
 
 pub struct PopupMenu {
     model: PopupMenuModel,
+    attachments: AttachmentHost,
     lifecycle: PopupLifecycle,
     menu_state: FloatingMenuState,
     highlight_from: Option<MenuPath>,
@@ -65,6 +67,7 @@ impl PopupMenu {
 
         Self {
             model: builder.model,
+            attachments: AttachmentHost::with_accessible_role(gpui::Role::Button),
             lifecycle: PopupLifecycle::new(true),
             menu_state: FloatingMenuState::default(),
             highlight_from: None,
@@ -656,15 +659,16 @@ impl Render for PopupMenu {
             self.highlight_transition.schedule_frame(window, cx);
         }
 
+        let mut tip_state = self.interaction.render_state(self.model.enabled, window);
+        tip_state.disabled |= self.lifecycle.is_open();
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);
+        let root = self.model.template.render(&model, handlers, window, cx);
+        let root = self.attachments.render(root, tip_state, cx);
 
         div()
             .child(
-                self.model
-                    .template
-                    .render(&model, handlers, window, cx)
-                    .track_focus(self.interaction.focus_handle())
+                root.track_focus(self.interaction.focus_handle())
                     .key_context(ControlKeyProfile::Menu.context())
                     .on_action(cx.listener(Self::handle_escape_focus))
                     .on_action(cx.listener(Self::handle_select_previous_item))
@@ -676,5 +680,17 @@ impl Render for PopupMenu {
                     .on_action(cx.listener(Self::handle_activate_control)),
             )
             .into_any_element()
+    }
+}
+
+impl AttachmentTarget for PopupMenu {
+    fn attachments(&self) -> &AttachmentHost {
+        &self.attachments
+    }
+    fn attachments_mut(&mut self) -> &mut AttachmentHost {
+        &mut self.attachments
+    }
+    fn attachment_anchor(&self, bounds: Bounds<Pixels>) -> Bounds<Pixels> {
+        self.lifecycle.trigger_bounds().unwrap_or(bounds)
     }
 }

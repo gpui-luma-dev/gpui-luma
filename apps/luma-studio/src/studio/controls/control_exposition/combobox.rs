@@ -1,3 +1,4 @@
+use gpui_luma::infra::attachments::TooltipEntityExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -107,7 +108,8 @@ impl ComboBoxControlExposition {
             .show_down_arrow(true)
             .show_clear_button(true)
             .invalid(false)
-            .spawn(cx);
+            .spawn(cx)
+            .help("Type to filter states, or open the list", cx);
         let selection_required_toggle = shadcn::Toggle::new("controls-doc-combobox-selection-required")
             .look(look.as_ref())
             .outline()

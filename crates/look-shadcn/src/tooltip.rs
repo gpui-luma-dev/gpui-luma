@@ -119,6 +119,107 @@ mod coverage_tests {
     coverage!(radio_help_tracks_look, crate::Radio::new("radio"));
     coverage!(toggle_help_tracks_look, crate::Toggle::new("toggle"));
     coverage!(textfield_help_tracks_look, crate::TextField::new("textfield"));
+    coverage!(popup_menu_help_tracks_look, crate::PopupMenu::new("popup"));
+    coverage!(split_button_help_tracks_look, crate::SplitButton::new("split"));
+    coverage!(selector_help_tracks_look, crate::Selector::new("selector"));
+    coverage!(
+        search_selector_help_tracks_look,
+        crate::SearchSelector::new("search", [gpui_luma::controls::search_selector::SelectionItem::new("one", "One")])
+    );
+    coverage!(
+        combobox_help_tracks_look,
+        crate::ComboBox::new("combo", [gpui_luma::controls::combobox::SelectionItem::new("one", "One")])
+    );
+
+    macro_rules! popup_behavior {
+        ($name:ident, $builder:expr, $event:path, $selection:pat) => {
+            #[test]
+            fn $name() {
+                use $event as ControlEvent;
+                let mut app = TestAppContext::single();
+                app.update(gpui_luma::key_handling::bind_default_control_keys);
+                let look = ShadcnLook::from_css_str(crate::FALLBACK_CSS).expect("bundled CSS");
+                let tips = Arc::new(Mutex::new(Vec::new()));
+                let openings = Arc::new(Mutex::new(Vec::new()));
+                let tip_log = tips.clone();
+                let open_log = openings.clone();
+                let selected = Arc::new(Mutex::new(false));
+                let selection_log = selected.clone();
+                let (_, cx) = app.add_window_view(|window, cx| {
+                    window.activate_window();
+                    let target = $builder.look(&look).spawn(cx).tooltip(
+                        Tooltip::new("Help")
+                            .delay(Duration::ZERO)
+                            .on_event(move |event| tip_log.lock().unwrap().push(event)),
+                        cx,
+                    );
+                    cx.subscribe(&target, move |_, _, event: &ControlEvent, _| {
+                        if matches!(event, $selection) {
+                            *selection_log.lock().unwrap() = true;
+                        }
+                        if let ControlEvent::OpenChanged { open } = event {
+                            open_log.lock().unwrap().push(*open);
+                        }
+                    })
+                    .detach();
+                    Page { target: target.into() }
+                });
+                let position = gpui::point(gpui::px(10.0), gpui::px(10.0));
+                cx.simulate_event(gpui::MouseMoveEvent { position, ..Default::default() });
+                cx.run_until_parked();
+                assert_eq!(tips.lock().unwrap().as_slice(), &[gpui_luma::controls::tooltip::TooltipEvent::Shown]);
+                cx.simulate_click(position, Default::default());
+                cx.run_until_parked();
+                if openings.lock().unwrap().last() != Some(&true) {
+                    // An editable ComboBox opens from its input with ArrowDown.
+                    cx.simulate_keystrokes("down");
+                    cx.run_until_parked();
+                }
+                assert_eq!(openings.lock().unwrap().last(), Some(&true));
+                assert_eq!(tips.lock().unwrap().last(), Some(&gpui_luma::controls::tooltip::TooltipEvent::Hidden));
+                let count = tips.lock().unwrap().len();
+                cx.simulate_event(gpui::MouseMoveEvent {
+                    position: gpui::point(gpui::px(600.0), gpui::px(600.0)),
+                    ..Default::default()
+                });
+                cx.executor().advance_clock(Duration::from_millis(200));
+                cx.run_until_parked();
+                cx.simulate_event(gpui::MouseMoveEvent { position, ..Default::default() });
+                cx.executor().advance_clock(Duration::from_secs(1));
+                cx.run_until_parked();
+                assert_eq!(tips.lock().unwrap().len(), count);
+                cx.simulate_keystrokes("down enter");
+                cx.run_until_parked();
+                assert_eq!(openings.lock().unwrap().last(), Some(&false));
+                assert!(*selected.lock().unwrap());
+            }
+        };
+    }
+    popup_behavior!(
+        popup_help_preserves_activation,
+        crate::PopupMenu::new("popup").items([gpui_luma::infra::menu_item::MenuItem::new("one").label("One")]),
+        gpui_luma::controls::popup_menu::PopupMenuEvent,
+        ControlEvent::Select { .. }
+    );
+    popup_behavior!(
+        selector_help_preserves_selection,
+        crate::Selector::new("selector").items([gpui_luma::controls::selector::SelectorItem::new("one").label("One")]),
+        gpui_luma::controls::selector::SelectorEvent,
+        ControlEvent::Change { .. }
+    );
+    popup_behavior!(
+        search_help_preserves_selection,
+        crate::SearchSelector::new("search", [gpui_luma::controls::search_selector::SelectionItem::new("one", "One")]),
+        gpui_luma::controls::search_selector::SearchSelectorEvent,
+        ControlEvent::Select { .. } | ControlEvent::Complete { .. }
+    );
+    popup_behavior!(
+        combo_help_preserves_selection,
+        crate::ComboBox::new("combo", [gpui_luma::controls::combobox::SelectionItem::new("one", "One")]),
+        gpui_luma::controls::combobox::ComboBoxEvent,
+        ControlEvent::Select { .. } | ControlEvent::Complete { .. }
+    );
+
     #[test]
     fn sidebar_item_help_tracks_look() {
         let mut app = TestAppContext::single();
