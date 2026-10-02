@@ -1,3 +1,5 @@
+use crate::infra::attachments::{AttachmentHost, AttachmentTarget};
+use crate::theme::InteractionState;
 use std::sync::Arc;
 use std::{ops::Range, time::Duration};
 
@@ -61,6 +63,7 @@ impl Render for TextFieldDrag {
 }
 
 pub struct TextFieldControl {
+    attachments: AttachmentHost,
     model: TextFieldModel,
     state: TextFieldState,
     focus_handle: FocusHandle,
@@ -92,6 +95,7 @@ impl TextFieldControl {
         let state = TextFieldState { cursor: builder.model.value.chars().count(), ..Default::default() };
 
         let mut this = Self {
+            attachments: AttachmentHost::with_accessible_role(gpui::Role::TextInput),
             model: builder.model,
             state,
             focus_handle: cx.focus_handle().tab_stop(true),
@@ -686,21 +690,30 @@ impl Render for TextFieldControl {
         let has_prefix_icon = self.model.prefix_icon.is_some();
         let horizontal_scroll = self.horizontal_scroll;
 
-        div()
+        let input_root = self.model.template.render(
+            &self.render_model_with_offsets(layout_preview.character_offsets.clone(), look),
+            self.template_handlers(cx),
+            window,
+            cx,
+        );
+        let input_root = self
+            .attachments
+            .render(
+                input_root,
+                InteractionState {
+                    hovered: self.state.hovered,
+                    focused: self.state.focused,
+                    disabled: !self.model.enabled,
+                    ..Default::default()
+                },
+                cx,
+            )
+            .track_focus(&self.focus_handle)
+            .tab_stop(self.model.enabled && self.model.tab_stop);
+        let root = div()
             .relative()
             .id(format!("{}-theme-{}", self.model.id, self.theme_epoch))
-            .child(
-                self.model
-                    .template
-                    .render(
-                        &self.render_model_with_offsets(layout_preview.character_offsets.clone(), look),
-                        self.template_handlers(cx),
-                        window,
-                        cx,
-                    )
-                    .track_focus(&self.focus_handle)
-                    .tab_stop(self.model.enabled && self.model.tab_stop),
-            )
+            .child(input_root)
             .child(
                 canvas(
                     move |bounds, window, _| {
@@ -752,8 +765,8 @@ impl Render for TextFieldControl {
                 )
                 .absolute()
                 .size_full(),
-            )
-            .into_any_element()
+            );
+        root.into_any_element()
     }
 }
 
@@ -978,5 +991,14 @@ impl EntityInputHandler for TextFieldControl {
         let byte_index = cache.line.closest_index_for_x(local_x.max(px(0.0)));
         let char_index = Self::byte_to_char_offset(self.model.value.as_ref(), byte_index);
         Some(self.offset_to_utf16(char_index))
+    }
+}
+
+impl AttachmentTarget for TextFieldControl {
+    fn attachments(&self) -> &AttachmentHost {
+        &self.attachments
+    }
+    fn attachments_mut(&mut self) -> &mut AttachmentHost {
+        &mut self.attachments
     }
 }

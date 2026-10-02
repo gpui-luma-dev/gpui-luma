@@ -91,10 +91,14 @@ impl Sidebar {
 
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::sidebar::SidebarControl> {
         let look = resolve_look_from(self.look.as_ref(), cx);
-        self.builder
+        let theme = crate::tooltip_theme(&look);
+        let entity = self
+            .builder
             .panel_template(look.sidebar_panel_template())
             .scrollbar_template(look.scrollbar_template())
-            .spawn(cx)
+            .spawn(cx);
+        entity.update(cx, |sidebar, cx| sidebar.set_tooltip_theme(theme, cx));
+        entity
     }
 
     pub fn panel(id: impl Into<SharedString>) -> SidebarBuilder {

@@ -1,3 +1,4 @@
+use gpui_luma::infra::attachments::TooltipEntityExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -95,7 +96,8 @@ impl PopupMenuControlExposition {
             .label("Smart popup")
             .items(popup_menu_items())
             .placement(PopupMenuPlacement::Smart)
-            .spawn(cx);
+            .spawn(cx)
+            .help("Open the action menu", cx);
         let preview_below = shadcn::PopupMenu::new("controls-doc-popup-menu-below")
             .look(look.as_ref())
             .label("Below popup")

@@ -18,7 +18,7 @@ pub use choice::{checkbox, control_group, icon_group, radio_button, radio_group,
 
 pub use text::{textarea, textfield};
 
-pub use overlay::{context_menu, floating_menu, overlay_window, popover_button, popup_menu, slide_panel};
+pub use overlay::{tooltip, context_menu, floating_menu, overlay_window, popover_button, popup_menu, slide_panel};
 
 pub use collection::{listbox, table, tree_view};
 

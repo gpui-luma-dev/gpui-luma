@@ -33,6 +33,8 @@ pub enum SidebarPanelEngineEvent {
 
 pub struct SidebarPanelEngine {
     model: SidebarPanelEngineModel,
+    tooltip_theme: std::sync::Arc<dyn crate::controls::tooltip::TooltipTheme>,
+    tooltips: HashMap<SharedString, crate::infra::attachments::TooltipHandle>,
     main_scroll: ScrollContainer,
     hovered_node: Option<SharedString>,
     pressed_node: Option<SharedString>,
@@ -83,6 +85,8 @@ impl SidebarPanelEngine {
 
         let mut engine = Self {
             model: builder.model,
+            tooltip_theme: crate::controls::tooltip::default_tooltip_theme(),
+            tooltips: HashMap::new(),
             main_scroll,
             hovered_node: None,
             pressed_node: None,
@@ -103,12 +107,51 @@ impl SidebarPanelEngine {
             branch_transitions: HashMap::new(),
             branch_heights_px: HashMap::new(),
         };
+        engine.rebuild_tooltips(cx);
         engine.sync_branch_state();
         engine
     }
 
+    /// Bind the default tooltip look for standard navigation items.
+    pub fn set_tooltip_theme(
+        &mut self,
+        theme: std::sync::Arc<dyn crate::controls::tooltip::TooltipTheme>,
+        cx: &mut Context<Self>,
+    ) {
+        self.tooltip_theme = theme;
+        self.rebuild_tooltips(cx);
+        cx.notify();
+    }
+
+    fn rebuild_tooltips(&mut self, cx: &mut Context<Self>) {
+        fn collect(
+            nodes: &[NavNode],
+            theme: &std::sync::Arc<dyn crate::controls::tooltip::TooltipTheme>,
+            tips: &mut HashMap<SharedString, crate::infra::attachments::TooltipHandle>,
+            cx: &mut gpui::App,
+        ) {
+            for node in nodes {
+                if node.kind == super::NavNodeKind::Item
+                    && node.presenter.is_none()
+                    && let Some(config) = &node.tooltip
+                {
+                    tips.insert(
+                        node.id.clone(),
+                        crate::infra::attachments::TooltipHandle::new_with_theme(config.clone(), theme.clone(), cx),
+                    );
+                }
+                collect(&node.children, theme, tips, cx);
+            }
+        }
+        self.tooltips.clear();
+        for nodes in [&self.model.header_nodes, &self.model.nodes, &self.model.footer_nodes] {
+            collect(nodes, &self.tooltip_theme, &mut self.tooltips, cx);
+        }
+    }
+
     pub fn set_header_nodes(&mut self, nodes: impl IntoIterator<Item = NavNode>, cx: &mut Context<Self>) {
         self.model.header_nodes = nodes.into_iter().collect();
+        self.rebuild_tooltips(cx);
         self.sync_branch_state();
         self.close_rail_submenu(cx);
         cx.notify();
@@ -116,6 +159,7 @@ impl SidebarPanelEngine {
 
     pub fn set_items(&mut self, nodes: impl IntoIterator<Item = NavNode>, cx: &mut Context<Self>) {
         self.model.nodes = nodes.into_iter().collect();
+        self.rebuild_tooltips(cx);
         self.sync_branch_state();
         self.close_rail_submenu(cx);
         cx.notify();
@@ -123,6 +167,7 @@ impl SidebarPanelEngine {
 
     pub fn set_footer_nodes(&mut self, nodes: impl IntoIterator<Item = NavNode>, cx: &mut Context<Self>) {
         self.model.footer_nodes = nodes.into_iter().collect();
+        self.rebuild_tooltips(cx);
         self.sync_branch_state();
         self.close_rail_submenu(cx);
         cx.notify();

@@ -21,6 +21,8 @@ mod state_color;
 pub mod stylesheet;
 mod tokens;
 mod usage;
+mod tooltip;
+pub use tooltip::tooltip_theme;
 
 #[cfg(test)]
 mod test_support;

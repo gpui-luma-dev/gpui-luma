@@ -66,6 +66,15 @@ impl SidebarControl {
         Self { model, panel, _subscriptions: subscriptions }
     }
 
+    /// Bind the default theme for per-item tooltip attachments.
+    pub fn set_tooltip_theme(
+        &mut self,
+        theme: Arc<dyn crate::controls::tooltip::TooltipTheme>,
+        cx: &mut Context<Self>,
+    ) {
+        self.panel.update(cx, |panel, cx| panel.set_tooltip_theme(theme, cx));
+    }
+
     pub fn presentation(&self) -> SidebarPresentation {
         self.model.presentation
     }
@@ -271,5 +280,56 @@ mod tests {
                 assert_eq!(sidebar.panel.read(app).collapsed(), presentation == SidebarPresentation::Icons);
             });
         }
+    }
+    #[test]
+    fn item_help_preserves_navigation_and_once_history_between_presentations() {
+        use crate::controls::tooltip::{Tooltip, TooltipEvent};
+        use std::{
+            sync::{Arc, Mutex},
+            time::Duration,
+        };
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let log = events.clone();
+        let mut app = TestAppContext::single();
+        let (sidebar, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            SidebarControl::from_builder(
+                SidebarControl::new("nav")
+                    .animated(false)
+                    .with_panel_template_modifier(|root| root.debug_selector(|| "help-nav".into()))
+                    .sidebar(
+                        sidebar("content").content(
+                            sidebar_content().group(
+                                sidebar_group().menu(
+                                    sidebar_menu("main").item(
+                                        sidebar_menu_item("first", "First").icon(Icon::House).tooltip(
+                                            Tooltip::new("First help")
+                                                .delay(Duration::ZERO)
+                                                .show_once()
+                                                .on_event(move |event| log.lock().unwrap().push(event)),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                cx,
+            )
+        });
+        cx.run_until_parked();
+        let bounds = cx.debug_bounds("help-nav").unwrap();
+        let position = point(bounds.left() + px(20.0), bounds.top() + px(15.0));
+        cx.simulate_event(gpui::MouseMoveEvent { position, ..Default::default() });
+        cx.run_until_parked();
+        assert_eq!(events.lock().unwrap().as_slice(), &[TooltipEvent::Shown]);
+        cx.simulate_click(position, Default::default());
+        cx.run_until_parked();
+        assert_eq!(events.lock().unwrap().as_slice(), &[TooltipEvent::Shown, TooltipEvent::Hidden]);
+        sidebar.update(cx, |sidebar, cx| sidebar.set_presentation(SidebarPresentation::Icons, cx));
+        cx.run_until_parked();
+        cx.simulate_event(gpui::MouseMoveEvent { position, ..Default::default() });
+        cx.run_until_parked();
+        assert_eq!(events.lock().unwrap().len(), 2);
+        cx.update(|_, app| assert_eq!(sidebar.read(app).model.selected_id.as_deref(), Some("first")));
     }
 }

@@ -1,3 +1,4 @@
+use crate::infra::attachments::{AttachmentHost, AttachmentTarget};
 use gpui::{
     Bounds, ClickEvent, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, KeyDownEvent,
     MouseDownEvent, Pixels, Render, ScrollWheelEvent, SharedString, Subscription, TextRun, Window, div, font,
@@ -43,6 +44,7 @@ pub struct SearchSelectorControl {
     popup_search_textfield: text_selection::TextSelection,
     popup_surface: PopupScrollSurface,
     model: super::model::SearchSelectorModel,
+    attachments: AttachmentHost,
     behavior: SelectionBehavior,
     interaction: ControlInteraction,
     trigger_bounds: Option<Bounds<Pixels>>,
@@ -115,6 +117,7 @@ impl SearchSelectorControl {
             popup_search_textfield,
             popup_surface,
             model,
+            attachments: AttachmentHost::with_accessible_role(gpui::Role::ComboBox),
             behavior: SelectionBehavior::new(),
             interaction: ControlInteraction::new(enabled, cx),
             trigger_bounds: None,
@@ -896,19 +899,19 @@ impl Render for SearchSelectorControl {
             disclosure_progress: self.disclosure_transition.progress(),
         };
 
+        let mut tip_state = interaction_state;
+        tip_state.disabled |= self.behavior.state.open;
+        let root = self.model.template.render(render_model, handlers, window, cx);
+        let root = self.attachments.render(root, tip_state, cx);
         div()
             .when(self.model.full_width, |root| root.w_full().h_full())
-            .child(
-                self.model
-                    .template
-                    .render(render_model, handlers, window, cx)
-                    .track_focus(self.interaction.focus_handle())
-                    .capture_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
-                        if this.behavior.state.open && event.keystroke.key == "escape" {
-                            this.handle_key_down(event, window, cx);
-                        }
-                    })),
-            )
+            .child(root.track_focus(self.interaction.focus_handle()).capture_key_down(cx.listener(
+                |this, event: &KeyDownEvent, window, cx| {
+                    if this.behavior.state.open && event.keystroke.key == "escape" {
+                        this.handle_key_down(event, window, cx);
+                    }
+                },
+            )))
             .into_any_element()
     }
 }
@@ -960,5 +963,17 @@ fn escape_from_popup_search_restores_trigger_focus() {
             assert!(!selector.behavior.state.open);
             assert!(selector.interaction.focus_handle().is_focused(window));
         });
+    }
+}
+
+impl AttachmentTarget for SearchSelectorControl {
+    fn attachments(&self) -> &AttachmentHost {
+        &self.attachments
+    }
+    fn attachments_mut(&mut self) -> &mut AttachmentHost {
+        &mut self.attachments
+    }
+    fn attachment_anchor(&self, bounds: Bounds<Pixels>) -> Bounds<Pixels> {
+        self.trigger_bounds.unwrap_or(bounds)
     }
 }

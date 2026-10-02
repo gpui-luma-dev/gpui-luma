@@ -9,7 +9,8 @@ use gpui_luma::controls::button::{Button, ButtonEvent};
 use gpui_luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
 use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
-use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::{ControlSize, InteractionState};
+use gpui_luma::infra::attachments::{AttachmentHost, AttachmentTarget};
 use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma_color::color_slider::color_spec::Hsv;
 use gpui_luma_color::color_slider::{ColorSliderBuilder, primary_slider_value, sizing};
@@ -32,6 +33,8 @@ pub struct ColorTextField {
     color: Hsla,
     hsv: Hsv,
     focused: bool,
+    hovered: bool,
+    attachments: AttachmentHost,
     swatch: Entity<Button<ColorSwatchData>>,
     field: TextField,
     picker_field: Entity<ColorFieldState>,
@@ -143,12 +146,16 @@ impl ColorTextField {
             }
         }));
 
+        let mut attachments = AttachmentHost::default();
+        attachments.set_tooltip_theme(radix::tooltip_theme(&look));
         Self {
             id,
             look,
             color,
             hsv,
             focused: false,
+            hovered: false,
+            attachments,
             swatch,
             field,
             picker_field,
@@ -208,7 +215,7 @@ impl ColorTextField {
 }
 
 impl Render for ColorTextField {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let border = if self.focused {
             self.look.resolve_role(SemanticRole::Primary).hsla()
         } else {
@@ -216,7 +223,7 @@ impl Render for ColorTextField {
         };
         let background = self.look.resolve_role(SemanticRole::Background).hsla();
 
-        div()
+        let root = div()
             .id(self.id.clone())
             .h(px(Self::HEIGHT))
             .w_full()
@@ -230,6 +237,15 @@ impl Render for ColorTextField {
             .rounded(px(4.0))
             .child(self.popover.clone())
             .child(div().min_w(px(0.0)).flex_1().child(self.field.clone()))
+            .on_hover(cx.listener(|field, hovered: &bool, _, cx| {
+                field.hovered = *hovered;
+                cx.notify();
+            }));
+        self.attachments.render(
+            root,
+            InteractionState { hovered: self.hovered, focused: self.focused, ..Default::default() },
+            cx,
+        )
     }
 }
 
@@ -257,4 +273,13 @@ fn embedded_textfield(
             field
         })
         .spawn(cx)
+}
+
+impl AttachmentTarget for ColorTextField {
+    fn attachments(&self) -> &AttachmentHost {
+        &self.attachments
+    }
+    fn attachments_mut(&mut self) -> &mut AttachmentHost {
+        &mut self.attachments
+    }
 }

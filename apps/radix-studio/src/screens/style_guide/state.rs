@@ -31,6 +31,7 @@ impl State {
             sliders: navigation("sliders"),
             progress: navigation("progress"),
             examples: TabsExamples::spawn(look, cx),
+            tooltips: super::tooltips::TooltipExamples::new(look, cx),
         };
         Self {
             tabs,

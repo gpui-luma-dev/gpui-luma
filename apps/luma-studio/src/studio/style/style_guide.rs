@@ -37,6 +37,7 @@ enum StyleGuideSection {
     Selectors,
     Tabs,
     Toolbar,
+    Tooltips,
     Scrollbar,
     Slider,
     TextField,
@@ -49,7 +50,7 @@ enum StyleGuideSection {
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 22] = [
+    const ALL: [Self; 23] = [
         Self::Accordion,
         Self::Buttons,
         Self::Checkbox,
@@ -69,6 +70,7 @@ impl StyleGuideSection {
         Self::TextField,
         Self::Toggle,
         Self::Toolbar,
+        Self::Tooltips,
         Self::TreeView,
         Self::Typography,
         Self::ShadowTokens,
@@ -95,6 +97,7 @@ impl StyleGuideSection {
             Self::TextField => "Text Field",
             Self::Toggle => "Toggles",
             Self::Toolbar => "Toolbar",
+            Self::Tooltips => "Tooltips",
             Self::TreeView => "Tree View",
             Self::Typography => "Typography",
             Self::ShadowTokens => "Shadow Tokens",
@@ -139,6 +142,7 @@ declare_form! {
             accordion_preview_tabs: Option<Entity<Tabs>> = None,
             accordion_preview: Option<Entity<sections::accordion::AccordionPreview>> = None,
             toolbar_preview_tabs: Option<Entity<Tabs>> = None,
+            tooltip_preview: Option<Entity<sections::tooltips::TooltipPreview>> = None,
             toolbar_preview: Option<Entity<sections::toolbar::ToolbarPreview>> = None,
         }
     }
@@ -147,6 +151,9 @@ declare_form! {
 impl StyleGuidePanel {
     pub fn sync_snapshot(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look;
+        if let Some(preview) = &self.tooltip_preview {
+            preview.update(cx, |preview, cx| preview.sync_look(self.look.clone(), cx));
+        }
         self.sync_sidebar_preview(cx);
         self.sync_buttons_preview_tabs(cx);
         self.sync_icon_buttons_preview_tabs(cx);
@@ -806,6 +813,9 @@ impl StyleGuidePanel {
 
 impl Render for StyleGuidePanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.tooltip_preview.is_none() {
+            self.tooltip_preview = Some(cx.new(|cx| sections::tooltips::TooltipPreview::new(cx, self.look.clone())));
+        }
         let _ = self.sidebar_preview(cx);
         let _ = self.buttons_preview_tabs(cx);
         let _ = self.icon_buttons_preview_tabs(cx);
@@ -979,11 +989,16 @@ impl StyleGuidePanel {
                 | StyleGuideSection::TreeView
                 | StyleGuideSection::Accordion
                 | StyleGuideSection::Toolbar
+                | StyleGuideSection::Tooltips
         )
     }
 
     fn render_section(&self, section: StyleGuideSection, window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
         match section {
+            StyleGuideSection::Tooltips => sections::tooltips::render_tooltip_section(
+                &self.look,
+                self.tooltip_preview.clone().expect("tooltip preview"),
+            ),
             StyleGuideSection::Sidebar => sections::sidebar::render_sidebar_template_section(
                 self.sidebar_preview.clone().expect("sidebar preview"),
                 self.look.as_ref(),

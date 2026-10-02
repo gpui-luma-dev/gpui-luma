@@ -20,3 +20,5 @@ pub(crate) mod toggle;
 pub(crate) mod toolbar;
 pub(crate) mod tree_view;
 pub(crate) mod typography;
+
+pub(crate) mod tooltips;

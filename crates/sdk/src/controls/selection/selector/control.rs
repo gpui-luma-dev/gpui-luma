@@ -1,3 +1,4 @@
+use crate::infra::attachments::{AttachmentHost, AttachmentTarget};
 use std::sync::Arc;
 
 use gpui::{
@@ -33,6 +34,7 @@ where
     T: SelectorItemLike + 'static,
 {
     model: SelectorModel<T>,
+    attachments: AttachmentHost,
     open: bool,
     presence: OverlayPresence,
     trigger_bounds: Option<Bounds<Pixels>>,
@@ -78,6 +80,7 @@ where
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
             model: builder.model,
+            attachments: AttachmentHost::with_accessible_role(gpui::Role::ComboBox),
             open: false,
             presence: OverlayPresence::new(false, true),
             trigger_bounds: None,
@@ -645,15 +648,16 @@ where
             self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
         }
 
+        let mut tip_state = self.interaction.render_state(self.model.enabled, window);
+        tip_state.disabled |= self.open;
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);
+        let root = self.model.template.render(&model, handlers, window, cx);
+        let root = self.attachments.render(root, tip_state, cx);
 
         div()
             .child(
-                self.model
-                    .template
-                    .render(&model, handlers, window, cx)
-                    .track_focus(self.interaction.focus_handle())
+                root.track_focus(self.interaction.focus_handle())
                     .key_context(ControlKeyProfile::Selector.context())
                     .on_action(cx.listener(Self::handle_escape_focus))
                     .on_action(cx.listener(Self::handle_select_previous_item))
@@ -741,3 +745,15 @@ mod tests {
 #[cfg(all(test, feature = "test-support"))]
 #[path = "wheel_tests.rs"]
 mod wheel_tests;
+
+impl<T: SelectorItemLike + 'static> AttachmentTarget for Selector<T> {
+    fn attachments(&self) -> &AttachmentHost {
+        &self.attachments
+    }
+    fn attachments_mut(&mut self) -> &mut AttachmentHost {
+        &mut self.attachments
+    }
+    fn attachment_anchor(&self, bounds: Bounds<Pixels>) -> Bounds<Pixels> {
+        self.trigger_bounds.unwrap_or(bounds)
+    }
+}

@@ -12,7 +12,7 @@ use super::cards::render_demo_board;
 use super::controls;
 use super::dashboard;
 use super::palette;
-use super::navigation::luma_studio_tabs_template;
+use super::navigation::main_content_tabs_template;
 use super::style_guide;
 use super::tab::ContentTab;
 use super::theme_usage;
@@ -62,7 +62,7 @@ impl ContentPaneHost {
             .look(board.look.as_ref())
             .size(shadcn::ShadcnSize::Lg)
             .width_mode(TabsWidthMode::Uniform)
-            .template(luma_studio_tabs_template(board.look.clone(), ControlSize::Lg))
+            .template(main_content_tabs_template(board.look.clone(), ControlSize::Lg, cx))
             .items([
                 TabsItem::new("cards").label("Cards"),
                 TabsItem::new("dashboard").label("Dashboard"),
@@ -213,7 +213,7 @@ impl ContentPaneHost {
         self.tabs.update(cx, |tabs, cx| {
             tabs.set_size(ControlSize::Lg, cx);
             tabs.set_width_mode(TabsWidthMode::Uniform, cx);
-            tabs.set_template(luma_studio_tabs_template(look.clone(), ControlSize::Lg), cx);
+            tabs.set_template(main_content_tabs_template(look.clone(), ControlSize::Lg, cx), cx);
         });
         self.style_guide_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
         self.controls_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));

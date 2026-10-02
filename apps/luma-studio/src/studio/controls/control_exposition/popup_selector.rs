@@ -1,3 +1,4 @@
+use gpui_luma::infra::attachments::TooltipEntityExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -102,7 +103,8 @@ impl PopupSelectorControlExposition {
             .items(selector_items())
             .placement(SelectorPlacement::BelowStart)
             .invalid(false)
-            .spawn(cx);
+            .spawn(cx)
+            .help("Choose an item", cx);
         let preview_smart = shadcn::Selector::new("controls-doc-selector-smart")
             .look(look.as_ref())
             .label("Smart selector")

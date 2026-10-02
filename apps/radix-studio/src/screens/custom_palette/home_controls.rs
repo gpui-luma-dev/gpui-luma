@@ -9,6 +9,7 @@ use gpui_luma::controls::{
     tree_view::TreeView,
 };
 use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::prelude::TooltipEntityExt;
 use gpui_luma_look_radix::{self as radix, Look};
 use super::super::shared::tree_view;
 
@@ -20,6 +21,7 @@ pub struct PreviewControls {
     pub tree: TreeView<()>,
     pub search_field: TextField,
     pub search_submit: Entity<Button>,
+    pub tooltip_slider: gpui_luma::controls::slider::Slider,
     pub sign_up_name: TextField,
     pub sign_up_email: TextField,
     pub sign_up_password: TextField,
@@ -46,7 +48,18 @@ impl PreviewControls {
             .active("themes")
             .spawn(cx);
         let search_field = radix::TextField::new("preview-search").look(look).placeholder("Search…").spawn(cx);
-        let search_submit = radix::Button::new("preview-search-submit").look(look).solid().label("Submit").spawn(cx);
+        let search_submit = radix::Button::new("preview-search-submit")
+            .look(look)
+            .solid()
+            .label("Submit")
+            .spawn(cx)
+            .tooltip(super::tooltip_examples::search_help(), cx);
+        let tooltip_slider = radix::Slider::new("preview-tooltip-slider")
+            .look(look)
+            .value(50.0)
+            .with_template_modifier(|root, _| root.w_full())
+            .spawn(cx)
+            .help("Adjust the preview value with the arrow keys", cx);
 
         let sign_up_name = radix::TextField::new("signup-name").look(look).placeholder("Full name").spawn(cx);
         let sign_up_email = radix::TextField::new("signup-email").look(look).placeholder("Email").spawn(cx);
@@ -79,6 +92,7 @@ impl PreviewControls {
             tree: preview_tree,
             search_field,
             search_submit,
+            tooltip_slider,
             sign_up_name,
             sign_up_email,
             sign_up_password,
@@ -92,6 +106,8 @@ impl PreviewControls {
     pub fn notify<M: 'static>(&self, cx: &mut Context<M>) {
         self.icon_samples.notify(cx);
         self.task_samples.notify(cx);
+        self.search_submit.update(cx, |_, cx| cx.notify());
+        self.tooltip_slider.update(cx, |_, cx| cx.notify());
         self.toolbar.update(cx, |toolbar, cx| toolbar.notify_items(cx));
         self.actions.update(cx, |_, cx| cx.notify());
         self.tabs.update(cx, |_, cx| cx.notify());

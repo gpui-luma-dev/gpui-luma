@@ -1,5 +1,6 @@
 //! Look-owned toggle builder. Spawn synthesizes the SDK [`gpui_luma::controls::toggle::Toggle`].
 
+use gpui_luma::infra::attachments::TooltipEntityExt;
 use gpui::{App, Context, SharedString};
 use gpui_luma::controls::button::{ButtonContentContext, ControlIcon, ControlPresenter, HasPresenter};
 use gpui_luma::controls::toggle::{ToggleBuilder, ToggleData};
@@ -129,7 +130,8 @@ impl Toggle {
 
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::toggle::Toggle {
         let look = self.resolve_look(cx);
-        self.into_sdk_builder(look).spawn(cx)
+        let theme = crate::tooltip::tooltip_theme(&look);
+        self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
     }
 
     fn resolve_look(&self, cx: &App) -> Look {

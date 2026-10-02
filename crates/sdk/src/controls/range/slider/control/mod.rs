@@ -1,3 +1,4 @@
+use crate::infra::attachments::{AttachmentHost, AttachmentTarget};
 mod motion;
 mod pointer;
 mod render;
@@ -59,6 +60,7 @@ impl Render for SliderDrag {
 pub struct SliderControl {
     model: SliderModel,
     interaction: ControlInteraction,
+    attachments: AttachmentHost,
     track_bounds: Option<Bounds<Pixels>>,
     active_thumb_id: Option<ThumbId>,
     angular_drag_angle_offset: Option<f32>,
@@ -93,6 +95,7 @@ impl SliderControl {
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
             model,
+            attachments: AttachmentHost::with_accessible_role(gpui::Role::Slider),
             interaction: ControlInteraction::new(enabled, cx),
             track_bounds: None,
             active_thumb_id,
@@ -298,5 +301,69 @@ impl SliderControl {
 impl Focusable for SliderControl {
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
         self.interaction.focus_handle().clone()
+    }
+}
+
+impl AttachmentTarget for SliderControl {
+    fn attachments(&self) -> &AttachmentHost {
+        &self.attachments
+    }
+    fn attachments_mut(&mut self) -> &mut AttachmentHost {
+        &mut self.attachments
+    }
+    fn attachment_anchor(&self, bounds: Bounds<Pixels>) -> Bounds<Pixels> {
+        let Some(track) = self.track_bounds else {
+            return bounds;
+        };
+        // Linear sliders anchor to their current active display thumb; angular
+        // sliders retain the control anchor until their templates expose a region.
+        if self.model.strategy.is_angular() {
+            return bounds;
+        }
+        let thumb = self
+            .display_thumbs
+            .iter()
+            .find(|thumb| Some(thumb.id) == self.active_thumb_id)
+            .or_else(|| self.display_thumbs.first());
+        let Some(thumb) = thumb else {
+            return bounds;
+        };
+        let position = super::layout::display_position(thumb.position, self.model.reversed);
+        match self.model.strategy.orientation() {
+            super::model::SliderOrientation::Horizontal => Bounds::new(
+                gpui::point(track.origin.x + track.size.width * position, bounds.origin.y),
+                gpui::Size { width: gpui::px(0.0), height: bounds.size.height },
+            ),
+            super::model::SliderOrientation::Vertical => Bounds::new(
+                gpui::point(bounds.origin.x, track.origin.y + track.size.height * (1.0 - position)),
+                gpui::Size { width: bounds.size.width, height: gpui::px(0.0) },
+            ),
+        }
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod attachment_tests {
+    use super::*;
+    use gpui::{AppContext, TestAppContext, point, px, Size};
+
+    #[test]
+    fn attachment_anchor_tracks_active_thumb_and_reversal() {
+        let app = TestAppContext::single();
+        app.update(|cx| {
+            let slider = cx.new(|cx| SliderControl::from_builder(SliderBuilder::new("anchor").value(50.0), cx));
+            let bounds = Bounds::new(point(px(100.0), px(200.0)), Size { width: px(220.0), height: px(32.0) });
+            slider.update(cx, |slider, _| {
+                slider.track_bounds =
+                    Some(Bounds::new(point(px(110.0), px(212.0)), Size { width: px(200.0), height: px(8.0) }));
+                let half = slider.attachment_anchor(bounds);
+                assert_eq!(half.origin.x, px(210.0));
+                slider.display_thumbs[0].position = 0.8;
+                assert_eq!(slider.attachment_anchor(bounds).origin.x, px(270.0));
+                slider.model.reversed = true;
+                assert!((f32::from(slider.attachment_anchor(bounds).origin.x) - 150.0).abs() < 0.01);
+                assert_eq!(half.size.height, bounds.size.height);
+            });
+        });
     }
 }

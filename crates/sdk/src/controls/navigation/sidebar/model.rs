@@ -14,6 +14,7 @@ use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 pub struct SidebarMenuItemModel {
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
+    pub(crate) tooltip: Option<crate::controls::tooltip::Tooltip>,
     pub(crate) icon: Option<LucideIcon>,
     pub(crate) badge: Option<SharedString>,
     pub(crate) action_label: Option<SharedString>,
@@ -88,6 +89,7 @@ impl SidebarMenuItemBuilder {
             model: SidebarMenuItemModel {
                 id: id.clone(),
                 label: label.into(),
+                tooltip: None,
                 icon: None,
                 badge: None,
                 action_label: None,
@@ -97,6 +99,17 @@ impl SidebarMenuItemBuilder {
                 children: Vec::new(),
             },
         }
+    }
+
+    /// Attach help to this navigation item in either sidebar presentation.
+    pub fn help(self, text: impl Into<SharedString>) -> Self {
+        self.tooltip(crate::controls::tooltip::Tooltip::new(text))
+    }
+
+    /// Configure per-item help; delay and dismissal use the shared SDK behavior.
+    pub fn tooltip(mut self, tooltip: crate::controls::tooltip::Tooltip) -> Self {
+        self.model.tooltip = Some(tooltip);
+        self
     }
 
     pub fn icon(mut self, icon: LucideIcon) -> Self {
@@ -504,6 +517,7 @@ pub(crate) fn panel_to_nav_nodes(panel: &SidebarPanelModel) -> (Vec<NavNode>, Ve
 fn menu_item_to_nav_node(item: &SidebarMenuItemModel) -> NavNode {
     let mut node = NavNode::new(item.id.clone()).label(item.label.clone()).enabled(!item.disabled);
 
+    node.tooltip = item.tooltip.clone();
     if let Some(icon) = item.icon {
         node = node.icon(icon);
     }

@@ -156,7 +156,25 @@ impl Render for SidebarPanelEngine {
             self.rail_submenu_content = None;
         }
         self.sync_branch_transitions(window, cx);
-        let model = self.render_model(window, cx);
+        let mut model = self.render_model(window, cx);
+        fn attach(
+            nodes: &mut [RenderedNavNode],
+            tips: &HashMap<SharedString, crate::infra::attachments::TooltipHandle>,
+        ) {
+            for node in nodes {
+                node.tooltip = tips.get(&node.id).cloned();
+                attach(&mut node.children, tips);
+            }
+        }
+        for nodes in [
+            &mut model.header_nodes,
+            &mut model.nodes,
+            &mut model.footer_nodes,
+            &mut model.rail_nodes,
+            &mut model.rail_footer_nodes,
+        ] {
+            attach(nodes, &self.tooltips);
+        }
         self.sync_focus_subscriptions(window, cx);
         let handlers = self.template_handlers(&model, cx);
         self.main_scroll.sync_scrollbar(cx);
@@ -256,6 +274,7 @@ pub(super) fn render_nodes(
         };
 
         rendered_nodes.push(RenderedNavNode {
+            tooltip: None,
             id: node.id.clone(),
             kind: node.kind,
             label: node.label.clone(),
@@ -312,6 +331,7 @@ pub(super) fn render_collapsed_rail_nodes(
         };
 
         rendered_nodes.push(RenderedNavNode {
+            tooltip: None,
             id: node.id.clone(),
             kind: node.kind,
             label: node.label.clone(),

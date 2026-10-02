@@ -132,7 +132,9 @@ impl ComboBox {
 
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<ComboBoxControl> {
         let look = resolve_look_from(self.look.as_ref(), cx);
-        self.into_sdk_builder(look).spawn(cx)
+        use gpui_luma::infra::attachments::TooltipEntityExt;
+        let theme = crate::tooltip_theme(&look);
+        self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ComboBoxBuilder {

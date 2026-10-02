@@ -192,7 +192,12 @@ impl Slider {
 
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::slider::Slider {
         let look = self.resolve_look(cx);
-        self.into_sdk_builder(look).spawn(cx)
+        let theme = crate::tooltip_theme(&look);
+        let entity = self.into_sdk_builder(look).spawn(cx);
+        entity.update(cx, |control, _| {
+            gpui_luma::infra::attachments::AttachmentTarget::attachments_mut(control).set_tooltip_theme(theme);
+        });
+        entity
     }
 
     fn resolve_look(&self, cx: &App) -> ShadcnLook {

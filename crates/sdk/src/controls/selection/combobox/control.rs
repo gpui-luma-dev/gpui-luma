@@ -1,3 +1,4 @@
+use gpui::App;
 use gpui::{
     Bounds, ClickEvent, Context, Entity, EventEmitter, IntoElement, KeyDownEvent, MouseDownEvent, Pixels, Render,
     ScrollWheelEvent, SharedString, Subscription, TextRun, Window, font, px,
@@ -573,6 +574,14 @@ impl ComboBoxControl {
 
         self.presence.set_open_with_animation(self.behavior.state.open, self.behavior.state.open);
 
+        use crate::infra::attachments::AttachmentTarget;
+        self.textfield.update(cx, |field, cx| {
+            field.attachments_mut().set_blocked(self.behavior.state.open);
+            if self.behavior.state.open {
+                field.attachments().dismiss(cx);
+            }
+            cx.notify();
+        });
         cx.emit(ComboBoxEvent::OpenChanged { open: self.behavior.state.open });
         if dismissed && !self.behavior.state.open {
             cx.emit(ComboBoxEvent::Dismiss);
@@ -797,4 +806,28 @@ fn popup_wheel_applies_once_and_pass_through_reaches_page() {
         assert_eq!(combo.read(app).popup_surface.vertical_offset(), px(25.0));
         assert!(page.read(app).scroll.offset().y < px(0.0));
     });
+}
+
+// Editable selectors attach help to their existing focused TextField.
+impl crate::infra::attachments::TooltipEntityExt for gpui::Entity<ComboBoxControl> {
+    fn with_tooltip_theme(
+        self,
+        theme: std::sync::Arc<dyn crate::controls::tooltip::TooltipTheme>,
+        cx: &mut App,
+    ) -> Self {
+        self.read(cx).textfield.clone().with_tooltip_theme(theme, cx);
+        self
+    }
+    fn help(self, text: impl Into<SharedString>, cx: &mut App) -> Self {
+        self.read(cx).textfield.clone().help(text, cx);
+        self
+    }
+    fn tooltip(self, config: crate::controls::tooltip::Tooltip, cx: &mut App) -> Self {
+        self.read(cx).textfield.clone().tooltip(config, cx);
+        self
+    }
+    fn clear_tooltip(self, cx: &mut App) -> Self {
+        self.read(cx).textfield.clone().clear_tooltip(cx);
+        self
+    }
 }

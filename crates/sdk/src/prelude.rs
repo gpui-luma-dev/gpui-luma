@@ -29,3 +29,6 @@ pub use crate::controls::textarea::{TextArea, TextAreaBuilder, TextAreaEvent};
 pub use crate::controls::textfield::{TextField, TextFieldBuilder, TextFieldEvent};
 pub use crate::controls::toggle::{Toggle, ToggleBuilder, ToggleEvent};
 pub use crate::controls::toolbar::{Toolbar, ToolbarBuilder, ToolbarEvent};
+
+pub use crate::infra::attachments::{AttachmentTarget, TooltipEntityExt};
+pub use crate::controls::tooltip::{Tooltip, TooltipPlacement, TooltipDismissal, TooltipEvent};

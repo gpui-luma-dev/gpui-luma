@@ -1,3 +1,4 @@
+use gpui_luma::infra::attachments::TooltipEntityExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -97,7 +98,8 @@ impl SearchSelectorControlExposition {
             .full_width(true)
             .clean_on_escape(true)
             .invalid(false)
-            .spawn(cx);
+            .spawn(cx)
+            .help("Choose a state or search the available states", cx);
         let selection_required_toggle = shadcn::Toggle::new("controls-doc-search-selector-selection-required")
             .look(look.as_ref())
             .outline()

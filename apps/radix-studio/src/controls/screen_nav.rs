@@ -7,6 +7,7 @@ use gpui_luma::controls::button::{Button, ButtonEvent};
 use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma::hstack;
 use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma::prelude::TooltipEntityExt;
 use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_radix::Look;
 use gpui_luma_look_radix as radix;
@@ -71,7 +72,8 @@ impl ScreenNav {
                     .map(|icon| react_icon(icon, model.look.foreground, THEME_ICON_SIZE))
                     .unwrap_or_else(|| div().into_any_element())
             })
-            .spawn(cx);
+            .spawn(cx)
+            .help("Switch between light and dark mode", cx);
 
         let theme_reset = radix::Button::new("screen-nav-reset-theme")
             .look(action_look)
@@ -81,7 +83,8 @@ impl ScreenNav {
                     .map(|icon| react_icon(icon, model.look.foreground, THEME_ICON_SIZE))
                     .unwrap_or_else(|| div().into_any_element())
             })
-            .spawn(cx);
+            .spawn(cx)
+            .help("Reset the custom palette", cx);
 
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&theme_reset, |_, _, event: &ButtonEvent, cx| {
