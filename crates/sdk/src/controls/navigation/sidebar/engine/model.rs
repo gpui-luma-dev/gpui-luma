@@ -42,6 +42,7 @@ pub struct NavNode {
     pub(crate) id: SharedString,
     pub(crate) kind: NavNodeKind,
     pub(crate) label: Option<SharedString>,
+    pub(crate) tooltip: Option<crate::controls::tooltip::Tooltip>,
     pub(crate) icon: Option<LucideIcon>,
     pub(crate) presenter: Option<NavPresenter>,
     pub(crate) children: Vec<NavNode>,
@@ -56,6 +57,7 @@ impl NavNode {
             id: id.into(),
             kind: NavNodeKind::Item,
             label: None,
+            tooltip: None,
             icon: None,
             presenter: None,
             children: Vec::new(),
@@ -76,6 +78,12 @@ impl NavNode {
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.label = Some(label.into());
+        self
+    }
+
+    /// Configure help for the standard navigation row (custom presenters own their help).
+    pub fn tooltip(mut self, tooltip: crate::controls::tooltip::Tooltip) -> Self {
+        self.tooltip = Some(tooltip);
         self
     }
 
@@ -171,6 +179,8 @@ pub struct SidebarPanelEngineRenderModel {
 }
 
 pub struct RenderedNavNode {
+    /// Retained per-item help. Custom templates apply this to the row's focus root.
+    pub tooltip: Option<crate::infra::attachments::TooltipHandle>,
     pub id: SharedString,
     pub kind: NavNodeKind,
     pub label: Option<SharedString>,

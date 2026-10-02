@@ -171,7 +171,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
         main_scroll: &ScrollContainer,
         handlers: SidebarPanelTemplateHandlers,
         _window: &mut Window,
-        _cx: &mut App,
+        cx: &mut App,
     ) -> Stateful<Div> {
         let SidebarPanelTemplateHandlers {
             mut row_bounds,
@@ -212,6 +212,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &mut row_mouse_up_outs,
                     &mut row_clicks,
                     &model.disclosure_icons,
+                    cx,
                 )
                 .flex_1(),
             );
@@ -228,6 +229,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                         &mut row_mouse_up_outs,
                         &mut row_clicks,
                         &model.disclosure_icons,
+                        cx,
                     )
                     .pt(px(FOOTER_REGION_PADDING_TOP)),
                 );
@@ -266,6 +268,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &mut row_clicks,
                     &mut children_height_reports,
                     &model.disclosure_icons,
+                    cx,
                 )
                 .pb(px(HEADER_REGION_PADDING_BOTTOM)),
             );
@@ -284,6 +287,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                         &mut row_clicks,
                         &mut children_height_reports,
                         &model.disclosure_icons,
+                        cx,
                     )
                     .into_any_element(),
                 )
@@ -303,6 +307,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &mut row_clicks,
                     &mut children_height_reports,
                     &model.disclosure_icons,
+                    cx,
                 )
                 .pt(px(FOOTER_REGION_PADDING_TOP)),
             );
@@ -362,6 +367,7 @@ fn render_region(
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
     children_height_reports: &mut std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
     disclosure_icons: &DisclosureIcons,
+    cx: &App,
 ) -> Div {
     let mut region = div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP));
 
@@ -376,6 +382,7 @@ fn render_region(
             row_clicks,
             children_height_reports,
             disclosure_icons,
+            cx,
         ));
     }
 
@@ -393,6 +400,7 @@ fn render_collapsed_rail_region(
     row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
     disclosure_icons: &DisclosureIcons,
+    cx: &App,
 ) -> Div {
     let mut region = div().flex().flex_col().items_center().gap(px(REGION_GAP));
 
@@ -409,6 +417,7 @@ fn render_collapsed_rail_region(
             },
             theme,
             disclosure_icons,
+            cx,
         ));
     }
 
@@ -426,6 +435,7 @@ fn render_node(
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
     children_height_reports: &mut std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
     disclosure_icons: &DisclosureIcons,
+    cx: &App,
 ) -> AnyElement {
     let RenderedNavNode {
         id,
@@ -439,11 +449,13 @@ fn render_node(
         expansion_progress,
         children_height_px,
         children,
+        tooltip,
     } = node;
     let mut root =
         div().id(id.clone()).w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP)).child(render_row(
             RowRenderInput {
                 id: id.clone(),
+                tooltip,
                 kind,
                 label,
                 icon,
@@ -463,6 +475,7 @@ fn render_node(
                 click: row_clicks.next(),
             },
             theme,
+            cx,
         ));
 
     if !children.is_empty() {
@@ -479,6 +492,7 @@ fn render_node(
                 row_clicks,
                 children_height_reports,
                 disclosure_icons,
+                cx,
             ));
         }
 
@@ -505,6 +519,7 @@ fn render_node(
 }
 
 struct RowRenderInput {
+    tooltip: Option<crate::infra::attachments::TooltipHandle>,
     id: SharedString,
     kind: NavNodeKind,
     label: Option<SharedString>,
@@ -526,14 +541,14 @@ struct RowHandlers {
     click: Option<SidebarPanelClickHandler>,
 }
 
-fn render_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn SidebarTheme>) -> AnyElement {
+fn render_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn SidebarTheme>, cx: &App) -> AnyElement {
     if let Some(element) = input.custom_element {
         return div().w_full().child(element).into_any_element();
     }
 
     match input.kind {
         NavNodeKind::Section => render_section_row(input.label.unwrap_or(input.id), theme).into_any_element(),
-        NavNodeKind::Item => render_item_row(input, handlers, theme),
+        NavNodeKind::Item => render_item_row(input, handlers, theme, cx),
     }
 }
 
@@ -551,9 +566,23 @@ fn render_section_row(label: SharedString, theme: &Arc<dyn SidebarTheme>) -> Div
         .child(label)
 }
 
-fn render_item_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn SidebarTheme>) -> AnyElement {
+fn render_item_row(
+    input: RowRenderInput,
+    handlers: RowHandlers,
+    theme: &Arc<dyn SidebarTheme>,
+    cx: &App,
+) -> AnyElement {
     let RowRenderInput {
-        id, label, icon, state, focus_handle, has_children, expansion_progress, disclosure_icons, ..
+        id,
+        label,
+        icon,
+        state,
+        focus_handle,
+        has_children,
+        expansion_progress,
+        disclosure_icons,
+        tooltip,
+        ..
     } = input;
     let interaction = InteractionState {
         hovered: state.hovered,
@@ -571,6 +600,8 @@ fn render_item_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn
     let padding_left = look.padding_x + state.depth as f32 * depth_indent;
     let mut row = div()
         .id(format!("{id}-row"))
+        .role(gpui::Role::Button)
+        .aria_label(label.clone().unwrap_or(id.clone()))
         .w_full()
         .min_h(px(look.height))
         .flex()
@@ -636,6 +667,9 @@ fn render_item_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn
         }
     }
 
+    if let Some(tip) = tooltip {
+        row = tip.render(row, interaction, cx);
+    }
     row.into_any_element()
 }
 
@@ -644,8 +678,9 @@ fn render_collapsed_rail_node(
     handlers: RowHandlers,
     theme: &Arc<dyn SidebarTheme>,
     disclosure_icons: &DisclosureIcons,
+    cx: &App,
 ) -> AnyElement {
-    let RenderedNavNode { id, icon, state, focus_handle, has_children, .. } = node;
+    let RenderedNavNode { id, label, icon, state, focus_handle, has_children, tooltip, .. } = node;
     let interaction = InteractionState {
         hovered: state.hovered,
         pressed: state.pressed,
@@ -665,6 +700,8 @@ fn render_collapsed_rail_node(
     };
     let mut row = div()
         .id(format!("{id}-rail-row"))
+        .role(gpui::Role::Button)
+        .aria_label(label.unwrap_or(id.clone()))
         .w(px(row_width))
         .h(px(look.height))
         .flex_none()
@@ -738,6 +775,9 @@ fn render_collapsed_rail_node(
         }
     }
 
+    if let Some(tip) = tooltip {
+        row = tip.render(row, interaction, cx);
+    }
     if let Some(bounds) = bounds {
         div()
             .on_children_prepainted(move |child_bounds, window, cx| {

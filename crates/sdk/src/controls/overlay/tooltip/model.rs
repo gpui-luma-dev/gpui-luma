@@ -26,6 +26,7 @@ pub enum TooltipEvent {
 }
 
 /// Configuration is independent of the target control and its button/slider template.
+#[derive(Clone)]
 pub struct Tooltip {
     pub(super) text: SharedString,
     pub(super) shortcut: Option<SharedString>,

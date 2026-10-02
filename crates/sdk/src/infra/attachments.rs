@@ -119,6 +119,17 @@ impl TooltipHandle {
         }
     }
 
+    /// Create a retained item attachment with a look-owned default theme.
+    /// An explicit theme on `config` takes precedence.
+    pub fn new_with_theme(config: Tooltip, theme: Arc<dyn TooltipTheme>, cx: &mut App) -> Self {
+        Self {
+            owner: cx
+                .new(|_| TemplateTooltipOwner { attachments: AttachmentHost::default() })
+                .with_tooltip_theme(theme, cx)
+                .tooltip(config, cx),
+        }
+    }
+
     /// Preserve the item's layout, focus and input handlers. The supplied state
     /// belongs to this item, rather than to the complete composite control.
     /// Give the root its accessible role/label for the help description association.

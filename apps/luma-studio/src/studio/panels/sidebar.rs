@@ -89,8 +89,13 @@ pub(crate) fn property_sidebar(
         for leaf in group.leaves {
             sub = sub.item(property_leaf_menu_item(look, leaf));
         }
-        properties_menu = properties_menu
-            .item(shadcn::Sidebar::menu_item(group.id, group.label).icon(group.icon).expanded(group.expanded).sub(sub));
+        properties_menu = properties_menu.item(
+            shadcn::Sidebar::menu_item(group.id, group.label)
+                .help(format!("Expand or collapse {}", group.label))
+                .icon(group.icon)
+                .expanded(group.expanded)
+                .sub(sub),
+        );
     }
 
     let mut footer = shadcn::Sidebar::footer();
@@ -110,6 +115,7 @@ pub(crate) fn property_sidebar(
 
 fn property_leaf_menu_item(_look: &Arc<ShadcnLook>, leaf: &PropertyLeaf) -> SidebarMenuItemBuilder {
     let mut item = shadcn::Sidebar::menu_item(leaf.id, leaf.label)
+        .help(format!("Select {}", leaf.label))
         .disabled(!leaf.enabled)
         .active(leaf.id == INITIAL_PROPERTY_SELECTION_ID);
     if let Some(icon) = leaf.icon {
