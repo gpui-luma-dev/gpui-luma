@@ -1,11 +1,10 @@
-//! Top-level screen navigation toggle bar (Custom Palette / Colors / Icons).
+//! Top-level screen navigation with the SDK animated tabs control.
 
 use std::sync::Arc;
 
 use gpui::{Context, Entity, EventEmitter, IntoElement, Render, Subscription, Window, div, prelude::*};
 use gpui_luma::controls::button::{Button, ButtonEvent};
-use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
-use gpui_luma::hstack;
+use gpui_luma::controls::tabs::{Tabs};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::prelude::TooltipEntityExt;
 use gpui_luma::theme::ThemeMode;
@@ -18,6 +17,14 @@ use crate::tabs::RadixStudioTab;
 /// Radix icons are drawn on a native 15x15 grid.
 const THEME_ICON_SIZE: f32 = 15.0;
 
+pub(crate) const SCREEN_TABS: [(RadixStudioTab, &str, &str); 5] = [
+    (RadixStudioTab::CustomPalette, "page-custom-palette", "Custom Palette"),
+    (RadixStudioTab::Colors, "page-colors", "Colors"),
+    (RadixStudioTab::Icons, "page-icons", "Icons"),
+    (RadixStudioTab::StyleGuide, "page-style-guide", "Style Guide"),
+    (RadixStudioTab::Developer, "page-developer", "Developer"),
+];
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ScreenNavEvent {
     Change { tab: RadixStudioTab },
@@ -28,11 +35,7 @@ pub enum ScreenNavEvent {
 pub struct ScreenNav {
     look: Arc<Look>,
     active: RadixStudioTab,
-    custom_palette: Toggle,
-    colors: Toggle,
-    icons: Toggle,
-    style_guide: Toggle,
-    developer: Toggle,
+    tabs: Entity<Tabs>,
     theme_toggle: Entity<Button>,
     theme_reset: Entity<Button>,
     github: Entity<Button>,
@@ -43,23 +46,7 @@ impl EventEmitter<ScreenNavEvent> for ScreenNav {}
 
 impl ScreenNav {
     /// Page navigation uses the app look; theme actions follow the editable palette.
-    pub fn new(look: &Arc<Look>, action_look: &Arc<Look>, cx: &mut Context<Self>) -> Self {
-        let custom_palette = radix::Toggle::new("page-custom-palette")
-            .look(look)
-            .page()
-            .with_data(true)
-            .label("Custom Palette")
-            .spawn(cx);
-        let colors = radix::Toggle::new("page-colors").look(look).page().with_data(false).label("Colors").spawn(cx);
-        let icons = radix::Toggle::new("page-icons").look(look).page().with_data(false).label("Icons").spawn(cx);
-        let style_guide = radix::Toggle::new("page-style-guide")
-            .look(look)
-            .page()
-            .with_data(false)
-            .label("Style Guide")
-            .spawn(cx);
-        let developer =
-            radix::Toggle::new("page-developer").look(look).page().with_data(false).label("Developer").spawn(cx);
+    pub fn new(look: &Arc<Look>, action_look: &Arc<Look>, tabs: Entity<Tabs>, cx: &mut Context<Self>) -> Self {
         let icon_look = Arc::clone(action_look);
         let theme_toggle = radix::Button::new("screen-nav-theme")
             .look(action_look)
@@ -109,29 +96,10 @@ impl ScreenNav {
                 cx.emit(ScreenNavEvent::ResetTheme);
             }
         }));
-        subscriptions.push(cx.subscribe(&custom_palette, |this, _, event: &ToggleEvent, cx| {
-            if let ToggleEvent::Change { selected: true } = event {
-                this.select(RadixStudioTab::CustomPalette, cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&colors, |this, _, event: &ToggleEvent, cx| {
-            if let ToggleEvent::Change { selected: true } = event {
-                this.select(RadixStudioTab::Colors, cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&icons, |this, _, event: &ToggleEvent, cx| {
-            if let ToggleEvent::Change { selected: true } = event {
-                this.select(RadixStudioTab::Icons, cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&style_guide, |this, _, event: &ToggleEvent, cx| {
-            if let ToggleEvent::Change { selected: true } = event {
-                this.select(RadixStudioTab::StyleGuide, cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&developer, |this, _, event: &ToggleEvent, cx| {
-            if let ToggleEvent::Change { selected: true } = event {
-                this.select(RadixStudioTab::Developer, cx);
+        subscriptions.push(cx.observe(&tabs, |this, tabs, cx| {
+            let active_id = tabs.read(cx).active_id().cloned();
+            if let Some((tab, _, _)) = SCREEN_TABS.iter().find(|(_, id, _)| Some(*id) == active_id.as_deref()) {
+                this.select(*tab, cx);
             }
         }));
         subscriptions.push(cx.subscribe(&theme_toggle, |this, _, event: &ButtonEvent, cx| {
@@ -147,11 +115,7 @@ impl ScreenNav {
         Self {
             look: Arc::clone(look),
             active: RadixStudioTab::CustomPalette,
-            custom_palette,
-            colors,
-            icons,
-            style_guide,
-            developer,
+            tabs,
             theme_toggle,
             theme_reset,
             github,
@@ -168,18 +132,21 @@ impl ScreenNav {
             return;
         }
         self.active = tab;
-        self.custom_palette
-            .update(cx, |toggle, cx| toggle.set_data(tab == RadixStudioTab::CustomPalette, cx));
-        self.colors.update(cx, |toggle, cx| toggle.set_data(tab == RadixStudioTab::Colors, cx));
-        self.icons.update(cx, |toggle, cx| toggle.set_data(tab == RadixStudioTab::Icons, cx));
-        self.style_guide.update(cx, |toggle, cx| toggle.set_data(tab == RadixStudioTab::StyleGuide, cx));
-        self.developer.update(cx, |toggle, cx| toggle.set_data(tab == RadixStudioTab::Developer, cx));
+        if let Some((_, id, _)) = SCREEN_TABS.iter().find(|(screen, _, _)| *screen == tab) {
+            self.tabs.update(cx, |tabs, cx| {
+                // User selection already started the indicator transition.
+                if tabs.active_id().map(|active| active.as_ref()) != Some(*id) {
+                    tabs.set_active(*id, cx);
+                }
+            });
+        }
         cx.emit(ScreenNavEvent::Change { tab });
         cx.notify();
     }
 
-    /// Shared Look mutation does not invalidate independently rendered button entities.
+    /// Refresh child controls after mutating their shared Look.
     pub fn theme_changed(&mut self, cx: &mut Context<Self>) {
+        self.tabs.update(cx, |tabs, cx| tabs.set_template(radix::tabs_template(&self.look), cx));
         self.theme_toggle.update(cx, |_, cx| cx.notify());
         self.theme_reset.update(cx, |_, cx| cx.notify());
         self.github.update(cx, |_, cx| cx.notify());
@@ -188,21 +155,14 @@ impl ScreenNav {
 }
 
 impl Render for ScreenNav {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .w_full()
             .flex()
             .flex_row()
             .items_center()
             .child(div().flex_1())
-            .child(hstack! {
-                gap=8 align=center justify=center;
-                self.custom_palette.clone(),
-                self.colors.clone(),
-                self.icons.clone(),
-                self.style_guide.clone(),
-                self.developer.clone(),
-            })
+            .child(self.tabs.read(cx).tab_list())
             .child(
                 div()
                     .flex_1()
