@@ -3,10 +3,11 @@
 use gpui_luma::prelude::TooltipEntityExt;
 
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use gpui::{
-    App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, ScrollHandle, Subscription, Task, Window, div,
-    prelude::*, px,
+    App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, AnyElement, ScrollHandle, Subscription, Task, Window,
+    div, prelude::*, px,
 };
 use gpui_luma::controls::button::ButtonEvent;
 use gpui_luma::controls::overlay_window::{OverlayWindow, OverlayWindowMode, OverlayWindowPosition};
@@ -17,6 +18,7 @@ use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::infra::menu_item::MenuItem;
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::shell::TitleBar;
+use gpui_luma::controls::tabs::Tabs;
 use gpui_luma::theme::ThemeMode;
 use gpui_luma::{WideMiddle, dock_panel, spawn_wide_middle, vstack};
 use gpui_luma_look_radix::{Accent, Gray, Look, LookControlExt, ScaleFamily, SemanticRole};
@@ -26,11 +28,13 @@ use crate::color_hex::format_hex;
 use crate::screens::custom_palette::{MeshCache, MeshRequest};
 use crate::controls::{
     ClassicShadowEditor, ClassicShadowEditorEvent, ColorTextField, ColorTextFieldEvent, ScreenNav, ScreenNavEvent,
+    SCREEN_TABS,
 };
 use crate::screens::{colors, custom_palette, developer, icons, style_guide};
 use crate::tabs::RadixStudioTab;
 
 const CONTENT_MAX_W: f32 = 1280.0;
+const SCREEN_ENTER_DURATION: Duration = Duration::from_millis(300);
 const CONTROL_BAR_FADE_DISTANCE: f32 = 96.0;
 const STARTUP_MODE: ThemeMode = ThemeMode::Dark;
 
@@ -99,6 +103,7 @@ pub struct RadixStudioApp {
     palette_edits: PaletteEdits,
     screen_nav: Entity<ScreenNav>,
     page_scroll: ScrollHandle,
+    screens: Entity<Tabs>,
     mode_selector: RadioGroup<RadioGroupItem>,
     accent_field: Entity<ColorTextField>,
     gray_field: Entity<ColorTextField>,
@@ -131,7 +136,20 @@ impl RadixStudioApp {
         palette_edits.apply(&theme, &draft);
 
         let mode_selector = theme_mode::spawn("palette-mode", &draft, cx);
-        let screen_nav = cx.new(|cx| ScreenNav::new(&theme, &draft, cx));
+        let mut screen_builder = radix::Tabs::new("screen-nav-tabs")
+            .look(&theme)
+            .line()
+            .fade_in(SCREEN_ENTER_DURATION)
+            .active("page-custom-palette");
+        for (screen, id, label) in SCREEN_TABS {
+            let app = cx.entity().downgrade();
+            screen_builder = screen_builder.tab_with(id, label, move |window, cx| {
+                app.update(cx, |app, cx| app.render_screen(screen, window, cx))
+                    .unwrap_or_else(|_| div().into_any_element())
+            });
+        }
+        let screens = screen_builder.spawn(cx);
+        let screen_nav = cx.new(|cx| ScreenNav::new(&theme, &draft, screens.clone(), cx));
         let home = custom_palette::PreviewControls::spawn(&draft, cx);
         let accent_color = seed_colors.accent;
         let gray_color = seed_colors.gray;
@@ -147,6 +165,15 @@ impl RadixStudioApp {
             .help("Background seed color. Click the swatch to pick a color or enter a hex value.", cx);
 
         let mut subscriptions = Vec::new();
+        // Screen presenters read app-owned state; refresh them when that state changes.
+        subscriptions.push(cx.observe(&cx.entity(), {
+            let screens = screens.downgrade();
+            move |_, _, cx| {
+                if let Some(screens) = screens.upgrade() {
+                    screens.update(cx, |_, cx| cx.notify());
+                }
+            }
+        }));
         for (index, field) in [(0, &accent_field), (1, &gray_field), (2, &background_field)] {
             subscriptions.push(cx.subscribe(field, move |this, _, event: &ColorTextFieldEvent, cx| {
                 let ColorTextFieldEvent::Change { color } = event;
@@ -242,6 +269,7 @@ impl RadixStudioApp {
             palette_edits,
             screen_nav,
             page_scroll: ScrollHandle::new(),
+            screens,
             mode_selector,
             accent_field,
             gray_field,
@@ -371,13 +399,67 @@ struct DraftChrome {
     accent: Hsla,
 }
 
-impl Render for RadixStudioApp {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+impl RadixStudioApp {
+    fn render_screen(&mut self, active_tab: RadixStudioTab, window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
         let surface = self.surface();
-        let border = self.border();
         let fg = self.fg();
         let muted = self.muted();
         let draft_chrome = self.draft_chrome();
+        let content = match active_tab {
+            RadixStudioTab::CustomPalette => custom_palette::page(
+                custom_palette::PageArgs {
+                    look: &self.draft,
+                    mode_selector: self.mode_selector.clone(),
+                    accent_field: self.accent_field.clone(),
+                    gray_field: self.gray_field.clone(),
+                    background_field: self.background_field.clone(),
+                    copy_menu: self.copy_menu.clone(),
+                    preview_layout: self.preview_layout.clone(),
+                    mesh_image: self.cached_signup_mesh(),
+                    app: cx.entity(),
+                    controls: self.home.clone(),
+                    surface: draft_chrome.surface,
+                    border: draft_chrome.border,
+                    muted: draft_chrome.muted,
+                    fg: draft_chrome.fg,
+                    accent: draft_chrome.accent,
+                },
+                cx,
+            ),
+            RadixStudioTab::Colors => colors::page(&self.theme, fg, muted),
+            RadixStudioTab::Icons => icons::page(fg, muted, surface),
+            RadixStudioTab::StyleGuide => {
+                let guide = self.style_guide.get_or_insert_with(|| style_guide::State::new(&self.theme, cx));
+                guide.render(&self.theme, window, cx)
+            }
+            RadixStudioTab::Developer => self
+                .developer
+                .get_or_insert_with(|| developer::State::new(&self.theme, cx))
+                .render(&self.theme, self.shadow_editor.clone(), cx),
+        };
+        let body = vstack! { gap=28; content };
+        div()
+            .id("radix-studio-scroll")
+            .relative()
+            .flex_1()
+            .w_full()
+            .min_h_0()
+            .flex()
+            .flex_col()
+            .overflow_y_scroll()
+            .track_scroll(&self.page_scroll)
+            .on_scroll_wheel(cx.listener(|_, _, _, cx| cx.notify()))
+            .when(active_tab == RadixStudioTab::Icons, |d| d.child(icons::hero_decoration(fg)))
+            .child(body.relative().w_full().max_w(px(CONTENT_MAX_W)).mx_auto().px_8().pt(px(20.0)).pb_8())
+            .into_any_element()
+    }
+}
+
+impl Render for RadixStudioApp {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let surface = self.surface();
+        let border = self.border();
+        let fg = self.fg();
         let active_tab = self.active_tab(cx);
         // Fade with scroll distance so scrolling back to the top reverses smoothly.
         let progress = (f32::from(-self.page_scroll.offset().y) / CONTROL_BAR_FADE_DISTANCE).clamp(0.0, 1.0);
@@ -438,62 +520,11 @@ impl Render for RadixStudioApp {
                 )
                 .child(
                     div()
-                        .id("radix-studio-scroll")
-                        .relative()
                         .flex_1()
-                        .w_full()
                         .min_h_0()
                         .flex()
                         .flex_col()
-                        .overflow_y_scroll()
-                        .track_scroll(&self.page_scroll)
-                        .when(active_tab == RadixStudioTab::Icons, |d| {
-                            d.child(icons::hero_decoration(fg))
-                        })
-                        .child(
-                            vstack! {
-                                gap=28;
-                                match active_tab {
-                                    RadixStudioTab::CustomPalette => custom_palette::page(
-                                        custom_palette::PageArgs {
-                                            look: &self.draft,
-                                            mode_selector: self.mode_selector.clone(),
-                                            accent_field: self.accent_field.clone(),
-                                            gray_field: self.gray_field.clone(),
-                                            background_field: self.background_field.clone(),
-                                            copy_menu: self.copy_menu.clone(),
-                                            preview_layout: self.preview_layout.clone(),
-                                            mesh_image: self.cached_signup_mesh(),
-                                            app: cx.entity(),
-                                            controls: self.home.clone(),
-                                            surface: draft_chrome.surface,
-                                            border: draft_chrome.border,
-                                            muted: draft_chrome.muted,
-                                            fg: draft_chrome.fg,
-                                            accent: draft_chrome.accent,
-                                        },
-                                        cx,
-                                    ),
-                                    RadixStudioTab::Colors => colors::page(&self.theme, fg, muted),
-                                    RadixStudioTab::Icons => icons::page(fg, muted, surface),
-                                    RadixStudioTab::StyleGuide => {
-                                        let guide = self.style_guide.get_or_insert_with(|| style_guide::State::new(&self.theme, cx));
-                                        guide.render(&self.theme, window, cx)
-                                    }
-                                    RadixStudioTab::Developer => {
-                                        self.developer.get_or_insert_with(|| developer::State::new(&self.theme, cx))
-                                            .render(&self.theme, self.shadow_editor.clone(), cx)
-                                    }
-                                },
-                            }
-                            .relative()
-                            .w_full()
-                            .max_w(px(CONTENT_MAX_W))
-                        .mx_auto()
-                        .px_8()
-                        .pt(px(20.0))
-                        .pb_8(),
-                    )
+                        .child(self.screens.read(cx).body()),
                 )
                 .child(self.swatch_overlay.clone()),
         }
@@ -578,5 +609,35 @@ mod palette_edit_tests {
         edits = PaletteEdits::default();
         assert_eq!(*edits.for_mode(ThemeMode::Dark), [None; 3]);
         assert_eq!(*edits.for_mode(ThemeMode::Light), [None; 3]);
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod screen_content_tests {
+    use super::*;
+    use gpui::TestAppContext;
+
+    #[test]
+    fn main_screen_slots_render_and_follow_programmatic_selection() {
+        let mut app = TestAppContext::single();
+        let (studio, cx) = app.add_window_view(RadixStudioApp::new);
+        cx.simulate_resize(gpui::size(px(900.0), px(700.0)));
+        cx.run_until_parked();
+        let screens = cx.update(|_, cx| studio.read(cx).screens.clone());
+        for (screen, id, _) in SCREEN_TABS {
+            cx.update(|_, cx| screens.update(cx, |tabs, cx| tabs.set_active(id, cx)));
+            cx.run_until_parked();
+            cx.update(|_, cx| {
+                let studio = studio.read(cx);
+                assert_eq!(studio.active_tab(cx), screen);
+                assert_eq!(studio.page_scroll.offset(), gpui::point(px(0.0), px(0.0)));
+                if screen == RadixStudioTab::StyleGuide {
+                    assert!(studio.style_guide.is_some());
+                }
+                if screen == RadixStudioTab::Developer {
+                    assert!(studio.developer.is_some());
+                }
+            });
+        }
     }
 }

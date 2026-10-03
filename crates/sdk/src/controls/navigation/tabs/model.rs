@@ -1,10 +1,12 @@
 use std::sync::Arc;
+use std::collections::HashMap;
+use std::time::Duration;
 
-use gpui::{AppContext, Entity, SharedString};
+use gpui::{App, AppContext, Entity, IntoElement, Render, SharedString, Window};
 
 use super::indicator::{TabsIndicatorMotion, TabsIndicatorPaint};
 use super::template::{tabs_control_group_template, template_with_modifier};
-use super::{Tabs, TabsTemplate, default_tabs_template};
+use super::{Tabs, TabsContent, TabsTemplate, default_tabs_template};
 use crate::controls::control_group::ControlGroupItemLike;
 use crate::infra::icon::IconSource;
 use crate::infra::icon::DisclosureIcons;
@@ -190,6 +192,8 @@ pub struct TabsModel {
     pub(crate) active_id: Option<SharedString>,
     pub(crate) enabled: bool,
     pub(crate) animated: bool,
+    pub(crate) contents: HashMap<SharedString, TabsContent>,
+    pub(crate) fade_duration: Duration,
     pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) template: Arc<dyn TabsTemplate>,
 }
@@ -234,6 +238,8 @@ impl TabsBuilder {
                 active_id: None,
                 enabled: true,
                 animated: true,
+                contents: HashMap::new(),
+                fade_duration: Duration::ZERO,
                 disclosure_icons: DisclosureIcons::new(
                     lucide_svg_static::Icon::ChevronUp,
                     lucide_svg_static::Icon::ChevronDown,
@@ -250,6 +256,40 @@ impl TabsBuilder {
 
     pub fn items(mut self, items: impl IntoIterator<Item = TabsItem>) -> Self {
         self.model.items = items.into_iter().collect();
+        self.model.contents.retain(|id, _| self.model.items.iter().any(|item| item.id() == id));
+        self
+    }
+
+    /// Add a tab backed by an existing view. Its entity survives selection changes.
+    pub fn tab<V: Render + 'static>(
+        self,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        view: Entity<V>,
+    ) -> Self {
+        self.tab_with(id, label, move |_, _| view.clone())
+    }
+
+    /// Add a tab with a content presenter. The callback runs only for the selected panel.
+    pub fn tab_with<F, E>(self, id: impl Into<SharedString>, label: impl Into<SharedString>, presenter: F) -> Self
+    where
+        F: Fn(&mut Window, &mut App) -> E + 'static,
+        E: IntoElement + 'static,
+    {
+        self.tab_content(TabsItem::new(id).label(label), TabsContent::new(presenter))
+    }
+
+    /// Add an item and its content, preserving item options such as disabled state.
+    pub fn tab_content(mut self, item: TabsItem, content: TabsContent) -> Self {
+        self.model.contents.insert(item.id().clone(), content);
+        self.model.items.push(item);
+        self
+    }
+
+    /// Fade the incoming panel on selection changes. First render is fully visible.
+    /// Zero disables the fade; `animated(false)` also disables body motion.
+    pub fn fade_in(mut self, duration: Duration) -> Self {
+        self.model.fade_duration = duration;
         self
     }
 
@@ -297,7 +337,9 @@ impl TabsBuilder {
     }
 
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Tabs> {
-        cx.new(|cx| Tabs::from_builder(self, cx))
+        let tabs = cx.new(|cx| Tabs::from_builder(self, cx));
+        tabs.update(cx, |tabs, cx| tabs.initialize_slots(cx));
+        tabs
     }
 
     pub(crate) fn control_group_template(

@@ -1,17 +1,18 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use gpui::{
-    App, Bounds, Context, Entity, EventEmitter, Focusable, IntoElement, Pixels, Render, SharedString, Window, div,
+    App, Bounds, Context, Div, Entity, EventEmitter, Focusable, IntoElement, Pixels, Render, SharedString, Window, div,
     prelude::*,
 };
 
 use super::indicator::TabsIndicatorMotion;
-use super::{TabsBuilder, TabsItem};
+use super::{TabsBody, TabsBuilder, TabsContent, TabsItem, TabsList};
 use crate::controls::control_group::{ControlGroupControl, ControlGroupEvent, ControlGroupLayout, ControlSelectionMode};
 use crate::controls::tabs::model::TabsWidthMode;
 use crate::infra::lock;
-use crate::motion::DisclosureMotion;
+use crate::motion::{DisclosureMotion, VisualTransition};
 use crate::theme::ControlSize;
 
 #[derive(Clone, Debug)]
@@ -27,9 +28,14 @@ pub enum TabsEvent {
 }
 
 pub struct Tabs {
-    group: Entity<ControlGroupControl<TabsItem>>,
+    pub(super) group: Entity<ControlGroupControl<TabsItem>>,
     items: Vec<TabsItem>,
-    active_id: Option<SharedString>,
+    pub(super) contents: HashMap<SharedString, TabsContent>,
+    pub(super) body_transition: VisualTransition,
+    fade_duration: Duration,
+    list_slot: Option<Entity<TabsList>>,
+    body_slot: Option<Entity<TabsBody>>,
+    pub(super) active_id: Option<SharedString>,
     pending_changed_id: Option<SharedString>,
     item_bounds: Vec<Option<Bounds<Pixels>>>,
     size: ControlSize,
@@ -93,6 +99,11 @@ impl Tabs {
         Self {
             group,
             items: builder.model.items,
+            contents: builder.model.contents,
+            body_transition: VisualTransition::new(1.0, builder.model.fade_duration),
+            fade_duration: builder.model.fade_duration,
+            list_slot: None,
+            body_slot: None,
             active_id,
             pending_changed_id: None,
             item_bounds: Vec::new(),
@@ -104,6 +115,31 @@ impl Tabs {
             template: builder.model.template,
             disclosure_transitions,
             disclosure_progress,
+        }
+    }
+
+    pub(crate) fn initialize_slots(&mut self, cx: &mut Context<Self>) {
+        let tabs = cx.entity();
+        self.list_slot = Some(cx.new(|cx| TabsList::new(&tabs, cx)));
+        self.body_slot = Some(cx.new(|cx| TabsBody::new(&tabs, cx)));
+    }
+
+    /// Render only navigation, for layouts that place the body elsewhere.
+    pub fn tab_list(&self) -> Div {
+        div().children(self.list_slot.clone())
+    }
+
+    /// Render the selected panel with the configured body transition.
+    pub fn body(&self) -> Div {
+        div().w_full().min_h_0().flex_1().flex().flex_col().children(self.body_slot.clone())
+    }
+
+    fn restart_body_transition(&mut self) {
+        if self.animated && !self.fade_duration.is_zero() && !self.contents.is_empty() {
+            self.body_transition = VisualTransition::new(0.0, self.fade_duration);
+            self.body_transition.set_target(1.0);
+        } else {
+            self.body_transition.snap_to(1.0);
         }
     }
 
@@ -120,7 +156,10 @@ impl Tabs {
         let previous_id = self.active_id.clone();
         self.active_id = Some(active_id.clone());
         self.pending_changed_id = None;
-        self.retarget_indicator_for_active(previous_id.as_ref() != Some(&active_id));
+        if previous_id.as_ref() != Some(&active_id) {
+            self.restart_body_transition();
+            self.retarget_indicator_for_active(true);
+        }
         self.group.update(cx, |group, cx| {
             group.set_selected_ids([active_id], cx);
         });
@@ -129,6 +168,8 @@ impl Tabs {
 
     pub fn set_items(&mut self, items: impl IntoIterator<Item = TabsItem>, cx: &mut Context<Self>) {
         self.items = items.into_iter().collect();
+        self.contents.retain(|id, _| self.items.iter().any(|item| item.id() == id));
+        self.body_transition.snap_to(1.0);
         if !self
             .active_id
             .as_ref()
@@ -191,6 +232,9 @@ impl Tabs {
             return;
         }
         self.animated = animated;
+        if !animated {
+            self.body_transition.snap_to(1.0);
+        }
         self.indicator_motion.set_animated(animated);
         for transition in self.disclosure_transitions.values_mut() {
             transition.set_animated(animated);
@@ -276,7 +320,7 @@ impl Tabs {
         self.indicator_motion.apply_item_bounds(bounds, animate && self.animated);
     }
 
-    fn handle_group_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<Self>) {
+    pub(super) fn handle_group_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<Self>) {
         let previous_active = self.active_id.clone();
         let events = translate_group_event(
             &self.items,
@@ -288,7 +332,10 @@ impl Tabs {
 
         match event {
             ControlGroupEvent::Change { selected: true, .. } => {
-                self.retarget_indicator_for_active(previous_active != self.active_id);
+                if previous_active != self.active_id {
+                    self.restart_body_transition();
+                    self.retarget_indicator_for_active(true);
+                }
             }
             ControlGroupEvent::ItemBoundsChanged { item_id, .. } if self.active_id.as_ref() == Some(item_id) => {
                 let animate = self.indicator_motion.is_animating();
@@ -406,17 +453,33 @@ impl Focusable for Tabs {
     }
 }
 
-impl Render for Tabs {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+impl Tabs {
+    pub(super) fn sync_list_motion(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.sync_disclosure_transitions(window, cx);
         let was_animating = self.indicator_motion.is_animating();
         let is_animating = self.indicator_motion.sync();
         self.indicator_motion.schedule_frame(window, cx);
         if was_animating || is_animating {
             self.group.update(cx, |_, cx| cx.notify());
-            cx.notify();
         }
-        div().child(self.group.clone()).into_any_element()
+    }
+}
+
+impl Render for Tabs {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        let mut root = div();
+        if !self.contents.is_empty() {
+            root = root.flex().flex_col().w_full();
+        }
+        if let Some(list) = &self.list_slot {
+            root = root.child(list.clone());
+        }
+        if !self.contents.is_empty()
+            && let Some(body) = &self.body_slot
+        {
+            root = root.child(body.clone());
+        }
+        root
     }
 }
 

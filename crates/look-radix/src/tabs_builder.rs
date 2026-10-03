@@ -1,7 +1,9 @@
 //! Look-owned tabs builder. Spawn synthesizes the SDK [`gpui_luma::controls::tabs::Tabs`].
 
-use gpui::{App, Context, Div, Entity, SharedString, Stateful};
-use gpui_luma::controls::tabs::{TabsBuilder, TabsItem, TabsRenderModel, TabsWidthMode};
+use gpui::{App, Context, Div, Entity, IntoElement, Render, SharedString, Stateful, Window};
+use std::collections::HashMap;
+use std::time::Duration;
+use gpui_luma::controls::tabs::{TabsBuilder, TabsContent, TabsItem, TabsRenderModel, TabsWidthMode};
 use gpui_luma::infra::icon::DisclosureIcons;
 
 use crate::look::{Look, resolve_look};
@@ -20,6 +22,8 @@ pub struct Tabs {
     active_id: Option<SharedString>,
     enabled: bool,
     animated: bool,
+    contents: HashMap<SharedString, TabsContent>,
+    fade_duration: Duration,
     disclosure_icons: Option<DisclosureIcons>,
     modifiers: Vec<TabsModifier>,
 }
@@ -36,6 +40,8 @@ impl Tabs {
             active_id: None,
             enabled: true,
             animated: true,
+            contents: HashMap::new(),
+            fade_duration: Duration::ZERO,
             disclosure_icons: None,
             modifiers: Vec::new(),
         }
@@ -77,6 +83,39 @@ impl Tabs {
 
     pub fn items(mut self, items: impl IntoIterator<Item = TabsItem>) -> Self {
         self.items = items.into_iter().collect();
+        self.contents.retain(|id, _| self.items.iter().any(|item| item.id() == id));
+        self
+    }
+
+    /// Add a content-bearing tab backed by an existing view entity.
+    pub fn tab<V: Render + 'static>(
+        self,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        view: Entity<V>,
+    ) -> Self {
+        self.tab_with(id, label, move |_, _| view.clone())
+    }
+
+    /// Add a content-bearing tab with a presenter for the selected screen.
+    pub fn tab_with<F, E>(self, id: impl Into<SharedString>, label: impl Into<SharedString>, presenter: F) -> Self
+    where
+        F: Fn(&mut Window, &mut App) -> E + 'static,
+        E: IntoElement + 'static,
+    {
+        self.tab_content(TabsItem::new(id).label(label), TabsContent::new(presenter))
+    }
+
+    /// Add an item and its content, preserving item options.
+    pub fn tab_content(mut self, item: TabsItem, content: TabsContent) -> Self {
+        self.contents.insert(item.id().clone(), content);
+        self.items.push(item);
+        self
+    }
+
+    /// Fade incoming content on selection changes; first render stays fully visible.
+    pub fn fade_in(mut self, duration: Duration) -> Self {
+        self.fade_duration = duration;
         self
     }
 
@@ -123,9 +162,16 @@ impl Tabs {
             .template(template)
             .size(self.size.control_size())
             .width_mode(self.width_mode)
-            .items(self.items)
             .enabled(self.enabled)
-            .animated(self.animated);
+            .animated(self.animated)
+            .fade_in(self.fade_duration);
+        for item in self.items {
+            if let Some(content) = self.contents.get(item.id()) {
+                builder = builder.tab_content(item, content.clone());
+            } else {
+                builder = builder.item(item);
+            }
+        }
         if let Some(active_id) = self.active_id {
             builder = builder.active(active_id);
         }
