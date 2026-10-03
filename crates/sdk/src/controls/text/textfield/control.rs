@@ -346,6 +346,7 @@ impl TextFieldControl {
             caret_visible: self.state.focused && self.model.enabled && self.caret_visible,
             horizontal_scroll: self.horizontal_scroll.as_f32(),
             character_offsets,
+            marked_range: self.marked_range.clone(),
             look,
         }
     }

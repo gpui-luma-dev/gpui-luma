@@ -40,6 +40,8 @@ pub struct TextFieldRenderModel<'a> {
     pub enabled: bool,
     pub full_width: bool,
     pub state: TextFieldState,
+    /// Active IME composition range, measured in Unicode characters.
+    pub marked_range: Option<std::ops::Range<usize>>,
     pub caret_visible: bool,
     pub horizontal_scroll: f32,
     pub character_offsets: Vec<f32>,

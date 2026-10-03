@@ -1,6 +1,7 @@
 //! Text family: fields plus the shared editing engine.
 
 mod editing;
+mod runs;
 mod state;
 
 pub mod textarea;
