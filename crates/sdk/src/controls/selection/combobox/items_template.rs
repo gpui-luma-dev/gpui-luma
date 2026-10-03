@@ -122,15 +122,10 @@ impl ComboBoxItemsTemplate for DefaultComboBoxItemsTemplate {
         cx: &mut App,
     ) -> Stateful<gpui::Div> {
         let ComboBoxItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
-        let look = model.look.clone();
+        let look = &model.look;
 
-        let mut root = div()
-            .id(format!("{}-rows", model.menu_id))
-            .relative()
-            .flex()
-            .flex_col()
-            .w_full()
-            .p(px(look.padding));
+        let mut root =
+            div().id((model.menu_id.clone(), 0usize)).relative().flex().flex_col().w_full().p(px(look.padding));
         let mut clicks = item_clicks.into_iter();
 
         for (visible_index, (source_index, hover)) in model.visible_indices.iter().copied().zip(item_hovers).enumerate()
@@ -166,7 +161,7 @@ impl ComboBoxItemsTemplate for DefaultComboBoxItemsTemplate {
             };
 
             let mut row = div()
-                .id(format!("{}-row-{}", model.menu_id, visible_index))
+                .id(("row", visible_index))
                 .flex()
                 .items_center()
                 .min_h(px(look.item_height))

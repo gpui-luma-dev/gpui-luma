@@ -175,7 +175,7 @@ impl SplitViewTemplate for ThemedSplitViewTemplate {
         let expand_separator = if model.collapsed {
             Some(
                 div()
-                    .id(format!("{}-expand-separator", model.id))
+                    .id("expand-separator")
                     .absolute()
                     .left(collapsed_expand_separator_left(model.effective_sidebar_width))
                     .top(px(EXPAND_SEPARATOR_INSET_Y))
@@ -188,7 +188,7 @@ impl SplitViewTemplate for ThemedSplitViewTemplate {
             )
         } else {
             let mut separator = div()
-                .id(format!("{}-separator", model.id))
+                .id("separator")
                 .relative()
                 .h_full()
                 .w(px(SEPARATOR_HITBOX_WIDTH))

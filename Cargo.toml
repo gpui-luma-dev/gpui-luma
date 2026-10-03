@@ -106,3 +106,8 @@ opt-level = 3
 
 [profile.dev.package.ttf-parser]
 opt-level = 3
+
+# Enable cross-crate optimization for shipped applications while preserving panic unwinding.
+[profile.release]
+lto = "thin"
+codegen-units = 1

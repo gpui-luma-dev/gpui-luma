@@ -173,7 +173,7 @@ where
     };
 
     let mut row = div()
-        .id(format!("{}-row-{}", model.panel_id, model.visible_index))
+        .id((model.panel_id.clone(), model.visible_index))
         .flex()
         .items_center()
         .gap(px(model.look.item_gap))

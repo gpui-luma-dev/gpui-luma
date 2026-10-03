@@ -32,30 +32,21 @@ fn lerp_hsla(start: Hsla, end: Hsla, t: f32) -> Hsla {
     )
 }
 
-fn lerp_switch_palette(off: &SwitchPalette, on: &SwitchPalette, progress: f32) -> SwitchPalette {
+// Interpolate only colors; typography and shadows come from the owned settled palette.
+struct SwitchColors {
+    track_background: Hsla,
+    track_border: Hsla,
+    thumb_background: Hsla,
+    thumb_border: Hsla,
+}
+
+fn lerp_switch_palette(off: &SwitchPalette, on: &SwitchPalette, progress: f32) -> SwitchColors {
     let t = progress.clamp(0.0, 1.0);
-    SwitchPalette {
+    SwitchColors {
         track_background: lerp_hsla(off.track_background, on.track_background, t),
         track_border: lerp_hsla(off.track_border, on.track_border, t),
         thumb_background: lerp_hsla(off.thumb_background, on.thumb_background, t),
         thumb_border: lerp_hsla(off.thumb_border, on.thumb_border, t),
-        // Shadows and label stay on the settled endpoint (discrete).
-        thumb_shadow: if t >= 0.5 {
-            on.thumb_shadow.clone()
-        } else {
-            off.thumb_shadow.clone()
-        },
-        label_color: if t >= 0.5 { on.label_color } else { off.label_color },
-        label_typography: if t >= 0.5 {
-            on.label_typography
-        } else {
-            off.label_typography
-        },
-        label_font_family: if t >= 0.5 {
-            on.label_font_family.clone()
-        } else {
-            off.label_font_family.clone()
-        },
     }
 }
 
@@ -72,7 +63,7 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
         let off_palette = self.theme.resolve(false, control_state, model.size);
         let on_palette = self.theme.resolve(true, control_state, model.size);
         let palette = lerp_switch_palette(&off_palette, &on_palette, progress);
-        let settled_palette = if checked { &on_palette } else { &off_palette };
+        let settled_palette = if checked { on_palette } else { off_palette };
         let focus_state = crate::theme::InteractionState { focused: true, ..model.state };
         let focus_palette = if checked {
             self.theme.resolve(true, focus_state, model.size)
@@ -126,7 +117,7 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
         };
 
         let mut thumb = div()
-            .id(format!("{}-thumb", model.id))
+            .id("thumb")
             .absolute()
             .left(px(thumb_left))
             .top(px(thumb_top))
@@ -160,7 +151,7 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
         }
 
         let mut track_visual = div()
-            .id(format!("{}-track", model.id))
+            .id("track")
             .relative()
             .w(px(scale.track_width))
             .h(px(scale.track_height))
@@ -186,13 +177,13 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
         track_visual = track_visual.child(thumb);
 
         if should_paint_shadow(model.elevation, model.state.disabled, !settled_palette.thumb_shadow.is_empty()) {
-            track_visual = track_visual.shadow(settled_palette.thumb_shadow.clone());
+            track_visual = track_visual.shadow(settled_palette.thumb_shadow);
         }
 
         let track = div().relative().child(track_visual);
         let track = if focus_ring_extent > 0.0 {
             let mut slot = div()
-                .id(format!("{}-track-slot", model.id))
+                .id("track-slot")
                 .relative()
                 .flex()
                 .items_center()
@@ -222,7 +213,7 @@ impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
 
         let indicator_only = matches!(model.role, crate::controls::button_family::ButtonFamilyRole::Icon);
         let mut control =
-            div().id(format!("{}-control", model.id)).relative().flex().items_center().rounded(px(track_radius));
+            div().id((model.id.clone(), 0usize)).relative().flex().items_center().rounded(px(track_radius));
 
         if indicator_only {
             control = control.child(track);

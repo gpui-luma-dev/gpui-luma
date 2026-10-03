@@ -260,7 +260,7 @@ fn render_overlay_handle(
 ) -> AnyElement {
     let enabled = model.enabled;
     let orientation = model.orientation;
-    let handle_id = format!("{}-handle-{index}", model.id);
+    let handle_id = (model.id.clone(), index);
     let handle_active = model.hovered_handle == Some(index)
         || model.dragging_handle == Some(index)
         || (enabled && focus.is_focused(window));
@@ -374,7 +374,7 @@ fn render_handle_interaction_layer(
     drag_payload: ResizablePanelsHandleDrag,
     cx: &mut Context<ResizablePanels>,
 ) -> AnyElement {
-    let hit_id = format!("{id}-handle-hit-{index}");
+    let hit_id = (id, index);
     let hit_px = handle_hit.as_f32();
     let split_local = split_px - handle_origin_px;
     let hit_inset = split_local - hit_px * 0.5;

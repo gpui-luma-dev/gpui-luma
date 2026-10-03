@@ -96,7 +96,7 @@ impl SliderTemplate for ThemedSliderTemplate {
                     let node = render_linear_thumb(
                         model,
                         &look,
-                        format!("{}-thumb-{}", model.id, thumb.id.as_u64()),
+                        ("thumb", thumb.id.as_u64()),
                         display_percentage,
                         thumb_top,
                         Some(thumb_center_offset),
@@ -122,7 +122,7 @@ impl SliderTemplate for ThemedSliderTemplate {
                     let node = render_linear_thumb(
                         model,
                         &look,
-                        format!("{}-thumb-{}", model.id, thumb.id.as_u64()),
+                        ("thumb", thumb.id.as_u64()),
                         display_percentage,
                         thumb_top,
                         None,
@@ -159,7 +159,7 @@ fn render_horizontal_track(
     let uses_sibling_segments = uses_partitioned_track(model);
 
     let mut track = div()
-        .id(format!("{}-track", model.id))
+        .id("track")
         .absolute()
         .left(px(0.0))
         .right(px(0.0))
@@ -212,7 +212,7 @@ fn render_vertical_track(
     let uses_sibling_segments = uses_partitioned_track(model);
 
     let mut track = div()
-        .id(format!("{}-track", model.id))
+        .id("track")
         .absolute()
         .left(px(track_left))
         .top(px(0.0))

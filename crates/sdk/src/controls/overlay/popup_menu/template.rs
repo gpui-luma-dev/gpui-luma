@@ -155,7 +155,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             icon_only: model.icon_only,
             trigger_radius_override: model.trigger_radius_override,
         };
-        let look = self.theme.resolve_look(model.trigger_style, metrics, model.state, scale_factor, _cx);
+        let mut look = self.theme.resolve_look(model.trigger_style, metrics, model.state, scale_factor, _cx);
         let focused = model.state.focused && !model.state.disabled;
         let control_look = if focused {
             self.theme.resolve_look(
@@ -188,7 +188,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
         };
         let face = (model.content)(&trigger_model, _cx);
         let mut trigger = div()
-            .id(format!("{}-trigger", model.id))
+            .id("trigger")
             .relative()
             .flex()
             .items_center()
@@ -203,7 +203,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
 
         if model.split {
             let action_face = div()
-                .id(format!("{}-action-face", model.id))
+                .id("action-face")
                 .flex()
                 .flex_1()
                 .min_w(px(0.0))
@@ -217,7 +217,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .on_click(action_click)
                 .child(face);
             let secondary = div()
-                .id(format!("{}-secondary-face", model.id))
+                .id("secondary-face")
                 .flex()
                 .items_center()
                 .justify_center()
@@ -288,8 +288,8 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             trigger = trigger.border_1().border_color(border);
         }
 
-        if let Some(shadows) = look.trigger_shadow.as_ref().filter(|shadows| !shadows.is_empty()) {
-            trigger = trigger.shadow(shadows.clone());
+        if let Some(shadows) = look.trigger_shadow.take().filter(|shadows| !shadows.is_empty()) {
+            trigger = trigger.shadow(shadows);
         }
 
         if model.state.disabled {

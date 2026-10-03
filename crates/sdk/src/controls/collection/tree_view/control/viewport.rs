@@ -141,10 +141,8 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
         )
         .absolute()
         .size_full();
-        let debug_id = format!("{}-viewport", self.model.id);
         let body = div()
-            .id(format!("{}-drag-viewport", self.model.id))
-            .debug_selector(move || debug_id.clone())
+            .id("drag-viewport")
             .relative()
             .flex_1()
             .min_w(px(0.0))
@@ -153,6 +151,11 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
             .child(layout)
             .child(routing)
             .child(list(self.list_state.clone(), cx.processor(Self::render_row)).size_full());
+        #[cfg(any(test, feature = "test-support"))]
+        let body = {
+            let debug_id = self.model.id.clone();
+            body.debug_selector(move || format!("{debug_id}-viewport"))
+        };
         let body = self.bind_drag_viewport(body, cx);
         let reserve_gutter =
             self.scrollbar_scrollable && self.model.scrollbar_visibility != ScrollbarVisibility::Hidden;
@@ -167,7 +170,6 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
             // away from the tree after a scrollbar interaction.
             self.focus_handle.focus(window, cx);
         }
-        let chrome_id = format!("{}-scrollbar-chrome", self.model.id);
         div()
             .size_full()
             .flex()
@@ -176,7 +178,13 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
             .when(reserve_gutter, |root| {
                 root.when_some(self.scrollbar.clone(), |root, scrollbar| {
                     root.child(div().w(px(12.0)).h_full().flex_shrink_0().when(show_scrollbar, |gutter| {
-                        gutter.child(div().debug_selector(move || chrome_id.clone()).size_full().child(scrollbar))
+                        let chrome = div().size_full().child(scrollbar);
+                        #[cfg(any(test, feature = "test-support"))]
+                        let chrome = {
+                            let chrome_id = self.model.id.clone();
+                            chrome.debug_selector(move || format!("{chrome_id}-scrollbar-chrome"))
+                        };
+                        gutter.child(chrome)
                     }))
                 })
             })

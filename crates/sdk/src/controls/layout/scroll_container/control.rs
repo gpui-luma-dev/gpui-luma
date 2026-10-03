@@ -312,7 +312,7 @@ impl ScrollContainer {
                     }
                 }
             })
-            .id(format!("{}-viewport", self.id))
+            .id((self.id.clone(), 0usize))
             .absolute()
             .top(px(0.0))
             .bottom(px(0.0))

@@ -22,14 +22,14 @@ pub fn radio_occupation(look: &ShadcnLook, focus_oversize: f32) -> InspectOccupa
     let state = InteractionState::default();
     let tokens = look.mode_tokens();
     let palette = paint::radio_button_look(tokens.as_ref(), ShadcnButtonStyle::Primary, false, state, ControlSize::Md);
-    choice_indicator_occupation(palette.indicator_shadow.as_ref(), focus_oversize, state.disabled)
+    choice_indicator_occupation(palette.indicator_shadow.as_deref(), focus_oversize, state.disabled)
 }
 
 pub fn checkbox_occupation(look: &ShadcnLook, focus_oversize: f32) -> InspectOccupationSnapshot {
     let state = InteractionState::default();
     let tokens = look.mode_tokens();
     let palette = paint::checkbox_look(tokens.as_ref(), ShadcnButtonStyle::Primary, false, state, ControlSize::Md);
-    choice_indicator_occupation(palette.indicator_shadow.as_ref(), focus_oversize, state.disabled)
+    choice_indicator_occupation(palette.indicator_shadow.as_deref(), focus_oversize, state.disabled)
 }
 
 pub fn switch_occupation(look: &ShadcnLook, focus_oversize: f32) -> InspectOccupationSnapshot {
@@ -40,13 +40,13 @@ pub fn switch_occupation(look: &ShadcnLook, focus_oversize: f32) -> InspectOccup
     let shadows = if palette.thumb_shadow.is_empty() {
         None
     } else {
-        Some(&palette.thumb_shadow)
+        Some(palette.thumb_shadow.as_slice())
     };
     choice_indicator_occupation(shadows, focus_oversize, state.disabled)
 }
 
 fn choice_indicator_occupation(
-    shadows: Option<&Vec<BoxShadow>>,
+    shadows: Option<&[BoxShadow]>,
     focus_oversize: f32,
     disabled: bool,
 ) -> InspectOccupationSnapshot {
@@ -76,12 +76,12 @@ pub fn button_family_occupation(
 
     let tokens = look.mode_tokens();
     let button_look = paint::button_look(tokens.as_ref(), look.mode(), style, role, size, state);
-    let shadows = button_look.shadow.as_ref().filter(|shadows| !shadows.is_empty());
+    let shadows = button_look.shadow.as_deref().filter(|shadows| !shadows.is_empty());
     button_family_occupation_from_shadows(shadows, focus_oversize)
 }
 
 fn button_family_occupation_from_shadows(
-    shadows: Option<&Vec<BoxShadow>>,
+    shadows: Option<&[BoxShadow]>,
     focus_oversize: f32,
 ) -> InspectOccupationSnapshot {
     let shadow_insets = shadow_insets_from(shadows);
@@ -90,7 +90,7 @@ fn button_family_occupation_from_shadows(
     InspectOccupationSnapshot { paint, layout }
 }
 
-fn shadow_insets_from(shadows: Option<&Vec<BoxShadow>>) -> InspectEdgeInsets {
+fn shadow_insets_from(shadows: Option<&[BoxShadow]>) -> InspectEdgeInsets {
     shadows
         .map(|shadows| {
             let insets = shadow_projection_insets(shadows, SCALE_FACTOR);

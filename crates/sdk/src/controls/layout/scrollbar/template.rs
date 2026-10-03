@@ -196,7 +196,7 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
         };
 
         let track = div()
-            .id(format!("{}-track", model.id))
+            .id("track")
             .absolute()
             .left(px(track_left))
             .top(px(track_top))
@@ -206,7 +206,7 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
             .rounded(px(look.radius));
 
         let thumb = div()
-            .id(format!("{}-thumb", model.id))
+            .id("thumb")
             .absolute()
             .left(px(thumb_left))
             .top(px(thumb_top))

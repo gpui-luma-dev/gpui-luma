@@ -14,7 +14,7 @@ use crate::controls::selector_list::{
     SelectorItem, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
     default_selector_items_template,
 };
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, snap_to_pixel};
+use crate::theme::{StandardBoxScale, snap_to_pixel};
 
 use super::theme::{SelectorLook, SelectorTheme, default_selector_theme};
 
@@ -193,13 +193,9 @@ impl<T> SelectorTemplate<T> for ThemedSelectorTemplate<T>
 where
     T: SelectorItemLike + 'static,
 {
-    fn resolve_look(&self, model: &SelectorRenderModel<'_, T>, window: &Window, cx: &mut App) -> SelectorLook {
+    fn resolve_look(&self, model: &SelectorRenderModel<'_, T>, window: &Window, _cx: &mut App) -> SelectorLook {
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
-        );
+        let scale = StandardBoxScale::compute(model.size, &self.theme.metrics(), scale_factor);
         self.theme.resolve_visual_look(
             model.trigger_style,
             model.visual_state,
@@ -230,11 +226,7 @@ where
             on_item_click,
         } = handlers;
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
-        );
+        let scale = StandardBoxScale::compute(model.size, &self.theme.metrics(), scale_factor);
         let look = self.theme.resolve_visual_look(
             model.trigger_style,
             model.visual_state,
@@ -245,7 +237,7 @@ where
         let focused = model.visual_state.interaction.focused
             && !model.visual_state.interaction.disabled
             && !model.visual_state.invalid;
-        let control_look = if focused {
+        let mut control_look = if focused {
             self.theme.resolve_visual_look(
                 model.trigger_style,
                 super::theme::SelectorVisualState {
@@ -279,7 +271,7 @@ where
             .unwrap_or(0.0);
         let trigger_content = render_item_content(model, &control_look, cx);
         let mut trigger = div()
-            .id(format!("{}-trigger", model.id))
+            .id("trigger")
             .flex()
             .items_center()
             .justify_between()
@@ -333,10 +325,9 @@ where
 
         if !model.state.disabled
             && !model.without_elevation
-            && control_look.trigger_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty())
-            && let Some(shadows) = control_look.trigger_shadow.as_ref()
+            && let Some(shadows) = control_look.trigger_shadow.take().filter(|shadows| !shadows.is_empty())
         {
-            trigger = trigger.shadow(shadows.clone());
+            trigger = trigger.shadow(shadows);
         }
 
         let trigger = self.apply_modifiers(trigger, model);

@@ -100,10 +100,10 @@ impl ModifiedFloatingMenuTemplate {
 impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
     fn render(&self, model: &FloatingMenuRenderModel<'_>, handlers: FloatingMenuTemplateHandlers) -> Stateful<Div> {
         let FloatingMenuTemplateHandlers { item_hovers, mut submenu_hovers, controlled_hover, item_clicks } = handlers;
-        let look = model.look.clone();
+        let look = &model.look;
 
         let mut menu = div()
-            .id(format!("{}-menu", model.id))
+            .id((model.id.clone(), 0usize))
             .relative()
             .min_w(px(look.min_width))
             .p(px(look.padding))
@@ -116,7 +116,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
 
         if controlled_hover
             && let Some(highlight) = model.highlight
-            && let Some((left, top, width, height)) = highlight_rect(highlight, false, &look)
+            && let Some((left, top, width, height)) = highlight_rect(highlight, false, look)
         {
             menu = menu.child(
                 div()
@@ -141,7 +141,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                 look.item_disabled_foreground
             };
             let mut row = div()
-                .id(format!("{}-item-{}", model.id, item.id()))
+                .id((item.id().clone(), 0usize))
                 .flex()
                 .items_center()
                 .gap(px(look.item_gap))
@@ -186,7 +186,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                     submenu = Some(render_floating_submenu(
                         model.id,
                         item,
-                        &look,
+                        look,
                         &mut item_clicks,
                         index,
                         model.active_path,
@@ -455,7 +455,7 @@ pub fn render_floating_menu_with_submenu_hovers_and_icons_and_transition(
 
 #[allow(clippy::too_many_arguments)]
 fn render_floating_submenu(
-    menu_id: &SharedString,
+    _menu_id: &SharedString,
     item: &MenuItem,
     look: &FloatingMenuLook,
     item_clicks: &mut std::vec::IntoIter<FloatingMenuClickHandler>,
@@ -468,7 +468,7 @@ fn render_floating_submenu(
     disclosure_icons: &DisclosureIcons,
 ) -> Stateful<Div> {
     let mut submenu = div()
-        .id(format!("{menu_id}-submenu-{}", item.id()))
+        .id((item.id().clone(), 1usize))
         .absolute()
         .top(px(look.padding + (index as f32 * look.item_height)))
         .left(relative(1.0))
@@ -507,7 +507,7 @@ fn render_floating_submenu(
             look.item_disabled_foreground
         };
         let mut row = div()
-            .id(format!("{menu_id}-submenu-item-{}", submenu_item.id()))
+            .id((submenu_item.id().clone(), 0usize))
             .flex()
             .items_center()
             .gap(px(look.item_gap))

@@ -108,14 +108,7 @@ impl SliderTemplate for ThemedCircularRingTemplate {
                 .absolute()
                 .size_full(),
             )
-            .child(render_slider_thumb_at(
-                &look,
-                format!("{}-thumb", model.id),
-                thumb_x,
-                thumb_y,
-                thumb_radius,
-                primary_thumb,
-            ))
+            .child(render_slider_thumb_at(&look, "thumb", thumb_x, thumb_y, thumb_radius, primary_thumb))
             .child(track_bounds_canvas(track_bounds));
 
         attach_radial_interaction(root, model, interaction, primary_thumb_id)

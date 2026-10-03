@@ -2,7 +2,7 @@ mod input;
 mod nodes;
 mod render;
 
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap};
 
 use gpui::{Bounds, Context, EventEmitter, FocusHandle, Pixels, SharedString, Size, Subscription, Window};
 
@@ -33,6 +33,7 @@ pub enum SidebarPanelEngineEvent {
 
 pub struct SidebarPanelEngine {
     model: SidebarPanelEngineModel,
+    row_handlers: RefCell<Option<input::CachedSidebarHandlers>>,
     tooltip_theme: std::sync::Arc<dyn crate::controls::tooltip::TooltipTheme>,
     tooltips: HashMap<SharedString, crate::infra::attachments::TooltipHandle>,
     main_scroll: ScrollContainer,
@@ -85,6 +86,7 @@ impl SidebarPanelEngine {
 
         let mut engine = Self {
             model: builder.model,
+            row_handlers: RefCell::new(None),
             tooltip_theme: crate::controls::tooltip::default_tooltip_theme(),
             tooltips: HashMap::new(),
             main_scroll,

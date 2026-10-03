@@ -64,7 +64,7 @@ where
 {
     if let Some(item_template) = item_template {
         let indicator_render_model = ButtonRenderModel {
-            id: format!("{}-{}-indicator", item.group_id, item.item.id()).into(),
+            id: "indicator".into(),
             data: RadioButtonData::new(item.selected),
             content: Arc::new(|_, _| div().into_any_element()),
             role: ButtonFamilyRole::Icon,
@@ -81,7 +81,7 @@ where
         let content = item_template(item, window, cx);
 
         div()
-            .id(format!("{}-item-{}", item.group_id, item.item.id()))
+            .id((gpui::ElementId::from(item.group_id.clone()), item.item.id().clone()))
             .flex()
             .items_center()
             .gap_2()

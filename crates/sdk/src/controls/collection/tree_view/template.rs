@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 
 use gpui::{
     AnyElement, App, ClickEvent, Div, FontWeight, MouseDownEvent, MouseUpEvent, Stateful, Window, SharedString, div,
@@ -8,13 +8,19 @@ use lucide_svg_static::Icon as LucideIcon;
 
 use super::{FlatTreeNode, TreeViewRenderModel, TreeViewTheme, default_tree_view_theme};
 use crate::infra::icon::render_disclosure_icon;
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
-pub type TreeViewHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
-pub type TreeViewMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub type TreeViewMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
-pub type TreeViewClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
+/// Shared callback retained across redraws; use `Rc::new` when supplying a custom handler.
+pub type TreeViewHoverHandler = Rc<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
+/// Shared callback retained across redraws; use `Rc::new` when supplying a custom handler.
+pub type TreeViewMouseDownHandler = Rc<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+/// Shared callback retained across redraws; use `Rc::new` when supplying a custom handler.
+pub type TreeViewMouseUpHandler = Rc<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+/// Shared callback retained across redraws; use `Rc::new` when supplying a custom handler.
+pub type TreeViewClickHandler = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 
+/// Shared row callbacks. Custom templates bind these with a forwarding closure, for example
+/// `.on_hover(move |event, window, cx| (handlers.hover)(event, window, cx))`.
+#[derive(Clone)]
 pub struct TreeViewTemplateHandlers {
     pub hover: TreeViewHoverHandler,
     pub mouse_down: TreeViewMouseDownHandler,
@@ -251,14 +257,10 @@ impl ThemedTreeViewTemplate {
         handlers: TreeViewTemplateHandlers,
         content: Option<AnyElement>,
         window: &mut Window,
-        cx: &mut App,
+        _cx: &mut App,
     ) -> AnyElement {
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size: node.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| super::theme::TreeViewScale::compute(node.size, metrics, scale_factor),
-        );
+        let scale = super::theme::TreeViewScale::compute(node.size, &self.theme.metrics(), scale_factor);
 
         let palette = self.theme.resolve_row(node.state.interaction_state(), node.state.selected, node.size);
         let icon_size = scale.icon_size;
@@ -269,7 +271,7 @@ impl ThemedTreeViewTemplate {
         let row_height = scale.row_height * height_factor;
 
         let mut row = div()
-            .id(format!("{}-row", node.id))
+            .id((node.id.clone(), 1usize))
             .relative()
             .flex()
             .items_center()
@@ -293,25 +295,27 @@ impl ThemedTreeViewTemplate {
 
         if node.enabled {
             row = row
-                .on_hover(handlers.hover)
-                .on_mouse_down(gpui::MouseButton::Left, handlers.mouse_down)
-                .on_mouse_up(gpui::MouseButton::Left, handlers.mouse_up)
-                .on_click(handlers.click);
+                .on_hover(move |event, window, cx| (handlers.hover)(event, window, cx))
+                .on_mouse_down(gpui::MouseButton::Left, move |event, window, cx| {
+                    (handlers.mouse_down)(event, window, cx)
+                })
+                .on_mouse_up(gpui::MouseButton::Left, move |event, window, cx| (handlers.mouse_up)(event, window, cx))
+                .on_click(move |event, window, cx| (handlers.click)(event, window, cx));
         } else {
             row = row.opacity(0.40 * height_factor.max(0.0));
         }
 
         if node.has_children {
-            let debug_id = format!("tree-disclosure-{}", node.id);
             let chevron = div()
-                .id(format!("{}-chevron", node.id))
-                .debug_selector(move || debug_id.clone())
+                .id((node.id.clone(), 2usize))
                 .size(px(chevron_size))
                 .flex()
                 .items_center()
                 .justify_center()
                 .on_mouse_down(gpui::MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                .when(node.enabled, |chevron| chevron.on_click(handlers.disclosure))
+                .when(node.enabled, |chevron| {
+                    chevron.on_click(move |event, window, cx| (handlers.disclosure)(event, window, cx))
+                })
                 .child(render_disclosure_icon(
                     node.disclosure_icons,
                     node.expand_progress.clamp(0.0, 1.0),
@@ -319,6 +323,11 @@ impl ThemedTreeViewTemplate {
                     chevron_size,
                 ));
 
+            #[cfg(any(test, feature = "test-support"))]
+            let chevron = {
+                let debug_node_id = node.id.clone();
+                chevron.debug_selector(move || format!("tree-disclosure-{}", debug_node_id))
+            };
             row = row.child(chevron);
         } else {
             row = row.child(div().size(px(chevron_size)));

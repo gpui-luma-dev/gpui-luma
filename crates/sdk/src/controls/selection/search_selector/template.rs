@@ -148,7 +148,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
         };
 
         let mut trigger = div()
-            .id(format!("{}-trigger", model.id))
+            .id("trigger")
             .relative()
             .w_full()
             .h(px(trigger_look.trigger_height))
@@ -176,7 +176,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                     .child(div().min_w(px(0.0)).truncate().text_color(label_color).child(model.trigger_label))
                     .child(
                         div()
-                            .id(format!("{}-icon", model.id))
+                            .id("icon")
                             .w(px(18.0))
                             .flex()
                             .items_center()
@@ -193,15 +193,15 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
         let has_elevation = trigger_look.trigger_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty());
         if model.enabled
             && has_elevation
-            && let Some(shadows) = trigger_look.trigger_shadow.as_ref()
+            && let Some(shadows) = trigger_look.trigger_shadow.take()
         {
-            trigger = trigger.shadow(shadows.clone());
+            trigger = trigger.shadow(shadows);
         }
 
-        let trigger_chrome = div().id(format!("{}-trigger", model.id)).relative().w_full().child(trigger);
+        let trigger_chrome = div().id("trigger").relative().w_full().child(trigger);
 
         div()
-            .id(format!("{}-root", model.id))
+            .id((model.id.clone(), 0usize))
             .when(model.full_width, |root| root.w_full())
             .flex()
             .flex_col()
@@ -370,15 +370,10 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
         cx: &mut App,
     ) -> Stateful<gpui::Div> {
         let SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
-        let look = model.look.clone();
+        let look = &model.look;
 
-        let mut root = div()
-            .id(format!("{}-rows", model.menu_id))
-            .relative()
-            .flex()
-            .flex_col()
-            .w_full()
-            .p(px(look.padding));
+        let mut root =
+            div().id((model.menu_id.clone(), 0usize)).relative().flex().flex_col().w_full().p(px(look.padding));
         let mut clicks = item_clicks.into_iter();
 
         for (visible_index, (source_index, hover)) in model.visible_indices.iter().copied().zip(item_hovers).enumerate()
@@ -419,7 +414,7 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
             };
 
             let mut row = div()
-                .id(format!("{}-row-{}", model.menu_id, visible_index))
+                .id(("row", visible_index))
                 .flex()
                 .items_center()
                 .min_h(px(look.item_height))

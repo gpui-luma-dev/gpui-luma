@@ -713,7 +713,7 @@ impl Render for TextFieldControl {
             .tab_stop(self.model.enabled && self.model.tab_stop);
         let root = div()
             .relative()
-            .id(format!("{}-theme-{}", self.model.id, self.theme_epoch))
+            .id((gpui::ElementId::from(("theme", self.theme_epoch)), self.model.id.clone()))
             .child(input_root)
             .child(
                 canvas(

@@ -270,7 +270,7 @@ impl Render for OverlayWindowControl {
         let model = self.render_model(window);
         let header_drag_handle = self.model.draggable.then(|| {
             div()
-                .id(format!("{}-drag-header", self.model.id))
+                .id("drag-header")
                 .absolute()
                 .top_0()
                 .left_0()
@@ -349,7 +349,7 @@ fn render_modal_overlay(
         .position(point(px(0.0), px(0.0)))
         .child(
             div()
-                .id(format!("{id}-overlay"))
+                .id((id.clone(), 0usize))
                 .relative()
                 .w(viewport.width)
                 .h(viewport.height)
@@ -425,7 +425,7 @@ fn render_modeless_overlay(
         .position(point(px(0.0), px(0.0)))
         .child(
             div()
-                .id(format!("{id}-modeless"))
+                .id((id.clone(), 1usize))
                 .relative()
                 .w(viewport.width)
                 .h(viewport.height)

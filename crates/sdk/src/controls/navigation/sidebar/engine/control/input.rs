@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use gpui::{
     Bounds, ClickEvent, Context, FocusHandle, FocusOutEvent, MouseDownEvent, MouseUpEvent, Pixels, SharedString, Window,
 };
@@ -15,54 +17,109 @@ use crate::key_handling::{
     ActivateControl, CloseSubmenu, OpenSubmenu, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
 
+pub(super) struct CachedSidebarHandlers {
+    collapsed: bool,
+    signature: Vec<(SharedString, bool)>,
+    handlers: SidebarPanelTemplateHandlers,
+}
+
+fn clone_row_handlers(handlers: &SidebarPanelTemplateHandlers) -> SidebarPanelTemplateHandlers {
+    SidebarPanelTemplateHandlers {
+        row_bounds: handlers.row_bounds.clone(),
+        row_hovers: handlers.row_hovers.clone(),
+        row_mouse_downs: handlers.row_mouse_downs.clone(),
+        row_mouse_ups: handlers.row_mouse_ups.clone(),
+        row_mouse_up_outs: handlers.row_mouse_up_outs.clone(),
+        row_clicks: handlers.row_clicks.clone(),
+        children_height_reports: handlers.children_height_reports.clone(),
+        ..Default::default()
+    }
+}
+
 impl SidebarPanelEngine {
     pub(super) fn template_handlers(
         &self,
         model: &SidebarPanelEngineRenderModel,
         cx: &mut Context<Self>,
     ) -> SidebarPanelTemplateHandlers {
-        let mut handlers = SidebarPanelTemplateHandlers::default();
-
-        if model.collapsed {
-            push_template_handlers(&model.rail_nodes, &mut handlers, cx, SidebarNodeInteraction::Rail);
-            push_template_handlers(&model.rail_footer_nodes, &mut handlers, cx, SidebarNodeInteraction::Rail);
-
-            if let Some(rail_submenu) = &model.rail_submenu {
-                handlers.rail_submenu_bounds =
-                    Some(Box::new(cx.listener(|this, bounds: &Bounds<Pixels>, _window, cx| {
-                        if this.rail_submenu_content_size != Some(bounds.size) {
-                            this.rail_submenu_content_size = Some(bounds.size);
-                            cx.notify();
-                        }
-                    })));
-                let parent_node_id = rail_submenu.parent_node_id.clone();
-                handlers.rail_submenu_mouse_down_out =
-                    Some(Box::new(cx.listener(Self::handle_rail_submenu_mouse_down_out)));
-                handlers.rail_submenu_item_hovers = (0..rail_submenu.items.len())
-                    .map(|index| {
-                        let parent_node_id = parent_node_id.clone();
-                        Box::new(cx.listener(move |this, hovered, _window, cx| {
-                            this.handle_rail_submenu_item_hover(parent_node_id.clone(), index, *hovered, cx);
-                        })) as _
-                    })
-                    .collect();
-                handlers.rail_submenu_item_clicks = self
-                    .rail_submenu_click_node_ids(&parent_node_id)
-                    .into_iter()
-                    .map(|node_id| {
-                        Box::new(cx.listener(move |this, event, _window, cx| {
-                            this.handle_rail_submenu_item_click(node_id.clone(), event, cx);
-                        })) as _
-                    })
-                    .collect();
-            }
+        let regions: &[&[RenderedNavNode]] = if model.collapsed {
+            &[&model.rail_nodes, &model.rail_footer_nodes]
         } else {
-            push_children_height_handlers(&model.header_nodes, &mut handlers, cx);
-            push_children_height_handlers(&model.nodes, &mut handlers, cx);
-            push_children_height_handlers(&model.footer_nodes, &mut handlers, cx);
-            push_template_handlers(&model.header_nodes, &mut handlers, cx, SidebarNodeInteraction::Default);
-            push_template_handlers(&model.nodes, &mut handlers, cx, SidebarNodeInteraction::Default);
-            push_template_handlers(&model.footer_nodes, &mut handlers, cx, SidebarNodeInteraction::Default);
+            &[&model.header_nodes, &model.nodes, &model.footer_nodes]
+        };
+        let mut cache = self.row_handlers.borrow_mut();
+        let cached = cache
+            .as_ref()
+            .filter(|cached| cached.collapsed == model.collapsed && signature_matches(regions, &cached.signature));
+        let mut handlers = if let Some(cached) = cached {
+            clone_row_handlers(&cached.handlers)
+        } else {
+            let mut signature = Vec::new();
+            for region in regions {
+                handler_signature(region, &mut signature);
+            }
+            let row_count = signature.len();
+            let branch_count = signature.iter().filter(|(_, branch)| *branch).count();
+            let mut handlers = SidebarPanelTemplateHandlers {
+                row_bounds: Rc::new(Vec::with_capacity(if model.collapsed { row_count } else { 0 })),
+                row_hovers: Rc::new(Vec::with_capacity(row_count)),
+                row_mouse_downs: Rc::new(Vec::with_capacity(row_count)),
+                row_mouse_ups: Rc::new(Vec::with_capacity(row_count)),
+                row_mouse_up_outs: Rc::new(Vec::with_capacity(row_count)),
+                row_clicks: Rc::new(Vec::with_capacity(row_count)),
+                children_height_reports: Rc::new(std::collections::HashMap::with_capacity(if model.collapsed {
+                    0
+                } else {
+                    branch_count
+                })),
+                ..Default::default()
+            };
+
+            let interaction = if model.collapsed {
+                SidebarNodeInteraction::Rail
+            } else {
+                SidebarNodeInteraction::Default
+            };
+            for region in regions {
+                push_template_handlers(region, &mut handlers, cx, interaction);
+            }
+            *cache = Some(CachedSidebarHandlers {
+                collapsed: model.collapsed,
+                signature,
+                handlers: clone_row_handlers(&handlers),
+            });
+            handlers
+        };
+        drop(cache);
+
+        if model.collapsed
+            && let Some(rail_submenu) = &model.rail_submenu
+        {
+            handlers.rail_submenu_bounds = Some(Rc::new(cx.listener(|this, bounds: &Bounds<Pixels>, _window, cx| {
+                if this.rail_submenu_content_size != Some(bounds.size) {
+                    this.rail_submenu_content_size = Some(bounds.size);
+                    cx.notify();
+                }
+            })));
+            let parent_node_id = rail_submenu.parent_node_id.clone();
+            handlers.rail_submenu_mouse_down_out = Some(Rc::new(cx.listener(Self::handle_rail_submenu_mouse_down_out)));
+            handlers.rail_submenu_item_hovers = (0..rail_submenu.items.len())
+                .map(|index| {
+                    let parent_node_id = parent_node_id.clone();
+                    Box::new(cx.listener(move |this, hovered, _window, cx| {
+                        this.handle_rail_submenu_item_hover(parent_node_id.clone(), index, *hovered, cx);
+                    })) as _
+                })
+                .collect();
+            handlers.rail_submenu_item_clicks = self
+                .rail_submenu_click_node_ids(&parent_node_id)
+                .into_iter()
+                .map(|node_id| {
+                    Box::new(cx.listener(move |this, event, _window, cx| {
+                        this.handle_rail_submenu_item_click(node_id.clone(), event, cx);
+                    })) as _
+                })
+                .collect();
         }
 
         handlers
@@ -559,12 +616,12 @@ pub(super) fn push_template_handlers(
         let hover_id = node.id.clone();
         match interaction {
             SidebarNodeInteraction::Default => {
-                handlers.row_hovers.push(Box::new(cx.listener(move |this, hovered, _window, cx| {
+                Rc::make_mut(&mut handlers.row_hovers).push(Rc::new(cx.listener(move |this, hovered, _window, cx| {
                     this.handle_node_hover(hover_id.clone(), *hovered, cx);
                 })));
             }
             SidebarNodeInteraction::Rail => {
-                handlers.row_hovers.push(Box::new(cx.listener(move |this, hovered, _window, cx| {
+                Rc::make_mut(&mut handlers.row_hovers).push(Rc::new(cx.listener(move |this, hovered, _window, cx| {
                     this.handle_rail_node_hover(hover_id.clone(), *hovered, cx);
                 })));
             }
@@ -572,7 +629,7 @@ pub(super) fn push_template_handlers(
 
         if matches!(interaction, SidebarNodeInteraction::Rail) {
             let bounds_id = node.id.clone();
-            handlers.row_bounds.push(Box::new(cx.listener(move |this, bounds, window, cx| {
+            Rc::make_mut(&mut handlers.row_bounds).push(Rc::new(cx.listener(move |this, bounds, window, cx| {
                 this.handle_rail_node_bounds(bounds_id.clone(), bounds, window, cx);
             })));
         }
@@ -580,54 +637,77 @@ pub(super) fn push_template_handlers(
         let mouse_down_id = node.id.clone();
         match interaction {
             SidebarNodeInteraction::Default => {
-                handlers.row_mouse_downs.push(Box::new(cx.listener(move |this, event, window, cx| {
-                    this.handle_node_mouse_down(mouse_down_id.clone(), event, window, cx);
-                })));
+                Rc::make_mut(&mut handlers.row_mouse_downs).push(Rc::new(cx.listener(
+                    move |this, event, window, cx| {
+                        this.handle_node_mouse_down(mouse_down_id.clone(), event, window, cx);
+                    },
+                )));
             }
             SidebarNodeInteraction::Rail => {
-                handlers.row_mouse_downs.push(Box::new(cx.listener(move |this, event, window, cx| {
-                    this.handle_rail_node_mouse_down(mouse_down_id.clone(), event, window, cx);
-                })));
+                Rc::make_mut(&mut handlers.row_mouse_downs).push(Rc::new(cx.listener(
+                    move |this, event, window, cx| {
+                        this.handle_rail_node_mouse_down(mouse_down_id.clone(), event, window, cx);
+                    },
+                )));
             }
         }
 
-        handlers.row_mouse_ups.push(Box::new(cx.listener(SidebarPanelEngine::handle_node_mouse_up)));
-        handlers.row_mouse_up_outs.push(Box::new(cx.listener(SidebarPanelEngine::handle_node_mouse_up)));
+        Rc::make_mut(&mut handlers.row_mouse_ups).push(Rc::new(cx.listener(SidebarPanelEngine::handle_node_mouse_up)));
+        Rc::make_mut(&mut handlers.row_mouse_up_outs)
+            .push(Rc::new(cx.listener(SidebarPanelEngine::handle_node_mouse_up)));
 
         let click_id = node.id.clone();
         match interaction {
             SidebarNodeInteraction::Default => {
-                handlers.row_clicks.push(Box::new(cx.listener(move |this, event, window, cx| {
+                Rc::make_mut(&mut handlers.row_clicks).push(Rc::new(cx.listener(move |this, event, window, cx| {
                     this.handle_node_click(click_id.clone(), event, window, cx);
                 })));
             }
             SidebarNodeInteraction::Rail => {
-                handlers.row_clicks.push(Box::new(cx.listener(move |this, event, window, cx| {
+                Rc::make_mut(&mut handlers.row_clicks).push(Rc::new(cx.listener(move |this, event, window, cx| {
                     this.handle_rail_node_click(click_id.clone(), event, window, cx);
                 })));
             }
+        }
+
+        if matches!(interaction, SidebarNodeInteraction::Default) && node.has_children {
+            let node_id = node.id.clone();
+            Rc::make_mut(&mut handlers.children_height_reports).insert(
+                node_id.clone(),
+                Rc::new(cx.listener(move |this, height, _window, cx| {
+                    this.set_branch_height(node_id.clone(), *height, cx);
+                })),
+            );
         }
 
         push_template_handlers(&node.children, handlers, cx, interaction);
     }
 }
 
-pub(super) fn push_children_height_handlers(
-    nodes: &[RenderedNavNode],
-    handlers: &mut SidebarPanelTemplateHandlers,
-    cx: &mut Context<SidebarPanelEngine>,
-) {
-    for node in nodes {
-        if node.has_children {
-            let node_id = node.id.clone();
-            handlers.children_height_reports.insert(
-                node_id.clone(),
-                Box::new(cx.listener(move |this, height, _window, cx| {
-                    this.set_branch_height(node_id.clone(), *height, cx);
-                })),
-            );
+// Compare the rendered preorder directly so cache hits do not allocate a signature.
+// Inspecting the projection also catches children disappearing after a collapse animation.
+fn signature_matches(regions: &[&[RenderedNavNode]], signature: &[(SharedString, bool)]) -> bool {
+    fn matches(nodes: &[RenderedNavNode], signature: &[(SharedString, bool)], index: &mut usize) -> bool {
+        for node in nodes {
+            if !signature.get(*index).is_some_and(|(id, branch)| *id == node.id && *branch == node.has_children) {
+                return false;
+            }
+            *index += 1;
+            if !matches(&node.children, signature, index) {
+                return false;
+            }
         }
-        push_children_height_handlers(&node.children, handlers, cx);
+        true
+    }
+    let mut index = 0;
+    regions.iter().all(|nodes| matches(nodes, signature, &mut index)) && index == signature.len()
+}
+
+// Match the preorder used by handler construction, including rendered children.
+fn handler_signature(nodes: &[RenderedNavNode], signature: &mut Vec<(SharedString, bool)>) {
+    for node in nodes {
+        signature.push((node.id.clone(), node.has_children));
+        handler_signature(&node.children, signature);
     }
 }
 
@@ -664,4 +744,62 @@ pub(super) fn next_focus_target(
             focus_nodes.get(next_index).cloned()
         }
     }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn row_handlers_reuse_and_follow_projection_and_mode_changes() {
+    let mut app = gpui::TestAppContext::single();
+    let (engine, cx) = app.add_window_view(|_, cx| {
+        SidebarPanelEngine::from_builder(
+            super::super::SidebarPanelEngineBuilder::new("cached-handlers")
+                .item(NavNode::new("first").icon(lucide_svg_static::Icon::Search))
+                .item(
+                    NavNode::new("branch")
+                        .icon(lucide_svg_static::Icon::Search)
+                        .expanded(true)
+                        .child(NavNode::new("child")),
+                ),
+            cx,
+        )
+    });
+    cx.run_until_parked();
+    cx.update(|window, app| {
+        engine.update(app, |view, cx| {
+            let model = view.render_model(window, cx);
+            let first = view.template_handlers(&model, cx);
+            let second = view.template_handlers(&model, cx);
+            assert!(Rc::ptr_eq(&first.row_bounds, &second.row_bounds));
+            assert!(Rc::ptr_eq(&first.row_hovers, &second.row_hovers));
+            assert!(Rc::ptr_eq(&first.row_mouse_downs, &second.row_mouse_downs));
+            assert!(Rc::ptr_eq(&first.row_mouse_ups, &second.row_mouse_ups));
+            assert!(Rc::ptr_eq(&first.row_mouse_up_outs, &second.row_mouse_up_outs));
+            assert!(Rc::ptr_eq(&first.row_clicks, &second.row_clicks));
+            assert!(Rc::ptr_eq(&first.children_height_reports, &second.children_height_reports));
+            assert!(Rc::ptr_eq(&first.row_hovers[0], &second.row_hovers[0]));
+            assert!(Rc::ptr_eq(&first.row_clicks[0], &second.row_clicks[0]));
+            assert!(Rc::ptr_eq(&first.children_height_reports["branch"], &second.children_height_reports["branch"]));
+            // Animation completion changes the projection even without a model mutation.
+            let mut collapsed_projection = view.render_model(window, cx);
+            collapsed_projection.nodes[1].children.clear();
+            let collapsed_children = view.template_handlers(&collapsed_projection, cx);
+            assert_eq!(collapsed_children.row_hovers.len(), first.row_hovers.len() - 1);
+            assert!(!Rc::ptr_eq(&first.row_hovers, &collapsed_children.row_hovers));
+            view.model.nodes.swap(0, 1);
+            let model = view.render_model(window, cx);
+            let reordered = view.template_handlers(&model, cx);
+            assert!(!Rc::ptr_eq(&first.row_hovers[0], &reordered.row_hovers[0]));
+            view.model.collapsed = true;
+            let model = view.render_model(window, cx);
+            let rail = view.template_handlers(&model, cx);
+            assert!(!Rc::ptr_eq(&reordered.row_hovers[0], &rail.row_hovers[0]));
+            assert_eq!(rail.row_bounds.len(), rail.row_hovers.len());
+            assert!(rail.children_height_reports.is_empty());
+            view.model.nodes.clear();
+            let model = view.render_model(window, cx);
+            let empty = view.template_handlers(&model, cx);
+            assert!(empty.row_hovers.is_empty());
+            assert!(view.row_handlers.borrow().as_ref().unwrap().handlers.row_hovers.is_empty());
+        })
+    });
 }

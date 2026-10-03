@@ -79,7 +79,7 @@ impl SearchSelectorPanelTemplate for DefaultSearchSelectorPanelTemplate {
         let look = model.popup_look;
 
         let panel_content = div()
-            .id(format!("{}-panel-content", model.id))
+            .id("panel-content")
             .w_full()
             .when_some(model.search_content, |panel, search| {
                 panel.child(div().p(px(8.0)).child(search)).child(div().h(px(1.0)).bg(look.border))
@@ -95,7 +95,7 @@ impl SearchSelectorPanelTemplate for DefaultSearchSelectorPanelTemplate {
                     .offset(point(px(0.0), px(4.0)))
                     .child(
                         div()
-                            .id(format!("{}-popup-shell", model.id))
+                            .id((model.id.clone(), 1usize))
                             .w(bounds.size.width)
                             .bg(look.background)
                             .border_1()
@@ -112,7 +112,7 @@ impl SearchSelectorPanelTemplate for DefaultSearchSelectorPanelTemplate {
         }
 
         div()
-            .id(format!("{}-panel", model.id))
+            .id((model.id.clone(), 0usize))
             .w_full()
             .bg(look.background)
             .border_1()

@@ -144,7 +144,7 @@ fn render_splitter(
     };
     let half_inset = ((look.hit_target_px - look.visible_line_px) * 0.5).max(0.0);
 
-    let mut root = div().id(format!("{}-layout", model.id)).relative().flex_shrink_0();
+    let mut root = div().id((model.id.clone(), 0usize)).relative().flex_shrink_0();
 
     root = match model.orientation {
         SplitterOrientation::Vertical => root.w(px(look.visible_line_px)).h_full(),

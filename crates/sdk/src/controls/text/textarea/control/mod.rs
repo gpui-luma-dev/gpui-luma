@@ -83,6 +83,7 @@ pub struct TextArea {
     layout_cache: Option<TextAreaLayoutCache>,
     scrollbar: Entity<Scrollbar>,
     scrollbar_enabled: bool,
+    resize_drag_id: SharedString,
     resize_dragging: bool,
     resize_start_y: f32,
     resize_start_rows: usize,
@@ -127,6 +128,7 @@ impl TextArea {
     pub(crate) fn from_builder(builder: TextAreaBuilder, cx: &mut Context<Self>) -> Self {
         let mut state = TextAreaState { cursor: builder.model.value.chars().count(), ..Default::default() };
         let initial_rows = builder.model.rows.max(1);
+        let resize_drag_id = format!("{}-resize", builder.model.id).into();
 
         let scrollbar = Scrollbar::new(format!("{}-scrollbar", builder.model.id))
             .orientation(ScrollbarOrientation::Vertical)
@@ -161,6 +163,7 @@ impl TextArea {
             layout_cache: None,
             scrollbar,
             scrollbar_enabled: false,
+            resize_drag_id,
             resize_dragging: false,
             resize_start_y: 0.0,
             resize_start_rows: initial_rows,
@@ -460,4 +463,184 @@ fn scrollbar_focus_does_not_allow_ancestor_text_editing() {
     cx.run_until_parked();
     cx.simulate_keystrokes("backspace");
     cx.update(|_, app| assert_ne!(editor.read(app).model.value, original));
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn shaped_lines_reuse_and_invalidate_on_editing_and_style_changes() {
+    use std::sync::Arc;
+
+    let mut app = gpui::TestAppContext::single();
+    let (editor, cx) = app.add_window_view(|window, cx| {
+        window.activate_window();
+        TextArea::from_builder(TextAreaBuilder::new("layout-reuse").value("Unicode é中🙂\n".repeat(40)).rows(3), cx)
+    });
+    cx.run_until_parked();
+    let mut previous = cx.update(|_, app| editor.read(app).layout_cache.as_ref().unwrap().lines.clone());
+    editor.update(cx, |view, cx| {
+        view.state.cursor = 2;
+        view.vertical_scroll = px(20.0);
+        cx.notify();
+    });
+    cx.run_until_parked();
+    cx.update(|_, app| {
+        let cache = editor.read(app).layout_cache.as_ref().unwrap();
+        assert!(Arc::ptr_eq(&previous, &cache.lines));
+    });
+
+    // Each change reaches prepaint through the real control, rather than testing the key in isolation.
+    for change in 0..10 {
+        editor.update(cx, |view, cx| {
+            match change {
+                0 => view.model.value = "changed é中🙂\n".repeat(40).into(),
+                1 => view.marked_range = Some(0..3),
+                2 => view.state.selection_anchor = Some(0),
+                3..=9 => {
+                    view.model.look_override = Some(Arc::new(move |mut look| {
+                        look.typography.size += 2.0;
+                        if change >= 4 {
+                            look.typography.weight = gpui::FontWeight::BOLD;
+                        }
+                        if change >= 5 {
+                            look.foreground = gpui::red();
+                        }
+                        if change >= 6 {
+                            look.selection_foreground = gpui::blue();
+                        }
+                        if change >= 7 {
+                            look.padding_x += 20.0;
+                        }
+                        if change >= 8 {
+                            look.font_family = "monospace".to_owned();
+                        }
+                        if change >= 9 {
+                            look.typography.line_height += 5.0;
+                        }
+                        look
+                    }));
+                }
+                _ => unreachable!(),
+            }
+            cx.notify();
+        });
+        cx.run_until_parked();
+        let current = cx.update(|_, app| editor.read(app).layout_cache.as_ref().unwrap().lines.clone());
+        if matches!(change, 1 | 2 | 6) {
+            assert!(Arc::ptr_eq(&previous, &current), "decoration change {change} must preserve geometry");
+        } else {
+            assert!(!Arc::ptr_eq(&previous, &current), "geometry change {change} must reshape");
+        }
+        previous = current;
+        editor.update(cx, |_, cx| cx.notify());
+        cx.run_until_parked();
+        cx.update(|_, app| assert!(Arc::ptr_eq(&previous, &editor.read(app).layout_cache.as_ref().unwrap().lines)));
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+#[test]
+fn wrapping_shapes_logical_lines_once_and_selection_decorates_only_visible_lines() {
+    use gpui::prelude::*;
+    use std::sync::Arc;
+
+    let mut app = gpui::TestAppContext::single();
+    let value = "office e\u{301} é中🙂 العربية ".repeat(100);
+    let (editor, cx) = app.add_window_view(|_, cx| {
+        TextArea::from_builder(
+            TextAreaBuilder::new("shape-counts")
+                .value(value.clone())
+                .rows(3)
+                .with_template_modifier(|control, _| control.w(px(180.0)))
+                .look_override(|mut look| {
+                    look.foreground = gpui::red();
+                    look.selection_foreground = gpui::blue();
+                    look
+                }),
+            cx,
+        )
+    });
+    cx.run_until_parked();
+    let initial = cx.update(|_, app| {
+        let cache = editor.read(app).layout_cache.as_ref().unwrap();
+        assert!(cache.lines.len() > 10, "fixture must wrap");
+        assert_eq!(cache.lines.iter().map(|line| line.text.as_str()).collect::<String>(), value);
+        assert!(cache.lines.iter().all(|line| line.end > line.start));
+        cache.lines.clone()
+    });
+    let before = element::SHAPING_COUNTS.with(|counts| counts.get());
+    editor.update(cx, |view, cx| {
+        view.model.value = format!("{}z", view.model.value).into();
+        cx.notify();
+    });
+    cx.run_until_parked();
+    let after = element::SHAPING_COUNTS.with(|counts| counts.get());
+    assert_eq!(after.0 - before.0, 1, "one logical line requires one geometry shaping call");
+    assert_eq!(after.1, before.1, "plain wrapped segments must not be reshaped");
+    let geometry = cx.update(|_, app| editor.read(app).layout_cache.as_ref().unwrap().lines.clone());
+    assert!(!Arc::ptr_eq(&initial, &geometry));
+
+    for end in [2, 5, 9] {
+        let before = element::SHAPING_COUNTS.with(|counts| counts.get());
+        editor.update(cx, |view, cx| {
+            view.state.selection_anchor = Some(0);
+            view.state.cursor = end;
+            view.marked_range = Some(0..end);
+            cx.notify();
+        });
+        cx.run_until_parked();
+        let after = element::SHAPING_COUNTS.with(|counts| counts.get());
+        assert_eq!(after.0, before.0, "selection and IME must preserve wrapping");
+        cx.update(|window, app| {
+            let cache = editor.read(app).layout_cache.as_ref().unwrap();
+            assert!(Arc::ptr_eq(&geometry, &cache.lines));
+            let affected = cache.paint_lines.iter().filter(|line| line.key.selection.is_some()).count();
+            assert!(affected > 0);
+            for painted in &cache.paint_lines {
+                assert!(
+                    Arc::ptr_eq(&painted.line, &cache.lines[painted.key.line_index].line),
+                    "decorations must preserve contextual glyph geometry"
+                );
+            }
+            assert_eq!(after.1 - before.1, affected, "only affected visible lines need new decorations");
+            let underlines = window.painted_underlines();
+            assert!(!underlines.is_empty(), "IME underline must reach paint");
+            assert!(
+                underlines.iter().all(|underline| underline.color == gpui::blue()),
+                "selected composition must use the selection foreground"
+            );
+        });
+        editor.update(cx, |_, cx| cx.notify());
+        cx.run_until_parked();
+        assert_eq!(element::SHAPING_COUNTS.with(|counts| counts.get()), after, "unchanged decoration must reuse");
+    }
+    editor.update(cx, |view, cx| {
+        view.model.look_override = Some(Arc::new(|mut look| {
+            look.foreground = gpui::red();
+            look.selection_foreground = gpui::green();
+            look
+        }));
+        cx.notify();
+    });
+    cx.run_until_parked();
+    cx.update(|window, app| {
+        assert!(Arc::ptr_eq(&geometry, &editor.read(app).layout_cache.as_ref().unwrap().lines));
+        let underlines = window.painted_underlines();
+        assert!(!underlines.is_empty());
+        assert!(
+            underlines.iter().all(|underline| underline.color == gpui::green()),
+            "selection foreground changes must refresh painted decorations"
+        );
+    });
+    editor.update(cx, |view, cx| {
+        view.state.selection_anchor = None;
+        view.marked_range = None;
+        cx.notify();
+    });
+    cx.run_until_parked();
+    cx.update(|window, app| {
+        let cache = editor.read(app).layout_cache.as_ref().unwrap();
+        assert!(Arc::ptr_eq(&geometry, &cache.lines));
+        assert!(cache.paint_lines.iter().all(|line| line.key.selection.is_none() && line.key.marked_range.is_none()));
+        assert!(window.painted_underlines().is_empty(), "unmarking must remove the underline");
+    });
 }

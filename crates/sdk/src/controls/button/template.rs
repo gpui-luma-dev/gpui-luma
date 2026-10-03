@@ -13,7 +13,7 @@ const DISABLED_OPACITY: f32 = 0.56;
 const FOCUS_RING_GAP: f32 = 1.0;
 
 use crate::infra::template::{Modifier, TemplateWithModifiers};
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+use crate::theme::StandardBoxScale;
 
 pub type ButtonTemplateModifier<D> = Modifier<ButtonRenderModel<D>>;
 
@@ -172,12 +172,8 @@ impl<D: 'static> ButtonTemplate<D> for ModifiedButtonTemplate<D> {
 impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
     fn render(&self, model: &ButtonRenderModel<D>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
-        );
-        let look = resolve_look(&self.theme, model, &scale);
+        let scale = StandardBoxScale::compute(model.size, &self.theme.metrics(), scale_factor);
+        let mut look = resolve_look(&self.theme, model, &scale);
         let presenter_model = presenter_model(model, &look);
         let focused = model.state.focused && !model.state.disabled;
         let control_look = if focused {
@@ -199,7 +195,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         let focus_extent = if model.compact { 0.0 } else { focus_ring_extent };
 
         let mut control = div()
-            .id(format!("{}-control", model.id))
+            .id((model.id.clone(), 0usize))
             .flex()
             .items_center()
             .justify_center()
@@ -275,9 +271,9 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             model.elevation,
             model.state.disabled,
             look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),
-        ) && let Some(shadows) = look.shadow.as_ref()
+        ) && let Some(shadows) = look.shadow.take()
         {
-            control = control.shadow(shadows.clone());
+            control = control.shadow(shadows);
         }
 
         let oversize_extent = focus_extent;
@@ -290,7 +286,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             look.radius
         };
 
-        let adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
+        let adorned = div().id((model.id.clone(), 1usize)).relative().child(control);
 
         let mut root = div().id(model.id.clone()).relative();
         root = if oversize_extent > 0.0 {

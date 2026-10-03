@@ -1,6 +1,10 @@
 #[cfg(all(test, feature = "test-support"))]
 use gpui::ScrollWheelEvent;
-use std::collections::{HashMap, HashSet};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet},
+    rc::Rc,
+};
 
 use gpui::{
     App, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, FocusHandle, IntoElement, ListAlignment,
@@ -103,6 +107,8 @@ where
     hovered_node_id: Option<SharedString>,
     pub(super) pressed_node_id: Option<SharedString>,
     flat_cache: Vec<FlatNodeWrapper<T>>,
+    flat_indices: HashMap<SharedString, usize>,
+    row_handlers: RefCell<HashMap<SharedString, TreeViewTemplateHandlers>>,
     emitted_scroll_top_index: usize,
     emitted_focused: bool,
 }
@@ -185,6 +191,8 @@ where
             hovered_node_id: None,
             pressed_node_id: None,
             flat_cache: Vec::new(),
+            flat_indices: HashMap::new(),
+            row_handlers: RefCell::new(HashMap::new()),
             emitted_scroll_top_index: 0,
             emitted_focused: false,
         };
@@ -465,9 +473,9 @@ where
         }
 
         let node_id = node_id.into();
-        if !self.flat_cache.iter().any(|node| node.id == node_id && node.enabled) {
+        let Some(index) = self.flat_index_for_id(&node_id).filter(|&index| self.flat_cache[index].enabled) else {
             return;
-        }
+        };
 
         if self.model.selection_policy.mode == TreeViewSelectionMode::Extended {
             self.selection_anchor = Some(node_id.clone());
@@ -475,9 +483,7 @@ where
         let selection_changed = self.selected_ids.len() != 1 || !self.selected_ids.contains(&node_id);
         self.selected_ids.clear();
         self.selected_ids.insert(node_id.clone());
-        if let Some(idx) = self.flat_index_for_id(&node_id) {
-            self.set_active_index(Some(idx), false, cx);
-        }
+        self.set_active_index(Some(index), false, cx);
         if selection_changed {
             cx.emit(TreeViewEvent::SelectionChanged { selected_ids: self.selected_ids.clone() });
         }
@@ -621,6 +627,11 @@ where
             self.pressed_node_id = None;
         }
         self.flat_cache = flat;
+        self.flat_indices.clear();
+        self.flat_indices
+            .extend(self.flat_cache.iter().enumerate().map(|(index, node)| (node.id.clone(), index)));
+
+        self.row_handlers.get_mut().retain(|id, _| self.flat_indices.contains_key(id));
 
         if let Some(active_id) = active_before
             && self.flat_index_for_id(&active_id).is_none()
@@ -667,7 +678,7 @@ where
     }
 
     fn flat_index_for_id(&self, node_id: &SharedString) -> Option<usize> {
-        self.flat_cache.iter().position(|node| &node.id == node_id)
+        self.flat_indices.get(node_id).copied()
     }
 
     fn data_for_id(&self, node_id: &SharedString) -> Option<T> {
@@ -777,10 +788,8 @@ where
         };
         let id = node.id.clone();
         let label = node.label.clone();
-        let row_id = format!("{}/node/{}", self.model.id, id);
         let row = div()
-            .id(row_id.clone())
-            .debug_selector(move || row_id.clone())
+            .id((id.clone(), 0usize))
             .relative()
             .role(gpui::Role::TreeItem)
             .aria_level(node.depth + 1)
@@ -789,6 +798,12 @@ where
             .when(node.has_children, |row| row.aria_expanded(render_node.expanded))
             .when(active, |row| row.aria_active_descendant())
             .child(content);
+        #[cfg(any(test, feature = "test-support"))]
+        let row = {
+            let tree_id = self.model.id.clone();
+            let debug_node_id = id.clone();
+            row.debug_selector(move || format!("{}/node/{}", tree_id, debug_node_id))
+        };
         self.bind_row_drag(row, id, label, index, cx).into_any_element()
     }
 
@@ -816,11 +831,15 @@ where
     }
 
     fn template_row_handlers(&self, node_id: SharedString, cx: &mut Context<Self>) -> TreeViewTemplateHandlers {
+        if let Some(handlers) = self.row_handlers.borrow().get(&node_id) {
+            return handlers.clone();
+        }
+        let cache_id = node_id.clone();
         let hover_id = node_id.clone();
         let press_id = node_id.clone();
         let disclosure_id = node_id.clone();
-        TreeViewTemplateHandlers {
-            disclosure: Box::new(cx.listener(move |this, event: &ClickEvent, window, cx| {
+        let handlers = TreeViewTemplateHandlers {
+            disclosure: Rc::new(cx.listener(move |this, event: &ClickEvent, window, cx| {
                 cx.stop_propagation();
                 let Some(idx) = this.flat_index_for_id(&disclosure_id) else {
                     return;
@@ -835,12 +854,12 @@ where
                     this.select_with_modifiers(idx, event.modifiers(), cx);
                 }
             })),
-            hover: Box::new(cx.listener(move |this, hovered: &bool, _, cx| {
+            hover: Rc::new(cx.listener(move |this, hovered: &bool, _, cx| {
                 if let Some(idx) = this.flat_index_for_id(&hover_id) {
                     this.handle_row_hover(idx, *hovered, cx);
                 }
             })),
-            mouse_down: Box::new(cx.listener(move |this, _, window, cx| {
+            mouse_down: Rc::new(cx.listener(move |this, _, window, cx| {
                 let Some(idx) = this.flat_index_for_id(&press_id) else {
                     return;
                 };
@@ -854,11 +873,11 @@ where
                     cx.notify();
                 }
             })),
-            mouse_up: Box::new(cx.listener(move |this, _, _, cx| {
+            mouse_up: Rc::new(cx.listener(move |this, _, _, cx| {
                 this.pressed_node_id = None;
                 cx.notify();
             })),
-            click: Box::new(cx.listener(move |this, event: &ClickEvent, _, cx| {
+            click: Rc::new(cx.listener(move |this, event: &ClickEvent, _, cx| {
                 if event.click_count() != 1 {
                     return;
                 }
@@ -875,7 +894,14 @@ where
                 }
                 this.select_with_modifiers(idx, event.modifiers(), cx);
             })),
+        };
+        let mut cache = self.row_handlers.borrow_mut();
+        // Bound retained callbacks even when a large tree is scrolled without rebuilding its projection.
+        if cache.len() >= 256 {
+            cache.clear();
         }
+        cache.insert(cache_id, handlers.clone());
+        handlers
     }
 
     fn handle_node_select(&mut self, idx: usize, cx: &mut Context<Self>) {

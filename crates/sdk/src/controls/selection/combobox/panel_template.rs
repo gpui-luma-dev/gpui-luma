@@ -86,7 +86,7 @@ impl ComboBoxPanelTemplate for DefaultComboBoxPanelTemplate {
                     .offset(point(px(0.0), px(4.0)))
                     .child(
                         div()
-                            .id(format!("{}-popup-shell", model.id))
+                            .id((model.id.clone(), 1usize))
                             .w(bounds.size.width)
                             .bg(look.background)
                             .border_1()
@@ -104,7 +104,7 @@ impl ComboBoxPanelTemplate for DefaultComboBoxPanelTemplate {
 
         let look = model.popup_look;
         div()
-            .id(format!("{}-panel", model.id))
+            .id((model.id.clone(), 0usize))
             .w_full()
             .bg(look.background)
             .border_1()

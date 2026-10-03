@@ -7,7 +7,6 @@ use lucide_svg_static::Icon as LucideIcon;
 
 use super::{AccordionRenderModel, AccordionTheme, default_accordion_theme};
 use crate::infra::icon::render_disclosure_icon;
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
 pub type AccordionHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type AccordionMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -127,11 +126,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
         cx: &mut App,
     ) -> Stateful<Div> {
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |_| self.theme.resolve_scale(model.size, scale_factor),
-        );
+        let scale = self.theme.resolve_scale(model.size, scale_factor);
 
         let AccordionTemplateHandlers {
             trigger_hovers,
@@ -171,7 +166,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
             let trigger_padding_y = model.trigger_padding_y.unwrap_or(scale.padding_y);
 
             let mut trigger = div()
-                .id(format!("{}-trigger", item.id))
+                .id("trigger")
                 .flex()
                 .items_center()
                 .justify_between()
@@ -248,7 +243,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 }
 
                 let mut inner = div()
-                    .id(format!("{}-content", item.id))
+                    .id("content")
                     .w_full()
                     .px(px(scale.padding_x))
                     .pt(px(content_padding_top))
@@ -268,7 +263,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 None
             };
 
-            let mut item_container = div().id(format!("{}-item", item.id)).flex().flex_col().w_full().child(trigger_el);
+            let mut item_container = div().id((item.id.clone(), 0usize)).flex().flex_col().w_full().child(trigger_el);
 
             if model.item_dividers && index + 1 < model.items.len() {
                 item_container = item_container.border_b_1().border_color(trigger_palette.border_color);
