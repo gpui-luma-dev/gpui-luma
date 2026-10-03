@@ -1,18 +1,27 @@
+use std::sync::Arc;
+
 use gpui::{
     App, Bounds, ElementInputHandler, GlobalElementId, IntoElement, LayoutId, PaintQuad, Pixels, ShapedLine, Style,
     TextAlign, TextRun, Window, fill, font, point, px, relative, size,
 };
 
-use super::layout::{TextAreaCachedLine, TextAreaLayoutCache};
+use super::layout::{TextAreaCachedLine, TextAreaDecorationKey, TextAreaLayoutCache, TextAreaLayoutKey, TextAreaPaintLine};
 use super::TextArea;
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+use crate::theme::StandardBoxScale;
+
+#[cfg(all(test, feature = "test-support"))]
+thread_local! {
+    pub(super) static SHAPING_COUNTS: std::cell::Cell<(usize, usize)> = const { std::cell::Cell::new((0, 0)) };
+}
 
 pub(super) struct TextAreaElement {
     pub(super) input: gpui::Entity<TextArea>,
 }
 
 pub(super) struct TextAreaPrepaintState {
-    lines: Vec<TextAreaCachedLine>,
+    lines: Arc<[TextAreaCachedLine]>,
+    key: TextAreaLayoutKey,
+    paint_lines: Vec<TextAreaPaintLine>,
     selection_quads: Vec<PaintQuad>,
     caret_quad: Option<PaintQuad>,
     placeholder_line: Option<ShapedLine>,
@@ -58,11 +67,7 @@ impl gpui::Element for TextAreaElement {
             )
         };
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            theme.metrics(),
-            LayoutCacheKey { size: control_size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(control_size, metrics, scale_factor),
-        );
+        let scale = StandardBoxScale::compute(control_size, &theme.metrics(), scale_factor);
         let mut look = theme.resolve_look(state, enabled, control_size, &scale);
         if let Some(override_fn) = &look_override {
             look = override_fn(look);
@@ -93,11 +98,7 @@ impl gpui::Element for TextAreaElement {
             )
         };
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            theme.metrics(),
-            LayoutCacheKey { size: control_size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(control_size, metrics, scale_factor),
-        );
+        let scale = StandardBoxScale::compute(control_size, &theme.metrics(), scale_factor);
         let input = self.input.read(cx);
         let mut look = theme.resolve_look(state, enabled, control_size, &scale);
         if let Some(override_fn) = &look_override {
@@ -105,21 +106,15 @@ impl gpui::Element for TextAreaElement {
         }
         let line_height = px(look.typography.line_height);
         let font_size = px(look.typography.size);
-        let mut lines = Vec::new();
         let mut selection_quads = Vec::new();
         let mut caret_quad = None;
         let selection = input.state.selection_range();
-        let cursor = input.state.cursor.min(input.model.value.chars().count());
         let show_placeholder = input.model.value.is_empty() && !input.state.focused;
-        let font_family = look.font_family.clone();
-        let font_weight = look.typography.weight;
-        let run_for = move |len: usize, color| TextRun {
+        let mut text_font = font(look.font_family.clone());
+        text_font.weight = look.typography.weight;
+        let run_for = |len: usize, color| TextRun {
             len,
-            font: {
-                let mut font = font(font_family.clone());
-                font.weight = font_weight;
-                font
-            },
+            font: text_font.clone(),
             color,
             background_color: None,
             underline: None,
@@ -133,85 +128,118 @@ impl gpui::Element for TextAreaElement {
             None
         };
 
-        let logical_lines = TextArea::logical_lines(input.model.value.as_ref());
         let wrap_width = bounds.size.width.max(px(1.0));
+        let key = TextAreaLayoutKey {
+            text: input.model.value.clone(),
+            wrap_width,
+            font: text_font.clone(),
+            font_size,
+            line_height,
+            foreground: look.foreground,
+            scale_factor_bits: scale_factor.to_bits(),
+        };
+        let lines = if let Some(cache) = input.layout_cache.as_ref().filter(|cache| cache.key.as_ref() == Some(&key)) {
+            Arc::clone(&cache.lines)
+        } else {
+            let mut lines = Vec::new();
+            let logical_lines = TextArea::logical_lines(input.model.value.as_ref());
 
-        for (hard_start, _hard_end, text) in logical_lines.into_iter() {
-            let full_run = run_for(text.len(), look.foreground);
-            let full_shaped = window.text_system().shape_line(text.clone().into(), font_size, &[full_run], None);
-            let line_chars = text.chars().collect::<Vec<_>>();
-            let char_count = line_chars.len();
-
-            if char_count == 0 {
-                lines.push(TextAreaCachedLine {
-                    start: hard_start,
-                    end: hard_start,
-                    text: String::new(),
-                    line: full_shaped,
+            for (hard_start, _hard_end, text) in logical_lines.into_iter() {
+                let full_run = run_for(text.len(), look.foreground);
+                #[cfg(all(test, feature = "test-support"))]
+                SHAPING_COUNTS.with(|counts| {
+                    let (geometry, decoration) = counts.get();
+                    counts.set((geometry + 1, decoration));
                 });
-                continue;
-            }
-
-            let mut byte_offsets = Vec::with_capacity(char_count + 1);
-            for char_offset in 0..=char_count {
-                byte_offsets.push(TextArea::char_to_byte_offset(&text, char_offset));
-            }
-
-            let mut local_start = 0usize;
-            while local_start < char_count {
-                let start_x = full_shaped.x_for_index(byte_offsets[local_start]);
-                let mut fit_end = local_start + 1;
-                for (probe, _) in byte_offsets.iter().enumerate().take(char_count + 1).skip(local_start + 1) {
-                    let probe_x = full_shaped.x_for_index(byte_offsets[probe]);
-                    if probe_x - start_x <= wrap_width {
-                        fit_end = probe;
-                    } else {
-                        break;
-                    }
+                let full_shaped = window.text_system().shape_line(text.clone().into(), font_size, &[full_run], None);
+                if text.is_empty() {
+                    lines.push(TextAreaCachedLine {
+                        start: hard_start,
+                        end: hard_start,
+                        text: String::new(),
+                        line: full_shaped,
+                    });
+                    continue;
                 }
 
-                let mut local_end = fit_end;
-                if fit_end < char_count {
-                    for probe in ((local_start + 1)..=fit_end).rev() {
-                        if line_chars[probe - 1].is_whitespace() {
-                            local_end = probe;
+                let byte_offsets = TextArea::char_byte_offsets(&text);
+                let char_count = byte_offsets.len() - 1;
+                // A wrap must not divide a shaped glyph cluster (ligatures/combining sequences).
+                let mut glyph_boundaries: Vec<usize> = full_shaped
+                    .runs
+                    .iter()
+                    .flat_map(|run| run.glyphs.iter().map(|glyph| glyph.index))
+                    .chain([0, text.len()])
+                    .collect();
+                glyph_boundaries.sort_unstable();
+                glyph_boundaries.dedup();
+                let mut shaped_cursor = full_shaped.cursor();
+                let mut local_start = 0usize;
+                while local_start < char_count {
+                    let start_x = full_shaped.x_for_index(byte_offsets[local_start]);
+                    let mut fit_end = local_start + 1;
+                    for (probe, _) in byte_offsets.iter().enumerate().take(char_count + 1).skip(local_start + 1) {
+                        let probe_x = full_shaped.x_for_index(byte_offsets[probe]);
+                        if probe_x - start_x <= wrap_width {
+                            fit_end = probe;
+                        } else {
                             break;
                         }
                     }
-                    local_end = local_end.max(local_start + 1);
+
+                    let mut local_end = fit_end;
+                    if fit_end < char_count {
+                        let fitting_text = &text[byte_offsets[local_start]..byte_offsets[fit_end]];
+                        if let Some(distance) = fitting_text.chars().rev().position(char::is_whitespace) {
+                            local_end = fit_end - distance;
+                        }
+                        local_end = local_end.max(local_start + 1);
+                    }
+
+                    let byte_start = byte_offsets[local_start];
+                    let byte_end = byte_offsets[local_end];
+                    if let Err(boundary) = glyph_boundaries.binary_search(&byte_end) {
+                        let previous = glyph_boundaries[boundary.saturating_sub(1)];
+                        let end = if previous > byte_start {
+                            previous
+                        } else {
+                            glyph_boundaries[boundary]
+                        };
+                        // Glyph indices and UTF-8 character offsets share valid boundaries.
+                        if let Ok(end) = byte_offsets.binary_search(&end) {
+                            local_end = end;
+                        }
+                    }
+                    let segment_text = text[byte_offsets[local_start]..byte_offsets[local_end]].to_owned();
+                    // Preserve the original glyphs rather than shaping each segment again.
+                    let shaped = shaped_cursor.take_until(byte_offsets[local_end]);
+
+                    lines.push(TextAreaCachedLine {
+                        start: hard_start + local_start,
+                        end: hard_start + local_end,
+                        text: segment_text,
+                        line: shaped,
+                    });
+
+                    local_start = local_end;
                 }
-
-                let segment_text = line_chars[local_start..local_end].iter().collect::<String>();
-                let runs = crate::controls::text::runs::colored_runs(
-                    &segment_text,
-                    hard_start + local_start,
-                    selection,
-                    input.marked_range.as_ref(),
-                    {
-                        let mut font = font(look.font_family.clone());
-                        font.weight = font_weight;
-                        font
-                    },
-                    look.foreground,
-                    look.selection_foreground,
-                );
-                let shaped = window.text_system().shape_line(segment_text.clone().into(), font_size, &runs, None);
-
-                lines.push(TextAreaCachedLine {
-                    start: hard_start + local_start,
-                    end: hard_start + local_end,
-                    text: segment_text,
-                    line: shaped,
-                });
-
-                local_start = local_end;
             }
-        }
 
+            Arc::from(lines)
+        };
+
+        let cursor = input.state.cursor.min(lines.last().map_or(0, |line| line.end));
         let content_height = line_height * lines.len() as f32;
         let max_vertical_scroll = (content_height - bounds.size.height).max(px(0.0));
         let vertical_scroll = input.vertical_scroll.max(px(0.0)).min(max_vertical_scroll);
 
+        let mut paint_lines = Vec::new();
+        let previous_paint_lines = input
+            .layout_cache
+            .as_ref()
+            .filter(|cache| Arc::ptr_eq(&cache.lines, &lines))
+            .map(|cache| cache.paint_lines.as_slice())
+            .unwrap_or_default();
         for (line_ix, line) in lines.iter().enumerate() {
             let top = bounds.top() + line_height * line_ix as f32 - vertical_scroll;
             let bottom = top + line_height;
@@ -219,6 +247,47 @@ impl gpui::Element for TextAreaElement {
             if bottom >= bounds.top() && top <= bounds.bottom() {
                 let start = line.start;
                 let end = line.end;
+                let local_range = |range: (usize, usize)| {
+                    let start = range.0.max(line.start).min(line.end) - line.start;
+                    let end = range.1.max(line.start).min(line.end) - line.start;
+                    (start < end).then_some((start, end))
+                };
+                let decoration_key = TextAreaDecorationKey {
+                    line_index: line_ix,
+                    selection: selection.and_then(local_range),
+                    marked_range: input
+                        .marked_range
+                        .as_ref()
+                        .and_then(|range| local_range((range.start, range.end)))
+                        .map(|(start, end)| start..end),
+                    selection_foreground: look.selection_foreground,
+                };
+                let painted = if decoration_key.selection.is_none() && decoration_key.marked_range.is_none() {
+                    line.line.clone()
+                } else if let Some(cached) = previous_paint_lines.iter().find(|cached| cached.key == decoration_key) {
+                    cached.line.clone()
+                } else {
+                    let runs = crate::controls::text::runs::colored_runs(
+                        &line.text,
+                        0,
+                        decoration_key.selection,
+                        decoration_key.marked_range.as_ref(),
+                        text_font.clone(),
+                        look.foreground,
+                        look.selection_foreground,
+                    );
+                    #[cfg(all(test, feature = "test-support"))]
+                    SHAPING_COUNTS.with(|counts| {
+                        let (geometry, decoration) = counts.get();
+                        counts.set((geometry, decoration + 1));
+                    });
+                    let mut painted = window.text_system().shape_line(line.text.clone().into(), font_size, &runs, None);
+                    // Keep the exact glyph geometry used by wrapping and hit testing. Shaping
+                    // a substring can otherwise change contextual forms or ligatures at wraps.
+                    *painted = (*line.line).clone();
+                    painted
+                };
+                paint_lines.push(TextAreaPaintLine { key: decoration_key, line: painted });
 
                 if let Some((selection_start, selection_end)) = selection {
                     let local_start = selection_start.max(start).min(end).saturating_sub(start);
@@ -245,7 +314,16 @@ impl gpui::Element for TextAreaElement {
             }
         }
 
-        TextAreaPrepaintState { lines, selection_quads, caret_quad, placeholder_line, line_height, vertical_scroll }
+        TextAreaPrepaintState {
+            key,
+            lines,
+            paint_lines,
+            selection_quads,
+            caret_quad,
+            placeholder_line,
+            line_height,
+            vertical_scroll,
+        }
     }
 
     fn paint(
@@ -268,7 +346,8 @@ impl gpui::Element for TextAreaElement {
         if let Some(line) = prepaint.placeholder_line.take() {
             line.paint(bounds.origin, prepaint.line_height, TextAlign::Left, None, window, cx).ok();
         } else {
-            for (line_ix, line) in prepaint.lines.iter().enumerate() {
+            for line in &prepaint.paint_lines {
+                let line_ix = line.key.line_index;
                 let origin = point(
                     bounds.left(),
                     bounds.top() + prepaint.line_height * line_ix as f32 - prepaint.vertical_scroll,
@@ -287,9 +366,11 @@ impl gpui::Element for TextAreaElement {
         self.input.update(cx, |input, cx| {
             input.vertical_scroll = prepaint.vertical_scroll;
             input.layout_cache = Some(TextAreaLayoutCache {
+                key: Some(prepaint.key.clone()),
                 text_viewport: bounds,
                 line_height: prepaint.line_height,
                 lines: prepaint.lines.clone(),
+                paint_lines: std::mem::take(&mut prepaint.paint_lines),
             });
             input.clamp_vertical_scroll_to_cache();
             input.sync_scrollbar(cx);

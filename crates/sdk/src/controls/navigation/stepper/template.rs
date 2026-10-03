@@ -92,7 +92,7 @@ impl StepperTemplate for ThemedStepperTemplate {
             let panel = render_content_panel(model, horizontal, window, cx);
             if horizontal {
                 div()
-                    .id(SharedString::from(format!("{}-shell", model.id)))
+                    .id((model.id.clone(), 0usize))
                     .w_full()
                     .flex()
                     .flex_col()
@@ -101,7 +101,7 @@ impl StepperTemplate for ThemedStepperTemplate {
                     .child(panel)
             } else {
                 div()
-                    .id(SharedString::from(format!("{}-shell", model.id)))
+                    .id((model.id.clone(), 0usize))
                     .h_full()
                     .w_full()
                     .flex()
@@ -159,7 +159,7 @@ fn render_horizontal_stepper(
 
         root = root.child(
             div()
-                .id(SharedString::from(format!("stepper-step-{step_index}")))
+                .id(("step", step_index))
                 .flex_1()
                 .min_w(px(0.0))
                 .flex()
@@ -266,7 +266,7 @@ fn render_vertical_stepper(
 
         root = root.child(match model.label_placement {
             StepperLabelPlacement::Below => div()
-                .id(SharedString::from(format!("stepper-step-{step_index}")))
+                .id(("step", step_index))
                 .flex_1()
                 .min_h(px(0.0))
                 .flex()
@@ -275,7 +275,7 @@ fn render_vertical_stepper(
                 .child(badge_column)
                 .children(label.map(|label| render_step_label(label, look, false))),
             StepperLabelPlacement::Start => div()
-                .id(SharedString::from(format!("stepper-step-{step_index}")))
+                .id(("step", step_index))
                 .flex_1()
                 .min_h(px(0.0))
                 .flex()
@@ -286,7 +286,7 @@ fn render_vertical_stepper(
                 .child(badge_column)
                 .child(div().flex_1()),
             StepperLabelPlacement::End => div()
-                .id(SharedString::from(format!("stepper-step-{step_index}")))
+                .id(("step", step_index))
                 .flex_1()
                 .min_h(px(0.0))
                 .flex()
@@ -315,7 +315,7 @@ fn render_content_panel(
     let settled = progress >= 1.0 - f32::EPSILON || from_index == to_index;
     let forward = (to_index as f32) >= model.from_step;
 
-    let mut host = div().id(SharedString::from(format!("{}-content", model.id))).relative().overflow_hidden().w_full();
+    let mut host = div().id((model.id.clone(), 1usize)).relative().overflow_hidden().w_full();
 
     if let Some(height) = model.content_height {
         host = host.h(px(height));
@@ -345,9 +345,8 @@ fn render_content_panel(
     host
 }
 
-fn positioned_panel(content: AnyElement, horizontal: bool, offset: f32, key: &str) -> Stateful<Div> {
-    let mut panel =
-        div().id(SharedString::from(format!("stepper-panel-{key}"))).absolute().top_0().left_0().size_full();
+fn positioned_panel(content: AnyElement, horizontal: bool, offset: f32, key: &'static str) -> Stateful<Div> {
+    let mut panel = div().id(key).absolute().top_0().left_0().size_full();
 
     if horizontal {
         panel = panel.left(relative(offset));
@@ -360,7 +359,7 @@ fn positioned_panel(content: AnyElement, horizontal: bool, offset: f32, key: &st
 
 fn render_step_label(label: &SharedString, look: &StepperLook, align_end: bool) -> Stateful<Div> {
     let mut label_node = div()
-        .id(SharedString::from(format!("stepper-label-{label}")))
+        .id((label.clone(), 0usize))
         .text_size(px(12.0))
         .line_height(px(16.0))
         .text_color(look.incomplete_fg)
@@ -374,12 +373,7 @@ fn render_step_label(label: &SharedString, look: &StepperLook, align_end: bool) 
 }
 
 fn render_side_label_slot(label: Option<&SharedString>, look: &StepperLook, align_end: bool) -> Stateful<Div> {
-    let mut slot = div()
-        .id(SharedString::from(format!("stepper-label-slot-{align_end}")))
-        .flex_1()
-        .min_w(px(0.0))
-        .flex()
-        .items_center();
+    let mut slot = div().id(("label-slot", usize::from(align_end))).flex_1().min_w(px(0.0)).flex().items_center();
     slot = if align_end {
         slot.justify_end()
     } else {
@@ -403,27 +397,18 @@ fn render_horizontal_track(
     segment_id: usize,
 ) -> Stateful<Div> {
     if is_edge {
-        return div()
-            .id(SharedString::from(format!("stepper-track-h-edge-{segment_id}")))
-            .flex_1()
-            .h(px(badge_size));
+        return div().id(("track-h-edge", segment_id)).flex_1().h(px(badge_size));
     }
 
     let fill = fill.clamp(0.0, 1.0);
-    div()
-        .id(SharedString::from(format!("stepper-track-h-{segment_id}")))
-        .flex_1()
-        .h(px(badge_size))
-        .flex()
-        .items_center()
-        .child(
-            div()
-                .relative()
-                .w_full()
-                .h(px(track_thickness))
-                .bg(muted_color)
-                .child(div().absolute().top_0().left_0().h_full().w(relative(fill)).bg(active_color)),
-        )
+    div().id(("track-h", segment_id)).flex_1().h(px(badge_size)).flex().items_center().child(
+        div()
+            .relative()
+            .w_full()
+            .h(px(track_thickness))
+            .bg(muted_color)
+            .child(div().absolute().top_0().left_0().h_full().w(relative(fill)).bg(active_color)),
+    )
 }
 
 fn render_vertical_track(
@@ -436,27 +421,18 @@ fn render_vertical_track(
     segment_id: usize,
 ) -> Stateful<Div> {
     if is_edge {
-        return div()
-            .id(SharedString::from(format!("stepper-track-v-edge-{segment_id}")))
-            .flex_1()
-            .w(px(badge_size));
+        return div().id(("track-v-edge", segment_id)).flex_1().w(px(badge_size));
     }
 
     let fill = fill.clamp(0.0, 1.0);
-    div()
-        .id(SharedString::from(format!("stepper-track-v-{segment_id}")))
-        .flex_1()
-        .w(px(badge_size))
-        .flex()
-        .justify_center()
-        .child(
-            div()
-                .relative()
-                .w(px(track_thickness))
-                .h_full()
-                .bg(muted_color)
-                .child(div().absolute().top_0().left_0().w_full().h(relative(fill)).bg(active_color)),
-        )
+    div().id(("track-v", segment_id)).flex_1().w(px(badge_size)).flex().justify_center().child(
+        div()
+            .relative()
+            .w(px(track_thickness))
+            .h_full()
+            .bg(muted_color)
+            .child(div().absolute().top_0().left_0().w_full().h(relative(fill)).bg(active_color)),
+    )
 }
 
 fn render_badge(

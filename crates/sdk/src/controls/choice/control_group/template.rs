@@ -358,7 +358,7 @@ where
         default_item_content(model)
     };
 
-    div().id(format!("{}-item-{}", model.group_id, model.item.id())).flex().child(content)
+    div().id((model.item.id().clone(), 0usize)).flex().child(content)
 }
 
 pub fn render_control_group_item_elements<T>(

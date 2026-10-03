@@ -39,19 +39,23 @@ fn lerp_optional_hsla(start: Option<Hsla>, end: Option<Hsla>, t: f32) -> Option<
     }
 }
 
-fn lerp_radio_palette(off: &RadioButtonPalette, on: &RadioButtonPalette, progress: f32) -> RadioButtonPalette {
+// Interpolate only colors; typography and shadows come from the owned settled palette.
+struct RadioButtonColors {
+    control_background: Option<Hsla>,
+    control_border: Option<Hsla>,
+    indicator_background: Hsla,
+    indicator_border: Hsla,
+    dot_color: Hsla,
+}
+
+fn lerp_radio_palette(off: &RadioButtonPalette, on: &RadioButtonPalette, progress: f32) -> RadioButtonColors {
     let t = progress.clamp(0.0, 1.0);
-    let settled = if t >= 0.5 { on } else { off };
-    RadioButtonPalette {
+    RadioButtonColors {
         control_background: lerp_optional_hsla(off.control_background, on.control_background, t),
         control_border: lerp_optional_hsla(off.control_border, on.control_border, t),
         indicator_background: lerp_hsla(off.indicator_background, on.indicator_background, t),
         indicator_border: lerp_hsla(off.indicator_border, on.indicator_border, t),
         dot_color: lerp_hsla(off.dot_color, on.dot_color, t),
-        label_color: settled.label_color,
-        label_typography: settled.label_typography,
-        label_font_family: settled.label_font_family.clone(),
-        indicator_shadow: settled.indicator_shadow.clone(),
     }
 }
 
@@ -68,7 +72,7 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         let off_palette = self.theme.resolve(false, control_state, model.size);
         let on_palette = self.theme.resolve(true, control_state, model.size);
         let palette = lerp_radio_palette(&off_palette, &on_palette, progress);
-        let settled_palette = if selected { &on_palette } else { &off_palette };
+        let mut settled_palette = if selected { on_palette } else { off_palette };
         let focus_state = crate::theme::InteractionState { focused: true, ..model.state };
         let focus_palette = if selected {
             self.theme.resolve(true, focus_state, model.size)
@@ -88,7 +92,7 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
         let indicator_visual = {
             let mut indicator = div()
-                .id(format!("{}-indicator", model.id))
+                .id("indicator")
                 .flex()
                 .items_center()
                 .justify_center()
@@ -103,9 +107,9 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
                 model.elevation,
                 model.state.disabled,
                 settled_palette.indicator_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),
-            ) && let Some(shadows) = settled_palette.indicator_shadow.as_ref()
+            ) && let Some(shadows) = settled_palette.indicator_shadow.take()
             {
-                indicator = indicator.shadow(shadows.clone());
+                indicator = indicator.shadow(shadows);
             }
 
             indicator
@@ -114,7 +118,7 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         let indicator = div().relative().child(indicator_visual);
         let indicator = if focus_ring_extent > 0.0 {
             let mut slot = div()
-                .id(format!("{}-indicator-slot", model.id))
+                .id("indicator-slot")
                 .relative()
                 .flex()
                 .items_center()
@@ -160,7 +164,7 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(&content_model, cx));
 
         let mut control = div()
-            .id(format!("{}-control", model.id))
+            .id((model.id.clone(), 0usize))
             .relative()
             .flex()
             .items_center()

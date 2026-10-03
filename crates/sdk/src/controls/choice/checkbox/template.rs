@@ -39,19 +39,23 @@ fn lerp_optional_hsla(start: Option<Hsla>, end: Option<Hsla>, t: f32) -> Option<
     }
 }
 
-fn lerp_checkbox_palette(off: &CheckboxPalette, on: &CheckboxPalette, progress: f32) -> CheckboxPalette {
+// Interpolate only colors; typography and shadows come from the owned settled palette.
+struct CheckboxColors {
+    control_background: Option<Hsla>,
+    control_border: Option<Hsla>,
+    indicator_background: Hsla,
+    indicator_border: Hsla,
+    checkmark_color: Hsla,
+}
+
+fn lerp_checkbox_palette(off: &CheckboxPalette, on: &CheckboxPalette, progress: f32) -> CheckboxColors {
     let t = progress.clamp(0.0, 1.0);
-    let settled = if t >= 0.5 { on } else { off };
-    CheckboxPalette {
+    CheckboxColors {
         control_background: lerp_optional_hsla(off.control_background, on.control_background, t),
         control_border: lerp_optional_hsla(off.control_border, on.control_border, t),
         indicator_background: lerp_hsla(off.indicator_background, on.indicator_background, t),
         indicator_border: lerp_hsla(off.indicator_border, on.indicator_border, t),
         checkmark_color: lerp_hsla(off.checkmark_color, on.checkmark_color, t),
-        label_color: settled.label_color,
-        label_typography: settled.label_typography,
-        label_font_family: settled.label_font_family.clone(),
-        indicator_shadow: settled.indicator_shadow.clone(),
     }
 }
 
@@ -68,7 +72,7 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
         let off_palette = self.theme.resolve(false, control_state, model.size);
         let on_palette = self.theme.resolve(true, control_state, model.size);
         let palette = lerp_checkbox_palette(&off_palette, &on_palette, progress);
-        let settled_palette = if checked { &on_palette } else { &off_palette };
+        let mut settled_palette = if checked { on_palette } else { off_palette };
         let focus_state = crate::theme::InteractionState { focused: true, ..model.state };
         let focus_palette = if checked {
             self.theme.resolve(true, focus_state, model.size)
@@ -105,9 +109,9 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
                 model.elevation,
                 model.state.disabled,
                 settled_palette.indicator_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),
-            ) && let Some(shadows) = settled_palette.indicator_shadow.as_ref()
+            ) && let Some(shadows) = settled_palette.indicator_shadow.take()
             {
-                indicator = indicator.shadow(shadows.clone());
+                indicator = indicator.shadow(shadows);
             }
 
             indicator
@@ -117,7 +121,7 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
         let indicator = div().relative().child(indicator_visual);
         let indicator = if focus_ring_extent > 0.0 {
             let mut slot = div()
-                .id(format!("{}-indicator-slot", model.id))
+                .id("indicator-slot")
                 .relative()
                 .flex()
                 .items_center()

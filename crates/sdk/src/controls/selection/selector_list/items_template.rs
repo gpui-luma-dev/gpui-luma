@@ -195,9 +195,9 @@ where
         cx: &mut App,
     ) -> Stateful<Div> {
         let SelectorItemsTemplateHandlers { item_hovers, item_mouse_downs, item_clicks, scroll_wheel } = handlers;
-        let look = model.look.clone();
+        let look = &model.look;
         let content_max_height = (model.max_height - px(look.padding * 2.0)).max(px(look.item_height));
-        let mut rows = div().id(format!("{}-rows", model.menu_id)).relative().flex().flex_col().w_full();
+        let mut rows = div().id("rows").relative().flex().flex_col().w_full();
 
         if model.scrolling {
             rows = rows.max_h(content_max_height).overflow_y_scroll();
@@ -240,7 +240,7 @@ where
             };
 
             let mut row = div()
-                .id(format!("{}-item-{}", model.menu_id, item.id()))
+                .id((item.id().clone(), 0usize))
                 .flex()
                 .items_center()
                 .gap(px(look.item_gap))
@@ -283,7 +283,7 @@ where
         }
 
         let root = div()
-            .id(format!("{}-menu", model.menu_id))
+            .id((model.menu_id.clone(), 0usize))
             .relative()
             .min_w(px(look.min_width))
             .max_h(model.max_height)

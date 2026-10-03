@@ -8,7 +8,7 @@ use gpui::{
 use super::{TextFieldDrag, TextFieldLook, TextFieldRenderModel, TextFieldState};
 use crate::controls::button::ControlIcon;
 use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
-use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+use crate::theme::{ControlSize, StandardBoxScale};
 
 const TEXTFIELD_CARET_WIDTH: f32 = 1.5;
 const TEXTFIELD_CARET_HEIGHT_EXTRA: f32 = 2.0;
@@ -173,13 +173,9 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         enabled: bool,
         size: ControlSize,
         scale_factor: f32,
-        cx: &mut App,
+        _cx: &mut App,
     ) -> TextFieldLook {
-        let scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(size, metrics, scale_factor),
-        );
+        let scale = StandardBoxScale::compute(size, &self.theme.metrics(), scale_factor);
         self.theme.resolve_look(state, enabled, size, &scale)
     }
 
@@ -188,16 +184,12 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         model: &TextFieldRenderModel<'_>,
         handlers: TextFieldTemplateHandlers,
         window: &mut Window,
-        cx: &mut App,
+        _cx: &mut App,
     ) -> Stateful<Div> {
         let mut look = model.look.clone();
         if look.focus_border.is_none() && model.enabled && !model.state.invalid {
             let scale_factor = window.scale_factor();
-            let scale = cx.use_cached_layout(
-                self.theme.metrics(),
-                LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-                |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
-            );
+            let scale = StandardBoxScale::compute(model.size, &self.theme.metrics(), scale_factor);
             let base_state = TextFieldState { focused: false, focus_visible: false, ..model.state };
             let base_look = self.theme.resolve_look(base_state, model.enabled, model.size, &scale);
             let focus_state = TextFieldState { focused: true, focus_visible: true, ..model.state };
@@ -336,7 +328,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         };
 
         let mut control = div()
-            .id(format!("{}-control", model.id))
+            .id("control")
             .relative()
             .w_full()
             .min_w(px(0.0))
@@ -358,12 +350,12 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             .child(text_viewport);
 
         if model.enabled
-            && let Some(shadows) = look.shadow.as_ref().filter(|shadows| !shadows.is_empty())
+            && let Some(shadows) = look.shadow.take().filter(|shadows| !shadows.is_empty())
         {
-            control = control.shadow(shadows.clone());
+            control = control.shadow(shadows);
         }
 
-        let adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
+        let adorned = div().id("adorned").relative().child(control);
         let mut root = div().id(model.id.clone()).relative();
         if focus_extent > 0.0 {
             root = root.p(px(focus_extent)).child(adorned);

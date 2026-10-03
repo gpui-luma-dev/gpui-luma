@@ -137,9 +137,9 @@ where
             item_mouse_up_outs,
             item_clicks,
         } = handlers;
-        let look = model.look.clone();
+        let look = &model.look;
 
-        let mut root = div().id(format!("{}-rows", model.panel_id)).relative().flex().flex_col().w_full();
+        let mut root = div().id((model.panel_id.clone(), 0usize)).relative().flex().flex_col().w_full();
 
         if model.show_panel_chrome {
             root = root
@@ -186,7 +186,7 @@ where
                     enabled: row_enabled,
                     sibling_count: model.visible_indices.len(),
                     item_template: model.item_template,
-                    look: &look,
+                    look,
                     show_selection_marker: model.show_selection_marker,
                     icons: model.icons.clone(),
                 },

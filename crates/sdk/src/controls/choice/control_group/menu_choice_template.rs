@@ -5,7 +5,7 @@ use gpui::{AnyElement, App, Window, div, prelude::*, px};
 use super::model::{ControlGroupItemLike, ControlGroupItemRenderModel};
 use super::template::{ControlGroupItemElementTemplate, ControlGroupTemplate, render_control_group_item_elements};
 use super::theme::{ControlGroupItemVisualContext, ControlGroupTheme};
-use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+use crate::theme::{ControlSize, StandardBoxScale};
 
 pub type MenuChoiceRowContentFn<T> = Arc<
     dyn for<'a> Fn(
@@ -44,11 +44,7 @@ where
 {
     Arc::new(move |item, _item_template, window, cx| {
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            theme.metrics(),
-            LayoutCacheKey { size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(size, metrics, scale_factor),
-        );
+        let scale = StandardBoxScale::compute(size, &theme.metrics(), scale_factor);
         let visual = theme.resolve_item_visual(
             item.selected,
             item.state.interaction_state(),
@@ -60,7 +56,7 @@ where
         let row_content = content(item, &visual, window, cx);
 
         let mut row = div()
-            .id(format!("{}-item-{}", item.group_id, item.item.id()))
+            .id((item.item.id().clone(), 0usize))
             .relative()
             .w_full()
             .h(px(row_height))

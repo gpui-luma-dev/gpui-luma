@@ -8,7 +8,7 @@ use super::super::row::render_table_row;
 use super::super::theme::{TableLook, TableRowLook};
 use super::TableControl;
 use crate::infra::state::ControlFocusState;
-use crate::theme::{InteractionState, LayoutCacheKey, ListRowScale, LumaLayoutCacheExt};
+use crate::theme::{InteractionState, ListRowScale};
 
 impl<T> TableControl<T>
 where
@@ -23,14 +23,10 @@ where
         look
     }
 
-    pub(super) fn resolve_row_look(&self, window: &Window, cx: &mut Context<Self>) -> TableRowLook {
+    pub(super) fn resolve_row_look(&self, window: &Window, _cx: &mut Context<Self>) -> TableRowLook {
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            self.model.theme.metrics(),
-            LayoutCacheKey { size: self.model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| ListRowScale::compute(self.model.size, metrics, scale_factor),
-        );
+        let scale = ListRowScale::compute(self.model.size, &self.model.theme.metrics(), scale_factor);
         self.model.theme.resolve_row_look(
             false,
             InteractionState { focused: focus.focused, ..Default::default() },
@@ -101,11 +97,7 @@ where
             invalid: false,
         };
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            self.model.theme.metrics(),
-            LayoutCacheKey { size: self.model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| ListRowScale::compute(self.model.size, metrics, scale_factor),
-        );
+        let scale = ListRowScale::compute(self.model.size, &self.model.theme.metrics(), scale_factor);
         let mut look = self.model.theme.resolve_row_look(selected, interaction, self.model.size, &scale);
         if let Some(fill_height) = self.fill_row_height {
             look.min_height = fill_height;
@@ -128,7 +120,7 @@ where
             focused: focus.focused,
             focus_visible: focus.focus_visible,
             enabled,
-            look: look.clone(),
+            look,
         };
 
         let cells = if !self.model.columns.is_empty() {
@@ -146,11 +138,10 @@ where
 
         let row_height = self.fill_row_height.or(self.model.visible_row_height);
         let row = render_table_row(
-            format!(
-                "{}-row-{}",
-                self.model.id,
-                self.row_keys.get(index).cloned().unwrap_or_else(|| index.to_string().into())
-            ),
+            self.row_keys
+                .get(index)
+                .map(|key| gpui::ElementId::from((gpui::ElementId::from(self.model.id.clone()), key.clone())))
+                .unwrap_or_else(|| gpui::ElementId::from((self.model.id.clone(), index))),
             content,
             look,
             enabled,

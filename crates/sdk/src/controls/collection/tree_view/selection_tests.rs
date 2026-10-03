@@ -50,6 +50,46 @@ fn record(tree: &Entity<TreeViewControl<()>>, cx: &mut VisualTestContext) -> Rc<
     });
     events
 }
+
+#[test]
+fn row_lookup_tracks_sort_filter_expansion_and_replacement() {
+    let mut app = TestAppContext::single();
+    let (tree, cx) = setup(&mut app);
+    let handlers = tree.update(cx, |tree, cx| {
+        assert_eq!(tree.flat_index_for_id(&"c".into()), Some(1));
+        let handlers = tree.template_row_handlers("c".into(), cx);
+        let reused = tree.template_row_handlers("c".into(), cx);
+        assert!(Rc::ptr_eq(&handlers.hover, &reused.hover));
+        assert!(Rc::ptr_eq(&handlers.click, &reused.click));
+        tree.set_sort(|a, b| a.label.cmp(&b.label), cx);
+        assert_eq!(tree.flat_index_for_id(&"c".into()), Some(3));
+        handlers
+    });
+    // A handler built before sorting must resolve the node's current position.
+    cx.update(|window, app| (handlers.hover)(&true, window, app));
+    cx.update(|_, app| assert_eq!(tree.read(app).hovered_node_id.as_deref(), Some("c")));
+    click(cx, "c", Modifiers::default());
+    selected(&tree, cx, &["c"]);
+    tree.update(cx, |tree, cx| {
+        tree.collapse("folder", cx);
+        assert_eq!(tree.flat_index_for_id(&"c".into()), None);
+        tree.expand("folder", cx);
+        assert_eq!(tree.flat_index_for_id(&"c".into()), Some(3));
+        tree.set_filter(|node| node.id == "c", cx);
+        assert_eq!(tree.flat_index_for_id(&"c".into()), Some(1));
+        assert_eq!(tree.flat_index_for_id(&"last".into()), None);
+        tree.clear_filter(cx);
+        tree.clear_sort(cx);
+        tree.set_items([leaf("last"), leaf("c")], cx);
+        assert_eq!(tree.flat_index_for_id(&"c".into()), Some(1));
+        assert_eq!(tree.flat_index_for_id(&"folder".into()), None);
+        tree.set_items([], cx);
+        assert_eq!(tree.flat_index_for_id(&"c".into()), None);
+        assert!(tree.flat_indices.is_empty());
+        assert!(tree.row_handlers.borrow().is_empty());
+    });
+}
+
 #[test]
 fn pointer_ranges_contract_toggle_and_skip_disabled_in_displayed_order() {
     let mut app = TestAppContext::single();

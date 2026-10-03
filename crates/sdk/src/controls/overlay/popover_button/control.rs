@@ -102,13 +102,13 @@ impl<D: 'static> Render for PopoverButton<D> {
         let panel_for_trigger = self.panel.clone();
         let trigger = if self.trigger_on_pointer_down {
             div()
-                .id(format!("{}-trigger", self.id))
+                .id((self.id.clone(), 0usize))
                 .on_mouse_down(MouseButton::Left, move |_, _, cx| {
                     panel_for_trigger.update(cx, |panel, cx| panel.toggle_guarded(cx));
                 })
                 .child(trigger)
         } else {
-            div().id(format!("{}-trigger", self.id)).child(trigger)
+            div().id((self.id.clone(), 0usize)).child(trigger)
         };
         let mut root = div().relative().child(trigger);
         if self.measure_trigger {

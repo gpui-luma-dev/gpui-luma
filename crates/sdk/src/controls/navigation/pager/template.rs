@@ -105,7 +105,7 @@ impl PagerTemplate for ModifiedPagerTemplate {
         window: &mut Window,
         cx: &mut App,
     ) -> AnyElement {
-        let root = div().id(format!("{}-template-modifier", model.id));
+        let root = div().id((model.id.clone(), 0usize));
         let root = root.child(self.base.render(model, handlers, window, cx));
         self.apply_modifiers(root, model).into_any_element()
     }
@@ -273,7 +273,7 @@ pub(crate) fn render_page_size_select(
         })
         .child(
             div()
-                .id(format!("{}-page-size-trigger", model.id))
+                .id("page-size-trigger")
                 .w_full()
                 .h(px(look.control_height))
                 .flex()
@@ -326,7 +326,7 @@ pub(crate) fn render_page_size_select(
                     .children(model.page_size_options.iter().copied().map(|option| {
                         let selected = option == model.page_size;
                         div()
-                            .id(format!("{}-page-size-{option}", model.id))
+                            .id(("page-size", option))
                             .px(px(look.padding_x))
                             .py(px(4.0))
                             .rounded(px((look.radius - 2.0).max(0.0)))
@@ -382,7 +382,7 @@ fn render_nav_group_leading(
             look,
             theme,
             NavButtonSpec {
-                id_suffix: "nav-first-0".to_string(),
+                id_namespace: "nav-first",
                 icon: model.icons.first.clone(),
                 label: model.first_label(),
                 label_position: NavLabelPosition::AfterIcon,
@@ -399,7 +399,7 @@ fn render_nav_group_leading(
         look,
         theme,
         NavButtonSpec {
-            id_suffix: format!("nav-prev-{}", model.current_page.saturating_sub(1)),
+            id_namespace: "nav-prev",
             icon: model.icons.previous.clone(),
             label: model.previous_label(),
             label_position: NavLabelPosition::AfterIcon,
@@ -427,7 +427,7 @@ fn render_nav_group_trailing(
         look,
         theme,
         NavButtonSpec {
-            id_suffix: format!("nav-next-{}", (model.current_page + 1).min(last_page)),
+            id_namespace: "nav-next",
             icon: model.icons.next.clone(),
             label: model.next_label(),
             label_position: NavLabelPosition::BeforeIcon,
@@ -444,7 +444,7 @@ fn render_nav_group_trailing(
             look,
             theme,
             NavButtonSpec {
-                id_suffix: format!("nav-last-{last_page}"),
+                id_namespace: "nav-last",
                 icon: model.icons.last.clone(),
                 label: model.last_label(),
                 label_position: NavLabelPosition::BeforeIcon,
@@ -466,7 +466,7 @@ enum NavLabelPosition {
 }
 
 struct NavButtonSpec<'a> {
-    id_suffix: String,
+    id_namespace: &'static str,
     icon: IconSource,
     label: Option<&'a SharedString>,
     label_position: NavLabelPosition,
@@ -523,7 +523,8 @@ fn render_nav_button(
         look,
         theme,
         PagerButtonSpec {
-            id_suffix: spec.id_suffix,
+            id_namespace: spec.id_namespace,
+            identity: spec.target,
             role: if has_label {
                 ButtonFamilyRole::Text
             } else {
@@ -564,7 +565,8 @@ fn render_page_button(
         look,
         theme,
         PagerButtonSpec {
-            id_suffix: format!("page-{page}"),
+            id_namespace: "page",
+            identity: page,
             role: ButtonFamilyRole::Toggle { selected },
             content,
             interaction_disabled: false,
@@ -600,7 +602,8 @@ fn render_gap_button(
         look,
         theme,
         PagerButtonSpec {
-            id_suffix: format!("gap-{target}"),
+            id_namespace: "gap",
+            identity: target,
             role: ButtonFamilyRole::Icon,
             content,
             interaction_disabled: false,
@@ -613,7 +616,8 @@ fn render_gap_button(
 }
 
 struct PagerButtonSpec {
-    id_suffix: String,
+    id_namespace: &'static str,
+    identity: usize,
     role: ButtonFamilyRole,
     content: ControlPresenter<ButtonContentContext<()>>,
     interaction_disabled: bool,
@@ -630,7 +634,7 @@ fn render_pager_button(
     cx: &mut App,
 ) -> AnyElement {
     let disabled = !model.enabled || spec.interaction_disabled;
-    let id = SharedString::from(format!("{}-{}", model.id, spec.id_suffix));
+    let id = SharedString::new_static(spec.id_namespace);
     let button_template = theme.button_template(look);
     let clickable = click.is_some() && !disabled;
     let button_model = ButtonRenderModel {
@@ -652,7 +656,7 @@ fn render_pager_button(
         button = button.on_click(move |event, window, cx| click(event, window, cx));
     }
 
-    let mut slot = div().min_w(px(spec.layout.min_width)).child(button);
+    let mut slot = div().id((spec.id_namespace, spec.identity)).min_w(px(spec.layout.min_width)).child(button);
     if spec.layout.square {
         slot = slot.w(px(look.button_size));
     }

@@ -6,13 +6,13 @@ use gpui::{
 
 use super::element::TextAreaElement;
 use super::{FOCUS_RING_GAP, TextArea, TextAreaDrag, TextAreaResizeDrag};
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+use crate::theme::StandardBoxScale;
 
 pub(super) const TEXTAREA_RESIZE_ICON_SIZE: f32 = 10.0;
 
 impl TextArea {
     pub(super) fn resize_drag_id(&self) -> SharedString {
-        format!("{}-resize", self.model.id).into()
+        self.resize_drag_id.clone()
     }
 
     pub(super) fn resize_line_height(&self) -> f32 {
@@ -118,12 +118,8 @@ impl Render for TextArea {
         self.sync_focus(window, cx);
         let scale_factor = window.scale_factor();
         let control_size = self.model.size;
-        let scale = cx.use_cached_layout(
-            self.model.theme.metrics(),
-            LayoutCacheKey { size: control_size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(control_size, metrics, scale_factor),
-        );
-        let look = self.resolved_look(&scale);
+        let scale = StandardBoxScale::compute(control_size, &self.model.theme.metrics(), scale_factor);
+        let mut look = self.resolved_look(&scale);
         let focused = self.state.focused && self.state.focus_visible && self.model.enabled;
         let focus_extent = if look.focus_border.is_some() {
             FOCUS_RING_GAP + look.border_width.max(0.0)
@@ -140,7 +136,7 @@ impl Render for TextArea {
         }
         let scrollbar_width = px(12.0);
         let resize_handle = div()
-            .id(format!("{}-resize-handle", self.model.id))
+            .id("resize-handle")
             .absolute()
             .right(px(3.0))
             .bottom(px(3.0))
@@ -173,7 +169,7 @@ impl Render for TextArea {
 
         // Keep overflow on an inner clip host so elevation shadows on the chrome are not clipped.
         let mut control = div()
-            .id(format!("{}-control-{}", self.model.id, self.theme_epoch))
+            .id(("control", self.theme_epoch))
             .relative()
             .flex()
             .items_start()
@@ -216,12 +212,12 @@ impl Render for TextArea {
             .when(self.model.enabled, |root| root.child(resize_handle));
 
         if self.model.enabled
-            && let Some(shadows) = look.shadow.as_ref().filter(|shadows| !shadows.is_empty())
+            && let Some(shadows) = look.shadow.take().filter(|shadows| !shadows.is_empty())
         {
-            control = control.shadow(shadows.clone());
+            control = control.shadow(shadows);
         }
 
-        let adorned = div().id(format!("{}-adorned", self.model.id)).relative().child(control);
+        let adorned = div().id("adorned").relative().child(control);
         let mut root = div().id(self.model.id.clone()).relative();
         if focus_extent > 0.0 {
             root = root.p(px(focus_extent)).child(adorned);

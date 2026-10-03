@@ -1,6 +1,6 @@
-use std::ops::Range;
+use std::{ops::Range, sync::Arc};
 
-use gpui::{Bounds, Pixels, Point, ShapedLine, point, px};
+use gpui::{Bounds, Font, Hsla, Pixels, Point, SharedString, ShapedLine, point, px};
 
 use super::TextArea;
 
@@ -12,11 +12,40 @@ pub(super) struct TextAreaCachedLine {
     pub(super) line: ShapedLine,
 }
 
+// Only inputs affecting wrapping or shaped runs belong here; viewport geometry is refreshed each frame.
+#[derive(Clone, PartialEq)]
+pub(super) struct TextAreaLayoutKey {
+    pub(super) text: SharedString,
+    pub(super) wrap_width: Pixels,
+    pub(super) font: Font,
+    pub(super) font_size: Pixels,
+    pub(super) line_height: Pixels,
+    pub(super) foreground: Hsla,
+    pub(super) scale_factor_bits: u32,
+}
+
+// Decoration is cached independently from wrapping and hit-test geometry.
+#[derive(Clone, PartialEq)]
+pub(super) struct TextAreaDecorationKey {
+    pub(super) line_index: usize,
+    pub(super) selection: Option<(usize, usize)>,
+    pub(super) marked_range: Option<Range<usize>>,
+    pub(super) selection_foreground: Hsla,
+}
+
+#[derive(Clone)]
+pub(super) struct TextAreaPaintLine {
+    pub(super) key: TextAreaDecorationKey,
+    pub(super) line: ShapedLine,
+}
+
 #[derive(Clone)]
 pub(super) struct TextAreaLayoutCache {
     pub(super) text_viewport: Bounds<Pixels>,
     pub(super) line_height: Pixels,
-    pub(super) lines: Vec<TextAreaCachedLine>,
+    pub(super) lines: Arc<[TextAreaCachedLine]>,
+    pub(super) key: Option<TextAreaLayoutKey>,
+    pub(super) paint_lines: Vec<TextAreaPaintLine>,
 }
 
 impl TextArea {
@@ -215,6 +244,11 @@ impl TextArea {
         text.chars().take(char_offset).map(char::len_utf8).sum()
     }
 
+    /// UTF-8 boundaries indexed by character offset, including the end of the line.
+    pub(super) fn char_byte_offsets(text: &str) -> Vec<usize> {
+        text.char_indices().map(|(offset, _)| offset).chain(std::iter::once(text.len())).collect()
+    }
+
     pub(super) fn byte_to_char_offset(text: &str, byte_offset: usize) -> usize {
         let mut char_offset = 0usize;
         let mut consumed = 0usize;
@@ -287,8 +321,24 @@ mod tests {
     use super::super::TextArea;
     use super::{TextAreaCachedLine, TextAreaLayoutCache};
 
+    #[test]
+    fn char_byte_offsets_preserve_unicode_and_empty_line_boundaries() {
+        for text in ["", "ascii text", "é中🙂", "e\u{301} 👩\u{200d}💻"] {
+            let offsets = TextArea::char_byte_offsets(text);
+            assert_eq!(offsets.len(), text.chars().count() + 1);
+            for (char_offset, &byte_offset) in offsets.iter().enumerate() {
+                assert_eq!(byte_offset, TextArea::char_to_byte_offset(text, char_offset));
+                assert!(text.is_char_boundary(byte_offset));
+            }
+            let reconstructed: String = offsets.windows(2).map(|pair| &text[pair[0]..pair[1]]).collect();
+            assert_eq!(reconstructed, text);
+        }
+    }
+
     fn cache_with_lines(lines: Vec<(usize, usize)>) -> TextAreaLayoutCache {
         TextAreaLayoutCache {
+            key: None,
+            paint_lines: Vec::new(),
             text_viewport: Bounds::new(point(px(0.0), px(0.0)), size(px(100.0), px(60.0))),
             line_height: px(20.0),
             lines: lines

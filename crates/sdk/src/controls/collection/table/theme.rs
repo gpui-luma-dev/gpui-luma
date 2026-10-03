@@ -40,7 +40,7 @@ pub struct TableRowPalette {
     pub label_typography: LumaTextStyle,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct TableRowLook {
     pub background: Hsla,
     pub label_color: Hsla,

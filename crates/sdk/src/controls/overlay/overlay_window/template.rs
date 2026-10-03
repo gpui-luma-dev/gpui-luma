@@ -143,7 +143,7 @@ impl OverlayWindowTemplate for ThemedOverlayWindowTemplate {
             .border_1()
             .border_color(look.border)
             .rounded(px(look.radius))
-            .shadow(look.shadow.clone())
+            .shadow(look.shadow)
             .text_color(look.foreground)
             .font_family(look.font_family.clone())
             .text_size(px(look.body.size))

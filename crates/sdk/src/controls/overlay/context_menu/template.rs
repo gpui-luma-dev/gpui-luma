@@ -143,7 +143,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
         let custom_content = model.target_content.map(|content| content(cx));
         let has_custom_content = custom_content.is_some();
         let mut target = div()
-            .id(format!("{}-target", model.id))
+            .id("target")
             .relative()
             .flex()
             .on_hover(target_hover)

@@ -1,4 +1,7 @@
-use std::sync::{Arc, OnceLock};
+use std::{
+    rc::Rc,
+    sync::{Arc, OnceLock},
+};
 
 use gpui::{
     Anchor, AnyElement, App, Bounds, ClickEvent, Div, FocusHandle, FontFeatures, FontWeight, MouseButton,
@@ -36,22 +39,32 @@ const RAIL_BRANCH_INDICATOR_SIZE: f32 = 18.0;
 const RAIL_BRANCH_INDICATOR_RIGHT: f32 = -10.0;
 const ICON_FONT_WEIGHT: FontWeight = FontWeight::NORMAL;
 
-pub type SidebarPanelBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
-pub type SidebarPanelClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
-pub type SidebarPanelHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
-pub type SidebarPanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub type SidebarPanelMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
-pub type SidebarPanelChildrenHeightHandler = Box<dyn Fn(&f32, &mut Window, &mut App) + 'static>;
+/// Shared callback retained across redraws; custom handlers use `Rc::new`.
+pub type SidebarPanelBoundsHandler = Rc<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
+/// Shared callback retained across redraws; custom handlers use `Rc::new`.
+pub type SidebarPanelClickHandler = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
+/// Shared callback retained across redraws; custom handlers use `Rc::new`.
+pub type SidebarPanelHoverHandler = Rc<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
+/// Shared callback retained across redraws; custom handlers use `Rc::new`.
+pub type SidebarPanelMouseDownHandler = Rc<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+/// Shared callback retained across redraws; custom handlers use `Rc::new`.
+pub type SidebarPanelMouseUpHandler = Rc<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+/// Shared callback retained across redraws; custom handlers use `Rc::new`.
+pub type SidebarPanelChildrenHeightHandler = Rc<dyn Fn(&f32, &mut Window, &mut App) + 'static>;
 
+/// Row callbacks are shared across redraws. Custom templates bind a callback through a
+/// forwarding closure such as `.on_hover(move |event, window, cx| hover(event, window, cx))`.
+/// Row containers use `Rc` too: custom templates iterate with `.iter().cloned()`;
+/// custom construction converts vectors/maps with `.into()`. This keeps cache hits allocation-free.
 #[derive(Default)]
 pub struct SidebarPanelTemplateHandlers {
-    pub row_bounds: Vec<SidebarPanelBoundsHandler>,
-    pub row_hovers: Vec<SidebarPanelHoverHandler>,
-    pub row_mouse_downs: Vec<SidebarPanelMouseDownHandler>,
-    pub row_mouse_ups: Vec<SidebarPanelMouseUpHandler>,
-    pub row_mouse_up_outs: Vec<SidebarPanelMouseUpHandler>,
-    pub row_clicks: Vec<SidebarPanelClickHandler>,
-    pub children_height_reports: std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
+    pub row_bounds: Rc<Vec<SidebarPanelBoundsHandler>>,
+    pub row_hovers: Rc<Vec<SidebarPanelHoverHandler>>,
+    pub row_mouse_downs: Rc<Vec<SidebarPanelMouseDownHandler>>,
+    pub row_mouse_ups: Rc<Vec<SidebarPanelMouseUpHandler>>,
+    pub row_mouse_up_outs: Rc<Vec<SidebarPanelMouseUpHandler>>,
+    pub row_clicks: Rc<Vec<SidebarPanelClickHandler>>,
+    pub children_height_reports: Rc<std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>>,
     pub rail_submenu_mouse_down_out: Option<SidebarPanelMouseDownHandler>,
     pub rail_submenu_item_hovers: Vec<FloatingMenuHoverHandler>,
     pub rail_submenu_item_clicks: Vec<FloatingMenuClickHandler>,
@@ -174,24 +187,24 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
         cx: &mut App,
     ) -> Stateful<Div> {
         let SidebarPanelTemplateHandlers {
-            mut row_bounds,
-            mut row_hovers,
-            mut row_mouse_downs,
-            mut row_mouse_ups,
-            mut row_mouse_up_outs,
-            mut row_clicks,
-            mut children_height_reports,
+            row_bounds,
+            row_hovers,
+            row_mouse_downs,
+            row_mouse_ups,
+            row_mouse_up_outs,
+            row_clicks,
+            children_height_reports,
             rail_submenu_mouse_down_out,
             rail_submenu_item_hovers,
             rail_submenu_item_clicks,
             rail_submenu_bounds,
         } = handlers;
-        let mut row_bounds = row_bounds.drain(..);
-        let mut row_hovers = row_hovers.drain(..);
-        let mut row_mouse_downs = row_mouse_downs.drain(..);
-        let mut row_mouse_ups = row_mouse_ups.drain(..);
-        let mut row_mouse_up_outs = row_mouse_up_outs.drain(..);
-        let mut row_clicks = row_clicks.drain(..);
+        let mut row_bounds = row_bounds.iter().cloned();
+        let mut row_hovers = row_hovers.iter().cloned();
+        let mut row_mouse_downs = row_mouse_downs.iter().cloned();
+        let mut row_mouse_ups = row_mouse_ups.iter().cloned();
+        let mut row_mouse_up_outs = row_mouse_up_outs.iter().cloned();
+        let mut row_clicks = row_clicks.iter().cloned();
         let mut root = div()
             .id(model.id)
             .size_full()
@@ -266,7 +279,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &mut row_mouse_ups,
                     &mut row_mouse_up_outs,
                     &mut row_clicks,
-                    &mut children_height_reports,
+                    &children_height_reports,
                     &model.disclosure_icons,
                     cx,
                 )
@@ -285,7 +298,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                         &mut row_mouse_ups,
                         &mut row_mouse_up_outs,
                         &mut row_clicks,
-                        &mut children_height_reports,
+                        &children_height_reports,
                         &model.disclosure_icons,
                         cx,
                     )
@@ -305,7 +318,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &mut row_mouse_ups,
                     &mut row_mouse_up_outs,
                     &mut row_clicks,
-                    &mut children_height_reports,
+                    &children_height_reports,
                     &model.disclosure_icons,
                     cx,
                 )
@@ -365,7 +378,7 @@ fn render_region(
     row_mouse_ups: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
-    children_height_reports: &mut std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
+    children_height_reports: &std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
     disclosure_icons: &DisclosureIcons,
     cx: &App,
 ) -> Div {
@@ -433,7 +446,7 @@ fn render_node(
     row_mouse_ups: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
-    children_height_reports: &mut std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
+    children_height_reports: &std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
     disclosure_icons: &DisclosureIcons,
     cx: &App,
 ) -> AnyElement {
@@ -479,7 +492,7 @@ fn render_node(
         ));
 
     if !children.is_empty() {
-        let height_report = children_height_reports.remove(&id);
+        let height_report = children_height_reports.get(&id).cloned();
         let mut children_region = div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP));
         for child in children {
             children_region = children_region.child(render_node(
@@ -599,7 +612,7 @@ fn render_item_row(
     let depth_indent = (look.icon_size + look.gap) * CHILD_DEPTH_INDENT_MULTIPLIER;
     let padding_left = look.padding_x + state.depth as f32 * depth_indent;
     let mut row = div()
-        .id(format!("{id}-row"))
+        .id((id.clone(), 0usize))
         .role(gpui::Role::Button)
         .aria_label(label.clone().unwrap_or(id.clone()))
         .w_full()
@@ -651,19 +664,19 @@ fn render_item_row(
             row = row.track_focus(focus_handle);
         }
         if let Some(hover) = hover {
-            row = row.on_hover(hover);
+            row = row.on_hover(move |event, window, cx| hover(event, window, cx));
         }
         if let Some(mouse_down) = mouse_down {
-            row = row.on_mouse_down(MouseButton::Left, mouse_down);
+            row = row.on_mouse_down(MouseButton::Left, move |event, window, cx| mouse_down(event, window, cx));
         }
         if let Some(mouse_up) = mouse_up {
-            row = row.on_mouse_up(MouseButton::Left, mouse_up);
+            row = row.on_mouse_up(MouseButton::Left, move |event, window, cx| mouse_up(event, window, cx));
         }
         if let Some(mouse_up_out) = mouse_up_out {
-            row = row.on_mouse_up_out(MouseButton::Left, mouse_up_out);
+            row = row.on_mouse_up_out(MouseButton::Left, move |event, window, cx| mouse_up_out(event, window, cx));
         }
         if let Some(click) = click {
-            row = row.on_click(click);
+            row = row.on_click(move |event, window, cx| click(event, window, cx));
         }
     }
 
@@ -699,7 +712,7 @@ fn render_collapsed_rail_node(
         look.height
     };
     let mut row = div()
-        .id(format!("{id}-rail-row"))
+        .id((id.clone(), 1usize))
         .role(gpui::Role::Button)
         .aria_label(label.unwrap_or(id.clone()))
         .w(px(row_width))
@@ -759,19 +772,19 @@ fn render_collapsed_rail_node(
             row = row.track_focus(focus_handle);
         }
         if let Some(hover) = hover {
-            row = row.on_hover(hover);
+            row = row.on_hover(move |event, window, cx| hover(event, window, cx));
         }
         if let Some(mouse_down) = mouse_down {
-            row = row.on_mouse_down(MouseButton::Left, mouse_down);
+            row = row.on_mouse_down(MouseButton::Left, move |event, window, cx| mouse_down(event, window, cx));
         }
         if let Some(mouse_up) = mouse_up {
-            row = row.on_mouse_up(MouseButton::Left, mouse_up);
+            row = row.on_mouse_up(MouseButton::Left, move |event, window, cx| mouse_up(event, window, cx));
         }
         if let Some(mouse_up_out) = mouse_up_out {
-            row = row.on_mouse_up_out(MouseButton::Left, mouse_up_out);
+            row = row.on_mouse_up_out(MouseButton::Left, move |event, window, cx| mouse_up_out(event, window, cx));
         }
         if let Some(click) = click {
-            row = row.on_click(click);
+            row = row.on_click(move |event, window, cx| click(event, window, cx));
         }
     }
 
@@ -814,7 +827,7 @@ fn render_rail_submenu_overlay(
     let offset = submenu.presence.adjust_offset(point(px(RAIL_SUBMENU_OFFSET_X), px(0.0)), content_size);
     let content = if let Some(bounds_handler) = bounds_handler {
         div()
-            .on_mouse_down_out(mouse_down_out)
+            .on_mouse_down_out(move |event, window, cx| mouse_down_out(event, window, cx))
             .on_prepaint(move |bounds, window, cx| {
                 bounds_handler(&bounds, window, cx);
             })

@@ -7,7 +7,7 @@
 
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::controls::popup_menu::{PopupMenuLook, PopupMenuPalette, PopupMenuTriggerStyle, compose_popup_menu_look};
-use gpui_luma::theme::{ControlSize, InteractionState, LumaLayoutCacheExt, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use super::button::{ShadcnButtonStyle, button_box_scale, button_elevation_shadow, button_palette};
@@ -74,13 +74,9 @@ pub fn popup_menu_look(
     metrics: gpui_luma::controls::popup_menu::PopupMenuTriggerMetrics,
     state: InteractionState,
     scale_factor: f32,
-    cx: &mut gpui::App,
+    _cx: &mut gpui::App,
 ) -> PopupMenuLook {
-    let scale = cx.use_cached_layout(
-        mode.metrics,
-        gpui_luma::theme::LayoutCacheKey { size: metrics.size, scale_factor_bits: scale_factor.to_bits() },
-        |_| popup_menu_trigger_scale(mode, theme_mode, metrics.size, state, scale_factor),
-    );
+    let scale = popup_menu_trigger_scale(mode, theme_mode, metrics.size, state, scale_factor);
     let mut look =
         compose_popup_menu_look(&popup_menu_palette(mode, theme_mode, trigger_style, metrics, state), &scale);
     if let Some(rule) = embedded_stylesheet().button.metrics_for_size(metrics.size) {

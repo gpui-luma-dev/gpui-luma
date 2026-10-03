@@ -207,14 +207,18 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
                 position,
             };
             let boundary = if node.has_children { 0.25 } else { 0.5 };
-            let zone_id = format!("{}-{}-{position:?}", self.model.id, id);
             let zone = div()
-                .id(zone_id.clone())
-                .debug_selector(move || zone_id.clone())
+                .id(("drop-zone", position as usize))
                 .absolute()
                 .left(px(node.depth as f32 * 16.0))
                 .right_0()
                 .border_color(gpui::transparent_black());
+            #[cfg(any(test, feature = "test-support"))]
+            let zone = {
+                let debug_tree_id = self.model.id.clone();
+                let debug_node_id = id.clone();
+                zone.debug_selector(move || format!("{debug_tree_id}-{debug_node_id}-{position:?}"))
+            };
             let zone = match position {
                 TreeDropPosition::Before => zone.top_0().bottom(relative(1.0 - boundary)).border_t_2(),
                 TreeDropPosition::After => zone.top(relative(1.0 - boundary)).bottom_0().border_b_2(),

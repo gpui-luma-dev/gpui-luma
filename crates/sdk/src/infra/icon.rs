@@ -101,13 +101,13 @@ impl From<LucideIcon> for IconSource {
 
 impl From<&str> for IconSource {
     fn from(icon: &str) -> Self {
-        Self::SvgPath(icon.to_string().into())
+        Self::SvgPath(SharedString::from(icon))
     }
 }
 
 impl From<String> for IconSource {
     fn from(icon: String) -> Self {
-        Self::from(icon.as_str())
+        Self::SvgPath(icon.into())
     }
 }
 

@@ -185,7 +185,7 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
             );
 
         let root = div()
-            .id(format!("{}-root", model.id))
+            .id((model.id.clone(), 0usize))
             .w_full()
             .flex()
             .flex_col()
@@ -240,7 +240,7 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
                                         .border_1()
                                         .border_color(model.popup_look.border)
                                         .rounded(px(model.popup_look.radius))
-                                        .shadow(model.popup_look.shadow.clone())
+                                        .shadow(model.popup_look.shadow)
                                         .overflow_hidden()
                                         .block_mouse_except_scroll()
                                         .child(div().opacity(model.presence.opacity()).child(popup_content)),
@@ -365,10 +365,10 @@ impl AutocompleteItemsTemplate for DefaultAutocompleteItemsTemplate {
         handlers: AutocompleteItemsTemplateHandlers,
     ) -> Stateful<gpui::Div> {
         let AutocompleteItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
-        let look = model.look.clone();
+        let look = &model.look;
 
         let mut root = div()
-            .id(format!("{}-rows", model.id))
+            .id((model.id.clone(), 1usize))
             .relative()
             .flex()
             .flex_col()
@@ -384,7 +384,7 @@ impl AutocompleteItemsTemplate for DefaultAutocompleteItemsTemplate {
                 look.item_disabled_foreground
             };
             let mut row = div()
-                .id(format!("{}-row-{}", model.id, index))
+                .id(("row", index))
                 .flex()
                 .items_center()
                 .min_h(px(look.item_height))

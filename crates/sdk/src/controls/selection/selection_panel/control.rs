@@ -748,7 +748,7 @@ where
             .border_1()
             .border_color(look.border)
             .rounded(px(look.radius))
-            .shadow(look.shadow.clone())
+            .shadow(look.shadow)
             .block_mouse_except_scroll()
             .child(rows_content);
 

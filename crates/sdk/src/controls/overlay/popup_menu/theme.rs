@@ -5,8 +5,7 @@ use gpui::{BoxShadow, Hsla, hsla};
 use super::PopupMenuTriggerStyle;
 use crate::controls::floating_menu::{FloatingMenuLook, default_floating_menu_look};
 use crate::theme::{
-    ControlSize, InteractionLayer, InteractionState, LumaLayoutCacheExt, LumaTextStyle, MetricTokens, StandardBoxScale,
-    ThemeTokens,
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,
 };
 
 #[derive(Clone, Debug)]
@@ -61,13 +60,9 @@ pub trait PopupMenuTheme: Send + Sync {
         metrics: PopupMenuTriggerMetrics,
         state: InteractionState,
         scale_factor: f32,
-        cx: &mut gpui::App,
+        _cx: &mut gpui::App,
     ) -> PopupMenuLook {
-        let scale = cx.use_cached_layout(
-            self.metrics(),
-            crate::theme::LayoutCacheKey { size: metrics.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics_tokens| StandardBoxScale::compute(metrics.size, metrics_tokens, scale_factor),
-        );
+        let scale = StandardBoxScale::compute(metrics.size, &self.metrics(), scale_factor);
         let mut look = compose_popup_menu_look(&self.resolve(trigger_style, metrics, state), &scale);
         if let Some(radius) = metrics.trigger_radius_override {
             look.trigger_radius = radius;

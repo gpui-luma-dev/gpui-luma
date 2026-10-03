@@ -7,7 +7,7 @@ use gpui::{
 
 use super::{TextAreaDrag, TextAreaRenderModel, TextAreaState};
 use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+use crate::theme::StandardBoxScale;
 
 const TEXTAREA_CARET_WIDTH: f32 = 1.5;
 const TEXTAREA_CARET_HEIGHT_EXTRA: f32 = 2.0;
@@ -142,15 +142,11 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
         model: &TextAreaRenderModel<'_>,
         handlers: TextAreaTemplateHandlers,
         window: &mut Window,
-        cx: &mut App,
+        _cx: &mut App,
     ) -> Stateful<Div> {
         let scale_factor = window.scale_factor();
         let size = model.size;
-        let scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(size, metrics, scale_factor),
-        );
+        let scale = StandardBoxScale::compute(size, &self.theme.metrics(), scale_factor);
         let base_state = TextAreaState { focused: false, focus_visible: false, ..model.state };
         let mut look = self.theme.resolve_look(base_state, model.enabled, size, &scale);
         if model.enabled && !model.state.invalid {
@@ -251,7 +247,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
         };
 
         let mut control = div()
-            .id(format!("{}-control", model.id))
+            .id("control")
             .relative()
             .h(px(look.padding_y * 2.0 + viewport_height))
             .flex()
@@ -272,9 +268,9 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
             .child(text_viewport);
 
         if model.enabled
-            && let Some(shadows) = look.shadow.as_ref().filter(|shadows| !shadows.is_empty())
+            && let Some(shadows) = look.shadow.take().filter(|shadows| !shadows.is_empty())
         {
-            control = control.shadow(shadows.clone());
+            control = control.shadow(shadows);
         }
 
         let focused = model.state.focused && model.state.focus_visible && model.enabled;
@@ -283,7 +279,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
         } else {
             0.0
         };
-        let adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
+        let adorned = div().id("adorned").relative().child(control);
         let mut root = div().id(model.id.clone()).relative();
         if focus_extent > 0.0 {
             root = root.p(px(focus_extent)).child(adorned);
