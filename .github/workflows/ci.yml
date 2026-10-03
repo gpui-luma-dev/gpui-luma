@@ -38,7 +38,19 @@ jobs:
       - name: Clippy
         run: cargo clippy --locked --workspace --all-targets --all-features
 
-      - name: Test
+      # PRs exercise library behavior without linking every demo and shell test binary.
+      # Workspace Clippy above still checks every app target and feature.
+      - name: Test library crates
+        if: github.event_name == 'pull_request'
+        run: >-
+          cargo test --locked --all-targets --all-features
+          --package gpui-luma
+          --package gpui-luma-color
+          --package gpui-luma-look-radix
+          --package gpui-luma-look-shadcn
+
+      - name: Test full workspace
+        if: github.event_name != 'pull_request'
         run: cargo test --locked --workspace --all-targets --all-features
 
       - name: Documentation tests
