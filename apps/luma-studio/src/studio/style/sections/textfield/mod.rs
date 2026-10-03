@@ -229,6 +229,7 @@ fn render_textfield_cell(
         enabled: sample.enabled,
         full_width: true,
         state: sample.state,
+        marked_range: None,
         caret_visible: sample.state.focused && sample.enabled,
         horizontal_scroll: 0.0,
         character_offsets,

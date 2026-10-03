@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{
     AnyElement, App, Bounds, Div, DragMoveEvent, FontWeight, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Stateful,
-    TextAlign, TextRun, Window, canvas, div, fill, font, point, px, prelude::*, size, svg,
+    TextAlign, Window, canvas, div, fill, font, point, px, prelude::*, size, svg,
 };
 
 use super::{TextFieldDrag, TextFieldLook, TextFieldRenderModel, TextFieldState};
@@ -14,64 +14,6 @@ const TEXTFIELD_CARET_WIDTH: f32 = 1.5;
 const TEXTFIELD_CARET_HEIGHT_EXTRA: f32 = 2.0;
 const CARET_EDGE_OFFSET: f32 = 0.0;
 const FOCUS_RING_GAP: f32 = 1.0;
-
-fn colored_runs_for_text(text: &str, selection: Option<(usize, usize)>, look: &TextFieldLook) -> Vec<TextRun> {
-    let mut base_font = font(look.font_family.clone());
-    base_font.weight = look.typography.weight;
-    let run = |value: &str, color| TextRun {
-        len: value.len(),
-        font: base_font.clone(),
-        color,
-        background_color: None,
-        underline: None,
-        strikethrough: None,
-    };
-
-    let Some((selection_start, selection_end)) = selection else {
-        return vec![run(text, look.foreground)];
-    };
-
-    let mut runs = Vec::new();
-    let mut chunk = String::new();
-    let mut chunk_selected = None::<bool>;
-
-    for (char_ix, ch) in text.chars().enumerate() {
-        let selected = char_ix >= selection_start && char_ix < selection_end;
-        match chunk_selected {
-            None => {
-                chunk_selected = Some(selected);
-                chunk.push(ch);
-            }
-            Some(current) if current == selected => chunk.push(ch),
-            Some(current) => {
-                runs.push(run(
-                    &chunk,
-                    if current {
-                        look.selection_foreground
-                    } else {
-                        look.foreground
-                    },
-                ));
-                chunk.clear();
-                chunk_selected = Some(selected);
-                chunk.push(ch);
-            }
-        }
-    }
-
-    if let Some(selected) = chunk_selected {
-        runs.push(run(
-            &chunk,
-            if selected {
-                look.selection_foreground
-            } else {
-                look.foreground
-            },
-        ));
-    }
-
-    runs
-}
 
 fn char_to_byte_offset(text: &str, char_offset: usize) -> usize {
     text.chars().take(char_offset).map(char::len_utf8).sum()
@@ -294,6 +236,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 )
         } else {
             let value = model.value.clone();
+            let marked_range = model.marked_range.clone();
             let horizontal_scroll = model.horizontal_scroll;
             let enabled = model.enabled;
             let caret_visible = model.caret_visible;
@@ -307,7 +250,19 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                         let line = window.text_system().shape_line(
                             value.clone(),
                             px(canvas_look.typography.size),
-                            &colored_runs_for_text(value.as_ref(), selection, &canvas_look),
+                            &crate::controls::text::runs::colored_runs(
+                                value.as_ref(),
+                                0,
+                                selection,
+                                marked_range.as_ref(),
+                                {
+                                    let mut font = font(canvas_look.font_family.clone());
+                                    font.weight = canvas_look.typography.weight;
+                                    font
+                                },
+                                canvas_look.foreground,
+                                canvas_look.selection_foreground,
+                            ),
                             None,
                         );
                         let selection_quad = selection.and_then(|(start, end)| {
