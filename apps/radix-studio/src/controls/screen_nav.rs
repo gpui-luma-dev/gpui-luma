@@ -35,6 +35,7 @@ pub struct ScreenNav {
     developer: Toggle,
     theme_toggle: Entity<Button>,
     theme_reset: Entity<Button>,
+    github: Entity<Button>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -86,7 +87,23 @@ impl ScreenNav {
             .spawn(cx)
             .help("Reset the custom palette", cx);
 
+        let github = radix::Button::new("screen-nav-github")
+            .look(action_look)
+            .ghost_quiet()
+            .content(|model, _| {
+                icon_named("github-logo")
+                    .map(|icon| react_icon(icon, model.look.foreground, THEME_ICON_SIZE))
+                    .unwrap_or_else(|| div().into_any_element())
+            })
+            .spawn(cx)
+            .help("View gpui-luma on GitHub", cx);
+
         let mut subscriptions = Vec::new();
+        subscriptions.push(cx.subscribe(&github, |_, _, event: &ButtonEvent, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                cx.open_url("https://github.com/gpui-luma-dev/gpui-luma");
+            }
+        }));
         subscriptions.push(cx.subscribe(&theme_reset, |_, _, event: &ButtonEvent, cx| {
             if matches!(event, ButtonEvent::Click) {
                 cx.emit(ScreenNavEvent::ResetTheme);
@@ -137,6 +154,7 @@ impl ScreenNav {
             developer,
             theme_toggle,
             theme_reset,
+            github,
             _subscriptions: subscriptions,
         }
     }
@@ -164,6 +182,7 @@ impl ScreenNav {
     pub fn theme_changed(&mut self, cx: &mut Context<Self>) {
         self.theme_toggle.update(cx, |_, cx| cx.notify());
         self.theme_reset.update(cx, |_, cx| cx.notify());
+        self.github.update(cx, |_, cx| cx.notify());
         cx.notify();
     }
 }
@@ -190,6 +209,7 @@ impl Render for ScreenNav {
                     .flex()
                     .flex_row()
                     .justify_end()
+                    .child(self.github.clone())
                     .child(self.theme_reset.clone())
                     .child(self.theme_toggle.clone()),
             )
