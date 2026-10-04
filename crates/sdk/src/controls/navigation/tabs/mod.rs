@@ -24,6 +24,96 @@
 //! Content callbacks should retain existing entities; recreating entities inside
 //! the callback would reset their state. For a view entity, use `.tab(id, label, view)`.
 
+//! # Builder and state contract
+//!
+//! Radix and Shadcn look builders forward the same `tab`, `tab_with`,
+//! `tab_content`, `active`, `fade_in`, and `animated` options to this control.
+//! Configure before `.spawn(cx)`; use setters on the resulting entity afterward.
+//! Omit `fade_in` to inherit the look snapshot, use explicit zero to disable it,
+//! or `animated(false)` to disable both body and indicator motion. Runtime
+//! `set_fade_in(None, cx)` restores that snapshot, not later stylesheet edits.
+//!
+//! Selection belongs to the control. An app can mirror it by observing the
+//! entity and calling `set_active`; setters do not emit selection events.
+//! Selecting the current, disabled, or unknown ID does nothing. Mouse and
+//! keyboard selection emit `Change`; activation emits `Activate`, preceded by
+//! `Reactivate` when activating the current tab. Focus navigation follows the
+//! underlying control group's selection policy: arrows skip disabled items and
+//! wrap, selecting and activating the next item; Enter/Space activate the current
+//! item. Programmatic selection also updates the keyboard navigation anchor.
+//! Item replacement retains the
+//! active enabled ID, otherwise chooses the first enabled item or none. It
+//! finishes the fade and does not emit selection events.
+//!
+//! Only the selected presenter runs, on each body render (including fade frames).
+//! It is not a once-only factory or a cached element tree. Captured entities
+//! remain alive while their content is registered; removal/replacement releases
+//! that registration. Keep scroll handles and other page state in retained views
+//! or presenter captures. Tabs do not capture or restore page focus or scroll:
+//! callers own restoration. Mouse/keyboard activation keeps focus on navigation;
+//! programmatic selection does not move focus. A retained `ScrollHandle` preserves
+//! its offset when the page returns, subject to normal viewport/content clamping.
+//! There is no implicit lazy creation or eviction policy.
+//!
+//! # Retained view
+//!
+//! ```no_run
+//! use gpui::{Context, Entity, Render};
+//! use gpui_luma::controls::tabs::Tabs;
+//!
+//! fn build<M: 'static, V: Render + 'static>(page: Entity<V>, cx: &mut Context<M>) {
+//!     // Construct `page` once, outside the presenter. Its state survives switching.
+//!     let tabs = Tabs::new("workspace")
+//!         .tab("editor", "Editor", page.clone())
+//!         .tab_with("help", "Help", |_, _| gpui::div())
+//!         .spawn(cx);
+//!     tabs.update(cx, |tabs, cx| tabs.set_active("help", cx));
+//! }
+//! ```
+//!
+//! # Explicit page focus restoration
+//!
+//! ```no_run
+//! use gpui::{Context, Entity, Focusable, Render, Window};
+//! use gpui_luma::controls::tabs::Tabs;
+//!
+//! fn restore<V: Render + Focusable + 'static>(
+//!     tabs: &Entity<Tabs>, page: &Entity<V>, window: &mut Window, cx: &mut Context<V>,
+//! ) {
+//!     tabs.update(cx, |tabs, cx| tabs.set_active("editor", cx));
+//!     // Call from an app action when entering the page is desired.
+//!     // Keep this focus handle and any ScrollHandle in the retained page entity.
+//!     let focus = page.read(cx).focus_handle(cx);
+//!     focus.focus(window, cx);
+//! }
+//! ```
+//!
+//! # App-owned presenter state
+//!
+//! ```no_run
+//! use gpui::{Context, Entity, SharedString, div, prelude::*};
+//! use gpui_luma::controls::tabs::Tabs;
+//!
+//! struct Document { title: SharedString }
+//! fn build<M: 'static>(document: Entity<Document>, cx: &mut Context<M>) {
+//!     let source = document.clone();
+//!     let tabs = Tabs::new("document")
+//!         .tab_with("preview", "Preview", move |_, cx| {
+//!             div().child(source.read(cx).title.clone())
+//!         })
+//!         .spawn(cx);
+//!     document.update(cx, |document, cx| {
+//!         document.title = "Updated".into();
+//!         cx.notify();
+//!     });
+//!     // Or call this from an observer of the app-owned state entity.
+//!     tabs.update(cx, |tabs, cx| tabs.refresh_content(cx));
+//! }
+//! ```
+//! `refresh_content`, `set_content`, and `remove_content` invalidate the body
+//! without changing selection or restarting a fade. `set_items` prunes content
+//! for removed IDs; new items can receive panels through `set_content`.
+//!
 mod content;
 mod control;
 mod indicator;
