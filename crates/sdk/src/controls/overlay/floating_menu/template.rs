@@ -141,20 +141,9 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
             .shadow(look.shadow.clone())
             .occlude();
 
-        if controlled_hover
-            && let Some(highlight) = model.highlight
-            && let Some((left, top, width, height)) = highlight_rect(highlight, false, model.items, look)
-        {
-            menu = menu.child(
-                div()
-                    .absolute()
-                    .left(px(left))
-                    .top(px(top))
-                    .w(px(width))
-                    .h(px(height))
-                    .rounded(px(look.item_radius))
-                    .bg(look.item_hover_background),
-            );
+        let highlight_rect = pane_highlight(model.highlight, None, controlled_hover, model.items, look);
+        if let Some(rect) = highlight_rect {
+            menu = menu.child(render_highlight(rect, look));
         }
 
         let mut item_clicks = item_clicks.into_iter();
@@ -166,11 +155,9 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                 continue;
             }
             let enabled = item.is_enabled();
-            let color = if enabled {
-                look.foreground
-            } else {
-                look.item_disabled_foreground
-            };
+            let is_active = matches!(model.active_path, Some(MenuPath::Root(active)) if active == index);
+            let paint = row_paint(enabled, is_active, controlled_hover, highlight_rect.is_some(), look);
+            let color = paint.foreground;
             let mut row = div()
                 .id((item.id().clone(), 0usize))
                 .flex()
@@ -186,8 +173,6 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                 .child(render_item_icon(item.icon_ref(), color, look.item_icon_size))
                 .child(div().flex_1().child(item.label_text().clone()));
 
-            let is_active = matches!(model.active_path, Some(MenuPath::Root(active)) if active == index);
-
             if enabled {
                 row = row.cursor_pointer().on_hover(item_hover).child(render_submenu_affordance(
                     !item.submenu_items().is_empty(),
@@ -196,18 +181,6 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                     model.disclosure_icons,
                     submenu_transition_progress(index, model.open_submenu, model.submenu_transition),
                 ));
-
-                if !controlled_hover {
-                    row = row.hover({
-                        let hover_background = look.item_hover_background;
-                        let hover_foreground = look.item_hover_foreground;
-                        move |style| style.bg(hover_background).text_color(hover_foreground)
-                    });
-                }
-
-                if is_active && !(controlled_hover && model.highlight.is_some()) {
-                    row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
-                }
 
                 if item.submenu_items().is_empty() {
                     if let Some(item_click) = item_clicks.next() {
@@ -239,7 +212,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                 ));
             }
 
-            menu = menu.child(row);
+            menu = menu.child(apply_row_paint(row, paint));
         }
 
         if let Some(submenu) = submenu {
@@ -515,20 +488,9 @@ fn render_floating_submenu(
         .shadow(look.shadow.clone())
         .occlude();
 
-    if controlled_hover
-        && let Some(highlight) = highlight
-        && let Some((left, top, width, height)) = highlight_rect(highlight, true, items, look)
-    {
-        submenu = submenu.child(
-            div()
-                .absolute()
-                .left(px(left))
-                .top(px(top))
-                .w(px(width))
-                .h(px(height))
-                .rounded(px(look.item_radius))
-                .bg(look.item_hover_background),
-        );
+    let highlight_rect = pane_highlight(highlight, Some(index), controlled_hover, items, look);
+    if let Some(rect) = highlight_rect {
+        submenu = submenu.child(render_highlight(rect, look));
     }
 
     let mut submenu_hovers = submenu_hovers.map(Vec::into_iter);
@@ -539,11 +501,9 @@ fn render_floating_submenu(
             continue;
         }
         let enabled = submenu_item.is_enabled();
-        let color = if enabled {
-            look.foreground
-        } else {
-            look.item_disabled_foreground
-        };
+        let is_active = active_path.is_some_and(|path| path.is_submenu(index, submenu_index));
+        let paint = row_paint(enabled, is_active, controlled_hover, highlight_rect.is_some(), look);
+        let color = paint.foreground;
         let mut row = div()
             .id((submenu_item.id().clone(), 0usize))
             .flex()
@@ -572,28 +532,86 @@ fn render_floating_submenu(
             }
             if let Some(item_click) = item_clicks.next() {
                 row = row.cursor_pointer().on_click(item_click);
-                if !controlled_hover {
-                    row = row.hover({
-                        let hover_background = look.item_hover_background;
-                        let hover_foreground = look.item_hover_foreground;
-                        move |style| style.bg(hover_background).text_color(hover_foreground)
-                    });
-                }
-            }
-
-            if active_path.is_some_and(|path| path.is_submenu(index, submenu_index))
-                && !(controlled_hover && highlight.is_some())
-            {
-                row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
             }
         } else if !enabled {
             row = row.opacity(look.disabled_opacity);
         }
 
-        submenu = submenu.child(row);
+        submenu = submenu.child(apply_row_paint(row, paint));
     }
 
     submenu.opacity(submenu_opacity)
+}
+
+#[derive(Clone, Copy, Debug)]
+struct MenuRowPaint {
+    foreground: gpui::Hsla,
+    background: Option<gpui::Hsla>,
+    hover: Option<(gpui::Hsla, gpui::Hsla)>,
+}
+
+// Static and animated panes share selected colors; only ownership of the fill differs.
+fn row_paint(
+    enabled: bool,
+    active: bool,
+    controlled_hover: bool,
+    highlight_painted: bool,
+    look: &FloatingMenuLook,
+) -> MenuRowPaint {
+    MenuRowPaint {
+        foreground: if !enabled {
+            look.item_disabled_foreground
+        } else if active {
+            look.item_hover_foreground
+        } else {
+            look.foreground
+        },
+        background: (enabled && active && !highlight_painted).then_some(look.item_hover_background),
+        hover: (enabled && !controlled_hover).then_some((look.item_hover_background, look.item_hover_foreground)),
+    }
+}
+
+fn apply_row_paint(mut row: Stateful<Div>, paint: MenuRowPaint) -> Stateful<Div> {
+    row = row.text_color(paint.foreground);
+    if let Some(background) = paint.background {
+        row = row.bg(background);
+    }
+    if let Some((background, foreground)) = paint.hover {
+        row = row.hover(move |style| style.bg(background).text_color(foreground));
+    }
+    row
+}
+
+fn pane_highlight(
+    highlight: Option<FloatingMenuHighlight>,
+    parent: Option<usize>,
+    controlled_hover: bool,
+    items: &[MenuItem],
+    look: &FloatingMenuLook,
+) -> Option<(f32, f32, f32, f32)> {
+    if !controlled_hover {
+        return None;
+    }
+    let highlight = highlight?;
+    if let Some(parent) = parent {
+        for path in [highlight.from, highlight.to] {
+            if !matches!(path, MenuPath::Submenu { parent: actual, .. } if actual == parent) {
+                return None;
+            }
+        }
+    }
+    highlight_rect(highlight, parent.is_some(), items, look)
+}
+
+fn render_highlight((left, top, width, height): (f32, f32, f32, f32), look: &FloatingMenuLook) -> Div {
+    div()
+        .absolute()
+        .left(px(left))
+        .top(px(top))
+        .w(px(width))
+        .h(px(height))
+        .rounded(px(look.item_radius))
+        .bg(look.item_hover_background)
 }
 
 fn separator_height(look: &FloatingMenuLook) -> f32 {
@@ -669,6 +687,72 @@ fn submenu_transition_progress(index: usize, open_submenu: Option<usize>, transi
 mod tests {
     use super::*;
     use crate::controls::floating_menu::default_floating_menu_theme;
+
+    #[test]
+    fn static_and_animated_panes_keep_matching_selected_colors() {
+        let mut look = default_floating_menu_theme().resolve();
+        look.foreground = gpui::black();
+        look.item_hover_foreground = gpui::white();
+        let items = [MenuItem::new("action").submenu([MenuItem::new("child")])];
+        for (parent, path) in [(None, MenuPath::Root(0)), (Some(0), MenuPath::Submenu { parent: 0, child: 0 })] {
+            for controlled in [false, true] {
+                for progress in [0.0, 0.5, 1.0] {
+                    let highlight = FloatingMenuHighlight { from: path, to: path, progress };
+                    let rect = pane_highlight(Some(highlight), parent, controlled, &items, &look);
+                    let paint = row_paint(true, true, controlled, rect.is_some(), &look);
+                    assert_eq!(paint.foreground, gpui::white());
+                    assert_eq!(paint.background, (!controlled).then_some(look.item_hover_background));
+                    assert_eq!(
+                        rect.map(|_| look.item_hover_background).or(paint.background),
+                        Some(look.item_hover_background)
+                    );
+                    let idle = row_paint(true, false, controlled, rect.is_some(), &look);
+                    assert_eq!(idle.foreground, gpui::black());
+                    assert_eq!(idle.background, None);
+                    let disabled = row_paint(false, true, controlled, rect.is_some(), &look);
+                    assert_eq!(disabled.foreground, look.item_disabled_foreground);
+                    assert_eq!(disabled.background, None);
+                    assert_eq!(disabled.hover, None);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn absent_or_unpaintable_highlights_keep_static_selected_fill() {
+        let look = default_floating_menu_theme().resolve();
+        let items = [MenuItem::new("action").submenu([MenuItem::new("child")]), MenuItem::separator("separator")];
+        for (parent, highlight) in [
+            (None, None),
+            (None, Some(FloatingMenuHighlight { from: MenuPath::Root(0), to: MenuPath::Root(1), progress: 1.0 })),
+            (
+                Some(0),
+                Some(FloatingMenuHighlight { from: MenuPath::Root(0), to: MenuPath::Root(0), progress: 1.0 }),
+            ),
+            (
+                None,
+                Some(FloatingMenuHighlight {
+                    from: MenuPath::Submenu { parent: 0, child: 0 },
+                    to: MenuPath::Root(0),
+                    progress: 0.5,
+                }),
+            ),
+            (
+                Some(0),
+                Some(FloatingMenuHighlight {
+                    from: MenuPath::Submenu { parent: 1, child: 0 },
+                    to: MenuPath::Submenu { parent: 1, child: 0 },
+                    progress: 1.0,
+                }),
+            ),
+        ] {
+            let rect = pane_highlight(highlight, parent, true, &items, &look);
+            assert!(rect.is_none());
+            let paint = row_paint(true, true, true, rect.is_some(), &look);
+            assert_eq!(paint.background, Some(look.item_hover_background));
+            assert_eq!(paint.foreground, look.item_hover_foreground);
+        }
+    }
 
     #[test]
     fn mixed_rows_position_submenus_and_animated_highlights() {

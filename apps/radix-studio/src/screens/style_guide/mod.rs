@@ -138,6 +138,12 @@ pub fn page(
             menus::matrix(look, &menus::RADIX_VARIANTS, fg, muted, window, cx),
         ),
         section(
+            "Menu Popup Pane",
+            "Template preview · Solid and Soft, in accent and gray, with a selected item and separator.",
+            fg, muted, border,
+            menus::pane_preview(look, fg),
+        ),
+        section(
             "Progress",
             "Surface and Soft; sizes 1–3, high contrast, and all five radius options.",
             fg, muted, border,

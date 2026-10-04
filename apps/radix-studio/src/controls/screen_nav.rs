@@ -51,10 +51,9 @@ impl EventEmitter<ScreenNavEvent> for ScreenNav {}
 impl ScreenNav {
     /// Page navigation uses the app look; theme actions follow the editable palette.
     pub fn new(look: &Arc<Look>, action_look: &Arc<Look>, tabs: Entity<Tabs>, cx: &mut Context<Self>) -> Self {
+        // Top-right actions must have no background or hover fill in any state.
         let icon_look = Arc::clone(action_look);
-        let theme_toggle = radix::Button::new("screen-nav-theme")
-            .look(action_look)
-            .ghost_quiet()
+        let theme_toggle = super::icon_button::ghost_no_hover("screen-nav-theme", action_look, ())
             .content(move |model, _| {
                 let name = match icon_look.mode() {
                     ThemeMode::Dark => "moon",
@@ -67,9 +66,7 @@ impl ScreenNav {
             .spawn(cx)
             .help("Switch between light and dark mode", cx);
 
-        let tooltip_toggle = radix::Button::new("screen-nav-tooltips")
-            .look(action_look)
-            .ghost_quiet()
+        let tooltip_toggle = super::icon_button::ghost_no_hover("screen-nav-tooltips", action_look, ())
             .content(|model, cx| {
                 let enabled = cx.try_global::<TooltipSettings>().is_none_or(|settings| settings.enabled);
                 icon_named(if enabled { "eye-open" } else { "eye-closed" })
@@ -79,9 +76,7 @@ impl ScreenNav {
             .spawn(cx)
             .tooltip(Tooltip::new("Enable or disable app tooltips").always_enabled(), cx);
 
-        let theme_reset = radix::Button::new("screen-nav-reset-theme")
-            .look(action_look)
-            .ghost_quiet()
+        let theme_reset = super::icon_button::ghost_no_hover("screen-nav-reset-theme", action_look, ())
             .content(|model, _| {
                 icon_named("reset")
                     .map(|icon| react_icon(icon, model.look.foreground, THEME_ICON_SIZE))
@@ -90,9 +85,7 @@ impl ScreenNav {
             .spawn(cx)
             .help("Reset the custom palette", cx);
 
-        let github = radix::Button::new("screen-nav-github")
-            .look(action_look)
-            .ghost_quiet()
+        let github = super::icon_button::ghost_no_hover("screen-nav-github", action_look, ())
             .content(|model, _| {
                 icon_named("github-logo")
                     .map(|icon| react_icon(icon, model.look.foreground, THEME_ICON_SIZE))
