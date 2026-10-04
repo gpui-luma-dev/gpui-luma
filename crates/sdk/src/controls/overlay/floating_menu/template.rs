@@ -43,13 +43,40 @@ pub trait FloatingMenuTemplate: Send + Sync {
     fn render(&self, model: &FloatingMenuRenderModel<'_>, handlers: FloatingMenuTemplateHandlers) -> Stateful<Div>;
 }
 
+/// Visual structure for a noninteractive menu divider. Its outer height must match
+/// `separator_thickness + 2 * separator_spacing` for highlight and submenu alignment.
+pub trait FloatingMenuSeparatorTemplate: Send + Sync {
+    fn render(&self, item: &MenuItem, look: &FloatingMenuLook) -> Stateful<Div>;
+}
+
+#[derive(Default)]
+pub struct ThemedFloatingMenuSeparatorTemplate;
+
+impl FloatingMenuSeparatorTemplate for ThemedFloatingMenuSeparatorTemplate {
+    fn render(&self, item: &MenuItem, look: &FloatingMenuLook) -> Stateful<Div> {
+        div()
+            .id((item.id().clone(), 0usize))
+            .h(px(separator_height(look)))
+            .py(px(look.separator_spacing))
+            .px(px(look.separator_inset))
+            .child(div().h(px(look.separator_thickness)).bg(look.separator_color))
+    }
+}
+
 pub struct ThemedFloatingMenuTemplate {
+    separator_template: Arc<dyn FloatingMenuSeparatorTemplate>,
     modifiers: Vec<FloatingMenuTemplateModifier>,
 }
 
 impl ThemedFloatingMenuTemplate {
     pub fn new() -> Self {
-        Self { modifiers: Vec::new() }
+        Self { separator_template: Arc::new(ThemedFloatingMenuSeparatorTemplate), modifiers: Vec::new() }
+    }
+
+    /// Customize divider structure while retaining the shared menu behavior.
+    pub fn with_separator_template(mut self, template: Arc<dyn FloatingMenuSeparatorTemplate>) -> Self {
+        self.separator_template = template;
+        self
     }
 
     pub fn with_modifier<F>(mut self, modifier: F) -> Self
@@ -116,7 +143,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
 
         if controlled_hover
             && let Some(highlight) = model.highlight
-            && let Some((left, top, width, height)) = highlight_rect(highlight, false, look)
+            && let Some((left, top, width, height)) = highlight_rect(highlight, false, model.items, look)
         {
             menu = menu.child(
                 div()
@@ -134,6 +161,10 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
         let mut submenu = None;
 
         for ((index, item), item_hover) in model.items.iter().enumerate().zip(item_hovers) {
+            if item.is_separator() {
+                menu = menu.child(self.separator_template.render(item, look));
+                continue;
+            }
             let enabled = item.is_enabled();
             let color = if enabled {
                 look.foreground
@@ -184,7 +215,8 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                     }
                 } else if model.open_submenu == Some(index) {
                     submenu = Some(render_floating_submenu(
-                        model.id,
+                        model.items,
+                        self.separator_template.as_ref(),
                         item,
                         look,
                         &mut item_clicks,
@@ -455,7 +487,8 @@ pub fn render_floating_menu_with_submenu_hovers_and_icons_and_transition(
 
 #[allow(clippy::too_many_arguments)]
 fn render_floating_submenu(
-    _menu_id: &SharedString,
+    items: &[MenuItem],
+    separator_template: &dyn FloatingMenuSeparatorTemplate,
     item: &MenuItem,
     look: &FloatingMenuLook,
     item_clicks: &mut std::vec::IntoIter<FloatingMenuClickHandler>,
@@ -470,7 +503,7 @@ fn render_floating_submenu(
     let mut submenu = div()
         .id((item.id().clone(), 1usize))
         .absolute()
-        .top(px(look.padding + (index as f32 * look.item_height)))
+        .top(px(look.padding + row_offset(items, index, look)))
         .left(relative(1.0))
         .ml(px(0.0))
         .min_w(px(look.min_width))
@@ -484,7 +517,7 @@ fn render_floating_submenu(
 
     if controlled_hover
         && let Some(highlight) = highlight
-        && let Some((left, top, width, height)) = highlight_rect(highlight, true, look)
+        && let Some((left, top, width, height)) = highlight_rect(highlight, true, items, look)
     {
         submenu = submenu.child(
             div()
@@ -500,6 +533,11 @@ fn render_floating_submenu(
 
     let mut submenu_hovers = submenu_hovers.map(Vec::into_iter);
     for (submenu_index, submenu_item) in item.submenu_items().iter().enumerate() {
+        let hover = submenu_hovers.as_mut().and_then(Iterator::next);
+        if submenu_item.is_separator() {
+            submenu = submenu.child(separator_template.render(submenu_item, look));
+            continue;
+        }
         let enabled = submenu_item.is_enabled();
         let color = if enabled {
             look.foreground
@@ -529,7 +567,7 @@ fn render_floating_submenu(
             ));
 
         if enabled && submenu_item.submenu_items().is_empty() {
-            if let Some(hover) = submenu_hovers.as_mut().and_then(Iterator::next) {
+            if let Some(hover) = hover {
                 row = row.on_hover(hover);
             }
             if let Some(item_click) = item_clicks.next() {
@@ -558,25 +596,34 @@ fn render_floating_submenu(
     submenu.opacity(submenu_opacity)
 }
 
+fn separator_height(look: &FloatingMenuLook) -> f32 {
+    look.separator_thickness + 2.0 * look.separator_spacing
+}
+
+fn row_offset(items: &[MenuItem], index: usize, look: &FloatingMenuLook) -> f32 {
+    look.rows_height(&items[..index.min(items.len())])
+}
+
 fn highlight_rect(
     highlight: FloatingMenuHighlight,
     submenu: bool,
+    items: &[MenuItem],
     look: &FloatingMenuLook,
 ) -> Option<(f32, f32, f32, f32)> {
-    let index = match (submenu, highlight.from) {
-        (false, MenuPath::Root(index)) => Some(index),
-        (true, MenuPath::Submenu { child, .. }) => Some(child),
-        _ => None,
-    }? as f32;
-    let to = match (submenu, highlight.to) {
-        (false, MenuPath::Root(index)) => index as f32,
-        (true, MenuPath::Submenu { child, .. }) => child as f32,
-        _ => return None,
+    let offset = |path| {
+        let (rows, index) = match (submenu, path) {
+            (false, MenuPath::Root(index)) => (items, index),
+            (true, MenuPath::Submenu { parent, child }) => (items.get(parent)?.submenu_items(), child),
+            _ => return None,
+        };
+        rows.get(index).filter(|item| item.is_enabled())?;
+        Some(row_offset(rows, index, look))
     };
-    let row = index + ((to - index) * highlight.progress.clamp(0.0, 1.0));
+    let from = offset(highlight.from)?;
+    let to = offset(highlight.to)?;
     Some((
         look.padding,
-        look.padding + row * look.item_height,
+        look.padding + from + (to - from) * highlight.progress.clamp(0.0, 1.0),
         (look.min_width - look.padding * 2.0).max(0.0),
         look.item_height,
     ))
@@ -616,4 +663,50 @@ fn submenu_transition_progress(index: usize, open_submenu: Option<usize>, transi
     }
 
     if open_submenu == Some(index) { 1.0 } else { 0.0 }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::controls::floating_menu::default_floating_menu_theme;
+
+    #[test]
+    fn mixed_rows_position_submenus_and_animated_highlights() {
+        let mut look = default_floating_menu_theme().resolve();
+        look.padding = 4.0;
+        look.item_height = 30.0;
+        look.separator_thickness = 2.0;
+        look.separator_spacing = 3.0;
+        let items = [
+            MenuItem::new("first"),
+            MenuItem::separator("divider"),
+            MenuItem::new("parent").submenu([
+                MenuItem::new("child-first"),
+                MenuItem::separator("child-divider"),
+                MenuItem::new("child-last"),
+            ]),
+        ];
+        assert_eq!(row_offset(&items, 2, &look), 38.0);
+        assert_eq!(look.rows_height(&items), 68.0);
+        for (submenu, from, to) in [
+            (false, MenuPath::Root(0), MenuPath::Root(2)),
+            (true, MenuPath::Submenu { parent: 2, child: 0 }, MenuPath::Submenu { parent: 2, child: 2 }),
+        ] {
+            for (progress, top) in [(0.0, 4.0), (0.5, 23.0), (1.0, 42.0)] {
+                let rect =
+                    highlight_rect(FloatingMenuHighlight { from, to, progress }, submenu, &items, &look).unwrap();
+                assert_eq!(rect.1, top);
+                assert_eq!(rect.3, 30.0);
+            }
+        }
+        assert!(
+            highlight_rect(
+                FloatingMenuHighlight { from: MenuPath::Root(0), to: MenuPath::Root(1), progress: 1.0 },
+                false,
+                &items,
+                &look,
+            )
+            .is_none()
+        );
+    }
 }

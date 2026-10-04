@@ -187,13 +187,15 @@ impl Render for PopupMenuControlExposition {
     }
 }
 
-fn popup_menu_items() -> [MenuItem; 5] {
+fn popup_menu_items() -> [MenuItem; 6] {
     [
         MenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
         MenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
+        MenuItem::separator("actions-separator"),
         MenuItem::new("archive").label("Archive"),
         MenuItem::new("share").label("Share").icon(LucideIcon::Share2).submenu([
             MenuItem::new("copy-link").label("Copy link").icon(LucideIcon::Link),
+            MenuItem::separator("submenu-separator"),
             MenuItem::new("email").label("Email").icon(LucideIcon::Mail),
         ]),
         MenuItem::new("disabled").label("Unavailable").icon(LucideIcon::ArchiveX).enabled(false),

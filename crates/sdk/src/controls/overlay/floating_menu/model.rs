@@ -53,14 +53,14 @@ impl FloatingMenuState {
         let mut paths = Vec::new();
 
         for (index, item) in items.iter().enumerate() {
-            if item.enabled && item.submenu_items.is_empty() {
+            if item.is_enabled() && item.submenu_items.is_empty() {
                 paths.push(vec![index]);
-            } else if self.open_submenu == Some(index) {
+            } else if item.is_enabled() && self.open_submenu == Some(index) {
                 paths.extend(
                     item.submenu_items
                         .iter()
                         .enumerate()
-                        .filter(|(_, submenu_item)| submenu_item.enabled && submenu_item.submenu_items.is_empty())
+                        .filter(|(_, submenu_item)| submenu_item.is_enabled() && submenu_item.submenu_items.is_empty())
                         .map(|(submenu_index, _)| vec![index, submenu_index]),
                 );
             }
@@ -70,8 +70,13 @@ impl FloatingMenuState {
     }
 
     pub fn hover_root_item(&mut self, items: &[MenuItem], index: usize) -> bool {
-        let next_submenu =
-            items.get(index).is_some_and(|item| item.enabled && !item.submenu_items.is_empty()).then_some(index);
+        if !items.get(index).is_some_and(MenuItem::is_enabled) {
+            return false;
+        }
+        let next_submenu = items
+            .get(index)
+            .is_some_and(|item| item.is_enabled() && !item.submenu_items.is_empty())
+            .then_some(index);
 
         let next_active_path = Some(MenuPath::Root(index));
         let changed = self.open_submenu != next_submenu || self.active_path != next_active_path;
@@ -106,7 +111,7 @@ impl FloatingMenuState {
             _ => None,
         }?;
 
-        if !item.enabled || !item.submenu_items.is_empty() {
+        if !item.is_enabled() || !item.submenu_items.is_empty() {
             return None;
         }
 
@@ -212,6 +217,10 @@ impl FloatingMenuState {
             return FloatingMenuActivateResult::None;
         };
 
+        if !item.is_enabled() {
+            return FloatingMenuActivateResult::None;
+        }
+
         if !item.submenu_items().is_empty() {
             if let MenuPath::Root(parent) = active_path
                 && let Some(child) = navigator.first_submenu(parent)
@@ -224,5 +233,84 @@ impl FloatingMenuState {
         }
 
         FloatingMenuActivateResult::Select { item_id: item.id.clone(), label: item.label.clone() }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn items() -> Vec<MenuItem> {
+        vec![
+            MenuItem::separator("leading"),
+            MenuItem::new("first"),
+            MenuItem::separator("middle").enabled(true),
+            MenuItem::new("parent").submenu([
+                MenuItem::separator("sub-leading"),
+                MenuItem::new("child-first"),
+                MenuItem::separator("sub-middle"),
+                MenuItem::new("child-last"),
+                MenuItem::separator("sub-trailing"),
+            ]),
+            MenuItem::separator("trailing"),
+        ]
+    }
+
+    #[test]
+    fn separators_are_skipped_by_root_and_submenu_navigation() {
+        let items = items();
+        let mut state = FloatingMenuState::default();
+        state.move_to_boundary(&items, true);
+        assert_eq!(state.active_path(), Some(MenuPath::Root(1)));
+        state.step(&items, FloatingMenuStepDirection::Next);
+        assert_eq!(state.active_path(), Some(MenuPath::Root(3)));
+        state.step(&items, FloatingMenuStepDirection::Next);
+        assert_eq!(state.active_path(), Some(MenuPath::Root(1)));
+        state.step(&items, FloatingMenuStepDirection::Previous);
+        assert_eq!(state.active_path(), Some(MenuPath::Root(3)));
+        assert_eq!(state.activate(&items), FloatingMenuActivateResult::OpenedSubmenu);
+        assert_eq!(state.active_path(), Some(MenuPath::Submenu { parent: 3, child: 1 }));
+        state.step(&items, FloatingMenuStepDirection::Next);
+        assert_eq!(state.active_path(), Some(MenuPath::Submenu { parent: 3, child: 3 }));
+        state.step(&items, FloatingMenuStepDirection::Next);
+        assert_eq!(state.active_path(), Some(MenuPath::Submenu { parent: 3, child: 1 }));
+        state.move_to_boundary(&items, false);
+        assert_eq!(state.active_path(), Some(MenuPath::Submenu { parent: 3, child: 3 }));
+        state.move_to_boundary(&items, true);
+        assert_eq!(state.active_path(), Some(MenuPath::Submenu { parent: 3, child: 1 }));
+        state.close_active_submenu();
+        state.move_to_boundary(&items, true);
+        state.move_to_boundary(&items, false);
+        assert_eq!(state.active_path(), Some(MenuPath::Root(3)));
+    }
+
+    #[test]
+    fn separators_cannot_hover_click_or_activate() {
+        let items = items();
+        let mut state = FloatingMenuState::default();
+        state.hover_root_item(&items, 3);
+        let previous = state.clone();
+        assert!(!state.hover_root_item(&items, 2));
+        assert!(!state.hover_submenu_item(&items, 3, 2));
+        assert_eq!(state, previous);
+        assert_eq!(state.item_click_paths(&items), vec![vec![1], vec![3, 1], vec![3, 3]]);
+        assert_eq!(state.select_at_path(&items, &[2]), None);
+        assert_eq!(state.select_at_path(&items, &[3, 2]), None);
+        assert_eq!(state.select_at_path(&items, &[3, 3]).unwrap().0.as_ref(), "child-last");
+        for path in [MenuPath::Root(2), MenuPath::Submenu { parent: 3, child: 2 }] {
+            state.open_with(Some(path));
+            assert_eq!(state.activate(&items), FloatingMenuActivateResult::None);
+        }
+    }
+
+    #[test]
+    fn separator_only_menus_have_no_keyboard_target() {
+        let items = [MenuItem::separator("one"), MenuItem::separator("two")];
+        let mut state = FloatingMenuState::default();
+        assert!(!state.step(&items, FloatingMenuStepDirection::Next));
+        assert!(!state.step(&items, FloatingMenuStepDirection::Previous));
+        assert!(!state.move_to_boundary(&items, true));
+        assert!(!state.move_to_boundary(&items, false));
+        assert_eq!(state.activate(&items), FloatingMenuActivateResult::None);
     }
 }

@@ -68,13 +68,24 @@ pub struct MenuItem {
     pub(crate) icon: Option<MenuItemIcon>,
     pub(crate) submenu_items: Vec<MenuItem>,
     pub(crate) enabled: bool,
+    separator: bool,
 }
 
 impl MenuItem {
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
 
-        Self { label: id.clone(), id, icon: None, submenu_items: Vec::new(), enabled: true }
+        Self { label: id.clone(), id, icon: None, submenu_items: Vec::new(), enabled: true, separator: false }
+    }
+
+    /// A noninteractive divider styled by the active floating-menu look.
+    pub fn separator(id: impl Into<SharedString>) -> Self {
+        Self { separator: true, ..Self::new(id) }
+    }
+
+    /// Whether this entry is a divider rather than an action or submenu.
+    pub fn is_separator(&self) -> bool {
+        self.separator
     }
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
@@ -113,7 +124,8 @@ impl MenuItem {
         &self.submenu_items
     }
 
+    /// Whether the entry can be selected or navigated to. Separators always return false.
     pub fn is_enabled(&self) -> bool {
-        self.enabled
+        self.enabled && !self.separator
     }
 }

@@ -331,12 +331,12 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 model.trigger_bounds,
                 model.placement,
                 &look,
-                model.items.len(),
+                model.items,
                 window.viewport_size(),
             );
             let content_size = estimated_menu_size(
                 &look,
-                model.items.len(),
+                model.items,
                 model.trigger_bounds.map(|bounds| bounds.size.width).unwrap_or(px(look.trigger_height)),
             );
             let offset = model.presence.adjust_offset(placement.offset, content_size);
@@ -376,7 +376,11 @@ struct ResolvedPopupMenuPlacement {
     offset: Point<Pixels>,
 }
 
-fn estimated_menu_size(look: &PopupMenuLook, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
+fn estimated_menu_size(
+    look: &PopupMenuLook,
+    items: &[crate::infra::menu_item::MenuItem],
+    trigger_width: Pixels,
+) -> Size<Pixels> {
     let menu_min_width = px(look.floating_menu.min_width);
     Size {
         width: if trigger_width > menu_min_width {
@@ -384,7 +388,7 @@ fn estimated_menu_size(look: &PopupMenuLook, item_count: usize, trigger_width: P
         } else {
             menu_min_width
         },
-        height: px(look.floating_menu.padding * 2.0) + px(look.floating_menu.item_height) * item_count as f32,
+        height: px(look.floating_menu.padding * 2.0) + px(look.floating_menu.rows_height(items)),
     }
 }
 
@@ -392,13 +396,13 @@ fn resolve_popup_menu_placement(
     trigger_bounds: Option<Bounds<Pixels>>,
     placement: PopupMenuPlacement,
     look: &PopupMenuLook,
-    item_count: usize,
+    items: &[crate::infra::menu_item::MenuItem],
     viewport_size: Size<Pixels>,
 ) -> ResolvedPopupMenuPlacement {
     let trigger_bounds = trigger_bounds.unwrap_or_else(|| {
         Bounds::new(point(px(0.0), px(0.0)), Size { width: px(0.0), height: px(look.trigger_height) })
     });
-    let menu_size = estimated_menu_size(look, item_count, trigger_bounds.size.width);
+    let menu_size = estimated_menu_size(look, items, trigger_bounds.size.width);
     let offset_y = px(look.menu_offset_y);
     let resolved = match placement {
         PopupMenuPlacement::Smart => {
@@ -461,6 +465,28 @@ mod tests {
     }
 
     #[test]
+    fn smart_placement_accounts_for_short_separator_rows() {
+        use crate::infra::menu_item::MenuItem;
+        let mut look = look();
+        look.floating_menu.padding = 4.0;
+        look.floating_menu.item_height = 30.0;
+        look.floating_menu.separator_thickness = 2.0;
+        look.floating_menu.separator_spacing = 3.0;
+        look.menu_offset_y = 4.0;
+        let items = [MenuItem::new("first"), MenuItem::separator("divider"), MenuItem::new("last")];
+        let trigger = Bounds::new(point(px(12.0), px(200.0)), size(px(160.0), px(32.0)));
+        assert_eq!(estimated_menu_size(&look, &items, trigger.size.width).height, px(76.0));
+        let placement = resolve_popup_menu_placement(
+            Some(trigger),
+            PopupMenuPlacement::Smart,
+            &look,
+            &items,
+            size(px(320.0), px(320.0)),
+        );
+        assert_eq!(placement.anchor, Anchor::TopLeft);
+    }
+
+    #[test]
     fn smart_placement_uses_below_when_it_fits() {
         let look = look();
         let trigger = Bounds::new(point(px(12.0), px(80.0)), size(px(160.0), px(32.0)));
@@ -468,7 +494,7 @@ mod tests {
             Some(trigger),
             PopupMenuPlacement::Smart,
             &look,
-            3,
+            &vec![crate::infra::menu_item::MenuItem::new("item"); 3],
             size(px(320.0), px(360.0)),
         );
 
@@ -485,7 +511,7 @@ mod tests {
             Some(trigger),
             PopupMenuPlacement::Smart,
             &look,
-            4,
+            &vec![crate::infra::menu_item::MenuItem::new("item"); 4],
             size(px(320.0), px(360.0)),
         );
 
@@ -502,7 +528,7 @@ mod tests {
             Some(trigger),
             PopupMenuPlacement::AboveStart,
             &look,
-            3,
+            &vec![crate::infra::menu_item::MenuItem::new("item"); 3],
             size(px(320.0), px(360.0)),
         );
 
@@ -514,12 +540,13 @@ mod tests {
     fn centered_placement_anchors_to_trigger_center() {
         let look = look();
         let trigger = Bounds::new(point(px(40.0), px(80.0)), size(px(160.0), px(32.0)));
-        let menu_size = estimated_menu_size(&look, 5, trigger.size.width);
+        let menu_size =
+            estimated_menu_size(&look, &vec![crate::infra::menu_item::MenuItem::new("item"); 5], trigger.size.width);
         let placement = resolve_popup_menu_placement(
             Some(trigger),
             PopupMenuPlacement::CenteredOnTrigger,
             &look,
-            5,
+            &vec![crate::infra::menu_item::MenuItem::new("item"); 5],
             size(px(320.0), px(360.0)),
         );
 
@@ -536,7 +563,7 @@ mod tests {
             Some(trigger),
             PopupMenuPlacement::RightEnd,
             &look,
-            4,
+            &vec![crate::infra::menu_item::MenuItem::new("item"); 4],
             size(px(800.0), px(600.0)),
         );
 

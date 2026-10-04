@@ -24,6 +24,30 @@ pub struct FloatingMenuLook {
     pub item_radius: f32,
     pub disabled_opacity: f32,
     pub submenu_offset_x: f32,
+    /// Divider line color.
+    pub separator_color: Hsla,
+    /// Divider line thickness in pixels.
+    pub separator_thickness: f32,
+    /// Vertical padding on each side of the divider, in pixels.
+    pub separator_spacing: f32,
+    /// Horizontal inset on each side of the divider, in pixels.
+    pub separator_inset: f32,
+}
+
+impl FloatingMenuLook {
+    /// Total row height, including dividers, excluding the panel padding.
+    pub fn rows_height(&self, items: &[crate::infra::menu_item::MenuItem]) -> f32 {
+        items
+            .iter()
+            .map(|item| {
+                if item.is_separator() {
+                    self.separator_thickness + 2.0 * self.separator_spacing
+                } else {
+                    self.item_height
+                }
+            })
+            .sum()
+    }
 }
 
 pub trait FloatingMenuTheme: Send + Sync {
@@ -79,6 +103,10 @@ pub(crate) fn default_floating_menu_look(tokens: &ThemeTokens, size: ControlSize
         item_radius: metrics.radius.sm,
         disabled_opacity: 0.56,
         submenu_offset_x: metrics.gap(size) * 0.5,
+        separator_color: palette.surface.floating.border,
+        separator_thickness: 1.0,
+        separator_spacing: metrics.gap(size) * 0.5,
+        separator_inset: 0.0,
     }
 }
 

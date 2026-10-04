@@ -225,6 +225,7 @@ impl RadixStudioApp {
                 MenuItem::new("copy-url")
                     .label("Copy palette URL")
                     .icon(MenuItemIcon::asset("assets/react-icons/share-2.svg")),
+                MenuItem::separator("copy-url-separator"),
                 MenuItem::new("copy-css")
                     .label("Copy CSS code")
                     .icon(MenuItemIcon::asset("assets/react-icons/copy.svg"))

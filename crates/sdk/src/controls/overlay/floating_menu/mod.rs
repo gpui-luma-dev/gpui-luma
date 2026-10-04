@@ -14,7 +14,8 @@ mod theme;
 pub use model::{FloatingMenuActivateResult, FloatingMenuState, FloatingMenuStepDirection};
 pub use template::{
     FloatingMenuClickHandler, FloatingMenuHighlight, FloatingMenuHoverHandler, FloatingMenuRenderModel,
-    FloatingMenuTemplate, FloatingMenuTemplateHandlers, FloatingMenuTemplateModifier, ThemedFloatingMenuTemplate,
+    FloatingMenuSeparatorTemplate, ThemedFloatingMenuSeparatorTemplate, FloatingMenuTemplate,
+    FloatingMenuTemplateHandlers, FloatingMenuTemplateModifier, ThemedFloatingMenuTemplate,
     default_floating_menu_template, floating_menu_template_with_modifier, render_floating_menu,
     render_floating_menu_with_submenu_hovers_and_icons, render_floating_menu_with_submenu_hovers,
     render_floating_menu_with_submenu_hovers_and_icons_and_transition, render_floating_menu_with_submenu_presence,

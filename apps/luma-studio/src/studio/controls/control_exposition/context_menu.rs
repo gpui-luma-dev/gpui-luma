@@ -199,13 +199,15 @@ impl Render for ContextMenuControlExposition {
     }
 }
 
-fn context_menu_items() -> [MenuItem; 4] {
+fn context_menu_items() -> [MenuItem; 5] {
     [
         MenuItem::new("open").label("Open").icon(LucideIcon::FolderOpen),
         MenuItem::new("copy").label("Copy").icon(LucideIcon::Copy),
+        MenuItem::separator("actions-separator"),
         MenuItem::new("inspect").label("Inspect"),
         MenuItem::new("more").label("More").icon(LucideIcon::Ellipsis).submenu([
             MenuItem::new("download").label("Download").icon(LucideIcon::Download),
+            MenuItem::separator("submenu-separator"),
             MenuItem::new("external").label("Open externally").icon(LucideIcon::ExternalLink),
         ]),
     ]
