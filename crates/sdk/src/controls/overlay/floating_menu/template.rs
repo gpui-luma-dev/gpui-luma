@@ -585,6 +585,8 @@ fn highlight_rect(
 fn render_item_icon(icon: Option<&MenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
     if let Some(icon) = icon.and_then(MenuItemIcon::lucide) {
         svg().path(icon.asset_path()).size(px(size)).text_color(color).into_any_element()
+    } else if let Some(path) = icon.and_then(MenuItemIcon::asset_path) {
+        svg().path(path.clone()).size(px(size)).text_color(color).into_any_element()
     } else if let Some(path) = icon.and_then(MenuItemIcon::svg_path) {
         svg().external_path(path.clone()).size(px(size)).text_color(color).into_any_element()
     } else {

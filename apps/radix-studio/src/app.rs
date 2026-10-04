@@ -10,11 +10,11 @@ use gpui::{
     div, prelude::*, px,
 };
 use gpui_luma::controls::button::{Button, ButtonEvent};
-use gpui_luma::controls::popup_menu::PopupMenu;
+use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem, RadioGroupEvent};
 use crate::controls::theme_mode;
 use gpui_luma::focus::LumaFocusScopeExt;
-use gpui_luma::infra::menu_item::MenuItem;
+use gpui_luma::infra::menu_item::{MenuItem, MenuItemIcon};
 use gpui_luma::shell::TitleBar;
 use gpui_luma::controls::tabs::Tabs;
 use gpui_luma::theme::ThemeMode;
@@ -222,11 +222,30 @@ impl RadixStudioApp {
             .primary()
             .label("Copy")
             .items([
-                MenuItem::new("copy-css").label("Copy as CSS"),
-                MenuItem::new("copy-json").label("Copy as JSON"),
-                MenuItem::new("copy-hex").label("Copy hex values"),
+                MenuItem::new("copy-url")
+                    .label("Copy palette URL")
+                    .icon(MenuItemIcon::asset("assets/react-icons/share-2.svg")),
+                MenuItem::new("copy-css")
+                    .label("Copy CSS code")
+                    .icon(MenuItemIcon::asset("assets/react-icons/copy.svg"))
+                    .submenu([
+                        MenuItem::new("copy-accent").label("Copy accent scale"),
+                        MenuItem::new("copy-gray").label("Copy gray scale"),
+                        MenuItem::new("copy-background").label("Copy background color"),
+                    ]),
+                MenuItem::new("copy-svg")
+                    .label("Copy SVG object")
+                    .icon(MenuItemIcon::asset("assets/react-icons/figma-logo.svg")),
             ])
             .spawn(cx);
+
+        subscriptions.push(cx.subscribe(&copy_menu, |this, _, event: &PopupMenuEvent, cx| {
+            if let PopupMenuEvent::Select { item_id, .. } = event {
+                if let Some(text) = this.palette_copy_text(item_id.as_ref()) {
+                    cx.write_to_clipboard(gpui::ClipboardItem::new_string(text));
+                }
+            }
+        }));
 
         let color_details = cx.new(|cx| ColorDetails::new(&draft, cx));
         let mut palette_swatches = Vec::new();
@@ -326,6 +345,61 @@ impl RadixStudioApp {
         self.sync_seed_fields(cx);
         cx.refresh_windows();
         cx.notify();
+    }
+
+    fn palette_copy_text(&self, action: &str) -> Option<String> {
+        use crate::color_hex::format_hex;
+        match action {
+            "copy-url" => {
+                let theme = self.defaults.fork();
+                let mut params = Vec::new();
+                for (mode, suffix) in [(ThemeMode::Light, "light"), (ThemeMode::Dark, "dark")] {
+                    theme.set_mode(mode);
+                    let colors = self.palette_edits.colors(&theme);
+                    for (name, color) in
+                        [("accent", colors.accent), ("gray", colors.gray), ("background", colors.background)]
+                    {
+                        params.push(format!("{name}-{suffix}={}", format_hex(editor_preview(color))));
+                    }
+                }
+                Some(format!("https://www.radix-ui.com/colors/custom?{}", params.join("&")))
+            }
+            "copy-accent" | "copy-gray" => {
+                let (family, name) = if action == "copy-accent" {
+                    (ScaleFamily::Color, "accent")
+                } else {
+                    (ScaleFamily::Gray, "gray")
+                };
+                let declarations: Vec<String> = (1..=12)
+                    .map(|step| {
+                        format!("  --{name}-{step}: #{};", format_hex(self.draft.resolve_step(family, step).hsla()))
+                    })
+                    .collect();
+                Some(format!(":root {{\n{}\n}}", declarations.join("\n")))
+            }
+            "copy-background" => Some(format!(
+                "--background: #{};",
+                format_hex(editor_preview(self.palette_edits.colors(&self.defaults).background))
+            )),
+            "copy-svg" => {
+                let mut svg = String::from(
+                    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1200\" height=\"200\" viewBox=\"0 0 1200 200\">\n",
+                );
+                for (row, family) in [ScaleFamily::Color, ScaleFamily::Gray].into_iter().enumerate() {
+                    for step in 1..=12 {
+                        svg.push_str(&format!(
+                            "  <rect x=\"{}\" y=\"{}\" width=\"100\" height=\"100\" fill=\"#{}\"/>\n",
+                            usize::from(step - 1) * 100,
+                            row * 100,
+                            format_hex(self.draft.resolve_step(family, step).hsla())
+                        ));
+                    }
+                }
+                svg.push_str("</svg>");
+                Some(svg)
+            }
+            _ => None,
+        }
     }
 
     /// Restores both looks and the theme editors to their startup values.
@@ -668,6 +742,35 @@ mod palette_edit_tests {
 mod screen_content_tests {
     use super::*;
     use gpui::TestAppContext;
+
+    #[test]
+    fn copy_exports_follow_edited_palette_and_mode() {
+        let mut app = TestAppContext::single();
+        let (studio, cx) = app.add_window_view(RadixStudioApp::new);
+        cx.update(|_, cx| {
+            studio.update(cx, |studio, cx| {
+                let color = ColorValue::srgb(1.0, 0.0, 0.0, 1.0);
+                studio.palette_edits.set_input(ThemeMode::Dark, 0, color, true);
+                studio.palette_edits.apply(&studio.defaults, &studio.draft);
+                let url = studio.palette_copy_text("copy-url").unwrap();
+                assert!(url.contains("accent-light=FF0000"));
+                assert!(url.contains("accent-dark=FF0000"));
+                assert!(url.contains("background-dark=000000"));
+                for mode in [ThemeMode::Light, ThemeMode::Dark] {
+                    studio.set_mode(mode, cx);
+                    let css = studio.palette_copy_text("copy-accent").unwrap();
+                    let expected =
+                        crate::color_hex::format_hex(studio.draft.resolve_step(ScaleFamily::Color, 9).hsla());
+                    assert!(css.contains(&format!("--accent-9: #{expected};")));
+                    assert_eq!(css.matches("--accent-").count(), 12);
+                    let svg = studio.palette_copy_text("copy-svg").unwrap();
+                    assert_eq!(svg.matches("<rect ").count(), 24);
+                    assert!(svg.contains(&format!("fill=\"#{expected}\"")));
+                }
+                assert!(studio.palette_copy_text("copy-css").is_none());
+            })
+        });
+    }
 
     #[test]
     fn seed_edits_update_app_theme_and_preserve_separate_backgrounds() {

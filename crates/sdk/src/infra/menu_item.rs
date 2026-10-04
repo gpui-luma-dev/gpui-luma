@@ -5,19 +5,33 @@ use lucide_svg_static::Icon as LucideIcon;
 pub enum MenuItemIcon {
     Lucide(LucideIcon),
     SvgPath(SharedString),
+    /// SVG supplied by the application's registered asset source.
+    AssetPath(SharedString),
 }
 
 impl MenuItemIcon {
+    /// Use an SVG from the application's registered asset source.
+    pub fn asset(path: impl Into<SharedString>) -> Self {
+        Self::AssetPath(path.into())
+    }
+
+    pub fn asset_path(&self) -> Option<&SharedString> {
+        match self {
+            Self::AssetPath(path) => Some(path),
+            _ => None,
+        }
+    }
+
     pub fn lucide(&self) -> Option<LucideIcon> {
         match self {
             Self::Lucide(icon) => Some(*icon),
-            Self::SvgPath(_) => None,
+            Self::SvgPath(_) | Self::AssetPath(_) => None,
         }
     }
 
     pub fn svg_path(&self) -> Option<&SharedString> {
         match self {
-            Self::Lucide(_) => None,
+            Self::Lucide(_) | Self::AssetPath(_) => None,
             Self::SvgPath(path) => Some(path),
         }
     }
