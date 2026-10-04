@@ -70,20 +70,20 @@ impl CheckboxSize {
 
     /// Outer indicator box edge in px (`--checkbox-size`).
     pub fn box_size(self) -> f32 {
-        match self {
-            Self::One => 14.0,
-            Self::Two => 16.0,
-            Self::Three => 20.0,
-        }
+        crate::look::embedded_common_stylesheet()
+            .checkbox
+            .resolve_geometry(self.as_str(), Default::default())
+            .indicator_size
+            .value_px
     }
 
     /// Checkmark glyph box (`--checkbox-indicator-size`).
     pub fn glyph_size(self) -> f32 {
-        match self {
-            Self::One => 9.0,
-            Self::Two => 10.0,
-            Self::Three => 12.0,
-        }
+        crate::look::embedded_common_stylesheet()
+            .checkbox
+            .resolve_geometry(self.as_str(), Default::default())
+            .glyph_size
+            .value_px
     }
 
     /// Multiplier applied to `--radius-1` for this size.
@@ -110,8 +110,25 @@ pub fn resolve_checkbox_radius(size: CheckboxSize, radius: Radius) -> f32 {
 }
 
 pub fn checkbox_scale_for(size: CheckboxSize, radius: Radius) -> CheckboxScale {
-    let box_size = size.box_size();
-    let glyph = size.glyph_size();
+    checkbox_scale_with_stylesheet(crate::look::embedded_common_stylesheet(), size, radius)
+}
+
+fn checkbox_scale_with_stylesheet(
+    stylesheet: &gpui_luma::theme::stylesheet::CommonStylesheet,
+    size: CheckboxSize,
+    radius: Radius,
+) -> CheckboxScale {
+    let fallback = CheckboxScale::compute(size.control_size(), &MetricTokens::default(), 1.0);
+    let geometry = stylesheet.checkbox.resolve_geometry(
+        size.as_str(),
+        gpui_luma::theme::stylesheet::CheckboxGeometry {
+            indicator_size: fallback.indicator_size,
+            glyph_size: fallback.glyph_size,
+            gap: fallback.gap,
+        },
+    );
+    let box_size = geometry.indicator_size.value_px;
+    let glyph = geometry.glyph_size.value_px;
     let indicator_radius = resolve_checkbox_radius(size, radius);
     CheckboxScale {
         control_radius: indicator_radius,
@@ -120,7 +137,7 @@ pub fn checkbox_scale_for(size: CheckboxSize, radius: Radius) -> CheckboxScale {
         indicator_size: box_size,
         indicator_radius,
         height: box_size,
-        gap: 8.0,
+        gap: geometry.gap.value_px,
         label_baseline_shift: 0.0,
         glyph_size: glyph,
     }
@@ -244,7 +261,7 @@ impl CheckboxTheme for CheckboxThemeAdapter {
 
     fn scale(&self, size: ControlSize, scale_factor: f32) -> CheckboxScale {
         if let Some((radix_size, radius)) = self.geometry {
-            return checkbox_scale_for(radix_size, radius);
+            return checkbox_scale_with_stylesheet(&self.look.common_stylesheet(), radix_size, radius);
         }
         let radix_size = match size {
             ControlSize::Sm => CheckboxSize::One,
@@ -252,7 +269,7 @@ impl CheckboxTheme for CheckboxThemeAdapter {
             ControlSize::Lg => CheckboxSize::Three,
         };
         let _ = scale_factor;
-        checkbox_scale_for(radix_size, Radius::Medium)
+        checkbox_scale_with_stylesheet(&self.look.common_stylesheet(), radix_size, Radius::Medium)
     }
 }
 

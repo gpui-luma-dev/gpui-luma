@@ -6,7 +6,6 @@ use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale, ThemeMod
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};
 
 use super::button::{ShadcnButtonStyle, button_elevation_shadow, button_palette};
 use super::selector_items_panel::selector_items_panel_look;
@@ -26,7 +25,7 @@ pub fn selector_palette(
     without_elevation: bool,
 ) -> SelectorPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let stylesheet = embedded_stylesheet();
+    let stylesheet = mode.stylesheet();
     let button_style = shadcn_button_style(trigger_style);
     let button = button_palette(&ctx, stylesheet, button_style, ButtonFamilyRole::Text, ControlSize::Md);
     let trigger_shadow = if without_elevation {
@@ -58,15 +57,14 @@ pub fn selector_look(
 ) -> SelectorLook {
     let palette = selector_palette(mode, theme_mode, trigger_style, state, without_elevation);
     let mut typography = palette.trigger_typography;
-    if let Some(rule) = embedded_stylesheet().button.metrics_for_size(size) {
-        let metrics = resolve_button_metrics_rule(rule, &mode.metrics, size);
-        let base_size = typography.size;
-        typography.size = metrics.font_size;
-        if base_size > 0.0 {
-            typography.line_height = metrics.font_size * (typography.line_height / base_size);
-        }
-    }
+    super::typography::apply_button_metrics_typography(&mut typography, mode, size);
 
+    let geometry = selector_geometry(mode, size, scale, &typography);
+    crate::tables::typography::apply_resolved_geometry_typography(
+        &mut typography,
+        &geometry.font_size,
+        &geometry.line_height,
+    );
     let trigger_border = (!state.disabled && state.invalid)
         .then_some(mode.palette.destructive_background)
         .or(palette.trigger_border);
@@ -78,15 +76,11 @@ pub fn selector_look(
         trigger_shadow: palette.trigger_shadow,
         trigger_typography: typography,
         trigger_radius: scale.radius,
-        trigger_padding_x: scale.padding_x,
-        trigger_padding_y: scale.padding_y,
-        trigger_gap: scale.gap,
-        trigger_height: scale.height,
-        trigger_icon_size: embedded_stylesheet()
-            .button
-            .metrics_for_size(size)
-            .map(|rule| resolve_button_metrics_rule(rule, &mode.metrics, size).icon_size)
-            .unwrap_or_else(|| mode.metrics.icon_size(size)),
+        trigger_padding_x: geometry.padding_x.value_px,
+        trigger_padding_y: geometry.padding_y.value_px,
+        trigger_gap: geometry.gap.value_px,
+        trigger_height: geometry.height.value_px,
+        trigger_icon_size: geometry.icon_size.value_px,
         trigger_focus_border: None,
         menu_offset_y: scale.gap * 0.5,
         items_panel: selector_items_panel_look(mode, theme_mode, size),
@@ -111,6 +105,33 @@ pub fn selector_look_with_visual_state(
         look.trigger_focus_border = crate::focus::focus_ring_color(&mode.catalog).ok();
     }
     look
+}
+
+pub(crate) fn selector_geometry(
+    mode: &ShadcnModeTokens,
+    size: ControlSize,
+    scale: &StandardBoxScale,
+    typography: &gpui_luma::theme::LumaTextStyle,
+) -> gpui_luma::theme::stylesheet::ResolvedSelectorGeometry {
+    let icon = super::button::button_box_scale(
+        &LookContext::new(mode, mode.theme_mode, InteractionState::default()),
+        mode.stylesheet(),
+        size,
+        1.0,
+    )
+    .icon_size;
+    mode.stylesheet().common.selector.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::SelectorGeometry {
+            height: scale.height,
+            padding_x: scale.padding_x,
+            padding_y: scale.padding_y,
+            gap: scale.gap,
+            icon_size: icon,
+            font_size: typography.size,
+            line_height: typography.line_height,
+        },
+    )
 }
 
 #[cfg(test)]

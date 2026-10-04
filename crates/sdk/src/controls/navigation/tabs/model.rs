@@ -193,7 +193,8 @@ pub struct TabsModel {
     pub(crate) enabled: bool,
     pub(crate) animated: bool,
     pub(crate) contents: HashMap<SharedString, TabsContent>,
-    pub(crate) fade_duration: Duration,
+    pub(crate) fade_duration: Option<Duration>,
+    pub(crate) inherited_motion: crate::theme::stylesheet::ResolvedMotion,
     pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) template: Arc<dyn TabsTemplate>,
 }
@@ -239,7 +240,8 @@ impl TabsBuilder {
                 enabled: true,
                 animated: true,
                 contents: HashMap::new(),
-                fade_duration: Duration::ZERO,
+                fade_duration: None,
+                inherited_motion: Default::default(),
                 disclosure_icons: DisclosureIcons::new(
                     lucide_svg_static::Icon::ChevronUp,
                     lucide_svg_static::Icon::ChevronDown,
@@ -289,8 +291,20 @@ impl TabsBuilder {
     /// Fade the incoming panel on selection changes. First render is fully visible.
     /// Zero disables the fade; `animated(false)` also disables body motion.
     pub fn fade_in(mut self, duration: Duration) -> Self {
-        self.model.fade_duration = duration;
+        self.model.fade_duration = Some(duration);
         self
+    }
+
+    /// Snapshot the look's common configuration. Later look edits affect new builders only.
+    /// Explicit `fade_in` overrides win regardless of builder call order.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet, look_name: &str) -> Self {
+        self.model.inherited_motion = stylesheet.tabs_content_motion(look_name);
+        self
+    }
+
+    /// Effective body motion, including provenance and control-wide animation disable.
+    pub fn body_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        self.model.inherited_motion.clone().with_override(self.model.fade_duration, self.model.animated)
     }
 
     pub fn active(mut self, active_id: impl Into<SharedString>) -> Self {
@@ -361,6 +375,20 @@ impl TabsBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn motion_override_is_independent_of_builder_order() {
+        use crate::theme::stylesheet::{CommonStylesheet, MotionSource};
+        let stylesheet = CommonStylesheet::parse("[common.tabs.content]\nfade_in_ms = 300").unwrap();
+        for builder in [
+            TabsBuilder::new("before").fade_in(Duration::ZERO).stylesheet(&stylesheet, "test"),
+            TabsBuilder::new("after").stylesheet(&stylesheet, "test").fade_in(Duration::ZERO),
+        ] {
+            assert_eq!(builder.body_motion().duration, Duration::ZERO);
+            assert_eq!(builder.body_motion().source, MotionSource::InstanceOverride);
+        }
+        assert_eq!(TabsBuilder::new("default").body_motion().source, MotionSource::SdkFallback);
+    }
 
     #[test]
     fn with_template_modifier_wraps_template() {

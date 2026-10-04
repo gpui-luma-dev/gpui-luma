@@ -19,8 +19,8 @@ use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_textfield_color_rule, find_textfield_elevation_rule,
-    resolve_textfield_color_rule, resolve_stylesheet_shadow_token,
+    StylesheetConfig, find_textfield_color_rule, find_textfield_elevation_rule, resolve_textfield_color_rule,
+    resolve_stylesheet_shadow_token,
 };
 
 fn textfield_style_key(style: ShadcnTextFieldStyle) -> &'static str {
@@ -75,7 +75,7 @@ pub fn resolve_textfield_colors(
     invalid: bool,
     theme_mode: ThemeMode,
 ) -> anyhow::Result<TextFieldColorTable> {
-    resolve_textfield_colors_with_stylesheet(resolver, embedded_stylesheet(), style, enabled, invalid, theme_mode)
+    resolve_textfield_colors_with_stylesheet(resolver, resolver.stylesheet(), style, enabled, invalid, theme_mode)
 }
 
 pub fn resolve_textfield_colors_with_stylesheet(
@@ -122,7 +122,7 @@ pub fn resolve_textfield_palette(
 ) -> TextFieldColorTable {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
-    let resolver = LookResolver::new(catalog, ctx.theme_mode, "textfield");
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "textfield").with_stylesheet(mode.stylesheet());
     let mut colors = resolve_textfield_colors(&resolver, style, enabled, state.invalid, ctx.theme_mode)
         .unwrap_or_else(|_| TextFieldColorTable::fallback());
     if state.focused && state.focus_visible && !state.invalid && enabled {
@@ -160,8 +160,47 @@ pub fn textfield_palette_for_size(
     enabled: bool,
     size: ControlSize,
 ) -> TextFieldPalette {
+    let mut palette = textfield_palette_base_for_size(mode, theme_mode, style, state, enabled, size);
+    let scale = StandardBoxScale::compute(size, &mode.metrics, 1.0);
+    let geometry = textfield_geometry(mode, size, &scale, &palette.typography);
+    crate::tables::typography::apply_resolved_geometry_typography(
+        &mut palette.typography,
+        &geometry.font_size,
+        &geometry.line_height,
+    );
+    palette
+}
+
+pub(crate) fn textfield_geometry(
+    mode: &ShadcnModeTokens,
+    size: ControlSize,
+    scale: &StandardBoxScale,
+    typography: &LumaTextStyle,
+) -> gpui_luma::theme::stylesheet::ResolvedTextFieldGeometry {
+    mode.stylesheet().common.textfield.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::TextFieldGeometry {
+            min_height: scale.height,
+            padding_x: scale.padding_x,
+            padding_y: scale.padding_y,
+            gap: scale.gap,
+            icon_size: scale.icon_size,
+            font_size: typography.size,
+            line_height: typography.line_height,
+        },
+    )
+}
+
+pub(crate) fn textfield_palette_base_for_size(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnTextFieldStyle,
+    state: TextFieldState,
+    enabled: bool,
+    size: ControlSize,
+) -> TextFieldPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let stylesheet = embedded_stylesheet();
+    let stylesheet = mode.stylesheet();
     let typography = ctx.typography();
     let colors = resolve_textfield_palette(mode, theme_mode, style, state, enabled);
     // Keep elevation in the look when disabled so SDK hosts can reserve projection
@@ -186,7 +225,7 @@ pub fn textfield_palette_for_size(
     }
 }
 
-/// Scales text-field typography from `button.metrics.*.font_size` (same curve as buttons/selectors).
+/// Scales text-field typography from shared Button font sizes (same curve as buttons/selectors).
 pub fn apply_textfield_control_size_typography(
     typography: &mut LumaTextStyle,
     mode: &ShadcnModeTokens,
@@ -205,7 +244,14 @@ pub fn textfield_look(
     scale: &StandardBoxScale,
 ) -> TextFieldLook {
     let palette = textfield_palette_for_size(mode, theme_mode, style, state, enabled, size);
-    compose_textfield_look(&palette, scale, mode.metrics.border_width.default)
+    let geometry = textfield_geometry(mode, size, scale, &palette.typography);
+    let mut scale = *scale;
+    scale.height = geometry.min_height.value_px;
+    scale.padding_x = geometry.padding_x.value_px;
+    scale.padding_y = geometry.padding_y.value_px;
+    scale.gap = geometry.gap.value_px;
+    scale.icon_size = geometry.icon_size.value_px;
+    compose_textfield_look(&palette, &scale, mode.metrics.border_width.default)
 }
 
 #[cfg(test)]

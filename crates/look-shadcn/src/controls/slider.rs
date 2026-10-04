@@ -19,8 +19,7 @@ use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_slider_color_rule, resolve_layered_elevation_shadow,
-    resolve_slider_color_rule,
+    StylesheetConfig, find_slider_color_rule, resolve_layered_elevation_shadow, resolve_slider_color_rule,
 };
 
 /// Shared corner-radius preset resolution for slider parts.
@@ -80,7 +79,7 @@ pub fn resolve_slider_colors(
     style: ShadcnButtonStyle,
     layer: InteractionLayer,
 ) -> anyhow::Result<SliderColorTable> {
-    resolve_slider_colors_with_stylesheet(resolver, embedded_stylesheet(), style, layer)
+    resolve_slider_colors_with_stylesheet(resolver, resolver.stylesheet(), style, layer)
 }
 
 pub fn resolve_slider_colors_with_stylesheet(
@@ -115,16 +114,26 @@ pub fn slider_look(
     thumb_size: Option<SliderThumbSize>,
     state: InteractionState,
 ) -> SliderLook {
+    slider_look_with_stylesheet(mode, mode.stylesheet(), theme_mode, style, size, thumb_size, state)
+}
+
+pub(crate) fn slider_look_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &StylesheetConfig,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    size: ControlSize,
+    thumb_size: Option<SliderThumbSize>,
+    state: InteractionState,
+) -> SliderLook {
     let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
     let layer = state.layer();
-    let stylesheet = embedded_stylesheet();
     let thumb_shadow = slider_elevation_shadow(catalog, stylesheet, layer);
-    let resolver = LookResolver::new(catalog, ctx.theme_mode, "slider");
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "slider").with_stylesheet(stylesheet);
     let colors = resolve_slider_colors(&resolver, style, layer).unwrap_or_else(|_| SliderColorTable::fallback());
-    let geometry = crate::tables::metrics::resolve_slider_metrics_for_size(mode, theme_mode, size);
-    let thumb_size = thumb_size.map(slider_thumb_size).unwrap_or(geometry.thumb_size.value_px);
+    let geometry = crate::tables::metrics::resolve_slider_metrics_with_stylesheet(mode, stylesheet, size, thumb_size);
 
     SliderLook {
         track_background: colors.track_background.hsla(),
@@ -135,16 +144,8 @@ pub fn slider_look(
         width: geometry.width.value_px,
         height: geometry.height.value_px,
         track_height: geometry.track_height.value_px,
-        thumb_size,
+        thumb_size: geometry.thumb_size.value_px,
         radius: geometry.radius.value_px,
-    }
-}
-
-fn slider_thumb_size(size: SliderThumbSize) -> f32 {
-    match size {
-        SliderThumbSize::Sm => 12.0,
-        SliderThumbSize::Md => 16.0,
-        SliderThumbSize::Lg => 20.0,
     }
 }
 

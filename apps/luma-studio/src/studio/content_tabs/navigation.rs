@@ -1,5 +1,4 @@
-use std::{sync::Arc, collections::HashMap};
-use gpui_luma::{infra::attachments::TooltipHandle, controls::tooltip::Tooltip};
+use std::sync::Arc;
 
 use gpui::{App, Div, Hsla, Stateful, Window, div, prelude::*, px};
 use gpui_luma::infra::ElementExt;
@@ -9,38 +8,17 @@ use gpui_luma::controls::tabs::{
     resolve_tabs_uniform_item_width,
 };
 use gpui_luma::theme::{ControlSize, InteractionState};
-use gpui_luma_look_shadcn::{ShadcnLook, tooltip_theme as shadcn_tooltip_theme};
+use gpui_luma_look_shadcn::ShadcnLook;
 
 pub fn luma_studio_tabs_template(look: Arc<ShadcnLook>, tab_size: ControlSize) -> Arc<dyn TabsTemplate> {
     let full_bar_color = look.token_color("border").unwrap_or(look.chrome().border);
-    Arc::new(LumaStudioTabsTemplate { theme: look.tabs_theme(), full_bar_color, tab_size, tooltips: HashMap::new() })
-}
-
-pub fn main_content_tabs_template(look: Arc<ShadcnLook>, tab_size: ControlSize, cx: &mut App) -> Arc<dyn TabsTemplate> {
-    let tooltips = [
-        ("cards", "Explore card layouts and component examples"),
-        ("dashboard", "Explore the dashboard example"),
-        ("typography", "Inspect typography, spacing and visual styles"),
-        ("controls", "Browse and test SDK controls"),
-        ("palette", "Inspect the theme's color palette"),
-        ("theme-usage", "Inspect how theme tokens are used"),
-    ]
-    .into_iter()
-    .map(|(id, text)| (id, TooltipHandle::new(Tooltip::new(text).theme(shadcn_tooltip_theme(&look)), cx)))
-    .collect();
-    Arc::new(LumaStudioTabsTemplate {
-        theme: look.tabs_theme(),
-        full_bar_color: look.token_color("border").unwrap_or(look.chrome().border),
-        tab_size,
-        tooltips,
-    })
+    Arc::new(LumaStudioTabsTemplate { theme: look.tabs_theme(), full_bar_color, tab_size })
 }
 
 struct LumaStudioTabsTemplate {
     theme: Arc<dyn TabsTheme>,
     full_bar_color: Hsla,
     tab_size: ControlSize,
-    tooltips: HashMap<&'static str, TooltipHandle>,
 }
 
 impl TabsTemplate for LumaStudioTabsTemplate {
@@ -103,16 +81,10 @@ impl TabsTemplate for LumaStudioTabsTemplate {
                 tab = tab.cursor_pointer();
             }
 
-            if let Some(tooltip) = self.tooltips.get(item.id.as_ref()) {
-                tab = tooltip.render(
-                    tab.role(gpui::Role::Tab).aria_label(item.label.clone()).debug_selector({
-                        let id = item.id.clone();
-                        move || format!("content-tab-{id}")
-                    }),
-                    item.state.interaction_state(),
-                    cx,
-                );
-            }
+            tab = tab.role(gpui::Role::Tab).aria_label(item.label.clone()).debug_selector({
+                let id = item.id.clone();
+                move || format!("content-tab-{id}")
+            });
             root = root.child(tab);
         }
 
@@ -140,7 +112,7 @@ mod tests {
     use gpui_luma::controls::tabs::TabsItem;
 
     #[test]
-    fn content_tab_tooltip_targets_preserve_navigation() {
+    fn content_tab_targets_preserve_navigation() {
         let mut app = gpui::TestAppContext::single();
         let look = Arc::new(ShadcnLook::built_in());
         struct Page {
@@ -154,15 +126,15 @@ mod tests {
         let (page, cx) = app.add_window_view(|window, cx| {
             window.activate_window();
             let builder = gpui_luma::controls::tabs::Tabs::new("luma-studio-content-tabs")
-                .template(main_content_tabs_template(look.clone(), ControlSize::Lg, cx))
+                .template(luma_studio_tabs_template(look.clone(), ControlSize::Lg))
                 .items([TabsItem::new("cards").label("Cards"), TabsItem::new("dashboard").label("Dashboard")])
                 .active("cards");
             Page { tabs: builder.spawn(cx) }
         });
         cx.run_until_parked();
         let tabs = cx.update(|_, app| page.read(app).tabs.clone());
-        let cards = cx.debug_bounds("content-tab-cards").expect("cards tooltip target");
-        let dashboard = cx.debug_bounds("content-tab-dashboard").expect("dashboard tooltip target");
+        let cards = cx.debug_bounds("content-tab-cards").expect("cards tab target");
+        let dashboard = cx.debug_bounds("content-tab-dashboard").expect("dashboard tab target");
         assert!(cards.origin.x + cards.size.width <= dashboard.origin.x);
         cx.simulate_event(gpui::MouseMoveEvent { position: dashboard.center(), ..Default::default() });
         cx.executor().advance_clock(std::time::Duration::from_millis(500));

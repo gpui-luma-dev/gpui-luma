@@ -12,7 +12,7 @@ use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, find_split_view_color_rule, resolve_split_view_color_rule};
+use crate::stylesheet::{StylesheetConfig, find_split_view_color_rule, resolve_split_view_color_rule};
 
 #[derive(Clone, Debug)]
 pub struct SplitViewColorTable {
@@ -27,7 +27,7 @@ impl SplitViewColorTable {
 }
 
 pub fn resolve_split_view_colors(resolver: &LookResolver<'_>, enabled: bool) -> anyhow::Result<SplitViewColorTable> {
-    resolve_split_view_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+    resolve_split_view_colors_with_stylesheet(resolver, resolver.stylesheet(), enabled)
 }
 
 pub fn resolve_split_view_colors_with_stylesheet(
@@ -48,7 +48,7 @@ pub fn split_view_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, _hovered:
         InteractionState { disabled: true, ..InteractionState::default() }
     };
     let ctx = LookContext::new(mode, theme_mode, state);
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "split_view");
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "split_view").with_stylesheet(mode.stylesheet());
     let colors = resolve_split_view_colors(&resolver, enabled).unwrap_or_else(|_| SplitViewColorTable::fallback());
 
     SplitViewLook { separator: colors.separator.hsla(), separator_hover: colors.separator_hover.hsla() }

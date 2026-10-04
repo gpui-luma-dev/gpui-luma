@@ -13,14 +13,33 @@ pub fn callout(look: &Look, text: impl Into<SharedString>, icon: impl Into<Contr
         ControlIcon::Lucide(icon) => SharedString::from(icon.asset_path()),
         ControlIcon::SvgPath(path) => path,
     };
+    let geometry = resolve_geometry(look);
     div()
         .flex()
         .items_center()
-        .gap(px(12.0))
+        .gap(px(geometry.gap.value_px))
         .w_full()
         .rounded_lg()
-        .p_3()
+        .p(px(geometry.padding.value_px))
         .bg(look.resolve_step(ScaleFamily::Color, 3).hsla())
-        .child(div().flex_none().child(svg().path(path).size(px(15.0)).text_color(foreground)))
-        .child(div().text_sm().text_color(foreground).child(text.into()))
+        .child(
+            div()
+                .flex_none()
+                .child(svg().path(path).size(px(geometry.icon_size.value_px)).text_color(foreground)),
+        )
+        .child(div().text_size(px(geometry.font_size.value_px)).text_color(foreground).child(text.into()))
+}
+
+pub(crate) fn resolve_geometry(look: &Look) -> gpui_luma::theme::stylesheet::ResolvedCalloutGeometry {
+    let metrics = look.metrics();
+    let typography = gpui_luma::theme::ThemeTokens::default().typography.text.label;
+    look.common_stylesheet().callout.resolve_geometry(
+        "",
+        gpui_luma::theme::stylesheet::CalloutGeometry {
+            padding: metrics.spacing.s4,
+            gap: metrics.control.md.gap,
+            icon_size: metrics.control.md.icon_size,
+            font_size: typography.size,
+        },
+    )
 }

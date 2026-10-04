@@ -34,6 +34,13 @@ pub enum BadgeSize {
 
 impl BadgeSize {
     pub const ALL: [Self; 3] = [Self::One, Self::Two, Self::Three];
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::One => "1",
+            Self::Two => "2",
+            Self::Three => "3",
+        }
+    }
     pub fn label(self) -> &'static str {
         match self {
             Self::One => "Size 1",
@@ -42,11 +49,19 @@ impl BadgeSize {
         }
     }
     fn metrics(self) -> (f32, f32, f32, f32, f32) {
-        match self {
-            Self::One => (12.0, 16.0, 6.0, 2.0, 3.0),
-            Self::Two => (12.0, 16.0, 8.0, 4.0, 4.0),
-            Self::Three => (14.0, 20.0, 10.0, 4.0, 4.0),
-        }
+        let geometry =
+            crate::look::embedded_common_stylesheet().badge.resolve_geometry(self.as_str(), Default::default());
+        let radius = match self {
+            Self::One => 3.0,
+            Self::Two | Self::Three => 4.0,
+        };
+        (
+            geometry.font_size.value_px,
+            geometry.line_height.value_px,
+            geometry.padding_x.value_px,
+            geometry.padding_y.value_px,
+            radius,
+        )
     }
 }
 
@@ -121,6 +136,22 @@ impl IntoElement for Badge {
     fn into_element(self) -> Div {
         let (background, foreground, border) = self.colors();
         let (font_size, line_height, padding_x, padding_y, radius) = self.size.metrics();
+        let geometry = self.look.common_stylesheet().badge.resolve_geometry(
+            self.size.as_str(),
+            gpui_luma::theme::stylesheet::BadgeGeometry {
+                font_size,
+                line_height,
+                padding_x,
+                padding_y,
+                ..Default::default()
+            },
+        );
+        let (font_size, line_height, padding_x, padding_y) = (
+            geometry.font_size.value_px,
+            geometry.line_height.value_px,
+            geometry.padding_x.value_px,
+            geometry.padding_y.value_px,
+        );
         let radius = if self.pill { 999.0 } else { radius };
         // An inset outline preserves identical dimensions across variants.
         div()

@@ -4,7 +4,7 @@ use gpui_luma::controls::textarea::{TextAreaLook, TextAreaPalette, TextAreaState
 use gpui_luma::controls::textfield::TextFieldState;
 use gpui_luma::theme::{ControlSize, StandardBoxScale, ThemeMode};
 
-use super::textfield::{ShadcnTextFieldStyle, textfield_palette, textfield_palette_for_size};
+use super::textfield::{ShadcnTextFieldStyle, textfield_palette_base_for_size};
 use crate::mode::ShadcnModeTokens;
 
 pub fn textarea_palette(
@@ -14,7 +14,7 @@ pub fn textarea_palette(
     state: TextAreaState,
     enabled: bool,
 ) -> TextAreaPalette {
-    textarea_from_textfield(textfield_palette(mode, theme_mode, style, textfield_state_from(state), enabled))
+    textarea_palette_for_size(mode, theme_mode, style, state, enabled, ControlSize::Md)
 }
 
 pub fn textarea_palette_for_size(
@@ -25,14 +25,22 @@ pub fn textarea_palette_for_size(
     enabled: bool,
     size: ControlSize,
 ) -> TextAreaPalette {
-    textarea_from_textfield(textfield_palette_for_size(
+    let mut palette = textarea_from_textfield(textfield_palette_base_for_size(
         mode,
         theme_mode,
         style,
         textfield_state_from(state),
         enabled,
         size,
-    ))
+    ));
+    let scale = StandardBoxScale::compute(size, &mode.metrics, 1.0);
+    let geometry = textarea_geometry(mode, size, &scale, &palette.typography);
+    crate::tables::typography::apply_resolved_geometry_typography(
+        &mut palette.typography,
+        &geometry.font_size,
+        &geometry.line_height,
+    );
+    palette
 }
 
 pub fn textarea_look(
@@ -45,7 +53,30 @@ pub fn textarea_look(
     scale: &StandardBoxScale,
 ) -> TextAreaLook {
     let palette = textarea_palette_for_size(mode, theme_mode, style, state, enabled, size);
-    compose_textarea_look(&palette, scale, mode.metrics.border_width.default)
+    let geometry = textarea_geometry(mode, size, scale, &palette.typography);
+    let mut scale = *scale;
+    scale.height = geometry.min_height.value_px;
+    scale.padding_x = geometry.padding_x.value_px;
+    scale.padding_y = geometry.padding_y.value_px;
+    compose_textarea_look(&palette, &scale, mode.metrics.border_width.default)
+}
+
+pub(crate) fn textarea_geometry(
+    mode: &ShadcnModeTokens,
+    size: ControlSize,
+    scale: &StandardBoxScale,
+    typography: &gpui_luma::theme::LumaTextStyle,
+) -> gpui_luma::theme::stylesheet::ResolvedTextAreaGeometry {
+    mode.stylesheet().common.textarea.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::TextAreaGeometry {
+            min_height: scale.height,
+            padding_x: scale.padding_x,
+            padding_y: scale.padding_y,
+            font_size: typography.size,
+            line_height: typography.line_height,
+        },
+    )
 }
 
 fn textfield_state_from(state: TextAreaState) -> TextFieldState {

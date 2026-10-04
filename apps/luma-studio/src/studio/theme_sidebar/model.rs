@@ -41,22 +41,3 @@ pub(super) const SHADOW_SECTION_GAP: f32 = 4.0;
 pub(super) const DEFAULT_RADIUS_REM: f32 = 0.5;
 pub(super) const DEFAULT_SPACING_REM: f32 = 0.25;
 pub(super) const REM_IN_PX: f32 = 16.0;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub(super) enum SidebarTab {
-    #[default]
-    Colors,
-    Typography,
-    Other,
-}
-
-impl SidebarTab {
-    pub(super) fn from_id(id: &str) -> Option<Self> {
-        match id {
-            "colors" => Some(Self::Colors),
-            "typography" => Some(Self::Typography),
-            "other" => Some(Self::Other),
-            _ => None,
-        }
-    }
-}

@@ -62,15 +62,18 @@ impl ProgressSize {
     }
 }
 fn height(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 4.0,
-        ControlSize::Md => 6.0,
-        ControlSize::Lg => 8.0,
-    }
+    crate::look::embedded_common_stylesheet()
+        .progress
+        .resolve_geometry(crate::look::sdk_size_key(size), Default::default())
+        .track_height
+        .value_px
 }
 /// Matches Radix's radius-factor and radius-thumb rules, capped at half the height.
 pub fn resolve_progress_radius(size: ControlSize, radius: Radius) -> f32 {
-    let h = height(size);
+    progress_radius_for_height(height(size), radius)
+}
+
+fn progress_radius_for_height(h: f32, radius: Radius) -> f32 {
     let thumb = match radius {
         Radius::None | Radius::Small => 0.5,
         _ => 9999.0,
@@ -104,14 +107,24 @@ impl ProgressTheme for ProgressThemeAdapter {
                 ProgressVariant::Soft => 8,
             })
         };
+        let height = self
+            .look
+            .common_stylesheet()
+            .progress
+            .resolve_geometry(
+                crate::look::sdk_size_key(size),
+                gpui_luma::theme::stylesheet::ProgressGeometry { track_height: height(size), ..Default::default() },
+            )
+            .track_height
+            .value_px;
         ProgressLook {
             track_color: track,
             progress_color: fill,
             thumb_color: fill,
-            track_height: height(size),
+            track_height: height,
             thumb_size: 0.0,
-            size: height(size),
-            stroke_width: height(size),
+            size: height,
+            stroke_width: height,
         }
     }
 }
@@ -130,7 +143,7 @@ struct RadixProgressTemplate {
 impl ProgressTemplate for RadixProgressTemplate {
     fn render(&self, model: &ProgressRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let look = self.theme.resolve(model.enabled, model.size);
-        let radius = resolve_progress_radius(model.size, self.radius);
+        let radius = progress_radius_for_height(look.track_height, self.radius);
         let horizontal = model.direction.orientation() == ProgressOrientation::Horizontal;
         let (offset, extent) = if model.indeterminate {
             (model.phase.clamp(0.0, 1.0) * 1.3 - 0.3, 0.3)

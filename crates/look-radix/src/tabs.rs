@@ -110,11 +110,34 @@ pub struct TabsStyle {
 
 impl Default for TabsStyle {
     fn default() -> Self {
+        Self::from_stylesheet(crate::look::embedded_common_stylesheet())
+    }
+}
+
+impl TabsStyle {
+    pub(crate) fn from_stylesheet(stylesheet: &gpui_luma::theme::stylesheet::CommonStylesheet) -> Self {
+        let defaults = gpui_luma::controls::tabs::default_tabs_theme();
+        let list = defaults.resolve_list(true, ControlSize::Md);
+        let item = defaults.resolve_item(true, InteractionState::default(), ControlSize::Md);
+        let geometry = stylesheet.tabs.resolve_geometry(
+            "line",
+            gpui_luma::theme::stylesheet::ResolvedTabsGeometry {
+                list_gap: gpui_luma::theme::provenance::ResolvedMetric::constant(list.gap, "SDK tabs list gap"),
+                list_padding: gpui_luma::theme::provenance::ResolvedMetric::constant(
+                    list.padding,
+                    "SDK tabs list padding",
+                ),
+                indicator_height: gpui_luma::theme::provenance::ResolvedMetric::constant(
+                    item.indicator_height,
+                    "SDK tabs indicator height",
+                ),
+            },
+        );
         Self {
             baseline: Some(TabsBaselineStyle::default()),
-            indicator_height: 2.0,
+            indicator_height: geometry.indicator_height.value_px,
             indicator_inset: 0.0,
-            gap: 0.0,
+            gap: geometry.list_gap.value_px,
             small: TabsMetrics { height: 32.0, padding_x: 8.0, font_size: 12.0, line_height: 16.0 },
             medium: TabsMetrics { height: 40.0, padding_x: 16.0, font_size: 14.0, line_height: 20.0 },
         }
@@ -130,6 +153,40 @@ impl TabsStyle {
     }
 }
 
+/// Shared metric values and provenance used by the Radix tabs adapter.
+/// `TabsStyle` tuning wins for line gap/indicator height; surface keeps its recipe.
+pub fn tabs_geometry(
+    look: &Look,
+    variant: TabsVariant,
+    size: ControlSize,
+) -> gpui_luma::theme::stylesheet::ResolvedTabsGeometry {
+    use gpui_luma::theme::provenance::ResolvedMetric;
+    use gpui_luma::theme::stylesheet::ResolvedTabsGeometry;
+    let surface = variant == TabsVariant::Surface;
+    let defaults = gpui_luma::controls::tabs::default_tabs_theme();
+    let list = defaults.resolve_list(true, size);
+    let item = defaults.resolve_item(true, InteractionState::default(), size);
+    let mut geometry = look.common_stylesheet().tabs.resolve_geometry(
+        if surface { "surface" } else { "line" },
+        ResolvedTabsGeometry {
+            list_gap: ResolvedMetric::constant(list.gap, "SDK tabs list gap"),
+            list_padding: if surface {
+                ResolvedMetric::constant(look.metrics().spacing.s1, "Radix surface spacing.s1")
+            } else {
+                ResolvedMetric::constant(list.padding, "SDK tabs list padding")
+            },
+            indicator_height: ResolvedMetric::constant(item.indicator_height, "SDK tabs indicator height"),
+        },
+    );
+    if surface {
+        geometry.indicator_height = ResolvedMetric::constant(0.0, "Radix surface hides indicator");
+    } else if let Some(style) = look.tabs_style_override() {
+        geometry.list_gap = ResolvedMetric::constant(style.gap, "Radix TabsStyle override");
+        geometry.indicator_height = ResolvedMetric::constant(style.indicator_height, "Radix TabsStyle override");
+    }
+    geometry
+}
+
 struct TabsThemeAdapter {
     look: Look,
     variant: TabsVariant,
@@ -138,21 +195,22 @@ struct TabsThemeAdapter {
 impl TabsTheme for TabsThemeAdapter {
     fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsListLook {
         let metrics = self.look.metrics();
+        let geometry = tabs_geometry(&self.look, self.variant, size);
         match self.variant {
             TabsVariant::Line => TabsListLook {
                 // The SDK paints the separate baseline without adding layout borders.
                 background: (!enabled).then(|| self.look.resolve_role(SemanticRole::Surface).hsla()),
                 border: None,
                 radius: 0.0,
-                padding: 0.0,
-                gap: self.look.tabs_style().gap,
+                padding: geometry.list_padding.value_px,
+                gap: geometry.list_gap.value_px,
             },
             TabsVariant::Surface => TabsListLook {
                 background: Some(self.look.resolve_step(ScaleFamily::Gray, 3).hsla()),
                 border: None,
                 radius: metrics.radius(size),
-                padding: metrics.spacing.s1,
-                gap: 2.0,
+                padding: geometry.list_padding.value_px,
+                gap: geometry.list_gap.value_px,
             },
         }
     }
@@ -199,7 +257,7 @@ impl TabsTheme for TabsThemeAdapter {
             radius: metrics.radius(size),
             padding_x: tab.padding_x,
             height: tab.height,
-            indicator_height: if surface { 0.0 } else { style.indicator_height },
+            indicator_height: tabs_geometry(&self.look, self.variant, size).indicator_height.value_px,
         }
     }
 
@@ -253,6 +311,73 @@ pub fn tabs_template_for(look: &Look, variant: TabsVariant) -> Arc<dyn TabsTempl
 mod tests {
     use super::*;
     use gpui_luma::theme::ControlSize;
+
+    #[test]
+    fn embedded_geometry_preserves_all_modes_sizes_and_variants() {
+        let look = Look::built_in();
+        for mode in [gpui_luma::theme::ThemeMode::Light, gpui_luma::theme::ThemeMode::Dark] {
+            look.set_mode(mode);
+            for size in [ControlSize::Sm, ControlSize::Md, ControlSize::Lg] {
+                for variant in [TabsVariant::Line, TabsVariant::Surface] {
+                    let theme = tabs_theme_for(&look, variant);
+                    let surface = variant == TabsVariant::Surface;
+                    for enabled in [true, false] {
+                        let list = theme.resolve_list(enabled, size);
+                        assert_eq!(list.gap, if surface { 2.0 } else { 0.0 });
+                        assert_eq!(list.padding, if surface { look.metrics().spacing.s1 } else { 0.0 });
+                    }
+                    for state in [
+                        InteractionState::default(),
+                        InteractionState { hovered: true, ..Default::default() },
+                        InteractionState { pressed: true, ..Default::default() },
+                        InteractionState { focused: true, ..Default::default() },
+                        InteractionState { disabled: true, ..Default::default() },
+                    ] {
+                        for active in [false, true] {
+                            let item = theme.resolve_item(active, state, size);
+                            assert_eq!(item.indicator_height, if surface { 0.0 } else { 2.0 });
+                            assert_eq!(item.height, if size == ControlSize::Sm { 32.0 } else { 40.0 });
+                            assert_eq!(item.padding_x, if size == ControlSize::Sm { 8.0 } else { 16.0 });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn shared_geometry_updates_live_themes_and_keeps_tuning_and_forks() {
+        use gpui_luma::theme::provenance::MetricSource;
+        let look = Look::built_in();
+        let line = tabs_theme(&look);
+        let surface = tabs_theme_for(&look, TabsVariant::Surface);
+        let mut config = look.common_stylesheet();
+        config.tabs.geometry.indicator_height = Some(5.0);
+        config.tabs.variants.get_mut("line").unwrap().list_gap = Some(6.0);
+        config.tabs.variants.get_mut("surface").unwrap().list_padding = Some(9.0);
+        look.set_common_stylesheet(config.clone());
+        assert_eq!(line.resolve_list(true, ControlSize::Md).gap, 6.0);
+        assert_eq!(line.resolve_item(true, Default::default(), ControlSize::Md).indicator_height, 5.0);
+        assert_eq!(surface.resolve_list(true, ControlSize::Md).padding, 9.0);
+        assert!(matches!(
+            tabs_geometry(&look, TabsVariant::Line, ControlSize::Md).indicator_height.source,
+            MetricSource::Authored { .. }
+        ));
+        let fork = look.fork();
+        fork.set_common_stylesheet(Default::default());
+        assert_eq!(look.common_stylesheet(), config);
+        let mut tuning = look.tabs_style();
+        tuning.gap = 11.0;
+        tuning.indicator_height = 7.0;
+        look.set_tabs_style(tuning);
+        assert_eq!(line.resolve_list(true, ControlSize::Md).gap, 11.0);
+        assert_eq!(line.resolve_item(true, Default::default(), ControlSize::Md).indicator_height, 7.0);
+        assert!(
+            matches!(tabs_geometry(&look, TabsVariant::Line, ControlSize::Md).indicator_height.source, MetricSource::Constant { label } if label == "Radix TabsStyle override")
+        );
+        assert_eq!(surface.resolve_list(true, ControlSize::Md).gap, 2.0);
+        assert_eq!(surface.resolve_item(true, Default::default(), ControlSize::Md).indicator_height, 0.0);
+    }
 
     #[test]
     fn line_hover_and_press_use_gray_ghost_palette() {

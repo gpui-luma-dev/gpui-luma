@@ -1,15 +1,12 @@
 //! Progress — accent track + accent-foreground fill.
 
 use gpui_luma::controls::progress::ProgressLook;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
-use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_progress_color_rule, resolve_progress_color_rule,
-    resolve_progress_metrics,
-};
+use crate::stylesheet::{StylesheetConfig, find_progress_color_rule, resolve_progress_color_rule, resolve_progress_metrics};
 
 const DEFAULT_PROGRESS_SIZE: f32 = 64.0;
 const DEFAULT_PROGRESS_STROKE_WIDTH: f32 = 6.0;
@@ -32,7 +29,7 @@ impl ProgressColorTable {
 }
 
 pub fn resolve_progress_colors(resolver: &LookResolver<'_>, enabled: bool) -> anyhow::Result<ProgressColorTable> {
-    resolve_progress_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+    resolve_progress_colors_with_stylesheet(resolver, resolver.stylesheet(), enabled)
 }
 
 pub fn resolve_progress_colors_with_stylesheet(
@@ -47,10 +44,11 @@ pub fn resolve_progress_colors_with_stylesheet(
 }
 
 pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -> ProgressLook {
-    let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "progress");
+    let ctx = LookContext::new(mode, mode.theme_mode, InteractionState::default());
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "progress").with_stylesheet(mode.stylesheet());
     let colors = resolve_progress_colors(&resolver, enabled).unwrap_or_else(|_| ProgressColorTable::fallback());
-    let stylesheet = embedded_stylesheet();
+    let stylesheet = mode.stylesheet();
+    let size_key = crate::tables::metrics::helpers::control_size_key(size);
     let (size, stroke_width, track_height, thumb_size) = stylesheet
         .progress
         .metrics_for_size(size)
@@ -63,7 +61,7 @@ pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) 
             DEFAULT_PROGRESS_THUMB_SIZE,
         ));
 
-    ProgressLook {
+    let mut look = ProgressLook {
         track_color: colors.track_color.hsla(),
         progress_color: colors.progress_color.hsla(),
         thumb_color: colors.progress_color.hsla(),
@@ -71,7 +69,22 @@ pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) 
         thumb_size,
         size,
         stroke_width,
-    }
+    };
+    let geometry = mode.stylesheet().common.progress.resolve_geometry(
+        size_key,
+        gpui_luma::theme::stylesheet::ProgressGeometry {
+            size: look.size,
+            stroke_width: look.stroke_width,
+            track_height: look.track_height,
+            thumb_size: look.thumb_size,
+        },
+    );
+    look.size = geometry.size.value_px;
+    look.stroke_width = geometry.stroke_width.value_px;
+    look.track_height = geometry.track_height.value_px;
+    look.thumb_size = geometry.thumb_size.value_px;
+
+    look
 }
 
 #[cfg(test)]

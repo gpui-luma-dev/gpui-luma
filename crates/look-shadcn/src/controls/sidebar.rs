@@ -21,9 +21,9 @@ use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::look::ShadcnLook;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_sidebar_branch_color_rule, find_sidebar_container_color_rule,
-    find_sidebar_item_color_rule, find_sidebar_section_color_rule, resolve_sidebar_branch_color_rule,
-    resolve_sidebar_container_color_rule, resolve_sidebar_item_color_rule, resolve_sidebar_section_color_rule,
+    StylesheetConfig, find_sidebar_branch_color_rule, find_sidebar_container_color_rule, find_sidebar_item_color_rule,
+    find_sidebar_section_color_rule, resolve_sidebar_branch_color_rule, resolve_sidebar_container_color_rule,
+    resolve_sidebar_item_color_rule, resolve_sidebar_section_color_rule,
 };
 use crate::tokens::ShadcnTextSize;
 
@@ -48,7 +48,7 @@ pub fn resolve_sidebar_container_colors(
     resolver: &LookResolver<'_>,
     _present: bool,
 ) -> anyhow::Result<SidebarContainerColorTable> {
-    resolve_sidebar_container_colors_with_stylesheet(resolver, embedded_stylesheet())
+    resolve_sidebar_container_colors_with_stylesheet(resolver, resolver.stylesheet())
 }
 
 pub fn resolve_sidebar_container_colors_with_stylesheet(
@@ -80,7 +80,7 @@ pub fn resolve_sidebar_section_colors(
     resolver: &LookResolver<'_>,
     _present: bool,
 ) -> anyhow::Result<SidebarSectionColorTable> {
-    resolve_sidebar_section_colors_with_stylesheet(resolver, embedded_stylesheet())
+    resolve_sidebar_section_colors_with_stylesheet(resolver, resolver.stylesheet())
 }
 
 pub fn resolve_sidebar_section_colors_with_stylesheet(
@@ -115,7 +115,7 @@ pub fn resolve_sidebar_branch_colors(
     disabled: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<SidebarBranchColorTable> {
-    resolve_sidebar_branch_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
+    resolve_sidebar_branch_colors_with_stylesheet(resolver, resolver.stylesheet(), disabled, layer)
 }
 
 pub fn resolve_sidebar_branch_colors_with_stylesheet(
@@ -157,7 +157,7 @@ pub fn resolve_sidebar_item_colors(
     disabled: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<SidebarItemColorTable> {
-    resolve_sidebar_item_colors_with_stylesheet(resolver, embedded_stylesheet(), selected, disabled, layer)
+    resolve_sidebar_item_colors_with_stylesheet(resolver, resolver.stylesheet(), selected, disabled, layer)
 }
 
 pub fn resolve_sidebar_item_colors_with_stylesheet(
@@ -178,8 +178,9 @@ pub fn resolve_sidebar_item_colors_with_stylesheet(
 }
 
 pub fn sidebar_container_look(mode: &ShadcnModeTokens) -> SidebarContainerLook {
-    let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_container");
+    let ctx = LookContext::new(mode, mode.theme_mode, InteractionState::default());
+    let resolver =
+        LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_container").with_stylesheet(mode.stylesheet());
     let colors =
         resolve_sidebar_container_colors(&resolver, true).unwrap_or_else(|_| SidebarContainerColorTable::fallback());
     SidebarContainerLook {
@@ -193,7 +194,8 @@ pub fn sidebar_container_look(mode: &ShadcnModeTokens) -> SidebarContainerLook {
 pub fn sidebar_section_look(theme: &ShadcnLook) -> SidebarSectionLook {
     let tokens = theme.mode_tokens();
     let ctx = LookContext::new(tokens.as_ref(), theme.mode(), InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_section");
+    let resolver =
+        LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_section").with_stylesheet(ctx.tokens.stylesheet());
     let colors =
         resolve_sidebar_section_colors(&resolver, true).unwrap_or_else(|_| SidebarSectionColorTable::fallback());
     SidebarSectionLook {
@@ -209,7 +211,8 @@ fn base_item_look(_theme: &ShadcnLook, ctx: &LookContext, size: ControlSize) -> 
     let state = ctx.state;
     let typography = ctx.typography();
     let resolved_metrics = crate::tables::metrics::resolve_sidebar_metrics(ctx.tokens, ctx.theme_mode, size);
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_item_base");
+    let resolver =
+        LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_item_base").with_stylesheet(ctx.tokens.stylesheet());
     let colors = resolve_sidebar_branch_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| SidebarBranchColorTable::fallback());
 
@@ -231,7 +234,8 @@ pub fn sidebar_branch_look(theme: &ShadcnLook, state: InteractionState, size: Co
     let tokens = theme.mode_tokens();
     let ctx = LookContext::new(tokens.as_ref(), theme.mode(), state);
     let mut look = base_item_look(theme, &ctx, size);
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_branch");
+    let resolver =
+        LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_branch").with_stylesheet(ctx.tokens.stylesheet());
     let colors = resolve_sidebar_branch_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| SidebarBranchColorTable::fallback());
 
@@ -251,7 +255,8 @@ pub fn sidebar_item_look(
     let tokens = theme.mode_tokens();
     let ctx = LookContext::new(tokens.as_ref(), theme.mode(), state);
     let mut look = base_item_look(theme, &ctx, size);
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_item");
+    let resolver =
+        LookResolver::new(ctx.catalog(), ctx.theme_mode, "sidebar_item").with_stylesheet(ctx.tokens.stylesheet());
     let colors = resolve_sidebar_item_colors(&resolver, selected, state.disabled, state.layer())
         .unwrap_or_else(|_| SidebarItemColorTable::fallback());
 

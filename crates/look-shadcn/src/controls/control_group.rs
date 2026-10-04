@@ -7,14 +7,12 @@
 //! | Border          | `border`             |
 
 use gpui_luma::controls::control_group::ControlGroupListLook;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_control_group_list_color_rule, resolve_control_group_list_color_rule,
-};
+use crate::stylesheet::{StylesheetConfig, find_control_group_list_color_rule, resolve_control_group_list_color_rule};
 
 #[derive(Clone, Debug)]
 pub struct ControlGroupListColorTable {
@@ -32,7 +30,7 @@ pub fn resolve_control_group_list_colors(
     resolver: &LookResolver<'_>,
     enabled: bool,
 ) -> anyhow::Result<ControlGroupListColorTable> {
-    resolve_control_group_list_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+    resolve_control_group_list_colors_with_stylesheet(resolver, resolver.stylesheet(), enabled)
 }
 
 pub fn resolve_control_group_list_colors_with_stylesheet(
@@ -47,20 +45,34 @@ pub fn resolve_control_group_list_colors_with_stylesheet(
 }
 
 pub fn control_group_list_look(mode: &ShadcnModeTokens, enabled: bool) -> ControlGroupListLook {
-    let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
+    let ctx = LookContext::new(mode, mode.theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "control_group_list");
+    let resolver =
+        LookResolver::new(ctx.catalog(), ctx.theme_mode, "control_group_list").with_stylesheet(mode.stylesheet());
     let colors = resolve_control_group_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| ControlGroupListColorTable::fallback());
 
-    ControlGroupListLook {
+    let mut look = ControlGroupListLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
         radius: metrics.radius(ControlSize::Md),
         padding_x: 6.0,
         padding_y: 4.0,
         gap: 6.0,
-    }
+    };
+    let geometry = mode.stylesheet().common.control_group.resolve_geometry(
+        "md",
+        gpui_luma::theme::stylesheet::ControlGroupGeometry {
+            padding_x: look.padding_x,
+            padding_y: look.padding_y,
+            gap: look.gap,
+        },
+    );
+    look.padding_x = geometry.padding_x.value_px;
+    look.padding_y = geometry.padding_y.value_px;
+    look.gap = geometry.gap.value_px;
+
+    look
 }
 
 #[cfg(test)]

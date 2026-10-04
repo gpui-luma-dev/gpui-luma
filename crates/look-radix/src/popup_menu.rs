@@ -78,12 +78,24 @@ impl PopupMenuTheme for PopupMenuThemeAdapter {
             border = Some(step(8));
         }
 
+        let geometry = self.look.common_stylesheet().popup_menu.resolve_geometry(
+            "",
+            gpui_luma::theme::stylesheet::PopupMenuGeometry {
+                font_size: gpui_luma::theme::ThemeTokens::default().typography.text.label.size,
+                line_height: gpui_luma::theme::ThemeTokens::default().typography.text.label.line_height,
+                ..Default::default()
+            },
+        );
         PopupMenuPalette {
             trigger_background: background,
             trigger_foreground: foreground,
             trigger_border: border,
             trigger_shadow: None,
-            trigger_typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight::MEDIUM },
+            trigger_typography: LumaTextStyle {
+                size: geometry.font_size.value_px,
+                line_height: geometry.line_height.value_px,
+                weight: FontWeight::MEDIUM,
+            },
             floating_menu: floating_menu_look(&self.look, self.variant, self.tone),
         }
     }
@@ -100,7 +112,21 @@ impl PopupMenuTheme for PopupMenuThemeAdapter {
         scale_factor: f32,
         _cx: &mut gpui::App,
     ) -> gpui_luma::controls::popup_menu::PopupMenuLook {
-        let scale = StandardBoxScale::compute(metrics.size, &self.metrics(), scale_factor);
+        let mut scale = StandardBoxScale::compute(metrics.size, &self.metrics(), scale_factor);
+        let geometry = self.look.common_stylesheet().popup_menu.resolve_geometry(
+            "",
+            gpui_luma::theme::stylesheet::PopupMenuGeometry {
+                height: scale.height,
+                padding_x: scale.padding_x,
+                padding_y: scale.padding_y,
+                gap: scale.gap,
+                ..Default::default()
+            },
+        );
+        scale.height = geometry.height.value_px;
+        scale.padding_x = geometry.padding_x.value_px;
+        scale.padding_y = geometry.padding_y.value_px;
+        scale.gap = geometry.gap.value_px;
         let mut look = compose_popup_menu_look(&self.resolve(trigger_style, metrics, state), &scale);
         if let Some(radius) = metrics.trigger_radius_override {
             look.trigger_radius = radius;
@@ -116,7 +142,7 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
         PopupMenuVariant::Soft => (tone.step(look, 4), look.resolve_role(SemanticRole::Foreground).hsla()),
     };
 
-    FloatingMenuLook {
+    let mut resolved = FloatingMenuLook {
         background: look.resolve_role(SemanticRole::Surface).hsla(),
         foreground: look.resolve_role(SemanticRole::Foreground).hsla(),
         border: look.resolve_role(SemanticRole::Border).hsla(),
@@ -141,7 +167,31 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
         item_radius: metrics.radius.sm,
         disabled_opacity: 0.56,
         submenu_offset_x: metrics.spacing.s1,
-    }
+    };
+    let geometry = look.common_stylesheet().floating_menu.resolve_geometry(
+        "2",
+        gpui_luma::theme::stylesheet::FloatingMenuGeometry {
+            padding: resolved.padding,
+            min_width: resolved.min_width,
+            item_height: resolved.item_height,
+            item_padding_x: resolved.item_padding_x,
+            item_gap: resolved.item_gap,
+            item_icon_size: resolved.item_icon_size,
+            font_size: resolved.item_typography.size,
+            line_height: resolved.item_typography.line_height,
+            submenu_offset_x: resolved.submenu_offset_x,
+        },
+    );
+    resolved.padding = geometry.padding.value_px;
+    resolved.min_width = geometry.min_width.value_px;
+    resolved.item_height = geometry.item_height.value_px;
+    resolved.item_padding_x = geometry.item_padding_x.value_px;
+    resolved.item_gap = geometry.item_gap.value_px;
+    resolved.item_icon_size = geometry.item_icon_size.value_px;
+    resolved.item_typography.size = geometry.font_size.value_px;
+    resolved.item_typography.line_height = geometry.line_height.value_px;
+    resolved.submenu_offset_x = geometry.submenu_offset_x.value_px;
+    resolved
 }
 
 pub fn popup_menu_theme(look: &Look, variant: PopupMenuVariant, tone: Tone) -> Arc<dyn PopupMenuTheme> {

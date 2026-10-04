@@ -23,7 +23,7 @@ pub struct Tabs {
     enabled: bool,
     animated: bool,
     contents: HashMap<SharedString, TabsContent>,
-    fade_duration: Duration,
+    fade_duration: Option<Duration>,
     disclosure_icons: Option<DisclosureIcons>,
     modifiers: Vec<TabsModifier>,
 }
@@ -41,7 +41,7 @@ impl Tabs {
             enabled: true,
             animated: true,
             contents: HashMap::new(),
-            fade_duration: Duration::ZERO,
+            fade_duration: None,
             disclosure_icons: None,
             modifiers: Vec::new(),
         }
@@ -115,7 +115,7 @@ impl Tabs {
 
     /// Fade incoming content on selection changes; first render stays fully visible.
     pub fn fade_in(mut self, duration: Duration) -> Self {
-        self.fade_duration = duration;
+        self.fade_duration = Some(duration);
         self
     }
 
@@ -164,7 +164,10 @@ impl Tabs {
             .width_mode(self.width_mode)
             .enabled(self.enabled)
             .animated(self.animated)
-            .fade_in(self.fade_duration);
+            .stylesheet(&look.common_stylesheet(), "radix");
+        if let Some(duration) = self.fade_duration {
+            builder = builder.fade_in(duration);
+        }
         for item in self.items {
             if let Some(content) = self.contents.get(item.id()) {
                 builder = builder.tab_content(item, content.clone());
@@ -189,6 +192,39 @@ impl Tabs {
 mod tests {
     use super::*;
     use gpui_luma::theme::ControlSize;
+
+    #[test]
+    fn look_edits_apply_to_future_builders_only() {
+        use gpui_luma::theme::stylesheet::{CommonStylesheet, MotionSource};
+        let look = Look::built_in();
+        let existing = Tabs::new("existing").into_sdk_builder(look.clone());
+        look.set_common_stylesheet(CommonStylesheet::default());
+        assert_eq!(existing.body_motion().duration, Duration::from_millis(300));
+        let new = Tabs::new("new").into_sdk_builder(look);
+        assert_eq!(new.body_motion().source, MotionSource::SdkFallback);
+    }
+
+    #[test]
+    fn body_motion_inherits_look_and_respects_overrides() {
+        use gpui_luma::theme::stylesheet::MotionSource;
+        let look = Look::built_in();
+        let inherited = Tabs::new("motion").into_sdk_builder(look.clone()).body_motion();
+        assert_eq!(inherited.duration, Duration::from_millis(300));
+        assert_eq!(
+            inherited.source,
+            MotionSource::Look { name: "radix".into(), field: "common.tabs.content.fade_in_ms" }
+        );
+        let explicit = Tabs::new("motion").fade_in(Duration::ZERO).into_sdk_builder(look.clone()).body_motion();
+        assert_eq!(explicit.duration, Duration::ZERO);
+        assert_eq!(explicit.source, MotionSource::InstanceOverride);
+        let disabled = Tabs::new("motion")
+            .fade_in(Duration::from_millis(900))
+            .animated(false)
+            .into_sdk_builder(look)
+            .body_motion();
+        assert_eq!(disabled.duration, Duration::ZERO);
+        assert_eq!(disabled.source, MotionSource::AnimationDisabled);
+    }
 
     #[test]
     fn size_maps_to_sdk_control_size() {

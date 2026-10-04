@@ -4,9 +4,7 @@ use gpui_luma::controls::textarea::TextAreaState;
 use gpui_luma::theme::{ControlSize, ThemeMode};
 use crate::{ShadcnModeTokens, ShadcnTextFieldStyle};
 
-use super::textfield::{
-    TextFieldInspectMetrics, TextFieldInspectPalette, inspect_textfield_color_palette, inspect_textfield_metrics,
-};
+use super::textfield::{TextFieldInspectMetrics, TextFieldInspectPalette, inspect_textfield_color_palette};
 
 fn textfield_state_from(state: TextAreaState) -> gpui_luma::controls::textfield::TextFieldState {
     gpui_luma::controls::textfield::TextFieldState {
@@ -35,5 +33,40 @@ pub fn inspect_textarea_metrics(
     theme_mode: ThemeMode,
     size: ControlSize,
 ) -> TextFieldInspectMetrics {
-    inspect_textfield_metrics(mode, theme_mode, size)
+    let mut table = crate::tables::metrics::resolve_textfield_metrics(mode, theme_mode, size);
+    // Textarea owns geometry independently of configured textfield dimensions.
+    let scale = gpui_luma::theme::StandardBoxScale::compute(size, &mode.metrics, 1.0);
+    let geometry = crate::controls::textarea::textarea_geometry(mode, size, &scale, &mode.typography.text.body);
+    table.min_height = crate::tables::metrics::helpers::prefer_shared_metric(
+        geometry.min_height,
+        crate::tables::metrics::helpers::scaffold_control_metric(
+            crate::tables::metrics::helpers::control_size_key(size),
+            "control_height",
+            scale.height,
+        ),
+    );
+    table.padding_x = crate::tables::metrics::helpers::prefer_shared_metric(
+        geometry.padding_x,
+        crate::tables::metrics::helpers::spacing_control_metric(
+            &mode.catalog,
+            size,
+            crate::catalog::SpacingField::PaddingX,
+            scale.padding_x,
+        ),
+    );
+    table.padding_y = crate::tables::metrics::helpers::prefer_shared_metric(
+        geometry.padding_y,
+        crate::tables::metrics::helpers::spacing_control_metric(
+            &mode.catalog,
+            size,
+            crate::catalog::SpacingField::PaddingY,
+            scale.padding_y,
+        ),
+    );
+    table.icon_size = crate::tables::metrics::helpers::scaffold_control_metric(
+        crate::tables::metrics::helpers::control_size_key(size),
+        "icon_size",
+        scale.icon_size,
+    );
+    table.into()
 }

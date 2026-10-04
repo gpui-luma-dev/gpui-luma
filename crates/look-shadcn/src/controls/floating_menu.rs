@@ -17,10 +17,9 @@ use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_floating_menu_surface_color_rule,
-    find_floating_menu_surface_elevation_rule, find_floating_menu_trigger_color_rule, resolve_button_metrics_rule,
-    resolve_floating_menu_surface_color_rule, resolve_floating_menu_trigger_color_rule,
-    resolve_stylesheet_shadow_token,
+    StylesheetConfig, find_floating_menu_surface_color_rule, find_floating_menu_surface_elevation_rule,
+    find_floating_menu_trigger_color_rule, resolve_floating_menu_surface_color_rule,
+    resolve_floating_menu_trigger_color_rule, resolve_stylesheet_shadow_token,
 };
 
 #[derive(Clone, Debug)]
@@ -50,7 +49,7 @@ pub fn resolve_floating_menu_colors(
     resolver: &LookResolver<'_>,
     present: bool,
 ) -> anyhow::Result<FloatingMenuColorTable> {
-    resolve_floating_menu_colors_with_stylesheet(resolver, embedded_stylesheet(), present)
+    resolve_floating_menu_colors_with_stylesheet(resolver, resolver.stylesheet(), present)
 }
 
 pub fn resolve_floating_menu_colors_with_stylesheet(
@@ -88,7 +87,7 @@ pub fn resolve_ghost_trigger_colors(
     layer: InteractionLayer,
     disabled: bool,
 ) -> anyhow::Result<GhostTriggerColorTable> {
-    resolve_ghost_trigger_colors_with_stylesheet(resolver, embedded_stylesheet(), layer, disabled)
+    resolve_ghost_trigger_colors_with_stylesheet(resolver, resolver.stylesheet(), layer, disabled)
 }
 
 pub fn resolve_ghost_trigger_colors_with_stylesheet(
@@ -108,23 +107,14 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let typography = ctx.typography();
-    let shadow = floating_menu_elevation_shadow(catalog, embedded_stylesheet());
-    let resolver = LookResolver::new(catalog, ctx.theme_mode, "floating_menu");
+    let shadow = floating_menu_elevation_shadow(catalog, mode.stylesheet());
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "floating_menu").with_stylesheet(mode.stylesheet());
     let colors = resolve_floating_menu_colors(&resolver, true).unwrap_or_else(|_| FloatingMenuColorTable::fallback());
-    let button_metrics = embedded_stylesheet()
-        .button
-        .metrics_for_size(size)
-        .map(|rule| resolve_button_metrics_rule(rule, metrics, size));
     let mut item_typography = typography.text.label;
-    if let Some(button_metrics) = button_metrics.as_ref() {
-        let base_size = item_typography.size;
-        item_typography.size = button_metrics.font_size;
-        if base_size > 0.0 {
-            item_typography.line_height = button_metrics.font_size * (item_typography.line_height / base_size);
-        }
-    }
+    super::typography::apply_button_metrics_typography(&mut item_typography, mode, size);
+    let item_icon_size = super::button::button_box_scale(&ctx, mode.stylesheet(), size, 1.0).icon_size;
 
-    FloatingMenuLook {
+    let mut look = FloatingMenuLook {
         background: colors.background.hsla(),
         foreground: colors.foreground.hsla(),
         border: colors.border.hsla(),
@@ -139,11 +129,50 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
         item_height: metrics.control_height(size) * 0.9,
         item_padding_x: metrics.padding_x(size) * 0.75,
         item_gap: metrics.gap(size),
-        item_icon_size: button_metrics.as_ref().map(|m| m.icon_size).unwrap_or_else(|| metrics.icon_size(size)),
+        item_icon_size: item_icon_size,
         item_radius: metrics.radius.sm,
         disabled_opacity: 0.56,
         submenu_offset_x: metrics.gap(size) * 0.5,
+    };
+    if let Some(rule) =
+        mode.stylesheet().floating_menu.metrics.get(crate::tables::metrics::helpers::control_size_key(size))
+    {
+        look.min_width = rule.min_width;
+        look.radius = crate::stylesheet::resolve_stylesheet_metric(&rule.radius, metrics, size).unwrap_or(look.radius);
+        look.item_radius =
+            crate::stylesheet::resolve_stylesheet_metric(&rule.item_radius, metrics, size).unwrap_or(look.item_radius);
+        look.item_height = metrics.control_height(size) * rule.item_height_factor;
+        look.item_padding_x = metrics.padding_x(size) * rule.item_padding_x_factor;
+        look.submenu_offset_x = metrics.gap(size) * rule.submenu_offset_x_factor;
     }
+    let geometry = mode.stylesheet().common.floating_menu.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::FloatingMenuGeometry {
+            padding: look.padding,
+            min_width: look.min_width,
+            item_height: look.item_height,
+            item_padding_x: look.item_padding_x,
+            item_gap: look.item_gap,
+            item_icon_size: look.item_icon_size,
+            submenu_offset_x: look.submenu_offset_x,
+            font_size: look.item_typography.size,
+            line_height: look.item_typography.line_height,
+        },
+    );
+    look.padding = geometry.padding.value_px;
+    look.min_width = geometry.min_width.value_px;
+    look.item_height = geometry.item_height.value_px;
+    look.item_padding_x = geometry.item_padding_x.value_px;
+    look.item_gap = geometry.item_gap.value_px;
+    look.item_icon_size = geometry.item_icon_size.value_px;
+    look.submenu_offset_x = geometry.submenu_offset_x.value_px;
+    crate::tables::typography::apply_resolved_geometry_typography(
+        &mut look.item_typography,
+        &geometry.font_size,
+        &geometry.line_height,
+    );
+
+    look
 }
 
 fn floating_menu_elevation_shadow(

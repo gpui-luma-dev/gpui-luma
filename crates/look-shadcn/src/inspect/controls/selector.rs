@@ -55,7 +55,7 @@ pub fn inspect_selector_metrics(
     trigger_style: SelectorTriggerStyle,
     size: ControlSize,
 ) -> SelectorInspectMetrics {
-    SelectorInspectMetrics {
+    let mut result = SelectorInspectMetrics {
         trigger: inspect_button_metrics(
             mode,
             theme_mode,
@@ -65,5 +65,26 @@ pub fn inspect_selector_metrics(
             InteractionState::default(),
         ),
         items_panel: crate::inspect::controls::floating_menu::inspect_floating_menu_metrics(mode, theme_mode, size),
-    }
+    };
+    let scale = gpui_luma::theme::StandardBoxScale::compute(size, &mode.metrics, 1.0);
+    let geometry = crate::controls::selector::selector_geometry(mode, size, &scale, &mode.typography.text.label);
+    use crate::catalog::SpacingField;
+    use crate::tables::metrics::helpers::{
+        control_size_key, radius_metric, scaffold_control_metric, spacing_control_metric,
+    };
+    result.trigger.height = scaffold_control_metric(control_size_key(size), "control_height", scale.height);
+    result.trigger.padding_x = spacing_control_metric(&mode.catalog, size, SpacingField::PaddingX, scale.padding_x);
+    result.trigger.padding_y = spacing_control_metric(&mode.catalog, size, SpacingField::PaddingY, scale.padding_y);
+    result.trigger.gap = spacing_control_metric(&mode.catalog, size, SpacingField::Gap, scale.gap);
+    result.trigger.radius = radius_metric(&mode.catalog, size, scale.radius);
+    result.trigger.height =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.height, result.trigger.height);
+    result.trigger.padding_x =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_x, result.trigger.padding_x);
+    result.trigger.padding_y =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_y, result.trigger.padding_y);
+    result.trigger.gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.gap, result.trigger.gap);
+    result.trigger.icon_size =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.icon_size, result.trigger.icon_size);
+    result
 }

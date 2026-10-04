@@ -37,7 +37,8 @@ pub fn inspect_sidebar_container_color_palette(
     theme_mode: ThemeMode,
 ) -> SidebarContainerInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_container_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "sidebar_container_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_sidebar_container_colors(&resolver, true)
         .unwrap_or_else(|_| crate::tables::SidebarContainerColorTable::fallback());
     SidebarContainerInspectPalette {
@@ -52,7 +53,8 @@ pub fn inspect_sidebar_section_color_palette(
     theme_mode: ThemeMode,
 ) -> SidebarSectionInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_section_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "sidebar_section_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_sidebar_section_colors(&resolver, true)
         .unwrap_or_else(|_| crate::tables::SidebarSectionColorTable::fallback());
     SidebarSectionInspectPalette { label_color: colors.label_color }
@@ -64,7 +66,8 @@ pub fn inspect_sidebar_branch_color_palette(
     state: InteractionState,
 ) -> SidebarItemInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_branch_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "sidebar_branch_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_sidebar_branch_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| crate::tables::SidebarBranchColorTable::fallback());
     SidebarItemInspectPalette {
@@ -82,7 +85,8 @@ pub fn inspect_sidebar_item_color_palette(
     state: InteractionState,
 ) -> SidebarItemInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "sidebar_item_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "sidebar_item_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_sidebar_item_colors(&resolver, selected, state.disabled, state.layer())
         .unwrap_or_else(|_| crate::tables::SidebarItemColorTable::fallback());
     SidebarItemInspectPalette {

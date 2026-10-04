@@ -9,8 +9,6 @@
 use gpui_luma::controls::checkbox::CheckboxPalette;
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
-use super::apply_button_metrics_typography;
-
 use crate::look_context::LookContext;
 use crate::provenance::{LookResolver, ResolvedColor};
 use super::ShadcnButtonStyle;
@@ -18,8 +16,7 @@ use super::choice_indicator::choice_indicator_color_layer;
 use crate::mode::ShadcnModeTokens;
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_checkbox_color_rule, resolve_checkbox_color_rule,
-    resolve_layered_elevation_shadow,
+    StylesheetConfig, find_checkbox_color_rule, resolve_checkbox_color_rule, resolve_layered_elevation_shadow,
 };
 
 #[derive(Clone, Debug)]
@@ -45,7 +42,7 @@ pub fn resolve_checkbox_colors(
     checked: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<CheckboxColorTable> {
-    resolve_checkbox_colors_with_stylesheet(resolver, embedded_stylesheet(), style, checked, layer)
+    resolve_checkbox_colors_with_stylesheet(resolver, resolver.stylesheet(), style, checked, layer)
 }
 
 pub fn resolve_checkbox_colors_with_stylesheet(
@@ -82,14 +79,37 @@ pub fn resolve_checkbox_palette(
     checked: bool,
     state: InteractionState,
 ) -> CheckboxResolvedColors {
+    resolve_checkbox_palette_with_stylesheet(
+        &LookContext::new(mode, theme_mode, state),
+        mode.stylesheet(),
+        style,
+        checked,
+    )
+}
+
+pub(crate) fn resolve_checkbox_palette_with_stylesheet(
+    ctx: &LookContext,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
+    checked: bool,
+) -> CheckboxResolvedColors {
+    let mode = ctx.tokens;
+    let theme_mode = ctx.theme_mode;
+    let state = ctx.state;
     let indicator_style = if style == ShadcnButtonStyle::ContentOnly {
         ShadcnButtonStyle::Primary
     } else {
         style
     };
-    let resolver = LookResolver::new(&mode.catalog, theme_mode, "checkbox");
-    let colors = resolve_checkbox_colors(&resolver, indicator_style, checked, choice_indicator_color_layer(state))
-        .unwrap_or_else(|_| CheckboxColorTable::fallback());
+    let resolver = LookResolver::new(&mode.catalog, theme_mode, "checkbox").with_stylesheet(stylesheet);
+    let colors = resolve_checkbox_colors_with_stylesheet(
+        &resolver,
+        stylesheet,
+        indicator_style,
+        checked,
+        choice_indicator_color_layer(state),
+    )
+    .unwrap_or_else(|_| CheckboxColorTable::fallback());
     let indicator_border = super::choice_indicator::resolve_indicator_border(
         &resolver,
         style,
@@ -112,13 +132,29 @@ pub fn checkbox_look(
     state: InteractionState,
     size: ControlSize,
 ) -> CheckboxPalette {
+    checkbox_look_with_stylesheet(
+        &LookContext::new(mode, mode.theme_mode, state),
+        mode.stylesheet(),
+        style,
+        checked,
+        size,
+    )
+}
+
+pub(crate) fn checkbox_look_with_stylesheet(
+    ctx: &LookContext,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
+    checked: bool,
+    size: ControlSize,
+) -> CheckboxPalette {
     let content_only = style == ShadcnButtonStyle::ContentOnly;
-    let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
-    let typography = ctx.typography();
+    let typography =
+        crate::tables::typography::resolve_control_typography_with_stylesheet(ctx.tokens, stylesheet, size, false);
     let layer = choice_indicator_color_layer(state);
-    let colors = resolve_checkbox_palette(mode, ctx.theme_mode, style, checked, state);
+    let colors = resolve_checkbox_palette_with_stylesheet(ctx, stylesheet, style, checked);
 
     CheckboxPalette {
         control_background: None,
@@ -127,16 +163,12 @@ pub fn checkbox_look(
         indicator_border: colors.indicator_border.hsla(),
         checkmark_color: colors.checkmark_color.hsla(),
         label_color: colors.label_color.hsla(),
-        label_typography: {
-            let mut label_typography = typography.text.label;
-            apply_button_metrics_typography(&mut label_typography, mode, size);
-            label_typography
-        },
-        label_font_family: typography.font.sans.family.clone().into(),
+        label_typography: typography.style,
+        label_font_family: typography.font_family,
         indicator_shadow: if content_only {
             None
         } else {
-            checkbox_elevation_shadow(catalog, embedded_stylesheet(), layer)
+            checkbox_elevation_shadow(catalog, stylesheet, layer)
         },
     }
 }
@@ -149,6 +181,29 @@ fn checkbox_elevation_shadow(
     let token = resolve_layered_elevation_shadow(&stylesheet.checkbox.elevation_rules, layer)?;
     let shadows = parse_shadow_token(catalog, &token).ok()?;
     if shadows.is_empty() { None } else { Some(shadows) }
+}
+
+/// Resolve common indicator dimensions over the SDK's existing row scale.
+pub(crate) fn checkbox_scale_with_stylesheet(
+    ctx: &LookContext,
+    stylesheet: &StylesheetConfig,
+    size: ControlSize,
+    scale_factor: f32,
+) -> (gpui_luma::controls::checkbox::CheckboxScale, gpui_luma::theme::stylesheet::ResolvedCheckboxGeometry) {
+    use gpui_luma::controls::checkbox::CheckboxScale;
+    use gpui_luma::theme::{snap_to_pixel, stylesheet::CheckboxGeometry};
+    let mut scale = CheckboxScale::compute(size, ctx.metrics(), scale_factor);
+    let mut geometry = stylesheet.common.checkbox.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        CheckboxGeometry { indicator_size: scale.indicator_size, glyph_size: scale.glyph_size, gap: scale.gap },
+    );
+    for metric in [&mut geometry.indicator_size, &mut geometry.glyph_size, &mut geometry.gap] {
+        metric.value_px = snap_to_pixel(metric.value_px, scale_factor);
+    }
+    scale.indicator_size = geometry.indicator_size.value_px;
+    scale.glyph_size = geometry.glyph_size.value_px;
+    scale.gap = geometry.gap.value_px;
+    (scale, geometry)
 }
 
 #[cfg(test)]

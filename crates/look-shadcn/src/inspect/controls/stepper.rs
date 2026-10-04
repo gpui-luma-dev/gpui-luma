@@ -27,7 +27,7 @@ pub fn inspect_stepper_color_palette(
     enabled: bool,
 ) -> StepperInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "stepper_inspect");
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "stepper_inspect").with_stylesheet(mode.stylesheet());
     let palette = crate::tables::resolve_stepper_colors(&resolver, enabled)
         .unwrap_or_else(|_| crate::tables::StepperColorTable::fallback());
     StepperInspectPalette {

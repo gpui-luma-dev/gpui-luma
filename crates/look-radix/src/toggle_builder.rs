@@ -8,7 +8,7 @@ use gpui_luma::controls::toggle::{ToggleBuilder, ToggleData};
 use crate::button::Paint;
 use crate::button_layout::ButtonSize;
 use crate::look::{Look, resolve_look};
-use crate::toggle::{page_toggle_template, toggle_template_for};
+use crate::toggle::toggle_template_for_size;
 use crate::tone::Tone;
 
 /// Builder in the guise of a toggle: Radix axes plus SDK options, until `.spawn(cx)`.
@@ -139,11 +139,7 @@ impl Toggle {
     }
 
     fn into_sdk_builder(self, look: Look) -> ToggleBuilder {
-        let template = if self.page {
-            page_toggle_template(&look)
-        } else {
-            toggle_template_for(&look, self.paint)
-        };
+        let template = toggle_template_for_size(&look, self.paint, self.page, self.size);
         let mut builder = gpui_luma::controls::toggle::new(self.id)
             .template(template)
             .size(self.size.control_size())

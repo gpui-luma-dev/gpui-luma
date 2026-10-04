@@ -11,8 +11,6 @@
 use gpui_luma::controls::radio_button::RadioButtonPalette;
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
-use super::apply_button_metrics_typography;
-
 use crate::look_context::LookContext;
 use crate::provenance::{LookResolver, ResolvedColor};
 use super::ShadcnButtonStyle;
@@ -20,8 +18,7 @@ use super::choice_indicator::choice_indicator_color_layer;
 use crate::mode::ShadcnModeTokens;
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_radio_color_rule, resolve_layered_elevation_shadow,
-    resolve_radio_color_rule,
+    StylesheetConfig, find_radio_color_rule, resolve_layered_elevation_shadow, resolve_radio_color_rule,
 };
 
 #[derive(Clone, Debug)]
@@ -49,7 +46,7 @@ pub fn resolve_radio_colors(
     selected: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<RadioColorTable> {
-    resolve_radio_colors_with_stylesheet(resolver, embedded_stylesheet(), style, selected, layer)
+    resolve_radio_colors_with_stylesheet(resolver, resolver.stylesheet(), style, selected, layer)
 }
 
 pub fn resolve_radio_colors_with_stylesheet(
@@ -87,14 +84,37 @@ pub fn resolve_radio_palette(
     selected: bool,
     state: InteractionState,
 ) -> RadioResolvedColors {
+    resolve_radio_palette_with_stylesheet(
+        &LookContext::new(mode, theme_mode, state),
+        mode.stylesheet(),
+        style,
+        selected,
+    )
+}
+
+pub(crate) fn resolve_radio_palette_with_stylesheet(
+    ctx: &LookContext,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
+    selected: bool,
+) -> RadioResolvedColors {
+    let mode = ctx.tokens;
+    let theme_mode = ctx.theme_mode;
+    let state = ctx.state;
     let indicator_style = if style == ShadcnButtonStyle::ContentOnly {
         ShadcnButtonStyle::Primary
     } else {
         style
     };
-    let resolver = LookResolver::new(&mode.catalog, theme_mode, "radio");
-    let colors = resolve_radio_colors(&resolver, indicator_style, selected, choice_indicator_color_layer(state))
-        .unwrap_or_else(|_| RadioColorTable::fallback());
+    let resolver = LookResolver::new(&mode.catalog, theme_mode, "radio").with_stylesheet(stylesheet);
+    let colors = resolve_radio_colors_with_stylesheet(
+        &resolver,
+        stylesheet,
+        indicator_style,
+        selected,
+        choice_indicator_color_layer(state),
+    )
+    .unwrap_or_else(|_| RadioColorTable::fallback());
     let indicator_border =
         super::choice_indicator::resolve_indicator_border(&resolver, style, selected, state, &colors.selection_ring);
     RadioResolvedColors {
@@ -112,13 +132,29 @@ pub fn radio_button_look(
     state: InteractionState,
     size: ControlSize,
 ) -> RadioButtonPalette {
+    radio_button_look_with_stylesheet(
+        &LookContext::new(mode, mode.theme_mode, state),
+        mode.stylesheet(),
+        style,
+        selected,
+        size,
+    )
+}
+
+pub(crate) fn radio_button_look_with_stylesheet(
+    ctx: &LookContext,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
+    selected: bool,
+    size: ControlSize,
+) -> RadioButtonPalette {
     let content_only = style == ShadcnButtonStyle::ContentOnly;
-    let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
-    let typography = ctx.typography();
+    let typography =
+        crate::tables::typography::resolve_control_typography_with_stylesheet(ctx.tokens, stylesheet, size, false);
     let layer = choice_indicator_color_layer(state);
-    let colors = resolve_radio_palette(mode, ctx.theme_mode, style, selected, state);
+    let colors = resolve_radio_palette_with_stylesheet(ctx, stylesheet, style, selected);
 
     RadioButtonPalette {
         control_background: None,
@@ -127,16 +163,12 @@ pub fn radio_button_look(
         indicator_border: colors.indicator_border.hsla(),
         dot_color: colors.dot_color.hsla(),
         label_color: colors.label_color.hsla(),
-        label_typography: {
-            let mut label_typography = typography.text.label;
-            apply_button_metrics_typography(&mut label_typography, mode, size);
-            label_typography
-        },
-        label_font_family: typography.font.sans.family.clone().into(),
+        label_typography: typography.style,
+        label_font_family: typography.font_family,
         indicator_shadow: if content_only {
             None
         } else {
-            radio_elevation_shadow(catalog, embedded_stylesheet(), layer)
+            radio_elevation_shadow(catalog, stylesheet, layer)
         },
     }
 }
@@ -149,6 +181,29 @@ fn radio_elevation_shadow(
     let token = resolve_layered_elevation_shadow(&stylesheet.radio.elevation_rules, layer)?;
     let shadows = parse_shadow_token(catalog, &token).ok()?;
     if shadows.is_empty() { None } else { Some(shadows) }
+}
+
+/// Resolve common indicator dimensions over the SDK's existing row scale.
+pub(crate) fn radio_scale_with_stylesheet(
+    ctx: &LookContext,
+    stylesheet: &StylesheetConfig,
+    size: ControlSize,
+    scale_factor: f32,
+) -> (gpui_luma::controls::radio_button::RadioScale, gpui_luma::theme::stylesheet::ResolvedRadioGeometry) {
+    use gpui_luma::controls::radio_button::RadioScale;
+    use gpui_luma::theme::{snap_to_pixel, stylesheet::RadioGeometry};
+    let mut scale = RadioScale::compute(size, ctx.metrics(), scale_factor);
+    let mut geometry = stylesheet.common.radio.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        RadioGeometry { indicator_size: scale.indicator_size, dot_size: scale.dot_size, gap: scale.gap },
+    );
+    for metric in [&mut geometry.indicator_size, &mut geometry.dot_size, &mut geometry.gap] {
+        metric.value_px = snap_to_pixel(metric.value_px, scale_factor);
+    }
+    scale.indicator_size = geometry.indicator_size.value_px;
+    scale.dot_size = geometry.dot_size.value_px;
+    scale.gap = geometry.gap.value_px;
+    (scale, geometry)
 }
 
 #[cfg(test)]

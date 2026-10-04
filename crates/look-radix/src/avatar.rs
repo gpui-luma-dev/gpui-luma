@@ -47,17 +47,26 @@ impl AvatarSize {
         Self::Eight,
         Self::Nine,
     ];
+    pub fn as_str(self) -> &'static str {
+        ["1", "2", "3", "4", "5", "6", "7", "8", "9"][self as usize]
+    }
     pub fn label(self) -> &'static str {
         ["Size 1", "Size 2", "Size 3", "Size 4", "Size 5", "Size 6", "Size 7", "Size 8", "Size 9"][self as usize]
     }
     pub fn diameter(self) -> f32 {
-        [24.0, 32.0, 40.0, 48.0, 64.0, 80.0, 96.0, 128.0, 160.0][self as usize]
+        crate::look::embedded_common_stylesheet()
+            .avatar
+            .resolve_geometry(self.as_str(), Default::default())
+            .diameter
+            .value_px
     }
     fn font_size(self, two_letters: bool) -> f32 {
+        let geometry =
+            crate::look::embedded_common_stylesheet().avatar.resolve_geometry(self.as_str(), Default::default());
         if two_letters {
-            [12.0, 14.0, 16.0, 18.0, 24.0, 28.0, 28.0, 35.0, 60.0][self as usize]
+            geometry.two_letter_font_size.value_px
         } else {
-            [14.0, 16.0, 18.0, 20.0, 24.0, 28.0, 28.0, 35.0, 60.0][self as usize]
+            geometry.font_size.value_px
         }
     }
     pub fn corner_radius(self, radius: Radius) -> f32 {
@@ -166,11 +175,36 @@ impl Avatar {
     /// Resolve current palette and size defaults, then apply the local override.
     pub fn resolve_style(&self) -> AvatarStyle {
         let (background, foreground) = self.colors();
-        let font_size = self.size.font_size(matches!(&self.fallback, Fallback::Text(text) if text.chars().count() > 1));
+        let stylesheet = self.look.common_stylesheet();
+        let diameter = self.size.diameter();
+        let geometry = stylesheet.avatar.resolve_geometry(
+            self.size.as_str(),
+            gpui_luma::theme::stylesheet::AvatarGeometry {
+                diameter,
+                icon_size: diameter * 0.6,
+                font_size: self.size.font_size(false),
+                two_letter_font_size: self.size.font_size(true),
+            },
+        );
+        let icon_size =
+            if matches!(geometry.icon_size.source, gpui_luma::theme::provenance::MetricSource::Constant { .. }) {
+                geometry.diameter.value_px * 0.6
+            } else {
+                geometry.icon_size.value_px
+            };
+        let font_size = if matches!(&self.fallback, Fallback::Text(text) if text.chars().count() > 1) {
+            geometry.two_letter_font_size.value_px
+        } else {
+            geometry.font_size.value_px
+        };
         let mut style = AvatarStyle {
-            diameter: self.size.diameter(),
-            radius: self.size.corner_radius(self.radius),
-            icon_size: self.size.diameter() * 0.6,
+            diameter: geometry.diameter.value_px,
+            radius: if self.radius == Radius::Full {
+                geometry.diameter.value_px / 2.0
+            } else {
+                self.size.corner_radius(self.radius)
+            },
+            icon_size,
             font_size,
             line_height: font_size,
             font_weight: FontWeight::MEDIUM,
@@ -253,6 +287,24 @@ impl IntoElement for Avatar {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn icon_fallback_tracks_resolved_diameter_but_preserves_authored_sizes() {
+        let look = Look::built_in();
+        let avatar = Avatar::new(&look, "A");
+        let mut stylesheet = look.common_stylesheet();
+        stylesheet.avatar.sizes.get_mut("3").unwrap().diameter = Some(75.0);
+        look.set_common_stylesheet(stylesheet.clone());
+        assert_eq!(avatar.resolve_style().icon_size, 75.0 * 0.6);
+
+        stylesheet.avatar.geometry.icon_size = Some(17.0);
+        look.set_common_stylesheet(stylesheet.clone());
+        assert_eq!(avatar.resolve_style().icon_size, 17.0);
+
+        stylesheet.avatar.sizes.get_mut("3").unwrap().icon_size = Some(0.0);
+        look.set_common_stylesheet(stylesheet);
+        assert_eq!(avatar.resolve_style().icon_size, 0.0);
+    }
+
     #[test]
     fn local_override_preserves_live_palette_and_does_not_change_siblings() {
         let look = Look::built_in();

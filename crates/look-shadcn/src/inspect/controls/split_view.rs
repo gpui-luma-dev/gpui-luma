@@ -28,7 +28,8 @@ pub fn inspect_split_view_color_palette(
     enabled: bool,
 ) -> SplitViewInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "split_view_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "split_view_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_split_view_colors(&resolver, enabled)
         .unwrap_or_else(|_| crate::tables::SplitViewColorTable::fallback());
     SplitViewInspectPalette { separator: colors.separator, separator_hover: colors.separator_hover }

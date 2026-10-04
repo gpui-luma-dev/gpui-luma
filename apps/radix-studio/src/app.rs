@@ -3,7 +3,6 @@
 use gpui_luma::prelude::TooltipEntityExt;
 
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use gpui::{
     App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, AnyElement, ScrollHandle, Subscription, Task, Window,
@@ -34,7 +33,6 @@ use crate::screens::{colors, custom_palette, developer, icons, style_guide};
 use crate::tabs::RadixStudioTab;
 
 const CONTENT_MAX_W: f32 = 1280.0;
-const SCREEN_ENTER_DURATION: Duration = Duration::from_millis(300);
 const CONTROL_BAR_FADE_DISTANCE: f32 = 96.0;
 const STARTUP_MODE: ThemeMode = ThemeMode::Dark;
 
@@ -136,11 +134,7 @@ impl RadixStudioApp {
         palette_edits.apply(&theme, &draft);
 
         let mode_selector = theme_mode::spawn("palette-mode", &draft, cx);
-        let mut screen_builder = radix::Tabs::new("screen-nav-tabs")
-            .look(&theme)
-            .line()
-            .fade_in(SCREEN_ENTER_DURATION)
-            .active("page-custom-palette");
+        let mut screen_builder = radix::Tabs::new("screen-nav-tabs").look(&theme).line().active("page-custom-palette");
         for (screen, id, label) in SCREEN_TABS {
             let app = cx.entity().downgrade();
             screen_builder = screen_builder.tab_with(id, label, move |window, cx| {

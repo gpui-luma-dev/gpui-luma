@@ -11,6 +11,7 @@ use crate::{Look, ScaleFamily};
 pub fn segmented_radio_template<T: ControlGroupItemLike + 'static>(look: &Look) -> RadioGroupTemplate<T> {
     let look = look.clone();
     Arc::new(move |model, handlers, window, cx| {
+        let geometry = resolve_geometry(&look);
         let gray = |step| look.resolve_step(ScaleFamily::Gray, step).hsla();
         let rows = model
             .items
@@ -41,14 +42,14 @@ pub fn segmented_radio_template<T: ControlGroupItemLike + 'static>(look: &Look) 
                     .items_center()
                     .justify_center()
                     .flex_1()
-                    .h(px(32.0))
-                    .px(px(12.0))
+                    .h(px(geometry.height.value_px))
+                    .px(px(geometry.padding_x.value_px))
                     .rounded(px(4.0))
                     .border_1()
                     .border_color(border)
                     .bg(gray(fill))
-                    .text_size(px(14.0))
-                    .line_height(px(20.0))
+                    .text_size(px(geometry.font_size.value_px))
+                    .line_height(px(geometry.line_height.value_px))
                     .text_color(gray(if item.enabled { 12 } else { 8 }))
                     .when(item.enabled, |row| row.cursor_pointer())
                     .child(content)
@@ -57,4 +58,18 @@ pub fn segmented_radio_template<T: ControlGroupItemLike + 'static>(look: &Look) 
             .collect::<Vec<_>>();
         div().id(model.id.clone()).flex().items_center().rounded(px(5.0)).bg(gray(3)).children(rows)
     })
+}
+
+pub(crate) fn resolve_geometry(look: &Look) -> gpui_luma::theme::stylesheet::ResolvedSegmentedGeometry {
+    let control = look.metrics().control.md;
+    let typography = gpui_luma::theme::ThemeTokens::default().typography.text.label;
+    look.common_stylesheet().segmented.resolve_geometry(
+        "2",
+        gpui_luma::theme::stylesheet::SegmentedGeometry {
+            height: control.height,
+            padding_x: control.padding_x,
+            font_size: typography.size,
+            line_height: typography.line_height,
+        },
+    )
 }

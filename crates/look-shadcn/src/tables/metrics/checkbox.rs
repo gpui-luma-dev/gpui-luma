@@ -21,8 +21,15 @@ pub fn resolve_checkbox_metrics(
     theme_mode: ThemeMode,
     size: gpui_luma::theme::ControlSize,
 ) -> CheckboxMetricTable {
-    use gpui_luma::controls::checkbox::CheckboxScale;
+    resolve_checkbox_metrics_with_stylesheet(mode, mode.stylesheet(), theme_mode, size)
+}
 
+pub(crate) fn resolve_checkbox_metrics_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    theme_mode: ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> CheckboxMetricTable {
     use crate::catalog::SpacingField;
     use super::helpers::{
         border_width_metric, control_size_key, derived_metric, focus_ring_offset_metric, focus_ring_width_metric,
@@ -32,15 +39,28 @@ pub fn resolve_checkbox_metrics(
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
-    let scale = CheckboxScale::compute(size, metrics, 1.0);
+    let (scale, geometry) = crate::controls::checkbox::checkbox_scale_with_stylesheet(&ctx, stylesheet, size, 1.0);
+    let authored = |metric: gpui_luma::theme::provenance::ResolvedMetric, fallback: ResolvedMetric| {
+        if matches!(metric.source, gpui_luma::theme::provenance::MetricSource::Constant { .. }) {
+            fallback
+        } else {
+            super::helpers::inspect_shared_metric(metric)
+        }
+    };
     let size_key = control_size_key(size);
 
     CheckboxMetricTable {
         height: scaffold_control_metric(size_key, "control_height", scale.height),
-        gap: spacing_control_metric(catalog, size, SpacingField::Gap, scale.gap),
-        indicator_size: derived_metric(format!("{size_key} CheckboxScale.indicator_size"), scale.indicator_size),
+        gap: authored(geometry.gap, spacing_control_metric(catalog, size, SpacingField::Gap, scale.gap)),
+        indicator_size: authored(
+            geometry.indicator_size,
+            derived_metric(format!("{size_key} CheckboxScale.indicator_size"), scale.indicator_size),
+        ),
         indicator_radius: derived_metric(format!("{size_key} CheckboxScale.indicator_radius"), scale.indicator_radius),
-        glyph_size: derived_metric(format!("{size_key} glyph = indicator − inset"), scale.glyph_size),
+        glyph_size: authored(
+            geometry.glyph_size,
+            derived_metric(format!("{size_key} glyph = SDK indicator − inset"), scale.glyph_size),
+        ),
         control_radius: radius_metric(catalog, size, scale.control_radius),
         border_width: border_width_metric(metrics),
         focus_ring_width: focus_ring_width_metric(metrics),

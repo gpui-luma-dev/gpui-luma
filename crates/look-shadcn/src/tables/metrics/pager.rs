@@ -31,7 +31,7 @@ pub fn resolve_pager_metrics(look: &ShadcnLook, style: PagerStyle) -> PagerMetri
     );
     let reserved_shadow_extent = shadow_projection_extent(button.shadow.as_deref(), 1.0, true);
 
-    PagerMetricTable {
+    let mut table = PagerMetricTable {
         control_height: derived_metric(format!("{style_label} page-size trigger height"), pager.control_height),
         button_size: derived_metric(format!("{style_label} button size"), pager.button_size),
         button_min_width: derived_metric(format!("{style_label} button min width"), pager.button_min_width),
@@ -45,7 +45,29 @@ pub fn resolve_pager_metrics(look: &ShadcnLook, style: PagerStyle) -> PagerMetri
             value_px: reserved_shadow_extent,
             source: crate::MetricSource::Derived { note: "button outline shadow projection extent".into() },
         },
-    }
+    };
+    let geometry = look.mode_tokens().stylesheet().common.pager.resolve_geometry(
+        style_label,
+        gpui_luma::theme::stylesheet::PagerGeometry {
+            control_height: table.control_height.value_px,
+            button_size: table.button_size.value_px,
+            button_min_width: table.button_min_width.value_px,
+            padding_x: table.padding_x.value_px,
+            padding_y: table.padding_y.value_px,
+            gap: table.gap.value_px,
+            group_gap: table.group_gap.value_px,
+            ..Default::default()
+        },
+    );
+    table.control_height = super::helpers::prefer_shared_metric(geometry.control_height, table.control_height);
+    table.button_size = super::helpers::prefer_shared_metric(geometry.button_size, table.button_size);
+    table.button_min_width = super::helpers::prefer_shared_metric(geometry.button_min_width, table.button_min_width);
+    table.padding_x = super::helpers::prefer_shared_metric(geometry.padding_x, table.padding_x);
+    table.padding_y = super::helpers::prefer_shared_metric(geometry.padding_y, table.padding_y);
+    table.gap = super::helpers::prefer_shared_metric(geometry.gap, table.gap);
+    table.group_gap = super::helpers::prefer_shared_metric(geometry.group_gap, table.group_gap);
+
+    table
 }
 
 fn pager_font_family(look: &ShadcnLook) -> ResolvedTypography {

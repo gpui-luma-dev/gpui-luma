@@ -5,7 +5,7 @@ use gpui_luma::controls::checkbox::{CheckboxData, CheckboxTheme, ThemedCheckboxT
 use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::controls::button::ShadcnButtonStyle;
-use crate::controls::checkbox::checkbox_look;
+use crate::controls::checkbox::{checkbox_look_with_stylesheet, checkbox_scale_with_stylesheet};
 use crate::look::ShadcnLook;
 
 struct ShadcnStyledCheckboxTheme {
@@ -21,7 +21,24 @@ impl CheckboxTheme for ShadcnStyledCheckboxTheme {
         size: ControlSize,
     ) -> gpui_luma::controls::checkbox::CheckboxPalette {
         let tokens = self.theme.mode_tokens();
-        checkbox_look(tokens.as_ref(), self.style, checked, state, size)
+        checkbox_look_with_stylesheet(
+            &crate::LookContext::new(tokens.as_ref(), self.theme.mode(), state),
+            self.theme.stylesheet().as_ref(),
+            self.style,
+            checked,
+            size,
+        )
+    }
+
+    fn scale(&self, size: ControlSize, scale_factor: f32) -> gpui_luma::controls::checkbox::CheckboxScale {
+        let tokens = self.theme.mode_tokens();
+        checkbox_scale_with_stylesheet(
+            &crate::LookContext::new(tokens.as_ref(), self.theme.mode(), InteractionState::default()),
+            self.theme.stylesheet().as_ref(),
+            size,
+            scale_factor,
+        )
+        .0
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {

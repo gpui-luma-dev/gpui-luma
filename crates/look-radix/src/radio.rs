@@ -65,30 +65,50 @@ impl RadioSize {
 
     /// Outer indicator diameter (`--radio-size`).
     pub fn box_size(self) -> f32 {
-        match self {
-            Self::One => 14.0,
-            Self::Two => 16.0,
-            Self::Three => 20.0,
-        }
+        crate::look::embedded_common_stylesheet()
+            .radio
+            .resolve_geometry(self.as_str(), Default::default())
+            .indicator_size
+            .value_px
     }
 
     /// Inner dot diameter — Radix scales the indicator with `transform: scale(0.4)`.
     pub fn dot_size(self) -> f32 {
-        self.box_size() * 0.4
+        crate::look::embedded_common_stylesheet()
+            .radio
+            .resolve_geometry(self.as_str(), Default::default())
+            .dot_size
+            .value_px
     }
 }
 
 pub fn radio_scale_for(size: RadioSize) -> RadioScale {
-    let box_size = size.box_size();
+    radio_scale_with_stylesheet(crate::look::embedded_common_stylesheet(), size)
+}
+
+fn radio_scale_with_stylesheet(
+    stylesheet: &gpui_luma::theme::stylesheet::CommonStylesheet,
+    size: RadioSize,
+) -> RadioScale {
+    let fallback = RadioScale::compute(size.control_size(), &MetricTokens::default(), 1.0);
+    let geometry = stylesheet.radio.resolve_geometry(
+        size.as_str(),
+        gpui_luma::theme::stylesheet::RadioGeometry {
+            indicator_size: fallback.indicator_size,
+            dot_size: fallback.dot_size,
+            gap: fallback.gap,
+        },
+    );
+    let box_size = geometry.indicator_size.value_px;
     RadioScale {
         control_radius: box_size / 2.0,
         control_padding_x: 0.0,
         control_padding_y: 0.0,
         indicator_size: box_size,
         height: box_size,
-        gap: 8.0,
+        gap: geometry.gap.value_px,
         label_baseline_shift: 0.0,
-        dot_size: size.dot_size(),
+        dot_size: geometry.dot_size.value_px,
     }
 }
 
@@ -212,7 +232,7 @@ impl RadioButtonTheme for RadioThemeAdapter {
             ControlSize::Md => RadioSize::Two,
             ControlSize::Lg => RadioSize::Three,
         });
-        radio_scale_for(radix_size)
+        radio_scale_with_stylesheet(&self.look.common_stylesheet(), radix_size)
     }
 }
 

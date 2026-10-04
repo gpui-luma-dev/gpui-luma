@@ -6,7 +6,7 @@ use gpui_luma::controls::slider::{
 use gpui_luma::theme::InteractionState;
 
 use crate::controls::button::ShadcnButtonStyle;
-use crate::controls::slider::slider_look;
+use crate::controls::slider::slider_look_with_stylesheet;
 use crate::look::ShadcnLook;
 
 pub fn slider_theme(theme: ShadcnLook) -> Arc<dyn SliderTheme> {
@@ -30,7 +30,15 @@ impl SliderTheme for ShadcnSliderTheme {
         state: InteractionState,
     ) -> gpui_luma::controls::slider::SliderLook {
         let tokens = self.theme.mode_tokens();
-        slider_look(tokens.as_ref(), self.theme.mode(), self.style, size, thumb_size, state)
+        slider_look_with_stylesheet(
+            tokens.as_ref(),
+            &self.theme.stylesheet(),
+            self.theme.mode(),
+            self.style,
+            size,
+            thumb_size,
+            state,
+        )
     }
 }
 

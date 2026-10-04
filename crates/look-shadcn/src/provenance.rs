@@ -62,11 +62,21 @@ pub struct LookResolver<'a> {
     catalog: &'a CssTokenMap,
     theme_mode: ThemeMode,
     _label: &'a str,
+    stylesheet: &'a crate::stylesheet::StylesheetConfig,
 }
 
 impl<'a> LookResolver<'a> {
     pub fn new(catalog: &'a CssTokenMap, theme_mode: ThemeMode, label: &'a str) -> Self {
-        Self { catalog, theme_mode, _label: label }
+        Self { catalog, theme_mode, _label: label, stylesheet: crate::stylesheet::embedded_stylesheet() }
+    }
+
+    pub(crate) fn with_stylesheet(mut self, stylesheet: &'a crate::stylesheet::StylesheetConfig) -> Self {
+        self.stylesheet = stylesheet;
+        self
+    }
+
+    pub(crate) fn stylesheet(&self) -> &crate::stylesheet::StylesheetConfig {
+        self.stylesheet
     }
 
     pub fn resolve_decl(&self, decl: &str) -> anyhow::Result<ResolvedColor> {

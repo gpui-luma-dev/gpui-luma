@@ -31,7 +31,8 @@ pub fn inspect_floating_menu_color_palette(
     _size: ControlSize,
 ) -> FloatingMenuInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "floating_menu_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "floating_menu_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_floating_menu_colors(&resolver, true)
         .unwrap_or_else(|_| crate::tables::FloatingMenuColorTable::fallback());
     FloatingMenuInspectPalette {

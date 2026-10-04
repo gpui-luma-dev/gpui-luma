@@ -5,7 +5,7 @@ use gpui_luma::theme::LumaTextStyle;
 use crate::look::ShadcnLook;
 use crate::size::ShadcnSize;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
-use crate::stylesheet::{embedded_stylesheet, find_badge_color_rule, resolve_badge_color_rule, resolve_button_metrics_rule};
+use crate::stylesheet::{find_badge_color_rule, resolve_badge_color_rule};
 use crate::tokens::{ShadcnFont, ShadcnToken};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -160,7 +160,7 @@ impl Badge {
 }
 
 pub fn resolve_badge_colors(theme: &ShadcnLook, variant: BadgeVariant) -> anyhow::Result<BadgeColorTable> {
-    resolve_badge_colors_with_stylesheet(theme, embedded_stylesheet(), variant)
+    resolve_badge_colors_with_stylesheet(theme, theme.stylesheet().as_ref(), variant)
 }
 
 pub fn resolve_badge_colors_with_stylesheet(
@@ -181,11 +181,11 @@ pub fn badge_look(theme: &ShadcnLook, variant: BadgeVariant, size: ShadcnSize) -
     let tokens = theme.mode_tokens();
     let metrics = &tokens.metrics;
     let control_size = size.control_size();
-    let typography = badge_typography(tokens.as_ref(), size);
+    let typography = badge_typography(tokens.as_ref(), theme.stylesheet().as_ref(), size);
     let min_height = typography.line_height + metrics.padding_y(control_size);
     let colors = resolve_badge_colors(theme, variant).unwrap_or_else(|_| BadgeColorTable::fallback(theme, variant));
 
-    BadgeLook {
+    let mut look = BadgeLook {
         background: colors.background.hsla(),
         foreground: colors.foreground.hsla(),
         border: colors.border.map(|border| border.hsla()),
@@ -197,7 +197,31 @@ pub fn badge_look(theme: &ShadcnLook, variant: BadgeVariant, size: ShadcnSize) -
         icon_size: typography.size,
         typography,
         font_family: theme.font(ShadcnFont::Sans),
-    }
+    };
+    let geometry = tokens.stylesheet().common.badge.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(control_size),
+        gpui_luma::theme::stylesheet::BadgeGeometry {
+            padding_x: look.padding_x,
+            padding_y: look.padding_y,
+            min_height: look.min_height,
+            gap: look.gap,
+            icon_size: look.icon_size,
+            font_size: look.typography.size,
+            line_height: look.typography.line_height,
+        },
+    );
+    look.padding_x = geometry.padding_x.value_px;
+    look.padding_y = geometry.padding_y.value_px;
+    look.min_height = geometry.min_height.value_px;
+    look.gap = geometry.gap.value_px;
+    look.icon_size = geometry.icon_size.value_px;
+    crate::tables::typography::apply_resolved_geometry_typography(
+        &mut look.typography,
+        &geometry.font_size,
+        &geometry.line_height,
+    );
+
+    look
 }
 
 impl IntoElement for Badge {
@@ -237,21 +261,19 @@ impl IntoElement for Badge {
     }
 }
 
-fn badge_typography(tokens: &crate::mode::ShadcnModeTokens, size: ShadcnSize) -> LumaTextStyle {
-    let mut typography = tokens.typography.text.label;
+fn badge_typography(
+    tokens: &crate::mode::ShadcnModeTokens,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    size: ShadcnSize,
+) -> LumaTextStyle {
+    let mut typography = crate::tables::typography::resolve_control_typography_with_stylesheet(
+        tokens,
+        stylesheet,
+        size.control_size(),
+        false,
+    )
+    .style;
     typography.weight = FontWeight::MEDIUM;
-    let control_size = size.control_size();
-
-    if let Some(metrics) = embedded_stylesheet()
-        .button
-        .metrics_for_size(control_size)
-        .map(|rule| resolve_button_metrics_rule(rule, &tokens.metrics, control_size))
-    {
-        let base_size = typography.size.max(1.0);
-        typography.size = metrics.font_size;
-        typography.line_height = metrics.font_size * (typography.line_height / base_size);
-    }
-
     typography
 }
 

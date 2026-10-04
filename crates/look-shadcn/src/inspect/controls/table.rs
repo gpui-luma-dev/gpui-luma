@@ -33,7 +33,7 @@ pub fn inspect_table_color_palette(
     enabled: bool,
 ) -> TableInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "table_inspect");
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "table_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_table_surface_colors(&resolver, enabled)
         .unwrap_or_else(|_| crate::tables::TableSurfaceColorTable::fallback());
     TableInspectPalette {
@@ -51,7 +51,7 @@ pub fn inspect_table_row_color_palette(
     state: InteractionState,
 ) -> TableRowInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "table_row_inspect");
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "table_row_inspect").with_stylesheet(mode.stylesheet());
     let colors =
         crate::tables::resolve_table_row_colors(&resolver, selected, state.focused, state.disabled, state.layer())
             .unwrap_or_else(|_| crate::tables::TableRowColorTable::fallback());

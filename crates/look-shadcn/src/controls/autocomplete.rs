@@ -6,9 +6,7 @@ use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_autocomplete_chrome_color_rule, resolve_autocomplete_chrome_color_rule,
-};
+use crate::stylesheet::{StylesheetConfig, find_autocomplete_chrome_color_rule, resolve_autocomplete_chrome_color_rule};
 
 use super::floating_menu::floating_menu_look;
 
@@ -35,7 +33,7 @@ pub fn resolve_autocomplete_chrome_colors(
     resolver: &LookResolver<'_>,
     _present: bool,
 ) -> anyhow::Result<AutocompleteChromeColorTable> {
-    resolve_autocomplete_chrome_colors_with_stylesheet(resolver, embedded_stylesheet())
+    resolve_autocomplete_chrome_colors_with_stylesheet(resolver, resolver.stylesheet())
 }
 
 pub fn resolve_autocomplete_chrome_colors_with_stylesheet(
@@ -59,7 +57,8 @@ pub fn autocomplete_textbox_look(
     size: ControlSize,
 ) -> AutocompleteLook {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "autocomplete_chrome");
+    let resolver =
+        LookResolver::new(ctx.catalog(), ctx.theme_mode, "autocomplete_chrome").with_stylesheet(mode.stylesheet());
     let colors = resolve_autocomplete_chrome_colors(&resolver, true)
         .unwrap_or_else(|_| AutocompleteChromeColorTable::fallback());
 

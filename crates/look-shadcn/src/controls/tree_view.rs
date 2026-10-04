@@ -17,9 +17,7 @@ use super::apply_button_metrics_typography;
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_tree_view_row_color_rule, resolve_tree_view_row_color_rule,
-};
+use crate::stylesheet::{StylesheetConfig, find_tree_view_row_color_rule, resolve_tree_view_row_color_rule};
 
 #[derive(Clone, Debug)]
 pub struct TreeViewRowColorTable {
@@ -45,7 +43,7 @@ pub fn resolve_tree_view_row_colors(
     disabled: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<TreeViewRowColorTable> {
-    resolve_tree_view_row_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
+    resolve_tree_view_row_colors_with_stylesheet(resolver, resolver.stylesheet(), disabled, layer)
 }
 
 pub fn resolve_tree_view_row_colors_with_stylesheet(
@@ -73,7 +71,7 @@ pub fn tree_view_row_palette(
 ) -> TreeViewPalette {
     let ctx = LookContext::new(mode, mode.theme_mode, state);
     let typography = ctx.typography();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tree_view_row");
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tree_view_row").with_stylesheet(mode.stylesheet());
     let colors = resolve_tree_view_row_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| TreeViewRowColorTable::fallback());
 

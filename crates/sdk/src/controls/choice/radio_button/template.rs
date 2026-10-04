@@ -209,7 +209,7 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
 
 fn render_dot(progress: f32, size: f32, color: gpui::Hsla) -> AnyElement {
     let progress = progress.clamp(0.0, 1.0);
-    if progress <= f32::EPSILON {
+    if progress <= f32::EPSILON || size <= 0.0 {
         return div().size(px(size)).into_any_element();
     }
 

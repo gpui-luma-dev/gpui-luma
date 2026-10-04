@@ -6,7 +6,7 @@ use gpui_luma::controls::button::{
     DefaultButtonTemplate, HasPresenter,
 };
 use gpui_luma::controls::button_family::ButtonFamilyRole;
-use super::button::{ButtonRadiusPreset, ShadcnButtonStyle, button_look_semantic};
+use super::button::{ButtonRadiusPreset, ShadcnButtonStyle, button_look_with_stylesheet};
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
 
@@ -202,8 +202,9 @@ impl<D: Clone + 'static> Button<D> {
         if let Some(radius) = radius {
             let geometry_look = look.clone();
             builder = builder.with_look(move |model| {
-                button_look_semantic(
+                button_look_with_stylesheet(
                     geometry_look.mode_tokens().as_ref(),
+                    geometry_look.stylesheet().as_ref(),
                     geometry_look.mode(),
                     style,
                     model.role,

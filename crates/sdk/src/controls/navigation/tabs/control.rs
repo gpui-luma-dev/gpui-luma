@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use gpui::{
     App, Bounds, Context, Div, Entity, EventEmitter, Focusable, IntoElement, Pixels, Render, SharedString, Window, div,
@@ -32,7 +31,7 @@ pub struct Tabs {
     items: Vec<TabsItem>,
     pub(super) contents: HashMap<SharedString, TabsContent>,
     pub(super) body_transition: VisualTransition,
-    fade_duration: Duration,
+    body_motion: crate::theme::stylesheet::ResolvedMotion,
     list_slot: Option<Entity<TabsList>>,
     body_slot: Option<Entity<TabsBody>>,
     pub(super) active_id: Option<SharedString>,
@@ -96,12 +95,13 @@ impl Tabs {
                 })
             })
             .collect();
+        let body_motion = builder.model.inherited_motion.clone().with_override(builder.model.fade_duration, true);
         Self {
             group,
             items: builder.model.items,
             contents: builder.model.contents,
-            body_transition: VisualTransition::new(1.0, builder.model.fade_duration),
-            fade_duration: builder.model.fade_duration,
+            body_transition: VisualTransition::new(1.0, body_motion.duration),
+            body_motion,
             list_slot: None,
             body_slot: None,
             active_id,
@@ -134,9 +134,14 @@ impl Tabs {
         div().w_full().min_h_0().flex_1().flex().flex_col().children(self.body_slot.clone())
     }
 
+    /// Body-motion configuration captured at construction, with its source.
+    pub fn body_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        self.body_motion.clone().with_override(None, self.animated)
+    }
+
     fn restart_body_transition(&mut self) {
-        if self.animated && !self.fade_duration.is_zero() && !self.contents.is_empty() {
-            self.body_transition = VisualTransition::new(0.0, self.fade_duration);
+        if self.animated && !self.body_motion.duration.is_zero() && !self.contents.is_empty() {
+            self.body_transition = VisualTransition::new(0.0, self.body_motion.duration);
             self.body_transition.set_target(1.0);
         } else {
             self.body_transition.snap_to(1.0);

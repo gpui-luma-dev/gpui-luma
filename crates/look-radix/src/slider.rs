@@ -72,6 +72,14 @@ impl SliderSize {
         }
     }
 
+    fn from_control_size(size: ControlSize) -> Self {
+        match size {
+            ControlSize::Sm => Self::One,
+            ControlSize::Md => Self::Two,
+            ControlSize::Lg => Self::Three,
+        }
+    }
+
     pub fn control_size(self) -> ControlSize {
         match self {
             Self::One => ControlSize::Sm,
@@ -84,6 +92,7 @@ impl SliderSize {
 struct SliderThemeAdapter {
     look: Look,
     variant: SliderVariant,
+    size: Option<SliderSize>,
 }
 
 fn alpha(color: Hsla, a: f32) -> Hsla {
@@ -145,31 +154,39 @@ impl SliderTheme for SliderThemeAdapter {
             }
         };
 
-        let (height, track_height, default_thumb) = match size {
-            ControlSize::Sm => (16.0, 4.0, 12.0),
-            ControlSize::Md => (20.0, 6.0, 16.0),
-            ControlSize::Lg => (24.0, 8.0, 20.0),
-        };
-        let thumb = match thumb_size {
-            Some(SliderThumbSize::Sm) => 12.0,
-            Some(SliderThumbSize::Md) => 16.0,
-            Some(SliderThumbSize::Lg) => 20.0,
-            None => default_thumb,
-        };
-
+        let radix_size = self.size.unwrap_or_else(|| SliderSize::from_control_size(size));
+        let geometry = slider_geometry(look, radix_size, thumb_size);
         SliderLook {
             track_background: track,
             fill_background: fill,
             thumb_background: thumb_bg,
             thumb_border,
             thumb_shadow,
-            width: 120.0,
-            height,
-            track_height,
-            thumb_size: thumb,
-            radius: height / 2.0,
+            width: geometry.width.value_px,
+            height: geometry.height.value_px,
+            track_height: geometry.track_height.value_px,
+            thumb_size: geometry.thumb_size.value_px,
+            radius: geometry.height.value_px / 2.0,
         }
     }
+}
+
+/// Shared metric values and provenance consumed by the Radix slider adapter.
+pub fn slider_geometry(
+    look: &Look,
+    size: SliderSize,
+    thumb_size: Option<SliderThumbSize>,
+) -> gpui_luma::theme::stylesheet::ResolvedSliderGeometry {
+    use gpui_luma::controls::slider::DefaultSliderTheme;
+    let theme =
+        DefaultSliderTheme::new(gpui_luma::theme::ThemeTokens { metrics: look.metrics(), ..Default::default() });
+    let fallback = theme.resolve(size.control_size(), thumb_size, Default::default());
+    let thumb_key = thumb_size.map(|size| match size {
+        SliderThumbSize::Sm => "1",
+        SliderThumbSize::Md => "2",
+        SliderThumbSize::Lg => "3",
+    });
+    look.common_stylesheet().slider.resolve_geometry(size.as_str(), thumb_key, &fallback)
 }
 
 fn surface_thumb_shadow() -> Vec<BoxShadow> {
@@ -232,7 +249,16 @@ pub fn slider_theme(look: &Look) -> Arc<dyn SliderTheme> {
 }
 
 pub fn slider_theme_with(look: &Look, variant: SliderVariant) -> Arc<dyn SliderTheme> {
-    Arc::new(SliderThemeAdapter { look: look.clone(), variant })
+    Arc::new(SliderThemeAdapter { look: look.clone(), variant, size: None })
+}
+
+/// Bind Radix's semantic size before adapting to the SDK theme contract.
+pub fn slider_theme_for(look: &Look, variant: SliderVariant, size: SliderSize) -> Arc<dyn SliderTheme> {
+    Arc::new(SliderThemeAdapter { look: look.clone(), variant, size: Some(size) })
+}
+
+pub fn slider_template_for(look: &Look, variant: SliderVariant, size: SliderSize) -> Arc<dyn SliderTemplate> {
+    Arc::new(ThemedSliderTemplate::new(slider_theme_for(look, variant, size)))
 }
 
 pub fn slider_template(look: &Look, variant: SliderVariant) -> Arc<dyn SliderTemplate> {
@@ -242,6 +268,92 @@ pub fn slider_template(look: &Look, variant: SliderVariant) -> Arc<dyn SliderTem
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shared_slider_geometry_preserves_modes_states_sizes_and_explicit_thumbs() {
+        let look = Look::built_in();
+        for mode in [gpui_luma::theme::ThemeMode::Light, gpui_luma::theme::ThemeMode::Dark] {
+            look.set_mode(mode);
+            for variant in SliderVariant::ALL {
+                let theme = slider_theme_with(&look, variant);
+                for (size, height, track, thumb) in [
+                    (ControlSize::Sm, 16.0, 4.0, 12.0),
+                    (ControlSize::Md, 20.0, 6.0, 16.0),
+                    (ControlSize::Lg, 24.0, 8.0, 20.0),
+                ] {
+                    for bits in 0..16 {
+                        let state = InteractionState {
+                            hovered: bits & 1 != 0,
+                            pressed: bits & 2 != 0,
+                            focused: bits & 4 != 0,
+                            disabled: bits & 8 != 0,
+                            ..Default::default()
+                        };
+                        for (selection, expected) in [
+                            (None, thumb),
+                            (Some(SliderThumbSize::Sm), 12.0),
+                            (Some(SliderThumbSize::Md), 16.0),
+                            (Some(SliderThumbSize::Lg), 20.0),
+                        ] {
+                            let painted = theme.resolve(size, selection, state);
+                            assert_eq!(
+                                (
+                                    painted.width,
+                                    painted.height,
+                                    painted.track_height,
+                                    painted.thumb_size,
+                                    painted.radius
+                                ),
+                                (120.0, height, track, expected, height / 2.0)
+                            );
+                            let inspected = slider_geometry(&look, SliderSize::from_control_size(size), selection);
+                            assert_eq!(inspected.width.value_px, painted.width);
+                            assert_eq!(inspected.thumb_size.value_px, painted.thumb_size);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn explicit_radix_size_retains_numeric_semantics_at_sdk_boundary() {
+        let look = Look::built_in();
+        let stylesheet = look.common_stylesheet();
+        for sizes in [stylesheet.slider.sizes.keys().collect::<Vec<_>>(), stylesheet.switch.sizes.keys().collect()] {
+            assert_eq!(sizes.len(), 3);
+            assert!(sizes.iter().all(|key| ["1", "2", "3"].contains(&key.as_str())));
+        }
+        let theme = slider_theme_for(&look, SliderVariant::Surface, SliderSize::One);
+        assert_eq!(theme.resolve(ControlSize::Lg, None, Default::default()).height, 16.0);
+        let geometry = slider_geometry(&look, SliderSize::Two, Some(SliderThumbSize::Lg));
+        assert!(matches!(geometry.height.source,
+            gpui_luma::theme::provenance::MetricSource::Authored { key }
+            if key == "common.slider.sizes.2.height"));
+        assert!(matches!(geometry.thumb_size.source,
+            gpui_luma::theme::provenance::MetricSource::Derived { note }
+            if note.contains("common.slider.sizes.3.thumb_size")));
+    }
+
+    #[test]
+    fn shared_slider_geometry_updates_live_themes_without_changing_palettes() {
+        let look = Look::built_in();
+        let theme = slider_theme(&look);
+        let original = theme.resolve(ControlSize::Md, None, Default::default());
+        let mut stylesheet = look.common_stylesheet();
+        stylesheet.slider.geometry.width = Some(200.0);
+        stylesheet.slider.sizes.get_mut("2").unwrap().height = Some(30.0);
+        stylesheet.slider.sizes.get_mut("2").unwrap().thumb_size = Some(27.0);
+        stylesheet.slider.sizes.get_mut("3").unwrap().thumb_size = Some(31.0);
+        look.set_common_stylesheet(stylesheet.clone());
+        let custom = theme.resolve(ControlSize::Md, Some(SliderThumbSize::Lg), Default::default());
+        assert_eq!((custom.width, custom.height, custom.thumb_size, custom.radius), (200.0, 30.0, 31.0, 15.0));
+        assert_eq!(custom.track_background, original.track_background);
+        assert_eq!(custom.fill_background, original.fill_background);
+        let fork = look.fork();
+        fork.set_common_stylesheet(Default::default());
+        assert_eq!(look.common_stylesheet(), stylesheet);
+    }
 
     #[test]
     fn thumbs_keep_light_colors_in_dark_mode() {

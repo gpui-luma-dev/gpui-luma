@@ -14,9 +14,7 @@ use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_resizable_panels_color_rule, resolve_resizable_panels_color_rule,
-};
+use crate::stylesheet::{StylesheetConfig, find_resizable_panels_color_rule, resolve_resizable_panels_color_rule};
 
 #[derive(Clone, Debug)]
 pub struct ResizablePanelsColorTable {
@@ -42,7 +40,7 @@ pub fn resolve_resizable_panels_colors(
     disabled: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<ResizablePanelsColorTable> {
-    resolve_resizable_panels_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
+    resolve_resizable_panels_colors_with_stylesheet(resolver, resolver.stylesheet(), disabled, layer)
 }
 
 pub fn resolve_resizable_panels_colors_with_stylesheet(
@@ -69,7 +67,8 @@ pub fn resizable_panels_look(
 ) -> ResizablePanelsLook {
     let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "resizable_panels");
+    let resolver =
+        LookResolver::new(ctx.catalog(), ctx.theme_mode, "resizable_panels").with_stylesheet(mode.stylesheet());
     let colors = resolve_resizable_panels_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| ResizablePanelsColorTable::fallback());
 

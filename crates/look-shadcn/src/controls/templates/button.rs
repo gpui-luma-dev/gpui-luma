@@ -5,7 +5,7 @@ use gpui_luma::controls::button_family::{ButtonFamilyPalette, ButtonFamilyRole, 
 use gpui_luma::controls::toggle::{ToggleData, apply_toggle_progress_chrome};
 use gpui_luma::theme::{ControlSize, InteractionState};
 
-use crate::controls::button::{ShadcnButtonStyle, button_look, button_palette};
+use crate::controls::button::{ShadcnButtonStyle, button_look_with_stylesheet, button_palette};
 use crate::look::ShadcnLook;
 use crate::look_context::LookContext;
 
@@ -31,7 +31,16 @@ impl ButtonFamilyTheme for ShadcnStyledButtonFamilyTheme {
         _pill_radius: f32,
     ) -> Option<gpui_luma::controls::button_family::ButtonFamilyLook> {
         let tokens = self.theme.mode_tokens();
-        Some(button_look(tokens.as_ref(), self.theme.mode(), self.style, role, size, state))
+        Some(button_look_with_stylesheet(
+            tokens.as_ref(),
+            self.theme.stylesheet().as_ref(),
+            self.theme.mode(),
+            self.style,
+            role,
+            size,
+            None,
+            state,
+        ))
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {

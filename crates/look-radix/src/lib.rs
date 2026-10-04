@@ -167,16 +167,19 @@ pub use radio::{
     radio_theme_with,
 };
 pub use radio_builder::Radio;
-pub use slider::{SliderSize, SliderVariant, slider_template, slider_theme, slider_theme_with};
+pub use slider::{
+    SliderSize, SliderVariant, slider_geometry, slider_template, slider_template_for, slider_theme, slider_theme_for,
+    slider_theme_with,
+};
 pub use slider_builder::Slider;
 pub use switch::{
     SwitchSize, SwitchVariant, resolve_switch_radius, switch_scale_for, switch_template, switch_template_for,
-    switch_theme, switch_theme_for, switch_theme_with,
+    switch_theme, switch_theme_for, switch_theme_with, switch_geometry,
 };
 pub use switch_builder::Switch;
 pub use tabs::{
     TabsBaselineStyle, TabsMetrics, TabsStyle, TabsSize, TabsVariant, tabs_template, tabs_template_for, tabs_theme,
-    tabs_theme_for,
+    tabs_theme_for, tabs_geometry,
 };
 pub use tabs_builder::Tabs;
 pub use textarea::{TextAreaSize, textarea_template, textarea_theme, textarea_theme_with};
@@ -195,3 +198,6 @@ pub use overlay_window::overlay_window_theme;
 pub use segmented::segmented_radio_template;
 
 pub use tooltip::tooltip_theme;
+
+#[cfg(test)]
+mod stylesheet_tests;

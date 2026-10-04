@@ -26,7 +26,8 @@ pub fn resolve_context_menu_colors(
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> ContextMenuColorTable {
-    let resolver = crate::LookResolver::new(&mode.catalog, theme_mode, "context_menu");
+    let resolver =
+        crate::LookResolver::new(&mode.catalog, theme_mode, "context_menu").with_stylesheet(mode.stylesheet());
     let background = if state.disabled {
         resolver.resolve_decl("muted").unwrap_or_else(|_| ResolvedColor::transparent())
     } else {
@@ -52,7 +53,7 @@ pub fn context_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: 
     let size = ControlSize::Md;
     let colors = resolve_context_menu_colors(mode, theme_mode, state);
 
-    ContextMenuLook {
+    let mut look = ContextMenuLook {
         target_background: colors.background.hsla(),
         target_foreground: colors.foreground.hsla(),
         target_border: colors.border.hsla(),
@@ -62,7 +63,27 @@ pub fn context_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: 
         target_padding_y: metrics.padding_y(size),
         target_min_width: 200.0,
         floating_menu: floating_menu_look(ctx.tokens, ctx.theme_mode, size),
-    }
+    };
+    let geometry = mode.stylesheet().common.context_menu.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::ContextMenuGeometry {
+            min_width: look.target_min_width,
+            padding_x: look.target_padding_x,
+            padding_y: look.target_padding_y,
+            font_size: look.target_typography.size,
+            line_height: look.target_typography.line_height,
+        },
+    );
+    look.target_min_width = geometry.min_width.value_px;
+    look.target_padding_x = geometry.padding_x.value_px;
+    look.target_padding_y = geometry.padding_y.value_px;
+    crate::tables::typography::apply_resolved_geometry_typography(
+        &mut look.target_typography,
+        &geometry.font_size,
+        &geometry.line_height,
+    );
+
+    look
 }
 
 #[cfg(test)]

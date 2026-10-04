@@ -10,14 +10,13 @@
 use gpui_luma::controls::scrollbar::ScrollbarLook;
 use gpui_luma::controls::scrollbar::ScrollbarOrientation;
 use gpui_luma::controls::scrollbar::ScrollbarStyle;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_scrollbar_color_rule, resolve_scrollbar_color_rule,
-    resolve_scrollbar_metrics,
+    StylesheetConfig, find_scrollbar_color_rule, resolve_scrollbar_color_rule, resolve_scrollbar_metrics,
 };
 
 const DEFAULT_SCROLLBAR_THICKNESS: f32 = 12.0;
@@ -48,7 +47,7 @@ pub fn resolve_scrollbar_colors(
     disabled: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<ScrollbarColorTable> {
-    resolve_scrollbar_colors_with_stylesheet(resolver, embedded_stylesheet(), style, disabled, layer)
+    resolve_scrollbar_colors_with_stylesheet(resolver, resolver.stylesheet(), style, disabled, layer)
 }
 
 pub fn resolve_scrollbar_colors_with_stylesheet(
@@ -71,11 +70,11 @@ pub fn scrollbar_look(
     size: ControlSize,
     style: ScrollbarStyle,
 ) -> ScrollbarLook {
-    let ctx = LookContext::new(mode, ThemeMode::Light, state);
+    let ctx = LookContext::new(mode, mode.theme_mode, state);
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let layer = state.layer();
-    let resolver = LookResolver::new(catalog, ctx.theme_mode, "scrollbar");
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "scrollbar").with_stylesheet(mode.stylesheet());
     let colors = resolve_scrollbar_colors(&resolver, style, state.disabled, layer)
         .unwrap_or_else(|_| ScrollbarColorTable::fallback());
 
@@ -83,7 +82,7 @@ pub fn scrollbar_look(
         ScrollbarOrientation::Horizontal => DEFAULT_SCROLLBAR_LENGTH_H,
         ScrollbarOrientation::Vertical => DEFAULT_SCROLLBAR_LENGTH_V,
     };
-    let stylesheet = embedded_stylesheet();
+    let stylesheet = mode.stylesheet();
     let (thickness, track_thickness, thumb_thickness, min_thumb_length) = stylesheet
         .scrollbar
         .metrics_for_size(size)
@@ -95,7 +94,7 @@ pub fn scrollbar_look(
             DEFAULT_SCROLLBAR_THUMB_THICKNESS,
             DEFAULT_SCROLLBAR_MIN_THUMB_LENGTH,
         ));
-    ScrollbarLook {
+    let mut look = ScrollbarLook {
         track_background: colors.track_background.hsla(),
         thumb_background: colors.thumb_background.hsla(),
         length,
@@ -104,7 +103,27 @@ pub fn scrollbar_look(
         thumb_thickness,
         min_thumb_length,
         radius: metrics.radius.pill,
-    }
+    };
+    let geometry = mode.stylesheet().common.scrollbar.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::ScrollbarGeometry {
+            thickness: look.thickness,
+            track_thickness: look.track_thickness,
+            thumb_thickness: look.thumb_thickness,
+            min_thumb_length: look.min_thumb_length,
+            length_h: DEFAULT_SCROLLBAR_LENGTH_H,
+            length_v: DEFAULT_SCROLLBAR_LENGTH_V,
+        },
+    );
+    look.thickness = geometry.thickness.value_px;
+    look.track_thickness = geometry.track_thickness.value_px;
+    look.thumb_thickness = geometry.thumb_thickness.value_px;
+    look.min_thumb_length = geometry.min_thumb_length.value_px;
+    look.length = match orientation {
+        ScrollbarOrientation::Horizontal => geometry.length_h.value_px,
+        ScrollbarOrientation::Vertical => geometry.length_v.value_px,
+    };
+    look
 }
 
 fn scrollbar_style_key(style: ScrollbarStyle) -> &'static str {

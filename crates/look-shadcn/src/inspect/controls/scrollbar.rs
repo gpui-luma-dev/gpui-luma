@@ -27,7 +27,7 @@ pub fn inspect_scrollbar_color_palette(
     state: InteractionState,
 ) -> ScrollbarInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "scrollbar_inspect");
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "scrollbar_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_scrollbar_colors(&resolver, style, state.disabled, state.layer())
         .unwrap_or_else(|_| crate::tables::ScrollbarColorTable::fallback());
 

@@ -105,7 +105,8 @@ pub use textfield::{
 };
 pub use tabs::{
     TabsInspectMetrics, TabsItemInspectPalette, TabsListInspectPalette, inspect_tabs_item_color_palette,
-    inspect_tabs_list_color_palette, inspect_tabs_metrics,
+    inspect_tabs_list_color_palette, inspect_tabs_metrics, inspect_tabs_metrics_for_look,
+    inspect_tabs_item_color_palette_for_look, inspect_tabs_list_color_palette_for_look,
 };
 pub use textarea::{inspect_textarea_color_palette, inspect_textarea_metrics};
 pub use toolbar::{ToolbarInspectMetrics, ToolbarInspectPalette, inspect_toolbar_color_palette, inspect_toolbar_metrics};
@@ -125,3 +126,11 @@ pub use pager::{PagerInspectMetrics, PagerShellInspectPalette, inspect_pager_met
 pub use selector::{
     SelectorInspectMetrics, SelectorInspectPalette, inspect_selector_color_palette, inspect_selector_metrics,
 };
+
+pub(crate) use button::{
+    inspect_button_color_palette_with_stylesheet, inspect_button_metrics_with_stylesheet,
+    inspect_button_elevation_with_stylesheet,
+};
+
+pub(crate) use checkbox::{inspect_checkbox_color_palette_with_stylesheet, inspect_checkbox_elevation_with_stylesheet};
+pub(crate) use radio::{inspect_radio_button_color_palette_with_stylesheet, inspect_radio_button_elevation_with_stylesheet};

@@ -1,3 +1,14 @@
+[common.switch.geometry]
+track_padding = 2.0
+
+[common.tabs.geometry]
+list_padding = 0.0
+indicator_height = 3.0
+
+[common.tabs.content]
+# Match Radix tab body motion.
+fade_in_ms = 300
+
 # style.toml - Unified Stylesheet Mapping Configuration
 
 # =====================================================================
@@ -74,26 +85,32 @@ group_gap = 16.0
 # =====================================================================
 # 1. BUTTON
 # =====================================================================
-[button.metrics.sm]
-height = "metrics.control.sm"
-padding_horizontal = 12.0
+[common.button.sizes.sm]
+padding_x = 12.0
 font_size = 12.0
 icon_size = 14.0
-corner_radius = "radius"
 
-[button.metrics.md]
-height = "metrics.control.md"
-padding_horizontal = 16.0
+[button.tokens.sm]
+corner_radius = "radius"
+height = "metrics.control.sm"
+
+[common.button.sizes.md]
+padding_x = 16.0
 font_size = 14.0
 icon_size = 16.0
-corner_radius = "radius"
 
-[button.metrics.lg]
-height = "metrics.control.lg"
-padding_horizontal = 20.0
+[button.tokens.md]
+corner_radius = "radius"
+height = "metrics.control.md"
+
+[common.button.sizes.lg]
+padding_x = 20.0
 font_size = 16.0
 icon_size = 18.0
+
+[button.tokens.lg]
 corner_radius = "radius"
+height = "metrics.control.lg"
 
 # Elevation per shadcn/ui button variant (component layer, not CSS theme tokens).
 [[button.elevation_rules]]
@@ -117,25 +134,31 @@ style = "content-only"
 shadow = "none"
 
 # Toggle elevation (full-button toggles; matches checkbox/radio/switch indicator policy).
-[toggle.metrics.sm]
-height = "36.0"
-padding_horizontal = 10.0
+[common.toggle.sizes.sm]
+padding_x = 10.0
 font_size = 12.0
 icon_size = 14.0
+height = 36.0
+
+[toggle.tokens.sm]
 corner_radius = "radius"
 
-[toggle.metrics.md]
-height = "40.0"
-padding_horizontal = 12.0
+[common.toggle.sizes.md]
+padding_x = 12.0
 font_size = 14.0
 icon_size = 16.0
+height = 40.0
+
+[toggle.tokens.md]
 corner_radius = "radius"
 
-[toggle.metrics.lg]
-height = "44.0"
-padding_horizontal = 20.0
+[common.toggle.sizes.lg]
+padding_x = 20.0
 font_size = 16.0
 icon_size = 18.0
+height = 44.0
+
+[toggle.tokens.lg]
 corner_radius = "radius"
 
 [[toggle.elevation_rules]]
@@ -572,19 +595,19 @@ layer = "disabled"
 shadow = "none"
 
 # Switch geometry: track thickness aligns with checkbox/radio indicator sizes.
-[switch.metrics.sm]
-width = 32.0
-height = 13.0
+[common.switch.sizes."sm"]
+track_width = 32.0
+track_height = 13.0
 thumb_size = 9.0
 
-[switch.metrics.md]
-width = 40.0
-height = 18.0
+[common.switch.sizes."md"]
+track_width = 40.0
+track_height = 18.0
 thumb_size = 14.0
 
-[switch.metrics.lg]
-width = 48.0
-height = 24.0
+[common.switch.sizes."lg"]
+track_width = 48.0
+track_height = 24.0
 thumb_size = 20.0
 
 [[switch.color_rules]]
@@ -622,26 +645,23 @@ shadow = "shadow-sm"
 layer = "disabled"
 shadow = "none"
 
-[slider.metrics.sm]
+[common.slider.sizes."sm"]
 width = 260.0
 height = 24.0
 track_height = 4.0
 thumb_size = 12.0
-radius = "radius.pill"
 
-[slider.metrics.md]
+[common.slider.sizes."md"]
 width = 260.0
 height = 32.0
 track_height = 6.0
 thumb_size = 16.0
-radius = "radius.pill"
 
-[slider.metrics.lg]
+[common.slider.sizes."lg"]
 width = 260.0
 height = 40.0
 track_height = 8.0
 thumb_size = 20.0
-radius = "radius.pill"
 
 [[slider.color_rules]]
 style = "primary"
@@ -1011,19 +1031,19 @@ divider = "border"
 # =====================================================================
 # 8. SCROLLBAR
 # =====================================================================
-[scrollbar.metrics.sm]
+[common.scrollbar.sizes.sm]
 thickness = 10.0
 track_thickness = 3.0
 thumb_thickness = 6.0
 min_thumb_length = 24.0
 
-[scrollbar.metrics.md]
+[common.scrollbar.sizes.md]
 thickness = 12.0
 track_thickness = 4.0
 thumb_thickness = 8.0
 min_thumb_length = 28.0
 
-[scrollbar.metrics.lg]
+[common.scrollbar.sizes.lg]
 thickness = 14.0
 track_thickness = 5.0
 thumb_thickness = 10.0
@@ -1182,13 +1202,8 @@ grip_emphasis = "accent"
 # =====================================================================
 # 11. FLOATING MENU
 # =====================================================================
-[floating_menu.metrics.md]
+[common.floating_menu.geometry]
 min_width = 180.0
-radius = "radius.lg"
-item_height_factor = 0.9
-item_padding_x_factor = 0.75
-item_radius = "radius.sm"
-submenu_offset_x_factor = 0.5
 
 [[floating_menu.surface.elevation_rules]]
 shadow = "shadow-md"
@@ -1235,19 +1250,19 @@ foreground = "foreground"
 # =====================================================================
 # 12. PROGRESS
 # =====================================================================
-[progress.metrics.sm]
+[common.progress.sizes.sm]
 size = 48.0
 stroke_width = 5.0
 track_height = 4.0
 thumb_size = 12.0
 
-[progress.metrics.md]
+[common.progress.sizes.md]
 size = 64.0
 stroke_width = 6.0
 track_height = 6.0
 thumb_size = 16.0
 
-[progress.metrics.lg]
+[common.progress.sizes.lg]
 size = 80.0
 stroke_width = 8.0
 track_height = 8.0
@@ -1266,15 +1281,15 @@ progress_color = "muted-foreground"
 # =====================================================================
 # 12b. STEPPER
 # =====================================================================
-[stepper.metrics.sm]
+[common.stepper.sizes.sm]
 step_badge_size = 24.0
 track_thickness = 2.0
 
-[stepper.metrics.md]
+[common.stepper.sizes.md]
 step_badge_size = 32.0
 track_thickness = 2.0
 
-[stepper.metrics.lg]
+[common.stepper.sizes.lg]
 step_badge_size = 40.0
 track_thickness = 3.0
 
@@ -1612,3 +1627,66 @@ layer = "pressed"
 foreground = "accent-foreground"
 icon_color = "accent-foreground"
 background = "accent"
+
+# Shared geometry; palette and radius recipes remain look-owned.
+[common.tooltip.geometry]
+padding = 8.0
+padding_y = 4.0
+max_width = 260.0
+font_size = 12.0
+line_height = 16.0
+
+[common.scrollbar.geometry]
+length_h = 260.0
+length_v = 180.0
+
+[common.toolbar.geometry]
+padding_x = 6.0
+padding_y = 4.0
+
+[common.control_group.geometry]
+padding_x = 6.0
+padding_y = 4.0
+gap = 6.0
+
+[common.sidebar.geometry]
+section_height = 20.0
+item_height = 30.0
+item_padding_x = 8.0
+item_icon_size = 16.0
+
+[common.context_menu.geometry]
+min_width = 200.0
+
+[common.overlay_window.sizes.sm]
+min_width = 320.0
+max_width = 420.0
+estimated_height = 196.0
+
+[common.overlay_window.sizes.md]
+min_width = 400.0
+max_width = 520.0
+estimated_height = 228.0
+
+[common.overlay_window.sizes.lg]
+min_width = 480.0
+max_width = 620.0
+estimated_height = 264.0
+
+[common.pager.geometry]
+padding_x = 8.0
+padding_y = 8.0
+gap = 4.0
+
+[common.pager.sizes.minimal]
+button_size = 28.0
+button_min_width = 28.0
+group_gap = 8.0
+
+[common.pager.sizes.minimal-edge]
+button_min_width = 32.0
+group_gap = 16.0
+
+[common.pager.sizes.numeric]
+button_min_width = 32.0
+group_gap = 16.0

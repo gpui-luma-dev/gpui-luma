@@ -28,7 +28,7 @@ impl Default for ToolbarStyle {
 
 struct RadixToolbarTheme {
     look: Look,
-    style: ToolbarStyle,
+    style: Option<ToolbarStyle>,
 }
 
 impl ToolbarTheme for RadixToolbarTheme {
@@ -41,15 +41,30 @@ impl ToolbarTheme for RadixToolbarTheme {
             ToolbarVariant::Outline => (gray(if enabled { 1 } else { 2 }), gray(6)),
             ToolbarVariant::Ghost => (transparent, transparent),
         };
+        let fallback = ToolbarStyle::default();
+        let geometry = self.look.common_stylesheet().toolbar.resolve_geometry(
+            "",
+            gpui_luma::theme::stylesheet::ToolbarGeometry {
+                padding_x: fallback.padding_x,
+                padding_y: fallback.padding_y,
+                gap: fallback.gap,
+            },
+        );
+        let style = self.style.unwrap_or(ToolbarStyle {
+            padding_x: geometry.padding_x.value_px,
+            padding_y: geometry.padding_y.value_px,
+            gap: geometry.gap.value_px,
+            ..fallback
+        });
         ToolbarLook {
             background,
             border,
             separator: gray(6),
-            radius: self.style.radius.unwrap_or(metrics.radius.md),
-            padding_x: self.style.padding_x,
-            padding_y: self.style.padding_y,
-            gap: self.style.gap,
-            separator_height: control.height * self.style.separator_height_ratio,
+            radius: style.radius.unwrap_or(metrics.radius.md),
+            padding_x: style.padding_x,
+            padding_y: style.padding_y,
+            gap: style.gap,
+            separator_height: control.height * style.separator_height_ratio,
         }
     }
 }
@@ -57,12 +72,12 @@ impl ToolbarTheme for RadixToolbarTheme {
 /// Toolbar shell colors resolve from the current mode and palette on render.
 /// Notify affected views after mutating the look; see [`Look`].
 pub fn toolbar_theme(look: &Look) -> Arc<dyn ToolbarTheme> {
-    toolbar_theme_with(look, ToolbarStyle::default())
+    Arc::new(RadixToolbarTheme { look: look.clone(), style: None })
 }
 
 /// Override shell geometry without replacing palette resolution or SDK behavior.
 pub fn toolbar_theme_with(look: &Look, style: ToolbarStyle) -> Arc<dyn ToolbarTheme> {
-    Arc::new(RadixToolbarTheme { look: look.clone(), style })
+    Arc::new(RadixToolbarTheme { look: look.clone(), style: Some(style) })
 }
 
 pub fn toolbar_template_with(look: &Look, style: ToolbarStyle) -> Arc<dyn ToolbarTemplate> {

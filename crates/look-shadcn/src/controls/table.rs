@@ -8,14 +8,14 @@
 //! | Keyboard active | `muted`           |
 
 use gpui_luma::controls::table::{TableLook, TableRowPalette};
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_table_row_color_rule, find_table_surface_color_rule,
-    resolve_table_row_color_rule, resolve_table_surface_color_rule, resolve_stylesheet_metric,
+    StylesheetConfig, find_table_row_color_rule, find_table_surface_color_rule, resolve_table_row_color_rule,
+    resolve_table_surface_color_rule, resolve_stylesheet_metric,
 };
 
 #[derive(Clone, Debug)]
@@ -41,7 +41,7 @@ pub fn resolve_table_surface_colors(
     resolver: &LookResolver<'_>,
     enabled: bool,
 ) -> anyhow::Result<TableSurfaceColorTable> {
-    resolve_table_surface_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+    resolve_table_surface_colors_with_stylesheet(resolver, resolver.stylesheet(), enabled)
 }
 
 pub fn resolve_table_surface_colors_with_stylesheet(
@@ -84,7 +84,7 @@ pub fn resolve_table_row_colors(
     disabled: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<TableRowColorTable> {
-    resolve_table_row_colors_with_stylesheet(resolver, embedded_stylesheet(), selected, focused, disabled, layer)
+    resolve_table_row_colors_with_stylesheet(resolver, resolver.stylesheet(), selected, focused, disabled, layer)
 }
 
 pub fn resolve_table_row_colors_with_stylesheet(
@@ -102,12 +102,12 @@ pub fn resolve_table_row_colors_with_stylesheet(
 }
 
 pub fn table_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: ControlSize) -> TableLook {
-    let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
+    let ctx = LookContext::new(mode, mode.theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "table");
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "table").with_stylesheet(mode.stylesheet());
     let colors =
         resolve_table_surface_colors(&resolver, enabled).unwrap_or_else(|_| TableSurfaceColorTable::fallback());
-    let surface_metrics = embedded_stylesheet().table.surface.metrics_for_size(size);
+    let surface_metrics = mode.stylesheet().table.surface.metrics_for_size(size);
     let radius = surface_metrics
         .and_then(|rule| resolve_stylesheet_metric(&rule.radius, metrics, size))
         .unwrap_or(metrics.radius(size));
@@ -116,7 +116,7 @@ pub fn table_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: 
         .and_then(|max| resolve_stylesheet_metric(max, metrics, size))
         .map_or(radius, |max| radius.min(max));
 
-    TableLook {
+    let mut look = TableLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
         header_background: colors.header_background.hsla(),
@@ -125,7 +125,15 @@ pub fn table_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: 
         radius,
         padding_x: 0.0,
         padding_y: metrics.padding_y(size) * 0.5,
-    }
+    };
+    let geometry = mode.stylesheet().common.table.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::TableGeometry { padding_x: look.padding_x, padding_y: look.padding_y },
+    );
+    look.padding_x = geometry.padding_x.value_px;
+    look.padding_y = geometry.padding_y.value_px;
+
+    look
 }
 
 pub fn table_row_palette(
@@ -134,9 +142,9 @@ pub fn table_row_palette(
     state: InteractionState,
     size: ControlSize,
 ) -> TableRowPalette {
-    let ctx = LookContext::new(mode, ThemeMode::Light, state);
+    let ctx = LookContext::new(mode, mode.theme_mode, state);
     let typography = ctx.typography();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "table_row");
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "table_row").with_stylesheet(mode.stylesheet());
     let colors = resolve_table_row_colors(&resolver, selected, state.focused, state.disabled, state.layer())
         .unwrap_or_else(|_| TableRowColorTable::fallback());
 

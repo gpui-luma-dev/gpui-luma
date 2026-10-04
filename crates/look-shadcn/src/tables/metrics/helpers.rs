@@ -103,3 +103,30 @@ pub fn border_width_metric(metrics: &gpui_luma::theme::MetricTokens) -> Resolved
         source: MetricSource::Scaffold { path: "MetricTokens.border_width.default".into() },
     }
 }
+
+// Preserve the existing Shadcn inspector API while reporting shared authored paths.
+pub fn inspect_shared_metric(value: gpui_luma::theme::provenance::ResolvedMetric) -> crate::ResolvedMetric {
+    use gpui_luma::theme::provenance::MetricSource;
+    let source = match value.source {
+        MetricSource::Authored { key } => crate::MetricSource::Derived { note: format!("style.toml · {key}") },
+        MetricSource::Derived { note } => crate::MetricSource::Derived { note },
+        MetricSource::Scaffold { path } => crate::MetricSource::Scaffold { path },
+        MetricSource::Constant { label } => crate::MetricSource::Constant { label },
+        MetricSource::ScaleStep { family, step } => {
+            crate::MetricSource::Derived { note: format!("{family} step {step}") }
+        }
+    };
+    crate::ResolvedMetric { value_px: value.value_px, source }
+}
+
+/// Preserve token/recipe provenance when a common field is unset.
+pub(crate) fn prefer_shared_metric(
+    metric: gpui_luma::theme::provenance::ResolvedMetric,
+    fallback: ResolvedMetric,
+) -> ResolvedMetric {
+    if matches!(metric.source, gpui_luma::theme::provenance::MetricSource::Constant { .. }) {
+        fallback
+    } else {
+        inspect_shared_metric(metric)
+    }
+}

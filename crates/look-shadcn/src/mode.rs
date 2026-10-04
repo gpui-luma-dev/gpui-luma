@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::sync::Arc;
 
 use gpui_luma::theme::{InteractionLayer, LumaTypography, MetricTokens, ThemeMode};
 
@@ -15,10 +16,23 @@ pub struct ShadcnModeTokens {
     pub metrics: MetricTokens,
     pub typography: LumaTypography,
     state_colors: StateColorTable,
+    stylesheet: Arc<crate::stylesheet::StylesheetConfig>,
 }
 
 impl ShadcnModeTokens {
     pub fn from_catalog(catalog: CssTokenMap, theme_mode: ThemeMode) -> Result<Self> {
+        Self::from_catalog_with_stylesheet(
+            catalog,
+            theme_mode,
+            Arc::new(crate::stylesheet::embedded_stylesheet().clone()),
+        )
+    }
+
+    pub(crate) fn from_catalog_with_stylesheet(
+        catalog: CssTokenMap,
+        theme_mode: ThemeMode,
+        stylesheet: Arc<crate::stylesheet::StylesheetConfig>,
+    ) -> Result<Self> {
         let palette = ShadcnPalette::from_catalog(&catalog, theme_mode)?;
         let state_colors = StateColorTable::from_catalog(&catalog, &palette, theme_mode);
         Ok(Self {
@@ -26,9 +40,15 @@ impl ShadcnModeTokens {
             metrics: metrics_from_catalog(&catalog, MetricTokens::default()),
             typography: typography_from_catalog(&catalog, LumaTypography::default()),
             state_colors,
+            stylesheet,
             palette,
             catalog,
         })
+    }
+
+    /// Configuration captured with these palette/metric tokens.
+    pub(crate) fn stylesheet(&self) -> &crate::stylesheet::StylesheetConfig {
+        &self.stylesheet
     }
 
     /// Resolves a semantic token color for an interaction layer (O(1) lookup).

@@ -13,7 +13,6 @@ use crate::look_context::LookContext;
 use super::button::{ShadcnButtonStyle, button_box_scale, button_elevation_shadow, button_palette};
 use super::floating_menu::floating_menu_look;
 use crate::mode::ShadcnModeTokens;
-use crate::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};
 
 fn shadcn_button_style(trigger_style: PopupMenuTriggerStyle) -> ShadcnButtonStyle {
     match trigger_style {
@@ -32,14 +31,21 @@ pub fn popup_menu_palette(
     state: InteractionState,
 ) -> PopupMenuPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let stylesheet = embedded_stylesheet();
+    let stylesheet = mode.stylesheet();
     let button_style = shadcn_button_style(trigger_style);
     let role = if metrics.icon_only {
         ButtonFamilyRole::Icon
     } else {
         ButtonFamilyRole::Text
     };
-    let button = button_palette(&ctx, stylesheet, button_style, role, metrics.size);
+    let mut button = button_palette(&ctx, stylesheet, button_style, role, metrics.size);
+    let scale = button_box_scale(&ctx, stylesheet, metrics.size, 1.0);
+    let geometry = popup_menu_geometry(mode, metrics.size, &scale, &button.typography);
+    crate::tables::typography::apply_resolved_geometry_typography(
+        &mut button.typography,
+        &geometry.font_size,
+        &geometry.line_height,
+    );
     let trigger_shadow = if metrics.without_elevation {
         None
     } else {
@@ -64,7 +70,14 @@ pub fn popup_menu_trigger_scale(
     scale_factor: f32,
 ) -> gpui_luma::theme::StandardBoxScale {
     let ctx = LookContext::new(mode, theme_mode, state);
-    button_box_scale(&ctx, embedded_stylesheet(), size, scale_factor)
+    let mut scale = button_box_scale(&ctx, mode.stylesheet(), size, scale_factor);
+    let geometry = popup_menu_geometry(mode, size, &scale, &mode.typography.text.label);
+    scale.height = gpui_luma::theme::snap_to_pixel(geometry.height.value_px, scale_factor);
+    scale.padding_x = gpui_luma::theme::snap_to_pixel(geometry.padding_x.value_px, scale_factor);
+    scale.padding_y = gpui_luma::theme::snap_to_pixel(geometry.padding_y.value_px, scale_factor);
+    scale.gap = gpui_luma::theme::snap_to_pixel(geometry.gap.value_px, scale_factor);
+    scale.icon_size = gpui_luma::theme::snap_to_pixel(geometry.icon_size.value_px, scale_factor);
+    scale
 }
 
 pub fn popup_menu_look(
@@ -79,13 +92,31 @@ pub fn popup_menu_look(
     let scale = popup_menu_trigger_scale(mode, theme_mode, metrics.size, state, scale_factor);
     let mut look =
         compose_popup_menu_look(&popup_menu_palette(mode, theme_mode, trigger_style, metrics, state), &scale);
-    if let Some(rule) = embedded_stylesheet().button.metrics_for_size(metrics.size) {
-        look.trigger_icon_size = resolve_button_metrics_rule(rule, &mode.metrics, metrics.size).icon_size;
-    }
+    look.trigger_icon_size = scale.icon_size;
     if let Some(radius) = metrics.trigger_radius_override {
         look.trigger_radius = radius;
     }
     look
+}
+
+pub(crate) fn popup_menu_geometry(
+    mode: &ShadcnModeTokens,
+    size: ControlSize,
+    scale: &gpui_luma::theme::StandardBoxScale,
+    typography: &gpui_luma::theme::LumaTextStyle,
+) -> gpui_luma::theme::stylesheet::ResolvedPopupMenuGeometry {
+    mode.stylesheet().common.popup_menu.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::PopupMenuGeometry {
+            height: scale.height,
+            padding_x: scale.padding_x,
+            padding_y: scale.padding_y,
+            gap: scale.gap,
+            icon_size: scale.icon_size,
+            font_size: typography.size,
+            line_height: typography.line_height,
+        },
+    )
 }
 
 #[cfg(test)]

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Bounds, Context, Entity, Focusable, Pixels, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, App, Bounds, Context, Entity, Focusable, Pixels, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::popover_button::{PopoverButton, PopoverButtonEvent, PopoverDismissPolicy, PopoverPlacement};
-use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
+use gpui_luma::controls::tabs::{Tabs, TabsContent, TabsEvent, TabsItem, TabsTemplate, TabsWidthMode};
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::paint::floating_menu_look;
 use gpui_luma_look_shadcn as shadcn;
@@ -12,7 +12,7 @@ use super::cards::render_demo_board;
 use super::controls;
 use super::dashboard;
 use super::palette;
-use super::navigation::main_content_tabs_template;
+use super::navigation::luma_studio_tabs_template;
 use super::style_guide;
 use super::tab::ContentTab;
 use super::theme_usage;
@@ -58,21 +58,18 @@ impl ContentPaneHost {
             .window_margin(px(8.0))
             .measure_trigger(false)
             .spawn(cx);
-        let tabs = shadcn::Tabs::new("luma-studio-content-tabs")
-            .look(board.look.as_ref())
-            .size(shadcn::ShadcnSize::Lg)
-            .width_mode(TabsWidthMode::Uniform)
-            .template(main_content_tabs_template(board.look.clone(), ControlSize::Lg, cx))
-            .items([
-                TabsItem::new("cards").label("Cards"),
-                TabsItem::new("dashboard").label("Dashboard"),
-                TabsItem::new("typography").label("Style Guide"),
-                TabsItem::new("controls").label("Controls").dropdown_trigger(),
-                TabsItem::new("palette").label("Color Palette"),
-                TabsItem::new("theme-usage").label("Theme Usage"),
-            ])
-            .active("cards")
-            .spawn(cx);
+        let content_host = host.downgrade();
+        let tabs = content_tabs_builder(
+            board.look.as_ref(),
+            luma_studio_tabs_template(board.look.clone(), ControlSize::Lg),
+            move |tab, _, cx| {
+                content_host
+                    .upgrade()
+                    .map(|host| host.read(cx).render_tab_content(tab))
+                    .unwrap_or_else(|| div().into_any_element())
+            },
+        )
+        .spawn(cx);
 
         let tabs_for_sub = tabs.clone();
         let picker_for_sub = catalog_picker.clone();
@@ -213,7 +210,7 @@ impl ContentPaneHost {
         self.tabs.update(cx, |tabs, cx| {
             tabs.set_size(ControlSize::Lg, cx);
             tabs.set_width_mode(TabsWidthMode::Uniform, cx);
-            tabs.set_template(main_content_tabs_template(look.clone(), ControlSize::Lg, cx), cx);
+            tabs.set_template(luma_studio_tabs_template(look.clone(), ControlSize::Lg), cx);
         });
         self.style_guide_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
         self.controls_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
@@ -223,13 +220,62 @@ impl ContentPaneHost {
     }
 }
 
-impl Render for ContentPaneHost {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
-        let board = &self.board;
-        let chrome = board.look.chrome();
-        let board_bg = board.look.token_color("background").unwrap_or(chrome.app_background);
-        let active_tab = self.active_tab;
+impl ContentPaneHost {
+    fn render_tab_content(&self, tab: ContentTab) -> AnyElement {
+        match tab {
+            ContentTab::Cards => scrollable_body()
+                .child(
+                    div()
+                        .id("luma-studio-cards-content")
+                        .flex_1()
+                        .min_h_0()
+                        .overflow_y_scroll()
+                        .child(div().p(px(24.0)).child(render_demo_board(self.board.demos.clone(), tab.panels()))),
+                )
+                .into_any_element(),
+            ContentTab::Dashboard => dashboard::viewport().child(self.board.demos.dashboard.clone()).into_any_element(),
+            ContentTab::Typography => style_guide::viewport().child(self.style_guide_panel.clone()).into_any_element(),
+            ContentTab::Controls => controls::viewport().child(self.controls_panel.clone()).into_any_element(),
+            ContentTab::Palette => palette::viewport().child(self.palette_panel.clone()).into_any_element(),
+            ContentTab::ThemeUsage => theme_usage::viewport().child(self.theme_usage_panel.clone()).into_any_element(),
+        }
+    }
+}
 
+fn content_tabs_builder(
+    look: &ShadcnLook,
+    template: Arc<dyn TabsTemplate>,
+    presenter: impl Fn(ContentTab, &mut Window, &mut App) -> AnyElement + 'static,
+) -> shadcn::Tabs {
+    let presenter = Arc::new(presenter);
+    let mut builder = shadcn::Tabs::new("luma-studio-content-tabs")
+        .look(look)
+        .size(shadcn::ShadcnSize::Lg)
+        .width_mode(TabsWidthMode::Uniform)
+        .template(template)
+        .active("cards");
+    for (id, label, tab) in [
+        ("cards", "Cards", ContentTab::Cards),
+        ("dashboard", "Dashboard", ContentTab::Dashboard),
+        ("typography", "Style Guide", ContentTab::Typography),
+        ("controls", "Controls", ContentTab::Controls),
+        ("palette", "Color Palette", ContentTab::Palette),
+        ("theme-usage", "Theme Usage", ContentTab::ThemeUsage),
+    ] {
+        let mut item = TabsItem::new(id).label(label);
+        if tab == ContentTab::Controls {
+            item = item.dropdown_trigger();
+        }
+        let presenter = presenter.clone();
+        builder = builder.tab_content(item, TabsContent::new(move |window, cx| presenter(tab, window, cx)));
+    }
+    builder
+}
+
+impl Render for ContentPaneHost {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        let chrome = self.board.look.chrome();
+        let board_bg = self.board.look.token_color("background").unwrap_or(chrome.app_background);
         div()
             .id("luma-studio-content-pane")
             .size_full()
@@ -238,25 +284,71 @@ impl Render for ContentPaneHost {
             .flex_col()
             .overflow_hidden()
             .bg(board_bg)
-            .child(div().flex_shrink_0().pt(px(8.0)).child(div().w_full().child(self.tabs.clone())))
+            .child(div().flex_shrink_0().pt(px(8.0)).child(div().w_full().child(self.tabs.read(cx).tab_list())))
             .child(self.catalog_picker.clone())
-            .child(match active_tab {
-                ContentTab::Cards => {
-                    scrollable_body().child(
-                        div().id("luma-studio-cards-content").flex_1().min_h_0().overflow_y_scroll().child(
-                            div().p(px(24.0)).child(render_demo_board(board.demos.clone(), active_tab.panels())),
-                        ),
-                    )
-                }
-                ContentTab::Dashboard => dashboard::viewport().child(board.demos.dashboard.clone()),
-                ContentTab::Typography => style_guide::viewport().child(self.style_guide_panel.clone()),
-                ContentTab::Controls => controls::viewport().child(self.controls_panel.clone()),
-                ContentTab::Palette => palette::viewport().child(self.palette_panel.clone()),
-                ContentTab::ThemeUsage => theme_usage::viewport().child(self.theme_usage_panel.clone()),
-            })
+            .child(self.tabs.read(cx).body())
     }
 }
 
 fn scrollable_body() -> gpui::Div {
     div().flex_1().min_h_0().size_full().flex().flex_col()
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+    use gpui_luma::theme::stylesheet::MotionSource;
+
+    #[test]
+    fn main_tabs_route_panels_through_the_inherited_body_motion() {
+        struct Page {
+            tabs: Entity<Tabs>,
+        }
+        impl Render for Page {
+            fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .child(self.tabs.read(cx).tab_list())
+                    .child(self.tabs.read(cx).body())
+            }
+        }
+        let mut app = gpui::TestAppContext::single();
+        let look = Arc::new(ShadcnLook::built_in());
+        let (page, cx) = app.add_window_view(|_, cx| {
+            let builder =
+                content_tabs_builder(&look, luma_studio_tabs_template(look.clone(), ControlSize::Lg), |tab, _, _| {
+                    div().debug_selector(move || format!("panel-{tab:?}")).child("Panel").into_any_element()
+                });
+            Page { tabs: builder.spawn(cx) }
+        });
+        cx.simulate_resize(gpui::size(px(900.0), px(400.0)));
+        cx.run_until_parked();
+        let tabs = cx.update(|_, cx| page.read(cx).tabs.clone());
+        cx.update(|_, cx| {
+            let motion = tabs.read(cx).body_motion();
+            assert_eq!(motion.duration, Duration::from_millis(300));
+            assert!(matches!(motion.source, MotionSource::Look { .. }));
+        });
+        assert!(cx.debug_bounds("panel-Cards").is_some());
+        assert!(cx.debug_bounds("panel-Dashboard").is_none());
+        let target = cx.debug_bounds("content-tab-dashboard").expect("dashboard tab");
+        cx.simulate_click(target.center(), Default::default());
+        cx.run_until_parked();
+        assert!(cx.debug_bounds("panel-Dashboard").is_some());
+        assert!(cx.debug_bounds("panel-Cards").is_none());
+        for (id, panel) in [
+            ("typography", "panel-Typography"),
+            ("controls", "panel-Controls"),
+            ("palette", "panel-Palette"),
+            ("theme-usage", "panel-ThemeUsage"),
+            ("cards", "panel-Cards"),
+        ] {
+            cx.update(|_, cx| tabs.update(cx, |tabs, cx| tabs.set_active(id, cx)));
+            cx.run_until_parked();
+            assert!(cx.debug_bounds(panel).is_some(), "{id} must render through Tabs::body");
+        }
+    }
 }

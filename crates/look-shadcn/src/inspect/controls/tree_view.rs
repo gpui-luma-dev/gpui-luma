@@ -27,7 +27,8 @@ pub fn inspect_tree_view_row_color_palette(
     state: InteractionState,
 ) -> TreeViewRowInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "tree_view_row_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "tree_view_row_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_tree_view_row_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| crate::tables::TreeViewRowColorTable::fallback());
     TreeViewRowInspectPalette {

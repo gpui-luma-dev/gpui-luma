@@ -7,15 +7,15 @@ mod theme_selector;
 
 use std::sync::{Arc, RwLock};
 
-use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::search_selector::SearchSelector;
-use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
+use gpui_luma::controls::tabs::{Tabs, TabsWidthMode};
 
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::{ShadcnLook};
 use gpui_luma_look_shadcn as shadcn;
 
-use self::model::{SidebarTab, TOKEN_CATEGORIES};
+use self::model::TOKEN_CATEGORIES;
 use self::panels::{ColorsPanel, OtherPanel, PanelContextMenuHost, TypographyPanel};
 use self::parsing::token_color_with_fallback;
 use self::theme_selector::{
@@ -33,13 +33,11 @@ pub struct ThemeSidebar {
     theme_selector_swatches: Arc<RwLock<ThemeSelectorSwatchCache>>,
     theme_selector_selected_id: Arc<RwLock<SharedString>>,
     tabs: Entity<Tabs>,
-    active_tab: SidebarTab,
     colors_panel: Entity<ColorsPanel>,
     colors_host: Entity<PanelContextMenuHost>,
     other_host: Entity<PanelContextMenuHost>,
     typography_panel: Entity<TypographyPanel>,
     other_panel: Entity<OtherPanel>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl ThemeSidebar {
@@ -96,29 +94,9 @@ impl ThemeSidebar {
             .with_item_template(move |model, cx| render_theme_search_selector_item(model, &swatches_for_template, cx))
             .spawn(cx);
 
-        let tabs = shadcn::Tabs::new("luma-studio-sidebar-tabs")
-            .look(look.as_ref())
-            .size(shadcn::ShadcnSize::Lg)
-            .width_mode(TabsWidthMode::Uniform)
-            .template(luma_studio_tabs_template(look.clone(), ControlSize::Lg))
-            .items([
-                TabsItem::new("colors").label("Colors"),
-                TabsItem::new("typography").label("Typography"),
-                TabsItem::new("other").label("Other"),
-            ])
-            .active("colors")
-            .spawn(cx);
-
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&tabs, |sidebar, _, event: &TabsEvent, cx| {
-            let TabsEvent::Activate { tab_id, .. } = event else {
-                return;
-            };
-            if let Some(tab) = SidebarTab::from_id(tab_id.as_ref()) {
-                sidebar.active_tab = tab;
-                cx.notify();
-            }
-        }));
+        let tabs =
+            sidebar_tabs_builder(look.clone(), colors_host.clone(), typography_panel.clone(), other_host.clone())
+                .spawn(cx);
 
         Self {
             look,
@@ -127,13 +105,11 @@ impl ThemeSidebar {
             theme_selector_swatches,
             theme_selector_selected_id,
             tabs,
-            active_tab: SidebarTab::Colors,
             colors_panel,
             colors_host,
             other_host,
             typography_panel,
             other_panel,
-            _subscriptions: subscriptions,
         }
     }
 }
@@ -143,16 +119,10 @@ pub(crate) fn palette_tokens() -> Vec<&'static str> {
 }
 
 impl Render for ThemeSidebar {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
         let sidebar_bg =
             token_color_with_fallback(&self.look, &self.global_overrides, "sidebar", chrome.panel_background);
-
-        let tab_body = match self.active_tab {
-            SidebarTab::Colors => self.colors_host.clone().into_any_element(),
-            SidebarTab::Typography => self.typography_panel.clone().into_any_element(),
-            SidebarTab::Other => self.other_host.clone().into_any_element(),
-        };
 
         div()
             .id("luma-studio-sidebar")
@@ -174,16 +144,92 @@ impl Render for ThemeSidebar {
                     .border_color(chrome.border)
                     .child(div().flex().items_center().w_full().h_full().child(self.theme_selector.clone())),
             )
-            .child(div().flex_shrink_0().pt(px(8.0)).child(div().w_full().child(self.tabs.clone())))
-            .child(
-                div()
-                    .id("luma-studio-sidebar-scroll")
-                    .flex_1()
-                    .min_h(px(0.0))
-                    .w_full()
-                    .overflow_y_scroll()
-                    .p(px(12.0))
-                    .child(tab_body),
-            )
+            .child(div().flex_shrink_0().pt(px(8.0)).child(div().w_full().child(self.tabs.read(cx).tab_list())))
+            .child(self.tabs.read(cx).body())
+    }
+}
+
+fn sidebar_tabs_builder(
+    look: Arc<ShadcnLook>,
+    colors: Entity<impl Render + 'static>,
+    typography: Entity<impl Render + 'static>,
+    other: Entity<impl Render + 'static>,
+) -> shadcn::Tabs {
+    shadcn::Tabs::new("luma-studio-sidebar-tabs")
+        .look(look.as_ref())
+        .size(shadcn::ShadcnSize::Lg)
+        .width_mode(TabsWidthMode::Uniform)
+        .template(luma_studio_tabs_template(look, ControlSize::Lg))
+        .tab_with("colors", "Colors", move |_, _| sidebar_scroll_body().child(colors.clone()))
+        .tab_with("typography", "Typography", move |_, _| sidebar_scroll_body().child(typography.clone()))
+        .tab_with("other", "Other", move |_, _| sidebar_scroll_body().child(other.clone()))
+        .active("colors")
+}
+
+fn sidebar_scroll_body() -> gpui::Stateful<gpui::Div> {
+    div()
+        .id("luma-studio-sidebar-scroll")
+        .flex_1()
+        .min_h(px(0.0))
+        .w_full()
+        .overflow_y_scroll()
+        .p(px(12.0))
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+    use gpui_luma::theme::stylesheet::MotionSource;
+
+    struct Panel(&'static str);
+    impl Render for Panel {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            let id = self.0;
+            div().debug_selector(move || format!("sidebar-panel-{id}")).h(px(800.0)).child(id)
+        }
+    }
+    struct Page {
+        tabs: Entity<Tabs>,
+    }
+    impl Render for Page {
+        fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+            div()
+                .size_full()
+                .flex()
+                .flex_col()
+                .child(self.tabs.read(cx).tab_list())
+                .child(self.tabs.read(cx).body())
+        }
+    }
+
+    #[test]
+    fn sidebar_tabs_inherit_motion_and_retain_scrollable_panels() {
+        let mut app = gpui::TestAppContext::single();
+        let (page, cx) = app.add_window_view(|_, cx| {
+            let colors = cx.new(|_| Panel("colors"));
+            let typography = cx.new(|_| Panel("typography"));
+            let other = cx.new(|_| Panel("other"));
+            Page { tabs: sidebar_tabs_builder(Arc::new(ShadcnLook::built_in()), colors, typography, other).spawn(cx) }
+        });
+        cx.simulate_resize(gpui::size(px(400.0), px(500.0)));
+        cx.run_until_parked();
+        let tabs = cx.update(|_, cx| page.read(cx).tabs.clone());
+        cx.update(|_, cx| {
+            let motion = tabs.read(cx).body_motion();
+            assert_eq!(motion.duration, Duration::from_millis(300));
+            assert!(matches!(motion.source, MotionSource::Look { .. }));
+        });
+        for id in ["colors", "typography", "other", "colors"] {
+            cx.update(|_, cx| tabs.update(cx, |tabs, cx| tabs.set_active(id, cx)));
+            cx.run_until_parked();
+            for (panel, selector) in [
+                ("colors", "sidebar-panel-colors"),
+                ("typography", "sidebar-panel-typography"),
+                ("other", "sidebar-panel-other"),
+            ] {
+                assert_eq!(cx.debug_bounds(selector).is_some(), panel == id);
+            }
+        }
     }
 }

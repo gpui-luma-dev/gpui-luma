@@ -69,3 +69,12 @@ pub use provenance::{
     ColorSource, LookResolver, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, TypographySource,
 };
 pub use usage::all_shadcn_theme_usages;
+
+#[cfg(test)]
+mod button_stylesheet_tests;
+
+#[cfg(test)]
+mod choice_stylesheet_tests;
+
+#[cfg(test)]
+mod remaining_stylesheet_tests;
