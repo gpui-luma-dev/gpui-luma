@@ -32,8 +32,7 @@ pub enum ButtonVariant {
     Surface,
     Outline,
     Ghost,
-    /// Ghost chrome (transparent at rest, soft hover fill) without a focus ring.
-    /// For icon-only chrome that must not draw a border in any state.
+    /// Bare chrome: no background, border, or focus ring in any interaction state.
     GhostQuiet,
     /// Screen-nav pill. Selected reads as a filled tab rather than a button.
     /// Interaction is binary (off | on) — no focus ring, hover, or pressed paint.
@@ -169,7 +168,7 @@ fn resolve_button_palette(
 ) -> ButtonFamilyPalette {
     let layer = state.layer();
     let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
-    // Quiet ghosts share every Ghost treatment except the focus ring.
+    // Quiet ghosts share Ghost foregrounds; their face stays transparent in every state.
     let quiet = matches!(variant, ButtonVariant::GhostQuiet);
     let page = matches!(variant, ButtonVariant::Page);
     let variant = if quiet { ButtonVariant::Ghost } else { variant };
@@ -285,6 +284,11 @@ fn resolve_button_palette(
 
     if state.focused && !state.disabled && !quiet && !page {
         border = Some(look.resolve_role(SemanticRole::Focus).hsla());
+    }
+
+    if quiet {
+        background = transparent();
+        border = None;
     }
 
     ButtonFamilyPalette {
@@ -723,18 +727,41 @@ mod tests {
     }
 
     #[test]
-    fn ghost_quiet_keeps_ghost_hover_without_focus_border() {
+    fn ghost_quiet_has_no_background_or_border_in_any_state() {
         let look = Look::built_in();
+        for mode in [gpui_luma::theme::ThemeMode::Light, gpui_luma::theme::ThemeMode::Dark] {
+            look.set_mode(mode);
+            for paint in [Paint::accent(), Paint::gray(), Paint { tone: Tone::Accent, high_contrast: true }] {
+                let quiet = button_family_theme_with(&look, ButtonVariant::GhostQuiet, paint);
+                for role in
+                    [ButtonFamilyRole::Text, ButtonFamilyRole::Icon, ButtonFamilyRole::Toggle { selected: true }]
+                {
+                    for bits in 0..16 {
+                        let state = InteractionState {
+                            hovered: bits & 1 != 0,
+                            pressed: bits & 2 != 0,
+                            focused: bits & 4 != 0,
+                            disabled: bits & 8 != 0,
+                            ..Default::default()
+                        };
+                        let palette = quiet.resolve(role, ControlSize::Md, state);
+                        assert_eq!(palette.background.a, 0.0, "{mode:?} {role:?} {state:?}");
+                        assert!(palette.border.is_none(), "{mode:?} {role:?} {state:?}");
+                    }
+                }
+            }
+        }
         let ghost = button_family_theme(&look, ButtonVariant::Ghost);
-        let quiet = button_family_theme(&look, ButtonVariant::GhostQuiet);
-        let hovered = InteractionState { hovered: true, ..InteractionState::default() };
-        let focused = InteractionState { focused: true, ..InteractionState::default() };
-
-        assert_eq!(
-            quiet.resolve(ButtonFamilyRole::Text, ControlSize::Md, hovered).background,
-            ghost.resolve(ButtonFamilyRole::Text, ControlSize::Md, hovered).background
+        assert!(
+            ghost
+                .resolve(
+                    ButtonFamilyRole::Text,
+                    ControlSize::Md,
+                    InteractionState { hovered: true, ..Default::default() }
+                )
+                .background
+                .a
+                > 0.0
         );
-        assert!(ghost.resolve(ButtonFamilyRole::Text, ControlSize::Md, focused).border.is_some());
-        assert!(quiet.resolve(ButtonFamilyRole::Text, ControlSize::Md, focused).border.is_none());
     }
 }

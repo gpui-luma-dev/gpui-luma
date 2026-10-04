@@ -206,3 +206,57 @@ fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
 fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
 
 fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
+
+/// Always-visible popup panes use the same controlled highlight path as live popups.
+pub fn pane_preview(look: &Look, fg: Hsla) -> AnyElement {
+    use gpui_luma::controls::floating_menu::{FloatingMenuHighlight, render_floating_menu_with_submenu_hovers_and_icons};
+    use gpui_luma::infra::state::MenuPath;
+    use gpui_luma::theme::InteractionState;
+    use gpui_luma_look_radix::popup_menu_theme;
+
+    let items = [
+        MenuItem::new("copy-url").label("Copy palette URL").icon(LucideIcon::Share2),
+        MenuItem::separator("copy-divider"),
+        MenuItem::new("copy-css").label("Copy CSS code").icon(LucideIcon::Copy).submenu([
+            MenuItem::new("copy-accent").label("Copy accent scale"),
+            MenuItem::separator("css-divider"),
+            MenuItem::new("copy-gray").label("Copy gray scale"),
+        ]),
+        MenuItem::new("copy-svg").label("Copy SVG object").icon(LucideIcon::FileCode),
+        MenuItem::new("unavailable").label("Unavailable").enabled(false),
+    ];
+    let mut panels = div().w_full().flex().flex_wrap().gap(px(24.0));
+    for def in &RADIX_VARIANTS {
+        let id = SharedString::from(format!("guide-popup-pane-{}", def.id));
+        let palette = popup_menu_theme(look, def.variant, def.tone)
+            .resolve(def.trigger_style, Default::default(), InteractionState::default())
+            .floating_menu;
+        let selected = MenuPath::Root(2);
+        let panel = render_floating_menu_with_submenu_hovers_and_icons(
+            &id,
+            &items,
+            None,
+            Some(selected),
+            palette,
+            items.iter().map(|_| Box::new(noop_hover) as _).collect(),
+            Vec::new(),
+            items
+                .iter()
+                .filter(|item| item.is_enabled() && item.submenu_items().is_empty())
+                .map(|_| Box::new(noop_click) as _)
+                .collect(),
+            Some(FloatingMenuHighlight { from: selected, to: selected, progress: 1.0 }),
+            DisclosureIcons::default(),
+        )
+        .block_mouse_except_scroll();
+        panels = panels.child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(12.0))
+                .child(div().text_sm().text_color(fg).child(def.label))
+                .child(panel),
+        );
+    }
+    panels.into_any_element()
+}
