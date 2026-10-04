@@ -2,6 +2,13 @@ use std::{sync::Arc, time::Duration};
 use gpui::{SharedString, AnyElement};
 use super::{TooltipRenderModel, TooltipTemplate, TooltipTheme, bubble};
 
+/// Application-wide tooltip preference. Absent settings enable help by default.
+#[derive(Clone, Copy)]
+pub struct TooltipSettings {
+    pub enabled: bool,
+}
+impl gpui::Global for TooltipSettings {}
+
 /// Preferred side; the opposite side is used when there is insufficient room.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum TooltipPlacement {
@@ -39,6 +46,7 @@ pub struct Tooltip {
     pub(super) theme: Option<Arc<dyn TooltipTheme>>,
     pub(super) once: bool,
     pub(super) enabled: bool,
+    pub(super) always_enabled: bool,
     pub(super) template: TooltipTemplate,
 }
 
@@ -57,6 +65,7 @@ impl Tooltip {
             theme: None,
             once: false,
             enabled: true,
+            always_enabled: false,
             template: Arc::new(bubble),
         }
     }
@@ -119,6 +128,12 @@ impl Tooltip {
     /// Disabled configurations do not activate or alter the owner's input behavior.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        self
+    }
+
+    /// Keep this attachment available regardless of application-wide settings.
+    pub fn always_enabled(mut self) -> Self {
+        self.always_enabled = true;
         self
     }
 

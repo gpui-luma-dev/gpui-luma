@@ -197,7 +197,7 @@ pub fn page(
         ),
         section(
             "Tooltips",
-            "Standard Radix help, shortcut hints and wrapping. Hover a button or Tab to it to open the live tooltip.",
+            "Standard Radix help, shortcut hints and wrapping. Static presentation previews.",
             fg, muted, border,
             tabs.tooltips.render(look),
         ),

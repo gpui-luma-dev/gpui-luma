@@ -7,7 +7,7 @@ use gpui::{
 };
 use crate::theme::InteractionState;
 use crate::infra::attachments::AttachmentTarget;
-use super::{Tooltip, TooltipTheme, TooltipRenderModel, TooltipPlacement, TooltipDismissal, TooltipEvent};
+use super::{TooltipSettings, Tooltip, TooltipTheme, TooltipRenderModel, TooltipPlacement, TooltipDismissal, TooltipEvent};
 
 const GAP: f32 = 10.0;
 const MARGIN: f32 = 8.0;
@@ -27,6 +27,12 @@ impl Attachment {
     ) -> Self {
         Self {
             controller: cx.new(|cx| Controller {
+                _settings: cx.observe_global::<TooltipSettings>(|tip: &mut Controller, cx| {
+                    if !tip.config.always_enabled && !cx.global::<TooltipSettings>().enabled {
+                        tip.reset_trigger();
+                    }
+                    cx.notify();
+                }),
                 config,
                 theme,
                 window: None,
@@ -271,6 +277,7 @@ struct Controller {
     pending: Option<Task<()>>,
     presented: bool,
     expiry: Option<Task<()>>,
+    _settings: Subscription,
     _keystrokes: Subscription,
     _owner_release: Subscription,
 }
@@ -338,7 +345,11 @@ impl Controller {
         // Keyboard input can clear GPUI's hover flag while the pointer remains
         // over the owner. Escape suppression must survive that modality change.
         let hovered = hovered || (self.state.suppressed && self.owner_bounds.contains(&window.mouse_position()));
-        let enabled = enabled && window.is_window_active() && window.is_visible();
+        let enabled = enabled
+            && (self.config.always_enabled
+                || cx.try_global::<TooltipSettings>().is_none_or(|settings| settings.enabled))
+            && window.is_window_active()
+            && window.is_visible();
         let previous = self.state.visible;
         let can_open = self.state.can_open(self.config.once);
         let transition = self.state.sync(
@@ -601,6 +612,31 @@ mod ownership_tests {
     use super::*;
     use gpui::TestAppContext;
     use crate::controls::{button::Button, tooltip::default_tooltip_theme};
+
+    #[test]
+    fn global_disable_dismisses_help_but_preserves_always_enabled_attachment() {
+        let app = TestAppContext::single();
+        let (_owner, regular, always) = app.update(|cx| {
+            let owner = cx.new(|cx| Button::from_builder(Button::new("settings-owner"), cx));
+            let regular = Attachment::new(Tooltip::new("Help"), default_tooltip_theme(), &owner, cx);
+            let always = Attachment::new(Tooltip::new("Toggle").always_enabled(), default_tooltip_theme(), &owner, cx);
+            for attachment in [&regular, &always] {
+                attachment.controller.update(cx, |tip, _| {
+                    tip.state.visible = true;
+                    tip.state.enabled = true;
+                    tip.state.hovered = true;
+                });
+            }
+            (owner, regular, always)
+        });
+        app.update(|cx| cx.set_global(TooltipSettings { enabled: false }));
+        app.update(|cx| {
+            assert!(!regular.controller.read(cx).state.visible);
+            assert!(always.controller.read(cx).state.visible);
+            assert!(regular.controller.read(cx).config.enabled);
+        });
+        app.update(|cx| cx.set_global(TooltipSettings { enabled: true }));
+    }
 
     #[test]
     fn owner_release_retires_retained_tooltip() {

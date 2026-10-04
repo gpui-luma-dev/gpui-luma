@@ -7,6 +7,7 @@ use gpui_luma::controls::button::{Button, ButtonEvent};
 use gpui_luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
 use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
+use gpui_luma::prelude::{TooltipEntityExt, HasPresenter};
 use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma::infra::attachments::{AttachmentHost, AttachmentTarget};
 use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldState};
@@ -23,6 +24,7 @@ const SWATCH_RADIUS: f32 = 2.0;
 #[derive(Clone, Debug)]
 pub enum ColorTextFieldEvent {
     Change { color: ColorValue },
+    LinkChange { linked: bool },
 }
 
 pub struct ColorTextField {
@@ -35,6 +37,7 @@ pub struct ColorTextField {
     attachments: AttachmentHost,
     swatch: Entity<Button<ColorSwatchData>>,
     field: TextField,
+    accent_link: Option<Entity<Button<bool>>>,
     picker_field: Entity<ColorFieldState>,
     hue_slider: Entity<SliderControl>,
     picker_hex: TextField,
@@ -156,6 +159,7 @@ impl ColorTextField {
             attachments,
             swatch,
             field,
+            accent_link: None,
             picker_field,
             hue_slider,
             picker_hex,
@@ -163,6 +167,26 @@ impl ColorTextField {
             sync: ColorCompositionSync::new(),
             _subscriptions: subscriptions,
         }
+    }
+
+    pub fn enable_accent_link(&mut self, cx: &mut Context<Self>) {
+        let button = super::icon_button::ghost_no_hover(format!("{}-link", self.id), &self.look, false)
+            .content(|model, _| {
+                crate::assets::icon_named(if model.data { "link-2" } else { "link-break-2" })
+                    .map(|icon| crate::assets::react_icon(icon, model.look.foreground, 15.0))
+                    .unwrap_or_else(|| div().into_any_element())
+            })
+            .spawn(cx)
+            .help("Link accent edits across light and dark palettes", cx);
+        self._subscriptions.push(cx.subscribe(&button, |_, button, event: &ButtonEvent, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                let linked = !button.read(cx).data();
+                button.update(cx, |button, cx| button.set_data(linked, cx));
+                cx.emit(ColorTextFieldEvent::LinkChange { linked });
+            }
+        }));
+        self.accent_link = Some(button);
+        cx.notify();
     }
 
     pub fn set_color(&mut self, color: ColorValue, cx: &mut Context<Self>) {
@@ -246,6 +270,7 @@ impl Render for ColorTextField {
             .rounded(px(4.0))
             .child(self.popover.clone())
             .child(div().min_w(px(0.0)).flex_1().child(self.field.clone()))
+            .children(self.accent_link.clone())
             .on_hover(cx.listener(|field, hovered: &bool, _, cx| {
                 field.hovered = *hovered;
                 cx.notify();

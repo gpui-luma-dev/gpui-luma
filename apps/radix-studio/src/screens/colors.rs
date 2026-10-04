@@ -1,18 +1,124 @@
 //! Colors tab screen — Radix Colors catalog matrix.
 
-use gpui_luma::color::gpui_bridge::from_hsla;
-use gpui::{Hsla, div, hsla, linear_color_stop, linear_gradient, prelude::*, px};
+use gpui_luma::color::{ColorValue, gpui_bridge::from_hsla};
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use std::sync::Arc;
+use crate::controls::swatch_info::{self, ColorDetails, SwatchSelection};
+use gpui::{Context, Entity, Subscription, Hsla, div, hsla, linear_color_stop, linear_gradient, prelude::*, px};
 use gpui_luma::hstack;
 use gpui_luma::vstack;
 use gpui_luma::theme::ThemeMode;
-use gpui_luma_color::ColorSwatch;
 use gpui_luma_look_radix::{BLACK_ALPHA_STEPS, Look, WHITE_ALPHA_STEPS, color_families, parse_color};
 
 const COLOR_MATRIX_LABEL_W: f32 = 112.0;
 const COLOR_MATRIX_CELL_W: f32 = 95.0;
 const COLOR_MATRIX_CELL_H: f32 = 50.0;
 
-pub fn page(look: &Look, fg: Hsla, muted: Hsla) -> gpui::AnyElement {
+pub struct State {
+    swatches: Vec<Vec<Entity<Button>>>,
+    alpha: Vec<Vec<Entity<Button>>>,
+    _subscriptions: Vec<Subscription>,
+}
+
+impl State {
+    pub fn new<M: 'static>(look: &Arc<Look>, panel: Entity<ColorDetails>, cx: &mut Context<M>) -> Self {
+        let mut subscriptions = Vec::new();
+        let mut swatches = Vec::new();
+        for family in color_families(look.mode()) {
+            let name = family.family;
+            let mut row = Vec::new();
+            for step in 1..=12_u8 {
+                let swatch_look = Arc::clone(look);
+                let color = move || catalog_color(&swatch_look, name, step);
+                let button = swatch_info::swatch(
+                    format!("catalog-{name}-{step}"),
+                    look,
+                    Some(COLOR_MATRIX_CELL_W),
+                    COLOR_MATRIX_CELL_H,
+                    color,
+                    cx,
+                );
+                let source_look = Arc::clone(look);
+                let panel = panel.clone();
+                subscriptions.push(cx.subscribe(&button, move |_, _, event: &ButtonEvent, cx| {
+                    if matches!(event, ButtonEvent::Click) {
+                        let source = from_hsla(catalog_color(&source_look, name, step));
+                        let background = catalog_background(source_look.mode());
+                        let title = title_case(name);
+                        match SwatchSelection::from_source(&title, step, source, background) {
+                            Ok(selection) => panel.update(cx, |panel, cx| panel.open(selection, None, cx)),
+                            Err(error) => eprintln!("failed to resolve catalog color: {error}"),
+                        }
+                    }
+                }));
+                row.push(button);
+            }
+            swatches.push(row);
+        }
+        let mut alpha = Vec::new();
+        for (name, values) in [("Black", &BLACK_ALPHA_STEPS), ("White", &WHITE_ALPHA_STEPS)] {
+            let mut row = Vec::new();
+            for (index, value) in values.iter().enumerate() {
+                let step = (index + 1) as u8;
+                let color = parse_color(value);
+                let button = swatch_info::swatch(
+                    format!("catalog-{name}-{step}"),
+                    look,
+                    Some(COLOR_MATRIX_CELL_W),
+                    COLOR_MATRIX_CELL_H,
+                    move || color,
+                    cx,
+                );
+                let source_look = Arc::clone(look);
+                let panel = panel.clone();
+                subscriptions.push(cx.subscribe(&button, move |_, _, event: &ButtonEvent, cx| {
+                    if matches!(event, ButtonEvent::Click) {
+                        match SwatchSelection::from_alpha(
+                            name,
+                            step,
+                            from_hsla(color),
+                            catalog_background(source_look.mode()),
+                        ) {
+                            Ok(selection) => panel.update(cx, |panel, cx| panel.open(selection, None, cx)),
+                            Err(error) => eprintln!("failed to resolve alpha color: {error}"),
+                        }
+                    }
+                }));
+                row.push(button);
+            }
+            alpha.push(row);
+        }
+        Self { swatches, alpha, _subscriptions: subscriptions }
+    }
+
+    pub fn render(&self, look: &Look, fg: Hsla, muted: Hsla) -> gpui::AnyElement {
+        page(look, fg, muted, &self.swatches, &self.alpha)
+    }
+}
+
+fn catalog_background(mode: ThemeMode) -> ColorValue {
+    from_hsla(if mode == ThemeMode::Dark {
+        gpui::rgb(0x111111).into()
+    } else {
+        gpui::white()
+    })
+}
+
+fn catalog_color(look: &Look, name: &str, step: u8) -> Hsla {
+    color_families(look.mode())
+        .iter()
+        .find(|family| family.family == name)
+        .map(|family| parse_color(family.steps[usize::from(step - 1)]))
+        .unwrap_or_else(gpui::transparent_black)
+}
+
+fn page(
+    look: &Look,
+    fg: Hsla,
+    muted: Hsla,
+    swatches: &[Vec<Entity<Button>>],
+    alpha: &[Vec<Entity<Button>>],
+) -> gpui::AnyElement {
     let mut matrix = div().flex().flex_col().gap(px(3.0)).flex_none();
     let mut groups = hstack! { gap=3; div().w(px(COLOR_MATRIX_LABEL_W)).flex_none() };
     for (label, span) in [("Backgrounds", 2), ("Interactive", 3), ("Borders", 3), ("Solid", 2), ("Text", 2)] {
@@ -44,8 +150,8 @@ pub fn page(look: &Look, fg: Hsla, muted: Hsla) -> gpui::AnyElement {
     }
     matrix = matrix.child(steps);
 
-    for family in color_families(look.mode()) {
-        matrix = matrix.child(color_catalog_row(family, muted));
+    for (family, swatches) in color_families(look.mode()).iter().zip(swatches) {
+        matrix = matrix.child(color_catalog_row(family, swatches, muted));
     }
 
     let mut alpha_matrix = div().flex().flex_col().gap(px(3.0)).flex_none();
@@ -62,8 +168,8 @@ pub fn page(look: &Look, fg: Hsla, muted: Hsla) -> gpui::AnyElement {
         );
     }
     alpha_matrix = alpha_matrix.child(alpha_header);
-    alpha_matrix = alpha_matrix.child(alpha_catalog_row("Black", &BLACK_ALPHA_STEPS, muted));
-    alpha_matrix = alpha_matrix.child(alpha_catalog_row("White", &WHITE_ALPHA_STEPS, muted));
+    alpha_matrix = alpha_matrix.child(alpha_catalog_row("Black", &alpha[0], muted));
+    alpha_matrix = alpha_matrix.child(alpha_catalog_row("White", &alpha[1], muted));
 
     vstack! {
         gap=16;
@@ -88,43 +194,20 @@ fn page_gradient(start: Hsla, end: Hsla) -> gpui::Background {
     linear_gradient(180.0, linear_color_stop(start, 0.0), linear_color_stop(end, 1.0 / 3.0))
 }
 
-fn color_catalog_row(family: &gpui_luma_look_radix::RawColorScale, muted: Hsla) -> gpui::Div {
-    let mut row = hstack! {
-        gap=3;
-        div().w(px(COLOR_MATRIX_LABEL_W)).flex_none().text_sm().text_color(muted).child(family.family),
-    };
-    for value in family.steps {
-        row = row.child(color_catalog_cell(value));
-    }
-    row
+fn color_catalog_row(
+    family: &gpui_luma_look_radix::RawColorScale,
+    swatches: &[Entity<Button>],
+    muted: Hsla,
+) -> gpui::Div {
+    alpha_catalog_row(family.family, swatches, muted)
 }
 
-fn color_catalog_cell(value: &str) -> gpui::Div {
-    div().w(px(COLOR_MATRIX_CELL_W)).h(px(COLOR_MATRIX_CELL_H)).flex_none().bg(parse_color(value))
+fn alpha_catalog_row(label: &'static str, swatches: &[Entity<Button>], muted: Hsla) -> gpui::Div {
+    hstack! { gap=3; div().w(px(COLOR_MATRIX_LABEL_W)).flex_none().text_sm().text_color(muted).child(label) }
+        .children(swatches.iter().cloned())
 }
 
-fn alpha_catalog_row(label: &'static str, values: &[&'static str; 12], muted: Hsla) -> gpui::Div {
-    let mut row = hstack! {
-        gap=3;
-        div().w(px(COLOR_MATRIX_LABEL_W)).flex_none().text_sm().text_color(muted).child(label),
-    };
-    for value in values.iter() {
-        row = row.child(
-            div()
-                .w(px(COLOR_MATRIX_CELL_W))
-                .h(px(COLOR_MATRIX_CELL_H))
-                .flex_none()
-                .flex()
-                .justify_center()
-                .child(
-                    ColorSwatch::new(from_hsla(parse_color(value)))
-                        .size(gpui_luma::theme::ControlSize::Lg)
-                        .height(px(COLOR_MATRIX_CELL_H))
-                        .rounded(px(0.0))
-                        .bordered(false)
-                        .checkerboard(true),
-                ),
-        );
-    }
-    row
+fn title_case(name: &str) -> String {
+    let mut chars = name.chars();
+    chars.next().map(|c| c.to_uppercase().collect::<String>() + chars.as_str()).unwrap_or_default()
 }
