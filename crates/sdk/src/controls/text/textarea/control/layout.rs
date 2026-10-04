@@ -321,6 +321,40 @@ mod tests {
     use super::super::TextArea;
     use super::{TextAreaCachedLine, TextAreaLayoutCache};
 
+    // Exercises the actual indexing helpers without a GPUI window or text system.
+    // Timings are diagnostic only; ordinary tests never depend on wall-clock speed.
+    #[test]
+    #[ignore = "manual headless performance measurement"]
+    fn measure_unicode_offset_construction() {
+        use std::{hint::black_box, time::Instant};
+
+        for repeats in [100, 1_000, 10_000] {
+            let text = "é中🙂e\u{301}".repeat(repeats);
+            let char_count = text.chars().count();
+            let expected: Vec<usize> =
+                (0..=char_count).map(|offset| TextArea::char_to_byte_offset(&text, offset)).collect();
+            assert_eq!(TextArea::char_byte_offsets(&text), expected);
+            for (name, linear) in [("previous repeated scan", false), ("single pass", true)] {
+                let iterations = if linear { 100 } else { 3 };
+                let start = Instant::now();
+                for _ in 0..iterations {
+                    let offsets = if linear {
+                        TextArea::char_byte_offsets(black_box(&text))
+                    } else {
+                        (0..=char_count)
+                            .map(|offset| TextArea::char_to_byte_offset(black_box(&text), black_box(offset)))
+                            .collect()
+                    };
+                    black_box(offsets);
+                }
+                println!(
+                    "Unicode offsets/{name}/{char_count} chars: {:.1} us/op",
+                    start.elapsed().as_secs_f64() * 1_000_000.0 / iterations as f64
+                );
+            }
+        }
+    }
+
     #[test]
     fn char_byte_offsets_preserve_unicode_and_empty_line_boundaries() {
         for text in ["", "ascii text", "é中🙂", "e\u{301} 👩\u{200d}💻"] {

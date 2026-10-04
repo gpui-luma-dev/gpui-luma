@@ -30,16 +30,16 @@ impl<T: 'static> TableControl<T> {
     pub(super) fn render_grid_header(&self, look: &TableLook, cx: &mut Context<Self>) -> AnyElement {
         let mut row = div().w_full().flex().items_center();
         for (index, column) in self.model.columns.iter().enumerate() {
-            row = row.child(
-                render_grid_view_header_column_slot(
-                    column.width(),
-                    column.fill_weight,
-                    column.cell_layout(),
-                    column.header().clone().into_any_element(),
-                )
-                .id(("table-column", index))
-                .debug_selector(move || format!("table-column-{index}")),
-            );
+            let slot = render_grid_view_header_column_slot(
+                column.width(),
+                column.fill_weight,
+                column.cell_layout(),
+                column.header().clone().into_any_element(),
+            )
+            .id(("table-column", index));
+            #[cfg(any(test, feature = "test-support"))]
+            let slot = slot.debug_selector(move || format!("table-column-{index}"));
+            row = row.child(slot);
         }
         let owner = cx.entity().downgrade();
         let row = row.on_children_prepainted(move |bounds, _, cx| {
@@ -67,10 +67,11 @@ impl<T: 'static> TableControl<T> {
             if self.can_resize_column(index) {
                 let drag = ColumnResizeDrag(cx.entity_id());
                 let active = self.column_resize.as_ref().is_some_and(|resize| resize.index == index);
+                let handle = div().id(("table-column-resize", index));
+                #[cfg(any(test, feature = "test-support"))]
+                let handle = handle.debug_selector(move || format!("table-column-resize-{index}"));
                 header = header.child(
-                    div()
-                        .id(("table-column-resize", index))
-                        .debug_selector(move || format!("table-column-resize-{index}"))
+                    handle
                         .absolute()
                         // Center the hit target on the divider. A target ending
                         // at the divider excludes clicks on its right edge.
