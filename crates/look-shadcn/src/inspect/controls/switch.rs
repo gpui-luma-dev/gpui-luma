@@ -59,12 +59,12 @@ pub fn inspect_switch_elevation(
     state: InteractionState,
 ) -> crate::inspect::controls::button::ButtonInspectElevation {
     use gpui_luma::theme::ControlSize;
-    use crate::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
+    use crate::stylesheet::{resolve_stylesheet_shadow_token};
     use crate::inspect::controls::button::{button_style_key, inspect_layered_elevation};
 
     let look = crate::paint::switch_look(mode, theme_mode, style, on, state, ControlSize::Md);
     let layer = state.layer();
-    let rule = embedded_stylesheet().switch.elevation_rule_for_layer(layer);
+    let rule = mode.stylesheet().switch.elevation_rule_for_layer(layer);
     let rule_shadow = rule.map(|rule| rule.shadow.clone()).unwrap_or_else(|| "none".to_string());
     let token = rule.and_then(|rule| resolve_stylesheet_shadow_token(&rule.shadow));
     let shadows = if look.thumb_shadow.is_empty() {

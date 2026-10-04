@@ -5,7 +5,7 @@ use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::{
     LookContext, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, ShadcnButtonStyle, ShadcnModeTokens,
 };
-use crate::stylesheet::{embedded_stylesheet, find_button_elevation_rule, resolve_stylesheet_shadow_token};
+use crate::stylesheet::{find_button_elevation_rule, resolve_stylesheet_shadow_token};
 
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::infra::shadow_layout::shadow_projection_extent;
@@ -23,7 +23,23 @@ pub fn inspect_button_color_palette(
     role: ButtonFamilyRole,
     state: InteractionState,
 ) -> ButtonInspectPalette {
-    let colors = crate::tables::resolve_button_palette(mode, theme_mode, style, role, state);
+    inspect_button_color_palette_with_stylesheet(mode, mode.stylesheet(), theme_mode, style, role, state)
+}
+
+pub(crate) fn inspect_button_color_palette_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    role: ButtonFamilyRole,
+    state: InteractionState,
+) -> ButtonInspectPalette {
+    let colors = crate::controls::button::resolve_button_palette_with_stylesheet(
+        &LookContext::new(mode, theme_mode, state),
+        stylesheet,
+        style,
+        role,
+    );
 
     let border = effective_border_resolved(&colors);
     ButtonInspectPalette { background: colors.background, foreground: colors.foreground, border }
@@ -50,7 +66,21 @@ pub fn inspect_button_metrics(
     size: ControlSize,
     state: InteractionState,
 ) -> ButtonInspectMetrics {
-    let table = crate::tables::metrics::resolve_button_metrics(mode, theme_mode, style, role, size, state);
+    inspect_button_metrics_with_stylesheet(mode, mode.stylesheet(), theme_mode, style, role, size, state)
+}
+
+pub(crate) fn inspect_button_metrics_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    role: ButtonFamilyRole,
+    size: ControlSize,
+    state: InteractionState,
+) -> ButtonInspectMetrics {
+    let table = crate::tables::metrics::resolve_button_metrics_with_stylesheet(
+        mode, stylesheet, theme_mode, style, role, size, state,
+    );
     table.into()
 }
 
@@ -91,14 +121,45 @@ pub fn inspect_button_elevation(
     role: ButtonFamilyRole,
     state: InteractionState,
 ) -> ButtonInspectElevation {
+    inspect_button_elevation_with_stylesheet(mode, mode.stylesheet(), theme_mode, style, role, state)
+}
+
+pub(crate) fn inspect_button_elevation_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    role: ButtonFamilyRole,
+    state: InteractionState,
+) -> ButtonInspectElevation {
     let effective_style = effective_button_style(style, role);
-    let look = crate::paint::button_look(mode, theme_mode, style, role, ControlSize::Md, state);
+    let look = crate::controls::button::button_look_with_stylesheet(
+        mode,
+        stylesheet,
+        theme_mode,
+        style,
+        role,
+        ControlSize::Md,
+        None,
+        state,
+    );
     let ctx = LookContext::new(mode, theme_mode, state);
-    let stylesheet = embedded_stylesheet();
     let style_key = button_style_key(effective_style);
-    let rule = find_button_elevation_rule(stylesheet, effective_style);
-    let rule_shadow = rule.map(|rule| rule.shadow.clone()).unwrap_or_else(|| "none".to_string());
-    let token = rule.and_then(|rule| resolve_stylesheet_shadow_token(&rule.shadow));
+    let rule_shadow = if matches!(role, ButtonFamilyRole::Toggle { .. }) {
+        match style {
+            ShadcnButtonStyle::ContentOnly => "none".into(),
+            ShadcnButtonStyle::Ghost | ShadcnButtonStyle::Outline => find_button_elevation_rule(stylesheet, style)
+                .map(|rule| rule.shadow.clone())
+                .unwrap_or_else(|| "none".into()),
+            _ => crate::stylesheet::resolve_layered_elevation_shadow(&stylesheet.toggle.elevation_rules, state.layer())
+                .unwrap_or_else(|| "none".into()),
+        }
+    } else {
+        find_button_elevation_rule(stylesheet, effective_style)
+            .map(|rule| rule.shadow.clone())
+            .unwrap_or_else(|| "none".into())
+    };
+    let token = resolve_stylesheet_shadow_token(&rule_shadow);
     let catalog_value = token.as_ref().and_then(|token| ctx.catalog().get(token).map(|value| value.to_string()));
     let layers: Vec<ButtonInspectElevationLayer> = look
         .shadow
@@ -379,7 +440,7 @@ mod tests {
         assert_eq!(typography.font_family.value, "Outfit");
         assert!(matches!(
             typography.font_size.source,
-            crate::TypographySource::Constant { ref label } if label.contains("button.metrics.md")
+            crate::TypographySource::Constant { ref label } if label.contains("common.button.sizes.md")
         ));
         assert_eq!(typography.font_size.value, "14");
         assert_eq!(typography.line_height.value.parse::<f32>().unwrap(), 14.0 * (18.0 / 12.5));

@@ -32,6 +32,13 @@ pub enum CardSize {
 }
 impl CardSize {
     pub const ALL: [Self; 3] = [Self::One, Self::Two, Self::Three];
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::One => "1",
+            Self::Two => "2",
+            Self::Three => "3",
+        }
+    }
     pub fn label(self) -> &'static str {
         match self {
             Self::One => "Size 1",
@@ -40,11 +47,11 @@ impl CardSize {
         }
     }
     pub fn padding(self) -> f32 {
-        match self {
-            Self::One => 12.0,
-            Self::Two => 16.0,
-            Self::Three => 24.0,
-        }
+        crate::look::embedded_common_stylesheet()
+            .card
+            .resolve_geometry(self.as_str(), Default::default())
+            .padding
+            .value_px
     }
     pub fn radius(self) -> f32 {
         match self {
@@ -120,8 +127,12 @@ impl Card {
     pub fn resolve_style(&self) -> CardStyle {
         let gray = |step| Tone::Gray.step(&self.look, step);
         let dark = self.look.mode() == ThemeMode::Dark;
+        let geometry = self.look.common_stylesheet().card.resolve_geometry(
+            self.size.as_str(),
+            gpui_luma::theme::stylesheet::CardGeometry { padding: self.size.padding(), ..Default::default() },
+        );
         let mut style = CardStyle {
-            padding: self.size.padding(),
+            padding: geometry.padding.value_px,
             radius: self.size.radius(),
             margin: 0.0,
             background: None,
@@ -130,7 +141,7 @@ impl Card {
             shadows: Vec::new(),
         };
         if self.variant == CardVariant::Ghost {
-            style.margin = -self.size.padding();
+            style.margin = -style.padding;
         } else {
             // Solid scale equivalents of Radix's panel and translucent neutral borders.
             let edge = gray(match self.variant {

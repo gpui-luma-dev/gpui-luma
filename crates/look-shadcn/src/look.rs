@@ -74,13 +74,22 @@ struct ShadcnLookSnapshot {
 
 impl ShadcnLookSnapshot {
     fn new(catalog: CssTokenCatalog, stylesheet: StylesheetConfig) -> anyhow::Result<Self> {
+        let stylesheet = Arc::new(stylesheet);
         let light_catalog = catalog.light_map();
         let dark_catalog = catalog.dark_map();
         Ok(Self {
-            light: Arc::new(ShadcnModeTokens::from_catalog(light_catalog, ThemeMode::Light)?),
-            dark: Arc::new(ShadcnModeTokens::from_catalog(dark_catalog, ThemeMode::Dark)?),
+            light: Arc::new(ShadcnModeTokens::from_catalog_with_stylesheet(
+                light_catalog,
+                ThemeMode::Light,
+                Arc::clone(&stylesheet),
+            )?),
+            dark: Arc::new(ShadcnModeTokens::from_catalog_with_stylesheet(
+                dark_catalog,
+                ThemeMode::Dark,
+                Arc::clone(&stylesheet),
+            )?),
             catalog: Arc::new(catalog),
-            stylesheet: Arc::new(stylesheet),
+            stylesheet,
         })
     }
 
@@ -107,8 +116,16 @@ impl ShadcnLookSnapshot {
 
         Ok(Self {
             catalog: Arc::clone(&self.catalog),
-            light: Arc::new(ShadcnModeTokens::from_catalog(light_catalog, ThemeMode::Light)?),
-            dark: Arc::new(ShadcnModeTokens::from_catalog(dark_catalog, ThemeMode::Dark)?),
+            light: Arc::new(ShadcnModeTokens::from_catalog_with_stylesheet(
+                light_catalog,
+                ThemeMode::Light,
+                Arc::clone(&self.stylesheet),
+            )?),
+            dark: Arc::new(ShadcnModeTokens::from_catalog_with_stylesheet(
+                dark_catalog,
+                ThemeMode::Dark,
+                Arc::clone(&self.stylesheet),
+            )?),
             stylesheet: Arc::clone(&self.stylesheet),
         })
     }
@@ -128,8 +145,16 @@ impl ShadcnLookSnapshot {
 
         Ok(Self {
             catalog: Arc::clone(&self.catalog),
-            light: Arc::new(ShadcnModeTokens::from_catalog(light_catalog, ThemeMode::Light)?),
-            dark: Arc::new(ShadcnModeTokens::from_catalog(dark_catalog, ThemeMode::Dark)?),
+            light: Arc::new(ShadcnModeTokens::from_catalog_with_stylesheet(
+                light_catalog,
+                ThemeMode::Light,
+                Arc::clone(&self.stylesheet),
+            )?),
+            dark: Arc::new(ShadcnModeTokens::from_catalog_with_stylesheet(
+                dark_catalog,
+                ThemeMode::Dark,
+                Arc::clone(&self.stylesheet),
+            )?),
             stylesheet: Arc::clone(&self.stylesheet),
         })
     }
@@ -182,6 +207,11 @@ impl ShadcnLook {
 
     pub fn stylesheet(&self) -> Arc<StylesheetConfig> {
         Arc::clone(&self.snapshot().stylesheet)
+    }
+
+    /// Common SDK configuration; tabs builders snapshot it when spawning.
+    pub fn common_stylesheet(&self) -> gpui_luma::theme::stylesheet::CommonStylesheet {
+        self.stylesheet().common.clone()
     }
 
     pub fn mode(&self) -> ThemeMode {

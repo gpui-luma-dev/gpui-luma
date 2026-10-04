@@ -1,13 +1,13 @@
 //! Stepper — accent track + accent-foreground fill (same color elements as progress).
 
 use gpui_luma::controls::stepper::StepperLook;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::controls::progress::ProgressColorTable;
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
-use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, resolve_color_ref, resolve_stepper_metrics, ResolvedFields};
+use crate::stylesheet::{StylesheetConfig, resolve_color_ref, resolve_stepper_metrics, ResolvedFields};
 use crate::controls::progress::resolve_progress_colors_with_stylesheet;
 
 const DEFAULT_STEP_BADGE_SIZE: f32 = 32.0;
@@ -46,7 +46,7 @@ impl StepperColorTable {
 }
 
 pub fn resolve_stepper_colors(resolver: &LookResolver<'_>, enabled: bool) -> anyhow::Result<StepperColorTable> {
-    resolve_stepper_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+    resolve_stepper_colors_with_stylesheet(resolver, resolver.stylesheet(), enabled)
 }
 
 pub fn resolve_stepper_colors_with_stylesheet(
@@ -105,10 +105,10 @@ fn stepper_colors_from_progress(
 }
 
 pub fn stepper_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -> StepperLook {
-    let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "stepper");
+    let ctx = LookContext::new(mode, mode.theme_mode, InteractionState::default());
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "stepper").with_stylesheet(mode.stylesheet());
     let colors = resolve_stepper_colors(&resolver, enabled).unwrap_or_else(|_| StepperColorTable::fallback());
-    let stylesheet = embedded_stylesheet();
+    let stylesheet = mode.stylesheet();
     let (step_badge_size, track_thickness) = stylesheet
         .stepper
         .metrics_for_size(size)
@@ -116,7 +116,7 @@ pub fn stepper_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -
         .map(|metrics| (metrics.step_badge_size, metrics.track_thickness))
         .unwrap_or((DEFAULT_STEP_BADGE_SIZE, DEFAULT_TRACK_THICKNESS));
 
-    StepperLook {
+    let mut look = StepperLook {
         complete_bg: colors.complete_bg.hsla(),
         complete_fg: colors.complete_fg.hsla(),
         in_progress_bg: colors.in_progress_bg.hsla(),
@@ -128,7 +128,18 @@ pub fn stepper_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -
         track_muted_color: colors.track_muted.hsla(),
         step_badge_size,
         track_thickness,
-    }
+    };
+    let geometry = mode.stylesheet().common.stepper.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::StepperGeometry {
+            step_badge_size: look.step_badge_size,
+            track_thickness: look.track_thickness,
+        },
+    );
+    look.step_badge_size = geometry.step_badge_size.value_px;
+    look.track_thickness = geometry.track_thickness.value_px;
+
+    look
 }
 
 #[cfg(test)]

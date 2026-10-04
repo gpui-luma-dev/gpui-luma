@@ -9,6 +9,9 @@ use super::LayeredElevationRule;
 pub struct ButtonStylesheet {
     #[serde(default)]
     pub metrics: HashMap<String, ButtonMetricsRule>,
+    /// Look-owned metric-token references; literals live in the common contract.
+    #[serde(default)]
+    pub tokens: HashMap<String, ButtonMetricTokensRule>,
     #[serde(default)]
     pub elevation_rules: Vec<ButtonElevationRule>,
     #[serde(default)]
@@ -38,6 +41,9 @@ impl ButtonStylesheet {
 pub struct ToggleStylesheet {
     #[serde(default)]
     pub metrics: HashMap<String, ButtonMetricsRule>,
+    /// Look-owned metric-token references; literals live in the common contract.
+    #[serde(default)]
+    pub tokens: HashMap<String, ButtonMetricTokensRule>,
     #[serde(default)]
     pub elevation_rules: Vec<LayeredElevationRule>,
 }
@@ -94,4 +100,12 @@ impl ButtonColorRule {
             && self.mode.as_deref().is_none_or(|value| value == "any" || value == mode)
             && self.selected.is_none_or(|value| value == selected)
     }
+}
+
+/// Shadcn token references retained independently of common pixel dimensions.
+#[derive(Debug, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ButtonMetricTokensRule {
+    pub height: Option<String>,
+    pub corner_radius: Option<String>,
 }

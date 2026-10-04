@@ -22,7 +22,8 @@ pub fn inspect_listbox_list_color_palette(
     _focused: bool,
 ) -> ListBoxListInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "listbox_list_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "listbox_list_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_listbox_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| crate::tables::ListBoxListColorTable::fallback());
     ListBoxListInspectPalette { background: colors.background, border: colors.border, divider: colors.divider }
@@ -34,7 +35,8 @@ pub fn inspect_listbox_row_color_palette(
     state: InteractionState,
 ) -> ListBoxRowInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "listbox_row_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "listbox_row_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_listbox_row_colors(&resolver, state.disabled, state.focused, state.layer())
         .unwrap_or_else(|_| crate::tables::ListBoxRowColorTable::fallback());
     ListBoxRowInspectPalette { background: colors.background, label_color: colors.label_color }

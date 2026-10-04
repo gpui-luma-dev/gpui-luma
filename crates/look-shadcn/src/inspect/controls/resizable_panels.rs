@@ -26,7 +26,8 @@ pub fn inspect_resizable_panels_color_palette(
     state: InteractionState,
 ) -> ResizablePanelsInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "resizable_panels_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "resizable_panels_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_resizable_panels_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| crate::tables::ResizablePanelsColorTable::fallback());
     ResizablePanelsInspectPalette {

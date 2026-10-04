@@ -19,7 +19,7 @@ pub struct Toolbar {
     id: SharedString,
     look: Option<Look>,
     items: Vec<Item>,
-    style: ToolbarStyle,
+    style: Option<ToolbarStyle>,
     size: ControlSize,
     command_size: ButtonSize,
     icon_size: f32,
@@ -31,7 +31,7 @@ impl Toolbar {
             id: id.into(),
             look: None,
             items: Vec::new(),
-            style: ToolbarStyle::default(),
+            style: None,
             size: ControlSize::Sm,
             command_size: ButtonSize::One,
             icon_size: 16.0,
@@ -45,7 +45,7 @@ impl Toolbar {
 
     /// Shell spacing and radius; applies to this toolbar only.
     pub fn style(mut self, style: ToolbarStyle) -> Self {
-        self.style = style;
+        self.style = Some(style);
         self
     }
 
@@ -113,7 +113,10 @@ impl Toolbar {
             })
             .collect::<Vec<_>>();
         ToolbarBuilder::new(self.id)
-            .template(toolbar_template_with(&look, self.style))
+            .template(match self.style {
+                Some(style) => toolbar_template_with(&look, style),
+                None => crate::toolbar_template(&look),
+            })
             .size(self.size)
             .items(items)
             .spawn(cx)

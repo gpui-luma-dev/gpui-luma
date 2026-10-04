@@ -17,7 +17,7 @@ use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_accordion_content_color_rule, find_accordion_trigger_color_rule,
+    StylesheetConfig, find_accordion_content_color_rule, find_accordion_trigger_color_rule,
     resolve_accordion_content_color_rule, resolve_accordion_trigger_color_rule,
 };
 
@@ -47,7 +47,7 @@ pub fn resolve_accordion_trigger_colors(
     disabled: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<AccordionTriggerColorTable> {
-    resolve_accordion_trigger_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
+    resolve_accordion_trigger_colors_with_stylesheet(resolver, resolver.stylesheet(), disabled, layer)
 }
 
 pub fn resolve_accordion_trigger_colors_with_stylesheet(
@@ -84,7 +84,7 @@ pub fn resolve_accordion_content_colors(
     resolver: &LookResolver<'_>,
     expanded: bool,
 ) -> anyhow::Result<AccordionContentColorTable> {
-    resolve_accordion_content_colors_with_stylesheet(resolver, embedded_stylesheet(), expanded)
+    resolve_accordion_content_colors_with_stylesheet(resolver, resolver.stylesheet(), expanded)
 }
 
 pub fn resolve_accordion_content_colors_with_stylesheet(
@@ -107,7 +107,8 @@ pub fn accordion_trigger_palette(
     let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let typography = crate::tables::typography::resolve_control_typography(mode, size, false);
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "accordion_trigger");
+    let resolver =
+        LookResolver::new(ctx.catalog(), ctx.theme_mode, "accordion_trigger").with_stylesheet(mode.stylesheet());
     let colors = resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| AccordionTriggerColorTable::fallback());
 
@@ -128,7 +129,8 @@ pub fn accordion_content_palette(
     expanded: bool,
 ) -> AccordionContentPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "accordion_content");
+    let resolver =
+        LookResolver::new(ctx.catalog(), ctx.theme_mode, "accordion_content").with_stylesheet(mode.stylesheet());
     let colors = resolve_accordion_content_colors(&resolver, expanded)
         .unwrap_or_else(|_| AccordionContentColorTable::fallback());
 

@@ -14,7 +14,7 @@ pub fn overlay_window_look(theme: &ShadcnLook, size: ControlSize, mode: OverlayW
     let foreground =
         theme.token_color("popover-foreground").unwrap_or_else(|_| theme.color(ShadcnToken::CardForeground));
     let border = theme.token_color("border").unwrap_or(chrome.border);
-    OverlayWindowLook {
+    let mut look = OverlayWindowLook {
         background,
         border,
         foreground,
@@ -43,5 +43,27 @@ pub fn overlay_window_look(theme: &ShadcnLook, size: ControlSize, mode: OverlayW
         },
         body: typography.text.body,
         font_family: theme.font(ShadcnFont::Sans),
-    }
+    };
+    let geometry = tokens.stylesheet().common.overlay_window.resolve_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::OverlayWindowGeometry {
+            padding: look.padding,
+            min_width: look.min_width,
+            max_width: look.max_width,
+            estimated_height: look.estimated_height,
+            font_size: look.body.size,
+            line_height: look.body.line_height,
+        },
+    );
+    look.padding = geometry.padding.value_px;
+    look.min_width = geometry.min_width.value_px;
+    look.max_width = geometry.max_width.value_px;
+    look.estimated_height = geometry.estimated_height.value_px;
+    crate::tables::typography::apply_resolved_geometry_typography(
+        &mut look.body,
+        &geometry.font_size,
+        &geometry.line_height,
+    );
+
+    look
 }

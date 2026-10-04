@@ -15,6 +15,18 @@ struct ContextMenuThemeAdapter {
 impl ContextMenuTheme for ContextMenuThemeAdapter {
     fn resolve(&self, state: InteractionState) -> ContextMenuLook {
         let metrics = self.look.metrics();
+        let geometry = self.look.common_stylesheet().context_menu.resolve_geometry(
+            "",
+            gpui_luma::theme::stylesheet::ContextMenuGeometry {
+                min_width: gpui_luma::controls::context_menu::default_context_menu_theme()
+                    .resolve(state)
+                    .target_min_width,
+                padding_x: metrics.control.md.padding_x,
+                padding_y: metrics.control.md.padding_y,
+                font_size: gpui_luma::theme::ThemeTokens::default().typography.text.label.size,
+                line_height: gpui_luma::theme::ThemeTokens::default().typography.text.label.line_height,
+            },
+        );
         ContextMenuLook {
             target_background: self.look.resolve_role(SemanticRole::Surface).hsla(),
             target_foreground: self
@@ -33,11 +45,15 @@ impl ContextMenuTheme for ContextMenuThemeAdapter {
                     SemanticRole::Border
                 })
                 .hsla(),
-            target_typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight::NORMAL },
+            target_typography: LumaTextStyle {
+                size: geometry.font_size.value_px,
+                line_height: geometry.line_height.value_px,
+                weight: FontWeight::NORMAL,
+            },
             target_radius: metrics.radius.md,
-            target_padding_x: metrics.control.md.padding_x,
-            target_padding_y: metrics.control.md.padding_y,
-            target_min_width: 200.0,
+            target_padding_x: geometry.padding_x.value_px,
+            target_padding_y: geometry.padding_y.value_px,
+            target_min_width: geometry.min_width.value_px,
             floating_menu: crate::popup_menu::floating_menu_look(&self.look, self.variant, self.tone),
         }
     }

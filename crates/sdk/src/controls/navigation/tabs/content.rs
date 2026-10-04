@@ -178,6 +178,39 @@ mod tests {
     }
 
     #[test]
+    fn inherited_motion_survives_runtime_disable_and_configuration_edits() {
+        use crate::theme::stylesheet::{CommonStylesheet, MotionSource};
+        let app = TestAppContext::single();
+        let mut stylesheet = CommonStylesheet::parse("[common.tabs.content]\nfade_in_ms = 300").unwrap();
+        let tabs = app.update(|cx| {
+            Tabs::new("inherited-tabs")
+                .stylesheet(&stylesheet, "test")
+                .tab_with("one", "One", |_, _| div())
+                .tab_with("two", "Two", |_, _| div())
+                .animated(false)
+                .spawn(cx)
+        });
+        stylesheet.tabs.content.fade_in_ms = Some(0);
+        assert_eq!(stylesheet.tabs_content_motion("test").duration, Duration::ZERO);
+        app.update(|cx| {
+            tabs.update(cx, |tabs, cx| {
+                assert_eq!(tabs.body_motion().source, MotionSource::AnimationDisabled);
+                tabs.set_active("two", cx);
+                assert!(!tabs.body_transition.is_animating());
+                tabs.set_animated(true, cx);
+                assert_eq!(tabs.body_motion().duration, Duration::from_millis(300));
+                assert!(matches!(tabs.body_motion().source, MotionSource::Look { .. }));
+                tabs.set_active("one", cx);
+                assert_eq!(tabs.body_transition.progress(), 0.0);
+                assert!(tabs.body_transition.is_animating());
+                tabs.set_animated(false, cx);
+                assert_eq!(tabs.body_transition.progress(), 1.0);
+                assert_eq!(tabs.body_motion().duration, Duration::ZERO);
+            });
+        });
+    }
+
+    #[test]
     fn user_selection_and_rapid_changes_restart_only_the_incoming_body() {
         let app = TestAppContext::single();
         let tabs = app.update(|cx| {

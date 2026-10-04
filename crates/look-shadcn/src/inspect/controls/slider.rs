@@ -26,7 +26,7 @@ pub fn inspect_slider_color_palette(
 ) -> SliderInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
     let layer = state.layer();
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "slider_inspect");
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "slider_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_slider_colors(&resolver, ShadcnButtonStyle::Primary, layer)
         .unwrap_or_else(|_| crate::tables::SliderColorTable::fallback());
 

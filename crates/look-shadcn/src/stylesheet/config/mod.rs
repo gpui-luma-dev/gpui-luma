@@ -53,6 +53,8 @@ pub use autocomplete::*;
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct StylesheetConfig {
     #[serde(default)]
+    pub common: gpui_luma::theme::stylesheet::CommonStylesheet,
+    #[serde(default)]
     pub typography: TypographyStylesheet,
     #[serde(default)]
     pub button: ButtonStylesheet,

@@ -5,7 +5,7 @@ use gpui_luma::controls::switch::{SwitchData, SwitchTheme, ThemedSwitchTemplate}
 use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::controls::button::ShadcnButtonStyle;
-use crate::controls::switch::{switch_look, switch_scale};
+use crate::controls::switch::{switch_look, switch_scale_with_stylesheet};
 use crate::look::ShadcnLook;
 
 struct ShadcnStyledSwitchTheme {
@@ -30,7 +30,15 @@ impl SwitchTheme for ShadcnStyledSwitchTheme {
 
     fn scale(&self, size: ControlSize, scale_factor: f32) -> gpui_luma::controls::switch::SwitchScale {
         let tokens = self.theme.mode_tokens();
-        switch_scale(tokens.as_ref(), self.theme.mode(), self.style, size, scale_factor)
+        switch_scale_with_stylesheet(
+            tokens.as_ref(),
+            &self.theme.stylesheet(),
+            self.theme.mode(),
+            self.style,
+            size,
+            None,
+            scale_factor,
+        )
     }
 }
 

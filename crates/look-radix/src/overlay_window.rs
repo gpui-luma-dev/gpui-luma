@@ -16,7 +16,8 @@ struct OverlayWindowThemeAdapter {
 impl OverlayWindowTheme for OverlayWindowThemeAdapter {
     fn resolve(&self, size: ControlSize, mode: OverlayWindowMode) -> OverlayWindowLook {
         let metrics = self.look.metrics();
-        OverlayWindowLook {
+        let fallback = gpui_luma::controls::overlay_window::default_overlay_window_theme().resolve(size, mode);
+        let mut resolved = OverlayWindowLook {
             background: self.look.resolve_role(SemanticRole::Surface).hsla(),
             border: self.look.resolve_role(SemanticRole::Border).hsla(),
             foreground: self.look.resolve_role(SemanticRole::Foreground).hsla(),
@@ -34,24 +35,35 @@ impl OverlayWindowTheme for OverlayWindowThemeAdapter {
             }],
             radius: metrics.radius.xl,
             padding: metrics.padding_x(size),
-            min_width: match size {
-                ControlSize::Sm => 280.0,
-                ControlSize::Md => 360.0,
-                ControlSize::Lg => 440.0,
-            },
-            max_width: match size {
-                ControlSize::Sm => 360.0,
-                ControlSize::Md => 440.0,
-                ControlSize::Lg => 520.0,
-            },
-            estimated_height: match size {
-                ControlSize::Sm => 180.0,
-                ControlSize::Md => 220.0,
-                ControlSize::Lg => 260.0,
-            },
+            min_width: fallback.min_width,
+            max_width: fallback.max_width,
+            estimated_height: fallback.estimated_height,
             body: LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight::NORMAL },
             font_family: SharedString::from("System UI"),
-        }
+        };
+        let key = match size {
+            ControlSize::Sm => "sm",
+            ControlSize::Md => "md",
+            ControlSize::Lg => "lg",
+        };
+        let geometry = self.look.common_stylesheet().overlay_window.resolve_geometry(
+            key,
+            gpui_luma::theme::stylesheet::OverlayWindowGeometry {
+                padding: resolved.padding,
+                min_width: resolved.min_width,
+                max_width: resolved.max_width,
+                estimated_height: resolved.estimated_height,
+                font_size: resolved.body.size,
+                line_height: resolved.body.line_height,
+            },
+        );
+        resolved.padding = geometry.padding.value_px;
+        resolved.min_width = geometry.min_width.value_px;
+        resolved.max_width = geometry.max_width.value_px;
+        resolved.estimated_height = geometry.estimated_height.value_px;
+        resolved.body.size = geometry.font_size.value_px;
+        resolved.body.line_height = geometry.line_height.value_px;
+        resolved
     }
 }
 

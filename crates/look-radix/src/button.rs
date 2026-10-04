@@ -10,7 +10,7 @@ use gpui_luma::controls::button_family::{
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale};
 use gpui::FontWeight;
 
-use crate::button_layout::{ButtonSize, Radius, apply_button_box, button_box_for};
+use crate::button_layout::{ButtonSize, Radius, apply_button_box, button_box_with_stylesheet};
 use crate::look::Look;
 use crate::scale::ScaleFamily;
 use crate::semantic::SemanticRole;
@@ -66,6 +66,7 @@ struct ButtonFamilyThemeAdapter {
     look: Look,
     variant: ButtonVariant,
     paint: Paint,
+    size: Option<ButtonSize>,
 }
 
 impl ButtonFamilyTheme for ButtonFamilyThemeAdapter {
@@ -86,24 +87,29 @@ impl ButtonFamilyTheme for ButtonFamilyThemeAdapter {
         pill_radius: f32,
     ) -> Option<ButtonFamilyLook> {
         let mut palette = self.resolve(role, size, state);
-        let metrics = self.look.metrics();
-        let control = metrics.for_size(size);
-        // Prefer look metrics for typography size when the scale path is used.
-        palette.typography = LumaTextStyle {
-            size: match size {
-                ControlSize::Sm => 12.0,
-                ControlSize::Md => 14.0,
-                ControlSize::Lg => 16.0,
+        let geometry = self.look.common_stylesheet().button.resolve_geometry(
+            self.size.map(ButtonSize::as_str).unwrap_or_else(|| crate::look::sdk_size_key(size)),
+            gpui_luma::theme::stylesheet::ButtonGeometry {
+                height: scale.height,
+                padding_x: scale.padding_x,
+                padding_y: scale.padding_y,
+                gap: scale.gap,
+                icon_size: scale.icon_size,
+                font_size: palette.typography.size,
+                line_height: palette.typography.line_height,
             },
-            line_height: match size {
-                ControlSize::Sm => 16.0,
-                ControlSize::Md => 20.0,
-                ControlSize::Lg => 24.0,
-            },
-            weight: FontWeight::MEDIUM,
-        };
-        let _ = control;
+        );
+        palette.typography.size = geometry.font_size.value_px;
+        palette.typography.line_height = geometry.line_height.value_px;
         let mut look = compose_button_family_look(&palette, role, scale, pill_radius);
+        look.height = geometry.height.value_px;
+        look.gap = geometry.gap.value_px;
+        if role != ButtonFamilyRole::Icon {
+            look.padding_x = geometry.padding_x.value_px;
+            look.padding_y = geometry.padding_y.value_px;
+        } else {
+            look.icon_size = geometry.icon_size.value_px;
+        }
         if matches!(self.variant, ButtonVariant::Page) {
             look.radius = pill_radius;
         }
@@ -132,7 +138,8 @@ pub fn button_look_for<D: 'static>(
     let look = look.clone();
     Arc::new(move |model| {
         let palette = resolve_button_palette(&look, variant, paint, model.role, model.state);
-        let mut family = apply_button_box(&palette, model.role, button_box_for(size, radius));
+        let mut family =
+            apply_button_box(&palette, model.role, button_box_with_stylesheet(&look.common_stylesheet(), size, radius));
         if matches!(variant, ButtonVariant::Classic) {
             family.shadow = Some(classic_shadow(&look, family.background, model.state));
         }
@@ -141,7 +148,16 @@ pub fn button_look_for<D: 'static>(
 }
 
 pub fn button_family_theme_with(look: &Look, variant: ButtonVariant, paint: Paint) -> Arc<dyn ButtonFamilyTheme> {
-    Arc::new(ButtonFamilyThemeAdapter { look: look.clone(), variant, paint })
+    Arc::new(ButtonFamilyThemeAdapter { look: look.clone(), variant, paint, size: None })
+}
+
+pub(crate) fn button_family_theme_for_size(
+    look: &Look,
+    variant: ButtonVariant,
+    paint: Paint,
+    size: ButtonSize,
+) -> Arc<dyn ButtonFamilyTheme> {
+    Arc::new(ButtonFamilyThemeAdapter { look: look.clone(), variant, paint, size: Some(size) })
 }
 
 fn resolve_button_palette(

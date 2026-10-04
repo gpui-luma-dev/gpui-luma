@@ -105,6 +105,25 @@ impl TextFieldTheme for TextFieldThemeAdapter {
         let mut palette = self.resolve(state, enabled);
         palette.typography = typography_for_size(size);
         let mut look = compose_textfield_look(&palette, scale, self.metrics().border_width.default);
+        let geometry = self.look.common_stylesheet().textfield.resolve_geometry(
+            crate::look::sdk_size_key(size),
+            gpui_luma::theme::stylesheet::TextFieldGeometry {
+                min_height: look.min_height,
+                padding_x: look.padding_x,
+                padding_y: look.padding_y,
+                gap: look.gap,
+                icon_size: look.icon_size,
+                font_size: look.typography.size,
+                line_height: look.typography.line_height,
+            },
+        );
+        look.min_height = geometry.min_height.value_px;
+        look.padding_x = geometry.padding_x.value_px;
+        look.padding_y = geometry.padding_y.value_px;
+        look.gap = geometry.gap.value_px;
+        look.icon_size = geometry.icon_size.value_px;
+        look.typography.size = geometry.font_size.value_px;
+        look.typography.line_height = geometry.line_height.value_px;
         if matches!(self.variant, TextFieldVariant::Soft | TextFieldVariant::Classic) {
             // Soft has no rim; Classic draws its edge via shadow-1.
             look.border_width = 0.0;
@@ -234,10 +253,13 @@ fn classic_field_shadow(edge: gpui::Hsla, fade: gpui::Hsla) -> Vec<BoxShadow> {
 }
 
 fn typography_for_size(size: ControlSize) -> LumaTextStyle {
-    match size {
-        ControlSize::Sm => LumaTextStyle { size: 12.5, line_height: 18.0, weight: FontWeight::NORMAL },
-        ControlSize::Md => LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight::NORMAL },
-        ControlSize::Lg => LumaTextStyle { size: 16.0, line_height: 22.0, weight: FontWeight::NORMAL },
+    let geometry = crate::look::embedded_common_stylesheet()
+        .textfield
+        .resolve_geometry(crate::look::sdk_size_key(size), Default::default());
+    LumaTextStyle {
+        size: geometry.font_size.value_px,
+        line_height: geometry.line_height.value_px,
+        weight: FontWeight::NORMAL,
     }
 }
 

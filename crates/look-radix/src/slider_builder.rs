@@ -7,7 +7,7 @@ use gpui_luma::controls::slider::{
 use gpui_luma::infra::value::ControlRange;
 
 use crate::look::{Look, resolve_look};
-use crate::slider::{SliderSize, SliderVariant, slider_template};
+use crate::slider::{SliderSize, SliderVariant, slider_template_for};
 
 /// Builder in the guise of a slider: Radix axes plus SDK options, until `.spawn(cx)`.
 pub struct Slider {
@@ -167,7 +167,7 @@ impl Slider {
     }
 
     fn into_sdk_builder(self, look: Look) -> SliderBuilder {
-        let template = slider_template(&look, self.variant);
+        let template = slider_template_for(&look, self.variant, self.size);
         let mut builder = gpui_luma::controls::slider::new(self.id)
             .template(template)
             .size(self.size.control_size())

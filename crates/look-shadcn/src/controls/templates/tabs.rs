@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui_luma::controls::tabs::{TabsTemplate, TabsTheme, ThemedTabsTemplate};
 use gpui_luma::theme::{ControlSize, InteractionState};
 
-use crate::controls::tabs::{tabs_item_look, tabs_list_look};
+use crate::controls::tabs::{tabs_item_look_with_stylesheet, tabs_list_look_with_stylesheet};
 use crate::look::ShadcnLook;
 
 struct ShadcnTabsTheme {
@@ -13,7 +13,7 @@ struct ShadcnTabsTheme {
 impl TabsTheme for ShadcnTabsTheme {
     fn resolve_list(&self, enabled: bool, size: ControlSize) -> gpui_luma::controls::tabs::TabsListLook {
         let tokens = self.theme.mode_tokens();
-        tabs_list_look(tokens.as_ref(), enabled, size)
+        tabs_list_look_with_stylesheet(tokens.as_ref(), &self.theme.stylesheet(), enabled, size)
     }
 
     fn resolve_item(
@@ -23,7 +23,7 @@ impl TabsTheme for ShadcnTabsTheme {
         size: ControlSize,
     ) -> gpui_luma::controls::tabs::TabsItemLook {
         let tokens = self.theme.mode_tokens();
-        tabs_item_look(tokens.as_ref(), active, state, size)
+        tabs_item_look_with_stylesheet(tokens.as_ref(), &self.theme.stylesheet(), active, state, size)
     }
 
     fn font_family(&self) -> gpui::SharedString {

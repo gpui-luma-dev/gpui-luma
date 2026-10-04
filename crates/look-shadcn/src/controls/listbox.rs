@@ -18,8 +18,8 @@ use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_listbox_list_color_rule, find_listbox_row_color_rule,
-    resolve_listbox_list_color_rule, resolve_listbox_row_color_rule,
+    StylesheetConfig, find_listbox_list_color_rule, find_listbox_row_color_rule, resolve_listbox_list_color_rule,
+    resolve_listbox_row_color_rule,
 };
 
 /// Look-owned styling for host-composed list surfaces; not an SDK theme.
@@ -102,7 +102,7 @@ pub fn resolve_listbox_list_colors(
     resolver: &LookResolver<'_>,
     enabled: bool,
 ) -> anyhow::Result<ListBoxListColorTable> {
-    resolve_listbox_list_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+    resolve_listbox_list_colors_with_stylesheet(resolver, resolver.stylesheet(), enabled)
 }
 
 pub fn resolve_listbox_list_colors_with_stylesheet(
@@ -134,7 +134,7 @@ pub fn resolve_listbox_row_colors(
     focused: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<ListBoxRowColorTable> {
-    resolve_listbox_row_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, focused, layer)
+    resolve_listbox_row_colors_with_stylesheet(resolver, resolver.stylesheet(), disabled, focused, layer)
 }
 
 pub fn resolve_listbox_row_colors_with_stylesheet(
@@ -153,7 +153,7 @@ pub fn resolve_listbox_row_colors_with_stylesheet(
 /// Color palette only; the host owns all surface geometry.
 pub fn listbox_surface_palette(mode: &ShadcnModeTokens, enabled: bool) -> ListBoxSurfacePalette {
     let ctx = LookContext::new(mode, mode.theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_list");
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_list").with_stylesheet(mode.stylesheet());
     let colors = resolve_listbox_list_colors(&resolver, enabled).unwrap_or_else(|_| ListBoxListColorTable::fallback());
     ListBoxSurfacePalette { background: colors.background.hsla(), border: colors.border.hsla() }
 }
@@ -167,7 +167,7 @@ pub fn listbox_row_palette(
     state.focused |= selected;
     let ctx = LookContext::new(mode, mode.theme_mode, state);
     let typography = ctx.typography();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_row");
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_row").with_stylesheet(mode.stylesheet());
     let colors = resolve_listbox_row_colors(&resolver, state.disabled, state.focused, state.layer())
         .unwrap_or_else(|_| ListBoxRowColorTable::fallback());
 

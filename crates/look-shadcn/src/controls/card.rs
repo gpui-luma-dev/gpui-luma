@@ -14,7 +14,7 @@ use crate::size::ShadcnSize;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_card_color_rule, find_card_elevation_rule, resolve_card_color_rule,
+    StylesheetConfig, find_card_color_rule, find_card_elevation_rule, resolve_card_color_rule,
     resolve_stylesheet_shadow_token,
 };
 use crate::tokens::{ShadcnFont, ShadcnTextRole, ShadcnTextSize};
@@ -39,7 +39,7 @@ impl CardColorTable {
 }
 
 pub fn resolve_card_colors(theme: &ShadcnLook) -> anyhow::Result<CardColorTable> {
-    resolve_card_colors_with_stylesheet(theme, embedded_stylesheet())
+    resolve_card_colors_with_stylesheet(theme, theme.mode_tokens().stylesheet())
 }
 
 pub fn resolve_card_colors_with_stylesheet(
@@ -48,7 +48,7 @@ pub fn resolve_card_colors_with_stylesheet(
 ) -> anyhow::Result<CardColorTable> {
     let tokens = theme.mode_tokens();
     let ctx = LookContext::new(tokens.as_ref(), theme.mode(), Default::default());
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "card");
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "card").with_stylesheet(stylesheet);
     let rule = find_card_color_rule(stylesheet).ok_or_else(|| anyhow::anyhow!("no card color rule configured"))?;
     let colors = resolve_card_color_rule(&resolver, rule)?;
     Ok(CardColorTable {
@@ -83,7 +83,7 @@ pub fn card_look(theme: &ShadcnLook, size: ControlSize) -> CardLook {
     let colors = resolve_card_colors(theme).unwrap_or_else(|_| CardColorTable::fallback());
     let geometry = crate::tables::metrics::resolve_card_metrics(theme, size);
     let typography = &tokens.typography;
-    let shadow = card_elevation_shadow(&tokens.catalog, embedded_stylesheet());
+    let shadow = card_elevation_shadow(&tokens.catalog, theme.mode_tokens().stylesheet());
 
     CardLook {
         background: colors.background.hsla(),

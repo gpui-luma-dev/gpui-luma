@@ -15,8 +15,8 @@ use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_tabs_item_color_rule, find_tabs_list_color_rule,
-    resolve_tabs_item_color_rule, resolve_tabs_list_color_rule,
+    StylesheetConfig, find_tabs_item_color_rule, find_tabs_list_color_rule, resolve_tabs_item_color_rule,
+    resolve_tabs_list_color_rule,
 };
 
 #[derive(Clone, Debug)]
@@ -31,7 +31,7 @@ impl TabsListColorTable {
 }
 
 pub fn resolve_tabs_list_colors(resolver: &LookResolver<'_>, enabled: bool) -> anyhow::Result<TabsListColorTable> {
-    resolve_tabs_list_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+    resolve_tabs_list_colors_with_stylesheet(resolver, resolver.stylesheet(), enabled)
 }
 
 pub fn resolve_tabs_list_colors_with_stylesheet(
@@ -63,7 +63,7 @@ pub fn resolve_tabs_item_colors(
     layer: InteractionLayer,
     focused: bool,
 ) -> anyhow::Result<TabsItemColorTable> {
-    resolve_tabs_item_colors_with_stylesheet(resolver, embedded_stylesheet(), active, layer, focused)
+    resolve_tabs_item_colors_with_stylesheet(resolver, resolver.stylesheet(), active, layer, focused)
 }
 
 pub fn resolve_tabs_item_colors_with_stylesheet(
@@ -80,11 +80,22 @@ pub fn resolve_tabs_item_colors_with_stylesheet(
 }
 
 pub fn tabs_list_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -> TabsListLook {
+    tabs_list_look_with_stylesheet(mode, mode.stylesheet(), enabled, size)
+}
+
+pub fn tabs_list_look_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &StylesheetConfig,
+    enabled: bool,
+    size: ControlSize,
+) -> TabsListLook {
     let ctx = LookContext::new(mode, mode.theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tabs_list");
-    let colors = resolve_tabs_list_colors(&resolver, enabled).unwrap_or_else(|_| TabsListColorTable::fallback());
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tabs_list").with_stylesheet(stylesheet);
+    let colors = resolve_tabs_list_colors_with_stylesheet(&resolver, stylesheet, enabled)
+        .unwrap_or_else(|_| TabsListColorTable::fallback());
 
+    let geometry = crate::tables::metrics::resolve_common_tabs_geometry(mode, stylesheet, size);
     TabsListLook {
         background: if enabled {
             None
@@ -93,8 +104,8 @@ pub fn tabs_list_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize)
         },
         border: None,
         radius: metrics.radius(size),
-        padding: 0.0,
-        gap: metrics.gap(size),
+        padding: geometry.list_padding.value_px,
+        gap: geometry.list_gap.value_px,
     }
 }
 
@@ -104,12 +115,22 @@ pub fn tabs_item_look(
     state: InteractionState,
     size: ControlSize,
 ) -> TabsItemLook {
+    tabs_item_look_with_stylesheet(mode, mode.stylesheet(), active, state, size)
+}
+
+pub fn tabs_item_look_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &StylesheetConfig,
+    active: bool,
+    state: InteractionState,
+    size: ControlSize,
+) -> TabsItemLook {
     let ctx = LookContext::new(mode, mode.theme_mode, state);
     let metrics = ctx.metrics();
     let typography = ctx.typography();
     let layer = state.layer();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tabs_item");
-    let colors = resolve_tabs_item_colors(&resolver, active, layer, state.focused)
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tabs_item").with_stylesheet(stylesheet);
+    let colors = resolve_tabs_item_colors_with_stylesheet(&resolver, stylesheet, active, layer, state.focused)
         .unwrap_or_else(|_| TabsItemColorTable::fallback());
     let label_typography = match size {
         ControlSize::Sm => typography.text.caption,
@@ -125,7 +146,9 @@ pub fn tabs_item_look(
         radius: metrics.radius(size),
         padding_x: metrics.padding_x(size),
         height: label_typography.line_height + metrics.padding_y(size) * 2.0,
-        indicator_height: 3.0,
+        indicator_height: crate::tables::metrics::resolve_common_tabs_geometry(mode, stylesheet, size)
+            .indicator_height
+            .value_px,
     }
 }
 
@@ -154,6 +177,56 @@ mod tests {
             ("input".into(), "oklch(0.6537 0.0197 205.2618)".into()),
             ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
         ]))
+    }
+
+    #[test]
+    fn embedded_tabs_preserve_geometry_across_modes_sizes_and_states() {
+        let look = crate::ShadcnLook::built_in();
+        let theme = look.tabs_theme();
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            look.set_mode(mode);
+            let tokens = look.mode_tokens();
+            for size in [ControlSize::Sm, ControlSize::Md, ControlSize::Lg] {
+                for enabled in [true, false] {
+                    let list = theme.resolve_list(enabled, size);
+                    assert_eq!(list.padding, 0.0);
+                    assert_eq!(list.gap, tokens.metrics.gap(size));
+                    assert_eq!(list.radius, tokens.metrics.radius(size));
+                }
+                for bits in 0..16 {
+                    let state = InteractionState {
+                        hovered: bits & 1 != 0,
+                        pressed: bits & 2 != 0,
+                        focused: bits & 4 != 0,
+                        disabled: bits & 8 != 0,
+                        ..Default::default()
+                    };
+                    for active in [true, false] {
+                        let item = theme.resolve_item(active, state, size);
+                        assert_eq!(item.indicator_height, 3.0);
+                        assert_eq!(item.padding_x, tokens.metrics.padding_x(size));
+                        assert_eq!(item.radius, tokens.metrics.radius(size));
+                        assert_eq!(
+                            item.height,
+                            item.label_typography.line_height + tokens.metrics.padding_y(size) * 2.0
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn custom_stylesheets_validate_geometry_and_missing_fields_use_sdk_fallback() {
+        for value in ["-1", "nan", "inf"] {
+            assert!(
+                crate::stylesheet::StylesheetConfig::parse(&format!("[common.tabs.geometry]\nlist_padding = {value}"))
+                    .is_err()
+            );
+        }
+        let stylesheet = crate::stylesheet::StylesheetConfig::default();
+        let look = crate::ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, stylesheet).unwrap();
+        assert_eq!(look.tabs_theme().resolve_item(true, Default::default(), ControlSize::Md).indicator_height, 2.0);
     }
 
     #[test]

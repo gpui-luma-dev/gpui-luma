@@ -23,8 +23,17 @@ pub fn resolve_switch_metrics(
     style: ShadcnButtonStyle,
     size: gpui_luma::theme::ControlSize,
 ) -> SwitchMetricTable {
+    resolve_switch_metrics_with_stylesheet(mode, mode.stylesheet(), theme_mode, style, size)
+}
+
+pub fn resolve_switch_metrics_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    size: gpui_luma::theme::ControlSize,
+) -> SwitchMetricTable {
     use crate::catalog::SpacingField;
-    use crate::paint::switch_scale;
     use super::helpers::{
         border_width_metric, control_size_key, derived_metric, focus_ring_offset_metric, focus_ring_width_metric,
         pill_radius_metric, spacing_control_metric,
@@ -33,37 +42,41 @@ pub fn resolve_switch_metrics(
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
-    let scale = switch_scale(mode, theme_mode, style, size, 1.0);
+    let scale =
+        crate::controls::switch::switch_scale_with_stylesheet(mode, stylesheet, theme_mode, style, size, None, 1.0);
+    let geometry = crate::controls::switch::switch_geometry_with_stylesheet(mode, stylesheet, size, 1.0);
     let size_key = control_size_key(size);
-    let style_key = match style {
-        ShadcnButtonStyle::Primary => "primary",
-        ShadcnButtonStyle::Secondary => "secondary",
-        ShadcnButtonStyle::Outline => "outline",
-        ShadcnButtonStyle::Ghost => "ghost",
-        ShadcnButtonStyle::ContentOnly => "primary",
+    let legacy = stylesheet.switch.metrics_for_size(size).is_some();
+    let dimension = |field: &str, value| {
+        let note = if legacy {
+            format!("style.toml · switch.metrics.{size_key}.{field}")
+        } else {
+            format!("SDK switch {field} fallback")
+        };
+        derived_metric(note, value)
     };
-
-    SwitchMetricTable {
-        track_width: derived_metric(
-            format!("{size_key} {style_key} track width (style.toml switch metrics)"),
-            scale.track_width,
-        ),
-        track_height: derived_metric(
-            format!("{size_key} {style_key} track height (style.toml switch metrics)"),
-            scale.track_height,
-        ),
-        track_padding: derived_metric(
-            format!("{size_key} {style_key} track padding = height × 2/22"),
-            scale.track_padding,
-        ),
-        thumb_size: derived_metric(
-            format!("{size_key} {style_key} thumb (style.toml switch metrics)"),
-            scale.thumb_size,
-        ),
+    let mut table = SwitchMetricTable {
+        track_width: dimension("width", scale.track_width),
+        track_height: dimension("height", scale.track_height),
+        track_padding: derived_metric("SDK switch track padding fallback", scale.track_padding),
+        thumb_size: dimension("thumb_size", scale.thumb_size),
         gap: spacing_control_metric(catalog, size, SpacingField::Gap, scale.gap),
         track_radius: pill_radius_metric(catalog, scale.track_radius),
         border_width: border_width_metric(metrics),
         focus_ring_width: focus_ring_width_metric(metrics),
         focus_ring_offset: focus_ring_offset_metric(metrics),
-    }
+    };
+    let authored = |common: gpui_luma::theme::provenance::ResolvedMetric, fallback: ResolvedMetric| {
+        if matches!(common.source, gpui_luma::theme::provenance::MetricSource::Authored { .. }) {
+            super::helpers::inspect_shared_metric(common)
+        } else {
+            fallback
+        }
+    };
+    table.track_width = authored(geometry.track_width, table.track_width);
+    table.track_height = authored(geometry.track_height, table.track_height);
+    table.track_padding = authored(geometry.track_padding, table.track_padding);
+    table.thumb_size = authored(geometry.thumb_size, table.thumb_size);
+    table.gap = authored(geometry.gap, table.gap);
+    table
 }

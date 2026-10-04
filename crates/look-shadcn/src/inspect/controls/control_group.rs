@@ -22,7 +22,8 @@ pub fn inspect_control_group_list_color_palette(
     enabled: bool,
 ) -> ControlGroupListInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "control_group_list_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "control_group_list_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_control_group_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| crate::tables::ControlGroupListColorTable::fallback());
     ControlGroupListInspectPalette { background: colors.background, border: colors.border }

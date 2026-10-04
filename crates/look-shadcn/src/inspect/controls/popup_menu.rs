@@ -56,7 +56,7 @@ pub fn inspect_popup_menu_metrics(
     trigger_style: PopupMenuTriggerStyle,
     size: ControlSize,
 ) -> PopupMenuInspectMetrics {
-    PopupMenuInspectMetrics {
+    let mut result = PopupMenuInspectMetrics {
         trigger: inspect_button_metrics(
             mode,
             theme_mode,
@@ -66,5 +66,22 @@ pub fn inspect_popup_menu_metrics(
             InteractionState::default(),
         ),
         menu: crate::inspect::controls::floating_menu::inspect_floating_menu_metrics(mode, theme_mode, size),
-    }
+    };
+    let scale = crate::controls::button::button_box_scale(
+        &crate::LookContext::new(mode, theme_mode, InteractionState::default()),
+        mode.stylesheet(),
+        size,
+        1.0,
+    );
+    let geometry = crate::controls::popup_menu::popup_menu_geometry(mode, size, &scale, &mode.typography.text.label);
+    result.trigger.height =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.height, result.trigger.height);
+    result.trigger.padding_x =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_x, result.trigger.padding_x);
+    result.trigger.padding_y =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_y, result.trigger.padding_y);
+    result.trigger.gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.gap, result.trigger.gap);
+    result.trigger.icon_size =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.icon_size, result.trigger.icon_size);
+    result
 }

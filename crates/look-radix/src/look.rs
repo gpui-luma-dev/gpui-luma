@@ -86,6 +86,21 @@ pub(crate) fn resolve_look(explicit: Option<&Look>, ambient: Option<&Look>) -> L
     Look::built_in()
 }
 
+pub(crate) fn embedded_common_stylesheet() -> &'static gpui_luma::theme::stylesheet::CommonStylesheet {
+    static STYLESHEET: std::sync::OnceLock<gpui_luma::theme::stylesheet::CommonStylesheet> = std::sync::OnceLock::new();
+    STYLESHEET.get_or_init(|| {
+        gpui_luma::theme::stylesheet::CommonStylesheet::parse(include_str!("../assets/style.toml")).unwrap_or_default()
+    })
+}
+
+pub(crate) fn sdk_size_key(size: gpui_luma::theme::ControlSize) -> &'static str {
+    match size {
+        gpui_luma::theme::ControlSize::Sm => "1",
+        gpui_luma::theme::ControlSize::Md => "2",
+        gpui_luma::theme::ControlSize::Lg => "3",
+    }
+}
+
 struct LookState {
     scales: RwLock<ScalePair>,
     palettes: RwLock<[ThemePalettes; 2]>,
@@ -93,7 +108,8 @@ struct LookState {
     metrics: MetricTokens,
     mode: AtomicU8,
     classic_shadow: RwLock<ClassicButtonParams>,
-    tabs_style: RwLock<crate::tabs::TabsStyle>,
+    tabs_style: RwLock<Option<crate::tabs::TabsStyle>>,
+    common_stylesheet: RwLock<gpui_luma::theme::stylesheet::CommonStylesheet>,
     /// Bumped by look setters; polling does not schedule GPUI redraws.
     revision: RwLock<u64>,
 }
@@ -122,7 +138,8 @@ impl Look {
                 metrics,
                 mode: AtomicU8::new(mode_to_u8(mode)),
                 classic_shadow: RwLock::new(ClassicButtonParams::default()),
-                tabs_style: RwLock::new(crate::tabs::TabsStyle::default()),
+                tabs_style: RwLock::new(None),
+                common_stylesheet: RwLock::new(embedded_common_stylesheet().clone()),
                 revision: RwLock::new(0),
             }),
         }
@@ -142,23 +159,42 @@ impl Look {
             *classic = self.classic_params();
         }
         if let Ok(mut tabs) = forked.state.tabs_style.write() {
-            *tabs = self.tabs_style();
+            *tabs = self.tabs_style_override();
         }
         if let Ok(mut contrast) = forked.state.custom_contrast.write() {
             *contrast = *self.state.custom_contrast.read().unwrap_or_else(|poisoned| poisoned.into_inner());
         }
+        *forked.state.common_stylesheet.write().unwrap_or_else(|poisoned| poisoned.into_inner()) =
+            self.common_stylesheet();
         forked
+    }
+
+    /// Common SDK configuration. Clones share edits; forks copy independently.
+    pub fn common_stylesheet(&self) -> gpui_luma::theme::stylesheet::CommonStylesheet {
+        self.state.common_stylesheet.read().unwrap_or_else(|poisoned| poisoned.into_inner()).clone()
+    }
+
+    /// Update shared geometry for subsequent renders and motion for future controls.
+    /// Existing motion retains its snapshot. Notify affected views after geometry edits.
+    pub fn set_common_stylesheet(&self, stylesheet: gpui_luma::theme::stylesheet::CommonStylesheet) {
+        *self.state.common_stylesheet.write().unwrap_or_else(|poisoned| poisoned.into_inner()) = stylesheet;
+        self.bump_revision();
     }
 
     /// Shared tab geometry, baseline, and indicator settings for this look.
     pub fn tabs_style(&self) -> crate::tabs::TabsStyle {
+        self.tabs_style_override()
+            .unwrap_or_else(|| crate::tabs::TabsStyle::from_stylesheet(&self.common_stylesheet()))
+    }
+
+    pub(crate) fn tabs_style_override(&self) -> Option<crate::tabs::TabsStyle> {
         *self.state.tabs_style.read().unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     /// Update tab defaults for subsequent renders. Notify affected views; see [`Look`].
     pub fn set_tabs_style(&self, style: crate::tabs::TabsStyle) {
         if let Ok(mut current) = self.state.tabs_style.write() {
-            *current = style;
+            *current = Some(style);
         }
         self.bump_revision();
     }
@@ -361,6 +397,21 @@ fn mode_from_u8(value: u8) -> ThemeMode {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn common_stylesheet_snapshot_and_fork_are_isolated() {
+        use gpui_luma::theme::stylesheet::CommonStylesheet;
+        let look = Look::built_in();
+        let snapshot = look.common_stylesheet();
+        let fork = look.fork();
+        fork.set_common_stylesheet(CommonStylesheet::default());
+        assert_eq!(look.common_stylesheet(), snapshot);
+        assert_ne!(fork.common_stylesheet(), snapshot);
+        let sdk = gpui_luma::controls::tabs::Tabs::new("snapshot").stylesheet(&snapshot, "radix");
+        look.set_common_stylesheet(CommonStylesheet::default());
+        assert_eq!(sdk.body_motion().duration, std::time::Duration::from_millis(300));
+        assert_eq!(look.common_stylesheet(), CommonStylesheet::default());
+    }
 
     #[test]
     fn mode_switch_changes_resolved_background() {

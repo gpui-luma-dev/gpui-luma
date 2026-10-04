@@ -17,7 +17,21 @@ pub fn inspect_checkbox_color_palette(
     checked: bool,
     state: InteractionState,
 ) -> CheckboxInspectPalette {
-    let colors = crate::tables::resolve_checkbox_palette(mode, theme_mode, style, checked, state);
+    inspect_checkbox_color_palette_with_stylesheet(
+        &crate::LookContext::new(mode, theme_mode, state),
+        mode.stylesheet(),
+        style,
+        checked,
+    )
+}
+
+pub(crate) fn inspect_checkbox_color_palette_with_stylesheet(
+    ctx: &crate::LookContext,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    style: ShadcnButtonStyle,
+    checked: bool,
+) -> CheckboxInspectPalette {
+    let colors = crate::controls::checkbox::resolve_checkbox_palette_with_stylesheet(ctx, stylesheet, style, checked);
     CheckboxInspectPalette {
         indicator_background: colors.indicator_background,
         indicator_border: colors.indicator_border,
@@ -55,19 +69,36 @@ pub fn inspect_checkbox_elevation(
     checked: bool,
     state: InteractionState,
 ) -> crate::inspect::controls::button::ButtonInspectElevation {
+    inspect_checkbox_elevation_with_stylesheet(
+        &crate::LookContext::new(mode, theme_mode, state),
+        mode.stylesheet(),
+        style,
+        checked,
+    )
+}
+
+pub(crate) fn inspect_checkbox_elevation_with_stylesheet(
+    ctx: &crate::LookContext,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    style: ShadcnButtonStyle,
+    checked: bool,
+) -> crate::inspect::controls::button::ButtonInspectElevation {
     use gpui_luma::theme::ControlSize;
-    use crate::stylesheet::{embedded_stylesheet, resolve_stylesheet_shadow_token};
+    use crate::stylesheet::resolve_stylesheet_shadow_token;
     use crate::inspect::controls::button::{button_style_key, inspect_layered_elevation};
 
-    let look = crate::paint::checkbox_look(mode, style, checked, state, ControlSize::Md);
-    let layer = state.layer();
-    let rule = embedded_stylesheet().checkbox.elevation_rule_for_layer(layer);
+    let look =
+        crate::controls::checkbox::checkbox_look_with_stylesheet(ctx, stylesheet, style, checked, ControlSize::Md);
+    let layer = crate::controls::choice_indicator::choice_indicator_color_layer(ctx.state);
+    let rule = (style != ShadcnButtonStyle::ContentOnly)
+        .then(|| stylesheet.checkbox.elevation_rule_for_layer(layer))
+        .flatten();
     let rule_shadow = rule.map(|rule| rule.shadow.clone()).unwrap_or_else(|| "none".to_string());
     let token = rule.and_then(|rule| resolve_stylesheet_shadow_token(&rule.shadow));
     inspect_layered_elevation(
-        mode,
-        theme_mode,
-        state,
+        ctx.tokens,
+        ctx.theme_mode,
+        ctx.state,
         rule_shadow,
         token,
         look.indicator_shadow.as_ref(),

@@ -83,7 +83,21 @@ impl TextAreaTheme for TextAreaThemeAdapter {
         scale: &StandardBoxScale,
     ) -> TextAreaLook {
         let mut look = compose_textarea_look(&self.resolve(state, enabled), scale, self.metrics().border_width.default);
-        let _ = size;
+        let geometry = self.look.common_stylesheet().textarea.resolve_geometry(
+            crate::look::sdk_size_key(size),
+            gpui_luma::theme::stylesheet::TextAreaGeometry {
+                min_height: look.min_height,
+                padding_x: look.padding_x,
+                padding_y: look.padding_y,
+                font_size: look.typography.size,
+                line_height: look.typography.line_height,
+            },
+        );
+        look.min_height = geometry.min_height.value_px;
+        look.padding_x = geometry.padding_x.value_px;
+        look.padding_y = geometry.padding_y.value_px;
+        look.typography.size = geometry.font_size.value_px;
+        look.typography.line_height = geometry.line_height.value_px;
         if matches!(self.variant, TextFieldVariant::Soft | TextFieldVariant::Classic) {
             look.border_width = 0.0;
         }

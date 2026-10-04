@@ -27,9 +27,7 @@ use crate::inspect::controls::{
     TreeViewRowInspectPalette, ColorChromeInspectSection, ColorChromeProfile, inspect_accordion_content_color_palette,
     inspect_accordion_metrics, inspect_accordion_trigger_color_palette, inspect_autocomplete_chrome_color_palette,
     inspect_autocomplete_menu_color_palette, inspect_autocomplete_metrics, inspect_badge_color_palette,
-    inspect_badge_metrics, inspect_button_color_palette, inspect_button_elevation, inspect_button_metrics,
-    inspect_button_typography, inspect_card_metrics, inspect_checkbox_color_palette, inspect_checkbox_elevation,
-    inspect_checkbox_metrics, inspect_context_menu_color_palette, inspect_context_menu_metrics,
+    inspect_badge_metrics, inspect_card_metrics, inspect_context_menu_color_palette, inspect_context_menu_metrics,
     inspect_control_group_list_color_palette, inspect_control_group_metrics, inspect_floating_menu_color_palette,
     inspect_floating_menu_metrics, inspect_table_color_palette, inspect_table_metrics, inspect_table_row_color_palette,
     inspect_listbox_list_color_palette, inspect_listbox_row_color_palette, inspect_sidebar_branch_color_palette,
@@ -37,12 +35,11 @@ use crate::inspect::controls::{
     inspect_sidebar_section_color_palette, inspect_overlay_window_color_palette, inspect_overlay_window_metrics,
     inspect_pager_metrics, inspect_pager_shell_color_palette, inspect_popup_menu_color_palette,
     inspect_popup_menu_metrics, inspect_progress_color_palette, inspect_progress_metrics,
-    inspect_radio_button_color_palette, inspect_radio_button_elevation, inspect_radio_button_metrics,
     inspect_resizable_panels_color_palette, inspect_resizable_panels_metrics, inspect_scrollbar_color_palette,
     inspect_scrollbar_metrics, inspect_selector_color_palette, inspect_selector_metrics, inspect_slider_color_palette,
-    inspect_slider_metrics, inspect_split_view_color_palette, inspect_split_view_metrics,
-    inspect_stepper_color_palette, inspect_stepper_metrics, inspect_switch_color_palette, inspect_switch_elevation,
-    inspect_switch_metrics, inspect_tabs_item_color_palette, inspect_tabs_list_color_palette, inspect_tabs_metrics,
+    inspect_split_view_color_palette, inspect_split_view_metrics, inspect_stepper_color_palette,
+    inspect_stepper_metrics, inspect_switch_color_palette, inspect_switch_elevation,
+    inspect_tabs_item_color_palette_for_look, inspect_tabs_list_color_palette_for_look, inspect_tabs_metrics_for_look,
     inspect_textarea_color_palette, inspect_textarea_metrics, inspect_textfield_color_palette,
     inspect_textfield_elevation, inspect_textfield_metrics, inspect_toolbar_color_palette, inspect_toolbar_metrics,
     inspect_tree_view_metrics, inspect_tree_view_row_color_palette, inspect_color_chrome_sections,
@@ -76,7 +73,14 @@ impl<'a> ShadcnInspect<'a> {
         role: ButtonFamilyRole,
         state: InteractionState,
     ) -> ButtonInspectPalette {
-        inspect_button_color_palette(&self.mode_tokens(), self.theme_mode(), style, role, state)
+        crate::inspect::controls::inspect_button_color_palette_with_stylesheet(
+            &self.mode_tokens(),
+            self.look.stylesheet().as_ref(),
+            self.theme_mode(),
+            style,
+            role,
+            state,
+        )
     }
 
     pub fn inspect_button_metrics(
@@ -86,11 +90,19 @@ impl<'a> ShadcnInspect<'a> {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonInspectMetrics {
-        inspect_button_metrics(&self.mode_tokens(), self.theme_mode(), style, role, size, state)
+        crate::inspect::controls::inspect_button_metrics_with_stylesheet(
+            &self.mode_tokens(),
+            self.look.stylesheet().as_ref(),
+            self.theme_mode(),
+            style,
+            role,
+            size,
+            state,
+        )
     }
 
     pub fn inspect_button_typography(&self) -> ButtonInspectTypography {
-        inspect_button_typography(&self.mode_tokens(), self.theme_mode())
+        self.inspect_button_typography_for_size(ControlSize::Md, ButtonFamilyRole::Text)
     }
 
     pub fn inspect_button_typography_for_size(
@@ -98,7 +110,13 @@ impl<'a> ShadcnInspect<'a> {
         size: ControlSize,
         role: ButtonFamilyRole,
     ) -> ButtonInspectTypography {
-        crate::inspect::inspect_button_typography_for_size(&self.mode_tokens(), self.theme_mode(), size, role)
+        crate::tables::typography::resolve_control_typography_with_stylesheet(
+            &self.mode_tokens(),
+            self.look.stylesheet().as_ref(),
+            size,
+            matches!(role, ButtonFamilyRole::Toggle { .. }),
+        )
+        .into()
     }
 
     pub fn inspect_accordion_typography(&self, size: ControlSize) -> ButtonInspectTypography {
@@ -111,7 +129,14 @@ impl<'a> ShadcnInspect<'a> {
         role: ButtonFamilyRole,
         state: InteractionState,
     ) -> ButtonInspectElevation {
-        inspect_button_elevation(&self.mode_tokens(), self.theme_mode(), style, role, state)
+        crate::inspect::controls::inspect_button_elevation_with_stylesheet(
+            &self.mode_tokens(),
+            self.look.stylesheet().as_ref(),
+            self.theme_mode(),
+            style,
+            role,
+            state,
+        )
     }
 
     pub fn inspect_card_metrics(&self, size: ControlSize) -> CardInspectMetrics {
@@ -132,7 +157,12 @@ impl<'a> ShadcnInspect<'a> {
         checked: bool,
         state: InteractionState,
     ) -> CheckboxInspectPalette {
-        inspect_checkbox_color_palette(&self.mode_tokens(), self.theme_mode(), style, checked, state)
+        crate::inspect::controls::inspect_checkbox_color_palette_with_stylesheet(
+            &crate::LookContext::new(&self.mode_tokens(), self.theme_mode(), state),
+            self.look.stylesheet().as_ref(),
+            style,
+            checked,
+        )
     }
 
     pub fn inspect_textfield_color_palette(
@@ -150,7 +180,12 @@ impl<'a> ShadcnInspect<'a> {
         selected: bool,
         state: InteractionState,
     ) -> RadioButtonInspectPalette {
-        inspect_radio_button_color_palette(&self.mode_tokens(), self.theme_mode(), style, selected, state)
+        crate::inspect::controls::inspect_radio_button_color_palette_with_stylesheet(
+            &crate::LookContext::new(&self.mode_tokens(), self.theme_mode(), state),
+            self.look.stylesheet().as_ref(),
+            style,
+            selected,
+        )
     }
 
     pub fn inspect_switch_color_palette(
@@ -163,7 +198,13 @@ impl<'a> ShadcnInspect<'a> {
     }
 
     pub fn inspect_checkbox_metrics(&self, size: ControlSize) -> CheckboxInspectMetrics {
-        inspect_checkbox_metrics(&self.mode_tokens(), self.theme_mode(), size)
+        crate::tables::metrics::resolve_checkbox_metrics_with_stylesheet(
+            &self.mode_tokens(),
+            self.look.stylesheet().as_ref(),
+            self.theme_mode(),
+            size,
+        )
+        .into()
     }
 
     pub fn inspect_checkbox_elevation(
@@ -172,11 +213,22 @@ impl<'a> ShadcnInspect<'a> {
         checked: bool,
         state: InteractionState,
     ) -> ButtonInspectElevation {
-        inspect_checkbox_elevation(&self.mode_tokens(), self.theme_mode(), style, checked, state)
+        crate::inspect::controls::inspect_checkbox_elevation_with_stylesheet(
+            &crate::LookContext::new(&self.mode_tokens(), self.theme_mode(), state),
+            self.look.stylesheet().as_ref(),
+            style,
+            checked,
+        )
     }
 
     pub fn inspect_radio_button_metrics(&self, size: ControlSize) -> RadioButtonInspectMetrics {
-        inspect_radio_button_metrics(&self.mode_tokens(), self.theme_mode(), size)
+        crate::tables::metrics::resolve_radio_button_metrics_with_stylesheet(
+            &self.mode_tokens(),
+            self.look.stylesheet().as_ref(),
+            self.theme_mode(),
+            size,
+        )
+        .into()
     }
 
     pub fn inspect_radio_button_elevation(
@@ -185,11 +237,23 @@ impl<'a> ShadcnInspect<'a> {
         selected: bool,
         state: InteractionState,
     ) -> ButtonInspectElevation {
-        inspect_radio_button_elevation(&self.mode_tokens(), self.theme_mode(), style, selected, state)
+        crate::inspect::controls::inspect_radio_button_elevation_with_stylesheet(
+            &crate::LookContext::new(&self.mode_tokens(), self.theme_mode(), state),
+            self.look.stylesheet().as_ref(),
+            style,
+            selected,
+        )
     }
 
     pub fn inspect_switch_metrics(&self, size: ControlSize) -> SwitchInspectMetrics {
-        inspect_switch_metrics(&self.mode_tokens(), self.theme_mode(), ShadcnButtonStyle::Primary, size)
+        crate::tables::metrics::resolve_switch_metrics_with_stylesheet(
+            &self.mode_tokens(),
+            &self.look.stylesheet(),
+            self.theme_mode(),
+            ShadcnButtonStyle::Primary,
+            size,
+        )
+        .into()
     }
 
     pub fn inspect_switch_metrics_for_style(
@@ -197,7 +261,14 @@ impl<'a> ShadcnInspect<'a> {
         style: ShadcnButtonStyle,
         size: ControlSize,
     ) -> SwitchInspectMetrics {
-        inspect_switch_metrics(&self.mode_tokens(), self.theme_mode(), style, size)
+        crate::tables::metrics::resolve_switch_metrics_with_stylesheet(
+            &self.mode_tokens(),
+            &self.look.stylesheet(),
+            self.theme_mode(),
+            style,
+            size,
+        )
+        .into()
     }
 
     pub fn inspect_switch_elevation(
@@ -230,7 +301,49 @@ impl<'a> ShadcnInspect<'a> {
     }
 
     pub fn inspect_slider_metrics(&self) -> SliderInspectMetrics {
-        inspect_slider_metrics(&self.mode_tokens(), self.theme_mode())
+        self.inspect_slider_metrics_for(ControlSize::Md, None)
+    }
+
+    /// Inspect geometry for the same size and explicit thumb selection used by painting.
+    pub fn inspect_slider_metrics_for(
+        &self,
+        size: ControlSize,
+        thumb_size: Option<gpui_luma::controls::slider::SliderThumbSize>,
+    ) -> SliderInspectMetrics {
+        crate::tables::metrics::resolve_slider_metrics_with_stylesheet(
+            &self.mode_tokens(),
+            &self.look.stylesheet(),
+            size,
+            thumb_size,
+        )
+        .into()
+    }
+
+    /// Inspect Progress geometry at the rendered control size.
+    pub fn inspect_progress_metrics_for_size(&self, size: ControlSize) -> ProgressInspectMetrics {
+        crate::tables::metrics::resolve_progress_metrics_for_size(&self.mode_tokens(), self.theme_mode(), size).into()
+    }
+
+    /// Inspect Stepper geometry at the rendered control size.
+    pub fn inspect_stepper_metrics_for_size(&self, size: ControlSize) -> StepperInspectMetrics {
+        crate::tables::metrics::resolve_stepper_metrics_for_size(&self.mode_tokens(), self.theme_mode(), size).into()
+    }
+
+    /// Inspect Scrollbar geometry at the rendered control size.
+    pub fn inspect_scrollbar_metrics_for_size(
+        &self,
+        orientation: ScrollbarOrientation,
+        style: ScrollbarStyle,
+        size: ControlSize,
+    ) -> ScrollbarInspectMetrics {
+        crate::tables::metrics::resolve_scrollbar_metrics_for_size(
+            &self.mode_tokens(),
+            self.theme_mode(),
+            orientation,
+            style,
+            size,
+        )
+        .into()
     }
 
     pub fn inspect_progress_color_palette(&self, enabled: bool) -> ProgressInspectPalette {
@@ -324,15 +437,15 @@ impl<'a> ShadcnInspect<'a> {
     }
 
     pub fn inspect_tabs_item_color_palette(&self, active: bool, state: InteractionState) -> TabsItemInspectPalette {
-        inspect_tabs_item_color_palette(&self.mode_tokens(), self.theme_mode(), active, state)
+        inspect_tabs_item_color_palette_for_look(self.look, active, state)
     }
 
     pub fn inspect_tabs_list_color_palette(&self, enabled: bool) -> TabsListInspectPalette {
-        inspect_tabs_list_color_palette(&self.mode_tokens(), self.theme_mode(), enabled)
+        inspect_tabs_list_color_palette_for_look(self.look, enabled)
     }
 
     pub fn inspect_tabs_metrics(&self, size: ControlSize) -> TabsInspectMetrics {
-        inspect_tabs_metrics(&self.mode_tokens(), self.theme_mode(), size)
+        inspect_tabs_metrics_for_look(self.look, size)
     }
 
     pub fn inspect_toolbar_color_palette(

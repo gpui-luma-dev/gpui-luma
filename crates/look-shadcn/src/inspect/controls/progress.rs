@@ -23,7 +23,7 @@ pub fn inspect_progress_color_palette(
     enabled: bool,
 ) -> ProgressInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "progress_inspect");
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "progress_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_progress_colors(&resolver, enabled)
         .unwrap_or_else(|_| crate::tables::ProgressColorTable::fallback());
     ProgressInspectPalette {

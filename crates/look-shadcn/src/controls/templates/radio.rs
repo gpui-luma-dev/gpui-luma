@@ -7,7 +7,7 @@ use gpui_luma::controls::radio_group::{RadioGroupLayout, radio_group_buttons_tem
 use gpui_luma::theme::{ControlSize, InteractionState};
 
 use crate::controls::button::ShadcnButtonStyle;
-use crate::controls::radio::radio_button_look;
+use crate::controls::radio::{radio_button_look_with_stylesheet, radio_scale_with_stylesheet};
 use crate::look::ShadcnLook;
 
 struct ShadcnStyledRadioButtonTheme {
@@ -23,7 +23,24 @@ impl RadioButtonTheme for ShadcnStyledRadioButtonTheme {
         size: ControlSize,
     ) -> gpui_luma::controls::radio_button::RadioButtonPalette {
         let tokens = self.theme.mode_tokens();
-        radio_button_look(tokens.as_ref(), self.style, selected, state, size)
+        radio_button_look_with_stylesheet(
+            &crate::LookContext::new(tokens.as_ref(), self.theme.mode(), state),
+            self.theme.stylesheet().as_ref(),
+            self.style,
+            selected,
+            size,
+        )
+    }
+
+    fn scale(&self, size: ControlSize, scale_factor: f32) -> gpui_luma::controls::radio_button::RadioScale {
+        let tokens = self.theme.mode_tokens();
+        radio_scale_with_stylesheet(
+            &crate::LookContext::new(tokens.as_ref(), self.theme.mode(), InteractionState::default()),
+            self.theme.stylesheet().as_ref(),
+            size,
+            scale_factor,
+        )
+        .0
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {

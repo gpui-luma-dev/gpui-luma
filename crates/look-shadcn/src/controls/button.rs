@@ -8,9 +8,8 @@ use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_button_color_rule, find_button_elevation_rule,
-    resolve_button_color_rule, resolve_button_metrics_rule, resolve_layered_elevation_shadow,
-    resolve_stylesheet_shadow_token,
+    StylesheetConfig, find_button_color_rule, find_button_elevation_rule, resolve_button_color_rule,
+    resolve_button_metrics_rule, resolve_layered_elevation_shadow, resolve_stylesheet_shadow_token,
 };
 
 /// Button-local corner radius presets (shadcn/Shadcn `radius` prop).
@@ -84,7 +83,7 @@ pub fn resolve_button_colors(
     theme_mode: ThemeMode,
     selected: bool,
 ) -> anyhow::Result<ButtonColorPalette> {
-    resolve_button_colors_with_stylesheet(resolver, embedded_stylesheet(), style, layer, theme_mode, selected)
+    resolve_button_colors_with_stylesheet(resolver, resolver.stylesheet(), style, layer, theme_mode, selected)
 }
 
 pub fn resolve_button_colors_with_stylesheet(
@@ -125,18 +124,34 @@ pub fn button_look_semantic(
     radius: Option<ButtonRadiusPreset>,
     state: InteractionState,
 ) -> ButtonFamilyLook {
+    button_look_with_stylesheet(mode, mode.stylesheet(), theme_mode, style, role, size, radius, state)
+}
+
+// Mirrors the public semantic resolver with an additional selected stylesheet.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn button_look_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &StylesheetConfig,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    role: ButtonFamilyRole,
+    size: ControlSize,
+    radius: Option<ButtonRadiusPreset>,
+    state: InteractionState,
+) -> ButtonFamilyLook {
     if let ButtonFamilyRole::Toggle { selected } = role {
-        return super::toggle::toggle_look_semantic(mode, theme_mode, style, selected, size, radius, state);
+        return super::toggle::toggle_look_with_stylesheet(
+            mode, stylesheet, theme_mode, style, selected, size, radius, state,
+        );
     }
 
     let ctx = LookContext::new(mode, theme_mode, state);
-    let stylesheet = embedded_stylesheet();
     let palette = button_palette(&ctx, stylesheet, style, role, size);
     let scale = button_box_scale(&ctx, stylesheet, size, 1.0);
     let effective_style = effective_button_style(style, role);
     let mut look = compose_button_family_look(&palette, role, &scale, ctx.metrics().radius.pill);
-    if let Some(rule) = stylesheet.button.metrics_for_size(size) {
-        look.icon_size = resolve_button_metrics_rule(rule, ctx.metrics(), size).icon_size;
+    if has_family_icon_override(stylesheet, size, false) {
+        look.icon_size = scale.icon_size;
     }
     if let Some(radius) = radius {
         look.radius = resolve_button_radius_preset(radius, ctx.metrics(), look.height);
@@ -172,20 +187,124 @@ pub fn button_box_scale(
     size: ControlSize,
     scale_factor: f32,
 ) -> StandardBoxScale {
-    let fallback = StandardBoxScale::compute(size, ctx.metrics(), scale_factor);
-    let Some(rule) = stylesheet.button.metrics_for_size(size) else {
-        return fallback;
-    };
-
-    let metrics = resolve_button_metrics_rule(rule, ctx.metrics(), size);
+    let (geometry, radius) = resolve_family_geometry(ctx, stylesheet, size, false, scale_factor);
     StandardBoxScale {
-        height: snap_to_pixel(metrics.height, scale_factor),
-        padding_x: snap_to_pixel(metrics.padding_horizontal, scale_factor),
-        padding_y: fallback.padding_y,
-        gap: fallback.gap,
-        radius: metrics.corner_radius,
-        icon_size: snap_to_pixel(metrics.icon_size, scale_factor),
+        height: geometry.height.value_px,
+        padding_x: geometry.padding_x.value_px,
+        padding_y: geometry.padding_y.value_px,
+        gap: geometry.gap.value_px,
+        radius,
+        icon_size: geometry.icon_size.value_px,
     }
+}
+
+pub(crate) fn has_family_icon_override(stylesheet: &StylesheetConfig, size: ControlSize, toggle: bool) -> bool {
+    let key = crate::tables::metrics::helpers::control_size_key(size);
+    if toggle {
+        stylesheet.toggle.metrics_for_size(size).is_some()
+            || stylesheet.common.toggle.geometry.icon_size.is_some()
+            || stylesheet.common.toggle.sizes.get(key).is_some_and(|value| value.icon_size.is_some())
+    } else {
+        stylesheet.button.metrics_for_size(size).is_some()
+            || stylesheet.common.button.geometry.icon_size.is_some()
+            || stylesheet.common.button.sizes.get(key).is_some_and(|value| value.icon_size.is_some())
+    }
+}
+
+pub(crate) fn resolve_family_geometry(
+    ctx: &LookContext,
+    stylesheet: &StylesheetConfig,
+    size: ControlSize,
+    toggle: bool,
+    scale_factor: f32,
+) -> (gpui_luma::theme::stylesheet::ResolvedButtonGeometry, f32) {
+    use gpui_luma::theme::stylesheet::{ButtonGeometry, ResolvedButtonGeometry, ToggleGeometry};
+    let scale = StandardBoxScale::compute(size, ctx.metrics(), scale_factor);
+    let typography = ctx.tokens.typography.text.label;
+    let mut fallback = ButtonGeometry {
+        height: scale.height,
+        padding_x: scale.padding_x,
+        padding_y: scale.padding_y,
+        gap: scale.gap,
+        icon_size: scale.icon_size,
+        font_size: typography.size,
+        line_height: typography.line_height,
+    };
+    let mut radius = scale.radius;
+    let rule = if toggle {
+        stylesheet.toggle.metrics_for_size(size)
+    } else {
+        stylesheet.button.metrics_for_size(size)
+    };
+    if let Some(rule) = rule {
+        let metrics = resolve_button_metrics_rule(rule, ctx.metrics(), size);
+        fallback.height = metrics.height;
+        fallback.padding_x = metrics.padding_horizontal;
+        fallback.icon_size = metrics.icon_size;
+        fallback.font_size = metrics.font_size;
+        radius = metrics.corner_radius;
+    }
+    let key = crate::tables::metrics::helpers::control_size_key(size);
+    let tokens = if toggle {
+        &stylesheet.toggle.tokens
+    } else {
+        &stylesheet.button.tokens
+    };
+    let mut height_source = None;
+    if let Some(tokens) = tokens.get(key) {
+        if let Some(height) = &tokens.height {
+            if let Some(value) = crate::stylesheet::resolve_stylesheet_metric(height, ctx.metrics(), size) {
+                fallback.height = value;
+                height_source = Some(height);
+            }
+        }
+        if let Some(token) = &tokens.corner_radius {
+            radius = crate::stylesheet::resolve_stylesheet_metric(token, ctx.metrics(), size).unwrap_or(radius);
+        }
+    }
+    let mut geometry = if toggle {
+        let value = stylesheet.common.toggle.resolve_geometry(
+            key,
+            ToggleGeometry {
+                height: fallback.height,
+                padding_x: fallback.padding_x,
+                padding_y: fallback.padding_y,
+                gap: fallback.gap,
+                icon_size: fallback.icon_size,
+                font_size: fallback.font_size,
+                line_height: fallback.line_height,
+            },
+        );
+        ResolvedButtonGeometry {
+            height: value.height,
+            padding_x: value.padding_x,
+            padding_y: value.padding_y,
+            gap: value.gap,
+            icon_size: value.icon_size,
+            font_size: value.font_size,
+            line_height: value.line_height,
+        }
+    } else {
+        stylesheet.common.button.resolve_geometry(key, fallback)
+    };
+    let family = if toggle { "toggle" } else { "button" };
+    if matches!(geometry.height.source, gpui_luma::theme::provenance::MetricSource::Constant { .. }) {
+        if let Some(token) = height_source {
+            geometry.height.source = gpui_luma::theme::provenance::MetricSource::Derived {
+                note: format!("style.toml · {family}.tokens.{key}.height → {token}"),
+            };
+        }
+    }
+    for metric in [
+        &mut geometry.height,
+        &mut geometry.padding_x,
+        &mut geometry.padding_y,
+        &mut geometry.gap,
+        &mut geometry.icon_size,
+    ] {
+        metric.value_px = snap_to_pixel(metric.value_px, scale_factor);
+    }
+    (geometry, radius)
 }
 
 /// Final button/toggle colors, including role normalization and focus border.
@@ -196,12 +315,7 @@ pub fn resolve_button_palette(
     role: ButtonFamilyRole,
     state: InteractionState,
 ) -> ButtonColorPalette {
-    resolve_button_palette_with_stylesheet(
-        &LookContext::new(mode, theme_mode, state),
-        embedded_stylesheet(),
-        style,
-        role,
-    )
+    resolve_button_palette_with_stylesheet(&LookContext::new(mode, theme_mode, state), mode.stylesheet(), style, role)
 }
 
 pub(crate) fn resolve_button_palette_with_stylesheet(
@@ -216,7 +330,7 @@ pub(crate) fn resolve_button_palette_with_stylesheet(
     let selected =
         matches!(role, ButtonFamilyRole::Toggle { selected: true }) && style != ShadcnButtonStyle::ContentOnly;
 
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "button_resolver");
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "button_resolver").with_stylesheet(stylesheet);
     let mut colors = resolve_button_colors_with_stylesheet(&resolver, stylesheet, style, layer, theme_mode, selected)
         .unwrap_or_else(|_| ButtonColorPalette::fallback());
     if (matches!(role, ButtonFamilyRole::Toggle { .. }) || style != ShadcnButtonStyle::ContentOnly)
@@ -244,8 +358,12 @@ pub fn button_palette(
     let foreground = colors.foreground.hsla();
     let border = colors.border.map(|color| color.hsla());
 
-    let typography =
-        crate::tables::typography::resolve_control_typography_with_stylesheet(ctx.tokens, stylesheet, size, false);
+    let typography = crate::tables::typography::resolve_control_typography_with_stylesheet(
+        ctx.tokens,
+        stylesheet,
+        size,
+        matches!(role, ButtonFamilyRole::Toggle { .. }),
+    );
 
     ButtonFamilyPalette {
         background,
@@ -278,6 +396,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
+    use crate::stylesheet::embedded_stylesheet;
     use gpui_luma::controls::button_family::ButtonFamilyRole;
     use crate::catalog::CssTokenMap;
     use crate::controls::toggle::toggle_look;

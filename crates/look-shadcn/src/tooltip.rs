@@ -5,15 +5,26 @@ use crate::{ShadcnLook, ShadcnToken, ShadcnRadius};
 struct ShadcnTooltipTheme(ShadcnLook);
 impl TooltipTheme for ShadcnTooltipTheme {
     fn resolve(&self) -> TooltipLook {
+        let tokens = self.0.mode_tokens();
+        let geometry = tokens.stylesheet().common.tooltip.resolve_geometry(
+            "default",
+            gpui_luma::theme::stylesheet::TooltipGeometry {
+                padding: 8.0,
+                padding_y: 4.0,
+                max_width: 260.0,
+                font_size: 12.0,
+                line_height: 16.0,
+            },
+        );
         TooltipLook {
             background: self.0.color(ShadcnToken::Foreground),
             foreground: self.0.color(ShadcnToken::Background),
-            padding: 8.0,
-            padding_y: 4.0,
+            padding: geometry.padding.value_px,
+            padding_y: geometry.padding_y.value_px,
             radius: self.0.radius(ShadcnRadius::Md),
-            max_width: 260.0,
-            text_size: 12.0,
-            line_height: 16.0,
+            max_width: geometry.max_width.value_px,
+            text_size: geometry.font_size.value_px,
+            line_height: geometry.line_height.value_px,
             shadow: Vec::new(),
         }
     }

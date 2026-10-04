@@ -21,8 +21,8 @@ use super::button::{ButtonRadiusPreset, resolve_button_radius_preset};
 use super::ShadcnButtonStyle;
 use crate::mode::ShadcnModeTokens;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_switch_color_rule, resolve_layered_elevation_shadow,
-    resolve_switch_color_rule, resolve_switch_metrics,
+    StylesheetConfig, find_switch_color_rule, resolve_layered_elevation_shadow, resolve_switch_color_rule,
+    resolve_switch_metrics,
 };
 
 #[derive(Clone, Debug)]
@@ -50,7 +50,7 @@ pub fn resolve_switch_colors(
     on: bool,
     disabled: bool,
 ) -> anyhow::Result<SwitchColorTable> {
-    resolve_switch_colors_with_stylesheet(resolver, embedded_stylesheet(), style, on, disabled)
+    resolve_switch_colors_with_stylesheet(resolver, resolver.stylesheet(), style, on, disabled)
 }
 
 pub fn resolve_switch_colors_with_stylesheet(
@@ -76,7 +76,7 @@ pub fn resolve_switch_radius_preset(preset: ButtonRadiusPreset, metrics: &Metric
     resolve_button_radius_preset(preset, metrics, track_height)
 }
 
-/// Look-owned switch geometry from `style.toml` (`switch.metrics`).
+/// Switch geometry from the embedded common contract, with legacy metric fallback.
 pub fn switch_scale(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
@@ -95,25 +95,48 @@ pub fn switch_scale_with_radius(
     radius: Option<ButtonRadiusPreset>,
     scale_factor: f32,
 ) -> SwitchScale {
+    switch_scale_with_stylesheet(mode, mode.stylesheet(), theme_mode, style, size, radius, scale_factor)
+}
+
+pub(crate) fn switch_geometry_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &StylesheetConfig,
+    size: ControlSize,
+    scale_factor: f32,
+) -> gpui_luma::theme::stylesheet::ResolvedSwitchGeometry {
+    let mut fallback = SwitchScale::compute(size, &mode.metrics, scale_factor);
+    // Legacy sections remain a compatibility fallback below the common contract.
+    if let Some(rule) = stylesheet.switch.metrics_for_size(size) {
+        let resolved = resolve_switch_metrics(rule);
+        fallback.track_width = snap_to_pixel(resolved.width, scale_factor);
+        fallback.track_height = snap_to_pixel(resolved.height, scale_factor);
+        fallback.thumb_size = snap_to_pixel(resolved.thumb_size, scale_factor);
+    }
+    stylesheet.common.switch.resolve_geometry(
+        match size {
+            ControlSize::Sm => "sm",
+            ControlSize::Md => "md",
+            ControlSize::Lg => "lg",
+        },
+        fallback,
+        scale_factor,
+    )
+}
+
+pub(crate) fn switch_scale_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &StylesheetConfig,
+    theme_mode: ThemeMode,
+    _style: ShadcnButtonStyle,
+    size: ControlSize,
+    radius: Option<ButtonRadiusPreset>,
+    scale_factor: f32,
+) -> SwitchScale {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let fallback = SwitchScale::compute(size, metrics, scale_factor);
-    let stylesheet = embedded_stylesheet();
-    let Some(rule) = stylesheet.switch.metrics_for_style(style, size) else {
-        return apply_switch_radius(fallback, metrics, radius);
-    };
-    let resolved = resolve_switch_metrics(rule);
-    let track_height = snap_to_pixel(resolved.height, scale_factor);
-    let track_padding = snap_to_pixel(2.0, scale_factor);
-    let scale = SwitchScale {
-        track_width: snap_to_pixel(resolved.width, scale_factor),
-        track_height,
-        track_padding,
-        thumb_size: snap_to_pixel(resolved.thumb_size, scale_factor),
-        track_radius: metrics.radius.pill,
-        gap: snap_to_pixel(metrics.gap(size), scale_factor),
-        label_baseline_shift: fallback.label_baseline_shift,
-    };
+    let geometry = switch_geometry_with_stylesheet(mode, stylesheet, size, scale_factor);
+    let scale = geometry.apply_to(fallback);
     apply_switch_radius(scale, metrics, radius)
 }
 
@@ -153,7 +176,7 @@ pub fn resolve_switch_palette(
     };
     let ctx = LookContext::new(mode, theme_mode, state);
     let catalog = ctx.catalog();
-    let resolver = LookResolver::new(catalog, ctx.theme_mode, "switch");
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "switch").with_stylesheet(mode.stylesheet());
     let colors = resolve_switch_colors(&resolver, indicator_style, on, state.disabled)
         .unwrap_or_else(|_| SwitchColorTable::fallback());
 
@@ -212,7 +235,7 @@ pub fn switch_look(
         thumb_shadow: if content_only {
             Vec::new()
         } else {
-            switch_elevation_shadow(catalog, embedded_stylesheet(), layer)
+            switch_elevation_shadow(catalog, mode.stylesheet(), layer)
         },
         label_color: colors.label_color.hsla(),
         label_typography: {
@@ -264,6 +287,35 @@ mod tests {
             ("card".into(), "oklch(0.9306 0.0260 92.4020)".into()),
             ("shadow-sm".into(), "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)".into()),
         ]))
+    }
+
+    #[test]
+    fn legacy_switch_metrics_remain_a_fallback_below_common_fields() {
+        let stylesheet = crate::stylesheet::StylesheetConfig::parse(
+            "[switch.metrics.md]\nwidth = 46\nheight = 24\nthumb_size = 20\n[common.switch.sizes.md]\ntrack_width = 50",
+        )
+        .unwrap();
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).unwrap();
+        let scale = super::switch_scale_with_stylesheet(
+            &mode,
+            &stylesheet,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ControlSize::Md,
+            None,
+            1.0,
+        );
+        assert_eq!((scale.track_width, scale.track_height, scale.thumb_size), (50.0, 24.0, 20.0));
+        let missing = super::switch_scale_with_stylesheet(
+            &mode,
+            &crate::stylesheet::StylesheetConfig::default(),
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ControlSize::Md,
+            None,
+            1.0,
+        );
+        assert_eq!(missing, gpui_luma::controls::switch::SwitchScale::compute(ControlSize::Md, &mode.metrics, 1.0));
     }
 
     #[test]

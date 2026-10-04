@@ -23,7 +23,8 @@ pub fn inspect_autocomplete_chrome_color_palette(
     theme_mode: ThemeMode,
 ) -> AutocompleteChromeInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "autocomplete_chrome_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "autocomplete_chrome_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_autocomplete_chrome_colors(&resolver, true)
         .unwrap_or_else(|_| crate::tables::AutocompleteChromeColorTable::fallback());
     AutocompleteChromeInspectPalette {

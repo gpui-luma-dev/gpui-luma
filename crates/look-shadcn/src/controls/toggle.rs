@@ -1,11 +1,11 @@
 use gpui_luma::controls::button_family::{
     ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_look,
 };
-use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale, ThemeMode, snap_to_pixel};
+use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, resolve_button_metrics_rule};
+use crate::stylesheet::{StylesheetConfig};
 
 use super::button::{
     ButtonRadiusPreset, ShadcnButtonStyle, button_box_scale, button_elevation_shadow, resolve_button_radius_preset,
@@ -46,14 +46,28 @@ pub fn toggle_look_semantic(
     radius: Option<ButtonRadiusPreset>,
     state: InteractionState,
 ) -> ButtonFamilyLook {
+    toggle_look_with_stylesheet(mode, mode.stylesheet(), theme_mode, style, selected, size, radius, state)
+}
+
+// Mirrors the public semantic resolver with an additional selected stylesheet.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn toggle_look_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &StylesheetConfig,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    selected: bool,
+    size: ControlSize,
+    radius: Option<ButtonRadiusPreset>,
+    state: InteractionState,
+) -> ButtonFamilyLook {
     let role = ButtonFamilyRole::Toggle { selected };
     let ctx = LookContext::new(mode, theme_mode, state);
-    let stylesheet = embedded_stylesheet();
     let palette = toggle_palette(&ctx, stylesheet, style, selected, size);
     let scale = toggle_box_scale(&ctx, stylesheet, size, 1.0);
     let mut look = compose_button_family_look(&palette, role, &scale, ctx.metrics().radius.pill);
-    if let Some(rule) = stylesheet.toggle.metrics_for_size(size) {
-        look.icon_size = resolve_button_metrics_rule(rule, ctx.metrics(), size).icon_size;
+    if super::button::has_family_icon_override(stylesheet, size, true) {
+        look.icon_size = scale.icon_size;
     }
     if let Some(radius) = radius {
         look.radius = resolve_button_radius_preset(radius, ctx.metrics(), look.height);
@@ -84,16 +98,30 @@ pub fn toggle_icon_look_semantic(
     radius: Option<ButtonRadiusPreset>,
     state: InteractionState,
 ) -> ButtonFamilyLook {
+    toggle_icon_look_with_stylesheet(mode, mode.stylesheet(), theme_mode, style, selected, size, radius, state)
+}
+
+// Mirrors the public semantic resolver with an additional selected stylesheet.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn toggle_icon_look_with_stylesheet(
+    mode: &ShadcnModeTokens,
+    stylesheet: &StylesheetConfig,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    selected: bool,
+    size: ControlSize,
+    radius: Option<ButtonRadiusPreset>,
+    state: InteractionState,
+) -> ButtonFamilyLook {
     let role = ButtonFamilyRole::Toggle { selected };
     let ctx = LookContext::new(mode, theme_mode, state);
-    let stylesheet = embedded_stylesheet();
     let palette = toggle_palette(&ctx, stylesheet, style, selected, size);
     let mut scale = button_box_scale(&ctx, stylesheet, size, 1.0);
     scale.padding_x = 0.0;
     scale.padding_y = 0.0;
     let mut look = compose_button_family_look(&palette, role, &scale, ctx.metrics().radius.pill);
-    if let Some(rule) = stylesheet.button.metrics_for_size(size) {
-        look.icon_size = resolve_button_metrics_rule(rule, ctx.metrics(), size).icon_size;
+    if super::button::has_family_icon_override(stylesheet, size, false) {
+        look.icon_size = scale.icon_size;
     }
     if let Some(radius) = radius {
         look.radius = resolve_button_radius_preset(radius, ctx.metrics(), look.height);
@@ -108,19 +136,14 @@ pub fn toggle_box_scale(
     size: ControlSize,
     scale_factor: f32,
 ) -> StandardBoxScale {
-    let fallback = StandardBoxScale::compute(size, ctx.metrics(), scale_factor);
-    let Some(rule) = stylesheet.toggle.metrics_for_size(size) else {
-        return fallback;
-    };
-
-    let metrics = resolve_button_metrics_rule(rule, ctx.metrics(), size);
+    let (geometry, radius) = super::button::resolve_family_geometry(ctx, stylesheet, size, true, scale_factor);
     StandardBoxScale {
-        height: snap_to_pixel(metrics.height, scale_factor),
-        padding_x: snap_to_pixel(metrics.padding_horizontal, scale_factor),
-        padding_y: fallback.padding_y,
-        gap: fallback.gap,
-        radius: metrics.corner_radius,
-        icon_size: snap_to_pixel(metrics.icon_size, scale_factor),
+        height: geometry.height.value_px,
+        padding_x: geometry.padding_x.value_px,
+        padding_y: geometry.padding_y.value_px,
+        gap: geometry.gap.value_px,
+        radius,
+        icon_size: geometry.icon_size.value_px,
     }
 }
 

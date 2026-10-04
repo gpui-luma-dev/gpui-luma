@@ -113,30 +113,66 @@ pub struct ButtonBox {
 /// Metrics for Sm/Md/Lg mapped to Radix sizes 1/2/3 (default look tokens).
 pub fn metric_tokens() -> MetricTokens {
     let mut metrics = MetricTokens::default();
-    // height, padding_x, padding_y, gap, radius (medium), icon_size
-    metrics.control.sm = ControlMetricTokens::new(24.0, 8.0, 0.0, 4.0, 3.0, 12.0);
-    metrics.control.md = ControlMetricTokens::new(32.0, 12.0, 0.0, 8.0, 4.0, 14.0);
-    metrics.control.lg = ControlMetricTokens::new(40.0, 16.0, 0.0, 12.0, 6.0, 16.0);
+    for (size, control) in [
+        (ButtonSize::One, &mut metrics.control.sm),
+        (ButtonSize::Two, &mut metrics.control.md),
+        (ButtonSize::Three, &mut metrics.control.lg),
+    ] {
+        let geometry = button_box_for(size, Radius::Medium);
+        *control = ControlMetricTokens::new(
+            geometry.height,
+            geometry.padding_x,
+            geometry.padding_y,
+            geometry.gap,
+            geometry.radius,
+            geometry.icon_size,
+        );
+    }
     metrics.radius = RadiusTokens { none: 0.0, sm: 3.0, md: 4.0, lg: 6.0, xl: 8.0, pill: 999.0 };
     metrics
 }
 
 pub fn button_box_for(size: ButtonSize, radius: Radius) -> ButtonBox {
-    let (height, padding_x, gap, font, line_height, icon_size) = match size {
-        ButtonSize::One => (24.0, 8.0, 4.0, 12.0, 16.0, 12.0),
-        ButtonSize::Two => (32.0, 12.0, 8.0, 14.0, 20.0, 14.0),
-        ButtonSize::Three => (40.0, 16.0, 12.0, 16.0, 24.0, 16.0),
-        ButtonSize::Four => (48.0, 24.0, 12.0, 18.0, 26.0, 18.0),
-    };
+    button_box_with_stylesheet(crate::look::embedded_common_stylesheet(), size, radius)
+}
+
+pub(crate) fn button_box_with_stylesheet(
+    stylesheet: &gpui_luma::theme::stylesheet::CommonStylesheet,
+    size: ButtonSize,
+    radius: Radius,
+) -> ButtonBox {
+    let metrics = MetricTokens::default();
+    let control = metrics.for_size(size.control_size());
+    let typography = gpui_luma::theme::ThemeTokens::default().typography.text.label;
+    let geometry = stylesheet.button.resolve_geometry(
+        size.as_str(),
+        gpui_luma::theme::stylesheet::ButtonGeometry {
+            height: control.height,
+            padding_x: control.padding_x,
+            padding_y: control.padding_y,
+            gap: control.gap,
+            icon_size: control.icon_size,
+            font_size: typography.size,
+            line_height: typography.line_height,
+        },
+    );
 
     ButtonBox {
-        height,
-        padding_x,
-        padding_y: 0.0,
-        gap,
-        radius: resolve_button_radius(size, radius),
-        icon_size,
-        typography: LumaTextStyle { size: font, line_height, weight: FontWeight::MEDIUM },
+        height: geometry.height.value_px,
+        padding_x: geometry.padding_x.value_px,
+        padding_y: geometry.padding_y.value_px,
+        gap: geometry.gap.value_px,
+        radius: if radius == Radius::Full {
+            geometry.height.value_px / 2.0
+        } else {
+            resolve_button_radius(size, radius)
+        },
+        icon_size: geometry.icon_size.value_px,
+        typography: LumaTextStyle {
+            size: geometry.font_size.value_px,
+            line_height: geometry.line_height.value_px,
+            weight: FontWeight::MEDIUM,
+        },
     }
 }
 
@@ -155,12 +191,11 @@ pub fn resolve_button_radius(size: ButtonSize, radius: Radius) -> f32 {
 }
 
 fn button_box_height(size: ButtonSize) -> f32 {
-    match size {
-        ButtonSize::One => 24.0,
-        ButtonSize::Two => 32.0,
-        ButtonSize::Three => 40.0,
-        ButtonSize::Four => 48.0,
-    }
+    crate::look::embedded_common_stylesheet()
+        .button
+        .resolve_geometry(size.as_str(), Default::default())
+        .height
+        .value_px
 }
 
 /// Applies Radix size/radius geometry onto a resolved color palette.

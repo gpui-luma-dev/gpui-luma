@@ -36,7 +36,8 @@ pub fn inspect_accordion_trigger_color_palette(
     state: InteractionState,
 ) -> AccordionTriggerInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "accordion_trigger_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "accordion_trigger_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| crate::tables::AccordionTriggerColorTable::fallback());
     AccordionTriggerInspectPalette {
@@ -54,7 +55,8 @@ pub fn inspect_accordion_content_color_palette(
     expanded: bool,
 ) -> AccordionContentInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "accordion_content_inspect");
+    let resolver =
+        LookResolver::new(ctx.catalog(), theme_mode, "accordion_content_inspect").with_stylesheet(mode.stylesheet());
     let colors = crate::tables::resolve_accordion_content_colors(&resolver, expanded)
         .unwrap_or_else(|_| crate::tables::AccordionContentColorTable::fallback());
     AccordionContentInspectPalette { background: colors.background, foreground: colors.foreground }
