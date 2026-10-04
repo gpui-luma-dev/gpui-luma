@@ -132,6 +132,10 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
         item_icon_size: item_icon_size,
         item_radius: metrics.radius.sm,
         disabled_opacity: 0.56,
+        separator_color: colors.border.hsla(),
+        separator_thickness: 1.0,
+        separator_spacing: metrics.gap(size) * 0.5,
+        separator_inset: 0.0,
         submenu_offset_x: metrics.gap(size) * 0.5,
     };
     if let Some(rule) =

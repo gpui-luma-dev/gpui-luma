@@ -166,6 +166,10 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
         item_icon_size: metrics.control.md.icon_size,
         item_radius: metrics.radius.sm,
         disabled_opacity: 0.56,
+        separator_color: look.resolve_role(SemanticRole::Border).hsla(),
+        separator_thickness: 1.0,
+        separator_spacing: metrics.spacing.s2,
+        separator_inset: metrics.spacing.s3,
         submenu_offset_x: metrics.spacing.s1,
     };
     let geometry = look.common_stylesheet().floating_menu.resolve_geometry(

@@ -493,10 +493,11 @@ fn popup_menu_items() -> [MenuItem; 5] {
     ]
 }
 
-fn floating_menu_default_items() -> [MenuItem; 3] {
+fn floating_menu_default_items() -> [MenuItem; 4] {
     [
         MenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
         MenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
+        MenuItem::separator("file-actions-separator"),
         MenuItem::new("archive").label("Archive"),
     ]
 }
