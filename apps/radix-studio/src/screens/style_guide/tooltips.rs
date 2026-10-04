@@ -1,13 +1,5 @@
-use gpui_luma::prelude::HasPresenter;
-
-use gpui::{Context, Entity, IntoElement, div, prelude::*, px};
-use gpui_luma::{
-    controls::{
-        button::Button,
-        tooltip::{Tooltip, TooltipRenderModel, bubble},
-    },
-    infra::attachments::TooltipEntityExt,
-};
+use gpui::{IntoElement, div, prelude::*, px};
+use gpui_luma::controls::tooltip::{TooltipRenderModel, bubble};
 use gpui_luma_look_radix::{self as radix, Look, SemanticRole};
 
 const SAMPLES: [(&str, &str, Option<&str>); 3] = [
@@ -21,32 +13,11 @@ const SAMPLES: [(&str, &str, Option<&str>); 3] = [
 ];
 
 #[derive(Clone)]
-pub(crate) struct TooltipExamples {
-    buttons: Vec<Entity<Button>>,
-}
+pub(crate) struct TooltipExamples;
 
 impl TooltipExamples {
-    pub(crate) fn new<M: 'static>(look: &Look, cx: &mut Context<M>) -> Self {
-        let buttons = SAMPLES
-            .iter()
-            .enumerate()
-            .map(|(index, (_, text, hint))| {
-                let mut tooltip = Tooltip::new(*text);
-                if let Some(hint) = hint {
-                    tooltip = tooltip.shortcut(*hint);
-                }
-                radix::Button::new(format!("style-tooltip-{index}"))
-                    .look(look)
-                    .outline()
-                    .label("Hover or focus")
-                    .with_template_modifier(move |root, _| {
-                        root.debug_selector(move || format!("style-tooltip-{index}"))
-                    })
-                    .spawn(cx)
-                    .tooltip(tooltip, cx)
-            })
-            .collect();
-        Self { buttons }
+    pub(crate) fn new<M: 'static>(_: &Look, _: &mut gpui::Context<M>) -> Self {
+        Self
     }
 
     pub(crate) fn render(&self, look: &Look) -> gpui::AnyElement {
@@ -54,7 +25,7 @@ impl TooltipExamples {
         let border = look.resolve_role(SemanticRole::Border).hsla();
         let muted = look.resolve_role(SemanticRole::MutedForeground).hsla();
         let style = radix::tooltip_theme(look).resolve();
-        let samples = SAMPLES.iter().zip(&self.buttons).map(|((title, text, hint), button)| {
+        let samples = SAMPLES.iter().map(|(title, text, hint)| {
             let model = TooltipRenderModel {
                 text: (*text).into(),
                 shortcut: hint.map(Into::into),
@@ -81,7 +52,6 @@ impl TooltipExamples {
                 .rounded(px(8.0))
                 .child(div().text_size(px(14.0)).font_weight(gpui::FontWeight::SEMIBOLD).child(*title))
                 .child(div().min_h(px(110.0)).flex().items_center().justify_center().child(bubble(&model)))
-                .child(div().flex().justify_center().child(button.clone()))
         });
         div().flex().flex_col().gap(px(16.0)).text_color(foreground)
             .child(div().flex().flex_wrap().gap(px(16.0)).children(samples))

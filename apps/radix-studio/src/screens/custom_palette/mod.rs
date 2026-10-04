@@ -11,7 +11,7 @@ pub(crate) use signup_mesh::{MeshCache, MeshRequest};
 
 use std::sync::Arc;
 
-use gpui::{App, Context, Entity, Hsla, ImageSource, IntoElement, RenderImage, SharedString, div, img, prelude::*, px};
+use gpui::{App, Context, Entity, Hsla, ImageSource, IntoElement, RenderImage, div, img, prelude::*, px};
 use gpui_luma::controls::button::Button;
 use gpui_luma::controls::popup_menu::PopupMenu;
 use gpui_luma::controls::textfield::TextField;
@@ -57,6 +57,7 @@ pub struct PageArgs<'a> {
     pub gray_field: Entity<ColorTextField>,
     pub background_field: Entity<ColorTextField>,
     pub copy_menu: Entity<PopupMenu>,
+    pub palette_swatches: Vec<Entity<Button>>,
     pub preview_layout: Entity<WideMiddle>,
     pub mesh_image: Option<Arc<RenderImage>>,
     pub app: Entity<RadixStudioApp>,
@@ -76,6 +77,7 @@ pub fn page(args: PageArgs<'_>, cx: &mut Context<RadixStudioApp>) -> gpui::AnyEl
         gray_field,
         background_field,
         copy_menu,
+        palette_swatches,
         preview_layout,
         mesh_image,
         app,
@@ -102,7 +104,7 @@ pub fn page(args: PageArgs<'_>, cx: &mut Context<RadixStudioApp>) -> gpui::AnyEl
             border,
             muted,
         }),
-        scale_section(look, muted, cx),
+        scale_section(muted, &palette_swatches),
         preview_section(look, mesh_image, app, preview_layout, cx, controls, surface, border, muted, fg),
     }
     .into_any_element()
@@ -169,7 +171,7 @@ fn seed_field(
     }
 }
 
-fn scale_section(look: &Look, muted: Hsla, cx: &mut Context<RadixStudioApp>) -> impl IntoElement {
+fn scale_section(muted: Hsla, swatches: &[Entity<Button>]) -> impl IntoElement {
     let columns = vec![GridTrack::Star(1.0); SCALE_LEN];
     let mut grid = GridLayout::new().columns(columns).gap_x(SCALE_SWATCH_GAP).gap_y(SCALE_SWATCH_GAP);
 
@@ -184,27 +186,14 @@ fn scale_section(look: &Look, muted: Hsla, cx: &mut Context<RadixStudioApp>) -> 
     }
 
     for step in 1..=SCALE_LEN as u8 {
-        grid = grid.child(scale_swatch(ScaleFamily::Color, step, look, cx), 2, (step - 1) as usize);
+        grid = grid.child(swatches[usize::from(step - 1)].clone(), 2, (step - 1) as usize);
     }
 
     for step in 1..=SCALE_LEN as u8 {
-        grid = grid.child(scale_swatch(ScaleFamily::Gray, step, look, cx), 3, (step - 1) as usize);
+        grid = grid.child(swatches[12 + usize::from(step - 1)].clone(), 3, (step - 1) as usize);
     }
 
     grid.into_element().w_full()
-}
-
-fn scale_swatch(family: ScaleFamily, step: u8, look: &Look, cx: &mut Context<RadixStudioApp>) -> impl IntoElement {
-    let color = look.resolve_step(family, step).hsla();
-    div()
-        .id(SharedString::from(format!("swatch-{}-{step}", family.as_str())))
-        .w_full()
-        .h(px(44.0))
-        .bg(color)
-        .cursor_pointer()
-        .on_click(cx.listener(move |this, _, _, cx| {
-            this.open_swatch_info(family, step, cx);
-        }))
 }
 
 fn legend_group(label: &'static str, muted: Hsla) -> impl IntoElement {

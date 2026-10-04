@@ -3,28 +3,25 @@
 use gpui_luma::prelude::TooltipEntityExt;
 use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use gpui::{
     App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, AnyElement, ScrollHandle, Subscription, Task, Window,
     div, prelude::*, px,
 };
-use gpui_luma::controls::button::ButtonEvent;
-use gpui_luma::controls::overlay_window::{OverlayWindow, OverlayWindowMode, OverlayWindowPosition};
+use gpui_luma::controls::button::{Button, ButtonEvent};
 use gpui_luma::controls::popup_menu::PopupMenu;
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem, RadioGroupEvent};
 use crate::controls::theme_mode;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::infra::menu_item::MenuItem;
-use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::shell::TitleBar;
 use gpui_luma::controls::tabs::Tabs;
 use gpui_luma::theme::ThemeMode;
 use gpui_luma::{WideMiddle, dock_panel, spawn_wide_middle, vstack};
-use gpui_luma_look_radix::{Accent, Gray, Look, LookControlExt, ScaleFamily, SemanticRole};
+use gpui_luma_look_radix::{Accent, Gray, Look, ScaleFamily, SemanticRole};
 use gpui_luma_look_radix as radix;
 
-use crate::color_hex::format_hex;
 use crate::screens::custom_palette::{MeshCache, MeshRequest};
 use crate::controls::{
     ClassicShadowEditor, ClassicShadowEditorEvent, ColorTextField, ColorTextFieldEvent, ScreenNav, ScreenNavEvent,
@@ -37,12 +34,7 @@ const CONTENT_MAX_W: f32 = 1280.0;
 const CONTROL_BAR_FADE_DISTANCE: f32 = 96.0;
 const STARTUP_MODE: ThemeMode = ThemeMode::Dark;
 
-#[derive(Clone, Debug)]
-struct SwatchSelection {
-    family: &'static str,
-    step: u8,
-    hex: String,
-}
+use crate::controls::swatch_info::{self, ColorDetails, SwatchSelection};
 
 // Resolve only paint fields to the current sRGB backend.
 fn editor_preview(source: ColorValue) -> Hsla {
@@ -92,6 +84,25 @@ impl PaletteEdits {
         }
     }
 
+    fn apply_app_theme(&self, defaults: &Look, theme: &Look) {
+        // Other screens keep their standard background while sharing the edited seeds.
+        if self.for_mode(defaults.mode())[..2].iter().any(Option::is_some) {
+            let mut colors = self.colors(defaults);
+            colors.background = defaults.resolve_role_source(SemanticRole::Background).value;
+            if let Err(error) = theme.set_custom_colors(colors) {
+                eprintln!("failed to generate app colors: {error}");
+            }
+        }
+    }
+
+    fn set_input(&mut self, mode: ThemeMode, index: usize, color: ColorValue, accent_linked: bool) {
+        self.set(mode, index, color);
+        if index == 0 && accent_linked {
+            self.set(ThemeMode::Light, index, color);
+            self.set(ThemeMode::Dark, index, color);
+        }
+    }
+
     fn set(&mut self, mode: ThemeMode, index: usize, color: ColorValue) {
         let values = match mode {
             ThemeMode::Light => &mut self.light,
@@ -103,13 +114,16 @@ impl PaletteEdits {
 
 pub struct RadixStudioApp {
     focus_scope: FocusHandle,
-    /// Named palettes every screen but Custom Palette paints from.
+    /// Named palette defaults, independent of generated editor output.
+    defaults: Arc<Look>,
+    /// App-wide accent and gray, generated against the standard background.
     theme: Arc<Look>,
-    /// Forked look the Custom Palette screen edits in isolation.
+    /// Custom background palette shared by Custom Palette, Style Guide and Developer.
     draft: Arc<Look>,
     theme_accent: Accent,
     theme_gray: Gray,
     palette_edits: PaletteEdits,
+    accent_linked: bool,
     screen_nav: Entity<ScreenNav>,
     page_scroll: ScrollHandle,
     screens: Entity<Tabs>,
@@ -122,8 +136,9 @@ pub struct RadixStudioApp {
     style_guide: Option<style_guide::State>,
     shadow_editor: Entity<ClassicShadowEditor>,
     developer: Option<developer::State>,
-    swatch_info: Arc<Mutex<Option<SwatchSelection>>>,
-    swatch_overlay: OverlayWindow,
+    color_details: Entity<ColorDetails>,
+    colors: Option<colors::State>,
+    palette_swatches: Vec<Entity<Button>>,
     preview_layout: Entity<WideMiddle>,
     signup_mesh_cache: MeshCache,
     signup_mesh_task: Option<Task<()>>,
@@ -138,7 +153,7 @@ impl RadixStudioApp {
         let theme = Arc::new(Look::built_in());
         theme.set_mode(STARTUP_MODE);
         cx.set_global(theme.as_ref().clone());
-        // Custom Palette edits a fork, so seed changes never repaint the rest of the app.
+        let defaults = Arc::new(theme.fork());
         let draft = Arc::new(theme.fork());
         let palette_edits = PaletteEdits::startup();
         let seed_colors = palette_edits.colors(&theme);
@@ -169,6 +184,8 @@ impl RadixStudioApp {
             .new(|cx| ColorTextField::new(Arc::clone(&draft), "seed-background", background_color, cx))
             .help("Background seed color. Click the swatch to pick a color or enter a hex value.", cx);
 
+        accent_field.update(cx, |field, cx| field.enable_accent_link(cx));
+
         let mut subscriptions = Vec::new();
         // Screen presenters read app-owned state; refresh them when that state changes.
         subscriptions.push(cx.observe(&cx.entity(), {
@@ -181,11 +198,20 @@ impl RadixStudioApp {
         }));
         for (index, field) in [(0, &accent_field), (1, &gray_field), (2, &background_field)] {
             subscriptions.push(cx.subscribe(field, move |this, _, event: &ColorTextFieldEvent, cx| {
-                let ColorTextFieldEvent::Change { color } = event;
-                this.palette_edits.set(this.draft.mode(), index, *color);
-                this.palette_edits.apply(&this.theme, &this.draft);
+                let color = match event {
+                    ColorTextFieldEvent::Change { color } => *color,
+                    ColorTextFieldEvent::LinkChange { linked } => {
+                        this.accent_linked = *linked;
+                        cx.notify();
+                        return;
+                    }
+                };
+                this.palette_edits.set_input(this.draft.mode(), index, color, this.accent_linked);
+                this.palette_edits.apply(&this.defaults, &this.draft);
+                this.palette_edits.apply_app_theme(&this.defaults, &this.theme);
                 this.home.notify(cx);
                 this.screen_nav.update(cx, |nav, cx| nav.theme_changed(cx));
+                cx.refresh_windows();
                 cx.notify();
             }));
         }
@@ -202,35 +228,27 @@ impl RadixStudioApp {
             ])
             .spawn(cx);
 
-        let swatch_info = Arc::new(Mutex::new(None::<SwatchSelection>));
-        let swatch_close = radix::Button::new("swatch-info-close").look(&draft).ghost().label("Close").spawn(cx);
-        let swatch_overlay = draft
-            .overlay_window("swatch-info")
-            .mode(OverlayWindowMode::Modeless)
-            .position(OverlayWindowPosition::Center)
-            .content({
-                let info = Arc::clone(&swatch_info);
-                let close = swatch_close.clone();
-                move |_, _, _| {
-                    let summary = info
-                        .lock()
-                        .ok()
-                        .and_then(|guard| guard.clone())
-                        .map(|s| format!("{} · step {} · #{}", s.family, s.step, s.hex))
-                        .unwrap_or_else(|| "No swatch selected".into());
-                    vstack! {
-                        gap=12;
-                        div().text_lg().font_weight(gpui::FontWeight::SEMIBOLD).child("Scale step"),
-                        div().text_sm().child(summary),
-                        div().text_xs().child("Provenance: ScaleStep from look-radix stub"),
-                        close.clone(),
+        let color_details = cx.new(|cx| ColorDetails::new(&draft, cx));
+        let mut palette_swatches = Vec::new();
+        for family in [ScaleFamily::Color, ScaleFamily::Gray] {
+            for step in 1..=12 {
+                let swatch_look = Arc::clone(&draft);
+                let swatch = swatch_info::swatch(
+                    format!("swatch-{}-{step}", family.as_str()),
+                    &draft,
+                    None,
+                    44.0,
+                    move || swatch_look.resolve_step(family, step).hsla(),
+                    cx,
+                );
+                subscriptions.push(cx.subscribe(&swatch, move |this, _, event: &ButtonEvent, cx| {
+                    if matches!(event, ButtonEvent::Click) {
+                        this.open_swatch_info(family, step, cx);
                     }
-                    .w_full()
-                    .into_any_element()
-                }
-            })
-            .theme_child(swatch_close.clone())
-            .spawn(cx);
+                }));
+                palette_swatches.push(swatch);
+            }
+        }
 
         subscriptions.push(cx.subscribe(&mode_selector, |this, _, event: &RadioGroupEvent, cx| {
             if let RadioGroupEvent::Change { value: Some(value) } = event {
@@ -252,11 +270,6 @@ impl RadixStudioApp {
             ScreenNavEvent::ModeChange { mode } => this.set_mode(*mode, cx),
             ScreenNavEvent::ResetTheme => this.reset_theme(cx),
         }));
-        subscriptions.push(cx.subscribe(&swatch_close, |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                this.swatch_overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
-            }
-        }));
         let shadow_editor = cx.new(|cx| ClassicShadowEditor::new(&theme, cx));
         subscriptions.push(cx.subscribe(&shadow_editor, |_this, _, event: &ClassicShadowEditorEvent, cx| {
             let ClassicShadowEditorEvent::Changed = event;
@@ -267,11 +280,13 @@ impl RadixStudioApp {
 
         Self {
             focus_scope,
+            defaults,
             theme,
             draft,
             theme_accent,
             theme_gray,
             palette_edits,
+            accent_linked: false,
             screen_nav,
             page_scroll: ScrollHandle::new(),
             screens,
@@ -284,8 +299,9 @@ impl RadixStudioApp {
             style_guide: None,
             developer: None,
             shadow_editor,
-            swatch_info,
-            swatch_overlay,
+            color_details,
+            colors: None,
+            palette_swatches,
             preview_layout,
             signup_mesh_cache: MeshCache::default(),
             signup_mesh_task: None,
@@ -298,13 +314,17 @@ impl RadixStudioApp {
     }
 
     fn set_mode(&mut self, mode: ThemeMode, cx: &mut Context<Self>) {
+        self.defaults.set_mode(mode);
         self.theme.set_mode(mode);
+        self.theme.set_palettes(self.theme_accent, self.theme_gray);
         self.draft.set_mode(mode);
         self.draft.set_palettes(self.theme_accent, self.theme_gray);
-        self.palette_edits.apply(&self.theme, &self.draft);
+        self.palette_edits.apply(&self.defaults, &self.draft);
+        self.palette_edits.apply_app_theme(&self.defaults, &self.theme);
         self.mode_selector.update(cx, |group, cx| group.set_selected(theme_mode::mode_id(mode), cx));
         self.screen_nav.update(cx, |nav, cx| nav.theme_changed(cx));
         self.sync_seed_fields(cx);
+        cx.refresh_windows();
         cx.notify();
     }
 
@@ -349,22 +369,24 @@ impl RadixStudioApp {
 
     fn sync_seed_fields(&self, cx: &mut Context<Self>) {
         self.home.notify(cx);
-        let colors = self.palette_edits.colors(&self.theme);
+        let colors = self.palette_edits.colors(&self.defaults);
         self.accent_field.update(cx, |field, cx| field.set_color(colors.accent, cx));
         self.gray_field.update(cx, |field, cx| field.set_color(colors.gray, cx));
         self.background_field.update(cx, |field, cx| field.set_color(colors.background, cx));
     }
 
     pub fn open_swatch_info(&mut self, family: ScaleFamily, step: u8, cx: &mut Context<Self>) {
-        let color = self.draft.resolve_step(family, step).hsla();
-        if let Ok(mut guard) = self.swatch_info.lock() {
-            *guard = Some(SwatchSelection { family: self.draft.palette_label(family), step, hex: format_hex(color) });
-        }
+        let selection =
+            match SwatchSelection::new(&self.draft, family, step, self.palette_edits.colors(&self.defaults).background)
+            {
+                Ok(selection) => selection,
+                Err(error) => {
+                    eprintln!("failed to resolve swatch details: {error}");
+                    return;
+                }
+            };
         let focus = self.focus_scope.clone();
-        self.swatch_overlay.update(cx, |overlay, cx| {
-            overlay.open_from(Some(focus), cx);
-            cx.notify();
-        });
+        self.color_details.update(cx, |panel, cx| panel.open(selection, Some(focus), cx));
         cx.notify();
     }
 
@@ -419,6 +441,7 @@ impl RadixStudioApp {
                     gray_field: self.gray_field.clone(),
                     background_field: self.background_field.clone(),
                     copy_menu: self.copy_menu.clone(),
+                    palette_swatches: self.palette_swatches.clone(),
                     preview_layout: self.preview_layout.clone(),
                     mesh_image: self.cached_signup_mesh(),
                     app: cx.entity(),
@@ -431,15 +454,18 @@ impl RadixStudioApp {
                 },
                 cx,
             ),
-            RadixStudioTab::Colors => colors::page(&self.theme, fg, muted),
+            RadixStudioTab::Colors => self
+                .colors
+                .get_or_insert_with(|| colors::State::new(&self.theme, self.color_details.clone(), cx))
+                .render(&self.theme, fg, muted),
             RadixStudioTab::Icons => icons::page(fg, muted, surface),
             RadixStudioTab::StyleGuide => {
-                let guide = self.style_guide.get_or_insert_with(|| style_guide::State::new(&self.theme, cx));
-                guide.render(&self.theme, window, cx)
+                let guide = self.style_guide.get_or_insert_with(|| style_guide::State::new(&self.draft, cx));
+                guide.render(&self.draft, window, cx)
             }
             RadixStudioTab::Developer => self
                 .developer
-                .get_or_insert_with(|| developer::State::new(&self.theme, self.shadow_editor.clone(), cx))
+                .get_or_insert_with(|| developer::State::new(&self.draft, self.shadow_editor.clone(), cx))
                 .render(cx),
         };
         let body = vstack! { gap=28; content };
@@ -474,20 +500,18 @@ impl Render for RadixStudioApp {
         let bar_border = Hsla { a: border.a * opacity, ..border };
         let page_background = match active_tab {
             RadixStudioTab::Colors => colors::page_background(self.theme.mode()),
-            // The draft owns this page, so its wash tracks the palette being edited.
-            RadixStudioTab::CustomPalette => {
+            // These screens share the editor's background and gradient.
+            RadixStudioTab::CustomPalette | RadixStudioTab::StyleGuide | RadixStudioTab::Developer => {
                 let recipe = radix::PageBackground { settle_at: 0.5, ..Default::default() };
                 let (start, _) = recipe.stops(&self.draft);
-                let end = editor_preview(self.palette_edits.colors(&self.theme).background);
+                let end = editor_preview(self.palette_edits.colors(&self.defaults).background);
                 gpui::linear_gradient(
                     180.0,
                     gpui::linear_color_stop(start, 0.0),
                     gpui::linear_color_stop(end, recipe.settle_at),
                 )
             }
-            RadixStudioTab::Icons | RadixStudioTab::StyleGuide | RadixStudioTab::Developer => {
-                self.theme.page_background()
-            }
+            RadixStudioTab::Icons => self.defaults.page_background(),
         };
 
         let title_bar = TitleBar::new().background_color(surface).border_color(border).text_color(fg).child(
@@ -531,7 +555,7 @@ impl Render for RadixStudioApp {
                         .flex_col()
                         .child(self.screens.read(cx).body()),
                 )
-                .child(self.swatch_overlay.clone()),
+                .child(self.color_details.clone()),
         }
         .into_element()
         .luma_focus_scope(&self.focus_scope)
@@ -545,6 +569,21 @@ impl Render for RadixStudioApp {
 #[cfg(test)]
 mod palette_edit_tests {
     use super::*;
+
+    #[test]
+    fn linked_accent_updates_both_modes_without_linking_other_inputs() {
+        let mut edits = PaletteEdits::default();
+        let color = ColorValue::srgb(1.0, 0.2, 0.4, 1.0);
+        edits.set_input(ThemeMode::Dark, 0, color, true);
+        assert_eq!(edits.light[0], Some(color));
+        assert_eq!(edits.dark[0], Some(color));
+        edits.set_input(ThemeMode::Dark, 1, color, true);
+        assert_eq!(edits.light[1], None);
+        let other = ColorValue::srgb(0.2, 0.4, 1.0, 1.0);
+        edits.set_input(ThemeMode::Light, 0, other, false);
+        assert_eq!(edits.light[0], Some(other));
+        assert_eq!(edits.dark[0], Some(color));
+    }
 
     #[test]
     fn startup_and_reset_background_are_black() {
@@ -629,6 +668,129 @@ mod palette_edit_tests {
 mod screen_content_tests {
     use super::*;
     use gpui::TestAppContext;
+
+    #[test]
+    fn seed_edits_update_app_theme_and_preserve_separate_backgrounds() {
+        let mut app = TestAppContext::single();
+        let (studio, cx) = app.add_window_view(RadixStudioApp::new);
+        cx.run_until_parked();
+        let accent = ColorValue::srgb(0.85, 0.2, 0.65, 1.0);
+        let gray = ColorValue::srgb(0.4, 0.5, 0.45, 1.0);
+        let background = ColorValue::srgb(0.04, 0.02, 0.06, 1.0);
+        for (index, color) in [accent, gray, background].into_iter().enumerate() {
+            cx.update(|_, cx| {
+                let fields = {
+                    let studio = studio.read(cx);
+                    [studio.accent_field.clone(), studio.gray_field.clone(), studio.background_field.clone()]
+                };
+                fields[index].update(cx, |_, cx| cx.emit(ColorTextFieldEvent::Change { color }));
+            });
+            cx.run_until_parked();
+        }
+        cx.update(|_, cx| {
+            let studio = studio.read(cx);
+            let expected = studio.defaults.fork();
+            expected
+                .set_custom_colors(radix::CustomColors {
+                    accent,
+                    gray,
+                    background: studio.defaults.resolve_role_source(SemanticRole::Background).value,
+                })
+                .unwrap();
+            for family in [ScaleFamily::Color, ScaleFamily::Gray] {
+                for step in 1..=12 {
+                    assert_eq!(
+                        studio.theme.resolve_step_source(family, step).value,
+                        expected.resolve_step_source(family, step).value
+                    );
+                }
+            }
+            assert_eq!(studio.palette_edits.colors(&studio.defaults).background, background);
+            assert_ne!(
+                studio.draft.resolve_step_source(ScaleFamily::Gray, 1).value,
+                studio.theme.resolve_step_source(ScaleFamily::Gray, 1).value
+            );
+        });
+        for (_, id, _) in SCREEN_TABS {
+            cx.update(|_, cx| {
+                let screens = studio.read(cx).screens.clone();
+                screens.update(cx, |tabs, cx| tabs.set_active(id, cx));
+            });
+            cx.run_until_parked();
+        }
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            cx.update(|_, cx| studio.update(cx, |studio, cx| studio.set_mode(mode, cx)));
+            cx.run_until_parked();
+        }
+        cx.update(|_, cx| studio.update(cx, |studio, cx| studio.reset_theme(cx)));
+        cx.run_until_parked();
+        cx.update(|_, cx| {
+            let studio = studio.read(cx);
+            assert_eq!(
+                studio.theme.resolve_step_source(ScaleFamily::Color, 9).value,
+                studio.defaults.resolve_step_source(ScaleFamily::Color, 9).value
+            );
+        });
+    }
+
+    #[test]
+    fn clicking_palette_swatch_opens_details_and_close_dismisses() {
+        let mut app = TestAppContext::single();
+        let (studio, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            RadixStudioApp::new(window, cx)
+        });
+        cx.simulate_resize(gpui::size(px(1400.0), px(900.0)));
+        cx.run_until_parked();
+        let bounds = cx.debug_bounds("swatch-color-5").expect("palette swatch");
+        cx.simulate_click(bounds.center(), Default::default());
+        cx.run_until_parked();
+        cx.update(|_, cx| {
+            let studio = studio.read(cx);
+            assert!(studio.color_details.read(cx).is_open(cx));
+            let selection = studio.color_details.read(cx).selected().unwrap();
+            assert_eq!(selection.step, 5);
+            assert_eq!(selection.color, studio.draft.resolve_step(ScaleFamily::Color, 5).hsla());
+            assert!(selection.solid.starts_with('#'));
+        });
+        let close = cx.debug_bounds("swatch-info-close").expect("close button");
+        cx.simulate_click(close.center(), Default::default());
+        cx.run_until_parked();
+        cx.update(|_, cx| assert!(!studio.read(cx).color_details.read(cx).is_open(cx)));
+    }
+
+    #[test]
+    fn colors_catalog_opens_shared_details_with_current_mode_values() {
+        let mut app = TestAppContext::single();
+        let (studio, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            RadixStudioApp::new(window, cx)
+        });
+        cx.simulate_resize(gpui::size(px(1400.0), px(900.0)));
+        cx.update(|_, cx| {
+            let screens = studio.read(cx).screens.clone();
+            screens.update(cx, |tabs, cx| tabs.set_active("page-colors", cx));
+        });
+        cx.run_until_parked();
+        for mode in [ThemeMode::Dark, ThemeMode::Light] {
+            cx.update(|_, cx| studio.update(cx, |studio, cx| studio.set_mode(mode, cx)));
+            cx.run_until_parked();
+            let bounds = cx.debug_bounds("catalog-gray-5").expect("catalog swatch");
+            cx.simulate_click(bounds.center(), Default::default());
+            cx.run_until_parked();
+            cx.update(|_, cx| {
+                let panel = studio.read(cx).color_details.read(cx);
+                assert!(panel.is_open(cx));
+                let selected = panel.selected().unwrap();
+                assert_eq!(selected.title, "Gray 5");
+                let family = radix::color_families(mode).iter().find(|family| family.family == "gray").unwrap();
+                assert_eq!(selected.color, radix::parse_color(family.steps[4]));
+            });
+            let close = cx.debug_bounds("swatch-info-close").unwrap();
+            cx.simulate_click(close.center(), Default::default());
+            cx.run_until_parked();
+        }
+    }
 
     #[test]
     fn main_screen_slots_render_and_follow_programmatic_selection() {

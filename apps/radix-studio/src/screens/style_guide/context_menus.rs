@@ -41,6 +41,7 @@ pub fn preview(look: &Look, fg: Hsla) -> AnyElement {
                 .map(|_| Box::new(|_: &gpui::ClickEvent, _: &mut gpui::Window, _: &mut gpui::App| {}) as _)
                 .collect(),
         );
+        let panel = panel.block_mouse_except_scroll();
         panels = panels.child(
             div().flex().flex_col().gap(px(12.0)).child(div().text_sm().text_color(fg).child(name)).child(panel),
         );

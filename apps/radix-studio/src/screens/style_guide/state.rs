@@ -33,12 +33,14 @@ impl State {
             examples: TabsExamples::spawn(look, cx),
             tooltips: super::tooltips::TooltipExamples::new(look, cx),
         };
-        Self {
-            tabs,
-            tree: super::super::shared::tree_view::spawn("guide-tree", look, true, cx),
-            disabled_tree: super::super::shared::tree_view::spawn("guide-tree-disabled", look, false, cx),
-            _subscriptions: subscriptions,
+        let tree = super::super::shared::tree_view::spawn("guide-tree", look, true, cx);
+        let disabled_tree = super::super::shared::tree_view::spawn("guide-tree-disabled", look, false, cx);
+        for tree in [&tree, &disabled_tree] {
+            tree.update(cx, |tree, cx| {
+                tree.set_wheel_scroll_policy(gpui_luma::interaction::WheelScrollPolicy::PassThrough, cx);
+            });
         }
+        Self { tabs, tree, disabled_tree, _subscriptions: subscriptions }
     }
 
     pub fn render(&self, look: &Arc<Look>, window: &mut Window, cx: &mut App) -> AnyElement {

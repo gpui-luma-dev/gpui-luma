@@ -7,7 +7,7 @@ pub type TooltipTemplate = Arc<dyn Fn(&TooltipRenderModel) -> AnyElement + Send 
 
 pub fn bubble(model: &TooltipRenderModel) -> AnyElement {
     div()
-        .occlude()
+        .block_mouse_except_scroll()
         .flex()
         .items_center()
         .gap(px(16.0))

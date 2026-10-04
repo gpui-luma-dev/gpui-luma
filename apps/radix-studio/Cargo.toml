@@ -9,6 +9,7 @@ publish = false
 test-support = ["gpui-luma/test-support"]
 
 [dependencies]
+palette.workspace = true
 image.workspace = true
 smallvec.workspace = true
 tiny-skia.workspace = true
