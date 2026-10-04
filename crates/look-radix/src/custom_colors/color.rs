@@ -1,6 +1,6 @@
-//! The Color.js operations used by the Radix generator, in f64 until sRGB output.
+//! The Color.js operations used by the Radix generator, in f64 until source storage.
 //! Lab mixing uses D50; OKLab/OKLCH use D65. See LICENSES.txt for attribution.
-use gpui::{Hsla, Rgba};
+use gpui_luma::color::ColorValue;
 use super::matrices::*;
 
 type Triple = [f64; 3];
@@ -32,17 +32,24 @@ fn encode(v: f64) -> f64 {
         v.signum() * (1.055 * v.abs().powf(1.0 / 2.4) - 0.055)
     }
 }
-fn in_gamut(rgb: Triple, epsilon: f64) -> bool {
-    rgb.iter().all(|&v| v >= -epsilon && v <= 1.0 + epsilon)
-}
-fn clip(rgb: Triple) -> Triple {
-    rgb.map(|v| v.clamp(0.0, 1.0))
-}
-
 impl Color {
-    pub fn from_hsla(color: Hsla) -> Self {
-        let rgb: Rgba = color.into();
-        Self::from_rgb([rgb.r as f64, rgb.g as f64, rgb.b as f64])
+    pub fn from_source(source: ColorValue) -> anyhow::Result<Self> {
+        source.validate()?;
+        let color = match source {
+            ColorValue::Srgb(c) => Self::from_rgb([c.red as f64, c.green as f64, c.blue as f64]),
+            ColorValue::LinearSrgb(c) => {
+                Self::from_xyz(multiply(RGB_TO_XYZ, [c.red as f64, c.green as f64, c.blue as f64]))
+            }
+            ColorValue::DisplayP3(c) => Self::from_p3([c.red as f64, c.green as f64, c.blue as f64]),
+            ColorValue::Oklch(c) => Self { l: c.l as f64, c: c.chroma as f64, h: c.hue.into_raw_degrees() as f64 },
+        };
+        color.source().validate()?;
+        Ok(color)
+    }
+
+    /// Derived colors use Oklch; internal missing achromatic hue resolves to zero.
+    pub fn source(self) -> ColorValue {
+        ColorValue::oklch(self.l as f32, self.c as f32, if self.h.is_nan() { 0.0 } else { self.h as f32 }, 1.0)
     }
     pub fn from_rgb(rgb: Triple) -> Self {
         Self::from_xyz(multiply(RGB_TO_XYZ, rgb.map(linearize)))
@@ -107,54 +114,6 @@ impl Color {
             v * D50[i]
         });
         Self::from_xyz(multiply(D50_TO_D65, xyz))
-    }
-    /// CSS Color 4 local-MINDE mapping, matching Color.js 0.5.2's `css` default.
-    fn mapped_rgb(self) -> Triple {
-        let rgb = self.rgb();
-        if in_gamut(rgb, 0.000075) {
-            return clip(rgb);
-        }
-        if self.l >= 1.0 {
-            return [1.0; 3];
-        }
-        if self.l <= 0.0 {
-            return [0.0; 3];
-        }
-        let mut clipped = clip(rgb);
-        if self.distance(Self::from_rgb(clipped)) < 0.02 {
-            return clipped;
-        }
-        let (mut low, mut high) = (0.0, self.c);
-        let mut minimum_in_gamut = true;
-        while high - low > 0.0001 {
-            let chroma = (low + high) / 2.0;
-            let current = Self { c: chroma, ..self };
-            let rgb = current.rgb();
-            if minimum_in_gamut && in_gamut(rgb, 0.0) {
-                low = chroma;
-            } else {
-                clipped = clip(rgb);
-                let distance = current.distance(Self::from_rgb(clipped));
-                if distance < 0.02 {
-                    if 0.02 - distance < 0.0001 {
-                        break;
-                    }
-                    minimum_in_gamut = false;
-                    low = chroma;
-                } else {
-                    high = chroma;
-                }
-            }
-        }
-        clipped
-    }
-    /// Match the website's 8-bit sRGB output before converting to GPUI's HSL.
-    pub fn hsla(self) -> Hsla {
-        let [r, g, b] = self.mapped_rgb().map(|v| (v * 255.0).round() as f32 / 255.0);
-        let mut color: Hsla = Rgba { r, g, b, a: 1.0 }.into();
-        // GPUI’s f32 RGB→HSL conversion can exceed one by a few ULPs.
-        color.s = color.s.clamp(0.0, 1.0);
-        color
     }
     pub fn text_color(self) -> Self {
         // Preserve upstream's white.contrastAPCA(source) call order (white background).

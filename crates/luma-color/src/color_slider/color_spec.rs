@@ -1,7 +1,10 @@
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
+use anyhow::Result;
+use palette::convert::FromColorUnclamped;
 use gpui::{Hsla, Rgba};
 
 mod interpolation;
-pub use interpolation::{interpolate_hsl, interpolate_lab, interpolate_rgb};
+pub use interpolation::{interpolate_hsl, interpolate_lab, interpolate_rgb, interpolate_source};
 pub use super::oklch_spec::Oklch;
 
 #[cfg(test)]
@@ -47,6 +50,14 @@ impl HueAlpha {
 }
 
 impl ColorSpecification for HueAlpha {
+    fn to_color_value(&self) -> ColorValue {
+        ColorValue::Srgb(palette::Srgba::from_color_unclamped(palette::Hsla::new(self.h, 1.0, 0.5, self.a)))
+    }
+    fn from_color_value(source: ColorValue) -> Result<Self> {
+        let hsl = palette::Hsla::from_color_unclamped(source.to_srgba_unclamped()?);
+        Ok(Self { h: hsl.hue.into_raw_degrees(), a: hsl.alpha })
+    }
+
     fn name(&self) -> &'static str {
         "Hue+Alpha"
     }
@@ -72,11 +83,12 @@ impl ColorSpecification for HueAlpha {
     }
 
     fn to_hsla(&self) -> Hsla {
-        Hsla { h: self.h / 360.0, s: 1.0, l: 0.5, a: self.a }
+        gpui_bridge::from_palette_hsla(palette::Hsla::new(self.h, 1.0, 0.5, self.a))
     }
 
     fn from_hsla(hsla: Hsla) -> Self {
-        Self { h: hsla.h * 360.0, a: hsla.a }
+        let color = gpui_bridge::to_palette_hsla(hsla);
+        Self { h: color.hue.into_raw_degrees(), a: color.alpha }
     }
 
     fn uses_rainbow_hue_track(&self) -> bool {
@@ -91,6 +103,11 @@ pub trait ColorSpecification: 'static + Clone + Copy + Send + Sync {
     #[allow(dead_code)]
     fn get_value(&self, channel_name: &str) -> f32;
     fn set_value(&mut self, channel_name: &str, value: f32);
+    /// Source export without gamut mapping. Lab uses D65 and exports extended linear sRGB.
+    fn to_color_value(&self) -> ColorValue;
+    /// Explicit space conversion without gamut mapping; keep the original source for identity.
+    fn from_color_value(source: ColorValue) -> Result<Self>;
+    /// Current backend preview only.
     fn to_hsla(&self) -> Hsla;
     fn from_hsla(hsla: Hsla) -> Self;
 
@@ -234,6 +251,14 @@ impl Hsl {
 }
 
 impl ColorSpecification for Hsl {
+    fn to_color_value(&self) -> ColorValue {
+        ColorValue::Srgb(palette::Srgba::from_color_unclamped(palette::Hsla::new(self.h, self.s, self.l, self.a)))
+    }
+    fn from_color_value(source: ColorValue) -> Result<Self> {
+        let hsl = palette::Hsla::from_color_unclamped(source.to_srgba_unclamped()?);
+        Ok(Self { h: hsl.hue.into_raw_degrees(), s: hsl.saturation, l: hsl.lightness, a: hsl.alpha })
+    }
+
     fn name(&self) -> &'static str {
         "HSL"
     }
@@ -263,11 +288,12 @@ impl ColorSpecification for Hsl {
     }
 
     fn to_hsla(&self) -> Hsla {
-        Hsla { h: self.h / 360.0, s: self.s, l: self.l, a: self.a }
+        gpui_bridge::from_palette_hsla(palette::Hsla::new(self.h, self.s, self.l, self.a))
     }
 
     fn from_hsla(hsla: Hsla) -> Self {
-        Self { h: hsla.h * 360.0, s: hsla.s, l: hsla.l, a: hsla.a }
+        let color = gpui_bridge::to_palette_hsla(hsla);
+        Self { h: color.hue.into_raw_degrees(), s: color.saturation, l: color.lightness, a: color.alpha }
     }
 }
 
@@ -293,61 +319,29 @@ impl Hsv {
     ];
 
     pub fn from_hsla_ext(hsla: Hsla) -> Self {
-        let rgba = hsla.to_rgb();
+        let rgba = gpui_bridge::preview_rgba(hsla);
         Self::from_rgba(rgba)
     }
 
     pub fn from_rgba(rgba: Rgba) -> Self {
-        let r = rgba.r;
-        let g = rgba.g;
-        let b = rgba.b;
-        let max = r.max(g).max(b);
-        let min = r.min(g).min(b);
-        let d = max - min;
-
-        let s = if max == 0.0 { 0.0 } else { d / max };
-        let v = max;
-
-        let mut h = 0.0;
-        if max != min {
-            if max == r {
-                h = (g - b) / d + (if g < b { 6.0 } else { 0.0 });
-            } else if max == g {
-                h = (b - r) / d + 2.0;
-            } else {
-                h = (r - g) / d + 4.0;
-            }
-            h *= 60.0;
-        }
-
-        Self { h, s, v, a: rgba.a }
+        let hsv = palette::Hsva::from_color_unclamped(palette::Srgba::new(rgba.r, rgba.g, rgba.b, rgba.a));
+        Self { h: hsv.hue.into_positive_degrees(), s: hsv.saturation, v: hsv.value, a: hsv.alpha }
     }
 
     pub fn to_hsla_ext(self) -> Hsla {
-        let h = self.h / 360.0;
-        let c = self.v * self.s;
-        let x = c * (1.0 - ((h * 6.0) % 2.0 - 1.0).abs());
-        let m = self.v - c;
-
-        let (r, g, b) = if h < 1.0 / 6.0 {
-            (c, x, 0.0)
-        } else if h < 2.0 / 6.0 {
-            (x, c, 0.0)
-        } else if h < 3.0 / 6.0 {
-            (0.0, c, x)
-        } else if h < 4.0 / 6.0 {
-            (0.0, x, c)
-        } else if h < 5.0 / 6.0 {
-            (x, 0.0, c)
-        } else {
-            (c, 0.0, x)
-        };
-
-        Rgba { r: r + m, g: g + m, b: b + m, a: self.a }.into()
+        gpui_bridge::to_hsla(self.to_color_value(), GamutMapping::Clip).unwrap_or_else(|_| gpui::transparent_black())
     }
 }
 
 impl ColorSpecification for Hsv {
+    fn to_color_value(&self) -> ColorValue {
+        ColorValue::Srgb(palette::Srgba::from_color_unclamped(palette::Hsva::new(self.h, self.s, self.v, self.a)))
+    }
+    fn from_color_value(source: ColorValue) -> Result<Self> {
+        let hsv = palette::Hsva::from_color_unclamped(source.to_srgba_unclamped()?);
+        Ok(Self { h: hsv.hue.into_raw_degrees(), s: hsv.saturation, v: hsv.value, a: hsv.alpha })
+    }
+
     fn name(&self) -> &'static str {
         "HSV"
     }
@@ -408,6 +402,14 @@ impl RgbaSpec {
 }
 
 impl ColorSpecification for RgbaSpec {
+    fn to_color_value(&self) -> ColorValue {
+        ColorValue::srgb(self.r / 255.0, self.g / 255.0, self.b / 255.0, self.a)
+    }
+    fn from_color_value(source: ColorValue) -> Result<Self> {
+        let rgb = source.to_srgba_unclamped()?;
+        Ok(Self { r: rgb.red * 255.0, g: rgb.green * 255.0, b: rgb.blue * 255.0, a: rgb.alpha })
+    }
+
     fn name(&self) -> &'static str {
         "RGBA"
     }
@@ -437,11 +439,11 @@ impl ColorSpecification for RgbaSpec {
     }
 
     fn to_hsla(&self) -> Hsla {
-        Rgba { r: self.r / 255.0, g: self.g / 255.0, b: self.b / 255.0, a: self.a }.into()
+        gpui_bridge::to_hsla(self.to_color_value(), GamutMapping::Clip).unwrap_or_else(|_| gpui::transparent_black())
     }
 
     fn from_hsla(hsla: Hsla) -> Self {
-        let rgba = hsla.to_rgb();
+        let rgba = gpui_bridge::preview_rgba(hsla);
         Self { r: rgba.r * 255.0, g: rgba.g * 255.0, b: rgba.b * 255.0, a: rgba.a }
     }
 }
@@ -478,7 +480,7 @@ impl Lab {
 
     pub fn to_hsla_checked(&self) -> (Hsla, bool) {
         let (rgba, out_of_gamut) = lab_to_rgb_checked(self.l, self.a, self.b, self.alpha);
-        (rgba.into(), out_of_gamut)
+        (gpui_bridge::preview_hsla(rgba), out_of_gamut)
     }
 
     // Non-trait Math Helpers originally from LabMixer
@@ -647,6 +649,16 @@ impl Lab {
 }
 
 impl ColorSpecification for Lab {
+    fn to_color_value(&self) -> ColorValue {
+        ColorValue::LinearSrgb(palette::LinSrgba::from_color_unclamped(
+            palette::Laba::<palette::white_point::D65, f32>::new(self.l, self.a, self.b, self.alpha),
+        ))
+    }
+    fn from_color_value(source: ColorValue) -> Result<Self> {
+        let lab = palette::Laba::<palette::white_point::D65, f32>::from_color_unclamped(source.to_srgba_unclamped()?);
+        Ok(Self { l: lab.l, a: lab.a, b: lab.b, alpha: lab.alpha, auto_clamp: false, dynamic_range: false })
+    }
+
     fn name(&self) -> &'static str {
         "Lab"
     }
@@ -680,7 +692,7 @@ impl ColorSpecification for Lab {
     }
 
     fn from_hsla(hsla: Hsla) -> Self {
-        let rgba = hsla.to_rgb();
+        let rgba = gpui_bridge::preview_rgba(hsla);
         let (l, a, b) = rgb_to_lab(rgba);
         Self { l, a, b, alpha: rgba.a, auto_clamp: false, dynamic_range: false }
     }
@@ -751,101 +763,20 @@ impl ColorSpecification for Lab {
 }
 
 fn rgb_to_lab(rgb: Rgba) -> (f32, f32, f32) {
-    let r = pivot_rgb(rgb.r);
-    let g = pivot_rgb(rgb.g);
-    let b = pivot_rgb(rgb.b);
-
-    let x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
-    let y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
-    let z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
-
-    let x = pivot_xyz(x);
-    let y = pivot_xyz(y);
-    let z = pivot_xyz(z);
-
-    let l = (116.0 * y) - 16.0;
-    let a = 500.0 * (x - y);
-    let b = 200.0 * (y - z);
-
-    (l, a, b)
+    let lab =
+        palette::Lab::<palette::white_point::D65, f32>::from_color_unclamped(palette::Srgb::new(rgb.r, rgb.g, rgb.b));
+    (lab.l, lab.a, lab.b)
 }
-
 fn lab_to_rgb(l: f32, a: f32, b: f32, alpha: f32) -> Rgba {
     lab_to_rgb_checked(l, a, b, alpha).0
 }
-
 fn lab_to_rgb_checked(l: f32, a: f32, b: f32, alpha: f32) -> (Rgba, bool) {
-    let mut y = (l + 16.0) / 116.0;
-    let mut x = a / 500.0 + y;
-    let mut z = y - b / 200.0;
-
-    let x3 = x * x * x;
-    let z3 = z * z * z;
-
-    x = if x3 > 0.008856 { x3 } else { (x - 16.0 / 116.0) / 7.787 };
-    y = if l > 8.0 {
-        ((l + 16.0) / 116.0).powi(3)
-    } else {
-        l / 903.3
-    };
-    z = if z3 > 0.008856 { z3 } else { (z - 16.0 / 116.0) / 7.787 };
-
-    // Multiply by white point (D65)
-    let x = x * 0.95047;
-    let y = y * 1.00000;
-    let z = z * 1.08883;
-
-    let r = x * 3.2406 + y * -1.5372 + z * -0.4986;
-    let g = x * -0.9689 + y * 1.8758 + z * 0.0415;
-    let b = x * 0.0557 + y * -0.2040 + z * 1.0570;
-
-    let srgb_r = rev_pivot_rgb(r);
-    let srgb_g = rev_pivot_rgb(g);
-    let srgb_b = rev_pivot_rgb(b);
-
-    const GAMUT_EPSILON: f32 = 1e-4;
-    let gamut = -GAMUT_EPSILON..=1.0 + GAMUT_EPSILON;
-    let out_of_gamut = !srgb_r.is_finite()
-        || !srgb_g.is_finite()
-        || !srgb_b.is_finite()
-        || !gamut.contains(&srgb_r)
-        || !gamut.contains(&srgb_g)
-        || !gamut.contains(&srgb_b);
-
-    let clamp_channel = |channel: f32| {
-        if channel.is_finite() {
-            channel.clamp(0.0, 1.0)
-        } else {
-            0.0
-        }
-    };
-
+    let spec = Lab { l, a, b, alpha, auto_clamp: false, dynamic_range: false };
+    let source = spec.to_color_value();
+    let in_gamut = source.is_in_gamut(gpui_luma::color::Gamut::Srgb).unwrap_or(false);
     (
-        Rgba { r: clamp_channel(srgb_r), g: clamp_channel(srgb_g), b: clamp_channel(srgb_b), a: alpha },
-        out_of_gamut,
+        gpui_bridge::to_rgba(source, GamutMapping::CssLocalMinde)
+            .unwrap_or_else(|_| gpui::transparent_black().to_rgb()),
+        !in_gamut,
     )
-}
-
-fn pivot_rgb(n: f32) -> f32 {
-    if n > 0.04045 {
-        ((n + 0.055) / 1.055).powf(2.4)
-    } else {
-        n / 12.92
-    }
-}
-
-fn rev_pivot_rgb(n: f32) -> f32 {
-    if n > 0.0031308 {
-        1.055 * n.powf(1.0 / 2.4) - 0.055
-    } else {
-        12.92 * n
-    }
-}
-
-fn pivot_xyz(n: f32) -> f32 {
-    if n > 0.008856 {
-        n.powf(1.0 / 3.0)
-    } else {
-        (7.787 * n) + (16.0 / 116.0)
-    }
 }

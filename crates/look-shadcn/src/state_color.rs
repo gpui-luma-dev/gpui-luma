@@ -3,7 +3,7 @@ use gpui::Hsla;
 use gpui_luma::theme::{InteractionLayer, ThemeMode};
 
 use crate::catalog::CssTokenMap;
-use crate::color::adjust_lightness;
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 use crate::palette::ShadcnPalette;
 use crate::tokens::ShadcnToken;
 
@@ -13,19 +13,27 @@ const LAYER_COUNT: usize = 4;
 /// Pre-indexed `(ShadcnToken, InteractionLayer)` colors for O(1) runtime lookup.
 #[derive(Clone, Debug)]
 pub struct StateColorTable {
+    sources: [ColorValue; TOKEN_COUNT * LAYER_COUNT],
     colors: [Hsla; TOKEN_COUNT * LAYER_COUNT],
 }
 
 impl StateColorTable {
     pub fn from_catalog(catalog: &CssTokenMap, palette: &ShadcnPalette, theme_mode: ThemeMode) -> Self {
         let mut colors = [Hsla::default(); TOKEN_COUNT * LAYER_COUNT];
+        let mut sources = [ColorValue::srgb(0.0, 0.0, 0.0, 0.0); TOKEN_COUNT * LAYER_COUNT];
         for token in ShadcnToken::ALL {
             let base = token_base_from_palette(palette, token);
             for layer in all_layers() {
-                colors[slot(token, layer)] = resolve_state_color(catalog, palette, token, layer, base, theme_mode);
+                let source = resolve_state_source(catalog, palette, token, layer, base, theme_mode);
+                sources[slot(token, layer)] = source;
+                colors[slot(token, layer)] = preview(source, base);
             }
         }
-        Self { colors }
+        Self { sources, colors }
+    }
+
+    pub fn source(&self, token: ShadcnToken, layer: InteractionLayer) -> ColorValue {
+        self.sources[slot(token, layer)]
     }
 
     pub fn get(&self, token: ShadcnToken, layer: InteractionLayer) -> Hsla {
@@ -33,28 +41,43 @@ impl StateColorTable {
     }
 }
 
-pub(crate) fn resolve_state_color(
+fn resolve_state_source(
     catalog: &CssTokenMap,
     palette: &ShadcnPalette,
     token: ShadcnToken,
     layer: InteractionLayer,
     base: Hsla,
     theme_mode: ThemeMode,
-) -> Hsla {
-    if let Some(color) = catalog_state_color(catalog, token.css_name(), layer) {
+) -> ColorValue {
+    if let Some(color) = catalog_state_source(catalog, token.css_name(), layer) {
         return color;
     }
+    let source = catalog.source_color(token.css_name()).unwrap_or_else(|_| gpui_bridge::from_hsla(base));
     match layer {
-        InteractionLayer::Default => base,
-        InteractionLayer::Disabled => disabled_color(token, palette),
-        InteractionLayer::Hovered => algorithmic_state_color(base, InteractionLayer::Hovered, theme_mode, true),
-        InteractionLayer::Pressed => algorithmic_state_color(base, InteractionLayer::Pressed, theme_mode, true),
+        InteractionLayer::Default => source,
+        InteractionLayer::Disabled => {
+            let key = if token.is_foreground() {
+                "muted-foreground"
+            } else {
+                "muted"
+            };
+            catalog.source_color(key).unwrap_or_else(|_| gpui_bridge::from_hsla(disabled_color(token, palette)))
+        }
+        _ => algorithmic_state_source(source, layer, theme_mode, true).unwrap_or(source),
     }
 }
 
+pub(crate) fn catalog_state_source(
+    catalog: &CssTokenMap,
+    css_name: &str,
+    layer: InteractionLayer,
+) -> Option<ColorValue> {
+    catalog.source_color(&state_key(css_name, layer)).ok()
+}
+
 pub(crate) fn catalog_state_color(catalog: &CssTokenMap, css_name: &str, layer: InteractionLayer) -> Option<Hsla> {
-    let key = state_key(css_name, layer);
-    catalog.color(&key).ok()
+    catalog_state_source(catalog, css_name, layer)
+        .and_then(|source| gpui_bridge::to_hsla(source, GamutMapping::CssLocalMinde).ok())
 }
 
 pub(crate) fn algorithmic_state_color(
@@ -63,9 +86,19 @@ pub(crate) fn algorithmic_state_color(
     theme_mode: ThemeMode,
     filled: bool,
 ) -> Hsla {
+    algorithmic_state_source(gpui_bridge::from_hsla(base), layer, theme_mode, filled)
+        .map(|source| preview(source, base))
+        .unwrap_or(base)
+}
+
+pub(crate) fn algorithmic_state_source(
+    base: ColorValue,
+    layer: InteractionLayer,
+    theme_mode: ThemeMode,
+    filled: bool,
+) -> anyhow::Result<ColorValue> {
     let delta = match (theme_mode, layer, filled) {
         (_, InteractionLayer::Default | InteractionLayer::Disabled, _) => 0.0,
-        // Subtle shifts — GPUI renders sRGB/Hsla; large Oklch steps clip harshly after round-trip.
         (ThemeMode::Light, InteractionLayer::Hovered, true) => -0.03,
         (ThemeMode::Light, InteractionLayer::Pressed, true) => -0.06,
         (ThemeMode::Light, InteractionLayer::Hovered, false) => -0.02,
@@ -76,10 +109,15 @@ pub(crate) fn algorithmic_state_color(
         (ThemeMode::Dark, InteractionLayer::Pressed, false) => 0.06,
     };
     if delta == 0.0 {
-        base
+        base.validate()?;
+        Ok(base)
     } else {
-        adjust_lightness(base, delta)
+        base.adjust_ui_lightness(delta)
     }
+}
+
+fn preview(source: ColorValue, fallback: Hsla) -> Hsla {
+    gpui_bridge::to_hsla(source, GamutMapping::CssLocalMinde).unwrap_or(fallback)
 }
 
 pub(crate) fn token_base_from_palette(palette: &ShadcnPalette, token: ShadcnToken) -> Hsla {
@@ -154,7 +192,7 @@ mod tests {
     use crate::catalog::CssTokenMap;
     use crate::palette::ShadcnPalette;
 
-    use super::{algorithmic_state_color, catalog_state_color, resolve_state_color};
+    use super::{algorithmic_state_color, catalog_state_color, StateColorTable};
     use crate::tokens::ShadcnToken;
 
     use gpui_luma::theme::InteractionLayer;
@@ -208,14 +246,8 @@ mod tests {
         ]));
         let palette = ShadcnPalette::from_catalog(&catalog, ThemeMode::Light).expect("palette");
         let base = palette.primary.background;
-        let hover = resolve_state_color(
-            &catalog,
-            &palette,
-            ShadcnToken::Primary,
-            InteractionLayer::Hovered,
-            base,
-            ThemeMode::Light,
-        );
+        let hover = StateColorTable::from_catalog(&catalog, &palette, ThemeMode::Light)
+            .get(ShadcnToken::Primary, InteractionLayer::Hovered);
         assert!(hover.l < base.l, "light hover should darken");
     }
 
@@ -239,14 +271,8 @@ mod tests {
         ]));
         let palette = ShadcnPalette::from_catalog(&catalog, ThemeMode::Dark).expect("palette");
         let base = palette.primary.background;
-        let hover = resolve_state_color(
-            &catalog,
-            &palette,
-            ShadcnToken::Primary,
-            InteractionLayer::Hovered,
-            base,
-            ThemeMode::Dark,
-        );
+        let hover = StateColorTable::from_catalog(&catalog, &palette, ThemeMode::Dark)
+            .get(ShadcnToken::Primary, InteractionLayer::Hovered);
         assert!(hover.l > base.l, "dark hover should lighten");
     }
 

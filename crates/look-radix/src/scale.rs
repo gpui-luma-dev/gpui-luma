@@ -8,6 +8,7 @@
 //! Page chrome often mixes families (e.g. color step 3 → gray step 1).
 
 use gpui::Hsla;
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge::SrgbRenderCache};
 use gpui_luma::theme::ThemeMode;
 use gpui_luma::theme::provenance::ResolvedColor;
 
@@ -36,13 +37,15 @@ impl ScaleFamily {
     }
 }
 
-/// Twelve HSL steps for one family in one mode.
+/// Twelve retained source steps and precomputed sRGB previews for one family in one mode.
 ///
 /// `palette` is the Radix palette the steps came from (`"indigo"`, `"slate"`, …) and rides
 /// along as color provenance. Hand-seeded scales carry [`CUSTOM_PALETTE`].
 #[derive(Clone, Copy, Debug)]
 pub struct ColorScale {
+    sources: [ColorValue; SCALE_LEN],
     steps: [Hsla; SCALE_LEN],
+    mapping: GamutMapping,
     palette: &'static str,
 }
 
@@ -50,12 +53,41 @@ pub struct ColorScale {
 pub const CUSTOM_PALETTE: &str = "custom";
 
 impl ColorScale {
-    pub const fn new(steps: [Hsla; SCALE_LEN]) -> Self {
-        Self { steps, palette: CUSTOM_PALETTE }
+    pub fn new(sources: [ColorValue; SCALE_LEN], mapping: GamutMapping) -> anyhow::Result<Self> {
+        Self::named(CUSTOM_PALETTE, sources, mapping)
     }
 
-    pub const fn named(palette: &'static str, steps: [Hsla; SCALE_LEN]) -> Self {
-        Self { steps, palette }
+    pub fn named(
+        palette: &'static str,
+        sources: [ColorValue; SCALE_LEN],
+        mapping: GamutMapping,
+    ) -> anyhow::Result<Self> {
+        let mut cache = SrgbRenderCache::default();
+        let mut steps = [gpui::black(); SCALE_LEN];
+        for (index, source) in sources.iter().enumerate() {
+            steps[index] = cache
+                .resolve_hsla(*source, mapping)
+                .map_err(|error| anyhow::anyhow!("{palette} step {}: {error}", index + 1))?;
+        }
+        Ok(Self { sources, steps, palette, mapping })
+    }
+
+    pub(crate) fn black() -> Self {
+        Self {
+            sources: [ColorValue::srgb(0.0, 0.0, 0.0, 1.0); SCALE_LEN],
+            steps: [gpui::black(); SCALE_LEN],
+            palette: CUSTOM_PALETTE,
+            mapping: GamutMapping::CssLocalMinde,
+        }
+    }
+
+    /// Source color, without conversion or mapping; same clamped 1-based indexing as `step`.
+    pub fn source_step(self, step: ScaleStep) -> ColorValue {
+        self.sources[step.clamp(1, SCALE_LEN as u8) as usize - 1]
+    }
+
+    pub fn mapping(self) -> GamutMapping {
+        self.mapping
     }
 
     pub fn palette(self) -> &'static str {
@@ -66,6 +98,16 @@ impl ColorScale {
     pub fn step(self, step: ScaleStep) -> Hsla {
         let idx = step.clamp(1, SCALE_LEN as u8) as usize - 1;
         self.steps[idx]
+    }
+
+    pub fn resolved_source(self, step: ScaleStep) -> gpui_luma::theme::provenance::ResolvedSourceColor {
+        gpui_luma::theme::provenance::ResolvedSourceColor {
+            value: self.source_step(step),
+            source: gpui_luma::theme::provenance::ColorSource::ScaleStep {
+                family: self.palette.into(),
+                step: step.clamp(1, SCALE_LEN as u8),
+            },
+        }
     }
 
     pub fn resolved(self, step: ScaleStep) -> ResolvedColor {
@@ -119,16 +161,17 @@ mod tests {
     fn color_scale_from_seed(seed: Hsla, mode: ThemeMode) -> ColorScale {
         crate::generate_colors(
             crate::CustomColors {
-                accent: seed,
-                gray: gpui::rgb(0x8b8d98).into(),
+                accent: gpui_luma::color::gpui_bridge::from_hsla(seed),
+                gray: ColorValue::srgb(139.0 / 255.0, 141.0 / 255.0, 152.0 / 255.0, 1.0),
                 background: if mode == ThemeMode::Light {
-                    gpui::white()
+                    ColorValue::srgb(1.0, 1.0, 1.0, 1.0)
                 } else {
-                    gpui::black()
+                    ColorValue::srgb(0.0, 0.0, 0.0, 1.0)
                 },
             },
             mode,
         )
+        .unwrap()
         .accent
     }
 

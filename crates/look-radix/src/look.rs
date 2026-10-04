@@ -8,7 +8,8 @@ use std::sync::{
 
 use gpui::{Background, Global, Hsla, linear_color_stop, linear_gradient};
 use gpui_luma::theme::{MetricTokens, ThemeMode};
-use gpui_luma::theme::provenance::ResolvedColor;
+use gpui_luma::theme::provenance::{ResolvedColor, ResolvedSourceColor};
+use gpui_luma::color::{ColorValue};
 
 use crate::button::ClassicButtonParams;
 use crate::palette::{PaletteSlot, Accent, Gray, ThemePalettes, scale_pair};
@@ -104,7 +105,8 @@ pub(crate) fn sdk_size_key(size: gpui_luma::theme::ControlSize) -> &'static str 
 struct LookState {
     scales: RwLock<ScalePair>,
     palettes: RwLock<[ThemePalettes; 2]>,
-    custom_contrast: RwLock<[Option<Hsla>; 2]>,
+    custom_contrast: RwLock<[Option<(ColorValue, Hsla)>; 2]>,
+    custom_inputs: RwLock<[Option<CustomColors>; 2]>,
     metrics: MetricTokens,
     mode: AtomicU8,
     classic_shadow: RwLock<ClassicButtonParams>,
@@ -135,6 +137,7 @@ impl Look {
                 scales: RwLock::new(scales),
                 palettes: RwLock::new([ThemePalettes { accent: PaletteSlot::Custom, gray: PaletteSlot::Custom }; 2]),
                 custom_contrast: RwLock::new([None; 2]),
+                custom_inputs: RwLock::new([None; 2]),
                 metrics,
                 mode: AtomicU8::new(mode_to_u8(mode)),
                 classic_shadow: RwLock::new(ClassicButtonParams::default()),
@@ -164,6 +167,8 @@ impl Look {
         if let Ok(mut contrast) = forked.state.custom_contrast.write() {
             *contrast = *self.state.custom_contrast.read().unwrap_or_else(|poisoned| poisoned.into_inner());
         }
+        *forked.state.custom_inputs.write().unwrap_or_else(|p| p.into_inner()) =
+            *self.state.custom_inputs.read().unwrap_or_else(|p| p.into_inner());
         *forked.state.common_stylesheet.write().unwrap_or_else(|poisoned| poisoned.into_inner()) =
             self.common_stylesheet();
         forked
@@ -221,6 +226,9 @@ impl Look {
         if let Ok(mut contrast) = self.state.custom_contrast.write() {
             *contrast = [None; 2];
         }
+        if let Ok(mut inputs) = self.state.custom_inputs.write() {
+            *inputs = [None; 2];
+        }
         self.bump_revision();
     }
 
@@ -255,23 +263,26 @@ impl Look {
     /// Rebuilds both accent scales using Radix's custom-color generator.
     /// Uses each mode's current gray step 8 and background; leaves gray unchanged.
     /// Notify affected views after changing it; see [`Look`].
-    pub fn set_accent_seed(&self, seed: Hsla) {
+    pub fn set_accent_seed(&self, seed: ColorValue) -> anyhow::Result<()> {
         let pair = *self.state.scales.read().unwrap_or_else(|poisoned| poisoned.into_inner());
-        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+        let generate = |mode| {
             let scales = pair.for_mode(mode);
-            let generated = generate_colors(
-                CustomColors { accent: seed, gray: scales.gray.step(8), background: scales.gray.step(1) },
+            generate_colors(
+                CustomColors { accent: seed, gray: scales.gray.source_step(8), background: scales.gray.source_step(1) },
                 mode,
-            );
-            if let Ok(mut scales) = self.state.scales.write() {
-                match mode {
-                    ThemeMode::Light => scales.light.color = generated.accent,
-                    ThemeMode::Dark => scales.dark.color = generated.accent,
-                }
-            }
-            if let Ok(mut contrast) = self.state.custom_contrast.write() {
-                contrast[mode_to_u8(mode) as usize] = Some(generated.accent_contrast);
-            }
+            )
+        };
+        // Validate/generate both modes before changing shared state.
+        let generated = [generate(ThemeMode::Light)?, generate(ThemeMode::Dark)?];
+        if let Ok(mut scales) = self.state.scales.write() {
+            scales.light.color = generated[0].accent;
+            scales.dark.color = generated[1].accent;
+        }
+        if let Ok(mut contrast) = self.state.custom_contrast.write() {
+            *contrast = generated.map(|colors| Some((colors.accent_contrast_source, colors.accent_contrast)));
+        }
+        if let Ok(mut inputs) = self.state.custom_inputs.write() {
+            *inputs = generated.map(|colors| Some(colors.inputs));
         }
         if let Ok(mut palettes) = self.state.palettes.write() {
             for palette in palettes.iter_mut() {
@@ -279,14 +290,15 @@ impl Look {
             }
         }
         self.bump_revision();
+        Ok(())
     }
 
     /// Regenerates the active mode's accent and gray scales from all three seed colors.
     /// The caller owns editor state and must notify affected views; see [`Look`].
     /// The background affects scale generation; page composition stays with the caller.
-    pub fn set_custom_colors(&self, inputs: CustomColors) {
+    pub fn set_custom_colors(&self, inputs: CustomColors) -> anyhow::Result<()> {
         let mode = self.mode();
-        let generated = generate_colors(inputs, mode);
+        let generated = generate_colors(inputs, mode)?;
         if let Ok(mut pair) = self.state.scales.write() {
             let scales = match mode {
                 ThemeMode::Light => &mut pair.light,
@@ -296,18 +308,28 @@ impl Look {
             scales.gray = generated.gray;
         }
         if let Ok(mut contrast) = self.state.custom_contrast.write() {
-            contrast[mode_to_u8(mode) as usize] = Some(generated.accent_contrast);
+            contrast[mode_to_u8(mode) as usize] = Some((generated.accent_contrast_source, generated.accent_contrast));
         }
         if let Ok(mut palettes) = self.state.palettes.write() {
             palettes[mode_to_u8(mode) as usize] =
                 ThemePalettes { accent: PaletteSlot::Custom, gray: PaletteSlot::Custom };
         }
+        if let Ok(mut stored) = self.state.custom_inputs.write() {
+            stored[mode_to_u8(mode) as usize] = Some(inputs);
+        }
         self.bump_revision();
+        Ok(())
     }
 
     fn custom_contrast(&self) -> Option<Hsla> {
         self.state.custom_contrast.read().unwrap_or_else(|poisoned| poisoned.into_inner())
             [mode_to_u8(self.mode()) as usize]
+            .map(|(_, preview)| preview)
+    }
+
+    /// Retained authored seeds for the active mode, including seeds replaced by derived solids.
+    pub fn custom_inputs(&self) -> Option<CustomColors> {
+        self.state.custom_inputs.read().unwrap_or_else(|p| p.into_inner())[mode_to_u8(self.mode()) as usize]
     }
 
     fn bump_revision(&self) {
@@ -330,6 +352,36 @@ impl Look {
             .read()
             .map(|scales| scales.for_mode(self.mode()))
             .unwrap_or_else(|poisoned| poisoned.into_inner().for_mode(self.mode()))
+    }
+
+    /// Resolve a role without reducing its source to the current backend gamut.
+    pub fn resolve_role_source(&self, role: SemanticRole) -> ResolvedSourceColor {
+        if role == SemanticRole::PrimaryForeground {
+            if let Some((source, _)) =
+                self.state.custom_contrast.read().unwrap_or_else(|p| p.into_inner())[mode_to_u8(self.mode()) as usize]
+            {
+                return ResolvedSourceColor {
+                    value: source,
+                    source: gpui_luma::theme::provenance::ColorSource::Authored {
+                        key: "custom-accent-contrast".into(),
+                    },
+                };
+            }
+            if self.accent_uses_dark_solid_contrast() {
+                let step = if self.scales().gray.step(1).l <= self.scales().gray.step(12).l {
+                    1
+                } else {
+                    12
+                };
+                return self.resolve_step_source(ScaleFamily::Gray, step);
+            }
+        }
+        let mapping = role.mapping(self.mode());
+        self.resolve_step_source(mapping.family, mapping.step)
+    }
+
+    pub fn resolve_step_source(&self, family: ScaleFamily, step: ScaleStep) -> ResolvedSourceColor {
+        self.scales().family(family).resolved_source(step)
     }
 
     pub fn resolve_role(&self, role: SemanticRole) -> ResolvedColor {
@@ -397,6 +449,26 @@ fn mode_from_u8(value: u8) -> ThemeMode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gpui_luma::color::gpui_bridge;
+
+    #[test]
+    fn source_roles_and_custom_seeds_survive_forks_and_failed_updates() {
+        let look = Look::built_in();
+        let p3 = ColorValue::display_p3(1.0, 0.0, 0.0, 1.0);
+        look.set_accent_seed(p3).unwrap();
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            look.set_mode(mode);
+            assert_eq!(look.resolve_role_source(SemanticRole::Primary).value, p3);
+            assert_eq!(look.custom_inputs().unwrap().accent, p3);
+            assert_eq!(look.fork().custom_inputs().unwrap().accent, p3);
+        }
+        let revision = look.revision();
+        assert!(look.set_accent_seed(ColorValue::srgb(f32::NAN, 0.0, 0.0, 1.0)).is_err());
+        assert_eq!(look.revision(), revision);
+        assert_eq!(look.resolve_role_source(SemanticRole::Primary).value, p3);
+        look.set_palettes(Accent::Indigo, Gray::Auto);
+        assert!(look.custom_inputs().is_none());
+    }
 
     #[test]
     fn common_stylesheet_snapshot_and_fork_are_isolated() {
@@ -439,7 +511,7 @@ mod tests {
         assert_eq!(draft.palettes(), theme.palettes());
         assert_eq!(draft.resolve_role(SemanticRole::Primary).hsla(), theme.resolve_role(SemanticRole::Primary).hsla());
 
-        draft.set_accent_seed(gpui::hsla(0.05, 0.9, 0.5, 1.0));
+        draft.set_accent_seed(gpui_bridge::from_hsla(gpui::hsla(0.05, 0.9, 0.5, 1.0))).unwrap();
 
         assert_ne!(draft.resolve_role(SemanticRole::Primary).hsla(), theme.resolve_role(SemanticRole::Primary).hsla());
         assert_eq!(draft.palettes().accent, PaletteSlot::Custom);
@@ -451,7 +523,7 @@ mod tests {
     #[test]
     fn set_palettes_restores_named_scales() {
         let draft = Look::built_in().fork();
-        draft.set_accent_seed(gpui::hsla(0.05, 0.9, 0.5, 1.0));
+        draft.set_accent_seed(gpui_bridge::from_hsla(gpui::hsla(0.05, 0.9, 0.5, 1.0))).unwrap();
 
         draft.set_palettes(Accent::Indigo, Gray::Auto);
 
@@ -469,10 +541,11 @@ mod tests {
         let light_contrast = look.resolve_role(SemanticRole::PrimaryForeground).hsla();
         look.set_mode(ThemeMode::Dark);
         look.set_custom_colors(CustomColors {
-            accent: gpui::rgb(0xffff00).into(),
-            gray: gpui::rgb(0x888888).into(),
-            background: gpui::black(),
-        });
+            accent: gpui_bridge::from_rgba(gpui::rgb(0xffff00)),
+            gray: gpui_bridge::from_rgba(gpui::rgb(0x888888)),
+            background: ColorValue::srgb(0.0, 0.0, 0.0, 1.0),
+        })
+        .unwrap();
         let dark_contrast = look.resolve_role(SemanticRole::PrimaryForeground).hsla();
         assert!(dark_contrast.l < 0.5);
         assert_eq!(look.fork().resolve_role(SemanticRole::PrimaryForeground).hsla(), dark_contrast);

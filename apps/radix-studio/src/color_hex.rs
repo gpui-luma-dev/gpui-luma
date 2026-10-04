@@ -15,7 +15,8 @@ pub fn format_hex(color: Hsla) -> String {
 }
 
 /// Accept exactly six hex digits, with optional `#` and surrounding whitespace.
-pub fn parse_hex(value: &str) -> Option<Hsla> {
+#[cfg(test)]
+fn parse_hex(value: &str) -> Option<Hsla> {
     let value = value.trim();
     let value = value.strip_prefix('#').unwrap_or(value);
     if value.len() != 6 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {

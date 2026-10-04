@@ -8,6 +8,7 @@ use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
 use gpui_luma::controls::switch::{Switch, SwitchData, SwitchEvent};
 use gpui_luma::shell::TitleBar;
+use gpui_luma::color::ColorValue;
 use gpui_luma::theme::{ControlSize, InteractionState, LumaThemeSyncExt, ThemeMode};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, sync_color_control_theme};
 use gpui_luma_look_shadcn as shadcn;
@@ -198,8 +199,7 @@ impl LumaStudioApp {
         {
             tracing::warn!("failed to apply studio color overrides: {err:?}");
         }
-        let token_overrides = self.overrides.token_overrides();
-        if let Err(err) = self.look.apply_token_overrides(&token_overrides) {
+        if let Err(err) = self.overrides.token_overrides().and_then(|tokens| self.look.apply_token_overrides(&tokens)) {
             tracing::warn!("failed to apply studio token overrides: {err:?}");
         }
         sync_color_control_theme(self.look.as_ref());
@@ -212,7 +212,7 @@ impl LumaStudioApp {
     fn derived_palette_color_overrides(
         &self,
         base: &ShadcnLook,
-    ) -> (HashMap<String, gpui::Hsla>, HashMap<String, gpui::Hsla>) {
+    ) -> (HashMap<String, ColorValue>, HashMap<String, ColorValue>) {
         let derive_for_mode = |mode: ThemeMode| {
             let palette_hsl = self.overrides.palette_hsl(mode).clone();
             let palette_hs = self.overrides.palette_hs(mode).clone();
@@ -223,19 +223,29 @@ impl LumaStudioApp {
             let primary = self
                 .overrides
                 .global_color_override("--primary")
-                .or_else(|| mode_tokens.catalog.color("primary").ok())
-                .unwrap_or_else(|| gpui::hsla(0.0, 0.0, 0.5, 1.0));
-            let hs_generated = derive_palette_hs_color_overrides(mode, primary, &palette_hs);
+                .or_else(|| mode_tokens.catalog.source_color("primary").ok())
+                .unwrap_or(ColorValue::srgb(0.5, 0.5, 0.5, 1.0));
+            let hs_generated = derive_palette_hs_color_overrides(mode, primary, &palette_hs).unwrap_or_else(|err| {
+                tracing::warn!("failed to derive studio palette: {err:?}");
+                HashMap::new()
+            });
 
             palette_tokens()
                 .into_iter()
                 .filter_map(|token| {
                     let css_name = token_css_name(token);
-                    self.overrides
+                    let source = self
+                        .overrides
                         .global_color_override(&css_name)
                         .or_else(|| hs_generated.get(&css_name).copied())
-                        .or_else(|| mode_tokens.catalog.color(token).ok())
-                        .map(|color| (css_name, palette_hsl.apply(color)))
+                        .or_else(|| mode_tokens.catalog.source_color(token).ok())?;
+                    match palette_hsl.apply(source) {
+                        Ok(color) => Some((css_name, color)),
+                        Err(err) => {
+                            tracing::warn!("failed to adjust studio color {token}: {err:?}");
+                            None
+                        }
+                    }
                 })
                 .collect::<HashMap<_, _>>()
         };
@@ -272,7 +282,7 @@ impl LumaStudioApp {
         cx.notify();
     }
 
-    pub fn set_global_color(&mut self, token: &str, color: gpui::Hsla, cx: &mut Context<Self>) {
+    pub fn set_global_color(&mut self, token: &str, color: ColorValue, cx: &mut Context<Self>) {
         if self.syncing_sidebar_tokens {
             return;
         }
@@ -411,7 +421,7 @@ impl LumaStudioApp {
         cx.notify();
     }
 
-    pub fn set_shadow_color(&mut self, color: gpui::Hsla, cx: &mut Context<Self>) {
+    pub fn set_shadow_color(&mut self, color: ColorValue, cx: &mut Context<Self>) {
         self.update_shadow_override(|shadow| shadow.color = color, cx);
     }
 

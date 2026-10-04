@@ -1,5 +1,6 @@
 //! Color slider control exposition — gallery-aligned hue/saturation/alpha, gradients, and channels.
 
+use gpui_luma::color::gpui_bridge::from_hsla;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Hsla, Render, Subscription, Window, div, prelude::*, px};
@@ -117,7 +118,7 @@ impl Render for ColorSliderExpositionLeftPane {
                             .child(slider_labeled_row(&self.look, "Saturation", self.saturation_slider.clone()))
                             .child(slider_labeled_row(&self.look, "Alpha", self.alpha_slider.clone()))
                             .child(
-                                ColorSwatch::new(selected)
+                                ColorSwatch::new(from_hsla(selected))
                                     .checkerboard(true)
                                     .height(px(44.0))
                                     .rounded(px(12.0))
@@ -206,15 +207,30 @@ impl ColorSliderControlExposition {
 
         let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
         let blue = gpui::hsla(240.0 / 360.0, 1.0, 0.5, 1.0);
-        let gradient_rgb = ColorSliderBuilder::gradient("controls-doc-color-slider-gradient-rgb", 0.5, vec![red, blue])
-            .interpolation(ColorInterpolation::Rgb)
-            .spawn(cx);
-        let gradient_hsl = ColorSliderBuilder::gradient("controls-doc-color-slider-gradient-hsl", 0.5, vec![red, blue])
-            .interpolation(ColorInterpolation::Hsl)
-            .spawn(cx);
-        let gradient_lab = ColorSliderBuilder::gradient("controls-doc-color-slider-gradient-lab", 0.5, vec![red, blue])
-            .interpolation(ColorInterpolation::Lab)
-            .spawn(cx);
+        let gradient_rgb = ColorSliderBuilder::gradient(
+            "controls-doc-color-slider-gradient-rgb",
+            0.5,
+            vec![red, blue].into_iter().map(gpui_luma::color::gpui_bridge::from_hsla).collect(),
+        )
+        .expect("valid demo gradient colors")
+        .interpolation(ColorInterpolation::Rgb)
+        .spawn(cx);
+        let gradient_hsl = ColorSliderBuilder::gradient(
+            "controls-doc-color-slider-gradient-hsl",
+            0.5,
+            vec![red, blue].into_iter().map(gpui_luma::color::gpui_bridge::from_hsla).collect(),
+        )
+        .expect("valid demo gradient colors")
+        .interpolation(ColorInterpolation::Hsl)
+        .spawn(cx);
+        let gradient_lab = ColorSliderBuilder::gradient(
+            "controls-doc-color-slider-gradient-lab",
+            0.5,
+            vec![red, blue].into_iter().map(gpui_luma::color::gpui_bridge::from_hsla).collect(),
+        )
+        .expect("valid demo gradient colors")
+        .interpolation(ColorInterpolation::Lab)
+        .spawn(cx);
 
         let rgba = RgbaSpec { r: 255.0, g: 128.0, b: 0.0, a: 1.0 };
         let red_slider = ColorSliderBuilder::channel("controls-doc-color-slider-red", rgba.r, rgba, RgbaSpec::RED)

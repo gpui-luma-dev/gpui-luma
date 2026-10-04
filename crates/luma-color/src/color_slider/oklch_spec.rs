@@ -1,6 +1,7 @@
 use std::ops::RangeInclusive;
 
-use gpui::{Hsla, Rgba};
+use gpui::Hsla;
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 use palette::{Clamp, FromColor, IsWithinBounds, Oklch as PaletteOklch, Srgb};
 use palette::convert::FromColorUnclamped;
 
@@ -141,23 +142,22 @@ impl ColorSpecification for Oklch {
         }
     }
 
-    fn to_hsla(&self) -> Hsla {
-        let oklch = PaletteOklch::new(self.l.clamp(0.0, 1.0), self.c.max(0.0), self.h.rem_euclid(360.0));
-        let srgb = Srgb::<f32>::from_color(oklch);
-        let rgba = Rgba {
-            r: srgb.red.clamp(0.0, 1.0),
-            g: srgb.green.clamp(0.0, 1.0),
-            b: srgb.blue.clamp(0.0, 1.0),
-            a: self.a,
-        };
-        rgba.into()
+    fn to_color_value(&self) -> ColorValue {
+        ColorValue::oklch(self.l, self.c, self.h, self.a)
     }
-
+    fn from_color_value(source: ColorValue) -> anyhow::Result<Self> {
+        let c = source.to_oklcha_unclamped()?;
+        Ok(Self { l: c.l, c: c.chroma, h: c.hue.into_raw_degrees(), a: c.alpha })
+    }
+    fn to_hsla(&self) -> Hsla {
+        gpui_bridge::to_hsla(self.to_color_value(), GamutMapping::CssLocalMinde)
+            .unwrap_or_else(|_| gpui::transparent_black())
+    }
     fn from_hsla(hsla: Hsla) -> Self {
-        let rgba = hsla.to_rgb();
-        let mut spec = Self::from_palette(PaletteOklch::from_color(Srgb::new(rgba.r, rgba.g, rgba.b)));
+        let rgba = gpui_bridge::preview_rgba(hsla);
+        let mut spec = Self::from_palette(PaletteOklch::from_color_unclamped(Srgb::new(rgba.r, rgba.g, rgba.b)));
         spec.a = rgba.a;
-        spec.clamp_to_srgb_gamut()
+        spec
     }
 
     fn uses_rainbow_hue_track(&self) -> bool {
@@ -192,7 +192,6 @@ impl ColorSpecification for Oklch {
 
     fn apply_channel_slider_value(&mut self, channel_name: &str, proposed: f32) {
         self.set_value(channel_name, proposed);
-        self.clamp_spec_to_gamut();
     }
 
     fn clamp_spec_to_gamut(&mut self) {
@@ -400,11 +399,16 @@ mod tests {
     }
 
     #[test]
-    fn lightness_slider_remains_draggable_via_full_clamp() {
+    fn lightness_slider_preserves_chroma_outside_srgb() {
         let mut spec = Oklch::from_hsla(gpui::hsla(0.55, 1.0, 0.5, 1.0));
         let original_l = spec.l;
+        let original_c = spec.c;
         spec.apply_channel_slider_value(Oklch::LIGHTNESS, 0.85);
         assert!((spec.l - original_l).abs() > 1e-4);
-        assert!(!spec.is_out_of_gamut());
+        assert_eq!(spec.c, original_c);
+        assert!(spec.is_out_of_gamut());
+        let source = spec.to_color_value();
+        let _ = spec.to_hsla();
+        assert_eq!(spec.to_color_value(), source);
     }
 }

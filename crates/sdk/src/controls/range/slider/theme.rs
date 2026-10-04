@@ -103,6 +103,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn prepared_theme_retains_p3_source_and_supplies_mapped_control_colors() {
+        use crate::color::{ColorValue, GamutMapping, gpui_bridge};
+        let mut source = crate::theme::LumaThemeMode::light();
+        let p3 = ColorValue::display_p3(1.0, 0.0, 0.0, 0.37);
+        source.palette.state.selected.background = p3;
+        let tokens = ThemeTokens::from_source(source, GamutMapping::CssLocalMinde).unwrap();
+        let theme = DefaultSliderTheme::new(tokens);
+        let painted = theme.resolve(ControlSize::Md, None, InteractionState::default());
+        assert_eq!(painted.fill_background, gpui_bridge::to_hsla(p3, GamutMapping::CssLocalMinde).unwrap());
+        assert_eq!(theme.tokens.source().palette.state.selected.background, p3);
+        let disabled = theme.resolve(ControlSize::Md, None, InteractionState { disabled: true, ..Default::default() });
+        assert_ne!(disabled.fill_background, painted.fill_background);
+        assert_eq!(theme.tokens.source().palette.state.selected.background, p3);
+    }
+
+    #[test]
     fn default_slider_geometry_uses_metric_tokens() {
         let theme = DefaultSliderTheme::default();
         let small = theme.resolve(ControlSize::Sm, None, InteractionState::default());

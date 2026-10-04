@@ -66,7 +66,8 @@ pub use controls::{
     ToolbarTextFieldItemBuilder, slide_panel_background, slide_panel_panels_look,
 };
 pub use provenance::{
-    ColorSource, LookResolver, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, TypographySource,
+    ColorSource, LookResolver, ResolvedSourceColor, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography,
+    TypographySource,
 };
 pub use usage::all_shadcn_theme_usages;
 

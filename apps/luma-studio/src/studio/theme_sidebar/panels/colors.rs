@@ -1,7 +1,8 @@
+use crate::studio::color_format::{format_color_readout, parse_color_input};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, Entity, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent, TextFieldLook, TextFieldLookOverride};
 use gpui_luma::vstack;
@@ -12,14 +13,14 @@ use super::super::model::TOKEN_CATEGORIES;
 use super::super::parsing::effective_token_color;
 use super::{category_item_id, expanded_category_ids, spawn_compact_textfield};
 use crate::studio::app::LumaStudioApp;
-use crate::studio::color_format::{format_compact_hsla, parse_compact_hsla};
+use gpui_luma::color::ColorValue;
 use crate::studio::controls::color_picker::{ColorPickerEvent, ColorPickerPopover};
 use crate::studio::overrides::StudioOverrides;
 use crate::studio::token_color_row::token_color_row;
 
 pub struct ColorsPanel {
     look: Arc<ShadcnLook>,
-    global_overrides: HashMap<String, Hsla>,
+    global_overrides: HashMap<String, ColorValue>,
     token_fields: HashMap<String, TextField>,
     token_pickers: HashMap<String, Entity<ColorPickerPopover>>,
     token_accordion: Entity<AccordionControl>,
@@ -66,7 +67,7 @@ impl ColorsPanel {
                 let token_key = token.to_string();
                 subscriptions.push(cx.subscribe(&field, move |app, _, event: &TextFieldEvent, cx| {
                     if let TextFieldEvent::Change { value } = event {
-                        let Some(color) = parse_compact_hsla(value) else {
+                        let Some(color) = parse_color_input(value) else {
                             return;
                         };
                         app.set_global_color(&token_key, color, cx);
@@ -94,7 +95,7 @@ impl ColorsPanel {
                 let Some(field) = self.token_fields.get(*token) else {
                     continue;
                 };
-                let value = format_compact_hsla(effective_token_color(look, &overrides.global_color_overrides, token));
+                let value = format_color_readout(effective_token_color(look, &overrides.global_color_overrides, token));
                 field.update(cx, |field, cx| field.set_value(value, cx));
             }
         }
@@ -201,7 +202,7 @@ impl ColorsPanel {
 
 fn build_token_pickers(
     look: &Arc<ShadcnLook>,
-    overrides: &HashMap<String, Hsla>,
+    overrides: &HashMap<String, ColorValue>,
     cx: &mut Context<ColorsPanel>,
 ) -> HashMap<String, Entity<ColorPickerPopover>> {
     let mut pickers = HashMap::new();
@@ -263,16 +264,43 @@ pub(super) fn sync_token_field_template<T>(theme: &Arc<ShadcnLook>, field: &Text
 
 fn build_token_fields(
     look: &Arc<ShadcnLook>,
-    global_overrides: &HashMap<String, Hsla>,
+    global_overrides: &HashMap<String, ColorValue>,
     cx: &mut Context<ColorsPanel>,
 ) -> HashMap<String, TextField> {
     let mut token_fields = HashMap::new();
     for (_, tokens) in TOKEN_CATEGORIES {
         for (token, _) in *tokens {
-            let initial = format_compact_hsla(effective_token_color(look, global_overrides, token));
+            let initial = format_color_readout(effective_token_color(look, global_overrides, token));
             let field = spawn_compact_textfield(look, &format!("token-{token}"), initial, cx);
             token_fields.insert(token.to_string(), field);
         }
     }
     token_fields
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod presentation_tests {
+    use super::*;
+
+    #[test]
+    fn token_fields_keep_compact_hsl_after_initialization_and_sync() {
+        let app = gpui::TestAppContext::single();
+        let source = ColorValue::display_p3(1.123456, -0.123456, 0.234567, 0.345678);
+        app.update(|cx| {
+            let look = Arc::new(ShadcnLook::built_in());
+            let mut overrides = StudioOverrides::default();
+            overrides.set_global_color("--primary".to_string(), source);
+            let panel = cx.new(|cx| ColorsPanel::new(look.clone(), &overrides, cx));
+            panel.update(cx, |panel, cx| {
+                for field in panel.token_fields.values() {
+                    assert!(field.read(cx).value().starts_with("hsl("));
+                }
+                panel.sync_global_overrides(&overrides, cx);
+                assert_eq!(panel.global_overrides["--primary"], source);
+                let primary = panel.token_fields["primary"].read(cx).value();
+                assert!(primary.starts_with("hsl("));
+                assert!(!primary.contains("color("));
+            });
+        });
+    }
 }

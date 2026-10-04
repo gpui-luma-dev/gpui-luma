@@ -1,3 +1,4 @@
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge::SrgbRenderCache};
 use gpui::*;
 
 use super::color_spec::{self, ColorChannel, ColorSpecification};
@@ -223,47 +224,99 @@ fn hue_spectrum_color_at_position(context: &ColorSliderTrackContext, position: f
     color_spec::interpolate_rgb(start, end, local_t)
 }
 
-#[allow(dead_code)]
+/// An original gradient color; GPUI previews are prepared separately.
 #[derive(Clone, Debug, PartialEq)]
 pub struct GradientStop {
     pub position: f32,
-    pub color: Hsla,
+    pub color: ColorValue,
+}
+#[derive(Clone, Debug, PartialEq)]
+struct PreviewGradientStop {
+    position: f32,
+    color: Hsla,
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq)]
 pub struct GradientDelegate {
-    pub stops: Vec<GradientStop>,
+    sources: Vec<GradientStop>,
+    stops: Vec<PreviewGradientStop>,
+    mapping: GamutMapping,
 }
-
 impl GradientDelegate {
-    pub fn from_colors(colors: Vec<Hsla>) -> Self {
-        let stops = match colors.len() {
-            0 => Vec::new(),
-            1 => vec![GradientStop { position: 0.0, color: colors[0] }],
-            len => colors
-                .into_iter()
-                .enumerate()
-                .map(|(index, color)| GradientStop { position: index as f32 / (len - 1) as f32, color })
-                .collect(),
-        };
-
-        Self { stops }
+    /// Validate and resolve immutable sRGB paint stops once.
+    pub fn new(mut sources: Vec<GradientStop>, mapping: GamutMapping) -> anyhow::Result<Self> {
+        let mut cache = SrgbRenderCache::default();
+        for stop in &sources {
+            anyhow::ensure!(
+                stop.position.is_finite() && (0.0..=1.0).contains(&stop.position),
+                "gradient stop position must be in 0..=1"
+            );
+            stop.color.validate()?;
+        }
+        sources.sort_by(|a, b| a.position.total_cmp(&b.position));
+        let stops = sources
+            .iter()
+            .map(|stop| {
+                Ok(PreviewGradientStop { position: stop.position, color: cache.resolve_hsla(stop.color, mapping)? })
+            })
+            .collect::<anyhow::Result<Vec<_>>>()?;
+        Ok(Self { sources, stops, mapping })
+    }
+    pub fn from_colors(colors: Vec<ColorValue>) -> anyhow::Result<Self> {
+        let len = colors.len();
+        let sources = colors
+            .into_iter()
+            .enumerate()
+            .map(|(index, color)| GradientStop {
+                position: if len <= 1 { 0.0 } else { index as f32 / (len - 1) as f32 },
+                color,
+            })
+            .collect();
+        Self::new(sources, GamutMapping::CssLocalMinde)
+    }
+    pub fn source_stops(&self) -> &[GradientStop] {
+        &self.sources
+    }
+    pub fn mapping(&self) -> GamutMapping {
+        self.mapping
+    }
+    /// Sample the retained sources, without using current-backend preview colors.
+    pub fn source_at_position(&self, position: f32, space: ColorInterpolation) -> anyhow::Result<ColorValue> {
+        anyhow::ensure!(position.is_finite() && (0.0..=1.0).contains(&position), "gradient position must be in 0..=1");
+        let first = self.sources.first().ok_or_else(|| anyhow::anyhow!("cannot sample an empty gradient"))?;
+        if position <= first.position {
+            return Ok(first.color);
+        }
+        for pair in self.sources.windows(2) {
+            let [start, end] = pair else {
+                continue;
+            };
+            if position <= end.position {
+                let span = end.position - start.position;
+                if span <= f32::EPSILON {
+                    return Ok(end.color);
+                }
+                return color_spec::interpolate_source(
+                    start.color,
+                    end.color,
+                    (position - start.position) / span,
+                    space,
+                );
+            }
+        }
+        Ok(self.sources.last().map(|stop| stop.color).unwrap_or(first.color))
     }
 }
-
-fn gradient_stops(delegate: &GradientDelegate, context: &ColorSliderTrackContext) -> Vec<GradientStop> {
-    let mut stops = delegate.stops.clone();
-    stops.sort_by(|left, right| left.position.total_cmp(&right.position));
-
+fn gradient_stops(delegate: &GradientDelegate, context: &ColorSliderTrackContext) -> Vec<PreviewGradientStop> {
     if context.reversed {
-        stops
-            .into_iter()
+        delegate
+            .stops
+            .iter()
             .rev()
-            .map(|stop| GradientStop { position: 1.0 - stop.position, color: stop.color })
+            .map(|stop| PreviewGradientStop { position: 1.0 - stop.position, color: stop.color })
             .collect()
     } else {
-        stops
+        delegate.stops.clone()
     }
 }
 
@@ -726,9 +779,14 @@ mod tests {
 
     #[::core::prelude::v1::test]
     fn gradient_delegate_uses_explicit_stop_positions_for_sampling() {
-        let delegate = GradientDelegate {
-            stops: vec![GradientStop { position: 0.2, color: black() }, GradientStop { position: 0.8, color: white() }],
-        };
+        let delegate = GradientDelegate::new(
+            vec![
+                GradientStop { position: 0.2, color: gpui_luma::color::gpui_bridge::from_hsla(black()) },
+                GradientStop { position: 0.8, color: gpui_luma::color::gpui_bridge::from_hsla(white()) },
+            ],
+            GamutMapping::CssLocalMinde,
+        )
+        .unwrap();
         let context = test_track_context(0.0..1.0);
 
         assert_eq!(delegate.get_color_for_context(&context, 0.0), black());
@@ -741,14 +799,17 @@ mod tests {
 
     #[::core::prelude::v1::test]
     fn gradient_delegate_from_colors_evenly_spaces_stops() {
-        let delegate = GradientDelegate::from_colors(vec![black(), white(), black()]);
+        let delegate = GradientDelegate::from_colors(
+            vec![black(), white(), black()].into_iter().map(gpui_luma::color::gpui_bridge::from_hsla).collect(),
+        )
+        .unwrap();
 
         assert_eq!(
             delegate.stops,
             vec![
-                GradientStop { position: 0.0, color: black() },
-                GradientStop { position: 0.5, color: white() },
-                GradientStop { position: 1.0, color: black() },
+                PreviewGradientStop { position: 0.0, color: black() },
+                PreviewGradientStop { position: 0.5, color: white() },
+                PreviewGradientStop { position: 1.0, color: black() },
             ]
         );
     }
@@ -821,5 +882,29 @@ mod tests {
         let preview = HueDelegate.get_color_for_context(&context, 210.0 / 360.0);
 
         assert_ne!(preview, spec.to_hsla());
+    }
+}
+
+#[cfg(test)]
+mod gradient_source_tests {
+    use super::*;
+    #[::core::prelude::v1::test]
+    fn p3_stops_and_sample_are_independent_of_preview_mapping() {
+        let source = ColorValue::display_p3(1.1, -0.1, 0.2, 0.345678);
+        let stops = vec![GradientStop { position: 0.0, color: source }, GradientStop { position: 1.0, color: source }];
+        let mapped = GradientDelegate::new(stops.clone(), GamutMapping::CssLocalMinde).unwrap();
+        let clipped = GradientDelegate::new(stops.clone(), GamutMapping::Clip).unwrap();
+        assert_eq!(mapped.source_stops(), stops);
+        assert_eq!(mapped.source_at_position(0.0, ColorInterpolation::Lab).unwrap(), source);
+        for space in [ColorInterpolation::Rgb, ColorInterpolation::Hsl, ColorInterpolation::Lab] {
+            assert_eq!(mapped.source_at_position(0.5, space).unwrap(), clipped.source_at_position(0.5, space).unwrap());
+        }
+        assert!(
+            !mapped
+                .source_at_position(0.5, ColorInterpolation::Rgb)
+                .unwrap()
+                .is_in_gamut(gpui_luma::color::Gamut::Srgb)
+                .unwrap()
+        );
     }
 }

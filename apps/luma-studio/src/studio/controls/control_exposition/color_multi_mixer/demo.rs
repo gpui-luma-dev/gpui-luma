@@ -228,6 +228,10 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
 
     fn handle_slider_event(&mut self, channel_name: &'static str, proposed: f32, cx: &mut Context<Self>) {
         self.spec.apply_channel_slider_value(channel_name, proposed);
+        // This existing Studio demo explicitly opts into gamut-clamped interaction.
+        if self.subtitle == Some("Gamut-clamped") {
+            self.spec.clamp_spec_to_gamut();
+        }
         self.sync_sliders(cx);
         cx.notify();
     }
@@ -298,7 +302,7 @@ impl<S: ColorSpecification> Render for ColorSpaceMixerState<S> {
                 )
             })
             .child(
-                ColorSwatch::new(color)
+                ColorSwatch::new(self.spec.to_color_value())
                     .checkerboard(true)
                     .height(px(44.0))
                     .rounded(px(composition_inset_radius(look))),

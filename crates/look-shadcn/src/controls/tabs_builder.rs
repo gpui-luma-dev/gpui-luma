@@ -191,7 +191,7 @@ mod tests {
         for (source, expected) in [("", None), ("[common.tabs.content]\nfade_in_ms = 175", Some(175))] {
             let stylesheet = crate::stylesheet::StylesheetConfig::parse(source).unwrap();
             let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, stylesheet).unwrap();
-            let copy = look.with_color_overrides(&Default::default());
+            let copy = look.with_color_overrides(&Default::default()).unwrap();
             assert_eq!(copy.common_stylesheet(), look.common_stylesheet());
             let tabs = Tabs::new("custom").tab_with("one", "One", |_, _| gpui::div());
             assert_eq!(tabs.contents.len(), 1);

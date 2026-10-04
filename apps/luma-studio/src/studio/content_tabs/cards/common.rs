@@ -11,29 +11,6 @@ pub enum AvatarSize {
     Md,
 }
 
-fn rgb_hex(r: u8, g: u8, b: u8) -> u32 {
-    (u32::from(r) << 16) | (u32::from(g) << 8) | u32::from(b)
-}
-
-pub fn parse_hex_color(raw: &str) -> Option<Hsla> {
-    let hex = raw.trim().trim_start_matches('#');
-    match hex.len() {
-        3 => {
-            let r = u8::from_str_radix(&hex[0..1].repeat(2), 16).ok()?;
-            let g = u8::from_str_radix(&hex[1..2].repeat(2), 16).ok()?;
-            let b = u8::from_str_radix(&hex[2..3].repeat(2), 16).ok()?;
-            Some(gpui::rgb(rgb_hex(r, g, b)).into())
-        }
-        6 => {
-            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
-            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
-            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-            Some(gpui::rgb(rgb_hex(r, g, b)).into())
-        }
-        _ => None,
-    }
-}
-
 pub fn card(
     id: impl Into<SharedString>,
     look: &Arc<ShadcnLook>,

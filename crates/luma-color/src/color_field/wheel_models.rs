@@ -2,7 +2,9 @@
 
 use super::model::{ColorFieldModel2D, ColorFieldModelKind};
 use crate::color_slider::color_spec::Hsv;
-use gpui::{Hsla, hsla};
+use gpui::Hsla;
+use gpui_luma::color::gpui_bridge;
+use palette::convert::FromColorUnclamped;
 use std::f32::consts::TAU;
 
 const WHITE_MIX_HUE_WHEEL_CACHE_KEY: u64 = 0x1001;
@@ -45,7 +47,7 @@ pub struct WhiteMixHueWheelModel;
 
 impl_wheel_model!(WhiteMixHueWheelModel, WHITE_MIX_HUE_WHEEL_CACHE_KEY, |_hsv, uv| {
     let (hue, saturation) = wheel_hs_from_uv(uv);
-    let hue_rgb = hsla(hue / 360.0, 1.0, 0.5, 1.0).to_rgb();
+    let hue_rgb = gpui_bridge::preview_rgba(gpui_bridge::from_palette_hsla(palette::Hsla::new(hue, 1.0, 0.5, 1.0)));
     let sat = saturation.clamp(0.0, 1.0);
 
     rgba_to_hsla(
@@ -61,7 +63,7 @@ pub struct HslWheelModel;
 
 impl_wheel_model!(HslWheelModel, HSL_WHEEL_CACHE_KEY, |hsv, uv| {
     let (hue, saturation) = wheel_hs_from_uv(uv);
-    hsla(hue / 360.0, saturation, hsv.v.clamp(0.0, 1.0), hsv.a.clamp(0.0, 1.0))
+    gpui_bridge::from_palette_hsla(palette::Hsla::new(hue, saturation, hsv.v.clamp(0.0, 1.0), hsv.a.clamp(0.0, 1.0)))
 });
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -69,7 +71,7 @@ pub struct GammaCorrectedHsvWheelModel;
 
 impl_wheel_model!(GammaCorrectedHsvWheelModel, GAMMA_HSV_WHEEL_CACHE_KEY, |_hsv, uv| {
     let (hue, saturation) = wheel_hs_from_uv(uv);
-    let hue_rgb = Hsv { h: hue, s: 1.0, v: 1.0, a: 1.0 }.to_hsla_ext().to_rgb();
+    let hue_rgb = gpui_bridge::preview_rgba(Hsv { h: hue, s: 1.0, v: 1.0, a: 1.0 }.to_hsla_ext());
     let sat = saturation.clamp(0.0, 1.0);
 
     let white_linear = 1.0;
@@ -114,51 +116,23 @@ fn wheel_uv_from_hs(hue_degrees: f32, saturation: f32) -> (f32, f32) {
 }
 
 fn rgba_to_hsla(r: f32, g: f32, b: f32, a: f32) -> Hsla {
-    let r = r.clamp(0.0, 1.0);
-    let g = g.clamp(0.0, 1.0);
-    let b = b.clamp(0.0, 1.0);
-    let a = a.clamp(0.0, 1.0);
-
-    let max = r.max(g.max(b));
-    let min = r.min(g.min(b));
-    let delta = max - min;
-    let lightness = (max + min) * 0.5;
-
-    if delta <= f32::EPSILON {
-        return hsla(0.0, 0.0, lightness, a);
-    }
-
-    let saturation = delta / (1.0 - (2.0 * lightness - 1.0).abs()).max(f32::EPSILON);
-    let hue_sector = if (max - r).abs() <= f32::EPSILON {
-        ((g - b) / delta).rem_euclid(6.0)
-    } else if (max - g).abs() <= f32::EPSILON {
-        (b - r) / delta + 2.0
-    } else {
-        (r - g) / delta + 4.0
-    };
-    let hue_degrees = 60.0 * hue_sector;
-
-    hsla((hue_degrees / 360.0).rem_euclid(1.0), saturation.clamp(0.0, 1.0), lightness.clamp(0.0, 1.0), a)
+    gpui_bridge::preview_hsla(gpui::Rgba {
+        r: r.clamp(0.0, 1.0),
+        g: g.clamp(0.0, 1.0),
+        b: b.clamp(0.0, 1.0),
+        a: a.clamp(0.0, 1.0),
+    })
 }
 
 fn srgb_to_linear(v: f32) -> f32 {
-    let v = v.clamp(0.0, 1.0);
-    if v <= 0.04045 {
-        v / 12.92
-    } else {
-        ((v + 0.055) / 1.055).powf(2.4)
-    }
+    palette::Srgb::new(v.clamp(0.0, 1.0), 0.0, 0.0).into_linear().red
 }
 
 fn linear_to_srgb(v: f32) -> f32 {
-    let v = v.clamp(0.0, 1.0);
-    if v <= 0.0031308 {
-        v * 12.92
-    } else {
-        1.055 * v.powf(1.0 / 2.4) - 0.055
-    }
+    palette::Srgb::from_linear(palette::LinSrgb::new(v.clamp(0.0, 1.0), 0.0, 0.0)).red
 }
 
+// Keep the existing wheel boundary-chroma policy; this only prepares its sRGB preview.
 fn oklch_to_srgb_gamut_mapped(l: f32, c: f32, h_degrees: f32) -> (f32, f32, f32) {
     if let Some(rgb) = oklch_to_srgb_if_in_gamut(l, c, h_degrees) {
         return rgb;
@@ -182,21 +156,8 @@ fn oklch_to_srgb_gamut_mapped(l: f32, c: f32, h_degrees: f32) -> (f32, f32, f32)
 }
 
 fn oklch_to_srgb_if_in_gamut(l: f32, c: f32, h_degrees: f32) -> Option<(f32, f32, f32)> {
-    let h = h_degrees.to_radians();
-    let a = c * h.cos();
-    let b = c * h.sin();
-
-    let l_ = l + 0.396_337_78 * a + 0.215_803_76 * b;
-    let m_ = l - 0.105_561_346 * a - 0.063_854_17 * b;
-    let s_ = l - 0.089_484_18 * a - 1.291_485_5 * b;
-
-    let l3 = l_ * l_ * l_;
-    let m3 = m_ * m_ * m_;
-    let s3 = s_ * s_ * s_;
-
-    let r_linear = 4.076_741_7 * l3 - 3.307_711_6 * m3 + 0.230_969_94 * s3;
-    let g_linear = -1.268_438 * l3 + 2.609_757_4 * m3 - 0.341_319_38 * s3;
-    let b_linear = -0.004_196_086_3 * l3 - 0.703_418_6 * m3 + 1.707_614_7 * s3;
+    let rgb = palette::LinSrgb::from_color_unclamped(palette::Oklch::new(l, c, h_degrees));
+    let (r_linear, g_linear, b_linear) = (rgb.red, rgb.green, rgb.blue);
 
     if !(0.0..=1.0).contains(&r_linear) || !(0.0..=1.0).contains(&g_linear) || !(0.0..=1.0).contains(&b_linear) {
         return None;
@@ -243,6 +204,20 @@ mod tests {
         approx_eq(rgb.r, 1.0);
         approx_eq(rgb.g, 1.0);
         approx_eq(rgb.b, 1.0);
+    }
+
+    #[test]
+    fn palette_conversion_matches_existing_wheel_samples() {
+        for (l, c, h, expected) in [
+            (0.7, 0.1, 45.0, [0.82511896, 0.54151577, 0.41329536]),
+            (0.5, 0.08, 240.0, [0.20278569, 0.4117124, 0.5499151]),
+            (0.8, 0.05, 120.0, [0.72615576, 0.7646376, 0.6243464]),
+        ] {
+            let (r, g, b) = oklch_to_srgb_if_in_gamut(l, c, h).unwrap();
+            for (actual, expected) in [r, g, b].into_iter().zip(expected) {
+                approx_eq(actual, expected);
+            }
+        }
     }
 
     #[test]

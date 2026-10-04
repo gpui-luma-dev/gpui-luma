@@ -1,5 +1,6 @@
 //! Color picker control exposition — Photoshop-style SV field, hue, and alpha composition.
 
+use gpui_luma::color::gpui_bridge::from_hsla;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -251,7 +252,7 @@ impl Render for ColorPickerDemo {
                     .flex_col()
                     .gap(px(10.0))
                     .child(
-                        ColorSwatch::new(selected)
+                        ColorSwatch::new(from_hsla(selected))
                             .checkerboard(true)
                             .height(px(swatch_height))
                             .rounded(px(composition_inset_radius(look))),

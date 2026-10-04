@@ -11,12 +11,15 @@ use crate::checkerboard_paint::{DEFAULT_CHECKERBOARD_SQUARE_SIZE, paint_masked_c
 use crate::chrome_tokens::swatch_checkerboard_colors;
 use crate::style::ActiveTheme;
 use gpui_luma::controls::button::{ButtonRenderModel, ButtonTemplate};
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 use gpui_luma::theme::ControlSize;
 
 /// Typed payload for a button-backed color swatch.
+/// The source space/components are retained; rendering resolves a cached sRGB preview.
+/// Invalid source values render transparently and can be diagnosed with `ColorValue::validate`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ColorSwatchData {
-    pub color: Hsla,
+    pub color: ColorValue,
     pub size: f32,
     pub radius: f32,
     pub open: bool,
@@ -25,7 +28,13 @@ pub struct ColorSwatchData {
 
 impl Default for ColorSwatchData {
     fn default() -> Self {
-        Self { color: hsla(0.0, 0.0, 0.0, 1.0), size: 30.0, radius: 4.0, open: false, checkerboard: true }
+        Self {
+            color: ColorValue::srgb(0.0, 0.0, 0.0, 1.0),
+            size: 30.0,
+            radius: 4.0,
+            open: false,
+            checkerboard: true,
+        }
     }
 }
 
@@ -36,7 +45,9 @@ impl ButtonTemplate<ColorSwatchData> for ColorSwatchButtonTemplate {
     fn render(&self, model: &ButtonRenderModel<ColorSwatchData>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let size = px(model.data.size);
         let radius = px(model.data.radius);
-        let color = model.data.color;
+        // Invalid source values have a transparent preview; the bridge exposes validation errors.
+        let color =
+            gpui_bridge::cached_rgba(model.data.color, GamutMapping::CssLocalMinde, cx).unwrap_or(rgba(0x00000000));
         let is_dark = cx.theme().is_dark();
         let border_color = cx.theme().border;
         let checkerboard = model.data.checkerboard;
@@ -98,7 +109,8 @@ impl ButtonTemplate<ColorSwatchData> for ColorSwatchButtonTemplate {
 ///   antialiasing.
 #[derive(IntoElement)]
 pub struct ColorSwatch {
-    color: Hsla,
+    color: ColorValue,
+    mapping: GamutMapping,
     size: ControlSize,
     custom_height: Option<Pixels>,
     corner_radius: Option<Pixels>,
@@ -111,15 +123,23 @@ impl ColorSwatch {
     ///
     /// The default sizing is `ControlSize::Md`, but callers can override the
     /// height or rounded radius after construction.
-    pub fn new(color: impl Into<Hsla>) -> Self {
+    /// Invalid source values render transparently; validate untrusted input before use.
+    pub fn new(color: ColorValue) -> Self {
         Self {
-            color: color.into(),
+            color,
+            mapping: GamutMapping::CssLocalMinde,
             size: ControlSize::Md,
             custom_height: None,
             corner_radius: None,
             checkerboard: false,
             bordered: true,
         }
+    }
+
+    /// Select the preview mapping policy without changing the source color.
+    pub fn mapping(mut self, mapping: GamutMapping) -> Self {
+        self.mapping = mapping;
+        self
     }
 
     /// Sets the semantic swatch size.
@@ -196,7 +216,7 @@ impl RenderOnce for ColorSwatch {
         let is_dark = chrome.is_dark();
         let height = self.custom_height.unwrap_or_else(|| Self::height_for_size(self.size));
         let radius = self.corner_radius.unwrap_or_else(|| Self::default_radius(self.size));
-        let color = self.color;
+        let color = gpui_bridge::cached_rgba(self.color, self.mapping, cx).unwrap_or(rgba(0x00000000));
         let border_width = if self.bordered { px(1.0) } else { px(0.0) };
         let corner_radii = Corners::all(radius);
 
@@ -246,5 +266,25 @@ impl RenderOnce for ColorSwatch {
             .absolute()
             .size_full(),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui_luma::color::gpui_bridge::SrgbRenderCache;
+
+    #[::core::prelude::v1::test]
+    fn swatch_source_survives_clone_and_preview_resolution() {
+        for source in [ColorValue::display_p3(1.0, 0.0, 0.0, 0.4), ColorValue::oklch(0.7, 0.3, 30.0, 0.8)] {
+            let data = ColorSwatchData { color: source, ..Default::default() };
+            let cloned = data.clone();
+            let swatch = ColorSwatch::new(cloned.color);
+            let preview = SrgbRenderCache::default().resolve(swatch.color, swatch.mapping).unwrap();
+            assert_eq!(preview.a, source.alpha());
+            assert_eq!(data.color, source);
+            assert_eq!(cloned.color, source);
+            assert_eq!(swatch.color, source);
+        }
     }
 }

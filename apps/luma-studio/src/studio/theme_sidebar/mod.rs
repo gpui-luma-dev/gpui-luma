@@ -28,7 +28,7 @@ use crate::studio::overrides::StudioOverrides;
 
 pub struct ThemeSidebar {
     look: std::sync::Arc<ShadcnLook>,
-    global_overrides: std::collections::HashMap<String, gpui::Hsla>,
+    global_overrides: std::collections::HashMap<String, gpui_luma::color::ColorValue>,
     theme_selector: SearchSelector,
     theme_selector_swatches: Arc<RwLock<ThemeSelectorSwatchCache>>,
     theme_selector_selected_id: Arc<RwLock<SharedString>>,

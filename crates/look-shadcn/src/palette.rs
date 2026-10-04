@@ -5,7 +5,8 @@ use gpui_luma::theme::ThemeMode;
 
 use crate::catalog::CssTokenMap;
 use crate::color::with_alpha;
-use crate::state_color::{algorithmic_state_color, catalog_state_color, token_base_from_palette};
+use crate::state_color::{algorithmic_state_source, catalog_state_source, token_base_from_palette};
+use gpui_luma::color::{GamutMapping, gpui_bridge};
 use crate::tokens::ShadcnToken;
 use gpui_luma::theme::InteractionLayer;
 
@@ -87,12 +88,18 @@ fn filled_role(
     foreground_key: &str,
     theme_mode: ThemeMode,
 ) -> Result<ShadcnActionRole> {
-    let background = catalog.color(background_key)?;
+    let source = catalog.source_color(background_key)?;
+    let background = gpui_bridge::to_hsla(source, GamutMapping::CssLocalMinde)?;
     let foreground = catalog.color(foreground_key)?;
-    let hover_background = catalog_state_color(catalog, background_key, InteractionLayer::Hovered)
-        .unwrap_or_else(|| algorithmic_state_color(background, InteractionLayer::Hovered, theme_mode, true));
-    let pressed_background = catalog_state_color(catalog, background_key, InteractionLayer::Pressed)
-        .unwrap_or_else(|| algorithmic_state_color(background, InteractionLayer::Pressed, theme_mode, true));
+    let state = |layer| -> Result<Hsla> {
+        let derived = match catalog_state_source(catalog, background_key, layer) {
+            Some(value) => value,
+            None => algorithmic_state_source(source, layer, theme_mode, true)?,
+        };
+        gpui_bridge::to_hsla(derived, GamutMapping::CssLocalMinde)
+    };
+    let hover_background = state(InteractionLayer::Hovered)?;
+    let pressed_background = state(InteractionLayer::Pressed)?;
     Ok(ShadcnActionRole { background, foreground, hover_background, pressed_background, border: background })
 }
 

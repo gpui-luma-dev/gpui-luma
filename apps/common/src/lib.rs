@@ -34,6 +34,21 @@ mod tests {
     use std::collections::HashMap;
 
     #[test]
+    fn bundled_themes_parse_source_colors_and_build_previews() {
+        for theme in built_in_themes() {
+            let look =
+                ShadcnLook::from_css_str(theme.css).unwrap_or_else(|error| panic!("theme {}: {error}", theme.id));
+            for tokens in [look.light_tokens(), look.dark_tokens()] {
+                for token in gpui_luma_look_shadcn::ShadcnToken::ALL {
+                    if tokens.catalog.get(token.css_name()).is_some() {
+                        tokens.catalog.source_color(token.css_name()).unwrap().validate().unwrap();
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
     fn fallback_look_matches_bundled_fallback_in_both_modes() {
         let look = fallback_look();
         let fallback = ShadcnLook::built_in();

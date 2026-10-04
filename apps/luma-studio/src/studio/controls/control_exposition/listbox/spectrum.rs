@@ -1,4 +1,5 @@
 //! A large, concrete collection with a richer item template for virtualization testing.
+use gpui_luma::color::gpui_bridge::from_hsla;
 use std::{cell::Cell, ops::Range, sync::Arc};
 
 use gpui::{Context, Div, Entity, Hsla, Render, SharedString, Window, div, hsla, prelude::*, px};
@@ -83,7 +84,7 @@ fn spectrum_item_template(model: &ListBoxItemRenderModel<'_, SpectrumItem>, look
                 div()
                     .flex_1()
                     .min_w(px(0.0))
-                    .child(ColorSwatch::new(color).height(px(30.0)).rounded(px(0.0)).bordered(false))
+                    .child(ColorSwatch::new(from_hsla(color)).height(px(30.0)).rounded(px(0.0)).bordered(false))
             }));
     hstack! { gap=6.0 align=center;
         SelectionMark { selected: model.selected },

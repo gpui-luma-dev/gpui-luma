@@ -1,12 +1,14 @@
+use crate::studio::color_format::{preview_color, parse_compact_hsla};
+use gpui_luma::color::gpui_bridge;
 use std::collections::HashMap;
 
 use gpui::Hsla;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::model::{DEFAULT_RADIUS_REM, DEFAULT_SPACING_REM, REM_IN_PX};
-use crate::studio::export::{catalog_color_for_token, token_css_name};
+use crate::studio::export::{token_css_name};
 use crate::studio::overrides::StudioOverrides;
-use crate::studio::content_tabs::cards::parse_hex_color;
+use gpui_luma::color::ColorValue;
 
 fn parse_number(value: &str, min: f32, max: f32) -> Option<f32> {
     value
@@ -61,7 +63,8 @@ pub(super) fn effective_spacing_rem(look: &ShadcnLook, overrides: &StudioOverrid
     })
 }
 
-pub(super) fn format_shadow_color_input(color: Hsla) -> String {
+pub(super) fn format_shadow_color_input(color: ColorValue) -> String {
+    let color = preview_color(color);
     format!(
         "hsla({} {}% {}% / {})",
         (color.h * 360.0).round(),
@@ -75,51 +78,34 @@ pub(super) fn format_shadow_number(value: f32) -> String {
     format_number(value, 100.0, 2)
 }
 
-pub(super) fn parse_shadow_color_input(raw: &str) -> Option<Hsla> {
-    let trimmed = raw.trim();
-    if trimmed.is_empty() {
-        return None;
+pub(super) fn parse_shadow_color_input(raw: &str) -> Option<ColorValue> {
+    if let Some(color) = parse_compact_hsla(raw) {
+        return Some(gpui_bridge::from_hsla(color));
     }
-
-    if let Some(color) = parse_hex_color(trimmed) {
-        return Some(color);
+    let input = raw.trim();
+    let hex = input.strip_prefix('#').unwrap_or(input);
+    if matches!(hex.len(), 3 | 6) && hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return ColorValue::parse_css(&format!("#{hex}")).ok();
     }
-
-    let inner = if trimmed.len() >= 5 && trimmed[..4].eq_ignore_ascii_case("hsl(") && trimmed.ends_with(')') {
-        &trimmed[4..trimmed.len() - 1]
-    } else if trimmed.len() >= 6 && trimmed[..5].eq_ignore_ascii_case("hsla(") && trimmed.ends_with(')') {
-        &trimmed[5..trimmed.len() - 1]
-    } else {
-        return None;
-    };
-
-    let normalized = inner.replace(',', " ");
-    let (channels, alpha) = match normalized.split_once('/') {
-        Some((channels, alpha)) => (channels.trim(), Some(alpha.trim())),
-        None => (normalized.trim(), None),
-    };
-    let mut parts = channels.split_whitespace();
-    let hue = parts.next()?.parse::<f32>().ok()? / 360.0;
-    let saturation = parts.next()?.trim_end_matches('%').parse::<f32>().ok()? / 100.0;
-    let lightness = parts.next()?.trim_end_matches('%').parse::<f32>().ok()? / 100.0;
-    let alpha = alpha.and_then(|value| value.parse::<f32>().ok()).unwrap_or(1.0);
-
-    Some(Hsla {
-        h: hue.rem_euclid(1.0),
-        s: saturation.clamp(0.0, 1.0),
-        l: lightness.clamp(0.0, 1.0),
-        a: alpha.clamp(0.0, 1.0),
-    })
+    ColorValue::parse_css(input).ok()
 }
 
-pub(super) fn effective_token_color(look: &ShadcnLook, global_overrides: &HashMap<String, Hsla>, token: &str) -> Hsla {
-    token_color_with_fallback(look, global_overrides, token, gpui::hsla(0.0, 0.0, 0.5, 1.0))
+pub(super) fn effective_token_color(
+    look: &ShadcnLook,
+    global_overrides: &HashMap<String, ColorValue>,
+    token: &str,
+) -> ColorValue {
+    let css_name = token_css_name(token);
+    global_overrides
+        .get(&css_name)
+        .copied()
+        .or_else(|| look.token_source_color(token).ok())
+        .unwrap_or(ColorValue::srgb(0.5, 0.5, 0.5, 1.0))
 }
-
-/// Resolves a theme token when present; otherwise uses `fallback` (e.g. chrome defaults).
+/// Resolve only the sidebar painting boundary to the current backend.
 pub(super) fn token_color_with_fallback(
     look: &ShadcnLook,
-    global_overrides: &HashMap<String, Hsla>,
+    global_overrides: &HashMap<String, ColorValue>,
     token: &str,
     fallback: Hsla,
 ) -> Hsla {
@@ -127,24 +113,26 @@ pub(super) fn token_color_with_fallback(
     global_overrides
         .get(&css_name)
         .copied()
-        .or_else(|| catalog_color_for_token(look, token))
+        .or_else(|| look.token_source_color(token).ok())
+        .and_then(|source| {
+            gpui_luma::color::gpui_bridge::to_hsla(source, gpui_luma::color::GamutMapping::CssLocalMinde).ok()
+        })
         .unwrap_or(fallback)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{format_shadow_color_input, parse_shadow_color_input};
-    use gpui::hsla;
-
+    use super::*;
     #[test]
-    fn shadow_color_input_round_trips_hsla_alpha() {
-        let original = hsla(0.625, 0.42, 0.31, 0.37);
+    fn shadow_color_input_restores_compact_hsla_presentation() {
+        let original = gpui_bridge::from_hsla(gpui::hsla(0.625, 0.42, 0.31, 0.37));
         let formatted = format_shadow_color_input(original);
-        let parsed = parse_shadow_color_input(&formatted).expect("formatted HSLA should parse");
-
-        assert!((parsed.h - original.h).abs() < 0.002);
-        assert!((parsed.s - original.s).abs() < 0.005);
-        assert!((parsed.l - original.l).abs() < 0.005);
-        assert!((parsed.a - original.a).abs() < 0.005);
+        assert_eq!(formatted, "hsla(225 42% 31% / 0.37)");
+        let parsed = preview_color(parse_shadow_color_input(&formatted).unwrap());
+        assert!((parsed.a - 0.37).abs() < 0.005);
+        assert!(parse_shadow_color_input("#3E63DD").is_some());
+        assert!(parse_shadow_color_input("3E63DD").is_some());
+        let p3 = ColorValue::display_p3(1.0, 0.0, 0.0, 0.5);
+        assert!(format_shadow_color_input(p3).starts_with("hsla("));
     }
 }

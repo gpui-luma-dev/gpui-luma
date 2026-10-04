@@ -38,7 +38,60 @@ pub struct LumaThemeMode {
     pub elevation: LumaElevation,
 }
 
-pub type ThemeTokens = LumaThemeMode;
+/// Prepared theme tokens: source colors and an immutable current-backend preview.
+/// Metrics/typography remain editable; color edits require rebuilding the palette.
+#[derive(Clone, Debug)]
+pub struct ThemeTokens {
+    pub palette: SrgbPalette,
+    pub metrics: MetricTokens,
+    pub typography: LumaTypography,
+    pub elevation: SrgbElevation,
+}
+
+impl ThemeTokens {
+    pub fn light() -> Self {
+        Self {
+            palette: SrgbPalette::light(),
+            metrics: MetricTokens::default(),
+            typography: LumaTypography::default(),
+            elevation: SrgbElevation::light(),
+        }
+    }
+    pub fn dark() -> Self {
+        Self {
+            palette: SrgbPalette::dark(),
+            metrics: MetricTokens::default(),
+            typography: LumaTypography::default(),
+            elevation: SrgbElevation::dark(),
+        }
+    }
+
+    /// Resolve once before passing tokens to control themes; invalid colors return a field-specific error.
+    pub fn from_source(source: LumaThemeMode, mapping: crate::color::GamutMapping) -> anyhow::Result<Self> {
+        Ok(Self {
+            palette: source.palette.snapshot_srgb(mapping)?,
+            metrics: source.metrics,
+            typography: source.typography,
+            elevation: source.elevation.snapshot_srgb(mapping)?,
+        })
+    }
+
+    /// Retrieve a standalone source copy, including current non-color tokens.
+    pub fn source(&self) -> LumaThemeMode {
+        LumaThemeMode {
+            palette: self.palette.source().clone(),
+            metrics: self.metrics,
+            typography: self.typography.clone(),
+            elevation: self.elevation.source().clone(),
+        }
+    }
+}
+
+impl Default for ThemeTokens {
+    fn default() -> Self {
+        Self::light()
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct ThemeModes {
@@ -134,7 +187,10 @@ mod tests {
 
     #[test]
     fn default_tokens_use_light_structural_palette() {
-        assert_eq!(LumaThemeMode::light().palette.app.background, ThemeTokens::default().palette.app.background);
+        assert_eq!(
+            LumaThemeMode::light().palette.app.background,
+            ThemeTokens::default().palette.source().app.background
+        );
     }
 
     #[test]

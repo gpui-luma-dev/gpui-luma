@@ -23,7 +23,6 @@ gpui-luma-color.workspace = true
 anyhow.workspace = true
 serde = { workspace = true, features = ["derive"] }
 toml.workspace = true
-palette.workspace = true
 lucide-svg-static.workspace = true
 
 [lints]

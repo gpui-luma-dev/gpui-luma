@@ -1,4 +1,20 @@
 use gpui::Hsla;
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
+
+/// Project only the Studio readout; the model retains its original source.
+pub(crate) fn preview_color(color: ColorValue) -> Hsla {
+    gpui_bridge::to_hsla(color, GamutMapping::CssLocalMinde).unwrap_or_else(|_| gpui::transparent_black())
+}
+
+/// Keep Studio's established compact HSL presentation separate from storage syntax.
+pub(crate) fn format_color_readout(color: ColorValue) -> String {
+    format_compact_hsla(preview_color(color))
+}
+
+/// Accept the established HSL input, with source parsing handled internally.
+pub(crate) fn parse_color_input(raw: &str) -> Option<ColorValue> {
+    parse_compact_hsla(raw).map(gpui_bridge::from_hsla).or_else(|| ColorValue::parse_css(raw).ok())
+}
 
 /// Formats an ordinary theme color for Luma Studio's compact readouts.
 pub(crate) fn format_compact_hsla(color: Hsla) -> String {
@@ -69,7 +85,20 @@ fn compact_alpha(alpha: f32) -> String {
 mod tests {
     use gpui::{Hsla, hsla};
 
-    use super::{format_compact_hsla, parse_compact_hsla};
+    use super::{format_compact_hsla, parse_compact_hsla, format_color_readout, parse_color_input};
+    use gpui_luma::color::{ColorValue, gpui_bridge};
+
+    #[test]
+    fn source_storage_syntax_does_not_appear_in_readouts() {
+        let source = ColorValue::display_p3(1.123456, -0.123456, 0.234567, 0.345678);
+        let readout = format_color_readout(source);
+        assert!(readout.starts_with("hsl("));
+        assert!(!readout.contains("color("));
+        assert_eq!(
+            parse_color_input("hsl(-30 120% -10%)"),
+            parse_compact_hsla("hsl(-30 120% -10%)").map(gpui_bridge::from_hsla)
+        );
+    }
 
     #[test]
     fn formats_ordinary_color() {

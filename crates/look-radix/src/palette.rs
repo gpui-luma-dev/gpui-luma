@@ -7,6 +7,8 @@
 
 use gpui_luma::theme::ThemeMode;
 
+use crate::colors::family_source_steps;
+#[cfg(test)]
 use crate::colors::family_steps;
 use crate::scale::{CUSTOM_PALETTE, ColorScale, ModeScales, ScalePair};
 
@@ -218,12 +220,14 @@ fn mode_scales(accent: Accent, gray: Gray, mode: ThemeMode) -> ModeScales {
     }
 }
 
-/// Falls back to a flat scale only if the catalog is missing a family, which it never is for
-/// the names these enums can produce.
+/// Missing or invalid catalog families use a flat black fallback. Catalog tests
+/// validate all named families, so bundled enum selections take the parsed path.
 fn named_scale(palette: &'static str, mode: ThemeMode) -> ColorScale {
-    family_steps(mode, palette)
-        .map(|steps| ColorScale::named(palette, steps))
-        .unwrap_or_else(|| ColorScale::new([gpui::black(); crate::scale::SCALE_LEN]))
+    family_source_steps(mode, palette)
+        .ok()
+        .flatten()
+        .and_then(|steps| ColorScale::named(palette, steps, gpui_luma::color::GamutMapping::CssLocalMinde).ok())
+        .unwrap_or_else(ColorScale::black)
 }
 
 #[cfg(test)]
