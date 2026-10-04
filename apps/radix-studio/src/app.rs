@@ -175,7 +175,7 @@ impl RadixStudioApp {
             let screens = screens.downgrade();
             move |_, _, cx| {
                 if let Some(screens) = screens.upgrade() {
-                    screens.update(cx, |_, cx| cx.notify());
+                    screens.update(cx, |tabs, cx| tabs.refresh_content(cx));
                 }
             }
         }));
@@ -439,8 +439,8 @@ impl RadixStudioApp {
             }
             RadixStudioTab::Developer => self
                 .developer
-                .get_or_insert_with(|| developer::State::new(&self.theme, cx))
-                .render(&self.theme, self.shadow_editor.clone(), cx),
+                .get_or_insert_with(|| developer::State::new(&self.theme, self.shadow_editor.clone(), cx))
+                .render(cx),
         };
         let body = vstack! { gap=28; content };
         div()

@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, App, Subscription, div, prelude::*, px};
-use gpui_luma::controls::tabs::{Tabs, TabsItem, TabsEvent};
+use gpui_luma::controls::tabs::{Tabs, TabsEvent};
 use super::tooltip_playground::TooltipPlayground;
 use gpui_luma::vstack;
 use gpui_luma_look_radix::{Look, SemanticRole};
@@ -13,36 +13,32 @@ use crate::controls::ClassicShadowEditor;
 
 pub struct State {
     tabs: Entity<Tabs>,
-    tooltips: Entity<TooltipPlayground>,
     _subscription: Subscription,
 }
 impl State {
-    pub fn new<M: 'static>(look: &Arc<Look>, cx: &mut Context<M>) -> Self {
+    pub fn new<M: 'static>(look: &Arc<Look>, shadow_editor: Entity<ClassicShadowEditor>, cx: &mut Context<M>) -> Self {
+        let tooltips = cx.new(|cx| TooltipPlayground::new(look, cx));
+        let button_look = Arc::clone(look);
         let tabs = gpui_luma_look_radix::Tabs::new("developer-tabs")
             .look(look)
             .line()
             .with_template_modifier(|root, _| root.flex_none().debug_selector(|| "developer-tabs".into()))
-            .items([TabsItem::new("buttons").label("Buttons"), TabsItem::new("tooltips").label("Tooltips")])
+            .tab_with("buttons", "Buttons", move |_, _| button_page(&button_look, shadow_editor.clone()))
+            .tab("tooltips", "Tooltips", tooltips)
             .active("buttons")
             .spawn(cx);
         let subscription = cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| cx.notify());
-        let tooltips = cx.new(|cx| TooltipPlayground::new(look, cx));
-        Self { tabs, tooltips, _subscription: subscription }
+        Self { tabs, _subscription: subscription }
     }
-    pub fn render(&self, look: &Arc<Look>, shadow_editor: Entity<ClassicShadowEditor>, cx: &App) -> AnyElement {
-        let content = if self.tabs.read(cx).active_id().map(|id| id.as_ref()) == Some("tooltips") {
-            self.tooltips.clone().into_any_element()
-        } else {
-            button_page(look, shadow_editor)
-        };
+    pub fn render(&self, cx: &App) -> AnyElement {
         div()
             .flex_none()
             .flex()
             .flex_col()
             .gap(px(24.0))
             .w_full()
-            .child(self.tabs.clone())
-            .child(content)
+            .child(self.tabs.read(cx).tab_list())
+            .child(self.tabs.read(cx).body())
             .into_any_element()
     }
 }
@@ -74,9 +70,7 @@ mod tests {
     use gpui::{Bounds, Pixels, Render, TestAppContext, Window};
 
     struct Page {
-        look: Arc<Look>,
         state: State,
-        shadow: Entity<ClassicShadowEditor>,
         bounds: HashMap<String, Bounds<Pixels>>,
         _bounds_subscription: Subscription,
     }
@@ -90,7 +84,7 @@ mod tests {
                     .flex()
                     .flex_col()
                     .overflow_y_scroll()
-                    .child(self.state.render(&self.look, self.shadow.clone(), cx)),
+                    .child(self.state.render(cx)),
             )
         }
     }
@@ -100,19 +94,14 @@ mod tests {
         let look = Arc::new(Look::built_in());
         let (page, cx) = app.add_window_view(|window, cx| {
             window.activate_window();
-            let state = State::new(&look, cx);
+            let shadow = cx.new(|cx| ClassicShadowEditor::new(&look, cx));
+            let state = State::new(&look, shadow, cx);
             let bounds_subscription = cx.subscribe(&state.tabs, |this: &mut Page, _, event: &TabsEvent, _| {
                 if let TabsEvent::ItemBoundsChanged { tab_id, bounds } = event {
                     this.bounds.insert(tab_id.to_string(), *bounds);
                 }
             });
-            Page {
-                look: look.clone(),
-                state,
-                shadow: cx.new(|cx| ClassicShadowEditor::new(&look, cx)),
-                bounds: HashMap::new(),
-                _bounds_subscription: bounds_subscription,
-            }
+            Page { state, bounds: HashMap::new(), _bounds_subscription: bounds_subscription }
         });
         cx.simulate_resize(gpui::size(px(800.0), px(600.0)));
         cx.run_until_parked();

@@ -32,6 +32,7 @@ pub struct Tabs {
     pub(super) contents: HashMap<SharedString, TabsContent>,
     pub(super) body_transition: VisualTransition,
     body_motion: crate::theme::stylesheet::ResolvedMotion,
+    inherited_motion: crate::theme::stylesheet::ResolvedMotion,
     list_slot: Option<Entity<TabsList>>,
     body_slot: Option<Entity<TabsBody>>,
     pub(super) active_id: Option<SharedString>,
@@ -102,6 +103,7 @@ impl Tabs {
             contents: builder.model.contents,
             body_transition: VisualTransition::new(1.0, body_motion.duration),
             body_motion,
+            inherited_motion: builder.model.inherited_motion,
             list_slot: None,
             body_slot: None,
             active_id,
@@ -134,9 +136,55 @@ impl Tabs {
         div().w_full().min_h_0().flex_1().flex().flex_col().children(self.body_slot.clone())
     }
 
-    /// Body-motion configuration captured at construction, with its source.
+    /// Effective body motion for future selections, with its source.
     pub fn body_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
         self.body_motion.clone().with_override(None, self.animated)
+    }
+
+    /// Override the body fade for future selections. `None` restores the look
+    /// snapshot captured by the builder; explicit zero disables future fades.
+    /// A running transition keeps its duration and progress.
+    pub fn set_fade_in(&mut self, duration: Option<std::time::Duration>, cx: &mut Context<Self>) {
+        self.body_motion = self.inherited_motion.clone().with_override(duration, true);
+        cx.notify();
+    }
+
+    /// Replace or attach a panel for an existing item. Unknown IDs return false.
+    /// Selection and running motion are preserved, including for disabled items.
+    pub fn set_content(&mut self, id: impl Into<SharedString>, content: TabsContent, cx: &mut Context<Self>) -> bool {
+        let id = id.into();
+        if !self.items.iter().any(|item| item.id() == &id) {
+            return false;
+        }
+        let was_navigation_only = self.contents.is_empty();
+        self.contents.insert(id, content);
+        if was_navigation_only {
+            cx.notify();
+        }
+        self.refresh_content(cx);
+        true
+    }
+
+    /// Remove a panel without removing its navigation item or changing selection.
+    pub fn remove_content(&mut self, id: impl AsRef<str>, cx: &mut Context<Self>) -> bool {
+        let requested_id = id.as_ref();
+        let Some(id) = self.contents.keys().find(|id| id.as_ref() == requested_id).cloned() else {
+            return false;
+        };
+        self.contents.remove(&id);
+        if self.contents.is_empty() {
+            cx.notify();
+        }
+        self.refresh_content(cx);
+        true
+    }
+
+    /// Reinvoke the selected presenter on the next body render. Does not emit
+    /// selection events or restart motion, and invalidates only the body slot.
+    pub fn refresh_content(&mut self, cx: &mut Context<Self>) {
+        if let Some(body) = &self.body_slot {
+            body.update(cx, |_, cx| cx.notify());
+        }
     }
 
     fn restart_body_transition(&mut self) {
@@ -152,9 +200,13 @@ impl Tabs {
         self.active_id.as_ref()
     }
 
+    /// Silently select an enabled item. Invalid IDs and the current ID are no-ops.
+    /// Observe the entity for programmatic changes; user actions emit `TabsEvent`.
     pub fn set_active(&mut self, active_id: impl Into<SharedString>, cx: &mut Context<Self>) {
         let active_id = active_id.into();
-        if !self.items.iter().any(|item| item.enabled && item.id() == &active_id) {
+        if self.active_id.as_ref() == Some(&active_id)
+            || !self.items.iter().any(|item| item.enabled && item.id() == &active_id)
+        {
             return;
         }
 
@@ -166,11 +218,15 @@ impl Tabs {
             self.retarget_indicator_for_active(true);
         }
         self.group.update(cx, |group, cx| {
+            group.set_active(active_id.clone(), cx);
             group.set_selected_ids([active_id], cx);
         });
         cx.notify();
     }
 
+    /// Silently replace items, retaining panels for surviving IDs. An invalid or
+    /// disabled selection falls back to the first enabled item (or none).
+    /// Item updates finish the current body fade.
     pub fn set_items(&mut self, items: impl IntoIterator<Item = TabsItem>, cx: &mut Context<Self>) {
         self.items = items.into_iter().collect();
         self.contents.retain(|id, _| self.items.iter().any(|item| item.id() == id));
