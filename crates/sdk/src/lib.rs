@@ -7,6 +7,7 @@
 pub mod macros;
 
 pub mod infra;
+pub mod color;
 pub mod motion;
 pub mod controls;
 pub mod focus;

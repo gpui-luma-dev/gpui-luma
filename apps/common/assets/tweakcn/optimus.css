@@ -52,7 +52,7 @@
   --shadow-md: 2px 2px 12px 2px hsl(0 0% 0% / 0.50), 2px 2px 4px 1px hsl(0 0% 0% / 0.50);
   --shadow-lg: 2px 2px 12px 2px hsl(0 0% 0% / 0.50), 2px 4px 6px 1px hsl(0 0% 0% / 0.50);
   --shadow-xl: 2px 2px 12px 2px hsl(0 0% 0% / 0.50), 2px 8px 10px 1px hsl(0 0% 0% / 0.50);
-  --shadow-2xl: 2px 2px 12px 2px hsl(0 0% 0% / 1.25);
+  --shadow-2xl: 2px 2px 12px 2px hsl(0 0% 0% / 1);
   --tracking-normal: 0.1em;
   --spacing: 0.25rem;
 }
@@ -107,7 +107,7 @@
   --shadow-md: 4px 4px 20px 4px hsl(0 0% 0% / 0.80), 4px 2px 4px 3px hsl(0 0% 0% / 0.80);
   --shadow-lg: 4px 4px 20px 4px hsl(0 0% 0% / 0.80), 4px 4px 6px 3px hsl(0 0% 0% / 0.80);
   --shadow-xl: 4px 4px 20px 4px hsl(0 0% 0% / 0.80), 4px 8px 10px 3px hsl(0 0% 0% / 0.80);
-  --shadow-2xl: 4px 4px 20px 4px hsl(0 0% 0% / 2.00);
+  --shadow-2xl: 4px 4px 20px 4px hsl(0 0% 0% / 1);
 }
 
 @theme inline {

@@ -21,6 +21,19 @@ pub struct ResolvedColor {
     pub source: ColorSource,
 }
 
+/// Retained source color and provenance, separate from a backend preview.
+#[derive(Clone, Debug)]
+pub struct ResolvedSourceColor {
+    pub value: crate::color::ColorValue,
+    pub source: ColorSource,
+}
+
+impl ResolvedSourceColor {
+    pub fn srgb_preview(self, mapping: crate::color::GamutMapping) -> anyhow::Result<ResolvedColor> {
+        Ok(ResolvedColor { value: crate::color::gpui_bridge::to_hsla(self.value, mapping)?, source: self.source })
+    }
+}
+
 /// Origin of a resolved color. Sources are intentionally not CSS-only.
 #[derive(Clone, Debug)]
 pub enum ColorSource {

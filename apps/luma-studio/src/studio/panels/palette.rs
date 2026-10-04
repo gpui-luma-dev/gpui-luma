@@ -1,3 +1,4 @@
+use crate::studio::color_format::format_color_readout;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -9,7 +10,7 @@ use gpui_luma_look_shadcn::{ShadcnLook, ShadcnModeTokens, ShadcnTextRole, Shadcn
 
 use crate::studio::export::token_css_name;
 use crate::studio::overrides::StudioOverrides;
-use crate::studio::color_format::format_compact_hsla;
+use gpui_luma::color::{ColorValue, gpui_bridge};
 use crate::studio::app::LumaStudioApp;
 use crate::studio::controls::color_picker::{ColorPickerEvent, ColorPickerPopover};
 
@@ -82,7 +83,7 @@ const PALETTE_CATEGORIES: &[(&str, &[(&str, &str)])] = &[
 
 struct TokenSwatchRow {
     label: &'static str,
-    color: gpui::Hsla,
+    color: ColorValue,
     picker: Entity<ColorPickerPopover>,
 }
 
@@ -224,7 +225,7 @@ fn build_palette_pickers(
 
 fn mode_palette(
     mode_tokens: &ShadcnModeTokens,
-    global_overrides: &HashMap<String, gpui::Hsla>,
+    global_overrides: &HashMap<String, ColorValue>,
     pickers: &HashMap<String, Entity<ColorPickerPopover>>,
 ) -> ModePalette {
     let palette = mode_tokens.palette;
@@ -252,16 +253,16 @@ fn mode_palette(
 
 fn token_color_for_mode(
     mode_tokens: &ShadcnModeTokens,
-    global_overrides: &HashMap<String, gpui::Hsla>,
+    global_overrides: &HashMap<String, ColorValue>,
     token: &str,
     fallback: gpui::Hsla,
-) -> gpui::Hsla {
+) -> ColorValue {
     let css_name = token_css_name(token);
     global_overrides
         .get(&css_name)
         .copied()
-        .or_else(|| mode_tokens.catalog.color(token).ok())
-        .unwrap_or(fallback)
+        .or_else(|| mode_tokens.catalog.source_color(token).ok())
+        .unwrap_or_else(|| gpui_bridge::from_hsla(fallback))
 }
 
 fn render_palette_sections(
@@ -330,7 +331,7 @@ fn render_token_cell(
                 .font_family("Monaco")
                 .typography_style(code_style)
                 .text_color(muted_text)
-                .child(format_compact_hsla(row.color)),
+                .child(format_color_readout(row.color)),
         }
         .w(px(PALETTE_CELL_TEXT_WIDTH))
         .flex_shrink_0(),

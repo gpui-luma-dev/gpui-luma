@@ -319,7 +319,12 @@ fn remaining_common_geometry_reaches_paint_and_inspection() {
 #[test]
 fn selected_configuration_survives_color_copies_token_edits_and_live_replacement() {
     let look = custom_look();
-    let copy = look.with_color_overrides(&HashMap::from([("primary".into(), gpui::black())]));
+    let copy = look
+        .with_color_overrides(&HashMap::from([(
+            "primary".into(),
+            gpui_luma::color::ColorValue::srgb(0.0, 0.0, 0.0, 1.0),
+        )]))
+        .unwrap();
     let progress = copy.progress_theme();
     assert_eq!(progress.resolve(true, ControlSize::Md).size, 83.0);
     copy.apply_token_overrides(&HashMap::from([("radius".into(), "10px".into())])).unwrap();

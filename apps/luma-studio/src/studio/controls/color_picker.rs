@@ -1,13 +1,15 @@
+use crate::studio::color_format::format_color_readout;
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClipboardItem, Context, Entity, EventEmitter, Hsla, IntoElement, Render, Subscription, Window,
-    div, prelude::*, px, size,
+    AnyElement, App, ClipboardItem, Context, Entity, EventEmitter, IntoElement, Render, Subscription, Window, div,
+    prelude::*, px, size,
 };
 use gpui_luma_color::{ColorSwatchButtonTemplate, ColorSwatchData};
 use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
 use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldState};
-use gpui_luma_color::color_slider::color_spec::Hsv;
+use gpui_luma_color::color_slider::color_spec::{Hsv, ColorSpecification};
 use gpui_luma_color::color_slider::{
     AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing,
 };
@@ -18,19 +20,17 @@ use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnSize};
 use gpui_luma_look_shadcn as shadcn;
 
-use crate::studio::color_format::format_compact_hsla;
-
 #[derive(Clone, Debug)]
 pub(crate) enum ColorPickerEvent {
-    Change(Hsla),
+    Change(ColorValue),
 }
 
-pub(crate) type ColorPickerChangeHandler = Arc<dyn Fn(Hsla, &mut App) + 'static>;
+pub(crate) type ColorPickerChangeHandler = Arc<dyn Fn(ColorValue, &mut App) + 'static>;
 pub(crate) type ColorPickerContent =
-    Arc<dyn Fn(Hsla, ColorPickerChangeHandler, &mut Window, &mut App) -> AnyElement + 'static>;
+    Arc<dyn Fn(ColorValue, ColorPickerChangeHandler, &mut Window, &mut App) -> AnyElement + 'static>;
 
 pub(crate) struct ColorPickerPopover {
-    color: Hsla,
+    color: ColorValue,
     hsv: Hsv,
     sync: ColorCompositionSync,
     field: Entity<ColorFieldState>,
@@ -48,7 +48,7 @@ impl EventEmitter<ColorPickerEvent> for ColorPickerPopover {}
 impl ColorPickerPopover {
     pub(crate) fn new(
         look: Arc<ShadcnLook>,
-        color: Hsla,
+        color: ColorValue,
         instance_id: impl Into<String>,
         cx: &mut Context<Self>,
     ) -> Self {
@@ -57,7 +57,7 @@ impl ColorPickerPopover {
 
     fn new_with_size(
         look: Arc<ShadcnLook>,
-        color: Hsla,
+        color: ColorValue,
         instance_id: String,
         swatch_size: f32,
         cx: &mut Context<Self>,
@@ -68,7 +68,7 @@ impl ColorPickerPopover {
     #[allow(dead_code)]
     pub(crate) fn new_with_content(
         look: Arc<ShadcnLook>,
-        color: Hsla,
+        color: ColorValue,
         instance_id: impl Into<String>,
         swatch_size: f32,
         content: ColorPickerContent,
@@ -79,14 +79,14 @@ impl ColorPickerPopover {
 
     fn new_with_size_and_content(
         look: Arc<ShadcnLook>,
-        color: Hsla,
+        color: ColorValue,
         instance_id: String,
         swatch_size: f32,
         content: Option<ColorPickerContent>,
         include_copy_button: bool,
         cx: &mut Context<Self>,
     ) -> Self {
-        let hsv = Hsv::from_hsla_ext(color);
+        let hsv = preview_hsv(color);
         let field = cx.new(|_| {
             ColorFieldState::saturation_value(format!("{instance_id}-field"), hsv, sizing::THUMB_SIZE_MEDIUM)
                 .vector()
@@ -153,7 +153,7 @@ impl ColorPickerPopover {
                 let (ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv)) = event else {
                     return;
                 };
-                picker.hsv.a = picker.color.a;
+                picker.hsv.a = picker.color.alpha();
                 picker.hsv.s = hsv.s;
                 picker.hsv.v = hsv.v;
                 picker.sync_controls(cx, false);
@@ -171,15 +171,19 @@ impl ColorPickerPopover {
                 let Some(value) = primary_slider_value(event) else {
                     return;
                 };
-                picker.hsv.a = value;
-                picker.sync_controls(cx, true);
-                picker.emit_change(cx);
+                if let Ok(color) = picker.color.with_alpha(value) {
+                    picker.color = color;
+                    picker.hsv.a = value;
+                    picker.sync_controls(cx, true);
+                    cx.emit(ColorPickerEvent::Change(color));
+                    cx.notify();
+                }
             }),
         ];
         if let Some(copy_button) = &copy_button {
             subscriptions.push(cx.subscribe(copy_button, |picker, _, event: &ButtonEvent, cx| {
                 if matches!(event, ButtonEvent::Click) {
-                    cx.write_to_clipboard(ClipboardItem::new_string(format_compact_hsla(picker.color)));
+                    cx.write_to_clipboard(ClipboardItem::new_string(format_color_readout(picker.color)));
                 }
             }));
         }
@@ -227,16 +231,16 @@ impl ColorPickerPopover {
 
     pub(crate) fn new_palette(
         look: Arc<ShadcnLook>,
-        color: Hsla,
+        color: ColorValue,
         instance_id: impl Into<String>,
         cx: &mut Context<Self>,
     ) -> Self {
         Self::new_with_size_and_content(look, color, instance_id.into(), 55.0, None, true, cx)
     }
 
-    pub(crate) fn set_color(&mut self, color: Hsla, cx: &mut Context<Self>) {
+    pub(crate) fn set_color(&mut self, color: ColorValue, cx: &mut Context<Self>) {
         self.color = color;
-        self.hsv = Hsv::from_hsla_ext(color);
+        self.hsv = preview_hsv(color);
         let swatch_size = self.swatch_size;
         self.button.update(cx, |button, cx| {
             button.set_data(
@@ -248,7 +252,7 @@ impl ColorPickerPopover {
         cx.notify();
     }
 
-    fn set_color_and_emit(&mut self, color: Hsla, cx: &mut Context<Self>) {
+    fn set_color_and_emit(&mut self, color: ColorValue, cx: &mut Context<Self>) {
         self.set_color(color, cx);
         cx.emit(ColorPickerEvent::Change(color));
     }
@@ -269,7 +273,7 @@ impl ColorPickerPopover {
     }
 
     fn emit_change(&mut self, cx: &mut Context<Self>) {
-        self.color = self.hsv.to_hsla_ext();
+        self.color = self.hsv.to_color_value();
         cx.emit(ColorPickerEvent::Change(self.color));
         cx.notify();
     }
@@ -278,5 +282,32 @@ impl ColorPickerPopover {
 impl Render for ColorPickerPopover {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         self.popover.clone()
+    }
+}
+
+fn preview_hsv(source: ColorValue) -> Hsv {
+    Hsv::from_hsla_ext(
+        gpui_bridge::to_hsla(source, GamutMapping::CssLocalMinde).unwrap_or_else(|_| gpui::transparent_black()),
+    )
+}
+#[cfg(all(test, feature = "test-support"))]
+mod source_tests {
+    use super::*;
+    #[test]
+    fn loading_and_syncing_picker_preserve_p3_and_alpha() {
+        let app = gpui::TestAppContext::single();
+        let source = ColorValue::display_p3(1.123456, -0.123456, 0.234567, 0.345678);
+        app.update(|cx| {
+            let picker =
+                cx.new(|cx| ColorPickerPopover::new(Arc::new(ShadcnLook::built_in()), source, "source-test", cx));
+            picker.update(cx, |picker, cx| {
+                assert_eq!(picker.color, source);
+                picker.sync_controls(cx, true);
+                assert_eq!(picker.color, source);
+                let translucent = source.with_alpha(0.456789).unwrap();
+                picker.set_color_and_emit(translucent, cx);
+                assert_eq!(picker.color, translucent);
+            });
+        });
     }
 }

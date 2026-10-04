@@ -128,7 +128,7 @@ mod tests {
             assert_eq!(selected.background, Some(look.resolve_step(ScaleFamily::Color, 3).hsla()));
             assert_eq!(selected.foreground, look.resolve_step(ScaleFamily::Color, 12).hsla());
             let before = selected.background;
-            look.set_accent_seed(gpui::rgb(0xd6409f).into());
+            look.set_accent_seed(gpui_luma::color::gpui_bridge::from_rgba(gpui::rgb(0xd6409f))).unwrap();
             let custom = theme.resolve_row(Default::default(), true, ControlSize::Md);
             assert_ne!(custom.background, before);
             assert_eq!(custom.background, Some(look.resolve_step(ScaleFamily::Color, 3).hsla()));

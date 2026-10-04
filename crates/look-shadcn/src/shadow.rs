@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use anyhow::{Context as _, Result};
-use gpui::{BoxShadow, Hsla, point, px};
+use gpui::{BoxShadow, point, px};
 use crate::catalog::CssTokenMap;
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 
 pub const SHADOW_LADDER_TOKENS: [&str; 8] = [
     "shadow-2xs",
@@ -17,7 +18,7 @@ pub const SHADOW_LADDER_TOKENS: [&str; 8] = [
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ShadowTokenParts {
-    pub color: Hsla,
+    pub color: ColorValue,
     pub blur_px: f32,
     pub spread_px: f32,
     pub offset_x_px: f32,
@@ -25,13 +26,14 @@ pub struct ShadowTokenParts {
 }
 
 impl ShadowTokenParts {
-    pub fn to_css_value(self) -> String {
+    pub fn to_css_value(self) -> Result<String> {
         format_shadow_layer(self.offset_x_px, self.offset_y_px, self.blur_px, self.spread_px, self.color)
     }
 }
 
 /// Generates the standard Shadcn shadow ladder from one editable shadow part set.
-pub fn shadow_ladder_overrides(parts: ShadowTokenParts) -> HashMap<String, String> {
+pub fn shadow_ladder_overrides(parts: ShadowTokenParts) -> Result<HashMap<String, String>> {
+    parts.color.validate()?;
     let levels = [
         ("shadow-2xs", 0.5, None),
         ("shadow-xs", 0.5, None),
@@ -46,53 +48,33 @@ pub fn shadow_ladder_overrides(parts: ShadowTokenParts) -> HashMap<String, Strin
     levels
         .into_iter()
         .map(|(token, primary_alpha, secondary)| {
-            let primary = ShadowTokenParts { color: with_alpha(parts.color, parts.color.a * primary_alpha), ..parts };
+            let primary = ShadowTokenParts {
+                color: parts.color.with_alpha((parts.color.alpha() * primary_alpha).clamp(0.0, 1.0))?,
+                ..parts
+            };
             let value = if let Some((offset_y_factor, blur_px, spread_px, _)) = secondary {
                 let secondary = format_shadow_layer(
                     parts.offset_x_px,
                     parts.offset_y_px * offset_y_factor,
                     blur_px,
                     spread_px,
-                    with_alpha(parts.color, parts.color.a),
-                );
-                format!("{}, {}", primary.to_css_value(), secondary)
+                    parts.color,
+                )?;
+                format!("{}, {}", primary.to_css_value()?, secondary)
             } else {
-                primary.to_css_value()
+                primary.to_css_value()?
             };
-            (token.to_string(), value)
+            Ok((token.to_string(), value))
         })
         .collect()
 }
 
-fn with_alpha(mut color: Hsla, alpha: f32) -> Hsla {
-    color.a = alpha.clamp(0.0, 1.0);
-    color
-}
-
-fn format_shadow_layer(offset_x: f32, offset_y: f32, blur: f32, spread: f32, color: Hsla) -> String {
-    format!(
-        "{}px {}px {}px {}px hsl({} {}% {}% / {})",
-        format_shadow_number(offset_x),
-        format_shadow_number(offset_y),
-        format_shadow_number(blur),
-        format_shadow_number(spread),
-        (color.h * 360.0).round(),
-        (color.s * 100.0).round(),
-        (color.l * 100.0).round(),
-        format_shadow_number(color.a),
-    )
-}
-
-fn format_shadow_number(value: f32) -> String {
-    let rounded = (value * 100.0).round() / 100.0;
-    let mut text = format!("{rounded:.2}");
-    while text.contains('.') && text.ends_with('0') {
-        text.pop();
-    }
-    if text.ends_with('.') {
-        text.pop();
-    }
-    text
+fn format_shadow_layer(offset_x: f32, offset_y: f32, blur: f32, spread: f32, color: ColorValue) -> Result<String> {
+    anyhow::ensure!(
+        [offset_x, offset_y, blur, spread].iter().all(|v| v.is_finite()) && blur >= 0.0,
+        "invalid shadow geometry"
+    );
+    Ok(format!("{offset_x}px {offset_y}px {blur}px {spread}px {}", color.to_css()?))
 }
 
 pub(crate) fn parse_shadow_token(catalog: &CssTokenMap, token_key: &str) -> Result<Vec<BoxShadow>> {
@@ -100,9 +82,32 @@ pub(crate) fn parse_shadow_token(catalog: &CssTokenMap, token_key: &str) -> Resu
     parse_box_shadow_value(raw)
 }
 
+pub(crate) fn parse_shadow_source_token(catalog: &CssTokenMap, token_key: &str) -> Result<Vec<ShadowTokenParts>> {
+    let raw = catalog.get(token_key).with_context(|| format!("missing css token `--{token_key}`"))?;
+    if raw.trim() == "none" {
+        return Ok(Vec::new());
+    }
+    split_shadow_layers(raw).into_iter().map(parse_shadow_layer).collect()
+}
+
 fn parse_box_shadow_value(raw: &str) -> Result<Vec<BoxShadow>> {
+    if raw.trim() == "none" {
+        return Ok(Vec::new());
+    }
     let layers = split_shadow_layers(raw);
-    layers.into_iter().map(parse_shadow_layer).collect()
+    layers
+        .into_iter()
+        .map(|layer| {
+            let source = parse_shadow_layer(layer)?;
+            Ok(BoxShadow {
+                color: gpui_bridge::to_hsla(source.color, GamutMapping::CssLocalMinde)?,
+                offset: point(px(source.offset_x_px), px(source.offset_y_px)),
+                blur_radius: px(source.blur_px),
+                spread_radius: px(source.spread_px),
+                inset: false,
+            })
+        })
+        .collect()
 }
 
 fn split_shadow_layers(raw: &str) -> Vec<&str> {
@@ -133,34 +138,32 @@ fn split_shadow_layers(raw: &str) -> Vec<&str> {
     layers
 }
 
-fn parse_shadow_layer(layer: &str) -> Result<BoxShadow> {
+fn parse_shadow_layer(layer: &str) -> Result<ShadowTokenParts> {
     let (lengths, color_raw) = split_lengths_and_color(layer)?;
     let mut parts = lengths.split_whitespace();
     let offset_x = next_length(&mut parts, "shadow offset-x")?;
     let offset_y = next_length(&mut parts, "shadow offset-y")?;
     let blur = next_length(&mut parts, "shadow blur")?;
-    let spread = next_length(&mut parts, "shadow spread").unwrap_or(0.0);
+    let spread = parts
+        .next()
+        .map(|raw| parse_length_px(raw).with_context(|| format!("invalid shadow spread `{raw}`")))
+        .transpose()?
+        .unwrap_or(0.0);
     if parts.next().is_some() {
         anyhow::bail!("unexpected extra values in shadow layer `{layer}`");
     }
 
-    let color = catalog_color(color_raw)?;
-
-    Ok(BoxShadow {
-        color,
-        offset: point(px(offset_x), px(offset_y)),
-        blur_radius: px(blur),
-        spread_radius: px(spread),
-        inset: false,
-    })
+    let color = ColorValue::parse_css(color_raw)?;
+    anyhow::ensure!(
+        [offset_x, offset_y, blur, spread].iter().all(|v| v.is_finite()) && blur >= 0.0,
+        "invalid shadow geometry"
+    );
+    Ok(ShadowTokenParts { color, offset_x_px: offset_x, offset_y_px: offset_y, blur_px: blur, spread_px: spread })
 }
 
 fn split_lengths_and_color(layer: &str) -> Result<(&str, &str)> {
-    if let Some(index) = layer.find("hsl") {
-        let (lengths, color) = layer.split_at(index);
-        return Ok((lengths.trim(), color.trim()));
-    }
-    if let Some(index) = layer.find('#') {
+    let index = ["hsl", "oklch(", "color(", "#", "transparent"].iter().filter_map(|prefix| layer.find(prefix)).min();
+    if let Some(index) = index {
         let (lengths, color) = layer.split_at(index);
         return Ok((lengths.trim(), color.trim()));
     }
@@ -186,12 +189,6 @@ fn parse_length_px(raw: &str) -> Option<f32> {
     value.parse().ok()
 }
 
-fn catalog_color(raw: &str) -> Result<Hsla> {
-    let mut tokens = std::collections::BTreeMap::new();
-    tokens.insert("_shadow".to_string(), raw.to_string());
-    CssTokenMap::from_map(tokens).color("_shadow")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -213,18 +210,56 @@ mod tests {
     #[test]
     fn shadow_ladder_preserves_parts_and_restores_scale() {
         let parts = ShadowTokenParts {
-            color: Hsla { h: 0.5, s: 0.4, l: 0.2, a: 0.2 },
+            color: ColorValue::srgb(0.12, 0.28, 0.28, 0.2),
             blur_px: 10.0,
             spread_px: -2.0,
             offset_x_px: 3.0,
             offset_y_px: 4.0,
         };
-        let ladder = shadow_ladder_overrides(parts);
+        let ladder = shadow_ladder_overrides(parts).unwrap();
 
         assert_eq!(ladder.len(), SHADOW_LADDER_TOKENS.len());
         assert!(ladder["shadow-2xs"].contains("0.1"));
         assert!(ladder["shadow"].contains(", 3px 4px 2px -1px"));
         assert!(ladder["shadow-xl"].contains("3px 32px 10px -1px"));
         assert!(ladder["shadow-2xl"].contains("0.5"));
+    }
+}
+
+#[cfg(test)]
+mod source_tests {
+    use super::*;
+    #[test]
+    fn ladder_round_trip_preserves_wide_gamut_components_and_geometry() {
+        let parts = ShadowTokenParts {
+            color: ColorValue::display_p3(1.123456, -0.123456, 0.234567, 0.123456),
+            blur_px: 10.123456,
+            spread_px: -2.123456,
+            offset_x_px: 1.123456,
+            offset_y_px: 4.123456,
+        };
+        let css = parts.to_css_value().unwrap();
+        assert_eq!(parse_shadow_layer(&css).unwrap(), parts);
+        let ladder = shadow_ladder_overrides(parts).unwrap();
+        assert_eq!(parse_shadow_layer(split_shadow_layers(&ladder["shadow"])[0]).unwrap(), parts);
+        assert!(parse_box_shadow_value(&css).is_ok());
+    }
+    #[test]
+    fn ladder_rejects_invalid_source_alpha_before_deriving_opacity() {
+        let parts = ShadowTokenParts {
+            color: ColorValue::display_p3(1.0, 0.0, 0.0, 2.0),
+            blur_px: 10.0,
+            spread_px: 0.0,
+            offset_x_px: 0.0,
+            offset_y_px: 1.0,
+        };
+        assert!(shadow_ladder_overrides(parts).is_err());
+    }
+
+    #[test]
+    fn malformed_geometry_is_rejected() {
+        for css in ["0px 1px 2px broken #000", "0px 1px -2px #000", "NaN 1px 2px #000"] {
+            assert!(parse_box_shadow_value(css).is_err());
+        }
     }
 }

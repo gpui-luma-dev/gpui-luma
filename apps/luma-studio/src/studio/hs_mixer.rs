@@ -3,9 +3,9 @@
 
 use std::collections::HashMap;
 
-use gpui::{Hsla, hsla};
+use gpui_luma::color::ColorValue;
+use anyhow::Result;
 use gpui_luma::theme::ThemeMode;
-use palette::{FromColor, Hsl as PaletteHsl, Oklch, Srgb};
 
 pub const PALETTE_VIVIDNESS_AMOUNT_MIN: f32 = -1.0;
 pub const PALETTE_VIVIDNESS_AMOUNT_MAX: f32 = 1.0;
@@ -35,21 +35,22 @@ pub fn clamp_palette_temperature_amount(amount: f32) -> f32 {
 
 pub fn derive_palette_hs_color_overrides(
     mode: ThemeMode,
-    primary: Hsla,
+    primary: ColorValue,
     palette_hs: &ThemePaletteHsOverride,
-) -> HashMap<String, Hsla> {
+) -> Result<HashMap<String, ColorValue>> {
     if !palette_hs.active {
-        return HashMap::new();
+        return Ok(HashMap::new());
     }
 
-    let base = hsla_to_oklch(primary);
+    let source = primary.to_oklcha_unclamped()?;
+    let base = BaseHueChroma { hue: source.hue.into_raw_degrees(), chroma: source.chroma };
     let hue = adjusted_hue(base.hue, palette_hs.temperature_amount);
     let chroma = adjusted_chroma(base.chroma, palette_hs.vividness_amount);
 
-    let chroma_bg = round3(chroma * 0.5);
-    let chroma_text = round3(chroma.min(0.1));
-    let chroma_action = round3(chroma.max(0.1));
-    let chroma_alert = round3(chroma.max(0.05));
+    let chroma_bg = chroma * 0.5;
+    let chroma_text = chroma.min(0.1);
+    let chroma_action = chroma.max(0.1);
+    let chroma_alert = chroma.max(0.05);
     let hue_secondary = (hue + 180.0).rem_euclid(360.0);
 
     let palette = match mode {
@@ -89,7 +90,7 @@ pub fn derive_palette_hs_color_overrides(
         },
     };
 
-    generated_palette_to_token_overrides(palette, mode)
+    Ok(generated_palette_to_token_overrides(palette, mode))
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -100,38 +101,25 @@ struct BaseHueChroma {
 
 #[derive(Clone, Copy, Debug)]
 struct GeneratedPalette {
-    bg_dark: Hsla,
-    bg: Hsla,
-    bg_light: Hsla,
-    text: Hsla,
-    text_muted: Hsla,
-    highlight: Hsla,
-    border: Hsla,
-    border_muted: Hsla,
-    primary: Hsla,
-    secondary: Hsla,
-    danger: Hsla,
-    warning: Hsla,
-    success: Hsla,
-    info: Hsla,
-    on_color: Hsla,
+    bg_dark: ColorValue,
+    bg: ColorValue,
+    bg_light: ColorValue,
+    text: ColorValue,
+    text_muted: ColorValue,
+    highlight: ColorValue,
+    border: ColorValue,
+    border_muted: ColorValue,
+    primary: ColorValue,
+    secondary: ColorValue,
+    danger: ColorValue,
+    warning: ColorValue,
+    success: ColorValue,
+    info: ColorValue,
+    on_color: ColorValue,
 }
 
-fn hsla_to_oklch(color: Hsla) -> BaseHueChroma {
-    let hsl = PaletteHsl::new(color.h.rem_euclid(1.0) * 360.0, color.s.clamp(0.0, 1.0), color.l.clamp(0.0, 1.0));
-    let oklch = Oklch::from_color(Srgb::from_color(hsl));
-    BaseHueChroma { hue: oklch.hue.into_positive_degrees(), chroma: oklch.chroma.max(0.0) }
-}
-
-fn oklch_color(lightness: f32, chroma: f32, hue: f32) -> Hsla {
-    let oklch = Oklch::new(lightness.clamp(0.0, 1.0), chroma.max(0.0), hue.rem_euclid(360.0));
-    let hsl: PaletteHsl = PaletteHsl::from_color(Srgb::from_color(oklch));
-    hsla(
-        hsl.hue.into_positive_degrees() / 360.0,
-        hsl.saturation.clamp(0.0, 1.0),
-        hsl.lightness.clamp(0.0, 1.0),
-        1.0,
-    )
+fn oklch_color(lightness: f32, chroma: f32, hue: f32) -> ColorValue {
+    ColorValue::oklch(lightness, chroma, hue, 1.0)
 }
 
 fn adjusted_hue(base_hue: f32, amount: f32) -> f32 {
@@ -158,7 +146,7 @@ fn adjusted_chroma(base_chroma: f32, amount: f32) -> f32 {
     }
 }
 
-fn generated_palette_to_token_overrides(palette: GeneratedPalette, mode: ThemeMode) -> HashMap<String, Hsla> {
+fn generated_palette_to_token_overrides(palette: GeneratedPalette, mode: ThemeMode) -> HashMap<String, ColorValue> {
     let mut overrides = HashMap::new();
 
     insert(&mut overrides, "background", palette.bg);
@@ -206,16 +194,12 @@ fn generated_palette_to_token_overrides(palette: GeneratedPalette, mode: ThemeMo
     overrides
 }
 
-fn insert(overrides: &mut HashMap<String, Hsla>, token: &str, color: Hsla) {
+fn insert(overrides: &mut HashMap<String, ColorValue>, token: &str, color: ColorValue) {
     overrides.insert(format!("--{token}"), color);
 }
 
 fn lerp(from: f32, to: f32, amount: f32) -> f32 {
     from + (to - from) * amount.clamp(0.0, 1.0)
-}
-
-fn round3(value: f32) -> f32 {
-    (value * 1000.0).round() / 1000.0
 }
 
 fn interpolate_hue(from: f32, to: f32, amount: f32) -> f32 {
@@ -234,12 +218,27 @@ mod tests {
     use super::{ThemePaletteHsOverride, derive_palette_hs_color_overrides, shortest_hue_delta};
 
     #[test]
+    fn palette_generation_retains_oklch_before_preview_mapping() {
+        let source = gpui_luma::color::ColorValue::oklch(0.65, 0.345678, 412.12345, 1.0);
+        let overrides = derive_palette_hs_color_overrides(
+            ThemeMode::Dark,
+            source,
+            &ThemePaletteHsOverride { active: true, vividness_amount: 0.0, temperature_amount: 0.0 },
+        )
+        .unwrap();
+        let generated = overrides["--primary"].to_oklcha_unclamped().unwrap();
+        assert_eq!(generated.chroma, 0.345678);
+        assert!(!overrides["--primary"].is_in_gamut(gpui_luma::color::Gamut::Srgb).unwrap());
+    }
+
+    #[test]
     fn identity_override_returns_no_palette_changes() {
         let overrides = derive_palette_hs_color_overrides(
             ThemeMode::Dark,
-            gpui::hsla(0.6, 0.7, 0.5, 1.0),
+            gpui_luma::color::gpui_bridge::from_hsla(gpui::hsla(0.6, 0.7, 0.5, 1.0)),
             &ThemePaletteHsOverride::default(),
-        );
+        )
+        .unwrap();
         assert!(overrides.is_empty());
     }
 
@@ -253,9 +252,10 @@ mod tests {
     fn non_identity_override_generates_primary() {
         let overrides = derive_palette_hs_color_overrides(
             ThemeMode::Dark,
-            gpui::hsla(0.6, 0.7, 0.5, 1.0),
+            gpui_luma::color::gpui_bridge::from_hsla(gpui::hsla(0.6, 0.7, 0.5, 1.0)),
             &ThemePaletteHsOverride { active: true, vividness_amount: 0.5, temperature_amount: 0.0 },
-        );
+        )
+        .unwrap();
         assert!(overrides.contains_key("--primary"));
         assert!(overrides.contains_key("--background"));
     }

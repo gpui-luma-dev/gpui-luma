@@ -11,6 +11,7 @@ keywords = ["gpui", "gui", "radix", "themes", "widgets"]
 categories = ["gui"]
 
 [dependencies]
+anyhow.workspace = true
 gpui.workspace = true
 gpui-luma.workspace = true
 

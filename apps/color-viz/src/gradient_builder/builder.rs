@@ -75,19 +75,24 @@ impl GradientBuilder {
         let end = gpui::hsla(33.0 / 360.0, 1.0, 0.46, 1.0);
         let mesh_background = default_mesh_background();
 
-        let slider_builder = ColorSliderBuilder::gradient("color-viz-gradient-stops", 0.0, vec![start, middle, end])
-            .thumb_policy(SliderThumbPolicy {
-                min_count: 2,
-                max_count: 8,
-                min_distance: 0.02,
-                allow_insert: true,
-                allow_remove: true,
-                allow_overlap: false,
-            })
-            .thumb_values([(0.0, Some(start)), (0.5, Some(middle)), (1.0, Some(end))])
-            .size(ControlSize::Sm)
-            .thumb_medium()
-            .theme_is_dark(theme_is_dark);
+        let slider_builder = ColorSliderBuilder::gradient(
+            "color-viz-gradient-stops",
+            0.0,
+            vec![start, middle, end].into_iter().map(gpui_luma::color::gpui_bridge::from_hsla).collect(),
+        )
+        .expect("valid demo gradient colors")
+        .thumb_policy(SliderThumbPolicy {
+            min_count: 2,
+            max_count: 8,
+            min_distance: 0.02,
+            allow_insert: true,
+            allow_remove: true,
+            allow_overlap: false,
+        })
+        .thumb_values([(0.0, Some(start)), (0.5, Some(middle)), (1.0, Some(end))])
+        .size(ControlSize::Sm)
+        .thumb_medium()
+        .theme_is_dark(theme_is_dark);
         let domain_renderer = slider_builder.domain_renderer();
         let track_context = slider_builder.track_context();
         let gradient_stops = slider_builder.spawn(cx);

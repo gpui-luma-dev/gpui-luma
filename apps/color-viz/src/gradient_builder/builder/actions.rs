@@ -317,10 +317,16 @@ impl GradientBuilder {
                 })
                 .collect::<Vec<_>>(),
         );
-        let stops = stops.into_iter().map(|(position, color)| GradientStop { position, color }).collect();
+        let stops = stops
+            .into_iter()
+            .map(|(position, color)| GradientStop { position, color: gpui_luma::color::gpui_bridge::from_hsla(color) })
+            .collect();
         let mut track_context = self.track_context.clone();
         track_context.theme_is_dark = matches!(self.look.mode(), ThemeMode::Dark);
-        update_domain_delegate(&self.domain_renderer, Arc::new(GradientDelegate { stops }), track_context);
+        let Ok(delegate) = GradientDelegate::new(stops, gpui_luma::color::GamutMapping::CssLocalMinde) else {
+            return;
+        };
+        update_domain_delegate(&self.domain_renderer, Arc::new(delegate), track_context);
         let _ = self.ensure_preview_image_cache(self.preview_size, cx);
         refresh_color_slider(&self.gradient_stops, cx);
         cx.notify();

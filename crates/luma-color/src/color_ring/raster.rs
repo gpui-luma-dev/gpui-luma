@@ -1,3 +1,4 @@
+use gpui_luma::color::gpui_bridge;
 use super::common::{mirrored_lightness, mirrored_saturation};
 use super::track_context::ColorRingTrackContext;
 use super::types::ColorRingTrackDelegate;
@@ -181,7 +182,7 @@ impl ColorRingTrackDelegate for RasterRingDelegate {
 
                         let theta = dy.atan2(dx);
                         let position = (0.25 + (theta / TAU) - rotation_turns).rem_euclid(1.0);
-                        let rgb = self.color_at_position(position).to_rgb();
+                        let rgb = gpui_bridge::preview_rgba(self.color_at_position(position));
                         r_sum += rgb.r;
                         g_sum += rgb.g;
                         b_sum += rgb.b;

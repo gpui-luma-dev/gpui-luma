@@ -20,6 +20,6 @@ anyhow.workspace = true
 lucide-svg-static.workspace = true
 serde = { workspace = true, features = ["derive"] }
 ttf-parser = "0.25"
-palette = "0.7.6"
+palette.workspace = true
 smallvec.workspace = true
 toml.workspace = true

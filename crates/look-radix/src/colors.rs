@@ -3,7 +3,8 @@
 #[path = "colors_data.rs"]
 mod colors_data;
 
-use gpui::{Hsla, hsla};
+use gpui::Hsla;
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 use gpui_luma::theme::ThemeMode;
 
 pub use colors_data::{BLACK_ALPHA_STEPS, DARK_FAMILIES, LIGHT_FAMILIES, COLORS_VERSION, WHITE_ALPHA_STEPS};
@@ -17,56 +18,64 @@ pub fn families(mode: ThemeMode) -> &'static [RawColorScale] {
 }
 
 /// Twelve parsed steps for one named family, or `None` when the catalog has no such family.
+#[cfg(test)]
 pub fn family_steps(mode: ThemeMode, family: &str) -> Option<[Hsla; 12]> {
     let scale = families(mode).iter().find(|candidate| candidate.family == family)?;
     Some(scale.steps.map(parse_color))
 }
 
-pub fn parse_color(value: &str) -> Hsla {
-    if let Some(hex) = value.strip_prefix('#') {
-        let red = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
-        let green = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
-        let blue = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
-        return rgb_to_hsla(red, green, blue, 1.0);
+/// Parse catalog data into retained source colors. Malformed input returns an error.
+pub fn parse_source_color(value: &str) -> anyhow::Result<ColorValue> {
+    if let Some(inner) = value.strip_prefix("rgba(").and_then(|value| value.strip_suffix(')')) {
+        let values: Vec<f32> =
+            inner.split(',').map(|component| component.trim().parse::<f32>()).collect::<Result<_, _>>()?;
+        anyhow::ensure!(values.len() == 4, "expected four rgba channels");
+        let source = ColorValue::srgb(values[0] / 255.0, values[1] / 255.0, values[2] / 255.0, values[3]);
+        source.validate()?;
+        return Ok(source);
     }
-
-    let values: Vec<f32> = value
-        .trim_start_matches("rgba(")
-        .trim_end_matches(')')
-        .split(',')
-        .filter_map(|component| component.trim().parse().ok())
-        .collect();
-    if values.len() == 4 {
-        return rgb_to_hsla(values[0] as u8, values[1] as u8, values[2] as u8, values[3]);
-    }
-    hsla(0.0, 0.0, 0.0, 0.0)
+    ColorValue::parse_css(value)
 }
 
-fn rgb_to_hsla(red: u8, green: u8, blue: u8, alpha: f32) -> Hsla {
-    let red = f32::from(red) / 255.0;
-    let green = f32::from(green) / 255.0;
-    let blue = f32::from(blue) / 255.0;
-    let max = red.max(green).max(blue);
-    let min = red.min(green).min(blue);
-    let lightness = (max + min) / 2.0;
-    let delta = max - min;
-    if delta == 0.0 {
-        return hsla(0.0, 0.0, lightness, alpha);
-    }
-    let saturation = delta / (1.0 - (2.0 * lightness - 1.0).abs());
-    let hue = if max == red {
-        ((green - blue) / delta).rem_euclid(6.0) / 6.0
-    } else if max == green {
-        ((blue - red) / delta + 2.0) / 6.0
-    } else {
-        ((red - green) / delta + 4.0) / 6.0
+/// Named source steps. The pinned catalog is sRGB; authored scales can be wide gamut.
+pub fn family_source_steps(mode: ThemeMode, family: &str) -> anyhow::Result<Option<[ColorValue; 12]>> {
+    let Some(scale) = families(mode).iter().find(|candidate| candidate.family == family) else {
+        return Ok(None);
     };
-    hsla(hue, saturation, lightness, alpha)
+    let mut steps = [ColorValue::srgb(0.0, 0.0, 0.0, 1.0); 12];
+    for (index, value) in scale.steps.iter().enumerate() {
+        steps[index] = parse_source_color(value)?;
+    }
+    Ok(Some(steps))
+}
+
+/// Current-backend catalog preview; invalid values use a transparent fallback.
+pub fn parse_color(value: &str) -> Hsla {
+    parse_source_color(value)
+        .and_then(|source| gpui_bridge::to_hsla(source, GamutMapping::CssLocalMinde))
+        .unwrap_or_else(|_| gpui::hsla(0.0, 0.0, 0.0, 0.0))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_parser_keeps_p3_and_fractional_rgb_and_rejects_malformed_hex() {
+        assert_eq!(parse_source_color("color(display-p3 1 0 0)").unwrap(), ColorValue::display_p3(1.0, 0.0, 0.0, 1.0));
+        assert_eq!(
+            parse_source_color("rgba(12.5, 20, 30, 0.37)").unwrap(),
+            ColorValue::srgb(12.5 / 255.0, 20.0 / 255.0, 30.0 / 255.0, 0.37)
+        );
+        for invalid in ["#", "#éa", "rgba(1,2,NaN,1)"] {
+            assert!(parse_source_color(invalid).is_err());
+        }
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            for family in families(mode) {
+                assert!(family_source_steps(mode, family.family).unwrap().is_some());
+            }
+        }
+    }
 
     #[test]
     fn catalog_contains_all_v3_families_in_order() {

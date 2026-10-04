@@ -13,7 +13,6 @@ mod team;
 mod tree_view;
 mod upgrade;
 
-pub(crate) use common::parse_hex_color;
 pub use account::AccountPanel;
 pub use accordion::AccordionPanel;
 pub use chat::ChatPanel;

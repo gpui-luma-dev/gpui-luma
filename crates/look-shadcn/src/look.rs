@@ -8,6 +8,7 @@ use std::sync::{
 use gpui::{App, BoxShadow, Global, Hsla, SharedString};
 use gpui_luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole};
 use gpui_luma::infra::lock;
+use gpui_luma::color::ColorValue;
 use gpui_luma::theme::pack::LumaChrome;
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeMode};
 
@@ -93,14 +94,14 @@ impl ShadcnLookSnapshot {
         })
     }
 
-    fn with_color_overrides(&self, overrides: &HashMap<String, Hsla>) -> anyhow::Result<Self> {
+    fn with_color_overrides(&self, overrides: &HashMap<String, ColorValue>) -> anyhow::Result<Self> {
         self.with_mode_color_overrides(overrides, overrides)
     }
 
     fn with_mode_color_overrides(
         &self,
-        light_overrides: &HashMap<String, Hsla>,
-        dark_overrides: &HashMap<String, Hsla>,
+        light_overrides: &HashMap<String, ColorValue>,
+        dark_overrides: &HashMap<String, ColorValue>,
     ) -> anyhow::Result<Self> {
         if light_overrides.is_empty() && dark_overrides.is_empty() {
             return Ok(Self {
@@ -111,8 +112,8 @@ impl ShadcnLookSnapshot {
             });
         }
 
-        let light_catalog = apply_color_overrides_to_catalog(self.light.catalog.clone(), light_overrides);
-        let dark_catalog = apply_color_overrides_to_catalog(self.dark.catalog.clone(), dark_overrides);
+        let light_catalog = apply_color_overrides_to_catalog(self.light.catalog.clone(), light_overrides)?;
+        let dark_catalog = apply_color_overrides_to_catalog(self.dark.catalog.clone(), dark_overrides)?;
 
         Ok(Self {
             catalog: Arc::clone(&self.catalog),
@@ -245,6 +246,16 @@ impl ShadcnLook {
         tokens.catalog.get(name).map(ToOwned::to_owned)
     }
 
+    /// Retained source color for the semantic token, with theme fallbacks resolved.
+    pub fn source_color(&self, token: ShadcnToken) -> ColorValue {
+        self.resolve_source_color_state(token, InteractionLayer::Default)
+    }
+
+    /// Source/derived state from the theme snapshot, without gamut mapping.
+    pub fn resolve_source_color_state(&self, token: ShadcnToken, layer: InteractionLayer) -> ColorValue {
+        self.mode_tokens().resolve_source_color_state(token, layer)
+    }
+
     /// Resolves colors directly from the loaded palette.
     pub fn color(&self, token: ShadcnToken) -> Hsla {
         self.mode_tokens().palette.token_color(token)
@@ -310,8 +321,17 @@ impl ShadcnLook {
         self.token(name).as_deref().and_then(parse_length_px)
     }
 
+    /// Retrieve shadow source colors without rendering or gamut mapping.
+    pub fn parse_shadow_source_token(&self, token_key: &str) -> anyhow::Result<Vec<crate::ShadowTokenParts>> {
+        let tokens = self.mode_tokens();
+        crate::shadow::parse_shadow_source_token(&tokens.catalog, token_key)
+    }
+
     pub fn parse_shadow_token(&self, token_key: &str) -> anyhow::Result<Vec<BoxShadow>> {
         let tokens = self.mode_tokens();
+        if let Some(preview) = tokens.shadow_preview(token_key) {
+            return Ok(preview.to_vec());
+        }
         parse_shadow_token(&tokens.catalog, token_key)
     }
 
@@ -337,6 +357,11 @@ impl ShadcnLook {
         Arc::clone(&self.snapshot().dark)
     }
 
+    /// Original arbitrary CSS token color, without a render projection.
+    pub fn token_source_color(&self, name: &str) -> anyhow::Result<ColorValue> {
+        self.mode_tokens().catalog.source_color(name)
+    }
+
     pub fn token_color(&self, name: &str) -> anyhow::Result<Hsla> {
         let tokens = self.mode_tokens();
         tokens.catalog.color(name)
@@ -346,17 +371,19 @@ impl ShadcnLook {
         *lock::write(&self.state.snapshot) = other.snapshot();
     }
 
-    pub fn apply_color_overrides(&self, overrides: &HashMap<String, Hsla>) -> anyhow::Result<()> {
+    /// Apply validated source colors, preserving their space and precision.
+    pub fn apply_color_overrides(&self, overrides: &HashMap<String, ColorValue>) -> anyhow::Result<()> {
         let snapshot = self.snapshot();
         let next = snapshot.with_color_overrides(overrides)?;
         *lock::write(&self.state.snapshot) = Arc::new(next);
         Ok(())
     }
 
+    /// Apply independently validated source colors to each mode.
     pub fn apply_mode_color_overrides(
         &self,
-        light_overrides: &HashMap<String, Hsla>,
-        dark_overrides: &HashMap<String, Hsla>,
+        light_overrides: &HashMap<String, ColorValue>,
+        dark_overrides: &HashMap<String, ColorValue>,
     ) -> anyhow::Result<()> {
         let snapshot = self.snapshot();
         let next = snapshot.with_mode_color_overrides(light_overrides, dark_overrides)?;
@@ -371,19 +398,17 @@ impl ShadcnLook {
         Ok(())
     }
 
-    /// Returns a copy of this look with global color overrides applied to both mode catalogs.
-    pub fn with_color_overrides(&self, overrides: &HashMap<String, Hsla>) -> Self {
+    /// Copy with source color overrides in both modes; invalid sources return an error.
+    pub fn with_color_overrides(&self, overrides: &HashMap<String, ColorValue>) -> anyhow::Result<Self> {
         let snapshot = self.snapshot();
-        let Ok(next) = snapshot.with_color_overrides(overrides) else {
-            return self.clone();
-        };
+        let next = snapshot.with_color_overrides(overrides)?;
 
-        Self {
+        Ok(Self {
             state: Arc::new(ShadcnLookState {
                 snapshot: RwLock::new(Arc::new(next)),
                 mode: AtomicU8::new(self.state.mode.load(Ordering::Relaxed)),
             }),
-        }
+        })
     }
 
     pub fn chrome(&self) -> LumaChrome {
@@ -831,12 +856,15 @@ impl ShadcnLook {
     }
 }
 
-fn apply_color_overrides_to_catalog(mut catalog: CssTokenMap, overrides: &HashMap<String, Hsla>) -> CssTokenMap {
+fn apply_color_overrides_to_catalog(
+    mut catalog: CssTokenMap,
+    overrides: &HashMap<String, ColorValue>,
+) -> anyhow::Result<CssTokenMap> {
     for (token, color) in overrides {
         let key = token.strip_prefix("--").unwrap_or(token.as_str()).to_string();
-        catalog.tokens.insert(key, hsla_to_css_value(*color));
+        catalog.tokens.insert(key, color.to_css()?);
     }
-    catalog
+    Ok(catalog)
 }
 
 fn apply_string_overrides_to_catalog(mut catalog: CssTokenMap, overrides: &HashMap<String, String>) -> CssTokenMap {
@@ -845,16 +873,6 @@ fn apply_string_overrides_to_catalog(mut catalog: CssTokenMap, overrides: &HashM
         catalog.tokens.insert(key, value.clone());
     }
     catalog
-}
-
-fn hsla_to_css_value(color: Hsla) -> String {
-    format!(
-        "hsla({} {}% {}% / {:.3})",
-        (color.h * 360.0).round(),
-        (color.s * 100.0).round(),
-        (color.l * 100.0).round(),
-        color.a.clamp(0.0, 1.0)
-    )
 }
 
 fn mode_to_u8(mode: ThemeMode) -> u8 {
@@ -922,14 +940,32 @@ mod tests {
     }
 
     #[test]
-    fn color_overrides_preserve_alpha_in_catalog() {
-        let color = gpui::hsla(120.0 / 360.0, 1.0, 0.5, 0.0);
-        let css = hsla_to_css_value(color);
-        assert_eq!(css, "hsla(120 100% 50% / 0.000)");
-
+    fn color_overrides_preserve_source_and_derive_before_mapping() {
         let look = crate::test_support::fallback_look();
-        let overridden = look.with_color_overrides(&HashMap::from([(String::from("--accent"), color)]));
-        assert_eq!(overridden.color(ShadcnToken::Accent).a, 0.0);
+        let color = ColorValue::display_p3(1.0, 0.0, 0.0, 0.37);
+        let overridden = look.with_color_overrides(&HashMap::from([(String::from("--primary"), color)])).unwrap();
+        assert_eq!(overridden.source_color(ShadcnToken::Primary), color);
+        assert_eq!(overridden.token_source_color("primary").unwrap(), color);
+        let hover = overridden.resolve_source_color_state(ShadcnToken::Primary, InteractionLayer::Hovered);
+        assert_eq!(hover, color.adjust_ui_lightness(-0.03).unwrap());
+        assert_eq!(overridden.color(ShadcnToken::Primary).a, 0.37);
+        assert_ne!(look.source_color(ShadcnToken::Primary), color);
+        overridden.set_mode(ThemeMode::Dark);
+        assert_eq!(overridden.source_color(ShadcnToken::Primary), color);
+        assert_eq!(
+            overridden.resolve_source_color_state(ShadcnToken::Primary, InteractionLayer::Hovered),
+            color.adjust_ui_lightness(0.04).unwrap()
+        );
+    }
+
+    #[test]
+    fn invalid_color_override_does_not_replace_snapshot() {
+        let look = crate::test_support::fallback_look();
+        let before = look.source_color(ShadcnToken::Primary);
+        let invalid = HashMap::from([("primary".into(), ColorValue::srgb(f32::NAN, 0.0, 0.0, 1.0))]);
+        assert!(look.apply_color_overrides(&invalid).is_err());
+        assert!(look.with_color_overrides(&invalid).is_err());
+        assert_eq!(look.source_color(ShadcnToken::Primary), before);
     }
 
     #[test]

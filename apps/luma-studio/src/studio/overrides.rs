@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use gpui::Hsla;
+use gpui_luma_color::color_slider::color_spec::{ColorSpecification, Hsl};
+use gpui_luma::color::ColorValue;
 use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadowTokenParts, shadow_ladder_overrides};
 
@@ -41,19 +42,28 @@ impl Default for ThemePaletteHslOverride {
 }
 
 impl ThemePaletteHslOverride {
-    pub fn apply(&self, color: Hsla) -> Hsla {
-        Hsla {
-            h: (color.h + self.hue_deg / 360.0).rem_euclid(1.0),
-            s: (color.s * self.saturation_multiplier).clamp(0.0, 1.0),
-            l: (color.l * self.lightness_multiplier).clamp(0.0, 1.0),
-            a: color.a,
+    /// Apply HSL controls to an unclamped source conversion, without using the preview.
+    pub fn apply(&self, color: ColorValue) -> anyhow::Result<ColorValue> {
+        if *self == Self::default() {
+            color.validate()?;
+            return Ok(color);
         }
+        let spec = Hsl::from_color_value(color)?;
+        let result = Hsl {
+            h: (spec.h + self.hue_deg).rem_euclid(360.0),
+            s: spec.s * self.saturation_multiplier,
+            l: spec.l * self.lightness_multiplier,
+            a: spec.a,
+        }
+        .to_color_value();
+        result.validate()?;
+        Ok(result)
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThemeShadowOverride {
-    pub color: Hsla,
+    pub color: ColorValue,
     pub blur_px: f32,
     pub spread_px: f32,
     pub offset_x_px: f32,
@@ -62,11 +72,13 @@ pub struct ThemeShadowOverride {
 
 impl ThemeShadowOverride {
     pub fn opacity(&self) -> f32 {
-        self.color.a
+        self.color.alpha()
     }
 
     pub fn set_opacity(&mut self, opacity: f32) {
-        self.color.a = clamp_shadow_opacity(opacity);
+        if let Ok(color) = self.color.with_alpha(clamp_shadow_opacity(opacity)) {
+            self.color = color;
+        }
     }
 
     fn to_parts(&self) -> ShadowTokenParts {
@@ -82,7 +94,7 @@ impl ThemeShadowOverride {
 
 #[derive(Clone, Debug, Default)]
 pub struct StudioOverrides {
-    pub global_color_overrides: HashMap<String, Hsla>,
+    pub global_color_overrides: HashMap<String, ColorValue>,
     pub light_palette_hsl: ThemePaletteHslOverride,
     pub dark_palette_hsl: ThemePaletteHslOverride,
     pub light_palette_hs: ThemePaletteHsOverride,
@@ -96,7 +108,7 @@ pub struct StudioOverrides {
 }
 
 impl StudioOverrides {
-    pub fn global_color_override(&self, token: &str) -> Option<Hsla> {
+    pub fn global_color_override(&self, token: &str) -> Option<ColorValue> {
         self.global_color_overrides.get(token).copied()
     }
 
@@ -147,7 +159,7 @@ impl StudioOverrides {
         }
     }
 
-    pub fn set_global_color(&mut self, token: String, color: Hsla) {
+    pub fn set_global_color(&mut self, token: String, color: ColorValue) {
         self.global_color_overrides.insert(token, color);
     }
 
@@ -201,7 +213,7 @@ impl StudioOverrides {
         self.font_mono = Some(stack);
     }
 
-    pub fn token_overrides(&self) -> HashMap<String, String> {
+    pub fn token_overrides(&self) -> anyhow::Result<HashMap<String, String>> {
         let mut overrides = HashMap::new();
         if let Some(radius_rem) = self.radius_rem {
             overrides.insert("radius".to_string(), rem_css_value(radius_rem));
@@ -210,7 +222,7 @@ impl StudioOverrides {
             overrides.insert("spacing".to_string(), rem_css_value(spacing_rem));
         }
         if let Some(shadow) = &self.shadow {
-            overrides.extend(shadow_ladder_overrides(shadow.to_parts()));
+            overrides.extend(shadow_ladder_overrides(shadow.to_parts())?);
         }
         if let Some(font_sans) = &self.font_sans {
             overrides.insert("font-sans".to_string(), font_sans.clone());
@@ -221,7 +233,7 @@ impl StudioOverrides {
         if let Some(font_mono) = &self.font_mono {
             overrides.insert("font-mono".to_string(), font_mono.clone());
         }
-        overrides
+        Ok(overrides)
     }
 
     pub fn clear_palette_hsl_overrides(&mut self) {
@@ -304,20 +316,20 @@ pub fn resolved_shadow_override(look: &ShadcnLook, overrides: &StudioOverrides) 
 }
 
 pub fn default_shadow_override(look: &ShadcnLook) -> ThemeShadowOverride {
-    if let Ok(mut layers) = look.parse_shadow_token("shadow")
+    if let Ok(mut layers) = look.parse_shadow_source_token("shadow")
         && let Some(layer) = layers.drain(..).next()
     {
         return ThemeShadowOverride {
             color: layer.color,
-            blur_px: layer.blur_radius.as_f32(),
-            spread_px: layer.spread_radius.as_f32(),
-            offset_x_px: layer.offset.x.as_f32(),
-            offset_y_px: layer.offset.y.as_f32(),
+            blur_px: layer.blur_px,
+            spread_px: layer.spread_px,
+            offset_x_px: layer.offset_x_px,
+            offset_y_px: layer.offset_y_px,
         };
     }
 
     ThemeShadowOverride {
-        color: Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.12 },
+        color: ColorValue::srgb(0.0, 0.0, 0.0, 0.12),
         blur_px: 10.0,
         spread_px: 0.0,
         offset_x_px: 0.0,
@@ -347,6 +359,17 @@ mod tests {
     use super::*;
 
     #[test]
+    fn palette_adjustments_use_sources_and_preserve_identity() {
+        let source = ColorValue::display_p3(1.123456, -0.123456, 0.234567, 0.345678);
+        assert_eq!(ThemePaletteHslOverride::default().apply(source).unwrap(), source);
+        let adjustment =
+            ThemePaletteHslOverride { hue_deg: 10.0, saturation_multiplier: 1.2, lightness_multiplier: 1.0 };
+        let adjusted = adjustment.apply(source).unwrap();
+        assert_eq!(adjusted.alpha(), source.alpha());
+        assert!(!adjusted.is_in_gamut(gpui_luma::color::Gamut::Srgb).unwrap());
+    }
+
+    #[test]
     fn font_stack_quotes_spaced_family_names() {
         assert_eq!(format_font_family_stack("Helvetica Neue", "sans-serif"), "'Helvetica Neue', sans-serif");
         assert_eq!(format_font_family_stack("Inter", "sans-serif"), "Inter, sans-serif");
@@ -358,7 +381,7 @@ mod tests {
         overrides.set_font_sans("Poppins, sans-serif".to_string());
         overrides.set_font_mono("'IBM Plex Mono', monospace".to_string());
 
-        let tokens = overrides.token_overrides();
+        let tokens = overrides.token_overrides().unwrap();
         assert_eq!(tokens.get("font-sans").map(String::as_str), Some("Poppins, sans-serif"));
         assert_eq!(tokens.get("font-mono").map(String::as_str), Some("'IBM Plex Mono', monospace"));
     }
@@ -367,14 +390,14 @@ mod tests {
     fn shadow_override_updates_the_complete_ladder() {
         let mut overrides = StudioOverrides::default();
         overrides.set_shadow_override(ThemeShadowOverride {
-            color: Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.2 },
+            color: ColorValue::srgb(0.0, 0.0, 0.0, 0.2),
             blur_px: 10.0,
             spread_px: -2.0,
             offset_x_px: 0.0,
             offset_y_px: 4.0,
         });
 
-        let tokens = overrides.token_overrides();
+        let tokens = overrides.token_overrides().unwrap();
         let shadow = tokens.get("shadow").expect("base shadow override");
         for token in gpui_luma_look_shadcn::SHADOW_LADDER_TOKENS {
             assert!(tokens.contains_key(token));

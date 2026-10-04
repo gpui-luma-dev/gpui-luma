@@ -1,3 +1,4 @@
+use gpui_luma::color::gpui_bridge;
 use super::super::domain::FieldDomain2D;
 use super::super::model::{ColorFieldModel2D, ColorFieldModelKind};
 use crate::color_slider::color_spec::Hsv;
@@ -112,7 +113,7 @@ pub(super) fn rasterize_domain_image(
                     } else {
                         model.color_at_uv(&hsv, uv)
                     };
-                    let rgb = hsla.to_rgb();
+                    let rgb = gpui_bridge::preview_rgba(hsla);
                     let alpha = hsla.a.clamp(0.0, 1.0);
                     r_sum += rgb.r * alpha;
                     g_sum += rgb.g * alpha;
@@ -198,7 +199,7 @@ fn rasterize_hue_saturation_wheel_image(
                 ((y as f32 + 0.5) / height as f32).clamp(0.0, 1.0),
             );
             let hsla = model.color_at_uv(&hsv, uv);
-            let rgb = hsla.to_rgb();
+            let rgb = gpui_bridge::preview_rgba(hsla);
             let alpha = hsla.a.clamp(0.0, 1.0);
             let r_u8 = (rgb.r.clamp(0.0, 1.0) * alpha * 255.0).round() as u8;
             let g_u8 = (rgb.g.clamp(0.0, 1.0) * alpha * 255.0).round() as u8;

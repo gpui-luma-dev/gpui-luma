@@ -92,18 +92,30 @@ impl ColorSliderRevealedControlExposition {
 
         let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
         let blue = gpui::hsla(240.0 / 360.0, 1.0, 0.5, 1.0);
-        let interp_rgb =
-            ColorSliderBuilder::gradient("controls-doc-color-slider-revealed-interp-rgb", 0.5, vec![red, blue])
-                .interpolation(ColorInterpolation::Rgb)
-                .spawn(cx);
-        let interp_hsl =
-            ColorSliderBuilder::gradient("controls-doc-color-slider-revealed-interp-hsl", 0.5, vec![red, blue])
-                .interpolation(ColorInterpolation::Hsl)
-                .spawn(cx);
-        let interp_lab =
-            ColorSliderBuilder::gradient("controls-doc-color-slider-revealed-interp-lab", 0.5, vec![red, blue])
-                .interpolation(ColorInterpolation::Lab)
-                .spawn(cx);
+        let interp_rgb = ColorSliderBuilder::gradient(
+            "controls-doc-color-slider-revealed-interp-rgb",
+            0.5,
+            vec![red, blue].into_iter().map(gpui_luma::color::gpui_bridge::from_hsla).collect(),
+        )
+        .expect("valid demo gradient colors")
+        .interpolation(ColorInterpolation::Rgb)
+        .spawn(cx);
+        let interp_hsl = ColorSliderBuilder::gradient(
+            "controls-doc-color-slider-revealed-interp-hsl",
+            0.5,
+            vec![red, blue].into_iter().map(gpui_luma::color::gpui_bridge::from_hsla).collect(),
+        )
+        .expect("valid demo gradient colors")
+        .interpolation(ColorInterpolation::Hsl)
+        .spawn(cx);
+        let interp_lab = ColorSliderBuilder::gradient(
+            "controls-doc-color-slider-revealed-interp-lab",
+            0.5,
+            vec![red, blue].into_iter().map(gpui_luma::color::gpui_bridge::from_hsla).collect(),
+        )
+        .expect("valid demo gradient colors")
+        .interpolation(ColorInterpolation::Lab)
+        .spawn(cx);
 
         let delegate_hue = ColorSliderBuilder::hue("controls-doc-color-slider-revealed-delegate-hue", 180.0)
             .thumb_size(SliderThumbSize::Md)

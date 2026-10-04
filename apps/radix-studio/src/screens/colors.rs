@@ -1,5 +1,6 @@
 //! Colors tab screen — Radix Colors catalog matrix.
 
+use gpui_luma::color::gpui_bridge::from_hsla;
 use gpui::{Hsla, div, hsla, linear_color_stop, linear_gradient, prelude::*, px};
 use gpui_luma::hstack;
 use gpui_luma::vstack;
@@ -116,7 +117,7 @@ fn alpha_catalog_row(label: &'static str, values: &[&'static str; 12], muted: Hs
                 .flex()
                 .justify_center()
                 .child(
-                    ColorSwatch::new(parse_color(value))
+                    ColorSwatch::new(from_hsla(parse_color(value)))
                         .size(gpui_luma::theme::ControlSize::Lg)
                         .height(px(COLOR_MATRIX_CELL_H))
                         .rounded(px(0.0))

@@ -1,10 +1,8 @@
+use crate::color_hex::format_hex;
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 use std::sync::Arc;
 
-use crate::color_hex::{format_hex, parse_hex};
-
-use gpui::{
-    Context, Entity, EventEmitter, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px,
-};
+use gpui::{Context, Entity, EventEmitter, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::button::{Button, ButtonEvent};
 use gpui_luma::controls::popover_button::{PopoverButton, PopoverDismissPolicy, PopoverPlacement};
 use gpui_luma::controls::slider::{SliderControl, SliderEvent};
@@ -12,7 +10,7 @@ use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma::infra::attachments::{AttachmentHost, AttachmentTarget};
 use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldState};
-use gpui_luma_color::color_slider::color_spec::Hsv;
+use gpui_luma_color::color_slider::color_spec::{Hsv, ColorSpecification};
 use gpui_luma_color::color_slider::{ColorSliderBuilder, primary_slider_value, sizing};
 use gpui_luma_color::composition::ColorCompositionSync;
 use gpui_luma_color::{ColorSwatchButtonTemplate, ColorSwatchData};
@@ -24,13 +22,13 @@ const SWATCH_RADIUS: f32 = 2.0;
 
 #[derive(Clone, Debug)]
 pub enum ColorTextFieldEvent {
-    Change { color: Hsla },
+    Change { color: ColorValue },
 }
 
 pub struct ColorTextField {
     id: SharedString,
     look: Arc<Look>,
-    color: Hsla,
+    color: ColorValue,
     hsv: Hsv,
     focused: bool,
     hovered: bool,
@@ -51,9 +49,9 @@ impl EventEmitter<ColorTextFieldEvent> for ColorTextField {}
 impl ColorTextField {
     pub const HEIGHT: f32 = 32.0;
 
-    pub fn new(look: Arc<Look>, id: impl Into<SharedString>, color: Hsla, cx: &mut Context<Self>) -> Self {
+    pub fn new(look: Arc<Look>, id: impl Into<SharedString>, color: ColorValue, cx: &mut Context<Self>) -> Self {
         let id = id.into();
-        let hsv = Hsv::from_hsla_ext(color);
+        let hsv = preview_hsv(color);
 
         let swatch = Button::new(format!("{id}-swatch"))
             .typed(ColorSwatchData {
@@ -66,7 +64,7 @@ impl ColorTextField {
             .template(Arc::new(ColorSwatchButtonTemplate))
             .tab_stop(false)
             .spawn(cx);
-        let field = embedded_textfield(&look, format!("{id}-field"), format_hex(color), cx);
+        let field = embedded_textfield(&look, format!("{id}-field"), rgb_text(color), cx);
         let picker_field = cx.new(|_| {
             ColorFieldState::saturation_value(format!("{id}-picker-sv"), hsv, sizing::THUMB_SIZE_MEDIUM)
                 .no_border()
@@ -77,7 +75,7 @@ impl ColorTextField {
             .thumb_medium()
             .edge_to_edge();
         let hue_slider = hue_builder.spawn(cx);
-        let picker_hex = embedded_textfield(&look, format!("{id}-picker-hex"), format_hex(color), cx);
+        let picker_hex = embedded_textfield(&look, format!("{id}-picker-hex"), rgb_text(color), cx);
 
         let swatch_for_popover = swatch.clone();
         let picker_field_for_popover = picker_field.clone();
@@ -167,21 +165,32 @@ impl ColorTextField {
         }
     }
 
-    pub fn set_color(&mut self, color: Hsla, cx: &mut Context<Self>) {
+    pub fn set_color(&mut self, color: ColorValue, cx: &mut Context<Self>) {
         self.color = color;
-        self.hsv = Hsv::from_hsla_ext(color);
+        self.hsv = preview_hsv(color);
         self.sync_fields(cx);
         cx.notify();
     }
 
     fn apply_hex(&mut self, value: &str, cx: &mut Context<Self>) {
-        let Some(color) = parse_hex(value) else { return };
+        let input = value.trim();
+        let hex = input.strip_prefix('#').unwrap_or(input);
+        let normalized;
+        let input = if hex.len() == 6 && hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            normalized = format!("#{hex}");
+            normalized.as_str()
+        } else {
+            input
+        };
+        let Ok(color) = ColorValue::parse_css(input) else {
+            return;
+        };
         self.set_color(color, cx);
         cx.emit(ColorTextFieldEvent::Change { color });
     }
 
     fn apply_hsv(&mut self, cx: &mut Context<Self>) {
-        let color = self.hsv.to_hsla_ext();
+        let color = self.hsv.to_color_value();
         // Keep HSV as the gesture source: converting black/gray back from HSL
         // discards hue (and at black, saturation), moving the hue slider spuriously.
         self.color = color;
@@ -201,7 +210,7 @@ impl ColorTextField {
 
         self.picker_field.update(cx, |field, cx| field.set_hsv(self.hsv, cx));
         self.sync.sync_slider_value(&self.hue_slider, self.hsv.h, cx);
-        let hex = format_hex(self.color);
+        let hex = rgb_text(self.color);
         // Both text fields represent the same selected color as the swatch.
         // Avoid resetting the caret when the text is already synchronized.
         for field in [&self.field, &self.picker_hex] {
@@ -281,5 +290,44 @@ impl AttachmentTarget for ColorTextField {
     }
     fn attachments_mut(&mut self) -> &mut AttachmentHost {
         &mut self.attachments
+    }
+}
+
+fn preview_hsv(source: ColorValue) -> Hsv {
+    Hsv::from_hsla_ext(
+        gpui_bridge::to_hsla(source, GamutMapping::CssLocalMinde).unwrap_or_else(|_| gpui::transparent_black()),
+    )
+}
+// Display RGB hex independently of the retained source representation.
+fn rgb_text(source: ColorValue) -> String {
+    format_hex(gpui_bridge::to_hsla(source, GamutMapping::CssLocalMinde).unwrap_or_else(|_| gpui::black()))
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod source_tests {
+    use super::*;
+    #[test]
+    fn loading_and_css_editing_preserve_wide_gamut_source() {
+        let app = gpui::TestAppContext::single();
+        let source = ColorValue::display_p3(1.123456, -0.123456, 0.234567, 1.0);
+        app.update(|cx| {
+            let field = cx.new(|cx| ColorTextField::new(Arc::new(Look::built_in()), "source-test", source, cx));
+            field.update(cx, |field, cx| {
+                assert_eq!(field.color, source);
+                field.set_color(source, cx);
+                field.sync_fields(cx);
+                assert_eq!(field.color, source);
+                let edited = ColorValue::oklch(0.75, 0.345678, 412.12345, 1.0);
+                field.apply_hex(&edited.to_css().unwrap(), cx);
+                assert_eq!(field.color, edited);
+                let displayed = rgb_text(edited);
+                assert_eq!(field.field.read(cx).value().as_str(), displayed);
+                assert_eq!(field.picker_hex.read(cx).value().as_str(), displayed);
+                field.apply_hex("3E63DD", cx);
+                assert_eq!(field.color, ColorValue::srgb(62.0 / 255.0, 99.0 / 255.0, 221.0 / 255.0, 1.0));
+                assert_eq!(field.field.read(cx).value().as_str(), "3E63DD");
+                assert_eq!(field.picker_hex.read(cx).value().as_str(), "3E63DD");
+            });
+        });
     }
 }

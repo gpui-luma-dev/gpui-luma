@@ -22,5 +22,5 @@ pub use tokens::{
     LumaPalette, LumaShadow, LumaShadowLayer, LumaTextRole, LumaTextScale, LumaTextStyle, LumaTheme, LumaThemeMode,
     LumaTypography, MetricTokens, NavigationPalette, RadiusTokens, SpacingTokens, StateBackgroundPalette, StatePalette,
     StateTonePalette, SurfacePalette, SurfaceTonePalette, SurfaceWithBorderPalette, TextRoleTokens, TextScaleTokens,
-    TextTokens, ThemeMode, ThemeModes, ThemeTokens,
+    TextTokens, ThemeMode, ThemeModes, ThemeTokens, SrgbPalette, SrgbElevation,
 };

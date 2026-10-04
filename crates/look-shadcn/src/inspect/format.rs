@@ -199,7 +199,7 @@ mod tests {
     #[test]
     fn format_css_style_ref_uses_shorthand_notation() {
         assert_eq!(
-            format_css_style_ref(&ColorSource::TokenAlpha { token: "accent".into(), alpha_percent: 50 }),
+            format_css_style_ref(&ColorSource::TokenAlpha { token: "accent".into(), alpha_percent: 50.0 }),
             "accent/50"
         );
         assert_eq!(format_css_style_ref(&ColorSource::CssVar { token: "primary".into() }), "primary");

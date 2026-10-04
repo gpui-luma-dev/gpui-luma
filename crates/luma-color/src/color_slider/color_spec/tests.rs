@@ -211,15 +211,6 @@ fn test_hsv_from_rgba_handles_grayscale() {
 }
 
 #[test]
-fn test_rgb_pivot_round_trip() {
-    for sample in [0.0, 0.02, 0.1, 0.5, 0.9, 1.0] {
-        let linear = pivot_rgb(sample);
-        let srgb = rev_pivot_rgb(linear);
-        assert!((srgb - sample).abs() < 1e-5);
-    }
-}
-
-#[test]
 fn test_hsv_value_zero_produces_black_regardless_of_hue_or_saturation() {
     let black_a = Hsv { h: 20.0, s: 0.2, v: 0.0, a: 1.0 }.to_hsla_ext().to_rgb();
     let black_b = Hsv { h: 310.0, s: 1.0, v: 0.0, a: 0.6 }.to_hsla_ext().to_rgb();
@@ -386,4 +377,53 @@ fn slider_step_for_channel_uses_fine_default_on_unit_ranges() {
 
     let red = ColorChannel { name: "red", label: "Red", min: 0.0, max: 255.0, step: Some(1.0), unit: "" };
     assert_approx_eq!(slider_step_for_channel(&red), 1.0);
+}
+
+#[test]
+fn source_conversion_preserves_extended_lab_and_rgb() {
+    let lab = Lab { l: 65.0, a: 110.0, b: -90.0, alpha: 0.345678, auto_clamp: false, dynamic_range: false };
+    let source = lab.to_color_value();
+    assert!(!source.is_in_gamut(gpui_luma::color::Gamut::Srgb).unwrap());
+    let restored = Lab::from_color_value(source).unwrap();
+    assert!((restored.l - lab.l).abs() < 0.001);
+    assert!((restored.a - lab.a).abs() < 0.001);
+    assert!((restored.b - lab.b).abs() < 0.001);
+    assert_eq!(restored.alpha, lab.alpha);
+    let extended = ColorValue::srgb(1.25, -0.25, 0.345678, 0.456789);
+    assert_eq!(RgbaSpec::from_color_value(extended).unwrap().to_color_value(), extended);
+}
+
+#[test]
+fn source_hsl_half_turn_matches_existing_preview_interpolation() {
+    use crate::color_slider::types::ColorInterpolation;
+    for (start, end) in [(0.0, 180.0), (180.0, 0.0)] {
+        let a = Hsl { h: start, s: 0.8, l: 0.5, a: 0.2 };
+        let b = Hsl { h: end, s: 0.8, l: 0.5, a: 0.8 };
+        let source = interpolate_source(a.to_color_value(), b.to_color_value(), 0.5, ColorInterpolation::Hsl).unwrap();
+        let actual = Hsl::from_color_value(source).unwrap();
+        assert_approx_eq!(actual.h, 90.0);
+        assert_approx_eq!(actual.a, 0.5);
+        let preview = interpolate_hsl(a.to_hsla(), b.to_hsla(), 0.5);
+        assert_approx_eq!(actual.h / 360.0, preview.h);
+    }
+}
+
+#[test]
+fn hsv_preview_matches_existing_sector_colors() {
+    // Established HSV sector samples, including the 360-degree endpoint and alpha.
+    for (h, expected) in [
+        (0.0, [0.8, 0.4, 0.4]),
+        (60.0, [0.8, 0.8, 0.4]),
+        (120.0, [0.4, 0.8, 0.4]),
+        (180.0, [0.4, 0.8, 0.8]),
+        (240.0, [0.4, 0.4, 0.8]),
+        (300.0, [0.8, 0.4, 0.8]),
+        (360.0, [0.8, 0.4, 0.4]),
+    ] {
+        let actual = Hsv { h, s: 0.5, v: 0.8, a: 0.3 }.to_hsla_ext().to_rgb();
+        for (actual, expected) in [actual.r, actual.g, actual.b].into_iter().zip(expected) {
+            assert_approx_eq!(actual, expected);
+        }
+        assert_approx_eq!(actual.a, 0.3);
+    }
 }

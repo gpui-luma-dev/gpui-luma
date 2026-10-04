@@ -1,6 +1,7 @@
 //! Radix Studio app shell — shared state, page routing, and window chrome.
 
 use gpui_luma::prelude::TooltipEntityExt;
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 
 use std::sync::{Arc, Mutex};
 
@@ -43,21 +44,29 @@ struct SwatchSelection {
     hex: String,
 }
 
+// Resolve only paint fields to the current sRGB backend.
+fn editor_preview(source: ColorValue) -> Hsla {
+    gpui_bridge::to_hsla(source, GamutMapping::CssLocalMinde).unwrap_or_else(|error| {
+        eprintln!("failed to preview Radix editor color: {error}");
+        gpui::black()
+    })
+}
+
 /// Exact editor inputs, independent of the derived palette scale colors.
 #[derive(Default)]
 struct PaletteEdits {
-    light: [Option<Hsla>; 3],
-    dark: [Option<Hsla>; 3],
+    light: [Option<ColorValue>; 3],
+    dark: [Option<ColorValue>; 3],
 }
 
 impl PaletteEdits {
     fn startup() -> Self {
         let mut edits = Self::default();
-        edits.set(STARTUP_MODE, 2, gpui::black());
+        edits.set(STARTUP_MODE, 2, ColorValue::srgb(0.0, 0.0, 0.0, 1.0));
         edits
     }
 
-    fn for_mode(&self, mode: ThemeMode) -> &[Option<Hsla>; 3] {
+    fn for_mode(&self, mode: ThemeMode) -> &[Option<ColorValue>; 3] {
         match mode {
             ThemeMode::Light => &self.light,
             ThemeMode::Dark => &self.dark,
@@ -69,19 +78,21 @@ impl PaletteEdits {
         // Otherwise editing one input would silently change the other two seeds.
         let edits = self.for_mode(theme.mode());
         radix::CustomColors {
-            accent: edits[0].unwrap_or_else(|| theme.resolve_role(SemanticRole::Primary).hsla()),
-            gray: edits[1].unwrap_or_else(|| theme.resolve_step(ScaleFamily::Gray, 8).hsla()),
-            background: edits[2].unwrap_or_else(|| theme.resolve_role(SemanticRole::Background).hsla()),
+            accent: edits[0].unwrap_or_else(|| theme.resolve_role_source(SemanticRole::Primary).value),
+            gray: edits[1].unwrap_or_else(|| theme.resolve_step_source(ScaleFamily::Gray, 8).value),
+            background: edits[2].unwrap_or_else(|| theme.resolve_role_source(SemanticRole::Background).value),
         }
     }
 
     fn apply(&self, theme: &Look, draft: &Look) {
         if self.for_mode(theme.mode()).iter().any(Option::is_some) {
-            draft.set_custom_colors(self.colors(theme));
+            if let Err(error) = draft.set_custom_colors(self.colors(theme)) {
+                eprintln!("failed to generate Radix colors: {error}");
+            }
         }
     }
 
-    fn set(&mut self, mode: ThemeMode, index: usize, color: Hsla) {
+    fn set(&mut self, mode: ThemeMode, index: usize, color: ColorValue) {
         let values = match mode {
             ThemeMode::Light => &mut self.light,
             ThemeMode::Dark => &mut self.dark,
@@ -467,7 +478,7 @@ impl Render for RadixStudioApp {
             RadixStudioTab::CustomPalette => {
                 let recipe = radix::PageBackground { settle_at: 0.5, ..Default::default() };
                 let (start, _) = recipe.stops(&self.draft);
-                let end = self.palette_edits.colors(&self.theme).background;
+                let end = editor_preview(self.palette_edits.colors(&self.theme).background);
                 gpui::linear_gradient(
                     180.0,
                     gpui::linear_color_stop(start, 0.0),
@@ -540,12 +551,12 @@ mod palette_edit_tests {
         let theme = Look::built_in();
         theme.set_mode(STARTUP_MODE);
         let edits = PaletteEdits::startup();
-        assert_eq!(edits.colors(&theme).background, gpui::black());
+        assert_eq!(edits.colors(&theme).background, ColorValue::srgb(0.0, 0.0, 0.0, 1.0));
         let draft = theme.fork();
         edits.apply(&theme, &draft);
         assert_eq!(draft.resolve_step(ScaleFamily::Gray, 1).hsla().l, 0.0);
         theme.set_mode(ThemeMode::Light);
-        assert!(edits.colors(&theme).background.l > 0.9);
+        assert!(editor_preview(edits.colors(&theme).background).l > 0.9);
     }
 
     #[test]
@@ -555,18 +566,18 @@ mod palette_edit_tests {
         let draft = theme.fork();
         let mut edits = PaletteEdits::default();
         let original = edits.colors(&theme);
-        edits.set(ThemeMode::Dark, 0, gpui::rgb(0x941100).into());
+        edits.set(ThemeMode::Dark, 0, ColorValue::srgb(148.0 / 255.0, 17.0 / 255.0, 0.0, 1.0));
         edits.apply(&theme, &draft);
         let inputs = edits.colors(&theme);
         assert_eq!(inputs.gray, original.gray);
         assert_eq!(inputs.background, original.background);
         assert_ne!(draft.resolve_step(ScaleFamily::Color, 9).hsla(), theme.resolve_step(ScaleFamily::Color, 9).hsla());
         let old_gray = draft.resolve_step(ScaleFamily::Gray, 8).hsla();
-        edits.set(ThemeMode::Dark, 1, gpui::rgb(0x807060).into());
+        edits.set(ThemeMode::Dark, 1, gpui_bridge::from_rgba(gpui::rgb(0x807060)));
         edits.apply(&theme, &draft);
         assert_ne!(draft.resolve_step(ScaleFamily::Gray, 8).hsla(), old_gray);
         let old_background = draft.resolve_step(ScaleFamily::Color, 1).hsla();
-        edits.set(ThemeMode::Dark, 2, gpui::black());
+        edits.set(ThemeMode::Dark, 2, ColorValue::srgb(0.0, 0.0, 0.0, 1.0));
         edits.apply(&theme, &draft);
         assert_ne!(draft.resolve_step(ScaleFamily::Color, 1).hsla(), old_background);
         let dark_colors = (1..=12).map(|step| draft.resolve_step(ScaleFamily::Color, step).hsla()).collect::<Vec<_>>();
@@ -589,8 +600,16 @@ mod palette_edit_tests {
     #[test]
     fn all_three_inputs_survive_mode_changes_and_reset_clears_both_modes() {
         let mut edits = PaletteEdits::default();
-        let dark = [gpui::rgb(0xe85454).into(), gpui::rgb(0x555555).into(), gpui::rgb(0x000000).into()];
-        let light = [gpui::rgb(0x3264ff).into(), gpui::rgb(0xaaaaaa).into(), gpui::rgb(0xffffff).into()];
+        let dark = [
+            gpui_bridge::from_rgba(gpui::rgb(0xe85454)),
+            gpui_bridge::from_rgba(gpui::rgb(0x555555)),
+            gpui_bridge::from_rgba(gpui::rgb(0x000000)),
+        ];
+        let light = [
+            gpui_bridge::from_rgba(gpui::rgb(0x3264ff)),
+            gpui_bridge::from_rgba(gpui::rgb(0xaaaaaa)),
+            gpui_bridge::from_rgba(gpui::rgb(0xffffff)),
+        ];
         for (index, color) in dark.into_iter().enumerate() {
             edits.set(ThemeMode::Dark, index, color);
         }

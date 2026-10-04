@@ -296,7 +296,8 @@ mod tests {
     fn explicit_look_wins_over_ambient() {
         let ambient = Look::built_in();
         let fork = ambient.fork();
-        fork.set_accent_seed(gpui::hsla(0.05, 0.9, 0.5, 1.0));
+        fork.set_accent_seed(gpui_luma::color::gpui_bridge::from_hsla(gpui::hsla(0.05, 0.9, 0.5, 1.0)))
+            .unwrap();
         let resolved = resolve_look(Some(&fork), Some(&ambient));
         assert_eq!(primary(&resolved), primary(&fork));
         assert_ne!(primary(&resolved), primary(&ambient));
@@ -305,7 +306,9 @@ mod tests {
     #[test]
     fn ambient_is_used_when_look_is_omitted() {
         let ambient = Look::built_in().fork();
-        ambient.set_accent_seed(gpui::hsla(0.12, 0.8, 0.4, 1.0));
+        ambient
+            .set_accent_seed(gpui_luma::color::gpui_bridge::from_hsla(gpui::hsla(0.12, 0.8, 0.4, 1.0)))
+            .unwrap();
         let resolved = resolve_look(None, Some(&ambient));
         assert_eq!(primary(&resolved), primary(&ambient));
         assert_ne!(primary(&resolved), primary(&Look::built_in()));

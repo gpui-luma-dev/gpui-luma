@@ -1,3 +1,4 @@
+use gpui_luma::color::gpui_bridge;
 use super::common::{arc_contains_turn, turn_to_position};
 use super::track_context::ColorArcTrackContext;
 use super::types::ColorArcDelegate;
@@ -104,7 +105,7 @@ impl RasterArcDelegate {
     }
 
     fn cache_key(&self, context: &ColorArcTrackContext, border_color: Hsla) -> ArcCacheKey {
-        let border_rgb = border_color.to_rgb();
+        let border_rgb = gpui_bridge::preview_rgba(border_color);
         ArcCacheKey {
             mode: match self.mode {
                 ColorArcRasterMode::Hue => 0,
@@ -203,7 +204,7 @@ impl RasterArcDelegate {
         let fill_start_center = cap_center(start_turn, fill_track_radius, center_x, center_y);
         let fill_end_center = cap_center(end_turn, fill_track_radius, center_x, center_y);
 
-        let border_rgb = border_color.to_rgb();
+        let border_rgb = gpui_bridge::preview_rgba(border_color);
         let border_r = border_rgb.r.clamp(0.0, 1.0);
         let border_g = border_rgb.g.clamp(0.0, 1.0);
         let border_b = border_rgb.b.clamp(0.0, 1.0);
@@ -251,7 +252,8 @@ impl RasterArcDelegate {
                                     logical_position(context.reversed, 1.0)
                                 };
 
-                                let fill_rgb = self.color_at_logical_position(logical_position).to_rgb();
+                                let fill_rgb =
+                                    gpui_bridge::preview_rgba(self.color_at_logical_position(logical_position));
                                 sample_rgb = Some((fill_rgb.r, fill_rgb.g, fill_rgb.b));
                             }
                         }

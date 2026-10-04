@@ -3,8 +3,8 @@
 //! Reference: radix-ui/website bb424082fd33fadc244a6dd276d3ced55caa6234,
 //! `components/generate-radix-colors.tsx`, @radix-ui/colors 3.0.0, Color.js 0.5.2.
 //! Uses the original P3 reference scales, Lab interpolation, OKLCH adjustments,
-//! background easing, and CSS gamut mapping. Output is the opaque sRGB palette
-//! used by GPUI; the website's CSS alpha/P3 serialization is not needed here.
+//! background easing. Derived Oklch values and original seeds are retained; the
+//! SDK bridge supplies precomputed sRGB previews for GPUI.
 //! See LICENSES.txt and tools/generate-custom-colors.mjs for attribution/fixtures.
 
 // Authored RGB channels can happen to resemble mathematical constants.
@@ -15,6 +15,7 @@ mod matrices;
 
 use std::sync::LazyLock;
 use gpui::Hsla;
+use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 use gpui_luma::theme::ThemeMode;
 use crate::ColorScale;
 use color::Color;
@@ -26,48 +27,61 @@ static DARK: LazyLock<[Scale; 29]> = LazyLock::new(|| catalog::DARK.map(|scale| 
 /// Opaque seed colors for a custom Radix palette. Appearance is supplied separately.
 #[derive(Clone, Copy, Debug)]
 pub struct CustomColors {
-    pub accent: Hsla,
-    pub gray: Hsla,
-    pub background: Hsla,
+    pub accent: ColorValue,
+    pub gray: ColorValue,
+    pub background: ColorValue,
 }
 
-/// Generated sRGB scales and the foreground for solid accent controls.
+/// Retained generated scales with precomputed sRGB previews and the foreground for solid accent controls.
 #[derive(Clone, Copy, Debug)]
 pub struct GeneratedColors {
     pub accent: ColorScale,
     pub gray: ColorScale,
     pub accent_contrast: Hsla,
+    pub accent_contrast_source: ColorValue,
+    pub inputs: CustomColors,
 }
 
 /// Generate a custom palette using Radix's perceptual scale adaptation algorithm.
-/// Inputs are treated as opaque, matching the website's native color inputs.
-pub fn generate_colors(inputs: CustomColors, mode: ThemeMode) -> GeneratedColors {
+/// Seeds must be opaque; invalid colors return an error. No 8-bit rounding is performed.
+pub fn generate_colors(inputs: CustomColors, mode: ThemeMode) -> anyhow::Result<GeneratedColors> {
+    for input in [inputs.accent, inputs.gray, inputs.background] {
+        input.validate()?;
+        anyhow::ensure!(input.alpha() == 1.0, "Radix custom color seeds must be opaque");
+    }
     let scales = match mode {
         ThemeMode::Light => &*LIGHT,
         ThemeMode::Dark => &*DARK,
     };
-    let background = Color::from_hsla(inputs.background);
-    let source = Color::from_hsla(inputs.accent);
-    let gray = scale_from_color(Color::from_hsla(inputs.gray), &scales[..6], background, mode);
+    let background = Color::from_source(inputs.background)?;
+    let source = Color::from_source(inputs.accent)?;
+    let gray = scale_from_color(Color::from_source(inputs.gray)?, &scales[..6], background, mode);
     let mut accent = scale_from_color(source, scales, background, mode);
-    let rgb = source.hsla();
-    if rgb.l == 0.0 || rgb.l == 1.0 {
+    if source.l <= 0.000001 || source.l >= 0.999999 {
         accent = gray;
     }
     // Near-background seeds need a useful solid rather than white-on-white/black-on-black.
-    if source.distance(accent[0]) * 100.0 >= 25.0 {
+    let keeps_seed = source.distance(accent[0]) * 100.0 >= 25.0;
+    if keeps_seed {
         accent[8] = source;
     }
-    let accent_contrast = accent[8].text_color().hsla();
+    let accent_contrast_source = accent[8].text_color().source();
+    let accent_contrast = gpui_bridge::to_hsla(accent_contrast_source, GamutMapping::CssLocalMinde)?;
     accent[9] = button_hover(accent[8], &accent);
     let max_text_chroma = accent[8].c.max(accent[7].c);
     accent[10].c = accent[10].c.min(max_text_chroma);
     accent[11].c = accent[11].c.min(max_text_chroma);
-    GeneratedColors {
-        accent: ColorScale::new(accent.map(Color::hsla)),
-        gray: ColorScale::new(gray.map(Color::hsla)),
-        accent_contrast,
+    let mut accent_sources = accent.map(Color::source);
+    if keeps_seed {
+        accent_sources[8] = inputs.accent;
     }
+    Ok(GeneratedColors {
+        accent: ColorScale::new(accent_sources, GamutMapping::CssLocalMinde)?,
+        gray: ColorScale::new(gray.map(Color::source), GamutMapping::CssLocalMinde)?,
+        accent_contrast,
+        accent_contrast_source,
+        inputs,
+    })
 }
 
 fn scale_from_color(source: Color, scales: &[Scale], background: Color, mode: ThemeMode) -> Scale {
@@ -210,10 +224,45 @@ mod tests {
         }
     }
     #[test]
+    fn p3_and_oklch_seeds_survive_generation_without_quantization() {
+        for accent in [ColorValue::display_p3(1.0, 0.0, 0.0, 1.0), ColorValue::oklch(0.65, 0.35, 725.0, 1.0)] {
+            let inputs = CustomColors {
+                accent,
+                gray: ColorValue::srgb(0.5, 0.5, 0.5, 1.0),
+                background: ColorValue::srgb(1.0, 1.0, 1.0, 1.0),
+            };
+            let colors = generate_colors(inputs, ThemeMode::Light).unwrap();
+            assert_eq!(colors.inputs.accent, accent);
+            assert_eq!(colors.accent.source_step(9), accent);
+            assert!(!colors.accent.source_step(9).is_in_gamut(gpui_luma::color::Gamut::Srgb).unwrap());
+            assert_eq!(colors.accent.step(9), gpui_bridge::to_hsla(accent, GamutMapping::CssLocalMinde).unwrap());
+            let rgb: gpui::Rgba = colors.accent.step(3).into();
+            assert!([rgb.r, rgb.g, rgb.b].iter().any(|value| (value * 255.0 - (value * 255.0).round()).abs() > 0.01));
+        }
+    }
+
+    #[test]
+    fn invalid_or_transparent_generator_seeds_are_rejected() {
+        for accent in [ColorValue::srgb(f32::NAN, 0.0, 0.0, 1.0), ColorValue::display_p3(1.0, 0.0, 0.0, 0.5)] {
+            assert!(
+                generate_colors(
+                    CustomColors {
+                        accent,
+                        gray: ColorValue::srgb(0.5, 0.5, 0.5, 1.0),
+                        background: ColorValue::srgb(1.0, 1.0, 1.0, 1.0)
+                    },
+                    ThemeMode::Light
+                )
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
     fn matches_upstream_javascript_srgb_vectors() {
         for fixture in CASES {
-            let [accent, gray, background] = fixture.inputs.map(|v| gpui::rgb(v).into());
-            let result = generate_colors(CustomColors { accent, gray, background }, fixture.mode);
+            let [accent, gray, background] = fixture.inputs.map(|v| gpui_bridge::from_rgba(gpui::rgb(v)));
+            let result = generate_colors(CustomColors { accent, gray, background }, fixture.mode).unwrap();
             let label = format!("{} {:?} {:?}", fixture.name, fixture.mode, fixture.inputs);
             for i in 0..12 {
                 check(result.accent.step(i as u8 + 1), fixture.accent[i], &format!("{label} accent {}", i + 1));
@@ -229,9 +278,14 @@ mod tests {
                 ThemeMode::Light => &*LIGHT,
                 ThemeMode::Dark => &*DARK,
             };
-            for accent in references.iter().flatten().map(|c| c.hsla()).chain([gpui::black(), gpui::white()]) {
-                for background in [gpui::black(), gpui::white()] {
-                    let result = generate_colors(CustomColors { accent, gray: accent, background }, mode);
+            for accent in references
+                .iter()
+                .flatten()
+                .map(|c| c.source())
+                .chain([ColorValue::srgb(0.0, 0.0, 0.0, 1.0), ColorValue::srgb(1.0, 1.0, 1.0, 1.0)])
+            {
+                for background in [ColorValue::srgb(0.0, 0.0, 0.0, 1.0), ColorValue::srgb(1.0, 1.0, 1.0, 1.0)] {
+                    let result = generate_colors(CustomColors { accent, gray: accent, background }, mode).unwrap();
                     for step in 1..=12 {
                         for c in [result.accent.step(step), result.gray.step(step), result.accent_contrast] {
                             assert!(

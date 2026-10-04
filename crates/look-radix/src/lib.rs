@@ -64,8 +64,8 @@
 //!
 //! [`Accent`] and [`Gray`] select named palettes; [`Tone`] chooses accent or neutral
 //! control colors. [`ScaleFamily`] and [`SemanticRole`] provide direct resolution.
-//! [`generate_colors`] adapts [`CustomColors`] into sRGB scales; GPUI rendering here
-//! does not use Display P3. [`Look::set_custom_colors`] updates only the active mode.
+//! [`generate_colors`] retains source seeds and generated colors, with precomputed
+//! sRGB previews for the current GPUI backend. [`Look::set_custom_colors`] updates only the active mode.
 //!
 //! Cloning a look shares its state. [`Look::fork`] copies it independently for a
 //! preview or editor. Shared settings affect controls bound to that same look;
@@ -133,7 +133,9 @@ pub use look::{PageBackground, Look};
 pub use palette::{PaletteSlot, Accent, Gray, ThemePalettes, scale_pair};
 pub use scale::{CUSTOM_PALETTE, ColorScale, ModeScales, SCALE_LEN, ScaleFamily, ScalePair, ScaleStep};
 pub use colors::{BLACK_ALPHA_STEPS, DARK_FAMILIES, LIGHT_FAMILIES, COLORS_VERSION, WHITE_ALPHA_STEPS};
-pub use colors::{RawColorScale, ColorValueKind, families as color_families, parse_color};
+pub use colors::{
+    RawColorScale, ColorValueKind, families as color_families, parse_color, parse_source_color, family_source_steps,
+};
 pub use custom_colors::{CustomColors, GeneratedColors, generate_colors};
 pub use semantic::{SemanticMapping, SemanticRole};
 pub use tone::Tone;

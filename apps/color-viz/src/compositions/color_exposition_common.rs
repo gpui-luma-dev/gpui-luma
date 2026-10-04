@@ -1,5 +1,6 @@
 //! Shared layout and readout helpers for color control expositions.
 
+use gpui_luma::color::gpui_bridge::from_hsla;
 use gpui::{FontWeight, Hsla, div, prelude::*, px};
 use gpui_luma_color::ColorSwatch;
 use gpui_luma_color::color_field::ColorFieldEvent;
@@ -145,7 +146,7 @@ pub(super) fn render_composition_readout_footer(
         footer = footer.child(
             div().w_full().flex().justify_center().child(
                 div().w(px(width)).child(
-                    ColorSwatch::new(color)
+                    ColorSwatch::new(from_hsla(color))
                         .checkerboard(false)
                         .height(px(COMPOSITION_READOUT_SWATCH_HEIGHT))
                         .rounded(radius),
