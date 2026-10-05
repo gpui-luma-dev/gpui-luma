@@ -102,7 +102,9 @@ artifacts are retained for seven days.
 
 [CI](https://github.com/gpui-luma-dev/gpui-luma/actions/workflows/ci.yml) runs on pull
 requests and pushes to `main`, and can also be started manually. It checks
-formatting, Clippy, workspace tests, and doctests on macOS:
+formatting, Clippy, and doctests on macOS. Pull requests run tests for the four
+library crates; pushes to `main` and manual runs test the full workspace.
+To run the full checks locally:
 
 ```bash
 cargo fmt --all --check
