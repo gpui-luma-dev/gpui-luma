@@ -864,6 +864,89 @@ mod screen_content_tests {
     }
 
     #[test]
+    fn alpha_catalog_swatches_have_visible_preview_geometry() {
+        let mut app = TestAppContext::single();
+        let (studio, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            RadixStudioApp::new(window, cx)
+        });
+        cx.simulate_resize(gpui::size(px(1400.0), px(3000.0)));
+        cx.update(|_, cx| {
+            let screens = studio.read(cx).screens.clone();
+            screens.update(cx, |tabs, cx| tabs.set_active("page-colors", cx));
+        });
+        cx.run_until_parked();
+        for mode in [ThemeMode::Dark, ThemeMode::Light] {
+            cx.update(|_, cx| studio.update(cx, |studio, cx| studio.set_mode(mode, cx)));
+            cx.run_until_parked();
+            for (id, preview_id) in [
+                ("catalog-Black-1", "catalog-Black-1-preview"),
+                ("catalog-Black-12", "catalog-Black-12-preview"),
+                ("catalog-White-1", "catalog-White-1-preview"),
+                ("catalog-White-12", "catalog-White-12-preview"),
+            ] {
+                let cell = cx.debug_bounds(id).expect("alpha swatch cell");
+                let preview = cx.debug_bounds(preview_id).expect("alpha preview");
+                assert_eq!(preview.size.width, cell.size.width - px(2.0), "{id}");
+                assert_eq!(preview.size.height, cell.size.height - px(2.0), "{id}");
+                cx.simulate_click(cell.center(), Default::default());
+                cx.run_until_parked();
+                cx.update(|_, app| {
+                    let panel = studio.read(app).color_details.read(app);
+                    assert!(panel.is_open(app));
+                    let selected = panel.selected().expect("selected alpha color");
+                    let values = if id.contains("Black") {
+                        &radix::BLACK_ALPHA_STEPS
+                    } else {
+                        &radix::WHITE_ALPHA_STEPS
+                    };
+                    let index = if id.ends_with("-1") { 0 } else { 11 };
+                    assert_eq!(selected.color, radix::parse_color(values[index]));
+                    assert!(selected.color.a < 1.0);
+                });
+                let values = cx.update(|_, app| {
+                    let selected = studio.read(app).color_details.read(app).selected().unwrap();
+                    [selected.solid, selected.alpha, selected.hsl, selected.hsla, selected.p3, selected.p3_alpha]
+                });
+                for (index, (copy_id, expected)) in [
+                    "swatch-info-copy-solid",
+                    "swatch-info-copy-alpha",
+                    "swatch-info-copy-hsl",
+                    "swatch-info-copy-hsla",
+                    "swatch-info-copy-p3",
+                    "swatch-info-copy-p3-alpha",
+                ]
+                .into_iter()
+                .zip(values)
+                .enumerate()
+                {
+                    let copy = cx.debug_bounds(copy_id).expect("copy button");
+                    cx.simulate_click(copy.center(), Default::default());
+                    cx.run_until_parked();
+                    cx.update(|_, app| {
+                        assert_eq!(app.read_from_clipboard().and_then(|item| item.text()), Some(expected));
+                        assert!(studio.read(app).color_details.read(app).is_open(app));
+                        assert!(studio.read(app).color_details.read(app).is_copied(index, app));
+                    });
+                }
+                cx.executor().advance_clock(std::time::Duration::from_millis(1500));
+                cx.run_until_parked();
+                cx.update(|_, app| {
+                    for index in 0..6 {
+                        assert!(!studio.read(app).color_details.read(app).is_copied(index, app));
+                    }
+                });
+                let popup = cx.debug_bounds("swatch-info-preview").expect("popup swatch preview");
+                assert!(popup.size.width > px(0.0));
+                assert_eq!(popup.size.height, px(240.0));
+                let close = cx.debug_bounds("swatch-info-close").expect("close button");
+                cx.simulate_click(close.center(), Default::default());
+                cx.run_until_parked();
+            }
+        }
+    }
+
+    #[test]
     fn colors_catalog_opens_shared_details_with_current_mode_values() {
         let mut app = TestAppContext::single();
         let (studio, cx) = app.add_window_view(|window, cx| {

@@ -13,3 +13,5 @@ pub(crate) use screen_nav::SCREEN_TABS;
 pub(crate) mod theme_mode;
 
 pub(crate) mod swatch_info;
+
+mod copy_icon;

@@ -8,8 +8,6 @@ color controls, and desktop example apps. Source lives at
 [gpui-luma.dev](https://gpui-luma.dev) redirects to this repository.
 
 Requires a recent Rust stable toolchain (`rust-toolchain.toml` tracks `stable`).
-The workspace is prepared for `0.1.3`; the latest published crates.io version is
-currently `0.1.2`.
 
 ## Build
 
@@ -104,7 +102,9 @@ artifacts are retained for seven days.
 
 [CI](https://github.com/gpui-luma-dev/gpui-luma/actions/workflows/ci.yml) runs on pull
 requests and pushes to `main`, and can also be started manually. It checks
-formatting, Clippy, workspace tests, and doctests on macOS:
+formatting, Clippy, and doctests on macOS. Pull requests run tests for the four
+library crates; pushes to `main` and manual runs test the full workspace.
+To run the full checks locally:
 
 ```bash
 cargo fmt --all --check

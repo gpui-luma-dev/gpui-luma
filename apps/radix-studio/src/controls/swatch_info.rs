@@ -1,6 +1,16 @@
 //! Palette-step details and equivalent alpha colors over the selected background.
 
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use gpui::{Animation, AnimationExt};
+use super::copy_icon::{CopyIcon, success_displacement};
+
+#[derive(Clone, Default)]
+pub(crate) struct CopyFeedback {
+    generation: u64,
+    copied: bool,
+}
+
 use gpui::{AnyElement, Context, Entity, FocusHandle, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::prelude::{HasPresenter, TooltipEntityExt};
 use gpui_luma::controls::button::ButtonEvent;
@@ -20,6 +30,8 @@ pub(crate) struct SwatchSelection {
     pub color: Hsla,
     pub solid: String,
     pub alpha: String,
+    pub hsl: String,
+    pub hsla: String,
     pub p3: String,
     pub p3_alpha: String,
 }
@@ -46,6 +58,10 @@ impl SwatchSelection {
             1.0,
         );
         let mut selection = Self::from_source(name, step, solid, background)?;
+        // Keep the original translucent color for the preview. The solid value
+        // above is only the equivalent color shown in the details text.
+        selection.color = gpui_luma::color::gpui_bridge::to_hsla(source, GamutMapping::CssLocalMinde)?;
+        selection.hsla = format_hsl(selection.color, true);
         selection.alpha =
             format!("#{:02X}{:02X}{:02X}{:02X}", byte(rgb.red), byte(rgb.green), byte(rgb.blue), byte(rgb.alpha));
         let p3 = DisplayP3Color::from_color_unclamped(rgb);
@@ -63,11 +79,17 @@ impl SwatchSelection {
         let p3_bg = DisplayP3Color::from_color_unclamped(background.to_srgba_unclamped()?);
         let (p3_rgb, p3_alpha) = equivalent_alpha([p3.red, p3.green, p3.blue], [p3_bg.red, p3_bg.green, p3_bg.blue]);
         let oklch = source.to_oklcha_unclamped()?;
+        let alpha_color = gpui_luma::color::gpui_bridge::to_hsla(
+            ColorValue::srgb(alpha_rgb[0], alpha_rgb[1], alpha_rgb[2], alpha),
+            GamutMapping::CssLocalMinde,
+        )?;
         Ok(Self {
             title: format!("{name} {step}"),
             step,
             color,
             solid: format!("#{}", format_hex(color)),
+            hsl: format_hsl(color, false),
+            hsla: format_hsl(alpha_color, true),
             alpha: format!(
                 "#{:02X}{:02X}{:02X}{:02X}",
                 byte(alpha_rgb[0]),
@@ -86,7 +108,8 @@ pub(crate) struct ColorDetails {
     selection: Arc<Mutex<Option<SwatchSelection>>>,
     overlay: OverlayWindow,
     close: Entity<Button<Hsla>>,
-    _subscription: Subscription,
+    copies: Vec<Entity<Button<CopyFeedback>>>,
+    _subscriptions: Vec<Subscription>,
 }
 
 impl ColorDetails {
@@ -103,6 +126,83 @@ impl ColorDetails {
             })
             .spawn(cx)
             .help("Close color details", cx);
+        let mut subscriptions = Vec::new();
+        let copies: Vec<Entity<Button<CopyFeedback>>> = ["solid", "alpha", "hsl", "hsla", "p3", "p3-alpha"]
+            .into_iter()
+            .enumerate()
+            .map(|(index, name)| {
+                let button_look = Arc::clone(look);
+                let id = format!("swatch-info-copy-{name}");
+                let button = super::icon_button::ghost_no_hover(id.clone(), look, CopyFeedback::default())
+                    .compact()
+                    .content(move |model, _| {
+                        let color = button_look.resolve_role(SemanticRole::MutedForeground).hsla();
+                        let icon = CopyIcon { color, displacement: 0.0 };
+                        let icon = if model.data.copied {
+                            icon.with_animation(
+                                ("copy-success", model.data.generation),
+                                Animation::new(Duration::from_millis(1400)),
+                                |mut icon, progress| {
+                                    icon.displacement = success_displacement(progress);
+                                    icon
+                                },
+                            )
+                            .into_any_element()
+                        } else {
+                            icon.into_any_element()
+                        };
+                        icon
+                    })
+                    .with_template_modifier(move |root, model| {
+                        root.aria_label(if model.data.copied {
+                            "Copied"
+                        } else {
+                            "Copy to clipboard"
+                        })
+                        .debug_selector({
+                            let id = id.clone();
+                            move || id.clone()
+                        })
+                    })
+                    .spawn(cx)
+                    .help("Copy to clipboard", cx);
+                subscriptions.push(cx.subscribe(&button, move |this, button, event: &ButtonEvent, cx| {
+                    if matches!(event, ButtonEvent::Click)
+                        && let Some(selection) = this.selection.lock().ok().and_then(|info| info.clone())
+                    {
+                        let values = [
+                            &selection.solid,
+                            &selection.alpha,
+                            &selection.hsl,
+                            &selection.hsla,
+                            &selection.p3,
+                            &selection.p3_alpha,
+                        ];
+                        cx.write_to_clipboard(gpui::ClipboardItem::new_string(values[index].clone()));
+                        button.update(cx, |button, cx| {
+                            let mut feedback = button.data().clone();
+                            feedback.generation = feedback.generation.wrapping_add(1);
+                            feedback.copied = true;
+                            let generation = feedback.generation;
+                            button.set_data(feedback, cx);
+                            cx.spawn(async move |button, cx| {
+                                cx.background_executor().timer(Duration::from_millis(1400)).await;
+                                let _ = button.update(cx, |button, cx| {
+                                    if button.data().generation == generation {
+                                        let mut feedback = button.data().clone();
+                                        feedback.copied = false;
+                                        button.set_data(feedback, cx);
+                                    }
+                                });
+                            })
+                            .detach();
+                        });
+                    }
+                }));
+                button
+            })
+            .collect();
+        let popup_copies = copies.clone();
         let popup_look = Arc::clone(look);
         let shell_look = Arc::clone(look);
         let info = Arc::clone(&selection);
@@ -122,21 +222,29 @@ impl ColorDetails {
                     .max_h((window.viewport_size().height - px(64.0)).max(px(100.0)))
                     .overflow_y_scroll()
                     .when_some(selection, |root, selection| {
-                        root.child(render(&selection, &popup_look, popup_close.clone()))
+                        root.child(render(&selection, &popup_look, popup_close.clone(), &popup_copies))
                     })
                     .into_any_element()
             })
             .theme_child(close.clone())
+            .theme_children(copies.clone())
             .spawn(cx);
         let subscription = cx.subscribe(&close, |this, _, event: &ButtonEvent, cx| {
             if matches!(event, ButtonEvent::Click) {
                 this.overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
             }
         });
-        Self { selection, overlay, close, _subscription: subscription }
+        subscriptions.push(subscription);
+        Self { selection, overlay, close, copies, _subscriptions: subscriptions }
     }
 
     pub fn open(&mut self, selection: SwatchSelection, focus: Option<FocusHandle>, cx: &mut Context<Self>) {
+        for copy in &self.copies {
+            copy.update(cx, |button, cx| {
+                let generation = button.data().generation.wrapping_add(1);
+                button.set_data(CopyFeedback { generation, copied: false }, cx);
+            });
+        }
         let foreground = close_foreground(selection.color);
         self.close.update(cx, |close, cx| close.set_data(foreground, cx));
         if let Ok(mut info) = self.selection.lock() {
@@ -146,6 +254,10 @@ impl ColorDetails {
         cx.notify();
     }
 
+    #[cfg(all(test, feature = "test-support"))]
+    pub fn is_copied(&self, index: usize, cx: &gpui::App) -> bool {
+        self.copies[index].read(cx).data().copied
+    }
     #[cfg(all(test, feature = "test-support"))]
     pub fn selected(&self) -> Option<SwatchSelection> {
         self.selection.lock().ok().and_then(|guard| guard.clone())
@@ -182,6 +294,7 @@ pub(crate) fn swatch<M: 'static>(
     let color = Arc::new(color);
     let content_color = Arc::clone(&color);
     let debug_id = id.clone();
+    let preview_id = format!("{id}-preview");
     Button::new(id.clone())
         .template(radix::button_template(look, radix::ButtonVariant::GhostQuiet, radix::Paint::accent()))
         .with_look(move |model| {
@@ -196,15 +309,22 @@ pub(crate) fn swatch<M: 'static>(
         })
         .content(move |_, _| {
             let color = content_color();
-            div().when(color.a < 1.0, |root| {
-                root.child(
-                    gpui_luma_color::ColorSwatch::new(gpui_luma::color::gpui_bridge::from_hsla(color))
-                        .height(px(height - 2.0))
-                        .rounded(px(0.0))
-                        .bordered(false)
-                        .checkerboard(true),
-                )
-            })
+            div()
+                .debug_selector({
+                    let id = preview_id.clone();
+                    move || id.clone()
+                })
+                .when(color.a < 1.0, |root| {
+                    // Button presenters are measured intrinsically. Give the
+                    // percentage-width canvas a concrete catalog-cell width.
+                    root.when_some(width, |root, width| root.w(px((width - 2.0).max(0.0)))).child(
+                        gpui_luma_color::ColorSwatch::new(gpui_luma::color::gpui_bridge::from_hsla(color))
+                            .height(px(height - 2.0))
+                            .rounded(px(0.0))
+                            .bordered(false)
+                            .checkerboard(true),
+                    )
+                })
         })
         .with_template_modifier(move |root, _| {
             let color = color();
@@ -251,6 +371,17 @@ fn byte(value: f32) -> u8 {
     (value.clamp(0.0, 1.0) * 255.0).round() as u8
 }
 
+fn format_hsl(color: Hsla, include_alpha: bool) -> String {
+    let hue = color.h * 360.0;
+    let saturation = color.s * 100.0;
+    let lightness = color.l * 100.0;
+    if include_alpha {
+        format!("hsla({hue:.1}, {saturation:.1}%, {lightness:.1}%, {:.4})", color.a)
+    } else {
+        format!("hsl({hue:.1}, {saturation:.1}%, {lightness:.1}%)")
+    }
+}
+
 // Smallest opacity whose foreground can reproduce the solid color over this background.
 fn equivalent_alpha(color: [f32; 3], background: [f32; 3]) -> ([f32; 3], f32) {
     let alpha = color
@@ -285,7 +416,12 @@ fn usage(step: u8) -> (&'static str, &'static str) {
     }
 }
 
-pub(crate) fn render(selection: &SwatchSelection, look: &Look, close: Entity<Button<Hsla>>) -> AnyElement {
+pub(crate) fn render(
+    selection: &SwatchSelection,
+    look: &Look,
+    close: Entity<Button<Hsla>>,
+    copies: &[Entity<Button<CopyFeedback>>],
+) -> AnyElement {
     let fg = look.resolve_role(SemanticRole::Foreground).hsla();
     let muted = look.resolve_role(SemanticRole::MutedForeground).hsla();
     let border = look.resolve_role(SemanticRole::Border).hsla();
@@ -293,6 +429,7 @@ pub(crate) fn render(selection: &SwatchSelection, look: &Look, close: Entity<But
     let row = |label: &'static str, value: String| {
         div()
             .flex()
+            .items_center()
             .gap(px(16.0))
             .child(div().w(px(104.0)).flex_none().text_color(muted).child(label))
             .child(div().min_w_0().flex_1().child(value))
@@ -308,17 +445,37 @@ pub(crate) fn render(selection: &SwatchSelection, look: &Look, close: Entity<But
                 .relative()
                 .w_full()
                 .h(px(240.0))
-                .bg(selection.color)
+                .debug_selector(|| "swatch-info-preview".into())
+                .child(
+                    gpui_luma_color::ColorSwatch::new(gpui_luma::color::gpui_bridge::from_hsla(selection.color))
+                        .height(px(240.0))
+                        .rounded(px(0.0))
+                        .bordered(false)
+                        .checkerboard(true),
+                )
                 .child(div().absolute().top(px(4.0)).right(px(4.0)).child(close)),
         )
         .child(div().text_lg().font_weight(gpui::FontWeight::BOLD).child(selection.title.clone()))
         .child(row("Usage", usage.into()))
         .child(row("Pairs with", pairs.into()))
         .child(div().w_full().h(px(1.0)).bg(border))
-        .child(row("Solid color", selection.solid.clone()))
-        .child(row("Alpha color", selection.alpha.clone()))
-        .child(row("P3 color", selection.p3.clone()).line_through())
-        .child(row("P3 alpha", selection.p3_alpha.clone()).line_through())
+        .children(
+            [
+                ("Solid color", &selection.solid),
+                ("Alpha color", &selection.alpha),
+                ("HSL", &selection.hsl),
+                ("HSLA", &selection.hsla),
+                ("P3 color", &selection.p3),
+                ("P3 alpha", &selection.p3_alpha),
+            ]
+            .into_iter()
+            .zip(copies)
+            .map(|((label, value), copy)| {
+                row(label, value.clone())
+                    .when(label.starts_with("P3"), |row| row.line_through())
+                    .child(copy.clone())
+            }),
+        )
         .into_any_element()
 }
 
@@ -341,6 +498,12 @@ mod tests {
         let selection = SwatchSelection::from_alpha("White", 5, source, ColorValue::srgb(0.0, 0.0, 0.0, 1.0)).unwrap();
         assert_eq!(selection.alpha, "#FFFFFF80");
         assert_eq!(selection.solid, "#808080");
+        assert_eq!(selection.hsl, "hsl(0.0, 0.0%, 50.2%)");
+        assert_eq!(selection.hsla, "hsla(0.0, 0.0%, 100.0%, 0.5020)");
+        assert_eq!(
+            selection.color,
+            gpui_luma::color::gpui_bridge::to_hsla(source, GamutMapping::CssLocalMinde).unwrap()
+        );
         assert!(selection.p3_alpha.ends_with("/ 0.5020)"));
     }
 
