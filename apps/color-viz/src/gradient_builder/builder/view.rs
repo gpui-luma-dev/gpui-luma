@@ -17,6 +17,87 @@ use super::mesh::{
     render_info_row,
 };
 
+fn compact_slider_row(
+    label: &'static str,
+    slider: Entity<SliderControl>,
+    value: String,
+    style: LumaTextStyle,
+    chrome: gpui_luma::theme::LumaChrome,
+) -> impl IntoElement {
+    div()
+        .w_full()
+        .flex()
+        .items_center()
+        .gap_2()
+        .child(
+            div()
+                .w(px(112.0))
+                .flex_shrink_0()
+                .typography_style(style)
+                .text_color(chrome.muted_text)
+                .child(label),
+        )
+        .child(div().flex_1().min_w_0().child(slider))
+        .child(
+            div()
+                .w(px(44.0))
+                .flex_shrink_0()
+                .text_right()
+                .typography_style(style)
+                .text_color(chrome.body_text)
+                .child(value),
+        )
+}
+
+impl GradientBuilder {
+    fn render_image_adjustments(&self) -> impl IntoElement {
+        let chrome = self.look.chrome();
+        if self.selected_tab == BuilderTab::Freeform {
+            let style = self.look.mode_tokens().typography.text.label;
+            return div()
+                .w_full()
+                .flex()
+                .flex_col()
+                .gap_2()
+                .p_3()
+                .rounded(px(12.0))
+                .border_1()
+                .border_color(chrome.border)
+                .bg(chrome.panel_background)
+                .child(compact_slider_row(
+                    "Saturation · All",
+                    self.saturation_slider.clone(),
+                    format!("{:+.0}", self.image_adjustments.saturation),
+                    style,
+                    chrome,
+                ))
+                .child(compact_slider_row(
+                    "Vibrance · All",
+                    self.vibrance_slider.clone(),
+                    format!("{:+.0}", self.image_adjustments.vibrance),
+                    style,
+                    chrome,
+                ))
+                .into_any_element();
+        }
+        div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .p_3()
+            .rounded(px(12.0))
+            .border_1()
+            .border_color(chrome.border)
+            .bg(chrome.panel_background)
+            .child(form_field!("Saturation · Entire image", chrome; self.saturation_slider.clone()))
+            .child(div().text_color(chrome.muted_text).child(format!("{:+.0}", self.image_adjustments.saturation)))
+            .child(form_field!("Vibrance · Entire image", chrome; self.vibrance_slider.clone()))
+            .child(div().text_color(chrome.muted_text).child(format!("{:+.0}", self.image_adjustments.vibrance)))
+            .into_any_element()
+    }
+}
+
 impl Render for GradientBuilder {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
@@ -163,6 +244,7 @@ impl Render for GradientBuilder {
                     )
                 })),
             stop_editor,
+            self.render_image_adjustments(),
             diagnostics_panel,
         }
         .id("color-viz-gradient-controls")
@@ -178,7 +260,7 @@ impl Render for GradientBuilder {
             BuilderTab::Gradients => {
                 self.selected_stop.and_then(|thumb_id| self.stop_swatch_bounds.get(&thumb_id).copied())
             }
-            BuilderTab::Mesh => match self.mesh_color_target {
+            BuilderTab::Mesh | BuilderTab::Freeform => match self.mesh_color_target {
                 MeshColorTarget::Point(point_index) => self.mesh_swatch_bounds.get(&point_index).copied(),
                 MeshColorTarget::Background => self.mesh_background_swatch_bounds,
             },
@@ -273,7 +355,7 @@ impl Render for GradientBuilder {
                 .min_h_0()
                 .into_any_element()
             }
-            BuilderTab::Mesh => {
+            BuilderTab::Mesh | BuilderTab::Freeform => {
                 let preview_container_builder = cx.entity();
                 let preview_frame_builder = cx.entity();
                 let frame_size = fit_aspect_ratio(self.mesh_preview_container_size, self.mesh_aspect_ratio_preset);
@@ -281,6 +363,16 @@ impl Render for GradientBuilder {
                 let work_area_size =
                     size(frame_size.width + px(MESH_HANDLE_SIZE), frame_size.height + px(MESH_HANDLE_SIZE));
                 let mesh_controls = div().child(render_mesh_controls(
+                    self.render_image_adjustments().into_any_element(),
+                    self.selected_tab == BuilderTab::Freeform,
+                    self.freeform_buttons.clone(),
+                    self.spread_slider.clone(),
+                    self.spread_percent,
+                    self.blend_selector.clone(),
+                    self.point_spread_slider.clone(),
+                    self.selected_mesh_point.and_then(|index| self.point_spreads.get(index)).copied().unwrap_or(100.0),
+                    self.softness_slider.clone(),
+                    self.softness_percent,
                     self.mesh_points.clone(),
                     self.mesh_background,
                     self.selected_mesh_point,
@@ -329,6 +421,19 @@ impl Render for GradientBuilder {
                 };
                 let preview_surface = div()
                     .id("color-viz-mesh-preview")
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(|this, _, _, cx| {
+                            this.deselect_freeform_point(cx);
+                        }),
+                    )
+                    .on_mouse_down(
+                        MouseButton::Right,
+                        cx.listener(|this, _, _, cx| {
+                            cx.stop_propagation();
+                            this.toggle_mesh_controls(cx);
+                        }),
+                    )
                     .relative()
                     .w(work_area_size.width)
                     .h(work_area_size.height)
@@ -381,22 +486,25 @@ impl Render for GradientBuilder {
                                 .inset_0(),
                             ),
                     )
-                    .child(
-                        div()
-                            .absolute()
-                            .left(handle_inset)
-                            .top(handle_inset)
-                            .w(frame_size.width)
-                            .h(frame_size.height)
-                            .children(self.mesh_points.iter().enumerate().map(|(point_index, point)| {
-                                render_mesh_handle(
-                                    point_index,
-                                    *point,
-                                    self.selected_mesh_point == Some(point_index),
-                                    cx.entity(),
-                                )
-                            })),
-                    );
+                    .when(self.mesh_controls_visible, |this| {
+                        this.child(
+                            div()
+                                .absolute()
+                                .left(handle_inset)
+                                .top(handle_inset)
+                                .w(frame_size.width)
+                                .h(frame_size.height)
+                                .children(self.mesh_points.iter().enumerate().map(|(point_index, point)| {
+                                    render_mesh_handle(
+                                        self.selected_tab == BuilderTab::Freeform,
+                                        point_index,
+                                        *point,
+                                        self.selected_mesh_point == Some(point_index),
+                                        cx.entity(),
+                                    )
+                                })),
+                        )
+                    });
                 let preview = div()
                     .flex_1()
                     .min_w(px(0.0))
@@ -560,6 +668,16 @@ fn render_stop_row(
 
 #[allow(clippy::too_many_arguments)]
 fn render_mesh_controls(
+    image_adjustments: gpui::AnyElement,
+    freeform: bool,
+    freeform_buttons: Vec<Entity<Button>>,
+    spread_slider: Entity<SliderControl>,
+    spread_percent: f32,
+    blend_selector: Entity<Selector>,
+    point_spread_slider: Entity<SliderControl>,
+    point_spread: f32,
+    softness_slider: Entity<SliderControl>,
+    softness_percent: f32,
     mesh_points: Vec<MeshPoint>,
     mesh_background: gpui::Hsla,
     selected_mesh_point: Option<usize>,
@@ -578,11 +696,134 @@ fn render_mesh_controls(
 ) -> impl IntoElement {
     let selected_label = selected_mesh_point
         .and_then(|index| mesh_points.get(index))
-        .map(|point| format!("P{}{}", point.row, point.col))
+        .map(|point| {
+            if freeform {
+                (point.col as usize + 1).to_string()
+            } else {
+                format!("P{}{}", point.row, point.col)
+            }
+        })
         .unwrap_or_else(|| "None".to_string());
+
+    if freeform {
+        let editing = selected_mesh_point
+            .map(|index| format!("Editing point {}", index + 1))
+            .unwrap_or_else(|| "Select a point".to_string());
+        let panel = div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .p_3()
+            .rounded(px(12.0))
+            .border_1()
+            .border_color(chrome.border)
+            .bg(chrome.panel_background)
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .child(div().typography_style(info_value_style).text_color(chrome.body_text).child("Freeform"))
+                    .child(mesh_reset_button),
+            )
+            .child(
+                div()
+                    .flex()
+                    .gap_2()
+                    .child(div().flex_1().min_w_0().child(form_field!("Blend", chrome; blend_selector)))
+                    .child(div().flex_1().min_w_0().child(form_field!("Aspect", chrome; mesh_aspect_ratio_selector))),
+            )
+            .child(div().flex().items_center().gap_2().children(freeform_buttons))
+            .child(render_mesh_background_row(mesh_background, info_label_style, chrome, builder.clone()));
+        let fields = div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .p_3()
+            .rounded(px(12.0))
+            .border_1()
+            .border_color(chrome.border)
+            .bg(chrome.panel_background)
+            .child(compact_slider_row(
+                "Spread · All",
+                spread_slider,
+                format!("{spread_percent:.0}%"),
+                info_label_style,
+                chrome,
+            ))
+            .child(compact_slider_row(
+                "Softness · All",
+                softness_slider,
+                format!("{softness_percent:.0}%"),
+                info_label_style,
+                chrome,
+            ))
+            .child(div().typography_style(info_label_style).text_color(chrome.muted_text).child(editing))
+            .child(compact_slider_row(
+                "Point spread",
+                point_spread_slider,
+                selected_mesh_point.map(|_| format!("{point_spread:.0}%")).unwrap_or_else(|| "—".to_string()),
+                info_label_style,
+                chrome,
+            ));
+        let points = div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap_1()
+            .p_2()
+            .rounded(px(12.0))
+            .border_1()
+            .border_color(chrome.border)
+            .bg(chrome.panel_background)
+            .children(mesh_points.into_iter().enumerate().map(|(index, point)| {
+                render_mesh_point_row(
+                    true,
+                    index,
+                    point,
+                    selected_mesh_point == Some(index),
+                    info_label_style,
+                    chrome,
+                    builder.clone(),
+                )
+            }));
+        return div()
+            .id("color-viz-mesh-controls")
+            .w(px(432.0))
+            .flex_shrink_0()
+            .h_full()
+            .min_h_0()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .corner_radii(controls_panel_corner_radii())
+            .overflow_y_scroll()
+            .p(px(12.0))
+            .bg(card_bg)
+            .child(panel)
+            .child(fields)
+            .child(points)
+            .child(image_adjustments)
+            .child(render_info_row(
+                "Preview",
+                format!(
+                    "{} × {} · {}",
+                    preview_size.width.as_f32().round(),
+                    preview_size.height.as_f32().round(),
+                    last_render_ms.map(|ms| format!("{ms:.2} ms")).unwrap_or_else(|| "n/a".to_string())
+                ),
+                info_label_style,
+                info_value_style,
+                chrome,
+            ))
+            .into_any_element();
+    }
 
     vstack! {
         gap=14;
+        image_adjustments,
         div()
             .w_full()
             .flex()
@@ -600,11 +841,21 @@ fn render_mesh_controls(
                     .items_center()
                     .justify_between()
                     .gap_3()
-                    .child(div().typography_style(info_label_style).text_color(chrome.muted_text).child("Mesh"))
+                    .child(div().typography_style(info_label_style).text_color(chrome.muted_text).child(if freeform { "Freeform" } else { "Mesh" }))
                     .child(mesh_reset_button),
             )
-            .child(form_field!("Preset", chrome; mesh_grid_selector))
-            .child(render_info_row("Grid", mesh_grid_preset.label(), info_label_style, info_value_style, chrome))
+            .when(!freeform, |this| this
+                .child(form_field!("Preset", chrome; mesh_grid_selector))
+                .child(render_info_row("Grid", mesh_grid_preset.label(), info_label_style, info_value_style, chrome)))
+            .when(freeform, |this| this.children(freeform_buttons)
+                .child(form_field!("Blend", chrome; blend_selector))
+                .child(form_field!("Global spread · All points", chrome; spread_slider))
+                .child(render_info_row("Editing", if selected_mesh_point.is_some() { format!("Point {selected_label}") } else { "Select a point".to_string() }, info_label_style, info_value_style, chrome))
+                .child(form_field!("Point spread", chrome; point_spread_slider))
+                .child(render_info_row("Point spread", if selected_mesh_point.is_some() { format!("{point_spread:.0}%") } else { "—".to_string() }, info_label_style, info_value_style, chrome))
+                .child(form_field!("Falloff softness · All points", chrome; softness_slider))
+                .child(render_info_row("Softness", format!("{softness_percent:.0}%"), info_label_style, info_value_style, chrome))
+                .child(render_info_row("Spread", format!("{spread_percent:.0}%"), info_label_style, info_value_style, chrome)))
             .child(form_field!("Aspect", chrome; mesh_aspect_ratio_selector))
             .child(render_info_row("Frame", mesh_aspect_ratio_preset.label(), info_label_style, info_value_style, chrome))
             .child(render_info_row("Selected", selected_label, info_label_style, info_value_style, chrome))
@@ -621,6 +872,7 @@ fn render_mesh_controls(
             .p_3()
             .children(mesh_points.into_iter().enumerate().map(|(point_index, point)| {
                 render_mesh_point_row(
+                    freeform,
                     point_index,
                     point,
                     selected_mesh_point == Some(point_index),
@@ -667,6 +919,7 @@ fn render_mesh_controls(
     .overflow_y_scroll()
     .p(px(16.0))
     .bg(card_bg)
+    .into_any_element()
 }
 
 fn render_mesh_background_row(
@@ -727,6 +980,7 @@ fn render_mesh_background_row(
 }
 
 fn render_mesh_point_row(
+    freeform: bool,
     point_index: usize,
     point: MeshPoint,
     selected: bool,
@@ -748,7 +1002,7 @@ fn render_mesh_point_row(
         .flex()
         .items_center()
         .gap_3()
-        .p_3()
+        .p(if freeform { px(6.0) } else { px(12.0) })
         .rounded(px(10.0))
         .border_1()
         .border_color(chrome.border)
@@ -763,6 +1017,7 @@ fn render_mesh_point_row(
                     this.open_color_picker_for_mesh_point(point_index, cx);
                 } else {
                     this.selected_mesh_point = Some(point_index);
+                    this.sync_point_spread(cx);
                     this.mesh_color_target = MeshColorTarget::Point(point_index);
                     this.color_picker_open = false;
                     cx.notify();
@@ -806,44 +1061,48 @@ fn render_mesh_point_row(
                         .flex()
                         .flex_col()
                         .gap_1()
-                        .child(div().typography_style(label_style).text_color(chrome.muted_text).child("POINT"))
-                        .child(
-                            div()
-                                .typography_style(label_style)
-                                .text_color(chrome.body_text)
-                                .child(format!("P{}{}", point.row, point.col)),
-                        ),
+                        .when(!freeform, |this| {
+                            this.child(div().typography_style(label_style).text_color(chrome.muted_text).child("POINT"))
+                        })
+                        .child(div().typography_style(label_style).text_color(chrome.body_text).child(if freeform {
+                            (point_index + 1).to_string()
+                        } else {
+                            format!("P{}{}", point.row, point.col)
+                        })),
                 )
                 .child(
                     div()
                         .flex()
                         .flex_col()
                         .gap_1()
-                        .child(div().typography_style(label_style).text_color(chrome.muted_text).child("X"))
-                        .child(
-                            div()
-                                .typography_style(label_style)
-                                .text_color(chrome.body_text)
-                                .child(format_percent(point.u)),
-                        ),
+                        .when(!freeform, |this| {
+                            this.child(div().typography_style(label_style).text_color(chrome.muted_text).child("X"))
+                        })
+                        .child(div().typography_style(label_style).text_color(chrome.body_text).child(if freeform {
+                            format!("X {}", format_percent(point.u))
+                        } else {
+                            format_percent(point.u)
+                        })),
                 )
                 .child(
                     div()
                         .flex()
                         .flex_col()
                         .gap_1()
-                        .child(div().typography_style(label_style).text_color(chrome.muted_text).child("Y"))
-                        .child(
-                            div()
-                                .typography_style(label_style)
-                                .text_color(chrome.body_text)
-                                .child(format_percent(point.v)),
-                        ),
+                        .when(!freeform, |this| {
+                            this.child(div().typography_style(label_style).text_color(chrome.muted_text).child("Y"))
+                        })
+                        .child(div().typography_style(label_style).text_color(chrome.body_text).child(if freeform {
+                            format!("Y {}", format_percent(point.v))
+                        } else {
+                            format_percent(point.v)
+                        })),
                 ),
         )
 }
 
 fn render_mesh_handle(
+    freeform: bool,
     point_index: usize,
     point: MeshPoint,
     selected: bool,
@@ -869,6 +1128,12 @@ fn render_mesh_handle(
         .bg(point.color)
         .border_2()
         .border_color(border)
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_color(gpui::hsla(0.0, 0.0, 1.0, 1.0))
+        .text_size(px(11.0))
+        .when(freeform, |this| this.child((point_index + 1).to_string()))
         .cursor_pointer()
         .on_mouse_down(MouseButton::Left, move |_, _, cx| {
             cx.stop_propagation();
@@ -888,6 +1153,7 @@ fn render_mesh_handle(
             cx.stop_propagation();
             builder.update(cx, |this, cx| {
                 this.selected_mesh_point = Some(point_index);
+                this.sync_point_spread(cx);
                 this.mesh_color_target = MeshColorTarget::Point(point_index);
                 this.color_picker_open = false;
                 cx.notify();

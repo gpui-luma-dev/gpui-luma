@@ -28,18 +28,24 @@ impl MeshGradientAlgorithm for CoonsPatchMeshAlgorithm {
         points: &[MeshPoint],
         background: Hsla,
     ) -> Option<Arc<gpui::RenderImage>> {
-        rasterize_with_coons_patch(size, points, background)
+        rasterize_with_coons_patch(size, points, background, true)
     }
 }
 
 static DEFAULT_MESH_ALGORITHM: CoonsPatchMeshAlgorithm = CoonsPatchMeshAlgorithm;
 
+/// Render the mesh with optional editing guides.
 pub fn rasterize_mesh_gradient_preview(
     size: gpui::Size<Pixels>,
     points: &[MeshPoint],
     background: Hsla,
+    show_guides: bool,
 ) -> Option<Arc<gpui::RenderImage>> {
-    DEFAULT_MESH_ALGORITHM.rasterize(size, points, background)
+    if show_guides {
+        DEFAULT_MESH_ALGORITHM.rasterize(size, points, background)
+    } else {
+        rasterize_with_coons_patch(size, points, background, false)
+    }
 }
 
 // This hook is intentionally kept even before a second algorithm is wired in.
@@ -66,6 +72,7 @@ fn rasterize_with_coons_patch(
     size: gpui::Size<Pixels>,
     points: &[MeshPoint],
     background: Hsla,
+    show_guides: bool,
 ) -> Option<Arc<gpui::RenderImage>> {
     let (rows, cols) = mesh_dimensions(points)?;
     let cells = build_mesh_cells(points, rows, cols);
@@ -87,7 +94,9 @@ fn rasterize_with_coons_patch(
         }
     }
 
-    paint_mesh_guides(&mut pixmap, points, rows, cols, width as f32, height as f32);
+    if show_guides {
+        paint_mesh_guides(&mut pixmap, points, rows, cols, width as f32, height as f32);
+    }
     pixmap_to_render_image(pixmap)
 }
 

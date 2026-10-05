@@ -81,10 +81,25 @@ impl GradientBuilder {
         };
         let next = match tab_id.as_ref() {
             "mesh" => BuilderTab::Mesh,
+            "freeform" => BuilderTab::Freeform,
             _ => BuilderTab::Gradients,
         };
         if self.selected_tab != next {
+            if next != BuilderTab::Gradients && (next == BuilderTab::Freeform) != self.mesh_state_is_freeform {
+                std::mem::swap(&mut self.mesh_points, &mut self.inactive_mesh_points);
+                std::mem::swap(&mut self.mesh_background, &mut self.inactive_mesh_background);
+                self.mesh_state_is_freeform = next == BuilderTab::Freeform;
+                self.selected_mesh_point = Some(0);
+                self.mesh_color_target = MeshColorTarget::Point(0);
+                self.mesh_swatch_bounds.clear();
+            }
+            self.preview_image_cache = None;
             self.selected_tab = next;
+            if next == BuilderTab::Freeform {
+                self.sync_freeform_buttons(cx);
+                self.sync_point_spread(cx);
+            }
+            self.render_task = None;
             self.active_mesh_drag = None;
             self.color_picker_open = false;
             let _ = self.ensure_preview_image_cache(self.preview_size, cx);
@@ -162,7 +177,7 @@ impl GradientBuilder {
                 self.stop_colors.insert(thumb_id, color);
                 self.rebuild_stops(cx);
             }
-            BuilderTab::Mesh => match self.mesh_color_target {
+            BuilderTab::Mesh | BuilderTab::Freeform => match self.mesh_color_target {
                 MeshColorTarget::Point(point_index) => {
                     if let Some(point) = self.mesh_points.get_mut(point_index) {
                         point.color = color;
@@ -189,6 +204,7 @@ impl GradientBuilder {
 
     pub(super) fn open_color_picker_for_mesh_point(&mut self, point_index: usize, cx: &mut Context<Self>) {
         self.selected_mesh_point = Some(point_index);
+        self.sync_point_spread(cx);
         self.mesh_color_target = MeshColorTarget::Point(point_index);
         let color = self.selected_mesh_color();
         self.color_picker.update(cx, |picker, cx| picker.set_color(color, cx));
@@ -204,10 +220,24 @@ impl GradientBuilder {
     }
 
     pub(super) fn reset_mesh_state(&mut self, cx: &mut Context<Self>) {
-        self.mesh_points = default_mesh_points(self.mesh_grid_preset);
+        self.preview_image_cache = None;
+        self.mesh_points = if self.selected_tab == BuilderTab::Freeform {
+            super::freeform::default_points()
+        } else {
+            default_mesh_points(self.mesh_grid_preset)
+        };
+        if self.selected_tab == BuilderTab::Freeform {
+            self.point_spreads = vec![100.0; self.mesh_points.len()];
+        }
+        self.sync_freeform_buttons(cx);
         self.mesh_background = default_mesh_background();
-        let selected_index = default_mesh_selected_index(self.mesh_grid_preset);
+        let selected_index = if self.selected_tab == BuilderTab::Freeform {
+            0
+        } else {
+            default_mesh_selected_index(self.mesh_grid_preset)
+        };
         self.selected_mesh_point = Some(selected_index);
+        self.sync_point_spread(cx);
         self.mesh_color_target = MeshColorTarget::Point(selected_index);
         self.active_mesh_drag = None;
         self.color_picker_open = false;
@@ -416,6 +446,9 @@ impl GradientBuilder {
     }
 
     pub(super) fn effective_preview_renderer(&self) -> PreviewRenderer {
+        if !self.image_adjustments.is_neutral() {
+            return PreviewRenderer::RenderImageSync;
+        }
         match (self.gradient_type, self.preview_renderer) {
             (GradientType::Linear, renderer) => renderer,
             (_, PreviewRenderer::RenderImageAsync) => PreviewRenderer::RenderImageAsync,
@@ -424,7 +457,7 @@ impl GradientBuilder {
     }
 
     pub(super) fn uses_render_preview(&self, cx: &Context<Self>) -> bool {
-        if self.selected_tab == BuilderTab::Mesh {
+        if self.selected_tab != BuilderTab::Gradients || !self.image_adjustments.is_neutral() {
             return true;
         }
         let stop_count = self.preview_stops(cx).len();
@@ -436,7 +469,7 @@ impl GradientBuilder {
     }
 
     pub(super) fn sync_preview_strategy(&mut self, stop_count: usize) {
-        if self.selected_tab == BuilderTab::Mesh {
+        if self.selected_tab != BuilderTab::Gradients {
             self.active_preview_strategy = "render (sync)";
             return;
         }
@@ -457,7 +490,7 @@ impl GradientBuilder {
         if self.preview_size != bounds.size {
             self.preview_size = bounds.size;
         }
-        if self.selected_tab == BuilderTab::Mesh {
+        if self.selected_tab != BuilderTab::Gradients {
             self.mesh_preview_bounds = Some(bounds);
         }
 
@@ -501,7 +534,9 @@ impl GradientBuilder {
                 let stops = self.preview_stops(cx);
                 preview_gradient_cache_key(self.gradient_type, preview_size, self.rotation_deg, &stops)
             }
-            BuilderTab::Mesh => preview_mesh_cache_key(preview_size, &self.mesh_points, self.mesh_background),
+            BuilderTab::Mesh | BuilderTab::Freeform => {
+                preview_mesh_cache_key(preview_size, &self.mesh_points, self.mesh_background)
+            }
         };
         if let Some((cached_key, _)) = &self.preview_image_cache
             && *cached_key == key
@@ -511,7 +546,7 @@ impl GradientBuilder {
 
         self.render_task = None;
 
-        if self.selected_tab == BuilderTab::Mesh
+        if self.selected_tab != BuilderTab::Gradients
             || self.effective_preview_renderer() == PreviewRenderer::RenderImageSync
         {
             let started = Instant::now();
@@ -520,11 +555,25 @@ impl GradientBuilder {
                     let stops = self.preview_stops(cx);
                     rasterize_gradient_preview(self.gradient_type, preview_size, &stops, self.rotation_deg)
                 }
-                BuilderTab::Mesh => {
-                    rasterize_mesh_gradient_preview(preview_size, &self.mesh_points, self.mesh_background)
-                }
+                BuilderTab::Freeform => super::super::paint::rasterize_freeform_preview(
+                    preview_size,
+                    &self.mesh_points,
+                    self.mesh_background,
+                    self.spread_percent,
+                    self.freeform_hsl,
+                    &super::super::paint::FieldShape {
+                        point_spreads: &self.point_spreads,
+                        softness_percent: self.softness_percent,
+                    },
+                ),
+                BuilderTab::Mesh => rasterize_mesh_gradient_preview(
+                    preview_size,
+                    &self.mesh_points,
+                    self.mesh_background,
+                    self.mesh_controls_visible,
+                ),
             };
-            let Some(image) = image else {
+            let Some(image) = image.and_then(|image| self.image_adjustments.apply(image)) else {
                 return false;
             };
             self.preview_image_cache = Some((key, image));
@@ -557,8 +606,17 @@ impl GradientBuilder {
         self.preview_image_cache.as_ref().map(|(_, image)| image.clone())
     }
 
+    pub(super) fn toggle_mesh_controls(&mut self, cx: &mut Context<Self>) {
+        self.mesh_controls_visible = !self.mesh_controls_visible;
+        self.active_mesh_drag = None;
+        self.preview_image_cache = None;
+        let _ = self.ensure_preview_image_cache(self.preview_size, cx);
+        cx.notify();
+    }
+
     pub(super) fn begin_mesh_drag(&mut self, point_index: usize, cx: &mut Context<Self>) {
         self.selected_mesh_point = Some(point_index);
+        self.sync_point_spread(cx);
         self.mesh_color_target = MeshColorTarget::Point(point_index);
         self.active_mesh_drag = Some(point_index);
         self.color_picker_open = false;
@@ -600,6 +658,9 @@ impl GradientBuilder {
     }
 
     pub(super) fn constrained_mesh_position(&self, point_index: usize, proposed_u: f32, proposed_v: f32) -> (f32, f32) {
+        if self.selected_tab == BuilderTab::Freeform {
+            return (proposed_u.clamp(0.0, 1.0), proposed_v.clamp(0.0, 1.0));
+        }
         let Some(point) = self.mesh_points.get(point_index).copied() else {
             return (proposed_u.clamp(0.0, 1.0), proposed_v.clamp(0.0, 1.0));
         };

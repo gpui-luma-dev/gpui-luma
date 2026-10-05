@@ -26,10 +26,10 @@ neumorphic-demo-rel:
     cargo run -p luma-neumorphic-demo --release
 
 color-viz:
-    cargo run -p luma-color-viz --release -- elegent-luxury
+    cargo run -p luma-color-viz --release -- monochrome-minimal-neutral
 
 color-viz-rel:
-    MTL_HUD_ENABLED=1 cargo run -p luma-color-viz --release -- retro-arcade
+    MTL_HUD_ENABLED=1 cargo run -p luma-color-viz --release -- monochrome-minimal-neutral
 
 shell-detached:
     cargo run -p luma-shell-detached -- default

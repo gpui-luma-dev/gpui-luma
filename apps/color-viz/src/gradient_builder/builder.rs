@@ -16,6 +16,7 @@ use lucide_svg_static::Icon as LucideIcon;
 mod actions;
 mod mesh;
 mod view;
+mod freeform;
 
 use super::paint::{GradientType, MeshPoint, PreviewRenderer};
 use super::sv_triangle_picker::SvTrianglePicker;
@@ -38,6 +39,17 @@ pub struct GradientBuilder {
     mesh_reset_button: Entity<Button>,
     stop_delete_buttons: HashMap<ThumbId, Entity<Button>>,
     rotation_slider: Entity<SliderControl>,
+    saturation_slider: Entity<SliderControl>,
+    vibrance_slider: Entity<SliderControl>,
+    image_adjustments: super::paint::ImageAdjustments,
+    spread_slider: Entity<SliderControl>,
+    spread_percent: f32,
+    point_spread_slider: Entity<SliderControl>,
+    point_spreads: Vec<f32>,
+    softness_slider: Entity<SliderControl>,
+    softness_percent: f32,
+    blend_selector: Entity<Selector>,
+    freeform_hsl: bool,
     type_selector: Entity<Selector>,
     renderer_selector: Entity<Selector>,
     mesh_grid_selector: Entity<Selector>,
@@ -48,10 +60,16 @@ pub struct GradientBuilder {
     mesh_grid_preset: MeshGridPreset,
     mesh_aspect_ratio_preset: MeshAspectRatioPreset,
     mesh_points: Vec<MeshPoint>,
+    inactive_mesh_points: Vec<MeshPoint>,
+    inactive_mesh_background: gpui::Hsla,
+    mesh_state_is_freeform: bool,
+    random_seed: u64,
+    freeform_buttons: Vec<Entity<Button>>,
     mesh_background: gpui::Hsla,
     selected_mesh_point: Option<usize>,
     mesh_color_target: MeshColorTarget,
     active_mesh_drag: Option<usize>,
+    mesh_controls_visible: bool,
     preview_size: Size<Pixels>,
     preview_image_cache: Option<(PreviewImageCacheKey, Arc<RenderImage>)>,
     active_preview_strategy: &'static str,
@@ -117,6 +135,44 @@ impl GradientBuilder {
             .step(1.0)
             .value(90.0)
             .spawn(cx);
+        let saturation_slider = shadcn::Slider::new("color-viz-image-saturation")
+            .look(look.as_ref())
+            .range(-100.0..100.0)
+            .step(1.0)
+            .value(0.0)
+            .spawn(cx);
+        let vibrance_slider = shadcn::Slider::new("color-viz-image-vibrance")
+            .look(look.as_ref())
+            .range(-100.0..100.0)
+            .step(1.0)
+            .value(0.0)
+            .spawn(cx);
+        let spread_slider = shadcn::Slider::new("color-viz-freeform-spread")
+            .look(look.as_ref())
+            .range(10.0..150.0)
+            .step(1.0)
+            .value(100.0)
+            .spawn(cx);
+        let point_spread_slider = shadcn::Slider::new("color-viz-point-spread")
+            .look(look.as_ref())
+            .range(10.0..200.0)
+            .step(1.0)
+            .value(100.0)
+            .spawn(cx);
+        let softness_slider = shadcn::Slider::new("color-viz-falloff-softness")
+            .look(look.as_ref())
+            .range(25.0..200.0)
+            .step(1.0)
+            .value(100.0)
+            .spawn(cx);
+        let blend_selector = shadcn::Selector::new("color-viz-freeform-blend")
+            .look(look.as_ref())
+            .items(vec![
+                gpui_luma::controls::selector::SelectorItem::new("rgb").label("RGB"),
+                gpui_luma::controls::selector::SelectorItem::new("hsl").label("HSL"),
+            ])
+            .selected_id("rgb")
+            .spawn(cx);
         let top_tabs = shadcn::Tabs::new("color-viz-builder-tabs")
             .look(look.as_ref())
             .items(builder_tab_items())
@@ -160,6 +216,17 @@ impl GradientBuilder {
             mesh_reset_button: mesh_reset_button.clone(),
             stop_delete_buttons: HashMap::new(),
             rotation_slider: rotation_slider.clone(),
+            saturation_slider: saturation_slider.clone(),
+            vibrance_slider: vibrance_slider.clone(),
+            image_adjustments: super::paint::ImageAdjustments::default(),
+            spread_slider: spread_slider.clone(),
+            spread_percent: 100.0,
+            point_spread_slider: point_spread_slider.clone(),
+            point_spreads: vec![100.0; freeform::default_points().len()],
+            softness_slider: softness_slider.clone(),
+            softness_percent: 100.0,
+            blend_selector: blend_selector.clone(),
+            freeform_hsl: false,
             type_selector: type_selector.clone(),
             renderer_selector: renderer_selector.clone(),
             mesh_grid_selector: mesh_grid_selector.clone(),
@@ -170,10 +237,20 @@ impl GradientBuilder {
             mesh_grid_preset,
             mesh_aspect_ratio_preset,
             mesh_points: default_mesh_points(mesh_grid_preset),
+            inactive_mesh_points: freeform::default_points(),
+            inactive_mesh_background: mesh_background,
+            mesh_state_is_freeform: false,
+            random_seed: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos() as u64
+                | 1,
+            freeform_buttons: Vec::new(),
             mesh_background,
             selected_mesh_point: Some(default_mesh_selected_index(mesh_grid_preset)),
             mesh_color_target: MeshColorTarget::Point(default_mesh_selected_index(mesh_grid_preset)),
             active_mesh_drag: None,
+            mesh_controls_visible: true,
             preview_size: size(px(0.0), px(0.0)),
             preview_image_cache: None,
             active_preview_strategy: "quads",
@@ -202,6 +279,59 @@ impl GradientBuilder {
             mesh_aspect_ratio_selector,
             color_picker,
         );
+        builder._subscriptions.push(cx.subscribe(&spread_slider, |this, _, event: &SliderEvent, cx| {
+            if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
+                this.spread_percent = *value;
+                this.preview_image_cache = None;
+                let _ = this.ensure_preview_image_cache(this.preview_size, cx);
+                cx.notify();
+            }
+        }));
+        builder._subscriptions.push(cx.subscribe(&blend_selector, |this, _, event: &SelectorEvent, cx| {
+            if let SelectorEvent::Change { item_id, .. } = event {
+                this.freeform_hsl = item_id.as_ref() == "hsl";
+                this.preview_image_cache = None;
+                let _ = this.ensure_preview_image_cache(this.preview_size, cx);
+                cx.notify();
+            }
+        }));
+        builder._subscriptions.push(cx.subscribe(&point_spread_slider, |this, _, event: &SliderEvent, cx| {
+            if this.selected_tab != BuilderTab::Freeform {
+                return;
+            }
+            if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
+                if let Some(spread) = this.selected_mesh_point.and_then(|index| this.point_spreads.get_mut(index)) {
+                    *spread = *value;
+                }
+                this.preview_image_cache = None;
+                let _ = this.ensure_preview_image_cache(this.preview_size, cx);
+                cx.notify();
+            }
+        }));
+        builder._subscriptions.push(cx.subscribe(&softness_slider, |this, _, event: &SliderEvent, cx| {
+            if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
+                this.softness_percent = *value;
+                this.preview_image_cache = None;
+                let _ = this.ensure_preview_image_cache(this.preview_size, cx);
+                cx.notify();
+            }
+        }));
+        for (slider, saturation) in [(saturation_slider, true), (vibrance_slider, false)] {
+            builder._subscriptions.push(cx.subscribe(&slider, move |this, _, event: &SliderEvent, cx| {
+                if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
+                    if saturation {
+                        this.image_adjustments.saturation = *value;
+                    } else {
+                        this.image_adjustments.vibrance = *value;
+                    }
+                    this.preview_image_cache = None;
+                    this.render_task = None;
+                    let _ = this.ensure_preview_image_cache(this.preview_size, cx);
+                    cx.notify();
+                }
+            }));
+        }
+        builder.init_freeform_buttons(cx);
         builder.sync_stop_buttons(cx);
         builder.rebuild_stops(cx);
         builder

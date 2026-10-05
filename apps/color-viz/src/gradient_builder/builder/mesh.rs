@@ -19,6 +19,7 @@ pub(super) enum BuilderTab {
     #[default]
     Gradients,
     Mesh,
+    Freeform,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -203,7 +204,11 @@ pub(super) fn mesh_aspect_ratio_items() -> Vec<SelectorItem> {
 }
 
 pub(super) fn builder_tab_items() -> Vec<TabsItem> {
-    vec![TabsItem::new("gradients").label("Gradients"), TabsItem::new("mesh").label("Mesh")]
+    vec![
+        TabsItem::new("gradients").label("Gradients"),
+        TabsItem::new("mesh").label("Mesh"),
+        TabsItem::new("freeform").label("Freeform"),
+    ]
 }
 
 pub(super) fn preview_gradient_cache_key(
@@ -268,11 +273,18 @@ pub(super) fn mesh_point_index(row: usize, col: usize, cols: usize) -> usize {
     row * cols + col
 }
 
+// Shared starting colors for structured and freeform gradients.
+pub(super) fn default_point_palette() -> [gpui::Hsla; 3] {
+    [
+        gpui::hsla(46.0 / 360.0, 1.0, 0.51, 1.0),
+        gpui::hsla(349.0 / 360.0, 1.0, 0.58, 1.0),
+        gpui::hsla(212.0 / 360.0, 0.86, 0.49, 1.0),
+    ]
+}
+
 pub(super) fn default_mesh_points(preset: MeshGridPreset) -> Vec<MeshPoint> {
     let (rows, cols) = preset.dimensions();
-    let top = gpui::hsla(46.0 / 360.0, 1.0, 0.51, 1.0);
-    let middle = gpui::hsla(349.0 / 360.0, 1.0, 0.58, 1.0);
-    let bottom = gpui::hsla(212.0 / 360.0, 0.86, 0.49, 1.0);
+    let [top, middle, bottom] = default_point_palette();
     let row_colors = [(0.0, top), (0.5, middle), (1.0, bottom)];
 
     (0..rows)
