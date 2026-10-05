@@ -2,7 +2,7 @@ use gpui_luma::infra::attachments::TooltipEntityExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem, SelectorPlacement};
+use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem, SelectorPlacement, SelectorOpeningMode};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma_look_shadcn::prelude::*;
@@ -33,22 +33,23 @@ pub struct PopupSelectorControlExposition {
 struct SelectorExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
-    preview_below: Entity<Selector>,
-    preview_smart: Entity<Selector>,
+    previews: Vec<(&'static str, Entity<Selector>)>,
     event_stream: Entity<ControlEventStream>,
     selection_required_toggle: Toggle,
 }
 
 impl SelectorExpositionLeftPane {
     fn dismiss_overlays(&mut self, cx: &mut Context<Self>) {
-        self.preview_below.update(cx, |preview, cx| preview.dismiss(cx));
-        self.preview_smart.update(cx, |preview, cx| preview.dismiss(cx));
+        for (_, preview) in &self.previews {
+            preview.update(cx, |preview, cx| preview.dismiss(cx));
+        }
     }
 
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
-        self.preview_below.update(cx, |_, cx| cx.notify());
-        self.preview_smart.update(cx, |_, cx| cx.notify());
+        for (_, preview) in &self.previews {
+            preview.update(cx, |_, cx| cx.notify());
+        }
         self.selection_required_toggle.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
@@ -58,22 +59,24 @@ impl SelectorExpositionLeftPane {
 impl Render for SelectorExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
+            let chrome = self.look.chrome();
             let preview = div()
                 .w_full()
                 .flex()
                 .flex_col()
                 .items_center()
                 .gap(px(16.0))
-                .child(
-                    div()
-                        .flex()
-                        .flex_wrap()
-                        .items_center()
-                        .justify_center()
-                        .gap(px(12.0))
-                        .child(self.preview_below.clone())
-                        .child(self.preview_smart.clone()),
-                )
+                .child(div().flex().flex_wrap().items_center().justify_center().gap(px(12.0)).children(
+                    self.previews.iter().map(|(label, preview)| {
+                        div()
+                            .w(px(220.0))
+                            .flex()
+                            .flex_col()
+                            .gap(px(8.0))
+                            .child(div().text_color(chrome.muted_text).child(*label))
+                            .child(preview.clone())
+                    }),
+                ))
                 .child(self.selection_required_toggle.clone())
                 .child(self.event_stream.clone());
 
@@ -112,6 +115,41 @@ impl PopupSelectorControlExposition {
             .placement(SelectorPlacement::Smart)
             .invalid(false)
             .spawn(cx);
+        let preview_centered = shadcn::Selector::new("controls-doc-selector-centered")
+            .look(look.as_ref())
+            .label("Choose an action")
+            .items(selector_items())
+            .selected_id("archive")
+            .opening_mode(SelectorOpeningMode::Centered)
+            .spawn(cx);
+        let preview_long = shadcn::Selector::new("controls-doc-selector-centered-long")
+            .look(look.as_ref())
+            .label("Choose an item")
+            .items((0..60).map(|index| {
+                SelectorItem::new(format!("item-{index}")).label(format!("Item {}", index + 1)).enabled(index != 2)
+            }))
+            .selected_id("item-30")
+            .opening_mode(SelectorOpeningMode::Centered)
+            .spawn(cx);
+        let preview_unselected = shadcn::Selector::new("controls-doc-selector-centered-unselected")
+            .look(look.as_ref())
+            .label("Choose an action")
+            .items(selector_items())
+            .opening_mode(SelectorOpeningMode::Centered)
+            .spawn(cx);
+        let preview_empty = shadcn::Selector::new("controls-doc-selector-centered-empty")
+            .look(look.as_ref())
+            .label("No items")
+            .opening_mode(SelectorOpeningMode::Centered)
+            .spawn(cx);
+        let previews = vec![
+            ("Dropdown · below", preview_below),
+            ("Dropdown · smart", preview_smart),
+            ("Centered · selected", preview_centered),
+            ("Centered · long list", preview_long),
+            ("Centered · no selection", preview_unselected),
+            ("Centered · empty", preview_empty),
+        ];
         let selection_required_toggle = shadcn::Toggle::new("controls-doc-selector-selection-required")
             .look(look.as_ref())
             .outline()
@@ -129,8 +167,7 @@ impl PopupSelectorControlExposition {
         let left_pane = cx.new(|_| SelectorExpositionLeftPane {
             look: look.clone(),
             entry,
-            preview_below: preview_below.clone(),
-            preview_smart: preview_smart.clone(),
+            previews: previews.clone(),
             event_stream: event_stream.clone(),
             selection_required_toggle: selection_required_toggle.clone(),
         });
@@ -147,7 +184,7 @@ impl PopupSelectorControlExposition {
         );
 
         let mut subscriptions = Vec::new();
-        for preview in [&preview_below, &preview_smart] {
+        for (_, preview) in &previews {
             let event_stream = event_stream.clone();
             subscriptions.push(cx.subscribe(preview, move |this, _, event: &SelectorEvent, cx| {
                 let line = format_selector_event(event);
@@ -184,8 +221,9 @@ impl PopupSelectorControlExposition {
     fn sync_required_validation(&mut self, cx: &mut Context<Self>) {
         let invalid = self.selection_required && !self.has_selection;
         self.left_pane.update(cx, |pane, cx| {
-            pane.preview_below.update(cx, |preview, cx| preview.set_invalid(invalid, cx));
-            pane.preview_smart.update(cx, |preview, cx| preview.set_invalid(invalid, cx));
+            for (_, preview) in &pane.previews {
+                preview.update(cx, |preview, cx| preview.set_invalid(invalid, cx));
+            }
         });
     }
 

@@ -32,6 +32,7 @@ impl State {
             progress: navigation("progress"),
             examples: TabsExamples::spawn(look, cx),
             tooltips: super::tooltips::TooltipExamples::new(look, cx),
+            selectors: super::selectors::SelectorExamples::new(look, cx),
         };
         let tree = super::super::shared::tree_view::spawn("guide-tree", look, true, cx);
         let disabled_tree = super::super::shared::tree_view::spawn("guide-tree-disabled", look, false, cx);

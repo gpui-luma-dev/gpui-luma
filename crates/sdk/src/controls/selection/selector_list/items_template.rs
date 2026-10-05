@@ -66,10 +66,25 @@ pub type SelectorPanelHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 
 pub type SelectorPanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type SelectorPanelScrollWheelHandler = Box<dyn Fn(&gpui::ScrollWheelEvent, &mut Window, &mut App) + 'static>;
 
+/// Unscrolled row geometry, reported by a panel after layout.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SelectorPopupGeometry {
+    /// Center of the alignment row relative to the start of the row content.
+    pub row_center: Pixels,
+    pub content_height: Pixels,
+    /// Space between the panel edge and row content, including border and padding.
+    pub inset: Pixels,
+}
+
+pub type SelectorPopupGeometryHandler = Box<dyn Fn(&SelectorPopupGeometry, &mut Window, &mut App) + 'static>;
+
 #[derive(Default)]
 pub struct SelectorItemsTemplateHandlers {
     /// Policy-aware handler. Pair with the render model's retained scroll handle.
     pub scroll_wheel: Option<SelectorPanelScrollWheelHandler>,
+    /// Custom panels should report their actual unscrolled alignment row geometry.
+    /// Use the selected row, or the first enabled row when there is no selection.
+    pub popup_geometry: Option<SelectorPopupGeometryHandler>,
     pub item_hovers: Vec<SelectorPanelHoverHandler>,
     pub item_mouse_downs: Vec<SelectorPanelMouseDownHandler>,
     pub item_clicks: Vec<SelectorPanelClickHandler>,
@@ -194,10 +209,46 @@ where
         handlers: SelectorItemsTemplateHandlers,
         cx: &mut App,
     ) -> Stateful<Div> {
-        let SelectorItemsTemplateHandlers { item_hovers, item_mouse_downs, item_clicks, scroll_wheel } = handlers;
+        let SelectorItemsTemplateHandlers { item_hovers, item_mouse_downs, item_clicks, scroll_wheel, popup_geometry } =
+            handlers;
         let look = &model.look;
-        let content_max_height = (model.max_height - px(look.padding * 2.0)).max(px(look.item_height));
-        let mut rows = div().id("rows").relative().flex().flex_col().w_full();
+        let content_max_height = (model.max_height - px(look.padding * 2.0 + 2.0)).max(px(0.0));
+        let mut rows = div().relative().flex().flex_col().w_full();
+
+        if let Some(report) = popup_geometry {
+            let alignment_index =
+                model.selected_index.or_else(|| model.items.iter().position(|item| item.is_enabled()));
+            let inset = px(look.padding + 1.0);
+            let scroll = model.scroll_handle.cloned();
+            let item_count = model.items.len();
+            rows = rows.on_children_prepainted(move |bounds, window, cx| {
+                // GPUI stores child bounds in the handle instead of passing them
+                // to this listener when the viewport tracks a scroll handle.
+                let bounds = if bounds.is_empty() {
+                    scroll
+                        .as_ref()
+                        .map(|handle| (0..item_count).filter_map(|index| handle.bounds_for_item(index)).collect())
+                        .unwrap_or_default()
+                } else {
+                    bounds
+                };
+                if let (Some(first), Some(last), Some(row)) =
+                    (bounds.first(), bounds.last(), alignment_index.and_then(|index| bounds.get(index)))
+                {
+                    report(
+                        &SelectorPopupGeometry {
+                            row_center: row.center().y - first.top(),
+                            content_height: last.bottom() - first.top(),
+                            inset,
+                        },
+                        window,
+                        cx,
+                    );
+                }
+            });
+        }
+
+        let mut rows = rows.id("rows");
 
         if model.scrolling {
             rows = rows.max_h(content_max_height).overflow_y_scroll();
@@ -211,6 +262,8 @@ where
         let mut clicks = item_clicks.into_iter();
 
         for ((index, item), hover) in model.items.iter().enumerate().zip(item_hovers) {
+            let mouse_down = mouse_downs.next();
+            let click = clicks.next();
             let enabled_item = item.is_enabled();
             let color = if enabled_item {
                 look.foreground
@@ -245,6 +298,7 @@ where
                 .items_center()
                 .gap(px(look.item_gap))
                 .min_h(px(look.item_height))
+                .flex_shrink_0()
                 .px(px(look.item_padding_x))
                 .rounded(px(look.item_radius))
                 .text_color(color)
@@ -265,14 +319,14 @@ where
                     row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
                 }
 
-                if let Some(mouse_down) = mouse_downs.next() {
+                if let Some(mouse_down) = mouse_down {
                     row = row.on_mouse_down(MouseButton::Left, move |event, window, cx| {
                         cx.stop_propagation();
                         mouse_down(event, window, cx);
                     });
                 }
 
-                if let Some(click) = clicks.next() {
+                if let Some(click) = click {
                     row = row.on_click(click);
                 }
             } else {

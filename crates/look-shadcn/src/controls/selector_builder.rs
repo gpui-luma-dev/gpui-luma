@@ -3,7 +3,7 @@
 use gpui::{App, Context, Div, Entity, IntoElement, SharedString, Stateful};
 use gpui_luma::controls::selector::{
     SelectorBuilder, SelectorIcons, SelectorItem, SelectorItemLike, SelectorItemRenderModel, SelectorPlacement,
-    SelectorRenderModel, SelectorTriggerStyle,
+    SelectorRenderModel, SelectorTriggerStyle, SelectorOpeningMode,
 };
 use crate::look::{ShadcnLook, resolve_look_from};
 use crate::size::ShadcnSize;
@@ -29,6 +29,7 @@ where
     invalid: bool,
     tab_stop: bool,
     placement: SelectorPlacement,
+    opening_mode: SelectorOpeningMode,
     trigger_style: SelectorTriggerStyle,
     icons: Option<SelectorIcons>,
     without_elevation: bool,
@@ -59,6 +60,7 @@ where
             invalid: false,
             tab_stop: true,
             placement: SelectorPlacement::Smart,
+            opening_mode: SelectorOpeningMode::default(),
             trigger_style: SelectorTriggerStyle::default(),
             icons: None,
             without_elevation: false,
@@ -144,6 +146,12 @@ where
         self
     }
 
+    /// Choose dropdown or selected-item-centered opening.
+    pub fn opening_mode(mut self, mode: SelectorOpeningMode) -> Self {
+        self.opening_mode = mode;
+        self
+    }
+
     pub fn placement(mut self, placement: SelectorPlacement) -> Self {
         self.placement = placement;
         self
@@ -199,6 +207,7 @@ where
             .invalid(self.invalid)
             .tab_stop(self.tab_stop)
             .placement(self.placement)
+            .opening_mode(self.opening_mode)
             .trigger_style(self.trigger_style);
         if let Some(label) = self.label {
             builder = builder.label(label);

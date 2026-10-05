@@ -45,6 +45,9 @@ where
     focus_out_subscription: Option<Subscription>,
     emitted_focused: bool,
     popup_scroll: gpui::ScrollHandle,
+    popup_geometry: Option<crate::controls::selector_list::SelectorPopupGeometry>,
+    initialize_popup_scroll: bool,
+    popup_viewport: Option<gpui::Size<gpui::Pixels>>,
 }
 
 impl<T> EventEmitter<SelectorEvent> for Selector<T> where T: SelectorItemLike + 'static {}
@@ -91,6 +94,9 @@ where
             focus_out_subscription: None,
             emitted_focused: false,
             popup_scroll: gpui::ScrollHandle::new(),
+            popup_geometry: None,
+            initialize_popup_scroll: false,
+            popup_viewport: None,
         }
     }
 
@@ -200,6 +206,14 @@ where
         cx.notify();
     }
 
+    /// Choose how the popup opens. Takes effect on the next opening.
+    pub fn set_opening_mode(&mut self, mode: super::SelectorOpeningMode, cx: &mut Context<Self>) {
+        self.model.opening_mode = mode;
+        self.popup_geometry = None;
+        self.initialize_popup_scroll = true;
+        cx.notify();
+    }
+
     pub fn set_placement(&mut self, placement: SelectorPlacement, cx: &mut Context<Self>) {
         self.model.placement = placement;
         cx.notify();
@@ -250,6 +264,9 @@ where
             popup_scroll: Some(&self.popup_scroll),
             trigger_bounds: self.trigger_bounds,
             placement: self.model.placement,
+            opening_mode: self.model.opening_mode,
+            popup_geometry: self.popup_geometry,
+            initialize_popup_scroll: self.initialize_popup_scroll,
             active_path: self.active_index.map(crate::controls::selector_list::SelectorPath::Item),
             enabled: self.model.enabled,
             size: self.model.size,
@@ -277,6 +294,7 @@ where
 
         SelectorTemplateHandlers {
             popup_scroll_wheel: Some(Box::new(cx.listener(Self::handle_popup_scroll_wheel))),
+            popup_geometry: Some(Box::new(cx.listener(Self::handle_popup_geometry))),
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
             trigger_click: Box::new(cx.listener(Self::handle_trigger_click)),
             trigger_hover: Box::new(cx.listener(Self::handle_hover)),
@@ -358,6 +376,25 @@ where
         }
     }
 
+    fn handle_popup_geometry(
+        &mut self,
+        geometry: &crate::controls::selector_list::SelectorPopupGeometry,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if !self.open || self.model.opening_mode != super::SelectorOpeningMode::Centered {
+            return;
+        }
+        if self.popup_geometry != Some(*geometry) || self.popup_viewport != Some(window.viewport_size()) {
+            self.popup_geometry = Some(*geometry);
+            self.popup_viewport = Some(window.viewport_size());
+            self.initialize_popup_scroll = true;
+            cx.on_next_frame(window, |_, _, cx| cx.notify());
+        } else {
+            self.initialize_popup_scroll = false;
+        }
+    }
+
     fn close_menu(&mut self) {
         self.open = false;
         // The native popup viewport previously discarded its offset when unmounted.
@@ -387,6 +424,8 @@ where
         self.presence.set_open_with_animation(true, true);
         self.active_index = next_active;
         if open_changed {
+            self.popup_geometry = None;
+            self.initialize_popup_scroll = true;
             cx.emit(SelectorEvent::OpenChanged { open: true });
         }
         changed
@@ -533,6 +572,14 @@ where
         }
     }
 
+    fn scroll_active_into_view(&self) {
+        if self.model.opening_mode == super::SelectorOpeningMode::Centered
+            && let Some(index) = self.active_index
+        {
+            self.popup_scroll.scroll_to_item(index);
+        }
+    }
+
     fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, _window: &mut Window, cx: &mut Context<Self>) {
         if !self.model.enabled {
             return;
@@ -542,6 +589,7 @@ where
             let next = self.step_selectable_index(self.active_index, false);
             if self.active_index != next {
                 self.active_index = next;
+                self.scroll_active_into_view();
                 cx.notify();
             }
         } else if self.model.tab_stop && self.open_menu_with_active(self.last_selectable_index(), cx) {
@@ -560,6 +608,7 @@ where
             let next = self.step_selectable_index(self.active_index, true);
             if self.active_index != next {
                 self.active_index = next;
+                self.scroll_active_into_view();
                 cx.notify();
             }
         } else if self.model.tab_stop && self.open_menu_with_active(self.first_selectable_index(), cx) {
@@ -574,6 +623,7 @@ where
             let next = self.first_selectable_index();
             if self.active_index != next {
                 self.active_index = next;
+                self.scroll_active_into_view();
                 cx.notify();
             }
         } else if self.model.enabled {
@@ -586,6 +636,7 @@ where
             let next = self.last_selectable_index();
             if self.active_index != next {
                 self.active_index = next;
+                self.scroll_active_into_view();
                 cx.notify();
             }
         } else if self.model.enabled {

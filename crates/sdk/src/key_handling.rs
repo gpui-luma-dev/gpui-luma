@@ -113,6 +113,7 @@ impl ControlKeyProfile {
                 KeyBinding::new("space", ActivateControl, Some(context)),
             ],
             Self::Selector => vec![
+                KeyBinding::new("escape", crate::focus::EscapeFocus, Some(context)),
                 KeyBinding::new("down", SelectNextItem, Some(context)),
                 KeyBinding::new("up", SelectPreviousItem, Some(context)),
                 KeyBinding::new("pagedown", IncreaseValueLarge, Some(context)),
@@ -233,7 +234,7 @@ mod tests {
 
     #[test]
     fn default_control_key_bindings_are_parseable() {
-        assert_eq!(default_control_key_bindings().len(), 103);
+        assert_eq!(default_control_key_bindings().len(), 104);
     }
 
     #[test]
@@ -243,7 +244,7 @@ mod tests {
         assert_eq!(ControlKeyProfile::RangeValue.default_bindings().len(), 10);
         assert_eq!(ControlKeyProfile::ScrollOffset.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::Menu.default_bindings().len(), 12);
-        assert_eq!(ControlKeyProfile::Selector.default_bindings().len(), 12);
+        assert_eq!(ControlKeyProfile::Selector.default_bindings().len(), 13);
         assert_eq!(ControlKeyProfile::TreeView.default_bindings().len(), 15);
         assert_eq!(ControlKeyProfile::TreeViewExtended.default_bindings().len(), 5);
         assert_eq!(ControlKeyProfile::ContextMenu.default_bindings().len(), 14);
