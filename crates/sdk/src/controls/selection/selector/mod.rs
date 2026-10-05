@@ -46,7 +46,7 @@ pub use control::{Selector, SelectorEvent};
 
 pub use model::{
     SelectorBuilder, SelectorIcons, SelectorItemRenderModel, SelectorItemTemplate, SelectorModel, SelectorPath,
-    SelectorPlacement, SelectorRenderModel, SelectorItem, SelectorItemLike, SelectorTriggerStyle,
+    SelectorOpeningMode, SelectorPlacement, SelectorRenderModel, SelectorItem, SelectorItemLike, SelectorTriggerStyle,
 };
 pub use template::{
     SelectorTemplate, SelectorTemplateHandlers, SelectorTemplateModifier, ThemedSelectorTemplate,

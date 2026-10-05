@@ -22,6 +22,16 @@ pub enum SelectorTriggerStyle {
     Ghost,
 }
 
+/// How a selector popup opens. Placement options apply to `Dropdown` only.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SelectorOpeningMode {
+    /// Preserve the configured popup placement.
+    #[default]
+    Dropdown,
+    /// Align the selected row over the trigger; fall back to the first enabled row.
+    Centered,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SelectorPlacement {
     Smart,
@@ -44,6 +54,7 @@ where
     pub(crate) tab_stop: bool,
     pub(crate) size: ControlSize,
     pub(crate) placement: SelectorPlacement,
+    pub(crate) opening_mode: SelectorOpeningMode,
     pub(crate) trigger_style: SelectorTriggerStyle,
     pub(crate) icons: SelectorIcons,
     pub(crate) without_elevation: bool,
@@ -81,6 +92,11 @@ where
     pub popup_scroll: Option<&'a gpui::ScrollHandle>,
     pub trigger_bounds: Option<Bounds<Pixels>>,
     pub placement: SelectorPlacement,
+    pub opening_mode: SelectorOpeningMode,
+    /// Measured panel geometry for selected-row alignment.
+    pub popup_geometry: Option<crate::controls::selector_list::SelectorPopupGeometry>,
+    /// Initialize the opening scroll offset after layout measurement.
+    pub initialize_popup_scroll: bool,
     pub active_path: Option<SelectorPath>,
     pub enabled: bool,
     pub size: ControlSize,
@@ -120,6 +136,7 @@ where
                 tab_stop: true,
                 size: ControlSize::Md,
                 placement: SelectorPlacement::Smart,
+                opening_mode: SelectorOpeningMode::default(),
                 trigger_style: SelectorTriggerStyle::default(),
                 icons: SelectorIcons::default(),
                 without_elevation: false,
@@ -206,6 +223,12 @@ where
 
     pub fn size(mut self, size: ControlSize) -> Self {
         self.model.size = size;
+        self
+    }
+
+    /// Choose dropdown placement or selected-item-centered opening.
+    pub fn opening_mode(mut self, mode: SelectorOpeningMode) -> Self {
+        self.model.opening_mode = mode;
         self
     }
 

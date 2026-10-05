@@ -295,3 +295,105 @@ fn default_popup_geometry_scrolling_and_reopening_match_the_legacy_native_templa
     }
     assert_eq!(results[0], results[1]);
 }
+
+#[test]
+fn centered_opening_measures_custom_rows_and_keeps_selection_aligned() {
+    let mut app = TestAppContext::single();
+    let (page, cx) = setup(&mut app, 80);
+    page.update(cx, |page, cx| {
+        page.child = Selector::new("centered-custom-rows")
+            .items((0..80).map(|i| SelectorItem::new(i.to_string()).label(format!("Option {i}"))))
+            .selected_id("40")
+            .opening_mode(crate::controls::selector::SelectorOpeningMode::Centered)
+            .with_item_template(|model, _| gpui::div().h(px(67.0)).child(model.item.label().clone()))
+            .spawn(cx);
+        cx.notify();
+    });
+    let selector = open(&page, true, cx);
+    cx.update(|window, app| window.simulate_next_frame(app));
+    cx.run_until_parked();
+    cx.update(|_, app| {
+        let s = selector.read(app);
+        let geometry = s.popup_geometry.expect("measured geometry");
+        assert!(geometry.row_center > px(40.0 * 60.0));
+        assert!(!s.initialize_popup_scroll);
+        let row_center = s.popup_scroll.bounds().top() + geometry.row_center + s.popup_scroll.offset().y;
+        let trigger_center = s.trigger_bounds.expect("trigger bounds").center().y;
+        assert!((row_center - trigger_center).abs() < px(1.0), "{row_center:?} vs {trigger_center:?}");
+        assert!(s.popup_scroll.offset().y < px(0.0));
+    });
+    let initial = cx.update(|_, app| selector.read(app).popup_scroll.offset());
+    scroll(&selector, -30.0, cx);
+    cx.update(|_, app| assert!(selector.read(app).popup_scroll.offset().y < initial.y));
+    selector.update(cx, |s, cx| {
+        s.close_menu();
+        s.open_with_default_active(cx);
+        cx.notify();
+    });
+    cx.run_until_parked();
+    cx.update(|window, app| window.simulate_next_frame(app));
+    cx.run_until_parked();
+    cx.update(|_, app| assert_eq!(selector.read(app).popup_scroll.offset(), initial));
+}
+
+#[test]
+fn centered_no_selection_fallback_preserves_disabled_rows_and_keyboard_selection() {
+    for count in [0, 4] {
+        let mut app = TestAppContext::single();
+        let (page, cx) = setup(&mut app, count);
+        page.update(cx, |page, cx| {
+            page.child = Selector::new("centered-unselected")
+                .items(
+                    (0..count).map(|i| SelectorItem::new(i.to_string()).label(format!("Option {i}")).enabled(i != 0)),
+                )
+                .opening_mode(crate::controls::selector::SelectorOpeningMode::Centered)
+                .spawn(cx);
+            cx.notify();
+        });
+        let selector = open(&page, true, cx);
+        cx.update(|window, app| window.simulate_next_frame(app));
+        cx.run_until_parked();
+        cx.update(|_, app| {
+            let s = selector.read(app);
+            assert!(s.selected_id().is_none());
+            assert_eq!(s.active_index, if count == 0 { None } else { Some(1) });
+            assert_eq!(s.popup_geometry.is_some(), count > 0);
+        });
+        if count > 0 {
+            let point_for_row = |index, cx: &mut VisualTestContext| {
+                cx.update(|_, app| {
+                    let scroll = &selector.read(app).popup_scroll;
+                    let first = scroll.bounds_for_item(0).expect("first row");
+                    let row = scroll.bounds_for_item(index).expect("target row");
+                    point(
+                        scroll.bounds().left() + px(20.0),
+                        scroll.bounds().top() + row.center().y - first.top() + scroll.offset().y,
+                    )
+                })
+            };
+            let disabled_row = point_for_row(0, cx);
+            cx.simulate_click(disabled_row, Default::default());
+            cx.run_until_parked();
+            cx.update(|_, app| assert!(selector.read(app).selected_id().is_none()));
+            let last_row = point_for_row(3, cx);
+            cx.simulate_click(last_row, Default::default());
+            cx.run_until_parked();
+            cx.update(|_, app| assert_eq!(selector.read(app).selected_id().map(|id| id.as_ref()), Some("3")));
+            selector.update(cx, |s, cx| {
+                s.open_with_default_active(cx);
+                cx.notify();
+            });
+            cx.run_until_parked();
+            cx.simulate_keystrokes("home enter");
+            cx.run_until_parked();
+            cx.update(|_, app| {
+                assert_eq!(selector.read(app).selected_id().map(|id| id.as_ref()), Some("1"));
+                assert!(!selector.read(app).open);
+            });
+        } else {
+            cx.simulate_keystrokes("escape");
+            cx.run_until_parked();
+            cx.update(|_, app| assert!(!selector.read(app).open));
+        }
+    }
+}

@@ -108,6 +108,7 @@ mod radio;
 mod radio_builder;
 mod scale;
 mod segmented;
+mod selector;
 mod semantic;
 mod slider;
 mod slider_builder;
@@ -198,6 +199,7 @@ pub use tree_view::{TreeView, tree_view_frame, tree_view_template, tree_view_the
 pub use ext::LookControlExt;
 pub use overlay_window::overlay_window_theme;
 pub use segmented::segmented_radio_template;
+pub use selector::{Selector, selector_template};
 
 pub use tooltip::tooltip_theme;
 

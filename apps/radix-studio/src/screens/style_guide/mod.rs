@@ -12,6 +12,7 @@ mod context_menus;
 mod high_contrast;
 mod matrix_grid;
 mod menus;
+mod selectors;
 mod palettes;
 mod preview_handlers;
 mod progress;
@@ -51,6 +52,7 @@ pub struct PreviewTabs {
     pub sliders: Entity<Tabs>,
     pub progress: Entity<Tabs>,
     pub(crate) tooltips: tooltips::TooltipExamples,
+    pub(crate) selectors: selectors::SelectorExamples,
 }
 
 pub fn page(
@@ -136,6 +138,12 @@ pub fn page(
             muted,
             border,
             menus::matrix(look, &menus::RADIX_VARIANTS, fg, muted, window, cx),
+        ),
+        section(
+            "Selectors",
+            "Dropdown and selected-item-centered opening, including a scrolling list.",
+            fg, muted, border,
+            tabs.selectors.render(look),
         ),
         section(
             "Menu Popup Pane",
