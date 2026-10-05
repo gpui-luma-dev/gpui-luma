@@ -8,8 +8,6 @@ color controls, and desktop example apps. Source lives at
 [gpui-luma.dev](https://gpui-luma.dev) redirects to this repository.
 
 Requires a recent Rust stable toolchain (`rust-toolchain.toml` tracks `stable`).
-The workspace is prepared for `0.1.3`; the latest published crates.io version is
-currently `0.1.2`.
 
 ## Build
 
