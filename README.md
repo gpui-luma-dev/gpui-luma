@@ -76,7 +76,7 @@ cargo run -p luma-radix-studio
 
 Release builds: `cargo run -p luma-studio --release` / `cargo run -p luma-radix-studio --release` (or `just luma-studio-rel` / `just luma-radix-rel`).
 
-**Color Viz (beta)** — An experimental gradient workbench designed to test the
+**Color Viz (ALPHA)** — An experimental gradient workbench designed to test the
 performance of graphics operations in GPUI, including linear, mesh, and freeform
 gradient rendering. **This application is alpha** and serves as a graphics testing
 workbench while its interface and rendering features evolve. To achieve adequate 
