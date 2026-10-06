@@ -15,10 +15,10 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   LIB_PACKAGES: >-
+    gpui-luma
     gpui-luma-color
     gpui-luma-look-radix
     gpui-luma-look-shadcn
-    gpui-luma
 
 jobs:
   publish:
@@ -85,17 +85,14 @@ jobs:
             $(printf -- '--package %s ' ${LIB_PACKAGES}) \
             --all-targets --all-features
 
-      - name: Check library crates
-        run: |
-          # shellcheck disable=SC2086
-          cargo check --locked \
-            $(printf -- '--package %s ' ${LIB_PACKAGES})
-
-      - name: Test library crates (including inspection and headless support)
+      - name: Test library crates (including inspection, headless support, and docs)
         run: |
           cargo test --locked \
             $(printf -- '--package %s ' ${LIB_PACKAGES}) \
             --all-features
+          cargo test --locked \
+            $(printf -- '--package %s ' ${LIB_PACKAGES}) \
+            --doc --all-features
 
       - name: Package and verify all library crates
         run: |
@@ -176,7 +173,7 @@ jobs:
                           raise
                       pending.append(package)
                   else:
-                      verify_package(package, version, attempts=6)
+                      verify_package(package, version, attempts=12)
               print("Pending uploads:", ", ".join(pending) or "none")
               return pending
 
@@ -188,13 +185,23 @@ jobs:
               if pending:
                   if not os.environ.get("CARGO_REGISTRY_TOKEN"):
                       raise RuntimeError("Set the CARGO_REGISTRY_TOKEN repository secret")
-                  command = ["cargo", "publish", "--locked", "--registry", "crates-io",
-                             "--config", 'registries.crates-io.credential-provider="cargo:token"']
                   for package in pending:
-                      command.extend(["--package", package])
-                  subprocess.run(command, check=True)
+                      print(f"Publishing {package} {version}...")
+                      command = [
+                          "cargo",
+                          "publish",
+                          "--locked",
+                          "--registry",
+                          "crates-io",
+                          "--config",
+                          'registries.crates-io.credential-provider="cargo:token"',
+                          "--package",
+                          package,
+                      ]
+                      subprocess.run(command, check=True)
+                      verify_package(package, version, attempts=12)
               for package in PACKAGES:
-                  verify_package(package, version, attempts=6)
+                  verify_package(package, version, attempts=12)
 
 
           if __name__ == "__main__":

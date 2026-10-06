@@ -46,6 +46,29 @@ shell-2026:
 loc:
     tokei --types Rust
 
+# SDK / Library (Fast)
+check:
+    cargo check
+
+build:
+    cargo build
+
+test-sdk:
+    cargo test
+
+clippy-sdk:
+    cargo clippy --all-targets --all-features
+
+doc-test:
+    cargo test --doc
+
+# Workspace / Full Verification
+check-all:
+    cargo check --workspace --all-targets
+
+build-all:
+    cargo build --workspace
+
 clippy:
     cargo clippy --workspace --all-targets
 
