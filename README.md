@@ -76,11 +76,21 @@ cargo run -p luma-radix-studio
 
 Release builds: `cargo run -p luma-studio --release` / `cargo run -p luma-radix-studio --release` (or `just luma-studio-rel` / `just luma-radix-rel`).
 
+**Color Viz (beta)** — An experimental gradient workbench designed to test the
+performance of graphics operations in GPUI, including linear, mesh, and freeform
+gradient rendering. **This application is beta** and serves as a graphics testing
+workbench while its interface and rendering features evolve.
+
+![Color Viz beta — GPUI graphics performance testing workbench](docs/screenshots/color-viz-beta.png)
+
+```bash
+cargo run -p luma-color-viz -- default
+```
+
 Additional examples:
 
 ```bash
 cargo run -p luma-neumorphic-demo
-cargo run -p luma-color-viz -- default
 cargo run -p luma-shell-detached -- default
 cargo run -p luma-shell-split-titlebar -- default
 cargo run -p luma-shell-vscode -- default
