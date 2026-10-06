@@ -10,4 +10,4 @@ mod freeform;
 pub use freeform::{FieldShape, rasterize_freeform_preview};
 
 mod adjustments;
-pub use adjustments::ImageAdjustments;
+pub use adjustments::{ImageAdjustments, save_preview_png};

@@ -7,12 +7,12 @@ use gpui_luma_look_shadcn::LumaTypographyExt;
 use super::super::paint::{GradientType, MeshPoint};
 use super::super::paint::color_at_position;
 
-pub(super) const SHELL_RADIUS: f32 = 12.0;
+pub(super) const SHELL_RADIUS: f32 = 0.0;
 pub(super) const SHELL_BORDER: f32 = 1.0;
-pub(super) const MESH_HANDLE_SIZE: f32 = 22.0;
+pub(super) const MESH_HANDLE_SIZE: f32 = 44.0;
 pub(super) const MESH_POINT_GAP: f32 = 0.08;
-pub(super) const MESH_ASPECT_INSET: f32 = 16.0;
-pub(super) const MESH_PREVIEW_PADDING: f32 = 18.0;
+pub(super) const MESH_ASPECT_INSET: f32 = 12.0;
+pub(super) const MESH_PREVIEW_PADDING: f32 = 12.0;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) enum BuilderTab {
@@ -148,7 +148,7 @@ pub(super) enum PreviewImageCacheKey {
 }
 
 fn shell_inner_corner_radius() -> Pixels {
-    px(SHELL_RADIUS - SHELL_BORDER)
+    px((SHELL_RADIUS - SHELL_BORDER).max(0.0))
 }
 
 pub(super) fn controls_panel_corner_radii() -> Corners<Pixels> {
@@ -205,7 +205,7 @@ pub(super) fn mesh_aspect_ratio_items() -> Vec<SelectorItem> {
 
 pub(super) fn builder_tab_items() -> Vec<TabsItem> {
     vec![
-        TabsItem::new("gradients").label("Gradients"),
+        TabsItem::new("gradients").label("Linear"),
         TabsItem::new("mesh").label("Mesh"),
         TabsItem::new("freeform").label("Freeform"),
     ]

@@ -30,10 +30,9 @@ impl ColorVizApp {
         let gradient_builder = cx.new(|cx| GradientBuilder::new(look.clone(), cx));
         let tabs = gpui_luma_look_shadcn::Tabs::new("color-viz-workspace-tabs")
             .look(look.as_ref())
-            .items([
-                TabsItem::new("gradients").label("Gradient Builder"),
-                TabsItem::new("compositions").label("Color Compositions"),
-            ])
+            .template(crate::studio_tabs::template(look.clone(), false))
+            .items([TabsItem::new("gradients").label("Gradients"), TabsItem::new("compositions").label("Compositions")])
+            .size(gpui_luma_look_shadcn::ShadcnSize::Sm)
             .active("gradients")
             .spawn(cx);
         let subscriptions = vec![cx.subscribe(&tabs, |this, _, event: &TabsEvent, cx| {
@@ -73,7 +72,9 @@ impl Render for ColorVizApp {
         let chrome = self.look.chrome();
         let sans_family = self.look.mode_tokens().typography.font.sans.family.clone();
 
+        let export_button = self.gradient_builder.read(_cx).export_button();
         let title_bar = TitleBar::new()
+            .height(px(48.0))
             .background_color(chrome.panel_background)
             .border_color(chrome.border)
             .text_color(chrome.title_text)
@@ -87,11 +88,22 @@ impl Render for ColorVizApp {
                     .px_2()
                     .text_color(chrome.title_text)
                     .font_family(sans_family.clone())
-                    .child(div().child(if self.show_compositions {
-                        "Color Viz - Color Compositions"
-                    } else {
-                        "Color Viz - Gradients"
-                    })),
+                    .child(div().text_size(px(14.0)).font_weight(gpui::FontWeight::SEMIBOLD).child("Color Viz"))
+                    .child(
+                        div()
+                            .ml(px(28.0))
+                            .on_mouse_down(gpui::MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                            .child(self.tabs.clone()),
+                    )
+                    .child(div().flex_1())
+                    .when(!self.show_compositions, |this| {
+                        this.child(
+                            div()
+                                .mr(px(12.0))
+                                .on_mouse_down(gpui::MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                                .child(export_button),
+                        )
+                    }),
             );
 
         div()
@@ -101,8 +113,8 @@ impl Render for ColorVizApp {
             .flex_col()
             .font_family(sans_family)
             .bg(chrome.app_background)
+            .text_color(chrome.body_text)
             .child(title_bar)
-            .child(div().w_full().flex_shrink_0().p(px(10.0)).bg(chrome.panel_background).child(self.tabs.clone()))
             .child(div().flex_1().min_h_0().bg(chrome.content_background).child(
                 match (self.show_compositions, &self.compositions) {
                     (true, Some(view)) => view.clone().into_any_element(),

@@ -6,6 +6,7 @@ mod app_shell;
 mod compositions;
 mod gradient_builder;
 mod theme;
+mod studio_tabs;
 #[path = "assets/assets.rs"]
 mod assets;
 

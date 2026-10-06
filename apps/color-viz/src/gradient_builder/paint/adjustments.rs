@@ -51,9 +51,44 @@ impl ImageAdjustments {
     }
 }
 
+/// Save a GPUI premultiplied BGRA preview as a straight-alpha RGBA PNG.
+pub fn save_preview_png(source: &RenderImage, path: &std::path::Path) -> anyhow::Result<()> {
+    let size = source.size(0);
+    let mut bytes = source.as_bytes(0).ok_or_else(|| anyhow::anyhow!("missing preview pixels"))?.to_vec();
+    for pixel in bytes.as_chunks_mut::<4>().0 {
+        let alpha = pixel[3] as f32 / 255.0;
+        pixel.swap(0, 2);
+        for channel in &mut pixel[..3] {
+            *channel = if alpha > 0.0 {
+                (*channel as f32 / alpha).round().clamp(0.0, 255.0) as u8
+            } else {
+                0
+            };
+        }
+    }
+    let buffer =
+        image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(size.width.0.try_into()?, size.height.0.try_into()?, bytes)
+            .ok_or_else(|| anyhow::anyhow!("invalid preview dimensions"))?;
+    buffer.save_with_format(path, image::ImageFormat::Png)?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn png_export_writes_straight_rgba_pixels() {
+        let buffer = image::ImageBuffer::from_raw(1, 1, vec![0, 0, 128, 128]).unwrap();
+        let source = RenderImage::new(smallvec::smallvec![image::Frame::new(buffer)]);
+        let nonce = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+        let path = std::env::temp_dir().join(format!("color-viz-export-{}-{nonce}.png", std::process::id()));
+        save_preview_png(&source, &path).unwrap();
+        let output = image::open(&path).unwrap().into_rgba8();
+        std::fs::remove_file(path).unwrap();
+        assert_eq!(output.dimensions(), (1, 1));
+        assert_eq!(output.get_pixel(0, 0).0, [255, 0, 0, 128]);
+    }
 
     #[test]
     fn saturation_zeroes_chroma_and_preserves_alpha() {

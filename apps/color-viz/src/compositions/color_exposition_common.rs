@@ -5,7 +5,7 @@ use gpui::{FontWeight, Hsla, div, prelude::*, px};
 use gpui_luma_color::ColorSwatch;
 use gpui_luma_color::color_field::ColorFieldEvent;
 use gpui_luma::controls::slider::SliderEvent;
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnRadius, ShadcnTextRole, ShadcnTextSize};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnRadius, ShadcnTextSize};
 
 /// Inner demo-card horizontal padding (`render_demo_card` default).
 pub(super) const COMPOSITION_DEMO_CARD_PADDING_X: f32 = 18.0;
@@ -22,11 +22,11 @@ pub(super) fn composition_card_width(content_width: f32, horizontal_padding: f32
 }
 
 pub(super) fn composition_card_radius(look: &ShadcnLook) -> f32 {
-    look.radius(ShadcnRadius::Xl)
+    look.radius(ShadcnRadius::Sm)
 }
 
 pub(super) fn composition_inset_radius(look: &ShadcnLook) -> f32 {
-    look.radius(ShadcnRadius::Lg)
+    look.radius(ShadcnRadius::Sm)
 }
 
 pub(super) fn render_demo_section(
@@ -36,7 +36,7 @@ pub(super) fn render_demo_section(
     content: gpui::AnyElement,
 ) -> gpui::AnyElement {
     let chrome = look.chrome();
-    let title_style = look.typography_role(ShadcnTextRole::H4);
+    let title_style = look.typography_scale(ShadcnTextSize::Sm);
     let description_style = look.typography_scale(ShadcnTextSize::Sm);
 
     div()

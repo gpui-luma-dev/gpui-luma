@@ -10,7 +10,10 @@ pub fn open(cx: &mut App, theme_choice: ColorVizThemeChoice) -> anyhow::Result<(
     cx.open_window(
         WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
-            titlebar: Some(TitleBar::title_bar_options()),
+            titlebar: Some(gpui::TitlebarOptions {
+                traffic_light_position: Some(gpui::point(px(12.0), px(17.0))),
+                ..TitleBar::title_bar_options()
+            }),
             app_owns_titlebar_drag: true,
             ..Default::default()
         },

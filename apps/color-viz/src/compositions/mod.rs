@@ -37,6 +37,7 @@ const EXAMPLES: [(&str, &str); 6] = [
 ];
 
 pub struct ColorCompositions {
+    look: Arc<ShadcnLook>,
     tabs: Entity<Tabs>,
     pages: [AnyView; 6],
     scrolls: [ScrollContainer; 6],
@@ -49,6 +50,7 @@ impl ColorCompositions {
         let tabs = shadcn::Tabs::new("color-viz-composition-tabs")
             .look(look.as_ref())
             .items(EXAMPLES.map(|(id, label)| TabsItem::new(id).label(label)))
+            .size(shadcn::ShadcnSize::Sm)
             .active("picker")
             .spawn(cx);
         // Retain every example so switching pages preserves edits and event history.
@@ -80,19 +82,32 @@ impl ColorCompositions {
                 }
             }));
         }
-        Self { tabs, pages, scrolls, active: 0, _subscriptions: subscriptions }
+        Self { look, tabs, pages, scrolls, active: 0, _subscriptions: subscriptions }
     }
 }
 
 impl Render for ColorCompositions {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let chrome = self.look.chrome();
         let scroll = &self.scrolls[self.active];
         scroll.sync_scrollbar(cx);
         div()
             .size_full()
             .flex()
             .flex_col()
-            .child(div().w_full().flex_shrink_0().p(px(10.0)).child(self.tabs.clone()))
+            .text_color(chrome.body_text)
+            .bg(chrome.content_background)
+            .child(
+                div()
+                    .w_full()
+                    .flex_shrink_0()
+                    .px(px(16.0))
+                    .py(px(6.0))
+                    .border_b_1()
+                    .border_color(chrome.border)
+                    .bg(chrome.panel_background)
+                    .child(self.tabs.clone()),
+            )
             .child(div().flex_1().min_h_0().child(
                 scroll.render(div().w_full().pt(px(16.0)).child(self.pages[self.active].clone()).into_any_element()),
             ))

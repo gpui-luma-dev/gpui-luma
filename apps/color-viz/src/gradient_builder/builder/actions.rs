@@ -263,8 +263,11 @@ impl GradientBuilder {
                 LucideIcon::Trash,
             )
             .look(self.look.as_ref())
-            .outline()
-            .spawn(cx);
+            .content_only()
+            .round(false)
+            .size(shadcn::ShadcnSize::Sm)
+            .spawn(cx)
+            .tooltip(Tooltip::new("Remove color stop"), cx);
             button.update(cx, |button, cx| button.set_enabled(can_remove, cx));
             self._subscriptions.push(cx.subscribe(&button, move |this, _, event: &ButtonEvent, cx| {
                 if matches!(event, ButtonEvent::Click) {
@@ -600,6 +603,62 @@ impl GradientBuilder {
             }));
             false
         }
+    }
+
+    pub(super) fn export_png(&mut self, cx: &mut Context<Self>) {
+        // Export the artwork, excluding editor handles and mesh guide lines.
+        let image = match self.selected_tab {
+            BuilderTab::Gradients => rasterize_gradient_preview(
+                self.gradient_type,
+                self.preview_size,
+                &self.preview_stops(cx),
+                self.rotation_deg,
+            ),
+            BuilderTab::Mesh => {
+                rasterize_mesh_gradient_preview(self.preview_size, &self.mesh_points, self.mesh_background, false)
+            }
+            BuilderTab::Freeform => super::super::paint::rasterize_freeform_preview(
+                self.preview_size,
+                &self.mesh_points,
+                self.mesh_background,
+                self.spread_percent,
+                self.freeform_hsl,
+                &super::super::paint::FieldShape {
+                    point_spreads: &self.point_spreads,
+                    softness_percent: self.softness_percent,
+                },
+            ),
+        }
+        .and_then(|image| self.image_adjustments.apply(image));
+        let Some(image) = image else {
+            self.export_status = Some("Preview not ready to export".into());
+            cx.notify();
+            return;
+        };
+        let directory = std::env::current_dir().unwrap_or_else(|_| std::env::temp_dir());
+        let path = cx.prompt_for_new_path(&directory, Some("gradient.png"));
+        self.export_status = Some("Choose a location for your PNG".into());
+        cx.notify();
+        cx.spawn(async move |this, cx| {
+            let result = match path.await {
+                Ok(Ok(Some(path))) => {
+                    cx.background_executor()
+                        .spawn(async move {
+                            super::super::paint::save_preview_png(&image, &path)
+                                .map(|_| format!("Saved {}", path.file_name().unwrap_or_default().to_string_lossy()))
+                        })
+                        .await
+                }
+                Ok(Ok(None)) => Ok("Export canceled".into()),
+                Ok(Err(error)) => Err(error),
+                Err(error) => Err(anyhow::anyhow!(error)),
+            };
+            let _ = this.update(cx, |this, cx| {
+                this.export_status = Some(result.unwrap_or_else(|error| format!("Export failed: {error}")));
+                cx.notify();
+            });
+        })
+        .detach();
     }
 
     pub(super) fn cached_preview_image(&self) -> Option<Arc<RenderImage>> {

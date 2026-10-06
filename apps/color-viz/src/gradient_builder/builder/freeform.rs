@@ -24,7 +24,9 @@ impl GradientBuilder {
         {
             let button = shadcn::Button::icon_button(format!("color-viz-freeform-{index}"), icon)
                 .look(self.look.as_ref())
-                .outline()
+                .content_only()
+                .round(false)
+                .size(shadcn::ShadcnSize::Sm)
                 .spawn(cx)
                 .tooltip(Tooltip::new(label), cx);
             self._subscriptions.push(cx.subscribe(&button, move |this, _, event: &ButtonEvent, cx| {

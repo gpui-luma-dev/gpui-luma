@@ -1,3 +1,5 @@
+use gpui_luma::infra::attachments::TooltipEntityExt;
+use gpui_luma::controls::tooltip::Tooltip;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
@@ -5,6 +7,7 @@ use std::time::Instant;
 use gpui::{AppContext, Bounds, Context, Entity, Pixels, RenderImage, Size, Subscription, px, size};
 use gpui_luma_color::color_slider::{ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext};
 use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::prelude::HasPresenter;
 use gpui_luma::controls::selector::{Selector, SelectorEvent};
 use gpui_luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy, ThumbId};
 use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsWidthMode};
@@ -37,6 +40,8 @@ pub struct GradientBuilder {
     track_context: ColorSliderTrackContext,
     add_stop_button: Entity<Button>,
     mesh_reset_button: Entity<Button>,
+    export_button: Entity<Button>,
+    export_status: Option<String>,
     stop_delete_buttons: HashMap<ThumbId, Entity<Button>>,
     rotation_slider: Entity<SliderControl>,
     saturation_slider: Entity<SliderControl>,
@@ -86,6 +91,10 @@ pub struct GradientBuilder {
 }
 
 impl GradientBuilder {
+    pub(crate) fn export_button(&self) -> Entity<Button> {
+        self.export_button.clone()
+    }
+
     pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let theme_is_dark = matches!(look.mode(), ThemeMode::Dark);
         let start = gpui::hsla(198.0 / 360.0, 1.0, 0.24, 1.0);
@@ -122,51 +131,71 @@ impl GradientBuilder {
         let selected_stop = gradient_stops.read(cx).active_thumb_id();
         let add_stop_button = shadcn::Button::icon_button("color-viz-gradient-add-stop", LucideIcon::Plus)
             .look(look.as_ref())
-            .outline()
-            .spawn(cx);
+            .content_only()
+            .round(false)
+            .size(shadcn::ShadcnSize::Sm)
+            .spawn(cx)
+            .tooltip(Tooltip::new("Add color stop"), cx);
         let mesh_reset_button = shadcn::Button::icon_button("color-viz-mesh-reset", LucideIcon::RotateCcw)
             .look(look.as_ref())
-            .outline()
-            .spawn(cx);
+            .content_only()
+            .round(false)
+            .size(shadcn::ShadcnSize::Sm)
+            .spawn(cx)
+            .tooltip(Tooltip::new("Reset canvas"), cx);
 
+        let export_button = shadcn::Button::new("color-viz-export")
+            .look(look.as_ref())
+            .outline()
+            .size(shadcn::ShadcnSize::Sm)
+            .icon(LucideIcon::Download)
+            .label("Export PNG")
+            .spawn(cx);
         let rotation_slider = shadcn::Slider::new("color-viz-gradient-rotation")
             .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Sm)
             .range(0.0..360.0)
             .step(1.0)
             .value(90.0)
             .spawn(cx);
         let saturation_slider = shadcn::Slider::new("color-viz-image-saturation")
             .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Sm)
             .range(-100.0..100.0)
             .step(1.0)
             .value(0.0)
             .spawn(cx);
         let vibrance_slider = shadcn::Slider::new("color-viz-image-vibrance")
             .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Sm)
             .range(-100.0..100.0)
             .step(1.0)
             .value(0.0)
             .spawn(cx);
         let spread_slider = shadcn::Slider::new("color-viz-freeform-spread")
             .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Sm)
             .range(10.0..150.0)
             .step(1.0)
             .value(100.0)
             .spawn(cx);
         let point_spread_slider = shadcn::Slider::new("color-viz-point-spread")
             .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Sm)
             .range(10.0..200.0)
             .step(1.0)
             .value(100.0)
             .spawn(cx);
         let softness_slider = shadcn::Slider::new("color-viz-falloff-softness")
             .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Sm)
             .range(25.0..200.0)
             .step(1.0)
             .value(100.0)
             .spawn(cx);
         let blend_selector = shadcn::Selector::new("color-viz-freeform-blend")
             .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Sm)
             .items(vec![
                 gpui_luma::controls::selector::SelectorItem::new("rgb").label("RGB"),
                 gpui_luma::controls::selector::SelectorItem::new("hsl").label("HSL"),
@@ -175,27 +204,33 @@ impl GradientBuilder {
             .spawn(cx);
         let top_tabs = shadcn::Tabs::new("color-viz-builder-tabs")
             .look(look.as_ref())
+            .template(crate::studio_tabs::template(look.clone(), true))
             .items(builder_tab_items())
             .active("gradients")
+            .size(shadcn::ShadcnSize::Sm)
             .width_mode(TabsWidthMode::Uniform)
             .spawn(cx);
         let type_selector = shadcn::Selector::new("color-viz-gradient-type")
             .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Sm)
             .items(type_items())
             .selected_id("linear")
             .spawn(cx);
         let renderer_selector = shadcn::Selector::new("color-viz-gradient-renderer")
             .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Sm)
             .items(renderer_items())
             .selected_id("quads")
             .spawn(cx);
         let mesh_grid_selector = shadcn::Selector::new("color-viz-mesh-grid")
             .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Sm)
             .items(mesh_grid_items())
             .selected_id("3x4")
             .spawn(cx);
         let mesh_aspect_ratio_selector = shadcn::Selector::new("color-viz-mesh-aspect")
             .look(look.as_ref())
+            .size(shadcn::ShadcnSize::Sm)
             .items(mesh_aspect_ratio_items())
             .selected_id("3:4")
             .spawn(cx);
@@ -214,6 +249,8 @@ impl GradientBuilder {
             track_context,
             add_stop_button: add_stop_button.clone(),
             mesh_reset_button: mesh_reset_button.clone(),
+            export_button: export_button.clone(),
+            export_status: None,
             stop_delete_buttons: HashMap::new(),
             rotation_slider: rotation_slider.clone(),
             saturation_slider: saturation_slider.clone(),
@@ -331,6 +368,11 @@ impl GradientBuilder {
                 }
             }));
         }
+        builder._subscriptions.push(cx.subscribe(&export_button, |this, _, event: &ButtonEvent, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                this.export_png(cx);
+            }
+        }));
         builder.init_freeform_buttons(cx);
         builder.sync_stop_buttons(cx);
         builder.rebuild_stops(cx);
@@ -386,5 +428,59 @@ impl GradientBuilder {
         self._subscriptions.push(cx.observe(&color_picker, |this, _, cx| {
             this.apply_picker_color(cx);
         }));
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod tests {
+    use super::*;
+    use gpui::TestAppContext;
+
+    #[test]
+    fn redesigned_inspector_retains_freeform_edits_across_modes() {
+        let mut app = TestAppContext::single();
+        app.update(|cx| gpui_luma::init(cx).expect("initialize SDK"));
+        let look = crate::theme::ColorVizThemeChoice::Default.shadcn_look();
+        look.set_mode(ThemeMode::Dark);
+        let (view, cx) = app.add_window_view(|_, cx| GradientBuilder::new(look.clone(), cx));
+        cx.run_until_parked();
+        let tabs = cx.update(|_, cx| view.read(cx).top_tabs.clone());
+        for id in ["freeform", "mesh", "gradients", "freeform"] {
+            tabs.update(cx, |tabs, cx| {
+                tabs.set_active(id, cx);
+                cx.emit(TabsEvent::Activate { tab_id: id.into(), label: id.into() });
+            });
+            cx.run_until_parked();
+            if id == "freeform" {
+                view.update(cx, |view, cx| {
+                    assert_eq!(view.mesh_points.len(), 4);
+                    if view.point_spreads[0] == 100.0 {
+                        view.point_spreads[0] = 65.0;
+                        view.mesh_points[0].u = 0.25;
+                        view.preview_image_cache = None;
+                        cx.notify();
+                    } else {
+                        assert_eq!(view.point_spreads[0], 65.0);
+                        assert_eq!(view.mesh_points[0].u, 0.25);
+                    }
+                });
+                cx.run_until_parked();
+            }
+        }
+        view.update(cx, |view, cx| {
+            view.deselect_freeform_point(cx);
+            assert_eq!(view.selected_mesh_point, None);
+            for index in [1, 0, 3, 2] {
+                view.begin_mesh_drag(index, cx);
+                assert_eq!(view.selected_mesh_point, Some(index));
+                assert_eq!(view.mesh_color_target, MeshColorTarget::Point(index));
+                view.finish_mesh_drag(cx);
+                view.open_color_picker_for_mesh_point(index, cx);
+                assert_eq!(view.selected_mesh_point, Some(index));
+            }
+            view.deselect_freeform_point(cx);
+            assert_eq!(view.selected_mesh_point, None);
+        });
+        cx.run_until_parked();
     }
 }
