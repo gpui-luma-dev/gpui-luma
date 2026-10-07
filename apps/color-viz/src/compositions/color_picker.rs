@@ -11,8 +11,7 @@ use gpui_luma_color::color_slider::{AlphaDelegate, ColorSliderBuilder, ColorSlid
 use gpui_luma_color::composition::ColorCompositionSync;
 use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnRadius};
+use crate::theme::{Look, TextSize};
 
 use super::color_exposition_common::{
     composition_card_width, composition_inset_radius, detail_row_sized, format_color_field_event, format_compact_hsla,
@@ -25,14 +24,14 @@ const PICKER_HORIZONTAL_PADDING: f32 = 25.0;
 const PICKER_VERTICAL_PADDING: f32 = 18.0;
 
 pub struct ColorPickerControlExposition {
-    look: Arc<ShadcnLook>,
+    look: Arc<Look>,
     state: Entity<ColorPickerDemo>,
     event_stream: Entity<ControlEventStream>,
     _subscriptions: Vec<Subscription>,
 }
 
 impl ColorPickerControlExposition {
-    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+    pub fn new(cx: &mut Context<Self>, look: Arc<Look>) -> Self {
         gpui_luma::theme::observe_theme_revision(cx, |this, cx| this.sync_look(this.look.clone(), cx)).detach();
 
         let state = cx.new(|cx| ColorPickerDemo::new(look.clone(), cx));
@@ -51,7 +50,7 @@ impl ColorPickerControlExposition {
         Self { look, state, event_stream, _subscriptions: subscriptions }
     }
 
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    pub fn sync_look(&mut self, look: Arc<Look>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.state.update(cx, |demo, cx| demo.sync_look(look, cx));
         self.event_stream.update(cx, |stream, cx| stream.sync_look(self.look.clone(), cx));
@@ -61,36 +60,34 @@ impl ColorPickerControlExposition {
 
 impl Render for ColorPickerControlExposition {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
-        with_look(&self.look, || {
-            let look = &self.look;
+        let look = &self.look;
 
-            let preview = div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .items_start()
-                .gap(px(28.0))
-                .child(render_demo_section(
+        let preview = div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .items_start()
+            .gap(px(28.0))
+            .child(render_demo_section(
+                look,
+                "Photoshop-style Picker",
+                "A composed picker built from the migrated field and slider primitives.",
+                render_demo_card_with_padding(
                     look,
-                    "Photoshop-style Picker",
-                    "A composed picker built from the migrated field and slider primitives.",
-                    render_demo_card_with_padding(
-                        look,
-                        ColorPickerDemo::card_width(PICKER_HORIZONTAL_PADDING),
-                        PICKER_HORIZONTAL_PADDING,
-                        PICKER_VERTICAL_PADDING,
-                        self.state.clone(),
-                    ),
-                ))
-                .child(self.event_stream.clone());
+                    ColorPickerDemo::card_width(PICKER_HORIZONTAL_PADDING),
+                    PICKER_HORIZONTAL_PADDING,
+                    PICKER_VERTICAL_PADDING,
+                    self.state.clone(),
+                ),
+            ))
+            .child(self.event_stream.clone());
 
-            render_composition_exposition("color-picker", preview.into_any_element())
-        })
+        render_composition_exposition("color-picker", preview.into_any_element())
     }
 }
 
 struct ColorPickerDemo {
-    look: Arc<ShadcnLook>,
+    look: Arc<Look>,
     metrics: ColorPickerMetrics,
     sync: ColorCompositionSync,
     field: Entity<ColorFieldState>,
@@ -124,11 +121,11 @@ impl ColorPickerDemo {
         ColorPickerMetrics::new().card_width(horizontal_padding)
     }
 
-    fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+    fn new(look: Arc<Look>, cx: &mut Context<Self>) -> Self {
         let hsv = Hsv { h: 12.0, s: 0.78, v: 0.86, a: 0.92 };
         let metrics = ColorPickerMetrics::new();
 
-        let field_radius = px(look.radius(ShadcnRadius::Sm));
+        let field_radius = px(look.metrics().radius.sm);
 
         let field = cx.new(move |_| {
             ColorFieldState::saturation_value("controls-doc-color-picker-field", hsv, 20.0)
@@ -199,7 +196,7 @@ impl ColorPickerDemo {
         }
     }
 
-    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    fn sync_look(&mut self, look: Arc<Look>, cx: &mut Context<Self>) {
         self.look = look;
         self.field.update(cx, |_, cx| cx.notify());
         self.hue_slider.update(cx, |_, cx| cx.notify());
@@ -234,7 +231,7 @@ impl Render for ColorPickerDemo {
         let control_width = self.metrics.control_width;
         let swatch_height = self.metrics.swatch_height;
         let look = &self.look;
-        let text_size = ShadcnTextSize::Base;
+        let text_size = TextSize::Base;
 
         div()
             .w_full()
@@ -314,7 +311,7 @@ mod tests {
         });
         let (gallery, cx) = app.add_window_view(|window, cx| {
             window.activate_window();
-            ColorCompositions::new(Arc::new(ShadcnLook::built_in()), cx)
+            ColorCompositions::new(Arc::new(Look::built_in()), cx)
         });
         cx.run_until_parked();
         let (picker, tabs) = cx.update(|_, cx| {

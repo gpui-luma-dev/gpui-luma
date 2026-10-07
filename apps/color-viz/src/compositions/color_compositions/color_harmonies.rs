@@ -18,9 +18,8 @@ use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use gpui_luma::controls::slider::SliderControl;
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma::vstack;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn as shadcn;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use gpui_luma_look_radix as radix;
+use crate::theme::{Look, ColorVizLookExt, TypographyExt, TextSize};
 
 use super::super::color_exposition_common::{composition_demo_card_width, format_hsl_label};
 
@@ -33,7 +32,7 @@ const COLOR_LABEL_RESERVE: f32 = 40.0;
 const COMBINATION_LABEL_RESERVE: f32 = 88.0;
 
 pub struct ColorHarmoniesDemo {
-    look: Arc<ShadcnLook>,
+    look: Arc<Look>,
     metrics: ColorHarmoniesMetrics,
     sync: ColorCompositionSync,
     wheel: Entity<ColorFieldState>,
@@ -125,7 +124,7 @@ impl ColorHarmoniesDemo {
         ColorHarmoniesMetrics::new().card_width()
     }
 
-    pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+    pub fn new(look: Arc<Look>, cx: &mut Context<Self>) -> Self {
         let color: Hsla = rgb(0x47c424).into();
         let metrics = ColorHarmoniesMetrics::new();
 
@@ -150,18 +149,18 @@ impl ColorHarmoniesDemo {
         let lightness_renderer = lightness_builder.domain_renderer();
         let lightness_context = lightness_builder.track_context();
         let lightness_ring = lightness_builder.spawn(cx);
-        let harmony_menu = shadcn::Selector::new("controls-doc-color-harmonies-harmony")
+        let harmony_menu = radix::Selector::new("controls-doc-color-harmonies-harmony")
             .look(look.as_ref())
             .label("Combination")
-            .size(ShadcnSize::Md)
+            .size(radix::ButtonSize::Two)
             .items(color_combination_items())
             .selected_id(ColorCombination::Tetradic.id())
             .spawn(cx);
-        let color_input = shadcn::TextField::new("controls-doc-color-harmonies-input")
+        let color_input = radix::TextField::new("controls-doc-color-harmonies-input")
             .look(look.as_ref())
             .value(format_hsl_input(color))
             .placeholder("hsl(120 50% 40%) or #006081")
-            .size(ShadcnSize::Md)
+            .size(radix::TextFieldSize::Two)
             .full_width(true)
             .spawn(cx);
 
@@ -232,7 +231,7 @@ impl ColorHarmoniesDemo {
         }
     }
 
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    pub fn sync_look(&mut self, look: Arc<Look>, cx: &mut Context<Self>) {
         self.look = look;
         self.wheel.update(cx, |_, cx| cx.notify());
         self.lightness_ring.update(cx, |_, cx| cx.notify());
@@ -292,7 +291,7 @@ impl Render for ColorHarmoniesDemo {
         let title_text = look.chrome().title_text;
         let border = look.chrome().border;
         let metrics = self.metrics;
-        let label_text_size = ShadcnTextSize::Base;
+        let label_text_size = TextSize::Base;
 
         render_combinations_body(
             look,
@@ -516,10 +515,10 @@ fn render_combo_wheel_layer(
 }
 
 fn render_combinations_body(
-    look: &ShadcnLook,
+    look: &Look,
     title_text: Hsla,
     border: Hsla,
-    label_text_size: ShadcnTextSize,
+    label_text_size: TextSize,
     lightness_ring: Entity<SliderControl>,
     wheel: Entity<ColorFieldState>,
     color_input: TextField,
@@ -593,9 +592,9 @@ fn render_palette_swatches(
 }
 
 fn render_color_field_row(
-    look: &ShadcnLook,
+    look: &Look,
     title_text: Hsla,
-    label_text_size: ShadcnTextSize,
+    label_text_size: TextSize,
     border: Hsla,
     color: Hsla,
     color_input: TextField,
@@ -620,9 +619,9 @@ fn render_color_field_row(
 }
 
 fn render_combination_field_row(
-    look: &ShadcnLook,
+    look: &Look,
     title_text: Hsla,
-    label_text_size: ShadcnTextSize,
+    label_text_size: TextSize,
     harmony_menu: Entity<Selector>,
 ) -> AnyElement {
     div()
@@ -635,7 +634,7 @@ fn render_combination_field_row(
         .into_any_element()
 }
 
-fn field_label(look: &ShadcnLook, label: &'static str, color: Hsla, text_size: ShadcnTextSize) -> gpui::Div {
+fn field_label(look: &Look, label: &'static str, color: Hsla, text_size: TextSize) -> gpui::Div {
     div()
         .flex_shrink_0()
         .typography_style(look.typography_scale(text_size))

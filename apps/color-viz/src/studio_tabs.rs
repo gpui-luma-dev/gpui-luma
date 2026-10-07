@@ -2,16 +2,17 @@
 use std::sync::Arc;
 use gpui_luma::controls::tabs::{TabsItemLook, TabsListLook, TabsTemplate, TabsTheme, ThemedTabsTemplate};
 use gpui_luma::theme::{ControlSize, InteractionState};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_radix::Look;
+use crate::theme::ColorVizLookExt;
 
 struct StudioTabsTheme {
-    look: Arc<ShadcnLook>,
+    look: Arc<Look>,
     segmented: bool,
 }
 
 impl TabsTheme for StudioTabsTheme {
     fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsListLook {
-        let mut list = self.look.tabs_theme().resolve_list(enabled, size);
+        let mut list = gpui_luma_look_radix::tabs_theme(&self.look).resolve_list(enabled, size);
         list.background = None;
         list.border = None;
         list.padding = if self.segmented { 3.0 } else { 0.0 };
@@ -21,7 +22,7 @@ impl TabsTheme for StudioTabsTheme {
     }
 
     fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsItemLook {
-        let mut item = self.look.tabs_theme().resolve_item(active, state, size);
+        let mut item = gpui_luma_look_radix::tabs_theme(&self.look).resolve_item(active, state, size);
         let chrome = self.look.chrome();
         if !self.segmented {
             item.label_typography.size = 14.0;
@@ -44,10 +45,10 @@ impl TabsTheme for StudioTabsTheme {
     }
 
     fn font_family(&self) -> gpui::SharedString {
-        self.look.mode_tokens().typography.font.sans.family.clone().into()
+        "System UI".to_string().into()
     }
 }
 
-pub(crate) fn template(look: Arc<ShadcnLook>, segmented: bool) -> Arc<dyn TabsTemplate> {
+pub(crate) fn template(look: Arc<Look>, segmented: bool) -> Arc<dyn TabsTemplate> {
     Arc::new(ThemedTabsTemplate::new(Arc::new(StudioTabsTheme { look, segmented })))
 }

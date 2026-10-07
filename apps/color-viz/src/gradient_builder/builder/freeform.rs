@@ -13,37 +13,64 @@ pub(super) fn default_points() -> Vec<MeshPoint> {
 
 impl GradientBuilder {
     pub(super) fn init_freeform_buttons(&mut self, cx: &mut Context<Self>) {
-        for (index, (icon, label)) in [
-            (LucideIcon::Plus, "Add point"),
-            (LucideIcon::Trash, "Remove selected point"),
-            (LucideIcon::Shuffle, "Randomize point positions"),
-            (LucideIcon::Palette, "Randomize selected point color"),
-        ]
-        .into_iter()
-        .enumerate()
-        {
-            let button = shadcn::Button::icon_button(format!("color-viz-freeform-{index}"), icon)
-                .look(self.look.as_ref())
-                .content_only()
-                .round(false)
-                .size(shadcn::ShadcnSize::Sm)
-                .spawn(cx)
-                .tooltip(Tooltip::new(label), cx);
-            self._subscriptions.push(cx.subscribe(&button, move |this, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    this.edit_freeform(index, cx);
-                }
-            }));
-            self.freeform_buttons.push(button);
+        let add = crate::theme::icon_button("color-viz-freeform-add", LucideIcon::Plus)
+            .look(&self.look)
+            .content_only()
+            .size(radix::ButtonSize::One)
+            .spawn(cx)
+            .tooltip(Tooltip::new("Add point"), cx);
+        self._subscriptions.push(cx.subscribe(&add, |this, _, event: &ButtonEvent, cx| {
+            if event.is_click() {
+                this.edit_freeform(0, cx);
+            }
+        }));
+        self.freeform_buttons.push(add);
+        let shuffle = crate::theme::icon_button("color-viz-freeform-shuffle", LucideIcon::Shuffle)
+            .look(&self.look)
+            .content_only()
+            .size(radix::ButtonSize::One)
+            .spawn(cx)
+            .tooltip(Tooltip::new("Randomize all point positions"), cx);
+        self._subscriptions.push(cx.subscribe(&shuffle, |this, _, event: &ButtonEvent, cx| {
+            if event.is_click() {
+                this.edit_freeform(2, cx);
+            }
+        }));
+        self.freeform_buttons.push(shuffle);
+        // Fixed row slots keep subscriptions stable as points are added or removed.
+        for point_index in 0..16 {
+            let buttons = [(1, LucideIcon::Trash, "Remove point"), (3, LucideIcon::Palette, "Randomize point color")]
+                .map(|(action, icon, label)| {
+                    let button = crate::theme::icon_button(format!("color-viz-point-{point_index}-{action}"), icon)
+                        .look(&self.look)
+                        .content_only()
+                        .size(radix::ButtonSize::One)
+                        .spawn(cx)
+                        .tooltip(Tooltip::new(label), cx);
+                    self._subscriptions.push(cx.subscribe(&button, move |this, _, event: &ButtonEvent, cx| {
+                        if event.is_click() {
+                            this.edit_freeform_point(point_index, action, cx);
+                        }
+                    }));
+                    button
+                });
+            self.point_buttons.push(buttons);
         }
     }
 
     pub(super) fn sync_freeform_buttons(&mut self, cx: &mut Context<Self>) {
         self.freeform_buttons[0].update(cx, |button, cx| button.set_enabled(self.mesh_points.len() < 16, cx));
-        self.freeform_buttons[1].update(cx, |button, cx| {
-            button.set_enabled(self.mesh_points.len() > 1 && self.selected_mesh_point.is_some(), cx)
-        });
-        self.freeform_buttons[3].update(cx, |button, cx| button.set_enabled(self.selected_mesh_point.is_some(), cx));
+        for [delete, _] in &self.point_buttons {
+            delete.update(cx, |button, cx| button.set_enabled(self.mesh_points.len() > 1, cx));
+        }
+    }
+
+    pub(super) fn edit_freeform_point(&mut self, point_index: usize, action: usize, cx: &mut Context<Self>) {
+        if self.selected_tab != BuilderTab::Freeform || point_index >= self.mesh_points.len() {
+            return;
+        }
+        self.selected_mesh_point = Some(point_index);
+        self.edit_freeform(action, cx);
     }
 
     pub(super) fn sync_point_spread(&mut self, cx: &mut Context<Self>) {
@@ -95,12 +122,15 @@ impl GradientBuilder {
                     color: self.random_color(),
                 };
                 self.mesh_points.push(point);
+                self.mesh_point_ids.push(self.next_point_id);
+                self.next_point_id += 1;
                 self.point_spreads.push(100.0);
                 self.selected_mesh_point = Some(self.mesh_points.len() - 1);
             }
             1 if self.mesh_points.len() > 1 => {
                 if let Some(index) = self.selected_mesh_point.filter(|index| *index < self.mesh_points.len()) {
                     self.mesh_points.remove(index);
+                    self.mesh_point_ids.remove(index);
                     self.point_spreads.remove(index);
                     for (index, point) in self.mesh_points.iter_mut().enumerate() {
                         point.col = index as u8;
@@ -110,10 +140,8 @@ impl GradientBuilder {
             }
             2 => {
                 for index in 0..self.mesh_points.len() {
-                    let u = self.random_unit();
-                    let v = self.random_unit();
-                    self.mesh_points[index].u = u;
-                    self.mesh_points[index].v = v;
+                    self.mesh_points[index].u = self.random_unit();
+                    self.mesh_points[index].v = self.random_unit();
                 }
             }
             3 => {

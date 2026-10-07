@@ -113,6 +113,11 @@ impl<D: Clone + 'static> Button<D> {
         self.variant(ButtonVariant::Ghost)
     }
 
+    /// Content-only action: no background, border, shadow, or focus-ring chrome.
+    pub fn content_only(self) -> Self {
+        self.ghost_quiet()
+    }
+
     pub fn ghost_quiet(self) -> Self {
         self.variant(ButtonVariant::GhostQuiet)
     }

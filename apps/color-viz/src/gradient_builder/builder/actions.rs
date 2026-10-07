@@ -7,8 +7,8 @@ use super::super::paint::{
     color_at_position, mesh_dimensions, rasterize_gradient_preview, rasterize_mesh_gradient_preview, sorted_stops,
 };
 use super::mesh::{
-    MESH_POINT_GAP, default_mesh_background, default_mesh_points, default_mesh_selected_index, fit_aspect_ratio,
-    mesh_point_index, mesh_preview_content_size, preview_gradient_cache_key, preview_mesh_cache_key,
+    MESH_POINT_GAP, default_mesh_background, default_mesh_points, fit_aspect_ratio, mesh_point_index,
+    mesh_preview_content_size, preview_gradient_cache_key, preview_mesh_cache_key,
 };
 
 impl GradientBuilder {
@@ -59,6 +59,9 @@ impl GradientBuilder {
 
     pub(super) fn handle_delete_stop(&mut self, thumb_id: ThumbId, cx: &mut Context<Self>) {
         self.stop_colors.remove(&thumb_id);
+        if self.selected_stop == Some(thumb_id) {
+            self.selected_stop = None;
+        }
         self.gradient_stops.update(cx, |slider, cx| {
             slider.remove_thumb_id(thumb_id, cx);
         });
@@ -87,14 +90,16 @@ impl GradientBuilder {
         if self.selected_tab != next {
             if next != BuilderTab::Gradients && (next == BuilderTab::Freeform) != self.mesh_state_is_freeform {
                 std::mem::swap(&mut self.mesh_points, &mut self.inactive_mesh_points);
+                std::mem::swap(&mut self.mesh_point_ids, &mut self.inactive_mesh_point_ids);
                 std::mem::swap(&mut self.mesh_background, &mut self.inactive_mesh_background);
                 self.mesh_state_is_freeform = next == BuilderTab::Freeform;
-                self.selected_mesh_point = Some(0);
-                self.mesh_color_target = MeshColorTarget::Point(0);
+                self.selected_mesh_point = None;
+                self.mesh_color_target = MeshColorTarget::Background;
                 self.mesh_swatch_bounds.clear();
             }
             self.preview_image_cache = None;
             self.selected_tab = next;
+            self.sync_visibility_button(cx);
             if next == BuilderTab::Freeform {
                 self.sync_freeform_buttons(cx);
                 self.sync_point_spread(cx);
@@ -226,22 +231,27 @@ impl GradientBuilder {
         } else {
             default_mesh_points(self.mesh_grid_preset)
         };
+        self.mesh_point_ids = (self.next_point_id..self.next_point_id + self.mesh_points.len() as u64).collect();
+        self.next_point_id += self.mesh_points.len() as u64;
         if self.selected_tab == BuilderTab::Freeform {
             self.point_spreads = vec![100.0; self.mesh_points.len()];
         }
         self.sync_freeform_buttons(cx);
         self.mesh_background = default_mesh_background();
-        let selected_index = if self.selected_tab == BuilderTab::Freeform {
-            0
-        } else {
-            default_mesh_selected_index(self.mesh_grid_preset)
-        };
-        self.selected_mesh_point = Some(selected_index);
+        self.selected_mesh_point = None;
         self.sync_point_spread(cx);
-        self.mesh_color_target = MeshColorTarget::Point(selected_index);
+        self.mesh_color_target = MeshColorTarget::Background;
         self.active_mesh_drag = None;
         self.color_picker_open = false;
         let _ = self.ensure_preview_image_cache(self.preview_size, cx);
+        cx.notify();
+    }
+
+    pub(super) fn select_stop_row(&mut self, thumb_id: ThumbId, cx: &mut Context<Self>) {
+        self.selected_stop = Some(thumb_id);
+        self.gradient_stops.update(cx, |slider, cx| {
+            slider.select_thumb_id(thumb_id, cx);
+        });
         cx.notify();
     }
 
@@ -258,14 +268,14 @@ impl GradientBuilder {
                 continue;
             }
 
-            let button = shadcn::Button::icon_button(
+            let button = crate::theme::icon_button(
                 format!("color-viz-gradient-stop-delete-{}", thumb_id.as_u64()),
                 LucideIcon::Trash,
             )
             .look(self.look.as_ref())
             .content_only()
-            .round(false)
-            .size(shadcn::ShadcnSize::Sm)
+            .radius(radix::Radius::Medium)
+            .size(radix::ButtonSize::One)
             .spawn(cx)
             .tooltip(Tooltip::new("Remove color stop"), cx);
             button.update(cx, |button, cx| button.set_enabled(can_remove, cx));
@@ -334,6 +344,7 @@ impl GradientBuilder {
     }
 
     pub(super) fn rebuild_stops(&mut self, cx: &mut Context<Self>) {
+        self.sync_stop_buttons(cx);
         let slider = self.gradient_stops.read(cx);
         let stops = sorted_stops(
             &slider
@@ -513,15 +524,19 @@ impl GradientBuilder {
         let content_size = mesh_preview_content_size(bounds.size);
         if self.mesh_preview_container_size != content_size {
             self.mesh_preview_container_size = content_size;
+            refreshed = true;
         }
 
         let fitted_size = fit_aspect_ratio(content_size, self.mesh_aspect_ratio_preset);
         if self.preview_size != fitted_size {
             self.preview_size = fitted_size;
+            refreshed = true;
         }
 
         if self.uses_render_preview(cx) && self.ensure_preview_image_cache(fitted_size, cx) {
             refreshed = true;
+        }
+        if refreshed {
             cx.notify();
         }
         refreshed
@@ -665,8 +680,31 @@ impl GradientBuilder {
         self.preview_image_cache.as_ref().map(|(_, image)| image.clone())
     }
 
+    pub(super) fn points_visible(&self) -> bool {
+        if self.selected_tab == BuilderTab::Freeform {
+            self.freeform_controls_visible
+        } else {
+            self.mesh_controls_visible
+        }
+    }
+
+    fn sync_visibility_button(&self, cx: &mut Context<Self>) {
+        self.visibility_button.update(cx, |button, cx| button.set_data(self.points_visible(), cx));
+    }
+
+    pub(super) fn copy_gradient_css(&self, cx: &mut Context<Self>) {
+        cx.write_to_clipboard(gpui::ClipboardItem::new_string(self.gradient_spec(cx)));
+    }
+
     pub(super) fn toggle_mesh_controls(&mut self, cx: &mut Context<Self>) {
-        self.mesh_controls_visible = !self.mesh_controls_visible;
+        if self.selected_tab == BuilderTab::Freeform {
+            self.freeform_controls_visible = !self.freeform_controls_visible;
+        } else if self.selected_tab == BuilderTab::Mesh {
+            self.mesh_controls_visible = !self.mesh_controls_visible;
+        } else {
+            return;
+        }
+        self.sync_visibility_button(cx);
         self.active_mesh_drag = None;
         self.preview_image_cache = None;
         let _ = self.ensure_preview_image_cache(self.preview_size, cx);
