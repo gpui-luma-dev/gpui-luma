@@ -1,5 +1,7 @@
 //! Local copies of Studio's color composition examples and their event streams.
 
+use crate::theme::ColorVizLookExt;
+
 mod color_compositions;
 mod color_exposition_common;
 mod color_harmonies;
@@ -18,7 +20,7 @@ use gpui::{AnyView, Context, Entity, Render, Subscription, Window, div, prelude:
 use gpui_luma::controls::scroll_container::ScrollContainer;
 use gpui_luma::controls::scrollbar::ScrollbarEvent;
 use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem};
-use gpui_luma_look_shadcn::{self as shadcn, ShadcnLook};
+use gpui_luma_look_radix::{self as radix, Look};
 
 use color_harmonies::ColorHarmoniesControlExposition;
 use color_hsv_plane::ColorHsvPlaneControlExposition;
@@ -37,7 +39,7 @@ const EXAMPLES: [(&str, &str); 6] = [
 ];
 
 pub struct ColorCompositions {
-    look: Arc<ShadcnLook>,
+    look: Arc<Look>,
     tabs: Entity<Tabs>,
     pages: [AnyView; 6],
     scrolls: [ScrollContainer; 6],
@@ -46,11 +48,11 @@ pub struct ColorCompositions {
 }
 
 impl ColorCompositions {
-    pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
-        let tabs = shadcn::Tabs::new("color-viz-composition-tabs")
+    pub fn new(look: Arc<Look>, cx: &mut Context<Self>) -> Self {
+        let tabs = radix::Tabs::new("color-viz-composition-tabs")
             .look(look.as_ref())
             .items(EXAMPLES.map(|(id, label)| TabsItem::new(id).label(label)))
-            .size(shadcn::ShadcnSize::Sm)
+            .size(radix::TabsSize::One)
             .active("picker")
             .spawn(cx);
         // Retain every example so switching pages preserves edits and event history.

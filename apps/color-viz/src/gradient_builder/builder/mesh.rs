@@ -2,7 +2,7 @@ use gpui::{Corners, Pixels, SharedString, Size, div, prelude::*, px, size};
 use gpui_luma::controls::selector::SelectorItem;
 use gpui_luma::controls::tabs::TabsItem;
 use gpui_luma::theme::LumaTextStyle;
-use gpui_luma_look_shadcn::LumaTypographyExt;
+use crate::theme::TypographyExt;
 
 use super::super::paint::{GradientType, MeshPoint};
 use super::super::paint::color_at_position;
@@ -77,7 +77,7 @@ pub(super) enum MeshAspectRatioPreset {
 impl MeshAspectRatioPreset {
     pub(super) fn label(self) -> &'static str {
         match self {
-            Self::Fill => "Fill",
+            Self::Fill => "Full",
             Self::NineByNineteen => "9:19",
             Self::ThreeByFour => "3:4",
             Self::OneByOne => "1:1",
@@ -195,7 +195,7 @@ pub(super) fn mesh_grid_items() -> Vec<SelectorItem> {
 
 pub(super) fn mesh_aspect_ratio_items() -> Vec<SelectorItem> {
     vec![
-        SelectorItem::new("fill").label("Fill"),
+        SelectorItem::new("fill").label("Full"),
         SelectorItem::new("9:19").label("9:19"),
         SelectorItem::new("3:4").label("3:4"),
         SelectorItem::new("1:1").label("1:1"),
@@ -297,11 +297,6 @@ pub(super) fn default_mesh_points(preset: MeshGridPreset) -> Vec<MeshPoint> {
             })
         })
         .collect()
-}
-
-pub(super) fn default_mesh_selected_index(preset: MeshGridPreset) -> usize {
-    let (rows, cols) = preset.dimensions();
-    mesh_point_index(rows / 2, cols / 2, cols)
 }
 
 pub(super) fn fit_aspect_ratio(container: Size<Pixels>, aspect_preset: MeshAspectRatioPreset) -> Size<Pixels> {

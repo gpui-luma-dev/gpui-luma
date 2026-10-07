@@ -17,7 +17,7 @@ gpui-luma-color.workspace = true
 luma-app-common.workspace = true
 gpui_platform = { workspace = true }
 image = { workspace = true }
-gpui-luma-look-shadcn.workspace = true
+gpui-luma-look-radix.workspace = true
 lucide-svg-static.workspace = true
 palette = { workspace = true }
 smallvec = { workspace = true }

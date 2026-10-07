@@ -9,14 +9,14 @@ use gpui_luma_color::color_ring::{ColorRingBuilder, primary_slider_value};
 use gpui_luma_color::color_slider::color_spec::Hsv;
 use gpui_luma_color::composition::ColorCompositionSync;
 use gpui_luma::controls::slider::SliderControl;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use crate::theme::{Look, TextSize};
 
 use super::super::color_exposition_common::{
     composition_demo_card_width, render_composition_readout_footer, COMPOSITION_PRIMARY_READOUT_GAP,
 };
 
 pub struct SvTriangleDemo {
-    look: Arc<ShadcnLook>,
+    look: Arc<Look>,
     metrics: SvTriangleMetrics,
     sync: ColorCompositionSync,
     hsv: Hsv,
@@ -60,7 +60,7 @@ impl SvTriangleDemo {
         SvTriangleMetrics::new().card_width()
     }
 
-    pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+    pub fn new(look: Arc<Look>, cx: &mut Context<Self>) -> Self {
         let initial_hsv = Hsv { h: 317.0, s: 0.83, v: 0.84, a: 1.0 };
         let metrics = SvTriangleMetrics::new();
 
@@ -123,7 +123,7 @@ impl SvTriangleDemo {
         }
     }
 
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    pub fn sync_look(&mut self, look: Arc<Look>, cx: &mut Context<Self>) {
         self.look = look;
         self.ring.update(cx, |_, cx| cx.notify());
         self.triangle.update(cx, |_, cx| cx.notify());
@@ -154,7 +154,7 @@ impl Render for SvTriangleDemo {
         let triangle_half = triangle_size * 0.5;
         let swatch = self.hsv.to_hsla_ext();
         let look = &self.look;
-        let text_size = ShadcnTextSize::Base;
+        let text_size = TextSize::Base;
 
         div()
             .w_full()

@@ -5,7 +5,7 @@ use gpui::{FontWeight, Hsla, div, prelude::*, px};
 use gpui_luma_color::ColorSwatch;
 use gpui_luma_color::color_field::ColorFieldEvent;
 use gpui_luma::controls::slider::SliderEvent;
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnRadius, ShadcnTextSize};
+use crate::theme::{Look, ColorVizLookExt, TypographyExt, TextSize};
 
 /// Inner demo-card horizontal padding (`render_demo_card` default).
 pub(super) const COMPOSITION_DEMO_CARD_PADDING_X: f32 = 18.0;
@@ -21,23 +21,23 @@ pub(super) fn composition_card_width(content_width: f32, horizontal_padding: f32
     content_width + horizontal_padding * 2.0
 }
 
-pub(super) fn composition_card_radius(look: &ShadcnLook) -> f32 {
-    look.radius(ShadcnRadius::Sm)
+pub(super) fn composition_card_radius(look: &Look) -> f32 {
+    look.metrics().radius.sm
 }
 
-pub(super) fn composition_inset_radius(look: &ShadcnLook) -> f32 {
-    look.radius(ShadcnRadius::Sm)
+pub(super) fn composition_inset_radius(look: &Look) -> f32 {
+    look.metrics().radius.sm
 }
 
 pub(super) fn render_demo_section(
-    look: &ShadcnLook,
+    look: &Look,
     title: &'static str,
     description: &'static str,
     content: gpui::AnyElement,
 ) -> gpui::AnyElement {
     let chrome = look.chrome();
-    let title_style = look.typography_scale(ShadcnTextSize::Sm);
-    let description_style = look.typography_scale(ShadcnTextSize::Sm);
+    let title_style = look.typography_scale(TextSize::Sm);
+    let description_style = look.typography_scale(TextSize::Sm);
 
     div()
         .flex()
@@ -63,12 +63,12 @@ pub(super) fn render_demo_section(
         .into_any_element()
 }
 
-pub(super) fn render_demo_card(look: &ShadcnLook, width_px: f32, content: impl IntoElement) -> gpui::AnyElement {
+pub(super) fn render_demo_card(look: &Look, width_px: f32, content: impl IntoElement) -> gpui::AnyElement {
     render_demo_card_with_padding(look, width_px, 18.0, 18.0, content)
 }
 
 pub(super) fn render_demo_card_with_padding(
-    look: &ShadcnLook,
+    look: &Look,
     width_px: f32,
     horizontal_padding: f32,
     vertical_padding: f32,
@@ -93,10 +93,10 @@ pub(super) fn render_demo_card_with_padding(
 }
 
 pub(super) fn detail_row_sized(
-    look: &ShadcnLook,
+    look: &Look,
     label: &'static str,
     value: String,
-    text_size: ShadcnTextSize,
+    text_size: TextSize,
 ) -> gpui::AnyElement {
     let chrome = look.chrome();
     let text_style = look.typography_scale(text_size);
@@ -131,9 +131,9 @@ pub(super) fn detail_row_sized(
 ///
 /// `preview_width`: when set, renders a thin swatch strip matching the primary control width.
 pub(super) fn render_composition_readout_footer(
-    look: &ShadcnLook,
+    look: &Look,
     color: Hsla,
-    text_size: ShadcnTextSize,
+    text_size: TextSize,
     preview_width: Option<f32>,
 ) -> gpui::AnyElement {
     let radius = px(composition_inset_radius(look));
@@ -161,11 +161,7 @@ pub(super) fn render_composition_readout_footer(
         .into_any_element()
 }
 
-pub(super) fn control_label_sized(
-    look: &ShadcnLook,
-    label: &'static str,
-    text_size: ShadcnTextSize,
-) -> gpui::AnyElement {
+pub(super) fn control_label_sized(look: &Look, label: &'static str, text_size: TextSize) -> gpui::AnyElement {
     div()
         .flex_shrink_0()
         .typography_style(look.typography_scale(text_size))
@@ -186,10 +182,10 @@ pub(super) fn format_hsl_label(color: Hsla) -> String {
 }
 
 pub(super) fn slider_labeled_row_compact_sized(
-    look: &ShadcnLook,
+    look: &Look,
     label: &'static str,
     slider: gpui::Entity<gpui_luma::controls::slider::SliderControl>,
-    label_text_size: ShadcnTextSize,
+    label_text_size: TextSize,
 ) -> gpui::AnyElement {
     div()
         .w_full()

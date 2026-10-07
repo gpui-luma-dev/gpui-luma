@@ -12,14 +12,14 @@ use gpui_luma_color::color_ring::{
 use gpui_luma_color::color_slider::color_spec::Hsv;
 use gpui_luma_color::composition::ColorCompositionSync;
 use gpui_luma::controls::slider::SliderControl;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use crate::theme::{Look, ColorVizLookExt, TextSize};
 
 use super::super::color_exposition_common::{
     composition_demo_card_width, render_composition_readout_footer, COMPOSITION_PRIMARY_READOUT_GAP,
 };
 
 pub struct SplitRingDemo {
-    look: Arc<ShadcnLook>,
+    look: Arc<Look>,
     metrics: SplitRingMetrics,
     sync: ColorCompositionSync,
     saturation_arc: Entity<SliderControl>,
@@ -102,7 +102,7 @@ impl SplitRingDemo {
         SplitRingMetrics::new().card_width()
     }
 
-    pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+    pub fn new(look: Arc<Look>, cx: &mut Context<Self>) -> Self {
         let init_color = hsla(18.0 / 360.0, 0.85, 0.49, 1.0);
         let hue_degrees = init_color.h * 360.0;
         let saturation = init_color.s;
@@ -210,7 +210,7 @@ impl SplitRingDemo {
         this
     }
 
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    pub fn sync_look(&mut self, look: Arc<Look>, cx: &mut Context<Self>) {
         self.look = look;
         self.saturation_arc.update(cx, |_, cx| cx.notify());
         self.lightness_arc.update(cx, |_, cx| cx.notify());
@@ -273,7 +273,7 @@ impl Render for SplitRingDemo {
         let group_width = self.metrics.frame_size();
         let arc_offset = self.metrics.arc_horizontal_offset;
         let look = &self.look;
-        let text_size = ShadcnTextSize::Base;
+        let text_size = TextSize::Base;
 
         let group_left = (primary_width - group_width) * 0.5;
         let group_top = (primary_width - self.metrics.outer_size) * 0.5;

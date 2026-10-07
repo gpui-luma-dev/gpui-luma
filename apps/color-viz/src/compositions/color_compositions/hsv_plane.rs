@@ -9,7 +9,7 @@ use gpui_luma_color::color_slider::{ChannelDelegate, ColorSliderBuilder, ColorSl
 use gpui_luma_color::composition::ColorCompositionSync;
 use gpui_luma::controls::slider::SliderControl;
 use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use crate::theme::{Look, TextSize};
 
 use super::super::color_exposition_common::{
     composition_demo_card_width, render_composition_readout_footer, slider_labeled_row_compact_sized,
@@ -17,7 +17,7 @@ use super::super::color_exposition_common::{
 };
 
 pub struct HsvPlaneDemo {
-    look: Arc<ShadcnLook>,
+    look: Arc<Look>,
     metrics: HsvPlaneMetrics,
     sync: ColorCompositionSync,
     hsv: Hsv,
@@ -50,7 +50,7 @@ impl HsvPlaneDemo {
         HsvPlaneMetrics::new().card_width()
     }
 
-    pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+    pub fn new(look: Arc<Look>, cx: &mut Context<Self>) -> Self {
         let initial_hsv = Hsv { h: 266.0, s: 0.78, v: 0.76, a: 1.0 };
         let metrics = HsvPlaneMetrics::new();
 
@@ -149,7 +149,7 @@ impl HsvPlaneDemo {
         }
     }
 
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    pub fn sync_look(&mut self, look: Arc<Look>, cx: &mut Context<Self>) {
         self.look = look;
         self.plane.update(cx, |_, cx| cx.notify());
         self.slider_h.update(cx, |_, cx| cx.notify());
@@ -206,7 +206,7 @@ impl Render for HsvPlaneDemo {
         let hsla = self.hsv.to_hsla_ext();
         let plane_size = self.metrics.plane_size;
         let look = &self.look;
-        let text_size = ShadcnTextSize::Base;
+        let text_size = TextSize::Base;
 
         div()
             .w(px(plane_size))
