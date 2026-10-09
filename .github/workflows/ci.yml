@@ -15,10 +15,31 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  RUSTFLAGS: "-C debuginfo=0"
+  # Disables LLVM optimization passes during CI tests to dramatically speed up compilation
+  CARGO_PROFILE_DEV_OPT_LEVEL: "0"
+  CARGO_PROFILE_DEV_PACKAGE_GPUI_LUMA_OPT_LEVEL: "0"
+  CARGO_PROFILE_DEV_PACKAGE_GPUI_UNOFFICIAL_OPT_LEVEL: "0"
 
 jobs:
-  check:
-    name: fmt, clippy, test
+  fmt:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Format check
+        run: cargo fmt --all --check
+
+  clippy:
+    name: Clippy
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -27,23 +48,33 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
+          components: clippy
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Format check
-        run: cargo fmt --all --check
-
       - name: Clippy
         run: cargo clippy --locked --workspace --all-targets --all-features
 
+  test:
+    name: Test & Doc-tests
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+
       # PRs exercise library behavior without linking every demo and shell test binary.
-      # Workspace Clippy above still checks every app target and feature.
+      # Excludes benchmarks from test builds (--lib --bins --tests).
       - name: Test library crates
         if: github.event_name == 'pull_request'
         run: >-
-          cargo test --locked --all-targets --all-features
+          cargo test --locked --lib --bins --tests --all-features
           --package gpui-luma
           --package gpui-luma-color
           --package gpui-luma-look-radix
@@ -51,7 +82,12 @@ jobs:
 
       - name: Test full workspace
         if: github.event_name != 'pull_request'
-        run: cargo test --locked --workspace --all-targets --all-features
+        run: cargo test --locked --workspace --lib --bins --tests --all-features
 
+      # Only run doc-tests on library packages that actually contain documentation
       - name: Documentation tests
-        run: cargo test --locked --workspace --doc --all-features
+        run: >-
+          cargo test --locked --doc --all-features
+          --package gpui-luma
+          --package gpui-luma-look-radix
+          --package gpui-luma-look-shadcn
