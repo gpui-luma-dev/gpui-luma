@@ -69,20 +69,16 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
 
-      # PRs exercise library behavior without linking every demo and shell test binary.
+      # Exercise library behavior without linking every demo and shell test binary.
+      # Workspace Clippy above still checks every app target and feature.
       # Excludes benchmarks from test builds (--lib --bins --tests).
       - name: Test library crates
-        if: github.event_name == 'pull_request'
         run: >-
           cargo test --locked --lib --bins --tests --all-features
           --package gpui-luma
           --package gpui-luma-color
           --package gpui-luma-look-radix
           --package gpui-luma-look-shadcn
-
-      - name: Test full workspace
-        if: github.event_name != 'pull_request'
-        run: cargo test --locked --workspace --lib --bins --tests --all-features
 
       # Only run doc-tests on library packages that actually contain documentation
       - name: Documentation tests
