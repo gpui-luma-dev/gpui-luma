@@ -5,6 +5,9 @@ Always answer concisely. Prefer short bullets. Do not give long explanations unl
 Documentation:
 - DO NOT EDIT `README.md` without explicit user approval. It is an independently maintained document and should generally not be touched by agents.
 
+Pull requests and git:
+- Never merge or close a pull request without explicit user approval. Approval to implement, push, or create a PR does not authorize merging or closing it.
+
 GUI applications:
 - Do not launch or run GUI applications without explicit user approval to launch them.
 - Approval to implement changes, build, or test does not authorize GUI launches, including startup or smoke tests.
