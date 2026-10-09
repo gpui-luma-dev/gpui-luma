@@ -1,4 +1,4 @@
-//! Shared demo assets for Luma apps (Studio, shells, color-viz).
+//! Shared demo assets for Luma apps (Studio, shells).
 //!
 //! Embeds tweakcn CSS packs and fonts referenced by those themes. Not part of the
 //! SDK or look runtime — production apps should supply their own CSS and fonts.
