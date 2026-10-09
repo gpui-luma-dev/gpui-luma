@@ -21,6 +21,7 @@ mod mesh;
 mod view;
 mod freeform;
 mod color_list;
+mod sections;
 
 use super::paint::{GradientType, MeshPoint, PreviewRenderer};
 use super::sv_triangle_picker::SvTrianglePicker;
@@ -32,6 +33,7 @@ use mesh::{
 pub struct GradientBuilder {
     look: Arc<Look>,
     top_tabs: Entity<Tabs>,
+    section_accordions: Vec<Vec<Entity<gpui_luma::controls::accordion::AccordionControl>>>,
     selected_tab: BuilderTab,
     gradient_stops: Entity<SliderControl>,
     stop_colors: HashMap<ThumbId, gpui::Hsla>,
@@ -286,6 +288,7 @@ impl GradientBuilder {
         let mut builder = Self {
             look: look.clone(),
             top_tabs: top_tabs.clone(),
+            section_accordions: Vec::new(),
             selected_tab: BuilderTab::Gradients,
             gradient_stops: gradient_stops.clone(),
             stop_colors,
@@ -439,6 +442,7 @@ impl GradientBuilder {
                 this.export_png(cx);
             }
         }));
+        builder.init_section_accordions(cx);
         builder.init_freeform_buttons(cx);
         builder.sync_stop_buttons(cx);
         builder.rebuild_stops(cx);
@@ -685,6 +689,72 @@ mod tests {
         cx.run_until_parked();
         cx.update(|_, cx| assert_eq!(cx.read_from_clipboard().and_then(|item| item.text()), Some(expected)));
     }
+    #[test]
+    fn collapsed_accordion_sections_have_uniform_spacing() {
+        let mut app = TestAppContext::single();
+        app.update(|cx| gpui_luma::init(cx).expect("initialize SDK"));
+        let (view, cx) = app.add_window_view(|_, cx| GradientBuilder::new(Look::built_in().into(), cx));
+        let sections = cx.update(|_, cx| view.read(cx).section_accordions[0].clone());
+        for section in sections {
+            section.update(cx, |section, cx| section.toggle_item(0, cx));
+        }
+        cx.run_until_parked();
+        let bounds = [
+            "color-viz-gradients-section-CANVAS",
+            "color-viz-gradients-section-FIELDS",
+            "color-viz-gradients-section-COLOR",
+            "color-viz-gradients-section-RENDER",
+        ]
+        .map(|selector| cx.debug_bounds(selector).expect("collapsed section header"));
+        let step = bounds[1].top() - bounds[0].top();
+        assert!(step > px(0.0) && step < px(50.0));
+        for pair in bounds.windows(2) {
+            assert!(((pair[1].top() - pair[0].top()) - step).abs() < px(0.5));
+            assert!((pair[1].size.height - pair[0].size.height).abs() < px(0.5));
+        }
+    }
+
+    #[test]
+    fn gradient_sections_collapse_independently_and_preserve_controls() {
+        let mut app = TestAppContext::single();
+        app.update(|cx| gpui_luma::init(cx).expect("initialize SDK"));
+        let (view, cx) = app.add_window_view(|_, cx| GradientBuilder::new(Look::built_in().into(), cx));
+        cx.run_until_parked();
+        for (index, id, selector, row_selector) in [
+            (0, "gradients", "color-viz-gradients-section-FIELDS", "color-viz-stop-list-first-row"),
+            (1, "mesh", "color-viz-mesh-section-FIELDS", "color-viz-point-list-first-row"),
+            (2, "freeform", "color-viz-freeform-section-FIELDS", "color-viz-point-list-first-row"),
+        ] {
+            view.update(cx, |builder, cx| {
+                builder.handle_top_tabs_event(&TabsEvent::Activate { tab_id: id.into(), label: id.into() }, cx)
+            });
+            cx.run_until_parked();
+            let (header, slider, value) = cx.update(|_, cx| {
+                let builder = view.read(cx);
+                (
+                    builder.section_accordions[index][1].clone(),
+                    builder.saturation_slider.clone(),
+                    builder.saturation_slider.read(cx).value(),
+                )
+            });
+            assert!(cx.debug_bounds(row_selector).is_some());
+            let bounds = cx.debug_bounds(selector).expect("section disclosure");
+            cx.simulate_click(bounds.center(), Default::default());
+            cx.run_until_parked();
+            assert!(cx.debug_bounds(row_selector).is_none());
+            cx.update(|_, cx| {
+                let builder = view.read(cx);
+                assert!(!header.read(cx).is_expanded(&"section".into()));
+                assert!(builder.section_accordions[index][0].read(cx).is_expanded(&"section".into()));
+                assert!(builder.section_accordions[index][2].read(cx).is_expanded(&"section".into()));
+                assert_eq!(slider.read(cx).value(), value);
+            });
+            cx.simulate_keystrokes("enter");
+            cx.run_until_parked();
+            assert!(cx.debug_bounds(row_selector).is_some());
+        }
+    }
+
     #[test]
     fn color_lists_start_unselected_and_mode_changes_do_not_select_items() {
         let mut app = TestAppContext::single();
