@@ -17,7 +17,7 @@ cd gpui-luma
 cargo build --locked
 ```
 
-The default build includes the SDK, Luma Studio, Neumorphic Demo, and Color Viz.
+The default build includes the four library crates.
 Use `cargo build --locked --workspace` to build all workspace packages.
 
 ## Library crates
@@ -76,18 +76,6 @@ cargo run -p luma-radix-studio
 
 Release builds: `cargo run -p luma-studio --release` / `cargo run -p luma-radix-studio --release` (or `just luma-studio-rel` / `just luma-radix-rel`).
 
-**Color Viz (ALPHA)** — An experimental gradient workbench designed to test the
-performance of graphics operations in GPUI, including linear, mesh, and freeform
-gradient rendering. **This application is alpha** and serves as a graphics testing
-workbench while its interface and rendering features evolve. To achieve adequate 
-performance you should run this application as a release build.
-
-![Color Viz beta — GPUI graphics performance testing workbench](docs/screenshots/color-viz-beta.png)
-
-```bash
-cargo run -p luma-color-viz --release -- monochrome-minimal-neutral
-```
-
 Additional examples:
 
 ```bash
@@ -98,7 +86,7 @@ cargo run -p luma-shell-vscode -- default
 cargo run -p luma-shell-2026 -- default
 ```
 
-Color Viz and the shell demos accept `default` or a built-in Shadcn theme ID,
+The shell demos accept `default` or a built-in Shadcn theme ID,
 such as `retro-arcade`, as their first argument.
 
 ## Prebuilt executables

@@ -9,7 +9,6 @@ members = [
   "apps/luma-studio",
   "apps/radix-studio",
   "apps/neumorphic-demo",
-  "apps/color-viz",
   "apps/shells/common",
   "apps/shells/detached",
   "apps/shells/split-titlebar",
@@ -71,9 +70,6 @@ opt-level = 2
 opt-level = 1
 
 [profile.dev.package.luma-neumorphic-demo]
-opt-level = 1
-
-[profile.dev.package.luma-color-viz]
 opt-level = 1
 
 [profile.dev.package.luma-radix-studio]

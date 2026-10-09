@@ -1,4 +1,4 @@
-//! Embedded fonts for Luma demo apps (Studio, shells, color-viz).
+//! Embedded fonts for Luma demo apps (Studio, shells).
 //!
 //! Font family names exposed here must match the names registered by GPUI's
 //! text system. CSS aliases are normalized by the look crate separately.

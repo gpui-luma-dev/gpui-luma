@@ -25,12 +25,6 @@ neumorphic-demo:
 neumorphic-demo-rel:
     cargo run -p luma-neumorphic-demo --release
 
-color-viz:
-    cargo run -p luma-color-viz --release
-
-color-viz-rel:
-    MTL_HUD_ENABLED=1 cargo run -p luma-color-viz --release
-
 shell-detached:
     cargo run -p luma-shell-detached -- default
 
