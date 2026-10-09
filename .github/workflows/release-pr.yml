@@ -1,0 +1,47 @@
+name: Prepare SDK Release PR
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-pr:
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-latest
+    concurrency:
+      group: release-pr-${{ github.ref }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Check release PR credentials
+        env:
+          RELEASE_PLZ_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+        run: |
+          if [[ -z "${RELEASE_PLZ_TOKEN}" ]]; then
+            echo "::error::Set RELEASE_PLZ_TOKEN to a GitHub token with Contents and Pull requests read/write access. This lets release PRs trigger CI."
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Create or update release PR
+        uses: release-plz/action@v0.5
+        with:
+          command: release-pr
+          version: 0.3.170
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}

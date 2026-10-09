@@ -1,0 +1,28 @@
+[workspace]
+# Release only the four public libraries, after their release PR is merged.
+release = false
+release_always = false
+dependencies_update = false
+# Each package needs its own tag: release-plz uses tags to track completed uploads.
+git_tag_name = "{{ package }}-v{{ version }}"
+git_release_name = "{{ package }} v{{ version }}"
+
+[[package]]
+name = "gpui-luma"
+release = true
+version_group = "sdk"
+
+[[package]]
+name = "gpui-luma-color"
+release = true
+version_group = "sdk"
+
+[[package]]
+name = "gpui-luma-look-radix"
+release = true
+version_group = "sdk"
+
+[[package]]
+name = "gpui-luma-look-shadcn"
+release = true
+version_group = "sdk"
