@@ -26,7 +26,7 @@ impl AccordionTheme for SectionTheme {
             icon_color: chrome.muted_text,
             chevron_color: chrome.muted_text,
             typography: self.0.typography_scale(TextSize::Base),
-            font_family: "Inter".into(),
+            font_family: "System UI".into(),
         }
     }
     fn resolve_content(&self, _: bool) -> AccordionContentPalette {

@@ -4,9 +4,8 @@ use gpui_luma::shell::{TitleBar, TITLE_BAR_HEIGHT};
 pub(crate) const SHELL_TITLEBAR_HEIGHT: gpui::Pixels = px(40.0);
 
 use crate::app::ColorVizApp;
-use crate::theme::ColorVizThemeChoice;
 
-pub fn open(cx: &mut App, theme_choice: ColorVizThemeChoice) -> anyhow::Result<()> {
+pub fn open(cx: &mut App) -> anyhow::Result<()> {
     let bounds = Bounds::centered(None, size(px(1280.0), px(800.0)), cx);
 
     let mut titlebar = TitleBar::title_bar_options();
@@ -21,7 +20,7 @@ pub fn open(cx: &mut App, theme_choice: ColorVizThemeChoice) -> anyhow::Result<(
             app_owns_titlebar_drag: true,
             ..Default::default()
         },
-        |window, cx| cx.new(|cx| ColorVizApp::new(window, cx, theme_choice)),
+        |window, cx| cx.new(|cx| ColorVizApp::new(window, cx)),
     )?;
 
     cx.activate(true);

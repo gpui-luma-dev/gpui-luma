@@ -12,7 +12,6 @@ mod assets;
 
 use assets::Assets;
 use gpui::{actions, App, KeyBinding, Menu, MenuItem};
-use theme::ColorVizThemeChoice;
 
 actions!(color_viz_app, [Quit]);
 
@@ -21,7 +20,6 @@ fn quit(_: &Quit, cx: &mut App) {
 }
 
 fn main() {
-    let theme_choice = ColorVizThemeChoice::from_args();
     let app = gpui_platform::application().with_assets(Assets);
 
     app.run(move |cx| {
@@ -31,8 +29,7 @@ fn main() {
         if let Err(error) = gpui_luma::init(cx).and_then(|_| {
             gpui_luma::focus::bind_default_focus_keys(cx);
             gpui_luma::key_handling::bind_default_control_keys(cx);
-            luma_app_common::register_all(cx)?;
-            app_shell::open(cx, theme_choice)
+            app_shell::open(cx)
         }) {
             eprintln!("failed to open Color Viz: {error:?}");
         }

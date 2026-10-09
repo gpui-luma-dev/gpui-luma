@@ -10,7 +10,6 @@ use gpui_luma::prelude::TooltipEntityExt;
 
 use crate::gradient_builder::GradientBuilder;
 use crate::compositions::ColorCompositions;
-use crate::theme::ColorVizThemeChoice;
 
 pub struct ColorVizApp {
     focus_scope: FocusHandle,
@@ -24,10 +23,9 @@ pub struct ColorVizApp {
 }
 
 impl ColorVizApp {
-    pub fn new(_window: &mut Window, cx: &mut Context<Self>, theme_choice: ColorVizThemeChoice) -> Self {
+    pub fn new(_window: &mut Window, cx: &mut Context<Self>) -> Self {
         let focus_scope = cx.focus_handle();
-        let look = theme_choice.radix_look();
-        look.set_mode(ThemeMode::Dark);
+        let look = crate::theme::default_look();
         sync_color_control_theme(&look);
         let gradient_builder = cx.new(|cx| GradientBuilder::new(look.clone(), cx));
         let gradient_nav = crate::theme::icon_button("color-viz-nav-gradients", lucide_svg_static::Icon::Blend)
@@ -182,7 +180,7 @@ mod tests {
     fn workspace_navigation_loads_compositions_once_and_retains_both_workspaces() {
         let mut app = TestAppContext::single();
         app.update(|cx| gpui_luma::init(cx).expect("initialize SDK"));
-        let (view, cx) = app.add_window_view(|window, cx| ColorVizApp::new(window, cx, ColorVizThemeChoice::Default));
+        let (view, cx) = app.add_window_view(ColorVizApp::new);
         cx.run_until_parked();
         let (gradient_nav, composition_nav, gradients) = cx.update(|_, cx| {
             let view = view.read(cx);
@@ -215,7 +213,7 @@ mod tests {
     fn shell_rail_routes_to_retained_workspaces() {
         let mut app = TestAppContext::single();
         app.update(|cx| gpui_luma::init(cx).expect("initialize SDK"));
-        let (view, cx) = app.add_window_view(|window, cx| ColorVizApp::new(window, cx, ColorVizThemeChoice::Default));
+        let (view, cx) = app.add_window_view(ColorVizApp::new);
         cx.run_until_parked();
         let (gradients, compositions) = cx.update(|_, cx| {
             let app = view.read(cx);
