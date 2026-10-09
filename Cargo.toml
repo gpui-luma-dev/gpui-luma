@@ -23,7 +23,7 @@ default-members = [
 ]
 
 [workspace.package]
-version = "0.1.6"
+version = "0.1.7"
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/gpui-luma-dev/gpui-luma"
@@ -32,16 +32,16 @@ publish = false
 
 [workspace.dependencies]
 anyhow = "1"
-gpui-luma = { version = "0.1.6", path = "crates/sdk" }
-gpui-luma-color = { version = "0.1.6", path = "crates/luma-color" }
-gpui-luma-look-shadcn = { version = "0.1.6", path = "crates/look-shadcn" }
-gpui-luma-look-radix = { version = "0.1.6", path = "crates/look-radix" }
+gpui-luma = { version = "0.1.7", path = "crates/sdk" }
+gpui-luma-color = { version = "0.1.7", path = "crates/luma-color" }
+gpui-luma-look-shadcn = { version = "0.1.7", path = "crates/look-shadcn" }
+gpui-luma-look-radix = { version = "0.1.7", path = "crates/look-radix" }
 luma-app-common = { path = "apps/common" }
-gpui = { package = "gpui-unofficial", version = "1.22.0" }
+gpui = { package = "gpui-unofficial", version = "1.23.2" }
 lucide-svg-static = { package = "lucide-static-svg", version = "1.45.0" }
 gpui_platform = {
   package = "gpui-platform-gpui-unofficial",
-  version = "1.22.0",
+  version = "1.23.2",
   features = ["font-kit"],
 }
 image = "0.25"
