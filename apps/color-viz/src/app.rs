@@ -1,5 +1,4 @@
 use gpui::{Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem};
 use gpui_luma_color::style::{ColorControlTheme, set_active_color_control_theme};
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
@@ -18,7 +17,6 @@ pub struct ColorVizApp {
     look: Arc<Look>,
     gradient_builder: Entity<GradientBuilder>,
     compositions: Option<Entity<ColorCompositions>>,
-    tabs: Entity<Tabs>,
     gradient_nav: Entity<gpui_luma::controls::button::Button>,
     composition_nav: Entity<gpui_luma::controls::button::Button>,
     show_compositions: bool,
@@ -32,12 +30,6 @@ impl ColorVizApp {
         look.set_mode(ThemeMode::Dark);
         sync_color_control_theme(&look);
         let gradient_builder = cx.new(|cx| GradientBuilder::new(look.clone(), cx));
-        let tabs = Tabs::new("color-viz-workspace-tabs")
-            .template(crate::studio_tabs::template(look.clone(), false))
-            .items([TabsItem::new("gradients").label("Gradients"), TabsItem::new("compositions").label("Compositions")])
-            .size(gpui_luma::theme::ControlSize::Sm)
-            .active("gradients")
-            .spawn(cx);
         let gradient_nav = crate::theme::icon_button("color-viz-nav-gradients", lucide_svg_static::Icon::Blend)
             .look(&look)
             .content_only()
@@ -50,25 +42,18 @@ impl ColorVizApp {
             .size(gpui_luma_look_radix::ButtonSize::Two)
             .spawn(cx)
             .tooltip(gpui_luma::controls::tooltip::Tooltip::new("Compositions"), cx);
-        let mut subscriptions = vec![cx.subscribe(&tabs, |this, _, event: &TabsEvent, cx| {
-            if let TabsEvent::Activate { tab_id, .. } = event {
-                this.show_compositions = tab_id == "compositions";
-                if this.show_compositions && this.compositions.is_none() {
-                    this.compositions = Some(cx.new(|cx| ColorCompositions::new(this.look.clone(), cx)));
-                }
-                cx.notify();
-            }
-        })];
+        let mut subscriptions = Vec::new();
 
         for (button, id) in [(&gradient_nav, "gradients"), (&composition_nav, "compositions")] {
             subscriptions.push(cx.subscribe(
                 button,
                 move |this, _, event: &gpui_luma::controls::button::ButtonEvent, cx| {
                     if event.is_click() {
-                        this.tabs.update(cx, |tabs, cx| {
-                            tabs.set_active(id, cx);
-                            cx.emit(TabsEvent::Activate { tab_id: id.into(), label: id.into() });
-                        });
+                        this.show_compositions = id == "compositions";
+                        if this.show_compositions && this.compositions.is_none() {
+                            this.compositions = Some(cx.new(|cx| ColorCompositions::new(this.look.clone(), cx)));
+                        }
+                        cx.notify();
                     }
                 },
             ));
@@ -78,7 +63,6 @@ impl ColorVizApp {
             look,
             gradient_builder,
             compositions: None,
-            tabs,
             gradient_nav,
             composition_nav,
             show_compositions: false,
@@ -119,12 +103,6 @@ impl Render for ColorVizApp {
                     .text_color(chrome.title_text)
                     .font_family(sans_family.clone())
                     .child(div().text_size(px(14.0)).font_weight(gpui::FontWeight::SEMIBOLD).child("Color Viz"))
-                    .child(
-                        div()
-                            .ml(px(28.0))
-                            .on_mouse_down(gpui::MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                            .child(self.tabs.clone()),
-                    )
                     .child(div().flex_1())
                     .when(!self.show_compositions, |this| {
                         this.child(
@@ -206,17 +184,19 @@ mod tests {
         app.update(|cx| gpui_luma::init(cx).expect("initialize SDK"));
         let (view, cx) = app.add_window_view(|window, cx| ColorVizApp::new(window, cx, ColorVizThemeChoice::Default));
         cx.run_until_parked();
-        let (tabs, gradients) = cx.update(|_, cx| {
+        let (gradient_nav, composition_nav, gradients) = cx.update(|_, cx| {
             let view = view.read(cx);
             assert!(view.compositions.is_none());
-            (view.tabs.clone(), view.gradient_builder.clone())
+            (view.gradient_nav.clone(), view.composition_nav.clone(), view.gradient_builder.clone())
         });
         let mut first_compositions = None;
         for id in ["compositions", "gradients", "compositions"] {
-            tabs.update(cx, |tabs, cx| {
-                tabs.set_active(id, cx);
-                cx.emit(TabsEvent::Activate { tab_id: id.into(), label: id.into() });
-            });
+            let button = if id == "compositions" {
+                &composition_nav
+            } else {
+                &gradient_nav
+            };
+            button.update(cx, |_, cx| cx.emit(gpui_luma::controls::button::ButtonEvent::Click));
             cx.run_until_parked();
             cx.update(|_, cx| {
                 let view = view.read(cx);

@@ -3,33 +3,22 @@ use super::*;
 
 use gpui::{
     ClickEvent, Context, Anchor, Corners, HitboxBehavior, ImageSource, MouseButton, MouseDownEvent, MouseMoveEvent,
-    MouseUpEvent, Pixels, Render, Window, anchored, canvas, deferred, div, img, point, prelude::*, px, relative, size,
+    MouseUpEvent, Render, Window, anchored, canvas, deferred, div, img, point, prelude::*, px, relative, size,
 };
 use gpui_luma::infra::{ElementExt, StyledExt};
 
 use gpui_luma::theme::LumaTextStyle;
-use gpui_luma::{form_field, hstack, vstack};
+use gpui_luma::hstack;
 use crate::theme::TypographyExt;
 use gpui_luma_look_radix as radix;
 
 use super::super::color::{format_percent};
 use super::super::paint::paint_gradient_preview;
-use super::mesh::{
-    MESH_HANDLE_SIZE, controls_panel_corner_radii, fit_aspect_ratio, preview_panel_corner_radii, render_info_row,
-};
+use super::mesh::{MESH_HANDLE_SIZE, fit_aspect_ratio, preview_panel_corner_radii};
 
-const INSPECTOR_WIDTH: f32 = 352.0;
+pub(super) const INSPECTOR_WIDTH: f32 = 352.0;
 
-fn section_heading(label: &'static str, chrome: gpui_luma::theme::LumaChrome) -> impl IntoElement {
-    div()
-        .pb(px(3.0))
-        .text_size(px(10.0))
-        .font_weight(gpui::FontWeight::SEMIBOLD)
-        .text_color(chrome.muted_text)
-        .child(label)
-}
-
-fn compact_slider_row(
+pub(super) fn compact_slider_row(
     label: &'static str,
     slider: Entity<SliderControl>,
     value: String,
@@ -62,18 +51,15 @@ fn compact_slider_row(
 }
 
 impl GradientBuilder {
-    fn render_image_adjustments(&self) -> impl IntoElement {
+    pub(super) fn render_image_adjustments(&self) -> impl IntoElement {
         let chrome = self.look.chrome();
         let style = self.look.typography_scale(TextSize::Sm);
         div()
             .w_full()
             .flex()
             .flex_col()
-            .gap_3()
-            .pt(px(24.0))
-            .pb(px(20.0))
+            .gap_2()
             .bg(chrome.panel_background)
-            .child(section_heading("COLOR", chrome))
             .child(compact_slider_row(
                 "Saturation",
                 self.saturation_slider.clone(),
@@ -92,24 +78,15 @@ impl GradientBuilder {
 }
 
 impl Render for GradientBuilder {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
+        let rotation_deg = self.rotation_deg;
         let stops = self.preview_stops(cx);
         self.sync_preview_strategy(stops.len());
-        let rotation_deg = self.rotation_deg;
-        let gradient_spec = self.gradient_spec(cx);
-        let info_label_style = self.look.typography_scale(TextSize::Sm);
-        let info_value_style = self.look.typography_scale(TextSize::Sm);
         let top_tabs = self.top_tabs.clone();
-        let gradient_stops = self.gradient_stops.clone();
-        let add_stop_button = self.add_stop_button.clone();
-        let rotation_slider = self.rotation_slider.clone();
-        let type_selector = self.type_selector.clone();
-        let renderer_selector = self.renderer_selector.clone();
         let color_picker = self.color_picker.clone();
         let color_picker_open = self.color_picker_open;
         let card_bg = chrome.panel_background;
-        let stop_rows = self.ordered_stop_rows(cx);
         let preview_corner_radii = preview_panel_corner_radii();
         let preview_surface_radii =
             Corners { top_left: px(0.0), top_right: px(0.0), bottom_left: px(0.0), bottom_right: px(0.0) };
@@ -122,140 +99,7 @@ impl Render for GradientBuilder {
         } else {
             None
         };
-        let diagnostics_panel = div()
-            .w_full()
-            .flex()
-            .flex_col()
-            .gap_2()
-            .py(px(12.0))
-            .bg(chrome.panel_background)
-            .child(section_heading("RENDER", chrome))
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_1()
-                    .child(
-                        div().flex_1().min_w_0().text_size(px(10.0)).text_color(chrome.muted_text).child(gradient_spec),
-                    )
-                    .child(self.copy_css_button.clone()),
-            )
-            .child(render_info_row("Active", self.active_preview_strategy, info_label_style, info_value_style, chrome))
-            .child(render_info_row(
-                "Requested",
-                match self.preview_renderer {
-                    PreviewRenderer::Quads => "quads",
-                    PreviewRenderer::RenderImageSync => "render (sync)",
-                    PreviewRenderer::RenderImageAsync => "render (async)",
-                },
-                info_label_style,
-                info_value_style,
-                chrome,
-            ))
-            .child(render_info_row("Type", self.gradient_type.label(), info_label_style, info_value_style, chrome))
-            .child(render_info_row("Stops", format!("{}", stops.len()), info_label_style, info_value_style, chrome))
-            .child(render_info_row(
-                "Preview",
-                format!(
-                    "{} x {}",
-                    self.preview_size.width.as_f32().round() as i32,
-                    self.preview_size.height.as_f32().round() as i32
-                ),
-                info_label_style,
-                info_value_style,
-                chrome,
-            ))
-            .child(render_info_row(
-                "Raster",
-                self.last_render_ms.map(|ms| format!("{ms:.2} ms")).unwrap_or_else(|| "n/a".to_string()),
-                info_label_style,
-                info_value_style,
-                chrome,
-            ));
-        let stop_editor = div()
-            .w_full()
-            .flex()
-            .flex_col()
-            .gap_2()
-            .pb(px(20.0))
-            .bg(chrome.panel_background)
-            .child(section_heading("CANVAS", chrome))
-            .child(
-                div()
-                    .flex()
-                    .gap_2()
-                    .child(div().flex_1().min_w_0().child(form_field!("Type", chrome; type_selector)))
-                    .child(div().flex_1().min_w_0().child(form_field!("Renderer", chrome; renderer_selector))),
-            )
-            .child(form_field!("Aspect", chrome; self.mesh_aspect_ratio_selector.clone()))
-            .when(self.gradient_type != GradientType::Radial, |this| {
-                this.child(compact_slider_row(
-                    "Angle",
-                    rotation_slider,
-                    format!("{rotation_deg:.0}°"),
-                    info_label_style,
-                    chrome,
-                ))
-            });
-
-        let stop_content = stop_rows
-            .into_iter()
-            .enumerate()
-            .map(|(index, (thumb_id, position, color))| {
-                (
-                    thumb_id.as_u64(),
-                    render_stop_row(
-                        index + 1,
-                        thumb_id,
-                        position,
-                        color,
-                        self.selected_stop == Some(thumb_id),
-                        self.stop_delete_buttons.get(&thumb_id).cloned(),
-                        self.look.typography_scale(TextSize::Sm),
-                        self.look.typography_scale(TextSize::Sm),
-                        chrome,
-                        cx.entity(),
-                    )
-                    .into_any_element(),
-                )
-            })
-            .collect();
-        let stop_list = self.stop_list.render(
-            stop_content,
-            self.selected_stop.map(|id| id.as_u64()),
-            "color-viz-stop-list",
-            chrome,
-            window,
-            cx,
-            GradientBuilder::handle_stop_list_input,
-        );
-
-        let controls = vstack! {
-            gap=2;
-            stop_editor,
-            div().pt(px(24.0)).child(section_heading("FIELDS", chrome)),
-            div()
-                .w_full()
-                .flex()
-                .items_start()
-                .justify_between()
-                .gap_4()
-                .child(div().flex_1().min_w(px(0.0)).pt_1().child(gradient_stops))
-                .child(add_stop_button),
-            stop_list,
-            self.render_image_adjustments(),
-            diagnostics_panel,
-        }
-        .id("color-viz-gradient-controls")
-        .w(px(INSPECTOR_WIDTH))
-        .flex_shrink_0()
-        .h_full()
-        .min_h_0()
-        .corner_radii(controls_panel_corner_radii())
-        .overflow_y_scroll()
-        .px(px(12.0))
-        .pb(px(12.0))
-        .bg(card_bg);
+        let controls = self.render_inspector("color-viz-gradient-controls", card_bg);
         let picker_bounds = match self.selected_tab {
             BuilderTab::Gradients => {
                 self.selected_stop.and_then(|thumb_id| self.stop_swatch_bounds.get(&thumb_id).copied())
@@ -377,81 +221,7 @@ impl Render for GradientBuilder {
                 let handle_inset = px(MESH_HANDLE_SIZE * 0.5);
                 let work_area_size =
                     size(frame_size.width + px(MESH_HANDLE_SIZE), frame_size.height + px(MESH_HANDLE_SIZE));
-                let point_content = self
-                    .mesh_points
-                    .iter()
-                    .copied()
-                    .enumerate()
-                    .map(|(index, point)| {
-                        let selected = self.selected_mesh_point == Some(index);
-                        let row = div()
-                            .w_full()
-                            .flex()
-                            .flex_col()
-                            .gap_1()
-                            .child(render_mesh_point_row(
-                                if self.selected_tab == BuilderTab::Freeform {
-                                    self.point_buttons.get(index).cloned()
-                                } else {
-                                    None
-                                },
-                                index,
-                                point,
-                                selected,
-                                info_label_style,
-                                chrome,
-                                cx.entity(),
-                            ))
-                            .when(self.selected_tab == BuilderTab::Freeform && selected, |row| {
-                                row.child(
-                                    div()
-                                        .px_2()
-                                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                                        .child(compact_slider_row(
-                                            "Point spread",
-                                            self.point_spread_slider.clone(),
-                                            format!("{:.0}%", self.point_spreads.get(index).copied().unwrap_or(100.0)),
-                                            info_label_style,
-                                            chrome,
-                                        )),
-                                )
-                            });
-                        (self.mesh_point_ids[index], row.into_any_element())
-                    })
-                    .collect();
-                let point_list = self.point_list.render(
-                    point_content,
-                    self.selected_mesh_point.map(|index| self.mesh_point_ids[index]),
-                    "color-viz-point-list",
-                    chrome,
-                    window,
-                    cx,
-                    GradientBuilder::handle_point_list_input,
-                );
-                let mesh_controls = div().child(render_mesh_controls(
-                    self.render_image_adjustments().into_any_element(),
-                    self.selected_tab == BuilderTab::Freeform,
-                    self.freeform_buttons.clone(),
-                    point_list,
-                    self.spread_slider.clone(),
-                    self.spread_percent,
-                    self.blend_selector.clone(),
-                    self.softness_slider.clone(),
-                    self.softness_percent,
-                    self.mesh_background,
-                    self.mesh_grid_preset,
-                    self.mesh_grid_selector.clone(),
-                    self.mesh_aspect_ratio_preset,
-                    self.mesh_aspect_ratio_selector.clone(),
-                    self.mesh_reset_button.clone(),
-                    chrome,
-                    card_bg,
-                    info_label_style,
-                    info_value_style,
-                    self.preview_size,
-                    self.last_render_ms,
-                    cx.entity(),
-                ));
+                let mesh_controls = div().child(self.render_inspector("color-viz-mesh-controls", card_bg));
                 let mesh_controls = if color_picker_open {
                     if let Some(bounds) = picker_bounds {
                         mesh_controls.child(
@@ -682,7 +452,7 @@ impl Render for GradientBuilder {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn render_stop_row(
+pub(super) fn render_stop_row(
     index: usize,
     thumb_id: ThumbId,
     position: f32,
@@ -756,111 +526,7 @@ fn render_stop_row(
         })
 }
 
-#[allow(clippy::too_many_arguments)]
-fn render_mesh_controls(
-    image_adjustments: gpui::AnyElement,
-    freeform: bool,
-    freeform_buttons: Vec<Entity<Button>>,
-    points: gpui::AnyElement,
-    spread_slider: Entity<SliderControl>,
-    spread_percent: f32,
-    blend_selector: Entity<Selector>,
-    softness_slider: Entity<SliderControl>,
-    softness_percent: f32,
-    mesh_background: gpui::Hsla,
-    mesh_grid_preset: MeshGridPreset,
-    mesh_grid_selector: Entity<Selector>,
-    mesh_aspect_ratio_preset: MeshAspectRatioPreset,
-    mesh_aspect_ratio_selector: Entity<Selector>,
-    mesh_reset_button: Entity<Button>,
-    chrome: gpui_luma::theme::LumaChrome,
-    card_bg: gpui::Hsla,
-    info_label_style: LumaTextStyle,
-    _info_value_style: LumaTextStyle,
-    _preview_size: Size<Pixels>,
-    _last_render_ms: Option<f32>,
-    builder: Entity<GradientBuilder>,
-) -> impl IntoElement {
-    let panel = div()
-        .w_full()
-        .flex()
-        .flex_col()
-        .gap_2()
-        .pb(px(20.0))
-        .bg(chrome.panel_background)
-        .child(
-            div()
-                .flex()
-                .items_center()
-                .justify_between()
-                .child(section_heading("CANVAS", chrome))
-                .child(mesh_reset_button),
-        )
-        .child(
-            div()
-                .flex()
-                .gap_2()
-                .child(div().flex_1().min_w_0().child(if freeform {
-                    form_field!("Blend", chrome; blend_selector).into_any_element()
-                } else {
-                    form_field!("Grid", chrome; mesh_grid_selector).into_any_element()
-                }))
-                .child(div().flex_1().min_w_0().child(form_field!("Aspect", chrome; mesh_aspect_ratio_selector))),
-        )
-        .child(render_mesh_background_row(mesh_background, info_label_style, chrome, builder.clone()));
-    let fields = div()
-        .w_full()
-        .flex()
-        .flex_col()
-        .gap_2()
-        .pt(px(24.0))
-        .pb(px(12.0))
-        .bg(chrome.panel_background)
-        .child(section_heading("FIELDS", chrome))
-        .when(freeform, |this| {
-            this.child(div().flex().items_center().gap_2().children(freeform_buttons))
-                .child(compact_slider_row(
-                    "Spread · All",
-                    spread_slider,
-                    format!("{spread_percent:.0}%"),
-                    info_label_style,
-                    chrome,
-                ))
-                .child(compact_slider_row(
-                    "Softness · All",
-                    softness_slider,
-                    format!("{softness_percent:.0}%"),
-                    info_label_style,
-                    chrome,
-                ))
-        });
-    div()
-        .id("color-viz-mesh-controls")
-        .w(px(INSPECTOR_WIDTH))
-        .flex_shrink_0()
-        .h_full()
-        .min_h_0()
-        .flex()
-        .flex_col()
-        .gap_2()
-        .corner_radii(controls_panel_corner_radii())
-        .overflow_y_scroll()
-        .px(px(12.0))
-        .pb(px(12.0))
-        .bg(card_bg)
-        .child(panel)
-        .child(fields)
-        .child(points)
-        .child(image_adjustments)
-        .child(div().text_size(px(10.0)).text_color(chrome.muted_text).child(if freeform {
-            "Click canvas to deselect · Right-click to hide points".to_string()
-        } else {
-            format!("{} · {} · Right-click to hide guides", mesh_grid_preset.label(), mesh_aspect_ratio_preset.label())
-        }))
-        .into_any_element()
-}
-
-fn render_mesh_background_row(
+pub(super) fn render_mesh_background_row(
     background: gpui::Hsla,
     label_style: LumaTextStyle,
     chrome: gpui_luma::theme::LumaChrome,
@@ -915,7 +581,7 @@ fn render_mesh_background_row(
         )
 }
 
-fn render_mesh_point_row(
+pub(super) fn render_mesh_point_row(
     buttons: Option<[Entity<Button>; 2]>,
     point_index: usize,
     point: MeshPoint,
