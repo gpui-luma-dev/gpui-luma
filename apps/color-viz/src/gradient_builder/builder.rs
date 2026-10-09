@@ -510,7 +510,7 @@ mod tests {
     fn redesigned_inspector_retains_freeform_edits_across_modes() {
         let mut app = TestAppContext::single();
         app.update(|cx| gpui_luma::init(cx).expect("initialize SDK"));
-        let look = crate::theme::ColorVizThemeChoice::Default.radix_look();
+        let look = crate::theme::default_look();
         look.set_mode(ThemeMode::Dark);
         let (view, cx) = app.add_window_view(|_, cx| GradientBuilder::new(look.clone(), cx));
         cx.run_until_parked();
