@@ -74,7 +74,16 @@ cargo run -p luma-radix-studio
 # or: just luma-radix
 ```
 
-Release builds: `cargo run -p luma-studio --release` / `cargo run -p luma-radix-studio --release` (or `just luma-studio-rel` / `just luma-radix-rel`).
+**Luma Plot Viz** — chart galleries using `gpui-luma-plot` and the Radix look, with line, area, bar, pie, radar, and radial examples:
+
+![Luma Plot Viz showing bar charts with the Radix dark theme](docs/screenshots/luma-plot.png)
+
+```bash
+cargo run -p luma-plot-viz
+# or: just luma-plot
+```
+
+Release builds: `cargo run -p luma-studio --release` / `cargo run -p luma-radix-studio --release` / `cargo run -p luma-plot-viz --release` (or `just luma-studio-rel` / `just luma-radix-rel` / `just luma-plot-rel`).
 
 Additional examples:
 
