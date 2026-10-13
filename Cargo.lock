@@ -2329,7 +2329,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "gpui-unofficial",
@@ -2343,7 +2343,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-color"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "gpui-luma",
@@ -2356,7 +2356,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-look-radix"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "gpui-luma",
@@ -2365,7 +2365,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-look-shadcn"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "gpui-luma",
@@ -2374,6 +2374,14 @@ dependencies = [
  "lucide-static-svg",
  "serde",
  "toml 0.8.23",
+]
+
+[[package]]
+name = "gpui-luma-plot"
+version = "0.1.8"
+dependencies = [
+ "gpui-luma",
+ "gpui-unofficial",
 ]
 
 [[package]]
@@ -3359,6 +3367,19 @@ dependencies = [
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",
  "gtk",
+ "lucide-static-svg",
+]
+
+[[package]]
+name = "luma-plot-viz"
+version = "0.1.8"
+dependencies = [
+ "anyhow",
+ "gpui-luma",
+ "gpui-luma-look-radix",
+ "gpui-luma-plot",
+ "gpui-platform-gpui-unofficial",
+ "gpui-unofficial",
  "lucide-static-svg",
 ]
 

@@ -1,6 +1,6 @@
 name: Release Library Crates to crates.io
 
-# Publishes the four library crates, then tags the verified commit and creates a release.
+# Publishes the five library crates, then tags the verified commit and creates a release.
 
 on:
   workflow_dispatch:
@@ -19,6 +19,7 @@ env:
     gpui-luma-color
     gpui-luma-look-radix
     gpui-luma-look-shadcn
+    gpui-luma-plot
 
 jobs:
   publish:
@@ -225,7 +226,8 @@ jobs:
               "gpui-luma",
               "gpui-luma-color",
               "gpui-luma-look-radix",
-              "gpui-luma-look-shadcn"
+              "gpui-luma-look-shadcn",
+              "gpui-luma-plot"
             ],
             "distribution": "crates.io"
           }
@@ -256,18 +258,19 @@ jobs:
           cat > dist/release-notes.md <<EOF
           ## ${VERSION}
 
-          The four library crates are published on crates.io.
+          The five library crates are published on crates.io.
 
           \`\`\`sh
           cargo add gpui-luma@${VERSION}
           cargo add gpui-luma-look-shadcn@${VERSION}
           # Or: cargo add gpui-luma-look-radix@${VERSION}
           # Optional: cargo add gpui-luma-color@${VERSION}
+          # Optional: cargo add gpui-luma-plot@${VERSION}
           cargo add gpui-unofficial --rename gpui
           \`\`\`
 
           Imports use \`gpui_luma\`, \`gpui_luma_look_shadcn\`,
-          \`gpui_luma_look_radix\`, and \`gpui_luma_color\`.
+          \`gpui_luma_look_radix\`, \`gpui_luma_color\`, and \`gpui_luma_plot\`.
 
           Source: https://github.com/${{ github.repository }}/tree/${TAG}
           EOF

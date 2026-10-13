@@ -1,0 +1,117 @@
+use std::time::Duration;
+
+use gpui::{App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::{
+    controls::button::{Button, ButtonEvent},
+    motion::VisualTransition,
+    hstack, vstack,
+};
+use gpui_luma_look_radix::Look;
+use gpui_luma_plot::{AreaLayer, CartesianChartBuilder, Dataset, DatasetError, Interpolation, NumericScale, Sample, Series};
+use crate::theme::{self, TypographyExt};
+
+pub(crate) struct AreaExample {
+    entrance: f32,
+    data: Dataset,
+    look: Look,
+    replay: Entity<Button<()>>,
+    motion: VisualTransition,
+    _subscriptions: Vec<Subscription>,
+}
+
+impl AreaExample {
+    pub(crate) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
+        let data = Dataset::new().with_series(Series::new(
+            "inflow",
+            "Reservoir inflow",
+            [
+                Sample::new(0.0, 2.0),
+                Sample::new(1.0, 3.0),
+                Sample::new(2.5, 8.0),
+                Sample::new(4.0, 9.0),
+                Sample::new(5.0, 9.0),
+                Sample::new(6.5, 4.0),
+                Sample::new(7.25, f64::NAN),
+                Sample::new(8.0, 1.0),
+                Sample::new(9.0, 2.0),
+                Sample::new(10.5, 7.0),
+                Sample::new(12.0, 8.0),
+            ],
+        ))?;
+        let look = look.clone();
+        Ok(cx.new(move |cx: &mut Context<Self>| {
+            let replay = theme::spawn_replay("area-replay", &look, cx);
+            let subscription = cx.subscribe(&replay, |this, _, event: &ButtonEvent, cx| {
+                if matches!(event, ButtonEvent::Click) {
+                    this.motion.snap_to(0.0);
+                    this.motion.set_target(1.0);
+                    cx.notify();
+                }
+            });
+            Self {
+                entrance: 1.0,
+                data,
+                look,
+                replay,
+                motion: VisualTransition::new(1.0, Duration::from_millis(1400)),
+                _subscriptions: vec![subscription],
+            }
+        }))
+    }
+}
+
+impl Render for AreaExample {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.motion.sync();
+        self.motion.schedule_frame(window, cx);
+        let typography = theme::typography();
+        let chrome = theme::chrome(&self.look);
+        vstack! { gap=8;
+            hstack! { gap=8;
+                div().typography_style(typography.text.label).child("Area · gradient fill"),
+                self.replay.clone(),
+            }.items_center().flex_shrink_0(),
+            div().typography_style(typography.text.caption).text_color(chrome.muted_text)
+                .child("One smooth series filled to zero, with a gradient fading toward the baseline. Replay reveals the fill and outline together; the missing interval stays open."),
+            theme::panel_frame(&self.look, "plot-viz-area-frame").h(px(360.0)).p_4().render(cx)
+                .child(chart(self.data.clone(), &self.look).draw_progress(self.motion.progress() * self.entrance).build()),
+        }.w_full()
+    }
+}
+
+fn chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
+    CartesianChartBuilder::new(data)
+        .style(theme::RadixPlotStyle::new(look))
+        .x_scale(NumericScale::new().tick_count(7))
+        .y_scale(NumericScale::new().tick_count(6))
+        .area(AreaLayer::new("inflow").interpolation(Interpolation::Monotone))
+        .style_override(|style| {
+            style.axes[0].title = Some("Time (hours)".into());
+            style.axes[1].title = Some("Inflow".into());
+        })
+}
+
+pub(crate) struct AreaGallery {
+    gradient: Entity<AreaExample>,
+    visitors: Entity<super::visitors::VisitorsExample>,
+    points: Entity<super::points::PointExamples>,
+}
+impl AreaGallery {
+    pub(crate) fn spawn(look: &Look, cx: &mut App) -> Result<Self, DatasetError> {
+        Ok(Self {
+            gradient: AreaExample::spawn(look, cx)?,
+            visitors: super::visitors::VisitorsExample::spawn(look, true, cx)?,
+            points: super::points::PointExamples::spawn(look, true, cx)?,
+        })
+    }
+    pub(crate) fn render(&self, progress: f32, cx: &mut App) -> impl IntoElement {
+        super::motion::display(&self.gradient, progress, cx);
+        super::motion::display(&self.visitors, progress, cx);
+        super::motion::display(&self.points, progress, cx);
+        vstack! { gap=20; self.gradient.clone(), self.visitors.clone(), self.points.clone() }
+            .w_full()
+            .max_w(px(960.0))
+    }
+}
+
+crate::examples::motion::entrance!(AreaExample);

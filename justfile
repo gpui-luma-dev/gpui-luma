@@ -19,6 +19,12 @@ luma-radix:
 luma-radix-rel:
     cargo run -p luma-radix-studio --release
 
+luma-plot:
+    cargo run -p luma-plot-viz
+
+luma-plot-rel:
+    cargo run -p luma-plot-viz --release
+
 neumorphic-demo:
     cargo run -p luma-neumorphic-demo
 

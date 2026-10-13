@@ -1,0 +1,23 @@
+[package]
+name = "luma-plot-viz"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+description = "Radix sample application for the GPUI-Luma plotting SDK"
+
+[dependencies]
+anyhow.workspace = true
+lucide-svg-static.workspace = true
+gpui.workspace = true
+gpui_platform.workspace = true
+gpui-luma.workspace = true
+gpui-luma-look-radix.workspace = true
+gpui-luma-plot.workspace = true
+
+[dev-dependencies]
+gpui = { workspace = true, features = ["test-support"] }
+
+[lints]
+workspace = true
