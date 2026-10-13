@@ -108,7 +108,11 @@ def local_contents(name, report):
 def verify(name, report, expected, wait=False):
     url = f'https://static.crates.io/crates/{name}/{name}-{report["version"]}.crate'
     for attempt in range(12 if wait else 1):
-        data = download(url, missing_ok=True)
+        # Missing CDN objects can return 403. Only request an archive once the
+        # registry API confirms that this version exists.
+        version_url = f'https://crates.io/api/v1/crates/{name}/{report["version"]}'
+        released = download(version_url, missing_ok=True) is not None
+        data = download(url) if released else None
         if data is not None:
             if contents(data) != expected:
                 raise ReleaseError(f'{name}: published contents differ. Do not overwrite or retry with changed '
@@ -124,9 +128,7 @@ def publish_packages(report, publish, allow_new):
     preflight(report, publish, allow_new)
     expected = {name: local_contents(name, report) for name in report['packages']}
     for name, state in report['packages'].items():
-        if verify(name, report, expected[name]):
-            state['status'] = 'verified'
-        elif state['status'].startswith('already published'):
+        if state['status'].startswith('already published'):
             if not verify(name, report, expected[name], wait=True):
                 raise ReleaseError(f'{name}: registry version exists but archive is unavailable; retry same commit later')
             state['status'] = 'verified'

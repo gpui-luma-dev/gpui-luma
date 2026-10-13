@@ -25,7 +25,7 @@ class ReleaseTests(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
         self.report = {'version': '0.1.9', 'commit': 'abc', 'phase': 'preflight', 'error': None,
-                       'packages': {'sdk': {'status': 'pending'}, 'plot': {'status': 'pending'}}}
+                       'packages': {'sdk': {'status': 'already published; verification pending'}, 'plot': {'status': 'pending'}}}
 
     @patch.object(release, 'download')
     def test_new_crate_blocks_before_upload(self, download):
@@ -62,7 +62,7 @@ class ReleaseTests(unittest.TestCase):
 
     def test_timeout_after_successful_upload_is_verified_without_reupload(self):
         with patch.object(release, 'preflight'), patch.object(release, 'local_contents', return_value={}), \
-                patch.object(release, 'verify', side_effect=[True, False, True]), \
+                patch.object(release, 'verify', side_effect=[True, True]), \
                 patch.object(release.subprocess, 'run', return_value=subprocess.CompletedProcess(
                     [], 101, 'index timeout')) as run:
             release.publish_packages(self.report, True, False)
@@ -71,7 +71,7 @@ class ReleaseTests(unittest.TestCase):
 
     def test_cargo_process_timeout_checks_registry_before_stopping(self):
         with patch.object(release, 'preflight'), patch.object(release, 'local_contents', return_value={}), \
-                patch.object(release, 'verify', side_effect=[True, False, True]), \
+                patch.object(release, 'verify', side_effect=[True, True]), \
                 patch.object(release.subprocess, 'run', side_effect=subprocess.TimeoutExpired(
                     'cargo', 600, output=b'waiting for index')) as run:
             release.publish_packages(self.report, True, False)
@@ -89,6 +89,7 @@ class ReleaseTests(unittest.TestCase):
                     release.local_contents('sdk', self.report)
 
     def test_unverified_upload_stops_without_blind_retry(self):
+        self.report["packages"]["sdk"]["status"] = "pending"
         with patch.object(release, 'preflight'), patch.object(release, 'local_contents', return_value={}), \
                 patch.object(release, 'verify', return_value=False), \
                 patch.object(release.subprocess, 'run', return_value=subprocess.CompletedProcess(
@@ -99,6 +100,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(self.report['packages']['plot']['status'], 'pending')
 
     def test_matching_existing_crates_are_skipped_on_resume(self):
+        self.report["packages"]["plot"]["status"] = "already published; verification pending"
         with patch.object(release, 'preflight'), patch.object(release, 'local_contents', return_value={}), \
                 patch.object(release, 'verify', return_value=True), patch.object(release.subprocess, 'run') as run:
             release.publish_packages(self.report, True, False)
@@ -121,6 +123,7 @@ class ReleaseTests(unittest.TestCase):
             run.assert_not_called()
 
     def test_verify_only_does_not_upload(self):
+        self.report["packages"]["sdk"]["status"] = "pending"
         with patch.object(release, 'preflight'), patch.object(release, 'local_contents', return_value={}), \
                 patch.object(release, 'verify', return_value=False), patch.object(release.subprocess, 'run') as run:
             release.publish_packages(self.report, False, False)
@@ -147,6 +150,25 @@ class ReleaseTests(unittest.TestCase):
                 patch.object(release, 'contents', return_value={'source': b'changed'}):
             with self.assertRaisesRegex(release.ReleaseError, 'published contents differ'):
                 release.verify('sdk', self.report, {'source': b'original'})
+
+    def test_pending_versions_do_not_request_cdn_archives(self):
+        for state in self.report['packages'].values():
+            state['status'] = 'pending'
+        with patch.object(release, 'preflight'), patch.object(release, 'local_contents', return_value={}), \
+                patch.object(release, 'verify') as verify, patch.object(release, 'download') as download:
+            release.publish_packages(self.report, False, False)
+            verify.assert_not_called()
+            download.assert_not_called()
+
+    def test_verification_of_missing_version_avoids_cdn_403(self):
+        with patch.object(release, 'download', return_value=None) as download:
+            self.assertFalse(release.verify('sdk', self.report, {}))
+        download.assert_called_once_with('https://crates.io/api/v1/crates/sdk/0.1.9', missing_ok=True)
+
+    def test_archive_403_for_existing_version_is_still_an_error(self):
+        with patch.object(release, 'download', side_effect=[b'{}', release.ReleaseError('HTTP 403')]):
+            with self.assertRaisesRegex(release.ReleaseError, 'HTTP 403'):
+                release.verify('sdk', self.report, {})
 
     def test_summary_retains_recovery_information(self):
         report = copy.deepcopy(self.report)
