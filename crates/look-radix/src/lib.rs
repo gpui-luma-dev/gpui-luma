@@ -7,10 +7,11 @@
 //! # Available controls
 //!
 //! - Display: [`Avatar`], [`Badge`], [`Card`], and [`callout`].
-//! - Actions and choices: [`Button`], [`Checkbox`], [`Radio`], [`Switch`], [`Toggle`].
+//! - Actions and choices: [`Button`], [`Checkbox`], [`CheckboxGroup`], [`Radio`], [`RadioGroup`], [`Switch`], [`Toggle`].
 //! - Input: [`TextField`], [`TextArea`], [`Slider`].
 //! - Progress: [`Progress`] (Surface / Soft bars, sizes 1–3).
-//! - Navigation and collections: [`Tabs`], [`Toolbar`], [`PopupMenu`], [`ContextMenu`], [`TreeView`].
+//! - Navigation and collections: [`Tabs`], [`Toolbar`], [`PopupMenu`], [`ContextMenu`], [`TreeView`], [`ListBoxBuilder`].
+//! - Popup content: [`HoverCard`] (interactive hover details), with [`hover_card_look`].
 //! - Composition: [`segmented_radio_template`] and [`LookControlExt::overlay_window`].
 //!
 //! # Start with a control builder
@@ -92,12 +93,15 @@ mod callout;
 mod card;
 mod checkbox;
 mod checkbox_builder;
+mod checkbox_group;
 mod colors;
 mod custom_colors;
 mod context_menu;
 mod context_menu_builder;
 mod ext;
 mod look;
+mod hover_card;
+mod listbox;
 mod overlay_window;
 mod palette;
 mod popup_menu;
@@ -106,6 +110,7 @@ mod progress;
 mod progress_builder;
 mod radio;
 mod radio_builder;
+mod radio_group;
 mod scale;
 mod segmented;
 mod selector;
@@ -131,6 +136,8 @@ mod typography;
 
 // Palette state, scales, and shared styling.
 pub use look::{PageBackground, Look};
+pub use hover_card::{HoverCard, HoverCardBuilder, HoverCardEvent, hover_card_look};
+pub use listbox::{ListBoxBuilder, listbox_row, listbox_template};
 pub use palette::{PaletteSlot, Accent, Gray, ThemePalettes, scale_pair};
 pub use scale::{CUSTOM_PALETTE, ColorScale, ModeScales, SCALE_LEN, ScaleFamily, ScalePair, ScaleStep};
 pub use colors::{BLACK_ALPHA_STEPS, DARK_FAMILIES, LIGHT_FAMILIES, COLORS_VERSION, WHITE_ALPHA_STEPS};
@@ -159,6 +166,7 @@ pub use checkbox::{
     checkbox_theme_for, checkbox_theme_with, resolve_checkbox_radius,
 };
 pub use checkbox_builder::Checkbox;
+pub use checkbox_group::{CheckboxGroup, checkbox_group_template};
 pub use popup_menu::{PopupMenuVariant, popup_menu_template, popup_menu_theme};
 pub use popup_menu_builder::PopupMenu;
 pub use progress::{
@@ -170,6 +178,7 @@ pub use radio::{
     radio_theme_with,
 };
 pub use radio_builder::Radio;
+pub use radio_group::{RadioGroup, radio_group_template};
 pub use slider::{
     SliderSize, SliderVariant, slider_geometry, slider_template, slider_template_for, slider_theme, slider_theme_for,
     slider_theme_with,
@@ -205,3 +214,6 @@ pub use tooltip::tooltip_theme;
 
 #[cfg(test)]
 mod stylesheet_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+mod interaction_tests;

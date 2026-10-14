@@ -7,6 +7,7 @@ mod avatars;
 mod badges;
 mod buttons;
 mod cards;
+mod collections;
 mod checkboxes;
 mod context_menus;
 mod high_contrast;
@@ -52,6 +53,7 @@ pub struct PreviewTabs {
     pub sliders: Entity<Tabs>,
     pub progress: Entity<Tabs>,
     pub(crate) tooltips: tooltips::TooltipExamples,
+    pub(crate) collections: Entity<collections::Collections>,
     pub(crate) selectors: selectors::SelectorExamples,
 }
 
@@ -215,6 +217,7 @@ pub fn page(
             fg, muted, border,
             tabs.tooltips.render(look),
         ),
+        tabs.collections.clone(),
         section(
             "Tree View",
             "Select rows and expand Grid. Use arrow keys to navigate. Selection uses accent 3/12; hover outlines use accent 8; pressed uses accent 5.",

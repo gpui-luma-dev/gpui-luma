@@ -2,7 +2,10 @@
 
 use std::sync::Arc;
 
-use gpui::{Context, Entity, EventEmitter, IntoElement, Render, Subscription, Window, div, prelude::*};
+use gpui::{
+    AnyElement, Hsla, FontWeight, px, Context, Entity, EventEmitter, IntoElement, Render, Subscription, Window, div,
+    prelude::*,
+};
 use gpui_luma::controls::button::{Button, ButtonEvent};
 use gpui_luma::controls::tabs::{Tabs};
 use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
@@ -43,6 +46,7 @@ pub struct ScreenNav {
     theme_reset: Entity<Button>,
     tooltip_toggle: Entity<Button>,
     github: Entity<Button>,
+    radix_link: Entity<Button>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -94,6 +98,17 @@ impl ScreenNav {
             .spawn(cx)
             .help("View gpui-luma on GitHub", cx);
 
+        let radix_link = radix::Button::new("screen-nav-radix")
+            .look(look)
+            .ghost_quiet()
+            .gray()
+            .size(radix::ButtonSize::One)
+            .compact()
+            .content(|model, _| radix_lockup(model.look.foreground))
+            .with_template_modifier(|root, _| root.aria_label("Radix website"))
+            .spawn(cx)
+            .help("Visit the original Radix website", cx);
+
         let mut subscriptions = Vec::new();
         let pages = SCREEN_TABS
             .iter()
@@ -123,6 +138,11 @@ impl ScreenNav {
                 cx.set_global(TooltipSettings { enabled: !enabled });
                 this.tooltip_toggle.update(cx, |_, cx| cx.notify());
                 cx.refresh_windows();
+            }
+        }));
+        subscriptions.push(cx.subscribe(&radix_link, |_, _, event: &ButtonEvent, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                cx.open_url("https://www.radix-ui.com/primitives/docs/overview/introduction");
             }
         }));
         subscriptions.push(cx.subscribe(&github, |_, _, event: &ButtonEvent, cx| {
@@ -160,6 +180,7 @@ impl ScreenNav {
             theme_reset,
             tooltip_toggle,
             github,
+            radix_link,
             _subscriptions: subscriptions,
         }
     }
@@ -198,8 +219,30 @@ impl ScreenNav {
         self.theme_reset.update(cx, |_, cx| cx.notify());
         self.tooltip_toggle.update(cx, |_, cx| cx.notify());
         self.github.update(cx, |_, cx| cx.notify());
+        self.radix_link.update(cx, |_, cx| cx.notify());
         cx.notify();
     }
+}
+
+/// The Radix square, circle, and half-circle mark from the website header.
+fn radix_lockup(foreground: Hsla) -> AnyElement {
+    div()
+        .flex()
+        .items_center()
+        .gap(px(6.0))
+        .text_color(foreground)
+        .child(
+            div()
+                .relative()
+                .w(px(16.5))
+                .h(px(24.0))
+                .flex_none()
+                .child(div().absolute().left_0().top_0().size(px(7.5)).bg(foreground))
+                .child(div().absolute().left(px(9.0)).top_0().size(px(7.5)).rounded_full().bg(foreground))
+                .child(div().absolute().left_0().top(px(9.0)).w(px(7.5)).h(px(15.0)).rounded_l(px(7.5)).bg(foreground)),
+        )
+        .child(div().text_size(px(21.0)).line_height(px(24.0)).font_weight(FontWeight::SEMIBOLD).child("Radix"))
+        .into_any_element()
 }
 
 impl Render for ScreenNav {
@@ -209,7 +252,27 @@ impl Render for ScreenNav {
             .flex()
             .flex_row()
             .items_center()
-            .child(div().flex_1())
+            .child(
+                div()
+                    .flex_1()
+                    .flex()
+                    .items_center()
+                    .gap_3()
+                    .child(self.radix_link.clone())
+                    .child(
+                        div()
+                            .w(px(1.0))
+                            .h(px(24.0))
+                            .flex_none()
+                            .bg(self.look.resolve_role(radix::SemanticRole::Border).hsla()),
+                    )
+                    .child(
+                        div()
+                            .text_sm()
+                            .text_color(self.look.resolve_role(radix::SemanticRole::Foreground).hsla())
+                            .child("Made with GPUI-LUMA"),
+                    ),
+            )
             .child(div().flex().gap_2().children(self.pages.iter().map(|(_, toggle)| toggle.clone())))
             .child(
                 div()

@@ -10,6 +10,9 @@ homepage.workspace = true
 keywords = ["gpui", "gui", "radix", "themes", "widgets"]
 categories = ["gui"]
 
+[features]
+test-support = ["gpui-luma/test-support"]
+
 [dependencies]
 anyhow.workspace = true
 gpui.workspace = true

@@ -138,6 +138,7 @@ pub struct RadixStudioApp {
     developer: Option<developer::State>,
     color_details: Entity<ColorDetails>,
     colors: Option<colors::State>,
+    icons: Option<icons::State>,
     palette_swatches: Vec<Entity<Button>>,
     preview_layout: Entity<WideMiddle>,
     signup_mesh_cache: MeshCache,
@@ -202,11 +203,30 @@ impl RadixStudioApp {
                     ColorTextFieldEvent::Change { color } => *color,
                     ColorTextFieldEvent::LinkChange { linked } => {
                         this.accent_linked = *linked;
-                        cx.notify();
-                        return;
+                        if !linked {
+                            cx.notify();
+                            return;
+                        }
+                        this.palette_edits.colors(&this.defaults).accent
                     }
                 };
                 this.palette_edits.set_input(this.draft.mode(), index, color, this.accent_linked);
+                if matches!(event, ColorTextFieldEvent::LinkChange { linked: true }) {
+                    // Regenerate the other mode immediately, preserving its gray/background seeds.
+                    let mode = this.defaults.mode();
+                    let other = match mode {
+                        ThemeMode::Light => ThemeMode::Dark,
+                        ThemeMode::Dark => ThemeMode::Light,
+                    };
+                    let defaults = this.defaults.fork();
+                    defaults.set_mode(other);
+                    this.draft.set_mode(other);
+                    this.theme.set_mode(other);
+                    this.palette_edits.apply(&defaults, &this.draft);
+                    this.palette_edits.apply_app_theme(&defaults, &this.theme);
+                    this.draft.set_mode(mode);
+                    this.theme.set_mode(mode);
+                }
                 this.palette_edits.apply(&this.defaults, &this.draft);
                 this.palette_edits.apply_app_theme(&this.defaults, &this.theme);
                 this.home.notify(cx);
@@ -306,7 +326,7 @@ impl RadixStudioApp {
             theme_accent,
             theme_gray,
             palette_edits,
-            accent_linked: false,
+            accent_linked: true,
             screen_nav,
             page_scroll: ScrollHandle::new(),
             screens,
@@ -321,6 +341,7 @@ impl RadixStudioApp {
             shadow_editor,
             color_details,
             colors: None,
+            icons: None,
             palette_swatches,
             preview_layout,
             signup_mesh_cache: MeshCache::default(),
@@ -533,7 +554,9 @@ impl RadixStudioApp {
                 .colors
                 .get_or_insert_with(|| colors::State::new(&self.theme, self.color_details.clone(), cx))
                 .render(&self.theme, fg, muted),
-            RadixStudioTab::Icons => icons::page(fg, muted, surface),
+            RadixStudioTab::Icons => {
+                self.icons.get_or_insert_with(|| icons::State::new(&self.defaults, cx)).render(fg, muted, surface)
+            }
             RadixStudioTab::StyleGuide => {
                 let guide = self.style_guide.get_or_insert_with(|| style_guide::State::new(&self.draft, cx));
                 guide.render(&self.draft, window, cx)
@@ -743,6 +766,57 @@ mod palette_edit_tests {
 mod screen_content_tests {
     use super::*;
     use gpui::TestAppContext;
+
+    #[test]
+    fn linking_immediately_synchronizes_seeds_and_both_palette_modes() {
+        let mut app = TestAppContext::single();
+        let (studio, cx) = app.add_window_view(RadixStudioApp::new);
+        cx.run_until_parked();
+        let accent = ColorValue::srgb(0.9, 0.1, 0.3, 1.0);
+        cx.update(|_, app| {
+            studio.update(app, |studio, cx| {
+                studio.set_mode(ThemeMode::Dark, cx);
+                studio.palette_edits.set(ThemeMode::Dark, 0, ColorValue::srgb(0.1, 0.7, 0.2, 1.0));
+                studio.set_mode(ThemeMode::Light, cx);
+                studio.palette_edits.set(ThemeMode::Light, 0, accent);
+                let field = studio.accent_field.clone();
+                field.update(cx, |_, cx| cx.emit(ColorTextFieldEvent::LinkChange { linked: true }));
+            })
+        });
+        cx.run_until_parked();
+        cx.update(|_, app| {
+            studio.update(app, |studio, _| {
+                assert!(studio.accent_linked);
+                assert_eq!(studio.palette_edits.light[0], Some(accent));
+                assert_eq!(studio.palette_edits.dark[0], Some(accent));
+                assert_eq!(studio.palette_edits.dark[2], Some(ColorValue::srgb(0.0, 0.0, 0.0, 1.0)));
+                assert_eq!(studio.draft.mode(), ThemeMode::Light);
+                assert_eq!(studio.theme.mode(), ThemeMode::Light);
+                for mode in [ThemeMode::Light, ThemeMode::Dark] {
+                    let defaults = studio.defaults.fork();
+                    defaults.set_mode(mode);
+                    let expected_draft = defaults.fork();
+                    let expected_theme = defaults.fork();
+                    studio.palette_edits.apply(&defaults, &expected_draft);
+                    studio.palette_edits.apply_app_theme(&defaults, &expected_theme);
+                    studio.draft.set_mode(mode);
+                    studio.theme.set_mode(mode);
+                    for step in 1..=12 {
+                        assert_eq!(
+                            studio.draft.resolve_step(ScaleFamily::Color, step).hsla(),
+                            expected_draft.resolve_step(ScaleFamily::Color, step).hsla()
+                        );
+                        assert_eq!(
+                            studio.theme.resolve_step(ScaleFamily::Color, step).hsla(),
+                            expected_theme.resolve_step(ScaleFamily::Color, step).hsla()
+                        );
+                    }
+                }
+                studio.draft.set_mode(ThemeMode::Light);
+                studio.theme.set_mode(ThemeMode::Light);
+            })
+        });
+    }
 
     #[test]
     fn copy_exports_follow_edited_palette_and_mode() {

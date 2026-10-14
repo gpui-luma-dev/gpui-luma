@@ -3,5 +3,5 @@
 mod react_icons;
 mod source;
 
-pub use react_icons::{ICON_GROUPS, icon_named, react_icon};
+pub use react_icons::{Icon, ICON_GROUPS, icon_named, react_icon};
 pub use source::Assets;
