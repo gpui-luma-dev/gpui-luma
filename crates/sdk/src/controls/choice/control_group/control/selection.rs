@@ -360,6 +360,7 @@ mod tests {
             state_mode,
             selection_follows_active: false,
             animated_selection: false,
+            independent_toggles: false,
             focus_strategy: ControlGroupFocusStrategy::ActiveDescendant,
             focus_target_provider: None,
             enabled: true,

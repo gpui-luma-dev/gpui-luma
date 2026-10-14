@@ -170,7 +170,7 @@ impl ColorTextField {
     }
 
     pub fn enable_accent_link(&mut self, cx: &mut Context<Self>) {
-        let button = super::icon_button::ghost_no_hover(format!("{}-link", self.id), &self.look, false)
+        let button = super::icon_button::ghost_no_hover(format!("{}-link", self.id), &self.look, true)
             .content(|model, _| {
                 crate::assets::icon_named(if model.data { "link-2" } else { "link-break-2" })
                     .map(|icon| crate::assets::react_icon(icon, model.look.foreground, 15.0))

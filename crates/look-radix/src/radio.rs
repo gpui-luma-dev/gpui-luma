@@ -158,7 +158,6 @@ impl RadioButtonTheme for RadioThemeAdapter {
             step(12)
         } else {
             match layer {
-                InteractionLayer::Pressed => step(11),
                 InteractionLayer::Hovered => step(10),
                 _ => look.resolve_role(SemanticRole::Primary).hsla(),
             }
@@ -272,6 +271,48 @@ mod tests {
     fn palette(variant: RadioVariant, checked: bool) -> RadioButtonPalette {
         let look = Look::built_in();
         radio_theme(&look, variant).resolve(checked, InteractionState::default(), ControlSize::Md)
+    }
+
+    #[test]
+    fn pressed_face_preserves_focused_fill_for_every_variant() {
+        let look = Look::built_in();
+        for mode in [gpui_luma::theme::ThemeMode::Light, gpui_luma::theme::ThemeMode::Dark] {
+            look.set_mode(mode);
+            for variant in [RadioVariant::Classic, RadioVariant::Surface, RadioVariant::Soft] {
+                for checked in [false, true] {
+                    for paint in [Paint::accent(), Paint::gray(), Paint::accent().high_contrast()] {
+                        let theme = radio_theme_with(&look, variant, paint);
+                        let focused = theme.resolve(
+                            checked,
+                            InteractionState { focused: true, ..Default::default() },
+                            ControlSize::Md,
+                        );
+                        for hovered in [false, true] {
+                            let pressed = theme.resolve(
+                                checked,
+                                InteractionState { focused: true, pressed: true, hovered, ..Default::default() },
+                                ControlSize::Md,
+                            );
+                            assert_eq!(pressed.indicator_background, focused.indicator_background);
+                            assert_eq!(pressed.dot_color, focused.dot_color);
+                            assert_eq!(pressed.indicator_border, focused.indicator_border);
+                        }
+                        let disabled = theme.resolve(
+                            checked,
+                            InteractionState { disabled: true, ..Default::default() },
+                            ControlSize::Md,
+                        );
+                        let disabled_press = theme.resolve(
+                            checked,
+                            InteractionState { disabled: true, pressed: true, ..Default::default() },
+                            ControlSize::Md,
+                        );
+                        assert_eq!(disabled.indicator_background, disabled_press.indicator_background);
+                        assert_eq!(disabled.indicator_border, disabled_press.indicator_border);
+                    }
+                }
+            }
+        }
     }
 
     #[test]

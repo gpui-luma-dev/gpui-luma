@@ -80,6 +80,10 @@ impl<D: Default + 'static> PopoverButton<D> {
     pub fn is_open(&self, cx: &App) -> bool {
         self.panel.read(cx).is_open()
     }
+    /// Open without a pointer-dismissal guard, for programmatic and hover entry.
+    pub fn open(&mut self, cx: &mut Context<Self>) {
+        self.panel.update(cx, |panel, cx| panel.open(cx));
+    }
     pub fn toggle_guarded(&mut self, cx: &mut Context<Self>) {
         self.panel.update(cx, |panel, cx| panel.toggle_guarded(cx));
     }

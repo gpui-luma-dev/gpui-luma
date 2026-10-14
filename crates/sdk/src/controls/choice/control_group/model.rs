@@ -173,6 +173,7 @@ where
     pub(crate) state_mode: ControlGroupStateMode,
     pub(crate) selection_follows_active: bool,
     pub(crate) animated_selection: bool,
+    pub(crate) independent_toggles: bool,
     pub(crate) focus_strategy: ControlGroupFocusStrategy,
     pub(crate) focus_target_provider: Option<ControlGroupFocusTargetProvider<T>>,
     pub(crate) enabled: bool,
@@ -271,6 +272,7 @@ where
                 state_mode: ControlGroupStateMode::Unmanaged,
                 selection_follows_active: false,
                 animated_selection: false,
+                independent_toggles: false,
                 focus_strategy: ControlGroupFocusStrategy::default(),
                 focus_target_provider: None,
                 enabled: true,
@@ -373,6 +375,13 @@ where
 
     pub fn multiple(self) -> Self {
         self.mode(ControlSelectionMode::Multiple)
+    }
+
+    /// Toggle each item independently in multiple-selection groups, without
+    /// requiring a modifier key. Intended for checkbox-style groups.
+    pub fn independent_toggles(mut self, enabled: bool) -> Self {
+        self.model.independent_toggles = enabled;
+        self
     }
 
     pub fn selected(mut self, selected_id: impl Into<SharedString>) -> Self {
