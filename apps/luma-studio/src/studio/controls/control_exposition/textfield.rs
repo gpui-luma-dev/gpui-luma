@@ -1,5 +1,6 @@
 //! TextField exposition — live preview, event stream, and theme inspector.
 
+use gpui_luma::controls::textfield::TextFieldEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
@@ -157,16 +158,22 @@ impl TextFieldControlExposition {
             TextFieldInspectorAdapter::shared(),
         );
 
-        let subscriptions = vec![cx.subscribe(&preview, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &TextFieldEvent, cx| {
-                let line = format_textfield_event(event);
-                event_stream.update(cx, |stream, cx| {
-                    stream.append_line(&line, cx);
-                    cx.notify();
-                });
-            }
-        })];
+        let subscriptions = {
+            preview.clone().on_event(cx, {
+                let event_stream = event_stream.downgrade();
+                move |_, event: &TextFieldEvent, cx| {
+                    let Some(event_stream) = event_stream.upgrade() else {
+                        return;
+                    };
+                    let line = format_textfield_event(event);
+                    event_stream.update(cx, |stream, cx| {
+                        stream.append_line(&line, cx);
+                        cx.notify();
+                    });
+                }
+            });
+            Vec::new()
+        };
         set_sample_button.clone().on_click(cx, {
             let preview = preview.downgrade();
             move |_, cx| {

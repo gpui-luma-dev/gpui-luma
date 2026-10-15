@@ -1,8 +1,10 @@
+use gpui::Subscription;
+use gpui_luma::controls::resizable_panels::ResizablePanelsEventExt;
 use gpui_luma::controls::switch::SwitchEventExt;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, App, Context, Entity, FocusHandle, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button::{ButtonContentContext, ControlIcon, ControlPresenter, HasPresenter};
 use gpui_luma::controls::icon_button::IconButton;
@@ -120,9 +122,9 @@ impl LumaStudioApp {
         let mut subscriptions = Vec::new();
         ThemeSidebar::wire_subscriptions(&theme_sidebar, cx, &mut subscriptions);
         demos.subscribe(cx, &mut subscriptions);
-        subscriptions.push(cx.subscribe(&workbench.panels(), |this, _, event: &ResizablePanelsEvent, cx| {
+        workbench.panels().clone().on_event(cx, |this, event: &ResizablePanelsEvent, cx| {
             this.handle_workbench_event(event, cx);
-        }));
+        });
         sidebar_toggle.clone().on_click(cx, |this, cx| {
             this.toggle_sidebar(cx);
         });

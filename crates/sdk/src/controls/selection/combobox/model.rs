@@ -55,12 +55,118 @@ pub struct ComboBoxModel {
 }
 
 pub struct ComboBoxBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::combobox::ComboBoxEvent>,
+
     pub(crate) model: ComboBoxModel,
 }
 
 impl ComboBoxBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::combobox::ComboBoxEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `ComboBoxEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::combobox::ComboBoxEvent::Change { query } = event {
+                callback(owner, query, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::Select` through the existing event stream.
+    pub fn on_select<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::combobox::ComboBoxEvent::Select { item_id, label } = event {
+                callback(owner, item_id, label, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::Complete` through the existing event stream.
+    pub fn on_complete<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::combobox::ComboBoxEvent::Complete { item_id, label } = event {
+                callback(owner, item_id, label, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::Clear` through the existing event stream.
+    pub fn on_clear<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::combobox::ComboBoxEvent::Clear = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::combobox::ComboBoxEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::OpenChanged` through the existing event stream.
+    pub fn on_open_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::combobox::ComboBoxEvent::OpenChanged { open } = event {
+                callback(owner, *open, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::Dismiss` through the existing event stream.
+    pub fn on_dismiss<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::combobox::ComboBoxEvent::Dismiss = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>, items: impl IntoIterator<Item = SelectionItem>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             model: ComboBoxModel {
                 id: id.into(),
                 items: items.into_iter().collect(),
@@ -257,8 +363,11 @@ impl ComboBoxBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<ComboBoxControl> {
-        cx.new(|cx| ComboBoxControl::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> Entity<ComboBoxControl> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| ComboBoxControl::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

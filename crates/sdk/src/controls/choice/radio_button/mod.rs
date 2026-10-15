@@ -198,11 +198,76 @@ impl IntoElement for RadioButtonControl {
 }
 
 pub struct RadioButtonBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::radio_button::RadioButtonEvent>,
+
     button: ButtonBuilder<RadioButtonData>,
     animated: bool,
 }
 
 impl RadioButtonBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::radio_button::RadioButtonEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `RadioButtonEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::radio_button::RadioButtonEvent::Change { selected } = event {
+                callback(owner, *selected, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioButtonEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::radio_button::RadioButtonEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioButtonEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::radio_button::RadioButtonEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioButtonEvent::HoverChanged` through the existing event stream.
+    pub fn on_hover_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::radio_button::RadioButtonEvent::HoverChanged { hovered } = event {
+                callback(owner, *hovered, cx);
+            }
+        })
+    }
+
     pub fn with_data(self, selected: bool) -> Self {
         Self { button: self.button.with_data(RadioButtonData::new(selected)), ..self }
     }
@@ -241,8 +306,11 @@ impl RadioButtonBuilder {
         Self { button: self.button.template(template), ..self }
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> RadioButton {
-        cx.new(|cx| RadioButtonControl::from_builder(self, cx))
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> RadioButton {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| RadioButtonControl::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 
@@ -254,6 +322,8 @@ impl HasPresenter<ButtonContentContext<RadioButtonData>> for RadioButtonBuilder 
 
 pub fn new(id: impl Into<SharedString>) -> RadioButtonBuilder {
     RadioButtonBuilder {
+        callbacks: Default::default(),
+
         button: ButtonBuilder::new(id).typed(RadioButtonData::default()).template(default_radio_button_template()),
         animated: true,
     }
@@ -277,3 +347,6 @@ mod tests {
 }
 
 crate::infra::attachments::delegate_tooltips!(RadioButtonControl, gpui::Role::RadioButton);
+
+mod callback;
+pub use callback::RadioButtonEventExt;

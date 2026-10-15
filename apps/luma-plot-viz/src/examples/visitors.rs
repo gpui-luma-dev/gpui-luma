@@ -1,5 +1,6 @@
 mod data;
 
+use gpui_luma::controls::selector::SelectorEventExt;
 use std::time::Duration;
 
 use gpui::{App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
@@ -35,7 +36,7 @@ impl VisitorsExample {
         let look = look.clone();
         Ok(cx.new(move |cx: &mut Context<Self>| {
             let range = theme::visitors::spawn_range(&look, cx);
-            let subscription = cx.subscribe(&range, |this, _, event: &SelectorEvent, cx| {
+            range.clone().on_event(cx, |this, event: &SelectorEvent, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event {
                     this.days = match item_id.as_ref() {
                         "7" => 7,
@@ -59,7 +60,7 @@ impl VisitorsExample {
                 range,
                 replay,
                 motion: VisualTransition::new(1.0, Duration::from_millis(1400)),
-                _subscriptions: vec![subscription],
+                _subscriptions: { Vec::new() },
             }
         }))
     }

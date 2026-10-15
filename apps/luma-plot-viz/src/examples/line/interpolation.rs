@@ -1,3 +1,4 @@
+use gpui_luma::controls::radio_group::RadioGroupEventExt;
 use std::time::Duration;
 
 use gpui::{App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
@@ -48,7 +49,7 @@ impl InterpolationExample {
         Ok(cx.new(move |cx: &mut Context<Self>| {
             let interpolation = Interpolation::Monotone;
             let selector = theme::spawn_interpolation_selector("reservoir-interpolation", &look, interpolation, cx);
-            let subscription = cx.subscribe(&selector, |this, _, event: &RadioGroupEvent, cx| {
+            selector.clone().on_event(cx, |this, event: &RadioGroupEvent, cx| {
                 if let RadioGroupEvent::Change { value: Some(value) } = event {
                     this.interpolation = if value.as_ref() == "monotone" {
                         Interpolation::Monotone
@@ -71,7 +72,7 @@ impl InterpolationExample {
                 selector,
                 replay,
                 motion: VisualTransition::new(1.0, Duration::from_millis(1400)),
-                _subscriptions: vec![subscription],
+                _subscriptions: { Vec::new() },
             }
         }))
     }

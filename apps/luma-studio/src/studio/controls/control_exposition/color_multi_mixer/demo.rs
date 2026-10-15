@@ -1,8 +1,9 @@
 //! Multi mixer composition — per-color-space channel mixers.
 
+use gpui_luma::controls::slider::SliderEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FontWeight, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, FontWeight, Render, Window, div, prelude::*, px};
 use gpui_luma_color::ColorSwatch;
 use gpui_luma_color::color_slider::color_spec::{
     ColorChannel, ColorSpecification, Hsl, Hsv, HueAlpha, Lab, Oklch, RgbaSpec, slider_step_for_channel,
@@ -152,7 +153,6 @@ struct ColorSpaceMixerState<S: ColorSpecification> {
     look: Arc<ShadcnLook>,
     spec: S,
     sliders: Vec<MixerSliderRow>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl<S: ColorSpecification> ColorSpaceMixerState<S> {
@@ -201,19 +201,16 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
             sliders.push(MixerSliderRow { channel: channel_meta, slider, domain_renderer });
         }
 
-        let subscriptions = sliders
-            .iter()
-            .map(|row| {
-                let channel_name = row.channel.name;
-                cx.subscribe(&row.slider, move |this, _, event: &SliderEvent, cx| {
-                    if let Some(value) = primary_slider_value(event) {
-                        this.handle_slider_event(channel_name, value, cx);
-                    }
-                })
-            })
-            .collect();
+        sliders.iter().for_each(|row| {
+            let channel_name = row.channel.name;
+            row.slider.clone().on_event(cx, move |this, event: &SliderEvent, cx| {
+                if let Some(value) = primary_slider_value(event) {
+                    this.handle_slider_event(channel_name, value, cx);
+                }
+            });
+        });
 
-        let state = Self { subtitle, show_gamut_warning, look, spec, sliders, _subscriptions: subscriptions };
+        let state = Self { subtitle, show_gamut_warning, look, spec, sliders };
         state.sync_sliders(cx);
         state
     }

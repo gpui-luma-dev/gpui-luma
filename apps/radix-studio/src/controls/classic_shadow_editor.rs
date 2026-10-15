@@ -4,12 +4,13 @@
 //! whole app retunes as you drag. The readout under the preview is the literal to paste
 //! back into `ClassicButtonParams::default` once the numbers look right.
 
+use gpui_luma::controls::slider::SliderEventExt;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use gpui::{
-    AnyElement, ClipboardItem, Context, Entity, EventEmitter, FontWeight, Hsla, IntoElement, Render, Subscription,
-    Window, div, prelude::*, px,
+    AnyElement, ClipboardItem, Context, Entity, EventEmitter, FontWeight, Hsla, IntoElement, Render, Window, div,
+    prelude::*, px,
 };
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button::Button;
@@ -294,7 +295,6 @@ pub struct ClassicShadowEditor {
     copy: Entity<Button>,
     /// Shared with the copy button's content closure so the face can confirm the copy.
     copied: Arc<AtomicBool>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl EventEmitter<ClassicShadowEditorEvent> for ClassicShadowEditor {}
@@ -303,7 +303,6 @@ impl ClassicShadowEditor {
     pub fn new(look: &Arc<Look>, cx: &mut Context<Self>) -> Self {
         let mut params = look.classic_params();
         let mut sliders = Vec::new();
-        let mut subscriptions = Vec::new();
 
         for spec in GROUPS.iter().flat_map(|(_, specs)| specs.iter()) {
             let field = spec.field;
@@ -313,13 +312,13 @@ impl ClassicShadowEditor {
                 .step(spec.step)
                 .value(*field.slot(&mut params))
                 .spawn(cx);
-            subscriptions.push(cx.subscribe(&control, move |this, _, event: &SliderEvent, cx| {
+            control.clone().on_event(cx, move |this, event: &SliderEvent, cx| {
                 let value = match event {
                     SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } => *value,
                     _ => return,
                 };
                 this.set_field(field, value, cx);
-            }));
+            });
             sliders.push((field, control));
         }
 
@@ -358,7 +357,7 @@ impl ClassicShadowEditor {
                 cx.notify();
             });
 
-        Self { look: Arc::clone(look), params, sliders, preview, reset, copy, copied, _subscriptions: subscriptions }
+        Self { look: Arc::clone(look), params, sliders, preview, reset, copy, copied }
     }
 
     pub(crate) fn reset(&mut self, cx: &mut Context<Self>) {

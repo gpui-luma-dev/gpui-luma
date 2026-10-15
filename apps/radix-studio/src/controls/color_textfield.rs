@@ -1,3 +1,5 @@
+use gpui_luma::controls::textfield::TextFieldEventExt;
+use gpui_luma::controls::slider::SliderEventExt;
 use crate::color_hex::format_hex;
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
@@ -110,19 +112,19 @@ impl ColorTextField {
             .spawn(cx);
 
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&field, |this, _, event: &TextFieldEvent, cx| match event {
+        field.clone().on_event(cx, |this, event: &TextFieldEvent, cx| match event {
             TextFieldEvent::FocusChanged { focused } => {
                 this.focused = *focused;
                 cx.notify();
             }
             TextFieldEvent::Change { value } => this.apply_hex(value, cx),
             _ => {}
-        }));
-        subscriptions.push(cx.subscribe(&picker_hex, |this, _, event: &TextFieldEvent, cx| {
+        });
+        picker_hex.clone().on_event(cx, |this, event: &TextFieldEvent, cx| {
             if let TextFieldEvent::Change { value } = event {
                 this.apply_hex(value, cx);
             }
-        }));
+        });
         subscriptions.push(cx.subscribe(&picker_field, |this, _, event: &ColorFieldEvent, cx| {
             let (ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv)) = event else {
                 return;
@@ -131,13 +133,13 @@ impl ColorTextField {
             this.hsv.v = hsv.v;
             this.apply_hsv(cx);
         }));
-        subscriptions.push(cx.subscribe(&hue_slider, |this, _, event: &SliderEvent, cx| {
+        hue_slider.clone().on_event(cx, |this, event: &SliderEvent, cx| {
             let Some(value) = primary_slider_value(event) else {
                 return;
             };
             this.hsv.h = value;
             this.apply_hsv(cx);
-        }));
+        });
         let popover_for_swatch = popover.downgrade();
         swatch.clone().on_click(cx, move |this, cx| {
             let Some(popover_for_swatch) = popover_for_swatch.upgrade() else {

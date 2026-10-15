@@ -1,4 +1,6 @@
 //! Host-owned query/sort, SDK-owned projection and selection.
+use gpui_luma::controls::textfield::TextFieldEventExt;
+use gpui_luma::controls::selector::SelectorEventExt;
 use std::sync::Arc;
 use gpui::{Context, Div, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::{
@@ -92,20 +94,21 @@ impl FilteringExample {
             ])
             .selected_id("source")
             .spawn(cx);
-        let subscriptions = vec![
-            cx.subscribe(&search, |this, _, event, cx| {
+        let subscriptions = {
+            search.clone().on_event(cx, |this, event, cx| {
                 if let TextFieldEvent::Change { value } = event {
                     this.query = value.trim().to_lowercase();
                     this.update_projection(cx);
                 }
-            }),
-            cx.subscribe(&sort, |this, _, event, cx| {
+            });
+            sort.clone().on_event(cx, |this, event, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event {
                     this.sort_order = item_id.clone();
                     this.update_projection(cx);
                 }
-            }),
-        ];
+            });
+            Vec::new()
+        };
         let mut state = ListBoxState::try_new(Document::samples(), |item| item.id, SelectionMode::Extended)
             .expect("sample documents have unique keys");
         state.set_selection_policy(super::selection_controls::DEFAULT_POLICY);

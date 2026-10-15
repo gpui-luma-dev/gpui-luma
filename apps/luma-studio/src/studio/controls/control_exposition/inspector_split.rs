@@ -1,3 +1,4 @@
+use gpui_luma::controls::resizable_panels::ResizablePanelsEventExt;
 use std::sync::Arc;
 
 use gpui::{
@@ -109,13 +110,13 @@ impl InspectorSplitShell {
             });
         });
         let app_for_panels = app.clone();
-        subscriptions.push(cx.subscribe(&split_panels, move |_, _, event, cx| {
+        split_panels.clone().on_event(cx, move |_, event, cx| {
             if let ResizablePanelsEvent::PanelHiddenChanged { panel_index: 1, hidden } = event {
                 app_for_panels.update(cx, |app, cx| {
                     app.set_inspector_open(!hidden, cx);
                 });
             }
-        }));
+        });
         let app_for_observer = app.clone();
         subscriptions.push(cx.observe(&app, move |this, _, cx| {
             let inspector_open = app_for_observer.read(cx).inspector_open();

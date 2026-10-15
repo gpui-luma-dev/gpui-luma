@@ -1,5 +1,6 @@
 //! Color slider revealed exposition — styling survey for the color-slider primitive.
 
+use gpui_luma::controls::slider::SliderEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -370,12 +371,18 @@ fn wire_slider_revealed_events(
     event_stream: &Entity<ControlEventStream>,
     cx: &mut Context<ColorSliderRevealedControlExposition>,
 ) -> Vec<Subscription> {
-    vec![cx.subscribe(delegate_hue, {
-        let event_stream = event_stream.clone();
-        move |_, _, event: &SliderEvent, cx| {
-            if let Some(line) = format_slider_event("Hue Delegate", event) {
-                event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+    {
+        delegate_hue.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |_, event: &SliderEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
+                if let Some(line) = format_slider_event("Hue Delegate", event) {
+                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                }
             }
-        }
-    })]
+        });
+        Vec::new()
+    }
 }

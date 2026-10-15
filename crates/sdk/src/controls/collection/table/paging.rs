@@ -170,13 +170,156 @@ impl PagerTemplate for TablePagerTemplate {
 }
 
 pub struct PagingTableBuilder<T: 'static> {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::table::TableEvent>,
+
     list_builder: TableBuilder<T>,
     pager_builder: PagerBuilder,
 }
 
 impl<T: 'static> PagingTableBuilder<T> {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::table::TableEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `TableEvent::RowDrag` through the existing event stream.
+    pub fn on_row_drag<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::table::TableRowDragEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::table::TableEvent::RowDrag(event) = event {
+                callback(owner, event, cx);
+            }
+        })
+    }
+
+    /// Handle `TableEvent::SelectionChanged` through the existing event stream.
+    pub fn on_selection_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Vec<usize>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::table::TableEvent::SelectionChanged { selected_indices } = event {
+                callback(owner, selected_indices, cx);
+            }
+        })
+    }
+
+    /// Handle `TableEvent::SelectedKeysChanged` through the existing event stream.
+    pub fn on_selected_keys_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Vec<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::table::TableEvent::SelectedKeysChanged { selected_keys } = event {
+                callback(owner, selected_keys, cx);
+            }
+        })
+    }
+
+    /// Handle `TableEvent::ActiveIndexChanged` through the existing event stream.
+    pub fn on_active_index_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Option<usize>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::table::TableEvent::ActiveIndexChanged { active_index } = event {
+                callback(owner, active_index, cx);
+            }
+        })
+    }
+
+    /// Handle `TableEvent::PageChanged` through the existing event stream.
+    pub fn on_page_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, usize, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::table::TableEvent::PageChanged { page } = event {
+                callback(owner, *page, cx);
+            }
+        })
+    }
+
+    /// Handle `TableEvent::PageSizeChanged` through the existing event stream.
+    pub fn on_page_size_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, usize, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::table::TableEvent::PageSizeChanged { page_size } = event {
+                callback(owner, *page_size, cx);
+            }
+        })
+    }
+
+    /// Handle `TableEvent::ScrollChanged` through the existing event stream.
+    pub fn on_scroll_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, usize, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::table::TableEvent::ScrollChanged { top_index } = event {
+                callback(owner, *top_index, cx);
+            }
+        })
+    }
+
+    /// Handle `TableEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::table::TableEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `TableEvent::RowHoverChanged` through the existing event stream.
+    pub fn on_row_hover_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, usize, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::table::TableEvent::RowHoverChanged { index, hovered } = event {
+                callback(owner, *index, *hovered, cx);
+            }
+        })
+    }
+
+    /// Handle `TableEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::table::TableEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(list_builder: TableBuilder<T>, pager_builder: PagerBuilder) -> Self {
-        Self { list_builder, pager_builder }
+        Self { callbacks: Default::default(), list_builder, pager_builder }
     }
 
     /// Fill the parent height; see [`TableBuilder::fill_height`].
@@ -191,39 +334,44 @@ impl<T: 'static> PagingTableBuilder<T> {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> PagingTable<T> {
-        let fill_height = self.list_builder.model.fill_height;
-        let list = cx.new(|cx| TableControl::from_builder(self.list_builder, cx));
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> PagingTable<T> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let fill_height = self.list_builder.model.fill_height;
+            let list = self.list_builder.spawn(cx);
 
-        let (current_page, page_count, page_size, selected_count, total_rows) = list.read_with(cx, |list, _| {
-            (
-                list.current_page(),
-                list.page_count(),
-                list.page_size().unwrap_or(10),
-                list.selected_indices().len(),
-                list.items().len(),
-            )
-        });
+            let (current_page, page_count, page_size, selected_count, total_rows) = list.read_with(cx, |list, _| {
+                (
+                    list.current_page(),
+                    list.page_count(),
+                    list.page_size().unwrap_or(10),
+                    list.selected_indices().len(),
+                    list.items().len(),
+                )
+            });
 
-        let mut pager_builder = self.pager_builder;
-        // Viewport-driven page size: hide the manual "rows per page" control.
-        if fill_height {
-            pager_builder = pager_builder.page_size_options([]);
-        } else if pager_builder.model.template_parameters.page_size_label.is_none() {
-            pager_builder = pager_builder.page_size_label("Rows per page");
-        }
-        let pager_theme = pager_builder.model.theme.clone().unwrap_or_else(default_pager_theme);
-        pager_builder = pager_builder.style(PagerStyle::MinimalEdge);
-        pager_builder = pager_builder.template(Arc::new(TablePagerTemplate::new(pager_theme)));
+            let mut pager_builder = self.pager_builder;
+            // Viewport-driven page size: hide the manual "rows per page" control.
+            if fill_height {
+                pager_builder = pager_builder.page_size_options([]);
+            } else if pager_builder.model.template_parameters.page_size_label.is_none() {
+                pager_builder = pager_builder.page_size_label("Rows per page");
+            }
+            let pager_theme = pager_builder.model.theme.clone().unwrap_or_else(default_pager_theme);
+            pager_builder = pager_builder.style(PagerStyle::MinimalEdge);
+            pager_builder = pager_builder.template(Arc::new(TablePagerTemplate::new(pager_theme)));
 
-        let pager = pager_builder
-            .current_page(current_page)
-            .page_count(page_count)
-            .page_size(page_size)
-            .info_text(selection_summary(selected_count, total_rows))
-            .spawn(cx);
+            let pager = pager_builder
+                .current_page(current_page)
+                .page_count(page_count)
+                .page_size(page_size)
+                .info_text(selection_summary(selected_count, total_rows))
+                .spawn(cx);
 
-        cx.new(|cx| PagingTableControl::new(list, pager, cx))
+            cx.new(|cx| PagingTableControl::new(list, pager, cx))
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

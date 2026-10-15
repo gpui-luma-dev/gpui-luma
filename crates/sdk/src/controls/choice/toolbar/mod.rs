@@ -21,3 +21,6 @@ pub type Toolbar = Entity<ToolbarControl>;
 pub fn new(id: impl Into<SharedString>) -> ToolbarBuilder {
     ToolbarBuilder::new(id)
 }
+
+mod callback;
+pub use callback::ToolbarEventExt;

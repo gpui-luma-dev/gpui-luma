@@ -93,8 +93,8 @@ jobs:
           --package gpui-luma-look-shadcn
           --package gpui-luma-plot
 
-      - name: Compile Button documentation examples
-        run: python3 scripts/check_button_docs.py
+      - name: Compile control documentation examples
+        run: python3 scripts/check_control_docs.py
 
       - name: Test plot sample app (headless)
         run: cargo test --locked --package luma-plot-viz --all-features

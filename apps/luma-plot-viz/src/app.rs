@@ -1,3 +1,6 @@
+use gpui_luma::controls::tabs::TabsEventExt;
+use gpui_luma::controls::scrollbar::ScrollbarEventExt;
+use gpui_luma::controls::radio_group::RadioGroupEventExt;
 use std::sync::Arc;
 
 use gpui::{Entity, Context, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
@@ -36,14 +39,14 @@ impl PlotVizApp {
         let scroll = ScrollContainer::new("plot-viz-scroll", default_scrollbar_template(), cx)
             .visibility(ScrollbarVisibility::AutoHide)
             .auto_hide_activate(ScrollbarAutoHideActivate::HoverOrMove);
-        let subscription = cx.subscribe(&mode_selector, |this, _, event: &RadioGroupEvent, cx| {
+        mode_selector.clone().on_event(cx, |this, event: &RadioGroupEvent, cx| {
             if let RadioGroupEvent::Change { value: Some(value) } = event {
                 this.set_mode(theme::mode_for_id(value.as_ref()), cx);
             }
         });
         let scrollbar = scroll.scrollbar();
         let scroll_for_event = scroll.clone();
-        let scrollbar_subscription = cx.subscribe(&scrollbar, move |_, _, event: &ScrollbarEvent, cx| {
+        scrollbar.clone().on_event(cx, move |_, event: &ScrollbarEvent, cx| {
             if let ScrollbarEvent::Change { value } = event {
                 scroll_for_event.set_vertical_offset(*value, cx);
             }
@@ -54,7 +57,7 @@ impl PlotVizApp {
             .items(["Line", "Area", "Bar", "Pie", "Radar", "Radial"].map(|name| TabsItem::new(name).label(name)))
             .active("Line")
             .spawn(cx);
-        let tabs_subscription = cx.subscribe(&tabs, |this, _, event: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |this, event: &TabsEvent, cx| {
             if let TabsEvent::Change { tab_id, .. } = event {
                 if this.active_tab != *tab_id {
                     this.entrance.snap_to(0.0);
@@ -95,7 +98,7 @@ impl PlotVizApp {
             look,
             mode_selector,
             scroll,
-            _subscriptions: vec![subscription, scrollbar_subscription, tabs_subscription],
+            _subscriptions: { Vec::new() },
         }
     }
 

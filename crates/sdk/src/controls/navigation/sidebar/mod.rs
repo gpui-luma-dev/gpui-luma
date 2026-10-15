@@ -56,3 +56,6 @@ pub fn sidebar_menu_sub() -> SidebarMenuSubBuilder {
 pub fn sidebar_footer() -> SidebarFooterBuilder {
     SidebarFooterBuilder::new()
 }
+
+mod callback;
+pub use callback::SidebarEventExt;

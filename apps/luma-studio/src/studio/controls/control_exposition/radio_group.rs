@@ -1,8 +1,9 @@
 //! Radio group control exposition — gallery-aligned vertical, horizontal, indented, and card layouts.
 
+use gpui_luma::controls::radio_group::RadioGroupEventExt;
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Div, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, Context, Div, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::control_group::ControlGroupItemElementTemplate;
 use gpui_luma::controls::radio_group::{
     self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, SelectionMode,
@@ -58,7 +59,6 @@ pub struct RadioGroupControlExposition {
     indented_choice: String,
     delivery_choice: String,
     event_stream: Entity<ControlEventStream>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl RadioGroupControlExposition {
@@ -114,12 +114,10 @@ impl RadioGroupControlExposition {
             )
         });
 
-        let subscriptions = vec![
-            wire_group(cx, &vertical_group, "vertical", GroupTarget::Vertical, event_stream.clone()),
-            wire_group(cx, &horizontal_group, "horizontal", GroupTarget::Horizontal, event_stream.clone()),
-            wire_group(cx, &indented_group, "indented", GroupTarget::Indented, event_stream.clone()),
-            wire_group(cx, &delivery_group, "delivery", GroupTarget::Delivery, event_stream.clone()),
-        ];
+        wire_group(cx, &vertical_group, "vertical", GroupTarget::Vertical, event_stream.clone());
+        wire_group(cx, &horizontal_group, "horizontal", GroupTarget::Horizontal, event_stream.clone());
+        wire_group(cx, &indented_group, "indented", GroupTarget::Indented, event_stream.clone());
+        wire_group(cx, &delivery_group, "delivery", GroupTarget::Delivery, event_stream.clone());
 
         Self {
             look,
@@ -133,7 +131,6 @@ impl RadioGroupControlExposition {
             indented_choice: Density::Comfortable.id().to_string(),
             delivery_choice: DeliveryWindow::Today.id().to_string(),
             event_stream,
-            _subscriptions: subscriptions,
         }
     }
 
@@ -166,8 +163,8 @@ fn wire_group<T: RadioGroupItemLike + 'static>(
     label: &'static str,
     target: GroupTarget,
     event_stream: Entity<ControlEventStream>,
-) -> Subscription {
-    cx.subscribe(group, move |this, _, event: &RadioGroupEvent, cx| {
+) {
+    group.clone().on_event(cx, move |this, event: &RadioGroupEvent, cx| {
         if let RadioGroupEvent::Change { value } = event {
             let choice = value.as_ref().map_or_else(|| "None".to_string(), ToString::to_string);
             match target {
@@ -183,7 +180,7 @@ fn wire_group<T: RadioGroupItemLike + 'static>(
         {
             event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
         }
-    })
+    });
 }
 
 impl Render for RadioGroupControlExposition {

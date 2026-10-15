@@ -36,12 +36,105 @@ pub struct DockSplitterRenderModel<'a> {
 }
 
 pub struct DockSplitterBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::dock_splitter::DockSplitterEvent>,
+
     pub(crate) model: DockSplitterModel,
 }
 
 impl DockSplitterBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::dock_splitter::DockSplitterEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `DockSplitterEvent::ResizeStart` through the existing event stream.
+    pub fn on_resize_start<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::dock_splitter::DockSplitterEvent::ResizeStart = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
+    /// Handle `DockSplitterEvent::Resize` through the existing event stream.
+    pub fn on_resize_delta<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, f32, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::dock_splitter::DockSplitterEvent::Resize { total_delta } = event {
+                callback(owner, *total_delta, cx);
+            }
+        })
+    }
+
+    /// Handle `DockSplitterEvent::ResizeEnd` through the existing event stream.
+    pub fn on_resize_end<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::dock_splitter::DockSplitterEvent::ResizeEnd = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
+    /// Handle `DockSplitterEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::dock_splitter::DockSplitterEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `DockSplitterEvent::HoverChanged` through the existing event stream.
+    pub fn on_hover_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::dock_splitter::DockSplitterEvent::HoverChanged { hovered } = event {
+                callback(owner, *hovered, cx);
+            }
+        })
+    }
+
+    /// Handle `DockSplitterEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::dock_splitter::DockSplitterEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>, orientation: SplitterOrientation) -> Self {
         Self {
+            callbacks: Default::default(),
+
             model: DockSplitterModel {
                 id: id.into(),
                 orientation,
@@ -96,8 +189,11 @@ impl DockSplitterBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<DockSplitter> {
-        cx.new(|cx| DockSplitter::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> Entity<DockSplitter> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| DockSplitter::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

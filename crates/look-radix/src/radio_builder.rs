@@ -13,6 +13,8 @@ use crate::tone::Tone;
 
 /// Builder in the guise of a radio: Radix axes plus SDK options, until `.spawn(cx)`.
 pub struct Radio {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::radio_button::RadioButtonEvent>,
+
     id: SharedString,
     look: Option<Look>,
     variant: RadioVariant,
@@ -29,8 +31,73 @@ pub struct Radio {
 }
 
 impl Radio {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::radio_button::RadioButtonEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `RadioButtonEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_button::RadioButtonEvent::Change { selected } = event {
+                callback(owner, *selected, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioButtonEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_button::RadioButtonEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioButtonEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_button::RadioButtonEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioButtonEvent::HoverChanged` through the existing event stream.
+    pub fn on_hover_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_button::RadioButtonEvent::HoverChanged { hovered } = event {
+                callback(owner, *hovered, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             id: id.into(),
             look: None,
             variant: RadioVariant::default(),
@@ -131,10 +198,15 @@ impl Radio {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::radio_button::RadioButton {
-        let look = self.resolve_look(cx);
-        let theme = crate::tooltip::tooltip_theme(&look);
-        self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> gpui_luma::controls::radio_button::RadioButton {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = self.resolve_look(cx);
+            let theme = crate::tooltip::tooltip_theme(&look);
+            self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 
     fn resolve_look(&self, cx: &App) -> Look {

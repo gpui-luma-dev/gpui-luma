@@ -14,6 +14,8 @@ pub struct TreeView<T>
 where
     T: Clone + Send + Sync + 'static,
 {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::tree_view::TreeViewEvent<T>>,
+
     look: Option<ShadcnLook>,
     builder: TreeViewBuilder<T>,
     custom_template: bool,
@@ -24,8 +26,164 @@ impl<T> TreeView<T>
 where
     T: Clone + Send + Sync + 'static,
 {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::tree_view::TreeViewEvent<T>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `TreeViewEvent::DragDrop` through the existing event stream.
+    pub fn on_drag_drop<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::tree_view::TreeViewDragEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewEvent::DragDrop(event) = event {
+                callback(owner, event, cx);
+            }
+        })
+    }
+
+    /// Handle `TreeViewEvent::NodeActivated` through the existing event stream.
+    pub fn on_node_activated<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &T, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewEvent::NodeActivated { node_id, data } = event {
+                callback(owner, node_id, data, cx);
+            }
+        })
+    }
+
+    /// Handle `TreeViewEvent::SelectionPolicyChanged` through the existing event stream.
+    pub fn on_selection_policy_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::tree_view::TreeViewSelectionPolicy, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewEvent::SelectionPolicyChanged { policy } = event {
+                callback(owner, policy, cx);
+            }
+        })
+    }
+
+    /// Handle `TreeViewEvent::NodeExpanded` through the existing event stream.
+    pub fn on_node_expanded<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &T, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewEvent::NodeExpanded { node_id, data } = event {
+                callback(owner, node_id, data, cx);
+            }
+        })
+    }
+
+    /// Handle `TreeViewEvent::NodeCollapsed` through the existing event stream.
+    pub fn on_node_collapsed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &T, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewEvent::NodeCollapsed { node_id, data } = event {
+                callback(owner, node_id, data, cx);
+            }
+        })
+    }
+
+    /// Handle `TreeViewEvent::SelectionChanged` through the existing event stream.
+    pub fn on_selection_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &std::collections::HashSet<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewEvent::SelectionChanged { selected_ids } = event {
+                callback(owner, selected_ids, cx);
+            }
+        })
+    }
+
+    /// Handle `TreeViewEvent::ActiveNodeChanged` through the existing event stream.
+    pub fn on_active_node_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Option<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewEvent::ActiveNodeChanged { node_id } = event {
+                callback(owner, node_id, cx);
+            }
+        })
+    }
+
+    /// Handle `TreeViewEvent::ScrollChanged` through the existing event stream.
+    pub fn on_scroll_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, usize, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewEvent::ScrollChanged { top_index } = event {
+                callback(owner, *top_index, cx);
+            }
+        })
+    }
+
+    /// Handle `TreeViewEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `TreeViewEvent::RowHoverChanged` through the existing event stream.
+    pub fn on_row_hover_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, usize, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewEvent::RowHoverChanged { node_id, index, hovered } = event {
+                callback(owner, node_id, *index, *hovered, cx);
+            }
+        })
+    }
+
+    /// Handle `TreeViewEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             look: None,
             builder: gpui_luma::controls::tree_view::new(id),
             custom_template: false,
@@ -178,9 +336,14 @@ where
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<TreeViewControl<T>> {
-        let look = resolve_look_from(self.look.as_ref(), cx);
-        self.into_sdk_builder(look).spawn(cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<TreeViewControl<T>> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = resolve_look_from(self.look.as_ref(), cx);
+            self.into_sdk_builder(look).spawn(cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> TreeViewBuilder<T> {

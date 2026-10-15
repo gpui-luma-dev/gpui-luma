@@ -1,8 +1,9 @@
 //! Pager control exposition — gallery-aligned minimal and numeric pager styles.
 
+use gpui_luma::controls::pager::PagerEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, FontWeight, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::pager::{Pager, PagerEvent, PagerStyle};
@@ -28,7 +29,6 @@ pub struct PagerControlExposition {
     left_pane: Entity<PagerExpositionLeftPane>,
     theme_inspector: Entity<PagerThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct PagerExpositionLeftPane {
@@ -352,16 +352,15 @@ impl PagerControlExposition {
             PagerInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
         for pager in left_pane.read(cx).pagers() {
             let event_stream = event_stream.clone();
             let left_pane = left_pane.clone();
-            subscriptions.push(cx.subscribe(&pager, move |_, _, event: &PagerEvent, cx| {
+            pager.clone().on_event(cx, move |_, event: &PagerEvent, cx| {
                 left_pane.update(cx, |pane, cx| pane.handle_pager_event(event, cx));
                 if let Some(line) = format_pager_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
-            }));
+            });
         }
 
         let (
@@ -453,7 +452,7 @@ impl PagerControlExposition {
             }
         });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

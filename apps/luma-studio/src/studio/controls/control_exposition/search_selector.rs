@@ -1,3 +1,4 @@
+use gpui_luma::controls::search_selector::SearchSelectorEventExt;
 use gpui_luma::controls::toggle::ToggleEventExt;
 use gpui_luma::infra::attachments::TooltipEntityExt;
 use std::sync::Arc;
@@ -134,9 +135,12 @@ impl SearchSelectorControlExposition {
             search_selector_inspector_adapter(),
         );
 
-        let subscription = cx.subscribe(&preview, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &SearchSelectorEvent, cx| {
+        preview.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |this, event: &SearchSelectorEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
                 let line = format_search_selector_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
@@ -166,7 +170,7 @@ impl SearchSelectorControlExposition {
             has_selection: false,
             theme_inspector,
             inspector_split,
-            _subscriptions: vec![subscription],
+            _subscriptions: { Vec::new() },
         }
     }
 

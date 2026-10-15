@@ -31,87 +31,155 @@ pub enum RadioGroupEvent {
     ItemFocused { item_id: SharedString },
 }
 
-pub struct RadioGroupBuilder<T>(pub(super) InnerControlGroupBuilder<T>)
+pub struct RadioGroupBuilder<T>
 where
-    T: ControlGroupItemLike + 'static;
+    T: ControlGroupItemLike + 'static,
+{
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::radio_group::RadioGroupEvent>,
+
+    pub(super) inner: InnerControlGroupBuilder<T>,
+}
 
 impl<T> RadioGroupBuilder<T>
 where
     T: ControlGroupItemLike + 'static,
 {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::radio_group::RadioGroupEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `RadioGroupEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Option<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::radio_group::RadioGroupEvent::Change { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioGroupEvent::Activate` through the existing event stream.
+    pub fn on_activate<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::radio_group::RadioGroupEvent::Activate { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioGroupEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::radio_group::RadioGroupEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioGroupEvent::ItemFocused` through the existing event stream.
+    pub fn on_item_focused<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::radio_group::RadioGroupEvent::ItemFocused { item_id } = event {
+                callback(owner, item_id, cx);
+            }
+        })
+    }
+
     fn from_inner(inner: InnerControlGroupBuilder<T>) -> Self {
-        Self(inner)
+        Self { callbacks: Default::default(), inner }
     }
 
     pub fn layout(self, layout: ControlGroupLayout) -> Self {
-        Self(self.0.layout(layout))
+        Self { inner: self.inner.layout(layout), ..self }
     }
 
     pub fn horizontal(self) -> Self {
-        Self(self.0.horizontal())
+        Self { inner: self.inner.horizontal(), ..self }
     }
 
     pub fn vertical(self) -> Self {
-        Self(self.0.vertical())
+        Self { inner: self.inner.vertical(), ..self }
     }
 
     pub fn item(self, item: T) -> Self {
-        Self(self.0.item(item))
+        Self { inner: self.inner.item(item), ..self }
     }
 
     pub fn items(self, items: impl IntoIterator<Item = T>) -> Self {
-        Self(self.0.items(items))
+        Self { inner: self.inner.items(items), ..self }
     }
 
     pub fn mode(self, selection_mode: ControlSelectionMode) -> Self {
-        Self(self.0.mode(selection_mode))
+        Self { inner: self.inner.mode(selection_mode), ..self }
     }
 
     pub fn selection_mode(self, selection_mode: ControlSelectionMode) -> Self {
-        Self(self.0.selection_mode(selection_mode))
+        Self { inner: self.inner.selection_mode(selection_mode), ..self }
     }
 
     pub fn selection_follows_active(self, selection_follows_active: bool) -> Self {
-        Self(self.0.selection_follows_active(selection_follows_active))
+        Self { inner: self.inner.selection_follows_active(selection_follows_active), ..self }
     }
 
     pub fn focus_strategy(self, focus_strategy: ControlGroupFocusStrategy) -> Self {
-        Self(self.0.focus_strategy(focus_strategy))
+        Self { inner: self.inner.focus_strategy(focus_strategy), ..self }
     }
 
     pub fn active_descendant(self) -> Self {
-        Self(self.0.active_descendant())
+        Self { inner: self.inner.active_descendant(), ..self }
     }
 
     pub fn roving_item_focus(self) -> Self {
-        Self(self.0.roving_item_focus())
+        Self { inner: self.inner.roving_item_focus(), ..self }
     }
 
     pub fn focus_target_provider(self, provider: ControlGroupFocusTargetProvider<T>) -> Self {
-        Self(self.0.focus_target_provider(provider))
+        Self { inner: self.inner.focus_target_provider(provider), ..self }
     }
 
     pub fn with_focus_target_provider<F>(self, provider: F) -> Self
     where
         F: for<'a> Fn(&'a T, &mut Window, &mut App) -> Option<ControlGroupFocusTarget> + Send + Sync + 'static,
     {
-        Self(self.0.with_focus_target_provider(provider))
+        Self { inner: self.inner.with_focus_target_provider(provider), ..self }
     }
 
     pub fn clear_focus_target_provider(self) -> Self {
-        Self(self.0.clear_focus_target_provider())
+        Self { inner: self.inner.clear_focus_target_provider(), ..self }
     }
 
     pub fn single_required(self) -> Self {
-        Self(self.0.single_required())
+        Self { inner: self.inner.single_required(), ..self }
     }
 
     pub fn single_allow_none(self) -> Self {
-        Self(self.0.single_allow_none())
+        Self { inner: self.inner.single_allow_none(), ..self }
     }
 
     pub fn selected(self, selected_id: impl Into<SharedString>) -> Self {
-        Self(self.0.selected(selected_id))
+        Self { inner: self.inner.selected(selected_id), ..self }
     }
 
     pub fn selected_ids<I, S>(self, selected_ids: I) -> Self
@@ -119,19 +187,19 @@ where
         I: IntoIterator<Item = S>,
         S: Into<SharedString>,
     {
-        Self(self.0.selected_ids(selected_ids))
+        Self { inner: self.inner.selected_ids(selected_ids), ..self }
     }
 
     pub fn managed(self) -> Self {
-        Self(self.0.managed())
+        Self { inner: self.inner.managed(), ..self }
     }
 
     pub fn unmanaged(self) -> Self {
-        Self(self.0.unmanaged())
+        Self { inner: self.inner.unmanaged(), ..self }
     }
 
     pub fn managed_selected(self, selected_id: impl Into<SharedString>) -> Self {
-        Self(self.0.managed_selected(selected_id))
+        Self { inner: self.inner.managed_selected(selected_id), ..self }
     }
 
     pub fn managed_selected_ids<I, S>(self, selected_ids: I) -> Self
@@ -139,27 +207,27 @@ where
         I: IntoIterator<Item = S>,
         S: Into<SharedString>,
     {
-        Self(self.0.managed_selected_ids(selected_ids))
+        Self { inner: self.inner.managed_selected_ids(selected_ids), ..self }
     }
 
     pub fn active(self, active_id: impl Into<SharedString>) -> Self {
-        Self(self.0.active(active_id))
+        Self { inner: self.inner.active(active_id), ..self }
     }
 
     pub fn enabled(self, enabled: bool) -> Self {
-        Self(self.0.enabled(enabled))
+        Self { inner: self.inner.enabled(enabled), ..self }
     }
 
     pub fn tab_stop(self, tab_stop: bool) -> Self {
-        Self(self.0.tab_stop(tab_stop))
+        Self { inner: self.inner.tab_stop(tab_stop), ..self }
     }
 
     pub fn item_template(self, template: ControlGroupItemTemplate<T>) -> Self {
-        Self(self.0.item_template(template))
+        Self { inner: self.inner.item_template(template), ..self }
     }
 
     pub fn item_element_template(self, template: ControlGroupItemElementTemplate<T>) -> Self {
-        Self(self.0.item_element_template(template))
+        Self { inner: self.inner.item_element_template(template), ..self }
     }
 
     pub fn with_item_template<F, E>(self, template: F) -> Self
@@ -167,7 +235,7 @@ where
         F: for<'a> Fn(&ControlGroupItemRenderModel<'a, T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
-        Self(self.0.with_item_template(template))
+        Self { inner: self.inner.with_item_template(template), ..self }
     }
 
     pub fn with_item_template_modifier<F>(self, modifier: F) -> Self
@@ -177,26 +245,26 @@ where
             + Sync
             + 'static,
     {
-        Self(self.0.with_item_template_modifier(modifier))
+        Self { inner: self.inner.with_item_template_modifier(modifier), ..self }
     }
 
     pub fn clear_item_template(self) -> Self {
-        Self(self.0.clear_item_template())
+        Self { inner: self.inner.clear_item_template(), ..self }
     }
 
     pub fn clear_item_element_template(self) -> Self {
-        Self(self.0.clear_item_element_template())
+        Self { inner: self.inner.clear_item_element_template(), ..self }
     }
 
     pub fn template(self, template: ControlGroupTemplate<T>) -> Self {
-        Self(self.0.template(template))
+        Self { inner: self.inner.template(template), ..self }
     }
 
     pub fn with_template_modifier<F>(self, modifier: F) -> Self
     where
         F: Fn(Stateful<Div>, &ControlGroupChromeModel) -> Stateful<Div> + Send + Sync + 'static,
     {
-        Self(self.0.with_template_modifier(modifier))
+        Self { inner: self.inner.with_template_modifier(modifier), ..self }
     }
 
     pub fn with_template<F>(self, template: F) -> Self
@@ -211,7 +279,7 @@ where
             + Sync
             + 'static,
     {
-        Self(self.0.with_template(template))
+        Self { inner: self.inner.with_template(template), ..self }
     }
 
     pub fn with_item_layout<F, E>(self, layout: F) -> Self
@@ -222,7 +290,7 @@ where
             + 'static,
         E: IntoElement + 'static,
     {
-        Self(self.0.with_item_layout(layout))
+        Self { inner: self.inner.with_item_layout(layout), ..self }
     }
 
     pub fn with_menu_row_item_content<F>(self, theme: Arc<dyn ControlGroupTheme>, content: F) -> Self
@@ -259,11 +327,17 @@ where
             + Sync
             + 'static,
     {
-        Self(self.0.with_menu_row_item_content_sized(theme, size, row_height, row_radius, content))
+        Self {
+            inner: self.inner.with_menu_row_item_content_sized(theme, size, row_height, row_radius, content),
+            ..self
+        }
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> RadioGroup<T> {
-        cx.new(|cx| RadioGroupControl::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> RadioGroup<T> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| RadioGroupControl::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

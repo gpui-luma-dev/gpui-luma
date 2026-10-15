@@ -115,3 +115,6 @@ where
 {
     TableBuilder::new_typed(id)
 }
+
+mod callback;
+pub use callback::TableEventExt;

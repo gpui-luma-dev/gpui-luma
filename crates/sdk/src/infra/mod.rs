@@ -1,5 +1,7 @@
 //! Shared LMTP seams, menu helpers, and chrome that are not spawnable controls.
 
+#[doc(hidden)]
+pub mod callbacks;
 pub mod arc_shape;
 pub mod attachments;
 pub mod element_ext;

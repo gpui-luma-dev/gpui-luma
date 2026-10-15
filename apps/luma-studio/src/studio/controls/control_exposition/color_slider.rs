@@ -1,5 +1,6 @@
 //! Color slider control exposition — gallery-aligned hue/saturation/alpha, gradients, and channels.
 
+use gpui_luma::controls::slider::SliderEventExt;
 use gpui_luma::color::gpui_bridge::from_hsla;
 use std::sync::Arc;
 
@@ -265,27 +266,27 @@ impl ColorSliderControlExposition {
             {
                 pane_subscriptions.extend(subscribe_slider(slider, label, event_stream.clone(), cx));
             }
-            pane_subscriptions.push(cx.subscribe(&hue_slider, |this, _, event, cx| {
+            hue_slider.clone().on_event(cx, |this, event, cx| {
                 if let Some(value) = slider_release_or_change_value(event) {
                     this.hsl.h = value;
                     this.sync_delegates(cx);
                     cx.notify();
                 }
-            }));
-            pane_subscriptions.push(cx.subscribe(&saturation_slider, |this, _, event, cx| {
+            });
+            saturation_slider.clone().on_event(cx, |this, event, cx| {
                 if let Some(value) = slider_release_or_change_value(event) {
                     this.hsl.s = value;
                     this.sync_delegates(cx);
                     cx.notify();
                 }
-            }));
-            pane_subscriptions.push(cx.subscribe(&alpha_slider, |this, _, event, cx| {
+            });
+            alpha_slider.clone().on_event(cx, |this, event, cx| {
                 if let Some(value) = slider_release_or_change_value(event) {
                     this.hsl.a = value;
                     this.sync_delegates(cx);
                     cx.notify();
                 }
-            }));
+            });
 
             ColorSliderExpositionLeftPane {
                 look: look.clone(),
@@ -366,15 +367,18 @@ fn subscribe_slider(
     cx: &mut Context<ColorSliderExpositionLeftPane>,
 ) -> Vec<Subscription> {
     let label = label.to_string();
-    vec![cx.subscribe(slider, move |_, _, event: &SliderEvent, cx| {
-        let Some(line) = format_slider_event(&label, event) else {
-            return;
-        };
-        event_stream.update(cx, |stream, cx| {
-            stream.append_line(&line, cx);
-            cx.notify();
+    {
+        slider.clone().on_event(cx, move |_, event: &SliderEvent, cx| {
+            let Some(line) = format_slider_event(&label, event) else {
+                return;
+            };
+            event_stream.update(cx, |stream, cx| {
+                stream.append_line(&line, cx);
+                cx.notify();
+            });
         });
-    })]
+        Vec::new()
+    }
 }
 
 fn slider_release_or_change_value(event: &SliderEvent) -> Option<f32> {

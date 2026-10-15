@@ -226,12 +226,79 @@ impl PagerRenderModel<'_> {
 }
 
 pub struct PagerBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::pager::PagerEvent>,
+
     pub(crate) model: PagerModel,
 }
 
 impl PagerBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::pager::PagerEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `PagerEvent::PageChanged` through the existing event stream.
+    pub fn on_page_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, usize, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::pager::PagerEvent::PageChanged { page } = event {
+                callback(owner, *page, cx);
+            }
+        })
+    }
+
+    /// Handle `PagerEvent::PageSizeChanged` through the existing event stream.
+    pub fn on_page_size_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, usize, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::pager::PagerEvent::PageSizeChanged { page_size } = event {
+                callback(owner, *page_size, cx);
+            }
+        })
+    }
+
+    /// Handle `PagerEvent::PageSizeOpenChanged` through the existing event stream.
+    pub fn on_page_size_open_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::pager::PagerEvent::PageSizeOpenChanged { open } = event {
+                callback(owner, *open, cx);
+            }
+        })
+    }
+
+    /// Handle `PagerEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::pager::PagerEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             model: PagerModel {
                 id: id.into(),
                 current_page: 0,
@@ -377,8 +444,11 @@ impl PagerBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> gpui::Entity<PagerControl> {
-        cx.new(|cx| PagerControl::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> gpui::Entity<PagerControl> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| PagerControl::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

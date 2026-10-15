@@ -1,3 +1,4 @@
+use gpui_luma::controls::slider::SliderEventExt;
 use crate::studio::color_format::format_color_readout;
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
@@ -149,8 +150,9 @@ impl ColorPickerPopover {
         let content = content.unwrap_or(default_content);
         let picker_entity = cx.entity().clone();
         let content_for_popover = content.clone();
-        let subscriptions = vec![
-            cx.subscribe(&field, |picker, _, event: &ColorFieldEvent, cx| {
+        let subscriptions = {
+            let mut retained_subscriptions = Vec::new();
+            retained_subscriptions.push(cx.subscribe(&field, |picker, _, event: &ColorFieldEvent, cx| {
                 let (ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv)) = event else {
                     return;
                 };
@@ -159,16 +161,16 @@ impl ColorPickerPopover {
                 picker.hsv.v = hsv.v;
                 picker.sync_controls(cx, false);
                 picker.emit_change(cx);
-            }),
-            cx.subscribe(&hue_slider, |picker, _, event: &SliderEvent, cx| {
+            }));
+            hue_slider.clone().on_event(cx, |picker, event: &SliderEvent, cx| {
                 let Some(value) = primary_slider_value(event) else {
                     return;
                 };
                 picker.hsv.h = value;
                 picker.sync_controls(cx, true);
                 picker.emit_change(cx);
-            }),
-            cx.subscribe(&alpha_slider, |picker, _, event: &SliderEvent, cx| {
+            });
+            alpha_slider.clone().on_event(cx, |picker, event: &SliderEvent, cx| {
                 let Some(value) = primary_slider_value(event) else {
                     return;
                 };
@@ -179,8 +181,9 @@ impl ColorPickerPopover {
                     cx.emit(ColorPickerEvent::Change(color));
                     cx.notify();
                 }
-            }),
-        ];
+            });
+            retained_subscriptions
+        };
         if let Some(copy_button) = &copy_button {
             copy_button.clone().on_click(cx, |picker, cx| {
                 cx.write_to_clipboard(ClipboardItem::new_string(format_color_readout(picker.color)));

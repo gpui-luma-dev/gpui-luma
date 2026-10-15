@@ -1,5 +1,7 @@
 //! Navigation sidebar control exposition — `SidebarControl` preview and event log.
 
+use gpui_luma::controls::sidebar::SidebarEventExt;
+use gpui_luma::controls::popup_menu::PopupMenuEventExt;
 use std::cell::Cell;
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::motion::VisualTransition;
@@ -246,10 +248,16 @@ impl SidebarControlExposition {
                 left_pane.update(cx, |_, cx| cx.notify());
             }
         });
-        let control_subscription = cx.subscribe(&sidebar_control, {
-            let event_stream = event_stream.clone();
-            let left_pane = left_pane.clone();
-            move |_, _, event: &SidebarEvent, cx| {
+        sidebar_control.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            let left_pane = left_pane.downgrade();
+            move |_, event: &SidebarEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 if let SidebarEvent::PresentationChanged { presentation } = event {
                     control_open_cell.set(*presentation == SidebarPresentation::Expanded);
                     left_pane.update(cx, |_, cx| cx.notify());
@@ -276,22 +284,18 @@ impl SidebarControlExposition {
                 });
             }
         });
-        let user_menu_subscription = cx.subscribe(&user_menu, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &PopupMenuEvent, cx| {
+        user_menu.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |_, event: &PopupMenuEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
                 let line = format_user_menu_event(event);
                 event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
             }
         });
 
-        Self {
-            look,
-            entry,
-            left_pane,
-            theme_inspector,
-            inspector_split,
-            _subscriptions: vec![observe_subscription, control_subscription, user_menu_subscription],
-        }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![observe_subscription] }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

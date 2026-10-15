@@ -1,4 +1,5 @@
 //! Manual scale diagnostics; all interactive chrome uses SDK controls.
+use gpui_luma::controls::tree_view::TreeViewEventExt;
 use std::{
     collections::HashSet,
     sync::{Arc, Mutex},
@@ -79,19 +80,22 @@ impl Scale {
                 "Jump, update, filter or collapse the tree, then Sample counts. Counts accumulate until Reset counts.",
             )
         });
-        let subscriptions = vec![cx.subscribe(&tree, |this: &mut Self, _, event, cx| {
-            if matches!(
-                event,
-                TreeViewEvent::NodeExpanded { .. }
-                    | TreeViewEvent::NodeCollapsed { .. }
-                    | TreeViewEvent::SelectionChanged { .. }
-            ) {
-                cx.notify();
-            }
-            if let TreeViewEvent::NodeCollapsed { node_id, .. } = event {
-                this.log(format!("Closed: {node_id}"), cx);
-            }
-        })];
+        let subscriptions = {
+            tree.clone().on_event(cx, |this: &mut Self, event, cx| {
+                if matches!(
+                    event,
+                    TreeViewEvent::NodeExpanded { .. }
+                        | TreeViewEvent::NodeCollapsed { .. }
+                        | TreeViewEvent::SelectionChanged { .. }
+                ) {
+                    cx.notify();
+                }
+                if let TreeViewEvent::NodeCollapsed { node_id, .. } = event {
+                    this.log(format!("Closed: {node_id}"), cx);
+                }
+            });
+            Vec::new()
+        };
         let buttons = [
             ("first", "First"),
             ("middle", "Middle"),

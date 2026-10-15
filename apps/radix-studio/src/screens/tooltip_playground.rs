@@ -1,7 +1,9 @@
 //! Tooltip options exercised against one retained preview.
+use gpui_luma::controls::textfield::TextFieldEventExt;
+use gpui_luma::controls::slider::SliderEventExt;
 use gpui_luma::controls::switch::SwitchEventExt;
 use std::{sync::Arc, time::Duration};
-use gpui::{AnyElement, FontWeight, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, FontWeight, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::{
     controls::{
@@ -47,7 +49,7 @@ pub struct TooltipPlayground {
     show_once: Switch,
     rearm: Entity<Button>,
     reset_all: Entity<Button>,
-    _subscriptions: Vec<Subscription>,
+
     #[cfg(all(test, feature = "test-support"))]
     render_probe: Option<gpui_luma::controls::tooltip::TooltipTemplate>,
 }
@@ -110,7 +112,7 @@ impl TooltipPlayground {
             .label("Reset properties")
             .with_template_modifier(|root, _| root.flex_none().debug_selector(|| "tooltip-reset-all".into()))
             .spawn(cx);
-        let mut subscriptions = Vec::new();
+
         reset_all.clone().on_click(cx, |this, cx| {
             this.reset_properties(cx);
         });
@@ -124,18 +126,18 @@ impl TooltipPlayground {
             this.shortcut_input.update(cx, |field, cx| field.set_value(DEFAULT_HINT, cx));
             this.apply(cx);
         });
-        subscriptions.push(cx.subscribe(&text_input, |this, _, event: &TextFieldEvent, cx| {
+        text_input.clone().on_event(cx, |this, event: &TextFieldEvent, cx| {
             if let TextFieldEvent::Change { value } = event {
                 this.text = value.clone();
                 this.apply(cx);
             }
-        }));
-        subscriptions.push(cx.subscribe(&shortcut_input, |this, _, event: &TextFieldEvent, cx| {
+        });
+        shortcut_input.clone().on_event(cx, |this, event: &TextFieldEvent, cx| {
             if let TextFieldEvent::Change { value } = event {
                 this.shortcut = value.clone();
                 this.apply(cx);
             }
-        }));
+        });
         custom_content.clone().on_value_changed(cx, |this, on, cx| {
             this.custom = on;
             this.apply(cx);
@@ -150,24 +152,24 @@ impl TooltipPlayground {
             });
             cx.notify();
         });
-        subscriptions.push(cx.subscribe(&delay, |this, _, event: &SliderEvent, cx| {
+        delay.clone().on_event(cx, |this, event: &SliderEvent, cx| {
             if let SliderEvent::Change { value, .. } = event {
                 this.delay_ms = value.round() as u64;
                 this.apply(cx);
             }
-        }));
-        subscriptions.push(cx.subscribe(&hide_delay, |this, _, event: &SliderEvent, cx| {
+        });
+        hide_delay.clone().on_event(cx, |this, event: &SliderEvent, cx| {
             if let SliderEvent::Change { value, .. } = event {
                 this.hide_delay_ms = value.round() as u64;
                 this.apply(cx);
             }
-        }));
-        subscriptions.push(cx.subscribe(&duration, |this, _, event: &SliderEvent, cx| {
+        });
+        duration.clone().on_event(cx, |this, event: &SliderEvent, cx| {
             if let SliderEvent::Change { value, .. } = event {
                 this.duration_ms = value.round() as u64;
                 this.apply(cx);
             }
-        }));
+        });
         placement.clone().on_value_changed(cx, |this, on, cx| {
             this.below = on;
             this.apply(cx);
@@ -215,7 +217,7 @@ impl TooltipPlayground {
             show_once,
             rearm,
             reset_all,
-            _subscriptions: subscriptions,
+
             #[cfg(all(test, feature = "test-support"))]
             render_probe: None,
         }

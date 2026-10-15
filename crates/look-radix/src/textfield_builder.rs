@@ -16,6 +16,8 @@ type TextFieldModifier = Box<dyn Fn(Stateful<Div>, &TextFieldRenderModel<'_>) ->
 
 /// Builder in the guise of a text field: Radix axes plus SDK options, until `.spawn(cx)`.
 pub struct TextField {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::textfield::TextFieldEvent>,
+
     id: SharedString,
     look: Option<Look>,
     variant: TextFieldVariant,
@@ -37,8 +39,73 @@ pub struct TextField {
 }
 
 impl TextField {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::textfield::TextFieldEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `TextFieldEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &String, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::textfield::TextFieldEvent::Change { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `TextFieldEvent::Submit` through the existing event stream.
+    pub fn on_submit<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &String, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::textfield::TextFieldEvent::Submit { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `TextFieldEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::textfield::TextFieldEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `TextFieldEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::textfield::TextFieldEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             id: id.into(),
             look: None,
             variant: TextFieldVariant::default(),
@@ -165,10 +232,15 @@ impl TextField {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::textfield::TextField {
-        let look = self.resolve_look(cx);
-        let theme = crate::tooltip::tooltip_theme(&look);
-        self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> gpui_luma::controls::textfield::TextField {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = self.resolve_look(cx);
+            let theme = crate::tooltip::tooltip_theme(&look);
+            self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 
     fn resolve_look(&self, cx: &App) -> Look {

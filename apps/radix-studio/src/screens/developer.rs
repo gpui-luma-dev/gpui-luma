@@ -1,8 +1,9 @@
 //! Developer tab screen: live tuning tools that are not part of the design docs.
 
+use gpui_luma::controls::tabs::TabsEventExt;
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, IntoElement, App, Subscription, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, IntoElement, App, div, prelude::*, px};
 use gpui_luma::controls::tabs::{Tabs, TabsEvent};
 use super::tooltip_playground::TooltipPlayground;
 use gpui_luma::vstack;
@@ -13,7 +14,6 @@ use crate::controls::ClassicShadowEditor;
 
 pub struct State {
     tabs: Entity<Tabs>,
-    _subscription: Subscription,
 }
 impl State {
     pub fn new<M: 'static>(look: &Arc<Look>, shadow_editor: Entity<ClassicShadowEditor>, cx: &mut Context<M>) -> Self {
@@ -27,8 +27,8 @@ impl State {
             .tab("tooltips", "Tooltips", tooltips)
             .active("buttons")
             .spawn(cx);
-        let subscription = cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| cx.notify());
-        Self { tabs, _subscription: subscription }
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| cx.notify());
+        Self { tabs }
     }
     pub fn render(&self, cx: &App) -> AnyElement {
         div()
@@ -72,7 +72,6 @@ mod tests {
     struct Page {
         state: State,
         bounds: HashMap<String, Bounds<Pixels>>,
-        _bounds_subscription: Subscription,
     }
     impl Render for Page {
         fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -96,12 +95,12 @@ mod tests {
             window.activate_window();
             let shadow = cx.new(|cx| ClassicShadowEditor::new(&look, cx));
             let state = State::new(&look, shadow, cx);
-            let bounds_subscription = cx.subscribe(&state.tabs, |this: &mut Page, _, event: &TabsEvent, _| {
+            state.tabs.clone().on_event(cx, |this: &mut Page, event: &TabsEvent, _| {
                 if let TabsEvent::ItemBoundsChanged { tab_id, bounds } = event {
                     this.bounds.insert(tab_id.to_string(), *bounds);
                 }
             });
-            Page { state, bounds: HashMap::new(), _bounds_subscription: bounds_subscription }
+            Page { state, bounds: HashMap::new() }
         });
         cx.simulate_resize(gpui::size(px(800.0), px(600.0)));
         cx.run_until_parked();

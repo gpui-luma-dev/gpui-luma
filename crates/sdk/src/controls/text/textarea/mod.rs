@@ -15,3 +15,6 @@ pub use template::{
 pub use theme::{
     DefaultTextAreaTheme, TextAreaLook, TextAreaPalette, TextAreaTheme, compose_textarea_look, default_textarea_theme,
 };
+
+mod callback;
+pub use callback::TextAreaEventExt;

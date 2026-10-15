@@ -1,6 +1,9 @@
+use gpui::Subscription;
+use gpui_luma::controls::tabs::TabsEventExt;
+use gpui_luma::controls::popover_button::PopoverButtonEventExt;
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Bounds, Context, Entity, Focusable, Pixels, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, App, Bounds, Context, Entity, Focusable, Pixels, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::popover_button::{PopoverButton, PopoverButtonEvent, PopoverDismissPolicy, PopoverPlacement};
 use gpui_luma::controls::tabs::{Tabs, TabsContent, TabsEvent, TabsItem, TabsTemplate, TabsWidthMode};
 use gpui_luma::theme::ControlSize;
@@ -73,8 +76,8 @@ impl ContentPaneHost {
 
         let tabs_for_sub = tabs.clone();
         let picker_for_sub = catalog_picker.clone();
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&tabs_for_sub, |host, _, event: &TabsEvent, cx| match event {
+
+        tabs_for_sub.clone().on_event(cx, |host, event: &TabsEvent, cx| match event {
             TabsEvent::Change { tab_id, .. } => {
                 let Some(tab) = ContentTab::from_id(tab_id.as_ref()) else {
                     return;
@@ -91,16 +94,17 @@ impl ContentPaneHost {
                 host.set_catalog_picker_anchor(*bounds, cx);
             }
             _ => {}
-        }));
-        subscriptions.push(cx.subscribe(&picker_for_sub, |host, _, event: &PopoverButtonEvent, cx| {
+        });
+        picker_for_sub.clone().on_event(cx, |host, event: &PopoverButtonEvent, cx| {
             let PopoverButtonEvent::OpenChanged { open } = event;
             host.tabs.update(cx, |tabs, cx| {
                 tabs.set_item_disclosure_open("controls", *open, cx);
             });
-        }));
+        });
 
         let style_guide_panel = cx.new(|cx| StyleGuidePanel::new(cx, board.look.clone()));
         let palette_panel = cx.new(|cx| PalettePanel::new(cx, board.look.clone(), board.overrides.clone()));
+        let mut subscriptions = Vec::new();
         PalettePanel::wire_subscriptions(&palette_panel, app, cx, &mut subscriptions);
         let theme_usage_panel = cx.new(|cx| ThemeUsagePanel::new(cx, board.look.clone()));
 

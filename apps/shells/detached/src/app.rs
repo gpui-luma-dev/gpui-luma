@@ -60,8 +60,8 @@ impl DetachedShellApp {
             .separator_visibility(SplitViewSeparatorVisibility::Hover)
             .spawn(cx);
 
-        let mut subscriptions = Vec::new();
-        wire_split_nav_sync(&mut subscriptions, split_view.clone(), sidebar.clone(), cx);
+        let subscriptions = Vec::new();
+        wire_split_nav_sync(split_view.clone(), sidebar.clone(), cx);
         theme_toggle_button.clone().on_click(cx, |this, cx| {
             handle_theme_toggle(this, cx);
         });

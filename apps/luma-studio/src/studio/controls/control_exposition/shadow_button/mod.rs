@@ -1,5 +1,7 @@
 mod button;
 
+use gpui_luma::controls::textfield::TextFieldEventExt;
+use gpui_luma::controls::slider::SliderEventExt;
 use gpui_luma::controls::toggle::ToggleEventExt;
 use std::sync::Arc;
 
@@ -131,10 +133,9 @@ impl ShadowButtonControlExposition {
         bounds_toggle.clone().on_event(cx, move |this, event: &ToggleEvent, cx| {
             this.handle_bounds_toggle(event, cx);
         });
-        cx.subscribe(&color_field, move |this, _, event: &TextFieldEvent, cx| {
+        color_field.clone().on_event(cx, move |this, event: &TextFieldEvent, cx| {
             this.handle_color_field_event(event, cx);
-        })
-        .detach();
+        });
         for (slider, field) in [
             (offset_x_slider.clone(), ShadowSliderField::OffsetX),
             (offset_y_slider.clone(), ShadowSliderField::OffsetY),
@@ -142,10 +143,9 @@ impl ShadowButtonControlExposition {
             (spread_slider.clone(), ShadowSliderField::Spread),
             (opacity_slider.clone(), ShadowSliderField::Opacity),
         ] {
-            cx.subscribe(&slider, move |this, _, event: &SliderEvent, cx| {
+            slider.clone().on_event(cx, move |this, event: &SliderEvent, cx| {
                 this.handle_slider_event(field, event, cx);
-            })
-            .detach();
+            });
         }
 
         Self {

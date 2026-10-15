@@ -10,3 +10,5 @@ pub use model::{
     IconGroup, IconGroupBuilder, IconGroupEvent, IconGroupItem, IconGroupItemLike, horizontal, icon_toolbar,
     icon_toolbar_multiple, new,
 };
+
+pub use crate::controls::control_group::ControlGroupEventExt as IconGroupEventExt;

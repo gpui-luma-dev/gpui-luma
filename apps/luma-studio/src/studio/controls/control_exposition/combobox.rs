@@ -1,3 +1,4 @@
+use gpui_luma::controls::combobox::ComboBoxEventExt;
 use gpui_luma::controls::toggle::ToggleEventExt;
 use gpui_luma::infra::attachments::TooltipEntityExt;
 use std::sync::Arc;
@@ -145,9 +146,12 @@ impl ComboBoxControlExposition {
             combobox_inspector_adapter(),
         );
 
-        let subscription = cx.subscribe(&preview, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &ComboBoxEvent, cx| {
+        preview.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |this, event: &ComboBoxEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
                 let line = format_combobox_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
@@ -179,7 +183,7 @@ impl ComboBoxControlExposition {
             has_selection: false,
             theme_inspector,
             inspector_split,
-            _subscriptions: vec![subscription],
+            _subscriptions: { Vec::new() },
         }
     }
 

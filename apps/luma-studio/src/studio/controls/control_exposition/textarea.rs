@@ -1,3 +1,4 @@
+use gpui_luma::controls::textarea::TextAreaEventExt;
 use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::sync::Arc;
 
@@ -240,14 +241,20 @@ impl TextAreaControlExposition {
             TextAreaInspectorAdapter::shared(),
         );
 
-        let subscriptions = vec![cx.subscribe(&text_area, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &TextAreaEvent, cx| {
-                if let Some(line) = format_textarea_event(event) {
-                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+        let subscriptions = {
+            text_area.clone().on_event(cx, {
+                let event_stream = event_stream.downgrade();
+                move |_, event: &TextAreaEvent, cx| {
+                    let Some(event_stream) = event_stream.upgrade() else {
+                        return;
+                    };
+                    if let Some(line) = format_textarea_event(event) {
+                        event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                    }
                 }
-            }
-        })];
+            });
+            Vec::new()
+        };
         set_sample_button.clone().on_click(cx, {
             let text_area = text_area.downgrade();
             move |_, cx| {

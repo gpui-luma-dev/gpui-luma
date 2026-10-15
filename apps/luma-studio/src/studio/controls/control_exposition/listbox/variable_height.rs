@@ -1,7 +1,8 @@
 //! The same content-sized template in eager and measured-virtualized lists.
+use gpui_luma::controls::selector::SelectorEventExt;
 use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::{cell::Cell, sync::Arc};
-use gpui::{Context, Div, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Div, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::{
     checkbox::{Checkbox},
@@ -177,7 +178,6 @@ pub(super) struct VariableHeightExample {
     target_key: u32,
     make_visible: Entity<Button>,
     center_item: Entity<Button>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl VariableHeightExample {
@@ -226,17 +226,17 @@ impl VariableHeightExample {
             shadcn::Button::new("notes-make-visible").look(&look).outline().label("Make visible").spawn(cx);
         let center_item =
             shadcn::Button::new("notes-center-item").look(&look).outline().label("Center in viewport").spawn(cx);
-        let mut subscriptions = Vec::new();
+
         smooth.clone().on_value_changed(cx, |this, checked, _| {
             this.smooth_enabled = checked;
         });
-        subscriptions.push(cx.subscribe(&target, |this, _, event, _| {
+        target.clone().on_event(cx, |this, event, _| {
             if let SelectorEvent::Change { item_id, .. } = event
                 && let Ok(key) = item_id.parse::<u32>()
             {
                 this.target_key = key;
             }
-        }));
+        });
         make_visible.clone().on_click(cx, |this, cx| {
             for list in &this.lists {
                 list.update(cx, |list, cx| {
@@ -286,7 +286,6 @@ impl VariableHeightExample {
             target_key: 7,
             make_visible,
             center_item,
-            _subscriptions: subscriptions,
         }
     }
 

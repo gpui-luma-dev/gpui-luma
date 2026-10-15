@@ -1,5 +1,6 @@
 //! One runtime selection policy shared by every ListBox exposition example.
 
+use gpui_luma::controls::selector::SelectorEventExt;
 use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::sync::Arc;
 
@@ -58,15 +59,15 @@ impl SelectionControls {
             .content(|_, _| div().child("Selection follows navigation").into_any_element())
             .spawn(cx);
         let subscriptions = {
-            let mut retained_subscriptions = Vec::new();
-            retained_subscriptions.push(cx.subscribe(&mode, |this, _, event, cx| {
+            let retained_subscriptions = Vec::new();
+            mode.clone().on_event(cx, |this, event, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event
                     && let Some((_, _, mode)) = MODES.iter().find(|(id, _, _)| *id == item_id.as_ref())
                 {
                     this.policy.mode = *mode;
                     this.apply_policy(cx);
                 }
-            }));
+            });
             toggle_off.clone().on_value_changed(cx, |this, checked, cx| {
                 this.policy.toggle_off = checked;
                 this.apply_policy(cx);

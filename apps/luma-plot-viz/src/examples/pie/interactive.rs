@@ -1,5 +1,6 @@
+use gpui_luma::controls::selector::SelectorEventExt;
 use std::time::Duration;
-use gpui::{App, Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::{
     DockPanel, vstack, hstack,
@@ -129,7 +130,6 @@ pub(super) struct Interactive {
     look: Look,
     selected: usize,
     selector: Entity<Selector>,
-    _subscription: Subscription,
 }
 impl Interactive {
     pub(super) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
@@ -137,7 +137,7 @@ impl Interactive {
         let look = look.clone();
         Ok(cx.new(move |cx: &mut Context<Self>| {
             let selector = theme::pie::month_selector(&look, cx);
-            let subscription = cx.subscribe(&selector, |this, _, event: &SelectorEvent, cx| {
+            selector.clone().on_event(cx, |this, event: &SelectorEvent, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event
                     && let Ok(index) = item_id.parse::<usize>()
                     && index < MONTHS.len()
@@ -146,7 +146,7 @@ impl Interactive {
                     cx.notify();
                 }
             });
-            Self { entrance: 1.0, data, look, selected: 0, selector, _subscription: subscription }
+            Self { entrance: 1.0, data, look, selected: 0, selector }
         }))
     }
 }

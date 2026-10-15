@@ -36,7 +36,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Split Button (Prototype)",
         description: "Issue #17 prototype for a cohesive command button with a separate menu trigger. The action face executes immediately while the adjacent face opens alternate actions; this Studio surface is validating focus, seams, menu ownership, and event semantics before SDK promotion.",
         category: ControlCategory::Command,
-        snippet: "use gpui_luma::infra::menu_item::MenuItem;\nuse gpui_luma::controls::split_button::SplitButtonEvent;\n\nlet save = shadcn::SplitButton::new(\"save\").look(look.as_ref()).primary()\n    .label(\"Save\")\n    .items([\n        MenuItem::new(\"save-as\").label(\"Save as\"),\n        MenuItem::new(\"duplicate\").label(\"Duplicate\"),\n    ])\n    .spawn(cx);\n\ncx.subscribe(&save, |_, _, event: &SplitButtonEvent, _| {\n    match event {\n        SplitButtonEvent::ActionClick => { /* save immediately */ }\n        SplitButtonEvent::Select { item_id, .. } => { let _ = item_id; }\n        _ => {}\n    }\n});",
+        snippet: "let save = shadcn::SplitButton::new(\"save\").look(look.as_ref()).primary()\n    .label(\"Save\")\n    .items([MenuItem::new(\"save-as\").label(\"Save as\")])\n    .on_action_click(cx, |app: &mut Self, cx| {\n        app.save_requests += 1;\n        cx.notify();\n    })\n    .on_select(cx, |app, item_id, _, cx| {\n        app.last_action = item_id.to_string();\n        cx.notify();\n    })\n    .spawn(cx);",
         section_order: 101,
     },
     ControlDocEntry {
@@ -76,7 +76,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Radio Button",
         description: "Single-select choice within a mutually exclusive set. Standalone radio buttons emit RadioButtonEvent::Change when selected; coordinate sibling deselection in the parent or use a radio group for managed value binding. Primary and secondary builders support indicator-only or labeled content layouts.",
         category: ControlCategory::Choice,
-        snippet: "let option_a = shadcn::Radio::new(\"option-a\").look(look.as_ref()).primary()\n    .with_data(false)\n    .content(|_, _| div().child(\"Option A\").into_any_element())\n    .spawn(cx);\n\ncx.subscribe(&option_a, |_, _, event: &RadioButtonEvent, _| {\n    if let RadioButtonEvent::Change { selected } = event {\n        let _ = selected;\n    }\n});",
+        snippet: "let option_a = shadcn::Radio::new(\"option-a\").look(look.as_ref()).primary()\n    .with_data(false).label(\"Option A\")\n    .on_value_changed(cx, |app: &mut Self, selected, cx| {\n        app.option_a_selected = selected;\n        cx.notify();\n    })\n    .spawn(cx);",
         section_order: 120,
     },
     ControlDocEntry {
@@ -284,7 +284,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Color Slider",
         description: "Spectrum sliders built on the unified Slider engine with color-specific delegates for hue, saturation, alpha, channel, and gradient interpolation. ColorSliderBuilder returns Slider entities—subscribe to SliderEvent::Change for live preview and SliderEvent::Release to commit values. Linked saturation and alpha tracks refresh when the base color changes.",
         category: ControlCategory::Color,
-        snippet: "ColorSliderBuilder::hue(\"accent-hue\", 210.0)\n    .size(ControlSize::Sm)\n    .thumb_medium()\n    .spawn(cx);\n\ncx.subscribe(&hue_slider, |_, _, event: &SliderEvent, _| {\n    if let SliderEvent::Release { value, .. } = event {\n        let _ = value;\n    }\n});",
+        snippet: "let hue_slider = ColorSliderBuilder::hue(\"accent-hue\", 210.0)\n    .size(ControlSize::Sm).thumb_medium().spawn(cx)\n    .on_release(cx, |app: &mut Self, _, value, cx| {\n        app.hue = value;\n        cx.notify();\n    });",
         section_order: 210,
     },
     ControlDocEntry {

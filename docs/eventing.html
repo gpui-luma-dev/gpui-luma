@@ -242,6 +242,13 @@
   </div>
 </section>
 
+<section id="callbacks">
+  <h2>Owner-bound callbacks</h2>
+  <p>SDK and Look builders now expose <code>.on_event(cx, |app, event, cx| { … })</code> and named callbacks for their existing events. <code>Change</code> maps to <code>.on_value_changed</code>; focus, selection, open, and drag events retain their semantic names. Each control page lists the exact arguments.</p>
+  <p>Handlers append in registration order and hold the application owner weakly. The emitting control retains them until release. Existing <code>cx.subscribe</code> observers still work. Factory-created entities expose the same callbacks through their SDK <code>*EventExt</code> trait.</p>
+  <p>List Box retains host-delivered transactions. Tooltip retains attachment lifecycle callbacks, with <code>.on_shown</code> and <code>.on_hidden</code>. These helpers do not change which events a control emits or whether a programmatic setter emits.</p>
+</section>
+
 <section id="delivery">
   <h2>How events are delivered</h2>
   <table>

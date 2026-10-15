@@ -1,10 +1,8 @@
+use gpui_luma::controls::search_selector::SearchSelectorEventExt;
 use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
 
-use gpui::{
-    AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Stateful, Subscription, Window, div,
-    prelude::*, px,
-};
+use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Stateful, Window, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::search_selector::{
     SearchSelector, SearchSelectorEvent, SearchSelectorItemRenderModel, SearchSelectorItemTemplate,
@@ -103,13 +101,9 @@ impl TypographyPanel {
         Self { look, font_catalog, font_names, sans, serif, mono, typography_accordion }
     }
 
-    pub fn wire_subscriptions(
-        panel: &Entity<Self>,
-        cx: &mut Context<LumaStudioApp>,
-        subscriptions: &mut Vec<Subscription>,
-    ) {
+    pub fn wire_subscriptions(panel: &Entity<Self>, cx: &mut Context<LumaStudioApp>) {
         let sans = panel.read(cx).sans.search_selector.clone();
-        subscriptions.push(cx.subscribe(&sans, |app, _, event: &SearchSelectorEvent, cx| {
+        sans.clone().on_event(cx, |app, event: &SearchSelectorEvent, cx| {
             let item_id = match event {
                 SearchSelectorEvent::Select { item_id, .. } | SearchSelectorEvent::Complete { item_id, .. } => item_id,
                 _ => return,
@@ -118,10 +112,10 @@ impl TypographyPanel {
                 return;
             }
             app.set_font_sans(item_id.as_ref(), cx);
-        }));
+        });
 
         let serif = panel.read(cx).serif.search_selector.clone();
-        subscriptions.push(cx.subscribe(&serif, |app, _, event: &SearchSelectorEvent, cx| {
+        serif.clone().on_event(cx, |app, event: &SearchSelectorEvent, cx| {
             let item_id = match event {
                 SearchSelectorEvent::Select { item_id, .. } | SearchSelectorEvent::Complete { item_id, .. } => item_id,
                 _ => return,
@@ -130,10 +124,10 @@ impl TypographyPanel {
                 return;
             }
             app.set_font_serif(item_id.as_ref(), cx);
-        }));
+        });
 
         let mono = panel.read(cx).mono.search_selector.clone();
-        subscriptions.push(cx.subscribe(&mono, |app, _, event: &SearchSelectorEvent, cx| {
+        mono.clone().on_event(cx, |app, event: &SearchSelectorEvent, cx| {
             let item_id = match event {
                 SearchSelectorEvent::Select { item_id, .. } | SearchSelectorEvent::Complete { item_id, .. } => item_id,
                 _ => return,
@@ -142,7 +136,7 @@ impl TypographyPanel {
                 return;
             }
             app.set_font_mono(item_id.as_ref(), cx);
-        }));
+        });
     }
 
     pub fn sync_font_selectors(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {

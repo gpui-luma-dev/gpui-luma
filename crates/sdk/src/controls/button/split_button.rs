@@ -6,3 +6,5 @@
 
 pub use crate::controls::popup_menu::{PopupMenu as SplitButton, PopupMenuBuilder as SplitButtonBuilder};
 pub use crate::controls::popup_menu::PopupMenuEvent as SplitButtonEvent;
+
+pub use crate::controls::popup_menu::PopupMenuEventExt as SplitButtonEventExt;

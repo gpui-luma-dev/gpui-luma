@@ -14,3 +14,6 @@ pub use theme::{DefaultContextMenuTheme, ContextMenuLook, ContextMenuTheme, defa
 
 pub use crate::infra::menu_item::{MenuItem, MenuItemIcon};
 pub use crate::infra::state::{ControlFocusState, MenuPath};
+
+mod callback;
+pub use callback::ContextMenuEventExt;

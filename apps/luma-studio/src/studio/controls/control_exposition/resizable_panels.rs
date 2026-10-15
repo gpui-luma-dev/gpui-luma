@@ -1,5 +1,6 @@
 //! Resizable panels control exposition — horizontal, vertical, and controlled splits.
 
+use gpui_luma::controls::resizable_panels::ResizablePanelsEventExt;
 use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -387,31 +388,40 @@ impl ResizablePanelsControlExposition {
             ResizablePanelsInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&horizontal, {
+        let subscriptions = Vec::new();
+        horizontal.clone().on_event(cx, {
             let event_stream = event_stream.clone();
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
+            let left_pane = left_pane.downgrade();
+            move |_, event, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 left_pane.update(cx, |pane, cx| {
                     pane.apply_sizes_event(event, |pane, sizes| pane.horizontal_sizes = sizes, cx);
                 });
                 append_resizable_event(&event_stream, event, cx);
             }
-        }));
-        subscriptions.push(cx.subscribe(&vertical, {
+        });
+        vertical.clone().on_event(cx, {
             let event_stream = event_stream.clone();
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
+            let left_pane = left_pane.downgrade();
+            move |_, event, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 left_pane.update(cx, |pane, cx| {
                     pane.apply_sizes_event(event, |pane, sizes| pane.vertical_sizes = sizes, cx);
                 });
                 append_resizable_event(&event_stream, event, cx);
             }
-        }));
-        subscriptions.push(cx.subscribe(&controlled, {
+        });
+        controlled.clone().on_event(cx, {
             let event_stream = event_stream.clone();
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
+            let left_pane = left_pane.downgrade();
+            move |_, event, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 left_pane.update(cx, |pane, cx| {
                     if let ResizablePanelsEvent::SizesChanged { sizes_px }
                     | ResizablePanelsEvent::ResizeEnd { sizes_px } = event
@@ -423,7 +433,7 @@ impl ResizablePanelsControlExposition {
                 });
                 append_resizable_event(&event_stream, event, cx);
             }
-        }));
+        });
         reset_controlled_button.clone().on_click(cx, {
             let left_pane = left_pane.downgrade();
             move |_, cx| {
@@ -457,16 +467,19 @@ impl ResizablePanelsControlExposition {
                 });
             }
         });
-        subscriptions.push(cx.subscribe(&animated_panels, {
+        animated_panels.clone().on_event(cx, {
             let event_stream = event_stream.clone();
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
+            let left_pane = left_pane.downgrade();
+            move |_, event, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 left_pane.update(cx, |pane, cx| {
                     pane.apply_sizes_event(event, |pane, sizes| pane.animated_sizes = sizes, cx);
                 });
                 append_resizable_event(&event_stream, event, cx);
             }
-        }));
+        });
         toggle_instant_button.clone().on_click(cx, {
             let left_pane = left_pane.downgrade();
             move |_, cx| {
@@ -485,16 +498,19 @@ impl ResizablePanelsControlExposition {
                 });
             }
         });
-        subscriptions.push(cx.subscribe(&instant_panels, {
+        instant_panels.clone().on_event(cx, {
             let event_stream = event_stream.clone();
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
+            let left_pane = left_pane.downgrade();
+            move |_, event, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 left_pane.update(cx, |pane, cx| {
                     pane.apply_sizes_event(event, |pane, sizes| pane.instant_sizes = sizes, cx);
                 });
                 append_resizable_event(&event_stream, event, cx);
             }
-        }));
+        });
 
         Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
     }

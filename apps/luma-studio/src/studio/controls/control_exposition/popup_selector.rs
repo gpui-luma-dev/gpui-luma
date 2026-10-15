@@ -1,8 +1,9 @@
+use gpui_luma::controls::selector::SelectorEventExt;
 use gpui_luma::controls::toggle::ToggleEventExt;
 use gpui_luma::infra::attachments::TooltipEntityExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem, SelectorPlacement, SelectorOpeningMode};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::controls::toggle::{Toggle};
@@ -28,7 +29,6 @@ pub struct PopupSelectorControlExposition {
     has_selection: bool,
     theme_inspector: Entity<SelectorThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct SelectorExpositionLeftPane {
@@ -184,10 +184,9 @@ impl PopupSelectorControlExposition {
             SelectorInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
         for (_, preview) in &previews {
             let event_stream = event_stream.clone();
-            subscriptions.push(cx.subscribe(preview, move |this, _, event: &SelectorEvent, cx| {
+            preview.clone().on_event(cx, move |this, event: &SelectorEvent, cx| {
                 let line = format_selector_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
@@ -197,7 +196,7 @@ impl PopupSelectorControlExposition {
                     this.has_selection = true;
                 }
                 this.sync_required_validation(cx);
-            }));
+            });
         }
         selection_required_toggle.clone().on_value_changed(cx, |this, selected, cx| {
             this.selection_required = selected;
@@ -212,7 +211,6 @@ impl PopupSelectorControlExposition {
             has_selection: false,
             theme_inspector,
             inspector_split,
-            _subscriptions: subscriptions,
         }
     }
 

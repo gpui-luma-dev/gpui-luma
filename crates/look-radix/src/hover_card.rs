@@ -38,6 +38,7 @@ type HoverCardContent = Arc<dyn Fn(&mut Window, &mut App) -> AnyElement>;
 
 /// Look-owned builder for an interactive card attached to an SDK button.
 pub struct HoverCardBuilder {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<HoverCardEvent>,
     id: SharedString,
     trigger: Entity<Button>,
     look: Option<Look>,
@@ -46,7 +47,13 @@ pub struct HoverCardBuilder {
 impl HoverCard {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(id: impl Into<SharedString>, trigger: Entity<Button>) -> HoverCardBuilder {
-        HoverCardBuilder { id: id.into(), trigger, look: None, content: Arc::new(|_, _| div().into_any_element()) }
+        HoverCardBuilder {
+            callbacks: Default::default(),
+            id: id.into(),
+            trigger,
+            look: None,
+            content: Arc::new(|_, _| div().into_any_element()),
+        }
     }
     pub fn is_open(&self, cx: &App) -> bool {
         self.popup.read(cx).is_open(cx)
@@ -83,6 +90,27 @@ impl HoverCard {
     }
 }
 impl HoverCardBuilder {
+    /// Append an owner-bound lifecycle callback. Owners are held weakly.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, &HoverCardEvent, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+    /// Handle the semantic open state.
+    pub fn on_open_changed<M: 'static>(
+        self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            let HoverCardEvent::OpenChanged { open } = event;
+            callback(owner, *open, cx);
+        })
+    }
+
     pub fn look(mut self, look: &Look) -> Self {
         self.look = Some(look.clone());
         self
@@ -91,66 +119,77 @@ impl HoverCardBuilder {
         self.content = Arc::new(content);
         self
     }
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<HoverCard> {
-        let look = resolve_look(self.look.as_ref(), cx.try_global::<Look>());
-        cx.new(|cx| {
-            let weak = cx.entity().downgrade();
-            let trigger = self.trigger.clone();
-            let popup = PopoverButton::new(self.id)
-                .typed(())
-                .trigger(move |_, _| trigger.clone().into_any_element())
-                .content(move |_, window, cx| {
-                    let style = hover_card_look(&look);
-                    let weak = weak.clone();
-                    div()
-                        .id("hover-card-content")
-                        .bg(style.background)
-                        .border_1()
-                        .border_color(style.border)
-                        .rounded(px(style.radius))
-                        .shadow(style.shadow)
-                        .p(px(style.padding))
-                        .text_color(style.foreground)
-                        .font_family(style.font_family)
-                        .on_hover(move |hovered, _, cx| {
-                            let _ = weak.update(cx, |card: &mut HoverCard, cx| {
-                                card.over_content = *hovered;
-                                if *hovered {
-                                    card.pending = None;
-                                } else if !card.over_trigger {
-                                    card.leave(cx);
-                                }
-                            });
-                        })
-                        .child((self.content)(window, cx))
-                        .into_any_element()
-                })
-                .focus_on_open(false)
-                .dismiss_policy(PopoverDismissPolicy::CloseOnClickAway)
-                .offset_y(px(6.0))
-                .initial_content_size(gpui::size(px(440.0), px(180.0)))
-                .trigger_on_pointer_down(false)
-                .spawn(cx);
-            let subscriptions = vec![
-                cx.subscribe(&self.trigger, |this: &mut HoverCard, _, event: &ButtonEvent, cx| match event {
-                    ButtonEvent::HoverChanged { hovered } => {
-                        this.over_trigger = *hovered;
-                        if *hovered {
-                            this.enter(cx);
-                        } else if !this.over_content {
-                            this.leave(cx);
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<HoverCard> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = resolve_look(self.look.as_ref(), cx.try_global::<Look>());
+            cx.new(|cx| {
+                let weak = cx.entity().downgrade();
+                let trigger = self.trigger.clone();
+                let popup = PopoverButton::new(self.id)
+                    .typed(())
+                    .trigger(move |_, _| trigger.clone().into_any_element())
+                    .content(move |_, window, cx| {
+                        let style = hover_card_look(&look);
+                        let weak = weak.clone();
+                        div()
+                            .id("hover-card-content")
+                            .bg(style.background)
+                            .border_1()
+                            .border_color(style.border)
+                            .rounded(px(style.radius))
+                            .shadow(style.shadow)
+                            .p(px(style.padding))
+                            .text_color(style.foreground)
+                            .font_family(style.font_family)
+                            .on_hover(move |hovered, _, cx| {
+                                let _ = weak.update(cx, |card: &mut HoverCard, cx| {
+                                    card.over_content = *hovered;
+                                    if *hovered {
+                                        card.pending = None;
+                                    } else if !card.over_trigger {
+                                        card.leave(cx);
+                                    }
+                                });
+                            })
+                            .child((self.content)(window, cx))
+                            .into_any_element()
+                    })
+                    .focus_on_open(false)
+                    .dismiss_policy(PopoverDismissPolicy::CloseOnClickAway)
+                    .offset_y(px(6.0))
+                    .initial_content_size(gpui::size(px(440.0), px(180.0)))
+                    .trigger_on_pointer_down(false)
+                    .spawn(cx);
+                let subscriptions = vec![
+                    cx.subscribe(&self.trigger, |this: &mut HoverCard, _, event: &ButtonEvent, cx| match event {
+                        ButtonEvent::HoverChanged { hovered } => {
+                            this.over_trigger = *hovered;
+                            if *hovered {
+                                this.enter(cx);
+                            } else if !this.over_content {
+                                this.leave(cx);
+                            }
                         }
-                    }
-                    ButtonEvent::Click => this.open(cx),
-                    _ => {}
-                }),
-                cx.subscribe(&popup, |_, _, event: &PopoverButtonEvent, cx| {
-                    let PopoverButtonEvent::OpenChanged { open } = event;
-                    cx.emit(HoverCardEvent::OpenChanged { open: *open });
-                }),
-            ];
-            HoverCard { popup, pending: None, over_trigger: false, over_content: false, _subscriptions: subscriptions }
-        })
+                        ButtonEvent::Click => this.open(cx),
+                        _ => {}
+                    }),
+                    cx.subscribe(&popup, |_, _, event: &PopoverButtonEvent, cx| {
+                        let PopoverButtonEvent::OpenChanged { open } = event;
+                        cx.emit(HoverCardEvent::OpenChanged { open: *open });
+                    }),
+                ];
+                HoverCard {
+                    popup,
+                    pending: None,
+                    over_trigger: false,
+                    over_content: false,
+                    _subscriptions: subscriptions,
+                }
+            })
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 impl Render for HoverCard {
@@ -172,5 +211,60 @@ mod tests {
             assert!(popup.border.a > 0.0);
             assert!(!popup.shadow.is_empty());
         }
+    }
+}
+
+/// Owner-bound lifecycle callbacks for existing HoverCards.
+pub trait HoverCardEventExt: Sized {
+    fn on_event<M: 'static>(
+        self,
+        cx: &mut Context<M>,
+        callback: impl Fn(&mut M, &HoverCardEvent, &mut Context<M>) + 'static,
+    ) -> Self;
+    fn on_open_changed<M: 'static>(
+        self,
+        cx: &mut Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            let HoverCardEvent::OpenChanged { open } = event;
+            callback(owner, *open, cx);
+        })
+    }
+}
+impl HoverCardEventExt for Entity<HoverCard> {
+    fn on_event<M: 'static>(
+        self,
+        cx: &mut Context<M>,
+        callback: impl Fn(&mut M, &HoverCardEvent, &mut Context<M>) + 'static,
+    ) -> Self {
+        gpui_luma::infra::callbacks::EventCallbacks::default().on_event(cx, callback).bind(&self, cx);
+        self
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod callback_tests {
+    use super::*;
+    use gpui::{AppContext, TestAppContext};
+    #[derive(Default)]
+    struct Owner {
+        opened: Vec<bool>,
+    }
+    #[test]
+    fn builder_and_factory_forward_open_lifecycle() {
+        let app = TestAppContext::single();
+        let owner = app.update(|cx| cx.new(|_| Owner::default()));
+        let card = app.update(|cx| {
+            owner.update(cx, |_, cx| {
+                let trigger = crate::Button::new("hover-trigger").spawn(cx);
+                HoverCard::new("hover-card", trigger)
+                    .on_open_changed(cx, |owner: &mut Owner, open, _| owner.opened.push(open))
+                    .spawn(cx)
+                    .on_open_changed(cx, |owner, open, _| owner.opened.push(open))
+            })
+        });
+        app.update(|cx| card.update(cx, |_, cx| cx.emit(HoverCardEvent::OpenChanged { open: true })));
+        app.read(|cx| assert_eq!(owner.read(cx).opened, [true, true]));
     }
 }

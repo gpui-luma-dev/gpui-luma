@@ -1,3 +1,4 @@
+use gpui_luma::controls::pager::PagerEventExt;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
@@ -178,9 +179,9 @@ impl PagerPreview {
 
     fn subscribe(&mut self, cx: &mut Context<Self>) {
         for pager in self.pagers() {
-            self._subscriptions.push(cx.subscribe(&pager, |preview, _, event: &PagerEvent, cx| {
+            pager.clone().on_event(cx, |preview, event: &PagerEvent, cx| {
                 preview.handle_pager_event(event, cx);
-            }));
+            });
         }
 
         self.page_prev_button.clone().on_click(cx, |preview, cx| {

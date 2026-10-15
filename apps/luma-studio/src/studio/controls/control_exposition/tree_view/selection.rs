@@ -1,4 +1,7 @@
 //! Selection and range input in Controls → TreeView.
+use gpui_luma::controls::tree_view::TreeViewEventExt;
+use gpui_luma::controls::textfield::TextFieldEventExt;
+use gpui_luma::controls::selector::SelectorEventExt;
 use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::sync::Arc;
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -90,8 +93,8 @@ impl Selection {
             )
         });
         let subscriptions = {
-            let mut retained_subscriptions = Vec::new();
-            retained_subscriptions.push(cx.subscribe(&tree, |this: &mut Self, _, event, cx| {
+            let retained_subscriptions = Vec::new();
+            tree.clone().on_event(cx, |this: &mut Self, event, cx| {
                 let line = match event {
                     TreeViewEvent::SelectionChanged { selected_ids } => {
                         let mut ids: Vec<_> = selected_ids.iter().map(|id| id.as_ref()).collect();
@@ -119,8 +122,8 @@ impl Selection {
                     this.events.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
                 cx.notify();
-            }));
-            retained_subscriptions.push(cx.subscribe(&mode, |this: &mut Self, _, event, cx| {
+            });
+            mode.clone().on_event(cx, |this: &mut Self, event, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event {
                     this.change_policy(cx, |policy| {
                         policy.mode = match item_id.as_ref() {
@@ -131,8 +134,8 @@ impl Selection {
                         }
                     });
                 }
-            }));
-            retained_subscriptions.push(cx.subscribe(&sort, |this: &mut Self, _, event, cx| {
+            });
+            sort.clone().on_event(cx, |this: &mut Self, event, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event {
                     this.tree.update(cx, |tree, cx| match item_id.as_ref() {
                         "az" => tree.set_sort(|a, b| a.label.cmp(&b.label), cx),
@@ -141,8 +144,8 @@ impl Selection {
                     });
                     cx.notify();
                 }
-            }));
-            retained_subscriptions.push(cx.subscribe(&search, |this: &mut Self, _, event, cx| {
+            });
+            search.clone().on_event(cx, |this: &mut Self, event, cx| {
                 if let TextFieldEvent::Change { value } = event {
                     let query = value.trim().to_lowercase();
                     this.tree.update(cx, |tree, cx| {
@@ -154,7 +157,7 @@ impl Selection {
                     });
                     cx.notify();
                 }
-            }));
+            });
             toggle_off.clone().on_value_changed(cx, |this: &mut Self, checked, cx| {
                 this.change_policy(cx, |policy| policy.toggle_off = checked);
             });

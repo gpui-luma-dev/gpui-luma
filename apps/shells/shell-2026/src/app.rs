@@ -1,9 +1,7 @@
+use gpui_luma::controls::resizable_panels::ResizablePanelsEventExt;
 use std::sync::Arc;
 
-use gpui::{
-    Context, Entity, FocusHandle, IntoElement, Pixels, Render, Subscription, Window, div, prelude::*, px,
-    transparent_black,
-};
+use gpui::{Context, Entity, FocusHandle, IntoElement, Pixels, Render, Window, div, prelude::*, px, transparent_black};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::icon_button::IconButton;
 use gpui_luma::controls::resizable_panels::{
@@ -35,7 +33,6 @@ pub struct Shell2026App {
     rail: Entity<gpui_luma::controls::frame::FrameControl>,
     sidebar_width: Pixels,
     titlebar: TitlebarControls,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl Shell2026App {
@@ -49,15 +46,15 @@ impl Shell2026App {
         let rail = spawn_rail(&look, cx);
         let panels = spawn_panels(&look, cx);
         let titlebar = TitlebarControls::new(&look, cx);
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&panels, |this, _, event, cx| {
+
+        panels.clone().on_event(cx, |this, event, cx| {
             if let ResizablePanelsEvent::SizesChanged { sizes_px } = event
                 && let Some(width) = sizes_px.first()
             {
                 this.sidebar_width = px(*width);
                 cx.notify();
             }
-        }));
+        });
         titlebar.sidebar_toggle.clone().on_click(cx, |this, cx| {
             this.panels.update(cx, |panels, cx| panels.toggle_panel_hidden(0, PanelHideMode::Completely, cx));
         });
@@ -65,15 +62,7 @@ impl Shell2026App {
             handle_theme_toggle(this, cx);
         });
 
-        Self {
-            focus_scope,
-            look,
-            panels,
-            rail,
-            sidebar_width: INITIAL_SIDEBAR_WIDTH,
-            titlebar,
-            _subscriptions: subscriptions,
-        }
+        Self { focus_scope, look, panels, rail, sidebar_width: INITIAL_SIDEBAR_WIDTH, titlebar }
     }
 }
 

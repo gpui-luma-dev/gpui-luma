@@ -1,6 +1,7 @@
+use gpui_luma::controls::overlay_window::OverlayWindowEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Focusable, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Focusable, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button::Button;
 use gpui_luma::controls::overlay_window::{OverlayWindow, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition};
@@ -25,7 +26,6 @@ pub struct DraggableOverlayControlExposition {
     left_pane: Entity<DraggableOverlayExpositionLeftPane>,
     theme_inspector: Entity<OverlayWindowThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct DraggableOverlayExpositionLeftPane {
@@ -132,7 +132,6 @@ impl DraggableOverlayControlExposition {
             OverlayWindowInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
         trigger.clone().on_click(cx, {
             let left_pane = left_pane.downgrade();
             move |_, cx| {
@@ -164,17 +163,20 @@ impl DraggableOverlayControlExposition {
                 });
             }
         });
-        subscriptions.push(cx.subscribe(&overlay, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &OverlayWindowEvent, cx| {
+        overlay.clone().on_event(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, event: &OverlayWindowEvent, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 left_pane.update(cx, |pane, cx| {
                     pane.status = overlay_status_for(event, "draggable overlay");
                     cx.notify();
                 });
             }
-        }));
+        });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

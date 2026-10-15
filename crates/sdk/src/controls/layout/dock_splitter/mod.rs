@@ -11,3 +11,6 @@ pub use template::{
     DockSplitterTemplate, DockSplitterTemplateHandlers, ThemedDockSplitterTemplate, default_dock_splitter_template,
 };
 pub use theme::{DockSplitterLook, DockSplitterTheme, DefaultDockSplitterTheme, default_dock_splitter_theme};
+
+mod callback;
+pub use callback::DockSplitterEventExt;

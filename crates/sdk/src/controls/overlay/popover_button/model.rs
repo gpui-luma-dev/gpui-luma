@@ -37,6 +37,8 @@ pub struct PopoverRenderModel<'a, D> {
 }
 
 pub struct PopoverButtonBuilder<D = ()> {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::popover_button::PopoverButtonEvent>,
+
     pub(super) id: SharedString,
     pub(super) data: D,
     pub(super) trigger: PopoverTrigger<D>,
@@ -53,9 +55,34 @@ pub struct PopoverButtonBuilder<D = ()> {
 }
 
 impl<D: Default + 'static> PopoverButtonBuilder<D> {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::popover_button::PopoverButtonEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `PopoverButtonEvent::OpenChanged` through the existing event stream.
+    pub fn on_open_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            let crate::controls::popover_button::PopoverButtonEvent::OpenChanged { open } = event;
+            callback(owner, *open, cx);
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
         Self {
+            callbacks: Default::default(),
+
             id: id.clone(),
             data: D::default(),
             trigger: Arc::new(|_, _| div().into_any_element()),
@@ -126,7 +153,10 @@ impl<D: Default + 'static> PopoverButtonBuilder<D> {
         self.measure_trigger = value;
         self
     }
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<PopoverButton<D>> {
-        cx.new(|cx| PopoverButton::from_builder(self, cx))
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<PopoverButton<D>> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| PopoverButton::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }

@@ -19,3 +19,6 @@ pub use theme::{
 
 pub use crate::infra::presenter::{ControlPresenter, HasPresenter};
 pub use crate::infra::state::{ControlFocusState, MenuPath};
+
+mod callback;
+pub use callback::PopupMenuEventExt;

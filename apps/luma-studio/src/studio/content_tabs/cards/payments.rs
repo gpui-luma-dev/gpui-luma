@@ -1,7 +1,8 @@
+use gpui_luma::controls::table::TableEventExt;
 use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, SharedString, Window, div, prelude::*, px};
 use lucide_svg_static::Icon as LucideIcon;
 use gpui_luma::column_numeric;
 use gpui_luma::column_text;
@@ -47,7 +48,6 @@ pub struct PaymentsPanel {
     prev_button: Entity<Button>,
     next_button: Entity<Button>,
     selected_count: usize,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl PaymentsPanel {
@@ -74,8 +74,7 @@ impl PaymentsPanel {
             table.set_row_reordering(true, cx).expect("keyed payments table");
         });
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&table, |panel, _, event, cx| {
+        table.clone().on_event(cx, |panel, event, cx| {
             match event {
                 TableEvent::SelectionChanged { .. } => {
                     panel.selected_count = panel.table.read(cx).selected_indices().len();
@@ -85,7 +84,7 @@ impl PaymentsPanel {
                 _ => return,
             }
             cx.notify();
-        }));
+        });
 
         for (id, checkbox) in row_checkboxes.iter().enumerate() {
             checkbox.clone().on_event(cx, move |panel, event, cx| {
@@ -114,15 +113,7 @@ impl PaymentsPanel {
             .size(size)
             .spawn(cx);
 
-        Self {
-            prev_button,
-            next_button,
-            table,
-            row_checkboxes,
-            look,
-            selected_count: 0,
-            _subscriptions: subscriptions,
-        }
+        Self { prev_button, next_button, table, row_checkboxes, look, selected_count: 0 }
     }
 
     fn toggle_row_selection(&mut self, id: usize, cx: &mut Context<Self>) {

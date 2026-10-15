@@ -1,3 +1,4 @@
+use gpui_luma::controls::selection_panel::SelectionPanelEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -137,9 +138,12 @@ impl SelectionPanelControlExposition {
             SelectionPanelInspectorAdapter::shared(),
         );
 
-        let subscription = cx.subscribe(&preview, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &SelectionPanelEvent, cx| {
+        preview.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |_, event: &SelectionPanelEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
                 let line = format_selection_panel_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
@@ -148,7 +152,7 @@ impl SelectionPanelControlExposition {
             }
         });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![subscription] }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: { Vec::new() } }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

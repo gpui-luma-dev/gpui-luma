@@ -1,3 +1,4 @@
+use gpui_luma::controls::tabs::TabsEventExt;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -262,10 +263,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.buttons_preview_tabs = Some(tabs.clone());
         tabs
@@ -293,10 +293,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.icon_buttons_preview_tabs = Some(tabs.clone());
         tabs
@@ -324,10 +323,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.toggles_preview_tabs = Some(tabs.clone());
         tabs
@@ -354,10 +352,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.checkbox_preview_tabs = Some(tabs.clone());
         tabs
@@ -384,10 +381,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.radio_preview_tabs = Some(tabs.clone());
         tabs
@@ -414,10 +410,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.switch_preview_tabs = Some(tabs.clone());
         tabs
@@ -468,10 +463,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.menus_preview_tabs = Some(tabs.clone());
         tabs
@@ -524,10 +518,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.textarea_preview_tabs = Some(tabs.clone());
         tabs
@@ -554,10 +547,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.selectors_preview_tabs = Some(tabs.clone());
         tabs
@@ -580,10 +572,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.scrollbar_preview_tabs = Some(tabs.clone());
         tabs
@@ -606,10 +597,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.textfield_preview_tabs = Some(tabs.clone());
         tabs
@@ -636,10 +626,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         self.slider_preview_tabs = Some(tabs.clone());
         tabs
@@ -686,10 +675,9 @@ impl StyleGuidePanel {
             .template(self.look.tabs_template())
             .spawn(cx);
 
-        cx.subscribe(&tabs, |_, _, _: &TabsEvent, cx| {
+        tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| {
             cx.notify();
-        })
-        .detach();
+        });
 
         tabs
     }

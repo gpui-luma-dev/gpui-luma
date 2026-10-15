@@ -10,6 +10,9 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = {
     "button.html": [0, 1],
+    "icon-button.html": 0,
+    "tooltip.html": 0,
+    "listbox.html": 0,
     "checkbox.html": 0,
     "switch.html": 0,
     "toggle.html": 0,
@@ -18,6 +21,34 @@ EXAMPLES = {
     "look-shadcn.html": 0,
     "architecture.html": 0,
     "looks.html": 0,
+    "accordion.html": 0,
+    "autocomplete.html": 0,
+    "context-menu.html": 0,
+    "control-group.html": 0,
+    "dock-splitter.html": 0,
+    "icon-group.html": 0,
+    "overlay-window.html": 0,
+    "pager.html": 0,
+    "popover-button.html": 0,
+    "popup-menu.html": 0,
+    "radio-button.html": 0,
+    "radio-group.html": 0,
+    "resizable-panels.html": 0,
+    "scrollbar.html": 0,
+    "search-selector.html": 0,
+    "selection-panel.html": 0,
+    "selector.html": 0,
+    "sidebar.html": 0,
+    "slider.html": 0,
+    "split-button.html": 0,
+    "split-view.html": 0,
+    "table.html": 0,
+    "tabs.html": 0,
+    "textarea.html": 0,
+    "textfield.html": 0,
+    "toolbar.html": 0,
+    "tree-view.html": 0,
+    "combobox.html": 0,
 }
 
 
@@ -67,9 +98,9 @@ def main():
         dependency.get("rename") or dependency["name"]: dependency
         for package in metadata["packages"] for dependency in package["dependencies"]
     }
-    with tempfile.TemporaryDirectory(prefix="luma-button-docs-") as directory:
+    with tempfile.TemporaryDirectory(prefix="luma-control-docs-") as directory:
         package = Path(directory)
-        manifest = ['[package]', 'name = "luma-button-doc-check"', 'version = "0.0.0"',
+        manifest = ['[package]', 'name = "luma-control-doc-check"', 'version = "0.0.0"',
                     'edition = "2024"', '[dependencies]']
         for name in ["gpui", "gpui_platform"]:
             spec = dependencies[name]

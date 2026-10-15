@@ -1,5 +1,6 @@
 //! Scrolling table control exposition — task grid that fills the available pane.
 
+use gpui_luma::controls::table::TableEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -282,10 +283,16 @@ impl ScrollingTableControlExposition {
             TableInspectorAdapter::shared(),
         );
 
-        let subscription = cx.subscribe(&table, {
-            let event_stream = event_stream.clone();
-            let left_pane = left_pane.clone();
-            move |_, _, event: &TableEvent, cx| {
+        table.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            let left_pane = left_pane.downgrade();
+            move |_, event: &TableEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 left_pane.update(cx, |pane, cx| pane.handle_list_event(event, cx));
                 if let Some(line) = format_table_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
@@ -293,7 +300,7 @@ impl ScrollingTableControlExposition {
             }
         });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![subscription] }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: { Vec::new() } }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

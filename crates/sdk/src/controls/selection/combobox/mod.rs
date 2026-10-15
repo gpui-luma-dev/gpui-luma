@@ -32,3 +32,6 @@ pub use template::{
     ComboBoxTemplate, ComboBoxTemplateHandlers, ComboBoxTemplateModifier, default_combobox_items_template,
     default_combobox_template,
 };
+
+mod callback;
+pub use callback::ComboBoxEventExt;

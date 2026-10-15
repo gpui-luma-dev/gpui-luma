@@ -1,10 +1,13 @@
 //! In-memory domain mutation stays here; TreeView supplies interaction and proposals.
+use gpui_luma::controls::tree_view::TreeViewEventExt;
+use gpui_luma::controls::textfield::TextFieldEventExt;
+use gpui_luma::controls::selector::SelectorEventExt;
 use std::{
     collections::{HashMap, HashSet},
     rc::Rc,
     sync::Arc,
 };
-use gpui::{App, Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button::Button;
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
@@ -57,12 +60,10 @@ pub(super) struct Workspaces {
     search: TextField,
     sort: Entity<Selector>,
     event_stream: Entity<ControlEventStream>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl Workspaces {
     pub(super) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
-        let mut subscriptions = Vec::new();
         let actions: HashMap<SharedString, Entity<Button>> = ["readme", "guide", "draft"]
             .into_iter()
             .map(|id| {
@@ -111,12 +112,12 @@ impl Workspaces {
             )
         });
         for tree in &trees {
-            subscriptions.push(cx.subscribe(tree, |this, _, event, cx| {
+            tree.clone().on_event(cx, |this, event, cx| {
                 if let TreeViewEvent::DragDrop(event) = event {
                     this.log(this.format_drag_event(event), cx);
                 }
                 cx.notify();
-            }));
+            });
         }
         let search = shadcn::TextField::new("workspace-filter")
             .look(&look)
@@ -124,7 +125,7 @@ impl Workspaces {
             .clean_on_escape(true)
             .full_width(true)
             .spawn(cx);
-        subscriptions.push(cx.subscribe(&search, |this, _, event, cx| {
+        search.clone().on_event(cx, |this, event, cx| {
             if let TextFieldEvent::Change { value } = event {
                 let query = value.trim().to_lowercase();
                 for tree in &this.trees {
@@ -145,7 +146,7 @@ impl Workspaces {
                 }
                 cx.notify();
             }
-        }));
+        });
         let sort = shadcn::Selector::new("workspace-sort")
             .look(&look)
             .label("Sibling order")
@@ -156,7 +157,7 @@ impl Workspaces {
             ])
             .selected_id("source")
             .spawn(cx);
-        subscriptions.push(cx.subscribe(&sort, |this, _, event, cx| {
+        sort.clone().on_event(cx, |this, event, cx| {
             if let SelectorEvent::Change { item_id, .. } = event {
                 for tree in &this.trees {
                     tree.update(cx, |tree, cx| match item_id.as_ref() {
@@ -167,7 +168,7 @@ impl Workspaces {
                 }
                 cx.notify();
             }
-        }));
+        });
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
@@ -176,7 +177,7 @@ impl Workspaces {
                 "Drag row edges before/after; folder centers move into folders. Blank space appends to root. Escape cancels.",
             )
         });
-        Self { look, trees, actions: action_entities, search, sort, event_stream, _subscriptions: subscriptions }
+        Self { look, trees, actions: action_entities, search, sort, event_stream }
     }
 
     fn log(&mut self, line: String, cx: &mut Context<Self>) {

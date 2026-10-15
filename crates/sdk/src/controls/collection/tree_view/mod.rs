@@ -40,3 +40,6 @@ where
 {
     TreeViewBuilder::new(id)
 }
+
+mod callback;
+pub use callback::TreeViewEventExt;

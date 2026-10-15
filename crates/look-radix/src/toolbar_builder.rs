@@ -16,6 +16,8 @@ enum Item {
 /// Radix toolbar with compact, neutral icon buttons and a static outline.
 /// Command IDs, labels, icons, and hosted controls are supplied by the application.
 pub struct Toolbar {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::toolbar::ToolbarEvent>,
+
     id: SharedString,
     look: Option<Look>,
     items: Vec<Item>,
@@ -26,8 +28,48 @@ pub struct Toolbar {
 }
 
 impl Toolbar {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::toolbar::ToolbarEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `ToolbarEvent::Click` through the existing event stream.
+    pub fn on_click<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::toolbar::ToolbarEvent::Click { id } = event {
+                callback(owner, id, cx);
+            }
+        })
+    }
+
+    /// Handle `ToolbarEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &gpui_luma::controls::toolbar::ToolbarValue, &mut gpui::Context<M>)
+        + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::toolbar::ToolbarEvent::Change { id, value } = event {
+                callback(owner, id, value, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             id: id.into(),
             look: None,
             items: Vec::new(),
@@ -90,35 +132,40 @@ impl Toolbar {
         self.item(ToolbarItem::separator(id))
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::toolbar::Toolbar {
-        let look = crate::look::resolve_look(self.look.as_ref(), cx.try_global::<Look>());
-        let items = self
-            .items
-            .into_iter()
-            .map(|item| match item {
-                Item::Hosted(item) => item,
-                Item::Command { id, label, icon } => {
-                    let button = Button::new(id.clone())
-                        .look(&look)
-                        .ghost_quiet()
-                        .gray()
-                        .size(self.command_size)
-                        .role(ButtonFamilyRole::Icon)
-                        .tab_stop(false)
-                        .icon(icon)
-                        .icon_size(self.icon_size)
-                        .spawn(cx);
-                    ToolbarItem::command_button(id, button, cx).label(label)
-                }
-            })
-            .collect::<Vec<_>>();
-        ToolbarBuilder::new(self.id)
-            .template(match self.style {
-                Some(style) => toolbar_template_with(&look, style),
-                None => crate::toolbar_template(&look),
-            })
-            .size(self.size)
-            .items(items)
-            .spawn(cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> gpui_luma::controls::toolbar::Toolbar {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = crate::look::resolve_look(self.look.as_ref(), cx.try_global::<Look>());
+            let items = self
+                .items
+                .into_iter()
+                .map(|item| match item {
+                    Item::Hosted(item) => item,
+                    Item::Command { id, label, icon } => {
+                        let button = Button::new(id.clone())
+                            .look(&look)
+                            .ghost_quiet()
+                            .gray()
+                            .size(self.command_size)
+                            .role(ButtonFamilyRole::Icon)
+                            .tab_stop(false)
+                            .icon(icon)
+                            .icon_size(self.icon_size)
+                            .spawn(cx);
+                        ToolbarItem::command_button(id, button, cx).label(label)
+                    }
+                })
+                .collect::<Vec<_>>();
+            ToolbarBuilder::new(self.id)
+                .template(match self.style {
+                    Some(style) => toolbar_template_with(&look, style),
+                    None => crate::toolbar_template(&look),
+                })
+                .size(self.size)
+                .items(items)
+                .spawn(cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 }

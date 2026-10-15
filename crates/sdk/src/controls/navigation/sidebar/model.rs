@@ -357,12 +357,105 @@ impl SidebarBuilder {
 }
 
 pub struct SidebarControlBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::sidebar::SidebarEvent>,
+
     pub(crate) model: SidebarControlModel,
 }
 
 impl SidebarControlBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::sidebar::SidebarEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `SidebarEvent::PresentationChanged` through the existing event stream.
+    pub fn on_presentation_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::sidebar::SidebarPresentation, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarEvent::PresentationChanged { presentation } = event {
+                callback(owner, presentation, cx);
+            }
+        })
+    }
+
+    /// Handle `SidebarEvent::Select` through the existing event stream.
+    pub fn on_select<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarEvent::Select { id } = event {
+                callback(owner, id, cx);
+            }
+        })
+    }
+
+    /// Handle `SidebarEvent::ItemFocused` through the existing event stream.
+    pub fn on_item_focused<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarEvent::ItemFocused { id } = event {
+                callback(owner, id, cx);
+            }
+        })
+    }
+
+    /// Handle `SidebarEvent::HoverChanged` through the existing event stream.
+    pub fn on_hover_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Option<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarEvent::HoverChanged { id } = event {
+                callback(owner, id, cx);
+            }
+        })
+    }
+
+    /// Handle `SidebarEvent::SubMenuToggle` through the existing event stream.
+    pub fn on_sub_menu_toggle<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarEvent::SubMenuToggle { id, open } = event {
+                callback(owner, id, *open, cx);
+            }
+        })
+    }
+
+    /// Handle `SidebarEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             model: SidebarControlModel {
                 id: id.into(),
                 presentation: SidebarPresentation::Expanded,
@@ -456,8 +549,11 @@ impl SidebarControlBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<SidebarControl> {
-        cx.new(|cx| SidebarControl::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> Entity<SidebarControl> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| SidebarControl::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

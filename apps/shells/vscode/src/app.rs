@@ -1,3 +1,5 @@
+use gpui_luma::controls::resizable_panels::ResizablePanelsEventExt;
+use gpui_luma::controls::control_group::ControlGroupEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FocusHandle, Focusable, Render, Subscription, Window, div, prelude::*, px};
@@ -103,9 +105,9 @@ impl VscodeShellApp {
         wire_customize_layout_subscriptions(&customize_layout_dialog, cx, &mut subscriptions);
 
         let workspace_panels = workspace_layout.read(cx).panels();
-        subscriptions.push(cx.subscribe(&workspace_panels, |this, _, event: &ResizablePanelsEvent, cx| {
+        workspace_panels.clone().on_event(cx, |this, event: &ResizablePanelsEvent, cx| {
             this.handle_workbench_event(event, cx);
-        }));
+        });
         subscriptions.push(cx.subscribe(&workspace_layout, |this, _, event: &WorkspaceLayoutEvent, cx| {
             let WorkspaceLayoutEvent::PanelHeightChanged { height_px } = event;
             this.layout_config = reduce_layout_config(
@@ -411,7 +413,7 @@ fn wire_customize_layout_subscriptions(
     });
 
     let visibility_group = dialog.read(cx).visibility_group();
-    subscriptions.push(cx.subscribe(&visibility_group, |app, _, event: &ControlGroupEvent, cx| {
+    visibility_group.clone().on_event(cx, |app, event: &ControlGroupEvent, cx| {
         let ControlGroupEvent::Change { changed_id, selected, .. } = event else {
             return;
         };
@@ -425,10 +427,10 @@ fn wire_customize_layout_subscriptions(
             _ => return,
         };
         app.set_layout_region_visible(region, *selected, cx);
-    }));
+    });
 
     let position_group = dialog.read(cx).primary_side_bar_position_group();
-    subscriptions.push(cx.subscribe(&position_group, |app, _, event: &ControlGroupEvent, cx| {
+    position_group.clone().on_event(cx, |app, event: &ControlGroupEvent, cx| {
         let ControlGroupEvent::Change { changed_id, .. } = event else {
             return;
         };
@@ -437,10 +439,10 @@ fn wire_customize_layout_subscriptions(
             _ => PrimarySideBarPosition::Left,
         };
         app.set_primary_side_bar_position(position, cx);
-    }));
+    });
 
     let alignment_group = dialog.read(cx).panel_alignment_group();
-    subscriptions.push(cx.subscribe(&alignment_group, |app, _, event: &ControlGroupEvent, cx| {
+    alignment_group.clone().on_event(cx, |app, event: &ControlGroupEvent, cx| {
         let ControlGroupEvent::Change { changed_id, .. } = event else {
             return;
         };
@@ -451,7 +453,7 @@ fn wire_customize_layout_subscriptions(
             _ => PanelAlignment::Center,
         };
         app.set_panel_alignment(alignment, cx);
-    }));
+    });
 }
 
 fn titlebar_icon_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPresenter<ButtonContentContext<()>> {

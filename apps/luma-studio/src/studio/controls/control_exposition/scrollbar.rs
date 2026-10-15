@@ -1,6 +1,7 @@
+use gpui_luma::controls::scrollbar::ScrollbarEventExt;
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, Render, Subscription, Window, div, prelude::*, px, rgb};
+use gpui::{AnyElement, Context, Entity, Render, Window, div, prelude::*, px, rgb};
 use gpui_luma::controls::scrollbar::{Scrollbar, ScrollbarEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn as shadcn;
@@ -21,7 +22,6 @@ pub struct ScrollbarControlExposition {
     left_pane: Entity<ScrollbarExpositionLeftPane>,
     theme_inspector: Entity<ScrollbarThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct ScrollbarExpositionLeftPane {
@@ -140,21 +140,20 @@ impl ScrollbarControlExposition {
             ScrollbarInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
         for (scrollbar, axis) in
             [(horizontal_scrollbar.clone(), "horizontal"), (vertical_scrollbar.clone(), "vertical")]
         {
             let event_stream = event_stream.clone();
             let left_pane = left_pane.clone();
-            subscriptions.push(cx.subscribe(&scrollbar, move |_, _, event: &ScrollbarEvent, cx| {
+            scrollbar.clone().on_event(cx, move |_, event: &ScrollbarEvent, cx| {
                 left_pane.update(cx, |pane, cx| pane.handle_scrollbar_event(axis, event, cx));
                 if let Some(line) = format_scrollbar_event(axis, event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
-            }));
+            });
         }
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

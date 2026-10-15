@@ -1,8 +1,10 @@
 //! Accordion control exposition — single, multiple, and interactive content samples.
 
+use gpui_luma::controls::textfield::TextFieldEventExt;
+use gpui_luma::controls::accordion::AccordionEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionEvent, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma::vstack;
@@ -26,7 +28,6 @@ pub struct AccordionControlExposition {
     left_pane: Entity<AccordionExpositionLeftPane>,
     theme_inspector: Entity<AccordionThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct AccordionExpositionLeftPane {
@@ -174,25 +175,27 @@ impl AccordionControlExposition {
             AccordionInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
         for entity in [single.clone(), multiple.clone(), interactive.clone()] {
             let event_stream = event_stream.clone();
-            subscriptions.push(cx.subscribe(&entity, move |_, _, event: &AccordionEvent, cx| {
+            entity.clone().on_event(cx, move |_, event: &AccordionEvent, cx| {
                 if let Some(line) = format_accordion_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
-            }));
+            });
         }
-        subscriptions.push(cx.subscribe(&interactive_field, {
-            let interactive = interactive.clone();
-            move |_, _, event: &TextFieldEvent, cx| {
+        interactive_field.clone().on_event(cx, {
+            let interactive = interactive.downgrade();
+            move |_, event: &TextFieldEvent, cx| {
+                let Some(interactive) = interactive.upgrade() else {
+                    return;
+                };
                 if matches!(event, TextFieldEvent::Change { .. }) {
                     interactive.update(cx, |_, cx| cx.notify());
                 }
             }
-        }));
+        });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

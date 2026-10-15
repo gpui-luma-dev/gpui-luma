@@ -1,4 +1,5 @@
 //! Explicit positioning in Controls → TreeView; all interactive chrome uses SDK controls.
+use gpui_luma::controls::tree_view::TreeViewEventExt;
 use std::sync::Arc;
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
@@ -60,23 +61,26 @@ impl Positioning {
             .spawn(cx);
         let events = cx.new(|cx| ControlEventStream::new(cx, look.clone(), "tree-position-events",
             "Positioning leaves selection and tree focus unchanged. Scroll, use a navigation key, or issue another request to interrupt smooth movement."));
-        let mut subscriptions = vec![cx.subscribe(&tree, |this: &mut Self, _, event, cx| {
-            cx.notify();
-            let line = match event {
-                TreeViewEvent::ScrollChanged { top_index } => Some(format!("Top row: {top_index}")),
-                TreeViewEvent::NodeExpanded { node_id, .. } => Some(format!("Opened: {node_id}")),
-                TreeViewEvent::NodeCollapsed { node_id, .. } => Some(format!("Closed: {node_id}")),
-                TreeViewEvent::SelectionChanged { selected_ids } => {
-                    let mut ids: Vec<_> = selected_ids.iter().map(|id| id.as_ref()).collect();
-                    ids.sort();
-                    Some(format!("Selected: {}", ids.join(", ")))
+        let mut subscriptions = {
+            tree.clone().on_event(cx, |this: &mut Self, event, cx| {
+                cx.notify();
+                let line = match event {
+                    TreeViewEvent::ScrollChanged { top_index } => Some(format!("Top row: {top_index}")),
+                    TreeViewEvent::NodeExpanded { node_id, .. } => Some(format!("Opened: {node_id}")),
+                    TreeViewEvent::NodeCollapsed { node_id, .. } => Some(format!("Closed: {node_id}")),
+                    TreeViewEvent::SelectionChanged { selected_ids } => {
+                        let mut ids: Vec<_> = selected_ids.iter().map(|id| id.as_ref()).collect();
+                        ids.sort();
+                        Some(format!("Selected: {}", ids.join(", ")))
+                    }
+                    _ => None,
+                };
+                if let Some(line) = line {
+                    this.events.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
-                _ => None,
-            };
-            if let Some(line) = line {
-                this.events.update(cx, |stream, cx| stream.append_line(&line, cx));
-            }
-        })];
+            });
+            Vec::new()
+        };
         subscriptions.push(cx.observe(&target, |_, _, cx| cx.notify()));
         subscriptions.push(cx.observe(&movement, |_, _, cx| cx.notify()));
         let buttons = [("go", "Go"), ("collapse", "Close & show folder")]

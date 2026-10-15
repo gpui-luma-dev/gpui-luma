@@ -1,8 +1,9 @@
 //! Toolbar control exposition — gallery-aligned editing toolbar with focus strategy toggles.
 
+use gpui_luma::controls::toolbar::ToolbarEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::control_group::ControlGroupFocusStrategy;
@@ -29,7 +30,6 @@ pub struct ToolbarControlExposition {
     left_pane: Entity<ToolbarExpositionLeftPane>,
     theme_inspector: Entity<ToolbarThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct ToolbarExpositionLeftPane {
@@ -218,15 +218,17 @@ impl ToolbarControlExposition {
             ToolbarInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&toolbar, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &ToolbarEvent, cx| {
+        toolbar.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |_, event: &ToolbarEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
                 if let Some(line) = format_toolbar_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }
-        }));
+        });
         roving_focus_button.clone().on_click(cx, {
             let left_pane = left_pane.downgrade();
             move |_, cx| {
@@ -260,7 +262,7 @@ impl ToolbarControlExposition {
             }
         });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
