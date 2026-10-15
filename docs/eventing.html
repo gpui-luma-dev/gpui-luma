@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDK eventing review</title>
+<style>
+  :root {
+    --bg: #f3efe6;
+    --paper: #fffdf8;
+    --ink: #1c1915;
+    --muted: #5e584e;
+    --faint: #8a8376;
+    --line: #e3dcd0;
+    --line-strong: #cfc6b6;
+    --accent: #7d2f28;
+    --reconsider: #8a4b08;
+    --reconsider-bg: #f8ecd6;
+    --gap: #1d4a38;
+    --gap-bg: #e5f0e8;
+    --keep: #3c4634;
+    --keep-bg: #e8eadf;
+    --code-bg: #f6f1e7;
+    --shadow: 0 1px 0 rgba(28, 25, 21, 0.04);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  }
+  code, .mono {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.84em;
+  }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--ink); }
+  .wrap {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 860px);
+    gap: 40px;
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 36px 28px 80px;
+  }
+  nav {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  nav p {
+    margin: 0 0 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-size: 11px;
+  }
+  nav a {
+    display: block;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 4px 0;
+  }
+  nav a:hover { color: var(--ink); }
+  header.mast {
+    margin-bottom: 28px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .kicker {
+    margin: 0 0 8px;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    margin: 0 0 10px;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+  }
+  .lede { margin: 0; color: var(--muted); font-size: 18px; max-width: 42em; }
+  h2 {
+    margin: 42px 0 12px;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  h3 {
+    margin: 26px 0 8px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 14px; padding-left: 1.2em; }
+  li { margin: 0 0 6px; }
+  section { scroll-margin-top: 18px; }
+  .card, .finding, table, .note {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin: 14px 0 8px;
+  }
+  .card { padding: 14px 16px 12px; }
+  .card strong {
+    display: block;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .card p { margin: 0; font-size: 15px; }
+  .finding {
+    padding: 14px 16px 8px;
+    margin: 0 0 10px;
+    border-left: 3px solid var(--line-strong);
+  }
+  .finding.reconsider { border-left-color: var(--reconsider); }
+  .finding.gap { border-left-color: var(--gap); }
+  .finding.keep { border-left-color: var(--keep); }
+  .finding h3 { margin: 0 0 6px; font-size: 17px; }
+  .tag {
+    display: inline-block;
+    margin-right: 8px;
+    padding: 1px 7px 2px;
+    border-radius: 99px;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    vertical-align: 1px;
+  }
+  .tag.reconsider { background: var(--reconsider-bg); color: var(--reconsider); }
+  .tag.gap { background: var(--gap-bg); color: var(--gap); }
+  .tag.keep { background: var(--keep-bg); color: var(--keep); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 18px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  th, td {
+    text-align: left;
+    vertical-align: top;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  th {
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    background: #faf7f1;
+  }
+  tr:last-child td { border-bottom: 0; }
+  td.no { color: var(--faint); }
+  .note {
+    padding: 12px 14px;
+    margin: 12px 0;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .catalog h3 { margin-top: 22px; }
+  .variants { margin: 0; padding-left: 1.1em; }
+  .variants li { margin-bottom: 3px; }
+  footer {
+    margin-top: 36px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    color: var(--faint);
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-size: 12px;
+  }
+  @media (max-width: 860px) {
+    .wrap { grid-template-columns: 1fr; gap: 8px; padding: 20px 16px 48px; }
+    nav { position: static; }
+    .grid { grid-template-columns: 1fr; }
+    h1 { font-size: 32px; }
+    table { display: block; overflow-x: auto; }
+  }
+  @media print {
+    body { background: white; }
+    nav { display: none; }
+    .wrap { display: block; max-width: none; }
+    .card, .finding, table, .note { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <p>Contents</p>
+  <a href="#verdict">Verdict</a>
+  <a href="#delivery">Delivery</a>
+  <a href="#matrix">Signal matrix</a>
+  <a href="#catalog">Published catalog</a>
+  <a href="#reconsider">Reconsider</a>
+  <a href="#missing">Missing</a>
+  <a href="#leave">Leave alone</a>
+  <a href="#sequence">Sequence</a>
+</nav>
+<main>
+<header class="mast">
+  <p class="kicker">gpui-luma · crates/sdk · 15 Oct 2026</p>
+  <h1>Eventing review</h1>
+  <p class="lede">What the SDK publishes, where the vocabulary drifts, and which silences are real gaps. Scope is <code>crates/sdk</code> control and infra events. Look crates, plot, and color controls are out of scope.</p>
+</header>
+
+<section id="verdict">
+  <h2>Verdict</h2>
+  <p>The SDK has a usable event surface: almost every interactive control is an <code>EventEmitter</code>, most enums are <code>#[non_exhaustive]</code>, and value changes are generally distinct from focus, hover, and enabled transitions. The problem is consistency, not absence. The same user gesture is named, shaped, and delivered differently depending on which control owns it. A subscriber who has learned one control cannot predict the next.</p>
+  <div class="grid">
+    <article class="card">
+      <strong>38 public event types</strong>
+      <p>33 GPUI emitters, one returned batch (<code>ListBoxEvent</code>), one callback (<code>TooltipEvent</code>), and a handful of aliases and internal machines.</p>
+    </article>
+    <article class="card">
+      <strong>Three delivery channels</strong>
+      <p><code>cx.emit</code>, <code>ListBoxUpdate.events</code>, and <code>Tooltip::on_event</code>. Hosts cannot subscribe the same way to every control.</p>
+    </article>
+    <article class="card">
+      <strong>One vocabulary, many dialects</strong>
+      <p>Change, Select, Click, Activate, Complete, and Submit all mean “the user committed something.” Payloads and pairing rules differ.</p>
+    </article>
+  </div>
+</section>
+
+<section id="delivery">
+  <h2>How events are delivered</h2>
+  <table>
+    <thead>
+      <tr><th>Channel</th><th>Who</th><th>Contract</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>cx.emit</code></td>
+        <td>Buttons, choice, text, slider, scrollbar, menus, overlays, tabs, accordion, sidebar, pager, table, tree, splitters, panels</td>
+        <td>GPUI subscription. One event per call. Order is the order of the <code>emit</code> sites.</td>
+      </tr>
+      <tr>
+        <td>Returned batch</td>
+        <td><code>ListBoxState::apply</code> → <code>ListBoxUpdate</code></td>
+        <td>The model does not emit. The host applies input and forwards <code>update.events</code>. Activation can appear with <code>changed: false</code>.</td>
+      </tr>
+      <tr>
+        <td>Callback</td>
+        <td><code>Tooltip</code></td>
+        <td><code>Shown</code> and <code>Hidden</code> go to <code>Tooltip::on_event</code>. There is no entity and no subscription.</td>
+      </tr>
+      <tr>
+        <td>Translated</td>
+        <td>Radio group, tabs, toolbar, sidebar, paging table, text-selection adapter</td>
+        <td>An inner emitter is subscribed and republished under a different enum. Some inner variants are dropped on purpose.</td>
+      </tr>
+      <tr>
+        <td>Internal</td>
+        <td><code>SelectionEvent</code></td>
+        <td>Public type, private machine for combo box, autocomplete, and search selector. Subscribers never see it.</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note">Aliases, so they are not separate surfaces: <code>ButtonEvent</code> is <code>CommandEvent</code>, <code>SplitButtonEvent</code> is <code>PopupMenuEvent</code>, <code>IconGroupEvent</code> is <code>ControlGroupEvent</code>, <code>TableRowDragEvent</code> is <code>DragDropEvent&lt;EntityId, SharedString&gt;</code>. <code>PagingTableControl</code> re-emits <code>TableEvent</code> and does not define its own enum.</div>
+</section>
+
+<section id="matrix">
+  <h2>Signal matrix</h2>
+  <p>A dash means that signal is absent on the public event enum. “Visual” means the control tracks the state and repaints, and does not publish it.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Control</th>
+        <th>Commit</th>
+        <th>Focus</th>
+        <th>Hover</th>
+        <th>Enabled</th>
+        <th>Open / dismiss</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Button</td><td><code>Click</code></td><td>yes</td><td>yes</td><td>yes</td><td class="no">—</td></tr>
+      <tr><td>Checkbox, switch, toggle, radio button</td><td><code>Change { bool }</code></td><td>yes</td><td>yes</td><td>yes</td><td class="no">—</td></tr>
+      <tr><td>Control group, icon group</td><td><code>Change</code> then <code>Activate</code></td><td>group + item</td><td class="no">—</td><td class="no">—</td><td class="no">bounds only</td></tr>
+      <tr><td>Radio group</td><td><code>Change { Option&lt;id&gt; }</code> + <code>Activate</code></td><td>group + item</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+      <tr><td>Toolbar</td><td><code>Click</code>, <code>Change { ToolbarValue }</code></td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+      <tr><td>Text field</td><td><code>Change</code>, <code>Submit</code></td><td>yes</td><td>visual</td><td>yes</td><td class="no">—</td></tr>
+      <tr><td>Text area</td><td><code>Change</code></td><td>yes</td><td class="no">—</td><td>yes</td><td class="no">—</td></tr>
+      <tr><td>Slider</td><td><code>Change</code>, <code>Release</code></td><td>yes</td><td>yes</td><td>yes</td><td>drag start/end</td></tr>
+      <tr><td>Scrollbar</td><td><code>Change</code></td><td>yes</td><td>yes</td><td>yes</td><td>drag start/end</td></tr>
+      <tr><td>Selector</td><td><code>Change { id, label }</code></td><td>yes</td><td class="no">—</td><td class="no">—</td><td><code>OpenChanged</code> + <code>Dismiss</code></td></tr>
+      <tr><td>Combo, autocomplete, search</td><td>query <code>Change</code>, <code>Select</code> or <code>Complete</code>, <code>Clear</code></td><td>yes</td><td class="no">—</td><td class="no">—</td><td><code>OpenChanged</code> + <code>Dismiss</code></td></tr>
+      <tr><td>Popup menu</td><td><code>Select</code>, <code>ActionClick</code></td><td>yes</td><td>yes</td><td>yes</td><td><code>OpenChanged</code> + <code>Dismiss</code></td></tr>
+      <tr><td>Context menu</td><td><code>Select</code></td><td>yes</td><td>yes</td><td>yes</td><td><code>OpenChanged</code> + <code>Dismiss</code></td></tr>
+      <tr><td>Popover button</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td><code>OpenChanged</code> only</td></tr>
+      <tr><td>Popover panel</td><td class="no">—</td><td>yes</td><td class="no">—</td><td class="no">—</td><td><code>OpenChanged</code> + <code>Dismiss</code></td></tr>
+      <tr><td>Overlay window</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td><code>Opened</code>, <code>Dismissed</code></td></tr>
+      <tr><td>Tooltip</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td><code>Shown</code>, <code>Hidden</code> via callback</td></tr>
+      <tr><td>Tabs</td><td><code>Change</code></td><td><code>Activate</code>, <code>Reactivate</code></td><td>group + item</td><td class="no">—</td><td class="no">—</td><td><code>DropdownRequested</code></td></tr>
+      <tr><td>Accordion</td><td><code>ExpandedChanged</code></td><td class="no">—</td><td>group + item</td><td>per item</td><td>yes</td><td class="no">—</td></tr>
+      <tr><td>Sidebar</td><td class="no">—</td><td><code>Select</code></td><td>item only</td><td><code>HoverChanged { Option&lt;id&gt; }</code></td><td>yes</td><td><code>SubMenuToggle</code></td></tr>
+      <tr><td>Sidebar engine</td><td class="no">—</td><td><code>Activate</code></td><td>group + item</td><td>per item</td><td>yes</td><td>branch, collapse, rail submenu</td></tr>
+      <tr><td>Pager</td><td><code>PageChanged</code>, <code>PageSizeChanged</code></td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td>yes</td><td><code>PageSizeOpenChanged</code></td></tr>
+      <tr><td>Table</td><td>selection indices and keys, active index, page</td><td>activation only selects</td><td>yes</td><td>row index</td><td>yes</td><td>scroll, nested row drag</td></tr>
+      <tr><td>Tree</td><td>selection set, active id, expand/collapse</td><td><code>NodeActivated</code></td><td>yes</td><td>id + index</td><td>yes</td><td>scroll, nested drag</td></tr>
+      <tr><td>List box</td><td>selection vec + active, policy, projection</td><td><code>ItemActivated</code></td><td><code>is_focused</code></td><td class="no">—</td><td class="no">—</td><td class="no">host owns the viewport</td></tr>
+      <tr><td>Split view</td><td>sidebar width</td><td class="no">—</td><td class="no">—</td><td>separator</td><td>yes</td><td>collapse, resize</td></tr>
+      <tr><td>Resizable panels</td><td>sizes, every layout frame</td><td class="no">—</td><td>handle</td><td>handle</td><td>yes</td><td>hidden, twice if the panel has an id</td></tr>
+      <tr><td>Dock splitter</td><td>resize delta</td><td class="no">—</td><td>yes</td><td>yes</td><td>yes</td><td>resize start/end</td></tr>
+      <tr><td>Selection panel</td><td><code>ActivateRow</code></td><td>that is the commit</td><td>yes</td><td>visible index</td><td class="no">—</td><td><code>OpenChanged</code>, active index</td></tr>
+      <tr><td>Scroll container, progress, stepper, frame, slide panel</td><td class="no">silent</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">see Missing</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="catalog" class="catalog">
+  <h2>Published catalog</h2>
+  <p>Variants below are the public enums. Notes call out pairing and what a subscriber actually observes.</p>
+
+  <h3>Command and choice</h3>
+  <ul class="variants">
+    <li><code>CommandEvent</code> / <code>ButtonEvent</code> — <code>Click</code>, <code>FocusChanged</code>, <code>EnabledChanged</code>, <code>HoverChanged</code>. Pointer clicks that GPUI marks as keyboard are ignored; keyboard activation goes through <code>ActivateControl</code> and still emits <code>Click</code>. No modifier or source payload.</li>
+    <li><code>CheckboxEvent</code> — <code>Change { checked }</code> plus the three interaction variants. Forwarded from the inner button. No indeterminate state exists.</li>
+    <li><code>SwitchEvent</code> — <code>Change { on }</code> plus interaction.</li>
+    <li><code>ToggleEvent</code> — <code>Change { selected }</code> plus interaction.</li>
+    <li><code>RadioButtonEvent</code> — <code>Change { selected }</code> plus interaction. A lone radio does not know its group.</li>
+    <li><code>ControlGroupEvent</code> — <code>Activate { activated_id }</code>, <code>Change { changed_id, selected, selected_ids }</code>, <code>ItemBoundsChanged</code>, <code>FocusChanged</code>, <code>ItemFocused</code>. A selection change emits <code>Change</code> and then <code>Activate</code>. Re-activating the current selection emits <code>Activate</code> alone. Bounds fire from layout.</li>
+    <li><code>RadioGroupEvent</code> — <code>Change { value: Option&lt;SharedString&gt; }</code>, <code>Activate { value }</code>, <code>FocusChanged</code>, <code>ItemFocused</code>. Mapped from the group. <code>Change</code> keeps only <code>selected_ids.first()</code>. <code>ItemBoundsChanged</code> is dropped. <code>EnabledChanged</code> is not on the inner enum, so it cannot be forwarded.</li>
+    <li><code>ToolbarEvent</code> — <code>Click { id }</code>, <code>Change { id, value: Bool | String }</code>. Child button clicks, toggle/menu/selector/text changes are collapsed into these two. Child focus, hover, enabled, open, and dismiss are dropped. Item <code>on_click</code> / <code>on_change</code> closures run as well as the emit.</li>
+  </ul>
+
+  <h3>Text</h3>
+  <ul class="variants">
+    <li><code>TextFieldEvent</code> — <code>Change { value: String }</code>, <code>Submit { value }</code>, <code>FocusChanged</code>, <code>EnabledChanged</code>. <code>Change</code> fires on user edits, cut, and paste. <code>set_value</code> is silent. Hover and invalid are visual. Validator failure updates <code>invalid</code> and does not emit.</li>
+    <li><code>TextAreaEvent</code> — <code>Change</code>, <code>FocusChanged</code>, <code>EnabledChanged</code>. Same programmatic-silence rule. No <code>Submit</code>.</li>
+    <li><code>TextSelectionEvent</code> — adapter used inside combo, autocomplete, and search: <code>Change</code>, <code>Submit</code>, <code>FocusEnter</code>, <code>FocusLeave</code>. <code>EnabledChanged</code> is discarded. This is the only focus API that uses enter/leave unit variants.</li>
+  </ul>
+
+  <h3>Range and scroll chrome</h3>
+  <ul class="variants">
+    <li><code>SliderEvent</code> — <code>Change { thumb_id, value }</code>, <code>Release</code>, <code>DragStart</code>, <code>DragEnd { thumb_id, value }</code>, <code>ThumbAdded</code>, <code>ThumbRemoved</code>, <code>ThumbSelected</code>, plus focus, hover, enabled. Pointer move emits <code>Change</code> continuously. Pointer up emits <code>Release</code> and <code>DragEnd</code> with the same value. Keyboard step emits <code>Change</code> then <code>Release</code>, with no drag pair. <code>set_value</code> passes <code>emit: false</code>.</li>
+    <li><code>ScrollbarEvent</code> — <code>Change { value }</code>, <code>DragStart</code>, <code>DragEnd { value }</code>, focus, hover, enabled. No <code>Release</code> twin.</li>
+    <li><code>ScrollContainer</code> — no event enum. Offset changes are methods. The inner <code>Scrollbar</code> still emits if the host subscribes to it directly.</li>
+  </ul>
+
+  <h3>Selection popups</h3>
+  <ul class="variants">
+    <li><code>SelectorEvent</code> — <code>Change { item_id, label }</code>, <code>FocusChanged</code>, <code>OpenChanged { open }</code>, <code>Dismiss</code>. Selecting an item emits <code>OpenChanged { open: false }</code> and does not emit <code>Dismiss</code>. <code>Dismiss</code> is the cancel path. Re-selecting the current item closes the menu and skips <code>Change</code>.</li>
+    <li><code>AutocompleteEvent</code>, <code>ComboBoxEvent</code>, <code>SearchSelectorEvent</code> — identical variants: <code>Change { query }</code>, <code>Select { item_id, label }</code>, <code>Complete { item_id, label }</code>, <code>Clear</code>, <code>FocusChanged</code>, <code>OpenChanged</code>, <code>Dismiss</code>. <code>Complete</code> is <code>Select</code> when an internal <code>exact_complete</code> flag is set. Both represent a chosen item. Highlight moves are silent.</li>
+    <li><code>SelectionPanelEvent</code> — <code>HoverChanged { visible_index }</code>, <code>ActivateRow { source_index, visible_index, item_id }</code>, <code>ActiveIndexChanged</code>, <code>FocusChanged</code>, <code>OpenChanged</code>.</li>
+    <li><code>SelectionEvent</code> — <code>Focus</code>, <code>Blur</code>, <code>Escape</code>, <code>Submit</code>, <code>MoveNext</code>, <code>MovePrevious</code>, <code>Clear</code>. Input to the shared behavior object, not a control subscription.</li>
+  </ul>
+
+  <h3>Overlay</h3>
+  <ul class="variants">
+    <li><code>PopupMenuEvent</code> — <code>ActionClick</code>, <code>Select { item_id, label }</code>, <code>OpenChanged</code>, <code>Dismiss</code>, focus, hover, enabled. Close emits <code>OpenChanged { open: false }</code>. <code>Dismiss</code> is an extra event on the dismiss path only.</li>
+    <li><code>ContextMenuEvent</code> — <code>Select</code>, <code>OpenChanged</code>, <code>Dismiss</code>, focus, hover, enabled. No <code>ActionClick</code>.</li>
+    <li><code>PopoverButtonEvent</code> — <code>OpenChanged { open }</code>. Not <code>non_exhaustive</code>. The button does not forward panel focus or dismiss.</li>
+    <li><code>PopoverPanelEvent</code> — <code>OpenChanged</code>, <code>Dismiss</code>, <code>FocusChanged</code>.</li>
+    <li><code>OverlayWindowEvent</code> — <code>Opened</code>, <code>Dismissed</code>. Edge events, no boolean, no focus.</li>
+    <li><code>TooltipEvent</code> — <code>Shown</code>, <code>Hidden</code>. Callback only. Not <code>non_exhaustive</code>.</li>
+  </ul>
+
+  <h3>Navigation</h3>
+  <ul class="variants">
+    <li><code>TabsEvent</code> — <code>Change { tab_id, label }</code>, <code>Activate</code>, <code>Reactivate</code>, <code>DropdownRequested { tab_id, label, bounds }</code>, <code>ItemBoundsChanged</code>, <code>FocusChanged</code>, <code>ItemFocused</code>. A new tab emits <code>Change</code> and then <code>Activate</code>. Clicking the already active tab emits <code>Reactivate</code> and then <code>Activate</code>. Dropdown tabs also emit <code>DropdownRequested</code> on that path. Deselect (<code>selected: false</code>) is dropped.</li>
+    <li><code>AccordionEvent</code> — <code>ExpandedChanged { item_id, expanded }</code>, <code>FocusChanged</code>, <code>ItemFocused</code>, <code>ItemHoverChanged</code>, <code>EnabledChanged</code>. Single mode can emit a collapse for the previous item and an expand for the new one. There is no separate activate event.</li>
+    <li><code>SidebarEvent</code> — <code>PresentationChanged</code>, <code>Select { id }</code>, <code>ItemFocused</code>, <code>HoverChanged { id: Option&lt;SharedString&gt; }</code>, <code>SubMenuToggle { id, open }</code>, <code>EnabledChanged</code>.</li>
+    <li><code>SidebarPanelEngineEvent</code> — <code>Activate { node_id, label }</code>, <code>BranchExpandedChanged</code>, <code>CollapsedChanged</code>, <code>FocusChanged</code>, <code>ItemFocused</code>, <code>ItemHoverChanged</code>, <code>RailSubmenuOpenChanged</code>, <code>EnabledChanged</code>. The public sidebar drops <code>FocusChanged</code> and <code>CollapsedChanged</code>. Item hover and rail-submenu open are both republished as <code>SidebarEvent::HoverChanged</code>.</li>
+    <li><code>PagerEvent</code> — <code>PageChanged { page }</code>, <code>PageSizeChanged</code>, <code>PageSizeOpenChanged { open }</code>, <code>EnabledChanged</code>. No focus or hover.</li>
+  </ul>
+
+  <h3>Collections</h3>
+  <ul class="variants">
+    <li><code>TableEvent</code> — <code>RowDrag(DragDropEvent)</code>, <code>SelectionChanged { selected_indices }</code>, <code>SelectedKeysChanged { selected_keys }</code>, <code>ActiveIndexChanged</code>, <code>PageChanged</code>, <code>PageSizeChanged</code>, <code>ScrollChanged { top_index }</code>, <code>FocusChanged</code>, <code>RowHoverChanged { index, hovered }</code>, <code>EnabledChanged</code>. Index selection can fire on a reorder when key membership did not. Key events require <code>set_row_key</code> and fire only when membership changes. Enter/Space selects the active row and does not emit an activation event. <code>PagingTableControl</code> clones every <code>TableEvent</code> outward and also writes page changes back into the table.</li>
+    <li><code>TreeViewEvent&lt;T&gt;</code> — <code>DragDrop(TreeViewDragEvent)</code>, <code>NodeActivated { node_id, data }</code>, <code>SelectionPolicyChanged</code>, <code>NodeExpanded</code>, <code>NodeCollapsed</code>, <code>SelectionChanged { selected_ids: HashSet }</code>, <code>ActiveNodeChanged</code>, <code>ScrollChanged</code>, <code>FocusChanged</code>, <code>RowHoverChanged { node_id, index, hovered }</code>, <code>EnabledChanged</code>. The selection set has no order.</li>
+    <li><code>TreeViewDragEvent</code> — <code>Started</code>, <code>Dropped</code>, <code>Rejected</code>, <code>Ended { reason }</code>. Not <code>non_exhaustive</code>. Narrower than <code>DragDropEvent</code>: no <code>ItemsRemoved</code> / <code>ItemsAdded</code> / <code>ItemsReordered</code> split, and its own <code>TreeDragEndReason</code>.</li>
+    <li><code>ListBoxEvent&lt;K&gt;</code> — <code>SelectionPolicyChanged</code>, <code>SelectionChanged { selected: Vec&lt;K&gt;, active }</code>, <code>ActiveItemChanged</code>, <code>ItemActivated { key }</code>, <code>ProjectionChanged { visible_count }</code>, <code>FocusChanged { is_focused }</code>. Returned in a <code>Vec</code> on <code>ListBoxUpdate</code>, which also carries <code>reveal: Option&lt;K&gt;</code> for host-owned scrolling. One transaction can emit selection and active together.</li>
+    <li><code>DragDropEvent&lt;S, K&gt;</code> — <code>DragStarted</code>, <code>ItemsRemoved</code>, <code>ItemsAdded</code>, <code>ItemsReordered</code>, <code>Dropped</code>, <code>DropRejected</code>, <code>DragEnded { reason }</code>. Domain-independent. Table nests it. Tree reimplements a cousin instead of reusing it.</li>
+  </ul>
+
+  <h3>Layout</h3>
+  <ul class="variants">
+    <li><code>SplitViewEvent</code> — <code>ResizeStart</code>, <code>SidebarWidthChanged { width }</code>, <code>ResizeEnd { width }</code>, <code>CollapsedChanged</code>, <code>SeparatorHoverChanged</code>, <code>EnabledChanged</code>. Width is absolute. No focus event; the separator is not a focus stop in this enum.</li>
+    <li><code>ResizablePanelsEvent</code> — <code>ResizeStart</code>, <code>SizesChanged { sizes_px }</code>, <code>ResizeEnd</code>, <code>PanelHiddenChanged { panel_index, hidden }</code>, <code>PanelRegionHiddenChanged { region, panel_index, hidden }</code>, <code>HandleFocusChanged</code>, <code>HandleHoverChanged</code>, <code>EnabledChanged</code>. <code>SizesChanged</code> includes animation frames and parent remeasurement, deferred off the prepaint path. A hidden panel with an id emits both hidden variants.</li>
+    <li><code>DockSplitterEvent</code> — <code>ResizeStart</code>, <code>Resize { total_delta }</code>, <code>ResizeEnd</code>, focus, hover, enabled. The live payload is a delta, not a size.</li>
+  </ul>
+</section>
+
+<section id="reconsider">
+  <h2>Reconsider</h2>
+  <p>These are published and working. They are the parts most likely to produce duplicate work, missed signals, or subscriber loops.</p>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">Vocabulary</span>Commit has six names</h3>
+    <p><code>Click</code>, <code>Change</code>, <code>Select</code>, <code>Activate</code>, <code>Complete</code>, and <code>Submit</code> overlap. Selector’s commit is <code>Change</code>. The three text pickers use <code>Select</code> or <code>Complete</code> for the same choice. Popup menu splits <code>ActionClick</code> and <code>Select</code>. Tabs fires <code>Change</code> and <code>Activate</code> for one click, and <code>Reactivate</code> plus <code>Activate</code> for a second click on the current tab. Control group always follows a real <code>Change</code> with <code>Activate</code>.</p>
+    <p>Pick one commit name per kind of control: value (<code>Change</code>), invocation (<code>Click</code> or <code>Activate</code>), and choice (<code>Select</code>). Keep <code>Submit</code> for text commit. Make <code>Complete</code> a documented mode of <code>Select</code>, or fold the flag into the payload (<code>exact: bool</code>), so subscribers stop matching both variants.</p>
+  </article>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">Pairing</span>Close is two events, and only sometimes</h3>
+    <p>Menus, selector, and the text pickers emit <code>OpenChanged { open: false }</code> on every close. They emit <code>Dismiss</code> only when the close is a cancel. Selecting an item closes without <code>Dismiss</code>. Overlay window uses a third dialect: <code>Opened</code> and <code>Dismissed</code>, with no boolean and no “closed because committed” distinction. Popover button publishes only <code>OpenChanged</code>.</p>
+    <p>Standardize on <code>OpenChanged { open }</code> for the boolean, and a separate <code>Dismiss</code> only for cancel. Document that successful selection is <code>OpenChanged { open: false }</code> without <code>Dismiss</code>. Map overlay window onto that pair, or document it as the exception in one place.</p>
+  </article>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">Pairing</span>Slider pointer-up emits the value twice</h3>
+    <p>Pointer up emits <code>Release</code> and <code>DragEnd</code> with the same <code>thumb_id</code> and <code>value</code>. Keyboard nudges emit <code>Change</code> and <code>Release</code> and skip the drag pair. Programmatic <code>set_value</code> emits nothing. Scrollbar has <code>Change</code> / <code>DragEnd</code> and no <code>Release</code>.</p>
+    <p><code>Change</code> should stay the live value. One terminal event should mean “gesture finished.” <code>Release</code> and <code>DragEnd</code> currently compete for that role. Keep <code>DragStart</code> / <code>DragEnd</code> for gesture brackets and let <code>Release</code> be the commit, including keyboard, or drop <code>Release</code> and teach keyboard to emit <code>DragEnd</code>. Do not keep both with identical payloads.</p>
+  </article>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">Channel</span>Layout traffic shares the semantic enum</h3>
+    <p><code>ControlGroupEvent::ItemBoundsChanged</code> and <code>TabsEvent::ItemBoundsChanged</code> fire from layout. <code>ResizablePanelsEvent::SizesChanged</code> fires on animation frames and on parent remeasurement, which the enum documents. Table and tree <code>ScrollChanged</code> and row-hover variants are high frequency next to selection. Radio group already drops bounds. Tabs still forwards them.</p>
+    <p>Bounds, per-frame sizes, scroll offsets, and hover belong on a presentation channel or a sampled callback. Semantic subscribers should be able to ignore them without matching them away. If bounds stay, they should not be required to retarget a tab indicator — that can stay internal, which tabs already does before it re-emits.</p>
+  </article>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">Identity</span>Selection payloads do not match</h3>
+    <p>List box reports an ordered <code>Vec</code> of keys plus active in one event, and a separate <code>ActiveItemChanged</code>. Table reports ordered indices and, when keyed, an ordered key vec as a second event. Tree reports an unordered <code>HashSet</code> and a separate active id. List box focus is <code>is_focused</code>; every other control uses <code>focused</code>.</p>
+    <p>Collection commits should carry ordered keys and the active key in one event. Indices are a view concern and go stale across sort, filter, and paging — table already says this in its module docs, then still leads with <code>SelectionChanged { selected_indices }</code>. Tree’s set should become a <code>Vec</code> in display order, matching list box and <code>SelectedKeysChanged</code>.</p>
+  </article>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">Translation</span>Sidebar flattens the engine and overloads hover</h3>
+    <p>The engine publishes focus, collapse, per-item hover, and rail-submenu open as distinct variants. The public sidebar drops focus and collapse. It turns both item hover and <code>RailSubmenuOpenChanged</code> into <code>HoverChanged { id: Option&lt;SharedString&gt; }</code>. A <code>None</code> id means “hover ended,” and a <code>Some</code> from the rail path means “submenu target,” using the same variant.</p>
+    <p>Forward <code>FocusChanged</code> and <code>CollapsedChanged</code>, or delete them from the engine if the host is not allowed to see them. Give the rail submenu its own event. Hover should stay <code>{ id, hovered }</code>, consistent with accordion and the engine.</p>
+  </article>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">Translation</span>Radio group throws away multi-select detail</h3>
+    <p>The inner <code>Change</code> carries <code>changed_id</code>, <code>selected</code>, and the full <code>selected_ids</code>. The radio event keeps <code>selected_ids.first()</code> as <code>Option</code>. That matches exclusive radios and misrepresents a multi group. Tabs, by contrast, keep the specific id and also keep bounds the radio group drops.</p>
+    <p>If radio group is exclusive, say so in the event (<code>Change { id }</code>) and stop implying a full selection set. If multi is legal, forward <code>selected_ids</code>.</p>
+  </article>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">Drag</span>Two drag lifecycles for one infra type</h3>
+    <p><code>DragDropEvent</code> is the shared keyed lifecycle: started, removed, added, reordered, dropped, rejected, ended. Table embeds it. Tree defines <code>TreeViewDragEvent</code> with a different reason enum and a single dropped/rejected pair, then wraps that in <code>TreeViewEvent::DragDrop</code>. End reasons are not interchangeable (<code>Transferred</code> / <code>Reordered</code> versus <code>MovedWithinTree</code> / <code>MovedAcrossTrees</code>).</p>
+    <p>Tree can keep domain fields (<code>TreeDropLocation</code>) on a payload inside <code>DragDropEvent</code>, or document the tree enum as a projection and map reasons in one function. A third shape — slider and scrollbar <code>DragStart</code> / <code>DragEnd</code> — is fine for a scalar thumb. It should not grow a third copy of rejected/cancelled.</p>
+  </article>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">Resize</span>Three live payloads</h3>
+    <p>Split view emits absolute sidebar width. Dock splitter emits <code>total_delta</code>. Resizable panels emit the full <code>sizes_px</code> vector, including frames that are not a user gesture. Subscribers that persist layout cannot share a helper.</p>
+    <p>Live and terminal events should carry absolute sizes. Deltas can be derived. <code>SizesChanged</code> during animation should be opt-in or named so a persist subscriber can listen only to <code>ResizeEnd</code>.</p>
+  </article>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">Delivery</span>List box is a different product shape</h3>
+    <p>List box is the most careful collection model: transactions, ordered keys, activation distinct from selection, projection changes, and a <code>reveal</code> request instead of a fake scroll event. It is also the only collection that refuses <code>EventEmitter</code>. Table and tree emit immediately, so a subscriber can observe a half-updated sibling. List box asks the host to deliver the batch after state is committed.</p>
+    <p>Either give <code>ListBoxControl</code> an emitter that flushes <code>ListBoxUpdate.events</code> in order, or treat the batch as the collection pattern and stop adding one-off emits on table and tree. Mixing them means look code and app code learn two subscription styles for the same gesture.</p>
+  </article>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">API</span>A few enums cannot grow</h3>
+    <p><code>PopoverButtonEvent</code>, <code>TooltipEvent</code>, and <code>TreeViewDragEvent</code> are exhaustive. Everything else a host matches is <code>non_exhaustive</code>. Adding dismiss or focus to the popover button, or a drag phase to the tree, is a breaking change today and a warning elsewhere.</p>
+  </article>
+
+  <article class="finding reconsider">
+    <h3><span class="tag reconsider">Loop</span>Paging table re-emits and writes back</h3>
+    <p><code>PagingTableControl</code> subscribes to the table and emits the same <code>TableEvent</code> values. It also subscribes to the pager and calls <code>set_page</code> / <code>set_page_size</code> on the table, which emit again. Selection updates push a summary string into the pager. The comment on table selection says setters emit once so owners can feed state back. The paging wrapper is a second owner inside that loop.</p>
+    <p>Page changes that originated from the pager should not re-enter <code>set_page</code> if the table is already on that page. The table module already claims setters emit only on difference; the wrapper should rely on that and should not be the place hosts subscribe if they also subscribe to the inner table.</p>
+  </article>
+</section>
+
+<section id="missing">
+  <h2>Missing</h2>
+  <p>Gaps a host hits when wiring the control. Interaction variants that button-family controls already have, and that composites drop, are listed first because they are inconsistent rather than new product surface.</p>
+
+  <article class="finding gap">
+    <h3><span class="tag gap">Forwarding</span>Enabled, focus, and hover die at composite boundaries</h3>
+    <ul>
+      <li>Toolbar publishes click and change only. A disabled toolbar item, a focused text item, or an open menu is invisible to the toolbar subscriber.</li>
+      <li>Selector, combo box, autocomplete, and search selector have focus and open, and no <code>EnabledChanged</code>. The choice controls they sit next to all emit it.</li>
+      <li>Radio group and tabs have focus and no enabled event, because control group itself has no <code>EnabledChanged</code>.</li>
+      <li>Popover button does not forward <code>PopoverPanelEvent::Dismiss</code> or <code>FocusChanged</code>.</li>
+      <li>Sidebar drops engine focus and collapse.</li>
+      <li>Text field hover updates state and does not emit. Text area has no hover event at all.</li>
+    </ul>
+    <p>Composites should forward the interaction trio when the inner control already emits it. Hosts that only need the commit can ignore the variants; hosts that sync chrome cannot invent them.</p>
+  </article>
+
+  <article class="finding gap">
+    <h3><span class="tag gap">Table</span>Activation selects and stops</h3>
+    <p>Enter, Space, and row click call <code>select_index</code>. Tree and list box both emit an activation distinct from selection (<code>NodeActivated</code>, <code>ItemActivated</code>). A table host that should open a row has to treat “selection became this single index” as a click, which is wrong for keyboard navigation that also changes selection, and wrong for extended selection.</p>
+    <p>Add <code>RowActivated { index, key }</code> on the explicit activate path. Keep selection events for membership changes.</p>
+  </article>
+
+  <article class="finding gap">
+    <h3><span class="tag gap">Text</span>Invalid and submit are uneven</h3>
+    <p>Both text controls recompute <code>invalid</code> from a validator on edit and on <code>set_value</code>, then only repaint. There is no <code>InvalidChanged</code>. Text area has no <code>Submit</code>, so a multiline field cannot share the text field’s commit path. Neither control publishes selection or caret changes; that is acceptable until a host needs a live character count or a collaborator caret. Invalid is not optional in the same way: the control already knows, and the host that supplied the validator often needs the bit for a form.</p>
+  </article>
+
+  <article class="finding gap">
+    <h3><span class="tag gap">Scroll</span>The container does not speak</h3>
+    <p><code>ScrollContainer</code> owns offset, smooth scrolling, and wheel policy. Subscribers must attach to the inner scrollbar’s <code>Change</code>, which is a normalized thumb value, or poll <code>vertical_offset()</code>. Table and tree already emit <code>ScrollChanged { top_index }</code>. A viewport event with offset and maximum would match those collections and let auto-hide chrome stay inside the container.</p>
+  </article>
+
+  <article class="finding gap">
+    <h3><span class="tag gap">Stepper</span>Step changes are method calls only</h3>
+    <p><code>set_current_step</code> and <code>set_step_state</code> notify and do not emit. If the stepper stays a display driven by the host, silence is correct. If a step becomes clickable, there is nowhere to put <code>StepActivated</code>. Decide that before adding pointer targets. Progress is in the same position: <code>set_value</code> is host-driven, and an event would only echo the caller.</p>
+  </article>
+
+  <article class="finding gap">
+    <h3><span class="tag gap">Slide panel</span>Not an entity</h3>
+    <p>Slide panel is app-owned state plus render helpers and resize handler structs. Open, dismiss, and resize never become events. That matches the module comment. It also means the overlay family has four lifecycle dialects: menu <code>OpenChanged</code>+<code>Dismiss</code>, window <code>Opened</code>/<code>Dismissed</code>, popover <code>OpenChanged</code>, and slide-panel callbacks. If slide panel remains a helper, say so next to overlay window so hosts do not look for an emitter.</p>
+  </article>
+
+  <article class="finding gap">
+    <h3><span class="tag gap">Picker</span>Highlight is invisible</h3>
+    <p>Combo box, autocomplete, and search selector move a highlighted row on the arrow keys and emit nothing until submit, clear, or open changes. Selection panel emits <code>ActiveIndexChanged</code> for the same idea. A host rendering a side preview of the highlighted item has to read the behavior object or duplicate keyboard handling.</p>
+  </article>
+
+  <article class="finding gap">
+    <h3><span class="tag gap">Button</span><code>Click</code> has no origin</h3>
+    <p>Pointer and keyboard both become <code>Click</code> with an empty payload. That is a good default. It blocks the few hosts that need to distinguish them (opening a menu on pointer versus activating the primary command on keyboard, which split button approximates by using a different control). A <code>source</code> field can wait until a real caller needs it. Do not add a parallel <code>Press</code> event without that caller.</p>
+  </article>
+</section>
+
+<section id="leave">
+  <h2>Leave alone</h2>
+  <article class="finding keep">
+    <h3><span class="tag keep">Keep</span>These splits are doing work</h3>
+    <ul>
+      <li>Programmatic setters that do not emit (<code>TextField::set_value</code>, <code>Slider::set_value</code>) let a subscriber write state back without a loop. Table’s module docs describe the same rule. Preserve it when adding events.</li>
+      <li><code>Dismiss</code> meaning cancel, separate from close-on-select, is the right distinction. The fix is to apply it everywhere, not to remove it.</li>
+      <li>List box’s batch plus <code>reveal</code> is the clearest collection contract in the crate. Copy it; do not replace it with ad-hoc emits.</li>
+      <li><code>SelectionEvent</code> staying off the public subscription path is correct. The three pickers should keep sharing that machine.</li>
+      <li>Button <code>Click</code> with no geometry is the right command event. Focus, hover, and enabled already cover chrome.</li>
+      <li>Accordion <code>ExpandedChanged</code> as the only commit is enough while items are disclosure, not navigation.</li>
+      <li>Progress and frame staying silent is correct. They display host state.</li>
+      <li>Dual hidden events on resizable panels are an explicit compatibility shim. Collapse them when index-based subscribers are gone, and not before.</li>
+    </ul>
+  </article>
+</section>
+
+<section id="sequence">
+  <h2>Suggested sequence</h2>
+  <ol>
+    <li>Write the vocabulary down as crate docs, not a new trait: commit, focus, hover, enabled, open, dismiss, drag bracket. Map each current variant onto it so new controls stop inventing names.</li>
+    <li>Stop double payloads. Slider pointer-up, tabs <code>Reactivate</code>+<code>Activate</code>, and control-group <code>Change</code>+<code>Activate</code> each need one canonical event for “this is the commit.”</li>
+    <li>Move per-frame and bounds traffic off the default semantic enum, starting with <code>SizesChanged</code> during animation and <code>ItemBoundsChanged</code> on tabs.</li>
+    <li>Align collection selection on ordered keys. Add table <code>RowActivated</code>. Decide whether list box gains an emitter or table/tree gain a batch.</li>
+    <li>Forward interaction events at toolbar, selector family, radio group, popover button, and sidebar, or delete the inner variants nobody is allowed to see.</li>
+    <li>Add <code>InvalidChanged</code> on both text controls. Add <code>Submit</code> to text area only if a caller needs Enter-to-commit; otherwise document that text area has no submit key.</li>
+    <li>Mark <code>PopoverButtonEvent</code>, <code>TooltipEvent</code>, and <code>TreeViewDragEvent</code> <code>non_exhaustive</code> before the next variant.</li>
+  </ol>
+  <div class="note">Do not introduce a single SDK-wide event enum. The controls are different types on purpose. The win is a shared set of names and payload shapes, applied per control, with layout noise kept off the path hosts match on.</div>
+</section>
+
+<footer>
+  Review of <code>crates/sdk</code> event enums and <code>cx.emit</code> sites. Standalone document, no external assets.
+</footer>
+</main>
+</div>
+</body>
+</html>

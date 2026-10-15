@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A modal or modeless overlay.">
+<title>Overlay Window · Luma SDK</title>
+<link rel="stylesheet" href="site.css">
+<script src="site.js" defer></script>
+<script>
+try { if(localStorage.getItem('luma-docs-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch {}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<details class="mobile-nav"><summary>Documentation navigation</summary><nav aria-label="Mobile navigation"><a href="index.html">Getting Started</a><a href="looks.html">Why? How?</a><a href="look-shadcn.html">Look-shadcn</a><a href="look-radix.html">Look-radix</a><a href="create-look.html">Create your own Look</a><a href="button.html">Button</a><a href="icon-button.html">Icon Button</a><a href="split-button.html">Split Button</a><a href="checkbox.html">Checkbox</a><a href="radio-button.html">Radio Button</a><a href="radio-group.html">Radio Group</a><a href="switch.html">Switch</a><a href="toggle.html">Toggle</a><a href="toolbar.html">Toolbar</a><a href="control-group.html">Control Group</a><a href="icon-group.html">Icon Group</a><a href="textfield.html">Text Field</a><a href="textarea.html">Text Area</a><a href="slider.html">Slider</a><a href="progress.html">Progress</a><a href="listbox.html">List Box</a><a href="table.html">Table</a><a href="tree-view.html">Tree View</a><a href="selector.html">Selector</a><a href="combobox.html">ComboBox</a><a href="autocomplete.html">Autocomplete</a><a href="search-selector.html">Search Selector</a><a href="selection-panel.html">Selection Panel</a><a href="accordion.html">Accordion</a><a href="tabs.html">Tabs</a><a href="sidebar.html">Sidebar</a><a href="pager.html">Pager</a><a href="stepper.html">Stepper</a><a href="popup-menu.html">Popup Menu</a><a href="context-menu.html">Context Menu</a><a href="popover-button.html">Popover Button</a><a href="overlay-window.html" aria-current="page">Overlay Window</a><a href="tooltip.html">Tooltip</a><a href="slide-panel.html">Slide Panel</a><a href="frame.html">Frame</a><a href="dock-splitter.html">Dock Splitter</a><a href="resizable-panels.html">Resizable Panels</a><a href="split-view.html">Split View</a><a href="scroll-container.html">Scroll Container</a><a href="scrollbar.html">Scrollbar</a><a href="popup-scroll-surface.html">Popup Scroll Surface</a><a href="floating-menu.html">Floating Menu</a><a href="selector-list.html">Selector List</a></nav></details>
+<div class="layout">
+<aside class="sidebar" aria-label="Documentation navigation"><nav aria-label="Overview"><div class="nav-label">Overview</div><a href="index.html">Getting Started</a></nav><nav aria-label="Looks"><div class="nav-label">Looks</div><a href="looks.html">Why? How?</a><a href="look-shadcn.html">Look-shadcn</a><a href="look-radix.html">Look-radix</a><a href="create-look.html">Create your own Look</a></nav><nav aria-label="Controls"><div class="nav-label">Controls</div><a href="accordion.html">Accordion</a><a href="autocomplete.html">Autocomplete</a><a href="button.html">Button</a><a href="checkbox.html">Checkbox</a><a href="combobox.html">ComboBox</a><a href="context-menu.html">Context Menu</a><a href="control-group.html">Control Group</a><a href="dock-splitter.html">Dock Splitter</a><a href="floating-menu.html">Floating Menu</a><a href="frame.html">Frame</a><a href="icon-button.html">Icon Button</a><a href="icon-group.html">Icon Group</a><a href="listbox.html">List Box</a><a href="overlay-window.html" aria-current="page">Overlay Window</a><a href="pager.html">Pager</a><a href="popover-button.html">Popover Button</a><a href="popup-menu.html">Popup Menu</a><a href="popup-scroll-surface.html">Popup Scroll Surface</a><a href="progress.html">Progress</a><a href="radio-button.html">Radio Button</a><a href="radio-group.html">Radio Group</a><a href="resizable-panels.html">Resizable Panels</a><a href="scroll-container.html">Scroll Container</a><a href="scrollbar.html">Scrollbar</a><a href="search-selector.html">Search Selector</a><a href="selection-panel.html">Selection Panel</a><a href="selector.html">Selector</a><a href="selector-list.html">Selector List</a><a href="sidebar.html">Sidebar</a><a href="slide-panel.html">Slide Panel</a><a href="slider.html">Slider</a><a href="split-button.html">Split Button</a><a href="split-view.html">Split View</a><a href="stepper.html">Stepper</a><a href="switch.html">Switch</a><a href="table.html">Table</a><a href="tabs.html">Tabs</a><a href="textarea.html">Text Area</a><a href="textfield.html">Text Field</a><a href="toggle.html">Toggle</a><a href="toolbar.html">Toolbar</a><a href="tooltip.html">Tooltip</a><a href="tree-view.html">Tree View</a></nav></aside>
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Overlay Window</h1><p class="intro">A modal or modeless overlay.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code>use gpui::{Context, Subscription};
+use gpui_luma::controls::overlay_window::OverlayWindowEvent;
+use gpui::{div, prelude::*};
+use gpui_luma_look_radix::{Look, LookControlExt};
+
+struct Example {
+    control: gpui_luma::controls::overlay_window::OverlayWindow,
+    dismissals: usize,
+    _subscription: Subscription,
+}
+
+impl Example {
+    fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
+        // This Look extension creates a template-bound SDK overlay builder.
+        let look = Look::built_in();
+        let control = look
+            .overlay_window(&quot;details&quot;)
+            .content(|_, _, _| div().child(&quot;Details&quot;).into_any_element())
+            .spawn(cx);
+
+        let subscription = cx.subscribe(&amp;control, |app, _, event: &amp;OverlayWindowEvent, cx| {
+            if let OverlayWindowEvent::Dismissed = event {
+                app.dismissals += 1;
+                cx.notify();
+            }
+        });
+
+        Self { control, dismissals: 0, _subscription: subscription }
+    }
+}</code></pre></div><p class="small">Integration snippet, checked against the current SDK and Radix crates. <code>cx</code> is the initialized owner context. The example retains both the control and its subscription. Render <code>self.control.clone()</code> in the owner’s view.</p></section><section id="sdk"><h2>SDK behavior & customization</h2><p>Configure dismissal, placement, and optional dragging. Open from an owner and preserve focus restoration.</p><p class="small">Relevant contracts: <code>OverlayWindowRenderModel</code>, <code>OverlayWindowTemplateHandlers</code>, <code>OverlayWindowTemplateModifier</code>, <code>OverlayWindowTemplateParts</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="events"><h2>Events</h2><p>The callback updates application state. Retain the subscription for as long as the owner needs events; dropping it unsubscribes. <code>cx.notify()</code> requests an owner redraw.</p><div class="event-table"><table><thead><tr><th scope="col">Event / payload</th><th scope="col">Application use</th></tr></thead><tbody><tr><td><code>Opened</code></td><td>The overlay opened.</td></tr><tr><td><code>Dismissed</code></td><td>The overlay was dismissed.</td></tr></tbody></table></div><p class="small"><code>OverlayWindowEvent</code> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/overlay/overlay_window/model.rs">Event definitions</a>. Match the events you need; allow for other variants.</p></section><section id="differences"><h2>Look differences</h2><p>Radix provides an adapter for this SDK role. Variant names, sizes, and styling options belong to the Look, not the SDK contract. Builders use ambient Look resolution unless you explicitly override it.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/overlay/overlay_window/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/ext.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#events">Events</a><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#differences">Look differences</a><a href="#source">Source</a></nav>
+</div>
+</body>
+</html>

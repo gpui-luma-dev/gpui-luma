@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A draggable boundary between dock regions.">
+<title>Dock Splitter · Luma SDK</title>
+<link rel="stylesheet" href="site.css">
+<script src="site.js" defer></script>
+<script>
+try { if(localStorage.getItem('luma-docs-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch {}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<details class="mobile-nav"><summary>Documentation navigation</summary><nav aria-label="Mobile navigation"><a href="index.html">Getting Started</a><a href="looks.html">Why? How?</a><a href="look-shadcn.html">Look-shadcn</a><a href="look-radix.html">Look-radix</a><a href="create-look.html">Create your own Look</a><a href="button.html">Button</a><a href="icon-button.html">Icon Button</a><a href="split-button.html">Split Button</a><a href="checkbox.html">Checkbox</a><a href="radio-button.html">Radio Button</a><a href="radio-group.html">Radio Group</a><a href="switch.html">Switch</a><a href="toggle.html">Toggle</a><a href="toolbar.html">Toolbar</a><a href="control-group.html">Control Group</a><a href="icon-group.html">Icon Group</a><a href="textfield.html">Text Field</a><a href="textarea.html">Text Area</a><a href="slider.html">Slider</a><a href="progress.html">Progress</a><a href="listbox.html">List Box</a><a href="table.html">Table</a><a href="tree-view.html">Tree View</a><a href="selector.html">Selector</a><a href="combobox.html">ComboBox</a><a href="autocomplete.html">Autocomplete</a><a href="search-selector.html">Search Selector</a><a href="selection-panel.html">Selection Panel</a><a href="accordion.html">Accordion</a><a href="tabs.html">Tabs</a><a href="sidebar.html">Sidebar</a><a href="pager.html">Pager</a><a href="stepper.html">Stepper</a><a href="popup-menu.html">Popup Menu</a><a href="context-menu.html">Context Menu</a><a href="popover-button.html">Popover Button</a><a href="overlay-window.html">Overlay Window</a><a href="tooltip.html">Tooltip</a><a href="slide-panel.html">Slide Panel</a><a href="frame.html">Frame</a><a href="dock-splitter.html" aria-current="page">Dock Splitter</a><a href="resizable-panels.html">Resizable Panels</a><a href="split-view.html">Split View</a><a href="scroll-container.html">Scroll Container</a><a href="scrollbar.html">Scrollbar</a><a href="popup-scroll-surface.html">Popup Scroll Surface</a><a href="floating-menu.html">Floating Menu</a><a href="selector-list.html">Selector List</a></nav></details>
+<div class="layout">
+<aside class="sidebar" aria-label="Documentation navigation"><nav aria-label="Overview"><div class="nav-label">Overview</div><a href="index.html">Getting Started</a></nav><nav aria-label="Looks"><div class="nav-label">Looks</div><a href="looks.html">Why? How?</a><a href="look-shadcn.html">Look-shadcn</a><a href="look-radix.html">Look-radix</a><a href="create-look.html">Create your own Look</a></nav><nav aria-label="Controls"><div class="nav-label">Controls</div><a href="accordion.html">Accordion</a><a href="autocomplete.html">Autocomplete</a><a href="button.html">Button</a><a href="checkbox.html">Checkbox</a><a href="combobox.html">ComboBox</a><a href="context-menu.html">Context Menu</a><a href="control-group.html">Control Group</a><a href="dock-splitter.html" aria-current="page">Dock Splitter</a><a href="floating-menu.html">Floating Menu</a><a href="frame.html">Frame</a><a href="icon-button.html">Icon Button</a><a href="icon-group.html">Icon Group</a><a href="listbox.html">List Box</a><a href="overlay-window.html">Overlay Window</a><a href="pager.html">Pager</a><a href="popover-button.html">Popover Button</a><a href="popup-menu.html">Popup Menu</a><a href="popup-scroll-surface.html">Popup Scroll Surface</a><a href="progress.html">Progress</a><a href="radio-button.html">Radio Button</a><a href="radio-group.html">Radio Group</a><a href="resizable-panels.html">Resizable Panels</a><a href="scroll-container.html">Scroll Container</a><a href="scrollbar.html">Scrollbar</a><a href="search-selector.html">Search Selector</a><a href="selection-panel.html">Selection Panel</a><a href="selector.html">Selector</a><a href="selector-list.html">Selector List</a><a href="sidebar.html">Sidebar</a><a href="slide-panel.html">Slide Panel</a><a href="slider.html">Slider</a><a href="split-button.html">Split Button</a><a href="split-view.html">Split View</a><a href="stepper.html">Stepper</a><a href="switch.html">Switch</a><a href="table.html">Table</a><a href="tabs.html">Tabs</a><a href="textarea.html">Text Area</a><a href="textfield.html">Text Field</a><a href="toggle.html">Toggle</a><a href="toolbar.html">Toolbar</a><a href="tooltip.html">Tooltip</a><a href="tree-view.html">Tree View</a></nav></aside>
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Dock Splitter</h1><p class="intro">A draggable boundary between dock regions.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>SDK · integration snippet</span><button class="copy" aria-label="Copy SDK · integration snippet">Copy</button></div><pre><code>use gpui::{Context, Subscription};
+use gpui_luma::controls::dock_splitter::DockSplitterEvent;
+use gpui_luma::controls::dock_splitter::{DockSplitter, SplitterOrientation};
+
+struct Example {
+    control: gpui::Entity&lt;gpui_luma::controls::dock_splitter::DockSplitter&gt;,
+    resize_delta: f32,
+    _subscription: Subscription,
+}
+
+impl Example {
+    fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
+        let control = DockSplitter::new(&quot;sidebar-resize&quot;, SplitterOrientation::Vertical).spawn(cx);
+
+        let subscription = cx.subscribe(&amp;control, |app, _, event: &amp;DockSplitterEvent, cx| {
+            if let DockSplitterEvent::Resize { total_delta } = event {
+                app.resize_delta = *total_delta;
+                cx.notify();
+            }
+        });
+
+        Self { control, resize_delta: 0.0, _subscription: subscription }
+    }
+}</code></pre></div><p class="small">Integration snippet, checked against the current SDK and Radix crates. <code>cx</code> is the initialized owner context. The example retains both the control and its subscription. Render <code>self.control.clone()</code> in the owner’s view.</p></section><section id="sdk"><h2>SDK behavior & customization</h2><p>Resize reports a total delta. The host applies it to the corresponding layout dimensions.</p><p class="small">Relevant contracts: <code>DockSplitterRenderModel</code>, <code>DockSplitterTemplateHandlers</code>, <code>DockSplitterTemplateModifier</code>, <code>DockSplitterTemplate</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="events"><h2>Events</h2><p>The callback updates application state. Retain the subscription for as long as the owner needs events; dropping it unsubscribes. <code>cx.notify()</code> requests an owner redraw.</p><div class="event-table"><table><thead><tr><th scope="col">Event / payload</th><th scope="col">Application use</th></tr></thead><tbody><tr><td><code>ResizeStart</code></td><td>Resizing began; capture the starting layout if applying deltas.</td></tr><tr><td><code>Resize { total_delta: f32 }</code></td><td>Total resize delta since the gesture began.</td></tr><tr><td><code>ResizeEnd</code></td><td>Resizing ended; persist the resulting layout.</td></tr><tr><td><code>FocusChanged { focused: bool }</code></td><td>Focus state changed.</td></tr><tr><td><code>HoverChanged { hovered: bool }</code></td><td>Pointer hover state changed.</td></tr><tr><td><code>EnabledChanged { enabled: bool }</code></td><td>Enabled state changed.</td></tr></tbody></table></div><p class="small"><code>DockSplitterEvent</code> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/layout/dock_splitter/control.rs">Event definitions</a>. Match the events you need; allow for other variants.</p></section><section id="differences"><h2>Look differences</h2><p>No dedicated Radix factory is exported for this SDK module. Use the SDK contract shown here; integrate a custom template or theme where the module supports one. Do not assume Shadcn and Radix have matching factories.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/layout/dock_splitter/mod.rs">SDK module</a></p></section><footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#events">Events</a><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#differences">Look differences</a><a href="#source">Source</a></nav>
+</div>
+</body>
+</html>

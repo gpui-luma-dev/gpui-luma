@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Build a GPUI-Luma button, handle activation, and choose a look. A practical SDK guide.">
+<title>Button · Luma SDK</title>
+<link rel="stylesheet" href="site.css">
+<script src="site.js" defer></script>
+<script>
+try { if(localStorage.getItem('luma-docs-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch {}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<details class="mobile-nav"><summary>Documentation navigation</summary><nav aria-label="Mobile navigation"><a href="index.html">Getting Started</a><a href="looks.html">Why? How?</a><a href="look-shadcn.html">Look-shadcn</a><a href="look-radix.html">Look-radix</a><a href="create-look.html">Create your own Look</a><a href="button.html" aria-current="page">Button</a><a href="icon-button.html">Icon Button</a><a href="split-button.html">Split Button</a><a href="checkbox.html">Checkbox</a><a href="radio-button.html">Radio Button</a><a href="radio-group.html">Radio Group</a><a href="switch.html">Switch</a><a href="toggle.html">Toggle</a><a href="toolbar.html">Toolbar</a><a href="control-group.html">Control Group</a><a href="icon-group.html">Icon Group</a><a href="textfield.html">Text Field</a><a href="textarea.html">Text Area</a><a href="slider.html">Slider</a><a href="progress.html">Progress</a><a href="listbox.html">List Box</a><a href="table.html">Table</a><a href="tree-view.html">Tree View</a><a href="selector.html">Selector</a><a href="combobox.html">ComboBox</a><a href="autocomplete.html">Autocomplete</a><a href="search-selector.html">Search Selector</a><a href="selection-panel.html">Selection Panel</a><a href="accordion.html">Accordion</a><a href="tabs.html">Tabs</a><a href="sidebar.html">Sidebar</a><a href="pager.html">Pager</a><a href="stepper.html">Stepper</a><a href="popup-menu.html">Popup Menu</a><a href="context-menu.html">Context Menu</a><a href="popover-button.html">Popover Button</a><a href="overlay-window.html">Overlay Window</a><a href="tooltip.html">Tooltip</a><a href="slide-panel.html">Slide Panel</a><a href="frame.html">Frame</a><a href="dock-splitter.html">Dock Splitter</a><a href="resizable-panels.html">Resizable Panels</a><a href="split-view.html">Split View</a><a href="scroll-container.html">Scroll Container</a><a href="scrollbar.html">Scrollbar</a><a href="popup-scroll-surface.html">Popup Scroll Surface</a><a href="floating-menu.html">Floating Menu</a><a href="selector-list.html">Selector List</a></nav></details>
+<div class="layout">
+<aside class="sidebar" aria-label="Documentation navigation"><nav aria-label="Overview"><div class="nav-label">Overview</div><a href="index.html">Getting Started</a></nav><nav aria-label="Looks"><div class="nav-label">Looks</div><a href="looks.html">Why? How?</a><a href="look-shadcn.html">Look-shadcn</a><a href="look-radix.html">Look-radix</a><a href="create-look.html">Create your own Look</a></nav><nav aria-label="Controls"><div class="nav-label">Controls</div><a href="accordion.html">Accordion</a><a href="autocomplete.html">Autocomplete</a><a href="button.html" aria-current="page">Button</a><a href="checkbox.html">Checkbox</a><a href="combobox.html">ComboBox</a><a href="context-menu.html">Context Menu</a><a href="control-group.html">Control Group</a><a href="dock-splitter.html">Dock Splitter</a><a href="floating-menu.html">Floating Menu</a><a href="frame.html">Frame</a><a href="icon-button.html">Icon Button</a><a href="icon-group.html">Icon Group</a><a href="listbox.html">List Box</a><a href="overlay-window.html">Overlay Window</a><a href="pager.html">Pager</a><a href="popover-button.html">Popover Button</a><a href="popup-menu.html">Popup Menu</a><a href="popup-scroll-surface.html">Popup Scroll Surface</a><a href="progress.html">Progress</a><a href="radio-button.html">Radio Button</a><a href="radio-group.html">Radio Group</a><a href="resizable-panels.html">Resizable Panels</a><a href="scroll-container.html">Scroll Container</a><a href="scrollbar.html">Scrollbar</a><a href="search-selector.html">Search Selector</a><a href="selection-panel.html">Selection Panel</a><a href="selector.html">Selector</a><a href="selector-list.html">Selector List</a><a href="sidebar.html">Sidebar</a><a href="slide-panel.html">Slide Panel</a><a href="slider.html">Slider</a><a href="split-button.html">Split Button</a><a href="split-view.html">Split View</a><a href="stepper.html">Stepper</a><a href="switch.html">Switch</a><a href="table.html">Table</a><a href="tabs.html">Tabs</a><a href="textarea.html">Text Area</a><a href="textfield.html">Text Field</a><a href="toggle.html">Toggle</a><a href="toolbar.html">Toolbar</a><a href="tooltip.html">Tooltip</a><a href="tree-view.html">Tree View</a></nav></aside>
+<main id="main">
+<div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div>
+<h1>Button</h1>
+<p class="intro">One action, clearly expressed. Create a button, respond to activation, and give it a look.</p>
+<div class="meta"><code>gpui_luma::controls::button</code><span>Native GPUI control</span></div>
+<section id="create"><h2><span class="number">01</span>Create a button</h2>
+<p>Create the SDK button through the Radix builder. The SDK owns its state and events; Radix supplies presentation.</p>
+<div class="codebox"><div class="codebar"><span>Rust · SDK button via Radix</span><button class="copy" aria-label="Copy SDK button example">Copy</button></div><pre><code>use gpui::{Context, Subscription};
+use gpui_luma::controls::button::ButtonEvent;
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma_look_radix as radix;
+
+struct Example {
+    control: gpui::Entity&lt;gpui_luma::controls::button::Button&gt;,
+    save_requests: usize,
+    _subscription: Subscription,
+}
+
+impl Example {
+    fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
+        let control = radix::Button::new(&quot;save&quot;).solid().label(&quot;Save&quot;).spawn(cx);
+
+        let subscription = cx.subscribe(&amp;control, |app, _, event: &amp;ButtonEvent, cx| {
+            if let ButtonEvent::Click = event {
+                app.save_requests += 1;
+                cx.notify();
+            }
+        });
+
+        Self { control, save_requests: 0, _subscription: subscription }
+    }
+}</code></pre></div>
+<p class="small">This integration example assumes an initialized Luma application. Render <code>self.control.clone()</code> from the owner’s view.</p>
+<div class="callout"><p><strong>Behavior lives in the SDK.</strong> A look supplies styling and templates. Its builder still creates the same SDK button entity.</p></div>
+</section>
+<section id="events"><h2>Events</h2><p>The callback updates application state. Retain the subscription for as long as the owner needs events; dropping it unsubscribes. <code>cx.notify()</code> requests an owner redraw.</p><div class="event-table"><table><thead><tr><th scope="col">Event / payload</th><th scope="col">Application use</th></tr></thead><tbody><tr><td><code>Click</code></td><td>Execute the application command.</td></tr><tr><td><code>FocusChanged { focused: bool }</code></td><td>Focus state changed.</td></tr><tr><td><code>EnabledChanged { enabled: bool }</code></td><td>Enabled state changed.</td></tr><tr><td><code>HoverChanged { hovered: bool }</code></td><td>Pointer hover state changed.</td></tr></tbody></table></div><p class="small"><code>ButtonEvent</code> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/button/core.rs">Event definitions</a>. Match the events you need; allow for other variants.</p></section>
+<section id="looks"><h2><span class="number">03</span>Look differences</h2>
+<p>Variants belong to the Look, not the SDK Button contract. Radix examples here use <code>.solid()</code>; Shadcn uses <code>.primary()</code> for primary emphasis. These are visual choices, not guaranteed equivalents.</p>
+<ul class="notes"><li>Radix: Solid, Soft, Surface, Outline, Ghost, and Classic; additional specialized variants exist.</li><li>Shadcn: Primary, Secondary, Outline, Ghost, and ContentOnly.</li><li>Sizes, tones, radii, and template options are Look-specific. Check the chosen builder.</li></ul>
+<p class="small">SDK activation, enabled state, and event types stay the same. Builders resolve their Look automatically.</p></section>
+<section id="disabled"><h2><span class="number">04</span>Disable an unavailable action</h2>
+<p>Update the entity when application state changes. Disabling the control prevents activation; changing its appearance alone does not.</p>
+<div class="codebox"><div class="codebar"><span>Rust · After creation</span><button class="copy" aria-label="Copy disabled state example">Copy</button></div><pre><code>self.control.update(cx, |button, cx| {
+    button.set_enabled(false, cx);
+});</code></pre></div>
+<p class="small">Pass <code>true</code> to enable it again. To start disabled, add <code>.enabled(false)</code> to the builder before <code>.spawn(cx)</code>.</p>
+</section>
+<section id="behavior"><h2>Interaction notes</h2><ul class="notes"><li>The button participates in focus navigation by default.</li><li>Keyboard activation uses the SDK’s command key profile. Keep Luma’s initialization and key bindings in place.</li><li>Use a unique, stable control ID within the containing view.</li><li>These are focused integration snippets, not a complete runnable application.</li></ul>
+<p class="small">Explore the implementation: <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/button/control.rs">SDK button</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-shadcn/src/controls/button_builder.rs">Shadcn builder</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/button_builder.rs">Radix builder</a></p>
+</section>
+<footer data-site-footer></footer>
+</main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#create">Create a button</a><a href="#events">Events</a><a href="#looks">Look differences</a><a href="#disabled">Disable an action</a><a href="#behavior">Interaction notes</a></nav>
+</div>
+</body>
+</html>
