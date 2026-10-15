@@ -14,3 +14,6 @@ pub use template::{
     SEPARATOR_HITBOX_WIDTH, SEPARATOR_CUE_WIDTH, SEPARATOR_CUE_HOVERED_WIDTH, SEPARATOR_CUE_RADIUS,
     SEPARATOR_CUE_INSET_Y,
 };
+
+mod callback;
+pub use callback::SplitViewEventExt;

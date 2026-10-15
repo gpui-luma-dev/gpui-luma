@@ -1,5 +1,6 @@
 //! Color arc control exposition — channel arcs, renderer compare, and thickness variants.
 
+use gpui_luma::controls::slider::SliderEventExt;
 use std::sync::Arc;
 
 use gpui::{App, AppContext, Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -374,15 +375,21 @@ impl ColorArcControlExposition {
         });
 
         let left_pane = cx.new(|cx| {
-            let subscriptions = vec![cx.subscribe(&hue_arc.slider, {
-                let event_stream = event_stream.clone();
-                move |this: &mut ColorArcExpositionLeftPane, _, event: &SliderEvent, cx| {
-                    this.handle_event(event, cx);
-                    if let Some(line) = format_slider_event("Hue Arc", event) {
-                        event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+            let subscriptions = {
+                hue_arc.slider.clone().on_event(cx, {
+                    let event_stream = event_stream.downgrade();
+                    move |this: &mut ColorArcExpositionLeftPane, event: &SliderEvent, cx| {
+                        let Some(event_stream) = event_stream.upgrade() else {
+                            return;
+                        };
+                        this.handle_event(event, cx);
+                        if let Some(line) = format_slider_event("Hue Arc", event) {
+                            event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                        }
                     }
-                }
-            })];
+                });
+                Vec::new()
+            };
 
             ColorArcExpositionLeftPane {
                 look: look.clone(),

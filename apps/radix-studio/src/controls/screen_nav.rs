@@ -1,12 +1,14 @@
 //! Toggle-style page navigation backed by the SDK screen content slots.
 
+use gpui_luma::controls::toggle::ToggleEventExt;
 use std::sync::Arc;
 
 use gpui::{
     AnyElement, Hsla, FontWeight, px, Context, Entity, EventEmitter, IntoElement, Render, Subscription, Window, div,
     prelude::*,
 };
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::tabs::{Tabs};
 use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma::infra::presenter::HasPresenter;
@@ -120,56 +122,53 @@ impl ScreenNav {
                     .selected(tab == RadixStudioTab::CustomPalette)
                     .animated(false)
                     .spawn(cx);
-                subscriptions.push(cx.subscribe(&toggle, move |this, toggle, event: &ToggleEvent, cx| {
-                    if matches!(event, ToggleEvent::Change { .. }) {
-                        if this.active == tab {
-                            toggle.update(cx, |toggle, cx| toggle.set_data(true, cx));
-                        } else {
-                            this.select(tab, cx);
+                {
+                    let callback_control = (&toggle).downgrade();
+                    toggle.clone().on_event(cx, move |this, event: &ToggleEvent, cx| {
+                        let Some(toggle) = callback_control.upgrade() else {
+                            return;
+                        };
+
+                        if matches!(event, ToggleEvent::Change { .. }) {
+                            if this.active == tab {
+                                toggle.update(cx, |toggle, cx| toggle.set_data(true, cx));
+                            } else {
+                                this.select(tab, cx);
+                            }
                         }
-                    }
-                }));
+                    })
+                };
                 (tab, toggle)
             })
             .collect();
-        subscriptions.push(cx.subscribe(&tooltip_toggle, |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                let enabled = cx.try_global::<TooltipSettings>().is_none_or(|settings| settings.enabled);
-                cx.set_global(TooltipSettings { enabled: !enabled });
-                this.tooltip_toggle.update(cx, |_, cx| cx.notify());
-                cx.refresh_windows();
-            }
-        }));
-        subscriptions.push(cx.subscribe(&radix_link, |_, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                cx.open_url("https://www.radix-ui.com/primitives/docs/overview/introduction");
-            }
-        }));
-        subscriptions.push(cx.subscribe(&github, |_, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                cx.open_url("https://github.com/gpui-luma-dev/gpui-luma");
-            }
-        }));
-        subscriptions.push(cx.subscribe(&theme_reset, |_, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                cx.emit(ScreenNavEvent::ResetTheme);
-            }
-        }));
+        tooltip_toggle.clone().on_click(cx, |this, cx| {
+            let enabled = cx.try_global::<TooltipSettings>().is_none_or(|settings| settings.enabled);
+            cx.set_global(TooltipSettings { enabled: !enabled });
+            this.tooltip_toggle.update(cx, |_, cx| cx.notify());
+            cx.refresh_windows();
+        });
+        radix_link.clone().on_click(cx, |_, cx| {
+            cx.open_url("https://www.radix-ui.com/primitives/docs/overview/introduction");
+        });
+        github.clone().on_click(cx, |_, cx| {
+            cx.open_url("https://github.com/gpui-luma-dev/gpui-luma");
+        });
+        theme_reset.clone().on_click(cx, |_, cx| {
+            cx.emit(ScreenNavEvent::ResetTheme);
+        });
         subscriptions.push(cx.observe(&tabs, |this, tabs, cx| {
             let active_id = tabs.read(cx).active_id().cloned();
             if let Some((tab, _, _)) = SCREEN_TABS.iter().find(|(_, id, _)| Some(*id) == active_id.as_deref()) {
                 this.select(*tab, cx);
             }
         }));
-        subscriptions.push(cx.subscribe(&theme_toggle, |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                let mode = match this.look.mode() {
-                    ThemeMode::Dark => ThemeMode::Light,
-                    ThemeMode::Light => ThemeMode::Dark,
-                };
-                cx.emit(ScreenNavEvent::ModeChange { mode });
-            }
-        }));
+        theme_toggle.clone().on_click(cx, |this, cx| {
+            let mode = match this.look.mode() {
+                ThemeMode::Dark => ThemeMode::Light,
+                ThemeMode::Light => ThemeMode::Dark,
+            };
+            cx.emit(ScreenNavEvent::ModeChange { mode });
+        });
 
         Self {
             look: Arc::clone(look),

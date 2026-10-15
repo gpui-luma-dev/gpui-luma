@@ -1,8 +1,9 @@
 //! Toggle control exposition — gallery-aligned primary/secondary text and round-icon toggles.
 
+use gpui_luma::controls::toggle::ToggleEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::infra::icon::lucide_icon;
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
@@ -39,7 +40,6 @@ struct ToggleExpositionLeftPane {
     primary_selected: bool,
     secondary_round_icon_selected: bool,
     primary_round_icon_selected: bool,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl ToggleExpositionLeftPane {
@@ -176,24 +176,22 @@ impl ToggleControlExposition {
         });
 
         let left_pane = cx.new(|cx| {
-            let subscriptions = vec![
-                wire_toggle(cx, &secondary_toggle, "secondary", ToggleTarget::Secondary, event_stream.clone()),
-                wire_toggle(cx, &primary_toggle, "primary", ToggleTarget::Primary, event_stream.clone()),
-                wire_toggle(
-                    cx,
-                    &secondary_round_icon_toggle,
-                    "secondary-round-icon",
-                    ToggleTarget::SecondaryRoundIcon,
-                    event_stream.clone(),
-                ),
-                wire_toggle(
-                    cx,
-                    &primary_round_icon_toggle,
-                    "primary-round-icon",
-                    ToggleTarget::PrimaryRoundIcon,
-                    event_stream.clone(),
-                ),
-            ];
+            wire_toggle(cx, &secondary_toggle, "secondary", ToggleTarget::Secondary, event_stream.clone());
+            wire_toggle(cx, &primary_toggle, "primary", ToggleTarget::Primary, event_stream.clone());
+            wire_toggle(
+                cx,
+                &secondary_round_icon_toggle,
+                "secondary-round-icon",
+                ToggleTarget::SecondaryRoundIcon,
+                event_stream.clone(),
+            );
+            wire_toggle(
+                cx,
+                &primary_round_icon_toggle,
+                "primary-round-icon",
+                ToggleTarget::PrimaryRoundIcon,
+                event_stream.clone(),
+            );
 
             ToggleExpositionLeftPane {
                 look: look.clone(),
@@ -207,7 +205,6 @@ impl ToggleControlExposition {
                 primary_selected: false,
                 secondary_round_icon_selected: false,
                 primary_round_icon_selected: true,
-                _subscriptions: subscriptions,
             }
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
@@ -263,8 +260,8 @@ fn wire_toggle(
     label: &'static str,
     target: ToggleTarget,
     event_stream: Entity<ControlEventStream>,
-) -> Subscription {
-    cx.subscribe(toggle, move |this, _, event: &ToggleEvent, cx| {
+) {
+    toggle.clone().on_event(cx, move |this, event: &ToggleEvent, cx| {
         if let ToggleEvent::Change { selected } = event {
             match target {
                 ToggleTarget::Secondary => this.secondary_selected = *selected,
@@ -301,7 +298,7 @@ fn wire_toggle(
         if let Some(line) = format_toggle_event(label, event) {
             event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
         }
-    })
+    });
 }
 
 impl Render for ToggleControlExposition {

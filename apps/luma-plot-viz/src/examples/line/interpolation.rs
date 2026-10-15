@@ -1,8 +1,10 @@
+use gpui_luma::controls::radio_group::RadioGroupEventExt;
 use std::time::Duration;
 
 use gpui::{App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::{
-    controls::button::{Button, ButtonEvent},
+    controls::button::{Button},
     motion::VisualTransition,
     controls::radio_group::{RadioGroup, RadioGroupEvent, RadioGroupItem},
     hstack, vstack,
@@ -47,7 +49,7 @@ impl InterpolationExample {
         Ok(cx.new(move |cx: &mut Context<Self>| {
             let interpolation = Interpolation::Monotone;
             let selector = theme::spawn_interpolation_selector("reservoir-interpolation", &look, interpolation, cx);
-            let subscription = cx.subscribe(&selector, |this, _, event: &RadioGroupEvent, cx| {
+            selector.clone().on_event(cx, |this, event: &RadioGroupEvent, cx| {
                 if let RadioGroupEvent::Change { value: Some(value) } = event {
                     this.interpolation = if value.as_ref() == "monotone" {
                         Interpolation::Monotone
@@ -57,13 +59,10 @@ impl InterpolationExample {
                     cx.notify();
                 }
             });
-            let replay = theme::spawn_replay("interpolation-replay", &look, cx);
-            let replay_subscription = cx.subscribe(&replay, |this, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    this.motion.snap_to(0.0);
-                    this.motion.set_target(1.0);
-                    cx.notify();
-                }
+            let replay = theme::spawn_replay("interpolation-replay", &look, cx).on_click(cx, |this, cx| {
+                this.motion.snap_to(0.0);
+                this.motion.set_target(1.0);
+                cx.notify();
             });
             Self {
                 entrance: 1.0,
@@ -73,7 +72,7 @@ impl InterpolationExample {
                 selector,
                 replay,
                 motion: VisualTransition::new(1.0, Duration::from_millis(1400)),
-                _subscriptions: vec![subscription, replay_subscription],
+                _subscriptions: { Vec::new() },
             }
         }))
     }

@@ -1,10 +1,12 @@
 mod data;
 
+use gpui_luma::controls::selector::SelectorEventExt;
 use std::time::Duration;
 
 use gpui::{App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::{
-    controls::button::{Button, ButtonEvent},
+    controls::button::{Button},
     motion::VisualTransition,
     controls::selector::{Selector, SelectorEvent},
     hstack, vstack,
@@ -34,7 +36,7 @@ impl VisitorsExample {
         let look = look.clone();
         Ok(cx.new(move |cx: &mut Context<Self>| {
             let range = theme::visitors::spawn_range(&look, cx);
-            let subscription = cx.subscribe(&range, |this, _, event: &SelectorEvent, cx| {
+            range.clone().on_event(cx, |this, event: &SelectorEvent, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event {
                     this.days = match item_id.as_ref() {
                         "7" => 7,
@@ -45,12 +47,9 @@ impl VisitorsExample {
                     cx.notify();
                 }
             });
-            let replay = theme::spawn_replay("visitors-replay", &look, cx);
-            let replay_subscription = cx.subscribe(&replay, |this, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    this.restart_motion();
-                    cx.notify();
-                }
+            let replay = theme::spawn_replay("visitors-replay", &look, cx).on_click(cx, |this, cx| {
+                this.restart_motion();
+                cx.notify();
             });
             Self {
                 entrance: 1.0,
@@ -61,7 +60,7 @@ impl VisitorsExample {
                 range,
                 replay,
                 motion: VisualTransition::new(1.0, Duration::from_millis(1400)),
-                _subscriptions: vec![subscription, replay_subscription],
+                _subscriptions: { Vec::new() },
             }
         }))
     }

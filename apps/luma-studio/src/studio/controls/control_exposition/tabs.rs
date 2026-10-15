@@ -1,8 +1,9 @@
 //! Tabs navigation control exposition — intrinsic and uniform width examples.
 
+use gpui_luma::controls::tabs::TabsEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn as shadcn;
@@ -23,7 +24,6 @@ pub struct TabsControlExposition {
     left_pane: Entity<TabsExpositionLeftPane>,
     theme_inspector: Entity<TabsThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct TabsExpositionLeftPane {
@@ -138,12 +138,11 @@ impl TabsControlExposition {
             TabsInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
         for (entity, label_field, left_pane) in
             [(tabs.clone(), "intrinsic", left_pane.clone()), (uniform_tabs.clone(), "uniform", left_pane.clone())]
         {
             let event_stream = event_stream.clone();
-            subscriptions.push(cx.subscribe(&entity, move |_, _, event: &TabsEvent, cx| {
+            entity.clone().on_event(cx, move |_, event: &TabsEvent, cx| {
                 if let TabsEvent::Activate { label, .. } = event {
                     left_pane.update(cx, |pane, cx| {
                         match label_field {
@@ -156,10 +155,10 @@ impl TabsControlExposition {
                 if let Some(line) = format_tabs_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
-            }));
+            });
         }
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

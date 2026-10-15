@@ -3,7 +3,8 @@
 use std::sync::Arc;
 
 use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::Button;
 use gpui_luma::infra::icon::SelectionStatusIcons;
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::controls::progress::ProgressDirection;
@@ -41,7 +42,6 @@ pub struct StepperControlExposition {
     left_pane: Entity<StepperExpositionLeftPane>,
     theme_inspector: Entity<StepperThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<gpui::Subscription>,
 }
 
 struct StepperExpositionLeftPane {
@@ -283,41 +283,48 @@ impl StepperControlExposition {
             StepperInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&start_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.handle_start(cx));
-                }
-            }
-        }));
-        subscriptions.push(cx.subscribe(&previous_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.handle_previous(cx));
-                }
-            }
-        }));
-        subscriptions.push(cx.subscribe(&next_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.handle_next(cx));
-                }
-            }
-        }));
-        subscriptions.push(cx.subscribe(&enable_toggle_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.toggle_enabled(cx));
-                }
-            }
-        }));
+        start_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+                left_pane.update(cx, |pane, cx| pane.handle_start(cx));
+            }
+        });
+        previous_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.handle_previous(cx));
+            }
+        });
+        next_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.handle_next(cx));
+            }
+        });
+        enable_toggle_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.toggle_enabled(cx));
+            }
+        });
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

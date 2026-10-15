@@ -1,12 +1,16 @@
+use gpui::Subscription;
+use gpui_luma::controls::resizable_panels::ResizablePanelsEventExt;
+use gpui_luma::controls::switch::SwitchEventExt;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{ButtonContentContext, ButtonEvent, ControlIcon, ControlPresenter, HasPresenter};
+use gpui::{AnyElement, App, Context, Entity, FocusHandle, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::{ButtonContentContext, ControlIcon, ControlPresenter, HasPresenter};
 use gpui_luma::controls::icon_button::IconButton;
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
-use gpui_luma::controls::switch::{Switch, SwitchData, SwitchEvent};
+use gpui_luma::controls::switch::{Switch, SwitchData};
 use gpui_luma::shell::TitleBar;
 use gpui_luma::color::ColorValue;
 use gpui_luma::theme::{ControlSize, InteractionState, LumaThemeSyncExt, ThemeMode};
@@ -118,24 +122,18 @@ impl LumaStudioApp {
         let mut subscriptions = Vec::new();
         ThemeSidebar::wire_subscriptions(&theme_sidebar, cx, &mut subscriptions);
         demos.subscribe(cx, &mut subscriptions);
-        subscriptions.push(cx.subscribe(&workbench.panels(), |this, _, event: &ResizablePanelsEvent, cx| {
+        workbench.panels().clone().on_event(cx, |this, event: &ResizablePanelsEvent, cx| {
             this.handle_workbench_event(event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&sidebar_toggle, |this, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                this.toggle_sidebar(cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&reset_theme_button, |this, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                this.reload_active_theme(cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&mode_toggle, |this, _, event: &SwitchEvent, cx| {
-            if let SwitchEvent::Change { on } = event {
-                this.set_mode(*on, cx);
-            }
-        }));
+        });
+        sidebar_toggle.clone().on_click(cx, |this, cx| {
+            this.toggle_sidebar(cx);
+        });
+        reset_theme_button.clone().on_click(cx, |this, cx| {
+            this.reload_active_theme(cx);
+        });
+        mode_toggle.clone().on_value_changed(cx, |this, on, cx| {
+            this.set_mode(on, cx);
+        });
         Self {
             focus_scope,
             look,

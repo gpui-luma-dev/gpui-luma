@@ -1,11 +1,13 @@
 //! Reference control exposition template — copy this module when adding a new control doc.
 
+use gpui_luma::controls::switch::SwitchEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button::{Button, ButtonEvent};
 use gpui_luma::infra::presenter::HasPresenter;
-use gpui_luma::controls::switch::{Switch, SwitchEvent};
+use gpui_luma::controls::switch::{Switch};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn as shadcn;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -113,7 +115,6 @@ pub struct ButtonControlExposition {
     left_pane: Entity<ButtonExpositionLeftPane>,
     theme_inspector: Entity<ButtonThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl ButtonControlExposition {
@@ -176,40 +177,19 @@ impl ButtonControlExposition {
             )
         });
 
-        let mut subscriptions = Vec::new();
-        subscriptions.extend(subscribe_button(
-            &primary,
-            ButtonVariant::Primary,
-            "controls-doc-button-primary",
-            event_stream.clone(),
-            cx,
-        ));
-        subscriptions.extend(subscribe_button(
+        bind_button_events(&primary, ButtonVariant::Primary, "controls-doc-button-primary", event_stream.clone(), cx);
+        bind_button_events(
             &secondary,
             ButtonVariant::Secondary,
             "controls-doc-button-secondary",
             event_stream.clone(),
             cx,
-        ));
-        subscriptions.extend(subscribe_button(
-            &outline,
-            ButtonVariant::Outline,
-            "controls-doc-button-outline",
-            event_stream.clone(),
-            cx,
-        ));
-        subscriptions.extend(subscribe_button(
-            &ghost,
-            ButtonVariant::Ghost,
-            "controls-doc-button-ghost",
-            event_stream.clone(),
-            cx,
-        ));
-        subscriptions.push(cx.subscribe(&enabled_switch, |this, _, event, cx| {
-            if let SwitchEvent::Change { on } = event {
-                this.set_buttons_enabled(*on, cx);
-            }
-        }));
+        );
+        bind_button_events(&outline, ButtonVariant::Outline, "controls-doc-button-outline", event_stream.clone(), cx);
+        bind_button_events(&ghost, ButtonVariant::Ghost, "controls-doc-button-ghost", event_stream.clone(), cx);
+        enabled_switch.clone().on_value_changed(cx, |this, on, cx| {
+            this.set_buttons_enabled(on, cx);
+        });
 
         Self {
             look,
@@ -224,7 +204,6 @@ impl ButtonControlExposition {
             left_pane,
             theme_inspector,
             inspector_split,
-            _subscriptions: subscriptions,
         }
     }
 
@@ -284,20 +263,24 @@ impl Render for ButtonControlExposition {
     }
 }
 
-fn subscribe_button(
+fn bind_button_events(
     button: &Entity<Button>,
     variant: ButtonVariant,
     button_id: &'static str,
     event_stream: Entity<ControlEventStream>,
     cx: &mut Context<ButtonControlExposition>,
-) -> Vec<Subscription> {
-    vec![cx.subscribe(button, move |_, _, event: &ButtonEvent, cx| {
+) {
+    let event_stream = event_stream.downgrade();
+    button.clone().on_event(cx, move |_, event, cx| {
+        let Some(event_stream) = event_stream.upgrade() else {
+            return;
+        };
         let line = format!("{} - {} (\"{button_id}\")", format_button_event(event), variant.label());
         event_stream.update(cx, |stream, cx| {
             stream.append_line(&line, cx);
             cx.notify();
         });
-    })]
+    });
 }
 
 fn format_button_event(event: &ButtonEvent) -> String {

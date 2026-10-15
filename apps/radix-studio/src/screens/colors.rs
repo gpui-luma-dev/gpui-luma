@@ -1,10 +1,11 @@
 //! Colors tab screen — Radix Colors catalog matrix.
 
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::color::{ColorValue, gpui_bridge::from_hsla};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::Button;
 use std::sync::Arc;
 use crate::controls::swatch_info::{self, ColorDetails, SwatchSelection};
-use gpui::{Context, Entity, Subscription, Hsla, div, hsla, linear_color_stop, linear_gradient, prelude::*, px};
+use gpui::{Context, Entity, Hsla, div, hsla, linear_color_stop, linear_gradient, prelude::*, px};
 use gpui_luma::hstack;
 use gpui_luma::vstack;
 use gpui_luma::theme::ThemeMode;
@@ -17,12 +18,10 @@ const COLOR_MATRIX_CELL_H: f32 = 50.0;
 pub struct State {
     swatches: Vec<Vec<Entity<Button>>>,
     alpha: Vec<Vec<Entity<Button>>>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl State {
     pub fn new<M: 'static>(look: &Arc<Look>, panel: Entity<ColorDetails>, cx: &mut Context<M>) -> Self {
-        let mut subscriptions = Vec::new();
         let mut swatches = Vec::new();
         for family in color_families(look.mode()) {
             let name = family.family;
@@ -39,18 +38,20 @@ impl State {
                     cx,
                 );
                 let source_look = Arc::clone(look);
-                let panel = panel.clone();
-                subscriptions.push(cx.subscribe(&button, move |_, _, event: &ButtonEvent, cx| {
-                    if matches!(event, ButtonEvent::Click) {
-                        let source = from_hsla(catalog_color(&source_look, name, step));
-                        let background = catalog_background(source_look.mode());
-                        let title = title_case(name);
-                        match SwatchSelection::from_source(&title, step, source, background) {
-                            Ok(selection) => panel.update(cx, |panel, cx| panel.open(selection, None, cx)),
-                            Err(error) => eprintln!("failed to resolve catalog color: {error}"),
-                        }
+                let panel = panel.downgrade();
+                button.clone().on_click(cx, move |_, cx| {
+                    let Some(panel) = panel.upgrade() else {
+                        return;
+                    };
+
+                    let source = from_hsla(catalog_color(&source_look, name, step));
+                    let background = catalog_background(source_look.mode());
+                    let title = title_case(name);
+                    match SwatchSelection::from_source(&title, step, source, background) {
+                        Ok(selection) => panel.update(cx, |panel, cx| panel.open(selection, None, cx)),
+                        Err(error) => eprintln!("failed to resolve catalog color: {error}"),
                     }
-                }));
+                });
                 row.push(button);
             }
             swatches.push(row);
@@ -70,25 +71,27 @@ impl State {
                     cx,
                 );
                 let source_look = Arc::clone(look);
-                let panel = panel.clone();
-                subscriptions.push(cx.subscribe(&button, move |_, _, event: &ButtonEvent, cx| {
-                    if matches!(event, ButtonEvent::Click) {
-                        match SwatchSelection::from_alpha(
-                            name,
-                            step,
-                            from_hsla(color),
-                            catalog_background(source_look.mode()),
-                        ) {
-                            Ok(selection) => panel.update(cx, |panel, cx| panel.open(selection, None, cx)),
-                            Err(error) => eprintln!("failed to resolve alpha color: {error}"),
-                        }
+                let panel = panel.downgrade();
+                button.clone().on_click(cx, move |_, cx| {
+                    let Some(panel) = panel.upgrade() else {
+                        return;
+                    };
+
+                    match SwatchSelection::from_alpha(
+                        name,
+                        step,
+                        from_hsla(color),
+                        catalog_background(source_look.mode()),
+                    ) {
+                        Ok(selection) => panel.update(cx, |panel, cx| panel.open(selection, None, cx)),
+                        Err(error) => eprintln!("failed to resolve alpha color: {error}"),
                     }
-                }));
+                });
                 row.push(button);
             }
             alpha.push(row);
         }
-        Self { swatches, alpha, _subscriptions: subscriptions }
+        Self { swatches, alpha }
     }
 
     pub fn render(&self, look: &Look, fg: Hsla, muted: Hsla) -> gpui::AnyElement {

@@ -61,3 +61,6 @@ where
 {
     shared_control_group_template()
 }
+
+mod callback;
+pub use callback::ControlGroupEventExt;

@@ -32,3 +32,6 @@ pub use template::{
     default_search_selector_items_template, default_search_selector_template,
     search_selector_items_template_with_modifier,
 };
+
+mod callback;
+pub use callback::SearchSelectorEventExt;

@@ -1,3 +1,4 @@
+use gpui_luma::controls::dock_splitter::DockSplitterEventExt;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -81,7 +82,7 @@ impl WorkspaceLayout {
             secondary_activity_bar_buttons,
         };
 
-        cx.subscribe(&this.panel_splitter, |this, _, event: &DockSplitterEvent, cx| match event {
+        this.panel_splitter.clone().on_event(cx, |this, event: &DockSplitterEvent, cx| match event {
             DockSplitterEvent::ResizeStart => this.drag_start_panel_height_px = this.panel_height_px,
             DockSplitterEvent::Resize { total_delta } => {
                 this.panel_height_px = this.clamp_panel_height(this.drag_start_panel_height_px - *total_delta);
@@ -91,8 +92,7 @@ impl WorkspaceLayout {
             }
             DockSplitterEvent::ResizeEnd => {}
             _ => {}
-        })
-        .detach();
+        });
 
         this
     }

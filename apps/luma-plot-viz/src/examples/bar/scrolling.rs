@@ -1,6 +1,5 @@
-use gpui::{
-    App, Context, Entity, FocusHandle, Render, Subscription, Window, ScrollWheelEvent, MouseButton, div, prelude::*, px,
-};
+use gpui_luma::controls::scrollbar::ScrollbarEventExt;
+use gpui::{App, Context, Entity, FocusHandle, Render, Window, ScrollWheelEvent, MouseButton, div, prelude::*, px};
 use gpui_luma::{
     vstack,
     controls::scrollbar::{Scrollbar, ScrollbarEvent},
@@ -27,7 +26,6 @@ pub(super) struct ScrollingBars {
     retained: usize,
     scrollbar: Entity<Scrollbar>,
     focus: FocusHandle,
-    _subscription: Subscription,
 }
 impl ScrollingBars {
     pub(super) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
@@ -35,7 +33,7 @@ impl ScrollingBars {
         let look = look.clone();
         Ok(cx.new(move |cx: &mut Context<Self>| {
             let scrollbar = theme::spawn_time_scrollbar(&look, (MIN, MAX), SPAN, cx);
-            let subscription = cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {
+            scrollbar.clone().on_event(cx, |this, event: &ScrollbarEvent, cx| {
                 if let ScrollbarEvent::Change { value } = event {
                     this.start = f64::from(*value);
                     this.wheel_position = this.start;
@@ -52,7 +50,6 @@ impl ScrollingBars {
                 retained: 0,
                 scrollbar,
                 focus: cx.focus_handle().tab_stop(true),
-                _subscription: subscription,
             }
         }))
     }

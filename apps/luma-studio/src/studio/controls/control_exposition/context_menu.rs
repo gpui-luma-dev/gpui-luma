@@ -1,3 +1,4 @@
+use gpui_luma::controls::context_menu::ContextMenuEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -122,9 +123,12 @@ impl ContextMenuControlExposition {
             ContextMenuInspectorAdapter::shared(),
         );
 
-        let subscription = cx.subscribe(&preview, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &ContextMenuEvent, cx| {
+        preview.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |_, event: &ContextMenuEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
                 let line = format_context_menu_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
@@ -132,10 +136,13 @@ impl ContextMenuControlExposition {
             }
         });
 
-        let textfield_subscription = cx.subscribe(&textfield_context_menu, {
-            let event_stream = event_stream.clone();
+        textfield_context_menu.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
             let textfield = left_pane.read(cx).textfield.clone();
-            move |_, _, event: &ContextMenuEvent, cx| {
+            move |_, event: &ContextMenuEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
                 let ContextMenuEvent::Select { item_id, .. } = event else {
                     return;
                 };
@@ -152,14 +159,7 @@ impl ContextMenuControlExposition {
             }
         });
 
-        Self {
-            look,
-            entry,
-            left_pane,
-            theme_inspector,
-            inspector_split,
-            _subscriptions: vec![subscription, textfield_subscription],
-        }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: { Vec::new() } }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

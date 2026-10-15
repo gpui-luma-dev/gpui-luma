@@ -1,5 +1,8 @@
 //! Radix Studio app shell — shared state, page routing, and window chrome.
 
+use gpui_luma::controls::radio_group::RadioGroupEventExt;
+use gpui_luma::controls::popup_menu::PopupMenuEventExt;
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::prelude::TooltipEntityExt;
 use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 
@@ -9,7 +12,7 @@ use gpui::{
     App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, AnyElement, ScrollHandle, Subscription, Task, Window,
     div, prelude::*, px,
 };
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem, RadioGroupEvent};
 use crate::controls::theme_mode;
@@ -260,13 +263,13 @@ impl RadixStudioApp {
             ])
             .spawn(cx);
 
-        subscriptions.push(cx.subscribe(&copy_menu, |this, _, event: &PopupMenuEvent, cx| {
+        copy_menu.clone().on_event(cx, |this, event: &PopupMenuEvent, cx| {
             if let PopupMenuEvent::Select { item_id, .. } = event {
                 if let Some(text) = this.palette_copy_text(item_id.as_ref()) {
                     cx.write_to_clipboard(gpui::ClipboardItem::new_string(text));
                 }
             }
-        }));
+        });
 
         let color_details = cx.new(|cx| ColorDetails::new(&draft, cx));
         let mut palette_swatches = Vec::new();
@@ -280,17 +283,15 @@ impl RadixStudioApp {
                     44.0,
                     move || swatch_look.resolve_step(family, step).hsla(),
                     cx,
-                );
-                subscriptions.push(cx.subscribe(&swatch, move |this, _, event: &ButtonEvent, cx| {
-                    if matches!(event, ButtonEvent::Click) {
-                        this.open_swatch_info(family, step, cx);
-                    }
-                }));
+                )
+                .on_click(cx, move |this, cx| {
+                    this.open_swatch_info(family, step, cx);
+                });
                 palette_swatches.push(swatch);
             }
         }
 
-        subscriptions.push(cx.subscribe(&mode_selector, |this, _, event: &RadioGroupEvent, cx| {
+        mode_selector.clone().on_event(cx, |this, event: &RadioGroupEvent, cx| {
             if let RadioGroupEvent::Change { value: Some(value) } = event {
                 this.set_mode(
                     if value.as_ref() == "light" {
@@ -301,7 +302,7 @@ impl RadixStudioApp {
                     cx,
                 );
             }
-        }));
+        });
         subscriptions.push(cx.subscribe(&screen_nav, |this, _, event: &ScreenNavEvent, cx| match event {
             ScreenNavEvent::Change { .. } => {
                 this.page_scroll.set_offset(gpui::point(px(0.0), px(0.0)));

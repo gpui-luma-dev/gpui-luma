@@ -1,8 +1,9 @@
 use std::time::Duration;
 
-use gpui::{App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::{
-    controls::button::{Button, ButtonEvent},
+    controls::button::{Button},
     motion::VisualTransition,
     hstack, vstack,
 };
@@ -16,7 +17,6 @@ pub(crate) struct AreaExample {
     look: Look,
     replay: Entity<Button<()>>,
     motion: VisualTransition,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl AreaExample {
@@ -40,22 +40,12 @@ impl AreaExample {
         ))?;
         let look = look.clone();
         Ok(cx.new(move |cx: &mut Context<Self>| {
-            let replay = theme::spawn_replay("area-replay", &look, cx);
-            let subscription = cx.subscribe(&replay, |this, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    this.motion.snap_to(0.0);
-                    this.motion.set_target(1.0);
-                    cx.notify();
-                }
+            let replay = theme::spawn_replay("area-replay", &look, cx).on_click(cx, |this, cx| {
+                this.motion.snap_to(0.0);
+                this.motion.set_target(1.0);
+                cx.notify();
             });
-            Self {
-                entrance: 1.0,
-                data,
-                look,
-                replay,
-                motion: VisualTransition::new(1.0, Duration::from_millis(1400)),
-                _subscriptions: vec![subscription],
-            }
+            Self { entrance: 1.0, data, look, replay, motion: VisualTransition::new(1.0, Duration::from_millis(1400)) }
         }))
     }
 }

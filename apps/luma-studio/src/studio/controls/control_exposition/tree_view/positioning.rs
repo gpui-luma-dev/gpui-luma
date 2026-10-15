@@ -1,8 +1,10 @@
 //! Explicit positioning in Controls → TreeView; all interactive chrome uses SDK controls.
+use gpui_luma::controls::tree_view::TreeViewEventExt;
 use std::sync::Arc;
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::{
-    button::{Button, ButtonEvent},
+    button::{Button},
     selector::{Selector, SelectorItem},
     tree_view::{TreeNode, TreeView, TreeViewEvent},
 };
@@ -59,44 +61,44 @@ impl Positioning {
             .spawn(cx);
         let events = cx.new(|cx| ControlEventStream::new(cx, look.clone(), "tree-position-events",
             "Positioning leaves selection and tree focus unchanged. Scroll, use a navigation key, or issue another request to interrupt smooth movement."));
-        let mut subscriptions = vec![cx.subscribe(&tree, |this: &mut Self, _, event, cx| {
-            cx.notify();
-            let line = match event {
-                TreeViewEvent::ScrollChanged { top_index } => Some(format!("Top row: {top_index}")),
-                TreeViewEvent::NodeExpanded { node_id, .. } => Some(format!("Opened: {node_id}")),
-                TreeViewEvent::NodeCollapsed { node_id, .. } => Some(format!("Closed: {node_id}")),
-                TreeViewEvent::SelectionChanged { selected_ids } => {
-                    let mut ids: Vec<_> = selected_ids.iter().map(|id| id.as_ref()).collect();
-                    ids.sort();
-                    Some(format!("Selected: {}", ids.join(", ")))
+        let mut subscriptions = {
+            tree.clone().on_event(cx, |this: &mut Self, event, cx| {
+                cx.notify();
+                let line = match event {
+                    TreeViewEvent::ScrollChanged { top_index } => Some(format!("Top row: {top_index}")),
+                    TreeViewEvent::NodeExpanded { node_id, .. } => Some(format!("Opened: {node_id}")),
+                    TreeViewEvent::NodeCollapsed { node_id, .. } => Some(format!("Closed: {node_id}")),
+                    TreeViewEvent::SelectionChanged { selected_ids } => {
+                        let mut ids: Vec<_> = selected_ids.iter().map(|id| id.as_ref()).collect();
+                        ids.sort();
+                        Some(format!("Selected: {}", ids.join(", ")))
+                    }
+                    _ => None,
+                };
+                if let Some(line) = line {
+                    this.events.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
-                _ => None,
-            };
-            if let Some(line) = line {
-                this.events.update(cx, |stream, cx| stream.append_line(&line, cx));
-            }
-        })];
+            });
+            Vec::new()
+        };
         subscriptions.push(cx.observe(&target, |_, _, cx| cx.notify()));
         subscriptions.push(cx.observe(&movement, |_, _, cx| cx.notify()));
         let buttons = [("go", "Go"), ("collapse", "Close & show folder")]
             .into_iter()
             .map(|(id, label)| {
-                let button = shadcn::Button::new(format!("tree-position-{id}"))
+                shadcn::Button::new(format!("tree-position-{id}"))
                     .look(&look)
                     .secondary()
                     .label(label)
                     .with_template_modifier(move |root, _| root.debug_selector(move || format!("tree-position-{id}")))
-                    .spawn(cx);
-                subscriptions.push(cx.subscribe(&button, move |this: &mut Self, _, event, cx| {
-                    if matches!(event, ButtonEvent::Click) {
+                    .spawn(cx)
+                    .on_click(cx, move |this: &mut Self, cx| {
                         if id == "go" {
                             this.go(cx);
                         } else {
                             this.close_folder(cx);
                         }
-                    }
-                }));
-                button
+                    })
             })
             .collect();
         Self { look, tree, target, movement, buttons, events, _subscriptions: subscriptions }

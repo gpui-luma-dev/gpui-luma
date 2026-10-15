@@ -1,8 +1,9 @@
 //! Switch control exposition — live primary/secondary previews and event stream.
 
+use gpui_luma::controls::switch::SwitchEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::controls::switch::{Switch, SwitchEvent};
 use gpui_luma_look_shadcn::prelude::*;
@@ -41,7 +42,6 @@ pub struct SwitchControlExposition {
     left_pane: Entity<SwitchExpositionLeftPane>,
     theme_inspector: Entity<SwitchThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct SwitchExpositionLeftPane {
@@ -143,22 +143,20 @@ impl SwitchControlExposition {
             &super::inspector::SWITCH_INSPECTOR_SPEC,
             super::inspector::SwitchInspectorAdapter::shared(),
         );
-
-        let mut subscriptions = Vec::new();
-        subscriptions.extend(subscribe_switch(
+        bind_switch_events(
             &secondary_switch,
             SwitchVariant::Secondary,
             "controls-doc-switch-secondary",
             event_stream.clone(),
             cx,
-        ));
-        subscriptions.extend(subscribe_switch(
+        );
+        bind_switch_events(
             &primary_switch,
             SwitchVariant::Primary,
             "controls-doc-switch-primary",
             event_stream.clone(),
             cx,
-        ));
+        );
 
         Self {
             look,
@@ -169,7 +167,6 @@ impl SwitchControlExposition {
             left_pane,
             theme_inspector,
             inspector_split,
-            _subscriptions: subscriptions,
         }
     }
 
@@ -215,20 +212,20 @@ impl Render for SwitchControlExposition {
     }
 }
 
-fn subscribe_switch(
+fn bind_switch_events(
     switch: &Switch,
     variant: SwitchVariant,
     switch_id: &'static str,
     event_stream: Entity<ControlEventStream>,
     cx: &mut Context<SwitchControlExposition>,
-) -> Vec<Subscription> {
-    vec![cx.subscribe(switch, move |_, _, event: &SwitchEvent, cx| {
+) {
+    switch.clone().on_event(cx, move |_, event: &SwitchEvent, cx| {
         let line = format!("{} - {} (\"{switch_id}\")", format_switch_event(event), variant.label());
         event_stream.update(cx, |stream, cx| {
             stream.append_line(&line, cx);
             cx.notify();
         });
-    })]
+    });
 }
 
 fn format_switch_event(event: &SwitchEvent) -> String {

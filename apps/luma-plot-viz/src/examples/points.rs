@@ -1,3 +1,4 @@
+use gpui_luma::controls::radio_group::RadioGroupEventExt;
 use gpui::{App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::{
     controls::radio_group::{RadioGroup, RadioGroupEvent, RadioGroupItem},
@@ -36,21 +37,21 @@ impl PointExamples {
         let look = look.clone();
         Ok(cx.new(move |cx: &mut Context<Self>| {
             let selector = theme::points::spawn("sparse-point-mode", &look, cx);
-            let subscription = cx.subscribe(&selector, |this, _, event: &RadioGroupEvent, cx| {
+            selector.clone().on_event(cx, |this, event: &RadioGroupEvent, cx| {
                 if let RadioGroupEvent::Change { value: Some(value) } = event {
                     this.visibility = theme::points::visibility(value.as_ref());
                     cx.notify();
                 }
             });
             let motion_selector = theme::points::spawn_motion(&look, cx);
-            let motion_subscription = cx.subscribe(&motion_selector, |this, _, event: &RadioGroupEvent, cx| {
+            motion_selector.clone().on_event(cx, |this, event: &RadioGroupEvent, cx| {
                 if let RadioGroupEvent::Change { value: Some(value) } = event {
                     this.motion = theme::points::motion(value.as_ref());
                     cx.notify();
                 }
             });
             let placement_selector = theme::points::spawn_placement(&look, cx);
-            let placement_subscription = cx.subscribe(&placement_selector, |this, _, event: &RadioGroupEvent, cx| {
+            placement_selector.clone().on_event(cx, |this, event: &RadioGroupEvent, cx| {
                 if let RadioGroupEvent::Change { value: Some(value) } = event {
                     this.placement = theme::points::placement(value.as_ref());
                     cx.notify();
@@ -69,7 +70,7 @@ impl PointExamples {
                 motion: std::time::Duration::from_millis(250),
                 placement_selector,
                 placement: TooltipPlacement::Above,
-                _subscriptions: vec![subscription, motion_subscription, placement_subscription],
+                _subscriptions: { Vec::new() },
             }
         }))
     }

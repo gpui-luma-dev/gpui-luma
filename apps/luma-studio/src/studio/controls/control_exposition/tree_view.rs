@@ -1,9 +1,11 @@
 //! Tree view control exposition — virtualized file tree with an integrated scrollbar.
 
+use gpui_luma::controls::tree_view::TreeViewEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui::{Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::ScrollbarVisibility;
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::controls::tree_view::{TreeNode, TreeView, TreeViewEvent, TreeViewSelectionMode};
@@ -35,7 +37,6 @@ pub struct TreeViewControlExposition {
     left_pane: Entity<TreeViewExpositionLeftPane>,
     theme_inspector: Entity<TreeViewThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct TreeViewExpositionLeftPane {
@@ -50,7 +51,6 @@ struct TreeViewExpositionLeftPane {
     scale: Entity<scale::Scale>,
     scrollbar_options: Vec<Entity<Button>>,
     scrollbar_visibility: ScrollbarVisibility,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl TreeViewExpositionLeftPane {
@@ -168,7 +168,6 @@ impl TreeViewControlExposition {
         let workspaces = cx.new(|cx| workspaces::Workspaces::new(look.clone(), cx));
         let state_updates = cx.new(|cx| state_updates::StateUpdates::new(look.clone(), cx));
         let left_pane = cx.new(|cx| {
-            let mut subscriptions = Vec::new();
             let scrollbar_options = [
                 ("auto", "While scrolling", ScrollbarVisibility::AutoHide),
                 ("hidden", "Never", ScrollbarVisibility::Hidden),
@@ -176,19 +175,16 @@ impl TreeViewControlExposition {
             ]
             .into_iter()
             .map(|(id, label, visibility)| {
-                let button =
-                    shadcn::Button::new(format!("tree-scrollbar-{id}")).look(&look).secondary().label(label).spawn(cx);
-                subscriptions.push(cx.subscribe(
-                    &button,
-                    move |pane: &mut TreeViewExpositionLeftPane, _, event, cx| {
-                        if matches!(event, ButtonEvent::Click) {
-                            pane.tree.update(cx, |tree, cx| tree.set_scrollbar_visibility(visibility, cx));
-                            pane.scrollbar_visibility = visibility;
-                            cx.notify();
-                        }
-                    },
-                ));
-                button
+                shadcn::Button::new(format!("tree-scrollbar-{id}"))
+                    .look(&look)
+                    .secondary()
+                    .label(label)
+                    .spawn(cx)
+                    .on_click(cx, move |pane: &mut TreeViewExpositionLeftPane, cx| {
+                        pane.tree.update(cx, |tree, cx| tree.set_scrollbar_visibility(visibility, cx));
+                        pane.scrollbar_visibility = visibility;
+                        cx.notify();
+                    })
             })
             .collect();
             TreeViewExpositionLeftPane {
@@ -203,7 +199,6 @@ impl TreeViewControlExposition {
                 scale,
                 scrollbar_options,
                 scrollbar_visibility: ScrollbarVisibility::AutoHide,
-                _subscriptions: subscriptions,
             }
         });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
@@ -218,16 +213,19 @@ impl TreeViewControlExposition {
             TreeViewInspectorAdapter::shared(),
         );
 
-        let subscription = cx.subscribe(&tree, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &TreeViewEvent<SharedString>, cx| {
+        tree.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |_, event: &TreeViewEvent<SharedString>, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
                 if let Some(line) = format_tree_view_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }
         });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![subscription] }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

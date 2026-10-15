@@ -15,3 +15,6 @@ pub use theme::{DefaultPagerTheme, PagerLook, PagerTheme, default_pager_theme};
 use gpui::Entity;
 
 pub type Pager = Entity<PagerControl>;
+
+mod callback;
+pub use callback::PagerEventExt;

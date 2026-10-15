@@ -1,9 +1,11 @@
 //! Toolbar control exposition — gallery-aligned editing toolbar with focus strategy toggles.
 
+use gpui_luma::controls::toolbar::ToolbarEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::control_group::ControlGroupFocusStrategy;
 use gpui_luma::infra::menu_item::MenuItem;
 use gpui_luma::controls::selector::SelectorItem;
@@ -28,7 +30,6 @@ pub struct ToolbarControlExposition {
     left_pane: Entity<ToolbarExpositionLeftPane>,
     theme_inspector: Entity<ToolbarThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct ToolbarExpositionLeftPane {
@@ -217,45 +218,51 @@ impl ToolbarControlExposition {
             ToolbarInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&toolbar, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &ToolbarEvent, cx| {
+        toolbar.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |_, event: &ToolbarEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
                 if let Some(line) = format_toolbar_event(event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }
-        }));
-        subscriptions.push(cx.subscribe(&roving_focus_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| {
-                        pane.toolbar.update(cx, |toolbar, cx| {
-                            toolbar.set_focus_strategy(ControlGroupFocusStrategy::RovingItemFocus, cx);
-                        });
-                        pane.focus_mode = "roving";
-                        cx.notify();
-                    });
-                }
-            }
-        }));
-        subscriptions.push(cx.subscribe(&sequential_focus_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| {
-                        pane.toolbar.update(cx, |toolbar, cx| {
-                            toolbar.set_focus_strategy(ControlGroupFocusStrategy::ActiveDescendant, cx);
-                        });
-                        pane.focus_mode = "sequential";
-                        cx.notify();
-                    });
-                }
-            }
-        }));
+        });
+        roving_focus_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+                left_pane.update(cx, |pane, cx| {
+                    pane.toolbar.update(cx, |toolbar, cx| {
+                        toolbar.set_focus_strategy(ControlGroupFocusStrategy::RovingItemFocus, cx);
+                    });
+                    pane.focus_mode = "roving";
+                    cx.notify();
+                });
+            }
+        });
+        sequential_focus_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| {
+                    pane.toolbar.update(cx, |toolbar, cx| {
+                        toolbar.set_focus_strategy(ControlGroupFocusStrategy::ActiveDescendant, cx);
+                    });
+                    pane.focus_mode = "sequential";
+                    cx.notify();
+                });
+            }
+        });
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

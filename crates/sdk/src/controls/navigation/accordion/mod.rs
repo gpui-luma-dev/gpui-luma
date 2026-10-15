@@ -33,3 +33,6 @@ pub type Accordion = Entity<AccordionControl>;
 pub fn new(id: impl Into<SharedString>) -> AccordionBuilder {
     AccordionBuilder::new(id)
 }
+
+mod callback;
+pub use callback::AccordionEventExt;

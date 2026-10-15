@@ -1,3 +1,4 @@
+use gpui_luma::controls::overlay_window::OverlayWindowEventExt;
 use std::sync::Arc;
 
 use gpui::{
@@ -137,10 +138,9 @@ impl CustomizeLayoutDialog {
             .theme_child(panel_alignment_group.clone())
             .spawn(cx);
 
-        cx.subscribe(&overlay, |_, _, event: &OverlayWindowEvent, cx| {
+        overlay.clone().on_event(cx, |_, event: &OverlayWindowEvent, cx| {
             cx.emit(event.clone());
-        })
-        .detach();
+        });
 
         let this = Self {
             look,

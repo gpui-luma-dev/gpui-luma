@@ -1,3 +1,6 @@
+mod callback;
+pub use callback::{CheckboxCallbacks, CheckboxEventExt};
+
 mod template;
 mod theme;
 
@@ -211,12 +214,70 @@ impl IntoElement for CheckboxControl {
 /// `gpui_luma_look_shadcn::Checkbox::new(...)`) rather than constructing this type
 /// directly or styling [`ButtonBuilder<CheckboxData>`] as a switch.
 pub struct CheckboxBuilder {
+    callbacks: CheckboxCallbacks,
     button: ButtonBuilder<CheckboxData>,
     animated: bool,
     icons: SelectionStatusIcons,
 }
 
 impl CheckboxBuilder {
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, &CheckboxEvent, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Append a user-change callback. `set_data` is silent; the owner is held weakly.
+    pub fn on_value_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_value_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_focus_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_focus_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_hover_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_hover_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_enabled_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_enabled_changed(cx, callback);
+        self
+    }
+
+    /// Transfer callbacks from a Look-owned builder.
+    #[doc(hidden)]
+    pub fn with_callbacks(mut self, callbacks: CheckboxCallbacks) -> Self {
+        self.callbacks = callbacks;
+        self
+    }
+
     pub fn with_data(self, checked: bool) -> Self {
         Self { button: self.button.with_data(CheckboxData::new(checked)), ..self }
     }
@@ -262,8 +323,11 @@ impl CheckboxBuilder {
         Self { button: self.button.template(template), ..self }
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Checkbox {
-        cx.new(|cx| CheckboxControl::from_builder(self, cx))
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Checkbox {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = cx.new(|cx| CheckboxControl::from_builder(self, cx));
+        callbacks.bind(&control, cx);
+        control
     }
 }
 
@@ -275,6 +339,7 @@ impl HasPresenter<ButtonContentContext<CheckboxData>> for CheckboxBuilder {
 
 pub fn new(id: impl Into<SharedString>) -> CheckboxBuilder {
     CheckboxBuilder {
+        callbacks: CheckboxCallbacks::default(),
         button: ButtonBuilder::new(id).typed(CheckboxData::default()).template(default_checkbox_template()),
         animated: true,
         icons: SelectionStatusIcons::default(),
@@ -299,3 +364,6 @@ mod tests {
 }
 
 crate::infra::attachments::delegate_tooltips!(CheckboxControl, gpui::Role::CheckBox);
+
+#[cfg(all(test, feature = "test-support"))]
+mod callback_tests;

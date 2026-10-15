@@ -1,11 +1,15 @@
 //! Tooltip options exercised against one retained preview.
+use gpui_luma::controls::textfield::TextFieldEventExt;
+use gpui_luma::controls::slider::SliderEventExt;
+use gpui_luma::controls::switch::SwitchEventExt;
 use std::{sync::Arc, time::Duration};
-use gpui::{AnyElement, FontWeight, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, FontWeight, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::{
     controls::{
-        button::{Button, ButtonEvent},
+        button::{Button},
         slider::{Slider, SliderEvent},
-        switch::{Switch, SwitchEvent},
+        switch::{Switch},
         textfield::{TextField, TextFieldEvent},
         tooltip::{Tooltip, TooltipPlacement, TooltipDismissal, bubble},
     },
@@ -45,7 +49,7 @@ pub struct TooltipPlayground {
     show_once: Switch,
     rearm: Entity<Button>,
     reset_all: Entity<Button>,
-    _subscriptions: Vec<Subscription>,
+
     #[cfg(all(test, feature = "test-support"))]
     render_probe: Option<gpui_luma::controls::tooltip::TooltipTemplate>,
 }
@@ -108,108 +112,83 @@ impl TooltipPlayground {
             .label("Reset properties")
             .with_template_modifier(|root, _| root.flex_none().debug_selector(|| "tooltip-reset-all".into()))
             .spawn(cx);
-        let subscriptions = vec![
-            cx.subscribe(&reset_all, |this, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    this.reset_properties(cx);
-                }
-            }),
-            cx.subscribe(&reset_text, |this, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    this.text = DEFAULT_TEXT.into();
-                    this.text_input.update(cx, |field, cx| field.set_value(DEFAULT_TEXT, cx));
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&reset_shortcut, |this, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    this.shortcut = DEFAULT_HINT.into();
-                    this.shortcut_input.update(cx, |field, cx| field.set_value(DEFAULT_HINT, cx));
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&text_input, |this, _, event: &TextFieldEvent, cx| {
-                if let TextFieldEvent::Change { value } = event {
-                    this.text = value.clone();
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&shortcut_input, |this, _, event: &TextFieldEvent, cx| {
-                if let TextFieldEvent::Change { value } = event {
-                    this.shortcut = value.clone();
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&custom_content, |this, _, event: &SwitchEvent, cx| {
-                if let SwitchEvent::Change { on } = event {
-                    this.custom = *on;
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&preview, |this, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    this.clicks = this.clicks.saturating_add(1);
-                    this.preview.update(cx, |button, cx| {
-                        button.set_label(
-                            format!(
-                                "Test button · {} {}",
-                                this.clicks,
-                                if this.clicks == 1 { "click" } else { "clicks" }
-                            ),
-                            cx,
-                        )
-                    });
-                    cx.notify();
-                }
-            }),
-            cx.subscribe(&delay, |this, _, event: &SliderEvent, cx| {
-                if let SliderEvent::Change { value, .. } = event {
-                    this.delay_ms = value.round() as u64;
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&hide_delay, |this, _, event: &SliderEvent, cx| {
-                if let SliderEvent::Change { value, .. } = event {
-                    this.hide_delay_ms = value.round() as u64;
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&duration, |this, _, event: &SliderEvent, cx| {
-                if let SliderEvent::Change { value, .. } = event {
-                    this.duration_ms = value.round() as u64;
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&placement, |this, _, event: &SwitchEvent, cx| {
-                if let SwitchEvent::Change { on } = event {
-                    this.below = *on;
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&dismissal, |this, _, event: &SwitchEvent, cx| {
-                if let SwitchEvent::Change { on } = event {
-                    this.permanent = *on;
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&enable, |this, _, event: &SwitchEvent, cx| {
-                if let SwitchEvent::Change { on } = event {
-                    this.enabled = *on;
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&show_once, |this, _, event: &SwitchEvent, cx| {
-                if let SwitchEvent::Change { on } = event {
-                    this.once = *on;
-                    this.apply(cx);
-                }
-            }),
-            cx.subscribe(&rearm, |this, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    this.apply(cx);
-                }
-            }),
-        ];
+
+        reset_all.clone().on_click(cx, |this, cx| {
+            this.reset_properties(cx);
+        });
+        reset_text.clone().on_click(cx, |this, cx| {
+            this.text = DEFAULT_TEXT.into();
+            this.text_input.update(cx, |field, cx| field.set_value(DEFAULT_TEXT, cx));
+            this.apply(cx);
+        });
+        reset_shortcut.clone().on_click(cx, |this, cx| {
+            this.shortcut = DEFAULT_HINT.into();
+            this.shortcut_input.update(cx, |field, cx| field.set_value(DEFAULT_HINT, cx));
+            this.apply(cx);
+        });
+        text_input.clone().on_event(cx, |this, event: &TextFieldEvent, cx| {
+            if let TextFieldEvent::Change { value } = event {
+                this.text = value.clone();
+                this.apply(cx);
+            }
+        });
+        shortcut_input.clone().on_event(cx, |this, event: &TextFieldEvent, cx| {
+            if let TextFieldEvent::Change { value } = event {
+                this.shortcut = value.clone();
+                this.apply(cx);
+            }
+        });
+        custom_content.clone().on_value_changed(cx, |this, on, cx| {
+            this.custom = on;
+            this.apply(cx);
+        });
+        preview.clone().on_click(cx, |this, cx| {
+            this.clicks = this.clicks.saturating_add(1);
+            this.preview.update(cx, |button, cx| {
+                button.set_label(
+                    format!("Test button · {} {}", this.clicks, if this.clicks == 1 { "click" } else { "clicks" }),
+                    cx,
+                )
+            });
+            cx.notify();
+        });
+        delay.clone().on_event(cx, |this, event: &SliderEvent, cx| {
+            if let SliderEvent::Change { value, .. } = event {
+                this.delay_ms = value.round() as u64;
+                this.apply(cx);
+            }
+        });
+        hide_delay.clone().on_event(cx, |this, event: &SliderEvent, cx| {
+            if let SliderEvent::Change { value, .. } = event {
+                this.hide_delay_ms = value.round() as u64;
+                this.apply(cx);
+            }
+        });
+        duration.clone().on_event(cx, |this, event: &SliderEvent, cx| {
+            if let SliderEvent::Change { value, .. } = event {
+                this.duration_ms = value.round() as u64;
+                this.apply(cx);
+            }
+        });
+        placement.clone().on_value_changed(cx, |this, on, cx| {
+            this.below = on;
+            this.apply(cx);
+        });
+        dismissal.clone().on_value_changed(cx, |this, on, cx| {
+            this.permanent = on;
+            this.apply(cx);
+        });
+        enable.clone().on_value_changed(cx, |this, on, cx| {
+            this.enabled = on;
+            this.apply(cx);
+        });
+        show_once.clone().on_value_changed(cx, |this, on, cx| {
+            this.once = on;
+            this.apply(cx);
+        });
+        rearm.clone().on_click(cx, |this, cx| {
+            this.apply(cx);
+        });
         Self {
             look: Arc::clone(look),
             delay_ms: 500,
@@ -238,7 +217,7 @@ impl TooltipPlayground {
             show_once,
             rearm,
             reset_all,
-            _subscriptions: subscriptions,
+
             #[cfg(all(test, feature = "test-support"))]
             render_probe: None,
         }

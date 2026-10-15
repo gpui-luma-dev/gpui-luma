@@ -14,3 +14,6 @@ pub use template::{
 };
 
 pub use theme::{DefaultScrollbarTheme, ScrollbarLook, ScrollbarTheme, default_scrollbar_theme};
+
+mod callback;
+pub use callback::ScrollbarEventExt;

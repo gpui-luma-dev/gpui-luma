@@ -1,8 +1,9 @@
 //! Checkbox control exposition — live primary/secondary previews and event stream.
 
+use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FontWeight, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, FontWeight, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma_look_shadcn::prelude::*;
@@ -45,7 +46,6 @@ pub struct CheckboxControlExposition {
     left_pane: Entity<CheckboxExpositionLeftPane>,
     theme_inspector: Entity<CheckboxThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct CheckboxExpositionLeftPane {
@@ -193,36 +193,34 @@ impl CheckboxControlExposition {
             &super::inspector::CHECKBOX_INSPECTOR_SPEC,
             super::inspector::CheckboxInspectorAdapter::shared(),
         );
-
-        let mut subscriptions = Vec::new();
-        subscriptions.extend(subscribe_checkbox(
+        bind_checkbox_events(
             &secondary_checkbox,
             CheckboxVariant::Secondary,
             "controls-doc-checkbox-secondary",
             event_stream.clone(),
             cx,
-        ));
-        subscriptions.extend(subscribe_checkbox(
+        );
+        bind_checkbox_events(
             &indicator_only_checked,
             CheckboxVariant::IndicatorOnly,
             "controls-doc-checkbox-indicator-only-checked",
             event_stream.clone(),
             cx,
-        ));
-        subscriptions.extend(subscribe_checkbox(
+        );
+        bind_checkbox_events(
             &indicator_only_unchecked,
             CheckboxVariant::IndicatorOnly,
             "controls-doc-checkbox-indicator-only-unchecked",
             event_stream.clone(),
             cx,
-        ));
-        subscriptions.extend(subscribe_checkbox(
+        );
+        bind_checkbox_events(
             &primary_checkbox,
             CheckboxVariant::Primary,
             "controls-doc-checkbox-primary",
             event_stream.clone(),
             cx,
-        ));
+        );
 
         Self {
             look,
@@ -235,7 +233,6 @@ impl CheckboxControlExposition {
             left_pane,
             theme_inspector,
             inspector_split,
-            _subscriptions: subscriptions,
         }
     }
 
@@ -286,20 +283,20 @@ impl Render for CheckboxControlExposition {
     }
 }
 
-fn subscribe_checkbox(
+fn bind_checkbox_events(
     checkbox: &Checkbox,
     variant: CheckboxVariant,
     checkbox_id: &'static str,
     event_stream: Entity<ControlEventStream>,
     cx: &mut Context<CheckboxControlExposition>,
-) -> Vec<Subscription> {
-    vec![cx.subscribe(checkbox, move |_, _, event: &CheckboxEvent, cx| {
+) {
+    checkbox.clone().on_event(cx, move |_, event: &CheckboxEvent, cx| {
         let line = format!("{} - {} (\"{checkbox_id}\")", format_checkbox_event(event), variant.label());
         event_stream.update(cx, |stream, cx| {
             stream.append_line(&line, cx);
             cx.notify();
         });
-    })]
+    });
 }
 
 fn format_checkbox_event(event: &CheckboxEvent) -> String {

@@ -250,12 +250,54 @@ pub struct ToolbarRenderModel<'a> {
 }
 
 pub struct ToolbarBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::toolbar::ToolbarEvent>,
+
     pub(crate) model: ToolbarModel,
 }
 
 impl ToolbarBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::toolbar::ToolbarEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `ToolbarEvent::Click` through the existing event stream.
+    pub fn on_click<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::toolbar::ToolbarEvent::Click { id } = event {
+                callback(owner, id, cx);
+            }
+        })
+    }
+
+    /// Handle `ToolbarEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &crate::controls::toolbar::ToolbarValue, &mut gpui::Context<M>)
+        + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::toolbar::ToolbarEvent::Change { id, value } = event {
+                callback(owner, id, value, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             model: ToolbarModel {
                 id: id.into(),
                 items: Vec::new(),
@@ -334,8 +376,11 @@ impl ToolbarBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<ToolbarControl> {
-        cx.new(|cx| ToolbarControl::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> Entity<ToolbarControl> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| ToolbarControl::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 
     pub(crate) fn control_group_template(&self) -> crate::controls::control_group::ControlGroupTemplate<ToolbarItem> {

@@ -1,10 +1,14 @@
 mod button;
 
+use gpui_luma::controls::textfield::TextFieldEventExt;
+use gpui_luma::controls::slider::SliderEventExt;
+use gpui_luma::controls::toggle::ToggleEventExt;
 use std::sync::Arc;
 
 use gpui::{
     AnyElement, App, Context, Entity, FontWeight, Hsla, IntoElement, Render, SharedString, Window, div, prelude::*, px,
 };
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::button::{Button, ButtonContentContext, ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use gpui_luma::infra::presenter::HasPresenter;
@@ -120,22 +124,18 @@ impl ShadowButtonControlExposition {
             .value(shadow.opacity * 100.0)
             .spawn(cx);
 
-        cx.subscribe(&demo_button, move |this, _, event: &ButtonEvent, cx| {
+        demo_button.clone().on_event(cx, move |this, event: &ButtonEvent, cx| {
             this.handle_button_event(event, cx);
-        })
-        .detach();
-        cx.subscribe(&reset_button, move |this, _, event: &ButtonEvent, cx| {
+        });
+        reset_button.clone().on_event(cx, move |this, event: &ButtonEvent, cx| {
             this.handle_reset(event, cx);
-        })
-        .detach();
-        cx.subscribe(&bounds_toggle, move |this, _, event: &ToggleEvent, cx| {
+        });
+        bounds_toggle.clone().on_event(cx, move |this, event: &ToggleEvent, cx| {
             this.handle_bounds_toggle(event, cx);
-        })
-        .detach();
-        cx.subscribe(&color_field, move |this, _, event: &TextFieldEvent, cx| {
+        });
+        color_field.clone().on_event(cx, move |this, event: &TextFieldEvent, cx| {
             this.handle_color_field_event(event, cx);
-        })
-        .detach();
+        });
         for (slider, field) in [
             (offset_x_slider.clone(), ShadowSliderField::OffsetX),
             (offset_y_slider.clone(), ShadowSliderField::OffsetY),
@@ -143,10 +143,9 @@ impl ShadowButtonControlExposition {
             (spread_slider.clone(), ShadowSliderField::Spread),
             (opacity_slider.clone(), ShadowSliderField::Opacity),
         ] {
-            cx.subscribe(&slider, move |this, _, event: &SliderEvent, cx| {
+            slider.clone().on_event(cx, move |this, event: &SliderEvent, cx| {
                 this.handle_slider_event(field, event, cx);
-            })
-            .detach();
+            });
         }
 
         Self {

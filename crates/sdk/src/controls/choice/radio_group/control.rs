@@ -22,7 +22,7 @@ where
     T: ControlGroupItemLike + 'static,
 {
     pub(super) fn from_builder(builder: RadioGroupBuilder<T>, cx: &mut Context<Self>) -> Self {
-        let group = builder.0.spawn(cx);
+        let group = builder.inner.spawn(cx);
         let subscription = cx.subscribe(&group, Self::handle_group_event);
         Self { group, _subscriptions: vec![subscription] }
     }

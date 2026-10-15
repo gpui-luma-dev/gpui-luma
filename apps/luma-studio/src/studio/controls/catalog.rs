@@ -26,9 +26,9 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     ControlDocEntry {
         id: "button",
         title: "Button",
-        description: "Command buttons commit actions in forms, dialogs, and toolbars. The look exposes primary, secondary, outline, and ghost builders that map to Shadcn emphasis tiers—use primary for the main call to action and ghost for low-priority utilities. Each button is a GPUI entity: spawn once per id, filter ButtonEvent::Click for activation, and optionally observe focus, hover, and enabled transitions.",
+        description: "Command buttons commit actions in forms, dialogs, and toolbars. The look exposes primary, secondary, outline, and ghost builders that map to Shadcn emphasis tiers—use primary for the main call to action and ghost for low-priority utilities. Each button is a GPUI entity: use on_click for application actions and on_focus_changed, on_hover_changed, or on_enabled_changed for state transitions. The Button retains callbacks automatically.",
         category: ControlCategory::Command,
-        snippet: "let save = shadcn::Button::new(\"save\").look(look.as_ref()).primary().label(\"Save\").spawn(cx);\n\ncx.subscribe(&save, |_, _, event: &ButtonEvent, _| {\n    match event {\n        ButtonEvent::Click => { /* commit action */ }\n        ButtonEvent::FocusChanged { focused } => { let _ = focused; }\n        ButtonEvent::HoverChanged { hovered } => { let _ = hovered; }\n        ButtonEvent::EnabledChanged { enabled } => { let _ = enabled; }\n        _ => {}\n    }\n});",
+        snippet: "shadcn::Button::new(\"save\").primary().label(\"Save\")\n    .on_click(cx, |app, cx| {\n        app.save_requests += 1;\n        cx.notify();\n    })\n    .spawn(cx);",
         section_order: 100,
     },
     ControlDocEntry {
@@ -36,7 +36,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Split Button (Prototype)",
         description: "Issue #17 prototype for a cohesive command button with a separate menu trigger. The action face executes immediately while the adjacent face opens alternate actions; this Studio surface is validating focus, seams, menu ownership, and event semantics before SDK promotion.",
         category: ControlCategory::Command,
-        snippet: "use gpui_luma::infra::menu_item::MenuItem;\nuse gpui_luma::controls::split_button::SplitButtonEvent;\n\nlet save = shadcn::SplitButton::new(\"save\").look(look.as_ref()).primary()\n    .label(\"Save\")\n    .items([\n        MenuItem::new(\"save-as\").label(\"Save as\"),\n        MenuItem::new(\"duplicate\").label(\"Duplicate\"),\n    ])\n    .spawn(cx);\n\ncx.subscribe(&save, |_, _, event: &SplitButtonEvent, _| {\n    match event {\n        SplitButtonEvent::ActionClick => { /* save immediately */ }\n        SplitButtonEvent::Select { item_id, .. } => { let _ = item_id; }\n        _ => {}\n    }\n});",
+        snippet: "let save = shadcn::SplitButton::new(\"save\").look(look.as_ref()).primary()\n    .label(\"Save\")\n    .items([MenuItem::new(\"save-as\").label(\"Save as\")])\n    .on_action_click(cx, |app: &mut Self, cx| {\n        app.save_requests += 1;\n        cx.notify();\n    })\n    .on_select(cx, |app, item_id, _, cx| {\n        app.last_action = item_id.to_string();\n        cx.notify();\n    })\n    .spawn(cx);",
         section_order: 101,
     },
     ControlDocEntry {
@@ -66,9 +66,9 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     ControlDocEntry {
         id: "checkbox",
         title: "Checkbox",
-        description: "Boolean choice controls for multi-select forms and settings. Primary and secondary builders map to Shadcn emphasis tiers; add a content closure for labeled checkboxes or omit it for indicator-only rows. Each checkbox is a GPUI entity—subscribe to CheckboxEvent::Change and assign local state from the payload; use set_data for programmatic sync.",
+        description: "Boolean choice controls for multi-select forms and settings. Primary and secondary builders map to Shadcn emphasis tiers; add a content closure for labeled checkboxes or omit it for indicator-only rows. Use on_value_changed to assign application state from the checked value; use set_data for programmatic sync.",
         category: ControlCategory::Choice,
-        snippet: "let terms = shadcn::Checkbox::new(\"terms\").look(look.as_ref()).primary()\n    .with_data(false)\n    .content(|_, _| div().child(\"Accept terms\").into_any_element())\n    .spawn(cx);\n\ncx.subscribe(&terms, |_, _, event: &CheckboxEvent, _| {\n    if let CheckboxEvent::Change { checked } = event {\n        let _ = checked;\n    }\n});",
+        snippet: "let terms = shadcn::Checkbox::new(\"terms\").look(look.as_ref()).primary()\n    .with_data(false).label(\"Accept terms\")\n    .on_value_changed(cx, |app: &mut Self, checked, cx| {\n        app.accepted_terms = checked;\n        cx.notify();\n    })\n    .spawn(cx);",
         section_order: 110,
     },
     ControlDocEntry {
@@ -76,15 +76,15 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Radio Button",
         description: "Single-select choice within a mutually exclusive set. Standalone radio buttons emit RadioButtonEvent::Change when selected; coordinate sibling deselection in the parent or use a radio group for managed value binding. Primary and secondary builders support indicator-only or labeled content layouts.",
         category: ControlCategory::Choice,
-        snippet: "let option_a = shadcn::Radio::new(\"option-a\").look(look.as_ref()).primary()\n    .with_data(false)\n    .content(|_, _| div().child(\"Option A\").into_any_element())\n    .spawn(cx);\n\ncx.subscribe(&option_a, |_, _, event: &RadioButtonEvent, _| {\n    if let RadioButtonEvent::Change { selected } = event {\n        let _ = selected;\n    }\n});",
+        snippet: "let option_a = shadcn::Radio::new(\"option-a\").look(look.as_ref()).primary()\n    .with_data(false).label(\"Option A\")\n    .on_value_changed(cx, |app: &mut Self, selected, cx| {\n        app.option_a_selected = selected;\n        cx.notify();\n    })\n    .spawn(cx);",
         section_order: 120,
     },
     ControlDocEntry {
         id: "switch",
         title: "Switch",
-        description: "On/off toggles for settings and feature flags. Switches use track-and-thumb presentation with primary and secondary emphasis tiers; optional content closures add inline labels. Subscribe to SwitchEvent::Change for user toggles and set_data for programmatic updates.",
+        description: "On/off toggles for settings and feature flags. Switches use track-and-thumb presentation with primary and secondary emphasis tiers; optional content closures add inline labels. Use on_value_changed for user toggles and set_data for programmatic updates.",
         category: ControlCategory::Choice,
-        snippet: "let notifications = shadcn::Switch::new(\"notifications\").look(look.as_ref()).primary()\n    .with_data(true)\n    .spawn(cx);\n\ncx.subscribe(&notifications, |_, _, event: &SwitchEvent, _| {\n    if let SwitchEvent::Change { on } = event {\n        let _ = on;\n    }\n});",
+        snippet: "let notifications = shadcn::Switch::new(\"notifications\").look(look.as_ref()).primary()\n    .with_data(true)\n    .on_value_changed(cx, |app: &mut Self, on, cx| {\n        app.notifications_enabled = on;\n        cx.notify();\n    })\n    .spawn(cx);",
         section_order: 130,
     },
     ControlDocEntry {
@@ -284,7 +284,7 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
         title: "Color Slider",
         description: "Spectrum sliders built on the unified Slider engine with color-specific delegates for hue, saturation, alpha, channel, and gradient interpolation. ColorSliderBuilder returns Slider entities—subscribe to SliderEvent::Change for live preview and SliderEvent::Release to commit values. Linked saturation and alpha tracks refresh when the base color changes.",
         category: ControlCategory::Color,
-        snippet: "ColorSliderBuilder::hue(\"accent-hue\", 210.0)\n    .size(ControlSize::Sm)\n    .thumb_medium()\n    .spawn(cx);\n\ncx.subscribe(&hue_slider, |_, _, event: &SliderEvent, _| {\n    if let SliderEvent::Release { value, .. } = event {\n        let _ = value;\n    }\n});",
+        snippet: "let hue_slider = ColorSliderBuilder::hue(\"accent-hue\", 210.0)\n    .size(ControlSize::Sm).thumb_medium().spawn(cx)\n    .on_release(cx, |app: &mut Self, _, value, cx| {\n        app.hue = value;\n        cx.notify();\n    });",
         section_order: 210,
     },
     ControlDocEntry {

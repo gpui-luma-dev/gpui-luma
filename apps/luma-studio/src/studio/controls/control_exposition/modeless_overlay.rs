@@ -1,7 +1,9 @@
+use gpui_luma::controls::overlay_window::OverlayWindowEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Focusable, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui::{Context, Entity, Focusable, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::overlay_window::{OverlayWindow, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn as shadcn;
@@ -23,7 +25,6 @@ pub struct ModelessOverlayControlExposition {
     left_pane: Entity<ModelessOverlayExpositionLeftPane>,
     theme_inspector: Entity<OverlayWindowThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct ModelessOverlayExpositionLeftPane {
@@ -144,25 +145,26 @@ impl ModelessOverlayControlExposition {
             OverlayWindowInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&trigger, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        trigger.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
                     return;
-                }
+                };
+
                 left_pane.update(cx, |pane, cx| {
                     let focus = pane.trigger.read(cx).focus_handle(cx);
                     pane.overlay.update(cx, |overlay, cx| overlay.open_from(Some(focus), cx));
                 });
             }
-        }));
-        subscriptions.push(cx.subscribe(&background_counter, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        });
+        background_counter.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
                     return;
-                }
+                };
+
                 left_pane.update(cx, |pane, cx| {
                     pane.background_clicks += 1;
                     pane.background_counter.update(cx, |button, cx| {
@@ -172,31 +174,35 @@ impl ModelessOverlayControlExposition {
                     cx.notify();
                 });
             }
-        }));
-        subscriptions.push(cx.subscribe(&close, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        });
+        close.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
                     return;
-                }
+                };
+
                 left_pane.update(cx, |pane, cx| {
                     pane.status = "Dismissed modeless overlay.".into();
                     pane.overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
                     cx.notify();
                 });
             }
-        }));
-        subscriptions.push(cx.subscribe(&overlay, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &OverlayWindowEvent, cx| {
+        });
+        overlay.clone().on_event(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, event: &OverlayWindowEvent, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 left_pane.update(cx, |pane, cx| {
                     pane.status = overlay_status_for(event, "modeless overlay");
                     cx.notify();
                 });
             }
-        }));
+        });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

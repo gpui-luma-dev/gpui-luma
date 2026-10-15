@@ -55,6 +55,8 @@ pub fn radio_group_template<T: ControlGroupItemLike + 'static>(
 
 /// Look-owned single-selection group. Events and state are owned by the SDK.
 pub struct RadioGroup<T: ControlGroupItemLike + 'static = ControlGroupItem> {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::radio_group::RadioGroupEvent>,
+
     look: Option<Look>,
     variant: RadioVariant,
     paint: Paint,
@@ -64,8 +66,73 @@ pub struct RadioGroup<T: ControlGroupItemLike + 'static = ControlGroupItem> {
 }
 
 impl<T: ControlGroupItemLike + 'static> RadioGroup<T> {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::radio_group::RadioGroupEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `RadioGroupEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Option<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_group::RadioGroupEvent::Change { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioGroupEvent::Activate` through the existing event stream.
+    pub fn on_activate<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_group::RadioGroupEvent::Activate { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioGroupEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_group::RadioGroupEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioGroupEvent::ItemFocused` through the existing event stream.
+    pub fn on_item_focused<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_group::RadioGroupEvent::ItemFocused { item_id } = event {
+                callback(owner, item_id, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             look: None,
             variant: RadioVariant::default(),
             paint: Paint::accent(),
@@ -107,13 +174,22 @@ impl<T: ControlGroupItemLike + 'static> RadioGroup<T> {
         self.builder = self.builder.enabled(enabled);
         self
     }
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::radio_group::RadioGroup<T> {
-        let look = resolve_look(self.look.as_ref(), cx.try_global::<Look>());
-        let item =
-            radio_group_button_item_element_template(radio_template_for(&look, self.variant, self.paint, self.size));
-        self.builder
-            .item_element_template(item)
-            .template(radio_group_template(&look, self.variant, self.paint, self.size, self.layout))
-            .spawn(cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> gpui_luma::controls::radio_group::RadioGroup<T> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = resolve_look(self.look.as_ref(), cx.try_global::<Look>());
+            let item = radio_group_button_item_element_template(radio_template_for(
+                &look,
+                self.variant,
+                self.paint,
+                self.size,
+            ));
+            self.builder
+                .item_element_template(item)
+                .template(radio_group_template(&look, self.variant, self.paint, self.size, self.layout))
+                .spawn(cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 }

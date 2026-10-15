@@ -1,5 +1,6 @@
 //! Look-owned switch builder. Spawn synthesizes the SDK [`gpui_luma::controls::switch::Switch`].
 
+use gpui_luma::controls::switch::{SwitchCallbacks, SwitchEvent};
 use gpui::{App, Context, IntoElement, Pixels, SharedString};
 use gpui_luma::controls::button::{ButtonContentContext, ControlPresenter, HasPresenter};
 use gpui_luma::controls::switch::{SwitchBuilder, SwitchData, SwitchOrientation};
@@ -9,6 +10,7 @@ use crate::size::ShadcnSize;
 
 /// Builder in the guise of a switch: Shadcn axes plus SDK options, until `.spawn(cx)`.
 pub struct Switch {
+    callbacks: SwitchCallbacks,
     id: SharedString,
     look: Option<ShadcnLook>,
     style: ShadcnButtonStyle,
@@ -30,8 +32,59 @@ pub struct Switch {
 }
 
 impl Switch {
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, &SwitchEvent, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_value_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_value_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_focus_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_focus_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_hover_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_hover_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_enabled_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_enabled_changed(cx, callback);
+        self
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: SwitchCallbacks::default(),
             id: id.into(),
             look: None,
             style: ShadcnButtonStyle::Primary,
@@ -192,7 +245,8 @@ impl Switch {
             .with_data(self.checked)
             .enabled(self.enabled)
             .tab_stop(self.tab_stop)
-            .animated(self.animated);
+            .animated(self.animated)
+            .with_callbacks(self.callbacks);
         if let Some(orientation) = self.orientation {
             builder = builder.orientation(orientation);
         }
@@ -252,5 +306,43 @@ mod tests {
     fn into_sdk_builder_does_not_panic() {
         let look = ShadcnLook::built_in();
         let _builder = Switch::new("ok").look(&look).primary().with_data(true).label("On").into_sdk_builder(look);
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod callback_tests {
+    use super::*;
+    use gpui::{AppContext, TestAppContext};
+    struct Owner {
+        control: gpui_luma::controls::switch::Switch,
+        log: Vec<bool>,
+    }
+    #[test]
+    fn look_builder_preserves_every_callback_and_payload() {
+        let app = TestAppContext::single();
+        let owner = app.update(|cx| {
+            cx.new(|cx| {
+                let control = Switch::new("choice")
+                    .on_event(cx, |owner: &mut Owner, _, _| owner.log.push(false))
+                    .on_value_changed(cx, |owner, value, _| owner.log.push(value))
+                    .on_focus_changed(cx, |owner, value, _| owner.log.push(value))
+                    .on_hover_changed(cx, |owner, value, _| owner.log.push(value))
+                    .on_enabled_changed(cx, |owner, value, _| owner.log.push(value))
+                    .with_data(true)
+                    .spawn(cx);
+                Owner { control, log: vec![] }
+            })
+        });
+        let control = app.read(|cx| owner.read(cx).control.clone());
+        app.read(|cx| assert!(*control.read(cx).data()));
+        app.update(|cx| {
+            control.update(cx, |_, cx| {
+                cx.emit(SwitchEvent::Change { on: true });
+                cx.emit(SwitchEvent::FocusChanged { focused: true });
+                cx.emit(SwitchEvent::HoverChanged { hovered: true });
+                cx.emit(SwitchEvent::EnabledChanged { enabled: true });
+            })
+        });
+        app.read(|cx| assert_eq!(owner.read(cx).log, [false, true, false, true, false, true, false, true]));
     }
 }

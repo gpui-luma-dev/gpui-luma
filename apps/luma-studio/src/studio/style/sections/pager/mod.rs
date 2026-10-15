@@ -1,7 +1,9 @@
+use gpui_luma::controls::pager::PagerEventExt;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::pager::{Pager, PagerEvent, PagerStyle};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::{vstack, wrappanel};
@@ -177,46 +179,32 @@ impl PagerPreview {
 
     fn subscribe(&mut self, cx: &mut Context<Self>) {
         for pager in self.pagers() {
-            self._subscriptions.push(cx.subscribe(&pager, |preview, _, event: &PagerEvent, cx| {
+            pager.clone().on_event(cx, |preview, event: &PagerEvent, cx| {
                 preview.handle_pager_event(event, cx);
-            }));
+            });
         }
 
-        self._subscriptions.push(cx.subscribe(&self.page_prev_button, |preview, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                preview.step_page(-1, cx);
-            }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.page_next_button, |preview, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                preview.step_page(1, cx);
-            }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.total_down_button, |preview, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                preview.step_total_items(-1, cx);
-            }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.total_up_button, |preview, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                preview.step_total_items(1, cx);
-            }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.size_down_button, |preview, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                preview.step_page_size(-1, cx);
-            }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.size_up_button, |preview, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                preview.step_page_size(1, cx);
-            }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.enabled_toggle_button, |preview, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                preview.toggle_enabled(cx);
-            }
-        }));
+        self.page_prev_button.clone().on_click(cx, |preview, cx| {
+            preview.step_page(-1, cx);
+        });
+        self.page_next_button.clone().on_click(cx, |preview, cx| {
+            preview.step_page(1, cx);
+        });
+        self.total_down_button.clone().on_click(cx, |preview, cx| {
+            preview.step_total_items(-1, cx);
+        });
+        self.total_up_button.clone().on_click(cx, |preview, cx| {
+            preview.step_total_items(1, cx);
+        });
+        self.size_down_button.clone().on_click(cx, |preview, cx| {
+            preview.step_page_size(-1, cx);
+        });
+        self.size_up_button.clone().on_click(cx, |preview, cx| {
+            preview.step_page_size(1, cx);
+        });
+        self.enabled_toggle_button.clone().on_click(cx, |preview, cx| {
+            preview.toggle_enabled(cx);
+        });
     }
 
     fn pagers(&self) -> [Pager; 5] {

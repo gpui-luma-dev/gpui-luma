@@ -51,12 +51,105 @@ pub struct SplitViewRenderModel<'a> {
 }
 
 pub struct SplitViewBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::split_view::SplitViewEvent>,
+
     pub(crate) model: SplitViewModel,
 }
 
 impl SplitViewBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::split_view::SplitViewEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `SplitViewEvent::ResizeStart` through the existing event stream.
+    pub fn on_resize_start<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::split_view::SplitViewEvent::ResizeStart = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
+    /// Handle `SplitViewEvent::SidebarWidthChanged` through the existing event stream.
+    pub fn on_sidebar_width_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::Pixels, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::split_view::SplitViewEvent::SidebarWidthChanged { width } = event {
+                callback(owner, *width, cx);
+            }
+        })
+    }
+
+    /// Handle `SplitViewEvent::ResizeEnd` through the existing event stream.
+    pub fn on_resize_end<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::Pixels, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::split_view::SplitViewEvent::ResizeEnd { width } = event {
+                callback(owner, *width, cx);
+            }
+        })
+    }
+
+    /// Handle `SplitViewEvent::CollapsedChanged` through the existing event stream.
+    pub fn on_collapsed_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::split_view::SplitViewEvent::CollapsedChanged { collapsed } = event {
+                callback(owner, *collapsed, cx);
+            }
+        })
+    }
+
+    /// Handle `SplitViewEvent::SeparatorHoverChanged` through the existing event stream.
+    pub fn on_separator_hover_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::split_view::SplitViewEvent::SeparatorHoverChanged { hovered } = event {
+                callback(owner, *hovered, cx);
+            }
+        })
+    }
+
+    /// Handle `SplitViewEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::split_view::SplitViewEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             model: SplitViewModel {
                 id: id.into(),
                 sidebar_width: px(280.0),
@@ -181,8 +274,11 @@ impl SplitViewBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<SplitView> {
-        cx.new(|cx| SplitView::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> Entity<SplitView> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| SplitView::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

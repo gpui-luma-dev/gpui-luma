@@ -11,9 +11,9 @@ pub(crate) struct CopyFeedback {
     copied: bool,
 }
 
-use gpui::{AnyElement, Context, Entity, FocusHandle, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, FocusHandle, Hsla, IntoElement, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::prelude::{HasPresenter, TooltipEntityExt};
-use gpui_luma::controls::button::ButtonEvent;
 use gpui_luma::controls::overlay_window::{OverlayWindow, OverlayWindowMode, OverlayWindowPosition};
 use gpui_luma_look_radix as radix;
 use gpui_luma::color::{ColorValue, DisplayP3Color, GamutMapping};
@@ -109,7 +109,6 @@ pub(crate) struct ColorDetails {
     overlay: OverlayWindow,
     close: Entity<Button<Hsla>>,
     copies: Vec<Entity<Button<CopyFeedback>>>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl ColorDetails {
@@ -124,9 +123,12 @@ impl ColorDetails {
             .with_template_modifier(|root, _| {
                 root.aria_label("Close color details").debug_selector(|| "swatch-info-close".into())
             })
+            .on_click(cx, |this, cx| {
+                this.overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
+            })
             .spawn(cx)
             .help("Close color details", cx);
-        let mut subscriptions = Vec::new();
+
         let copies: Vec<Entity<Button<CopyFeedback>>> = ["solid", "alpha", "hsl", "hsla", "p3", "p3-alpha"]
             .into_iter()
             .enumerate()
@@ -166,39 +168,44 @@ impl ColorDetails {
                     })
                     .spawn(cx)
                     .help("Copy to clipboard", cx);
-                subscriptions.push(cx.subscribe(&button, move |this, button, event: &ButtonEvent, cx| {
-                    if matches!(event, ButtonEvent::Click)
-                        && let Some(selection) = this.selection.lock().ok().and_then(|info| info.clone())
-                    {
-                        let values = [
-                            &selection.solid,
-                            &selection.alpha,
-                            &selection.hsl,
-                            &selection.hsla,
-                            &selection.p3,
-                            &selection.p3_alpha,
-                        ];
-                        cx.write_to_clipboard(gpui::ClipboardItem::new_string(values[index].clone()));
-                        button.update(cx, |button, cx| {
-                            let mut feedback = button.data().clone();
-                            feedback.generation = feedback.generation.wrapping_add(1);
-                            feedback.copied = true;
-                            let generation = feedback.generation;
-                            button.set_data(feedback, cx);
-                            cx.spawn(async move |button, cx| {
-                                cx.background_executor().timer(Duration::from_millis(1400)).await;
-                                let _ = button.update(cx, |button, cx| {
-                                    if button.data().generation == generation {
-                                        let mut feedback = button.data().clone();
-                                        feedback.copied = false;
-                                        button.set_data(feedback, cx);
-                                    }
-                                });
-                            })
-                            .detach();
-                        });
-                    }
-                }));
+                {
+                    let callback_button = (&button).downgrade();
+                    button.clone().on_click(cx, move |this, cx| {
+                        let Some(button) = callback_button.upgrade() else {
+                            return;
+                        };
+
+                        if let Some(selection) = this.selection.lock().ok().and_then(|info| info.clone()) {
+                            let values = [
+                                &selection.solid,
+                                &selection.alpha,
+                                &selection.hsl,
+                                &selection.hsla,
+                                &selection.p3,
+                                &selection.p3_alpha,
+                            ];
+                            cx.write_to_clipboard(gpui::ClipboardItem::new_string(values[index].clone()));
+                            button.update(cx, |button, cx| {
+                                let mut feedback = button.data().clone();
+                                feedback.generation = feedback.generation.wrapping_add(1);
+                                feedback.copied = true;
+                                let generation = feedback.generation;
+                                button.set_data(feedback, cx);
+                                cx.spawn(async move |button, cx| {
+                                    cx.background_executor().timer(Duration::from_millis(1400)).await;
+                                    let _ = button.update(cx, |button, cx| {
+                                        if button.data().generation == generation {
+                                            let mut feedback = button.data().clone();
+                                            feedback.copied = false;
+                                            button.set_data(feedback, cx);
+                                        }
+                                    });
+                                })
+                                .detach();
+                            });
+                        }
+                    })
+                };
                 button
             })
             .collect();
@@ -229,13 +236,7 @@ impl ColorDetails {
             .theme_child(close.clone())
             .theme_children(copies.clone())
             .spawn(cx);
-        let subscription = cx.subscribe(&close, |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                this.overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
-            }
-        });
-        subscriptions.push(subscription);
-        Self { selection, overlay, close, copies, _subscriptions: subscriptions }
+        Self { selection, overlay, close, copies }
     }
 
     pub fn open(&mut self, selection: SwatchSelection, focus: Option<FocusHandle>, cx: &mut Context<Self>) {

@@ -14,6 +14,8 @@ pub struct SelectionPanel<T = SelectionPanelItem>
 where
     T: SelectionPanelItemLike + 'static,
 {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::selection_panel::SelectionPanelEvent>,
+
     look: Option<ShadcnLook>,
     builder: SelectionPanelBuilder<T>,
     custom_look_provider: bool,
@@ -30,8 +32,94 @@ impl<T> SelectionPanel<T>
 where
     T: SelectionPanelItemLike + 'static,
 {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::selection_panel::SelectionPanelEvent, &mut gpui::Context<M>)
+        + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `SelectionPanelEvent::HoverChanged` through the existing event stream.
+    pub fn on_hover_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Option<usize>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::selection_panel::SelectionPanelEvent::HoverChanged { visible_index } = event {
+                callback(owner, visible_index, cx);
+            }
+        })
+    }
+
+    /// Handle `SelectionPanelEvent::ActivateRow` through the existing event stream.
+    pub fn on_activate_row<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, usize, usize, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::selection_panel::SelectionPanelEvent::ActivateRow {
+                source_index,
+                visible_index,
+                item_id,
+            } = event
+            {
+                callback(owner, *source_index, *visible_index, item_id, cx);
+            }
+        })
+    }
+
+    /// Handle `SelectionPanelEvent::ActiveIndexChanged` through the existing event stream.
+    pub fn on_active_index_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Option<usize>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::selection_panel::SelectionPanelEvent::ActiveIndexChanged { visible_index } =
+                event
+            {
+                callback(owner, visible_index, cx);
+            }
+        })
+    }
+
+    /// Handle `SelectionPanelEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::selection_panel::SelectionPanelEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `SelectionPanelEvent::OpenChanged` through the existing event stream.
+    pub fn on_open_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::selection_panel::SelectionPanelEvent::OpenChanged { open } = event {
+                callback(owner, *open, cx);
+            }
+        })
+    }
+
     pub fn new_typed(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             look: None,
             builder: SelectionPanelBuilder::new(id),
             custom_look_provider: false,
@@ -191,9 +279,14 @@ where
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<SelectionPanelControl<T>> {
-        let look = resolve_look_from(self.look.as_ref(), cx);
-        self.into_sdk_builder(look).spawn(cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<SelectionPanelControl<T>> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = resolve_look_from(self.look.as_ref(), cx);
+            self.into_sdk_builder(look).spawn(cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> SelectionPanelBuilder<T> {

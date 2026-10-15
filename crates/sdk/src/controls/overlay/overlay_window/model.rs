@@ -88,6 +88,8 @@ impl ThemeInvalidator {
 }
 
 pub struct OverlayWindowBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::overlay_window::OverlayWindowEvent>,
+
     pub(crate) model: OverlayWindowModel,
     pub(crate) theme_children: Vec<ThemeInvalidator>,
 }
@@ -97,8 +99,47 @@ pub fn new(id: impl Into<SharedString>) -> OverlayWindowBuilder {
 }
 
 impl OverlayWindowBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::overlay_window::OverlayWindowEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `OverlayWindowEvent::Opened` through the existing event stream.
+    pub fn on_opened<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::overlay_window::OverlayWindowEvent::Opened = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
+    /// Handle `OverlayWindowEvent::Dismissed` through the existing event stream.
+    pub fn on_dismissed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::overlay_window::OverlayWindowEvent::Dismissed = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             model: OverlayWindowModel {
                 id: id.into(),
                 content: Arc::new(|_, _, _| gpui::div().into_any_element()),
@@ -212,8 +253,11 @@ impl OverlayWindowBuilder {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<OverlayWindowControl> {
-        cx.new(|cx| OverlayWindowControl::from_builder(self, cx))
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<OverlayWindowControl> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| OverlayWindowControl::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

@@ -9,3 +9,6 @@ pub use model::{
     PopoverButtonBuilder, PopoverButtonEvent, PopoverContent, PopoverDismissPolicy, PopoverPlacement,
     PopoverRenderModel, PopoverTrigger,
 };
+
+mod callback;
+pub use callback::PopoverButtonEventExt;

@@ -1,6 +1,7 @@
 mod input;
 
-use gpui::{App, Context, Entity, FocusHandle, IntoElement, MouseButton, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::scrollbar::ScrollbarEventExt;
+use gpui::{App, Context, Entity, FocusHandle, IntoElement, MouseButton, Render, Window, div, prelude::*, px};
 use gpui_luma::{
     controls::scrollbar::{Scrollbar, ScrollbarEvent},
     key_handling::{
@@ -27,7 +28,6 @@ pub(super) struct ScrollingPlot {
     focus: FocusHandle,
     scrollbar: Entity<Scrollbar>,
     diagnostics: Entity<Diagnostics>,
-    _subscription: Subscription,
 }
 
 impl ScrollingPlot {
@@ -36,7 +36,7 @@ impl ScrollingPlot {
         cx.new(move |cx: &mut Context<Self>| {
             let content = time_domain(&data).unwrap_or((0.0, WINDOW_SECONDS));
             let scrollbar = theme::spawn_time_scrollbar(&look, content, WINDOW_SECONDS, cx);
-            let subscription = cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {
+            scrollbar.clone().on_event(cx, |this, event: &ScrollbarEvent, cx| {
                 if let ScrollbarEvent::Change { value } = event {
                     this.start = f64::from(*value);
                     this.wheel_position = this.start;
@@ -54,7 +54,6 @@ impl ScrollingPlot {
                 focus: cx.focus_handle().tab_stop(true),
                 scrollbar,
                 diagnostics: Diagnostics::spawn(cx),
-                _subscription: subscription,
             }
         })
     }

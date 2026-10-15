@@ -103,12 +103,105 @@ pub struct ScrollbarRenderModel<'a> {
 }
 
 pub struct ScrollbarBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::scrollbar::ScrollbarEvent>,
+
     pub(crate) model: ScrollbarModel,
 }
 
 impl ScrollbarBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::scrollbar::ScrollbarEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `ScrollbarEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, f32, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::scrollbar::ScrollbarEvent::Change { value } = event {
+                callback(owner, *value, cx);
+            }
+        })
+    }
+
+    /// Handle `ScrollbarEvent::DragStart` through the existing event stream.
+    pub fn on_drag_start<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::scrollbar::ScrollbarEvent::DragStart = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
+    /// Handle `ScrollbarEvent::DragEnd` through the existing event stream.
+    pub fn on_drag_end<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, f32, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::scrollbar::ScrollbarEvent::DragEnd { value } = event {
+                callback(owner, *value, cx);
+            }
+        })
+    }
+
+    /// Handle `ScrollbarEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::scrollbar::ScrollbarEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `ScrollbarEvent::HoverChanged` through the existing event stream.
+    pub fn on_hover_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::scrollbar::ScrollbarEvent::HoverChanged { hovered } = event {
+                callback(owner, *hovered, cx);
+            }
+        })
+    }
+
+    /// Handle `ScrollbarEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::scrollbar::ScrollbarEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             model: ScrollbarModel {
                 id: id.into(),
                 orientation: ScrollbarOrientation::Vertical,
@@ -235,8 +328,11 @@ impl ScrollbarBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Scrollbar> {
-        cx.new(|cx| Scrollbar::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> Entity<Scrollbar> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| Scrollbar::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

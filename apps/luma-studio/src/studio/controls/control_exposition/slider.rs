@@ -1,8 +1,10 @@
+use gpui_luma::controls::slider::SliderEventExt;
 use std::f32::consts::PI;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::slider::{Slider, SliderEvent, SliderThumbPolicy};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn as shadcn;
@@ -23,7 +25,6 @@ pub struct SliderControlExposition {
     left_pane: Entity<SliderExpositionLeftPane>,
     theme_inspector: Entity<SliderThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct SliderExpositionLeftPane {
@@ -287,7 +288,6 @@ impl SliderControlExposition {
             .label("Animate value")
             .spawn(cx);
 
-        let mut subscriptions = Vec::new();
         let left_pane = cx.new(|cx| {
             let mut pane = SliderExpositionLeftPane {
                 look: look.clone(),
@@ -311,14 +311,16 @@ impl SliderControlExposition {
             pane.sync_stop_summary(cx);
             pane
         });
-        subscriptions.push(cx.subscribe(&animate_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.toggle_animated_value(cx));
-                }
+        animate_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.toggle_animated_value(cx));
             }
-        }));
+        });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
             look.clone(),
@@ -331,58 +333,57 @@ impl SliderControlExposition {
             SliderInspectorAdapter::shared(),
         );
 
-        subscriptions.push(wire_value_slider(
-            cx,
-            &fill_slider,
-            "fill",
-            event_stream.clone(),
-            left_pane.clone(),
-            SliderValueTarget::Fill,
-        ));
-        subscriptions.push(wire_value_slider(
+        wire_value_slider(cx, &fill_slider, "fill", event_stream.clone(), left_pane.clone(), SliderValueTarget::Fill);
+        wire_value_slider(
             cx,
             &blocked_slider,
             "blocked",
             event_stream.clone(),
             left_pane.clone(),
             SliderValueTarget::Blocked,
-        ));
-        subscriptions.push(wire_value_slider(
+        );
+        wire_value_slider(
             cx,
             &reversed_slider,
             "reversed",
             event_stream.clone(),
             left_pane.clone(),
             SliderValueTarget::Reversed,
-        ));
-        subscriptions.push(wire_value_slider(
+        );
+        wire_value_slider(
             cx,
             &angular_slider,
             "angular",
             event_stream.clone(),
             left_pane.clone(),
             SliderValueTarget::Angular,
-        ));
-        subscriptions.push(wire_value_slider(
+        );
+        wire_value_slider(
             cx,
             &wrapping_slider,
             "wrapping",
             event_stream.clone(),
             left_pane.clone(),
             SliderValueTarget::Wrapping,
-        ));
-        subscriptions.push(cx.subscribe(&stops_slider, {
-            let event_stream = event_stream.clone();
-            let left_pane = left_pane.clone();
-            move |_, _, event: &SliderEvent, cx| {
+        );
+        stops_slider.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            let left_pane = left_pane.downgrade();
+            move |_, event: &SliderEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 left_pane.update(cx, |pane, cx| pane.handle_stops_event(event, cx));
                 if let Some(line) = format_slider_event("stops", event) {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
             }
-        }));
+        });
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
@@ -425,9 +426,13 @@ fn wire_value_slider(
     event_stream: Entity<ControlEventStream>,
     left_pane: Entity<SliderExpositionLeftPane>,
     target: SliderValueTarget,
-) -> Subscription {
-    cx.subscribe(slider, move |_, _, event: &SliderEvent, cx| {
+) {
+    let left_pane = left_pane.downgrade();
+    slider.clone().on_event(cx, move |_, event: &SliderEvent, cx| {
         if let Some(value) = slider_release_or_change_value(event) {
+            let Some(left_pane) = left_pane.upgrade() else {
+                return;
+            };
             left_pane.update(cx, |pane, cx| {
                 match target {
                     SliderValueTarget::Fill => pane.fill_value = value,
@@ -444,7 +449,7 @@ fn wire_value_slider(
         {
             event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
         }
-    })
+    });
 }
 
 impl Render for SliderControlExposition {

@@ -1,3 +1,4 @@
+use gpui_luma::controls::scrollbar::ScrollbarEventExt;
 use std::sync::Arc;
 
 use gpui::{App, Context, FocusHandle, Focusable, KeyDownEvent, Render, ScrollWheelEvent, Subscription, Window, px};
@@ -31,13 +32,16 @@ impl EventLogView {
             cx,
         );
         let scrollbar = scroll.scrollbar();
-        let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| {
-            let ScrollbarEvent::Change { value } = event else {
-                return;
-            };
-            this.scroll.set_vertical_offset(*value, cx);
-            this.scroll_to_end_pending = false;
-        })];
+        let subscriptions = {
+            scrollbar.clone().on_event(cx, |this, event: &ScrollbarEvent, cx| {
+                let ScrollbarEvent::Change { value } = event else {
+                    return;
+                };
+                this.scroll.set_vertical_offset(*value, cx);
+                this.scroll_to_end_pending = false;
+            });
+            Vec::new()
+        };
 
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
 

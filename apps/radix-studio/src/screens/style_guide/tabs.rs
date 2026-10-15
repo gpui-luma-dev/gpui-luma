@@ -1,5 +1,6 @@
 //! Tabs examples using the same three preview pages as other controls.
 
+use gpui_luma::controls::tabs::TabsEventExt;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, Hsla, IntoElement, SharedString, div, prelude::*, px};
@@ -48,7 +49,7 @@ impl TabsExamples {
             ])
             .active("template-preview")
             .spawn(cx);
-        cx.subscribe(&navigation, |_, _, _: &TabsEvent, cx| cx.notify()).detach();
+        navigation.clone().on_event(cx, |_, _: &TabsEvent, cx| cx.notify());
         let preview = [("Interactive", true), ("Disabled", false)]
             .into_iter()
             .map(|(label, enabled)| {

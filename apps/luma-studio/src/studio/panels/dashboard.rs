@@ -1,8 +1,10 @@
+use gpui_luma::controls::table::TableEventExt;
 use std::sync::Arc;
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::motion::VisualTransition;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{ButtonContentContext, ButtonEvent, ControlIcon};
+use gpui_luma::controls::button::{ButtonContentContext, ControlIcon};
 use gpui_luma::controls::icon_button::IconButton;
 use gpui_luma::controls::table::{TableSelectionMode, TableEvent, PagingTable};
 use gpui_luma::controls::pager::PagerStyle;
@@ -124,23 +126,20 @@ impl DashboardPanel {
             table.set_row_reordering(true, cx).expect("keyed table");
         });
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.observe(&sidebar, |_, _, cx| cx.notify()));
-        subscriptions.push(cx.subscribe(&sidebar_toggle, |panel, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                panel.sidebar_open = !panel.sidebar_open;
-                let presentation = if panel.sidebar_open {
-                    SidebarPresentation::Expanded
-                } else {
-                    SidebarPresentation::Icons
-                };
-                panel.sidebar.update(cx, |sidebar, cx| sidebar.set_presentation(presentation, cx));
-                cx.notify();
-            }
-        }));
-        subscriptions.push(cx.subscribe(&table, |_, _, _: &TableEvent, cx| {
+        let subscriptions = vec![cx.observe(&sidebar, |_, _, cx| cx.notify())];
+        sidebar_toggle.clone().on_click(cx, |panel, cx| {
+            panel.sidebar_open = !panel.sidebar_open;
+            let presentation = if panel.sidebar_open {
+                SidebarPresentation::Expanded
+            } else {
+                SidebarPresentation::Icons
+            };
+            panel.sidebar.update(cx, |sidebar, cx| sidebar.set_presentation(presentation, cx));
             cx.notify();
-        }));
+        });
+        table.clone().on_event(cx, |_, _: &TableEvent, cx| {
+            cx.notify();
+        });
 
         Self {
             look,

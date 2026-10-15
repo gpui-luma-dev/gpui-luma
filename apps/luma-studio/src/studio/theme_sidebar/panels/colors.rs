@@ -1,3 +1,4 @@
+use gpui_luma::controls::textfield::TextFieldEventExt;
 use crate::studio::color_format::{format_color_readout, parse_color_input};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -65,14 +66,14 @@ impl ColorsPanel {
             for (token, _) in *tokens {
                 let field = panel.read(cx).token_fields.get(*token).expect("token field").clone();
                 let token_key = token.to_string();
-                subscriptions.push(cx.subscribe(&field, move |app, _, event: &TextFieldEvent, cx| {
+                field.clone().on_event(cx, move |app, event: &TextFieldEvent, cx| {
                     if let TextFieldEvent::Change { value } = event {
                         let Some(color) = parse_color_input(value) else {
                             return;
                         };
                         app.set_global_color(&token_key, color, cx);
                     }
-                }));
+                });
                 let picker = panel.read(cx).token_pickers.get(*token).expect("token picker").clone();
                 let token_key = token.to_string();
                 subscriptions.push(cx.subscribe(&picker, move |app, _, event: &ColorPickerEvent, cx| {

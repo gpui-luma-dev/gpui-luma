@@ -1,7 +1,8 @@
+use gpui_luma::controls::popup_menu::PopupMenuEventExt;
 use gpui_luma::infra::attachments::TooltipEntityExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::infra::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
 use gpui_luma_look_shadcn::prelude::*;
@@ -24,7 +25,6 @@ pub struct PopupMenuControlExposition {
     left_pane: Entity<PopupMenuExpositionLeftPane>,
     theme_inspector: Entity<PopupMenuThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct PopupMenuExpositionLeftPane {
@@ -131,19 +131,18 @@ impl PopupMenuControlExposition {
             PopupMenuInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
         for preview in [&preview_smart, &preview_below] {
             let event_stream = event_stream.clone();
-            subscriptions.push(cx.subscribe(preview, move |_, _, event: &PopupMenuEvent, cx| {
+            preview.clone().on_event(cx, move |_, event: &PopupMenuEvent, cx| {
                 let line = format_popup_menu_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
                     cx.notify();
                 });
-            }));
+            });
         }
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

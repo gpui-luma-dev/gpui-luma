@@ -14,6 +14,8 @@ type TextAreaModifier = Box<dyn Fn(Stateful<Div>, &TextAreaRenderModel<'_>) -> S
 
 /// Builder in the guise of a text area: Radix axes plus SDK options, until `.spawn(cx)`.
 pub struct TextArea {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::textarea::TextAreaEvent>,
+
     id: SharedString,
     look: Option<Look>,
     variant: TextFieldVariant,
@@ -33,8 +35,60 @@ pub struct TextArea {
 }
 
 impl TextArea {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::textarea::TextAreaEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `TextAreaEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &String, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::textarea::TextAreaEvent::Change { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `TextAreaEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::textarea::TextAreaEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `TextAreaEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::textarea::TextAreaEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             id: id.into(),
             look: None,
             variant: TextFieldVariant::default(),
@@ -149,9 +203,14 @@ impl TextArea {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::textarea::TextArea> {
-        let look = self.resolve_look(cx);
-        self.into_sdk_builder(look).spawn(cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::textarea::TextArea> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = self.resolve_look(cx);
+            self.into_sdk_builder(look).spawn(cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 
     fn resolve_look(&self, cx: &App) -> Look {

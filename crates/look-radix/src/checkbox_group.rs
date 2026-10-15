@@ -55,6 +55,8 @@ pub fn checkbox_group_template<T: ControlGroupItemLike + 'static>(
 
 /// Look-owned checkbox group. Subscribe to SDK `ControlGroupEvent` for changes.
 pub struct CheckboxGroup<T: ControlGroupItemLike + 'static = ControlGroupItem> {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::control_group::ControlGroupEvent>,
+
     look: Option<Look>,
     variant: CheckboxVariant,
     paint: Paint,
@@ -63,8 +65,92 @@ pub struct CheckboxGroup<T: ControlGroupItemLike + 'static = ControlGroupItem> {
     builder: ControlGroupBuilder<T>,
 }
 impl<T: ControlGroupItemLike + 'static> CheckboxGroup<T> {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::control_group::ControlGroupEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `ControlGroupEvent::Activate` through the existing event stream.
+    pub fn on_activate<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::control_group::ControlGroupEvent::Activate { activated_id } = event {
+                callback(owner, activated_id, cx);
+            }
+        })
+    }
+
+    /// Handle `ControlGroupEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, bool, &Vec<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::control_group::ControlGroupEvent::Change {
+                changed_id,
+                selected,
+                selected_ids,
+            } = event
+            {
+                callback(owner, changed_id, *selected, selected_ids, cx);
+            }
+        })
+    }
+
+    /// Handle `ControlGroupEvent::ItemBoundsChanged` through the existing event stream.
+    pub fn on_item_bounds_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &gpui::Bounds<gpui::Pixels>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::control_group::ControlGroupEvent::ItemBoundsChanged { item_id, bounds } = event
+            {
+                callback(owner, item_id, bounds, cx);
+            }
+        })
+    }
+
+    /// Handle `ControlGroupEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::control_group::ControlGroupEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `ControlGroupEvent::ItemFocused` through the existing event stream.
+    pub fn on_item_focused<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::control_group::ControlGroupEvent::ItemFocused { item_id } = event {
+                callback(owner, item_id, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             look: None,
             variant: CheckboxVariant::default(),
             paint: Paint::accent(),
@@ -113,10 +199,15 @@ impl<T: ControlGroupItemLike + 'static> CheckboxGroup<T> {
         self.builder = self.builder.enabled(enabled);
         self
     }
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> control_group::ControlGroup<T> {
-        let look = resolve_look(self.look.as_ref(), cx.try_global::<Look>());
-        self.builder
-            .template(checkbox_group_template(&look, self.variant, self.paint, self.size, self.radius))
-            .spawn(cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> control_group::ControlGroup<T> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = resolve_look(self.look.as_ref(), cx.try_global::<Look>());
+            self.builder
+                .template(checkbox_group_template(&look, self.variant, self.paint, self.size, self.radius))
+                .spawn(cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 }

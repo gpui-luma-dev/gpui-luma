@@ -210,14 +210,159 @@ pub struct SliderRenderModel<'a> {
 }
 
 pub struct SliderBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::slider::SliderEvent>,
+
     pub(crate) model: SliderModel,
     pub(crate) animated: bool,
 }
 
 impl SliderBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::slider::SliderEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `SliderEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::slider::ThumbId, f32, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::slider::SliderEvent::Change { thumb_id, value } = event {
+                callback(owner, thumb_id, *value, cx);
+            }
+        })
+    }
+
+    /// Handle `SliderEvent::Release` through the existing event stream.
+    pub fn on_release<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::slider::ThumbId, f32, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::slider::SliderEvent::Release { thumb_id, value } = event {
+                callback(owner, thumb_id, *value, cx);
+            }
+        })
+    }
+
+    /// Handle `SliderEvent::DragStart` through the existing event stream.
+    pub fn on_drag_start<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::slider::ThumbId, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::slider::SliderEvent::DragStart { thumb_id } = event {
+                callback(owner, thumb_id, cx);
+            }
+        })
+    }
+
+    /// Handle `SliderEvent::DragEnd` through the existing event stream.
+    pub fn on_drag_end<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::slider::ThumbId, f32, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::slider::SliderEvent::DragEnd { thumb_id, value } = event {
+                callback(owner, thumb_id, *value, cx);
+            }
+        })
+    }
+
+    /// Handle `SliderEvent::ThumbAdded` through the existing event stream.
+    pub fn on_thumb_added<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::slider::ThumbId, f32, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::slider::SliderEvent::ThumbAdded { thumb_id, value } = event {
+                callback(owner, thumb_id, *value, cx);
+            }
+        })
+    }
+
+    /// Handle `SliderEvent::ThumbRemoved` through the existing event stream.
+    pub fn on_thumb_removed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::slider::ThumbId, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::slider::SliderEvent::ThumbRemoved { thumb_id } = event {
+                callback(owner, thumb_id, cx);
+            }
+        })
+    }
+
+    /// Handle `SliderEvent::ThumbSelected` through the existing event stream.
+    pub fn on_thumb_selected<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::slider::ThumbId, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::slider::SliderEvent::ThumbSelected { thumb_id } = event {
+                callback(owner, thumb_id, cx);
+            }
+        })
+    }
+
+    /// Handle `SliderEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::slider::SliderEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `SliderEvent::HoverChanged` through the existing event stream.
+    pub fn on_hover_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::slider::SliderEvent::HoverChanged { hovered } = event {
+                callback(owner, *hovered, cx);
+            }
+        })
+    }
+
+    /// Handle `SliderEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::slider::SliderEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         let thumb_id = ThumbId::next();
         Self {
+            callbacks: Default::default(),
+
             animated: true,
             model: SliderModel {
                 id: id.into(),
@@ -450,8 +595,11 @@ impl SliderBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<SliderControl> {
-        cx.new(|cx| SliderControl::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> Entity<SliderControl> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| SliderControl::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 
     fn sync_primary_thumb_position(&mut self) {

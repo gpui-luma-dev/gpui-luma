@@ -9,14 +9,123 @@ use crate::size::ShadcnSize;
 
 /// Builder in the guise of an autocomplete: Shadcn templates plus SDK options, until `.spawn(cx)`.
 pub struct Autocomplete {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::autocomplete::AutocompleteEvent>,
+
     look: Option<ShadcnLook>,
     builder: AutocompleteBuilder,
     size: ShadcnSize,
 }
 
 impl Autocomplete {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::autocomplete::AutocompleteEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `AutocompleteEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::autocomplete::AutocompleteEvent::Change { query } = event {
+                callback(owner, query, cx);
+            }
+        })
+    }
+
+    /// Handle `AutocompleteEvent::Select` through the existing event stream.
+    pub fn on_select<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::autocomplete::AutocompleteEvent::Select { item_id, label } = event {
+                callback(owner, item_id, label, cx);
+            }
+        })
+    }
+
+    /// Handle `AutocompleteEvent::Complete` through the existing event stream.
+    pub fn on_complete<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::autocomplete::AutocompleteEvent::Complete { item_id, label } = event {
+                callback(owner, item_id, label, cx);
+            }
+        })
+    }
+
+    /// Handle `AutocompleteEvent::Clear` through the existing event stream.
+    pub fn on_clear<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::autocomplete::AutocompleteEvent::Clear = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
+    /// Handle `AutocompleteEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::autocomplete::AutocompleteEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `AutocompleteEvent::OpenChanged` through the existing event stream.
+    pub fn on_open_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::autocomplete::AutocompleteEvent::OpenChanged { open } = event {
+                callback(owner, *open, cx);
+            }
+        })
+    }
+
+    /// Handle `AutocompleteEvent::Dismiss` through the existing event stream.
+    pub fn on_dismiss<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::autocomplete::AutocompleteEvent::Dismiss = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>, items: impl IntoIterator<Item = SelectionItem>) -> Self {
-        Self { look: None, builder: gpui_luma::controls::autocomplete::new(id, items), size: ShadcnSize::Md }
+        Self {
+            callbacks: Default::default(),
+            look: None,
+            builder: gpui_luma::controls::autocomplete::new(id, items),
+            size: ShadcnSize::Md,
+        }
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
@@ -83,9 +192,14 @@ impl Autocomplete {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<AutocompleteControl> {
-        let look = resolve_look_from(self.look.as_ref(), cx);
-        self.into_sdk_builder(look).spawn(cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<AutocompleteControl> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = resolve_look_from(self.look.as_ref(), cx);
+            self.into_sdk_builder(look).spawn(cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> AutocompleteBuilder {

@@ -1,5 +1,6 @@
 //! Dock panel exposition — gallery-aligned dock_panel macro with resizable splitters.
 
+use gpui_luma::controls::dock_splitter::DockSplitterEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
@@ -230,7 +231,7 @@ impl DockPanelDemo {
         apply_delta: fn(&mut Self, f32),
     ) {
         let event_stream = event_stream.clone();
-        cx.subscribe(splitter, move |this, _, event: &DockSplitterEvent, cx| {
+        splitter.clone().on_event(cx, move |this, event: &DockSplitterEvent, cx| {
             match event {
                 DockSplitterEvent::ResizeStart => match name {
                     "left" => this.drag_start_left_width = this.left_width,
@@ -248,8 +249,7 @@ impl DockPanelDemo {
             if let Some(line) = format_dock_splitter_event(name, event) {
                 event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
             }
-        })
-        .detach();
+        });
     }
 
     fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {

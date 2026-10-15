@@ -1,4 +1,7 @@
+use gpui_luma::controls::textfield::TextFieldEventExt;
+use gpui_luma::controls::slider::SliderEventExt;
 use crate::color_hex::format_hex;
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 use std::sync::Arc;
 
@@ -109,19 +112,19 @@ impl ColorTextField {
             .spawn(cx);
 
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&field, |this, _, event: &TextFieldEvent, cx| match event {
+        field.clone().on_event(cx, |this, event: &TextFieldEvent, cx| match event {
             TextFieldEvent::FocusChanged { focused } => {
                 this.focused = *focused;
                 cx.notify();
             }
             TextFieldEvent::Change { value } => this.apply_hex(value, cx),
             _ => {}
-        }));
-        subscriptions.push(cx.subscribe(&picker_hex, |this, _, event: &TextFieldEvent, cx| {
+        });
+        picker_hex.clone().on_event(cx, |this, event: &TextFieldEvent, cx| {
             if let TextFieldEvent::Change { value } = event {
                 this.apply_hex(value, cx);
             }
-        }));
+        });
         subscriptions.push(cx.subscribe(&picker_field, |this, _, event: &ColorFieldEvent, cx| {
             let (ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv)) = event else {
                 return;
@@ -130,22 +133,24 @@ impl ColorTextField {
             this.hsv.v = hsv.v;
             this.apply_hsv(cx);
         }));
-        subscriptions.push(cx.subscribe(&hue_slider, |this, _, event: &SliderEvent, cx| {
+        hue_slider.clone().on_event(cx, |this, event: &SliderEvent, cx| {
             let Some(value) = primary_slider_value(event) else {
                 return;
             };
             this.hsv.h = value;
             this.apply_hsv(cx);
-        }));
-        let popover_for_swatch = popover.clone();
-        subscriptions.push(cx.subscribe(&swatch, move |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                popover_for_swatch.update(cx, |popover, cx| popover.toggle_guarded(cx));
-                cx.emit(ButtonEvent::Click);
-                this.focused = false;
-                cx.notify();
-            }
-        }));
+        });
+        let popover_for_swatch = popover.downgrade();
+        swatch.clone().on_click(cx, move |this, cx| {
+            let Some(popover_for_swatch) = popover_for_swatch.upgrade() else {
+                return;
+            };
+
+            popover_for_swatch.update(cx, |popover, cx| popover.toggle_guarded(cx));
+            cx.emit(ButtonEvent::Click);
+            this.focused = false;
+            cx.notify();
+        });
 
         let mut attachments = AttachmentHost::default();
         attachments.set_tooltip_theme(radix::tooltip_theme(&look));
@@ -178,13 +183,18 @@ impl ColorTextField {
             })
             .spawn(cx)
             .help("Link accent edits across light and dark palettes", cx);
-        self._subscriptions.push(cx.subscribe(&button, |_, button, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
+        {
+            let callback_button = (&button).downgrade();
+            button.clone().on_click(cx, move |_, cx| {
+                let Some(button) = callback_button.upgrade() else {
+                    return;
+                };
+
                 let linked = !button.read(cx).data();
                 button.update(cx, |button, cx| button.set_data(linked, cx));
                 cx.emit(ColorTextFieldEvent::LinkChange { linked });
-            }
-        }));
+            })
+        };
         self.accent_link = Some(button);
         cx.notify();
     }

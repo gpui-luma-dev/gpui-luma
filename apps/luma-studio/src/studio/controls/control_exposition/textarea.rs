@@ -1,8 +1,11 @@
+use gpui_luma::controls::textarea::TextAreaEventExt;
+use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::Button;
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::controls::textarea::{TextArea, TextAreaEvent, Validator};
 use gpui_luma_look_shadcn::prelude::*;
@@ -238,44 +241,54 @@ impl TextAreaControlExposition {
             TextAreaInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = vec![cx.subscribe(&text_area, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &TextAreaEvent, cx| {
-                if let Some(line) = format_textarea_event(event) {
-                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+        let subscriptions = {
+            text_area.clone().on_event(cx, {
+                let event_stream = event_stream.downgrade();
+                move |_, event: &TextAreaEvent, cx| {
+                    let Some(event_stream) = event_stream.upgrade() else {
+                        return;
+                    };
+                    if let Some(line) = format_textarea_event(event) {
+                        event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                    }
                 }
-            }
-        })];
-        subscriptions.push(cx.subscribe(&set_sample_button, {
-            let text_area = text_area.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
-                    return;
-                }
+            });
+            Vec::new()
+        };
+        set_sample_button.clone().on_click(cx, {
+            let text_area = text_area.downgrade();
+            move |_, cx| {
+let Some(text_area) = text_area.upgrade() else { return; };
+
+
                 let value = SharedString::from(
                     "Short line\nSeveral hard lines\nA very long line that should exceed the visible viewport width before wrapping is implemented\nMultibyte smoke test: café 東京\nEnough lines\nTo make vertical space\nFeel like a textarea",
                 );
                 text_area.update(cx, |area, cx| area.set_value(value.as_ref(), cx));
             }
-        }));
-        subscriptions.push(cx.subscribe(&clear_button, {
-            let text_area = text_area.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        });
+        clear_button.clone().on_click(cx, {
+            let text_area = text_area.downgrade();
+            move |_, cx| {
+                let Some(text_area) = text_area.upgrade() else {
                     return;
-                }
+                };
+
                 text_area.update(cx, |area, cx| area.set_value("", cx));
             }
-        }));
+        });
         for (checkbox, option) in [
             (enabled_checkbox.clone(), TextAreaOption::Enabled),
             (clean_on_escape_checkbox.clone(), TextAreaOption::CleanOnEscape),
             (validation_checkbox.clone(), TextAreaOption::StrictValidation),
         ] {
-            let left_pane = left_pane.clone();
-            subscriptions.push(cx.subscribe(&checkbox, move |_, _, event: &CheckboxEvent, cx| {
+            let left_pane = left_pane.downgrade();
+            checkbox.clone().on_event(cx, move |_, event: &CheckboxEvent, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 left_pane.update(cx, |pane, cx| pane.handle_option_changed(option, event, cx));
-            }));
+            });
         }
 
         Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }

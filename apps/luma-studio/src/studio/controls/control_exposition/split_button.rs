@@ -1,6 +1,7 @@
 //! Studio prototype for issue #17. This deliberately keeps the interaction
 //! sources visible until the unified SDK control contract is validated.
 
+use gpui_luma::controls::popup_menu::PopupMenuEventExt;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
@@ -71,14 +72,14 @@ impl SplitButtonControlExposition {
             ("Ghost", shadcn::SplitButton::new("controls-split-button-ghost").look(look.as_ref()).ghost()),
         ];
         let mut pairs = Vec::new();
-        let mut subscriptions = Vec::new();
+        let subscriptions = Vec::new();
 
         for (label, builder) in variants {
             let control = builder.label(label).items(split_button_items()).spawn(cx);
 
             let event_log = event_stream.clone();
             let variant_label = label.to_string();
-            subscriptions.push(cx.subscribe(&control, move |_, _, event: &SplitButtonEvent, cx| {
+            control.clone().on_event(cx, move |_, event: &SplitButtonEvent, cx| {
                 let line = match event {
                     SplitButtonEvent::ActionClick => format!("{variant_label}: ActionClick"),
                     SplitButtonEvent::Select { item_id, label } => {
@@ -91,7 +92,7 @@ impl SplitButtonControlExposition {
                     _ => format!("{variant_label}: other SplitButtonEvent"),
                 };
                 event_log.update(cx, |stream, cx| stream.append_line(&line, cx));
-            }));
+            });
 
             pairs.push(SplitButtonPair { control, label });
         }

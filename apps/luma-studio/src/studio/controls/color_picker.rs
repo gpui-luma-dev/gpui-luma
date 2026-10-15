@@ -1,4 +1,6 @@
+use gpui_luma::controls::slider::SliderEventExt;
 use crate::studio::color_format::format_color_readout;
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 use std::sync::Arc;
 
@@ -7,7 +9,7 @@ use gpui::{
     prelude::*, px, size,
 };
 use gpui_luma_color::{ColorSwatchButtonTemplate, ColorSwatchData};
-use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma_color::color_slider::color_spec::{Hsv, ColorSpecification};
 use gpui_luma_color::color_slider::{
@@ -148,8 +150,9 @@ impl ColorPickerPopover {
         let content = content.unwrap_or(default_content);
         let picker_entity = cx.entity().clone();
         let content_for_popover = content.clone();
-        let mut subscriptions = vec![
-            cx.subscribe(&field, |picker, _, event: &ColorFieldEvent, cx| {
+        let subscriptions = {
+            let mut retained_subscriptions = Vec::new();
+            retained_subscriptions.push(cx.subscribe(&field, |picker, _, event: &ColorFieldEvent, cx| {
                 let (ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv)) = event else {
                     return;
                 };
@@ -158,16 +161,16 @@ impl ColorPickerPopover {
                 picker.hsv.v = hsv.v;
                 picker.sync_controls(cx, false);
                 picker.emit_change(cx);
-            }),
-            cx.subscribe(&hue_slider, |picker, _, event: &SliderEvent, cx| {
+            }));
+            hue_slider.clone().on_event(cx, |picker, event: &SliderEvent, cx| {
                 let Some(value) = primary_slider_value(event) else {
                     return;
                 };
                 picker.hsv.h = value;
                 picker.sync_controls(cx, true);
                 picker.emit_change(cx);
-            }),
-            cx.subscribe(&alpha_slider, |picker, _, event: &SliderEvent, cx| {
+            });
+            alpha_slider.clone().on_event(cx, |picker, event: &SliderEvent, cx| {
                 let Some(value) = primary_slider_value(event) else {
                     return;
                 };
@@ -178,14 +181,13 @@ impl ColorPickerPopover {
                     cx.emit(ColorPickerEvent::Change(color));
                     cx.notify();
                 }
-            }),
-        ];
+            });
+            retained_subscriptions
+        };
         if let Some(copy_button) = &copy_button {
-            subscriptions.push(cx.subscribe(copy_button, |picker, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    cx.write_to_clipboard(ClipboardItem::new_string(format_color_readout(picker.color)));
-                }
-            }));
+            copy_button.clone().on_click(cx, |picker, cx| {
+                cx.write_to_clipboard(ClipboardItem::new_string(format_color_readout(picker.color)));
+            });
         }
 
         let button_for_popover = button.clone();
@@ -207,11 +209,13 @@ impl ColorPickerPopover {
             .trigger_on_pointer_down(false)
             .spawn(cx);
 
-        let popover_for_button = popover.clone();
-        let button_subscription = cx.subscribe(&button, move |_, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                popover_for_button.update(cx, |popover, cx| popover.toggle_guarded(cx));
-            }
+        let popover_for_button = popover.downgrade();
+        button.clone().on_click(cx, move |_, cx| {
+            let Some(popover_for_button) = popover_for_button.upgrade() else {
+                return;
+            };
+
+            popover_for_button.update(cx, |popover, cx| popover.toggle_guarded(cx));
         });
 
         Self {
@@ -225,7 +229,7 @@ impl ColorPickerPopover {
             popover,
             button,
             swatch_size,
-            _subscriptions: subscriptions.into_iter().chain([button_subscription]).collect(),
+            _subscriptions: subscriptions,
         }
     }
 

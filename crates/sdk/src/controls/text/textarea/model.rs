@@ -58,12 +58,66 @@ pub struct TextAreaRenderModel<'a> {
 }
 
 pub struct TextAreaBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::textarea::TextAreaEvent>,
+
     pub(crate) model: TextAreaModel,
 }
 
 impl TextAreaBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::textarea::TextAreaEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `TextAreaEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &String, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::textarea::TextAreaEvent::Change { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `TextAreaEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::textarea::TextAreaEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `TextAreaEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::textarea::TextAreaEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             model: TextAreaModel {
                 id: id.into(),
                 placeholder: SharedString::default(),
@@ -199,8 +253,11 @@ impl TextAreaBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<TextArea> {
-        cx.new(|cx| TextArea::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> Entity<TextArea> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| TextArea::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

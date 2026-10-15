@@ -1,9 +1,11 @@
 //! TextField exposition — live preview, event stream, and theme inspector.
 
+use gpui_luma::controls::textfield::TextFieldEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::Button;
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma_look_shadcn::prelude::*;
@@ -156,22 +158,28 @@ impl TextFieldControlExposition {
             TextFieldInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = vec![cx.subscribe(&preview, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &TextFieldEvent, cx| {
-                let line = format_textfield_event(event);
-                event_stream.update(cx, |stream, cx| {
-                    stream.append_line(&line, cx);
-                    cx.notify();
-                });
-            }
-        })];
-        subscriptions.push(cx.subscribe(&set_sample_button, {
-            let preview = preview.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
-                    return;
+        let subscriptions = {
+            preview.clone().on_event(cx, {
+                let event_stream = event_stream.downgrade();
+                move |_, event: &TextFieldEvent, cx| {
+                    let Some(event_stream) = event_stream.upgrade() else {
+                        return;
+                    };
+                    let line = format_textfield_event(event);
+                    event_stream.update(cx, |stream, cx| {
+                        stream.append_line(&line, cx);
+                        cx.notify();
+                    });
                 }
+            });
+            Vec::new()
+        };
+        set_sample_button.clone().on_click(cx, {
+            let preview = preview.downgrade();
+            move |_, cx| {
+let Some(preview) = preview.upgrade() else { return; };
+
+
 
                 let value = SharedString::from(
                     "TextField drag-selection sample: left edge and right edge. \
@@ -180,7 +188,7 @@ This line is intentionally long enough to overflow a compact single-line field s
                 );
                 preview.update(cx, |field, cx| field.set_value(value.as_ref(), cx));
             }
-        }));
+        });
 
         Self {
             look,

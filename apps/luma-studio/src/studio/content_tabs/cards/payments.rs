@@ -1,11 +1,13 @@
+use gpui_luma::controls::table::TableEventExt;
+use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, SharedString, Window, div, prelude::*, px};
 use lucide_svg_static::Icon as LucideIcon;
 use gpui_luma::column_numeric;
 use gpui_luma::column_text;
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::table::{TableColumn, TableColumnCellTemplate, TableControl, TableEvent, TableRowRenderModel};
 use gpui_luma::infra::menu_item::MenuItem;
 use gpui_luma::infra::drag_drop::DragDropElementExt;
@@ -46,7 +48,6 @@ pub struct PaymentsPanel {
     prev_button: Entity<Button>,
     next_button: Entity<Button>,
     selected_count: usize,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl PaymentsPanel {
@@ -73,8 +74,7 @@ impl PaymentsPanel {
             table.set_row_reordering(true, cx).expect("keyed payments table");
         });
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&table, |panel, _, event, cx| {
+        table.clone().on_event(cx, |panel, event, cx| {
             match event {
                 TableEvent::SelectionChanged { .. } => {
                     panel.selected_count = panel.table.read(cx).selected_indices().len();
@@ -84,48 +84,36 @@ impl PaymentsPanel {
                 _ => return,
             }
             cx.notify();
-        }));
+        });
 
         for (id, checkbox) in row_checkboxes.iter().enumerate() {
-            subscriptions.push(cx.subscribe(checkbox, move |panel, _, event, cx| {
+            checkbox.clone().on_event(cx, move |panel, event, cx| {
                 if matches!(event, CheckboxEvent::Change { .. }) {
                     panel.toggle_row_selection(id, cx);
                 }
-            }));
+            });
         }
 
         let prev_button = shadcn::Button::new("payments-prev")
             .look(look.as_ref())
             .outline()
             .label("Previous")
+            .on_click(cx, |panel, cx| {
+                panel.table.update(cx, |list, cx| list.prev_page(cx));
+            })
             .size(size)
             .spawn(cx);
         let next_button = shadcn::Button::new("payments-next")
             .look(look.as_ref())
             .outline()
             .label("Next")
+            .on_click(cx, |panel, cx| {
+                panel.table.update(cx, |list, cx| list.next_page(cx));
+            })
             .size(size)
             .spawn(cx);
-        subscriptions.push(cx.subscribe(&prev_button, |panel, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                panel.table.update(cx, |list, cx| list.prev_page(cx));
-            }
-        }));
-        subscriptions.push(cx.subscribe(&next_button, |panel, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                panel.table.update(cx, |list, cx| list.next_page(cx));
-            }
-        }));
 
-        Self {
-            prev_button,
-            next_button,
-            table,
-            row_checkboxes,
-            look,
-            selected_count: 0,
-            _subscriptions: subscriptions,
-        }
+        Self { prev_button, next_button, table, row_checkboxes, look, selected_count: 0 }
     }
 
     fn toggle_row_selection(&mut self, id: usize, cx: &mut Context<Self>) {

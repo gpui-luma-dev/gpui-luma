@@ -139,3 +139,6 @@ pub use template::{
 pub use theme::{DefaultTabsTheme, TabsBaseline, TabsItemLook, TabsListLook, TabsTheme, default_tabs_theme};
 
 pub use crate::infra::state::{CompositeItemState as TabsItemState, ControlFocusState};
+
+mod callback;
+pub use callback::TabsEventExt;

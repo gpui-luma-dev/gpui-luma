@@ -18,6 +18,8 @@ pub struct Selector<T = SelectorItem>
 where
     T: SelectorItemLike + 'static,
 {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::selector::SelectorEvent>,
+
     id: SharedString,
     look: Option<ShadcnLook>,
     label: Option<SharedString>,
@@ -47,8 +49,73 @@ impl<T> Selector<T>
 where
     T: SelectorItemLike + 'static,
 {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::selector::SelectorEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `SelectorEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::selector::SelectorEvent::Change { item_id, label } = event {
+                callback(owner, item_id, label, cx);
+            }
+        })
+    }
+
+    /// Handle `SelectorEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::selector::SelectorEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `SelectorEvent::OpenChanged` through the existing event stream.
+    pub fn on_open_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::selector::SelectorEvent::OpenChanged { open } = event {
+                callback(owner, *open, cx);
+            }
+        })
+    }
+
+    /// Handle `SelectorEvent::Dismiss` through the existing event stream.
+    pub fn on_dismiss<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::selector::SelectorEvent::Dismiss = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
     pub fn new_typed(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             id: id.into(),
             look: None,
             label: None,
@@ -184,11 +251,16 @@ where
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::selector::Selector<T>> {
-        let look = self.resolve_look(cx);
-        use gpui_luma::infra::attachments::TooltipEntityExt;
-        let theme = crate::tooltip_theme(&look);
-        self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::selector::Selector<T>> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = self.resolve_look(cx);
+            use gpui_luma::infra::attachments::TooltipEntityExt;
+            let theme = crate::tooltip_theme(&look);
+            self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 
     fn resolve_look(&self, cx: &App) -> ShadcnLook {

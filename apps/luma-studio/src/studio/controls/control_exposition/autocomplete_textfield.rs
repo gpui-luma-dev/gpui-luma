@@ -1,9 +1,11 @@
+use gpui_luma::controls::autocomplete::AutocompleteEventExt;
+use gpui_luma::controls::toggle::ToggleEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::autocomplete::{Autocomplete, AutocompleteEvent, SelectionItem};
 use gpui_luma::infra::presenter::HasPresenter;
-use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
+use gpui_luma::controls::toggle::{Toggle};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn as shadcn;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -130,9 +132,12 @@ impl AutocompleteTextFieldControlExposition {
             AutocompleteInspectorAdapter::shared(),
         );
 
-        let subscription = cx.subscribe(&preview, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &AutocompleteEvent, cx| {
+        preview.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |this, event: &AutocompleteEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
                 let line = format_autocomplete_event(event);
                 event_stream.update(cx, |stream, cx| {
                     stream.append_line(&line, cx);
@@ -147,11 +152,9 @@ impl AutocompleteTextFieldControlExposition {
                 this.sync_required_validation(cx);
             }
         });
-        let required_subscription = cx.subscribe(&selection_required_toggle, |this, _, event: &ToggleEvent, cx| {
-            if let ToggleEvent::Change { selected } = event {
-                this.selection_required = *selected;
-                this.sync_required_validation(cx);
-            }
+        selection_required_toggle.clone().on_value_changed(cx, |this, selected, cx| {
+            this.selection_required = selected;
+            this.sync_required_validation(cx);
         });
 
         Self {
@@ -164,7 +167,7 @@ impl AutocompleteTextFieldControlExposition {
             has_selection: false,
             theme_inspector,
             inspector_split,
-            _subscriptions: vec![subscription, required_subscription],
+            _subscriptions: { Vec::new() },
         }
     }
 

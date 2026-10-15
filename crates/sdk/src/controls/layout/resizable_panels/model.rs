@@ -267,10 +267,142 @@ pub struct ResizablePanelsRenderModel<'a> {
 }
 
 pub struct ResizablePanelsBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::resizable_panels::ResizablePanelsEvent>,
+
     pub(crate) model: ResizablePanelsModel,
 }
 
 impl ResizablePanelsBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::resizable_panels::ResizablePanelsEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `ResizablePanelsEvent::ResizeStart` through the existing event stream.
+    pub fn on_resize_start<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::resizable_panels::ResizablePanelsEvent::ResizeStart = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
+    /// Handle `ResizablePanelsEvent::SizesChanged` through the existing event stream.
+    pub fn on_sizes_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Vec<f32>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::resizable_panels::ResizablePanelsEvent::SizesChanged { sizes_px } = event {
+                callback(owner, sizes_px, cx);
+            }
+        })
+    }
+
+    /// Handle `ResizablePanelsEvent::ResizeEnd` through the existing event stream.
+    pub fn on_resize_end<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Vec<f32>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::resizable_panels::ResizablePanelsEvent::ResizeEnd { sizes_px } = event {
+                callback(owner, sizes_px, cx);
+            }
+        })
+    }
+
+    /// Handle `ResizablePanelsEvent::PanelHiddenChanged` through the existing event stream.
+    pub fn on_panel_hidden_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, usize, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::resizable_panels::ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden } =
+                event
+            {
+                callback(owner, *panel_index, *hidden, cx);
+            }
+        })
+    }
+
+    /// Handle `ResizablePanelsEvent::PanelRegionHiddenChanged` through the existing event stream.
+    pub fn on_panel_region_hidden_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::resizable_panels::PanelId, usize, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::resizable_panels::ResizablePanelsEvent::PanelRegionHiddenChanged {
+                region,
+                panel_index,
+                hidden,
+            } = event
+            {
+                callback(owner, region, *panel_index, *hidden, cx);
+            }
+        })
+    }
+
+    /// Handle `ResizablePanelsEvent::HandleFocusChanged` through the existing event stream.
+    pub fn on_handle_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, usize, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::resizable_panels::ResizablePanelsEvent::HandleFocusChanged {
+                handle_index,
+                focused,
+            } = event
+            {
+                callback(owner, *handle_index, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `ResizablePanelsEvent::HandleHoverChanged` through the existing event stream.
+    pub fn on_handle_hover_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, usize, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::resizable_panels::ResizablePanelsEvent::HandleHoverChanged {
+                handle_index,
+                hovered,
+            } = event
+            {
+                callback(owner, *handle_index, *hovered, cx);
+            }
+        })
+    }
+
+    /// Handle `ResizablePanelsEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::resizable_panels::ResizablePanelsEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self::with_orientation(id, ResizablePanelsOrientation::Horizontal)
     }
@@ -285,6 +417,8 @@ impl ResizablePanelsBuilder {
 
     fn with_orientation(id: impl Into<SharedString>, orientation: ResizablePanelsOrientation) -> Self {
         Self {
+            callbacks: Default::default(),
+
             model: ResizablePanelsModel {
                 id: id.into(),
                 orientation,
@@ -432,8 +566,11 @@ impl ResizablePanelsBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<ResizablePanels> {
-        cx.new(|cx| ResizablePanels::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> Entity<ResizablePanels> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| ResizablePanels::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

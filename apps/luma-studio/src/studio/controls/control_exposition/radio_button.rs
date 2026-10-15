@@ -1,5 +1,6 @@
 //! Radio button control exposition — live primary/secondary previews and event stream.
 
+use gpui_luma::controls::radio_button::RadioButtonEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -177,24 +178,24 @@ impl RadioButtonControlExposition {
             event_stream.clone(),
             cx,
         ));
-        subscriptions.push(cx.subscribe(&secondary_radio, |this, _, event, cx| {
+        secondary_radio.clone().on_event(cx, |this, event, cx| {
             if matches!(event, RadioButtonEvent::Change { selected: true }) {
                 this.primary_radio.update(cx, |radio, cx| radio.set_data(false, cx));
                 this.content_only_radio.update(cx, |radio, cx| radio.set_data(false, cx));
             }
-        }));
-        subscriptions.push(cx.subscribe(&primary_radio, |this, _, event, cx| {
+        });
+        primary_radio.clone().on_event(cx, |this, event, cx| {
             if matches!(event, RadioButtonEvent::Change { selected: true }) {
                 this.secondary_radio.update(cx, |radio, cx| radio.set_data(false, cx));
                 this.content_only_radio.update(cx, |radio, cx| radio.set_data(false, cx));
             }
-        }));
-        subscriptions.push(cx.subscribe(&content_only_radio, |this, _, event, cx| {
+        });
+        content_only_radio.clone().on_event(cx, |this, event, cx| {
             if matches!(event, RadioButtonEvent::Change { selected: true }) {
                 this.secondary_radio.update(cx, |radio, cx| radio.set_data(false, cx));
                 this.primary_radio.update(cx, |radio, cx| radio.set_data(false, cx));
             }
-        }));
+        });
 
         Self {
             look,
@@ -259,13 +260,16 @@ fn subscribe_radio(
     event_stream: Entity<ControlEventStream>,
     cx: &mut Context<RadioButtonControlExposition>,
 ) -> Vec<Subscription> {
-    vec![cx.subscribe(radio, move |_, _, event: &RadioButtonEvent, cx| {
-        let line = format!("{} - {} (\"{radio_id}\")", format_radio_event(event), variant.label());
-        event_stream.update(cx, |stream, cx| {
-            stream.append_line(&line, cx);
-            cx.notify();
+    {
+        radio.clone().on_event(cx, move |_, event: &RadioButtonEvent, cx| {
+            let line = format!("{} - {} (\"{radio_id}\")", format_radio_event(event), variant.label());
+            event_stream.update(cx, |stream, cx| {
+                stream.append_line(&line, cx);
+                cx.notify();
+            });
         });
-    })]
+        Vec::new()
+    }
 }
 
 fn format_radio_event(event: &RadioButtonEvent) -> String {

@@ -109,8 +109,32 @@ impl Tooltip {
 
     /// Called once per actual presentation and once when that presentation ends.
     pub fn on_event(mut self, callback: impl Fn(TooltipEvent) + Send + Sync + 'static) -> Self {
-        self.on_event = Some(Arc::new(callback));
+        let previous = self.on_event.take();
+        self.on_event = Some(Arc::new(move |event| {
+            if let Some(previous) = &previous {
+                previous(event);
+            }
+            callback(event);
+        }));
         self
+    }
+
+    /// Append a callback when help becomes visible.
+    pub fn on_shown(self, callback: impl Fn() + Send + Sync + 'static) -> Self {
+        self.on_event(move |event| {
+            if event == TooltipEvent::Shown {
+                callback();
+            }
+        })
+    }
+
+    /// Append a callback when visible help is hidden.
+    pub fn on_hidden(self, callback: impl Fn() + Send + Sync + 'static) -> Self {
+        self.on_event(move |event| {
+            if event == TooltipEvent::Hidden {
+                callback();
+            }
+        })
     }
 
     /// Override the look bound to the owner. Ordinary help uses the owner's look.
@@ -141,5 +165,27 @@ impl Tooltip {
     pub fn template(mut self, template: impl Fn(&TooltipRenderModel) -> AnyElement + Send + Sync + 'static) -> Self {
         self.template = Arc::new(template);
         self
+    }
+}
+
+#[cfg(test)]
+mod callback_tests {
+    use super::*;
+    use std::sync::{Mutex, Arc};
+
+    #[test]
+    fn lifecycle_callbacks_append_and_filter_actual_presentations() {
+        let log = Arc::new(Mutex::new(Vec::new()));
+        let all = log.clone();
+        let shown = log.clone();
+        let hidden = log.clone();
+        let tooltip = Tooltip::new("Help")
+            .on_event(move |_| all.lock().unwrap().push("all"))
+            .on_shown(move || shown.lock().unwrap().push("shown"))
+            .on_hidden(move || hidden.lock().unwrap().push("hidden"));
+        let handler = tooltip.on_event.as_ref().unwrap();
+        handler(TooltipEvent::Shown);
+        handler(TooltipEvent::Hidden);
+        assert_eq!(*log.lock().unwrap(), ["all", "shown", "all", "hidden"]);
     }
 }

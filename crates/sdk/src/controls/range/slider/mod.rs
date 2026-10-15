@@ -40,3 +40,6 @@ pub type Slider = Entity<SliderControl>;
 pub fn new(id: impl Into<SharedString>) -> SliderBuilder {
     SliderBuilder::new(id)
 }
+
+mod callback;
+pub use callback::SliderEventExt;

@@ -30,3 +30,6 @@ pub use layout::{frame, dock_splitter, popup_scroll_surface, resizable_panels, s
 pub use layout::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 
 pub use range::{progress, slider};
+
+#[cfg(all(test, feature = "test-support"))]
+mod event_callback_tests;

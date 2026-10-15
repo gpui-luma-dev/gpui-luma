@@ -1,5 +1,6 @@
 //! Multi mixer composition exposition — per-color-space channel mixers.
 
+use gpui_luma::controls::slider::SliderEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
@@ -92,12 +93,18 @@ fn wire_multi_mixer_events(
 ) -> Vec<Subscription> {
     let hue_slider = demo.read(cx).hsva_hue_slider(cx);
 
-    vec![cx.subscribe(&hue_slider, {
-        let event_stream = event_stream.clone();
-        move |_, _, event: &SliderEvent, cx| {
-            if let Some(line) = format_slider_event("HSVA Hue", event) {
-                event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+    {
+        hue_slider.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |_, event: &SliderEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
+                if let Some(line) = format_slider_event("HSVA Hue", event) {
+                    event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
+                }
             }
-        }
-    })]
+        });
+        Vec::new()
+    }
 }

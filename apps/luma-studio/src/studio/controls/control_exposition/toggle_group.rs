@@ -1,5 +1,6 @@
 //! Toggle group control exposition — gallery-aligned icon placement groups.
 
+use gpui_luma::controls::control_group::ControlGroupEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Hsla, Render, Subscription, Window, div, prelude::*, px};
@@ -90,18 +91,18 @@ impl ToggleGroupControlExposition {
             )
         });
 
-        let mut subscriptions = Vec::new();
+        let subscriptions = Vec::new();
         for (index, demo) in demos.iter().enumerate() {
             let group = demo.group.clone();
             let event_stream = event_stream.clone();
-            subscriptions.push(cx.subscribe(&group, move |this, _, event: &IconGroupEvent, cx| {
+            group.clone().on_event(cx, move |this, event: &IconGroupEvent, cx| {
                 this.apply_event(index, event, cx);
                 if index == 0
                     && let Some(line) = format_icon_group_event(event)
                 {
                     event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
-            }));
+            });
         }
 
         Self { look, entry, demos, event_stream, _subscriptions: subscriptions }

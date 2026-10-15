@@ -19,6 +19,7 @@ pub struct Button<D = ()> {
     pub(crate) model: super::model::ButtonModel<D>,
     command: CommandCore,
     attachments: AttachmentHost,
+    pub(super) callback_subscriptions: Vec<Subscription>,
     focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
 }
@@ -48,6 +49,7 @@ impl<D: Clone + 'static> Button<D> {
             model: builder.model,
             attachments: AttachmentHost::with_accessible_role(gpui::Role::Button),
             command: CommandCore::new_with_tab_stop(enabled, tab_stop, cx),
+            callback_subscriptions: Vec::new(),
             focus_in_subscription: None,
             focus_out_subscription: None,
         }
@@ -215,3 +217,7 @@ impl<D: 'static> AttachmentTarget for Button<D> {
         &mut self.attachments
     }
 }
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "callback_tests.rs"]
+mod callback_tests;

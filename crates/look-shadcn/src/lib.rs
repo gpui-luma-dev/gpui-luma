@@ -79,3 +79,6 @@ mod choice_stylesheet_tests;
 
 #[cfg(test)]
 mod remaining_stylesheet_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+mod event_callback_tests;

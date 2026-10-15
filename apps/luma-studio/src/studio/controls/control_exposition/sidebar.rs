@@ -1,12 +1,15 @@
 //! Navigation sidebar control exposition — `SidebarControl` preview and event log.
 
+use gpui_luma::controls::sidebar::SidebarEventExt;
+use gpui_luma::controls::popup_menu::PopupMenuEventExt;
 use std::cell::Cell;
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::motion::VisualTransition;
 use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{ButtonContentContext, ButtonEvent, ControlIcon};
+use gpui_luma::controls::button::{ButtonContentContext, ControlIcon};
 use gpui_luma::controls::icon_button::IconButton;
 use gpui_luma::infra::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{HasPresenter, PopupMenu, PopupMenuEvent, PopupMenuPlacement};
@@ -245,10 +248,16 @@ impl SidebarControlExposition {
                 left_pane.update(cx, |_, cx| cx.notify());
             }
         });
-        let control_subscription = cx.subscribe(&sidebar_control, {
-            let event_stream = event_stream.clone();
-            let left_pane = left_pane.clone();
-            move |_, _, event: &SidebarEvent, cx| {
+        sidebar_control.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            let left_pane = left_pane.downgrade();
+            move |_, event: &SidebarEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 if let SidebarEvent::PresentationChanged { presentation } = event {
                     control_open_cell.set(*presentation == SidebarPresentation::Expanded);
                     left_pane.update(cx, |_, cx| cx.notify());
@@ -258,42 +267,35 @@ impl SidebarControlExposition {
                 }
             }
         });
-        let toggle_subscription = cx.subscribe(&sidebar_toggle, {
-            let sidebar_control = sidebar_control.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    sidebar_control.update(cx, |sidebar, cx| {
-                        let presentation = if sidebar.presentation() == SidebarPresentation::Expanded {
-                            SidebarPresentation::Icons
-                        } else {
-                            SidebarPresentation::Expanded
-                        };
-                        sidebar.set_presentation(presentation, cx);
-                    });
-                }
+        sidebar_toggle.clone().on_click(cx, {
+            let sidebar_control = sidebar_control.downgrade();
+            move |_, cx| {
+                let Some(sidebar_control) = sidebar_control.upgrade() else {
+                    return;
+                };
+
+                sidebar_control.update(cx, |sidebar, cx| {
+                    let presentation = if sidebar.presentation() == SidebarPresentation::Expanded {
+                        SidebarPresentation::Icons
+                    } else {
+                        SidebarPresentation::Expanded
+                    };
+                    sidebar.set_presentation(presentation, cx);
+                });
             }
         });
-        let user_menu_subscription = cx.subscribe(&user_menu, {
-            let event_stream = event_stream.clone();
-            move |_, _, event: &PopupMenuEvent, cx| {
+        user_menu.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |_, event: &PopupMenuEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
                 let line = format_user_menu_event(event);
                 event_stream.update(cx, |stream, cx| stream.append_line(&line, cx));
             }
         });
 
-        Self {
-            look,
-            entry,
-            left_pane,
-            theme_inspector,
-            inspector_split,
-            _subscriptions: vec![
-                observe_subscription,
-                control_subscription,
-                toggle_subscription,
-                user_menu_subscription,
-            ],
-        }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![observe_subscription] }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

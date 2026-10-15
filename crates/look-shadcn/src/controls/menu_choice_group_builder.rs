@@ -26,6 +26,8 @@ pub struct MenuChoiceGroup<T = ControlGroupItem>
 where
     T: ControlGroupItemLike + 'static,
 {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::control_group::ControlGroupEvent>,
+
     look: Option<ShadcnLook>,
     builder: ControlGroupBuilder<T>,
     menu_row: Option<MenuRowConfig<T>>,
@@ -35,8 +37,95 @@ impl<T> MenuChoiceGroup<T>
 where
     T: ControlGroupItemLike + 'static,
 {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::control_group::ControlGroupEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `ControlGroupEvent::Activate` through the existing event stream.
+    pub fn on_activate<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::control_group::ControlGroupEvent::Activate { activated_id } = event {
+                callback(owner, activated_id, cx);
+            }
+        })
+    }
+
+    /// Handle `ControlGroupEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, bool, &Vec<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::control_group::ControlGroupEvent::Change {
+                changed_id,
+                selected,
+                selected_ids,
+            } = event
+            {
+                callback(owner, changed_id, *selected, selected_ids, cx);
+            }
+        })
+    }
+
+    /// Handle `ControlGroupEvent::ItemBoundsChanged` through the existing event stream.
+    pub fn on_item_bounds_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &gpui::Bounds<gpui::Pixels>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::control_group::ControlGroupEvent::ItemBoundsChanged { item_id, bounds } = event
+            {
+                callback(owner, item_id, bounds, cx);
+            }
+        })
+    }
+
+    /// Handle `ControlGroupEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::control_group::ControlGroupEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `ControlGroupEvent::ItemFocused` through the existing event stream.
+    pub fn on_item_focused<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::control_group::ControlGroupEvent::ItemFocused { item_id } = event {
+                callback(owner, item_id, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
-        Self { look: None, builder: gpui_luma::controls::control_group::new(id).active_descendant(), menu_row: None }
+        Self {
+            callbacks: Default::default(),
+            look: None,
+            builder: gpui_luma::controls::control_group::new(id).active_descendant(),
+            menu_row: None,
+        }
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
@@ -126,9 +215,14 @@ where
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<ControlGroupControl<T>> {
-        let look = resolve_look_from(self.look.as_ref(), cx);
-        self.into_sdk_builder(look).spawn(cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<ControlGroupControl<T>> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = resolve_look_from(self.look.as_ref(), cx);
+            self.into_sdk_builder(look).spawn(cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ControlGroupBuilder<T> {

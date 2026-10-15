@@ -1,3 +1,5 @@
+use gpui_luma::controls::control_group::ControlGroupEventExt;
+use gpui_luma::controls::button::ButtonEvent;
 use gpui_luma_plot::PlotStyleProvider;
 use super::*;
 
@@ -7,7 +9,6 @@ struct SelectorHarness {
     scroll: gpui_luma::controls::scroll_container::ScrollContainer,
     plot: Entity<InterpolationExample>,
     bounds: std::rc::Rc<std::cell::RefCell<std::collections::HashMap<String, gpui::Bounds<gpui::Pixels>>>>,
-    _subscription: Subscription,
 }
 
 impl Render for SelectorHarness {
@@ -38,12 +39,12 @@ fn selector_clicks_change_interpolation_on_one_unchanged_series(cx: &mut gpui::T
         let group = plot.read(cx).selector.read(cx).inner_group();
         let bounds = std::rc::Rc::new(std::cell::RefCell::new(std::collections::HashMap::new()));
         let captured = bounds.clone();
-        let subscription = cx.subscribe(&group, move |_, _, event: &ControlGroupEvent, _| {
+        group.clone().on_event(cx, move |_, event: &ControlGroupEvent, _| {
             if let ControlGroupEvent::ItemBoundsChanged { item_id, bounds } = event {
                 captured.borrow_mut().insert(item_id.to_string(), *bounds);
             }
         });
-        SelectorHarness { gallery, look, scroll, plot, bounds, _subscription: subscription }
+        SelectorHarness { gallery, look, scroll, plot, bounds }
     });
     let y = host.read_with(cx, |host, _| f32::from(host.bounds.borrow().get("monotone").expect("bounds").origin.y));
     host.update(cx, |host, cx| host.scroll.set_vertical_offset(y - 100.0, cx));

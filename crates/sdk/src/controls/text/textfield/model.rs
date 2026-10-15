@@ -49,12 +49,79 @@ pub struct TextFieldRenderModel<'a> {
 }
 
 pub struct TextFieldBuilder {
+    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::textfield::TextFieldEvent>,
+
     pub(crate) model: TextFieldModel,
 }
 
 impl TextFieldBuilder {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::textfield::TextFieldEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `TextFieldEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &String, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::textfield::TextFieldEvent::Change { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `TextFieldEvent::Submit` through the existing event stream.
+    pub fn on_submit<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &String, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::textfield::TextFieldEvent::Submit { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `TextFieldEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::textfield::TextFieldEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `TextFieldEvent::EnabledChanged` through the existing event stream.
+    pub fn on_enabled_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::textfield::TextFieldEvent::EnabledChanged { enabled } = event {
+                callback(owner, *enabled, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             model: TextFieldModel {
                 id: id.into(),
                 placeholder: SharedString::default(),
@@ -171,8 +238,11 @@ impl TextFieldBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<TextFieldControl> {
-        cx.new(|cx| TextFieldControl::from_builder(self, cx))
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> Entity<TextFieldControl> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = { cx.new(|cx| TextFieldControl::from_builder(self, cx)) };
+        callbacks.bind(&control, cx);
+        control
     }
 }
 

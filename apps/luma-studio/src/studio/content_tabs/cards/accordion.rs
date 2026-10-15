@@ -1,3 +1,4 @@
+use gpui_luma::controls::accordion::AccordionEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
@@ -29,10 +30,10 @@ impl AccordionPanel {
             .item(demo_item("legacy", "Legacy", LucideIcon::Archive, "Legacy configuration.").enabled(false))
             .spawn(cx);
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&accordion, |panel, _, event, cx| {
+        let subscriptions = Vec::new();
+        accordion.clone().on_event(cx, |panel, event, cx| {
             panel.handle_event(event, cx);
-        }));
+        });
 
         Self { look, accordion, last_event: "None".into(), _subscriptions: subscriptions }
     }

@@ -26,3 +26,6 @@ pub type TextField = Entity<TextFieldControl>;
 pub fn new(id: impl Into<SharedString>) -> TextFieldBuilder {
     TextFieldBuilder::new(id)
 }
+
+mod callback;
+pub use callback::TextFieldEventExt;

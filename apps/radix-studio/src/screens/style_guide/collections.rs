@@ -1,5 +1,7 @@
 //! Live Radix listbox, checkbox-group, and non-segmented radio-group examples.
-use gpui::{Context, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::radio_group::RadioGroupEventExt;
+use gpui_luma::controls::control_group::ControlGroupEventExt;
+use gpui::{Context, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::control_group::{ControlGroup, ControlGroupEvent, ControlGroupItem};
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupEvent};
 use gpui_luma::controls::listbox::{ListBoxControl, ListBoxInput, ListBoxSnapshot, ListBoxState, SelectionMode};
@@ -12,7 +14,6 @@ pub(crate) struct Collections {
     checkboxes: Vec<(&'static str, ControlGroup<ControlGroupItem>)>,
     radios: Vec<(&'static str, RadioGroup<ControlGroupItem>)>,
     lists: Vec<(&'static str, ListBoxControl<Self, u32, u32>)>,
-    _subscriptions: Vec<Subscription>,
 }
 impl Collections {
     pub(crate) fn new(look: &Look, cx: &mut Context<Self>) -> Self {
@@ -23,7 +24,7 @@ impl Collections {
                 ControlGroupItem::new("push").label("Push (disabled)").enabled(false),
             ]
         };
-        let mut subscriptions = Vec::new();
+
         let mut checkboxes = Vec::new();
         let mut radios = Vec::new();
         for (label, checkbox_variant, radio_variant) in [
@@ -37,7 +38,7 @@ impl Collections {
                 .items(items())
                 .selected_ids(["email"])
                 .spawn(cx);
-            subscriptions.push(cx.subscribe(&checks, |_, _, _: &ControlGroupEvent, cx| cx.notify()));
+            checks.clone().on_event(cx, |_, _: &ControlGroupEvent, cx| cx.notify());
             checkboxes.push((label, checks));
             let group = radix::RadioGroup::new(format!("guide-radio-group-{label}"))
                 .look(look)
@@ -45,7 +46,7 @@ impl Collections {
                 .items(items())
                 .selected("email")
                 .spawn(cx);
-            subscriptions.push(cx.subscribe(&group, |_, _, _: &RadioGroupEvent, cx| cx.notify()));
+            group.clone().on_event(cx, |_, _: &RadioGroupEvent, cx| cx.notify());
             radios.push((label, group));
         }
         let mut lists = Vec::new();
@@ -70,7 +71,7 @@ impl Collections {
                 Err(error) => eprintln!("failed to build listbox example: {error}"),
             }
         }
-        Self { look: look.clone(), checkboxes, radios, lists, _subscriptions: subscriptions }
+        Self { look: look.clone(), checkboxes, radios, lists }
     }
     fn input(&mut self, index: usize, input: ListBoxInput<u32>, cx: &mut Context<Self>) {
         if let Some((_, list)) = self.lists.get_mut(index) {

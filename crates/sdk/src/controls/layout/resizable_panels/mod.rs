@@ -17,3 +17,6 @@ pub use template::{
     MIN_HIDDEN_HANDLE_HIT_TARGET_PX, default_resizable_panels_template,
 };
 pub use theme::{DefaultResizablePanelsTheme, ResizablePanelsLook, ResizablePanelsTheme, default_resizable_panels_theme};
+
+mod callback;
+pub use callback::ResizablePanelsEventExt;

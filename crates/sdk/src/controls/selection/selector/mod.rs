@@ -59,3 +59,6 @@ pub use theme::{
 pub(crate) use theme::compose_selector_look;
 
 pub use crate::infra::state::ControlFocusState;
+
+mod callback;
+pub use callback::SelectorEventExt;

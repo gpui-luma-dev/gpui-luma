@@ -12,14 +12,123 @@ use crate::size::ShadcnSize;
 
 /// Builder in the guise of a combobox: Shadcn templates plus SDK options, until `.spawn(cx)`.
 pub struct ComboBox {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::combobox::ComboBoxEvent>,
+
     look: Option<ShadcnLook>,
     builder: ComboBoxBuilder,
     size: ShadcnSize,
 }
 
 impl ComboBox {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::combobox::ComboBoxEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `ComboBoxEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::combobox::ComboBoxEvent::Change { query } = event {
+                callback(owner, query, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::Select` through the existing event stream.
+    pub fn on_select<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::combobox::ComboBoxEvent::Select { item_id, label } = event {
+                callback(owner, item_id, label, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::Complete` through the existing event stream.
+    pub fn on_complete<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::combobox::ComboBoxEvent::Complete { item_id, label } = event {
+                callback(owner, item_id, label, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::Clear` through the existing event stream.
+    pub fn on_clear<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::combobox::ComboBoxEvent::Clear = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::combobox::ComboBoxEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::OpenChanged` through the existing event stream.
+    pub fn on_open_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::combobox::ComboBoxEvent::OpenChanged { open } = event {
+                callback(owner, *open, cx);
+            }
+        })
+    }
+
+    /// Handle `ComboBoxEvent::Dismiss` through the existing event stream.
+    pub fn on_dismiss<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::combobox::ComboBoxEvent::Dismiss = event {
+                callback(owner, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>, items: impl IntoIterator<Item = SelectionItem>) -> Self {
-        Self { look: None, builder: gpui_luma::controls::combobox::new(id, items), size: ShadcnSize::Md }
+        Self {
+            callbacks: Default::default(),
+            look: None,
+            builder: gpui_luma::controls::combobox::new(id, items),
+            size: ShadcnSize::Md,
+        }
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
@@ -130,11 +239,16 @@ impl ComboBox {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<ComboBoxControl> {
-        let look = resolve_look_from(self.look.as_ref(), cx);
-        use gpui_luma::infra::attachments::TooltipEntityExt;
-        let theme = crate::tooltip_theme(&look);
-        self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<ComboBoxControl> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = resolve_look_from(self.look.as_ref(), cx);
+            use gpui_luma::infra::attachments::TooltipEntityExt;
+            let theme = crate::tooltip_theme(&look);
+            self.into_sdk_builder(look).spawn(cx).with_tooltip_theme(theme, cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ComboBoxBuilder {

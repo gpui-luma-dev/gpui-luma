@@ -17,3 +17,6 @@ pub use theme::{DefaultOverlayWindowTheme, OverlayWindowLook, OverlayWindowTheme
 use gpui::Entity;
 
 pub type OverlayWindow = Entity<OverlayWindowControl>;
+
+mod callback;
+pub use callback::OverlayWindowEventExt;

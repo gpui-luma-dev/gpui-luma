@@ -1,5 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
+use gpui_luma::controls::tabs::TabsEventExt;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
@@ -103,14 +104,14 @@ impl ThemeInspector {
                 .active(active_part_id.as_ref())
                 .spawn(cx);
 
-            subscriptions.push(cx.subscribe(&tabs, |inspector, _, event: &TabsEvent, cx| {
+            tabs.clone().on_event(cx, |inspector, event: &TabsEvent, cx| {
                 let TabsEvent::Activate { tab_id, .. } = event else {
                     return;
                 };
                 inspector.active_part_id = tab_id.clone();
                 inspector.active_variant_id = default_variant_for_part(inspector.spec, tab_id.as_ref());
                 cx.notify();
-            }));
+            });
 
             (Some(tabs), active_part_id)
         };
@@ -282,7 +283,7 @@ impl ThemeInspector {
                 .active(active_part_id.as_ref())
                 .spawn(cx);
 
-            let subscription = cx.subscribe(&tabs, |inspector, _, event: &TabsEvent, cx| {
+            tabs.clone().on_event(cx, |inspector, event: &TabsEvent, cx| {
                 let TabsEvent::Activate { tab_id, .. } = event else {
                     return;
                 };
@@ -290,7 +291,6 @@ impl ThemeInspector {
                 inspector.active_variant_id = default_variant_for_part(inspector.spec, tab_id.as_ref());
                 cx.notify();
             });
-            self._subscriptions.insert(0, subscription);
             self.part_tabs = Some(tabs);
         }
 
@@ -554,15 +554,15 @@ fn spawn_variant_tabs(
         .active(active_variant_id)
         .spawn(cx);
 
-    let mut subs = Vec::new();
-    subs.push(cx.subscribe(&tabs, move |inspector, _, event: &TabsEvent, cx| {
+    let subs = Vec::new();
+    tabs.clone().on_event(cx, move |inspector, event: &TabsEvent, cx| {
         let TabsEvent::Activate { tab_id, .. } = event else {
             return;
         };
         inspector.active_part_id = part_id.clone();
         inspector.active_variant_id = tab_id.clone();
         cx.notify();
-    }));
+    });
 
     (Some(tabs), subs, SharedString::from(active_variant_id))
 }
@@ -925,14 +925,14 @@ impl LayoutSizeInspector {
             .active(active_size_id.as_ref())
             .spawn(cx);
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&size_tabs, |inspector, _, event: &TabsEvent, cx| {
+        let subscriptions = Vec::new();
+        size_tabs.clone().on_event(cx, |inspector, event: &TabsEvent, cx| {
             let TabsEvent::Activate { tab_id, .. } = event else {
                 return;
             };
             inspector.active_size_id = tab_id.clone();
             cx.notify();
-        }));
+        });
 
         Self {
             look,
@@ -995,14 +995,14 @@ impl ColorValueInspector {
             .active(active_value_id.as_ref())
             .spawn(cx);
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&value_tabs, |inspector, _, event: &TabsEvent, cx| {
+        let subscriptions = Vec::new();
+        value_tabs.clone().on_event(cx, |inspector, event: &TabsEvent, cx| {
             let TabsEvent::Activate { tab_id, .. } = event else {
                 return;
             };
             inspector.active_value_id = tab_id.clone();
             cx.notify();
-        }));
+        });
 
         Self {
             look,

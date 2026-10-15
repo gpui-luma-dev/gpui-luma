@@ -1,9 +1,12 @@
 //! The same content-sized template in eager and measured-virtualized lists.
+use gpui_luma::controls::selector::SelectorEventExt;
+use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::{cell::Cell, sync::Arc};
-use gpui::{Context, Div, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Div, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::{
-    checkbox::{Checkbox, CheckboxEvent},
-    button::{Button, ButtonEvent},
+    checkbox::{Checkbox},
+    button::{Button},
     selector::{Selector, SelectorEvent, SelectorItem},
     listbox::{
         ListBoxControl, ListBoxInput, ListBoxItemRenderModel, ListBoxState, ListBoxVirtualization,
@@ -175,7 +178,6 @@ pub(super) struct VariableHeightExample {
     target_key: u32,
     make_visible: Entity<Button>,
     center_item: Entity<Button>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl VariableHeightExample {
@@ -224,66 +226,55 @@ impl VariableHeightExample {
             shadcn::Button::new("notes-make-visible").look(&look).outline().label("Make visible").spawn(cx);
         let center_item =
             shadcn::Button::new("notes-center-item").look(&look).outline().label("Center in viewport").spawn(cx);
-        let subscriptions = vec![
-            cx.subscribe(&smooth, |this, _, event, _| {
-                if let CheckboxEvent::Change { checked } = event {
-                    this.smooth_enabled = *checked;
-                }
-            }),
-            cx.subscribe(&target, |this, _, event, _| {
-                if let SelectorEvent::Change { item_id, .. } = event
-                    && let Ok(key) = item_id.parse::<u32>()
-                {
-                    this.target_key = key;
-                }
-            }),
-            cx.subscribe(&make_visible, |this, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    for list in &this.lists {
-                        list.update(cx, |list, cx| {
-                            if this.smooth_enabled {
-                                list.list.scroll_to_smooth(this.target_key, cx);
-                            } else {
-                                list.list.scroll_to(this.target_key, cx);
-                            }
-                        });
+
+        smooth.clone().on_value_changed(cx, |this, checked, _| {
+            this.smooth_enabled = checked;
+        });
+        target.clone().on_event(cx, |this, event, _| {
+            if let SelectorEvent::Change { item_id, .. } = event
+                && let Ok(key) = item_id.parse::<u32>()
+            {
+                this.target_key = key;
+            }
+        });
+        make_visible.clone().on_click(cx, |this, cx| {
+            for list in &this.lists {
+                list.update(cx, |list, cx| {
+                    if this.smooth_enabled {
+                        list.list.scroll_to_smooth(this.target_key, cx);
+                    } else {
+                        list.list.scroll_to(this.target_key, cx);
                     }
-                }
-            }),
-            cx.subscribe(&center_item, |this, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    for list in &this.lists {
-                        list.update(cx, |list, cx| {
-                            if this.smooth_enabled {
-                                list.list.scroll_to_center_smooth(this.target_key, cx);
-                            } else {
-                                list.list.scroll_to_center(this.target_key, cx);
-                            }
-                        });
+                });
+            }
+        });
+        center_item.clone().on_click(cx, |this, cx| {
+            for list in &this.lists {
+                list.update(cx, |list, cx| {
+                    if this.smooth_enabled {
+                        list.list.scroll_to_center_smooth(this.target_key, cx);
+                    } else {
+                        list.list.scroll_to_center(this.target_key, cx);
                     }
-                }
-            }),
-            cx.subscribe(&expanded, |this, _, event, cx| {
-                if let CheckboxEvent::Change { checked } = event {
-                    for list in &this.lists {
-                        list.update(cx, |list, cx| {
-                            list.expanded = *checked;
-                            list.list.invalidate_measurements(None, cx);
-                        });
-                    }
-                }
-            }),
-            cx.subscribe(&narrow, |this, _, event, cx| {
-                if let CheckboxEvent::Change { checked } = event {
-                    for list in &this.lists {
-                        list.update(cx, |list, cx| {
-                            list.width = if *checked { 180.0 } else { 250.0 };
-                            cx.notify();
-                        });
-                    }
-                }
-            }),
-        ];
+                });
+            }
+        });
+        expanded.clone().on_value_changed(cx, |this, checked, cx| {
+            for list in &this.lists {
+                list.update(cx, |list, cx| {
+                    list.expanded = checked;
+                    list.list.invalidate_measurements(None, cx);
+                });
+            }
+        });
+        narrow.clone().on_value_changed(cx, |this, checked, cx| {
+            for list in &this.lists {
+                list.update(cx, |list, cx| {
+                    list.width = if checked { 180.0 } else { 250.0 };
+                    cx.notify();
+                });
+            }
+        });
         Self {
             look,
             lists: [eager, measured],
@@ -295,7 +286,6 @@ impl VariableHeightExample {
             target_key: 7,
             make_visible,
             center_item,
-            _subscriptions: subscriptions,
         }
     }
 
@@ -343,6 +333,8 @@ impl Render for VariableHeightExample {
 
 #[cfg(all(test, feature = "test-support"))]
 mod tests {
+    use gpui_luma::controls::checkbox::CheckboxEvent;
+    use gpui_luma::controls::button::ButtonEvent;
     use gpui::{TestAppContext, VisualTestContext};
     use super::*;
 

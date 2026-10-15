@@ -1,3 +1,4 @@
+use gpui_luma::controls::slider::SliderEventExt;
 use std::f32::consts::PI;
 use std::sync::Arc;
 
@@ -115,37 +116,37 @@ impl SliderCustomizationPreview {
     }
 
     fn subscribe(&mut self, cx: &mut Context<Self>) {
-        self._subscriptions.push(cx.subscribe(&self.reversed_slider, |this, _, event: &SliderEvent, cx| {
+        self.reversed_slider.clone().on_event(cx, |this, event: &SliderEvent, cx| {
             if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
                 this.reversed_value = *value;
                 cx.notify();
             }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.blocked_slider, |this, _, event: &SliderEvent, cx| {
+        });
+        self.blocked_slider.clone().on_event(cx, |this, event: &SliderEvent, cx| {
             if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
                 this.blocked_value = *value;
                 cx.notify();
             }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.angular_slider, |this, _, event: &SliderEvent, cx| {
+        });
+        self.angular_slider.clone().on_event(cx, |this, event: &SliderEvent, cx| {
             if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
                 this.angular_value = *value;
                 cx.notify();
             }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.wrapping_slider, |this, _, event: &SliderEvent, cx| {
+        });
+        self.wrapping_slider.clone().on_event(cx, |this, event: &SliderEvent, cx| {
             if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
                 this.wrapping_value = *value;
                 cx.notify();
             }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.stops_slider, |this, _, event: &SliderEvent, cx| {
+        });
+        self.stops_slider.clone().on_event(cx, |this, event: &SliderEvent, cx| {
             if let SliderEvent::ThumbSelected { thumb_id } = event {
                 this.selected_stop = Some(*thumb_id);
             }
             this.sync_stop_summary(cx);
             cx.notify();
-        }));
+        });
     }
 
     fn sync_stop_summary(&mut self, cx: &mut Context<Self>) {

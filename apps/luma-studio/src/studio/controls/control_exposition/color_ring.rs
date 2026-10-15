@@ -1,8 +1,9 @@
 //! Color ring control exposition — linked HSL rings and renderer comparison.
 
+use gpui_luma::controls::slider::SliderEventExt;
 use std::sync::Arc;
 
-use gpui::{App, AppContext, Context, Entity, Hsla, Render, Subscription, Window, div, hsla, prelude::*, px};
+use gpui::{App, AppContext, Context, Entity, Hsla, Render, Window, div, hsla, prelude::*, px};
 use gpui_luma_color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingRenderer, ColorRingTrackContext, HueRingDelegate,
     LightnessRingDelegate, RasterRingDelegate, SaturationRingDelegate, primary_slider_value, refresh_color_ring,
@@ -109,7 +110,6 @@ struct ColorRingExpositionLeftPane {
     ring_hsl: Hsl,
     ring_color: Hsla,
     event_stream: Entity<ControlEventStream>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl ColorRingExpositionLeftPane {
@@ -341,28 +341,27 @@ impl ColorRingControlExposition {
         });
 
         let left_pane = cx.new(|cx| {
-            let mut subscriptions = Vec::new();
-            subscriptions.push(cx.subscribe(&color_ring.slider, {
+            color_ring.slider.clone().on_event(cx, {
                 let event_stream = event_stream.clone();
-                move |this: &mut ColorRingExpositionLeftPane, _, event: &SliderEvent, cx| {
+                move |this: &mut ColorRingExpositionLeftPane, event: &SliderEvent, cx| {
                     this.handle_hue_event(event, cx);
                     append_slider_event(&event_stream, "Hue", event, cx);
                 }
-            }));
-            subscriptions.push(cx.subscribe(&ring_saturation.slider, {
+            });
+            ring_saturation.slider.clone().on_event(cx, {
                 let event_stream = event_stream.clone();
-                move |this: &mut ColorRingExpositionLeftPane, _, event: &SliderEvent, cx| {
+                move |this: &mut ColorRingExpositionLeftPane, event: &SliderEvent, cx| {
                     this.handle_saturation_event(event, cx);
                     append_slider_event(&event_stream, "Saturation", event, cx);
                 }
-            }));
-            subscriptions.push(cx.subscribe(&ring_lightness.slider, {
+            });
+            ring_lightness.slider.clone().on_event(cx, {
                 let event_stream = event_stream.clone();
-                move |this: &mut ColorRingExpositionLeftPane, _, event: &SliderEvent, cx| {
+                move |this: &mut ColorRingExpositionLeftPane, event: &SliderEvent, cx| {
                     this.handle_lightness_event(event, cx);
                     append_slider_event(&event_stream, "Lightness", event, cx);
                 }
-            }));
+            });
 
             let mut pane = ColorRingExpositionLeftPane {
                 look: look.clone(),
@@ -375,7 +374,6 @@ impl ColorRingControlExposition {
                 ring_hsl: hsl,
                 ring_color: hsla_color,
                 event_stream,
-                _subscriptions: subscriptions,
             };
             pane.sync_ring(cx, SyncSource::HueRing);
             pane

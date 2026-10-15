@@ -14,6 +14,8 @@ pub struct RadioGroup<T>
 where
     T: ControlGroupItemLike + Clone + Send + Sync + 'static,
 {
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::radio_group::RadioGroupEvent>,
+
     look: Option<ShadcnLook>,
     style: ShadcnButtonStyle,
     horizontal: bool,
@@ -25,8 +27,73 @@ impl<T> RadioGroup<T>
 where
     T: ControlGroupItemLike + Clone + Send + Sync + 'static,
 {
+    /// Append an owner-bound handler for every semantic event.
+    /// Registrations append in order; released owners are skipped.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::radio_group::RadioGroupEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Handle `RadioGroupEvent::Change` through the existing event stream.
+    pub fn on_value_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &Option<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_group::RadioGroupEvent::Change { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioGroupEvent::Activate` through the existing event stream.
+    pub fn on_activate<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_group::RadioGroupEvent::Activate { value } = event {
+                callback(owner, value, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioGroupEvent::FocusChanged` through the existing event stream.
+    pub fn on_focus_changed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_group::RadioGroupEvent::FocusChanged { focused } = event {
+                callback(owner, *focused, cx);
+            }
+        })
+    }
+
+    /// Handle `RadioGroupEvent::ItemFocused` through the existing event stream.
+    pub fn on_item_focused<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::radio_group::RadioGroupEvent::ItemFocused { item_id } = event {
+                callback(owner, item_id, cx);
+            }
+        })
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             look: None,
             style: ShadcnButtonStyle::Primary,
             horizontal: false,
@@ -37,6 +104,8 @@ where
 
     pub fn horizontal(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: Default::default(),
+
             look: None,
             style: ShadcnButtonStyle::Primary,
             horizontal: true,
@@ -97,9 +166,14 @@ where
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::radio_group::RadioGroup<T> {
-        let look = resolve_look_from(self.look.as_ref(), cx);
-        self.into_sdk_builder(look).spawn(cx)
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> gpui_luma::controls::radio_group::RadioGroup<T> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = {
+            let look = resolve_look_from(self.look.as_ref(), cx);
+            self.into_sdk_builder(look).spawn(cx)
+        };
+        callbacks.bind(&control, cx);
+        control
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> RadioGroupBuilder<T> {

@@ -1,3 +1,4 @@
+use gpui_luma::controls::tree_view::TreeViewEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
@@ -30,10 +31,10 @@ impl TreeViewPanel {
             .items(mock_file_tree())
             .spawn(cx);
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&tree, |panel, _, event, cx| {
+        let subscriptions = Vec::new();
+        tree.clone().on_event(cx, |panel, event, cx| {
             panel.handle_event(event, cx);
-        }));
+        });
 
         Self { look, tree, last_event: "None".into(), _subscriptions: subscriptions }
     }
