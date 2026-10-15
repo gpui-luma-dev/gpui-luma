@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::overlay_window::{OverlayWindow, OverlayWindowMode};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma_look_shadcn::prelude::*;
@@ -23,7 +24,6 @@ pub struct ModalOverlayControlExposition {
     left_pane: Entity<ModalOverlayExpositionLeftPane>,
     theme_inspector: Entity<OverlayWindowThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct ModalOverlayExpositionLeftPane {
@@ -135,42 +135,44 @@ impl ModalOverlayControlExposition {
             OverlayWindowInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&trigger, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        trigger.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
                     return;
-                }
+                };
+
                 left_pane.update(cx, |pane, cx| {
                     pane.overlay.update(cx, |overlay, cx| overlay.open(cx));
                 });
             }
-        }));
-        subscriptions.push(cx.subscribe(&cancel, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        });
+        cancel.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
                     return;
-                }
-                left_pane.update(cx, |pane, cx| {
-                    pane.overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
-                });
-            }
-        }));
-        subscriptions.push(cx.subscribe(&confirm, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
-                    return;
-                }
-                left_pane.update(cx, |pane, cx| {
-                    pane.overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
-                });
-            }
-        }));
+                };
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+                left_pane.update(cx, |pane, cx| {
+                    pane.overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
+                });
+            }
+        });
+        confirm.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| {
+                    pane.overlay.update(cx, |overlay, cx| overlay.dismiss(cx));
+                });
+            }
+        });
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

@@ -26,9 +26,9 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     ControlDocEntry {
         id: "button",
         title: "Button",
-        description: "Command buttons commit actions in forms, dialogs, and toolbars. The look exposes primary, secondary, outline, and ghost builders that map to Shadcn emphasis tiers—use primary for the main call to action and ghost for low-priority utilities. Each button is a GPUI entity: spawn once per id, filter ButtonEvent::Click for activation, and optionally observe focus, hover, and enabled transitions.",
+        description: "Command buttons commit actions in forms, dialogs, and toolbars. The look exposes primary, secondary, outline, and ghost builders that map to Shadcn emphasis tiers—use primary for the main call to action and ghost for low-priority utilities. Each button is a GPUI entity: use on_click for application actions and on_focus_changed, on_hover_changed, or on_enabled_changed for state transitions. The Button retains callbacks automatically.",
         category: ControlCategory::Command,
-        snippet: "let save = shadcn::Button::new(\"save\").look(look.as_ref()).primary().label(\"Save\").spawn(cx);\n\ncx.subscribe(&save, |_, _, event: &ButtonEvent, _| {\n    match event {\n        ButtonEvent::Click => { /* commit action */ }\n        ButtonEvent::FocusChanged { focused } => { let _ = focused; }\n        ButtonEvent::HoverChanged { hovered } => { let _ = hovered; }\n        ButtonEvent::EnabledChanged { enabled } => { let _ = enabled; }\n        _ => {}\n    }\n});",
+        snippet: "shadcn::Button::new(\"save\").primary().label(\"Save\")\n    .on_click(cx, |app, cx| {\n        app.save_requests += 1;\n        cx.notify();\n    })\n    .spawn(cx);",
         section_order: 100,
     },
     ControlDocEntry {

@@ -3,7 +3,8 @@ use std::sync::Arc;
 use gpui::{
     AnyElement, Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px, transparent_black,
 };
-use gpui_luma::controls::button::{ButtonContentContext, ButtonEvent};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::ButtonContentContext;
 use gpui_luma::controls::icon_button::IconButton;
 use gpui_luma::infra::presenter::ControlPresenter;
 use gpui_luma::controls::resizable_panels::{
@@ -96,15 +97,17 @@ impl InspectorSplitShell {
             .spawn(cx);
 
         let app = cx.global::<LumaStudioAppHandle>().entity.clone();
-        let app_for_toggle = app.clone();
+        let app_for_toggle = app.downgrade();
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&inspector_toggle, move |_, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                app_for_toggle.update(cx, |app, cx| {
-                    app.set_inspector_open(!app.inspector_open(), cx);
-                });
-            }
-        }));
+        inspector_toggle.clone().on_click(cx, move |_, cx| {
+            let Some(app_for_toggle) = app_for_toggle.upgrade() else {
+                return;
+            };
+
+            app_for_toggle.update(cx, |app, cx| {
+                app.set_inspector_open(!app.inspector_open(), cx);
+            });
+        });
         let app_for_panels = app.clone();
         subscriptions.push(cx.subscribe(&split_panels, move |_, _, event, cx| {
             if let ResizablePanelsEvent::PanelHiddenChanged { panel_index: 1, hidden } = event {

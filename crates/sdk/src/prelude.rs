@@ -9,7 +9,7 @@ pub use crate::theme::{ControlSize, InteractionState};
 
 pub use crate::controls::accordion::{Accordion, AccordionBuilder, AccordionEvent};
 pub use crate::controls::autocomplete::{Autocomplete, AutocompleteBuilder, AutocompleteEvent};
-pub use crate::controls::button::{Button, ButtonBuilder, ButtonEvent};
+pub use crate::controls::button::{Button, ButtonBuilder, ButtonEvent, ButtonEventExt};
 pub use crate::controls::checkbox::{Checkbox, CheckboxBuilder, CheckboxEvent};
 pub use crate::controls::combobox::{ComboBox, ComboBoxBuilder, ComboBoxEvent};
 pub use crate::controls::context_menu::{ContextMenu, ContextMenuBuilder, ContextMenuEvent};

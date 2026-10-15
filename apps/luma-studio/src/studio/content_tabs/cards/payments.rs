@@ -5,7 +5,7 @@ use lucide_svg_static::Icon as LucideIcon;
 use gpui_luma::column_numeric;
 use gpui_luma::column_text;
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::table::{TableColumn, TableColumnCellTemplate, TableControl, TableEvent, TableRowRenderModel};
 use gpui_luma::infra::menu_item::MenuItem;
 use gpui_luma::infra::drag_drop::DragDropElementExt;
@@ -98,24 +98,20 @@ impl PaymentsPanel {
             .look(look.as_ref())
             .outline()
             .label("Previous")
+            .on_click(cx, |panel, cx| {
+                panel.table.update(cx, |list, cx| list.prev_page(cx));
+            })
             .size(size)
             .spawn(cx);
         let next_button = shadcn::Button::new("payments-next")
             .look(look.as_ref())
             .outline()
             .label("Next")
+            .on_click(cx, |panel, cx| {
+                panel.table.update(cx, |list, cx| list.next_page(cx));
+            })
             .size(size)
             .spawn(cx);
-        subscriptions.push(cx.subscribe(&prev_button, |panel, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                panel.table.update(cx, |list, cx| list.prev_page(cx));
-            }
-        }));
-        subscriptions.push(cx.subscribe(&next_button, |panel, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                panel.table.update(cx, |list, cx| list.next_page(cx));
-            }
-        }));
 
         Self {
             prev_button,

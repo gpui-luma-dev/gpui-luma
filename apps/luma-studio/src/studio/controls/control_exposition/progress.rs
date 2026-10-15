@@ -2,8 +2,9 @@
 
 use std::sync::Arc;
 
-use gpui::{App, Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui::{App, Context, Entity, Render, SharedString, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::progress::{Progress, ProgressDirection, ProgressRenderModel, ProgressTemplate};
 use gpui_luma::infra::value::ControlRange;
 use gpui_luma::theme::ControlSize;
@@ -32,7 +33,6 @@ pub struct ProgressControlExposition {
     left_pane: Entity<ProgressExpositionLeftPane>,
     theme_inspector: Entity<ProgressThemeInspector>,
     inspector_split: Entity<InspectorSplitShell>,
-    _subscriptions: Vec<Subscription>,
 }
 
 struct ProgressExpositionLeftPane {
@@ -224,15 +224,17 @@ impl ProgressControlExposition {
             indeterminate_circular,
             animate_button: animate_button.clone(),
         });
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&animate_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.toggle_animated_value(cx));
-                }
+
+        animate_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.toggle_animated_value(cx));
             }
-        }));
+        });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
             look.clone(),
@@ -245,7 +247,7 @@ impl ProgressControlExposition {
             ProgressInspectorAdapter::shared(),
         );
 
-        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

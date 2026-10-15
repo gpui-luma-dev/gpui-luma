@@ -4,7 +4,7 @@ use gpui::{
     AnyElement, Context, Entity, FocusHandle, IntoElement, ParentElement, Render, Styled, Subscription, Window, div,
     px, rgb,
 };
-use gpui_luma::controls::button::ButtonEvent;
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::icon_button::IconButton;
 use gpui_luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
 use gpui_luma::theme::ThemeMode;
@@ -62,23 +62,21 @@ impl DetachedShellApp {
 
         let mut subscriptions = Vec::new();
         wire_split_nav_sync(&mut subscriptions, split_view.clone(), sidebar.clone(), cx);
-        subscriptions.push(cx.subscribe(&theme_toggle_button, |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                handle_theme_toggle(this, cx);
-            }
-        }));
-        let toggle_for_sub = toggle_button.clone();
-        subscriptions.push(cx.subscribe(&toggle_for_sub, {
-            let split_view = split_view.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        theme_toggle_button.clone().on_click(cx, |this, cx| {
+            handle_theme_toggle(this, cx);
+        });
+        toggle_button.clone().on_click(cx, {
+            let split_view = split_view.downgrade();
+            move |_, cx| {
+                let Some(split_view) = split_view.upgrade() else {
                     return;
-                }
+                };
+
                 split_view.update(cx, |split_view, cx| {
                     split_view.toggle_collapsed(cx);
                 });
             }
-        }));
+        });
 
         let sidebar = shadcn::Frame::sidebar("detached-sidebar-frame")
             .look(&look)

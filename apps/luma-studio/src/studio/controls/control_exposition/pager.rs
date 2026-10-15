@@ -3,7 +3,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::pager::{Pager, PagerEvent, PagerStyle};
 use gpui_luma::{vstack, wrappanel};
 use gpui_luma_look_shadcn::prelude::*;
@@ -385,62 +386,72 @@ impl PagerControlExposition {
         };
 
         let left_pane_for_buttons = left_pane.clone();
-        subscriptions.push(cx.subscribe(&page_prev_button, {
-            let left_pane = left_pane_for_buttons.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.step_page(-1, cx));
-                }
+        page_prev_button.clone().on_click(cx, {
+            let left_pane = left_pane_for_buttons.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.step_page(-1, cx));
             }
-        }));
-        subscriptions.push(cx.subscribe(&page_next_button, {
-            let left_pane = left_pane_for_buttons.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.step_page(1, cx));
-                }
+        });
+        page_next_button.clone().on_click(cx, {
+            let left_pane = left_pane_for_buttons.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.step_page(1, cx));
             }
-        }));
-        subscriptions.push(cx.subscribe(&total_down_button, {
-            let left_pane = left_pane_for_buttons.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.step_total_items(-1, cx));
-                }
+        });
+        total_down_button.clone().on_click(cx, {
+            let left_pane = left_pane_for_buttons.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.step_total_items(-1, cx));
             }
-        }));
-        subscriptions.push(cx.subscribe(&total_up_button, {
-            let left_pane = left_pane_for_buttons.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.step_total_items(1, cx));
-                }
+        });
+        total_up_button.clone().on_click(cx, {
+            let left_pane = left_pane_for_buttons.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.step_total_items(1, cx));
             }
-        }));
-        subscriptions.push(cx.subscribe(&size_down_button, {
-            let left_pane = left_pane_for_buttons.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.step_page_size(-1, cx));
-                }
+        });
+        size_down_button.clone().on_click(cx, {
+            let left_pane = left_pane_for_buttons.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.step_page_size(-1, cx));
             }
-        }));
-        subscriptions.push(cx.subscribe(&size_up_button, {
-            let left_pane = left_pane_for_buttons.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.step_page_size(1, cx));
-                }
+        });
+        size_up_button.clone().on_click(cx, {
+            let left_pane = left_pane_for_buttons.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.step_page_size(1, cx));
             }
-        }));
-        subscriptions.push(cx.subscribe(&enabled_toggle_button, {
+        });
+        enabled_toggle_button.clone().on_click(cx, {
             let left_pane = left_pane_for_buttons;
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.toggle_enabled(cx));
-                }
+            move |_, cx| {
+                left_pane.update(cx, |pane, cx| pane.toggle_enabled(cx));
             }
-        }));
+        });
 
         Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
     }

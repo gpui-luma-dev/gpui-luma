@@ -4,9 +4,10 @@ use std::sync::Arc;
 
 use gpui::{
     AnyElement, App, Context, Entity, FocusHandle, Focusable, FontWeight, Hsla, IntoElement, MouseDownEvent,
-    MouseUpEvent, Overflow, Render, Subscription, Window, div, prelude::*, px,
+    MouseUpEvent, Overflow, Render, Window, div, prelude::*, px,
 };
-use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::slide_panel::{
     SlidePanelEdge, SlidePanelOverlayHandlers, SlidePanelResizeDrag, SlidePanelResizeHandlers, SlidePanelSizeConfig,
     SlidePanelState, SlidePanelTopAnchor, render_slide_panel_overlay,
@@ -72,7 +73,6 @@ pub struct SlidePanelControlExposition {
     entry: ControlDocEntry,
     demo: Entity<SlidePanelDemo>,
     event_stream: Entity<ControlEventStream>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl SlidePanelControlExposition {
@@ -90,7 +90,7 @@ impl SlidePanelControlExposition {
 
         let demo = cx.new(|cx| SlidePanelDemo::new(look.clone(), event_stream.clone(), cx));
 
-        Self { look, entry, demo, event_stream, _subscriptions: Vec::new() }
+        Self { look, entry, demo, event_stream }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
@@ -224,17 +224,17 @@ impl SlidePanelDemo {
         this.wire_trigger(&trigger_top, SlidePanelEdge::Top, cx);
         this.wire_trigger(&trigger_bottom, SlidePanelEdge::Bottom, cx);
 
-        cx.subscribe(&close_button, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        close_button.clone().on_click(cx, {
+            let event_stream = event_stream.downgrade();
+            move |this, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
                     return;
-                }
+                };
+
                 this.set_action("Closed from the panel close button.", &event_stream, cx);
                 this.state.request_close();
             }
-        })
-        .detach();
+        });
 
         for (button, label) in [
             (&primary_action, "Primary action pressed while the panel stayed open."),
@@ -243,13 +243,9 @@ impl SlidePanelDemo {
         ] {
             let event_stream = event_stream.clone();
             let label = label.to_string();
-            cx.subscribe(button, move |this, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
-                    return;
-                }
+            button.clone().on_click(cx, move |this, cx| {
                 this.set_action(&label, &event_stream, cx);
-            })
-            .detach();
+            });
         }
 
         cx.subscribe(&backdrop_toggle, {
@@ -275,14 +271,10 @@ impl SlidePanelDemo {
 
     fn wire_trigger(&self, button: &Entity<Button>, edge: SlidePanelEdge, cx: &mut Context<Self>) {
         let event_stream = self.event_stream.clone();
-        cx.subscribe(button, move |this, _, event: &ButtonEvent, cx| {
-            if !event.is_click() {
-                return;
-            }
+        button.clone().on_click(cx, move |this, cx| {
             this.open_from_trigger(edge, cx);
             this.set_action(&format!("Opened the {} slide panel.", edge.label()), &event_stream, cx);
-        })
-        .detach();
+        });
     }
 
     fn set_action(&mut self, message: &str, event_stream: &Entity<ControlEventStream>, cx: &mut Context<Self>) {

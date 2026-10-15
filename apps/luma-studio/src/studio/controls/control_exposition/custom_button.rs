@@ -2,7 +2,8 @@
 
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, Render, Subscription, Window, div, prelude::*, px, rgb};
+use gpui::{AnyElement, Context, Entity, Render, Window, div, prelude::*, px, rgb};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button_family::default_button_family_theme;
 use gpui_luma::controls::button::{Button, ButtonEvent, ButtonTemplate, DefaultButtonTemplate, HasPresenter};
 use gpui_luma_look_shadcn::prelude::*;
@@ -35,7 +36,6 @@ pub struct CustomButtonControlExposition {
     event_stream: Entity<ControlEventStream>,
     modified_clicks: usize,
     custom_clicks: usize,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl CustomButtonControlExposition {
@@ -150,7 +150,7 @@ impl CustomButtonControlExposition {
             )
         });
 
-        let mut this = Self {
+        let this = Self {
             look,
             entry,
             modified_button: modified_button.clone(),
@@ -165,12 +165,15 @@ impl CustomButtonControlExposition {
             event_stream: event_stream.clone(),
             modified_clicks: 0,
             custom_clicks: 0,
-            _subscriptions: Vec::new(),
         };
 
-        this._subscriptions.push(cx.subscribe(&modified_button, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &ButtonEvent, cx| {
+        modified_button.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |this, event: &ButtonEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
+
                 append_button_event(&event_stream, event, cx);
                 if !event.is_click() {
                     return;
@@ -179,10 +182,14 @@ impl CustomButtonControlExposition {
                 let label = format!("New Button {}", this.modified_clicks);
                 this.modified_button.update(cx, |button, cx| button.set_label(label, cx));
             }
-        }));
-        this._subscriptions.push(cx.subscribe(&custom_button, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &ButtonEvent, cx| {
+        });
+        custom_button.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |this, event: &ButtonEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
+
                 append_button_event(&event_stream, event, cx);
                 if !event.is_click() {
                     return;
@@ -214,10 +221,14 @@ impl CustomButtonControlExposition {
                     );
                 });
             }
-        }));
-        this._subscriptions.push(cx.subscribe(&reactive_button, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &ButtonEvent, cx| {
+        });
+        reactive_button.clone().on_event(cx, {
+            let event_stream = event_stream.downgrade();
+            move |this, event: &ButtonEvent, cx| {
+                let Some(event_stream) = event_stream.upgrade() else {
+                    return;
+                };
+
                 append_button_event(&event_stream, event, cx);
                 if !event.is_click() {
                     return;
@@ -228,7 +239,7 @@ impl CustomButtonControlExposition {
                     button.set_data(data, cx);
                 });
             }
-        }));
+        });
 
         this
     }

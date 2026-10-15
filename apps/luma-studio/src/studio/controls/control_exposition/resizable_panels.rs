@@ -5,7 +5,8 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, Render, Subscription, Window, div, prelude::*, px, transparent_black};
-use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::resizable_panels::{
     ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation, ResizeHandleSize,
 };
@@ -423,12 +424,13 @@ impl ResizablePanelsControlExposition {
                 append_resizable_event(&event_stream, event, cx);
             }
         }));
-        subscriptions.push(cx.subscribe(&reset_controlled_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        reset_controlled_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
                     return;
-                }
+                };
+
                 left_pane.update(cx, |pane, cx| {
                     pane.controlled.update(cx, |panels, cx| panels.set_weights(vec![3.0, 7.0], cx));
                     pane.controlled_panel_sizes.set([DEMO_WIDTH * 0.3, DEMO_WIDTH * 0.7]);
@@ -436,13 +438,14 @@ impl ResizablePanelsControlExposition {
                     cx.notify();
                 });
             }
-        }));
-        subscriptions.push(cx.subscribe(&toggle_animated_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        });
+        toggle_animated_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
                     return;
-                }
+                };
+
                 left_pane.update(cx, |pane, cx| {
                     pane.animated_panels.update(cx, |panels, cx| {
                         panels.toggle_panel_hidden(
@@ -453,7 +456,7 @@ impl ResizablePanelsControlExposition {
                     });
                 });
             }
-        }));
+        });
         subscriptions.push(cx.subscribe(&animated_panels, {
             let event_stream = event_stream.clone();
             let left_pane = left_pane.clone();
@@ -464,12 +467,13 @@ impl ResizablePanelsControlExposition {
                 append_resizable_event(&event_stream, event, cx);
             }
         }));
-        subscriptions.push(cx.subscribe(&toggle_instant_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        toggle_instant_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
                     return;
-                }
+                };
+
                 left_pane.update(cx, |pane, cx| {
                     pane.instant_panels.update(cx, |panels, cx| {
                         panels.toggle_panel_hidden(
@@ -480,7 +484,7 @@ impl ResizablePanelsControlExposition {
                     });
                 });
             }
-        }));
+        });
         subscriptions.push(cx.subscribe(&instant_panels, {
             let event_stream = event_stream.clone();
             let left_pane = left_pane.clone();

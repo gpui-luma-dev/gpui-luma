@@ -1,5 +1,6 @@
 //! Radix Studio app shell — shared state, page routing, and window chrome.
 
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::prelude::TooltipEntityExt;
 use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 
@@ -9,7 +10,7 @@ use gpui::{
     App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, AnyElement, ScrollHandle, Subscription, Task, Window,
     div, prelude::*, px,
 };
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem, RadioGroupEvent};
 use crate::controls::theme_mode;
@@ -280,12 +281,10 @@ impl RadixStudioApp {
                     44.0,
                     move || swatch_look.resolve_step(family, step).hsla(),
                     cx,
-                );
-                subscriptions.push(cx.subscribe(&swatch, move |this, _, event: &ButtonEvent, cx| {
-                    if matches!(event, ButtonEvent::Click) {
-                        this.open_swatch_info(family, step, cx);
-                    }
-                }));
+                )
+                .on_click(cx, move |this, cx| {
+                    this.open_swatch_info(family, step, cx);
+                });
                 palette_swatches.push(swatch);
             }
         }

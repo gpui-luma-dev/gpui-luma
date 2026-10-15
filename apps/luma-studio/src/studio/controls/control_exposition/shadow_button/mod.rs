@@ -5,6 +5,7 @@ use std::sync::Arc;
 use gpui::{
     AnyElement, App, Context, Entity, FontWeight, Hsla, IntoElement, Render, SharedString, Window, div, prelude::*, px,
 };
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::button::{Button, ButtonContentContext, ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use gpui_luma::infra::presenter::HasPresenter;
@@ -120,14 +121,12 @@ impl ShadowButtonControlExposition {
             .value(shadow.opacity * 100.0)
             .spawn(cx);
 
-        cx.subscribe(&demo_button, move |this, _, event: &ButtonEvent, cx| {
+        demo_button.clone().on_event(cx, move |this, event: &ButtonEvent, cx| {
             this.handle_button_event(event, cx);
-        })
-        .detach();
-        cx.subscribe(&reset_button, move |this, _, event: &ButtonEvent, cx| {
+        });
+        reset_button.clone().on_event(cx, move |this, event: &ButtonEvent, cx| {
             this.handle_reset(event, cx);
-        })
-        .detach();
+        });
         cx.subscribe(&bounds_toggle, move |this, _, event: &ToggleEvent, cx| {
             this.handle_bounds_toggle(event, cx);
         })

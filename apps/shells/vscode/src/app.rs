@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FocusHandle, Focusable, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{ButtonContentContext, ButtonEvent, ControlIcon, ControlPresenter};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::{ButtonContentContext, ControlIcon, ControlPresenter};
 use gpui_luma::controls::control_group::ControlGroupEvent;
 use gpui_luma::controls::icon_button::IconButton;
 use gpui_luma::controls::button_family::ButtonFamilyRole;
@@ -113,34 +114,26 @@ impl VscodeShellApp {
             );
             this.refresh_customize_layout_dialog(cx);
         }));
-        subscriptions.push(cx.subscribe(&customize_layout_toggle, |this, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                let action = ShellUiAction::ToggleCustomizeLayout;
-                this.dispatch_shell_ui_action(action);
-                if this.shell_ui_state.customize_layout_open {
-                    this.open_customize_layout(cx);
-                } else {
-                    this.dismiss_customize_layout(cx);
-                }
+        customize_layout_toggle.clone().on_click(cx, |this, cx| {
+            let action = ShellUiAction::ToggleCustomizeLayout;
+            this.dispatch_shell_ui_action(action);
+            if this.shell_ui_state.customize_layout_open {
+                this.open_customize_layout(cx);
+            } else {
+                this.dismiss_customize_layout(cx);
             }
-        }));
-        subscriptions.push(cx.subscribe(&primary_side_bar_toggle, |this, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                this.toggle_primary_side_bar(cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&secondary_side_bar_toggle, |this, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                this.toggle_secondary_side_bar(cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&theme_toggle_button, |this, _, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                handle_theme_toggle(this, cx);
-                this.sync_titlebar_icon_button_presenters(cx);
-                this.sync_workbench_theme(cx);
-            }
-        }));
+        });
+        primary_side_bar_toggle.clone().on_click(cx, |this, cx| {
+            this.toggle_primary_side_bar(cx);
+        });
+        secondary_side_bar_toggle.clone().on_click(cx, |this, cx| {
+            this.toggle_secondary_side_bar(cx);
+        });
+        theme_toggle_button.clone().on_click(cx, |this, cx| {
+            handle_theme_toggle(this, cx);
+            this.sync_titlebar_icon_button_presenters(cx);
+            this.sync_workbench_theme(cx);
+        });
 
         let mut app = Self {
             focus_scope,
@@ -409,19 +402,13 @@ fn wire_customize_layout_subscriptions(
         cx.notify();
     }));
 
-    let close = dialog.read(cx).close_button();
-    subscriptions.push(cx.subscribe(&close, |app, _, event, cx| {
-        if matches!(event, ButtonEvent::Click) {
-            app.dismiss_customize_layout(cx);
-        }
-    }));
+    dialog.read(cx).close_button().on_click(cx, |app, cx| {
+        app.dismiss_customize_layout(cx);
+    });
 
-    let reset = dialog.read(cx).reset_button();
-    subscriptions.push(cx.subscribe(&reset, |app, _, event, cx| {
-        if matches!(event, ButtonEvent::Click) {
-            app.reset_layout_config(cx);
-        }
-    }));
+    dialog.read(cx).reset_button().on_click(cx, |app, cx| {
+        app.reset_layout_config(cx);
+    });
 
     let visibility_group = dialog.read(cx).visibility_group();
     subscriptions.push(cx.subscribe(&visibility_group, |app, _, event: &ControlGroupEvent, cx| {

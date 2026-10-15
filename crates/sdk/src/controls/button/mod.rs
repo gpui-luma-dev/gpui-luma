@@ -5,6 +5,7 @@
 //! - [`split_button`] — `PopupMenu` type aliases, not a separate LMTP control
 //! - [`CommandCore`] — presentation-agnostic activation/interaction core used by `Button`
 
+mod callback;
 mod control;
 mod core;
 mod model;
@@ -15,6 +16,8 @@ pub mod icon_button;
 pub mod split_button;
 
 pub use control::{Button, ButtonEvent};
+pub use callback::{ButtonCallbacks, ButtonEventExt};
+
 pub use core::{CommandCore, CommandEvent};
 pub use crate::infra::template::{ControlTemplate, Modifier, TemplateWithModifiers};
 pub use model::{

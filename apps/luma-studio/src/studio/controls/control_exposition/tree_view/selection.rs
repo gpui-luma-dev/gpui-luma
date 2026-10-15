@@ -1,8 +1,9 @@
 //! Selection and range input in Controls → TreeView.
 use std::sync::Arc;
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::{
-    button::{Button, ButtonEvent},
+    button::{Button},
     checkbox::{Checkbox, CheckboxEvent},
     selector::{Selector, SelectorEvent, SelectorItem},
     textfield::{TextField, TextFieldEvent},
@@ -87,7 +88,7 @@ impl Selection {
                 "Selection, active row, activation, and policy changes appear here.",
             )
         });
-        let mut subscriptions = vec![
+        let subscriptions = vec![
             cx.subscribe(&tree, |this: &mut Self, _, event, cx| {
                 let line = match event {
                     TreeViewEvent::SelectionChanged { selected_ids } => {
@@ -166,14 +167,13 @@ impl Selection {
         let buttons = [("all", "Select visible"), ("clear", "Clear")]
             .into_iter()
             .map(|(id, label)| {
-                let button = shadcn::Button::new(format!("tree-selection-{id}"))
+                shadcn::Button::new(format!("tree-selection-{id}"))
                     .look(&look)
                     .secondary()
                     .label(label)
                     .with_template_modifier(move |root, _| root.debug_selector(move || format!("tree-selection-{id}")))
-                    .spawn(cx);
-                subscriptions.push(cx.subscribe(&button, move |this: &mut Self, _, event, cx| {
-                    if matches!(event, ButtonEvent::Click) {
+                    .spawn(cx)
+                    .on_click(cx, move |this: &mut Self, cx| {
                         this.tree.update(cx, |tree, cx| {
                             if id == "all" {
                                 tree.select_all(cx);
@@ -181,9 +181,7 @@ impl Selection {
                                 tree.clear_selection(cx);
                             }
                         });
-                    }
-                }));
-                button
+                    })
             })
             .collect();
         Self {

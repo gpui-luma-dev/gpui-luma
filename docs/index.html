@@ -27,27 +27,25 @@ gpui.workspace = true
 gpui_platform.workspace = true
 gpui-luma.workspace = true
 gpui-luma-look-shadcn.workspace = true</code></pre></div><div class="codebox"><div class="codebar"><span>src/main.rs</span><button class="copy" aria-label="Copy src/main.rs">Copy</button></div><pre><code>use gpui::{prelude::*, Context, Entity, Render, Window, WindowOptions, div};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::Button;
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma_look_shadcn as shadcn;
 
 struct Hello {
     button: Entity&lt;Button&gt;,
     saves: usize,
-    _subscription: gpui::Subscription,
 }
 
 impl Hello {
     fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
         let button = shadcn::Button::new(&quot;hello&quot;)
-            .primary().label(&quot;Hello, Luma&quot;).spawn(cx);
-        let subscription = cx.subscribe(&amp;button, |app, _, event, cx| {
-            if let ButtonEvent::Click = event {
+            .primary().label(&quot;Hello, Luma&quot;)
+            .on_click(cx, |app, cx| {
                 app.saves += 1;
                 cx.notify();
-            }
-        });
-        Self { button, saves: 0, _subscription: subscription }
+            })
+            .spawn(cx);
+        Self { button, saves: 0 }
     }
 }
 

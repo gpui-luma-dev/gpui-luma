@@ -3,8 +3,9 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::table::{Table, TableEvent};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::{column, column_emphasis};
@@ -194,25 +195,29 @@ impl ScrollingTableControlExposition {
             .outline()
             .label("Select tasks 1–3")
             .spawn(cx);
-        let sort_subscription = cx.subscribe(&sort_button, {
-            let table = table.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    table.update(cx, |table, cx| {
-                        let rows: Vec<_> = table.items().iter().rev().cloned().collect();
-                        table.set_items(rows, cx).expect("unique task IDs");
-                    });
-                }
+        sort_button.clone().on_click(cx, {
+            let table = table.downgrade();
+            move |_, cx| {
+                let Some(table) = table.upgrade() else {
+                    return;
+                };
+
+                table.update(cx, |table, cx| {
+                    let rows: Vec<_> = table.items().iter().rev().cloned().collect();
+                    table.set_items(rows, cx).expect("unique task IDs");
+                });
             }
         });
-        let select_subscription = cx.subscribe(&select_button, {
-            let table = table.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    table
-                        .update(cx, |table, cx| table.set_selected_keys(["T-0001", "T-0002", "T-0003"], cx))
-                        .expect("enabled task IDs");
-                }
+        select_button.clone().on_click(cx, {
+            let table = table.downgrade();
+            move |_, cx| {
+                let Some(table) = table.upgrade() else {
+                    return;
+                };
+
+                table
+                    .update(cx, |table, cx| table.set_selected_keys(["T-0001", "T-0002", "T-0003"], cx))
+                    .expect("enabled task IDs");
             }
         });
 
@@ -288,14 +293,7 @@ impl ScrollingTableControlExposition {
             }
         });
 
-        Self {
-            look,
-            entry,
-            left_pane,
-            theme_inspector,
-            inspector_split,
-            _subscriptions: vec![subscription, sort_subscription, select_subscription],
-        }
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: vec![subscription] }
     }
 
     pub fn entry(&self) -> ControlDocEntry {

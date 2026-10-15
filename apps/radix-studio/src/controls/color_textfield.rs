@@ -1,4 +1,5 @@
 use crate::color_hex::format_hex;
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 use std::sync::Arc;
 
@@ -137,15 +138,17 @@ impl ColorTextField {
             this.hsv.h = value;
             this.apply_hsv(cx);
         }));
-        let popover_for_swatch = popover.clone();
-        subscriptions.push(cx.subscribe(&swatch, move |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                popover_for_swatch.update(cx, |popover, cx| popover.toggle_guarded(cx));
-                cx.emit(ButtonEvent::Click);
-                this.focused = false;
-                cx.notify();
-            }
-        }));
+        let popover_for_swatch = popover.downgrade();
+        swatch.clone().on_click(cx, move |this, cx| {
+            let Some(popover_for_swatch) = popover_for_swatch.upgrade() else {
+                return;
+            };
+
+            popover_for_swatch.update(cx, |popover, cx| popover.toggle_guarded(cx));
+            cx.emit(ButtonEvent::Click);
+            this.focused = false;
+            cx.notify();
+        });
 
         let mut attachments = AttachmentHost::default();
         attachments.set_tooltip_theme(radix::tooltip_theme(&look));
@@ -178,13 +181,18 @@ impl ColorTextField {
             })
             .spawn(cx)
             .help("Link accent edits across light and dark palettes", cx);
-        self._subscriptions.push(cx.subscribe(&button, |_, button, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
+        {
+            let callback_button = (&button).downgrade();
+            button.clone().on_click(cx, move |_, cx| {
+                let Some(button) = callback_button.upgrade() else {
+                    return;
+                };
+
                 let linked = !button.read(cx).data();
                 button.update(cx, |button, cx| button.set_data(linked, cx));
                 cx.emit(ColorTextFieldEvent::LinkChange { linked });
-            }
-        }));
+            })
+        };
         self.accent_link = Some(button);
         cx.notify();
     }

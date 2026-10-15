@@ -3,7 +3,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::control_group::ControlGroupFocusStrategy;
 use gpui_luma::infra::menu_item::MenuItem;
 use gpui_luma::controls::selector::SelectorItem;
@@ -226,34 +227,38 @@ impl ToolbarControlExposition {
                 }
             }
         }));
-        subscriptions.push(cx.subscribe(&roving_focus_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| {
-                        pane.toolbar.update(cx, |toolbar, cx| {
-                            toolbar.set_focus_strategy(ControlGroupFocusStrategy::RovingItemFocus, cx);
-                        });
-                        pane.focus_mode = "roving";
-                        cx.notify();
+        roving_focus_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| {
+                    pane.toolbar.update(cx, |toolbar, cx| {
+                        toolbar.set_focus_strategy(ControlGroupFocusStrategy::RovingItemFocus, cx);
                     });
-                }
+                    pane.focus_mode = "roving";
+                    cx.notify();
+                });
             }
-        }));
-        subscriptions.push(cx.subscribe(&sequential_focus_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| {
-                        pane.toolbar.update(cx, |toolbar, cx| {
-                            toolbar.set_focus_strategy(ControlGroupFocusStrategy::ActiveDescendant, cx);
-                        });
-                        pane.focus_mode = "sequential";
-                        cx.notify();
+        });
+        sequential_focus_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| {
+                    pane.toolbar.update(cx, |toolbar, cx| {
+                        toolbar.set_focus_strategy(ControlGroupFocusStrategy::ActiveDescendant, cx);
                     });
-                }
+                    pane.focus_mode = "sequential";
+                    cx.notify();
+                });
             }
-        }));
+        });
 
         Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
     }

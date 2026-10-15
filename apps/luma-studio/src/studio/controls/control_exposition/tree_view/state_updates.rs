@@ -2,7 +2,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::tree_view::{TreeNode, TreeView};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma_look_shadcn::{self as shadcn, ShadcnLook, prelude::*};
@@ -39,7 +40,7 @@ impl StateUpdates {
             cx, look.clone(), "tree-state-update-events",
             "Select a node and change expansion, then reorder or move Guide. Invalid updates must leave the tree unchanged.",
         ));
-        let mut subscriptions = vec![cx.subscribe(&tree, {
+        let subscriptions = vec![cx.subscribe(&tree, {
             let events = events.clone();
             move |_, _, event, cx| {
                 cx.notify();
@@ -57,18 +58,15 @@ impl StateUpdates {
         ]
         .into_iter()
         .map(|(id, label, update)| {
-            let button = shadcn::Button::new(format!("tree-state-{id}"))
+            shadcn::Button::new(format!("tree-state-{id}"))
                 .look(&look)
                 .secondary()
                 .label(label)
                 .with_template_modifier(move |root, _| root.debug_selector(move || format!("tree-state-{id}")))
-                .spawn(cx);
-            subscriptions.push(cx.subscribe(&button, move |this, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
+                .spawn(cx)
+                .on_click(cx, move |this, cx| {
                     this.apply(update, cx);
-                }
-            }));
-            button
+                })
         })
         .collect();
         Self { look, tree, buttons, events, _subscriptions: subscriptions }

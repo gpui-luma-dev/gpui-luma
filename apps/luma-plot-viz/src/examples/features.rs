@@ -1,8 +1,9 @@
 //! Focused host examples for viewport actions, annotations, log scales and legends.
-use gpui::{App, Context, Entity, Render, Window, IntoElement, Subscription, div, px, prelude::*};
+use gpui::{App, Context, Entity, Render, Window, IntoElement, div, px, prelude::*};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::{
     vstack, hstack,
-    controls::button::{Button, ButtonEvent},
+    controls::button::{Button},
 };
 use gpui_luma_look_radix::Look;
 use gpui_luma_plot::*;
@@ -15,7 +16,6 @@ pub(crate) struct Features {
     hidden: Vec<usize>,
     selected: String,
     entrance: f32,
-    _subscriptions: Vec<Subscription>,
 }
 impl Features {
     pub(crate) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
@@ -37,7 +37,7 @@ impl Features {
         let look = look.clone();
         Ok(cx.new(move |cx| {
             let mut buttons = Vec::new();
-            let mut subscriptions = Vec::new();
+
             for (index, (id, label)) in [
                 ("viewport-in", "Zoom in"),
                 ("viewport-out", "Zoom out"),
@@ -48,9 +48,8 @@ impl Features {
             .into_iter()
             .enumerate()
             {
-                let button = theme::motion::spawn_plot_action(id, label, &look, cx);
-                subscriptions.push(cx.subscribe(&button, move |this: &mut Self, _, event: &ButtonEvent, cx| {
-                    if matches!(event, ButtonEvent::Click) {
+                let button =
+                    theme::motion::spawn_plot_action(id, label, &look, cx).on_click(cx, move |this: &mut Self, cx| {
                         let change = match index {
                             0 => this.viewport.zoom_at(1.5, 0.5, 0.5),
                             1 => this.viewport.zoom_at(1.0 / 1.5, 0.5, 0.5),
@@ -61,8 +60,7 @@ impl Features {
                         if change.is_some() {
                             cx.notify();
                         }
-                    }
-                }));
+                    });
                 buttons.push(button);
             }
             // Known finite sample limits; construction does not depend on external input.
@@ -77,7 +75,6 @@ impl Features {
                 hidden: Vec::new(),
                 selected: "Click a marker to select an observation".into(),
                 entrance: 1.0,
-                _subscriptions: subscriptions,
             }
         }))
     }
@@ -165,6 +162,7 @@ crate::examples::motion::entrance!(Features);
 
 #[cfg(test)]
 mod tests {
+    use gpui_luma::controls::button::ButtonEvent;
     use super::*;
     #[gpui::test]
     fn sdk_zoom_and_reset_preserve_dataset_and_annotations_draw(cx: &mut gpui::TestAppContext) {

@@ -4,6 +4,7 @@ use std::sync::Arc;
 use gpui::{Context, Entity, IntoElement, SharedString, div, prelude::*};
 
 use super::control::Button;
+use super::{ButtonCallbacks, ButtonEvent};
 use super::template::{ButtonTemplate, modified_button_template};
 pub use crate::infra::presenter::{ControlPresenter, HasPresenter};
 use crate::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole, ButtonSize};
@@ -122,6 +123,7 @@ impl<D: Default> Default for ButtonRenderModel<D> {
 
 pub struct ButtonBuilder<D = ()> {
     pub(crate) model: ButtonModel<D>,
+    pub(crate) callbacks: ButtonCallbacks,
 }
 
 impl ButtonBuilder<()> {
@@ -129,6 +131,7 @@ impl ButtonBuilder<()> {
         let id = id.into();
 
         ButtonBuilder {
+            callbacks: ButtonCallbacks::default(),
             model: ButtonModel {
                 id: id.clone(),
                 data: (),
@@ -170,6 +173,8 @@ impl ButtonBuilder<()> {
     /// [`ButtonBuilder::with_data`] only after the builder is already configured (template,
     /// content, style, etc.) to change the initial payload without discarding that configuration.
     ///
+    /// Owner-bound event callbacks are preserved across this conversion.
+    ///
     /// # Data binding
     ///
     /// Today, payload is set at build time and updated imperatively via
@@ -180,6 +185,7 @@ impl ButtonBuilder<()> {
         let old = self.model;
         let id = old.id.clone();
         ButtonBuilder {
+            callbacks: self.callbacks,
             model: ButtonModel {
                 id: old.id,
                 data: data.clone(),
@@ -207,6 +213,83 @@ impl ButtonBuilder<()> {
 }
 
 impl<D: Clone + 'static> ButtonBuilder<D> {
+    /// Append an owner-bound callback for every Button event.
+    ///
+    /// Repeated registrations append in order. The owner is held weakly; the
+    /// Button retains the callback until dropped. Events use the existing SDK
+    /// event stream, including programmatic state changes that emit events.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, &ButtonEvent, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound activation callback.
+    ///
+    /// Repeated registrations append in order. The owner is held weakly; the
+    /// Button retains the callback until dropped. Events use the existing SDK
+    /// event stream, including programmatic state changes that emit events.
+    pub fn on_click<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_click(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound focus-state callback.
+    ///
+    /// Repeated registrations append in order. The owner is held weakly; the
+    /// Button retains the callback until dropped. Events use the existing SDK
+    /// event stream, including programmatic state changes that emit events.
+    pub fn on_focus_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_focus_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound hover-state callback.
+    ///
+    /// Repeated registrations append in order. The owner is held weakly; the
+    /// Button retains the callback until dropped. Events use the existing SDK
+    /// event stream, including programmatic state changes that emit events.
+    pub fn on_hover_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_hover_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound enabled-state callback.
+    ///
+    /// Repeated registrations append in order. The owner is held weakly; the
+    /// Button retains the callback until dropped. Events use the existing SDK
+    /// event stream, including programmatic state changes that emit events.
+    pub fn on_enabled_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_enabled_changed(cx, callback);
+        self
+    }
+
+    /// Transfer callback registrations from a Look-owned builder.
+    #[doc(hidden)]
+    pub fn with_callbacks(mut self, callbacks: ButtonCallbacks) -> Self {
+        self.callbacks = callbacks;
+        self
+    }
+
     /// Sets a semantic icon rendered by the button template with resolved theme color.
     pub fn icon(mut self, icon: impl Into<ControlIcon>) -> Self {
         self.model.icon = Some(icon.into());
@@ -287,8 +370,11 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
         self
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<Button<D>> {
-        cx.new(|cx| Button::from_builder(self, cx))
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<Button<D>> {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let entity = cx.new(|cx| Button::from_builder(self, cx));
+        callbacks.bind(&entity, cx);
+        entity
     }
 }
 

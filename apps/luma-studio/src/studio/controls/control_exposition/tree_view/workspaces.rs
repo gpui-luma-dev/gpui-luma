@@ -5,7 +5,8 @@ use std::{
     sync::Arc,
 };
 use gpui::{App, Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use gpui_luma::controls::tree_view::{
@@ -73,12 +74,10 @@ impl Workspaces {
                     .with_template_modifier(move |root, _| {
                         root.debug_selector(move || format!("workspace-action-{id}"))
                     })
-                    .spawn(cx);
-                subscriptions.push(cx.subscribe(&button, move |this: &mut Self, _, event, cx| {
-                    if matches!(event, ButtonEvent::Click) {
+                    .spawn(cx)
+                    .on_click(cx, move |this: &mut Self, cx| {
                         this.log(format!("Info: {id}"), cx);
-                    }
-                }));
+                    });
                 (id.into(), button)
             })
             .collect();

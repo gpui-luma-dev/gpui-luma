@@ -6,8 +6,9 @@ use std::{
 use gpui::{
     AnyElement, App, Context, Div, Entity, Render, SharedString, Stateful, Subscription, Window, div, prelude::*, px,
 };
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::{
-    button::{Button, ButtonEvent},
+    button::{Button},
     tree_view::{
         FlatTreeNode, TreeNode, TreeView, TreeViewEvent, TreeViewRenderModel, TreeViewTemplate,
         TreeViewTemplateHandlers,
@@ -78,7 +79,7 @@ impl Scale {
                 "Jump, update, filter or collapse the tree, then Sample counts. Counts accumulate until Reset counts.",
             )
         });
-        let mut subscriptions = vec![cx.subscribe(&tree, |this: &mut Self, _, event, cx| {
+        let subscriptions = vec![cx.subscribe(&tree, |this: &mut Self, _, event, cx| {
             if matches!(
                 event,
                 TreeViewEvent::NodeExpanded { .. }
@@ -110,12 +111,10 @@ impl Scale {
                 .secondary()
                 .label(label)
                 .with_template_modifier(move |root, _| root.debug_selector(move || format!("tree-scale-{id}")))
-                .spawn(cx);
-            subscriptions.push(cx.subscribe(&button, move |this: &mut Self, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
+                .spawn(cx)
+                .on_click(cx, move |this: &mut Self, cx| {
                     this.act(id, cx);
-                }
-            }));
+                });
             (id, button)
         })
         .collect();

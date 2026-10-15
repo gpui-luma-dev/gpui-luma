@@ -24,7 +24,7 @@ try { if(localStorage.getItem('luma-docs-theme') === 'dark') document.documentEl
 <div class="callout"><p><strong>You can customize SDK controls with easy-to-use templating or template overrides.</strong> Keep the behavior; change the presentation.</p></div>
 <section id="layers"><h2>Architecture</h2>
 <p>SDK controls handle state, focus, input, and events. Templates render them. Look crates configure templates and styling, so different designs share the same control behavior.</p>
-<p class="small">The following are integration snippets for an initialized application. <code>cx</code> is the owning view’s context. These snippets have not been compiled.</p></section>
+<p class="small">The following are integration snippets for an initialized application. <code>cx</code> is the owning view’s context. The first snippet assumes an owner with a <code>save_requests: usize</code> field.</p></section>
 <section id="look"><h2><span class="number">01</span>Start with a look</h2><p>A styled builder still creates an SDK button. Your application subscribes to the same SDK events.</p><div class="codebox"><div class="codebar"><span>Rust · Look → SDK entity</span><button class="copy" aria-label="Copy Look → SDK entity example">Copy</button></div><pre><code>use gpui::Entity;
 use gpui_luma::controls::button::Button;
 use gpui_luma::infra::presenter::HasPresenter;
@@ -33,6 +33,10 @@ use gpui_luma_look_shadcn as shadcn;
 let save: Entity&lt;Button&gt; = shadcn::Button::new(&quot;save&quot;)
     .primary()
     .label(&quot;Save changes&quot;)
+    .on_click(cx, |app, cx| {
+        app.save_requests += 1;
+        cx.notify();
+    })
     .spawn(cx);</code></pre></div></section><section id="content"><h2><span class="number">02</span>Customize the content</h2><p>Keep the look’s template. Replace the label with your own composition using <code>.content(...)</code>.</p><div class="codebox"><div class="codebar"><span>Rust · Content presenter</span><button class="copy" aria-label="Copy Content presenter example">Copy</button></div><pre><code>use gpui::{div, prelude::*};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma_look_shadcn as shadcn;

@@ -1,8 +1,9 @@
 //! Explicit positioning in Controls → TreeView; all interactive chrome uses SDK controls.
 use std::sync::Arc;
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::{
-    button::{Button, ButtonEvent},
+    button::{Button},
     selector::{Selector, SelectorItem},
     tree_view::{TreeNode, TreeView, TreeViewEvent},
 };
@@ -81,22 +82,19 @@ impl Positioning {
         let buttons = [("go", "Go"), ("collapse", "Close & show folder")]
             .into_iter()
             .map(|(id, label)| {
-                let button = shadcn::Button::new(format!("tree-position-{id}"))
+                shadcn::Button::new(format!("tree-position-{id}"))
                     .look(&look)
                     .secondary()
                     .label(label)
                     .with_template_modifier(move |root, _| root.debug_selector(move || format!("tree-position-{id}")))
-                    .spawn(cx);
-                subscriptions.push(cx.subscribe(&button, move |this: &mut Self, _, event, cx| {
-                    if matches!(event, ButtonEvent::Click) {
+                    .spawn(cx)
+                    .on_click(cx, move |this: &mut Self, cx| {
                         if id == "go" {
                             this.go(cx);
                         } else {
                             this.close_folder(cx);
                         }
-                    }
-                }));
-                button
+                    })
             })
             .collect();
         Self { look, tree, target, movement, buttons, events, _subscriptions: subscriptions }

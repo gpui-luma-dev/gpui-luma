@@ -5,8 +5,9 @@ use gpui::{
     Bounds, ClipboardItem, Context, Entity, Hsla, IntoElement, PathBuilder, Pixels, Point, Render, Subscription,
     WeakEntity, Window, canvas, div, point, prelude::*, px,
 };
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::{vstack, hstack};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::Button;
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma_look_radix::{self as radix, Look, SemanticRole};
 use crate::assets::{ICON_GROUPS, icon_named, react_icon};
@@ -106,7 +107,6 @@ struct IconDetails {
     popup: Option<WeakEntity<radix::HoverCard>>,
     selected: Option<(&'static str, &'static str, Icon)>,
     copy: Entity<Button<bool>>,
-    _subscriptions: Vec<Subscription>,
 }
 impl IconDetails {
     fn new(look: Arc<Look>, cx: &mut Context<Self>) -> Self {
@@ -116,10 +116,9 @@ impl IconDetails {
             .content(|model, _| div().child(if model.data { "Copied" } else { "Copy SVG" }).into_any_element())
             .with_template_modifier(|root, _| root.debug_selector(|| "icon-details-copy".into()))
             .spawn(cx);
-        let subscriptions = vec![cx.subscribe(&copy, |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click)
-                && let Some((_, _, icon)) = this.selected
-            {
+
+        copy.clone().on_click(cx, |this, cx| {
+            if let Some((_, _, icon)) = this.selected {
                 match std::str::from_utf8(icon.svg_bytes()) {
                     Ok(svg) => {
                         cx.write_to_clipboard(ClipboardItem::new_string(svg.to_owned()));
@@ -128,8 +127,9 @@ impl IconDetails {
                     Err(error) => eprintln!("failed to copy icon SVG: {error}"),
                 }
             }
-        })];
-        Self { look, popup: None, selected: None, copy, _subscriptions: subscriptions }
+        });
+
+        Self { look, popup: None, selected: None, copy }
     }
 }
 impl Render for IconDetails {

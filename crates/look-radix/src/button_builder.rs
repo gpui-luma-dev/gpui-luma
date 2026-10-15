@@ -2,8 +2,8 @@
 
 use gpui::{App, Context, Div, Entity, SharedString, Stateful};
 use gpui_luma::controls::button::{
-    ButtonBuilder, ButtonContentContext, ButtonRenderModel, ButtonTemplateModifier, ControlIcon, ControlPresenter,
-    HasPresenter,
+    ButtonCallbacks, ButtonEvent, ButtonBuilder, ButtonContentContext, ButtonRenderModel, ButtonTemplateModifier,
+    ControlIcon, ControlPresenter, HasPresenter,
 };
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 
@@ -29,6 +29,7 @@ pub struct Button<D = ()> {
     data: D,
     content: Option<ControlPresenter<ButtonContentContext<D>>>,
     modifiers: Vec<ButtonTemplateModifier<D>>,
+    callbacks: ButtonCallbacks,
 }
 
 impl Button<()> {
@@ -49,12 +50,14 @@ impl Button<()> {
             data: (),
             content: None,
             modifiers: Vec::new(),
+            callbacks: ButtonCallbacks::default(),
         }
     }
 
     /// Pick a typed payload. Call once, usually at the start of the chain.
     ///
     /// Resets presenter content and queued template modifiers (they are typed on `D`).
+    /// Owner-bound event callbacks are preserved.
     /// Radix axes and SDK settings (`icon`, `role`, `enabled`, `tab_stop`, `compact`) are kept.
     pub fn typed<D: Clone + 'static>(self, data: D) -> Button<D> {
         Button {
@@ -73,11 +76,82 @@ impl Button<()> {
             data,
             content: None,
             modifiers: Vec::new(),
+            callbacks: self.callbacks,
         }
     }
 }
 
 impl<D: Clone + 'static> Button<D> {
+    /// Append an owner-bound callback for every Button event.
+    ///
+    /// Repeated registrations append in order. The owner is held weakly; the
+    /// Button retains the callback until dropped. Events use the existing SDK
+    /// event stream, including programmatic state changes that emit events.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, &ButtonEvent, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound activation callback.
+    ///
+    /// Repeated registrations append in order. The owner is held weakly; the
+    /// Button retains the callback until dropped. Events use the existing SDK
+    /// event stream, including programmatic state changes that emit events.
+    pub fn on_click<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_click(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound focus-state callback.
+    ///
+    /// Repeated registrations append in order. The owner is held weakly; the
+    /// Button retains the callback until dropped. Events use the existing SDK
+    /// event stream, including programmatic state changes that emit events.
+    pub fn on_focus_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_focus_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound hover-state callback.
+    ///
+    /// Repeated registrations append in order. The owner is held weakly; the
+    /// Button retains the callback until dropped. Events use the existing SDK
+    /// event stream, including programmatic state changes that emit events.
+    pub fn on_hover_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_hover_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound enabled-state callback.
+    ///
+    /// Repeated registrations append in order. The owner is held weakly; the
+    /// Button retains the callback until dropped. Events use the existing SDK
+    /// event stream, including programmatic state changes that emit events.
+    pub fn on_enabled_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_enabled_changed(cx, callback);
+        self
+    }
+
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
     pub fn look(mut self, look: &Look) -> Self {
         self.look = Some(look.clone());
@@ -224,6 +298,7 @@ impl<D: Clone + 'static> Button<D> {
         let geometry = self.look_source(&look);
         let mut builder = gpui_luma::controls::button::Button::new(self.id)
             .typed(self.data)
+            .with_callbacks(self.callbacks)
             .template(template)
             .with_look(move |model| geometry(model))
             .size(self.size.control_size())
@@ -383,5 +458,47 @@ mod tests {
     fn typed_bind_does_not_panic() {
         let look = Look::built_in();
         let _builder = Button::new("counter").look(&look).classic().typed(true).label("On").into_sdk_builder(look);
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod callback_tests {
+    use super::*;
+    use gpui::{AppContext, TestAppContext};
+    struct Owner {
+        button: Entity<gpui_luma::controls::button::Button<u32>>,
+        log: Vec<String>,
+    }
+
+    #[test]
+    fn look_forwards_all_callbacks_and_preserves_them_through_typed() {
+        let app = TestAppContext::single();
+        let owner = app.update(|cx| {
+            cx.new(|cx| {
+                let button = Button::new("callbacks")
+                    .on_event(cx, |owner: &mut Owner, event, _| {
+                        if event.is_click() {
+                            owner.log.push("all".into());
+                        }
+                    })
+                    .on_click(cx, |owner, _| owner.log.push("click".into()))
+                    .typed(42_u32)
+                    .on_focus_changed(cx, |owner, value, _| owner.log.push(format!("focus:{value}")))
+                    .on_hover_changed(cx, |owner, value, _| owner.log.push(format!("hover:{value}")))
+                    .on_enabled_changed(cx, |owner, value, _| owner.log.push(format!("enabled:{value}")))
+                    .spawn(cx);
+                Owner { button, log: Vec::new() }
+            })
+        });
+        let button = app.read(|cx| owner.read(cx).button.clone());
+        app.update(|cx| {
+            button.update(cx, |_, cx| {
+                cx.emit(ButtonEvent::Click);
+                cx.emit(ButtonEvent::FocusChanged { focused: true });
+                cx.emit(ButtonEvent::HoverChanged { hovered: true });
+            })
+        });
+        app.update(|cx| button.update(cx, |button, cx| button.set_enabled(false, cx)));
+        app.read(|cx| assert_eq!(owner.read(cx).log, ["all", "click", "focus:true", "hover:true", "enabled:false"]));
     }
 }

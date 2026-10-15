@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::Button;
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::controls::textarea::{TextArea, TextAreaEvent, Validator};
 use gpui_luma_look_shadcn::prelude::*;
@@ -246,27 +247,28 @@ impl TextAreaControlExposition {
                 }
             }
         })];
-        subscriptions.push(cx.subscribe(&set_sample_button, {
-            let text_area = text_area.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
-                    return;
-                }
+        set_sample_button.clone().on_click(cx, {
+            let text_area = text_area.downgrade();
+            move |_, cx| {
+let Some(text_area) = text_area.upgrade() else { return; };
+
+
                 let value = SharedString::from(
                     "Short line\nSeveral hard lines\nA very long line that should exceed the visible viewport width before wrapping is implemented\nMultibyte smoke test: café 東京\nEnough lines\nTo make vertical space\nFeel like a textarea",
                 );
                 text_area.update(cx, |area, cx| area.set_value(value.as_ref(), cx));
             }
-        }));
-        subscriptions.push(cx.subscribe(&clear_button, {
-            let text_area = text_area.clone();
-            move |_, _, event: &ButtonEvent, cx| {
-                if !event.is_click() {
+        });
+        clear_button.clone().on_click(cx, {
+            let text_area = text_area.downgrade();
+            move |_, cx| {
+                let Some(text_area) = text_area.upgrade() else {
                     return;
-                }
+                };
+
                 text_area.update(cx, |area, cx| area.set_value("", cx));
             }
-        }));
+        });
         for (checkbox, option) in [
             (enabled_checkbox.clone(), TextAreaOption::Enabled),
             (clean_on_escape_checkbox.clone(), TextAreaOption::CleanOnEscape),

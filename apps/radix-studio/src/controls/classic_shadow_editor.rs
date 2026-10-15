@@ -11,7 +11,8 @@ use gpui::{
     AnyElement, ClipboardItem, Context, Entity, EventEmitter, FontWeight, Hsla, IntoElement, Render, Subscription,
     Window, div, prelude::*, px,
 };
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::Button;
 use gpui_luma::controls::slider::{Slider, SliderEvent};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::{hstack, vstack};
@@ -330,11 +331,9 @@ impl ClassicShadowEditor {
             .with_template_modifier(|button, _| button.h(px(PREVIEW_HEIGHT)).w(px(PREVIEW_WIDTH)))
             .spawn(cx);
         let reset = radix::Button::new("classic-shadow-reset").look(look).soft().label("Reset").spawn(cx);
-        subscriptions.push(cx.subscribe(&reset, |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                this.reset(cx);
-            }
-        }));
+        reset.clone().on_click(cx, |this, cx| {
+            this.reset(cx);
+        });
 
         let copied = Arc::new(AtomicBool::new(false));
         let copy_state = Arc::clone(&copied);
@@ -352,14 +351,12 @@ impl ClassicShadowEditor {
                     .map(|icon| react_icon(icon, color, COPY_ICON_SIZE))
                     .unwrap_or_else(|| div().into_any_element())
             })
-            .spawn(cx);
-        subscriptions.push(cx.subscribe(&copy, |this, _, event: &ButtonEvent, cx| {
-            if matches!(event, ButtonEvent::Click) {
+            .spawn(cx)
+            .on_click(cx, |this, cx| {
                 cx.write_to_clipboard(ClipboardItem::new_string(this.snippet()));
                 this.copied.store(true, Ordering::Relaxed);
                 cx.notify();
-            }
-        }));
+            });
 
         Self { look: Arc::clone(look), params, sliders, preview, reset, copy, copied, _subscriptions: subscriptions }
     }

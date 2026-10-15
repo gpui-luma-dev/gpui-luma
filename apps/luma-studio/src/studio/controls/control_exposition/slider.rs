@@ -2,7 +2,8 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::controls::button::ButtonEventExt;
+use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::slider::{Slider, SliderEvent, SliderThumbPolicy};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn as shadcn;
@@ -311,14 +312,16 @@ impl SliderControlExposition {
             pane.sync_stop_summary(cx);
             pane
         });
-        subscriptions.push(cx.subscribe(&animate_button, {
-            let left_pane = left_pane.clone();
-            move |_, _, event, cx| {
-                if matches!(event, ButtonEvent::Click) {
-                    left_pane.update(cx, |pane, cx| pane.toggle_animated_value(cx));
-                }
+        animate_button.clone().on_click(cx, {
+            let left_pane = left_pane.downgrade();
+            move |_, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
+
+                left_pane.update(cx, |pane, cx| pane.toggle_animated_value(cx));
             }
-        }));
+        });
         let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
             cx,
             look.clone(),
