@@ -3,9 +3,9 @@
 > **Early version.** This project is pre-release / alpha. APIs, crate layout, and examples may change without notice.
 
 GPUI component library with a lookless control SDK, Shadcn and Radix look adapters,
-color controls, and desktop example apps. Source lives at
-[gpui-luma-dev/gpui-luma](https://github.com/gpui-luma-dev/gpui-luma);
-[gpui-luma.dev](https://gpui-luma.dev) redirects to this repository.
+color controls, and desktop example apps. Documentation is hosted at
+[gpui-luma.dev](https://gpui-luma.dev). Source lives at
+[gpui-luma-dev/gpui-luma](https://github.com/gpui-luma-dev/gpui-luma).
 
 Requires a recent Rust stable toolchain (`rust-toolchain.toml` tracks `stable`).
 
