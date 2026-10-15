@@ -1,5 +1,6 @@
 //! Look-owned toggle builder. Spawn synthesizes the SDK [`gpui_luma::controls::toggle::Toggle`].
 
+use gpui_luma::controls::toggle::{ToggleCallbacks, ToggleEvent};
 use gpui::{App, Context, SharedString};
 use gpui_luma::controls::button::{ButtonContentContext, ControlIcon, ControlPresenter, HasPresenter};
 use gpui_luma::controls::toggle::{ToggleBuilder, ToggleData};
@@ -9,6 +10,7 @@ use crate::size::ShadcnSize;
 
 /// Builder in the guise of a toggle: Shadcn axes plus SDK options, until `.spawn(cx)`.
 pub struct Toggle {
+    callbacks: ToggleCallbacks,
     id: SharedString,
     look: Option<ShadcnLook>,
     style: ShadcnButtonStyle,
@@ -25,8 +27,59 @@ pub struct Toggle {
 }
 
 impl Toggle {
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, &ToggleEvent, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_value_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_value_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_focus_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_focus_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_hover_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_hover_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_enabled_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_enabled_changed(cx, callback);
+        self
+    }
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
+            callbacks: ToggleCallbacks::default(),
             id: id.into(),
             look: None,
             style: ShadcnButtonStyle::Secondary,
@@ -144,7 +197,8 @@ impl Toggle {
             .with_data(self.selected)
             .enabled(self.enabled)
             .tab_stop(self.tab_stop)
-            .animated(self.animated);
+            .animated(self.animated)
+            .with_callbacks(self.callbacks);
         if let Some(icon) = self.icon {
             builder = builder.icon(icon);
         }
@@ -193,5 +247,43 @@ mod tests {
     fn into_sdk_builder_does_not_panic() {
         let look = ShadcnLook::built_in();
         let _builder = Toggle::new("ok").look(&look).primary().with_data(true).label("On").into_sdk_builder(look);
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod callback_tests {
+    use super::*;
+    use gpui::{AppContext, TestAppContext};
+    struct Owner {
+        control: gpui_luma::controls::toggle::Toggle,
+        log: Vec<bool>,
+    }
+    #[test]
+    fn look_builder_preserves_every_callback_and_payload() {
+        let app = TestAppContext::single();
+        let owner = app.update(|cx| {
+            cx.new(|cx| {
+                let control = Toggle::new("choice")
+                    .on_event(cx, |owner: &mut Owner, _, _| owner.log.push(false))
+                    .on_value_changed(cx, |owner, value, _| owner.log.push(value))
+                    .on_focus_changed(cx, |owner, value, _| owner.log.push(value))
+                    .on_hover_changed(cx, |owner, value, _| owner.log.push(value))
+                    .on_enabled_changed(cx, |owner, value, _| owner.log.push(value))
+                    .with_data(true)
+                    .spawn(cx);
+                Owner { control, log: vec![] }
+            })
+        });
+        let control = app.read(|cx| owner.read(cx).control.clone());
+        app.read(|cx| assert!(*control.read(cx).data()));
+        app.update(|cx| {
+            control.update(cx, |_, cx| {
+                cx.emit(ToggleEvent::Change { selected: true });
+                cx.emit(ToggleEvent::FocusChanged { focused: true });
+                cx.emit(ToggleEvent::HoverChanged { hovered: true });
+                cx.emit(ToggleEvent::EnabledChanged { enabled: true });
+            })
+        });
+        app.read(|cx| assert_eq!(owner.read(cx).log, [false, true, false, true, false, true, false, true]));
     }
 }

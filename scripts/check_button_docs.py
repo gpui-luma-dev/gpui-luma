@@ -1,4 +1,4 @@
-"""Compile the Button checkpoint's HTML examples without launching an application."""
+"""Compile event callback HTML examples without launching an application."""
 
 from html.parser import HTMLParser
 import json
@@ -10,6 +10,9 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = {
     "button.html": [0, 1],
+    "checkbox.html": 0,
+    "switch.html": 0,
+    "toggle.html": 0,
     "index.html": 1,  # Cargo.toml precedes the complete Rust application.
     "look-radix.html": 0,
     "look-shadcn.html": 0,
@@ -86,7 +89,7 @@ def main():
         subprocess.run(["cargo", "check", "--manifest-path", str(package / "Cargo.toml"),
                         "--target-dir", str(ROOT / "target")], check=True, cwd=ROOT)
     count = sum(len(value) if isinstance(value, list) else 1 for value in EXAMPLES.values())
-    print(f"Compiled {count} Button documentation examples.")
+    print(f"Compiled {count} documentation examples.")
 
 
 if __name__ == "__main__":

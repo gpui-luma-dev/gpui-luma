@@ -1,3 +1,6 @@
+mod callback;
+pub use callback::{ToggleCallbacks, ToggleEventExt};
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -199,11 +202,69 @@ impl IntoElement for ToggleControl {
 }
 
 pub struct ToggleBuilder {
+    callbacks: ToggleCallbacks,
     button: ButtonBuilder<ToggleData>,
     animated: bool,
 }
 
 impl ToggleBuilder {
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, &ToggleEvent, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Append a user-change callback. `set_data` is silent; the owner is held weakly.
+    pub fn on_value_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_value_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_focus_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_focus_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_hover_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_hover_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_enabled_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_enabled_changed(cx, callback);
+        self
+    }
+
+    /// Transfer callbacks from a Look-owned builder.
+    #[doc(hidden)]
+    pub fn with_callbacks(mut self, callbacks: ToggleCallbacks) -> Self {
+        self.callbacks = callbacks;
+        self
+    }
+
     pub fn icon(self, icon: impl Into<crate::controls::button::ControlIcon>) -> Self {
         Self { button: self.button.icon(icon), ..self }
     }
@@ -250,8 +311,11 @@ impl ToggleBuilder {
         Self { button: self.button.template(template), ..self }
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Toggle {
-        cx.new(|cx| ToggleControl::from_builder(self, cx))
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Toggle {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = cx.new(|cx| ToggleControl::from_builder(self, cx));
+        callbacks.bind(&control, cx);
+        control
     }
 }
 
@@ -269,7 +333,7 @@ fn button_builder(id: impl Into<SharedString>) -> ButtonBuilder<ToggleData> {
 }
 
 pub fn new(id: impl Into<SharedString>) -> ToggleBuilder {
-    ToggleBuilder { button: button_builder(id), animated: true }
+    ToggleBuilder { callbacks: ToggleCallbacks::default(), button: button_builder(id), animated: true }
 }
 
 fn lerp_f32(start: f32, end: f32, t: f32) -> f32 {
@@ -356,3 +420,6 @@ mod tests {
 }
 
 crate::infra::attachments::delegate_tooltips!(ToggleControl, gpui::Role::Button);
+
+#[cfg(all(test, feature = "test-support"))]
+mod callback_tests;

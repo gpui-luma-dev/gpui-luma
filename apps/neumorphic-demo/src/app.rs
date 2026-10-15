@@ -1,4 +1,6 @@
-use gpui::{Context, Render, Subscription, Window, div, hsla, prelude::*, px};
+use gpui_luma::controls::toggle::ToggleEventExt;
+use gpui_luma::controls::switch::SwitchEventExt;
+use gpui::{Context, Render, Window, div, hsla, prelude::*, px};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma::controls::radio_group::{self, RadioGroup, RadioGroupItem};
 use gpui_luma::controls::slider::{self, Slider, SliderOrientation};
@@ -32,7 +34,6 @@ pub struct NeumorphicDemoApp {
     left_switch: Switch,
     middle_switch: Switch,
     right_switch: Switch,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl NeumorphicDemoApp {
@@ -110,25 +111,24 @@ impl NeumorphicDemoApp {
             .selected("fast")
             .spawn(cx);
 
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&left_power, |this, _, event: &ToggleEvent, cx| {
+        left_power.clone().on_event(cx, |this, event: &ToggleEvent, cx| {
             this.handle_power_event(PanelSlot::Left, event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&middle_power, |this, _, event: &ToggleEvent, cx| {
+        });
+        middle_power.clone().on_event(cx, |this, event: &ToggleEvent, cx| {
             this.handle_power_event(PanelSlot::Middle, event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&right_power, |this, _, event: &ToggleEvent, cx| {
+        });
+        right_power.clone().on_event(cx, |this, event: &ToggleEvent, cx| {
             this.handle_power_event(PanelSlot::Right, event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&left_switch, |this, _, event: &SwitchEvent, cx| {
+        });
+        left_switch.clone().on_event(cx, |this, event: &SwitchEvent, cx| {
             this.handle_switch_event(PanelSlot::Left, event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&middle_switch, |this, _, event: &SwitchEvent, cx| {
+        });
+        middle_switch.clone().on_event(cx, |this, event: &SwitchEvent, cx| {
             this.handle_switch_event(PanelSlot::Middle, event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&right_switch, |this, _, event: &SwitchEvent, cx| {
+        });
+        right_switch.clone().on_event(cx, |this, event: &SwitchEvent, cx| {
             this.handle_switch_event(PanelSlot::Right, event, cx);
-        }));
+        });
 
         Self {
             level_dial: dial("level", "Level", 0.33, DialSize::Large).spawn(cx),
@@ -149,7 +149,6 @@ impl NeumorphicDemoApp {
             left_switch,
             middle_switch,
             right_switch,
-            _subscriptions: subscriptions,
         }
     }
 

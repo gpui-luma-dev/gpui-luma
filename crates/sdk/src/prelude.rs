@@ -10,7 +10,7 @@ pub use crate::theme::{ControlSize, InteractionState};
 pub use crate::controls::accordion::{Accordion, AccordionBuilder, AccordionEvent};
 pub use crate::controls::autocomplete::{Autocomplete, AutocompleteBuilder, AutocompleteEvent};
 pub use crate::controls::button::{Button, ButtonBuilder, ButtonEvent, ButtonEventExt};
-pub use crate::controls::checkbox::{Checkbox, CheckboxBuilder, CheckboxEvent};
+pub use crate::controls::checkbox::{Checkbox, CheckboxBuilder, CheckboxEvent, CheckboxEventExt};
 pub use crate::controls::combobox::{ComboBox, ComboBoxBuilder, ComboBoxEvent};
 pub use crate::controls::context_menu::{ContextMenu, ContextMenuBuilder, ContextMenuEvent};
 pub use crate::controls::icon_button::IconButton;
@@ -23,11 +23,11 @@ pub use crate::controls::search_selector::{SearchSelector, SearchSelectorBuilder
 pub use crate::controls::selector::{Selector, SelectorBuilder, SelectorEvent};
 pub use crate::controls::sidebar::{SidebarBuilder, SidebarControl, SidebarEvent};
 pub use crate::controls::slider::{Slider, SliderBuilder, SliderEvent};
-pub use crate::controls::switch::{Switch, SwitchBuilder, SwitchEvent};
+pub use crate::controls::switch::{Switch, SwitchBuilder, SwitchEvent, SwitchEventExt};
 pub use crate::controls::tabs::{Tabs, TabsBuilder, TabsEvent};
 pub use crate::controls::textarea::{TextArea, TextAreaBuilder, TextAreaEvent};
 pub use crate::controls::textfield::{TextField, TextFieldBuilder, TextFieldEvent};
-pub use crate::controls::toggle::{Toggle, ToggleBuilder, ToggleEvent};
+pub use crate::controls::toggle::{Toggle, ToggleBuilder, ToggleEvent, ToggleEventExt};
 pub use crate::controls::toolbar::{Toolbar, ToolbarBuilder, ToolbarEvent};
 
 pub use crate::infra::attachments::{AttachmentTarget, TooltipEntityExt};

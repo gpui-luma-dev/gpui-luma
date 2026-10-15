@@ -1,3 +1,6 @@
+mod callback;
+pub use callback::{SwitchCallbacks, SwitchEventExt};
+
 mod template;
 mod theme;
 
@@ -239,11 +242,69 @@ pub enum SwitchOrientation {
 /// `gpui_luma_look_shadcn::Switch::new(...)`) rather than constructing this type
 /// directly or styling [`ButtonBuilder<SwitchData>`] as a checkbox.
 pub struct SwitchBuilder {
+    callbacks: SwitchCallbacks,
     button: ButtonBuilder<SwitchData>,
     animated: bool,
 }
 
 impl SwitchBuilder {
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_event<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, &SwitchEvent, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_event(cx, callback);
+        self
+    }
+
+    /// Append a user-change callback. `set_data` is silent; the owner is held weakly.
+    pub fn on_value_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_value_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_focus_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_focus_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_hover_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_hover_changed(cx, callback);
+        self
+    }
+
+    /// Append an owner-bound callback; registrations are additive and owners are weak.
+    pub fn on_enabled_changed<M: 'static>(
+        mut self,
+        cx: &Context<M>,
+        callback: impl Fn(&mut M, bool, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.callbacks = self.callbacks.on_enabled_changed(cx, callback);
+        self
+    }
+
+    /// Transfer callbacks from a Look-owned builder.
+    #[doc(hidden)]
+    pub fn with_callbacks(mut self, callbacks: SwitchCallbacks) -> Self {
+        self.callbacks = callbacks;
+        self
+    }
+
     /// Render only the switch track, without the label or its spacing.
     pub fn without_label(self) -> Self {
         Self { button: self.button.role(crate::controls::button_family::ButtonFamilyRole::Icon), ..self }
@@ -341,8 +402,11 @@ impl SwitchBuilder {
         Self { button: self.button.template(template), ..self }
     }
 
-    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Switch {
-        cx.new(|cx| SwitchControl::from_builder(self, cx))
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Switch {
+        let callbacks = std::mem::take(&mut self.callbacks);
+        let control = cx.new(|cx| SwitchControl::from_builder(self, cx));
+        callbacks.bind(&control, cx);
+        control
     }
 }
 
@@ -388,6 +452,7 @@ impl Button<SwitchData> {
 
 pub fn new(id: impl Into<SharedString>) -> SwitchBuilder {
     SwitchBuilder {
+        callbacks: SwitchCallbacks::default(),
         button: ButtonBuilder::new(id).typed(SwitchData::default()).template(default_switch_template()),
         animated: true,
     }
@@ -438,3 +503,6 @@ mod tests {
 }
 
 crate::infra::attachments::delegate_tooltips!(SwitchControl, gpui::Role::Switch);
+
+#[cfg(all(test, feature = "test-support"))]
+mod callback_tests;

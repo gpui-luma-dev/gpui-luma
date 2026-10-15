@@ -1,5 +1,6 @@
 //! Slide panel exposition — gallery-aligned drawer prototype with edge triggers.
 
+use gpui_luma::controls::toggle::ToggleEventExt;
 use std::sync::Arc;
 
 use gpui::{
@@ -248,23 +249,19 @@ impl SlidePanelDemo {
             });
         }
 
-        cx.subscribe(&backdrop_toggle, {
-            let event_stream = event_stream.clone();
-            move |this, _, event: &ToggleEvent, cx| {
-                let ToggleEvent::Change { selected } = event else {
-                    return;
-                };
-                let enabled = *selected;
-                this.state.set_backdrop_click_closes(enabled);
-                let message = if enabled {
-                    "Backdrop click dismissal enabled."
-                } else {
-                    "Backdrop click dismissal disabled."
-                };
-                this.set_action(message, &event_stream, cx);
-            }
-        })
-        .detach();
+        backdrop_toggle.clone().on_event(cx, move |this, event: &ToggleEvent, cx| {
+            let ToggleEvent::Change { selected } = event else {
+                return;
+            };
+            let enabled = *selected;
+            this.state.set_backdrop_click_closes(enabled);
+            let message = if enabled {
+                "Backdrop click dismissal enabled."
+            } else {
+                "Backdrop click dismissal disabled."
+            };
+            this.set_action(message, &event_stream, cx);
+        });
 
         this
     }

@@ -1,4 +1,5 @@
 //! Tooltip options exercised against one retained preview.
+use gpui_luma::controls::switch::SwitchEventExt;
 use std::{sync::Arc, time::Duration};
 use gpui::{AnyElement, FontWeight, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
@@ -6,7 +7,7 @@ use gpui_luma::{
     controls::{
         button::{Button},
         slider::{Slider, SliderEvent},
-        switch::{Switch, SwitchEvent},
+        switch::{Switch},
         textfield::{TextField, TextFieldEvent},
         tooltip::{Tooltip, TooltipPlacement, TooltipDismissal, bubble},
     },
@@ -135,12 +136,10 @@ impl TooltipPlayground {
                 this.apply(cx);
             }
         }));
-        subscriptions.push(cx.subscribe(&custom_content, |this, _, event: &SwitchEvent, cx| {
-            if let SwitchEvent::Change { on } = event {
-                this.custom = *on;
-                this.apply(cx);
-            }
-        }));
+        custom_content.clone().on_value_changed(cx, |this, on, cx| {
+            this.custom = on;
+            this.apply(cx);
+        });
         preview.clone().on_click(cx, |this, cx| {
             this.clicks = this.clicks.saturating_add(1);
             this.preview.update(cx, |button, cx| {
@@ -169,30 +168,22 @@ impl TooltipPlayground {
                 this.apply(cx);
             }
         }));
-        subscriptions.push(cx.subscribe(&placement, |this, _, event: &SwitchEvent, cx| {
-            if let SwitchEvent::Change { on } = event {
-                this.below = *on;
-                this.apply(cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&dismissal, |this, _, event: &SwitchEvent, cx| {
-            if let SwitchEvent::Change { on } = event {
-                this.permanent = *on;
-                this.apply(cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&enable, |this, _, event: &SwitchEvent, cx| {
-            if let SwitchEvent::Change { on } = event {
-                this.enabled = *on;
-                this.apply(cx);
-            }
-        }));
-        subscriptions.push(cx.subscribe(&show_once, |this, _, event: &SwitchEvent, cx| {
-            if let SwitchEvent::Change { on } = event {
-                this.once = *on;
-                this.apply(cx);
-            }
-        }));
+        placement.clone().on_value_changed(cx, |this, on, cx| {
+            this.below = on;
+            this.apply(cx);
+        });
+        dismissal.clone().on_value_changed(cx, |this, on, cx| {
+            this.permanent = on;
+            this.apply(cx);
+        });
+        enable.clone().on_value_changed(cx, |this, on, cx| {
+            this.enabled = on;
+            this.apply(cx);
+        });
+        show_once.clone().on_value_changed(cx, |this, on, cx| {
+            this.once = on;
+            this.apply(cx);
+        });
         rearm.clone().on_click(cx, |this, cx| {
             this.apply(cx);
         });

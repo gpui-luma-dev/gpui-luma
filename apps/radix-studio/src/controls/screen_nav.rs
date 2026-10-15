@@ -1,5 +1,6 @@
 //! Toggle-style page navigation backed by the SDK screen content slots.
 
+use gpui_luma::controls::toggle::ToggleEventExt;
 use std::sync::Arc;
 
 use gpui::{
@@ -121,15 +122,22 @@ impl ScreenNav {
                     .selected(tab == RadixStudioTab::CustomPalette)
                     .animated(false)
                     .spawn(cx);
-                subscriptions.push(cx.subscribe(&toggle, move |this, toggle, event: &ToggleEvent, cx| {
-                    if matches!(event, ToggleEvent::Change { .. }) {
-                        if this.active == tab {
-                            toggle.update(cx, |toggle, cx| toggle.set_data(true, cx));
-                        } else {
-                            this.select(tab, cx);
+                {
+                    let callback_control = (&toggle).downgrade();
+                    toggle.clone().on_event(cx, move |this, event: &ToggleEvent, cx| {
+                        let Some(toggle) = callback_control.upgrade() else {
+                            return;
+                        };
+
+                        if matches!(event, ToggleEvent::Change { .. }) {
+                            if this.active == tab {
+                                toggle.update(cx, |toggle, cx| toggle.set_data(true, cx));
+                            } else {
+                                this.select(tab, cx);
+                            }
                         }
-                    }
-                }));
+                    })
+                };
                 (tab, toggle)
             })
             .collect();

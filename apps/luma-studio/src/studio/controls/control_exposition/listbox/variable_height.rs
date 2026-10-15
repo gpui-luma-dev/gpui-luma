@@ -1,9 +1,10 @@
 //! The same content-sized template in eager and measured-virtualized lists.
+use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::{cell::Cell, sync::Arc};
 use gpui::{Context, Div, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::{
-    checkbox::{Checkbox, CheckboxEvent},
+    checkbox::{Checkbox},
     button::{Button},
     selector::{Selector, SelectorEvent, SelectorItem},
     listbox::{
@@ -226,11 +227,9 @@ impl VariableHeightExample {
         let center_item =
             shadcn::Button::new("notes-center-item").look(&look).outline().label("Center in viewport").spawn(cx);
         let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&smooth, |this, _, event, _| {
-            if let CheckboxEvent::Change { checked } = event {
-                this.smooth_enabled = *checked;
-            }
-        }));
+        smooth.clone().on_value_changed(cx, |this, checked, _| {
+            this.smooth_enabled = checked;
+        });
         subscriptions.push(cx.subscribe(&target, |this, _, event, _| {
             if let SelectorEvent::Change { item_id, .. } = event
                 && let Ok(key) = item_id.parse::<u32>()
@@ -260,26 +259,22 @@ impl VariableHeightExample {
                 });
             }
         });
-        subscriptions.push(cx.subscribe(&expanded, |this, _, event, cx| {
-            if let CheckboxEvent::Change { checked } = event {
-                for list in &this.lists {
-                    list.update(cx, |list, cx| {
-                        list.expanded = *checked;
-                        list.list.invalidate_measurements(None, cx);
-                    });
-                }
+        expanded.clone().on_value_changed(cx, |this, checked, cx| {
+            for list in &this.lists {
+                list.update(cx, |list, cx| {
+                    list.expanded = checked;
+                    list.list.invalidate_measurements(None, cx);
+                });
             }
-        }));
-        subscriptions.push(cx.subscribe(&narrow, |this, _, event, cx| {
-            if let CheckboxEvent::Change { checked } = event {
-                for list in &this.lists {
-                    list.update(cx, |list, cx| {
-                        list.width = if *checked { 180.0 } else { 250.0 };
-                        cx.notify();
-                    });
-                }
+        });
+        narrow.clone().on_value_changed(cx, |this, checked, cx| {
+            for list in &this.lists {
+                list.update(cx, |list, cx| {
+                    list.width = if checked { 180.0 } else { 250.0 };
+                    cx.notify();
+                });
             }
-        }));
+        });
         Self {
             look,
             lists: [eager, measured],
@@ -339,6 +334,7 @@ impl Render for VariableHeightExample {
 
 #[cfg(all(test, feature = "test-support"))]
 mod tests {
+    use gpui_luma::controls::checkbox::CheckboxEvent;
     use gpui_luma::controls::button::ButtonEvent;
     use gpui::{TestAppContext, VisualTestContext};
     use super::*;

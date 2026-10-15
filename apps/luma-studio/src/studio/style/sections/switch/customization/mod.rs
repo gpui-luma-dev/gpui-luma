@@ -1,9 +1,10 @@
+use gpui_luma::controls::switch::SwitchEventExt;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonContentContext;
 use gpui_luma::infra::presenter::HasPresenter;
-use gpui_luma::controls::switch::{Switch, SwitchData, SwitchEvent, SwitchOrientation};
+use gpui_luma::controls::switch::{Switch, SwitchData, SwitchOrientation};
 use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::paint::switch_look;
 use gpui_luma_look_shadcn as shadcn;
@@ -21,7 +22,6 @@ pub(crate) struct SwitchCustomizationPreview {
     primary_switch: Switch,
     secondary_switch: Switch,
     vertical_switch: Switch,
-    _subscriptions: Vec<gpui::Subscription>,
 }
 
 impl SwitchCustomizationPreview {
@@ -54,8 +54,8 @@ impl SwitchCustomizationPreview {
             .thumb_content(icon_thumb_content(look.clone(), ShadcnButtonStyle::Primary))
             .content(|_, _| div().into_any_element())
             .spawn(cx);
-        let mut preview = Self { look, primary_switch, secondary_switch, vertical_switch, _subscriptions: Vec::new() };
-        preview.subscribe(cx);
+        let mut preview = Self { look, primary_switch, secondary_switch, vertical_switch };
+        preview.bind_callbacks(cx);
         preview
     }
 
@@ -79,22 +79,10 @@ impl SwitchCustomizationPreview {
         cx.notify();
     }
 
-    fn subscribe(&mut self, cx: &mut Context<Self>) {
-        self._subscriptions.push(cx.subscribe(&self.primary_switch, |_, _, event: &SwitchEvent, cx| {
-            if matches!(event, SwitchEvent::Change { .. }) {
-                cx.notify();
-            }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.secondary_switch, |_, _, event: &SwitchEvent, cx| {
-            if matches!(event, SwitchEvent::Change { .. }) {
-                cx.notify();
-            }
-        }));
-        self._subscriptions.push(cx.subscribe(&self.vertical_switch, |_, _, event: &SwitchEvent, cx| {
-            if matches!(event, SwitchEvent::Change { .. }) {
-                cx.notify();
-            }
-        }));
+    fn bind_callbacks(&mut self, cx: &mut Context<Self>) {
+        self.primary_switch.clone().on_value_changed(cx, |_, _, cx| cx.notify());
+        self.secondary_switch.clone().on_value_changed(cx, |_, _, cx| cx.notify());
+        self.vertical_switch.clone().on_value_changed(cx, |_, _, cx| cx.notify());
     }
 }
 

@@ -66,9 +66,9 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     ControlDocEntry {
         id: "checkbox",
         title: "Checkbox",
-        description: "Boolean choice controls for multi-select forms and settings. Primary and secondary builders map to Shadcn emphasis tiers; add a content closure for labeled checkboxes or omit it for indicator-only rows. Each checkbox is a GPUI entity—subscribe to CheckboxEvent::Change and assign local state from the payload; use set_data for programmatic sync.",
+        description: "Boolean choice controls for multi-select forms and settings. Primary and secondary builders map to Shadcn emphasis tiers; add a content closure for labeled checkboxes or omit it for indicator-only rows. Use on_value_changed to assign application state from the checked value; use set_data for programmatic sync.",
         category: ControlCategory::Choice,
-        snippet: "let terms = shadcn::Checkbox::new(\"terms\").look(look.as_ref()).primary()\n    .with_data(false)\n    .content(|_, _| div().child(\"Accept terms\").into_any_element())\n    .spawn(cx);\n\ncx.subscribe(&terms, |_, _, event: &CheckboxEvent, _| {\n    if let CheckboxEvent::Change { checked } = event {\n        let _ = checked;\n    }\n});",
+        snippet: "let terms = shadcn::Checkbox::new(\"terms\").look(look.as_ref()).primary()\n    .with_data(false).label(\"Accept terms\")\n    .on_value_changed(cx, |app: &mut Self, checked, cx| {\n        app.accepted_terms = checked;\n        cx.notify();\n    })\n    .spawn(cx);",
         section_order: 110,
     },
     ControlDocEntry {
@@ -82,9 +82,9 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     ControlDocEntry {
         id: "switch",
         title: "Switch",
-        description: "On/off toggles for settings and feature flags. Switches use track-and-thumb presentation with primary and secondary emphasis tiers; optional content closures add inline labels. Subscribe to SwitchEvent::Change for user toggles and set_data for programmatic updates.",
+        description: "On/off toggles for settings and feature flags. Switches use track-and-thumb presentation with primary and secondary emphasis tiers; optional content closures add inline labels. Use on_value_changed for user toggles and set_data for programmatic updates.",
         category: ControlCategory::Choice,
-        snippet: "let notifications = shadcn::Switch::new(\"notifications\").look(look.as_ref()).primary()\n    .with_data(true)\n    .spawn(cx);\n\ncx.subscribe(&notifications, |_, _, event: &SwitchEvent, _| {\n    if let SwitchEvent::Change { on } = event {\n        let _ = on;\n    }\n});",
+        snippet: "let notifications = shadcn::Switch::new(\"notifications\").look(look.as_ref()).primary()\n    .with_data(true)\n    .on_value_changed(cx, |app: &mut Self, on, cx| {\n        app.notifications_enabled = on;\n        cx.notify();\n    })\n    .spawn(cx);",
         section_order: 130,
     },
     ControlDocEntry {

@@ -1,3 +1,4 @@
+use gpui_luma::controls::switch::SwitchEventExt;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -7,7 +8,7 @@ use gpui_luma::controls::button::{ButtonContentContext, ControlIcon, ControlPres
 use gpui_luma::controls::icon_button::IconButton;
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
-use gpui_luma::controls::switch::{Switch, SwitchData, SwitchEvent};
+use gpui_luma::controls::switch::{Switch, SwitchData};
 use gpui_luma::shell::TitleBar;
 use gpui_luma::color::ColorValue;
 use gpui_luma::theme::{ControlSize, InteractionState, LumaThemeSyncExt, ThemeMode};
@@ -128,11 +129,9 @@ impl LumaStudioApp {
         reset_theme_button.clone().on_click(cx, |this, cx| {
             this.reload_active_theme(cx);
         });
-        subscriptions.push(cx.subscribe(&mode_toggle, |this, _, event: &SwitchEvent, cx| {
-            if let SwitchEvent::Change { on } = event {
-                this.set_mode(*on, cx);
-            }
-        }));
+        mode_toggle.clone().on_value_changed(cx, |this, on, cx| {
+            this.set_mode(on, cx);
+        });
         Self {
             focus_scope,
             look,

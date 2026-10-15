@@ -1,9 +1,10 @@
 //! One runtime selection policy shared by every ListBox exposition example.
 
+use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use gpui_luma::controls::checkbox::{Checkbox};
 use gpui_luma::controls::listbox::{SelectionMode, SelectionPolicy};
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use gpui_luma::infra::presenter::HasPresenter;
@@ -56,28 +57,26 @@ impl SelectionControls {
             .enabled(false)
             .content(|_, _| div().child("Selection follows navigation").into_any_element())
             .spawn(cx);
-        let subscriptions = vec![
-            cx.subscribe(&mode, |this, _, event, cx| {
+        let subscriptions = {
+            let mut retained_subscriptions = Vec::new();
+            retained_subscriptions.push(cx.subscribe(&mode, |this, _, event, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event
                     && let Some((_, _, mode)) = MODES.iter().find(|(id, _, _)| *id == item_id.as_ref())
                 {
                     this.policy.mode = *mode;
                     this.apply_policy(cx);
                 }
-            }),
-            cx.subscribe(&toggle_off, |this, _, event, cx| {
-                if let CheckboxEvent::Change { checked } = event {
-                    this.policy.toggle_off = *checked;
-                    this.apply_policy(cx);
-                }
-            }),
-            cx.subscribe(&follows_active, |this, _, event, cx| {
-                if let CheckboxEvent::Change { checked } = event {
-                    this.policy.selection_follows_active = *checked;
-                    this.apply_policy(cx);
-                }
-            }),
-        ];
+            }));
+            toggle_off.clone().on_value_changed(cx, |this, checked, cx| {
+                this.policy.toggle_off = checked;
+                this.apply_policy(cx);
+            });
+            follows_active.clone().on_value_changed(cx, |this, checked, cx| {
+                this.policy.selection_follows_active = checked;
+                this.apply_policy(cx);
+            });
+            retained_subscriptions
+        };
         Self {
             look,
             policy: DEFAULT_POLICY,
@@ -147,6 +146,7 @@ impl Render for SelectionControls {
 
 #[cfg(all(test, feature = "test-support"))]
 mod tests {
+    use gpui_luma::controls::checkbox::CheckboxEvent;
     use super::*;
     use std::{cell::RefCell, rc::Rc};
     use gpui::TestAppContext;

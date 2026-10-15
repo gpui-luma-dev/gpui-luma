@@ -1,5 +1,6 @@
 mod button;
 
+use gpui_luma::controls::toggle::ToggleEventExt;
 use std::sync::Arc;
 
 use gpui::{
@@ -127,10 +128,9 @@ impl ShadowButtonControlExposition {
         reset_button.clone().on_event(cx, move |this, event: &ButtonEvent, cx| {
             this.handle_reset(event, cx);
         });
-        cx.subscribe(&bounds_toggle, move |this, _, event: &ToggleEvent, cx| {
+        bounds_toggle.clone().on_event(cx, move |this, event: &ToggleEvent, cx| {
             this.handle_bounds_toggle(event, cx);
-        })
-        .detach();
+        });
         cx.subscribe(&color_field, move |this, _, event: &TextFieldEvent, cx| {
             this.handle_color_field_event(event, cx);
         })

@@ -1,3 +1,4 @@
+use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
@@ -87,11 +88,11 @@ impl PaymentsPanel {
         }));
 
         for (id, checkbox) in row_checkboxes.iter().enumerate() {
-            subscriptions.push(cx.subscribe(checkbox, move |panel, _, event, cx| {
+            checkbox.clone().on_event(cx, move |panel, event, cx| {
                 if matches!(event, CheckboxEvent::Change { .. }) {
                     panel.toggle_row_selection(id, cx);
                 }
-            }));
+            });
         }
 
         let prev_button = shadcn::Button::new("payments-prev")

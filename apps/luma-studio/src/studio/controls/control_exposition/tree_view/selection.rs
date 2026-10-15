@@ -1,10 +1,11 @@
 //! Selection and range input in Controls → TreeView.
+use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::sync::Arc;
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::{
     button::{Button},
-    checkbox::{Checkbox, CheckboxEvent},
+    checkbox::{Checkbox},
     selector::{Selector, SelectorEvent, SelectorItem},
     textfield::{TextField, TextFieldEvent},
     tree_view::{TreeNode, TreeView, TreeViewEvent, TreeViewSelectionMode, TreeViewSelectionPolicy},
@@ -88,8 +89,9 @@ impl Selection {
                 "Selection, active row, activation, and policy changes appear here.",
             )
         });
-        let subscriptions = vec![
-            cx.subscribe(&tree, |this: &mut Self, _, event, cx| {
+        let subscriptions = {
+            let mut retained_subscriptions = Vec::new();
+            retained_subscriptions.push(cx.subscribe(&tree, |this: &mut Self, _, event, cx| {
                 let line = match event {
                     TreeViewEvent::SelectionChanged { selected_ids } => {
                         let mut ids: Vec<_> = selected_ids.iter().map(|id| id.as_ref()).collect();
@@ -117,8 +119,8 @@ impl Selection {
                     this.events.update(cx, |stream, cx| stream.append_line(&line, cx));
                 }
                 cx.notify();
-            }),
-            cx.subscribe(&mode, |this: &mut Self, _, event, cx| {
+            }));
+            retained_subscriptions.push(cx.subscribe(&mode, |this: &mut Self, _, event, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event {
                     this.change_policy(cx, |policy| {
                         policy.mode = match item_id.as_ref() {
@@ -129,8 +131,8 @@ impl Selection {
                         }
                     });
                 }
-            }),
-            cx.subscribe(&sort, |this: &mut Self, _, event, cx| {
+            }));
+            retained_subscriptions.push(cx.subscribe(&sort, |this: &mut Self, _, event, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event {
                     this.tree.update(cx, |tree, cx| match item_id.as_ref() {
                         "az" => tree.set_sort(|a, b| a.label.cmp(&b.label), cx),
@@ -139,8 +141,8 @@ impl Selection {
                     });
                     cx.notify();
                 }
-            }),
-            cx.subscribe(&search, |this: &mut Self, _, event, cx| {
+            }));
+            retained_subscriptions.push(cx.subscribe(&search, |this: &mut Self, _, event, cx| {
                 if let TextFieldEvent::Change { value } = event {
                     let query = value.trim().to_lowercase();
                     this.tree.update(cx, |tree, cx| {
@@ -152,18 +154,15 @@ impl Selection {
                     });
                     cx.notify();
                 }
-            }),
-            cx.subscribe(&toggle_off, |this: &mut Self, _, event, cx| {
-                if let CheckboxEvent::Change { checked } = event {
-                    this.change_policy(cx, |policy| policy.toggle_off = *checked);
-                }
-            }),
-            cx.subscribe(&follows_active, |this: &mut Self, _, event, cx| {
-                if let CheckboxEvent::Change { checked } = event {
-                    this.change_policy(cx, |policy| policy.selection_follows_active = *checked);
-                }
-            }),
-        ];
+            }));
+            toggle_off.clone().on_value_changed(cx, |this: &mut Self, checked, cx| {
+                this.change_policy(cx, |policy| policy.toggle_off = checked);
+            });
+            follows_active.clone().on_value_changed(cx, |this: &mut Self, checked, cx| {
+                this.change_policy(cx, |policy| policy.selection_follows_active = checked);
+            });
+            retained_subscriptions
+        };
         let buttons = [("all", "Select visible"), ("clear", "Clear")]
             .into_iter()
             .map(|(id, label)| {
@@ -281,6 +280,7 @@ impl Render for Selection {
 
 #[cfg(all(test, feature = "test-support"))]
 mod tests {
+    use gpui_luma::controls::checkbox::CheckboxEvent;
     use super::*;
     use gpui::{Modifiers, TestAppContext};
     #[test]

@@ -1,3 +1,4 @@
+use gpui_luma::controls::checkbox::CheckboxEventExt;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
@@ -239,7 +240,7 @@ impl TextAreaControlExposition {
             TextAreaInspectorAdapter::shared(),
         );
 
-        let mut subscriptions = vec![cx.subscribe(&text_area, {
+        let subscriptions = vec![cx.subscribe(&text_area, {
             let event_stream = event_stream.clone();
             move |_, _, event: &TextAreaEvent, cx| {
                 if let Some(line) = format_textarea_event(event) {
@@ -274,10 +275,13 @@ let Some(text_area) = text_area.upgrade() else { return; };
             (clean_on_escape_checkbox.clone(), TextAreaOption::CleanOnEscape),
             (validation_checkbox.clone(), TextAreaOption::StrictValidation),
         ] {
-            let left_pane = left_pane.clone();
-            subscriptions.push(cx.subscribe(&checkbox, move |_, _, event: &CheckboxEvent, cx| {
+            let left_pane = left_pane.downgrade();
+            checkbox.clone().on_event(cx, move |_, event: &CheckboxEvent, cx| {
+                let Some(left_pane) = left_pane.upgrade() else {
+                    return;
+                };
                 left_pane.update(cx, |pane, cx| pane.handle_option_changed(option, event, cx));
-            }));
+            });
         }
 
         Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
