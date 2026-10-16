@@ -283,7 +283,7 @@
       </tr>
     </tbody>
   </table>
-  <div class="note">Aliases, so they are not separate surfaces: <code>ButtonEvent</code> is <code>CommandEvent</code>, <code>SplitButtonEvent</code> is <code>PopupMenuEvent</code>, <code>IconGroupEvent</code> is <code>ControlGroupEvent</code>, <code>TableRowDragEvent</code> is <code>DragDropEvent&lt;EntityId, SharedString&gt;</code>. <code>PagingTableControl</code> re-emits <code>TableEvent</code> and does not define its own enum.</div>
+  <div class="note"><a href="split-button.html">SplitButton</a> has a distinct semantic event enum forwarded from its shared popup engine. Aliases that are not separate surfaces: <code>ButtonEvent</code> is <code>CommandEvent</code>, <code>IconGroupEvent</code> is <code>ControlGroupEvent</code>, <code>TableRowDragEvent</code> is <code>DragDropEvent&lt;EntityId, SharedString&gt;</code>. <code>PagingTableControl</code> re-emits <code>TableEvent</code> and does not define its own enum.</div>
 </section>
 
 <section id="matrix">

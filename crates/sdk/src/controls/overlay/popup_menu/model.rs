@@ -79,6 +79,7 @@ pub struct PopupMenuModel {
     pub(crate) full_width: bool,
     pub(crate) without_elevation: bool,
     pub(crate) split: bool,
+    pub(crate) primary_enabled: bool,
     pub(crate) template: Arc<dyn PopupMenuTemplate>,
 }
 
@@ -103,6 +104,8 @@ pub struct PopupMenuRenderModel<'a> {
     pub full_width: bool,
     pub without_elevation: bool,
     pub split: bool,
+    /// Independent face feedback for split triggers.
+    pub split_state: crate::controls::split_button::SplitButtonState,
     pub trigger_radius_override: Option<f32>,
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
@@ -113,7 +116,7 @@ pub struct PopupMenuRenderModel<'a> {
 }
 
 pub struct PopupMenuBuilder {
-    callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::popup_menu::PopupMenuEvent>,
+    pub(crate) callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::popup_menu::PopupMenuEvent>,
 
     pub(crate) model: PopupMenuModel,
 }
@@ -245,6 +248,7 @@ impl PopupMenuBuilder {
                 full_width: false,
                 without_elevation: false,
                 split: false,
+                primary_enabled: true,
                 template: default_popup_menu_template(),
             },
         }

@@ -535,6 +535,14 @@ impl ShadcnLook {
         templates::popup_menu_template(self.clone())
     }
 
+    pub fn split_button_theme(&self) -> Arc<dyn gpui_luma::controls::split_button::SplitButtonTheme> {
+        templates::popup_menu_theme(self.clone())
+    }
+
+    pub fn split_button_template(&self) -> Arc<dyn gpui_luma::controls::split_button::SplitButtonTemplate> {
+        templates::split_button_template(self.clone())
+    }
+
     pub fn context_menu_theme(&self) -> Arc<dyn gpui_luma::controls::context_menu::ContextMenuTheme> {
         templates::context_menu_theme(self.clone())
     }

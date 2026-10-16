@@ -1,8 +1,8 @@
-//! Button family: LMTP button, icon preset, theme recipe, and popup-menu split preset.
+//! Button family: LMTP button, icon preset, theme recipe, and split-button specialization.
 //!
 //! - [`Button`] / [`IconButton`] — spawnable controls
 //! - [`family`] — shared look/metrics recipe (`button_family` re-export)
-//! - [`split_button`] — `PopupMenu` type aliases, not a separate LMTP control
+//! - [`split_button`] — single-focus retained action/menu specialization
 //! - [`CommandCore`] — presentation-agnostic activation/interaction core used by `Button`
 
 mod callback;

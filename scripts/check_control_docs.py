@@ -52,6 +52,7 @@ EXAMPLES = {
     "sidebar.html": 0,
     "slider.html": 0,
     "split-button.html": 0,
+    "control-specialization.html": 0,
     "split-view.html": 0,
     "table.html": 0,
     "tabs.html": 0,

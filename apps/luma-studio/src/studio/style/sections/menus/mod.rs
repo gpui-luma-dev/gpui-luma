@@ -290,6 +290,7 @@ fn render_menu_trigger_state_cell(
         full_width: false,
         without_elevation: false,
         split: false,
+        split_state: Default::default(),
         trigger_radius_override: None,
         open_submenu: None,
         active_path: None,
@@ -348,6 +349,7 @@ fn render_menu_trigger_size_radius_cell(
         full_width: false,
         without_elevation: false,
         split: false,
+        split_state: Default::default(),
         trigger_radius_override: Some(menu_trigger_radius_px(look, size, radius)),
         open_submenu: None,
         active_path: None,
@@ -466,6 +468,7 @@ fn popup_menu_preview_handlers(root_count: usize, submenu_click_count: usize) ->
     let click_count = root_count + submenu_click_count;
 
     PopupMenuTemplateHandlers {
+        split_faces: None,
         trigger_bounds: Box::new(input_noop_bounds),
         action_click: Box::new(input_noop_click),
         trigger_click: Box::new(input_noop_click),

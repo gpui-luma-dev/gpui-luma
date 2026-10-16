@@ -49,6 +49,7 @@ pub struct PopupMenu {
     submenu_target_open: bool,
     interaction: ControlInteraction,
     emitted_focused: bool,
+    split_state: crate::controls::split_button::SplitButtonState,
     focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
 }
@@ -79,6 +80,7 @@ impl PopupMenu {
             submenu_target_open: false,
             interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx),
             emitted_focused: false,
+            split_state: Default::default(),
             focus_in_subscription: None,
             focus_out_subscription: None,
         }
@@ -139,6 +141,7 @@ impl PopupMenu {
         self.focus_in_subscription = None;
         self.focus_out_subscription = None;
         if !enabled {
+            self.split_state = Default::default();
             self.close_menu(cx);
             self.emit_focus_changed(false, cx);
         }
@@ -146,6 +149,29 @@ impl PopupMenu {
             cx.emit(PopupMenuEvent::EnabledChanged { enabled });
         }
         cx.notify();
+    }
+
+    /// Disable only the primary face of a split trigger, preserving menu access.
+    pub fn set_primary_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.model.primary_enabled = enabled;
+        if !enabled {
+            self.split_state.primary = Default::default();
+        }
+        cx.notify();
+    }
+
+    pub(crate) fn split_state(&self, window: &Window) -> crate::controls::split_button::SplitButtonState {
+        self.split_state.resolved(
+            self.model.enabled,
+            self.model.primary_enabled,
+            self.interaction.render_state(self.model.enabled, window).focused,
+        )
+    }
+
+    pub(crate) fn attachment_state(&self, window: &Window) -> crate::theme::InteractionState {
+        let mut state = self.interaction.render_state(self.model.enabled, window);
+        state.disabled |= self.lifecycle.is_open();
+        state
     }
 
     pub fn set_tab_stop(&mut self, tab_stop: bool, cx: &mut Context<Self>) {
@@ -193,6 +219,7 @@ impl PopupMenu {
             full_width: self.model.full_width,
             without_elevation: self.model.without_elevation,
             split: self.model.split,
+            split_state: self.split_state(window),
             trigger_radius_override: None,
             open_submenu: self.menu_state.open_submenu(),
             active_path: self.menu_state.active_path(),
@@ -250,6 +277,24 @@ impl PopupMenu {
         let item_paths = self.menu_state.item_click_paths(&self.model.items);
 
         PopupMenuTemplateHandlers {
+            split_faces: Some(super::template::SplitFaceHandlers {
+                primary_hover: Box::new(cx.listener(|this, hovered, _, cx| {
+                    this.split_state.primary.hovered = *hovered;
+                    cx.notify();
+                })),
+                disclosure_hover: Box::new(cx.listener(|this, hovered, _, cx| {
+                    this.split_state.disclosure.hovered = *hovered;
+                    cx.notify();
+                })),
+                primary_down: Box::new(cx.listener(|this, _, _, cx| {
+                    this.split_state.primary.pressed = this.model.enabled && this.model.primary_enabled;
+                    cx.notify();
+                })),
+                disclosure_down: Box::new(cx.listener(|this, _, _, cx| {
+                    this.split_state.disclosure.pressed = this.model.enabled;
+                    cx.notify();
+                })),
+            }),
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
             action_click: Box::new(cx.listener(Self::handle_action_click)),
             trigger_click: Box::new(cx.listener(Self::handle_trigger_click)),
@@ -330,7 +375,8 @@ impl PopupMenu {
     fn open_menu_with(&mut self, active_path: Option<MenuPath>, cx: &mut Context<Self>) -> bool {
         let was_open = self.lifecycle.is_open();
         let previous = self.menu_state.active_path();
-        let changed = !self.lifecycle.is_open() || self.menu_state.open_with(active_path);
+        let selection_changed = self.menu_state.open_with(active_path);
+        let changed = !was_open || selection_changed;
         self.lifecycle.open();
         self.disclosure_transition.set_target(1.0);
         self.sync_highlight(previous);
@@ -388,8 +434,8 @@ impl PopupMenu {
         }
     }
 
-    fn activate_primary(&mut self, cx: &mut Context<Self>) {
-        if !self.model.enabled {
+    pub(crate) fn activate_primary(&mut self, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.model.primary_enabled {
             return;
         }
         self.dismiss_menu(cx);
@@ -433,6 +479,8 @@ impl PopupMenu {
     }
 
     fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        self.split_state.primary.pressed = false;
+        self.split_state.disclosure.pressed = false;
         if self.interaction.handle_mouse_up() {
             cx.notify();
         }
@@ -513,11 +561,6 @@ impl PopupMenu {
 
     fn activate_active_item(&mut self, cx: &mut Context<Self>) {
         if !self.model.enabled {
-            return;
-        }
-
-        if !self.lifecycle.is_open() {
-            self.open_menu_at_boundary(true, cx);
             return;
         }
 
@@ -617,6 +660,8 @@ impl PopupMenu {
     }
 
     fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        self.split_state = Default::default();
+        self.interaction.handle_mouse_up();
         let focused = self.emit_focus_changed(false, cx);
         let closed = self.dismiss_menu(cx);
         if focused || closed {

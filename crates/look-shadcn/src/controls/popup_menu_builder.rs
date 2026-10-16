@@ -331,11 +331,13 @@ impl HasPresenter<PopupMenuTriggerModel> for PopupMenu {
     }
 }
 
-/// Split-button preset: look-owned [`PopupMenu`] with `.split()` applied at spawn.
+/// Look-owned builder for the retained SDK SplitButton specialization.
 pub struct SplitButton {
-    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::popup_menu::PopupMenuEvent>,
+    callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::split_button::SplitButtonEvent>,
 
     inner: PopupMenu,
+    primary_enabled: bool,
+    modifiers: Vec<PopupMenuTemplateModifier>,
 }
 
 impl SplitButton {
@@ -344,105 +346,110 @@ impl SplitButton {
     pub fn on_event<M: 'static>(
         mut self,
         cx: &gpui::Context<M>,
-        callback: impl Fn(&mut M, &gpui_luma::controls::popup_menu::PopupMenuEvent, &mut gpui::Context<M>) + 'static,
+        callback: impl Fn(&mut M, &gpui_luma::controls::split_button::SplitButtonEvent, &mut gpui::Context<M>) + 'static,
     ) -> Self {
         self.callbacks = self.callbacks.on_event(cx, callback);
         self
     }
 
-    /// Handle `PopupMenuEvent::ActionClick` through the existing event stream.
+    /// Handle `SplitButtonEvent::ActionClick` through the existing event stream.
     pub fn on_action_click<M: 'static>(
         self,
         cx: &gpui::Context<M>,
         callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
     ) -> Self {
         self.on_event(cx, move |owner, event, cx| {
-            if let gpui_luma::controls::popup_menu::PopupMenuEvent::ActionClick = event {
+            if let gpui_luma::controls::split_button::SplitButtonEvent::ActionClick = event {
                 callback(owner, cx);
             }
         })
     }
 
-    /// Handle `PopupMenuEvent::Select` through the existing event stream.
+    /// Handle `SplitButtonEvent::Select` through the existing event stream.
     pub fn on_select<M: 'static>(
         self,
         cx: &gpui::Context<M>,
         callback: impl Fn(&mut M, &gpui::SharedString, &gpui::SharedString, &mut gpui::Context<M>) + 'static,
     ) -> Self {
         self.on_event(cx, move |owner, event, cx| {
-            if let gpui_luma::controls::popup_menu::PopupMenuEvent::Select { item_id, label } = event {
+            if let gpui_luma::controls::split_button::SplitButtonEvent::Select { item_id, label } = event {
                 callback(owner, item_id, label, cx);
             }
         })
     }
 
-    /// Handle `PopupMenuEvent::OpenChanged` through the existing event stream.
+    /// Handle `SplitButtonEvent::OpenChanged` through the existing event stream.
     pub fn on_open_changed<M: 'static>(
         self,
         cx: &gpui::Context<M>,
         callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
     ) -> Self {
         self.on_event(cx, move |owner, event, cx| {
-            if let gpui_luma::controls::popup_menu::PopupMenuEvent::OpenChanged { open } = event {
+            if let gpui_luma::controls::split_button::SplitButtonEvent::OpenChanged { open } = event {
                 callback(owner, *open, cx);
             }
         })
     }
 
-    /// Handle `PopupMenuEvent::Dismiss` through the existing event stream.
+    /// Handle `SplitButtonEvent::Dismiss` through the existing event stream.
     pub fn on_dismiss<M: 'static>(
         self,
         cx: &gpui::Context<M>,
         callback: impl Fn(&mut M, &mut gpui::Context<M>) + 'static,
     ) -> Self {
         self.on_event(cx, move |owner, event, cx| {
-            if let gpui_luma::controls::popup_menu::PopupMenuEvent::Dismiss = event {
+            if let gpui_luma::controls::split_button::SplitButtonEvent::Dismiss = event {
                 callback(owner, cx);
             }
         })
     }
 
-    /// Handle `PopupMenuEvent::FocusChanged` through the existing event stream.
+    /// Handle `SplitButtonEvent::FocusChanged` through the existing event stream.
     pub fn on_focus_changed<M: 'static>(
         self,
         cx: &gpui::Context<M>,
         callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
     ) -> Self {
         self.on_event(cx, move |owner, event, cx| {
-            if let gpui_luma::controls::popup_menu::PopupMenuEvent::FocusChanged { focused } = event {
+            if let gpui_luma::controls::split_button::SplitButtonEvent::FocusChanged { focused } = event {
                 callback(owner, *focused, cx);
             }
         })
     }
 
-    /// Handle `PopupMenuEvent::HoverChanged` through the existing event stream.
+    /// Handle `SplitButtonEvent::HoverChanged` through the existing event stream.
     pub fn on_hover_changed<M: 'static>(
         self,
         cx: &gpui::Context<M>,
         callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
     ) -> Self {
         self.on_event(cx, move |owner, event, cx| {
-            if let gpui_luma::controls::popup_menu::PopupMenuEvent::HoverChanged { hovered } = event {
+            if let gpui_luma::controls::split_button::SplitButtonEvent::HoverChanged { hovered } = event {
                 callback(owner, *hovered, cx);
             }
         })
     }
 
-    /// Handle `PopupMenuEvent::EnabledChanged` through the existing event stream.
+    /// Handle `SplitButtonEvent::EnabledChanged` through the existing event stream.
     pub fn on_enabled_changed<M: 'static>(
         self,
         cx: &gpui::Context<M>,
         callback: impl Fn(&mut M, bool, &mut gpui::Context<M>) + 'static,
     ) -> Self {
         self.on_event(cx, move |owner, event, cx| {
-            if let gpui_luma::controls::popup_menu::PopupMenuEvent::EnabledChanged { enabled } = event {
+            if let gpui_luma::controls::split_button::SplitButtonEvent::EnabledChanged { enabled } = event {
                 callback(owner, *enabled, cx);
             }
         })
     }
 
     pub fn new(id: impl Into<SharedString>) -> Self {
-        Self { callbacks: Default::default(), inner: PopupMenu::new(id).split() }
+        Self {
+            callbacks: Default::default(),
+            inner: PopupMenu::new(id),
+            primary_enabled: true,
+            modifiers: Vec::new(),
+        }
     }
 
     pub fn look(mut self, look: &ShadcnLook) -> Self {
@@ -495,6 +502,12 @@ impl SplitButton {
         self
     }
 
+    /// Keep dropdown actions available when the primary action is unavailable.
+    pub fn primary_enabled(mut self, enabled: bool) -> Self {
+        self.primary_enabled = enabled;
+        self
+    }
+
     pub fn tab_stop(mut self, tab_stop: bool) -> Self {
         self.inner = self.inner.tab_stop(tab_stop);
         self
@@ -544,13 +557,25 @@ impl SplitButton {
     where
         F: Fn(Stateful<Div>, &PopupMenuRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
     {
-        self.inner = self.inner.with_template_modifier(modifier);
+        self.modifiers.push(Box::new(modifier));
         self
     }
 
-    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::popup_menu::PopupMenu> {
+    pub fn spawn<M: 'static>(mut self, cx: &mut Context<M>) -> Entity<gpui_luma::controls::split_button::SplitButton> {
         let callbacks = std::mem::take(&mut self.callbacks);
-        let control = { self.inner.spawn(cx) };
+        let look = self.inner.resolve_look(cx);
+        let tooltip_theme = crate::tooltip_theme(&look);
+        let template = look.split_button_template();
+        let mut builder = gpui_luma::controls::split_button::SplitButtonBuilder::from_popup_builder(
+            self.inner.into_sdk_builder(look),
+        )
+        .primary_enabled(self.primary_enabled)
+        .template(template);
+        for modifier in self.modifiers {
+            builder = builder.with_template_modifier(move |root, model| modifier(root, model));
+        }
+        use gpui_luma::infra::attachments::TooltipEntityExt;
+        let control = builder.spawn(cx).with_tooltip_theme(tooltip_theme, cx);
         callbacks.bind(&control, cx);
         control
     }
@@ -583,5 +608,78 @@ mod tests {
             .items([MenuItem::new("one").label("One")])
             .with_template_modifier(|root, _| root)
             .into_sdk_builder(look);
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod split_integration_tests {
+    use super::*;
+    use gpui::{Focusable, Render, TestAppContext, Window, div, prelude::*};
+    use gpui_luma::controls::split_button::SplitButton as SdkSplitButton;
+    use std::sync::{Arc, Mutex};
+
+    struct Preview {
+        control: Entity<SdkSplitButton>,
+        selected: usize,
+        activated: usize,
+    }
+    impl Render for Preview {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            div().child(self.control.clone())
+        }
+    }
+
+    #[test]
+    fn split_builder_preserves_options_modifiers_and_real_semantic_callbacks() {
+        let mut app = TestAppContext::single();
+        let snapshots = Arc::new(Mutex::new(Vec::new()));
+        let capture = snapshots.clone();
+        let (preview, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            gpui_luma::key_handling::bind_default_control_keys(cx);
+            let control = SplitButton::new("look-split")
+                .look(&ShadcnLook::built_in())
+                .ghost()
+                .size(ShadcnSize::Sm)
+                .menu_size(ShadcnSize::Lg)
+                .label("Save")
+                .primary_enabled(false)
+                .full_width(true)
+                .items([MenuItem::new("alternate")])
+                .with_template_modifier(move |root, model| {
+                    capture.lock().unwrap().push((
+                        model.split,
+                        model.split_state.primary.disabled,
+                        model.split_state.disclosure.disabled,
+                        model.trigger_style,
+                        model.trigger_size,
+                        model.menu_size,
+                        model.full_width,
+                    ));
+                    root
+                })
+                .on_select(cx, |owner: &mut Preview, _, _, _| owner.selected += 1)
+                .on_action_click(cx, |owner, _| owner.activated += 1)
+                .spawn(cx);
+            control.read(cx).focus_handle(cx).focus(window, cx);
+            Preview { control, selected: 0, activated: 0 }
+        });
+        cx.run_until_parked();
+        assert!(snapshots.lock().unwrap().iter().all(|snapshot| *snapshot
+            == (
+                true,
+                true,
+                false,
+                PopupMenuTriggerStyle::Ghost,
+                gpui_luma::theme::ControlSize::Sm,
+                gpui_luma::theme::ControlSize::Lg,
+                true
+            )));
+        assert!(!snapshots.lock().unwrap().is_empty());
+        cx.simulate_keystrokes("enter space down enter");
+        cx.update(|_, app| {
+            assert_eq!(preview.read(app).selected, 1);
+            assert_eq!(preview.read(app).activated, 0);
+        });
     }
 }

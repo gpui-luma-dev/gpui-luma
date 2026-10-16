@@ -1,14 +1,13 @@
-//! Studio prototype for issue #17. This deliberately keeps the interaction
-//! sources visible until the unified SDK control contract is validated.
+//! Supported SplitButton behavior and independent face-state previews.
 
-use gpui_luma::controls::popup_menu::PopupMenuEventExt;
+use gpui_luma::controls::split_button::SplitButtonEventExt;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::infra::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{
-    ControlFocusState, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate, PopupMenuTemplateHandlers,
-    PopupMenuTriggerModel, PopupMenuTriggerStyle,
+    ControlFocusState, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, PopupMenuTriggerModel,
+    PopupMenuTriggerStyle,
 };
 use gpui_luma::motion::overlay_presence::OverlayPresence;
 use gpui_luma::infra::presenter::HasPresenter;
@@ -59,7 +58,7 @@ impl SplitButtonControlExposition {
                 cx,
                 look.clone(),
                 "controls-split-button-event-log",
-                "Activate the action face or open the menu face; prototype events appear below.",
+                "Activate the action face or open the menu face; semantic events appear below.",
             )
         });
         let variants = [
@@ -70,6 +69,16 @@ impl SplitButtonControlExposition {
             ),
             ("Outline", shadcn::SplitButton::new("controls-split-button-outline").look(look.as_ref()).outline()),
             ("Ghost", shadcn::SplitButton::new("controls-split-button-ghost").look(look.as_ref()).ghost()),
+            (
+                "Primary unavailable",
+                shadcn::SplitButton::new("controls-split-button-primary-disabled")
+                    .look(look.as_ref())
+                    .primary_enabled(false),
+            ),
+            (
+                "Disabled",
+                shadcn::SplitButton::new("controls-split-button-disabled").look(look.as_ref()).enabled(false),
+            ),
         ];
         let mut pairs = Vec::new();
         let subscriptions = Vec::new();
@@ -313,7 +322,7 @@ fn render_split_button_template_preview(look: &Arc<ShadcnLook>, window: &mut Win
         ("Outline", PopupMenuTriggerStyle::Outline, "Bordered actions"),
         ("Ghost", PopupMenuTriggerStyle::Ghost, "Quiet utility actions"),
     ];
-    let template = look.popup_menu_template();
+    let template = look.split_button_template();
     let chrome = look.chrome();
 
     VariantStateTable::new(VariantStateTableStyle::from_chrome(&chrome).state_column_width(140.0))
@@ -333,7 +342,7 @@ fn render_split_button_template_preview(look: &Arc<ShadcnLook>, window: &mut Win
 }
 
 fn render_split_button_template_cell(
-    template: &Arc<dyn PopupMenuTemplate>,
+    template: &Arc<dyn gpui_luma::controls::split_button::SplitButtonTemplate>,
     style: PopupMenuTriggerStyle,
     label: &'static str,
     sample: &ButtonStateSample,
@@ -366,6 +375,14 @@ fn render_split_button_template_cell(
         full_width: false,
         without_elevation: false,
         split: true,
+        split_state: gpui_luma::controls::split_button::SplitButtonState {
+            primary: sample.state,
+            disclosure: InteractionState {
+                focused: sample.state.focused,
+                disabled: sample.state.disabled,
+                ..Default::default()
+            },
+        },
         trigger_radius_override: None,
         open_submenu: None,
         active_path: None,
@@ -386,6 +403,7 @@ fn render_split_button_template_cell(
 
 fn split_button_template_handlers(item_count: usize) -> PopupMenuTemplateHandlers {
     PopupMenuTemplateHandlers {
+        split_faces: None,
         trigger_bounds: Box::new(input_noop_bounds),
         action_click: Box::new(input_noop_click),
         trigger_click: Box::new(input_noop_click),

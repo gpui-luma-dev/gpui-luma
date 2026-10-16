@@ -140,7 +140,7 @@
             },
             {
                 "href": "split-button.html",
-                "label": "Split Button (Preview)"
+                "label": "Split Button"
             },
             {
                 "href": "split-view.html",
@@ -211,6 +211,10 @@
             {
                 "href": "composition.html",
                 "label": "Overview & forms"
+            },
+            {
+                "href": "control-specialization.html",
+                "label": "Create a control specialization"
             },
             {
                 "href": "floating-menu.html",

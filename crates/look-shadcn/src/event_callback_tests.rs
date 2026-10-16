@@ -78,7 +78,7 @@ check_look!(
     split_button_forwards_callbacks,
     crate::SplitButton::new("callbacks"),
     on_focus_changed(_),
-    gpui_luma::controls::popup_menu::PopupMenuEvent::FocusChanged { focused: true }
+    gpui_luma::controls::split_button::SplitButtonEvent::FocusChanged { focused: true }
 );
 check_look!(
     text_area_forwards_callbacks,

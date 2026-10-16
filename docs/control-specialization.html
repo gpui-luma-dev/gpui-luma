@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Create a template for your control’s appearance. Add repository integration only when contributing it back.">
+<title>How to create a control specialization · Luma SDK</title>
+<script src="theme-init.js"></script>
+<link rel="stylesheet" href="site.css">
+<!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
+<script src="vendor/prism/prism-core.min.js" data-manual defer></script>
+<script src="vendor/prism/prism-rust.min.js" defer></script>
+<script src="vendor/prism/prism-toml.min.js" defer></script>
+<script src="navigation.js" defer></script>
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<div data-site-mobile-nav></div>
+<div class="layout">
+<aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
+<main id="main">
+<div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Control specialization</span></div>
+<h1>How to create a control specialization</h1>
+<p class="intro">Create a template: it defines the visual appearance. Use it with the existing control, and you’re done.</p>
+<section id="template"><h2>Create your template</h2>
+<p>Implement the existing control’s template trait and install your template with <code>.template(...)</code>. This SplitButton example styles interaction states and connects events to a small in-memory editor:</p>
+<div class="codebox"><div class="codebar"><span>Custom template · integration snippet</span><button class="copy" aria-label="Copy Custom template · integration snippet">Copy</button></div><pre><code class="language-rust">use std::sync::Arc;
+use gpui::{App, Context, Div, Entity, Render, Stateful, Window, div, prelude::*, px, rgb};
+use gpui_luma::controls::split_button::{
+    SplitButton, SplitButtonRenderModel, SplitButtonTemplate,
+    SplitButtonTemplateHandlers, ThemedSplitButtonTemplate,
+};
+use gpui_luma::infra::menu_item::MenuItem;
+use gpui_luma_look_shadcn::ShadcnLook;
+
+struct SaveTemplate(ThemedSplitButtonTemplate);
+
+impl SplitButtonTemplate for SaveTemplate {
+    fn render(
+        &amp;self,
+        model: &amp;SplitButtonRenderModel&lt;&#x27;_&gt;,
+        handlers: SplitButtonTemplateHandlers,
+        window: &amp;mut Window,
+        cx: &amp;mut App,
+    ) -&gt; Stateful&lt;Div&gt; {
+        let primary = model.split_state.primary;
+        let disclosure = model.split_state.disclosure;
+        let accent = if !model.enabled {
+            rgb(0x94a3b8)
+        } else if primary.pressed || disclosure.pressed {
+            rgb(0x1d4ed8)
+        } else if model.state.focused {
+            rgb(0x2563eb)
+        } else if primary.hovered || disclosure.hovered || model.open {
+            rgb(0x60a5fa)
+        } else {
+            rgb(0xcbd5e1)
+        };
+        let hint = if !model.enabled {
+            &quot;Saving is unavailable&quot;
+        } else if model.open {
+            &quot;Choose an alternative&quot;
+        } else if disclosure.pressed || disclosure.hovered {
+            &quot;More save options&quot;
+        } else if primary.disabled {
+            &quot;No changes to save; alternatives are available&quot;
+        } else if primary.pressed {
+            &quot;Release to save&quot;
+        } else {
+            &quot;Save changes · Enter, or Down for options&quot;
+        };
+
+        // The base paints each face from its own state and binds the handlers:
+        // action_click -&gt; primary; trigger_click -&gt; disclosure; item_clicks -&gt; menu.
+        // Keep its focus ring, accessibility, and popup lifecycle intact.
+        self.0.render(model, handlers, window, cx)
+            .border_1().border_color(accent).rounded(px(10.0))
+            .child(div().px(px(8.0)).py(px(4.0)).text_size(px(11.0))
+                .text_color(accent).child(hint))
+    }
+}
+
+// A small in-memory editor: Save commits the draft; the menu can copy or revert it.
+struct Editor {
+    save: Entity&lt;SplitButton&gt;,
+    draft: String,
+    saved: String,
+    copies: Vec&lt;String&gt;,
+    status: String,
+}
+
+impl Editor {
+    fn new(look: &amp;ShadcnLook, cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
+        let template = SaveTemplate(
+            ThemedSplitButtonTemplate::new(look.split_button_theme()),
+        );
+        let save = SplitButton::new(&quot;save&quot;)
+            .label(&quot;Save&quot;)
+            .primary_enabled(false)
+            .template(Arc::new(template))
+            .items([
+                MenuItem::new(&quot;save-copy&quot;).label(&quot;Save a copy&quot;),
+                MenuItem::new(&quot;revert&quot;).label(&quot;Revert changes&quot;),
+            ])
+            .on_action_click(cx, |editor: &amp;mut Self, cx| {
+                editor.saved = editor.draft.clone();
+                editor.status = &quot;Saved&quot;.into();
+                editor.sync_save_state(cx);
+            })
+            .on_select(cx, |editor, item_id, _, cx| {
+                match item_id.as_ref() {
+                    &quot;save-copy&quot; =&gt; {
+                        editor.copies.push(editor.draft.clone());
+                        editor.status = &quot;Copy saved&quot;.into();
+                    }
+                    &quot;revert&quot; =&gt; {
+                        editor.draft = editor.saved.clone();
+                        editor.status = &quot;Changes reverted&quot;.into();
+                    }
+                    _ =&gt; return,
+                }
+                editor.sync_save_state(cx);
+            })
+            .spawn(cx);
+        Self { save, draft: String::new(), saved: String::new(),
+            copies: Vec::new(), status: &quot;No changes&quot;.into() }
+    }
+
+    // Call from the application&#x27;s text-change callback.
+    fn edit(&amp;mut self, text: String, cx: &amp;mut Context&lt;Self&gt;) {
+        self.draft = text;
+        self.status = &quot;Draft updated&quot;.into();
+        self.sync_save_state(cx);
+    }
+
+    fn sync_save_state(&amp;mut self, cx: &amp;mut Context&lt;Self&gt;) {
+        let dirty = self.draft != self.saved;
+        self.save.update(cx, |save, cx| save.set_primary_enabled(dirty, cx));
+        cx.notify();
+    }
+}
+
+impl Render for Editor {
+    fn render(&amp;mut self, _: &amp;mut Window, _: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
+        div().flex().flex_col().items_start().gap(px(8.0))
+            .child(self.save.clone())
+            .child(self.status.clone())
+    }
+}</code></pre></div>
+<p>The template reads <code>split_state.primary</code> and <code>split_state.disclosure</code> independently, plus composite focus, enablement, and menu-open state. The base renderer keeps each face’s feedback and input bindings; the custom template adds a state-dependent frame and hint. Pass the handlers through so keyboard, pointer, and menu events retain their existing behavior.</p>
+<p>Application work stays in <code>on_action_click</code> and <code>on_select</code>. Editing enables Save; saving or reverting disables only the primary face, leaving alternatives available. Render <code>Editor</code> inside your normal SDK focus scope with default control/focus key bindings.</p>
+<p><strong>That’s all you need for use in your application.</strong> Add behavior functions only if the interaction changes. SplitButton’s primary action calls <code>activate_primary</code>; its disclosure reuses the existing menu-toggle behavior.</p>
+</section>
+<section id="contribute"><h2>Optional: contribute the control to the repository</h2>
+<p>To make the specialization reusable for other applications, add the supporting SDK and Look integration:</p>
+<ul>
+<li><strong>Builder:</strong> expose construction, options, and <code>.spawn(cx)</code>.</li>
+<li><strong>Model and behavior:</strong> expose any new state or behavior the existing control cannot express; reuse its infrastructure.</li>
+<li><strong>Events and callbacks:</strong> expose new semantic actions, such as SplitButton’s separate primary activation and menu selection.</li>
+<li><strong>Look integration:</strong> provide the template/theme factory and export the public types.</li>
+<li><strong>Tests:</strong> cover changed pointer, keyboard, disabled-state, and focus behavior.</li>
+<li><strong>Studio and documentation:</strong> add an example, control reference, and Look support entry.</li>
+</ul>
+<p>SplitButton’s <a href="https://github.com/gpui-luma-dev/gpui-luma/tree/main/crates/sdk/src/controls/button/split_button">SDK module</a> shows this packaging. See its <a href="split-button.html">control reference</a> for API and migration details.</p>
+</section>
+<footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#template">Create your template</a><a href="#contribute">Contribute to the repository</a></nav>
+</div>
+</body>
+</html>
