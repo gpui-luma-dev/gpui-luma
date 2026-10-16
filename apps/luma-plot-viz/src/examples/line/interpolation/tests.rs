@@ -1,6 +1,6 @@
 use gpui_luma::controls::control_group::ControlGroupEventExt;
 use gpui_luma::controls::button::ButtonEvent;
-use gpui_luma_plot::PlotStyleProvider;
+use gpui_luma_plot::CartesianStyleProvider;
 use super::*;
 
 struct SelectorHarness {
@@ -56,15 +56,17 @@ fn selector_clicks_change_interpolation_on_one_unchanged_series(cx: &mut gpui::T
         assert_eq!(plot.data.series().len(), 1);
         assert_eq!(plot.data.series()[0].samples().len(), 11);
     });
-    let dark_axis = host
-        .read_with(cx, |host, _| theme::RadixPlotStyle::new(&host.look).resolve().axes[0].presentation.stroke.color);
+    let dark_axis = host.read_with(cx, |host, _| {
+        theme::RadixCartesianStyle::new(&host.look).resolve().axes[0].presentation.stroke.color
+    });
     host.update(cx, |host, cx| {
         host.look.set_mode(gpui_luma::theme::ThemeMode::Light);
         cx.refresh_windows();
     });
     cx.run_until_parked();
-    let light_axis = host
-        .read_with(cx, |host, _| theme::RadixPlotStyle::new(&host.look).resolve().axes[0].presentation.stroke.color);
+    let light_axis = host.read_with(cx, |host, _| {
+        theme::RadixCartesianStyle::new(&host.look).resolve().axes[0].presentation.stroke.color
+    });
     assert_ne!(dark_axis, light_axis);
     plot.read_with(cx, |plot, cx| {
         assert_eq!(plot.look.mode(), gpui_luma::theme::ThemeMode::Light);
@@ -91,7 +93,7 @@ fn selector_clicks_change_interpolation_on_one_unchanged_series(cx: &mut gpui::T
     });
     cx.run_until_parked();
     assert_eq!(
-        host.read_with(cx, |host, _| theme::RadixPlotStyle::new(&host.look).resolve().axes[0]
+        host.read_with(cx, |host, _| theme::RadixCartesianStyle::new(&host.look).resolve().axes[0]
             .presentation
             .stroke
             .color),

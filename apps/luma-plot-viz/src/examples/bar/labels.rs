@@ -31,7 +31,7 @@ pub(super) fn card(data: Dataset, look: &Look, progress: f32, cx: &App) -> impl 
     let tooltip_look = look.clone();
     let chart = CartesianChartBuilder::new(data)
         .id("bar-custom-labels-chart")
-        .style(theme::RadixPlotStyle::new(look).blue())
+        .style(theme::RadixCartesianStyle::new(look).blue())
         .x_scale(CategoryScale::new(MONTHS))
         .y_scale(NumericScale::new().domain(0.0..=330.0).tick_values([0.0, 80.0, 160.0, 240.0, 320.0]))
         .bar_orientation(BarOrientation::Right)

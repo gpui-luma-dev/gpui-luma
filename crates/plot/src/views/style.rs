@@ -1,21 +1,21 @@
 use std::{fmt, sync::Arc};
-use crate::{PlotStyle, PlotStyleProvider};
+use crate::{CartesianStyle, CartesianStyleProvider};
 
-type Override = dyn Fn(&mut PlotStyle) + Send + Sync;
+type Override = dyn Fn(&mut CartesianStyle) + Send + Sync;
 
 #[derive(Clone)]
 pub(crate) struct StyleSource {
-    provider: Arc<dyn PlotStyleProvider>,
+    provider: Arc<dyn CartesianStyleProvider>,
     overrides: Vec<Arc<Override>>,
 }
 impl StyleSource {
-    pub(crate) fn new(provider: impl PlotStyleProvider) -> Self {
+    pub(crate) fn new(provider: impl CartesianStyleProvider) -> Self {
         Self { provider: Arc::new(provider), overrides: Vec::new() }
     }
-    pub(crate) fn customize(&mut self, customize: impl Fn(&mut PlotStyle) + Send + Sync + 'static) {
+    pub(crate) fn customize(&mut self, customize: impl Fn(&mut CartesianStyle) + Send + Sync + 'static) {
         self.overrides.push(Arc::new(customize));
     }
-    pub(crate) fn resolve(&self) -> PlotStyle {
+    pub(crate) fn resolve(&self) -> CartesianStyle {
         let mut style = self.provider.resolve();
         for customize in &self.overrides {
             customize(&mut style);
@@ -25,7 +25,7 @@ impl StyleSource {
 }
 impl Default for StyleSource {
     fn default() -> Self {
-        Self::new(PlotStyle::default())
+        Self::new(CartesianStyle::default())
     }
 }
 impl fmt::Debug for StyleSource {
@@ -48,7 +48,7 @@ mod tests {
         let dark = Arc::new(AtomicBool::new(false));
         let current = dark.clone();
         let mut source = StyleSource::new(move || {
-            let mut style = PlotStyle::default();
+            let mut style = CartesianStyle::default();
             style.line.stroke.color = if current.load(Ordering::Relaxed) {
                 gpui::white()
             } else {
@@ -73,7 +73,7 @@ mod tests {
     fn series_overrides_merge_components_and_do_not_add_layers_or_change_samples() {
         let data = Dataset::new().with_series(Series::new("a", "A", [Sample::new(1.0, 2.0)])).expect("dataset");
         let samples = data.series()[0].samples().as_ptr();
-        let mut style = PlotStyle::default();
+        let mut style = CartesianStyle::default();
         style.set_series_style("a".into(), LinePresentation::new(gpui::white()).into());
         style.set_series_style("a".into(), AreaPresentation::new(gpui::black()).into());
         let resolved = CartesianPresentation::from(style.clone());
@@ -106,7 +106,7 @@ mod tests {
         let captured = observed.clone();
         let chart = CartesianChartBuilder::new(Dataset::new())
             .style(move || {
-                let mut style = PlotStyle::default();
+                let mut style = CartesianStyle::default();
                 style.line.stroke.color = if current.load(Ordering::Relaxed) {
                     gpui::white()
                 } else {

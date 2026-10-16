@@ -71,7 +71,7 @@ impl Render for AreaExample {
 
 fn chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
     CartesianChartBuilder::new(data)
-        .style(theme::RadixPlotStyle::new(look))
+        .style(theme::RadixCartesianStyle::new(look))
         .x_scale(NumericScale::new().tick_count(7))
         .y_scale(NumericScale::new().tick_count(6))
         .area(AreaLayer::new("inflow").interpolation(Interpolation::Monotone))

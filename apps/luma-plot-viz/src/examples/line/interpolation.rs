@@ -101,7 +101,7 @@ impl Render for InterpolationExample {
 
 fn chart(data: Dataset, look: &Look, interpolation: Interpolation) -> CartesianChartBuilder {
     CartesianChartBuilder::new(data)
-        .style(theme::RadixPlotStyle::new(look))
+        .style(theme::RadixCartesianStyle::new(look))
         .x_scale(NumericScale::new().tick_values([0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0]))
         .y_scale(NumericScale::new().domain(0.0..=10.0).tick_count(6))
         .line(LineLayer::new("level").interpolation(interpolation))

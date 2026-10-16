@@ -299,7 +299,7 @@ mod tests {
         let selected = select_observation(
             &geometry,
             &data,
-            &CartesianPresentation::from(crate::PlotStyle::default()),
+            &CartesianPresentation::from(crate::CartesianStyle::default()),
             geometry.bars[0].rectangles[0].center(),
             geometry.plot_bounds,
         );

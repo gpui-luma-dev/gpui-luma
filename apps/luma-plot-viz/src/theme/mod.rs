@@ -7,7 +7,7 @@ mod plot;
 mod scrollbar;
 pub(crate) use scrollbar::spawn_time_scrollbar;
 pub(crate) use mode::{id as mode_id, mode_for_id, spawn as spawn_mode_selector};
-pub(crate) use plot::RadixPlotStyle;
+pub(crate) use plot::RadixCartesianStyle;
 
 use std::sync::Arc;
 

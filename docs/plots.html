@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Native charts from the separate gpui-luma-plot crate.">
+<title>Getting started · Luma SDK</title>
+<script src="theme-init.js"></script>
+<link rel="stylesheet" href="site.css">
+<!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
+<script src="vendor/prism/prism-core.min.js" data-manual defer></script>
+<script src="vendor/prism/prism-rust.min.js" defer></script>
+<script src="vendor/prism/prism-toml.min.js" defer></script>
+<script src="navigation.js" defer></script>
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<div data-site-mobile-nav></div>
+<div class="layout">
+<aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
+<main id="main"><div class="breadcrumb"><span>Plots</span><span aria-hidden="true">/</span><span>Getting started</span></div><h1>Getting started</h1><p class="intro">Native charts from the separate gpui-luma-plot crate.</p><section id="install"><h2>Dependency</h2><p>In a package inside this repository’s workspace, add the plot crate alongside your existing GPUI and SDK dependencies:</p><div class="codebox"><div class="codebar"><span>Cargo.toml</span><button class="copy" aria-label="Copy toml example">Copy</button></div><pre><code class="language-toml">[dependencies]
+gpui.workspace = true
+gpui-luma.workspace = true
+gpui-luma-plot.workspace = true</code></pre></div><p>External applications should use a compatible published <code>gpui-luma-plot</code> version and the matching SDK/GPUI versions. The workspace dependency shorthand applies only inside this workspace.</p></section><section id="first-chart"><h2>Your first chart</h2><p>Create named series, add drawing layers that refer to their IDs, then build a chart element. Give its host an explicit height and available width.</p><div class="codebox"><div class="codebar"><span>Rust</span><button class="copy" aria-label="Copy rust example">Copy</button></div><pre><code class="language-rust">use gpui::{div, prelude::*, px};
+use gpui_luma_plot::{
+    CartesianChartBuilder, CategoryScale, Dataset, DatasetError,
+    LineLayer, Sample, Series,
+};
+
+fn temperature_chart() -&gt; Result&lt;impl IntoElement, DatasetError&gt; {
+    let data = Dataset::new().with_series(Series::new(
+        "temperature", "Temperature",
+        [Sample::new(0.0, 18.0), Sample::new(1.0, 21.0), Sample::new(2.0, 19.0)],
+    ))?;
+
+    let chart = CartesianChartBuilder::new(data)
+        .id("temperature-chart")
+        .x_scale(CategoryScale::new(["Mon", "Tue", "Wed"]))
+        .line(LineLayer::new("temperature"))
+        .build();
+
+    Ok(div().w_full().h(px(280.0)).child(chart))
+}</code></pre></div><p class="small">Call the helper while composing your view, handle its result using your application’s error handling, and render the returned element. Unique chart IDs distinguish multiple charts in the same view.</p></section><section id="model"><h2>Data and rendering</h2><p><strong>Plot</strong> names the library and its rendering-independent specifications, such as <code>CartesianPlot</code> and <code>PiePlot</code>. A <strong>chart</strong> combines data, a plot specification, and presentation into a GPUI element through a <code>*ChartBuilder</code> / <code>*ChartView</code>. Styling APIs identify their chart family, such as <code>CartesianStyle</code>.</p><ul><li><code>Sample</code>: an X/Y observation.</li><li><code>Series</code>: observations with a stable ID and display name.</li><li><code>Dataset</code>: a collection of series; insertion returns <code>DatasetError</code> for duplicate IDs.</li><li>Plot specifications select series, scales, and layer behavior. Presentation defines appearance.</li></ul><p>Category X coordinates are zero-based indices into the category labels. Line layers connect observations in their input order; they do not sort samples for you.</p><p><code>.build()</code> returns a GPUI chart element rather than spawning a control entity. Retain application data and interaction state in the owning view and compose chart elements during rendering. Frames, headings, and surrounding controls are ordinary SDK content.</p></section><section id="families"><h2>Chart families</h2><div class="event-table"><table><thead><tr><th scope="col">Builder</th><th scope="col">Chart</th></tr></thead><tbody><tr><td><code>CartesianChartBuilder</code></td><td>Line, area, and bar layers, including combined charts.</td></tr><tr><td><code>PieChartBuilder</code></td><td><a href="plot-pie.html">Pie and donut/ring charts</a>.</td></tr><tr><td><code>RadarChartBuilder</code></td><td><a href="plot-radar.html">Series plotted around spokes</a>.</td></tr><tr><td><code>RadialChartBuilder</code></td><td><a href="plot-radial.html">Radial bar layouts</a>.</td></tr></tbody></table></div><p>Continue with <a href="plot-cartesian.html">Cartesian charts</a> and <a href="plot-styling.html">Styling</a>. For shared behavior, see <a href="plot-interaction.html">Interaction</a>, <a href="plot-view-state.html">View state</a>, and <a href="plot-performance.html">Performance</a>. Explore <a href="plot-pie.html">Pie &amp; donut</a>, <a href="plot-radar.html">Radar</a>, and <a href="plot-radial.html">Radial</a> for the other chart families.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/plot/src/lib.rs">Public API</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/apps/luma-plot-viz/src/examples/mod.rs">Native gallery examples</a></p></section><footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#install">Dependency</a><a href="#first-chart">Your first chart</a><a href="#model">Data and rendering</a><a href="#families">Chart families</a><a href="#source">Source</a></nav>
+</div>
+</body>
+</html>

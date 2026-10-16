@@ -3,18 +3,18 @@ use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_radix::{Look, SemanticRole};
 use gpui_luma_plot::{
     AreaPresentation, AxisPresentation, ChartMetrics, EmptyStatePresentation, GridPresentation, LinePresentation,
-    MarkerPresentation, PlotStyle, PlotStyleProvider, SeriesId, SeriesStyle, TextPresentation,
+    MarkerPresentation, CartesianStyle, CartesianStyleProvider, SeriesId, SeriesStyle, TextPresentation,
 };
 
 /// One live Radix adapter for all plot appearance. Series assignments are explicit
 /// host choices; this adapter has no knowledge of dataset names or sample values.
 #[derive(Clone)]
-pub(crate) struct RadixPlotStyle {
+pub(crate) struct RadixCartesianStyle {
     look: Look,
     blue: bool,
     series: Vec<(SeriesId, usize)>,
 }
-impl RadixPlotStyle {
+impl RadixCartesianStyle {
     pub(crate) fn new(look: &Look) -> Self {
         Self { look: look.clone(), blue: false, series: Vec::new() }
     }
@@ -53,8 +53,8 @@ impl RadixPlotStyle {
         SeriesStyle { line: Some(line), area: Some(area), bar: Some(gpui_luma_plot::BarPresentation::new(color)) }
     }
 }
-impl PlotStyleProvider for RadixPlotStyle {
-    fn resolve(&self) -> PlotStyle {
+impl CartesianStyleProvider for RadixCartesianStyle {
+    fn resolve(&self) -> CartesianStyle {
         let spacing = self.look.metrics().spacing;
         let muted = self.look.resolve_role(SemanticRole::MutedForeground).hsla();
         let typography = crate::theme::typography();
@@ -72,7 +72,7 @@ impl PlotStyleProvider for RadixPlotStyle {
         axis.label_gap = px(spacing.s1);
         let colors = self.colors();
         let defaults = self.series_style(colors[0]);
-        let mut style = PlotStyle::new(axis, defaults.line.expect("adapter supplies a line"));
+        let mut style = CartesianStyle::new(axis, defaults.line.expect("adapter supplies a line"));
         style.area = defaults.area.expect("adapter supplies an area");
         style.grid = GridPresentation::new(self.look.resolve_role(SemanticRole::Border).hsla());
         style.metrics = ChartMetrics {
@@ -98,7 +98,7 @@ mod tests {
     fn retained_radix_provider_resolves_current_mode_and_explicit_series_assignments() {
         let look = Look::built_in();
         look.set_mode(ThemeMode::Light);
-        let provider = RadixPlotStyle::new(&look).blue().series("desktop", 0).series("mobile", 1);
+        let provider = RadixCartesianStyle::new(&look).blue().series("desktop", 0).series("mobile", 1);
         let light = provider.resolve();
         look.set_mode(ThemeMode::Dark);
         let dark = provider.resolve();
@@ -113,6 +113,6 @@ mod tests {
         );
         assert!(dark.series[&"desktop".into()].area.unwrap().outline.is_some());
         assert_eq!(dark.series.len(), 2);
-        assert_eq!(RadixPlotStyle::new(&look).resolve().series.len(), 0);
+        assert_eq!(RadixCartesianStyle::new(&look).resolve().series.len(), 0);
     }
 }

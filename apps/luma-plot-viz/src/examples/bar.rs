@@ -53,7 +53,7 @@ impl BarExample {
         let horizontal = orientation.is_horizontal();
         let stacked = layout.grouping_policy() == BarGrouping::Stacked;
         CartesianChartBuilder::new(self.data.clone())
-            .style(theme::RadixPlotStyle::new(&self.look).blue().series("mobile", 1))
+            .style(theme::RadixCartesianStyle::new(&self.look).blue().series("mobile", 1))
             .x_scale(CategoryScale::new(["Q1", "Q2", "Q3", "Q4"]))
             .y_scale(if stacked {
                 NumericScale::new().domain(-25.0..=100.0).tick_values([-25.0, 0.0, 25.0, 50.0, 75.0, 100.0])

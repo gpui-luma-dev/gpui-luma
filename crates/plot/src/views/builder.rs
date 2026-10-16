@@ -3,7 +3,7 @@ use crate::{
     plots::{BarLayout, BarOrientation, BarLayer, AreaLayer, CartesianPlot, LineLayer, Scale},
     presentation::{
         BarPresentation, AreaPresentation, Axis, CartesianPresentation, ChartMetrics, EmptyStatePresentation,
-        GridPresentation, LegendPresentation, LinePresentation, PlotStyle, PlotStyleProvider, SeriesStyle,
+        GridPresentation, LegendPresentation, LinePresentation, CartesianStyle, CartesianStyleProvider, SeriesStyle,
     },
 };
 
@@ -14,7 +14,7 @@ use super::{
 
 /// Compose chart content and focused visuals without constructing a separate plot.
 ///
-/// Defaults show bottom/left axes, grid lines, and a legend. Bind one `PlotStyle`
+/// Defaults show bottom/left axes, grid lines, and a legend. Bind one `CartesianStyle`
 /// or live provider with `style`, then customize it with `style_override` and
 /// `series_style`. Providers resolve each render before local overrides.
 /// Frame decoration and chart headings remain ordinary host composition.
@@ -230,27 +230,27 @@ impl CartesianChartBuilder {
     /// Theme/advanced composition: replace all visuals, preserving data and mapping.
     /// Apply this before focused visual overrides; later calls replace earlier values.
     pub fn presentation(mut self, presentation: CartesianPresentation) -> Self {
-        self.style = StyleSource::new(PlotStyle::from(presentation));
+        self.style = StyleSource::new(CartesianStyle::from(presentation));
         self
     }
 
     /// Bind a static style or a provider resolved on every render. Replaces the
     /// previous source and its overrides; apply local customization afterward.
     /// ```
-    /// use gpui_luma_plot::{CartesianChartBuilder, Dataset, PlotStyle};
+    /// use gpui_luma_plot::{CartesianChartBuilder, Dataset, CartesianStyle};
     /// let chart = CartesianChartBuilder::new(Dataset::new())
-    ///     .style(PlotStyle::default())
+    ///     .style(CartesianStyle::default())
     ///     .style_override(|style| style.line.stroke.width = gpui::px(3.0))
     ///     .build();
     /// ```
-    pub fn style(mut self, provider: impl PlotStyleProvider) -> Self {
+    pub fn style(mut self, provider: impl CartesianStyleProvider) -> Self {
         self.style = StyleSource::new(provider);
         self
     }
 
     /// Apply a local override after current theme resolution, in call order.
     /// This runs each render and must not mutate application state.
-    pub fn style_override(mut self, customize: impl Fn(&mut PlotStyle) + Send + Sync + 'static) -> Self {
+    pub fn style_override(mut self, customize: impl Fn(&mut CartesianStyle) + Send + Sync + 'static) -> Self {
         self.style.customize(customize);
         self
     }
@@ -258,9 +258,9 @@ impl CartesianChartBuilder {
     /// Override a series' appearance without adding a drawing layer or changing data.
     /// Line/area values override just that component; `SeriesStyle` can supply both.
     /// ```
-    /// use gpui_luma_plot::{CartesianChartBuilder, Dataset, LineLayer, PlotStyle, SeriesStyle};
+    /// use gpui_luma_plot::{CartesianChartBuilder, Dataset, LineLayer, CartesianStyle, SeriesStyle};
     /// let chart = CartesianChartBuilder::new(Dataset::new())
-    ///     .style(PlotStyle::default())
+    ///     .style(CartesianStyle::default())
     ///     .series_style("desktop", SeriesStyle::new(gpui::rgb(0x2563eb).into()))
     ///     .line(LineLayer::new("desktop"))
     ///     .build();

@@ -22,7 +22,12 @@ mod area;
 pub use area::AreaPresentation;
 
 mod style;
-pub use style::{PlotStyle, PlotStyleProvider, SeriesStyle};
+pub use style::{CartesianStyle, CartesianStyleProvider, SeriesStyle};
+
+/// Compatibility name for [CartesianStyle]. Prefer the family-specific name in new code.
+pub use style::CartesianStyle as PlotStyle;
+/// Compatibility name for [CartesianStyleProvider]. Prefer the family-specific name in new code.
+pub use style::CartesianStyleProvider as PlotStyleProvider;
 
 mod bar;
 pub use bar::{BarPresentation, BarLabel, BarLabelPlacement};

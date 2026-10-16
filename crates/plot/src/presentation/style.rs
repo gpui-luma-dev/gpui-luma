@@ -41,10 +41,10 @@ impl From<BarPresentation> for SeriesStyle {
     }
 }
 
-/// One resolved plot style. No samples, scales, frame decoration or animation state.
+/// Resolved Cartesian chart appearance. No samples, scales, frame decoration or animation state.
 /// Providers resolve this value each render; local overrides are applied afterward.
 #[derive(Clone, Debug)]
-pub struct PlotStyle {
+pub struct CartesianStyle {
     pub axes: Vec<Axis>,
     pub line: LinePresentation,
     pub area: AreaPresentation,
@@ -55,7 +55,7 @@ pub struct PlotStyle {
     pub empty_state: Option<EmptyStatePresentation>,
     pub series: HashMap<SeriesId, SeriesStyle>,
 }
-impl PlotStyle {
+impl CartesianStyle {
     pub fn new(axis: AxisPresentation, line: LinePresentation) -> Self {
         Self {
             axes: vec![Axis::new(AxisSide::Bottom, axis.clone()), Axis::new(AxisSide::Left, axis.clone())],
@@ -82,7 +82,7 @@ impl PlotStyle {
         }
     }
 }
-impl Default for PlotStyle {
+impl Default for CartesianStyle {
     fn default() -> Self {
         let mut style = Self::new(
             AxisPresentation::new(gpui::rgb(0x64748b).into()),
@@ -93,19 +93,19 @@ impl Default for PlotStyle {
     }
 }
 
-/// A reusable, look-independent source of current plot appearance.
+/// A reusable, look-independent source of current Cartesian chart appearance.
 /// Resolve uses current theme state; the host must request a redraw after changes.
-/// Static `PlotStyle` values and closures returning `PlotStyle` are also providers.
-pub trait PlotStyleProvider: Send + Sync + 'static {
-    fn resolve(&self) -> PlotStyle;
+/// Static `CartesianStyle` values and closures returning `CartesianStyle` are also providers.
+pub trait CartesianStyleProvider: Send + Sync + 'static {
+    fn resolve(&self) -> CartesianStyle;
 }
-impl PlotStyleProvider for PlotStyle {
-    fn resolve(&self) -> PlotStyle {
+impl CartesianStyleProvider for CartesianStyle {
+    fn resolve(&self) -> CartesianStyle {
         self.clone()
     }
 }
-impl<F: Fn() -> PlotStyle + Send + Sync + 'static> PlotStyleProvider for F {
-    fn resolve(&self) -> PlotStyle {
+impl<F: Fn() -> CartesianStyle + Send + Sync + 'static> CartesianStyleProvider for F {
+    fn resolve(&self) -> CartesianStyle {
         self()
     }
 }

@@ -120,7 +120,7 @@ impl Render for ScrollingBars {
         let end = start + SPAN;
         let chart = CartesianChartBuilder::new(self.data.clone())
             .id("large-scrolling-bars-chart")
-            .style(theme::RadixPlotStyle::new(&self.look).blue())
+            .style(theme::RadixCartesianStyle::new(&self.look).blue())
             .x_scale(NumericScale::new().domain(start..=end).tick_labels(scrolling_ticks(start)))
             .y_scale(NumericScale::new().domain(0.0..=600.0).tick_count(5))
             .bar_layout(BarLayout::new().width(0.8))

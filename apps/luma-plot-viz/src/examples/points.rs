@@ -141,7 +141,7 @@ fn chart(
 ) -> CartesianChartBuilder {
     let tooltip_look = look.clone();
     let mut chart = CartesianChartBuilder::new(data)
-        .style(theme::RadixPlotStyle::new(look).blue().series("desktop", 0).series("mobile", 1))
+        .style(theme::RadixCartesianStyle::new(look).blue().series("desktop", 0).series("mobile", 1))
         .tooltip_motion(motion)
         .x_scale(NumericScale::new().tick_labels(MONTHS.into_iter().enumerate().map(|(i, label)| (i as f64, label))))
         .y_scale(NumericScale::new().domain(0.0..=10.0).tick_count(3))

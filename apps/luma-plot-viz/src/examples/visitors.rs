@@ -14,7 +14,7 @@ use gpui_luma::{
 use gpui_luma_look_radix::Look;
 use gpui_luma_plot::{
     AreaLayer, LineLayer, AxisSide, CartesianChartBuilder, ChartMetrics, Dataset, DatasetError, Interpolation,
-    LegendItem, LegendPresentation, LegendView, SwatchPresentation, NumericScale, PlotStyleProvider,
+    LegendItem, LegendPresentation, LegendView, SwatchPresentation, NumericScale, CartesianStyleProvider,
 };
 use crate::theme::{self, TypographyExt};
 
@@ -77,7 +77,11 @@ impl Render for VisitorsExample {
         self.motion.schedule_frame(window, cx);
         let typography = theme::typography();
         let chrome = theme::chrome(&self.look);
-        let style = theme::RadixPlotStyle::new(&self.look).blue().series("desktop", 0).series("mobile", 1).resolve();
+        let style = theme::RadixCartesianStyle::new(&self.look)
+            .blue()
+            .series("desktop", 0)
+            .series("mobile", 1)
+            .resolve();
         let caption = if self.days == 91 {
             "Showing total visitors for the last 3 months".to_owned()
         } else {
@@ -124,7 +128,7 @@ impl Render for VisitorsExample {
 
 fn chart(data: Dataset, look: &Look, days: usize, area: bool) -> CartesianChartBuilder {
     let mut chart = CartesianChartBuilder::new(data)
-        .style(theme::RadixPlotStyle::new(look).blue().series("desktop", 0).series("mobile", 1))
+        .style(theme::RadixCartesianStyle::new(look).blue().series("desktop", 0).series("mobile", 1))
         .x_scale(
             NumericScale::new()
                 .domain(data::first_day(days) as f64..=data::LAST_DAY as f64)

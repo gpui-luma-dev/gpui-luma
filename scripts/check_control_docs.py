@@ -9,6 +9,15 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = {
+    "plot-interaction.html": 0,
+    "plot-view-state.html": 0,
+    "plot-performance.html": 0,
+    "plot-pie.html": 0,
+    "plot-radar.html": 0,
+    "plot-radial.html": 0,
+    "plots.html": 1,
+    "plot-cartesian.html": 0,
+    "plot-styling.html": 0,
     "layout.html": 0,
     "composition.html": 0,
     "button.html": [0, 1],
@@ -111,7 +120,7 @@ def main():
                       f'features = {json.dumps(spec["features"])}']
             manifest.append(f'{name} = {{ {", ".join(fields)} }}')
         for name, path in [("gpui-luma", "sdk"), ("gpui-luma-look-radix", "look-radix"),
-                           ("gpui-luma-look-shadcn", "look-shadcn")]:
+                           ("gpui-luma-look-shadcn", "look-shadcn"), ("gpui-luma-plot", "plot")]:
             manifest.append(f'{name} = {{ path = {json.dumps(str(ROOT / "crates" / path))} }}')
         (package / "Cargo.toml").write_text("\n".join(manifest) + "\n")
         (package / "src").mkdir()

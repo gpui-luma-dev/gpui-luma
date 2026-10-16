@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Show positive weights as angular shares, with optional holes and concentric rings.">
+<title>Pie &amp; donut · Luma SDK</title>
+<script src="theme-init.js"></script>
+<link rel="stylesheet" href="site.css">
+<!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
+<script src="vendor/prism/prism-core.min.js" data-manual defer></script>
+<script src="vendor/prism/prism-rust.min.js" defer></script>
+<script src="vendor/prism/prism-toml.min.js" defer></script>
+<script src="navigation.js" defer></script>
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<div data-site-mobile-nav></div>
+<div class="layout">
+<aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
+<main id="main"><div class="breadcrumb"><span>Plots</span><span aria-hidden="true">/</span><span>Pie &amp; donut</span></div><h1>Pie &amp; donut</h1><p class="intro">Show positive weights as angular shares, with optional holes and concentric rings.</p><section id="basic"><h2>Basic use</h2><p><code>PieChartBuilder</code> combines a <code>PiePlot</code>, dataset, and presentation into a GPUI element. A donut uses the same builder with a nonzero <code>.inner_radius(...)</code>; there is no separate donut control.</p><div class="codebox"><div class="codebar"><span>Rust</span><button class="copy" aria-label="Copy Rust example">Copy</button></div><pre><code class="language-rust">use gpui::{div, prelude::*, px};
+use gpui_luma::controls::tooltip::Tooltip;
+use gpui_luma_plot::{
+    Dataset, DatasetError, PieChartBuilder, PieLabelPlacement,
+    PiePresentation, PieRingPresentation, Sample, Series,
+};
+
+fn browser_share() -&gt; Result&lt;impl IntoElement, DatasetError&gt; {
+    let data = Dataset::new().with_series(Series::new("browsers", "Browsers", [
+        Sample::new(0.0, 275.0), Sample::new(1.0, 200.0), Sample::new(2.0, 125.0),
+    ]))?;
+    let chart = PieChartBuilder::new(data, "browsers")
+        .id("browser-share")
+        .style(PiePresentation::default())
+        .inner_radius(0.6)
+        .slice_names(["Chrome", "Safari", "Other"])
+        .slice_labels(|slice| format!("{:.0}%", slice.fraction * 100.0).into())
+        .style_override(|style| style.label_placement = PieLabelPlacement::Outside)
+        .center_text("600", "Visits")
+        .legend(true)
+        .slice_tooltip(|slice| Tooltip::new(format!("{}: {}", slice.label, slice.sample.y)))
+        .build();
+    Ok(div().w_full().h(px(320.0)).child(chart))
+}
+
+fn comparison_rings(data: Dataset) -&gt; impl IntoElement {
+    let chart = PieChartBuilder::new(data, "current")
+        .id("comparison-rings")
+        .slice_names(["Chrome", "Safari", "Other"])
+        .inner_radius(0.4)
+        .outer_radius(0.65)
+        .ring("previous", PieRingPresentation::new(0.72, 1.0))
+        .build();
+    div().w_full().h(px(320.0)).child(chart)
+}</code></pre></div><p class="small">Handle <code>DatasetError</code> in the owning view and render the returned element. For the ring example, supply <code>current</code> and <code>previous</code> series. Give sibling charts distinct IDs.</p></section><section id="mapping"><h2>Data and angles</h2><p>Y contains weights, not required percentages. Only finite samples with positive Y contribute. Accepted weights are normalized within each pie; original sample indices and order remain intact. X is an optional numeric category coordinate, not an angle.</p><p><code>.slice_names(...)</code> indexes names by original sample position; omitted samples do not shift later names or colors. Missing names fall back to X. <code>.start_angle(...)</code> uses degrees from the rightward ray; positive angles point clockwise on screen. <code>.clockwise(true)</code> changes sector traversal from the default counterclockwise direction.</p></section><section id="rings"><h2>Donuts and concentric rings</h2><p><code>.inner_radius(...)</code> is the hole/outer-radius ratio, clamped to 0–0.95. <code>.outer_radius(...)</code> scales the primary pie against the common chart radius. Added <code>PieRingPresentation</code> bands specify inner/outer ratios against that same common radius.</p><p>Each added series is normalized independently. Choose separated bands explicitly; the builder allows overlapping bands. Center text is host-supplied and is not an automatically computed total.</p></section><section id="appearance"><h2>Styling and labels</h2><p>Bind <code>PiePresentation</code> or a live <code>PieStyleProvider</code> using <code>.style(...)</code>, then apply local overrides. Binding a new style clears earlier style overrides, including radius helpers. Palette, per-sample fills, labels, leader lines, legend, active expansion, and empty-state appearance belong to presentation.</p><p>Labels are opt-in through <code>.slice_labels(...)</code>; choose Inside or Outside placement. <code>.slice_style(index, fill)</code> overrides a source sample’s fill. The built-in legend is hidden unless enabled. See <a href="plot-styling.html">Styling</a> for theme and redraw ownership.</p></section><section id="interaction"><h2>Interaction and motion</h2><p><code>.on_slice_event(...)</code> reports <code>PieSliceEvent::HoverChanged</code> and <code>Select</code> with original observations. <code>PieSlice</code> includes the series, sample index, normalized fraction, and ring identity: <code>ring_index</code> is None for the primary pie or the added ring’s zero-based index.</p><p>The host owns persistent selection. Pass it back with <code>.active_slice(...)</code>, <code>.ring_active_slice(...)</code>, or <code>.active_ring_slice(...)</code>. Use ring-index selection when the same series is added more than once.</p><p><code>.slice_tooltip(...)</code> supplies SDK tooltips; configure delay on the returned Tooltip. <code>.tooltip_motion(...)</code> and <code>.active_motion(...)</code> configure transitions. <code>.draw_progress(...)</code> reveals sectors in angular order; the host drives replay timing and redraws.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/plot/src/views/pie.rs">Pie builder and events</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/plot/src/presentation/pie.rs">Pie presentation</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/apps/luma-plot-viz/src/examples/pie.rs">Native gallery</a></p></section><footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#basic">Basic use</a><a href="#mapping">Data and angles</a><a href="#rings">Donuts and concentric rings</a><a href="#appearance">Styling and labels</a><a href="#interaction">Interaction and motion</a><a href="#source">Source</a></nav>
+</div>
+</body>
+</html>

@@ -102,7 +102,7 @@ impl Render for Features {
         let host = cx.weak_entity();
         let mut chart = CartesianChartBuilder::new(self.data.clone())
             .id("viewport-annotation-chart")
-            .style(theme::RadixPlotStyle::new(&self.look).blue().series("b", 1))
+            .style(theme::RadixCartesianStyle::new(&self.look).blue().series("b", 1))
             .viewport(&self.viewport)
             .legend(LegendPresentation { visible: false, text_color: chrome.body_text })
             .draw_progress(self.entrance)
@@ -137,7 +137,7 @@ impl Render for Features {
         }
         let logarithmic = CartesianChartBuilder::new(self.data.clone())
             .id("log-scale-chart")
-            .style(theme::RadixPlotStyle::new(&self.look).blue())
+            .style(theme::RadixCartesianStyle::new(&self.look).blue())
             .x_scale(NumericScale::new().domain(0.0..=100.0))
             .y_scale(NumericScale::new().logarithmic(10.0).domain(1.0..=100.0))
             .line(LineLayer::new("a"))

@@ -3,6 +3,18 @@
 //! The chart builder composes those responsibilities into one public construction path.
 //! Host frames and chart headings remain ordinary SDK content around the built view.
 //!
+//! # Terminology
+//!
+//! **Plot** names the library and the rendering-independent specifications:
+//! [CartesianPlot], [PiePlot], [RadarPlot], and [RadialPlot]. A **chart**
+//! combines a specification, data, and presentation into a GPUI element through
+//! its chart builder and chart view. Styling contracts are family-specific:
+//! [CartesianStyle] / [CartesianStyleProvider] apply to Cartesian charts.
+//! [ChartMetrics] describes shared chart geometry.
+//!
+//! [PlotStyle] and [PlotStyleProvider] remain compatibility names for
+//! [CartesianStyle] and [CartesianStyleProvider].
+//!
 //! ```
 //! use gpui::rgb;
 //! use gpui_luma_plot::{
@@ -58,8 +70,8 @@ pub use plots::{
 pub use presentation::{
     BarLabel, BarLabelPlacement, BarPresentation, AreaPresentation, Axis, AxisPresentation, AxisSide,
     CartesianPresentation, ChartMetrics, EmptyStatePresentation, GridPresentation, LegendPresentation,
-    LinePresentation, MarkerPresentation, MarkerVisibility, Stroke, SwatchPresentation, TextPresentation, PlotStyle,
-    PlotStyleProvider, SeriesStyle,
+    LinePresentation, MarkerPresentation, MarkerVisibility, Stroke, SwatchPresentation, TextPresentation,
+    CartesianStyle, CartesianStyleProvider, PlotStyle, PlotStyleProvider, SeriesStyle,
 };
 pub use views::{
     BarRenderModel, BarTemplate, RectangleBarTemplate, PlotPointEvent, PlotSlice, PlotPoint, CartesianChartBuilder,

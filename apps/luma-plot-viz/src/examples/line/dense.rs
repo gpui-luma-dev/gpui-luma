@@ -59,7 +59,7 @@ fn chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
 
 pub(super) fn chart_with_decimation(data: Dataset, look: &Look, decimation: Decimation) -> CartesianChartBuilder {
     CartesianChartBuilder::new(data)
-        .style(theme::RadixPlotStyle::new(look).series("signal-a", 0).series("signal-b", 1))
+        .style(theme::RadixCartesianStyle::new(look).series("signal-a", 0).series("signal-b", 1))
         .x_scale(NumericScale::new().tick_count(6))
         .y_scale(NumericScale::new().tick_count(5))
         .line(LineLayer::new("signal-a").decimation(decimation))

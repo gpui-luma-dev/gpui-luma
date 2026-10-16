@@ -136,8 +136,8 @@ impl Default for CartesianPresentation {
     }
 }
 
-impl From<super::PlotStyle> for CartesianPresentation {
-    fn from(style: super::PlotStyle) -> Self {
+impl From<super::CartesianStyle> for CartesianPresentation {
+    fn from(style: super::CartesianStyle) -> Self {
         let mut result = Self::new(AxisPresentation::new(style.line.stroke.color), style.line).axes(style.axes);
         result.default_area = Some(style.area);
         result.default_bar = style.bar;
@@ -159,7 +159,7 @@ impl From<super::PlotStyle> for CartesianPresentation {
         result
     }
 }
-impl From<CartesianPresentation> for super::PlotStyle {
+impl From<CartesianPresentation> for super::CartesianStyle {
     fn from(presentation: CartesianPresentation) -> Self {
         let mut series = HashMap::new();
         for id in presentation.lines.keys().chain(presentation.areas.keys()).chain(presentation.bars.keys()) {

@@ -173,7 +173,7 @@ fn empty_selection(look: &Look) -> Result<LineExample, DatasetError> {
 
 fn two_series_chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
     CartesianChartBuilder::new(data)
-        .style(theme::RadixPlotStyle::new(look).series("humidity", 1))
+        .style(theme::RadixCartesianStyle::new(look).series("humidity", 1))
         .style_override(|style| {
             if let Some(line) = style.series.get_mut(&"humidity".into()).and_then(|series| series.line.as_mut()) {
                 line.markers = None;
@@ -187,7 +187,7 @@ fn two_series_chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
 
 fn missing_samples_chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
     CartesianChartBuilder::new(data)
-        .style(theme::RadixPlotStyle::new(look))
+        .style(theme::RadixCartesianStyle::new(look))
         .x_scale(CategoryScale::new(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]))
         .y_scale(NumericScale::new().tick_values([18.0, 21.0, 24.0, 27.0]))
         .line(LineLayer::new("temperature"))
@@ -202,7 +202,7 @@ fn missing_samples_chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
 
 fn empty_selection_chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
     CartesianChartBuilder::new(data)
-        .style(theme::RadixPlotStyle::new(look))
+        .style(theme::RadixCartesianStyle::new(look))
         .x_scale(NumericScale::new().tick_count(3))
         .y_scale(NumericScale::new().tick_count(3))
         .line(LineLayer::new("forecast"))
