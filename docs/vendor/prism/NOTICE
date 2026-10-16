@@ -1,0 +1,12 @@
+Prism 1.30.0 (MIT)
+Upstream: https://github.com/PrismJS/prism/tree/v1.30.0
+
+Vendored unchanged:
+- components/prism-core.min.js
+- components/prism-rust.min.js
+- components/prism-toml.min.js
+- LICENSE
+
+Only the core and Rust/TOML grammars are loaded. No plugins, CDN requests,
+package installation, or build step are required to view the documentation.
+Token colors are maintained in docs/site.css.

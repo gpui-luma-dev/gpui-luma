@@ -15,19 +15,26 @@
 
 const root = document.documentElement;
 const theme = document.getElementById('theme');
+const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
+function isDarkTheme() {
+    return root.dataset.theme === 'dark' || (!root.dataset.theme && systemTheme.matches);
+}
 function syncTheme() {
-    const dark = root.dataset.theme === 'dark';
+    const dark = isDarkTheme();
     theme.setAttribute('aria-pressed', String(dark));
     theme.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
     document.getElementById('theme-label').textContent = dark ? 'Light mode' : 'Dark mode';
 }
 syncTheme();
+systemTheme.addEventListener('change', syncTheme);
 theme.addEventListener('click', () => {
-    const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    const next = isDarkTheme() ? 'light' : 'dark';
     root.dataset.theme = next;
     try { localStorage.setItem('luma-docs-theme', next); } catch {}
     syncTheme();
 });
+// Highlight only explicitly marked code blocks; copying still reads plain text.
+if (window.Prism) window.Prism.highlightAll();
 document.querySelectorAll('.copy').forEach(button => {
     button.addEventListener('click', async () => {
         const code = button.closest('.codebox').querySelector('code');

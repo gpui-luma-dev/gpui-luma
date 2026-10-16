@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="How Luma separates lookless SDK controls, customizable templates, and Look crates.">
 <title>Architecture · Luma SDK</title>
+<script src="theme-init.js"></script>
 <link rel="stylesheet" href="site.css">
+<!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
+<script src="vendor/prism/prism-core.min.js" data-manual defer></script>
+<script src="vendor/prism/prism-rust.min.js" defer></script>
+<script src="vendor/prism/prism-toml.min.js" defer></script>
 <script src="site.js" defer></script>
-<script>
-try { if(localStorage.getItem('luma-docs-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch {}
-</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -25,7 +27,7 @@ try { if(localStorage.getItem('luma-docs-theme') === 'dark') document.documentEl
 <section id="layers"><h2>Architecture</h2>
 <p>SDK controls handle state, focus, input, and events. Templates render them. Look crates configure templates and styling, so different designs share the same control behavior.</p>
 <p class="small">The following are integration snippets for an initialized application. <code>cx</code> is the owning view’s context. The first snippet assumes an owner with a <code>save_requests: usize</code> field.</p></section>
-<section id="look"><h2><span class="number">01</span>Start with a look</h2><p>A styled builder still creates an SDK button. Your application subscribes to the same SDK events.</p><div class="codebox"><div class="codebar"><span>Rust · Look → SDK entity</span><button class="copy" aria-label="Copy Look → SDK entity example">Copy</button></div><pre><code>use gpui::Entity;
+<section id="look"><h2><span class="number">01</span>Start with a look</h2><p>A styled builder still creates an SDK button. Your application subscribes to the same SDK events.</p><div class="codebox"><div class="codebar"><span>Rust · Look → SDK entity</span><button class="copy" aria-label="Copy Look → SDK entity example">Copy</button></div><pre><code class="language-rust">use gpui::Entity;
 use gpui_luma::controls::button::Button;
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma_look_shadcn as shadcn;
@@ -37,7 +39,7 @@ let save: Entity&lt;Button&gt; = shadcn::Button::new(&quot;save&quot;)
         app.save_requests += 1;
         cx.notify();
     })
-    .spawn(cx);</code></pre></div></section><section id="content"><h2><span class="number">02</span>Customize the content</h2><p>Keep the look’s template. Replace the label with your own composition using <code>.content(...)</code>.</p><div class="codebox"><div class="codebar"><span>Rust · Content presenter</span><button class="copy" aria-label="Copy Content presenter example">Copy</button></div><pre><code>use gpui::{div, prelude::*};
+    .spawn(cx);</code></pre></div></section><section id="content"><h2><span class="number">02</span>Customize the content</h2><p>Keep the look’s template. Replace the label with your own composition using <code>.content(...)</code>.</p><div class="codebox"><div class="codebar"><span>Rust · Content presenter</span><button class="copy" aria-label="Copy Content presenter example">Copy</button></div><pre><code class="language-rust">use gpui::{div, prelude::*};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma_look_shadcn as shadcn;
 
@@ -49,7 +51,7 @@ let save = shadcn::Button::new(&quot;save&quot;)
             .child(&quot;Save changes&quot;)
             .child(&quot;↗&quot;)
     })
-    .spawn(cx);</code></pre></div><p class="small">The presenter receives resolved styling. The template keeps responsibility for the surrounding button.</p></section><section id="modifier"><h2><span class="number">03</span>Override part of a template</h2><p>Use <code>.with_template_modifier(...)</code> for a local adjustment. Both SDK and Look button builders support it.</p><div class="codebox"><div class="codebar"><span>Rust · Template modifier</span><button class="copy" aria-label="Copy Template modifier example">Copy</button></div><pre><code>use gpui::{px, prelude::*};
+    .spawn(cx);</code></pre></div><p class="small">The presenter receives resolved styling. The template keeps responsibility for the surrounding button.</p></section><section id="modifier"><h2><span class="number">03</span>Override part of a template</h2><p>Use <code>.with_template_modifier(...)</code> for a local adjustment. Both SDK and Look button builders support it.</p><div class="codebox"><div class="codebar"><span>Rust · Template modifier</span><button class="copy" aria-label="Copy Template modifier example">Copy</button></div><pre><code class="language-rust">use gpui::{px, prelude::*};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma_look_shadcn as shadcn;
 
@@ -59,7 +61,7 @@ let save = shadcn::Button::new(&quot;save&quot;)
     .with_template_modifier(|root, _model| {
         root.min_w(px(160.0))
     })
-    .spawn(cx);</code></pre></div><p class="small">This modifies the existing template’s output. The control still handles focus, activation, and events.</p></section><section id="template"><h2><span class="number">04</span>Supply your own template</h2><p>Implement <code>ButtonTemplate</code> when the structure needs to change. This example wraps the SDK’s default rendering to retain its state and focus visuals.</p><div class="codebox"><div class="codebar"><span>Rust · Template implementation</span><button class="copy" aria-label="Copy Template implementation example">Copy</button></div><pre><code>use gpui::{App, Div, Stateful, Window, div, prelude::*};
+    .spawn(cx);</code></pre></div><p class="small">This modifies the existing template’s output. The control still handles focus, activation, and events.</p></section><section id="template"><h2><span class="number">04</span>Supply your own template</h2><p>Implement <code>ButtonTemplate</code> when the structure needs to change. This example wraps the SDK’s default rendering to retain its state and focus visuals.</p><div class="codebox"><div class="codebar"><span>Rust · Template implementation</span><button class="copy" aria-label="Copy Template implementation example">Copy</button></div><pre><code class="language-rust">use gpui::{App, Div, Stateful, Window, div, prelude::*};
 use gpui_luma::controls::button::{
     ButtonRenderModel, ButtonTemplate, default_button_template,
 };
@@ -80,7 +82,7 @@ impl ButtonTemplate for WorkspaceButtonTemplate {
             .child(face)
             .child(div().text_xs().child(&quot;Workspace action&quot;))
     }
-}</code></pre></div><div class="codebox"><div class="codebar"><span>Rust · Install the template</span><button class="copy" aria-label="Copy Install the template example">Copy</button></div><pre><code>use std::sync::Arc;
+}</code></pre></div><div class="codebox"><div class="codebar"><span>Rust · Install the template</span><button class="copy" aria-label="Copy Install the template example">Copy</button></div><pre><code class="language-rust">use std::sync::Arc;
 use gpui_luma::controls::button::Button;
 use gpui_luma::infra::presenter::HasPresenter;
 
