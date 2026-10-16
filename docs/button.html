@@ -65,11 +65,7 @@ fn bind_factory_button(control: Entity&lt;Button&gt;, cx: &amp;mut Context&lt;Ex
     })
 }</code></pre></div><p class="small">When a captured entity can own this Button, capture it weakly to avoid an ownership cycle.</p></section>
 <section id="events"><h2>Events</h2><p>Builder callbacks update the owning app through its <code>Context</code>. The Button retains them automatically; no application subscription field is needed. <code>cx.notify()</code> requests an owner redraw. Use <code>.on_event(cx, ...)</code> for the complete event enum; ordinary <code>cx.subscribe</code> observers still work.</p><div class="event-table"><table><thead><tr><th scope="col">Event / payload</th><th scope="col">Callback</th><th scope="col">Application use</th></tr></thead><tbody><tr><td><code>Click</code></td><td><code>.on_click(cx, ...)</code></td><td>Execute the application command.</td></tr><tr><td><code>FocusChanged { focused: bool }</code></td><td><code>.on_focus_changed(cx, ...)</code></td><td>Focus state changed.</td></tr><tr><td><code>EnabledChanged { enabled: bool }</code></td><td><code>.on_enabled_changed(cx, ...)</code></td><td>Enabled state changed.</td></tr><tr><td><code>HoverChanged { hovered: bool }</code></td><td><code>.on_hover_changed(cx, ...)</code></td><td>Pointer hover state changed.</td></tr></tbody></table></div><p class="small">Builder callbacks append and run in registration order. They hold the owner weakly: after it is released they do nothing. Captures are released when the Button or unspawned builder is dropped. Separate entity bindings and subscribers follow GPUI ordering. Callback-triggered state changes use the same event queue; <code>set_enabled</code> emits only when state changes.</p><p class="small"><code>ButtonEvent</code> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/button/core.rs">Event definitions</a>. Match the events you need; allow for other variants.</p></section>
-<section id="looks"><h2><span class="number">03</span>Look differences</h2>
-<p>Variants belong to the Look, not the SDK Button contract. Radix examples here use <code>.solid()</code>; Shadcn uses <code>.primary()</code> for primary emphasis. These are visual choices, not guaranteed equivalents.</p>
-<ul class="notes"><li>Radix: Solid, Soft, Surface, Outline, Ghost, and Classic; additional specialized variants exist.</li><li>Shadcn: Primary, Secondary, Outline, Ghost, and ContentOnly.</li><li>Sizes, tones, radii, and template options are Look-specific. Check the chosen builder.</li></ul>
-<p class="small">SDK activation, enabled state, and event types stay the same. Builders resolve their Look automatically.</p></section>
-<section id="disabled"><h2><span class="number">04</span>Disable an unavailable action</h2>
+<section id="disabled"><h2><span class="number">03</span>Disable an unavailable action</h2>
 <p>Update the entity when application state changes. Disabling the control prevents activation; changing its appearance alone does not.</p>
 <div class="codebox"><div class="codebar"><span>Rust · After creation</span><button class="copy" aria-label="Copy disabled state example">Copy</button></div><pre><code>self.control.update(cx, |button, cx| {
     button.set_enabled(false, cx);
@@ -81,7 +77,7 @@ fn bind_factory_button(control: Entity&lt;Button&gt;, cx: &amp;mut Context&lt;Ex
 </section>
 <footer data-site-footer></footer>
 </main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#create">Create a button</a><a href="#factory">Factory Buttons</a><a href="#events">Events</a><a href="#looks">Look differences</a><a href="#disabled">Disable an action</a><a href="#behavior">Interaction notes</a></nav>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#create">Create a button</a><a href="#factory">Factory Buttons</a><a href="#events">Events</a><a href="#disabled">Disable an action</a><a href="#behavior">Interaction notes</a></nav>
 </div>
 </body>
 </html>

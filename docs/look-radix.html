@@ -31,8 +31,58 @@ fn save_button(cx: &amp;mut Context&lt;Example&gt;) -&gt; Entity&lt;Button&gt; {
             cx.notify();
         })
         .spawn(cx)
-}</code></pre></div><p class="small">Call inside an initialized application. Callbacks use the same SDK events in both Looks. This example is compilation-checked.</p></section><section id="customize"><h2>Look selection</h2><p>Builders use the application’s global <code>Look</code>, or the built-in fallback. Use <code>.look(&amp;custom_look)</code> for an explicit instance, such as a fork or preview.</p><h2>Customize</h2><p>Use the supported variants, sizes, tones, and radii. Use local template modifiers where available. Inspect the Look’s ownership and redraw rules when changing shared settings.</p><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/lib.rs">Public API and redraw examples</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/button_builder.rs">Button builder</a></p></section><footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Use it</a><a href="#customize">Customize</a></nav>
+}</code></pre></div><p class="small">Call inside an initialized application. Callbacks use the same SDK events in both Looks. This example is compilation-checked.</p></section><section id="support">
+<h2>Control support</h2>
+<p>Support describes the styling this Look supplies for the documented SDK controls. SDK behavior and events are shared across Looks.</p>
+<p><strong>Supported</strong>: a Look builder, theme, or template is available; the notes identify how to use it. <strong>Partial</strong>: styling is available only through another control. <strong>Not provided</strong>: no styling adapter is supplied. <strong>Styling not needed</strong>: use the SDK utility directly; its child controls or scrollbar may still need styling.</p>
+<div class="event-table support-table"><table><caption>Radix support for SDK controls</caption><thead><tr><th scope="col">Control</th><th scope="col">Support</th><th scope="col">Notes</th></tr></thead><tbody>
+<tr><th scope="row"><a href="accordion.html">Accordion</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="autocomplete.html">Autocomplete</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="button.html">Button</a></th><td>Supported</td><td><code>Button</code> builder. Solid, Soft, Surface, Outline, Ghost, Classic; specialized variants also available.</td></tr>
+<tr><th scope="row"><a href="checkbox.html">Checkbox</a></th><td>Supported</td><td><code>Checkbox</code> builder. Classic, Surface, Soft.</td></tr>
+<tr><th scope="row"><a href="combobox.html">ComboBox</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="context-menu.html">Context Menu</a></th><td>Supported</td><td><code>ContextMenu</code> builder.</td></tr>
+<tr><th scope="row"><a href="control-group.html">Control Group</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="dock-splitter.html">Dock Splitter</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="floating-menu.html">Floating Menu</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="frame.html">Frame</a></th><td>Styling not needed</td><td>Use SDK Frame for layout and optional decoration; no Look is required.</td></tr>
+<tr><th scope="row"><a href="icon-button.html">Icon Button</a></th><td>Supported</td><td>Use Button with the SDK icon role; shares button styling.</td></tr>
+<tr><th scope="row"><a href="icon-group.html">Icon Group</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="listbox.html">List Box</a></th><td>Supported</td><td><code>ListBoxBuilder</code> builder.</td></tr>
+<tr><th scope="row"><a href="overlay-window.html">Overlay Window</a></th><td>Supported</td><td><code>LookControlExt::overlay_window()</code> returns a themed SDK builder.</td></tr>
+<tr><th scope="row"><a href="pager.html">Pager</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="popover-button.html">Popover Button</a></th><td>Styling not needed</td><td>Supply the trigger and popup content; style those controls with the chosen Look.</td></tr>
+<tr><th scope="row"><a href="popup-menu.html">Popup Menu</a></th><td>Supported</td><td><code>PopupMenu</code> builder. Solid, Soft.</td></tr>
+<tr><th scope="row"><a href="popup-scroll-surface.html">Popup Scroll Surface</a></th><td>Styling not needed</td><td>Popup scrolling needs no Look styling; visible scrollbar chrome uses the supplied ScrollbarTemplate. Radix does not currently supply a scrollbar template.</td></tr>
+<tr><th scope="row"><a href="progress.html">Progress</a></th><td>Supported</td><td><code>Progress</code> builder. Surface, Soft.</td></tr>
+<tr><th scope="row"><a href="radio-button.html">Radio Button</a></th><td>Supported</td><td><code>Radio</code> builder. Classic, Surface, Soft.</td></tr>
+<tr><th scope="row"><a href="radio-group.html">Radio Group</a></th><td>Supported</td><td><code>RadioGroup</code> builder.</td></tr>
+<tr><th scope="row"><a href="resizable-panels.html">Resizable Panels</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="scroll-container.html">Scroll Container</a></th><td>Styling not needed</td><td>Scrolling needs no Look styling; visible scrollbar chrome uses the supplied ScrollbarTemplate. Radix does not currently supply a scrollbar template.</td></tr>
+<tr><th scope="row"><a href="scrollbar.html">Scrollbar</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="search-selector.html">Search Selector</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="selection-panel.html">Selection Panel</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="selector.html">Selector</a></th><td>Supported</td><td><code>Selector</code> builder.</td></tr>
+<tr><th scope="row"><a href="selector-list.html">Selector List</a></th><td>Partial</td><td>Radix Selector supplies row colors through its menu palette; no standalone selector-list helper.</td></tr>
+<tr><th scope="row"><a href="sidebar.html">Sidebar</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="slide-panel.html">Slide Panel</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="slider.html">Slider</a></th><td>Supported</td><td><code>Slider</code> builder. Classic, Surface, Soft.</td></tr>
+<tr><th scope="row"><a href="split-button.html">Split Button</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="split-view.html">Split View</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="stepper.html">Stepper</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="switch.html">Switch</a></th><td>Supported</td><td><code>Switch</code> builder. Classic, Surface, Soft.</td></tr>
+<tr><th scope="row"><a href="table.html">Table</a></th><td>Not provided</td><td>No Radix styling adapter; the SDK control remains available.</td></tr>
+<tr><th scope="row"><a href="tabs.html">Tabs</a></th><td>Supported</td><td><code>Tabs</code> builder. Line, Surface.</td></tr>
+<tr><th scope="row"><a href="textarea.html">Text Area</a></th><td>Supported</td><td><code>TextArea</code> builder.</td></tr>
+<tr><th scope="row"><a href="textfield.html">Text Field</a></th><td>Supported</td><td><code>TextField</code> builder. Classic, Surface, Soft.</td></tr>
+<tr><th scope="row"><a href="toggle.html">Toggle</a></th><td>Supported</td><td><code>Toggle</code> builder.</td></tr>
+<tr><th scope="row"><a href="toolbar.html">Toolbar</a></th><td>Supported</td><td><code>Toolbar</code> builder.</td></tr>
+<tr><th scope="row"><a href="tooltip.html">Tooltip</a></th><td>Supported</td><td><code>tooltip_theme()</code>; builders attach it to supported controls.</td></tr>
+<tr><th scope="row"><a href="tree-view.html">Tree View</a></th><td>Supported</td><td><code>TreeView</code> builder.</td></tr>
+</tbody></table></div>
+<p>Variants and customization options belong to each Look. Names in different Looks do not guarantee matching appearances. See the <a href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/lib.rs">Look public API</a> for exports.</p>
+</section><section id="customize"><h2>Look selection</h2><p>Builders use the application’s global <code>Look</code>, or the built-in fallback. Use <code>.look(&amp;custom_look)</code> for an explicit instance, such as a fork or preview.</p><h2>Customize</h2><p>Use the supported variants, sizes, tones, and radii. Use local template modifiers where available. Inspect the Look’s ownership and redraw rules when changing shared settings.</p><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/lib.rs">Public API and redraw examples</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/button_builder.rs">Button builder</a></p></section><footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Use it</a><a href="#support">Control support</a><a href="#customize">Customize</a></nav>
 </div>
 </body>
 </html>
