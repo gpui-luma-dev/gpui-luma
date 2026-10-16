@@ -9,8 +9,8 @@ pub use model::{
     PopupMenuTriggerStyle, icon_content,
 };
 pub use template::{
-    PopupMenuTemplate, PopupMenuTemplateHandlers, PopupMenuTemplateModifier, ThemedPopupMenuTemplate,
-    default_popup_menu_template,
+    SplitFaceHandlers, PopupMenuTemplate, PopupMenuTemplateHandlers, PopupMenuTemplateModifier,
+    ThemedPopupMenuTemplate, default_popup_menu_template,
 };
 pub use theme::{
     DefaultPopupMenuTheme, PopupMenuLook, PopupMenuPalette, PopupMenuTheme, PopupMenuTriggerMetrics,

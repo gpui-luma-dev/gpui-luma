@@ -33,8 +33,8 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     },
     ControlDocEntry {
         id: "split-button",
-        title: "Split Button (Prototype)",
-        description: "Issue #17 prototype for a cohesive command button with a separate menu trigger. The action face executes immediately while the adjacent face opens alternate actions; this Studio surface is validating focus, seams, menu ownership, and event semantics before SDK promotion.",
+        title: "Split Button",
+        description: "A primary action with an adjacent disclosure menu and one tab stop. Enter or Space runs the primary action; Up or Down opens alternate actions. Each face has independent hover and pressed feedback. Disable only the primary action with primary_enabled(false) while keeping menu actions available.",
         category: ControlCategory::Command,
         snippet: "let save = shadcn::SplitButton::new(\"save\").look(look.as_ref()).primary()\n    .label(\"Save\")\n    .items([MenuItem::new(\"save-as\").label(\"Save as\")])\n    .on_action_click(cx, |app: &mut Self, cx| {\n        app.save_requests += 1;\n        cx.notify();\n    })\n    .on_select(cx, |app, item_id, _, cx| {\n        app.last_action = item_id.to_string();\n        cx.notify();\n    })\n    .spawn(cx);",
         section_order: 101,

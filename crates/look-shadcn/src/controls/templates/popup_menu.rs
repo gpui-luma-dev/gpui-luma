@@ -58,3 +58,8 @@ impl PopupMenuTheme for ShadcnPopupMenuTheme {
 pub fn popup_menu_template(theme: ShadcnLook) -> Arc<dyn gpui_luma::controls::popup_menu::PopupMenuTemplate> {
     Arc::new(ThemedPopupMenuTemplate::new(Arc::new(ShadcnPopupMenuTheme { theme: theme.clone() })))
 }
+
+/// Dedicated template factory with the shared Shadcn button/menu theme recipe.
+pub fn split_button_template(theme: ShadcnLook) -> Arc<dyn gpui_luma::controls::split_button::SplitButtonTemplate> {
+    Arc::new(gpui_luma::controls::split_button::ThemedSplitButtonTemplate::new(popup_menu_theme(theme)))
+}

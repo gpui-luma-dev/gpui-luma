@@ -152,6 +152,7 @@ fn state_cell(
         full_width: false,
         without_elevation: false,
         split: false,
+        split_state: Default::default(),
         trigger_radius_override: None,
         open_submenu: None,
         active_path: None,
@@ -183,6 +184,7 @@ fn items() -> [MenuItem; 3] {
 
 fn preview_handlers(item_count: usize) -> PopupMenuTemplateHandlers {
     PopupMenuTemplateHandlers {
+        split_faces: None,
         trigger_bounds: Box::new(noop_bounds),
         action_click: Box::new(noop_click),
         trigger_click: Box::new(noop_click),

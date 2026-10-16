@@ -21,7 +21,16 @@ pub type PopupMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'sta
 pub type PopupMenuMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type PopupMenuMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 
+/// Optional per-face input handlers; omitted by static template previews.
+pub struct SplitFaceHandlers {
+    pub primary_hover: PopupMenuHoverHandler,
+    pub disclosure_hover: PopupMenuHoverHandler,
+    pub primary_down: PopupMenuMouseDownHandler,
+    pub disclosure_down: PopupMenuMouseDownHandler,
+}
+
 pub struct PopupMenuTemplateHandlers {
+    pub split_faces: Option<SplitFaceHandlers>,
     pub trigger_bounds: PopupMenuBoundsHandler,
     pub action_click: PopupMenuClickHandler,
     pub trigger_click: PopupMenuClickHandler,
@@ -135,6 +144,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
         _cx: &mut App,
     ) -> Stateful<Div> {
         let PopupMenuTemplateHandlers {
+            split_faces,
             trigger_bounds,
             action_click,
             trigger_click,
@@ -155,13 +165,19 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             icon_only: model.icon_only,
             trigger_radius_override: model.trigger_radius_override,
         };
-        let mut look = self.theme.resolve_look(model.trigger_style, metrics, model.state, scale_factor, _cx);
+        // The outer split frame owns focus; each face owns its hover/pressed paint.
+        let state = if model.split {
+            InteractionState { hovered: false, pressed: false, ..model.state }
+        } else {
+            model.state
+        };
+        let mut look = self.theme.resolve_look(model.trigger_style, metrics, state, scale_factor, _cx);
         let focused = model.state.focused && !model.state.disabled;
         let control_look = if focused {
             self.theme.resolve_look(
                 model.trigger_style,
                 metrics,
-                InteractionState { focused: false, ..model.state },
+                InteractionState { focused: false, ..state },
                 scale_factor,
                 _cx,
             )
@@ -183,8 +199,16 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             id: model.id.clone(),
             label: model.label.clone(),
             open: model.open,
-            enabled: model.enabled,
-            state: model.state,
+            enabled: if model.split {
+                !model.split_state.primary.disabled
+            } else {
+                model.enabled
+            },
+            state: if model.split {
+                model.split_state.primary
+            } else {
+                model.state
+            },
         };
         let face = (model.content)(&trigger_model, _cx);
         let mut trigger = div()
@@ -202,22 +226,54 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             .rounded(px(control_look.trigger_radius));
 
         if model.split {
-            let action_face = div()
+            let primary_look =
+                self.theme.resolve_look(model.trigger_style, metrics, model.split_state.primary, scale_factor, _cx);
+            let disclosure_look =
+                self.theme
+                    .resolve_look(model.trigger_style, metrics, model.split_state.disclosure, scale_factor, _cx);
+            let mut action_face = div()
                 .id("action-face")
+                .role(gpui::Role::Button)
+                .aria_label(model.label.clone())
+                .aria_keyshortcuts("Enter Space")
+                .a11y_synthetic_children({
+                    let enabled = !model.split_state.primary.disabled;
+                    move |builder| split_face_accessibility(builder.parent_node(), enabled, false)
+                })
+                .when(model.split_state.primary.disabled, |face| {
+                    face.aria_description("Primary action unavailable; press Down Arrow for menu options")
+                })
+                .bg(primary_look.trigger_background)
                 .flex()
                 .flex_1()
                 .min_w(px(0.0))
                 .items_center()
                 .px(px(control_look.trigger_padding_x))
                 .py(px(control_look.trigger_padding_y))
-                .text_color(control_look.trigger_foreground)
+                .text_color(primary_look.trigger_foreground)
                 .text_size(px(control_look.trigger_typography.size))
                 .line_height(px(control_look.trigger_typography.line_height))
                 .font_weight(control_look.trigger_typography.weight)
                 .on_click(action_click)
-                .child(face);
-            let secondary = div()
+                .child(face)
+                .when_some(model.end_icon, |face, icon| {
+                    face.gap(px(look.trigger_gap)).child(render_lucide_icon(
+                        icon,
+                        primary_look.trigger_foreground,
+                        look.trigger_icon_size,
+                    ))
+                });
+            let mut secondary = div()
                 .id("secondary-face")
+                .role(gpui::Role::Button)
+                .aria_label(format!("{} menu", model.label))
+                .aria_keyshortcuts("ArrowDown ArrowUp")
+                .aria_expanded(model.open)
+                .a11y_synthetic_children({
+                    let enabled = model.enabled;
+                    move |builder| split_face_accessibility(builder.parent_node(), enabled, true)
+                })
+                .bg(disclosure_look.trigger_background)
                 .flex()
                 .items_center()
                 .justify_center()
@@ -228,10 +284,26 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .child(render_disclosure_icon(
                     model.disclosure_icons,
                     model.disclosure_progress,
-                    control_look.trigger_foreground,
+                    disclosure_look.trigger_foreground,
                     look.trigger_icon_size,
                 ))
                 .on_click(trigger_click);
+            if let Some(faces) = split_faces {
+                action_face =
+                    action_face.on_hover(faces.primary_hover).on_mouse_down(MouseButton::Left, faces.primary_down);
+                secondary =
+                    secondary.on_hover(faces.disclosure_hover).on_mouse_down(MouseButton::Left, faces.disclosure_down);
+            }
+            #[cfg(any(test, feature = "test-support"))]
+            {
+                let primary_id = model.id.clone();
+                let disclosure_id = model.id.clone();
+                action_face = action_face.debug_selector(move || format!("{primary_id}/primary"));
+                secondary = secondary.debug_selector(move || format!("{disclosure_id}/disclosure"));
+            }
+            if model.split_state.primary.disabled && model.enabled {
+                action_face = action_face.opacity(0.56);
+            }
             trigger = trigger
                 .overflow_hidden()
                 .border_1()
@@ -284,6 +356,10 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             }
         }
 
+        if model.full_width {
+            trigger = trigger.w_full();
+        }
+
         if border.a > 0.0 && !model.split {
             trigger = trigger.border_1().border_color(border);
         }
@@ -307,6 +383,11 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             .flex_col()
             .items_stretch()
             .relative()
+            .when(model.split, |root| {
+                root.role(gpui::Role::Group).aria_label(model.label.clone()).aria_description(
+                    "Enter or Space activates the primary action; Down or Up Arrow opens the menu; Escape dismisses",
+                )
+            })
             .on_mouse_down_out(root_mouse_down_out);
 
         let oversize_extent = focus_extent;
@@ -366,6 +447,16 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
         }
 
         self.apply_modifiers(root, model)
+    }
+}
+
+// GPUI exposes disabled/has-popup through AccessKit's node API.
+fn split_face_accessibility(node: &mut gpui::accesskit::Node, enabled: bool, disclosure: bool) {
+    if !enabled {
+        node.set_disabled();
+    }
+    if disclosure {
+        node.set_has_popup(gpui::accesskit::HasPopup::Menu);
     }
 }
 
@@ -462,6 +553,20 @@ mod tests {
             ),
             &StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), 1.0),
         )
+    }
+
+    #[test]
+    fn split_faces_expose_independent_disabled_and_menu_semantics() {
+        let mut primary = gpui::accesskit::Node::new(gpui::Role::Button);
+        split_face_accessibility(&mut primary, false, false);
+        assert!(primary.is_disabled());
+        assert_eq!(primary.has_popup(), None);
+        let mut disclosure = gpui::accesskit::Node::new(gpui::Role::Button);
+        split_face_accessibility(&mut disclosure, true, true);
+        assert!(!disclosure.is_disabled());
+        assert_eq!(disclosure.has_popup(), Some(gpui::accesskit::HasPopup::Menu));
+        split_face_accessibility(&mut disclosure, false, true);
+        assert!(disclosure.is_disabled());
     }
 
     #[test]
