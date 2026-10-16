@@ -13,6 +13,30 @@
         footer.replaceChildren(context, attribution);
     }
 
+// Keep navigation at the same position across full-page loads and history visits.
+const sidebar = document.querySelector('.sidebar');
+if (sidebar) {
+    const sidebarScrollKey = 'luma-docs-sidebar-scroll';
+    function restoreSidebarScroll() {
+        if (!sidebar.clientWidth) return;
+        try {
+            const saved = sessionStorage.getItem(sidebarScrollKey);
+            if (saved !== null && Number.isFinite(Number(saved))) {
+                sidebar.scrollTop = Math.max(0, Number(saved));
+            }
+        } catch {
+            // Navigation still works when session storage is unavailable.
+        }
+    }
+    function saveSidebarScroll() {
+        if (!sidebar.clientWidth) return;
+        try { sessionStorage.setItem(sidebarScrollKey, String(sidebar.scrollTop)); } catch {}
+    }
+    restoreSidebarScroll();
+    window.addEventListener('pagehide', saveSidebarScroll);
+    window.addEventListener('pageshow', restoreSidebarScroll);
+}
+
 const root = document.documentElement;
 const theme = document.getElementById('theme');
 const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');

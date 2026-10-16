@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Arrange SDK controls with layout primitives and macros.">
+<title>Layout · Luma SDK</title>
+<script src="theme-init.js"></script>
+<link rel="stylesheet" href="site.css">
+<!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
+<script src="vendor/prism/prism-core.min.js" data-manual defer></script>
+<script src="vendor/prism/prism-rust.min.js" defer></script>
+<script src="vendor/prism/prism-toml.min.js" defer></script>
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<details class="mobile-nav"><summary>Documentation navigation</summary><nav aria-label="Mobile navigation"><a href="index.html">Getting Started</a><a href="looks.html">Why? How?</a><a href="look-shadcn.html">Look-shadcn</a><a href="look-radix.html">Look-radix</a><a href="create-look.html">Create your own Look</a><a href="button.html">Button</a><a href="icon-button.html">Icon Button</a><a href="split-button.html">Split Button (Preview)</a><a href="checkbox.html">Checkbox</a><a href="radio-button.html">Radio Button</a><a href="radio-group.html">Radio Group</a><a href="switch.html">Switch</a><a href="toggle.html">Toggle</a><a href="toolbar.html">Toolbar</a><a href="control-group.html">Control Group</a><a href="icon-group.html">Icon Group</a><a href="textfield.html">Text Field</a><a href="textarea.html">Text Area</a><a href="slider.html">Slider</a><a href="progress.html">Progress</a><a href="listbox.html">List Box</a><a href="table.html">Table</a><a href="tree-view.html">Tree View</a><a href="selector.html">Selector</a><a href="combobox.html">ComboBox</a><a href="autocomplete.html">Autocomplete</a><a href="search-selector.html">Search Selector</a><a href="selection-panel.html">Selection Panel</a><a href="accordion.html">Accordion</a><a href="tabs.html">Tabs</a><a href="sidebar.html">Sidebar</a><a href="pager.html">Pager</a><a href="stepper.html">Stepper</a><a href="popup-menu.html">Popup Menu</a><a href="context-menu.html">Context Menu</a><a href="popover-button.html">Popover Button</a><a href="overlay-window.html">Overlay Window</a><a href="tooltip.html">Tooltip</a><a href="slide-panel.html">Slide Panel</a><a href="dock-splitter.html">Dock Splitter</a><a href="resizable-panels.html">Resizable Panels</a><a href="split-view.html">Split View</a><a href="scrollbar.html">Scrollbar</a><div class="mobile-nav-group"><strong>Layout</strong><a href="layout.html" aria-current="page">Primitives &amp; macros</a><a href="frame.html">Frame</a><a href="scroll-container.html">Scroll Container</a></div><div class="mobile-nav-group"><strong>Composition &amp; helpers</strong><a href="composition.html">Overview &amp; forms</a><a href="floating-menu.html">Floating Menu</a><a href="popup-scroll-surface.html">Popup Scroll Surface</a><a href="selector-list.html">Selector List</a></div></nav></details>
+<div class="layout">
+<aside class="sidebar" aria-label="Documentation navigation"><nav aria-label="Overview"><div class="nav-label">Overview</div><a href="index.html">Getting Started</a></nav><nav aria-label="Looks"><div class="nav-label">Looks</div><a href="looks.html">Why? How?</a><a href="look-shadcn.html">Look-shadcn</a><a href="look-radix.html">Look-radix</a><a href="create-look.html">Create your own Look</a></nav><nav aria-label="Controls"><div class="nav-label">Controls</div><a href="accordion.html">Accordion</a><a href="autocomplete.html">Autocomplete</a><a href="button.html">Button</a><a href="checkbox.html">Checkbox</a><a href="combobox.html">ComboBox</a><a href="context-menu.html">Context Menu</a><a href="control-group.html">Control Group</a><a href="dock-splitter.html">Dock Splitter</a><a href="icon-button.html">Icon Button</a><a href="icon-group.html">Icon Group</a><a href="listbox.html">List Box</a><a href="overlay-window.html">Overlay Window</a><a href="pager.html">Pager</a><a href="popover-button.html">Popover Button</a><a href="popup-menu.html">Popup Menu</a><a href="progress.html">Progress</a><a href="radio-button.html">Radio Button</a><a href="radio-group.html">Radio Group</a><a href="resizable-panels.html">Resizable Panels</a><a href="scrollbar.html">Scrollbar</a><a href="search-selector.html">Search Selector</a><a href="selection-panel.html">Selection Panel</a><a href="selector.html">Selector</a><a href="sidebar.html">Sidebar</a><a href="slide-panel.html">Slide Panel</a><a href="slider.html">Slider</a><a href="split-button.html">Split Button (Preview)</a><a href="split-view.html">Split View</a><a href="stepper.html">Stepper</a><a href="switch.html">Switch</a><a href="table.html">Table</a><a href="tabs.html">Tabs</a><a href="textarea.html">Text Area</a><a href="textfield.html">Text Field</a><a href="toggle.html">Toggle</a><a href="toolbar.html">Toolbar</a><a href="tooltip.html">Tooltip</a><a href="tree-view.html">Tree View</a></nav><nav aria-label="Layout"><div class="nav-label">Layout</div><a href="layout.html" aria-current="page">Primitives &amp; macros</a><a href="frame.html">Frame</a><a href="scroll-container.html">Scroll Container</a></nav><nav aria-label="Composition &amp; helpers"><div class="nav-label">Composition &amp; helpers</div><a href="composition.html">Overview &amp; forms</a><a href="floating-menu.html">Floating Menu</a><a href="popup-scroll-surface.html">Popup Scroll Surface</a><a href="selector-list.html">Selector List</a></nav></aside>
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Layout</span></div><h1>Layout</h1><p class="intro">Arrange SDK controls with layout primitives and macros.</p><section id="stacks"><h2>Stacks &amp; wrapping</h2><p><code>vstack!</code> arranges children vertically, <code>hstack!</code> horizontally, and <code>wrappanel!</code> wraps children onto additional lines. They return GPUI flex elements; they do not spawn control entities or need a Look.</p><p>Use <code>gap</code> for spacing, <code>align</code> for cross-axis alignment, and stack <code>justify</code> options for main-axis distribution. Import GPUI’s prelude for the element methods used by these macros. <code>flow!</code> is a legacy compatibility alias; prefer <code>wrappanel!</code> for new code.</p></section>
+<section id="primitives"><h2>Dock, grid &amp; layers</h2><p><code>DockPanel</code> / <code>dock_panel!</code> place children against edges, with the last child filling the remainder by default. <code>GridLayout</code> / <code>grid_layout!</code> use fixed-pixel or proportional column tracks and support column spans. Both builders expose <code>.build()</code>.</p><p><code>LayerStack</code> paints later layers above earlier layers and applies a shared corner radius to the layer roots. It does not clip arbitrary descendant backgrounds to rounded corners.</p><div class="codebox"><div class="codebar"><span>Rust</span><button class="copy" aria-label="Copy Rust example">Copy</button></div><pre><code class="language-rust">use gpui::{div, prelude::*, px};
+use gpui_luma::{hstack, vstack, wrappanel, dock_panel, grid_layout};
+use gpui_luma::{GridTrack, LayerStack};
+
+fn stacks() -&gt; impl IntoElement {
+    vstack! { gap=12 align=start;
+        hstack! { gap=8 align=center; div().child("Name"), div().child("Value") },
+        wrappanel! { gap=8; div().child("One"), div().child("Two") },
+    }
+}
+
+fn docked() -&gt; impl IntoElement {
+    dock_panel! {
+        top: div().child("Header"),
+        left: div().w(px(180.0)).child("Sidebar"),
+        fill: div().child("Content"),
+    }.build()
+}
+
+fn grid() -&gt; impl IntoElement {
+    grid_layout! {
+        rows: 1, columns: [GridTrack::Px(180.0), GridTrack::Star(1.0)], gap: 12;
+        [0, 0] =&gt; div().child("Label"),
+        [0, 1] =&gt; div().child("Content"),
+    }.build()
+}
+
+fn layers() -&gt; impl IntoElement {
+    LayerStack::new(px(8.0))
+        .layer(div().child("Background layer"))
+        .layer(div().child("Foreground layer"))
+}</code></pre></div></section>
+<section id="responsive"><h2>Wide Middle</h2><p><code>WideMiddle</code> and <code>WideMiddleLayout</code> provide a responsive three-region layout. At narrow widths, the middle moves below the leading and trailing regions. Retain the host returned by <code>spawn_wide_middle</code>, then compose its regions with <code>WideMiddleLayout::new(...).build(cx)</code>. Configure side widths, middle bounds, and gap on the host.</p></section>
+<section id="containers"><h2>Containers</h2><ul><li><a href="frame.html">Frame</a>: arrange and optionally decorate a container.</li><li><a href="scroll-container.html">Scroll Container</a>: host scrollable content and scrollbar chrome.</li></ul><p>For draggable layout behavior, use the controls <a href="dock-splitter.html">Dock Splitter</a>, <a href="resizable-panels.html">Resizable Panels</a>, and <a href="split-view.html">Split View</a>.</p></section>
+<section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/macros.rs">Layout macros</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/layouts/mod.rs">Layout primitives</a></p></section><footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#stacks">Stacks & wrapping</a><a href="#primitives">Dock, grid & layers</a><a href="#responsive">Wide Middle</a><a href="#containers">Containers</a><a href="#source">Source</a></nav>
+</div>
+</body>
+</html>

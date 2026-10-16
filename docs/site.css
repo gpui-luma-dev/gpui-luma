@@ -20,3 +20,16 @@ pre .token.function,pre .token.macro{color:var(--syntax-function)}
 pre .token.class-name,pre .token.type-definition,pre .token.property,pre .token.table{color:var(--syntax-type)}
 pre .token.punctuation,pre .token.operator{color:var(--fg)}
 pre .token.attribute,pre .token.annotation{color:var(--syntax-type)}
+
+.mobile-nav-group{display:flex;flex-wrap:wrap;gap:9px 20px;width:100%}.mobile-nav-group strong{flex-basis:100%;font-size:12px;color:var(--fg);margin-top:12px}
+
+/* Desktop panes share the viewport but own their scroll positions. */
+@media(min-width:761px){
+    body{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+    header{flex:0 0 76px}
+    .layout{flex:1;min-height:0;width:100%;grid-template-rows:minmax(0,1fr)}
+    .sidebar{position:static;height:100%;min-height:0;overscroll-behavior:contain;overflow-anchor:none}
+    main{height:100%;min-height:0;overflow:auto;overscroll-behavior:contain;scroll-padding-top:24px;scroll-behavior:smooth;padding-left:6px;padding-right:6px}
+    .toc{position:static;min-height:0;max-height:calc(100% - 49px);overflow:auto;overscroll-behavior:contain}
+}
+@media(prefers-reduced-motion:reduce){main{scroll-behavior:auto}}
