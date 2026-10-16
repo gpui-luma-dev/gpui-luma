@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Preview a retained source color, or use a swatch as an SDK button.">
+<title>Color Swatch · Luma SDK</title>
+<script src="theme-init.js"></script>
+<link rel="stylesheet" href="site.css">
+<!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
+<script src="vendor/prism/prism-core.min.js" data-manual defer></script>
+<script src="vendor/prism/prism-rust.min.js" defer></script>
+<script src="vendor/prism/prism-toml.min.js" defer></script>
+<script src="navigation.js" defer></script>
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<div data-site-mobile-nav></div>
+<div class="layout">
+<aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><a href="colors.html">Color controls</a></div><h1>Color Swatch</h1><p class="intro">Preview a retained source color, or use a swatch as an SDK button.</p>
+<section id="use"><h2>Preview and clickable swatch</h2><div class="codebox"><div class="codebar"><span>Static preview and picker trigger</span><button class="copy" aria-label="Copy Static preview and picker trigger">Copy</button></div><pre><code class="language-rust">use std::sync::Arc;
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma::color::ColorValue;
+use gpui_luma::controls::button::Button;
+use gpui_luma_color::{ColorSwatch, ColorSwatchButtonTemplate, ColorSwatchData};
+
+struct Example {
+    button: Entity&lt;Button&lt;ColorSwatchData&gt;&gt;,
+    source: ColorValue,
+    picker_requested: bool,
+}
+impl Example {
+    fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
+        let source = ColorValue::srgb(0.2, 0.5, 0.9, 0.65);
+        let button = Button::new(&quot;accent-swatch&quot;)
+            .typed(ColorSwatchData { color: source, checkerboard: true, ..Default::default() })
+            .template(Arc::new(ColorSwatchButtonTemplate))
+            .on_click(cx, |owner: &amp;mut Self, cx| {
+                owner.picker_requested = true;
+                cx.notify();
+            })
+            .spawn(cx);
+        Self { button, source, picker_requested: false }
+    }
+}
+impl Render for Example {
+    fn render(&amp;mut self, _: &amp;mut Window, _: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
+        div().flex().items_center().gap(px(8.0))
+            .child(ColorSwatch::new(self.source).checkerboard(true).height(px(30.0)))
+            .child(self.button.clone())
+    }
+}</code></pre></div></section>
+<section id="appearance"><h2>Appearance and source colors</h2><p><code>ColorSwatch</code> is a renderable element; it has no events or spawned entity. Configure <code>size(ControlSize)</code>, <code>height</code>, <code>rounded</code>, <code>checkerboard</code>, and <code>bordered</code>. Checkerboard is off by default on static swatches; enable it to reveal alpha.</p><p>Both swatch forms take <code>ColorValue</code>, retaining its source space and components. Previews use an sRGB fallback with <code>CssLocalMinde</code> mapping. Static swatches can select another policy with <code>mapping</code>. Invalid source colors render transparently; validate input with the strict source-color API when errors need to be reported.</p></section>
+<section id="events"><h2>Button events and updates</h2><p><code>ColorSwatchButtonTemplate</code> is a template for <code>Button&lt;ColorSwatchData&gt;</code>. The SDK Button handles click, focus, hover, and enabled events; no separate swatch event enum is needed. The example sets an application flag: it does not construct a picker automatically.</p><div class="event-table event-reference">
+<table>
+<thead><tr><th scope="col">Event</th><th scope="col">Payload</th><th scope="col">Callback</th></tr></thead>
+<tbody>
+<tr><td><code>Click</code></td><td>None</td><td><code>on_click</code><br>Open the application’s picker.</td></tr>
+<tr><td><code>FocusChanged</code></td><td><code>focused: bool</code></td><td><code>on_focus_changed</code><br>React to keyboard focus.</td></tr>
+<tr><td><code>HoverChanged</code></td><td><code>hovered: bool</code></td><td><code>on_hover_changed</code><br>React to pointer hover.</td></tr>
+<tr><td><code>EnabledChanged</code></td><td><code>enabled: bool</code></td><td><code>on_enabled_changed</code><br>React to enablement changes.</td></tr>
+</tbody>
+</table>
+</div><p>Update the typed payload with <code>button.update(cx, |button, cx| button.set_data(data, cx))</code> when the selected source color changes. Keep the source color in the owner model too, so previews and picker content share the same value. See <a href="colors.html#compose">picker composition</a> and <a href="button.html#events">Button events</a>.</p></section>
+<section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/luma-color/src/swatch.rs">Implementation</a></p></section>
+<footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Preview and clickable swatch</a><a href="#appearance">Appearance and source colors</a><a href="#events">Button events and updates</a><a href="#source">Source</a></nav>
+</div>
+</body>
+</html>

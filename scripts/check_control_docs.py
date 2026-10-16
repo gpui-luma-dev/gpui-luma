@@ -51,6 +51,12 @@ EXAMPLES = {
     "selector.html": 0,
     "sidebar.html": 0,
     "slider.html": 0,
+    "colors.html": 1,
+    "color-slider.html": [0, 1],
+    "color-field.html": 0,
+    "color-ring.html": 0,
+    "color-arc.html": 0,
+    "color-swatch.html": 0,
     "split-button.html": 0,
     "control-specialization.html": 0,
     "split-view.html": 0,
@@ -121,7 +127,8 @@ def main():
                       f'features = {json.dumps(spec["features"])}']
             manifest.append(f'{name} = {{ {", ".join(fields)} }}')
         for name, path in [("gpui-luma", "sdk"), ("gpui-luma-look-radix", "look-radix"),
-                           ("gpui-luma-look-shadcn", "look-shadcn"), ("gpui-luma-plot", "plot")]:
+                           ("gpui-luma-look-shadcn", "look-shadcn"), ("gpui-luma-plot", "plot"),
+                           ("gpui-luma-color", "luma-color")]:
             manifest.append(f'{name} = {{ path = {json.dumps(str(ROOT / "crates" / path))} }}')
         (package / "Cargo.toml").write_text("\n".join(manifest) + "\n")
         (package / "src").mkdir()

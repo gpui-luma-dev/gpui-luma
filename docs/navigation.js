@@ -206,6 +206,35 @@
         ]
     },
     {
+        "title": "Color controls",
+        "items": [
+            {
+                "href": "colors.html",
+                "label": "Overview"
+            },
+            {
+                "href": "color-slider.html",
+                "label": "Color Slider"
+            },
+            {
+                "href": "color-field.html",
+                "label": "Color Field"
+            },
+            {
+                "href": "color-ring.html",
+                "label": "Color Ring"
+            },
+            {
+                "href": "color-arc.html",
+                "label": "Color Arc"
+            },
+            {
+                "href": "color-swatch.html",
+                "label": "Color Swatch"
+            }
+        ]
+    },
+    {
         "title": "Composition & helpers",
         "items": [
             {

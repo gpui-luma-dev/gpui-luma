@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Edit a color channel on a partial circular track.">
+<title>Color Arc · Luma SDK</title>
+<script src="theme-init.js"></script>
+<link rel="stylesheet" href="site.css">
+<!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
+<script src="vendor/prism/prism-core.min.js" data-manual defer></script>
+<script src="vendor/prism/prism-rust.min.js" defer></script>
+<script src="vendor/prism/prism-toml.min.js" defer></script>
+<script src="navigation.js" defer></script>
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<div data-site-mobile-nav></div>
+<div class="layout">
+<aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><a href="colors.html">Color controls</a></div><h1>Color Arc</h1><p class="intro">Edit a color channel on a partial circular track.</p>
+<section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Hue arc with preview and commit</span><button class="copy" aria-label="Copy Hue arc with preview and commit">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::slider::{SliderControl, SliderEventExt};
+use gpui_luma_color::color_arc::ColorArcBuilder;
+use gpui_luma_color::style::Size;
+
+struct Example {
+    control: Entity&lt;SliderControl&gt;,
+    preview: f32,
+    committed: f32,
+}
+impl Example {
+    fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
+        let control = ColorArcBuilder::hue(&quot;hue-arc&quot;, 210.0, 0.8, 0.5)
+            .size(Size::Medium).start_degrees(-45.0).sweep_degrees(270.0)
+            .spawn(cx)
+            .on_value_changed(cx, |owner: &amp;mut Self, _, value, cx| {
+                owner.preview = value;
+                cx.notify();
+            })
+            .on_release(cx, |owner, _, value, cx| {
+                owner.committed = value;
+                cx.notify();
+            });
+        Self { control, preview: 210.0, committed: 210.0 }
+    }
+}
+impl Render for Example {
+    fn render(&amp;mut self, _: &amp;mut Window, _: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
+        div().w(px(240.0)).child(self.control.clone())
+    }
+}</code></pre></div></section>
+<section id="options"><h2>Channels and appearance</h2><p><code>hue(id, hue, saturation, lightness)</code>, <code>saturation(id, saturation, hue, hsv_value)</code>, and <code>lightness(id, lightness, hue, saturation)</code> choose the channel. Hue uses degrees; saturation/lightness use <code>0..1</code>.</p><p>Use <code>start_degrees</code> and <code>sweep_degrees</code> for geometry, <code>reversed</code> for value direction, and <code>size(Size)</code>, <code>arc_thickness</code>, and <code>thumb_size</code> for appearance. Raster rendering is the default; the <code>*_with_renderer</code> constructors accept <code>ColorArcRenderer</code>.</p></section>
+<section id="events"><h2>Events</h2><div class="event-table event-reference">
+<table>
+<thead><tr><th scope="col">Event</th><th scope="col">Payload</th><th scope="col">Callback</th></tr></thead>
+<tbody>
+<tr><td><code>Change</code></td><td><code>thumb_id: ThumbId</code><br><code>value: f32</code></td><td><code>on_value_changed</code><br>Update the live preview.</td></tr>
+<tr><td><code>Release</code></td><td><code>thumb_id: ThumbId</code><br><code>value: f32</code></td><td><code>on_release</code><br>Commit the interaction value.</td></tr>
+<tr><td><code>DragStart</code></td><td><code>thumb_id: ThumbId</code></td><td><code>on_drag_start</code><br>Begin a pointer gesture.</td></tr>
+<tr><td><code>DragEnd</code></td><td><code>thumb_id: ThumbId</code><br><code>value: f32</code></td><td><code>on_drag_end</code><br>Finish a pointer gesture.</td></tr>
+<tr><td><code>ThumbAdded</code></td><td><code>thumb_id: ThumbId</code><br><code>value: f32</code></td><td><code>on_thumb_added</code><br>Track an added gradient stop.</td></tr>
+<tr><td><code>ThumbRemoved</code></td><td><code>thumb_id: ThumbId</code></td><td><code>on_thumb_removed</code><br>Track a removed stop.</td></tr>
+<tr><td><code>ThumbSelected</code></td><td><code>thumb_id: ThumbId</code></td><td><code>on_thumb_selected</code><br>Update the selected thumb.</td></tr>
+<tr><td><code>FocusChanged</code></td><td><code>focused: bool</code></td><td><code>on_focus_changed</code><br>React to keyboard focus.</td></tr>
+<tr><td><code>HoverChanged</code></td><td><code>hovered: bool</code></td><td><code>on_hover_changed</code><br>React to pointer hover.</td></tr>
+<tr><td><code>EnabledChanged</code></td><td><code>enabled: bool</code></td><td><code>on_enabled_changed</code><br>React to enablement changes.</td></tr>
+</tbody>
+</table>
+</div><p>These are SDK <code>SliderEvent</code> callbacks, available through <code>SliderEventExt</code>. The builders return <code>Entity&lt;SliderControl&gt;</code>. Each callback receives the owner, the listed payload values, and the owner context. Register callbacks after <code>spawn</code>; use <code>on_event</code> or <code>cx.subscribe</code> for the full event stream. See <a href="slider.html#events">Slider events</a>.</p></section>
+<section id="keyboard"><h2>Keyboard and synchronization</h2><p>The arc uses the SDK Slider’s angular input strategy over a bounded start/sweep range. It does not enable the full ring’s wrapping policy. Use the normal SDK slider keyboard bindings and configure scalar <code>step</code> for channel snapping.</p><p>Retain <code>domain_renderer()</code> and <code>track_context()</code> before spawning. Update dependent color delegates and refresh thumb previews with <code>update_arc_delegate</code> / <code>refresh_color_arc</code>, or use the corresponding <code>ColorCompositionSync</code> helper. Numeric value changes alone do not update the base colors of the track.</p></section>
+<section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/luma-color/src/color_arc/mod.rs">Implementation</a> · <a href="colors.html">Color controls</a></p></section>
+<footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Basic use</a><a href="#options">Channels and appearance</a><a href="#events">Events</a><a href="#keyboard">Keyboard and synchronization</a><a href="#source">Source</a></nav>
+</div>
+</body>
+</html>

@@ -10,6 +10,9 @@ h3{font-size:17px;letter-spacing:-.2px;font-weight:600;margin:30px 0 10px}p stro
 
 .event-table{overflow-x:auto;margin:20px 0}.event-table table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}.event-table th{font-weight:600;color:var(--fg)}.event-table th,.event-table td{padding:12px 10px;vertical-align:top;border-bottom:1px solid var(--line)}.event-table td{color:var(--muted)}.event-table td:first-child{width:56%;color:var(--fg)}.event-table code{font-size:11px;white-space:normal;overflow-wrap:anywhere}
 
+/* Three-column event references keep payload fields and callbacks separate. */
+.event-table.event-reference table{min-width:600px;table-layout:fixed}.event-table.event-reference th:first-child,.event-table.event-reference td:first-child{width:22%}.event-table.event-reference th:nth-child(2),.event-table.event-reference td:nth-child(2){width:32%}.event-table.event-reference th:nth-child(3),.event-table.event-reference td:nth-child(3){width:46%}
+
 .support-table th:first-child{width:24%}.support-table td:nth-child(2){width:20%;white-space:nowrap}.support-table caption{text-align:left;font-weight:600;color:var(--fg);padding-bottom:12px}
 /* Prism token colors follow the same saved/system theme as the page. */
 pre .token.comment{color:var(--syntax-comment)}

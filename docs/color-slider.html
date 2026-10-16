@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Edit hue, alpha, individual channels, or gradient positions on a color track.">
+<title>Color Slider · Luma SDK</title>
+<script src="theme-init.js"></script>
+<link rel="stylesheet" href="site.css">
+<!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
+<script src="vendor/prism/prism-core.min.js" data-manual defer></script>
+<script src="vendor/prism/prism-rust.min.js" defer></script>
+<script src="vendor/prism/prism-toml.min.js" defer></script>
+<script src="navigation.js" defer></script>
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<div data-site-mobile-nav></div>
+<div class="layout">
+<aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><a href="colors.html">Color controls</a></div><h1>Color Slider</h1><p class="intro">Edit hue, alpha, individual channels, or gradient positions on a color track.</p>
+<section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Hue slider with preview and commit</span><button class="copy" aria-label="Copy Hue slider with preview and commit">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::slider::{SliderControl, SliderEventExt};
+use gpui_luma_color::color_slider::ColorSliderBuilder;
+use gpui_luma::theme::ControlSize;
+
+struct Example {
+    control: Entity&lt;SliderControl&gt;,
+    preview: f32,
+    committed: f32,
+}
+impl Example {
+    fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
+        let control = ColorSliderBuilder::hue(&quot;hue&quot;, 210.0)
+            .size(ControlSize::Sm).thumb_medium()
+            .spawn(cx)
+            .on_value_changed(cx, |owner: &amp;mut Self, _, value, cx| {
+                owner.preview = value;
+                cx.notify();
+            })
+            .on_release(cx, |owner, _, value, cx| {
+                owner.committed = value;
+                cx.notify();
+            });
+        Self { control, preview: 210.0, committed: 210.0 }
+    }
+}
+impl Render for Example {
+    fn render(&amp;mut self, _: &amp;mut Window, _: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
+        div().w(px(240.0)).child(self.control.clone())
+    }
+}</code></pre></div></section>
+<section id="variants"><h2>Channels and gradients</h2><p><code>hue</code> uses degrees (<code>0..360</code>); <code>alpha</code> uses <code>0..1</code> and a supplied color specification. <code>channel</code> looks up a named channel’s bounds and step from that specification and returns <code>Result&lt;_, String&gt;</code>. Gradient construction accepts retained <code>ColorValue</code> stops and returns <code>anyhow::Result</code>.</p><div class="codebox"><div class="codebar"><span>RGBA channel and source-color gradient</span><button class="copy" aria-label="Copy RGBA channel and source-color gradient">Copy</button></div><pre><code class="language-rust">fn red_channel(cx: &amp;mut gpui::Context&lt;Example&gt;)
+    -&gt; Result&lt;gpui::Entity&lt;SliderControl&gt;, String&gt; {
+    use gpui_luma_color::color_slider::RgbaSpec;
+    let rgba = RgbaSpec { r: 0.8, g: 0.3, b: 0.2, a: 1.0 };
+    Ok(ColorSliderBuilder::channel(&quot;red&quot;, rgba.r, rgba, RgbaSpec::RED)?.spawn(cx))
+}
+
+fn gradient(cx: &amp;mut gpui::Context&lt;Example&gt;)
+    -&gt; Result&lt;gpui::Entity&lt;SliderControl&gt;, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+    use gpui_luma::color::ColorValue;
+    use gpui_luma_color::color_slider::ColorInterpolation;
+    Ok(ColorSliderBuilder::gradient(&quot;gradient&quot;, 0.5, vec![
+        ColorValue::srgb(1.0, 0.0, 0.0, 1.0),
+        ColorValue::srgb(0.0, 0.0, 1.0, 0.5),
+    ])?.interpolation(ColorInterpolation::Lab).spawn(cx))
+}</code></pre></div></section>
+<section id="events"><h2>Events</h2><div class="event-table event-reference">
+<table>
+<thead><tr><th scope="col">Event</th><th scope="col">Payload</th><th scope="col">Callback</th></tr></thead>
+<tbody>
+<tr><td><code>Change</code></td><td><code>thumb_id: ThumbId</code><br><code>value: f32</code></td><td><code>on_value_changed</code><br>Update the live preview.</td></tr>
+<tr><td><code>Release</code></td><td><code>thumb_id: ThumbId</code><br><code>value: f32</code></td><td><code>on_release</code><br>Commit the interaction value.</td></tr>
+<tr><td><code>DragStart</code></td><td><code>thumb_id: ThumbId</code></td><td><code>on_drag_start</code><br>Begin a pointer gesture.</td></tr>
+<tr><td><code>DragEnd</code></td><td><code>thumb_id: ThumbId</code><br><code>value: f32</code></td><td><code>on_drag_end</code><br>Finish a pointer gesture.</td></tr>
+<tr><td><code>ThumbAdded</code></td><td><code>thumb_id: ThumbId</code><br><code>value: f32</code></td><td><code>on_thumb_added</code><br>Track an added gradient stop.</td></tr>
+<tr><td><code>ThumbRemoved</code></td><td><code>thumb_id: ThumbId</code></td><td><code>on_thumb_removed</code><br>Track a removed stop.</td></tr>
+<tr><td><code>ThumbSelected</code></td><td><code>thumb_id: ThumbId</code></td><td><code>on_thumb_selected</code><br>Update the selected thumb.</td></tr>
+<tr><td><code>FocusChanged</code></td><td><code>focused: bool</code></td><td><code>on_focus_changed</code><br>React to keyboard focus.</td></tr>
+<tr><td><code>HoverChanged</code></td><td><code>hovered: bool</code></td><td><code>on_hover_changed</code><br>React to pointer hover.</td></tr>
+<tr><td><code>EnabledChanged</code></td><td><code>enabled: bool</code></td><td><code>on_enabled_changed</code><br>React to enablement changes.</td></tr>
+</tbody>
+</table>
+</div><p>These are SDK <code>SliderEvent</code> callbacks, available through <code>SliderEventExt</code>. The builders return <code>Entity&lt;SliderControl&gt;</code>. Each callback receives the owner, the listed payload values, and the owner context. Register callbacks after <code>spawn</code>; use <code>on_event</code> or <code>cx.subscribe</code> for the full event stream. See <a href="slider.html#events">Slider events</a>.</p></section>
+<section id="style"><h2>Appearance and synchronization</h2><p>Use <code>horizontal</code>/<code>vertical</code>, <code>size(ControlSize)</code>, <code>thumb_size(SliderThumbSize)</code>, <code>thumb_square</code>, <code>thumb_bar</code>, <code>rounded</code>, and <code>edge_to_edge</code>. Gradient interpolation supports RGB, HSL, and Lab. <code>multi_stop</code>, <code>dual_stop</code>, and <code>thumb_policy</code> configure multiple thumbs.</p><p>Capture <code>domain_renderer()</code> and <code>track_context()</code> before consuming the builder. When a base color changes, replace its delegate with <code>update_domain_delegate</code> and call <code>refresh_color_slider</code> to refresh thumb previews. <code>ColorCompositionSync::sync_color_slider</code> combines these updates. Changing only the numeric slider value does not replace a delegate’s color specification.</p></section>
+<section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/luma-color/src/color_slider/mod.rs">Implementation</a> · <a href="slider.html">SDK Slider</a> · <a href="colors.html#compose">Picker composition</a></p></section>
+<footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Basic use</a><a href="#variants">Channels and gradients</a><a href="#events">Events</a><a href="#style">Appearance and synchronization</a><a href="#source">Source</a></nav>
+</div>
+</body>
+</html>

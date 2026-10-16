@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Select two color dimensions on a rectangle, triangle, or wheel.">
+<title>Color Field · Luma SDK</title>
+<script src="theme-init.js"></script>
+<link rel="stylesheet" href="site.css">
+<!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
+<script src="vendor/prism/prism-core.min.js" data-manual defer></script>
+<script src="vendor/prism/prism-rust.min.js" defer></script>
+<script src="vendor/prism/prism-toml.min.js" defer></script>
+<script src="navigation.js" defer></script>
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<div data-site-mobile-nav></div>
+<div class="layout">
+<aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><a href="colors.html">Color controls</a></div><h1>Color Field</h1><p class="intro">Select two color dimensions on a rectangle, triangle, or wheel.</p>
+<section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Saturation/value field with retained subscription</span><button class="copy" aria-label="Copy Saturation/value field with retained subscription">Copy</button></div><pre><code class="language-rust">use gpui::{AppContext, Context, Entity, Render, Subscription, Window, prelude::*, px};
+use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldState};
+use gpui_luma_color::color_slider::color_spec::Hsv;
+
+struct Example {
+    field: Entity&lt;ColorFieldState&gt;,
+    preview: Hsv,
+    committed: Hsv,
+    _events: Subscription,
+}
+impl Example {
+    fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
+        let hsv = Hsv { h: 210.0, s: 0.7, v: 0.8, a: 1.0 };
+        let field = cx.new(|_| {
+            ColorFieldState::saturation_value_rect(&quot;sv&quot;, hsv, 16.0)
+                .vector().size(px(220.0)).rounded(px(12.0))
+                .keyboard_steps(0.01, 0.1)
+        });
+        let events = cx.subscribe(&amp;field, |owner: &amp;mut Self, _, event, cx| {
+            match event {
+                ColorFieldEvent::Change(hsv) =&gt; owner.preview = *hsv,
+                ColorFieldEvent::Release(hsv) =&gt; owner.committed = *hsv,
+                _ =&gt; return,
+            }
+            cx.notify();
+        });
+        Self { field, preview: hsv, committed: hsv, _events: events }
+    }
+}
+impl Render for Example {
+    fn render(&amp;mut self, _: &amp;mut Window, _: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
+        self.field.clone()
+    }
+}</code></pre></div></section>
+<section id="domains"><h2>Planes and wheels</h2><div class="event-table">
+<table><thead><tr><th scope="col">Constructor</th><th scope="col">Interaction</th></tr></thead><tbody>
+<tr><td><code>saturation_value_rect</code></td><td>Saturation/value at fixed hue.</td></tr>
+<tr><td><code>saturation_value_triangle</code></td><td>Saturation/value within a triangle domain.</td></tr>
+<tr><td><code>hue_saturation_wheel</code></td><td>Hue/saturation within a circle.</td></tr>
+<tr><td><code>hue_saturation</code></td><td>Hue/saturation rectangle at fixed value.</td></tr>
+<tr><td><code>hue_value</code></td><td>Hue/value rectangle at fixed saturation.</td></tr>
+</tbody></table>
+</div><p>Constructors return <code>ColorFieldState</code>; retain it with <code>cx.new</code>. Render the entity directly, or use <code>ColorField::new(&amp;state)</code>. Custom surfaces pair a <code>FieldDomain2D</code> with a <code>ColorFieldModel2D</code> through <code>new</code>, <code>with_domain</code>, and <code>with_model</code>.</p></section>
+<section id="events"><h2>Events and updates</h2><p>Subscribe to <code>ColorFieldEvent</code> with <code>cx.subscribe</code> and match one variant per action. Retain the subscription, as in the example.</p><div class="event-table event-reference">
+<table>
+<thead><tr><th scope="col">Event</th><th scope="col">Payload</th><th scope="col">Handling</th></tr></thead>
+<tbody>
+<tr><td><code>Change</code></td><td><code>Hsv</code></td><td>Update the live preview.</td></tr>
+<tr><td><code>Release</code></td><td><code>Hsv</code></td><td>Commit the final interaction value.</td></tr>
+<tr><td><code>DragStart</code></td><td><code>hsv: Hsv</code></td><td>Begin a pointer gesture.</td></tr>
+<tr><td><code>DragEnd</code></td><td><code>hsv: Hsv</code></td><td>Finish a pointer gesture.</td></tr>
+<tr><td><code>HoverChanged</code></td><td><code>hovered: bool</code></td><td>React to pointer hover.</td></tr>
+<tr><td><code>EnabledChanged</code></td><td><code>enabled: bool</code></td><td>React to enablement changes.</td></tr>
+</tbody>
+</table>
+</div><p>Use <code>set_hsv</code> or <code>set_hsv_components</code> to synchronize another color editor into the field. The field is an HSV editing view, not storage for an original Display P3 or Oklch source.</p></section>
+<section id="keyboard"><h2>Keyboard and rendering</h2><p>An enabled field is one Tab stop and focuses on pointer press by default. Arrows move spatially by 1%; Shift+Arrow uses 10%. <code>keyboard_steps</code>, <code>tab_stop</code>, and <code>pointer_focus_policy</code> customize this. A changed keyboard adjustment emits Change and one final Release, without pointer drag events. Wheel input passes through.</p><p><code>vector()</code> paints the field directly. Raster rendering is the default; <code>raster_image_prewarmed(width, height)</code> prepares its cache. <code>inside_field</code>, <code>edge_to_edge</code>, and <code>edge_to_edge_clipped</code> control thumb placement. Focus does not add a visual focus treatment; screen-reader semantics remain a follow-up in the current implementation.</p></section>
+<section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/luma-color/src/color_field/mod.rs">Implementation</a> · <a href="colors.html#compose">Picker composition</a></p></section>
+<footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Basic use</a><a href="#domains">Planes and wheels</a><a href="#events">Events and updates</a><a href="#keyboard">Keyboard and rendering</a><a href="#source">Source</a></nav>
+</div>
+</body>
+</html>
