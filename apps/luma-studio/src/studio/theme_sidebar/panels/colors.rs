@@ -1,9 +1,9 @@
 use gpui_luma::controls::textfield::TextFieldEventExt;
 use crate::studio::color_format::{format_color_readout, parse_color_input};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent, TextFieldLook, TextFieldLookOverride};
 use gpui_luma::vstack;
@@ -12,7 +12,7 @@ use gpui_luma_look_shadcn as shadcn;
 
 use super::super::model::TOKEN_CATEGORIES;
 use super::super::parsing::effective_token_color;
-use super::{category_item_id, expanded_category_ids, spawn_compact_textfield};
+use super::{category_item_id, spawn_compact_textfield};
 use crate::studio::app::LumaStudioApp;
 use gpui_luma::color::ColorValue;
 use crate::studio::controls::color_picker::{ColorPickerEvent, ColorPickerPopover};
@@ -21,6 +21,7 @@ use crate::studio::token_color_row::token_color_row;
 
 pub struct ColorsPanel {
     look: Arc<ShadcnLook>,
+    pub(crate) scroll_handle: gpui::ScrollHandle,
     global_overrides: HashMap<String, ColorValue>,
     token_fields: HashMap<String, TextField>,
     token_pickers: HashMap<String, Entity<ColorPickerPopover>>,
@@ -32,20 +33,23 @@ impl ColorsPanel {
         let global_overrides = overrides.global_color_overrides.clone();
         let token_fields = build_token_fields(&look, &global_overrides, cx);
         let token_pickers = build_token_pickers(&look, &global_overrides, cx);
-        let token_accordion = Self::build_token_accordion(cx.entity(), look.clone(), &HashSet::new(), cx);
+        let token_accordion = Self::build_token_accordion(cx.entity(), look.clone(), cx);
 
-        Self { look, global_overrides, token_fields, token_pickers, token_accordion }
+        let scroll_handle = gpui::ScrollHandle::default();
+        token_accordion.update(cx, |accordion, cx| accordion.set_drag_scroll_handle(Some(scroll_handle.clone()), cx));
+        Self { look, scroll_handle, global_overrides, token_fields, token_pickers, token_accordion }
     }
 
     pub fn apply_theme_snapshot(&mut self, look: Arc<ShadcnLook>, overrides: &StudioOverrides, cx: &mut Context<Self>) {
-        let expanded = self.expanded_token_category_ids(cx);
         self.look = look;
         self.global_overrides = overrides.global_color_overrides.clone();
         let theme = self.look.clone();
         self.sync_templates(&theme, cx);
         self.sync_values(theme.as_ref(), overrides, cx);
         self.sync_pickers(theme.as_ref(), overrides, cx);
-        self.token_accordion = Self::build_token_accordion(cx.entity(), theme, &expanded, cx);
+        // Retain the ordered Accordion and all keyed disclosure/editor state.
+        self.token_accordion
+            .update(cx, |accordion, cx| accordion.set_template(theme.accordion_template(), cx));
         cx.notify();
     }
 
@@ -112,12 +116,12 @@ impl ColorsPanel {
     fn build_token_accordion(
         panel: Entity<Self>,
         look: Arc<ShadcnLook>,
-        expanded_categories: &HashSet<String>,
         cx: &mut Context<Self>,
     ) -> Entity<AccordionControl> {
         let mut accordion_builder = shadcn::Accordion::new("luma-studio-token-accordion")
             .look(look.as_ref())
             .multiple()
+            .reordering(true)
             .item_dividers(false)
             .trigger_min_height(28.0)
             .trigger_padding_y(4.0)
@@ -127,18 +131,19 @@ impl ColorsPanel {
 
         for (category, tokens) in TOKEN_CATEGORIES {
             let items = *tokens;
-            let panel = panel.clone();
+            let panel = panel.downgrade();
             let id = category_item_id("token", category);
-            let expanded = if expanded_categories.is_empty() {
-                *category == "BASE"
-            } else {
-                expanded_categories.contains(&id)
-            };
+            let expanded = *category == "BASE";
             accordion_builder = accordion_builder.item(
                 AccordionItem::new(
                     id,
                     AccordionTrigger::new(*category),
-                    AccordionContent::custom(move |_window, cx| panel.read(cx).category_token_content(items)),
+                    AccordionContent::custom(move |_window, cx| {
+                        panel.upgrade().map_or_else(
+                            || div().into_any_element(),
+                            |panel| panel.read(cx).category_token_content(items),
+                        )
+                    }),
                 )
                 .expanded(expanded),
             );
@@ -147,19 +152,10 @@ impl ColorsPanel {
         accordion_builder.spawn(cx)
     }
 
-    fn expanded_token_category_ids(&self, cx: &App) -> HashSet<String> {
-        expanded_category_ids(
-            &self.token_accordion,
-            TOKEN_CATEGORIES.iter().map(|(category, _)| *category),
-            "token",
-            cx,
-        )
-    }
-
     pub(crate) fn set_all_categories_expanded(&mut self, expanded: bool, cx: &mut Context<Self>) {
-        for (index, (category, _)) in TOKEN_CATEGORIES.iter().enumerate() {
-            let id = category_item_id("token", category);
-            if self.token_accordion.read(cx).is_expanded(&id.clone().into()) != expanded {
+        let ids: Vec<_> = self.token_accordion.read(cx).items().iter().map(|item| item.id().clone()).collect();
+        for (index, id) in ids.iter().enumerate() {
+            if self.token_accordion.read(cx).is_expanded(id) != expanded {
                 self.token_accordion.update(cx, |accordion, cx| accordion.toggle_item(index, cx));
             }
         }
@@ -302,6 +298,96 @@ mod presentation_tests {
                 assert!(primary.starts_with("hsl("));
                 assert!(!primary.contains("color("));
             });
+        });
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod drag_tests {
+    use super::*;
+    use gpui::{MouseButton, TestAppContext, point};
+    #[test]
+    fn native_category_order_and_editors_survive_theme_updates_and_expand_all() {
+        struct Blank;
+        impl Render for Blank {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div()
+            }
+        }
+        struct Page {
+            panel: Entity<ColorsPanel>,
+            tabs: Entity<gpui_luma::controls::tabs::Tabs>,
+        }
+        impl Render for Page {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                div().w(px(340.)).h(px(700.)).flex().flex_col().child(self.tabs.clone())
+            }
+        }
+        let mut app = TestAppContext::single();
+        let (page, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            gpui_luma::key_handling::bind_default_control_keys(cx);
+            let look = Arc::new(ShadcnLook::built_in());
+            let panel = cx.new(|cx| ColorsPanel::new(look.clone(), &StudioOverrides::default(), cx));
+            let content = panel.clone();
+            let host = cx.new(|cx| {
+                super::super::PanelContextMenuHost::new(
+                    "colors-test-context",
+                    move |_| content.clone(),
+                    super::super::colors_context_menu_items(),
+                    look.clone(),
+                    cx,
+                )
+            });
+            let blank = cx.new(|_| Blank);
+            let scroll = panel.read(cx).scroll_handle.clone();
+            let tabs =
+                crate::studio::theme_sidebar::sidebar_tabs_builder(look, host, blank.clone(), blank, scroll).spawn(cx);
+            panel
+                .read(cx)
+                .token_accordion
+                .clone()
+                .update(cx, |a, cx| a.set_drop_layout_motion(Some(std::time::Duration::ZERO), cx));
+            Page { panel, tabs }
+        });
+        cx.run_until_parked();
+        let panel = cx.update(|_, cx| page.read(cx).panel.clone());
+        let (accordion, field, picker) = cx.update(|_, cx| {
+            let p = panel.read(cx);
+            (
+                p.token_accordion.clone(),
+                p.token_fields["background"].clone(),
+                p.token_pickers["background"].clone(),
+            )
+        });
+        let start = cx.debug_bounds("accordion-drag-token-base").unwrap().center();
+        let target = cx.debug_bounds("accordion-item-token-secondary").unwrap();
+        let end = point(target.center().x, target.bottom() - px(2.));
+        cx.simulate_mouse_down(start, MouseButton::Left, Default::default());
+        cx.simulate_mouse_move(start + point(px(12.), px(0.)), MouseButton::Left, Default::default());
+        cx.run_until_parked();
+        cx.simulate_mouse_move(end, MouseButton::Left, Default::default());
+        cx.run_until_parked();
+        cx.simulate_mouse_up(end, MouseButton::Left, Default::default());
+        cx.run_until_parked();
+        let order = cx.update(|_, cx| accordion.read(cx).items().iter().map(|i| i.id().clone()).collect::<Vec<_>>());
+        assert_eq!(
+            order[..3].iter().map(|id| id.as_ref()).collect::<Vec<_>>(),
+            ["token-primary", "token-secondary", "token-base"]
+        );
+        panel.update(cx, |p, cx| {
+            p.set_all_categories_expanded(false, cx);
+            let look = Arc::new(ShadcnLook::built_in());
+            look.set_mode(gpui_luma::theme::ThemeMode::Dark);
+            p.apply_theme_snapshot(look, &StudioOverrides::default(), cx);
+            assert_eq!(p.token_accordion.entity_id(), accordion.entity_id());
+            assert_eq!(p.token_fields["background"].entity_id(), field.entity_id());
+            assert_eq!(p.token_pickers["background"].entity_id(), picker.entity_id());
+            assert_eq!(p.token_accordion.read(cx).items().iter().map(|i| i.id().clone()).collect::<Vec<_>>(), order);
+            assert!(p.token_accordion.read(cx).items().iter().all(|i| !p.token_accordion.read(cx).is_expanded(i.id())));
+            p.set_all_categories_expanded(true, cx);
+            assert!(p.token_accordion.read(cx).items().iter().all(|i| p.token_accordion.read(cx).is_expanded(i.id())));
+            assert_eq!(p.token_fields.len(), TOKEN_CATEGORIES.iter().map(|(_, t)| t.len()).sum::<usize>());
         });
     }
 }

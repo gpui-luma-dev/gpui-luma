@@ -36,3 +36,9 @@ pub fn new(id: impl Into<SharedString>) -> AccordionBuilder {
 
 mod callback;
 pub use callback::AccordionEventExt;
+
+mod drag;
+mod geometry;
+pub use drag::{AccordionDragBindings, AccordionDragEvent, AccordionDropProposal};
+#[cfg(all(test, feature = "test-support"))]
+mod drag_tests;

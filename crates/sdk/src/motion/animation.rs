@@ -83,6 +83,8 @@ pub struct VisualTransition {
     from: f32,
     target: f32,
     started_at: Option<Instant>,
+    #[cfg(all(test, feature = "test-support"))]
+    test_elapsed: Option<Duration>,
     duration: Duration,
 }
 
@@ -96,7 +98,15 @@ impl VisualTransition {
     /// Creates a new transition initialized at `initial_target` (typically `0.0` or `1.0`).
     pub fn new(initial_target: f32, duration: Duration) -> Self {
         let target = initial_target.clamp(0.0, 1.0);
-        Self { progress: target, from: target, target, started_at: None, duration }
+        Self {
+            progress: target,
+            from: target,
+            target,
+            started_at: None,
+            duration,
+            #[cfg(all(test, feature = "test-support"))]
+            test_elapsed: None,
+        }
     }
 
     /// Sets a new target value (`0.0`..`1.0`) and initiates a transition if different.
@@ -109,6 +119,10 @@ impl VisualTransition {
         self.from = self.progress;
         self.target = target;
         self.started_at = Some(Instant::now());
+        #[cfg(all(test, feature = "test-support"))]
+        if self.test_elapsed.is_some() {
+            self.test_elapsed = Some(Duration::ZERO);
+        }
     }
 
     /// Updates internal progress based on elapsed time since animation start.
@@ -118,7 +132,10 @@ impl VisualTransition {
             return false;
         };
 
-        let elapsed_secs = started_at.elapsed().as_secs_f32();
+        let elapsed = started_at.elapsed();
+        #[cfg(all(test, feature = "test-support"))]
+        let elapsed = self.test_elapsed.unwrap_or(elapsed);
+        let elapsed_secs = elapsed.as_secs_f32();
         let duration_secs = self.duration.as_secs_f32();
 
         if duration_secs <= f32::EPSILON || elapsed_secs >= duration_secs {
@@ -149,9 +166,12 @@ impl VisualTransition {
 
     #[cfg(all(test, feature = "test-support"))]
     pub(crate) fn elapse_for_test(&mut self, elapsed: Duration) {
-        if self.started_at.is_some() {
-            self.started_at = Instant::now().checked_sub(elapsed);
-        }
+        self.test_elapsed = Some(elapsed);
+    }
+
+    #[cfg(all(test, feature = "test-support"))]
+    pub(super) fn uses_test_clock(&self) -> bool {
+        self.test_elapsed.is_some()
     }
 
     /// Returns current progress in range `0.0`..`1.0`.
@@ -260,6 +280,25 @@ pub(crate) fn ease_out_cubic(t: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(feature = "test-support")]
+    #[test]
+    fn explicit_test_clock_ignores_wall_time_and_samples_interpolation() {
+        let mut transition = VisualTransition::new(0., Duration::from_secs(1));
+        transition.elapse_for_test(Duration::ZERO);
+        transition.set_target(1.);
+        // Simulate a heavily delayed runner without sleeping or extending the
+        // animation duration. Real elapsed time already exceeds its duration.
+        transition.started_at = Instant::now().checked_sub(Duration::from_secs(60));
+        assert!(transition.sync());
+        assert_eq!(transition.progress(), 0.);
+        transition.elapse_for_test(Duration::from_millis(500));
+        assert!(transition.sync());
+        assert_eq!(transition.progress(), 0.875);
+        transition.elapse_for_test(Duration::from_millis(1100));
+        assert!(!transition.sync());
+        assert_eq!(transition.progress(), 1.);
+    }
 
     #[test]
     fn transition_initial_state() {

@@ -516,3 +516,23 @@ fn drag_aliases_and_named_handlers_coexist_and_can_update_emitting_control() {
     assert!(weak_table.upgrade().is_none());
     assert_eq!(std::rc::Rc::strong_count(&capture), 1);
 }
+
+check_callbacks!(accordion_drag_builder_callbacks, crate::controls::accordion::AccordionBuilder::new("drag"), [
+on_drag_started(source, keys) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::DragStarted { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()] })],
+on_items_removed(source, target, keys) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::ItemsRemoved { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()] })],
+on_items_added(source, target, keys, before) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::ItemsAdded { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_items_reordered(target, keys, before) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::ItemsReordered { target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_dropped(source, target, keys, before, changed) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::Dropped { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), changed: false })],
+on_drop_rejected(source, target, keys, before, error) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::DropRejected { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), error: "denied".into() })],
+on_drag_ended(source, keys, reason) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::DragEnded { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()], reason: crate::infra::drag_drop::DragEndReason::Unchanged })]
+]);
+
+check_drag_entity_callbacks!(accordion_drag_entity_callbacks, crate::controls::accordion::AccordionBuilder::new("drag"), [
+on_drag_started(source, keys) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::DragStarted { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()] })],
+on_items_removed(source, target, keys) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::ItemsRemoved { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()] })],
+on_items_added(source, target, keys, before) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::ItemsAdded { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_items_reordered(target, keys, before) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::ItemsReordered { target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_dropped(source, target, keys, before, changed) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::Dropped { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), changed: false })],
+on_drop_rejected(source, target, keys, before, error) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::DropRejected { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), error: "denied".into() })],
+on_drag_ended(source, keys, reason) => [crate::controls::accordion::AccordionEvent::DragDrop(crate::infra::drag_drop::DragDropEvent::DragEnded { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()], reason: crate::infra::drag_drop::DragEndReason::Unchanged })]
+]);

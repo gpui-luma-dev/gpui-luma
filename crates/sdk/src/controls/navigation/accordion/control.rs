@@ -18,6 +18,7 @@ use crate::theme::observe_theme_revision;
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum AccordionEvent {
+    DragDrop(super::AccordionDragEvent),
     ExpandedChanged { item_id: SharedString, expanded: bool },
     FocusChanged { focused: bool },
     ItemFocused { item_id: SharedString },
@@ -41,16 +42,25 @@ enum AccordionKeyAction {
 }
 
 pub struct AccordionControl {
-    model: AccordionModel,
+    pub(super) hovered_drag_handle: Option<SharedString>,
+    pub(super) drag_tooltips: std::collections::HashMap<SharedString, crate::infra::attachments::TooltipHandle>,
+    pub(super) active_drag: Option<super::drag::AccordionDrag>,
+    pub(super) drop_handler: Option<super::drag::DropHandler>,
+    pub(super) drop_layout: crate::motion::DropLayoutMotion<SharedString>,
+    pub(super) item_bounds: super::geometry::ItemBounds,
+    pub(super) external_scroll: bool,
+    pub(super) drag_scroll: gpui::ScrollHandle,
+    pub(super) drag_scroll_pending: std::rc::Rc<std::cell::Cell<bool>>,
+    pub(super) model: AccordionModel,
     focus_handle: FocusHandle,
     focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
     expanded_ids: HashSet<SharedString>,
-    transitions: Vec<DisclosureMotion>,
-    content_heights_px: Vec<f32>,
-    focused_item_index: Option<usize>,
-    hovered_item_index: Option<usize>,
-    pressed_item_index: Option<usize>,
+    pub(super) transitions: Vec<DisclosureMotion>,
+    pub(super) content_heights_px: Vec<f32>,
+    pub(super) focused_item_index: Option<usize>,
+    pub(super) hovered_item_index: Option<usize>,
+    pub(super) pressed_item_index: Option<usize>,
     emitted_focused: bool,
 }
 
@@ -83,6 +93,15 @@ impl AccordionControl {
 
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
+            hovered_drag_handle: None,
+            drag_tooltips: Default::default(),
+            external_scroll: false,
+            active_drag: None,
+            drop_handler: None,
+            drop_layout: Default::default(),
+            item_bounds: Default::default(),
+            drag_scroll: Default::default(),
+            drag_scroll_pending: Default::default(),
             model: builder.model,
             focus_handle: cx.focus_handle().tab_stop(enabled),
             focus_in_subscription: None,
@@ -102,11 +121,15 @@ impl AccordionControl {
     }
 
     pub fn set_template(&mut self, template: Arc<dyn super::AccordionTemplate>, cx: &mut Context<Self>) {
+        self.drop_layout.cancel();
+        self.drag_tooltips.clear();
+        self.hovered_drag_handle = None;
         self.model.template = template;
         cx.notify();
     }
 
     pub fn set_size(&mut self, size: crate::theme::ControlSize, cx: &mut Context<Self>) {
+        self.drop_layout.cancel();
         self.model.size = size;
         cx.notify();
     }
@@ -121,6 +144,10 @@ impl AccordionControl {
         self.focus_in_subscription = None;
         self.focus_out_subscription = None;
         if !enabled {
+            self.drag_tooltips.clear();
+            self.hovered_drag_handle = None;
+            self.cancel_drag(cx);
+            self.drop_layout.cancel();
             if let Some(index) = self.hovered_item_index {
                 cx.emit(AccordionEvent::ItemHoverChanged {
                     item_id: self.model.items[index].id.clone(),
@@ -146,6 +173,7 @@ impl AccordionControl {
             return;
         }
 
+        self.drop_layout.cancel();
         let id = item.id.clone();
         for event in apply_toggle(&mut self.expanded_ids, self.model.selection_mode, self.model.collapsible, id) {
             if let AccordionEvent::ExpandedChanged { item_id, expanded } = &event
@@ -265,8 +293,9 @@ impl AccordionControl {
         }
     }
 
-    fn template_handlers(&self, cx: &mut Context<Self>) -> AccordionTemplateHandlers {
+    fn template_handlers(&mut self, cx: &mut Context<Self>) -> AccordionTemplateHandlers {
         AccordionTemplateHandlers {
+            drag: self.drag_bindings(cx),
             trigger_hovers: (0..self.model.items.len())
                 .map(|idx| {
                     Box::new(cx.listener(move |this, hovered, _, cx| {
@@ -397,7 +426,7 @@ impl AccordionControl {
         }
     }
 
-    fn set_focused_item_index(&mut self, focused_item_index: Option<usize>, cx: &mut Context<Self>) {
+    pub(super) fn set_focused_item_index(&mut self, focused_item_index: Option<usize>, cx: &mut Context<Self>) {
         if self.focused_item_index == focused_item_index {
             return;
         }
@@ -448,19 +477,24 @@ impl Render for AccordionControl {
             self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
         }
 
-        let model = self.render_model(window);
         let handlers = self.template_handlers(cx);
+        let model = self.render_model(window);
 
-        div()
-            .w_full()
-            .child(
-                self.model
-                    .template
-                    .render(&model, handlers, window, cx)
-                    .track_focus(&self.focus_handle)
-                    .on_key_down(cx.listener(Self::handle_key_down)),
-            )
-            .into_any_element()
+        let root = div().w_full();
+        let root = if self.model.reordering && !self.external_scroll {
+            root.flex_1().min_h(gpui::px(0.)).flex().flex_col()
+        } else {
+            root
+        };
+        root.child(
+            self.model
+                .template
+                .render(&model, handlers, window, cx)
+                .key_context(crate::key_handling::ControlKeyProfile::Navigation.context())
+                .track_focus(&self.focus_handle)
+                .on_key_down(cx.listener(Self::handle_key_down)),
+        )
+        .into_any_element()
     }
 }
 

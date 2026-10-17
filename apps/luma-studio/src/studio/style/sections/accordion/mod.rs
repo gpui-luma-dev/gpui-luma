@@ -219,6 +219,7 @@ fn render_accordion_state_cell(
 
 fn noop_template_handlers(count: usize) -> AccordionTemplateHandlers {
     AccordionTemplateHandlers {
+        drag: None,
         trigger_hovers: (0..count).map(|_| Box::new(input_noop_hover) as _).collect(),
         trigger_mouse_downs: (0..count).map(|_| Box::new(input_noop_mouse_down) as _).collect(),
         trigger_mouse_ups: (0..count).map(|_| Box::new(input_noop_mouse_up) as _).collect(),

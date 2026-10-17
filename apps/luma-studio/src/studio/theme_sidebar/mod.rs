@@ -94,9 +94,14 @@ impl ThemeSidebar {
             .with_item_template(move |model, cx| render_theme_search_selector_item(model, &swatches_for_template, cx))
             .spawn(cx);
 
-        let tabs =
-            sidebar_tabs_builder(look.clone(), colors_host.clone(), typography_panel.clone(), other_host.clone())
-                .spawn(cx);
+        let tabs = sidebar_tabs_builder(
+            look.clone(),
+            colors_host.clone(),
+            typography_panel.clone(),
+            other_host.clone(),
+            colors_panel.read(cx).scroll_handle.clone(),
+        )
+        .spawn(cx);
 
         Self {
             look,
@@ -154,13 +159,16 @@ fn sidebar_tabs_builder(
     colors: Entity<impl Render + 'static>,
     typography: Entity<impl Render + 'static>,
     other: Entity<impl Render + 'static>,
+    colors_scroll: gpui::ScrollHandle,
 ) -> shadcn::Tabs {
     shadcn::Tabs::new("luma-studio-sidebar-tabs")
         .look(look.as_ref())
         .size(shadcn::ShadcnSize::Lg)
         .width_mode(TabsWidthMode::Uniform)
         .template(luma_studio_tabs_template(look, ControlSize::Lg))
-        .tab_with("colors", "Colors", move |_, _| sidebar_scroll_body().child(colors.clone()))
+        .tab_with("colors", "Colors", move |_, _| {
+            sidebar_scroll_body().track_scroll(&colors_scroll).child(colors.clone())
+        })
         .tab_with("typography", "Typography", move |_, _| sidebar_scroll_body().child(typography.clone()))
         .tab_with("other", "Other", move |_, _| sidebar_scroll_body().child(other.clone()))
         .active("colors")
@@ -210,7 +218,16 @@ mod tests {
             let colors = cx.new(|_| Panel("colors"));
             let typography = cx.new(|_| Panel("typography"));
             let other = cx.new(|_| Panel("other"));
-            Page { tabs: sidebar_tabs_builder(Arc::new(ShadcnLook::built_in()), colors, typography, other).spawn(cx) }
+            Page {
+                tabs: sidebar_tabs_builder(
+                    Arc::new(ShadcnLook::built_in()),
+                    colors,
+                    typography,
+                    other,
+                    gpui::ScrollHandle::default(),
+                )
+                .spawn(cx),
+            }
         });
         cx.simulate_resize(gpui::size(px(400.0), px(500.0)));
         cx.run_until_parked();

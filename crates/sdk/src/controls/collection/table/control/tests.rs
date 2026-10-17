@@ -859,13 +859,16 @@ fn virtualized_drop_motion_tracks_only_visible_rows_and_finishes_after_commit() 
     table.update(cx, |table, cx| {
         table.set_row_reordering(true, cx).unwrap();
         table.drop_layout_motion().set_duration(Some(Duration::from_millis(1000)));
+        // CI deliberately disables optimization; native commit/render work must
+        // not consume the animation interval before we sample the first frame.
+        table.drop_layout_motion().elapse_for_test(Duration::ZERO);
     });
     cx.run_until_parked();
     let old = cx.debug_bounds("table-motion-1").unwrap();
     start_drag(cx, 45.);
     drop_at(cx, 5.);
     let first = cx.debug_bounds("table-motion-1").unwrap().top();
-    assert!(first > px(1.) && first <= old.top(), "first frame {first:?}");
+    assert_eq!(first, old.top(), "motion must stay at its explicit zero-time position");
     cx.update(|_, cx| {
         let table = table.read(cx);
         assert_eq!(table.items()[0].id, 1);

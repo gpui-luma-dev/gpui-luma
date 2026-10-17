@@ -73,6 +73,11 @@ impl AccordionItem {
         Self { id: id.into(), trigger, content, enabled: true, initially_expanded: false }
     }
 
+    /// Stable identity retained through reordering.
+    pub fn id(&self) -> &SharedString {
+        &self.id
+    }
+
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
@@ -92,6 +97,7 @@ pub struct AccordionModel {
     pub(crate) collapsible: bool,
     pub(crate) enabled: bool,
     pub(crate) animated: bool,
+    pub(crate) reordering: bool,
     pub(crate) size: ControlSize,
     pub(crate) item_dividers: bool,
     /// When set, overrides themed vertical padding inside expanded item panels (both edges).
@@ -154,6 +160,145 @@ impl AccordionBuilder {
     ) -> Self {
         self.callbacks = self.callbacks.on_event(cx, callback);
         self
+    }
+
+    /// Observe the complete drag lifecycle through the semantic event stream.
+    pub fn on_drag_drop<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::accordion::AccordionDragEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::accordion::AccordionEvent::DragDrop(event) = event {
+                callback(owner, event, cx);
+            }
+        })
+    }
+    /// Observe `DragStarted` through the existing drag/drop lifecycle.
+    pub fn on_drag_started<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, &Vec<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::DragStarted { source, keys } = event {
+                callback(owner, *source, keys, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsRemoved` through the existing drag/drop lifecycle.
+    pub fn on_items_removed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, gpui::EntityId, &Vec<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::ItemsRemoved { source, target, keys } = event {
+                callback(owner, *source, *target, keys, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsAdded` through the existing drag/drop lifecycle.
+    pub fn on_items_added<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::ItemsAdded { source, target, keys, before } = event {
+                callback(owner, *source, *target, keys, before, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsReordered` through the existing drag/drop lifecycle.
+    pub fn on_items_reordered<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::ItemsReordered { target, keys, before } = event {
+                callback(owner, *target, keys, before, cx);
+            }
+        })
+    }
+
+    /// Observe `Dropped` through the existing drag/drop lifecycle.
+    pub fn on_dropped<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            bool,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::Dropped { source, target, keys, before, changed } = event {
+                callback(owner, *source, *target, keys, before, *changed, cx);
+            }
+        })
+    }
+
+    /// Observe `DropRejected` through the existing drag/drop lifecycle.
+    pub fn on_drop_rejected<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            &gpui::SharedString,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::DropRejected { source, target, keys, before, error } = event
+            {
+                callback(owner, *source, *target, keys, before, error, cx);
+            }
+        })
+    }
+
+    /// Observe `DragEnded` through the existing drag/drop lifecycle.
+    pub fn on_drag_ended<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            crate::infra::drag_drop::DragEndReason,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::DragEnded { source, keys, reason } = event {
+                callback(owner, *source, keys, *reason, cx);
+            }
+        })
     }
 
     /// Handle `AccordionEvent::ExpandedChanged` through the existing event stream.
@@ -232,6 +377,7 @@ impl AccordionBuilder {
                 collapsible: true,
                 enabled: true,
                 animated: true,
+                reordering: false,
                 size: ControlSize::Md,
                 item_dividers: true,
                 content_padding_y: None,
@@ -253,6 +399,12 @@ impl AccordionBuilder {
     /// Enables or disables expand/collapse animation (default `true`).
     pub fn animated(mut self, animated: bool) -> Self {
         self.model.animated = animated;
+        self
+    }
+
+    /// Enable native same-Accordion reordering through header drag handles.
+    pub fn reordering(mut self, enabled: bool) -> Self {
+        self.model.reordering = enabled;
         self
     }
 

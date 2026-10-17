@@ -33,7 +33,7 @@ EXAMPLES = {
     "look-shadcn.html": 0,
     "architecture.html": 0,
     "looks.html": 0,
-    "accordion.html": 0,
+    "accordion.html": [0, 1],
     "autocomplete.html": 0,
     "context-menu.html": 0,
     "control-group.html": 0,

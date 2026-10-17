@@ -321,7 +321,7 @@ live edits, fork isolation and local Toolbar/Card/Avatar override precedence.
 ## Drop-layout motion (#140)
 
 `[common.drag_drop] drop_motion_ms = 200` configures post-drop position motion in
-ListBox, Table, TreeView, Sidebar and Tabs. Missing uses the shared 200 ms cubic
+ListBox, Table, TreeView, Sidebar, Tabs and Accordion. Missing uses the shared 200 ms cubic
 transition; explicit zero disables it. SDK instance duration overrides take
 precedence over the Look, and `None` restores inheritance. Existing control-wide
 animation disable and GPUI reduced motion settle without scheduling frames.
