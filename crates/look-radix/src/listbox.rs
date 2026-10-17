@@ -57,7 +57,7 @@ pub fn listbox_template<T: 'static>(label: impl Fn(&T) -> SharedString + 'static
 
 /// Borrowed list builder. Keep the SDK control on the host between renders;
 /// building does not reset focus, selection, or scroll position.
-pub struct ListBoxBuilder<'a, M: 'static, T, K> {
+pub struct ListBoxBuilder<'a, M: 'static, T, K: 'static> {
     id: &'static str,
     control: &'a mut ListBoxControl<M, T, K>,
     look: Option<Look>,
@@ -128,7 +128,11 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         }
         for item in parts.state.visible_items().skip(range.start).take(range.len()) {
             let row = listbox_row(&look, (parts.item_id)(&item.key), item.state, parts.binding.focus_visible(window));
-            let row = parts.binding.bind_row(row, item.key, item.state, cx, parts.on_input);
+            let key = item.key.clone();
+            let mut row = parts.binding.bind_row(row, item.key, item.state, cx, parts.on_input);
+            if let Some(drag_drop) = &parts.drag_drop {
+                row = drag_drop.bind_row(row, parts.state.drag_keys(&key), (parts.item_label)(item.item), cx);
+            }
             let model = ListBoxItemRenderModel {
                 item: item.item,
                 selected: item.state.selected,
@@ -136,22 +140,60 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
                 enabled: item.state.enabled,
             };
             let selector = format!("{}-item-{}", self.id, item.visible_index);
-            rows.push(
-                row.debug_selector(move || selector.clone())
-                    .flex_shrink_0()
-                    .min_w_0()
-                    .when(horizontal, |row| row.w(px(extent)))
-                    .when(!horizontal, |row| row.w_full())
-                    .when(!content_sized, |row| row.h(px(layout.item_height)))
-                    .aria_label((parts.item_label)(item.item))
-                    .child((self.template)(&model, cx))
-                    .into_any_element(),
-            );
+            let mut rendered = row
+                .debug_selector(move || selector.clone())
+                .flex_shrink_0()
+                .min_w_0()
+                .when(horizontal, |row| row.w(px(extent)))
+                .when(!horizontal, |row| row.w_full())
+                .when(!content_sized, |row| row.h(px(layout.item_height)))
+                .aria_label((parts.item_label)(item.item))
+                .child((self.template)(&model, cx));
+            if let Some(drag_drop) = &parts.drag_drop {
+                rendered = rendered.relative();
+                if cx.has_active_drag() {
+                    for (edge, before) in [
+                        (gpui_luma::infra::drag_drop::DropEdge::Before, Some(key)),
+                        (
+                            gpui_luma::infra::drag_drop::DropEdge::After,
+                            parts.state.visible_items().nth(item.visible_index + 1).map(|item| item.key),
+                        ),
+                    ] {
+                        let zone = gpui_luma::infra::drag_drop::DropZone {
+                            axis: if horizontal {
+                                gpui::Axis::Horizontal
+                            } else {
+                                gpui::Axis::Vertical
+                            },
+                            edge,
+                            item_extent: px(if horizontal { extent } else { layout.item_height }),
+                            following_gap: px(if before.is_some() { layout.spacing } else { 0.0 }),
+                            marker_width: px(2.0),
+                        };
+                        let target = div().id(if edge == gpui_luma::infra::drag_drop::DropEdge::Before {
+                            "insert-before"
+                        } else {
+                            "insert-after"
+                        });
+                        let target = if content_sized {
+                            zone.apply_measured(target)
+                        } else {
+                            zone.apply(target)
+                        };
+                        let target = drag_drop.highlight(
+                            target.border_color(gpui::transparent_black()),
+                            look.resolve_role(SemanticRole::Focus).hsla(),
+                        );
+                        rendered = rendered.child(drag_drop.bind_target(target, before, cx));
+                    }
+                }
+            }
+            rows.push(rendered.into_any_element());
         }
         if let Some(extent) = virtual_window.as_ref().and_then(|v| v.trailing_space) {
             rows.push(spacer(extent));
         }
-        let viewport = div()
+        let mut viewport = div()
             .id(format!("{}-viewport", self.id))
             .flex()
             .w_full()
@@ -161,11 +203,36 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             .when(horizontal, |v| v.overflow_x_scroll())
             .when(!horizontal, |v| v.flex_col().overflow_y_scroll())
             .children(rows);
-        let surface = crate::tree_view_frame(&look).id(self.id).w_full().min_w_0().aria_label(self.id);
+        if let Some(drag_drop) = &parts.drag_drop {
+            viewport = drag_drop.bind_viewport(viewport, parts.scroll, axis);
+        }
+        let mut surface = crate::tree_view_frame(&look).id(self.id).w_full().min_w_0().aria_label(self.id);
+        if let Some(drag_drop) = &parts.drag_drop {
+            use gpui_luma::infra::drag_drop::DragDropElementExt;
+            surface = drag_drop.bind_target(surface, None, cx).cancel_drag_on_escape();
+        }
         let surface = match virtual_window {
             Some(rendered) => parts.scroll.bind_virtualized(surface, viewport, parts.state, rendered),
             None => parts.scroll.bind(surface, viewport, parts.state),
         };
         parts.binding.bind_root(surface, axis, parts.state.selection_mode(), window, cx, parts.on_input)
     }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod persistent_drag_tests {
+    fn render_drag_list(
+        side: usize,
+        list: &mut gpui_luma::controls::listbox::ListBoxControl<DragHarness, u32, u32>,
+        window: &mut gpui::Window,
+        cx: &mut gpui::Context<DragHarness>,
+    ) -> gpui::Stateful<gpui::Div> {
+        super::ListBoxBuilder::new(
+            if side == 0 { "sdk-left" } else { "sdk-right" },
+            list,
+            super::listbox_template(|row: &u32| row.to_string().into()),
+        )
+        .build(window, cx)
+    }
+    include!("../../sdk/tests/support/listbox_drag.rs");
 }

@@ -9,12 +9,129 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
     /// after the current borrow ends and may update the list. Returned event
     /// batches remain available. Capture owning entities weakly.
     pub fn on_event(
-        mut self,
+        self,
         cx: &mut Context<M>,
         callback: impl Fn(&mut M, &ListBoxEvent<K>, &mut Context<M>) + 'static,
     ) -> Self {
-        self.callbacks = self.callbacks.on_event(cx, callback);
+        crate::infra::callbacks::EventCallbacks::default()
+            .on_event(cx, callback)
+            .bind(&self.event_source, cx);
         self
+    }
+
+    /// Observe the shared keyed lifecycle through `ListBoxEvent::DragDrop`.
+    pub fn on_drag_drop(
+        self,
+        cx: &mut Context<M>,
+        callback: impl Fn(&mut M, &crate::infra::drag_drop::DragDropEvent<gpui::EntityId, K>, &mut Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let ListBoxEvent::DragDrop(event) = event {
+                callback(owner, event, cx);
+            }
+        })
+    }
+
+    /// Observe `DragStarted` through the existing drag/drop lifecycle.
+    pub fn on_drag_started(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, &Vec<K>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::DragStarted { source, keys } = event {
+                callback(owner, *source, keys, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsRemoved` through the existing drag/drop lifecycle.
+    pub fn on_items_removed(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, gpui::EntityId, &Vec<K>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::ItemsRemoved { source, target, keys } = event {
+                callback(owner, *source, *target, keys, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsAdded` through the existing drag/drop lifecycle.
+    pub fn on_items_added(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, gpui::EntityId, &Vec<K>, &Option<K>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::ItemsAdded { source, target, keys, before } = event {
+                callback(owner, *source, *target, keys, before, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsReordered` through the existing drag/drop lifecycle.
+    pub fn on_items_reordered(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, &Vec<K>, &Option<K>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::ItemsReordered { target, keys, before } = event {
+                callback(owner, *target, keys, before, cx);
+            }
+        })
+    }
+
+    /// Observe `Dropped` through the existing drag/drop lifecycle.
+    pub fn on_dropped(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, gpui::EntityId, &Vec<K>, &Option<K>, bool, &mut gpui::Context<M>)
+        + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::Dropped { source, target, keys, before, changed } = event {
+                callback(owner, *source, *target, keys, before, *changed, cx);
+            }
+        })
+    }
+
+    /// Observe `DropRejected` through the existing drag/drop lifecycle.
+    pub fn on_drop_rejected(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<K>,
+            &Option<K>,
+            &gpui::SharedString,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::DropRejected { source, target, keys, before, error } = event
+            {
+                callback(owner, *source, *target, keys, before, error, cx);
+            }
+        })
+    }
+
+    /// Observe `DragEnded` through the existing drag/drop lifecycle.
+    pub fn on_drag_ended(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, &Vec<K>, crate::infra::drag_drop::DragEndReason, &mut gpui::Context<M>)
+        + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::DragEnded { source, keys, reason } = event {
+                callback(owner, *source, keys, *reason, cx);
+            }
+        })
     }
 
     /// Handle `ListBoxEvent::SelectionPolicyChanged` after the transaction commits.

@@ -36,8 +36,35 @@ pub enum TreeDragEndReason {
 
 /// One lifecycle per drag. `node_ids` contains normalized moving roots in
 /// displayed order; `node_id` is the first root for single-node consumers.
+/// The shared session produces all seven phases. Historical Started/Rejected/
+/// Ended spellings and tree reason names remain compatible. Mutation phases are
+/// emitted only for changed commits, never for no-ops, rejection or cancellation.
+/// Downstream matches must allow additional lifecycle variants.
 #[derive(Clone, Debug)]
 pub enum TreeViewDragEvent {
+    /// Committed transfer removal, delivered to the source before target add.
+    ItemsRemoved {
+        source: EntityId,
+        target: EntityId,
+        node_id: SharedString,
+        node_ids: Vec<SharedString>,
+    },
+    /// Committed transfer addition, delivered to the target before completion.
+    ItemsAdded {
+        source: EntityId,
+        target: EntityId,
+        node_id: SharedString,
+        node_ids: Vec<SharedString>,
+        location: TreeDropLocation,
+    },
+    /// Committed move within a tree, including reparenting, before completion.
+    ItemsReordered {
+        target: EntityId,
+        node_id: SharedString,
+        node_ids: Vec<SharedString>,
+        location: TreeDropLocation,
+    },
+
     Started {
         source: EntityId,
         node_id: SharedString,
@@ -214,7 +241,24 @@ pub(super) fn deliver<T: Clone + Send + Sync + 'static>(
     cx: &mut App,
 ) {
     let owner = event.list().clone();
-    let mapped = match event {
+    let mapped = project_event(event, location);
+    if let Some(event) = mapped {
+        let _ = owner.update(cx, |tree, cx| {
+            if matches!(event, TreeViewDragEvent::Ended { .. }) {
+                tree.pressed_node_id = None;
+            }
+            cx.emit(TreeViewEvent::DragDrop(event));
+            cx.notify();
+        });
+    }
+}
+
+/// Project every shared lifecycle phase without inventing mutation events.
+pub(super) fn project_event<T: Clone + Send + Sync + 'static>(
+    event: DragDropEvent<WeakEntity<TreeViewControl<T>>, SharedString>,
+    location: Option<&TreeDropLocation>,
+) -> Option<TreeViewDragEvent> {
+    match event {
         DragDropEvent::DragStarted { source, keys } => keys.first().map(|id| TreeViewDragEvent::Started {
             source: source.entity_id(),
             node_id: id.clone(),
@@ -251,15 +295,30 @@ pub(super) fn deliver<T: Clone + Send + Sync + 'static>(
                 error,
             })
         }
-        _ => None,
-    };
-    if let Some(event) = mapped {
-        let _ = owner.update(cx, |tree, cx| {
-            if matches!(event, TreeViewDragEvent::Ended { .. }) {
-                tree.pressed_node_id = None;
-            }
-            cx.emit(TreeViewEvent::DragDrop(event));
-            cx.notify();
-        });
+        DragDropEvent::ItemsRemoved { source, target, keys } => {
+            keys.first().map(|id| TreeViewDragEvent::ItemsRemoved {
+                source: source.entity_id(),
+                target: target.entity_id(),
+                node_id: id.clone(),
+                node_ids: keys.clone(),
+            })
+        }
+        DragDropEvent::ItemsAdded { source, target, keys, .. } => {
+            keys.first().zip(location).map(|(id, location)| TreeViewDragEvent::ItemsAdded {
+                source: source.entity_id(),
+                target: target.entity_id(),
+                node_id: id.clone(),
+                node_ids: keys.clone(),
+                location: location.clone(),
+            })
+        }
+        DragDropEvent::ItemsReordered { target, keys, .. } => {
+            keys.first().zip(location).map(|(id, location)| TreeViewDragEvent::ItemsReordered {
+                target: target.entity_id(),
+                node_id: id.clone(),
+                node_ids: keys.clone(),
+                location: location.clone(),
+            })
+        }
     }
 }

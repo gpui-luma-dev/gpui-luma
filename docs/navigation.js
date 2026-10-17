@@ -246,6 +246,10 @@
                 "label": "Overview & forms"
             },
             {
+                "href": "drag-drop.html",
+                "label": "Drag and drop"
+            },
+            {
                 "href": "floating-menu.html",
                 "label": "Floating Menu"
             },

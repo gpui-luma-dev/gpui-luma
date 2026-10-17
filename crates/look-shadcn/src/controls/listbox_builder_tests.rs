@@ -20,6 +20,7 @@ struct Harness {
     scrolls: [ListBoxScrollHandle<u32>; 2],
     look: Arc<ShadcnLook>,
     dnd: bool,
+    unanswered: bool,
     content_sized: bool,
     virtualization: ListBoxVirtualization,
     previews: Rc<Cell<usize>>,
@@ -40,6 +41,7 @@ impl Harness {
             scrolls: std::array::from_fn(|_| ListBoxScrollHandle::default().require_focus_for_scroll(true)),
             look: Arc::new(ShadcnLook::built_in()),
             dnd,
+            unanswered: false,
             content_sized: false,
             virtualization: ListBoxVirtualization::Eager,
             previews: Rc::default(),
@@ -64,6 +66,9 @@ impl Harness {
     }
     fn drop(&mut self, proposal: DropProposal<usize, u32>, _: &mut Window, cx: &mut Context<Self>) {
         self.drops.push((*proposal.target(), proposal.before().copied()));
+        if self.unanswered {
+            return;
+        }
         for event in proposal.committed(true, proposal.keys().to_vec()) {
             self.event(event, cx);
         }
@@ -96,10 +101,11 @@ impl Render for Harness {
                 builder = builder.content_sized();
             }
             if self.dnd {
-                builder = builder.drag_and_drop(side, Self::drop, Self::event, move |_, _, _, cx| {
+                let preview = move |_: &u32, _: &[u32], _: &mut Window, cx: &mut App| {
                     previews.set(previews.get() + 1);
                     cx.new(|_| Preview)
-                });
+                };
+                builder = builder.drag_and_drop(side, Self::drop, Self::event, preview);
             }
             // Theme may be supplied after DnD without freezing the old look.
             builder.look(&self.look).build(window, cx).w(px(250.0)).flex_shrink_0()
@@ -443,4 +449,24 @@ fn constrained_flex_column_preserves_surface_height_around_viewport() {
     assert_eq!(surface.size.height, px(214.0));
     assert_eq!(viewport.top() - surface.top(), px(9.0));
     assert_eq!(surface.bottom() - viewport.bottom(), px(9.0));
+}
+
+#[test]
+fn raw_composition_rejects_unanswered_proposals_instead_of_reporting_cancellation() {
+    let mut app = TestAppContext::single();
+    let (view, cx) = app.add_window_view(|_, cx| {
+        let mut host = Harness::new(true, cx);
+        host.unanswered = true;
+        host
+    });
+    cx.run_until_parked();
+    drag(cx, (300.0, 38.0));
+    cx.simulate_mouse_up(point(px(300.0), px(38.0)), MouseButton::Left, Default::default());
+    cx.run_until_parked();
+    cx.update(|_, app| {
+        let host = view.read(app);
+        assert_eq!(host.events.len(), 3);
+        assert!(matches!(&host.events[1], DragDropEvent::DropRejected { error, .. } if error.as_ref() == "owner did not accept the drop"));
+        assert!(matches!(host.events[2], DragDropEvent::DragEnded { reason: DragEndReason::Rejected, .. }));
+    });
 }

@@ -109,6 +109,42 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         }
     }
 
+    /// Compose a persistent SDK control, including its registered drag/drop
+    /// callbacks and configuration. No render-time callback registration occurs.
+    pub fn from_control<E: IntoElement>(
+        id: &'static str,
+        control: &'a mut ListBoxControl<M, T, K>,
+        item: impl Fn(Surface, ListBoxVisibleItem<'_, T, K>, &mut App) -> E + 'a,
+    ) -> Self {
+        let parts = control.render_parts();
+        Self::new(id, parts.state, parts.binding, parts.scroll, parts.on_input, parts.item_id, item)
+            .virtualization(parts.virtualization)
+            .control_drag_drop(parts.drag_drop, parts.item_label)
+    }
+
+    fn control_drag_drop(
+        mut self,
+        binding: Option<gpui_luma::controls::listbox::ListBoxDragDropBinding<M, K>>,
+        label: fn(&T) -> gpui::SharedString,
+    ) -> Self {
+        if let Some(binding) = binding {
+            let row_binding = binding.clone();
+            let target_binding = binding.clone();
+            let scroll_binding = binding.clone();
+            let state = self.state;
+            let scroll = self.scroll;
+            self.drag_drop = Some(DragDropBindings {
+                row: Box::new(move |surface, item, key, cx| {
+                    row_binding.bind_row(surface, state.drag_keys(key), label(item), cx)
+                }),
+                target: Box::new(move |surface, before, cx| target_binding.bind_target(surface, before, cx)),
+                viewport: Box::new(move |surface, _, axis| scroll_binding.bind_viewport(surface, scroll, axis)),
+                highlight: Box::new(move |surface, _, color| binding.highlight(surface, color)),
+            });
+        }
+        self
+    }
+
     /// Bind an explicit look, including live theme changes.
     pub fn look(mut self, look: &ShadcnLook) -> Self {
         self.look = Some(look.clone());
@@ -157,10 +193,13 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         self
     }
 
-    /// This prototype connects lists owned by the same host entity, which serves
+    /// Compatibility composition API for raw host-owned state and custom previews.
+    /// Prefer `from_control` with SDK drag/drop configuration and named callbacks.
+    /// This connects lists owned by the same host entity, which serves
     /// as their shared scope. The SDK owns session admission and lifecycle guards;
     /// `on_drop` validates/mutates the host data and completes the proposal.
     /// Preview construction happens only once a native drag actually starts.
+    /// Unanswered synchronous proposals are rejected through `on_event`.
     pub fn drag_and_drop<S: Clone + 'static, P: Render + 'static>(
         mut self,
         list: S,
@@ -175,6 +214,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         let source = list.clone();
         let preview = std::rc::Rc::new(preview);
         let scroll = self.scroll;
+        let target_events = on_event;
         // Read scope and theme at build time so fluent option order is immaterial.
         self.drag_drop = Some(DragDropBindings {
             row: Box::new(move |surface, item, key, cx| {
@@ -194,7 +234,17 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
                 )
             }),
             target: Box::new(move |surface, before, cx| {
-                KeyedDropTarget::new(cx.entity_id(), list.clone(), before).bind(surface, cx, on_drop)
+                KeyedDropTarget::new(cx.entity_id(), list.clone(), before).bind(surface, cx, {
+                    let on_event = target_events;
+                    move |owner, proposal, window, cx| {
+                        on_drop(owner, proposal.clone(), window, cx);
+                        if proposal.is_active() {
+                            for event in proposal.rejected("owner did not accept the drop") {
+                                on_event(owner, event, cx);
+                            }
+                        }
+                    }
+                })
             }),
             viewport: Box::new(move |surface, scope, axis| {
                 scroll.bind_drag_auto_scroll(surface, axis, move |drag: &KeyedDrag<S, K>| drag.accepts(scope))
@@ -437,6 +487,7 @@ impl ShadcnLook {
                     .child(template(&model, cx))
             },
         )
+        .control_drag_drop(parts.drag_drop, parts.item_label)
         .look(self)
         .layout(layout)
         .virtualization(parts.virtualization);
@@ -447,4 +498,22 @@ impl ShadcnLook {
         };
         builder.build(window, cx).aria_description(format!("Selection mode: {mode:?}"))
     }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod persistent_drag_tests {
+    fn render_drag_list(
+        side: usize,
+        list: &mut gpui_luma::controls::listbox::ListBoxControl<DragHarness, u32, u32>,
+        window: &mut gpui::Window,
+        cx: &mut gpui::Context<DragHarness>,
+    ) -> gpui::Stateful<gpui::Div> {
+        super::ListBoxBuilder::from_control(
+            if side == 0 { "sdk-left" } else { "sdk-right" },
+            list,
+            |surface, item, _| surface.child(item.item.to_string()),
+        )
+        .build(window, cx)
+    }
+    include!("../../../sdk/tests/support/listbox_drag.rs");
 }

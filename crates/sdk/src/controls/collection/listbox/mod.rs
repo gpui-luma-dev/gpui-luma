@@ -10,6 +10,8 @@ mod binding;
 mod callback;
 mod control;
 mod drag_scroll;
+mod drag;
+pub use drag::{ListBoxDragDrop, ListBoxDropProposal, ListBoxDragDropBinding};
 mod item_template;
 mod layout;
 mod model;

@@ -1,7 +1,7 @@
 //! Persistent state and bindings for look-owned ListBox composition.
 
 use std::hash::Hash;
-use gpui::{App, Context, ElementId, SharedString, Window};
+use gpui::{App, AppContext, Context, ElementId, SharedString, Window};
 
 use super::{
     ListBoxBinding, ListBoxError, ListBoxInput, ListBoxScrollHandle, ListBoxState, ListBoxUpdate,
@@ -13,7 +13,7 @@ pub type ListBoxInputHandler<M, K> = fn(&mut M, ListBoxInput<K>, &mut Window, &m
 
 /// Persistent SDK objects shared by successive renders. This is host-owned,
 /// not a separately spawned entity; the look supplies the visual composition.
-pub struct ListBoxControl<M: 'static, T, K> {
+pub struct ListBoxControl<M: 'static, T, K: 'static> {
     /// Collection and selection state. Deliver updates from direct mutations
     /// through [`Self::handle_update`] to deliver effects and named callbacks.
     pub state: ListBoxState<T, K>,
@@ -23,12 +23,15 @@ pub struct ListBoxControl<M: 'static, T, K> {
     item_id: fn(&K) -> ElementId,
     item_label: fn(&T) -> SharedString,
     virtualization: ListBoxVirtualization,
-    pub(super) callbacks: crate::infra::callbacks::EventCallbacks<super::ListBoxEvent<K>>,
+    pub(super) event_source: gpui::Entity<super::drag::ListBoxEventSource<K>>,
+    drag_drop: Option<super::ListBoxDragDrop<M, K>>,
 }
 
 /// Borrowed integration point for look-owned builders. The binding is mutable
 /// only to register its persistent focus subscriptions during rendering.
-pub struct ListBoxRenderParts<'a, M: 'static, T, K> {
+pub struct ListBoxRenderParts<'a, M: 'static, T, K: 'static> {
+    /// Optional persistent SDK drag/drop binding; Looks attach native geometry.
+    pub drag_drop: Option<super::ListBoxDragDropBinding<M, K>>,
     /// Current collection and selection state.
     pub state: &'a ListBoxState<T, K>,
     /// Stable keyboard and focus binding.
@@ -58,7 +61,8 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
     ) -> Self {
         Self {
             state,
-            callbacks: Default::default(),
+            event_source: cx.new(|_| super::drag::ListBoxEventSource::default()),
+            drag_drop: None,
             on_input,
             item_id,
             item_label,
@@ -66,6 +70,18 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
             binding: ListBoxBinding::new(cx),
             scroll: ListBoxScrollHandle::default(),
         }
+    }
+
+    /// Enable scoped, host-owned drag/drop. Register lifecycle handlers directly
+    /// on this control; Look builders consume this configuration at render time.
+    pub fn drag_drop(mut self, config: super::ListBoxDragDrop<M, K>) -> Self {
+        self.drag_drop = Some(config);
+        self
+    }
+
+    /// Stable source/target identity used by ListBox drop proposals and events.
+    pub fn drag_drop_id(&self) -> gpui::EntityId {
+        self.event_source.entity_id()
     }
 
     /// Opt into focus-required wheel routing. Defaults to hover scrolling.
@@ -199,13 +215,18 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
     /// current owner borrow ends, in event and registration order.
     pub fn handle_update(&self, update: &ListBoxUpdate<K>, cx: &mut Context<M>) {
         self.scroll.handle_update(update, cx);
-        self.callbacks.dispatch_batch(&update.events, cx);
+        super::drag::emit_batch(self.event_source.downgrade(), update.events.clone(), cx);
     }
 
     /// Borrow existing state/handles for composition without recreating them.
     pub fn render_parts(&mut self) -> ListBoxRenderParts<'_, M, T, K> {
         self.scroll.set_wheel_focus_owner(self.binding.focus_handle().clone());
+        let drag_drop = self
+            .drag_drop
+            .clone()
+            .map(|config| super::ListBoxDragDropBinding { source: self.event_source.downgrade(), config });
         ListBoxRenderParts {
+            drag_drop,
             state: &self.state,
             binding: &mut self.binding,
             scroll: &self.scroll,

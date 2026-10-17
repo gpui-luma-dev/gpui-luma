@@ -1,7 +1,7 @@
 use gpui::{App, Context, Div, Render, SharedString, Stateful, WeakEntity, Window, div, px, relative};
 use crate::infra::drag_drop::{DragDropElementExt, DragDropEvent, bind_drag_source};
 use super::super::drag::TreeDrag;
-use super::super::{TreeDropLocation, TreeDropPosition, TreeDropProposal, TreeViewDragEvent, TreeDragEndReason};
+use super::super::{TreeDropLocation, TreeDropPosition, TreeDropProposal};
 use super::*;
 
 struct DragPreview<T: Clone + Send + Sync + 'static> {
@@ -20,30 +20,12 @@ impl<T: Clone + Send + Sync + 'static> Render for DragPreview<T> {
 
 impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
     fn native_drag_event(&mut self, event: DragDropEvent<WeakEntity<Self>, SharedString>, cx: &mut Context<Self>) {
-        match event {
-            DragDropEvent::DragStarted { source, keys } => {
-                self.drag_revision = Some(self.revision);
-                self.pressed_node_id = None;
-                if let Some(node_id) = keys.first() {
-                    cx.emit(TreeViewEvent::DragDrop(TreeViewDragEvent::Started {
-                        source: source.entity_id(),
-                        node_id: node_id.clone(),
-                        node_ids: keys.clone(),
-                    }));
-                }
-            }
-            DragDropEvent::DragEnded { source, keys, .. } => {
-                self.pressed_node_id = None;
-                if let Some(node_id) = keys.first() {
-                    cx.emit(TreeViewEvent::DragDrop(TreeViewDragEvent::Ended {
-                        source: source.entity_id(),
-                        node_id: node_id.clone(),
-                        node_ids: keys.clone(),
-                        reason: TreeDragEndReason::Cancelled,
-                    }));
-                }
-            }
-            _ => {}
+        if matches!(event, DragDropEvent::DragStarted { .. }) {
+            self.drag_revision = Some(self.revision);
+        }
+        self.pressed_node_id = None;
+        if let Some(event) = super::super::drag::project_event(event, None) {
+            cx.emit(TreeViewEvent::DragDrop(event));
         }
         cx.notify();
     }
@@ -116,7 +98,12 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
                 cx.stop_propagation();
                 if let Some(proposal) = Self::proposal(&target, drag, location.clone(), cx) {
                     match proposal.validate(cx) {
-                        Ok(()) => (config.on_drop)(proposal, window, cx),
+                        Ok(()) => {
+                            (config.on_drop)(proposal.clone(), window, cx);
+                            if proposal.is_active() {
+                                proposal.rejected("owner did not accept the drop", cx);
+                            }
+                        }
                         Err(error) => proposal.rejected(error, cx),
                     }
                 }

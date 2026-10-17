@@ -37,6 +37,37 @@ macro_rules! check_callbacks {
         }
     };
 }
+macro_rules! check_drag_entity_callbacks {
+    ($test:ident, $builder:expr, [$($method:ident($($arg:ident),*) => [$($event:expr),*]),* $(,)?]) => {
+        #[test]
+        fn $test() {
+            let app = TestAppContext::single();
+            let owner = app.update(|cx| cx.new(|_| Owner::default()));
+            let control = app.update(|cx| owner.update(cx, |_, cx| {
+                $builder
+                    .on_event(cx, |owner: &mut Owner, _, _| owner.log.push("all".into()))
+                    .spawn(cx)
+                    $(.$method(cx, |owner, $($arg,)* _| {
+                        owner.log.push(format!("{}:{:?}", stringify!($method), ($($arg,)*)));
+                    }))*
+                    .on_event(cx, |owner, _, _| owner.log.push("factory".into()))
+            }));
+            $($(
+                app.update(|cx| {
+                    owner.update(cx, |owner, _| owner.log.clear());
+                    control.update(cx, |_, cx| cx.emit($event));
+                });
+                app.read(|cx| {
+                    let log = &owner.read(cx).log;
+                    assert_eq!(log.len(), 3, "{}: {log:?}", stringify!($method));
+                    assert!(log.iter().any(|s| s == "all"));
+                    assert!(log.iter().any(|s| s == "factory"));
+                    assert!(log.iter().any(|s| s.starts_with(concat!(stringify!($method), ":"))));
+                });
+            )*)*
+        }
+    };
+}
 check_callbacks!(
 overlay_window_callbacks,
 crate::controls::overlay_window::OverlayWindowBuilder::new("callbacks"),
@@ -369,4 +400,119 @@ fn paging_table_preserves_inner_and_wrapper_callbacks() {
         assert!(log.iter().any(|s| s == "inner"));
         assert!(log.iter().any(|s| s == "wrapper"));
     });
+}
+
+check_callbacks!(table_drag_builder_callbacks, crate::controls::table::TableBuilder::<()>::new_typed("drag"), [
+on_drag_started(source, keys) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DragStarted { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()] })],
+on_items_removed(source, target, keys) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsRemoved { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()] })],
+on_items_added(source, target, keys, before) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsAdded { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_items_reordered(target, keys, before) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsReordered { target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_dropped(source, target, keys, before, changed) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::Dropped { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), changed: false })],
+on_drop_rejected(source, target, keys, before, error) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DropRejected { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), error: "denied".into() })],
+on_drag_ended(source, keys, reason) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DragEnded { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()], reason: crate::infra::drag_drop::DragEndReason::Unchanged })]
+]);
+
+check_drag_entity_callbacks!(table_drag_entity_callbacks, crate::controls::table::TableBuilder::<()>::new_typed("drag"), [
+on_drag_started(source, keys) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DragStarted { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()] })],
+on_items_removed(source, target, keys) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsRemoved { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()] })],
+on_items_added(source, target, keys, before) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsAdded { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_items_reordered(target, keys, before) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsReordered { target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_dropped(source, target, keys, before, changed) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::Dropped { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), changed: false })],
+on_drop_rejected(source, target, keys, before, error) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DropRejected { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), error: "denied".into() })],
+on_drag_ended(source, keys, reason) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DragEnded { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()], reason: crate::infra::drag_drop::DragEndReason::Unchanged })]
+]);
+
+check_callbacks!(paging_table_drag_builder_callbacks, crate::controls::table::PagingTableBuilder::new(crate::controls::table::TableBuilder::<()>::new_typed("drag"), crate::controls::pager::PagerBuilder::new("pager")), [
+on_drag_started(source, keys) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DragStarted { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()] })],
+on_items_removed(source, target, keys) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsRemoved { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()] })],
+on_items_added(source, target, keys, before) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsAdded { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_items_reordered(target, keys, before) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsReordered { target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_dropped(source, target, keys, before, changed) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::Dropped { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), changed: false })],
+on_drop_rejected(source, target, keys, before, error) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DropRejected { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), error: "denied".into() })],
+on_drag_ended(source, keys, reason) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DragEnded { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()], reason: crate::infra::drag_drop::DragEndReason::Unchanged })]
+]);
+
+check_drag_entity_callbacks!(paging_table_drag_entity_callbacks, crate::controls::table::PagingTableBuilder::new(crate::controls::table::TableBuilder::<()>::new_typed("drag"), crate::controls::pager::PagerBuilder::new("pager")), [
+on_drag_started(source, keys) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DragStarted { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()] })],
+on_items_removed(source, target, keys) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsRemoved { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()] })],
+on_items_added(source, target, keys, before) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsAdded { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_items_reordered(target, keys, before) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::ItemsReordered { target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()) })],
+on_dropped(source, target, keys, before, changed) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::Dropped { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), changed: false })],
+on_drop_rejected(source, target, keys, before, error) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DropRejected { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), keys: vec!["a".into(), "b".into()], before: Some("c".into()), error: "denied".into() })],
+on_drag_ended(source, keys, reason) => [crate::controls::table::TableEvent::RowDrag(crate::infra::drag_drop::DragDropEvent::DragEnded { source: gpui::EntityId::from(1), keys: vec!["a".into(), "b".into()], reason: crate::infra::drag_drop::DragEndReason::Unchanged })]
+]);
+
+check_callbacks!(tree_drag_builder_callbacks, crate::controls::tree_view::TreeViewBuilder::<()>::new("drag"), [
+on_items_removed(source, target, node_id, node_ids) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::ItemsRemoved { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()] })],
+on_items_added(source, target, node_id, node_ids, location) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::ItemsAdded { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()], location: crate::controls::tree_view::TreeDropLocation { parent_id: None, anchor_id: Some("c".into()), position: crate::controls::tree_view::TreeDropPosition::Before } })],
+on_items_reordered(target, node_id, node_ids, location) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::ItemsReordered { target: gpui::EntityId::from(2), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()], location: crate::controls::tree_view::TreeDropLocation { parent_id: None, anchor_id: Some("c".into()), position: crate::controls::tree_view::TreeDropPosition::Before } })],
+on_drag_started(source, node_id, node_ids) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::Started { source: gpui::EntityId::from(1), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()] })],
+on_dropped(source, target, node_id, node_ids, location, changed) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::Dropped { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()], location: crate::controls::tree_view::TreeDropLocation { parent_id: None, anchor_id: Some("c".into()), position: crate::controls::tree_view::TreeDropPosition::Before }, changed: false })],
+on_drop_rejected(source, target, node_id, node_ids, error) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::Rejected { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()], error: "denied".into() })],
+on_drag_ended(source, node_id, node_ids, reason) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::Ended { source: gpui::EntityId::from(1), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()], reason: crate::controls::tree_view::TreeDragEndReason::Unchanged })]
+]);
+
+check_drag_entity_callbacks!(tree_drag_entity_callbacks, crate::controls::tree_view::TreeViewBuilder::<()>::new("drag"), [
+on_items_removed(source, target, node_id, node_ids) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::ItemsRemoved { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()] })],
+on_items_added(source, target, node_id, node_ids, location) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::ItemsAdded { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()], location: crate::controls::tree_view::TreeDropLocation { parent_id: None, anchor_id: Some("c".into()), position: crate::controls::tree_view::TreeDropPosition::Before } })],
+on_items_reordered(target, node_id, node_ids, location) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::ItemsReordered { target: gpui::EntityId::from(2), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()], location: crate::controls::tree_view::TreeDropLocation { parent_id: None, anchor_id: Some("c".into()), position: crate::controls::tree_view::TreeDropPosition::Before } })],
+on_drag_started(source, node_id, node_ids) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::Started { source: gpui::EntityId::from(1), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()] })],
+on_dropped(source, target, node_id, node_ids, location, changed) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::Dropped { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()], location: crate::controls::tree_view::TreeDropLocation { parent_id: None, anchor_id: Some("c".into()), position: crate::controls::tree_view::TreeDropPosition::Before }, changed: false })],
+on_drop_rejected(source, target, node_id, node_ids, error) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::Rejected { source: gpui::EntityId::from(1), target: gpui::EntityId::from(2), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()], error: "denied".into() })],
+on_drag_ended(source, node_id, node_ids, reason) => [crate::controls::tree_view::TreeViewEvent::<()>::DragDrop(crate::controls::tree_view::TreeViewDragEvent::Ended { source: gpui::EntityId::from(1), node_id: "a".into(), node_ids: vec!["a".into(), "b".into()], reason: crate::controls::tree_view::TreeDragEndReason::Unchanged })]
+]);
+
+#[test]
+fn drag_aliases_and_named_handlers_coexist_and_can_update_emitting_control() {
+    use crate::controls::table::{TableBuilder, TableControl, TableEvent};
+    use crate::infra::drag_drop::DragDropEvent;
+    #[derive(Default)]
+    struct DragOwner {
+        table: Option<gpui::Entity<TableControl<()>>>,
+        log: Vec<&'static str>,
+    }
+    let app = TestAppContext::single();
+    let capture = std::rc::Rc::new(());
+    let owner = app.update(|cx| {
+        cx.new(|cx| {
+            let retained = capture.clone();
+            let table = TableBuilder::<()>::new_typed("alias")
+                .on_row_drag(cx, |owner: &mut DragOwner, _, _| owner.log.push("legacy"))
+                .on_drag_drop(cx, |owner, _, _| owner.log.push("aggregate"))
+                .on_dropped(cx, move |owner, source, target, keys, before, changed, cx| {
+                    let _keep = &retained;
+                    assert_eq!(source, target);
+                    assert_eq!(keys, &[gpui::SharedString::from("row")]);
+                    assert_eq!(before, &None);
+                    assert!(!changed);
+                    owner.log.push("completed");
+                    owner.table.as_ref().unwrap().update(cx, |table, cx| table.set_enabled(false, cx));
+                })
+                .spawn(cx);
+            DragOwner { table: Some(table), log: vec![] }
+        })
+    });
+    let table = app.read(|cx| owner.read(cx).table.as_ref().unwrap().clone());
+    app.update(|cx| {
+        table.update(cx, |_, cx| {
+            cx.emit(TableEvent::RowDrag(DragDropEvent::Dropped {
+                source: cx.entity_id(),
+                target: cx.entity_id(),
+                keys: vec!["row".into()],
+                before: None,
+                changed: false,
+            }))
+        })
+    });
+    app.read(|cx| assert_eq!(owner.read(cx).log, ["legacy", "aggregate", "completed"]));
+    let weak_owner = owner.downgrade();
+    drop(owner);
+    app.update(|_| {});
+    assert!(weak_owner.upgrade().is_none());
+    assert_eq!(std::rc::Rc::strong_count(&capture), 2);
+    let weak_table = table.downgrade();
+    drop(table);
+    app.update(|_| {});
+    assert!(weak_table.upgrade().is_none());
+    assert_eq!(std::rc::Rc::strong_count(&capture), 1);
 }

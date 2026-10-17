@@ -196,6 +196,15 @@ impl Workspaces {
             TreeViewDragEvent::Started { source, node_ids, .. } => {
                 format!("Started: {} in {}", ids(node_ids), workspace(*source))
             }
+            TreeViewDragEvent::ItemsRemoved { source, target, node_ids, .. } => {
+                format!("Removed: {} · {} → {}", ids(node_ids), workspace(*source), workspace(*target))
+            }
+            TreeViewDragEvent::ItemsAdded { target, node_ids, .. } => {
+                format!("Added: {} in {}", ids(node_ids), workspace(*target))
+            }
+            TreeViewDragEvent::ItemsReordered { target, node_ids, .. } => {
+                format!("Reordered: {} in {}", ids(node_ids), workspace(*target))
+            }
             TreeViewDragEvent::Dropped { source, target, node_ids, location, changed, .. } => {
                 let position = match location.position {
                     TreeDropPosition::Before => "before",

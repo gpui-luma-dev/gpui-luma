@@ -100,6 +100,180 @@ impl<T: Clone + Send + Sync + 'static> TreeView<T> {
         self
     }
 
+    /// Observe the committed `ItemsRemoved` phase before successful completion.
+    pub fn on_items_removed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewDragEvent::ItemsRemoved {
+                source,
+                target,
+                node_id,
+                node_ids,
+            } = event
+            {
+                callback(owner, *source, *target, node_id, node_ids, cx);
+            }
+        })
+    }
+
+    /// Observe the committed `ItemsAdded` phase before successful completion.
+    pub fn on_items_added<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            &gpui_luma::controls::tree_view::TreeDropLocation,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewDragEvent::ItemsAdded {
+                source,
+                target,
+                node_id,
+                node_ids,
+                location,
+            } = event
+            {
+                callback(owner, *source, *target, node_id, node_ids, location, cx);
+            }
+        })
+    }
+
+    /// Observe the committed `ItemsReordered` phase before successful completion.
+    pub fn on_items_reordered<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            &gpui_luma::controls::tree_view::TreeDropLocation,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewDragEvent::ItemsReordered {
+                target,
+                node_id,
+                node_ids,
+                location,
+            } = event
+            {
+                callback(owner, *target, node_id, node_ids, location, cx);
+            }
+        })
+    }
+
+    /// Observe `Started` through the existing drag/drop lifecycle.
+    pub fn on_drag_started<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, &gpui::SharedString, &Vec<gpui::SharedString>, &mut gpui::Context<M>)
+        + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewDragEvent::Started { source, node_id, node_ids } = event {
+                callback(owner, *source, node_id, node_ids, cx);
+            }
+        })
+    }
+
+    /// Observe `Dropped` through the existing drag/drop lifecycle.
+    pub fn on_dropped<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            &gpui_luma::controls::tree_view::TreeDropLocation,
+            bool,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewDragEvent::Dropped {
+                source,
+                target,
+                node_id,
+                node_ids,
+                location,
+                changed,
+            } = event
+            {
+                callback(owner, *source, *target, node_id, node_ids, location, *changed, cx);
+            }
+        })
+    }
+
+    /// Observe `Rejected` through the existing drag/drop lifecycle.
+    pub fn on_drop_rejected<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            &gpui::SharedString,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewDragEvent::Rejected {
+                source,
+                target,
+                node_id,
+                node_ids,
+                error,
+            } = event
+            {
+                callback(owner, *source, *target, node_id, node_ids, error, cx);
+            }
+        })
+    }
+
+    /// Observe `Ended` through the existing drag/drop lifecycle.
+    pub fn on_drag_ended<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            gpui_luma::controls::tree_view::TreeDragEndReason,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tree_view::TreeViewDragEvent::Ended { source, node_id, node_ids, reason } =
+                event
+            {
+                callback(owner, *source, node_id, node_ids, *reason, cx);
+            }
+        })
+    }
+
     /// Handle `TreeViewEvent::DragDrop` through the existing event stream.
     pub fn on_drag_drop<M: 'static>(
         self,
@@ -255,6 +429,12 @@ impl<T: Clone + Send + Sync + 'static> TreeView<T> {
     /// Set initial nodes. Duplicate IDs retain the previous items, as in the SDK.
     pub fn items(mut self, items: impl IntoIterator<Item = TreeNode<T>>) -> Self {
         self.builder = self.builder.items(items);
+        self
+    }
+
+    /// Enable scoped, host-owned drag/drop transactions using the SDK policy.
+    pub fn drag_drop(mut self, config: gpui_luma::controls::tree_view::TreeViewDragDrop<T>) -> Self {
+        self.builder = self.builder.drag_drop(config);
         self
     }
 
