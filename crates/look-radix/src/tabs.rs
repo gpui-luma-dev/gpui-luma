@@ -193,6 +193,18 @@ struct TabsThemeAdapter {
 }
 
 impl TabsTheme for TabsThemeAdapter {
+    fn resolve_drag(&self, size: ControlSize) -> gpui_luma::infra::drag_drop::DragDropLook {
+        let mut drag =
+            gpui_luma::infra::drag_drop::DragDropLook::from_tokens(&gpui_luma::theme::ThemeTokens::default(), size);
+        drag.background = self.look.resolve_role(SemanticRole::Surface).hsla();
+        drag.foreground = self.look.resolve_role(SemanticRole::Foreground).hsla();
+        drag.valid_marker = self.look.resolve_role(SemanticRole::Focus).hsla();
+        drag.invalid_marker = self.look.resolve_role(SemanticRole::Destructive).hsla();
+        drag.radius = self.look.metrics().radius(size);
+        drag.font_family = font_family(&self.look);
+        drag.typography = self.resolve_item(true, Default::default(), size).label_typography;
+        drag
+    }
     fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsListLook {
         let metrics = self.look.metrics();
         let geometry = tabs_geometry(&self.look, self.variant, size);
@@ -491,5 +503,22 @@ mod tests {
         assert!(inactive.background.is_none());
         assert!(active.radius > 0.0);
         assert!(theme.baseline(true, ControlSize::Md).is_none());
+    }
+}
+
+#[cfg(test)]
+mod drag_tests {
+    use super::*;
+    #[test]
+    fn drag_surfaces_follow_semantic_roles_in_both_modes() {
+        let look = Look::built_in();
+        for mode in [gpui_luma::theme::ThemeMode::Light, gpui_luma::theme::ThemeMode::Dark] {
+            look.set_mode(mode);
+            let drag = tabs_theme(&look).resolve_drag(ControlSize::Md);
+            assert_eq!(drag.background, look.resolve_role(SemanticRole::Surface).hsla());
+            assert_eq!(drag.foreground, look.resolve_role(SemanticRole::Foreground).hsla());
+            assert_eq!(drag.valid_marker, look.resolve_role(SemanticRole::Focus).hsla());
+            assert_eq!(drag.invalid_marker, look.resolve_role(SemanticRole::Destructive).hsla());
+        }
     }
 }

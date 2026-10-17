@@ -165,6 +165,7 @@ impl Render for SidebarExpositionLeftPane {
                 .flex()
                 .flex_col()
                 .gap(px(16.0))
+                .child(div().text_sm().text_color(look.chrome().muted_text).child("Drag row edges before/after; branch centers move into branches. Hold near an edge to scroll; Escape cancels."))
                 .child(preview_shell(
                     look,
                     control_width,
@@ -214,7 +215,7 @@ impl SidebarControlExposition {
                 cx,
                 look.clone(),
                 "controls-sidebar-event-log",
-                "Expand branches, select rows, toggle collapse, or open the account menu to inspect events.",
+                "Interact with the sidebar to inspect events.",
             )
         });
 
@@ -467,7 +468,7 @@ fn sidebar_toggle_presenter(icon: ControlIcon) -> ControlPresenter<ButtonContent
 fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControlExposition>) -> Entity<SidebarControl> {
     let mut pinned_menu = shadcn::Sidebar::menu("pinned_menu");
     for leaf in PINNED_PROPERTIES {
-        pinned_menu = pinned_menu.item(property_leaf_menu_item(look, leaf));
+        pinned_menu = pinned_menu.item(property_leaf_menu_item(look, leaf).draggable(leaf.id != "summary"));
     }
 
     let mut properties_menu = shadcn::Sidebar::menu("properties_menu");
@@ -482,6 +483,7 @@ fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControl
 
     shadcn::Sidebar::new("controls-doc-sidebar-control")
         .look(look.as_ref())
+        .drag_drop(gpui_luma::controls::sidebar::SidebarDragDrop::new())
         .auto_hide_scrollbar(true)
         .auto_hide_scrollbar_activate(ScrollbarAutoHideActivate::Move)
         .sidebar(
@@ -489,8 +491,8 @@ fn spawn_sidebar_control(look: &Arc<ShadcnLook>, cx: &mut Context<SidebarControl
                 .header(shadcn::Sidebar::header().title("Properties").subtitle("Rectangle / Prominent card"))
                 .content(
                     shadcn::Sidebar::content()
-                        .group(shadcn::Sidebar::group().label("Pinned").menu(pinned_menu))
-                        .group(shadcn::Sidebar::group().label("Properties").menu(properties_menu)),
+                        .group(shadcn::Sidebar::group().id("pinned").label("Pinned").menu(pinned_menu))
+                        .group(shadcn::Sidebar::group().id("properties").label("Properties").menu(properties_menu)),
                 ),
         )
         .overlay_scrollbar(true)
@@ -569,6 +571,7 @@ fn property_leaf_menu_item(
 
 fn format_sidebar_control_event(event: &SidebarEvent) -> Option<String> {
     match event {
+        SidebarEvent::DragDrop(event) => Some(format!("SidebarEvent::DragDrop {event:?}")),
         SidebarEvent::PresentationChanged { presentation } => {
             Some(format!("SidebarEvent::PresentationChanged {{ presentation: {presentation:?} }}"))
         }

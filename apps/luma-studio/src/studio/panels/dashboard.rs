@@ -39,6 +39,7 @@ impl DashboardPanel {
         let sidebar = shadcn::Sidebar::new("studio-dashboard-nav")
             .look(look.as_ref())
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
+            .drag_drop(gpui_luma::controls::sidebar::SidebarDragDrop::new().allowed_groups(["properties"]))
             .sidebar(property_sidebar(&look, "studio-dashboard-nav-panel", "Properties", "Task workspace"))
             .spawn(cx);
 
@@ -286,6 +287,55 @@ fn sidebar_toggle_presenter(icon: ControlIcon, color: gpui::Hsla) -> ControlPres
 mod tests {
     use super::*;
     use gpui::{MouseButton, TestAppContext, point, size};
+
+    #[test]
+    fn dashboard_properties_move_without_navigation_and_pinned_items_stay_fixed() {
+        use gpui_luma::controls::sidebar::SidebarEvent;
+        let mut app = TestAppContext::single();
+        let (panel, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            DashboardPanel::new(cx, Arc::new(ShadcnLook::built_in()))
+        });
+        cx.simulate_resize(size(px(1400.0), px(900.0)));
+        cx.run_until_parked();
+        let sidebar = cx.update(|_, cx| panel.read(cx).sidebar.clone());
+        let events = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let log = events.clone();
+        let _subscription = cx.update(|_, cx| {
+            cx.subscribe(&sidebar, move |_, event: &SidebarEvent, _| log.borrow_mut().push(event.clone()))
+        });
+        let start = cx.debug_bounds("sidebar-drag-dimensions").unwrap().center();
+        let target = cx.debug_bounds("sidebar-drag-fill").unwrap();
+        let end = point(target.center().x, target.top() + px(2.0));
+        cx.simulate_mouse_down(start, MouseButton::Left, Default::default());
+        cx.simulate_mouse_move(start + point(px(12.0), px(0.0)), MouseButton::Left, Default::default());
+        cx.run_until_parked();
+        cx.simulate_mouse_move(end, MouseButton::Left, Default::default());
+        cx.run_until_parked();
+        cx.simulate_mouse_up(end, MouseButton::Left, Default::default());
+        cx.run_until_parked();
+        cx.update(|_, cx| {
+            let sidebar = sidebar.read(cx);
+            let location = sidebar.item_location("dimensions").unwrap();
+            assert_eq!(location.group_id.as_ref(), "properties");
+            assert_eq!(location.parent_id.as_deref(), Some("look"));
+            assert_eq!(sidebar.selected_id().map(|id| id.as_ref()), Some(INITIAL_PROPERTY_SELECTION_ID));
+        });
+        assert!(
+            !events
+                .borrow()
+                .iter()
+                .any(|event| matches!(event, SidebarEvent::Select { .. } | SidebarEvent::SubMenuToggle { .. }))
+        );
+        events.borrow_mut().clear();
+        let start = cx.debug_bounds("sidebar-drag-summary").unwrap().center();
+        cx.simulate_mouse_down(start, MouseButton::Left, Default::default());
+        cx.simulate_mouse_move(start + point(px(12.0), px(0.0)), MouseButton::Left, Default::default());
+        cx.simulate_mouse_move(end, MouseButton::Left, Default::default());
+        cx.simulate_mouse_up(end, MouseButton::Left, Default::default());
+        cx.run_until_parked();
+        assert!(!events.borrow().iter().any(|event| matches!(event, SidebarEvent::DragDrop(_))));
+    }
 
     #[test]
     fn dashboard_column_handles_resize_on_first_drag() {

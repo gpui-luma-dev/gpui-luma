@@ -1,7 +1,13 @@
 //! Keyed in-window drag sessions and drop proposals. GPUI owns gesture detection,
 //! hit testing, and previews; hosts own acceptance policy and collection mutation.
 
+mod appearance;
+pub use appearance::DragDropLook;
+pub(crate) use appearance::{DragPreview, bind_feedback};
 mod binding;
+pub(crate) use binding::bind_edge_scroll;
+mod reorder;
+pub(crate) use reorder::reorder_indices;
 
 use std::{cell::Cell, collections::HashSet, hash::Hash, rc::Rc};
 use gpui::{EntityId, SharedString};

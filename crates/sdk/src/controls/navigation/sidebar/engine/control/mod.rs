@@ -32,11 +32,13 @@ pub enum SidebarPanelEngineEvent {
 }
 
 pub struct SidebarPanelEngine {
+    pub(crate) drag_owner: Option<gpui::WeakEntity<crate::controls::sidebar::SidebarControl>>,
     model: SidebarPanelEngineModel,
     row_handlers: RefCell<Option<input::CachedSidebarHandlers>>,
     tooltip_theme: std::sync::Arc<dyn crate::controls::tooltip::TooltipTheme>,
     tooltips: HashMap<SharedString, crate::infra::attachments::TooltipHandle>,
     main_scroll: ScrollContainer,
+    drag_scroll_pending: std::rc::Rc<std::cell::Cell<bool>>,
     hovered_node: Option<SharedString>,
     pressed_node: Option<SharedString>,
     row_focus_handles: HashMap<SharedString, FocusHandle>,
@@ -59,6 +61,11 @@ pub struct SidebarPanelEngine {
 
 impl EventEmitter<SidebarPanelEngineEvent> for SidebarPanelEngine {}
 impl SidebarPanelEngine {
+    pub(crate) fn move_items(&mut self, nodes: Vec<NavNode>, cx: &mut Context<Self>) {
+        // IDs survive a move: retain focus handles, tooltip history, scroll and motion.
+        self.model.nodes = nodes;
+        cx.notify();
+    }
     #[allow(clippy::new_ret_no_self)]
     pub fn new(id: impl Into<SharedString>) -> SidebarPanelEngineBuilder {
         SidebarPanelEngineBuilder::new(id)
@@ -85,11 +92,13 @@ impl SidebarPanelEngine {
         ];
 
         let mut engine = Self {
+            drag_owner: None,
             model: builder.model,
             row_handlers: RefCell::new(None),
             tooltip_theme: crate::controls::tooltip::default_tooltip_theme(),
             tooltips: HashMap::new(),
             main_scroll,
+            drag_scroll_pending: Default::default(),
             hovered_node: None,
             pressed_node: None,
             row_focus_handles: HashMap::new(),

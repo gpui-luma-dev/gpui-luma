@@ -175,3 +175,66 @@ pub trait DragDropElementExt: StatefulInteractiveElement + Sized {
     }
 }
 impl<E: StatefulInteractiveElement> DragDropElementExt for E {}
+
+/// Native edge scrolling for a scoped keyed strip or viewport. Session admission
+/// is rechecked each frame; release, cancellation and leaving the viewport stop it.
+pub(crate) fn bind_edge_scroll<S: Clone + 'static, K: Clone + 'static>(
+    surface: Stateful<Div>,
+    handle: gpui::ScrollHandle,
+    axis: Axis,
+    scope: EntityId,
+    pending: std::rc::Rc<std::cell::Cell<bool>>,
+) -> Stateful<Div> {
+    surface.on_drag_move(move |event: &gpui::DragMoveEvent<KeyedDrag<S, K>>, window, cx| {
+        if !pending.replace(true) {
+            scroll_frame(handle.clone(), axis, scope, event.drag(cx).clone(), pending.clone(), window, cx);
+        }
+    })
+}
+fn scroll_frame<S: Clone + 'static, K: Clone + 'static>(
+    handle: gpui::ScrollHandle,
+    axis: Axis,
+    scope: EntityId,
+    drag: KeyedDrag<S, K>,
+    pending: std::rc::Rc<std::cell::Cell<bool>>,
+    window: &mut Window,
+    _: &mut App,
+) {
+    window.on_next_frame(move |window, cx| {
+        pending.set(false);
+        let bounds = handle.bounds();
+        let pointer = window.mouse_position();
+        if !drag.accepts(scope) || !cx.has_active_drag() || !window.is_window_hovered() || !bounds.contains(&pointer) {
+            return;
+        }
+        let (position, extent, offset, max) = match axis {
+            Axis::Horizontal => (
+                (pointer.x - bounds.left()).as_f32(),
+                bounds.size.width.as_f32(),
+                handle.offset().x,
+                handle.max_offset().x,
+            ),
+            Axis::Vertical => (
+                (pointer.y - bounds.top()).as_f32(),
+                bounds.size.height.as_f32(),
+                handle.offset().y,
+                handle.max_offset().y,
+            ),
+        };
+        let delta = super::edge_scroll_delta(position, extent, std::time::Duration::from_secs_f32(1. / 60.), 540.);
+        let next = (-offset.as_f32() + delta).clamp(0., max.as_f32().max(0.));
+        if (next + offset.as_f32()).abs() < 0.01 {
+            return;
+        }
+        let mut point = handle.offset();
+        match axis {
+            Axis::Horizontal => point.x = px(-next),
+            Axis::Vertical => point.y = px(-next),
+        }
+        handle.set_offset(point);
+        window.refresh();
+        pending.set(true);
+        scroll_frame(handle, axis, scope, drag, pending, window, cx);
+    });
+    window.refresh();
+}

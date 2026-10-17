@@ -37,6 +37,21 @@ pub struct TabsBaseline {
 }
 
 pub trait TabsTheme: Send + Sync {
+    /// Appearance of native drag previews and insertion feedback.
+    fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
+        let mut drag = crate::infra::drag_drop::DragDropLook::from_tokens(&ThemeTokens::default(), size);
+        let list = self.resolve_list(true, size);
+        let item = self.resolve_item(true, Default::default(), size);
+        drag.background = list.background.or(item.background).unwrap_or(drag.background);
+        drag.foreground = item.label_color;
+        drag.valid_marker = item.indicator.unwrap_or(item.label_color);
+        drag.invalid_marker =
+            self.resolve_item(false, InteractionState { invalid: true, ..Default::default() }, size).label_color;
+        drag.radius = list.radius;
+        drag.typography = item.label_typography;
+        drag.font_family = self.font_family();
+        drag
+    }
     fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsListLook;
     fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsItemLook;
     fn font_family(&self) -> SharedString;
@@ -73,6 +88,9 @@ impl DefaultTabsTheme {
 }
 
 impl TabsTheme for DefaultTabsTheme {
+    fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
+        crate::infra::drag_drop::DragDropLook::from_tokens(&self.tokens, size)
+    }
     fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsListLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;

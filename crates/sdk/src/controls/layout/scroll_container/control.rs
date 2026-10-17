@@ -178,6 +178,10 @@ impl ScrollContainer {
         cx.notify();
     }
 
+    pub(crate) fn drag_scroll_handle(&self) -> ScrollHandle {
+        self.scroll_handle.clone()
+    }
+
     pub fn vertical_offset(&self) -> Pixels {
         px((-self.scroll_handle.offset().y.as_f32()).max(0.0))
     }

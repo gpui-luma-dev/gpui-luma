@@ -20,6 +20,8 @@ pub struct SidebarMenuItemModel {
     pub(crate) action_label: Option<SharedString>,
     pub(crate) active: bool,
     pub(crate) disabled: bool,
+    pub(crate) draggable: bool,
+    pub(crate) branch: bool,
     pub(crate) expanded: Option<bool>,
     pub(crate) children: Vec<SidebarMenuItemModel>,
 }
@@ -33,6 +35,7 @@ pub struct SidebarMenuModel {
 
 #[derive(Clone)]
 pub struct SidebarGroupModel {
+    pub(crate) id: Option<SharedString>,
     pub(crate) label: Option<SharedString>,
     pub(crate) action_label: Option<SharedString>,
     pub(crate) menu: Option<SidebarMenuModel>,
@@ -70,6 +73,7 @@ pub struct SidebarControlModel {
     pub(crate) enabled: bool,
     pub(crate) animated: bool,
     pub(crate) selected_id: Option<SharedString>,
+    pub(crate) drag_drop: Option<super::SidebarDragDrop>,
     pub(crate) sidebar: Option<SidebarPanelModel>,
     pub(crate) panel_template: Arc<dyn SidebarPanelTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
@@ -95,6 +99,8 @@ impl SidebarMenuItemBuilder {
                 action_label: None,
                 active: false,
                 disabled: false,
+                draggable: true,
+                branch: false,
                 expanded: None,
                 children: Vec::new(),
             },
@@ -132,6 +138,12 @@ impl SidebarMenuItemBuilder {
         self
     }
 
+    /// Keep a navigation item fixed while other items can be dragged.
+    pub fn draggable(mut self, draggable: bool) -> Self {
+        self.model.draggable = draggable;
+        self
+    }
+
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.model.disabled = disabled;
         self
@@ -145,6 +157,7 @@ impl SidebarMenuItemBuilder {
     /// Attach a nested submenu branch (Shadcn `SidebarMenuSub` ergonomics).
     #[allow(clippy::should_implement_trait)]
     pub fn sub(mut self, sub: SidebarMenuSubBuilder) -> Self {
+        self.model.branch = true;
         self.model.children = sub.into_items();
         self
     }
@@ -203,8 +216,13 @@ pub struct SidebarGroupBuilder {
 }
 
 impl SidebarGroupBuilder {
+    /// Stable destination identity. Defaults to the menu ID when omitted.
+    pub fn id(mut self, id: impl Into<SharedString>) -> Self {
+        self.model.id = Some(id.into());
+        self
+    }
     pub fn new() -> Self {
-        Self { model: SidebarGroupModel { label: None, action_label: None, menu: None } }
+        Self { model: SidebarGroupModel { id: None, label: None, action_label: None, menu: None } }
     }
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
@@ -363,6 +381,148 @@ pub struct SidebarControlBuilder {
 }
 
 impl SidebarControlBuilder {
+    /// Observe the complete drag lifecycle through the semantic event stream.
+    pub fn on_drag_drop<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::sidebar::SidebarDragEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarEvent::DragDrop(event) = event {
+                callback(owner, event, cx);
+            }
+        })
+    }
+    /// Observe `DragStarted` through the existing drag/drop lifecycle.
+    pub fn on_drag_started<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, &Vec<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarDragEvent::DragStarted { source, keys } = event {
+                callback(owner, *source, keys, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsRemoved` through the existing drag/drop lifecycle.
+    pub fn on_items_removed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, gpui::EntityId, &Vec<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarDragEvent::ItemsRemoved { source, target, keys } = event {
+                callback(owner, *source, *target, keys, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsAdded` through the existing drag/drop lifecycle.
+    pub fn on_items_added<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &crate::controls::sidebar::SidebarDropLocation,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarDragEvent::ItemsAdded { source, target, keys, location } = event {
+                callback(owner, *source, *target, keys, location, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsReordered` through the existing drag/drop lifecycle.
+    pub fn on_items_reordered<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &crate::controls::sidebar::SidebarDropLocation,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarDragEvent::ItemsReordered { target, keys, location } = event {
+                callback(owner, *target, keys, location, cx);
+            }
+        })
+    }
+
+    /// Observe `Dropped` through the existing drag/drop lifecycle.
+    pub fn on_dropped<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &crate::controls::sidebar::SidebarDropLocation,
+            bool,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarDragEvent::Dropped { source, target, keys, location, changed } =
+                event
+            {
+                callback(owner, *source, *target, keys, location, *changed, cx);
+            }
+        })
+    }
+
+    /// Observe `DropRejected` through the existing drag/drop lifecycle.
+    pub fn on_drop_rejected<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &crate::controls::sidebar::SidebarDropLocation,
+            &gpui::SharedString,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarDragEvent::DropRejected { source, target, keys, location, error } =
+                event
+            {
+                callback(owner, *source, *target, keys, location, error, cx);
+            }
+        })
+    }
+
+    /// Observe `DragEnded` through the existing drag/drop lifecycle.
+    pub fn on_drag_ended<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            crate::infra::drag_drop::DragEndReason,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::sidebar::SidebarDragEvent::DragEnded { source, keys, reason } = event {
+                callback(owner, *source, keys, *reason, cx);
+            }
+        })
+    }
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -462,6 +622,7 @@ impl SidebarControlBuilder {
                 enabled: true,
                 animated: true,
                 selected_id: None,
+                drag_drop: None,
                 sidebar: None,
                 panel_template: default_sidebar_panel_template(),
                 scrollbar_template: default_scrollbar_template(),
@@ -473,6 +634,12 @@ impl SidebarControlBuilder {
     }
 
     /// Select expanded rows or an icon rail, independently of host visibility.
+    /// Enable validated same-sidebar moves for the configured groups.
+    pub fn drag_drop(mut self, config: super::SidebarDragDrop) -> Self {
+        self.model.drag_drop = Some(config);
+        self
+    }
+
     pub fn presentation(mut self, presentation: SidebarPresentation) -> Self {
         self.model.presentation = presentation;
         self
@@ -592,7 +759,8 @@ pub(crate) fn panel_to_nav_nodes(panel: &SidebarPanelModel) -> (Vec<NavNode>, Ve
     if let Some(content) = &panel.content {
         for (group_index, group) in content.groups.iter().enumerate() {
             if let Some(label) = &group.label {
-                let section_id = SharedString::from(format!("{}-group-{group_index}", panel.id));
+                let section_id =
+                    group.id.clone().unwrap_or_else(|| SharedString::from(format!("{}-group-{group_index}", panel.id)));
                 main_nodes.push(NavNode::section(section_id, label.clone()));
             }
             if let Some(menu) = &group.menu {
@@ -613,12 +781,13 @@ pub(crate) fn panel_to_nav_nodes(panel: &SidebarPanelModel) -> (Vec<NavNode>, Ve
 fn menu_item_to_nav_node(item: &SidebarMenuItemModel) -> NavNode {
     let mut node = NavNode::new(item.id.clone()).label(item.label.clone()).enabled(!item.disabled);
 
+    node.branch = item.branch;
     node.tooltip = item.tooltip.clone();
     if let Some(icon) = item.icon {
         node = node.icon(icon);
     }
 
-    if !item.children.is_empty() {
+    if item.branch || !item.children.is_empty() {
         let child_active = find_active_in_items(&item.children).is_some();
         let expanded = item.expanded.unwrap_or(child_active || item.active);
         node = node.expanded(expanded).children(item.children.iter().map(menu_item_to_nav_node));

@@ -46,12 +46,16 @@ pub struct NavNode {
     pub(crate) icon: Option<LucideIcon>,
     pub(crate) presenter: Option<NavPresenter>,
     pub(crate) children: Vec<NavNode>,
+    pub(crate) branch: bool,
     pub(crate) expanded: bool,
     pub(crate) enabled: bool,
     pub(crate) visible: bool,
 }
 
 impl NavNode {
+    pub(crate) fn has_children(&self) -> bool {
+        self.branch || !self.children.is_empty()
+    }
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -61,6 +65,7 @@ impl NavNode {
             icon: None,
             presenter: None,
             children: Vec::new(),
+            branch: false,
             expanded: false,
             enabled: true,
             visible: true,
@@ -179,6 +184,8 @@ pub struct SidebarPanelEngineRenderModel {
 }
 
 pub struct RenderedNavNode {
+    /// Native drag binding; custom templates attach this to the row only.
+    pub drag_drop: Option<super::super::drag::SidebarItemDragBinding>,
     /// Retained per-item help. Custom templates apply this to the row's focus root.
     pub tooltip: Option<crate::infra::attachments::TooltipHandle>,
     pub id: SharedString,

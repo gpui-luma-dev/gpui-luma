@@ -566,7 +566,7 @@
   <div class="note">Do not introduce a single SDK-wide event enum. The controls are different types on purpose. The win is a shared set of names and payload shapes, applied per control, with layout noise kept off the path hosts match on.</div>
 </section>
 
-<section id="drag-drop"><h2>Collection drag/drop</h2><p>ListBox, Table and TreeView use a shared keyed lifecycle and the same nested aggregate/named callback hierarchy. See <a href="drag-drop.html">Drag and drop</a> for the authoritative lifecycle, proposal/completion rules, ownership and <a href="drag-drop.html#coverage">control/Look coverage matrix</a>; control pages retain their setup and domain payloads.</p></section>
+<section id="drag-drop"><h2>Collection drag/drop</h2><p>ListBox, Table, TreeView, Sidebar and Tabs use a shared keyed lifecycle and the same nested aggregate/named callback hierarchy. See <a href="drag-drop.html">Drag and drop</a> for the authoritative lifecycle, proposal/completion rules, ownership and <a href="drag-drop.html#coverage">control/Look coverage matrix</a>; control pages retain their setup and domain payloads.</p></section>
 <footer>
   Review of <code>crates/sdk</code> event enums and <code>cx.emit</code> sites. Standalone document, no external assets.
 </footer>

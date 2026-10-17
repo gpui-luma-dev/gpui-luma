@@ -20,7 +20,7 @@ impl SidebarPanelEngine {
         let mut branch_ids = HashSet::new();
         fn collect(nodes: &[NavNode], ids: &mut HashSet<SharedString>) {
             for node in nodes {
-                if !node.children.is_empty() {
+                if node.has_children() {
                     ids.insert(node.id.clone());
                 }
                 collect(&node.children, ids);
@@ -131,7 +131,7 @@ pub(super) fn collapsed_rail_node_visible(node: &NavNode) -> bool {
 }
 pub(super) fn set_expanded_in_nodes(nodes: &mut [NavNode], node_id: &SharedString, expanded: bool) -> bool {
     for node in nodes {
-        if node.id == *node_id && !node.children.is_empty() && node.enabled && node.expanded != expanded {
+        if node.id == *node_id && node.has_children() && node.enabled && node.expanded != expanded {
             node.expanded = expanded;
             return true;
         }
@@ -160,7 +160,7 @@ pub(super) fn find_node_in_nodes<'a>(nodes: &'a [NavNode], node_id: &SharedStrin
 
 pub(super) fn toggle_expanded_in_nodes(nodes: &mut [NavNode], node_id: &SharedString) -> Option<bool> {
     for node in nodes {
-        if node.id == *node_id && !node.children.is_empty() && node.enabled {
+        if node.id == *node_id && node.has_children() && node.enabled {
             node.expanded = !node.expanded;
             return Some(node.expanded);
         }

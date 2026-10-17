@@ -1,10 +1,11 @@
 //! Tabs navigation control exposition — intrinsic and uniform width examples.
 
 use gpui_luma::controls::tabs::TabsEventExt;
+use gpui_luma::infra::presenter::HasPresenter;
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
+use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode, TabsContent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn as shadcn;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -57,12 +58,18 @@ impl Render for TabsExpositionLeftPane {
                 .flex_col()
                 .items_center()
                 .gap(px(12.0))
+                .child(
+                    div()
+                        .text_sm()
+                        .text_color(look.chrome().muted_text)
+                        .child("Drag tabs to reorder. Hold near an edge to scroll; Escape cancels."),
+                )
                 .child(render_tabs_example(
                     look,
                     "Intrinsic width",
                     self.tabs.clone(),
                     &self.active_label,
-                    "Each tab keeps its own intrinsic width.",
+                    "Increment a page’s counter, then reorder its tab; its state stays with the tab.",
                     360.0,
                 ))
                 .child(render_tabs_example(
@@ -96,14 +103,18 @@ impl TabsControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("tabs-navigation").expect("tabs-navigation catalog entry");
 
-        let tabs = shadcn::Tabs::new("controls-doc-tabs")
-            .look(look.as_ref())
-            .items(project_tabs())
-            .active("activity")
-            .spawn(cx);
+        let mut tabs_builder =
+            shadcn::Tabs::new("controls-doc-tabs").look(look.as_ref()).reordering(true).active("activity");
+        for item in project_tabs() {
+            let label = item.label_text().clone();
+            let page = cx.new(|cx| RetainedTabPage::new(label, look.clone(), cx));
+            tabs_builder = tabs_builder.tab_content(item, TabsContent::new(move |_, _| page.clone()));
+        }
+        let tabs = tabs_builder.spawn(cx);
         let uniform_tabs = shadcn::Tabs::new("controls-doc-tabs-uniform")
             .look(look.as_ref())
             .items(uniform_width_tabs())
+            .reordering(true)
             .active("recent-activity")
             .width_mode(TabsWidthMode::Uniform)
             .spawn(cx);
@@ -113,7 +124,7 @@ impl TabsControlExposition {
                 cx,
                 look.clone(),
                 "controls-tabs-navigation-event-log",
-                "Click tabs or use keyboard navigation; TabsEvent variants appear below.",
+                "Interact with the tabs to inspect events.",
             )
         });
 
@@ -200,6 +211,7 @@ impl Render for TabsControlExposition {
 
 fn format_tabs_event(event: &TabsEvent) -> Option<String> {
     match event {
+        TabsEvent::DragDrop(event) => Some(format!("TabsEvent::DragDrop {event:?}")),
         TabsEvent::Activate { tab_id, label } => {
             Some(format!("TabsEvent::Activate {{ tab_id: \"{tab_id}\", label: \"{label}\" }}"))
         }
@@ -231,6 +243,7 @@ fn render_tabs_example(
         .items_center()
         .gap(px(4.0))
         .child(render_example_label(label, look))
+        .w(px(content_width))
         .child(tabs)
         .child(render_tab_content(active_label, detail, content_width, look))
 }
@@ -270,11 +283,12 @@ fn render_tab_content(active_label: &str, detail: &'static str, width: f32, look
         .child(div().text_size(px(13.0)).line_height(px(18.0)).child(detail))
 }
 
-fn project_tabs() -> [TabsItem; 4] {
+fn project_tabs() -> [TabsItem; 5] {
     [
         TabsItem::new("overview").label("Overview"),
         TabsItem::new("activity").label("Activity"),
         TabsItem::new("metrics").label("Metrics"),
+        TabsItem::new("more").label("More").dropdown_trigger(),
         TabsItem::new("settings").label("Settings").enabled(false),
     ]
 }
@@ -286,4 +300,45 @@ fn uniform_width_tabs() -> [TabsItem; 4] {
         TabsItem::new("api-integrations").label("API & Integrations"),
         TabsItem::new("settings").label("Settings").enabled(false),
     ]
+}
+
+/// Retained SDK-backed page: its counter makes state preservation observable.
+struct RetainedTabPage {
+    look: Arc<ShadcnLook>,
+    label: gpui::SharedString,
+    count: usize,
+    increment: Entity<gpui_luma::controls::button::Button>,
+}
+impl RetainedTabPage {
+    fn new(label: gpui::SharedString, look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+        let increment = shadcn::Button::new("tabs-dnd-increment")
+            .look(look.as_ref())
+            .label("Increment")
+            .on_click(cx, |page: &mut Self, cx| {
+                page.count += 1;
+                cx.notify();
+            })
+            .spawn(cx);
+        Self { look, label, count: 0, increment }
+    }
+}
+impl Render for RetainedTabPage {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap(px(8.0))
+            .p(px(12.0))
+            .text_sm()
+            .text_color(self.look.chrome().body_text)
+            .child(
+                div()
+                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(self.look.chrome().title_text)
+                    .child(self.label.clone()),
+            )
+            .child(format!("Count: {}", self.count))
+            .child(self.increment.clone())
+    }
 }

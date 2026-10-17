@@ -168,6 +168,7 @@ impl ControlKeyProfile {
                 KeyBinding::new("space", ActivateControl, Some(context)),
             ],
             Self::Navigation => vec![
+                KeyBinding::new("escape", crate::focus::EscapeFocus, Some(context)),
                 KeyBinding::new("down", SelectNextItem, Some(context)),
                 KeyBinding::new("up", SelectPreviousItem, Some(context)),
                 KeyBinding::new("home", SelectFirstItem, Some(context)),
@@ -182,6 +183,7 @@ impl ControlKeyProfile {
                 KeyBinding::new("space", ActivateControl, Some(context)),
             ],
             Self::TabList => vec![
+                KeyBinding::new("escape", crate::focus::EscapeFocus, Some(context)),
                 KeyBinding::new("left", SelectPreviousItem, Some(context)),
                 KeyBinding::new("right", SelectNextItem, Some(context)),
                 KeyBinding::new("up", SelectPreviousRow, Some(context)),
@@ -234,7 +236,7 @@ mod tests {
 
     #[test]
     fn default_control_key_bindings_are_parseable() {
-        assert_eq!(default_control_key_bindings().len(), 104);
+        assert_eq!(default_control_key_bindings().len(), 106);
     }
 
     #[test]
@@ -248,8 +250,8 @@ mod tests {
         assert_eq!(ControlKeyProfile::TreeView.default_bindings().len(), 15);
         assert_eq!(ControlKeyProfile::TreeViewExtended.default_bindings().len(), 5);
         assert_eq!(ControlKeyProfile::ContextMenu.default_bindings().len(), 14);
-        assert_eq!(ControlKeyProfile::Navigation.default_bindings().len(), 12);
-        assert_eq!(ControlKeyProfile::TabList.default_bindings().len(), 12);
+        assert_eq!(ControlKeyProfile::Navigation.default_bindings().len(), 13);
+        assert_eq!(ControlKeyProfile::TabList.default_bindings().len(), 13);
     }
 
     #[test]

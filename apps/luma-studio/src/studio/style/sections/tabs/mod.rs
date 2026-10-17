@@ -99,6 +99,7 @@ fn render_tabs_state_sample(
         })
         .collect::<Vec<_>>();
     let model = TabsRenderModel {
+        drag_drop: None,
         id: &id,
         size: ControlSize::Md,
         width_mode: TabsWidthMode::Intrinsic,
