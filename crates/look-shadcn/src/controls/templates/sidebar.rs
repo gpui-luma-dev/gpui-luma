@@ -12,6 +12,20 @@ struct ShadcnSidebarTheme {
 }
 
 impl SidebarTheme for ShadcnSidebarTheme {
+    fn resolve_drag(&self, size: ControlSize) -> gpui_luma::infra::drag_drop::DragDropLook {
+        let tokens = self.theme.mode_tokens();
+        let palette = &tokens.palette;
+        gpui_luma::infra::drag_drop::DragDropLook {
+            background: self.theme.token_color("popover").unwrap_or(palette.panel_background),
+            foreground: self.theme.token_color("popover-foreground").unwrap_or(palette.body_text),
+            valid_marker: self.theme.token_color("ring").unwrap_or(palette.focus_ring),
+            invalid_marker: self.theme.token_color("destructive").unwrap_or(palette.destructive_background),
+            radius: tokens.metrics.radius(size),
+            typography: tokens.typography.text.label,
+            font_family: tokens.typography.font.sans.family.clone().into(),
+        }
+    }
+
     fn foreground(&self) -> gpui::Hsla {
         sidebar_container_look(self.theme.mode_tokens().as_ref()).foreground
     }

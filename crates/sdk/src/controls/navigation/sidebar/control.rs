@@ -14,6 +14,8 @@ use crate::theme::observe_theme_revision;
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum SidebarEvent {
+    /// Shared drag lifecycle with Sidebar destinations.
+    DragDrop(super::SidebarDragEvent),
     /// Navigation presentation changed; host pane visibility is independent.
     PresentationChanged { presentation: SidebarPresentation },
     /// Fired when an item or sub-item is selected.
@@ -34,8 +36,10 @@ pub enum SidebarEvent {
 
 /// Bare navigation. The host owns pane geometry; use a Frame for container styling.
 pub struct SidebarControl {
-    model: SidebarControlModel,
-    panel: Entity<SidebarPanelEngine>,
+    pub(super) model: SidebarControlModel,
+    pub(super) panel: Entity<SidebarPanelEngine>,
+    pub(super) active_drag: Option<super::drag::SidebarDrag>,
+    pub(super) drop_handler: Option<super::drag::DropHandler>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -57,13 +61,15 @@ impl SidebarControl {
         }
 
         let panel = spawn_panel_engine(&model, cx);
+        let owner = cx.weak_entity();
+        panel.update(cx, |panel, _| panel.drag_owner = Some(owner));
 
         let mut subscriptions = vec![observe_theme_revision(cx, |_, cx| cx.notify())];
         subscriptions.push(cx.subscribe(&panel, |this, _, event: &SidebarPanelEngineEvent, cx| {
             this.handle_panel_engine_event(event, cx);
         }));
 
-        Self { model, panel, _subscriptions: subscriptions }
+        Self { model, panel, active_drag: None, drop_handler: None, _subscriptions: subscriptions }
     }
 
     /// Bind the default theme for per-item tooltip attachments.
@@ -83,6 +89,7 @@ impl SidebarControl {
         if self.model.presentation == presentation {
             return;
         }
+        self.cancel_drag(cx);
         self.model.presentation = presentation;
         self.panel
             .update(cx, |panel, cx| panel.set_collapsed(presentation == SidebarPresentation::Icons, cx));
@@ -93,6 +100,9 @@ impl SidebarControl {
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         if self.model.enabled == enabled {
             return;
+        }
+        if !enabled {
+            self.cancel_drag(cx);
         }
         self.model.enabled = enabled;
         self.panel.update(cx, |panel, cx| panel.set_enabled(enabled, cx));
@@ -119,6 +129,7 @@ impl SidebarControl {
 
     /// Replace the sidebar panel tree (header / groups / footer) at runtime.
     pub fn set_sidebar(&mut self, sidebar: SidebarBuilder, cx: &mut Context<Self>) {
+        self.cancel_drag(cx);
         let panel = sidebar.build();
         self.apply_panel_model(panel, cx);
     }
@@ -161,6 +172,9 @@ impl SidebarControl {
                 cx.emit(SidebarEvent::Select { id: node_id.clone() });
             }
             SidebarPanelEngineEvent::BranchExpandedChanged { node_id, expanded } => {
+                if let Some(panel) = self.model.sidebar.as_mut() {
+                    super::drag::set_expanded(panel, node_id, *expanded);
+                }
                 cx.emit(SidebarEvent::SubMenuToggle { id: node_id.clone(), open: *expanded });
             }
             SidebarPanelEngineEvent::CollapsedChanged { .. } => {}

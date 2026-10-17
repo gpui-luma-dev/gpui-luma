@@ -185,6 +185,7 @@ impl ControlGroupItemLike for TabsItem {
 
 #[derive(Clone)]
 pub struct TabsModel {
+    pub(crate) reordering: bool,
     pub(crate) id: SharedString,
     pub(crate) size: ControlSize,
     pub(crate) width_mode: TabsWidthMode,
@@ -212,6 +213,8 @@ pub struct TabsRenderItem<'a> {
 }
 
 pub struct TabsRenderModel<'a> {
+    /// Native SDK binding used by themed/custom tab templates.
+    pub drag_drop: Option<gpui::WeakEntity<super::Tabs>>,
     pub id: &'a SharedString,
     pub size: ControlSize,
     pub width_mode: TabsWidthMode,
@@ -231,6 +234,145 @@ pub struct TabsBuilder {
 }
 
 impl TabsBuilder {
+    /// Observe the complete drag lifecycle through the semantic event stream.
+    pub fn on_drag_drop<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &crate::controls::tabs::TabsDragEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let crate::controls::tabs::TabsEvent::DragDrop(event) = event {
+                callback(owner, event, cx);
+            }
+        })
+    }
+    /// Observe `DragStarted` through the existing drag/drop lifecycle.
+    pub fn on_drag_started<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, &Vec<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::DragStarted { source, keys } = event {
+                callback(owner, *source, keys, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsRemoved` through the existing drag/drop lifecycle.
+    pub fn on_items_removed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, gpui::EntityId, &Vec<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::ItemsRemoved { source, target, keys } = event {
+                callback(owner, *source, *target, keys, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsAdded` through the existing drag/drop lifecycle.
+    pub fn on_items_added<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::ItemsAdded { source, target, keys, before } = event {
+                callback(owner, *source, *target, keys, before, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsReordered` through the existing drag/drop lifecycle.
+    pub fn on_items_reordered<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::ItemsReordered { target, keys, before } = event {
+                callback(owner, *target, keys, before, cx);
+            }
+        })
+    }
+
+    /// Observe `Dropped` through the existing drag/drop lifecycle.
+    pub fn on_dropped<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            bool,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::Dropped { source, target, keys, before, changed } = event {
+                callback(owner, *source, *target, keys, before, *changed, cx);
+            }
+        })
+    }
+
+    /// Observe `DropRejected` through the existing drag/drop lifecycle.
+    pub fn on_drop_rejected<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            &gpui::SharedString,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::DropRejected { source, target, keys, before, error } = event
+            {
+                callback(owner, *source, *target, keys, before, error, cx);
+            }
+        })
+    }
+
+    /// Observe `DragEnded` through the existing drag/drop lifecycle.
+    pub fn on_drag_ended<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            crate::infra::drag_drop::DragEndReason,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::infra::drag_drop::DragDropEvent::DragEnded { source, keys, reason } = event {
+                callback(owner, *source, keys, *reason, cx);
+            }
+        })
+    }
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -344,6 +486,7 @@ impl TabsBuilder {
             callbacks: Default::default(),
 
             model: TabsModel {
+                reordering: false,
                 id: id.into(),
                 size: ControlSize::Md,
                 width_mode: TabsWidthMode::Intrinsic,
@@ -429,6 +572,12 @@ impl TabsBuilder {
         self
     }
 
+    /// Opt into same-strip keyed reordering; content and active identity survive moves.
+    pub fn reordering(mut self, enabled: bool) -> Self {
+        self.model.reordering = enabled;
+        self
+    }
+
     pub fn width_mode(mut self, width_mode: TabsWidthMode) -> Self {
         self.model.width_mode = width_mode;
         self
@@ -477,6 +626,7 @@ impl TabsBuilder {
         &self,
         indicator_motion: TabsIndicatorMotion,
         disclosure_progress: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<SharedString, f32>>>,
+        owner: gpui::WeakEntity<super::Tabs>,
     ) -> crate::controls::control_group::ControlGroupTemplate<TabsItem> {
         tabs_control_group_template(
             self.model.size,
@@ -485,6 +635,7 @@ impl TabsBuilder {
             indicator_motion,
             self.model.disclosure_icons.clone(),
             disclosure_progress,
+            owner,
         )
     }
 }

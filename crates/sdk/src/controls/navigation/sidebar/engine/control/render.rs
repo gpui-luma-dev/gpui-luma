@@ -94,7 +94,7 @@ impl SidebarPanelEngine {
             &self.branch_transitions,
             &self.branch_heights_px,
         );
-        let nodes = render_nodes(
+        let mut nodes = render_nodes(
             &self.model.nodes,
             0,
             self.model.enabled,
@@ -125,6 +125,21 @@ impl SidebarPanelEngine {
             &self.branch_heights_px,
         );
 
+        if let Some(owner) = &self.drag_owner {
+            fn attach(
+                nodes: &mut [RenderedNavNode],
+                owner: &gpui::WeakEntity<crate::controls::sidebar::SidebarControl>,
+            ) {
+                for node in nodes {
+                    node.drag_drop = Some(crate::controls::sidebar::drag::SidebarItemDragBinding {
+                        owner: owner.clone(),
+                        id: node.id.clone(),
+                    });
+                    attach(&mut node.children, owner);
+                }
+            }
+            attach(&mut nodes, owner);
+        }
         self.visible_focus_nodes = visible_focus_nodes;
 
         SidebarPanelEngineRenderModel {
@@ -175,12 +190,25 @@ impl Render for SidebarPanelEngine {
         ] {
             attach(nodes, &self.tooltips);
         }
+        let scroll = self.main_scroll.drag_scroll_handle();
+        let drag_owner = self.drag_owner.clone();
         self.sync_focus_subscriptions(window, cx);
         let handlers = self.template_handlers(&model, cx);
         self.main_scroll.sync_scrollbar(cx);
 
-        div()
-            .size_full()
+        let root = div().id("sidebar-drag-viewport");
+        let root = if let Some(owner) = drag_owner {
+            crate::infra::drag_drop::bind_edge_scroll::<gpui::EntityId, SharedString>(
+                root,
+                scroll,
+                gpui::Axis::Vertical,
+                owner.entity_id(),
+                self.drag_scroll_pending.clone(),
+            )
+        } else {
+            root
+        };
+        root.size_full()
             .key_context(ControlKeyProfile::Navigation.context())
             .on_action(cx.listener(Self::handle_escape_focus))
             .on_action(cx.listener(Self::handle_select_previous_item))
@@ -252,7 +280,7 @@ pub(super) fn render_nodes(
             visible_focus_nodes.push((node.id.clone(), focus_handle.clone()));
         }
 
-        let has_children = !node.children.is_empty();
+        let has_children = node.has_children();
         let children = if branch_visible_for(branch_transitions, &node.id, node.expanded) {
             render_nodes(
                 &node.children,
@@ -274,6 +302,7 @@ pub(super) fn render_nodes(
         };
 
         rendered_nodes.push(RenderedNavNode {
+            drag_drop: None,
             tooltip: None,
             id: node.id.clone(),
             kind: node.kind,
@@ -331,6 +360,7 @@ pub(super) fn render_collapsed_rail_nodes(
         };
 
         rendered_nodes.push(RenderedNavNode {
+            drag_drop: None,
             tooltip: None,
             id: node.id.clone(),
             kind: node.kind,
@@ -339,7 +369,7 @@ pub(super) fn render_collapsed_rail_nodes(
             state,
             custom_element: None,
             focus_handle,
-            has_children: !node.children.is_empty(),
+            has_children: node.has_children(),
             expansion_progress: 0.0,
             children_height_px: 0.0,
             children: Vec::new(),

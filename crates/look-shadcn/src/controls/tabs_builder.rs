@@ -22,6 +22,7 @@ pub struct Tabs {
     width_mode: TabsWidthMode,
     items: Vec<TabsItem>,
     active_id: Option<SharedString>,
+    reordering: bool,
     enabled: bool,
     animated: bool,
     contents: HashMap<SharedString, TabsContent>,
@@ -34,6 +35,147 @@ pub struct Tabs {
 impl Tabs {
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
+    /// Observe the complete drag lifecycle through the semantic event stream.
+    pub fn on_drag_drop<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, &gpui_luma::controls::tabs::TabsDragEvent, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_event(cx, move |owner, event, cx| {
+            if let gpui_luma::controls::tabs::TabsEvent::DragDrop(event) = event {
+                callback(owner, event, cx);
+            }
+        })
+    }
+    /// Observe `DragStarted` through the existing drag/drop lifecycle.
+    pub fn on_drag_started<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, &Vec<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::infra::drag_drop::DragDropEvent::DragStarted { source, keys } = event {
+                callback(owner, *source, keys, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsRemoved` through the existing drag/drop lifecycle.
+    pub fn on_items_removed<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, gpui::EntityId, &Vec<gpui::SharedString>, &mut gpui::Context<M>) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::infra::drag_drop::DragDropEvent::ItemsRemoved { source, target, keys } = event {
+                callback(owner, *source, *target, keys, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsAdded` through the existing drag/drop lifecycle.
+    pub fn on_items_added<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::infra::drag_drop::DragDropEvent::ItemsAdded { source, target, keys, before } = event {
+                callback(owner, *source, *target, keys, before, cx);
+            }
+        })
+    }
+
+    /// Observe `ItemsReordered` through the existing drag/drop lifecycle.
+    pub fn on_items_reordered<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::infra::drag_drop::DragDropEvent::ItemsReordered { target, keys, before } = event {
+                callback(owner, *target, keys, before, cx);
+            }
+        })
+    }
+
+    /// Observe `Dropped` through the existing drag/drop lifecycle.
+    pub fn on_dropped<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            bool,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::infra::drag_drop::DragDropEvent::Dropped { source, target, keys, before, changed } = event
+            {
+                callback(owner, *source, *target, keys, before, *changed, cx);
+            }
+        })
+    }
+
+    /// Observe `DropRejected` through the existing drag/drop lifecycle.
+    pub fn on_drop_rejected<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            &Option<gpui::SharedString>,
+            &gpui::SharedString,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::infra::drag_drop::DragDropEvent::DropRejected { source, target, keys, before, error } =
+                event
+            {
+                callback(owner, *source, *target, keys, before, error, cx);
+            }
+        })
+    }
+
+    /// Observe `DragEnded` through the existing drag/drop lifecycle.
+    pub fn on_drag_ended<M: 'static>(
+        self,
+        cx: &gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &Vec<gpui::SharedString>,
+            gpui_luma::infra::drag_drop::DragEndReason,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let gpui_luma::infra::drag_drop::DragDropEvent::DragEnded { source, keys, reason } = event {
+                callback(owner, *source, keys, *reason, cx);
+            }
+        })
+    }
+
     pub fn on_event<M: 'static>(
         mut self,
         cx: &gpui::Context<M>,
@@ -150,6 +292,7 @@ impl Tabs {
             width_mode: TabsWidthMode::default(),
             items: Vec::new(),
             active_id: None,
+            reordering: false,
             enabled: true,
             animated: true,
             contents: HashMap::new(),
@@ -224,6 +367,12 @@ impl Tabs {
         self
     }
 
+    /// Opt into SDK same-strip tab reordering.
+    pub fn reordering(mut self, enabled: bool) -> Self {
+        self.reordering = enabled;
+        self
+    }
+
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
@@ -273,6 +422,7 @@ impl Tabs {
             .size(self.size.control_size())
             .width_mode(self.width_mode)
             .enabled(self.enabled)
+            .reordering(self.reordering)
             .animated(self.animated)
             .stylesheet(&look.common_stylesheet(), "shadcn");
         if let Some(duration) = self.fade_duration {

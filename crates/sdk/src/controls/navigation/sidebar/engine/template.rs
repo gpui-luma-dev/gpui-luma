@@ -380,7 +380,7 @@ fn render_region(
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
     children_height_reports: &std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
     disclosure_icons: &DisclosureIcons,
-    cx: &App,
+    cx: &mut App,
 ) -> Div {
     let mut region = div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP));
 
@@ -413,7 +413,7 @@ fn render_collapsed_rail_region(
     row_mouse_up_outs: &mut impl Iterator<Item = SidebarPanelMouseUpHandler>,
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
     disclosure_icons: &DisclosureIcons,
-    cx: &App,
+    cx: &mut App,
 ) -> Div {
     let mut region = div().flex().flex_col().items_center().gap(px(REGION_GAP));
 
@@ -448,9 +448,10 @@ fn render_node(
     row_clicks: &mut impl Iterator<Item = SidebarPanelClickHandler>,
     children_height_reports: &std::collections::HashMap<SharedString, SidebarPanelChildrenHeightHandler>,
     disclosure_icons: &DisclosureIcons,
-    cx: &App,
+    cx: &mut App,
 ) -> AnyElement {
     let RenderedNavNode {
+        drag_drop,
         id,
         kind,
         label,
@@ -464,32 +465,43 @@ fn render_node(
         children,
         tooltip,
     } = node;
-    let mut root =
-        div().id(id.clone()).w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP)).child(render_row(
-            RowRenderInput {
-                id: id.clone(),
-                tooltip,
-                kind,
-                label,
-                icon,
-                state,
-                custom_element,
-                focus_handle,
-                has_children,
-                expansion_progress,
-                disclosure_icons: disclosure_icons.clone(),
-            },
-            RowHandlers {
-                bounds: None,
-                hover: row_hovers.next(),
-                mouse_down: row_mouse_downs.next(),
-                mouse_up: row_mouse_ups.next(),
-                mouse_up_out: row_mouse_up_outs.next(),
-                click: row_clicks.next(),
-            },
-            theme,
-            cx,
-        ));
+    let row = render_row(
+        RowRenderInput {
+            id: id.clone(),
+            tooltip,
+            kind,
+            label,
+            icon,
+            state,
+            custom_element,
+            focus_handle,
+            has_children,
+            expansion_progress,
+            disclosure_icons: disclosure_icons.clone(),
+        },
+        RowHandlers {
+            bounds: None,
+            hover: row_hovers.next(),
+            mouse_down: row_mouse_downs.next(),
+            mouse_up: row_mouse_ups.next(),
+            mouse_up_out: row_mouse_up_outs.next(),
+            click: row_clicks.next(),
+        },
+        theme,
+        cx,
+    );
+    let row = if let Some(binding) = drag_drop {
+        binding
+            .bind(
+                div().id(gpui::SharedString::from(format!("{id}-drag-row"))).w_full().child(row),
+                theme.resolve_drag(ControlSize::Md),
+                cx,
+            )
+            .into_any_element()
+    } else {
+        row
+    };
+    let mut root = div().id(id.clone()).w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP)).child(row);
 
     if !children.is_empty() {
         let height_report = children_height_reports.get(&id).cloned();
@@ -554,7 +566,7 @@ struct RowHandlers {
     click: Option<SidebarPanelClickHandler>,
 }
 
-fn render_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn SidebarTheme>, cx: &App) -> AnyElement {
+fn render_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn SidebarTheme>, cx: &mut App) -> AnyElement {
     if let Some(element) = input.custom_element {
         return div().w_full().child(element).into_any_element();
     }
@@ -583,7 +595,7 @@ fn render_item_row(
     input: RowRenderInput,
     handlers: RowHandlers,
     theme: &Arc<dyn SidebarTheme>,
-    cx: &App,
+    cx: &mut App,
 ) -> AnyElement {
     let RowRenderInput {
         id,
@@ -691,7 +703,7 @@ fn render_collapsed_rail_node(
     handlers: RowHandlers,
     theme: &Arc<dyn SidebarTheme>,
     disclosure_icons: &DisclosureIcons,
-    cx: &App,
+    cx: &mut App,
 ) -> AnyElement {
     let RenderedNavNode { id, label, icon, state, focus_handle, has_children, tooltip, .. } = node;
     let interaction = InteractionState {

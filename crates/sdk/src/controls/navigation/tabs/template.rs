@@ -295,6 +295,13 @@ impl TabsTemplate for ThemedTabsTemplate {
             );
         }
 
+        if let Some(owner) = &model.drag_drop {
+            if let Ok(bound) = owner.update(cx, |tabs, cx| tabs.bind_drag_strip(root, cx)) {
+                root = bound;
+            } else {
+                return div().id(model.id.clone());
+            }
+        }
         for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
             let look = self.theme.resolve_item(item.active, item.state.interaction_state(), model.size);
             let mut tab = render_tab_button_with_content_padding(
@@ -316,9 +323,32 @@ impl TabsTemplate for ThemedTabsTemplate {
                 tab = tab.cursor_pointer();
             }
 
-            root = root.child(tab);
+            if let Some(owner) = &model.drag_drop {
+                if let Ok(bound) = owner.update(cx, |tabs, cx| {
+                    tabs.bind_tab_drag(tab, item.id, item.label.clone(), self.theme.resolve_drag(model.size), cx)
+                }) {
+                    root = root.child(bound);
+                }
+            } else {
+                root = root.child(tab);
+            }
         }
 
+        if let Some(owner) = &model.drag_drop {
+            if let Ok(bound) = owner.update(cx, |tabs, cx| {
+                tabs.bind_tab_drop_targets(
+                    root,
+                    list_look.gap,
+                    list_look.padding + if list_look.border.is_some() { 1.0 } else { 0.0 },
+                    self.theme.resolve_drag(model.size),
+                    cx,
+                )
+            }) {
+                root = bound;
+            } else {
+                return div().id(model.id.clone());
+            }
+        }
         if let Some(indicator) = model.indicator_motion.and_then(TabsIndicatorMotion::paint).or(model.indicator) {
             root = root.child(
                 div()
@@ -657,10 +687,12 @@ pub(crate) fn tabs_control_group_template(
     indicator_motion: TabsIndicatorMotion,
     disclosure_icons: crate::infra::icon::DisclosureIcons,
     disclosure_progress: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<SharedString, f32>>>,
+    owner: gpui::WeakEntity<super::Tabs>,
 ) -> ControlGroupTemplate<TabsItem> {
     Arc::new(move |model, handlers, window, cx| {
-        let tabs_model =
+        let mut tabs_model =
             tabs_render_model(model, size, width_mode, &indicator_motion, &disclosure_icons, &disclosure_progress);
+        tabs_model.drag_drop = Some(owner.clone());
         template.render(&tabs_model, handlers, window, cx)
     })
 }
@@ -675,6 +707,7 @@ fn tabs_render_model<'a>(
 ) -> TabsRenderModel<'a> {
     let progress = lock::mutex(disclosure_progress);
     TabsRenderModel {
+        drag_drop: None,
         id: model.id,
         size,
         width_mode,

@@ -107,8 +107,8 @@ pub(crate) fn property_sidebar(
         .header(shadcn::Sidebar::header().title(title).subtitle(subtitle))
         .content(
             shadcn::Sidebar::content()
-                .group(shadcn::Sidebar::group().label("Pinned").menu(pinned_menu))
-                .group(shadcn::Sidebar::group().label("Properties").menu(properties_menu)),
+                .group(shadcn::Sidebar::group().id("pinned").label("Pinned").menu(pinned_menu))
+                .group(shadcn::Sidebar::group().id("properties").label("Properties").menu(properties_menu)),
         )
         .footer(footer)
 }

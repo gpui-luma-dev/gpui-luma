@@ -17,6 +17,7 @@ use crate::theme::ControlSize;
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum TabsEvent {
+    DragDrop(super::TabsDragEvent),
     Change { tab_id: SharedString, label: SharedString },
     Activate { tab_id: SharedString, label: SharedString },
     Reactivate { tab_id: SharedString, label: SharedString },
@@ -27,8 +28,14 @@ pub enum TabsEvent {
 }
 
 pub struct Tabs {
+    pub(super) drag_scroll: gpui::ScrollHandle,
+    pub(super) drag_scroll_pending: std::rc::Rc<std::cell::Cell<bool>>,
     pub(super) group: Entity<ControlGroupControl<TabsItem>>,
-    items: Vec<TabsItem>,
+    pub(super) items: Vec<TabsItem>,
+    pub(super) reordering: bool,
+    pub(super) enabled: bool,
+    pub(super) active_drag: Option<super::drag::TabDrag>,
+    pub(super) drop_handler: Option<super::drag::DropHandler>,
     pub(super) contents: HashMap<SharedString, TabsContent>,
     pub(super) body_transition: VisualTransition,
     body_motion: crate::theme::stylesheet::ResolvedMotion,
@@ -37,12 +44,12 @@ pub struct Tabs {
     body_slot: Option<Entity<TabsBody>>,
     pub(super) active_id: Option<SharedString>,
     pending_changed_id: Option<SharedString>,
-    item_bounds: Vec<Option<Bounds<Pixels>>>,
+    pub(super) item_bounds: Vec<Option<Bounds<Pixels>>>,
     size: ControlSize,
     width_mode: TabsWidthMode,
     animated: bool,
     disclosure_icons: crate::infra::icon::DisclosureIcons,
-    indicator_motion: TabsIndicatorMotion,
+    pub(super) indicator_motion: TabsIndicatorMotion,
     template: std::sync::Arc<dyn super::TabsTemplate>,
     disclosure_transitions: HashMap<SharedString, DisclosureMotion>,
     disclosure_progress: Arc<Mutex<HashMap<SharedString, f32>>>,
@@ -73,7 +80,11 @@ impl Tabs {
             .layout(ControlGroupLayout::Horizontal)
             .selection_follows_active(true)
             .enabled(model.enabled)
-            .template(builder.control_group_template(indicator_motion.clone(), disclosure_progress.clone()));
+            .template(builder.control_group_template(
+                indicator_motion.clone(),
+                disclosure_progress.clone(),
+                cx.weak_entity(),
+            ));
 
         if let Some(active_id) = model.active_id {
             group_builder = group_builder.selected(active_id);
@@ -98,7 +109,13 @@ impl Tabs {
             .collect();
         let body_motion = builder.model.inherited_motion.clone().with_override(builder.model.fade_duration, true);
         Self {
+            drag_scroll: gpui::ScrollHandle::new(),
+            drag_scroll_pending: Default::default(),
             group,
+            reordering: builder.model.reordering,
+            enabled: builder.model.enabled,
+            active_drag: None,
+            drop_handler: None,
             items: builder.model.items,
             contents: builder.model.contents,
             body_transition: VisualTransition::new(1.0, body_motion.duration),
@@ -228,6 +245,7 @@ impl Tabs {
     /// disabled selection falls back to the first enabled item (or none).
     /// Item updates finish the current body fade.
     pub fn set_items(&mut self, items: impl IntoIterator<Item = TabsItem>, cx: &mut Context<Self>) {
+        self.cancel_drag(cx);
         self.items = items.into_iter().collect();
         self.contents.retain(|id, _| self.items.iter().any(|item| item.id() == id));
         self.body_transition.snap_to(1.0);
@@ -326,6 +344,10 @@ impl Tabs {
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.enabled = enabled;
+        if !enabled {
+            self.cancel_drag(cx);
+        }
         self.group.update(cx, |group, cx| {
             group.set_enabled(enabled, cx);
         });
@@ -338,6 +360,7 @@ impl Tabs {
         let indicator_motion = self.indicator_motion.clone();
         let disclosure_icons = self.disclosure_icons.clone();
         let disclosure_progress = self.disclosure_progress.clone();
+        let owner = cx.weak_entity();
         self.group.update(cx, |group, cx| {
             group.set_template(
                 super::template::tabs_control_group_template(
@@ -347,6 +370,7 @@ impl Tabs {
                     indicator_motion,
                     disclosure_icons,
                     disclosure_progress,
+                    owner,
                 ),
                 cx,
             );

@@ -1,3 +1,5 @@
+mod drag;
+pub use drag::{SidebarDragDrop, SidebarDragEvent, SidebarDropLocation, SidebarDropProposal, SidebarItemDragBinding};
 mod control;
 /// Internal flush-list presentation engine (former `navigation_sidebar`).
 mod engine;
@@ -59,3 +61,6 @@ pub fn sidebar_footer() -> SidebarFooterBuilder {
 
 mod callback;
 pub use callback::SidebarEventExt;
+
+#[cfg(all(test, feature = "test-support"))]
+mod drag_tests;

@@ -26,6 +26,19 @@ pub struct SidebarItemLook {
 }
 
 pub trait SidebarTheme: Send + Sync {
+    /// Appearance of native drag previews and insertion feedback.
+    fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
+        let mut drag = crate::infra::drag_drop::DragDropLook::from_tokens(&ThemeTokens::default(), size);
+        let item = self.resolve_item(true, InteractionState { focused: true, ..Default::default() }, size);
+        drag.background = item.background.unwrap_or(drag.background);
+        drag.foreground = item.foreground;
+        drag.valid_marker = item.focus_border.unwrap_or(item.foreground);
+        drag.invalid_marker =
+            self.resolve_item(false, InteractionState { invalid: true, ..Default::default() }, size).foreground;
+        drag.radius = item.radius;
+        drag.typography = item.typography;
+        drag
+    }
     fn foreground(&self) -> Hsla;
     fn resolve_section(&self) -> SidebarSectionLook;
     fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> SidebarItemLook;
@@ -79,6 +92,9 @@ impl DefaultSidebarTheme {
 }
 
 impl SidebarTheme for DefaultSidebarTheme {
+    fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
+        crate::infra::drag_drop::DragDropLook::from_tokens(&self.tokens, size)
+    }
     fn foreground(&self) -> Hsla {
         self.tokens.palette.navigation.foreground
     }

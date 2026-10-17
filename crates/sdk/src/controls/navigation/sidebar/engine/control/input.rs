@@ -158,7 +158,7 @@ impl SidebarPanelEngine {
     pub(super) fn rendered_rail_submenu(&self) -> Option<RenderedRailSubmenu> {
         let parent_node_id = self.open_rail_submenu.as_ref()?;
         let parent = self.find_top_level_main_node(parent_node_id)?;
-        if parent.children.is_empty() || !collapsed_rail_node_visible(parent) {
+        if !parent.has_children() || !collapsed_rail_node_visible(parent) {
             return None;
         }
 
@@ -242,7 +242,7 @@ impl SidebarPanelEngine {
             return;
         }
 
-        if self.find_node(&node_id).is_some_and(|node| !node.children.is_empty()) {
+        if self.find_node(&node_id).is_some_and(|node| node.has_children()) {
             self.toggle_node_expanded(node_id, cx);
         } else {
             self.activate_node(node_id, cx);
@@ -295,7 +295,7 @@ impl SidebarPanelEngine {
             return;
         }
 
-        if self.find_top_level_main_node(&node_id).is_some_and(|node| node.children.is_empty()) {
+        if self.find_top_level_main_node(&node_id).is_some_and(|node| !node.has_children()) {
             self.close_rail_submenu(cx);
             self.activate_node(node_id, cx);
         } else {
@@ -329,8 +329,10 @@ impl SidebarPanelEngine {
         }
     }
 
-    pub(super) fn handle_escape_focus(&mut self, _: &EscapeFocus, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.open_rail_submenu.is_some() {
+    pub(super) fn handle_escape_focus(&mut self, _: &EscapeFocus, window: &mut Window, cx: &mut Context<Self>) {
+        if cx.stop_active_drag(window) {
+            cx.stop_propagation();
+        } else if self.open_rail_submenu.is_some() {
             self.close_rail_submenu(cx);
             cx.notify();
         } else {
@@ -352,7 +354,7 @@ impl SidebarPanelEngine {
         let open_submenu = self
             .find_top_level_main_node(&parent_node_id)
             .and_then(|parent| parent.children.iter().filter(|node| node.visible).nth(index))
-            .is_some_and(|node| node.enabled && !node.children.is_empty())
+            .is_some_and(|node| node.enabled && node.has_children())
             .then_some(index);
         let active_path = Some(MenuPath::Root(index));
 
@@ -382,7 +384,7 @@ impl SidebarPanelEngine {
         let Some(node) = self.find_node(&node_id) else {
             return;
         };
-        if !node.enabled || node.kind != NavNodeKind::Item || !node.children.is_empty() {
+        if !node.enabled || node.kind != NavNodeKind::Item || node.has_children() {
             return;
         }
 
@@ -497,14 +499,14 @@ impl SidebarPanelEngine {
         };
 
         if self.model.collapsed {
-            if self.find_top_level_main_node(&node_id).is_some_and(|node| node.children.is_empty()) {
+            if self.find_top_level_main_node(&node_id).is_some_and(|node| !node.has_children()) {
                 self.close_rail_submenu(cx);
                 self.activate_node(node_id, cx);
             } else {
                 self.set_open_rail_submenu(node_id, cx);
                 cx.notify();
             }
-        } else if self.find_node(&node_id).is_some_and(|node| !node.children.is_empty()) {
+        } else if self.find_node(&node_id).is_some_and(|node| node.has_children()) {
             self.toggle_node_expanded(node_id, cx);
         } else {
             self.activate_node(node_id, cx);
@@ -585,13 +587,13 @@ pub(super) fn nav_menu_click_node_ids(nodes: &[NavNode], open_submenu: Option<us
             continue;
         }
 
-        if node.children.is_empty() {
+        if !node.has_children() {
             ids.push(node.id.clone());
         } else if open_submenu == Some(index) {
             ids.extend(
                 node.children
                     .iter()
-                    .filter(|child| child.visible && child.enabled && child.children.is_empty())
+                    .filter(|child| child.visible && child.enabled && !child.has_children())
                     .map(|child| child.id.clone()),
             );
         }

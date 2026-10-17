@@ -142,3 +142,9 @@ pub use crate::infra::state::{CompositeItemState as TabsItemState, ControlFocusS
 
 mod callback;
 pub use callback::TabsEventExt;
+
+mod drag;
+pub use drag::{TabsDragEvent, TabsDropProposal};
+
+#[cfg(all(test, feature = "test-support"))]
+mod drag_tests;
