@@ -89,12 +89,11 @@ const SELECTION_ENTRIES: &[ComponentCatalogEntry] = &[
     ComponentCatalogEntry { id: "search-selector", label: "SearchSelector" },
     ComponentCatalogEntry { id: "popup-selector", label: "Selector" },
     ComponentCatalogEntry { id: "selection-panel", label: "Selection Panel" },
-];
-
-const PROTOTYPES_ENTRIES: &[ComponentCatalogEntry] = &[
-    ComponentCatalogEntry { id: "shadow-button", label: "Shadow Button" },
     ComponentCatalogEntry { id: "split-button", label: "Split Button" },
 ];
+
+const PROTOTYPES_ENTRIES: &[ComponentCatalogEntry] =
+    &[ComponentCatalogEntry { id: "shadow-button", label: "Shadow Button" }];
 
 /// Control catalog for the Controls tab (grouped SDK families and exposition ids).
 pub const COMPONENT_CATALOG: &[ComponentCatalogGroup] = &[

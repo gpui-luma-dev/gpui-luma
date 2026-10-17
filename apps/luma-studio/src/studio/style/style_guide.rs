@@ -41,6 +41,7 @@ enum StyleGuideSection {
     Tooltips,
     Scrollbar,
     Slider,
+    SplitButton,
     TextField,
     TextArea,
     Table,
@@ -51,7 +52,7 @@ enum StyleGuideSection {
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 23] = [
+    const ALL: [Self; 24] = [
         Self::Accordion,
         Self::Buttons,
         Self::Checkbox,
@@ -65,6 +66,7 @@ impl StyleGuideSection {
         Self::Selectors,
         Self::Sidebar,
         Self::Slider,
+        Self::SplitButton,
         Self::Switch,
         Self::Tabs,
         Self::TextArea,
@@ -92,6 +94,7 @@ impl StyleGuideSection {
             Self::Selectors => "Selectors",
             Self::Sidebar => "Sidebar",
             Self::Slider => "Slider",
+            Self::SplitButton => "Split Button",
             Self::Switch => "Switch",
             Self::Tabs => "Tabs",
             Self::TextArea => "Text Area",
@@ -1064,6 +1067,9 @@ impl StyleGuidePanel {
                 window,
                 cx,
             ),
+            StyleGuideSection::SplitButton => {
+                sections::split_button::render_split_button_template_section(self.look.clone(), window, cx)
+            }
             StyleGuideSection::TextField => sections::textfield::render_textfield_template_section(
                 self.look.clone(),
                 self.textfield_preview_tabs.clone().expect("textfield preview tabs"),
