@@ -69,6 +69,7 @@ pub struct ListBoxBuilder<'a, M: 'static, T, K> {
     label: &'static str,
     empty: Option<AnyElement>,
     drag_drop: Option<DragDropBindings<'a, M, T, K>>,
+    drop_layout: Option<gpui_luma::motion::DropLayoutMotion<K>>,
 }
 
 impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<'a, M, T, K> {
@@ -106,6 +107,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             label: id,
             empty: None,
             drag_drop: None,
+            drop_layout: None,
         }
     }
 
@@ -119,7 +121,14 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         let parts = control.render_parts();
         Self::new(id, parts.state, parts.binding, parts.scroll, parts.on_input, parts.item_id, item)
             .virtualization(parts.virtualization)
+            .drop_layout_motion(parts.drop_layout)
             .control_drag_drop(parts.drag_drop, parts.item_label)
+    }
+
+    /// Reuse SDK-owned drop motion for raw/host-owned composition.
+    pub fn drop_layout_motion(mut self, motion: gpui_luma::motion::DropLayoutMotion<K>) -> Self {
+        self.drop_layout = Some(motion);
+        self
     }
 
     fn control_drag_drop(
@@ -380,13 +389,17 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
                 .flex_shrink_0()
                 .child((self.item)(surface, item, cx));
             if self.drag_drop.is_some() && cx.has_active_drag() {
-                row = row.child(insertion_target(Some(key), DropEdge::Before, cx)).child(insertion_target(
+                row = row.child(insertion_target(Some(key.clone()), DropEdge::Before, cx)).child(insertion_target(
                     self.state.visible_items().nth(visible_index + 1).map(|item| item.key),
                     DropEdge::After,
                     cx,
                 ));
             }
-            rows.push(row.into_any_element());
+            rows.push(if let Some(motion) = &self.drop_layout {
+                motion.item(key.clone(), row)
+            } else {
+                row.into_any_element()
+            });
         }
         if let Some(extent) = virtual_window.as_ref().and_then(|window| window.trailing_space) {
             rows.push(spacer(extent).into_any_element());
@@ -439,7 +452,13 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             Some(rendered) => self.scroll.bind_virtualized(surface, viewport, self.state, rendered),
             None => self.scroll.bind(surface, viewport, self.state),
         };
-        self.binding.bind_root(surface, self.axis, self.state.selection_mode(), window, cx, self.on_input)
+        let surface =
+            self.binding.bind_root(surface, self.axis, self.state.selection_mode(), window, cx, self.on_input);
+        if let Some(motion) = &self.drop_layout {
+            motion.configure(look.stylesheet().common.drop_layout_motion("Shadcn"), true);
+            return div().id(format!("{}-drop-motion", self.id)).child(self.scroll.drop_layout_scope(motion, surface));
+        }
+        surface
     }
 }
 
@@ -488,6 +507,7 @@ impl ShadcnLook {
             },
         )
         .control_drag_drop(parts.drag_drop, parts.item_label)
+        .drop_layout_motion(parts.drop_layout)
         .look(self)
         .layout(layout)
         .virtualization(parts.virtualization);

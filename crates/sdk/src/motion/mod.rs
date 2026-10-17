@@ -1,6 +1,8 @@
 //! Shared frame-driven motion: transitions, overlay presence, and popup lifecycle.
 
 mod animation;
+mod drop_layout;
+pub use drop_layout::DropLayoutMotion;
 pub mod overlay_presence;
 pub mod popup_lifecycle;
 

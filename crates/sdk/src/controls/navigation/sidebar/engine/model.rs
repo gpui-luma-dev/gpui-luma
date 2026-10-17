@@ -184,6 +184,7 @@ pub struct SidebarPanelEngineRenderModel {
 }
 
 pub struct RenderedNavNode {
+    pub drop_layout: Option<crate::motion::DropLayoutMotion<SharedString>>,
     /// Native drag binding; custom templates attach this to the row only.
     pub drag_drop: Option<super::super::drag::SidebarItemDragBinding>,
     /// Retained per-item help. Custom templates apply this to the row's focus root.

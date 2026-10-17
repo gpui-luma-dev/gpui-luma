@@ -32,6 +32,7 @@ pub enum SidebarPanelEngineEvent {
 }
 
 pub struct SidebarPanelEngine {
+    pub(crate) drop_layout: crate::motion::DropLayoutMotion<SharedString>,
     pub(crate) drag_owner: Option<gpui::WeakEntity<crate::controls::sidebar::SidebarControl>>,
     model: SidebarPanelEngineModel,
     row_handlers: RefCell<Option<input::CachedSidebarHandlers>>,
@@ -63,6 +64,35 @@ impl EventEmitter<SidebarPanelEngineEvent> for SidebarPanelEngine {}
 impl SidebarPanelEngine {
     pub(crate) fn move_items(&mut self, nodes: Vec<NavNode>, cx: &mut Context<Self>) {
         // IDs survive a move: retain focus handles, tooltip history, scroll and motion.
+        // Reparenting changes ancestor heights. Discard only those measurements
+        // so the first committed layout uses actual new child extents.
+        fn collect(nodes: &[NavNode], old: &mut HashMap<SharedString, std::collections::HashSet<SharedString>>) {
+            for node in nodes {
+                old.insert(node.id.clone(), node.children.iter().map(|child| child.id.clone()).collect());
+                collect(&node.children, old);
+            }
+        }
+        fn invalidate(
+            nodes: &[NavNode],
+            old: &HashMap<SharedString, std::collections::HashSet<SharedString>>,
+            heights: &mut HashMap<SharedString, f32>,
+        ) -> bool {
+            let mut changed = false;
+            for node in nodes {
+                let descendants = invalidate(&node.children, old, heights);
+                let children_changed = old.get(&node.id).is_none_or(|before| {
+                    before.len() != node.children.len() || node.children.iter().any(|child| !before.contains(&child.id))
+                });
+                if descendants || children_changed {
+                    heights.remove(&node.id);
+                    changed = true;
+                }
+            }
+            changed
+        }
+        let mut old = HashMap::new();
+        collect(&self.model.nodes, &mut old);
+        invalidate(&nodes, &old, &mut self.branch_heights_px);
         self.model.nodes = nodes;
         cx.notify();
     }
@@ -92,6 +122,7 @@ impl SidebarPanelEngine {
         ];
 
         let mut engine = Self {
+            drop_layout: Default::default(),
             drag_owner: None,
             model: builder.model,
             row_handlers: RefCell::new(None),

@@ -64,6 +64,16 @@ impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
     /// Request a one-time reveal of this stable key, even without focus.
     /// Fully visible items stay in place; oversized items show their leading
     /// edge. Missing keys are ignored at layout. Selection is unchanged.
+    /// Compose a drop-motion viewport using the same retained scroll offset.
+    #[doc(hidden)]
+    pub fn drop_layout_scope(
+        &self,
+        motion: &crate::motion::DropLayoutMotion<K>,
+        content: impl gpui::IntoElement,
+    ) -> gpui::AnyElement {
+        let scroll = self.scroll.clone();
+        motion.scope(content, move || scroll.offset())
+    }
     pub fn scroll_to<M: 'static>(&self, item_key: K, cx: &mut Context<M>) {
         self.request_position(item_key, false, cx);
     }

@@ -24,6 +24,9 @@ pub fn tree_view_frame(look: &Look) -> Div {
 }
 
 impl TreeViewTheme for RadixTreeViewTheme {
+    fn drop_layout_motion(&self) -> gpui_luma::theme::stylesheet::ResolvedMotion {
+        self.look.common_stylesheet().drop_layout_motion("Radix")
+    }
     fn resolve_row(&self, state: InteractionState, selected: bool, size: ControlSize) -> TreeViewPalette {
         let gray = |step| self.look.resolve_step(ScaleFamily::Gray, step).hsla();
         let accent = |step| self.look.resolve_step(ScaleFamily::Color, step).hsla();

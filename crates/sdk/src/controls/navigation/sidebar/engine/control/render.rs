@@ -129,16 +129,18 @@ impl SidebarPanelEngine {
             fn attach(
                 nodes: &mut [RenderedNavNode],
                 owner: &gpui::WeakEntity<crate::controls::sidebar::SidebarControl>,
+                motion: &crate::motion::DropLayoutMotion<SharedString>,
             ) {
                 for node in nodes {
+                    node.drop_layout = Some(motion.clone());
                     node.drag_drop = Some(crate::controls::sidebar::drag::SidebarItemDragBinding {
                         owner: owner.clone(),
                         id: node.id.clone(),
                     });
-                    attach(&mut node.children, owner);
+                    attach(&mut node.children, owner, motion);
                 }
             }
-            attach(&mut nodes, owner);
+            attach(&mut nodes, owner, &self.drop_layout);
         }
         self.visible_focus_nodes = visible_focus_nodes;
 
@@ -208,7 +210,8 @@ impl Render for SidebarPanelEngine {
         } else {
             root
         };
-        root.size_full()
+        let root = root
+            .size_full()
             .key_context(ControlKeyProfile::Navigation.context())
             .on_action(cx.listener(Self::handle_escape_focus))
             .on_action(cx.listener(Self::handle_select_previous_item))
@@ -219,7 +222,10 @@ impl Render for SidebarPanelEngine {
             .on_action(cx.listener(Self::handle_close_submenu))
             .on_action(cx.listener(Self::handle_activate_control))
             .child(self.model.template.render(model, &self.main_scroll, handlers, window, cx))
-            .into_any_element()
+            .into_any_element();
+        self.drop_layout.configure(self.model.template.drop_layout_motion(), self.model.animated);
+        let scroll = self.main_scroll.drag_scroll_handle();
+        self.drop_layout.scope(root, move || scroll.offset())
     }
 }
 #[allow(clippy::too_many_arguments)]
@@ -302,6 +308,7 @@ pub(super) fn render_nodes(
         };
 
         rendered_nodes.push(RenderedNavNode {
+            drop_layout: None,
             drag_drop: None,
             tooltip: None,
             id: node.id.clone(),
@@ -360,6 +367,7 @@ pub(super) fn render_collapsed_rail_nodes(
         };
 
         rendered_nodes.push(RenderedNavNode {
+            drop_layout: None,
             drag_drop: None,
             tooltip: None,
             id: node.id.clone(),

@@ -259,6 +259,14 @@ impl TabsTemplate for ThemedTabsTemplate {
             );
         }
 
+        let drop_scope = model.drag_drop.as_ref().and_then(|owner| {
+            owner
+                .update(cx, |tabs, _| {
+                    tabs.drop_layout.configure(self.theme.drop_layout_motion(), tabs.animated);
+                    (tabs.drop_layout.clone(), tabs.drag_scroll.clone())
+                })
+                .ok()
+        });
         let mut root = div()
             .id(model.id.clone())
             .relative()
@@ -268,6 +276,10 @@ impl TabsTemplate for ThemedTabsTemplate {
             .gap(px(list_look.gap))
             .p(px(list_look.padding))
             .rounded(px(list_look.radius));
+        if let Some((motion, scroll)) = &drop_scope {
+            let scroll = scroll.clone();
+            root = motion.begin_surface(root, move || scroll.offset());
+        }
 
         if let Some(motion) = model.indicator_motion.cloned() {
             root = root.on_prepaint(move |bounds, _, _| {
@@ -325,7 +337,9 @@ impl TabsTemplate for ThemedTabsTemplate {
 
             if let Some(owner) = &model.drag_drop {
                 if let Ok(bound) = owner.update(cx, |tabs, cx| {
-                    tabs.bind_tab_drag(tab, item.id, item.label.clone(), self.theme.resolve_drag(model.size), cx)
+                    let bound =
+                        tabs.bind_tab_drag(tab, item.id, item.label.clone(), self.theme.resolve_drag(model.size), cx);
+                    tabs.drop_layout.item(item.id.clone(), bound)
                 }) {
                     root = root.child(bound);
                 }
@@ -362,6 +376,9 @@ impl TabsTemplate for ThemedTabsTemplate {
             );
         }
 
+        if let Some((motion, _)) = drop_scope {
+            root = motion.end_surface(root);
+        }
         self.apply_modifiers(root, model)
     }
 }

@@ -21,6 +21,7 @@ impl<T: Clone + Send + Sync + 'static> Render for DragPreview<T> {
 impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
     fn native_drag_event(&mut self, event: DragDropEvent<WeakEntity<Self>, SharedString>, cx: &mut Context<Self>) {
         if matches!(event, DragDropEvent::DragStarted { .. }) {
+            self.drop_layout.cancel();
             self.drag_revision = Some(self.revision);
         }
         self.pressed_node_id = None;

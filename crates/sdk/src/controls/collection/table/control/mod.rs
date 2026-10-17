@@ -70,6 +70,8 @@ pub struct TableControl<T>
 where
     T: 'static,
 {
+    pub(crate) drop_layout: crate::motion::DropLayoutMotion<SharedString>,
+
     model: TableModel<T>,
     list_state: ListState,
     focus_handle: gpui::FocusHandle,
@@ -159,6 +161,7 @@ where
             focus_in_subscription: None,
             focus_out_subscription: None,
             model: builder.model,
+            drop_layout: Default::default(),
             hovered_index: None,
             pressed_index: None,
             current_page: 0,
@@ -177,6 +180,17 @@ where
             measured_header_width: 0.0,
             column_resize: None,
         }
+    }
+
+    /// Override post-drop duration; None restores the inherited Look value.
+    pub fn set_drop_layout_motion(&mut self, duration: Option<std::time::Duration>, cx: &mut Context<Self>) {
+        self.drop_layout.set_duration(duration);
+        cx.notify();
+    }
+
+    /// Retained keyed post-drop motion and resolved duration diagnostics.
+    pub fn drop_layout_motion(&self) -> crate::motion::DropLayoutMotion<SharedString> {
+        self.drop_layout.clone()
     }
 
     pub fn items(&self) -> &[T] {
@@ -235,6 +249,7 @@ where
     ) -> Result<(), TableSelectionError> {
         let items: Vec<T> = items.into_iter().collect();
         let keys = self.row_key.as_ref().map(|key| keys::collect_keys(&items, key.as_ref())).transpose()?;
+        self.drop_layout.cancel();
         self.cancel_row_drag(cx);
         let previous = self.selection_snapshot();
         let previous_page = self.current_page;
@@ -409,6 +424,7 @@ where
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         if !enabled {
+            self.drop_layout.cancel();
             self.cancel_row_drag(cx);
             self.cancel_column_resize(cx);
         }

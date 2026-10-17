@@ -153,7 +153,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
                 rendered = rendered.relative();
                 if cx.has_active_drag() {
                     for (edge, before) in [
-                        (gpui_luma::infra::drag_drop::DropEdge::Before, Some(key)),
+                        (gpui_luma::infra::drag_drop::DropEdge::Before, Some(key.clone())),
                         (
                             gpui_luma::infra::drag_drop::DropEdge::After,
                             parts.state.visible_items().nth(item.visible_index + 1).map(|item| item.key),
@@ -188,7 +188,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
                     }
                 }
             }
-            rows.push(rendered.into_any_element());
+            rows.push(parts.drop_layout.item(key, rendered));
         }
         if let Some(extent) = virtual_window.as_ref().and_then(|v| v.trailing_space) {
             rows.push(spacer(extent));
@@ -215,7 +215,12 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             Some(rendered) => parts.scroll.bind_virtualized(surface, viewport, parts.state, rendered),
             None => parts.scroll.bind(surface, viewport, parts.state),
         };
-        parts.binding.bind_root(surface, axis, parts.state.selection_mode(), window, cx, parts.on_input)
+        let surface = parts.binding.bind_root(surface, axis, parts.state.selection_mode(), window, cx, parts.on_input);
+        parts.drop_layout.configure(look.common_stylesheet().drop_layout_motion("Radix"), true);
+        div()
+            .id("radix-listbox-drop-motion")
+            .w_full()
+            .child(parts.scroll.drop_layout_scope(&parts.drop_layout, surface))
     }
 }
 

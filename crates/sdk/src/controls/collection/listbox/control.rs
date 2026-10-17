@@ -25,6 +25,7 @@ pub struct ListBoxControl<M: 'static, T, K: 'static> {
     virtualization: ListBoxVirtualization,
     pub(super) event_source: gpui::Entity<super::drag::ListBoxEventSource<K>>,
     drag_drop: Option<super::ListBoxDragDrop<M, K>>,
+    drop_layout: crate::motion::DropLayoutMotion<K>,
 }
 
 /// Borrowed integration point for look-owned builders. The binding is mutable
@@ -32,6 +33,8 @@ pub struct ListBoxControl<M: 'static, T, K: 'static> {
 pub struct ListBoxRenderParts<'a, M: 'static, T, K: 'static> {
     /// Optional persistent SDK drag/drop binding; Looks attach native geometry.
     pub drag_drop: Option<super::ListBoxDragDropBinding<M, K>>,
+    /// Persistent SDK geometry for post-drop transitions.
+    pub drop_layout: crate::motion::DropLayoutMotion<K>,
     /// Current collection and selection state.
     pub state: &'a ListBoxState<T, K>,
     /// Stable keyboard and focus binding.
@@ -59,9 +62,11 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
         item_label: fn(&T) -> SharedString,
         cx: &mut App,
     ) -> Self {
+        let motion = crate::motion::DropLayoutMotion::default();
         Self {
             state,
-            event_source: cx.new(|_| super::drag::ListBoxEventSource::default()),
+            drop_layout: motion.clone(),
+            event_source: cx.new(|_| super::drag::ListBoxEventSource { motion }),
             drag_drop: None,
             on_input,
             item_id,
@@ -77,6 +82,17 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
     pub fn drag_drop(mut self, config: super::ListBoxDragDrop<M, K>) -> Self {
         self.drag_drop = Some(config);
         self
+    }
+
+    /// Override post-drop duration; None restores the inherited Look value.
+    pub fn set_drop_layout_motion(&self, duration: Option<std::time::Duration>, cx: &mut Context<M>) {
+        self.drop_layout.set_duration(duration);
+        cx.notify();
+    }
+
+    /// Retained keyed post-drop motion and resolved duration diagnostics.
+    pub fn drop_layout_motion(&self) -> crate::motion::DropLayoutMotion<K> {
+        self.drop_layout.clone()
     }
 
     /// Stable source/target identity used by ListBox drop proposals and events.
@@ -178,6 +194,9 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
     /// Apply semantic input, queue rendering/reveal effects and named callbacks.
     /// Events are also returned for optional manual handling.
     pub fn apply(&mut self, input: ListBoxInput<K>, cx: &mut Context<M>) -> ListBoxUpdate<K> {
+        if !matches!(input, ListBoxInput::Focus(_)) {
+            self.drop_layout.cancel();
+        }
         let update = self.state.apply(input);
         self.handle_update(&update, cx);
         update
@@ -198,12 +217,14 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
         cx: &mut Context<M>,
     ) -> Result<ListBoxUpdate<K>, ListBoxError> {
         let update = self.state.set_projection(keys)?;
+        self.drop_layout.cancel();
         self.handle_update(&update, cx);
         Ok(update)
     }
 
     /// Restore source order and visibility, preserving keyed selection.
     pub fn reset_projection(&mut self, cx: &mut Context<M>) -> ListBoxUpdate<K> {
+        self.drop_layout.cancel();
         let update = self.state.reset_projection();
         self.handle_update(&update, cx);
         update
@@ -226,6 +247,7 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
             .clone()
             .map(|config| super::ListBoxDragDropBinding { source: self.event_source.downgrade(), config });
         ListBoxRenderParts {
+            drop_layout: self.drop_layout.clone(),
             drag_drop,
             state: &self.state,
             binding: &mut self.binding,

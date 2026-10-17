@@ -161,6 +161,7 @@ impl<T: 'static> TableControl<T> {
         let moving: HashSet<_> = proposal.keys().iter().collect();
         let moved = self.row_keys.iter().filter(|key| moving.contains(key)).cloned().collect();
         if changed {
+            self.drop_layout.start();
             let previous = self.selection_snapshot();
             let keys = order.iter().map(|&index| self.row_keys[index].clone()).collect::<Vec<_>>();
             self.remap_selection(&keys);

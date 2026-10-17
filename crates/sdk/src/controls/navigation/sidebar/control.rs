@@ -89,6 +89,7 @@ impl SidebarControl {
         if self.model.presentation == presentation {
             return;
         }
+        self.panel.read(cx).drop_layout.cancel();
         self.cancel_drag(cx);
         self.model.presentation = presentation;
         self.panel
@@ -102,6 +103,7 @@ impl SidebarControl {
             return;
         }
         if !enabled {
+            self.panel.read(cx).drop_layout.cancel();
             self.cancel_drag(cx);
         }
         self.model.enabled = enabled;
@@ -129,6 +131,7 @@ impl SidebarControl {
 
     /// Replace the sidebar panel tree (header / groups / footer) at runtime.
     pub fn set_sidebar(&mut self, sidebar: SidebarBuilder, cx: &mut Context<Self>) {
+        self.panel.read(cx).drop_layout.cancel();
         self.cancel_drag(cx);
         let panel = sidebar.build();
         self.apply_panel_model(panel, cx);

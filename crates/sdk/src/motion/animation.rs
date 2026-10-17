@@ -147,6 +147,13 @@ impl VisualTransition {
         });
     }
 
+    #[cfg(all(test, feature = "test-support"))]
+    pub(crate) fn elapse_for_test(&mut self, elapsed: Duration) {
+        if self.started_at.is_some() {
+            self.started_at = Instant::now().checked_sub(elapsed);
+        }
+    }
+
     /// Returns current progress in range `0.0`..`1.0`.
     pub fn progress(&self) -> f32 {
         self.progress

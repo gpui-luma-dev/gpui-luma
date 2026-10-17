@@ -224,6 +224,16 @@ impl<T: Clone + Send + Sync + 'static> TreeDropProposal<T> {
     /// Call only after both host-owned snapshots and transferred state are applied.
     /// Completion is guarded across all retained proposals and preview release.
     pub fn committed(&self, changed: bool, cx: &mut App) {
+        if self.inner.is_active() && changed {
+            if let Some(source) = self.inner.source().upgrade() {
+                source.read(cx).drop_layout.start();
+            }
+            if self.inner.source().entity_id() != self.inner.target().entity_id()
+                && let Some(target) = self.inner.target().upgrade()
+            {
+                target.read(cx).drop_layout.start();
+            }
+        }
         for event in self.inner.committed(changed, self.node_ids().to_vec()) {
             deliver(event, Some(&self.location), cx);
         }

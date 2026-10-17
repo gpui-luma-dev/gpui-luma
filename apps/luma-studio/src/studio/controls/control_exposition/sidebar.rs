@@ -100,6 +100,7 @@ pub struct SidebarControlExposition {
 }
 
 struct SidebarExpositionLeftPane {
+    motion_controls: Entity<super::drop_motion::DropMotionControls<gpui::SharedString>>,
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     sidebar_control: Entity<SidebarControl>,
@@ -165,6 +166,7 @@ impl Render for SidebarExpositionLeftPane {
                 .flex()
                 .flex_col()
                 .gap(px(16.0))
+                .child(self.motion_controls.clone())
                 .child(div().text_sm().text_color(look.chrome().muted_text).child("Drag row edges before/after; branch centers move into branches. Hold near an edge to scroll; Escape cancels."))
                 .child(preview_shell(
                     look,
@@ -219,8 +221,14 @@ impl SidebarControlExposition {
             )
         });
 
+        let motion_controls = super::drop_motion::DropMotionControls::spawn(
+            look.clone(),
+            vec![sidebar_control.read(cx).drop_layout_motion(cx)],
+            cx,
+        );
         let control_open = Rc::new(Cell::new(true));
         let left_pane = cx.new(|_| SidebarExpositionLeftPane {
+            motion_controls,
             look: look.clone(),
             entry,
             sidebar_control: sidebar_control.clone(),
