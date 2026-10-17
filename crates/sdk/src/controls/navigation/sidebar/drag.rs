@@ -308,6 +308,19 @@ pub(super) fn set_expanded(panel: &mut SidebarPanelModel, key: &SharedString, ex
     }
 }
 impl SidebarControl {
+    /// Override post-drop duration; None restores the inherited Look value.
+    pub fn set_drop_layout_motion(&mut self, duration: Option<std::time::Duration>, cx: &mut Context<Self>) {
+        self.panel.update(cx, |panel, cx| {
+            panel.drop_layout.set_duration(duration);
+            cx.notify();
+        });
+        cx.notify();
+    }
+
+    /// Retained keyed post-drop motion and resolved duration diagnostics.
+    pub fn drop_layout_motion(&self, cx: &gpui::App) -> crate::motion::DropLayoutMotion<SharedString> {
+        self.panel.read(cx).drop_layout.clone()
+    }
     /// Current keyed position, including group and parent, after SDK-owned moves.
     pub fn item_location(&self, id: impl Into<SharedString>) -> Option<SidebarDropLocation> {
         location(self.model.sidebar.as_ref()?, &id.into())
@@ -353,6 +366,7 @@ impl SidebarControl {
         match result {
             Ok(changed) => {
                 if changed && let Some(panel) = &self.model.sidebar {
+                    self.panel.read(cx).drop_layout.start();
                     let (nodes, _) = panel_to_nav_nodes(panel);
                     self.panel.update(cx, |engine, cx| engine.move_items(nodes, cx));
                 }
@@ -381,6 +395,9 @@ impl SidebarControl {
         }
     }
     fn drag_event(&mut self, event: DragDropEvent<EntityId, SharedString>, cx: &mut Context<Self>) {
+        if matches!(event, DragDropEvent::DragStarted { .. }) {
+            self.panel.read(cx).drop_layout.cancel();
+        }
         if matches!(event, DragDropEvent::DragEnded { .. }) {
             self.active_drag = None;
         }

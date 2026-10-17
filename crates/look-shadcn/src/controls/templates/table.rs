@@ -11,6 +11,9 @@ struct ShadcnTableTheme {
 }
 
 impl TableTheme for ShadcnTableTheme {
+    fn drop_layout_motion(&self) -> gpui_luma::theme::stylesheet::ResolvedMotion {
+        self.theme.stylesheet().common.drop_layout_motion("Shadcn")
+    }
     fn resolve_drag(&self, size: ControlSize) -> gpui_luma::controls::table::TableDragLook {
         let tokens = self.theme.mode_tokens();
         let palette = &tokens.palette;

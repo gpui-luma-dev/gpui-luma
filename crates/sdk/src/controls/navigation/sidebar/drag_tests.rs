@@ -39,11 +39,14 @@ impl Render for Page {
     }
 }
 fn setup(app: &mut TestAppContext) -> (Entity<Page>, &mut VisualTestContext) {
+    setup_animated(app, false)
+}
+fn setup_animated(app: &mut TestAppContext, animated: bool) -> (Entity<Page>, &mut VisualTestContext) {
     let (page, cx) = app.add_window_view(|window, cx| {
         window.activate_window();
         crate::key_handling::bind_default_control_keys(cx);
         let sidebar = SidebarControl::new("nav")
-            .animated(false)
+            .animated(animated)
             .selected_id("a")
             .drag_drop(SidebarDragDrop::new())
             .sidebar(fixture())
@@ -202,4 +205,35 @@ fn escape_and_presentation_change_cancel_and_fixed_rows_never_start() {
     drag(cx, "fixed", "c", 0.8);
     drag(cx, "disabled", "c", 0.8);
     cx.update(|_, cx| assert!(!page.read(cx).events.iter().any(|e| matches!(e, SidebarEvent::DragDrop(_)))));
+}
+
+#[test]
+fn reparenting_animates_row_positions_without_changing_selection() {
+    use std::time::Duration;
+    let mut app = TestAppContext::single();
+    let (page, cx) = setup_animated(&mut app, true);
+    let sidebar = cx.update(|_, cx| page.read(cx).sidebar.clone());
+    sidebar.update(cx, |s, cx| s.drop_layout_motion(cx).set_duration(Some(Duration::from_millis(1000))));
+    let old = cx.debug_bounds("sidebar-drag-a").unwrap();
+    drag(cx, "a", "c", 0.2);
+    assert!((cx.debug_bounds("sidebar-drag-a").unwrap().top() - old.top()).abs() < px(1.));
+    cx.update(|_, cx| {
+        let s = sidebar.read(cx);
+        assert_eq!(s.item_location("a").unwrap().group_id.as_ref(), "two");
+        assert_eq!(s.selected_id().map(|s| s.as_ref()), Some("a"));
+        assert!(s.drop_layout_motion(cx).is_animating());
+    });
+    sidebar.update(cx, |s, cx| s.drop_layout_motion(cx).elapse_for_test(Duration::from_millis(500)));
+    cx.update(|window, cx| {
+        window.simulate_next_frame(cx);
+    });
+    cx.run_until_parked();
+    let mid = cx.debug_bounds("sidebar-drag-a").unwrap().top();
+    sidebar.update(cx, |s, cx| s.drop_layout_motion(cx).elapse_for_test(Duration::from_millis(1100)));
+    cx.update(|window, cx| {
+        window.simulate_next_frame(cx);
+    });
+    cx.run_until_parked();
+    let end = cx.debug_bounds("sidebar-drag-a").unwrap().top();
+    assert!(mid > old.top() && mid < end);
 }

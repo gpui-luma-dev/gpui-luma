@@ -24,6 +24,18 @@ impl Tabs {
         }
         cx.notify();
     }
+    /// Override post-drop duration; None restores the inherited Look value.
+    pub fn set_drop_layout_motion(&mut self, duration: Option<std::time::Duration>, cx: &mut Context<Self>) {
+        self.drop_layout.set_duration(duration);
+        self.group.update(cx, |_, cx| cx.notify());
+        cx.notify();
+    }
+
+    /// Retained keyed post-drop motion and resolved duration diagnostics.
+    pub fn drop_layout_motion(&self) -> crate::motion::DropLayoutMotion<SharedString> {
+        self.drop_layout.clone()
+    }
+
     pub fn items(&self) -> &[super::TabsItem] {
         &self.items
     }
@@ -47,6 +59,7 @@ impl Tabs {
         };
         let changed = order.iter().enumerate().any(|(i, index)| i != *index);
         if changed {
+            self.drop_layout.start();
             self.items = order.into_iter().map(|index| self.items[index].clone()).collect();
             // Unlike set_items, a move must not restart/finish body transitions,
             // recreate content, or change the selected/keyboard-active identity.
@@ -96,6 +109,9 @@ impl Tabs {
         }
     }
     fn drag_event(&mut self, event: TabsDragEvent, cx: &mut Context<Self>) {
+        if matches!(event, DragDropEvent::DragStarted { .. }) {
+            self.drop_layout.cancel();
+        }
         if matches!(event, DragDropEvent::DragEnded { .. }) {
             self.active_drag = None;
         }

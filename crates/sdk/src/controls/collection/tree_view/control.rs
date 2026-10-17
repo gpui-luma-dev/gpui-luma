@@ -81,6 +81,8 @@ pub struct TreeViewControl<T>
 where
     T: Clone + Send + Sync + 'static,
 {
+    pub(crate) drop_layout: crate::motion::DropLayoutMotion<SharedString>,
+
     pub(super) model: TreeViewModel<T>,
     pub(super) revision: u64,
     pub(super) drag_revision: Option<u64>,
@@ -166,6 +168,7 @@ where
         );
         let mut control = Self {
             model: builder.model,
+            drop_layout: Default::default(),
             revision: 0,
             drag_revision: None,
             drag_scroll_scheduled: false,
@@ -202,6 +205,17 @@ where
         control.rebuild_flat_cache(cx);
 
         control
+    }
+
+    /// Override post-drop duration; None restores the inherited Look value.
+    pub fn set_drop_layout_motion(&mut self, duration: Option<std::time::Duration>, cx: &mut Context<Self>) {
+        self.drop_layout.set_duration(duration);
+        cx.notify();
+    }
+
+    /// Retained keyed post-drop motion and resolved duration diagnostics.
+    pub fn drop_layout_motion(&self) -> crate::motion::DropLayoutMotion<SharedString> {
+        self.drop_layout.clone()
     }
 
     pub fn items(&self) -> &[TreeNode<T>] {
@@ -261,6 +275,7 @@ where
         cx: &mut Context<Self>,
     ) -> Result<(), TreeViewError> {
         let index = TreeIndex::new(&items)?;
+        self.drop_layout.cancel();
         self.cancel_position();
         let selected_before = self.selected_ids.clone();
         let active_before = self.active_node_id.clone();
@@ -804,7 +819,9 @@ where
             let debug_node_id = id.clone();
             row.debug_selector(move || format!("{}/node/{}", tree_id, debug_node_id))
         };
-        self.bind_row_drag(row, id, label, index, cx).into_any_element()
+        let key = id.clone();
+        let row = self.bind_row_drag(row, id, label, index, cx);
+        self.drop_layout.item(key, row)
     }
 
     fn handle_row_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
@@ -1149,6 +1166,9 @@ where
         };
 
         let body = self.render_viewport(window, cx);
+        self.drop_layout.configure(self.model.template.drop_layout_motion(), self.model.animated);
+        let scroll = self.list_state.clone();
+        let body = self.drop_layout.scope(body, move || scroll.scroll_px_offset_for_scrollbar());
 
         self.model
             .template

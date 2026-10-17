@@ -164,7 +164,17 @@ where
             this.handle_item_click(index, event, cx);
         }));
 
-        self.bind_row_drag(row, index, cx).into_any_element()
+        let row = self.bind_row_drag(row, index, cx);
+        if let Some(key) = self.row_keys.get(index) {
+            #[cfg(any(test, feature = "test-support"))]
+            let row = {
+                let key = key.clone();
+                row.debug_selector(move || format!("table-motion-{key}"))
+            };
+            self.drop_layout.item(key.clone(), row)
+        } else {
+            row.into_any_element()
+        }
     }
 }
 
@@ -215,6 +225,9 @@ where
                 let _ = owner.update(cx, |table, cx| table.handle_scroll_wheel(event, window, cx));
             },
         );
+        self.drop_layout.configure(self.model.theme.drop_layout_motion(), true);
+        let scroll = self.list_state.clone();
+        let list_element = self.drop_layout.scope(list_element, move || scroll.scroll_px_offset_for_scrollbar());
         let body = div()
             .relative()
             .w_full()
