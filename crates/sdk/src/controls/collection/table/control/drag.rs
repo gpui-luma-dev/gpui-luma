@@ -52,6 +52,7 @@ impl<T: 'static> TableControl<T> {
                 drag,
                 move |drag, offset, window, app| {
                     let _ = owner.update(app, |table, cx| {
+                        table.drop_layout.cancel();
                         table.active_row_drag = Some(drag.clone());
                         table.schedule_drag_scroll(window, cx, None);
                         cx.notify();

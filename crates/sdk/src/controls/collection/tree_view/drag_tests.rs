@@ -434,3 +434,66 @@ fn tree_native_transactions_emit_all_shared_phases_with_root_payloads_and_locati
         });
     }
 }
+
+#[test]
+fn same_tree_commit_animates_visible_keyed_rows_after_ended_event() {
+    use std::time::Duration;
+    let mut app = TestAppContext::single();
+    let ended = Rc::new(Cell::new(false));
+    let report = ended.clone();
+    let (tree, cx) = app.add_window_view(|window, cx| {
+        window.activate_window();
+        crate::key_handling::bind_default_control_keys(cx);
+        let config = TreeViewDragDrop::new(cx.entity_id(), move |p, _, cx| {
+            p.validate(cx).unwrap();
+            let source = p.source().unwrap();
+            source.update(cx, |tree, cx| {
+                tree.replace_items(
+                    [TreeNode::new("b", "B", ()), TreeNode::new("c", "C", ()), TreeNode::new("a", "A", ())],
+                    cx,
+                )
+                .unwrap()
+            });
+            p.committed(true, cx);
+        });
+        let builder = TreeViewBuilder::new("motion-tree")
+            .items([TreeNode::new("a", "A", ()), TreeNode::new("b", "B", ()), TreeNode::new("c", "C", ())])
+            .drag_drop(config);
+        let tree = TreeViewControl::from_builder(builder, cx);
+        tree.drop_layout_motion().set_duration(Some(Duration::from_millis(1000)));
+        tree
+    });
+    cx.update(|_, cx| {
+        cx.subscribe(&tree, move |_, event: &TreeViewEvent<()>, _| {
+            if matches!(event, TreeViewEvent::DragDrop(TreeViewDragEvent::Ended { .. })) {
+                report.set(true)
+            }
+        })
+        .detach();
+    });
+    cx.run_until_parked();
+    let old = cx.debug_bounds("motion-tree/node/a").unwrap();
+    let end = cx.debug_bounds("motion-tree/node/c").unwrap();
+    let start = old.center();
+    let target = point(end.center().x, end.bottom() - px(2.));
+    cx.simulate_mouse_down(start, MouseButton::Left, Default::default());
+    cx.simulate_mouse_move(start + point(px(12.), px(0.)), MouseButton::Left, Default::default());
+    cx.run_until_parked();
+    cx.simulate_mouse_move(target, MouseButton::Left, Default::default());
+    cx.run_until_parked();
+    cx.simulate_mouse_up(target, MouseButton::Left, Default::default());
+    cx.run_until_parked();
+    assert!(ended.get());
+    assert!((cx.debug_bounds("motion-tree/node/a").unwrap().top() - old.top()).abs() < px(1.));
+    cx.update(|_, cx| {
+        let tree = tree.read(cx);
+        assert_eq!(tree.items()[2].id.as_ref(), "a");
+        assert!(tree.drop_layout_motion().is_animating());
+    });
+    tree.update(cx, |tree, _| tree.drop_layout_motion().elapse_for_test(Duration::from_millis(1100)));
+    cx.update(|window, cx| {
+        window.simulate_next_frame(cx);
+    });
+    cx.run_until_parked();
+    assert!(cx.debug_bounds("motion-tree/node/a").unwrap().top() > old.top());
+}

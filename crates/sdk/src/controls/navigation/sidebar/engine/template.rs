@@ -74,6 +74,10 @@ pub struct SidebarPanelTemplateHandlers {
 pub type SidebarPanelTemplateModifier = Box<dyn Fn(Stateful<Div>) -> Stateful<Div> + Send + Sync + 'static>;
 
 pub trait SidebarPanelTemplate: Send + Sync {
+    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        crate::theme::stylesheet::CommonStylesheet::default().drop_layout_motion("SDK")
+    }
+
     fn render(
         &self,
         model: SidebarPanelEngineRenderModel,
@@ -164,6 +168,10 @@ where
 }
 
 impl SidebarPanelTemplate for ModifiedSidebarPanelTemplate {
+    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        self.base.drop_layout_motion()
+    }
+
     fn render(
         &self,
         model: SidebarPanelEngineRenderModel,
@@ -178,6 +186,10 @@ impl SidebarPanelTemplate for ModifiedSidebarPanelTemplate {
 }
 
 impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
+    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        self.theme.drop_layout_motion()
+    }
+
     fn render(
         &self,
         model: SidebarPanelEngineRenderModel,
@@ -451,6 +463,7 @@ fn render_node(
     cx: &mut App,
 ) -> AnyElement {
     let RenderedNavNode {
+        drop_layout,
         drag_drop,
         id,
         kind,
@@ -498,6 +511,11 @@ fn render_node(
                 cx,
             )
             .into_any_element()
+    } else {
+        row
+    };
+    let row = if let Some(motion) = drop_layout {
+        motion.item(id.clone(), row)
     } else {
         row
     };

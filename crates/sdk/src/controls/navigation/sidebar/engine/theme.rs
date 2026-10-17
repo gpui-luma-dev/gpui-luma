@@ -26,6 +26,11 @@ pub struct SidebarItemLook {
 }
 
 pub trait SidebarTheme: Send + Sync {
+    /// Inherited post-drop position motion; instance overrides remain SDK-owned.
+    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        crate::theme::stylesheet::CommonStylesheet::default().drop_layout_motion("SDK")
+    }
+
     /// Appearance of native drag previews and insertion feedback.
     fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
         let mut drag = crate::infra::drag_drop::DragDropLook::from_tokens(&ThemeTokens::default(), size);

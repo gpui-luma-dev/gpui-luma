@@ -1,3 +1,4 @@
+mod drop_motion;
 mod accordion;
 mod autocomplete_textfield;
 mod badge;

@@ -10,6 +10,7 @@ against the selected configuration. SDK templates consume the resolved inputs.
 
 | Input or machinery | Current source | Ownership and migration decision |
 | --- | --- | --- |
+| Post-drop item position duration | `[common.drag_drop].drop_motion_ms`, SDK instance overrides | Shared `DropLayoutMotion` / `VisualTransition`, 200 ms SDK fallback, explicit zero, Look provenance and reduced-motion/disabled-animation handling. Looks resolve appearance; SDK controls own commits and keyed geometry. |
 | Incoming tab panel duration | SDK builder, Radix builder, Radix Studio constant | SDK `CommonStylesheet` defines types, fallback, precedence and provenance; looks supply `fade_in_ms`. |
 | Tab list gap, list padding and indicator height | SDK `TabsGeometryStylesheet`, per-look TOML | Shared fields with variant, general and supplied token/SDK fallback precedence. Paint and inspectors consume the same resolved metrics. |
 | Shadcn tab labels, disabled list fill and selected indicator colors | `stylesheet/config/tabs.rs`, `controls/tabs.rs` | Look extensions: CSS token names and recipes remain Shadcn-owned. |
@@ -316,3 +317,20 @@ explicit zero, per-size/general/fallback precedence and authored source paths.
 Resolved-output baselines cover both modes, all existing checkbox/radio radii,
 input sizes/variants/interaction states, progress sizes, menu/tooltip geometry,
 live edits, fork isolation and local Toolbar/Card/Avatar override precedence.
+
+## Drop-layout motion (#140)
+
+`[common.drag_drop] drop_motion_ms = 200` configures post-drop position motion in
+ListBox, Table, TreeView, Sidebar and Tabs. Missing uses the shared 200 ms cubic
+transition; explicit zero disables it. SDK instance duration overrides take
+precedence over the Look, and `None` restores inheritance. Existing control-wide
+animation disable and GPUI reduced motion settle without scheduling frames.
+Live Look/configuration changes settle an existing drop transition.
+
+The SDK commits collection state and lifecycle events before animation. The
+motion module owns bounded keyed geometry, while Looks supply the duration and
+row appearance. Only mounted local positions animate; there are no retained ghost
+views or extra off-screen construction. Transfer destinations show new keys at
+their final positions while displaced survivors animate. Native-dispatch and
+paint-output tests cover timing, interruption and final layout. See
+[Drag and drop](drag-drop.html#drop-motion) for the per-control coverage and limits.

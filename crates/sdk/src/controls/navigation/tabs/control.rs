@@ -28,6 +28,8 @@ pub enum TabsEvent {
 }
 
 pub struct Tabs {
+    pub(crate) drop_layout: crate::motion::DropLayoutMotion<SharedString>,
+
     pub(super) drag_scroll: gpui::ScrollHandle,
     pub(super) drag_scroll_pending: std::rc::Rc<std::cell::Cell<bool>>,
     pub(super) group: Entity<ControlGroupControl<TabsItem>>,
@@ -47,7 +49,7 @@ pub struct Tabs {
     pub(super) item_bounds: Vec<Option<Bounds<Pixels>>>,
     size: ControlSize,
     width_mode: TabsWidthMode,
-    animated: bool,
+    pub(super) animated: bool,
     disclosure_icons: crate::infra::icon::DisclosureIcons,
     pub(super) indicator_motion: TabsIndicatorMotion,
     template: std::sync::Arc<dyn super::TabsTemplate>,
@@ -110,6 +112,7 @@ impl Tabs {
         let body_motion = builder.model.inherited_motion.clone().with_override(builder.model.fade_duration, true);
         Self {
             drag_scroll: gpui::ScrollHandle::new(),
+            drop_layout: Default::default(),
             drag_scroll_pending: Default::default(),
             group,
             reordering: builder.model.reordering,
@@ -245,6 +248,7 @@ impl Tabs {
     /// disabled selection falls back to the first enabled item (or none).
     /// Item updates finish the current body fade.
     pub fn set_items(&mut self, items: impl IntoIterator<Item = TabsItem>, cx: &mut Context<Self>) {
+        self.drop_layout.cancel();
         self.cancel_drag(cx);
         self.items = items.into_iter().collect();
         self.contents.retain(|id, _| self.items.iter().any(|item| item.id() == id));
@@ -346,6 +350,7 @@ impl Tabs {
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.enabled = enabled;
         if !enabled {
+            self.drop_layout.cancel();
             self.cancel_drag(cx);
         }
         self.group.update(cx, |group, cx| {

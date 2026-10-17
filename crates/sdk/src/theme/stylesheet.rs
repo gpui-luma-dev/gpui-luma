@@ -15,6 +15,7 @@ pub use geometry::*;
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
 pub struct CommonStylesheet {
+    pub drag_drop: DragDropStylesheet,
     pub tabs: TabsStylesheet,
     pub switch: SwitchStylesheet,
     pub slider: SliderStylesheet,
@@ -43,6 +44,13 @@ pub struct CommonStylesheet {
     pub table: TableStylesheet,
     pub pager: PagerStylesheet,
     pub context_menu: ContextMenuStylesheet,
+}
+
+/// Common post-drop position transition. Explicit zero disables it.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+#[serde(default, deny_unknown_fields)]
+pub struct DragDropStylesheet {
+    pub drop_motion_ms: Option<u32>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
@@ -314,6 +322,19 @@ impl Default for ResolvedMotion {
 }
 
 impl CommonStylesheet {
+    pub fn drop_layout_motion(&self, look_name: &str) -> ResolvedMotion {
+        match self.drag_drop.drop_motion_ms {
+            Some(ms) => ResolvedMotion {
+                duration: Duration::from_millis(u64::from(ms)),
+                source: MotionSource::Look { name: look_name.into(), field: "common.drag_drop.drop_motion_ms" },
+            },
+            None => ResolvedMotion {
+                duration: crate::motion::DEFAULT_TRANSITION_DURATION,
+                source: MotionSource::SdkFallback,
+            },
+        }
+    }
+
     /// Parse a complete look stylesheet. Look-owned root sections are ignored.
     /// File access and input-size limits belong to the application.
     pub fn parse(source: &str) -> anyhow::Result<Self> {
@@ -507,5 +528,39 @@ gap = 7
         let disabled = inherited.with_override(Some(Duration::from_millis(900)), false);
         assert_eq!(disabled.duration, Duration::ZERO);
         assert_eq!(disabled.source, MotionSource::AnimationDisabled);
+    }
+}
+
+#[cfg(test)]
+mod drop_motion_tests {
+    use super::*;
+    #[test]
+    fn drop_motion_resolution_preserves_fallback_zero_override_and_provenance() {
+        let fallback = CommonStylesheet::default().drop_layout_motion("Test");
+        assert_eq!(fallback.duration, crate::motion::DEFAULT_TRANSITION_DURATION);
+        assert_eq!(fallback.source, MotionSource::SdkFallback);
+        let sheet = CommonStylesheet::parse("[common.drag_drop]\ndrop_motion_ms = 350").unwrap();
+        let resolved = sheet.drop_layout_motion("Test");
+        assert_eq!(resolved.duration, Duration::from_millis(350));
+        assert_eq!(
+            resolved.source,
+            MotionSource::Look { name: "Test".into(), field: "common.drag_drop.drop_motion_ms" }
+        );
+        assert_eq!(resolved.clone().with_override(Some(Duration::ZERO), true).source, MotionSource::InstanceOverride);
+        assert_eq!(
+            resolved.with_override(Some(Duration::from_millis(800)), false),
+            ResolvedMotion { duration: Duration::ZERO, source: MotionSource::AnimationDisabled }
+        );
+        for value in ["-1", "1.5", "\"fast\"", "4294967296"] {
+            assert!(CommonStylesheet::parse(&format!("[common.drag_drop]\ndrop_motion_ms = {value}")).is_err());
+        }
+        assert!(CommonStylesheet::parse("[common.drag_drop]\nunknown = 1").is_err());
+        assert!(
+            CommonStylesheet::parse("[common.drag_drop]\ndrop_motion_ms = 0")
+                .unwrap()
+                .drop_layout_motion("Test")
+                .duration
+                .is_zero()
+        );
     }
 }

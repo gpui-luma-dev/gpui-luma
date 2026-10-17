@@ -850,3 +850,39 @@ fn paged_table_passes_wheel_without_advancing_page() {
         assert!(page.scroll.offset().y < px(0.0));
     });
 }
+
+#[test]
+fn virtualized_drop_motion_tracks_only_visible_rows_and_finishes_after_commit() {
+    use std::time::Duration;
+    let mut app = TestAppContext::single();
+    let (table, cx) = setup(&mut app, 100_000, TableSelectionMode::Single);
+    table.update(cx, |table, cx| {
+        table.set_row_reordering(true, cx).unwrap();
+        table.drop_layout_motion().set_duration(Some(Duration::from_millis(1000)));
+    });
+    cx.run_until_parked();
+    let old = cx.debug_bounds("table-motion-1").unwrap();
+    start_drag(cx, 45.);
+    drop_at(cx, 5.);
+    let first = cx.debug_bounds("table-motion-1").unwrap().top();
+    assert!(first > px(1.) && first <= old.top(), "first frame {first:?}");
+    cx.update(|_, cx| {
+        let table = table.read(cx);
+        assert_eq!(table.items()[0].id, 1);
+        assert!(table.drop_layout_motion().is_animating());
+        assert!(table.drop_layout_motion().tracked_items() < 20);
+    });
+    table.update(cx, |table, _| table.drop_layout_motion().elapse_for_test(Duration::from_millis(500)));
+    cx.update(|window, cx| {
+        window.simulate_next_frame(cx);
+    });
+    cx.run_until_parked();
+    let mid = cx.debug_bounds("table-motion-1").unwrap().top();
+    table.update(cx, |table, _| table.drop_layout_motion().elapse_for_test(Duration::from_millis(1100)));
+    cx.update(|window, cx| {
+        window.simulate_next_frame(cx);
+    });
+    cx.run_until_parked();
+    let end = cx.debug_bounds("table-motion-1").unwrap().top();
+    assert!(mid < old.top() && mid > end);
+}

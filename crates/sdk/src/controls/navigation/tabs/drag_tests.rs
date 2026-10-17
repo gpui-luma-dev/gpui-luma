@@ -369,3 +369,39 @@ fn neighboring_halves_share_one_gap_marker_and_destination() {
         }
     }
 }
+
+#[test]
+fn native_drop_animates_positions_after_lifecycle_completion() {
+    use std::time::Duration;
+    let mut app = TestAppContext::single();
+    let (page, cx) = setup(&mut app, 0);
+    let tabs = cx.update(|_, cx| page.read(cx).tabs.clone());
+    tabs.update(cx, |tabs, cx| {
+        tabs.set_animated(true, cx);
+        tabs.drop_layout_motion().set_duration(Some(Duration::from_millis(1000)));
+    });
+    cx.run_until_parked();
+    let old = cx.debug_bounds("tab-drag-a").unwrap();
+    drag(cx, "a", "c", 0.8);
+    assert!((cx.debug_bounds("tab-drag-a").unwrap().left() - old.left()).abs() < px(1.));
+    cx.update(|_, cx| {
+        let page = page.read(cx);
+        assert_eq!(page.tabs.read(cx).items()[2].id().as_ref(), "a");
+        assert!(page.events.iter().any(|e| matches!(e, TabsEvent::DragDrop(E::DragEnded { .. }))));
+        assert!(page.tabs.read(cx).drop_layout_motion().is_animating());
+    });
+    tabs.update(cx, |tabs, _| tabs.drop_layout_motion().elapse_for_test(Duration::from_millis(500)));
+    cx.update(|window, cx| {
+        window.simulate_next_frame(cx);
+    });
+    cx.run_until_parked();
+    let mid = cx.debug_bounds("tab-drag-a").unwrap().left();
+    tabs.update(cx, |tabs, _| tabs.drop_layout_motion().elapse_for_test(Duration::from_millis(1100)));
+    cx.update(|window, cx| {
+        window.simulate_next_frame(cx);
+    });
+    cx.run_until_parked();
+    let end = cx.debug_bounds("tab-drag-a").unwrap().left();
+    assert!(mid > old.left() && mid < end);
+    cx.update(|_, cx| assert_eq!(tabs.read(cx).active_id().map(|id| id.as_ref()), Some("b")));
+}

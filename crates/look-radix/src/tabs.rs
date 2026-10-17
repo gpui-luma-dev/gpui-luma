@@ -193,6 +193,9 @@ struct TabsThemeAdapter {
 }
 
 impl TabsTheme for TabsThemeAdapter {
+    fn drop_layout_motion(&self) -> gpui_luma::theme::stylesheet::ResolvedMotion {
+        self.look.common_stylesheet().drop_layout_motion("Radix")
+    }
     fn resolve_drag(&self, size: ControlSize) -> gpui_luma::infra::drag_drop::DragDropLook {
         let mut drag =
             gpui_luma::infra::drag_drop::DragDropLook::from_tokens(&gpui_luma::theme::ThemeTokens::default(), size);

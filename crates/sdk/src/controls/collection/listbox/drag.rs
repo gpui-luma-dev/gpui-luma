@@ -4,10 +4,12 @@ use gpui::{App, Context, Div, EntityId, SharedString, Stateful, WeakEntity, Wind
 use crate::infra::drag_drop::{DragDropEvent, DropProposal, KeyedDrag, bind_drag_source};
 use super::{ListBoxAxis, ListBoxEvent, ListBoxScrollHandle};
 
-pub(super) struct ListBoxEventSource<K: 'static>(std::marker::PhantomData<K>);
+pub(super) struct ListBoxEventSource<K: 'static> {
+    pub motion: crate::motion::DropLayoutMotion<K>,
+}
 impl<K: 'static> Default for ListBoxEventSource<K> {
     fn default() -> Self {
-        Self(std::marker::PhantomData)
+        Self { motion: Default::default() }
     }
 }
 impl<K: 'static> gpui::EventEmitter<ListBoxEvent<K>> for ListBoxEventSource<K> {}
@@ -110,6 +112,15 @@ fn deliver_batch<K: Clone + 'static>(events: Vec<DragDropEvent<WeakEntity<ListBo
     cx.defer(move |cx| {
         for event in events {
             let recipient = event.list().clone();
+            if let Some(owner) = recipient.upgrade() {
+                match &event {
+                    DragDropEvent::DragStarted { .. } => owner.read(cx).motion.cancel(),
+                    DragDropEvent::ItemsReordered { .. }
+                    | DragDropEvent::ItemsAdded { .. }
+                    | DragDropEvent::ItemsRemoved { .. } => owner.read(cx).motion.start(),
+                    _ => {}
+                }
+            }
             let mapped = match event {
                 DragDropEvent::DragStarted { source, keys } => {
                     DragDropEvent::DragStarted { source: source.entity_id(), keys }

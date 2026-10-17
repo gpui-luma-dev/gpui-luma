@@ -37,6 +37,10 @@ pub trait TreeViewTemplate<T>: Send + Sync
 where
     T: Send + Sync + 'static,
 {
+    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        crate::theme::stylesheet::CommonStylesheet::default().drop_layout_motion("SDK")
+    }
+
     fn render(
         &self,
         model: &TreeViewRenderModel<'_>,
@@ -144,6 +148,10 @@ impl<T> TreeViewTemplate<T> for ModifiedTreeViewTemplate<T>
 where
     T: Send + Sync + 'static,
 {
+    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        self.base.drop_layout_motion()
+    }
+
     fn render(
         &self,
         model: &TreeViewRenderModel<'_>,
@@ -192,6 +200,10 @@ impl<T> TreeViewTemplate<T> for ThemedTreeViewTemplate
 where
     T: Send + Sync + 'static,
 {
+    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        self.theme.drop_layout_motion()
+    }
+
     fn render(
         &self,
         model: &TreeViewRenderModel<'_>,

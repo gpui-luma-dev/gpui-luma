@@ -11,6 +11,9 @@ struct ShadcnTabsTheme {
 }
 
 impl TabsTheme for ShadcnTabsTheme {
+    fn drop_layout_motion(&self) -> gpui_luma::theme::stylesheet::ResolvedMotion {
+        self.theme.stylesheet().common.drop_layout_motion("Shadcn")
+    }
     fn resolve_drag(&self, size: ControlSize) -> gpui_luma::infra::drag_drop::DragDropLook {
         let tokens = self.theme.mode_tokens();
         let palette = &tokens.palette;

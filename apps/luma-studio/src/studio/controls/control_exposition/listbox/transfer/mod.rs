@@ -39,7 +39,9 @@ const LAYOUT: ListBoxSampleLayout = ListBoxSampleLayout {
 type ItemDrop = DropProposal<Side, u32>;
 
 pub(super) struct TransferExample {
+    motion_controls: Entity<super::super::drop_motion::DropMotionControls<u32>>,
     model: TransferModel,
+    drop_layout: [gpui_luma::motion::DropLayoutMotion<u32>; 2],
     bindings: [ListBoxBinding; 2],
     scrolls: [ListBoxScrollHandle<u32>; 2],
     presentations: [ExamplePresentation; 2],
@@ -51,8 +53,13 @@ impl TransferExample {
         for list in &mut model.lists {
             list.set_selection_policy(super::selection_controls::DEFAULT_POLICY);
         }
+        let drop_layout: [gpui_luma::motion::DropLayoutMotion<u32>; 2] = std::array::from_fn(|_| Default::default());
+        let motion_controls =
+            super::super::drop_motion::DropMotionControls::spawn(look.clone(), drop_layout.to_vec(), cx);
         Self {
             model,
+            motion_controls,
+            drop_layout,
             bindings: Side::ALL.map(|_| ListBoxBinding::new(cx)),
             scrolls: [
                 ListBoxScrollHandle::default()
@@ -100,6 +107,11 @@ impl TransferExample {
 
     fn record_drag_event(&mut self, event: DragDropEvent<Side, u32>, cx: &mut Context<Self>) {
         let index = event.list().index();
+        if matches!(event, DragDropEvent::DragStarted { .. }) {
+            for motion in &self.drop_layout {
+                motion.cancel();
+            }
+        }
         self.presentations[index].record_message(&format!("{event:?}"), cx);
     }
 
@@ -121,6 +133,9 @@ impl TransferExample {
         // Domain mutations and final ListBox events remain host-owned. Report
         // the result to the shared lifecycle only after both lists are committed.
         for (index, update) in updates.iter().enumerate() {
+            if update.changed {
+                self.drop_layout[index].start();
+            }
             self.scrolls[index].handle_update(update, cx);
             self.presentations[index].record(&update.events, cx);
         }
@@ -155,6 +170,7 @@ impl TransferExample {
             |surface, item, _| TransferRow::new(surface, item),
         )
         .look(&presentation.look)
+        .drop_layout_motion(self.drop_layout[index].clone())
         .virtualization(ListBoxVirtualization::Uniform { overscan: 2 })
         .layout(ListBoxLayout {
             item_height: LAYOUT.item_height,
@@ -194,6 +210,7 @@ impl Render for TransferExample {
         let right = self.render_list(Side::Right, window, cx);
         let look = &self.presentations[0].look;
         vstack! { gap=8.0;
+            self.motion_controls.clone(),
             div().typography_style(look.typography_scale(ShadcnTextSize::Sm)).font_weight(FontWeight::SEMIBOLD)
                 .text_color(look.chrome().title_text).child("Drag and drop"),
             div().typography_style(look.typography_scale(ShadcnTextSize::Xs)).text_color(look.chrome().muted_text)
