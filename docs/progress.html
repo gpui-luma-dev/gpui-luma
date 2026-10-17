@@ -20,13 +20,53 @@
 <div data-site-mobile-nav></div>
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
-<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Progress</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">Show progress through a numeric range.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust">use gpui_luma_look_radix as radix;
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Progress</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">Show progress through a numeric range.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::{button::Button, progress::Progress};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma_look_radix as radix;
 
-let control = radix::Progress::new(&quot;example&quot;)
-    .range(0..100)
-    .value(40.0)
-    .spawn(cx);</code></pre></div><p class="small">Integration snippet, checked against the current SDK and Radix crates. <code>cx</code> is the initialized owner context. Keep spawned entities and subscriptions in the owning view.</p></section><section id="sdk"><h2>SDK behavior & customization</h2><p>A read-only indicator. Update its value from application state; it is not a value picker.</p><p class="small">Relevant contracts: <code>ProgressRenderModel</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="interaction"><h2>Application interaction</h2><p>Progress is read-only and exposes no ProgressEvent. Update its value from application work; subscribe to the interactive control that starts or cancels that work.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/range/progress/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/progress_builder.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#source">Source</a></nav>
+struct Example {
+    progress: Progress,
+    advance: Entity&lt;Button&gt;,
+    reset: Entity&lt;Button&gt;,
+    completed: f32,
+}
+
+impl Example {
+    fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
+        let progress = radix::Progress::new(&quot;progress&quot;)
+            .range(0..100).value(0.0).animated(true).spawn(cx);
+        let advance = radix::Button::new(&quot;advance&quot;)
+            .label(&quot;Advance +10%&quot;)
+            .on_click(cx, |owner: &amp;mut Self, cx| {
+                owner.set_progress((owner.completed + 10.0).min(100.0), cx);
+            })
+            .spawn(cx);
+        let reset = radix::Button::new(&quot;reset&quot;)
+            .label(&quot;Reset&quot;)
+            .on_click(cx, |owner: &amp;mut Self, cx| owner.set_progress(0.0, cx))
+            .spawn(cx);
+        Self { progress, advance, reset, completed: 0.0 }
+    }
+
+    fn set_progress(&amp;mut self, value: f32, cx: &amp;mut Context&lt;Self&gt;) {
+        self.completed = value;
+        self.progress.update(cx, |progress, cx| progress.set_value(value, cx));
+        self.advance.update(cx, |button, cx| button.set_enabled(value &lt; 100.0, cx));
+        cx.notify();
+    }
+}
+
+impl Render for Example {
+    fn render(&amp;mut self, _: &amp;mut Window, _: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
+        div().flex().flex_col().gap_3().w(px(320.0))
+            .child(self.progress.clone())
+            .child(format!(&quot;{:.0}% complete&quot;, self.completed))
+            .child(div().flex().gap_2()
+                .child(self.advance.clone()).child(self.reset.clone()))
+    }
+}</code></pre></div><p class="small">Click <strong>Advance +10%</strong> to animate the progress and update the percentage. At 100%, Advance is disabled; <strong>Reset</strong> returns to zero and enables it again. Render this view inside an initialized Luma application.</p></section><section id="sdk"><h2>SDK behavior & customization</h2><p>A read-only indicator. Update its value from application state; it is not a value picker.</p><p class="small">Relevant contracts: <code>ProgressRenderModel</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="interaction"><h2>Application interaction</h2><p>Progress is read-only and exposes no <code>ProgressEvent</code>. In this example, Button’s named <code>on_click</code> callbacks update application state and call <code>set_value</code>. For real work, call the same update method as tasks complete. <code>animated(true)</code> animates transitions between values; it does not advance progress automatically.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/range/progress/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/progress_builder.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#interaction">Application interaction</a><a href="#source">Source</a></nav>
 </div>
 </body>
 </html>

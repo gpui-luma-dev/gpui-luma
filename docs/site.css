@@ -8,10 +8,14 @@ h3{font-size:17px;letter-spacing:-.2px;font-weight:600;margin:30px 0 10px}p stro
 
 .source-list{list-style:none;padding:0}.source-list li{padding:12px 0;border-bottom:1px solid var(--line)}.source-list a{color:var(--fg);text-decoration:underline;text-underline-offset:3px}.source-list small{display:block;color:var(--muted);font-size:12px}h1{font-size:42px}section{margin-top:38px}
 
-.event-table{overflow-x:auto;margin:20px 0}.event-table table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}.event-table th{font-weight:600;color:var(--fg)}.event-table th,.event-table td{padding:12px 10px;vertical-align:top;border-bottom:1px solid var(--line)}.event-table td{color:var(--muted)}.event-table td:first-child{width:56%;color:var(--fg)}.event-table code{font-size:11px;white-space:normal;overflow-wrap:anywhere}
+.event-table{overflow-x:auto;margin:20px 0}.event-table table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}.event-table th{font-weight:600;color:var(--fg)}.event-table th,.event-table td{padding:12px 10px;vertical-align:top;border-bottom:1px solid var(--line)}.event-table td{color:var(--muted)}.event-table td:first-child{width:var(--event-first-column,56%);color:var(--fg)}.event-table code{font-size:11px;white-space:normal;overflow-wrap:anywhere}
 
-/* Three-column event references keep payload fields and callbacks separate. */
-.event-table.event-reference table{min-width:600px;table-layout:fixed}.event-table.event-reference th:first-child,.event-table.event-reference td:first-child{width:22%}.event-table.event-reference th:nth-child(2),.event-table.event-reference td:nth-child(2){width:32%}.event-table.event-reference th:nth-child(3),.event-table.event-reference td:nth-child(3){width:46%}
+/* Balance every three-column reference, including pages without event-reference.
+   Narrow viewports scroll the table instead of squeezing callback names. */
+.event-table table:has(>thead>tr>th:nth-child(3):last-child){--event-first-column:30%;min-width:700px;table-layout:fixed}
+.event-table table:has(>thead>tr>th:nth-child(3):last-child) th:first-child{width:30%}
+.event-table table:has(>thead>tr>th:nth-child(3):last-child) th:nth-child(2){width:30%}
+.event-table table:has(>thead>tr>th:nth-child(3):last-child) th:nth-child(3){width:40%}
 
 .support-table th:first-child{width:24%}.support-table td:nth-child(2){width:20%;white-space:nowrap}.support-table caption{text-align:left;font-weight:600;color:var(--fg);padding-bottom:12px}
 /* Prism token colors follow the same saved/system theme as the page. */

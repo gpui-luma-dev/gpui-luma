@@ -8,14 +8,14 @@ use super::{
     ListBoxVirtualization, SelectionPolicy,
 };
 
-/// Host callback for semantic input. Apply it to the control and deliver its events.
+/// Host callback for semantic input. Apply it to the control to queue callbacks.
 pub type ListBoxInputHandler<M, K> = fn(&mut M, ListBoxInput<K>, &mut Window, &mut Context<M>);
 
 /// Persistent SDK objects shared by successive renders. This is host-owned,
 /// not a separately spawned entity; the look supplies the visual composition.
 pub struct ListBoxControl<M: 'static, T, K> {
     /// Collection and selection state. Deliver updates from direct mutations
-    /// through [`Self::handle_update`] before forwarding their events.
+    /// through [`Self::handle_update`] to deliver effects and named callbacks.
     pub state: ListBoxState<T, K>,
     binding: ListBoxBinding,
     scroll: ListBoxScrollHandle<K>,
@@ -23,6 +23,7 @@ pub struct ListBoxControl<M: 'static, T, K> {
     item_id: fn(&K) -> ElementId,
     item_label: fn(&T) -> SharedString,
     virtualization: ListBoxVirtualization,
+    pub(super) callbacks: crate::infra::callbacks::EventCallbacks<super::ListBoxEvent<K>>,
 }
 
 /// Borrowed integration point for look-owned builders. The binding is mutable
@@ -46,7 +47,8 @@ pub struct ListBoxRenderParts<'a, M: 'static, T, K> {
 
 impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T, K> {
     /// Create once per list. IDs must remain stable across reorder/replacement;
-    /// `on_input` must apply SDK input and forward events to the application.
+    /// `on_input` must apply SDK input. Named callbacks are queued automatically;
+    /// returned events remain available for manual delivery.
     pub fn new(
         state: ListBoxState<T, K>,
         on_input: ListBoxInputHandler<M, K>,
@@ -56,6 +58,7 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
     ) -> Self {
         Self {
             state,
+            callbacks: Default::default(),
             on_input,
             item_id,
             item_label,
@@ -156,8 +159,8 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
         self.scroll.set_drag_auto_scroll_speed(pixels_per_second);
     }
 
-    /// Apply semantic input and queue rendering/reveal effects. Events remain
-    /// host-owned and are returned for delivery after the state is committed.
+    /// Apply semantic input, queue rendering/reveal effects and named callbacks.
+    /// Events are also returned for optional manual handling.
     pub fn apply(&mut self, input: ListBoxInput<K>, cx: &mut Context<M>) -> ListBoxUpdate<K> {
         let update = self.state.apply(input);
         self.handle_update(&update, cx);
@@ -172,7 +175,7 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
     }
 
     /// Display an ordered subset of source keys and deliver rendering effects.
-    /// Hidden selections are preserved. Return events for host-owned delivery.
+    /// Hidden selections are preserved. Queues named callbacks and returns events.
     pub fn set_projection(
         &mut self,
         keys: impl IntoIterator<Item = K>,
@@ -190,9 +193,13 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
         update
     }
 
-    /// Deliver effects after direct state mutation, including snapshot changes.
+    /// Deliver effects and queue named callbacks after a committed state mutation.
+    /// Called automatically by control methods. After direct `state` mutation,
+    /// call this exactly once with the returned update. Callbacks run after the
+    /// current owner borrow ends, in event and registration order.
     pub fn handle_update(&self, update: &ListBoxUpdate<K>, cx: &mut Context<M>) {
         self.scroll.handle_update(update, cx);
+        self.callbacks.dispatch_batch(&update.events, cx);
     }
 
     /// Borrow existing state/handles for composition without recreating them.

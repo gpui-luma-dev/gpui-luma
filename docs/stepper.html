@@ -20,12 +20,51 @@
 <div data-site-mobile-nav></div>
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
-<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Stepper</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a></div><p class="intro">Show a process with discrete steps.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>SDK · integration snippet</span><button class="copy" aria-label="Copy SDK · integration snippet">Copy</button></div><pre><code class="language-rust">use gpui_luma::controls::stepper;
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Stepper</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a></div><p class="intro">Show a process with discrete steps.</p><section id="use"><h2>Advance and reset</h2><div class="codebox"><div class="codebar"><span>Shadcn · Next and Reset</span><button class="copy" aria-label="Copy Shadcn · Next and Reset">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Entity, Render, Window, div, prelude::*};
+use gpui_luma::controls::{button::Button, stepper::Stepper};
+use gpui_luma::infra::presenter::HasPresenter;
+use gpui_luma_look_shadcn as shadcn;
 
-let control = stepper::stepper(&quot;checkout&quot;, 4)
-    .current_step(1)
-    .spawn(cx);</code></pre></div><p class="small">Integration snippet, checked against the current SDK and Radix crates. <code>cx</code> is the initialized owner context. Keep spawned entities and subscriptions in the owning view.</p></section><section id="sdk"><h2>SDK behavior & customization</h2><p>Configure step count, current step, labels, and direction. It is a process indicator rather than Tabs.</p><p class="small">Relevant contracts: <code>StepperRenderModel</code>, <code>StepperTemplateModifier</code>, <code>StepperTemplate</code>, <code>ThemedStepperTemplate</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="interaction"><h2>Application interaction</h2><p>Stepper exposes no StepperEvent. The application advances its current step after validation or another command.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/navigation/stepper/mod.rs">SDK module</a></p></section><footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#source">Source</a></nav>
+struct Example {
+    stepper: Stepper,
+    next: Entity&lt;Button&gt;,
+    reset: Entity&lt;Button&gt;,
+}
+
+impl Example {
+    fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
+        let stepper = shadcn::Stepper::new(&quot;setup&quot;, 3)
+            .labels(vec![&quot;Details&quot;, &quot;Review&quot;, &quot;Done&quot;])
+            .spawn(cx);
+        let next = shadcn::Button::new(&quot;next&quot;).label(&quot;Next / Finish&quot;)
+            .on_click(cx, |owner: &amp;mut Self, cx| {
+                owner.stepper.update(cx, |stepper, cx| {
+                    let next = stepper.current_step() + 1;
+                    if next &lt; stepper.step_count() {
+                        stepper.set_current_step(next, cx);
+                    } else {
+                        stepper.complete(cx);
+                    }
+                });
+            })
+            .spawn(cx);
+        let reset = shadcn::Button::new(&quot;reset&quot;).label(&quot;Reset&quot;)
+            .on_click(cx, |owner: &amp;mut Self, cx| {
+                owner.stepper.update(cx, |stepper, cx| stepper.set_current_step(0, cx));
+            })
+            .spawn(cx);
+        Self { stepper, next, reset }
+    }
+}
+
+impl Render for Example {
+    fn render(&amp;mut self, _: &amp;mut Window, _: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
+        div().flex().flex_col().gap_3()
+            .child(self.stepper.clone())
+            .child(div().flex().gap_2().child(self.next.clone()).child(self.reset.clone()))
+    }
+}</code></pre></div><p class="small">Render this view in an initialized Luma application. Next advances through the three steps; another click completes the workflow. Reset returns to the first step.</p></section><section id="sdk"><h2>SDK behavior & customization</h2><p>Configure step count, current step, labels, and direction. It is a process indicator rather than Tabs.</p><p class="small">Relevant contracts: <code>StepperRenderModel</code>, <code>StepperTemplateModifier</code>, <code>StepperTemplate</code>, <code>ThemedStepperTemplate</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="interaction"><h2>Application interaction</h2><p>Stepper has no events of its own. Button’s <code>on_click</code> handlers drive it here. Indices start at zero; <code>set_current_step</code> derives each badge’s state, <code>complete</code> marks all steps complete, and setting a step again clears completion.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/navigation/stepper/mod.rs">SDK module</a></p></section><footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Advance and reset</a><a href="#sdk">SDK behavior</a><a href="#interaction">Application interaction</a><a href="#source">Source</a></nav>
 </div>
 </body>
 </html>

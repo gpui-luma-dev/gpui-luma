@@ -7,6 +7,10 @@
             {
                 "href": "index.html",
                 "label": "Getting Started"
+            },
+            {
+                "href": "control-specialization.html",
+                "label": "Create a control specialization"
             }
         ]
     },
@@ -15,7 +19,7 @@
         "items": [
             {
                 "href": "looks.html",
-                "label": "Why? How?"
+                "label": "Lookless"
             },
             {
                 "href": "look-shadcn.html",
@@ -63,10 +67,6 @@
                 "label": "Control Group"
             },
             {
-                "href": "dock-splitter.html",
-                "label": "Dock Splitter"
-            },
-            {
                 "href": "icon-button.html",
                 "label": "Icon Button"
             },
@@ -107,10 +107,6 @@
                 "label": "Radio Group"
             },
             {
-                "href": "resizable-panels.html",
-                "label": "Resizable Panels"
-            },
-            {
                 "href": "scrollbar.html",
                 "label": "Scrollbar"
             },
@@ -141,10 +137,6 @@
             {
                 "href": "split-button.html",
                 "label": "Split Button"
-            },
-            {
-                "href": "split-view.html",
-                "label": "Split View"
             },
             {
                 "href": "stepper.html",
@@ -202,6 +194,18 @@
             {
                 "href": "scroll-container.html",
                 "label": "Scroll Container"
+            },
+            {
+                "href": "dock-splitter.html",
+                "label": "Dock Splitter"
+            },
+            {
+                "href": "resizable-panels.html",
+                "label": "Resizable Panels"
+            },
+            {
+                "href": "split-view.html",
+                "label": "Split View"
             }
         ]
     },
@@ -240,10 +244,6 @@
             {
                 "href": "composition.html",
                 "label": "Overview & forms"
-            },
-            {
-                "href": "control-specialization.html",
-                "label": "Create a control specialization"
             },
             {
                 "href": "floating-menu.html",

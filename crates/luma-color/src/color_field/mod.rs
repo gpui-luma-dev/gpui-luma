@@ -8,6 +8,9 @@
 //! without pointer drag events. Focus does not alter the field's appearance.
 //! Screen-reader semantics remain a separate follow-up.
 
+mod callback;
+pub use callback::ColorFieldEventExt;
+
 pub mod control;
 pub mod domain;
 pub mod field;

@@ -21,15 +21,14 @@
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
 <main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><a href="colors.html">Color controls</a></div><h1>Color Field</h1><p class="intro">Select two color dimensions on a rectangle, triangle, or wheel.</p>
-<section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Saturation/value field with retained subscription</span><button class="copy" aria-label="Copy Saturation/value field with retained subscription">Copy</button></div><pre><code class="language-rust">use gpui::{AppContext, Context, Entity, Render, Subscription, Window, prelude::*, px};
-use gpui_luma_color::color_field::{ColorFieldEvent, ColorFieldState};
+<section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Saturation/value field with named callbacks</span><button class="copy" aria-label="Copy Saturation/value field with named callbacks">Copy</button></div><pre><code class="language-rust">use gpui::{AppContext, Context, Entity, Render, Window, prelude::*, px};
+use gpui_luma_color::color_field::{ColorFieldEventExt, ColorFieldState};
 use gpui_luma_color::color_slider::color_spec::Hsv;
 
 struct Example {
     field: Entity&lt;ColorFieldState&gt;,
     preview: Hsv,
     committed: Hsv,
-    _events: Subscription,
 }
 impl Example {
     fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
@@ -38,16 +37,16 @@ impl Example {
             ColorFieldState::saturation_value_rect(&quot;sv&quot;, hsv, 16.0)
                 .vector().size(px(220.0)).rounded(px(12.0))
                 .keyboard_steps(0.01, 0.1)
-        });
-        let events = cx.subscribe(&amp;field, |owner: &amp;mut Self, _, event, cx| {
-            match event {
-                ColorFieldEvent::Change(hsv) =&gt; owner.preview = *hsv,
-                ColorFieldEvent::Release(hsv) =&gt; owner.committed = *hsv,
-                _ =&gt; return,
-            }
+        })
+        .on_value_changed(cx, |owner: &amp;mut Self, hsv, cx| {
+            owner.preview = hsv;
+            cx.notify();
+        })
+        .on_release(cx, |owner, hsv, cx| {
+            owner.committed = hsv;
             cx.notify();
         });
-        Self { field, preview: hsv, committed: hsv, _events: events }
+        Self { field, preview: hsv, committed: hsv }
     }
 }
 impl Render for Example {
@@ -64,16 +63,16 @@ impl Render for Example {
 <tr><td><code>hue_value</code></td><td>Hue/value rectangle at fixed saturation.</td></tr>
 </tbody></table>
 </div><p>Constructors return <code>ColorFieldState</code>; retain it with <code>cx.new</code>. Render the entity directly, or use <code>ColorField::new(&amp;state)</code>. Custom surfaces pair a <code>FieldDomain2D</code> with a <code>ColorFieldModel2D</code> through <code>new</code>, <code>with_domain</code>, and <code>with_model</code>.</p></section>
-<section id="events"><h2>Events and updates</h2><p>Subscribe to <code>ColorFieldEvent</code> with <code>cx.subscribe</code> and match one variant per action. Retain the subscription, as in the example.</p><div class="event-table event-reference">
+<section id="events"><h2>Events and updates</h2><p>Import <code>ColorFieldEventExt</code> and register named callbacks on the entity after <code>cx.new</code>. Each callback receives the owner, the payload below, and the owner context. Subscriptions are retained automatically for the field’s lifetime; the owner is held weakly. Use <code>on_event</code> or <code>cx.subscribe</code> for the full <code>ColorFieldEvent</code> stream.</p><div class="event-table event-reference">
 <table>
 <thead><tr><th scope="col">Event</th><th scope="col">Payload</th><th scope="col">Handling</th></tr></thead>
 <tbody>
-<tr><td><code>Change</code></td><td><code>Hsv</code></td><td>Update the live preview.</td></tr>
-<tr><td><code>Release</code></td><td><code>Hsv</code></td><td>Commit the final interaction value.</td></tr>
-<tr><td><code>DragStart</code></td><td><code>hsv: Hsv</code></td><td>Begin a pointer gesture.</td></tr>
-<tr><td><code>DragEnd</code></td><td><code>hsv: Hsv</code></td><td>Finish a pointer gesture.</td></tr>
-<tr><td><code>HoverChanged</code></td><td><code>hovered: bool</code></td><td>React to pointer hover.</td></tr>
-<tr><td><code>EnabledChanged</code></td><td><code>enabled: bool</code></td><td>React to enablement changes.</td></tr>
+<tr><td><code>Change</code></td><td><code>Hsv</code></td><td><code>on_value_changed</code><br>Update the live preview.</td></tr>
+<tr><td><code>Release</code></td><td><code>Hsv</code></td><td><code>on_release</code><br>Commit the final interaction value.</td></tr>
+<tr><td><code>DragStart</code></td><td><code>hsv: Hsv</code></td><td><code>on_drag_start</code><br>Begin a pointer gesture.</td></tr>
+<tr><td><code>DragEnd</code></td><td><code>hsv: Hsv</code></td><td><code>on_drag_end</code><br>Finish a pointer gesture.</td></tr>
+<tr><td><code>HoverChanged</code></td><td><code>hovered: bool</code></td><td><code>on_hover_changed</code><br>React to pointer hover.</td></tr>
+<tr><td><code>EnabledChanged</code></td><td><code>enabled: bool</code></td><td><code>on_enabled_changed</code><br>React to enablement changes.</td></tr>
 </tbody>
 </table>
 </div><p>Use <code>set_hsv</code> or <code>set_hsv_components</code> to synchronize another color editor into the field. The field is an HSV editing view, not storage for an original Display P3 or Oklch source.</p></section>

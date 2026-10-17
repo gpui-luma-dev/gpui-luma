@@ -1,11 +1,13 @@
 //! Keyed collection state and input binding for host-composed selectable lists.
 //!
-//! Hosts and looks own content, viewport composition, and event delivery. An
+//! Hosts and looks own content and viewport composition. Named callbacks deliver
+//! committed event batches; hosts can also handle the returned events. An
 //! optional persistent control combines state and bindings; fixed-item geometry
 //! and content-template contracts support look-owned builders. This module never
 //! chooses appearance or depends on a particular look.
 
 mod binding;
+mod callback;
 mod control;
 mod drag_scroll;
 mod item_template;

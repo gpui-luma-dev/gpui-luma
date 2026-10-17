@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Share control behavior. Choose the visual design.">
-<title>Why a Look? · Luma SDK</title>
+<meta name="description" content="Separate control behavior from presentation with templates and optional Look crates.">
+<title>Lookless · Luma SDK</title>
 <script src="theme-init.js"></script>
 <link rel="stylesheet" href="site.css">
 <!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
@@ -20,14 +20,53 @@
 <div data-site-mobile-nav></div>
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
-<main id="main"><div class="breadcrumb"><span>Luma</span><span aria-hidden="true">/</span><span>Why a Look?</span></div><h1>Why a Look?</h1><p class="intro">Share control behavior. Choose the visual design.</p><section id="why"><h2>Why?</h2><p>Button activation, focus, and events belong in the SDK. Colors, metrics, typography, and visual structure can vary by Look.</p></section><section id="how"><h2>How?</h2><p>Builders resolve the application’s global Look automatically, falling back to built-in styling. Explicit <code>.look(&amp;custom_look)</code> is an optional override.</p><p>A Look builder configures an SDK template and creates an SDK control. Application code keeps the entity and handles its events.</p><div class="codebox"><div class="codebar"><span>Look → SDK</span><button class="copy" aria-label="Copy Look → SDK">Copy</button></div><pre><code class="language-rust">use gpui_luma::infra::presenter::HasPresenter;
-use gpui_luma_look_shadcn as shadcn;
+<main id="main">
+<div class="breadcrumb"><span>Luma</span><span aria-hidden="true">/</span><span>Lookless</span></div>
+<h1>Lookless</h1>
+<p class="intro">Control behavior belongs to the SDK. Presentation belongs to the template.</p>
+<section id="why"><h2>Similar controls, distinct visual systems</h2>
+<p>Luma separates interaction from visual design. SDK controls manage state, keyboard and pointer input, focus, and semantic events. Templates define the rendered structure and appearance. This lets applications change a control’s presentation while preserving its interaction contract.</p>
+<p>A Look packages templates, colors, typography, and metrics into a consistent design system. Look-shadcn and Look-radix provide similar controls, each shaped by its own design conventions. Their control coverage and configuration APIs can differ.</p>
+</section>
+<section id="how"><h2>Customize a template</h2>
+<p>Implement the control’s template trait and install it with <code>.template(...)</code>. The template receives a render model containing the current state. This small button template reuses the built-in renderer for state and focus feedback, then adjusts its geometry:</p>
+<div class="codebox"><div class="codebar"><span>Rust · Custom button template</span><button class="copy" aria-label="Copy custom button template">Copy</button></div><pre><code class="language-rust">use std::sync::Arc;
+use gpui::{App, Div, Stateful, Window, prelude::*, px};
+use gpui_luma::controls::button::{
+    Button, ButtonRenderModel, ButtonTemplate, default_button_template,
+};
+use gpui_luma::infra::presenter::HasPresenter;
 
-let button = shadcn::Button::new(&quot;save&quot;)
-    .primary().label(&quot;Save&quot;)
+struct CompactButtonTemplate;
+
+impl ButtonTemplate for CompactButtonTemplate {
+    fn render(
+        &amp;self,
+        model: &amp;ButtonRenderModel&lt;()&gt;,
+        window: &amp;mut Window,
+        cx: &amp;mut App,
+    ) -&gt; Stateful&lt;Div&gt; {
+        // Retain the default state and focus visuals; adjust the geometry.
+        default_button_template().render(model, window, cx)
+            .min_w(px(96.0))
+            .rounded(px(6.0))
+    }
+}
+
+let save = Button::new(&quot;save&quot;)
+    .label(&quot;Save&quot;)
+    .template(Arc::new(CompactButtonTemplate))
     .on_click(cx, |app, cx| { app.save_requests += 1; cx.notify(); })
-    .spawn(cx);</code></pre></div><p class="small">Integration snippet: an initialized owner context with a <code>save_requests: usize</code> field are required.</p></section><section id="choose"><h2>Choose your starting point</h2><p><a class="source-link" href="look-shadcn.html">Look-shadcn</a> · <a class="source-link" href="look-radix.html">Look-radix</a> · <a class="source-link" href="create-look.html">Create your own Look</a></p></section><footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#why">Why?</a><a href="#how">How?</a><a href="#choose">Choose your starting point</a></nav>
+    .spawn(cx);</code></pre></div>
+<p class="small">Integration snippet: <code>cx</code> is the owning view’s context; the view has a <code>save_requests: usize</code> field.</p>
+<p>The click callback remains application logic. The template controls presentation; add behavior functions only when the interaction itself needs to change. See <a href="control-specialization.html">control specialization</a> for a fuller example.</p>
+</section>
+<section id="choose"><h2>Use a shared Look</h2>
+<p>For a complete visual system, start with <a href="look-shadcn.html">Look-shadcn</a> or <a href="look-radix.html">Look-radix</a>, or <a href="create-look.html">create your own Look</a>. Look builders resolve the application’s global Look; <code>.look(&amp;custom_look)</code> provides an explicit override.</p>
+<p><strong>A Look is optional.</strong> The SDK can render controls on its own using the built-in appearance defaults. Use those defaults directly, customize a template, or adopt a Look when you need a shared visual system.</p>
+</section>
+<footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#why">Similar controls, distinct visual systems</a><a href="#how">Customize a template</a><a href="#choose">Use a shared Look</a></nav>
 </div>
 </body>
 </html>

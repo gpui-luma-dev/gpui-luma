@@ -22,7 +22,7 @@
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
 <main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>List Box</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">A keyed, selectable flat collection.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Render, Window, div, prelude::*};
 use gpui_luma::controls::listbox::{
-    ListBoxControl, ListBoxEvent, ListBoxInput, ListBoxState, ListBoxError, SelectionMode, make_listbox_item_template,
+    ListBoxControl, ListBoxInput, ListBoxState, ListBoxError, SelectionMode, make_listbox_item_template,
 };
 use gpui_luma_look_radix as radix;
 
@@ -39,19 +39,20 @@ impl Example {
             |row| row.clone(),
             SelectionMode::SingleRequired,
         )?;
-        let list = ListBoxControl::new(state, Self::on_input, |key| key.clone().into(), |row| row.clone().into(), cx);
+        let list = ListBoxControl::new(state, Self::on_input, |key| key.clone().into(), |row| row.clone().into(), cx)
+            .on_selection_changed(cx, |owner: &amp;mut Self, selected, _active, cx| {
+                owner.selected = selected.to_vec();
+                cx.notify();
+            })
+            .on_item_activated(cx, |owner, key, cx| {
+                owner.last_opened = Some(key.clone());
+                cx.notify();
+            });
         Ok(Self { list, selected: Vec::new(), last_opened: None })
     }
 
     fn on_input(&amp;mut self, input: ListBoxInput&lt;String&gt;, _: &amp;mut Window, cx: &amp;mut Context&lt;Self&gt;) {
-        let update = self.list.apply(input, cx);
-        for event in update.events {
-            match event {
-                ListBoxEvent::SelectionChanged { selected, .. } =&gt; self.selected = selected,
-                ListBoxEvent::ItemActivated { key } =&gt; self.last_opened = Some(key),
-                _ =&gt; {}
-            }
-        }
+        self.list.apply(input, cx);
         cx.notify();
     }
 }
@@ -65,7 +66,7 @@ impl Render for Example {
         );
         radix::ListBoxBuilder::new("items", &amp;mut self.list, template).build(window, cx)
     }
-}</code></pre></div></section><section id="sdk"><h2>SDK behavior & customization</h2><p>Keep ListBoxControl state persistent. Hosts compose content, viewport, and event delivery.</p><p class="small">Relevant contracts: <code>ListBoxItemRenderModel</code>, <code>ListBoxItemTemplate</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="events"><h2>Events</h2><p>List Box is host-owned state, rather than a separate emitter entity. Its input callback applies the change and handles <code>ListBoxUpdate.events</code> after the transaction commits, as shown above.</p><p>List Box is host-owned, not a separately spawned event emitter. Its input callback applies SDK input, delivers the returned events to application state, and requests a redraw.</p><div class="event-table"><table><thead><tr><th scope="col">Event / payload</th><th scope="col">Application use</th></tr></thead><tbody><tr><td><code>SelectionPolicyChanged { policy: SelectionPolicy }</code></td><td>Selection policy changed.</td></tr><tr><td><code>SelectionChanged { selected: Vec&lt;K&gt;, active: Option&lt;K&gt; }</code></td><td>Selection changed; use the supplied indices, IDs, or keys.</td></tr><tr><td><code>ActiveItemChanged { active: Option&lt;K&gt; }</code></td><td>The active item changed independently of selection.</td></tr><tr><td><code>ItemActivated { key: K }</code></td><td>An item was activated; open or execute its application action.</td></tr><tr><td><code>ProjectionChanged { visible_count: usize }</code></td><td>The visible projection changed.</td></tr><tr><td><code>FocusChanged { is_focused: bool }</code></td><td>Focus state changed.</td></tr></tbody></table></div><p class="small"><code>ListBoxEvent</code> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/collection/listbox/model.rs">Event definitions</a>. Match the events you need; allow for other variants.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/collection/listbox/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/listbox.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
+}</code></pre></div></section><section id="sdk"><h2>SDK behavior & customization</h2><p>Keep ListBoxControl state persistent. Hosts compose content, viewport, and event delivery.</p><p class="small">Relevant contracts: <code>ListBoxItemRenderModel</code>, <code>ListBoxItemTemplate</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="events"><h2>Events</h2><p>Register named handlers on the persistent <code>ListBoxControl</code>. Each receives the owner, the payload below, and the owner context. Use <code>on_event</code> for the full <code>ListBoxEvent</code> stream.</p><p>Control methods commit state and queue callbacks automatically. Delivery runs after the current owner borrow ends, in event order and handler registration order; callbacks can safely update the list. Owners are held weakly, and handlers live with the control.</p><div class="event-table"><table><thead><tr><th scope="col">Event</th><th scope="col">Callback payload</th><th scope="col">Handler / use</th></tr></thead><tbody><tr><td><code>SelectionPolicyChanged</code></td><td><code>policy: SelectionPolicy</code></td><td><code>on_selection_policy_changed</code><br>Selection policy changed.</td></tr><tr><td><code>SelectionChanged</code></td><td><code>selected: &amp;[K], active: Option&lt;&amp;K&gt;</code></td><td><code>on_selection_changed</code><br>Update the selected keys.</td></tr><tr><td><code>ActiveItemChanged</code></td><td><code>active: Option&lt;&amp;K&gt;</code></td><td><code>on_active_item_changed</code><br>Track the active item.</td></tr><tr><td><code>ItemActivated</code></td><td><code>key: &amp;K</code></td><td><code>on_item_activated</code><br>Open or execute an item.</td></tr><tr><td><code>ProjectionChanged</code></td><td><code>visible_count: usize</code></td><td><code>on_projection_changed</code><br>Track visible item count.</td></tr><tr><td><code>FocusChanged</code></td><td><code>is_focused: bool</code></td><td><code>on_focus_changed</code><br>React to focus changes.</td></tr></tbody></table></div><p>The host still routes input through <code>list.apply(input, cx)</code>. Returned <code>ListBoxUpdate.events</code> remain available for manual handling. After a direct <code>list.state</code> mutation, call <code>list.handle_update(&amp;update, cx)</code> once to deliver effects and callbacks; control methods already do this. Avoid processing the same action in both a named callback and manual event handling.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/collection/listbox/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/listbox.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
 <nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#events">Events</a><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#source">Source</a></nav>
 </div>
 </body>
