@@ -34,25 +34,6 @@ impl<E: 'static> EventCallbacks<E> {
         self
     }
 
-    /// Deliver a committed host-owned transaction after the current borrow ends.
-    pub(crate) fn dispatch_batch(&self, events: &[E], cx: &mut App)
-    where
-        E: Clone,
-    {
-        if self.handlers.is_empty() || events.is_empty() {
-            return;
-        }
-        let handlers = self.handlers.clone();
-        let events = events.to_vec();
-        cx.defer(move |cx| {
-            for event in &events {
-                for handler in &handlers {
-                    handler(event, cx);
-                }
-            }
-        });
-    }
-
     pub fn bind<T: EventEmitter<E> + 'static>(self, entity: &Entity<T>, cx: &mut impl AppContext) {
         if self.handlers.is_empty() {
             return;

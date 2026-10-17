@@ -20,7 +20,7 @@
 <div data-site-mobile-nav></div>
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
-<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>List Box</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">A keyed, selectable flat collection.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Render, Window, div, prelude::*};
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>List Box</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">A keyed, selectable flat collection.</p><p class="small">Supports drag and drop. See the <a href="drag-drop.html">shared DnD guide</a> for lifecycle, callbacks, and transaction rules.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Render, Window, div, prelude::*};
 use gpui_luma::controls::listbox::{
     ListBoxControl, ListBoxInput, ListBoxState, ListBoxError, SelectionMode, make_listbox_item_template,
 };
@@ -66,8 +66,89 @@ impl Render for Example {
         );
         radix::ListBoxBuilder::new("items", &amp;mut self.list, template).build(window, cx)
     }
-}</code></pre></div></section><section id="sdk"><h2>SDK behavior & customization</h2><p>Keep ListBoxControl state persistent. Hosts compose content, viewport, and event delivery.</p><p class="small">Relevant contracts: <code>ListBoxItemRenderModel</code>, <code>ListBoxItemTemplate</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="events"><h2>Events</h2><p>Register named handlers on the persistent <code>ListBoxControl</code>. Each receives the owner, the payload below, and the owner context. Use <code>on_event</code> for the full <code>ListBoxEvent</code> stream.</p><p>Control methods commit state and queue callbacks automatically. Delivery runs after the current owner borrow ends, in event order and handler registration order; callbacks can safely update the list. Owners are held weakly, and handlers live with the control.</p><div class="event-table"><table><thead><tr><th scope="col">Event</th><th scope="col">Callback payload</th><th scope="col">Handler / use</th></tr></thead><tbody><tr><td><code>SelectionPolicyChanged</code></td><td><code>policy: SelectionPolicy</code></td><td><code>on_selection_policy_changed</code><br>Selection policy changed.</td></tr><tr><td><code>SelectionChanged</code></td><td><code>selected: &amp;[K], active: Option&lt;&amp;K&gt;</code></td><td><code>on_selection_changed</code><br>Update the selected keys.</td></tr><tr><td><code>ActiveItemChanged</code></td><td><code>active: Option&lt;&amp;K&gt;</code></td><td><code>on_active_item_changed</code><br>Track the active item.</td></tr><tr><td><code>ItemActivated</code></td><td><code>key: &amp;K</code></td><td><code>on_item_activated</code><br>Open or execute an item.</td></tr><tr><td><code>ProjectionChanged</code></td><td><code>visible_count: usize</code></td><td><code>on_projection_changed</code><br>Track visible item count.</td></tr><tr><td><code>FocusChanged</code></td><td><code>is_focused: bool</code></td><td><code>on_focus_changed</code><br>React to focus changes.</td></tr></tbody></table></div><p>The host still routes input through <code>list.apply(input, cx)</code>. Returned <code>ListBoxUpdate.events</code> remain available for manual handling. After a direct <code>list.state</code> mutation, call <code>list.handle_update(&amp;update, cx)</code> once to deliver effects and callbacks; control methods already do this. Avoid processing the same action in both a named callback and manual event handling.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/collection/listbox/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/listbox.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#events">Events</a><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#source">Source</a></nav>
+}</code></pre></div></section><section id="sdk"><h2>SDK behavior & customization</h2><p>Keep ListBoxControl state persistent. Hosts compose content, viewport, and event delivery.</p><p class="small">Relevant contracts: <code>ListBoxItemRenderModel</code>, <code>ListBoxItemTemplate</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="events"><h2>Events</h2><p>Register named handlers on the persistent <code>ListBoxControl</code>. Each receives the owner, the payload below, and the owner context. Use <code>on_event</code> for the full <code>ListBoxEvent</code> stream.</p><p>Control methods commit state and queue callbacks automatically. Delivery runs after the current owner borrow ends, in event order and handler registration order; callbacks can safely update the list. Owners are held weakly, and handlers live with the control.</p><div class="event-table"><table><thead><tr><th scope="col">Event</th><th scope="col">Callback payload</th><th scope="col">Handler / use</th></tr></thead><tbody><tr><td><code>SelectionPolicyChanged</code></td><td><code>policy: SelectionPolicy</code></td><td><code>on_selection_policy_changed</code><br>Selection policy changed.</td></tr><tr><td><code>SelectionChanged</code></td><td><code>selected: &amp;[K], active: Option&lt;&amp;K&gt;</code></td><td><code>on_selection_changed</code><br>Update the selected keys.</td></tr><tr><td><code>ActiveItemChanged</code></td><td><code>active: Option&lt;&amp;K&gt;</code></td><td><code>on_active_item_changed</code><br>Track the active item.</td></tr><tr><td><code>ItemActivated</code></td><td><code>key: &amp;K</code></td><td><code>on_item_activated</code><br>Open or execute an item.</td></tr><tr><td><code>ProjectionChanged</code></td><td><code>visible_count: usize</code></td><td><code>on_projection_changed</code><br>Track visible item count.</td></tr><tr><td><code>FocusChanged</code></td><td><code>is_focused: bool</code></td><td><code>on_focus_changed</code><br>React to focus changes.</td></tr></tbody></table></div><p>The host still routes input through <code>list.apply(input, cx)</code>. Returned <code>ListBoxUpdate.events</code> remain available for manual handling. After a direct <code>list.state</code> mutation, call <code>list.handle_update(&amp;update, cx)</code> once to deliver effects and callbacks; control methods already do this. Avoid processing the same action in both a named callback and manual event handling.</p></section><section id="drag-drop"><h2>Drag/drop</h2><p>See <a href="drag-drop.html">Drag and drop</a> for the lifecycle, proposal/completion distinction, ordering, scopes, and callback ownership shared by these controls.</p><p>Register drag/drop callbacks directly on <code>ListBoxControl</code> and opt in with <code>drag_drop(ListBoxDragDrop::new(scope, on_drop))</code>. Its <code>ListBoxEvent::DragDrop</code> carries <code>DragDropEvent&lt;EntityId, K&gt;</code>; the exact named callback arguments are in the <a href="drag-drop.html#lifecycle">shared payload table</a>. <code>drag_drop_id()</code> returns this persistent list’s identity.</p>
+<p>The handler receives <code>ListBoxDropProposal&lt;K&gt;</code>. Call <code>validate()</code> and check current keys/application policy, prepare and apply all collection/selection changes, then call <code>committed(changed, ordered_keys, cx)</code> or <code>rejected(error, cx)</code>. The SDK routes the returned lifecycle automatically; no separate dispatcher or manual completion-event forwarding is required.</p>
+<p>Shadcn <code>ListBoxBuilder::from_control</code>, <code>ShadcnLook::render_listbox</code>, and Radix <code>ListBoxBuilder::new</code> consume that configuration automatically. The example below shows both Looks using the same control.</p>
+<p><strong>Compatibility:</strong> the borrowed Shadcn <code>ListBoxBuilder::new</code> with <code>drag_and_drop(list, on_drop, on_event, preview)</code> remains available for raw host composition with arbitrary source tags and custom previews. Its raw <code>DropProposal</code> returns batches that the host must deliver, outside <code>ListBoxEvent</code>. To migrate, retain a <code>ListBoxControl</code>, configure <code>ListBoxDragDrop</code>, register handlers on the control, use the control-based Look adapter, and remove manual completion delivery.</p><h3>Validate proposals and observe completion</h3><p>Compiled by <code>scripts/check_control_docs.py</code>.</p><pre><code class="language-rust">mod drag_drop_example {
+    use gpui::{Context, Render, Window, prelude::*};
+    use gpui_luma::controls::listbox::{
+        ListBoxControl, ListBoxDragDrop, ListBoxDropProposal, ListBoxError, ListBoxInput,
+        ListBoxSnapshot, ListBoxState, SelectionMode,
+    };
+    use gpui_luma_look_shadcn::ListBoxBuilder;
+
+    struct Queue {
+        list: ListBoxControl&lt;Self, String, String&gt;,
+        dirty: bool,
+        error: Option&lt;String&gt;,
+    }
+    impl Queue {
+        fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Result&lt;Self, ListBoxError&gt; {
+            let state = ListBoxState::try_new(
+                [&quot;Draft&quot;.to_string(), &quot;Review&quot;.to_string()], |row| row.clone(), SelectionMode::Multiple,
+            )?;
+            let list = ListBoxControl::new(state, Self::input, |key| key.clone().into(), |row| row.clone().into(), cx)
+                .drag_drop(ListBoxDragDrop::new(cx.entity_id(), Self::on_drop))
+                .on_dropped(cx, |owner: &amp;mut Self, _, _, _, _, changed, cx| {
+                    owner.dirty |= changed;
+                    owner.error = None;
+                    cx.notify();
+                })
+                .on_drop_rejected(cx, |owner, _, _, _, _, error, cx| {
+                    owner.error = Some(error.to_string());
+                    cx.notify();
+                });
+            Ok(Self { list, dirty: false, error: None })
+        }
+        fn input(&amp;mut self, input: ListBoxInput&lt;String&gt;, _: &amp;mut Window, cx: &amp;mut Context&lt;Self&gt;) {
+            self.list.apply(input, cx);
+        }
+        fn on_drop(&amp;mut self, proposal: ListBoxDropProposal&lt;String&gt;, _: &amp;mut Window, cx: &amp;mut Context&lt;Self&gt;) {
+            match proposal.validate().map_err(|error| error.to_string()).and_then(|()| self.reorder(&amp;proposal, cx)) {
+                Ok((changed, keys)) =&gt; proposal.committed(changed, keys, cx),
+                Err(error) =&gt; proposal.rejected(error, cx),
+            }
+            cx.notify();
+        }
+        fn reorder(&amp;mut self, p: &amp;ListBoxDropProposal&lt;String&gt;, cx: &amp;mut Context&lt;Self&gt;) -&gt; Result&lt;(bool, Vec&lt;String&gt;), String&gt; {
+            let old = self.list.state.snapshot().items().to_vec();
+            if p.source() != self.list.drag_drop_id() || p.target() != self.list.drag_drop_id()
+                || p.keys().iter().any(|key| !old.contains(key) || key == &quot;Published&quot;) {
+                return Err(&quot;Queue changed or a row is protected&quot;.into());
+            }
+            let gap = match p.before() {
+                Some(key) =&gt; old.iter().position(|item| item == key).ok_or(&quot;Destination disappeared&quot;)?,
+                None =&gt; old.len(),
+            };
+            let moving: Vec&lt;_&gt; = old.iter().filter(|key| p.keys().contains(key)).cloned().collect();
+            let index = old[..gap].iter().filter(|key| !p.keys().contains(key)).count();
+            let mut next: Vec&lt;_&gt; = old.iter().filter(|key| !p.keys().contains(key)).cloned().collect();
+            next.splice(index..index, moving.iter().cloned());
+            let changed = next != old;
+            if changed {
+                let snapshot = ListBoxSnapshot::try_new(next, |row| row.clone()).map_err(|error| error.to_string())?;
+                let update = self.list.state.replace_snapshot(snapshot);
+                self.list.handle_update(&amp;update, cx);
+            }
+            Ok((changed, moving))
+        }
+    }
+    impl Render for Queue {
+        fn render(&amp;mut self, window: &amp;mut Window, cx: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
+            ListBoxBuilder::from_control(&quot;queue&quot;, &amp;mut self.list,
+                |surface, item, _| surface.child(item.item.clone()))
+                .build(window, cx)
+        }
+    }
+    // The same persistent control, configuration, and callbacks work in Radix.
+    fn render_radix(queue: &amp;mut Queue, window: &amp;mut Window, cx: &amp;mut Context&lt;Queue&gt;) -&gt; impl IntoElement {
+        gpui_luma_look_radix::ListBoxBuilder::new(&quot;queue&quot;, &amp;mut queue.list,
+            gpui_luma_look_radix::listbox_template(|row: &amp;String| row.clone().into()))
+            .build(window, cx)
+    }
+}
+</code></pre></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/collection/listbox/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/listbox.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#events">Events</a><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#drag-drop">Drag/drop</a><a href="#source">Source</a></nav>
 </div>
 </body>
 </html>

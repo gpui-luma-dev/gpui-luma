@@ -177,3 +177,197 @@ check_look!(
         selected_ids: Vec::new()
     }
 );
+
+check_look!(
+    table_drag_started_forwards,
+    crate::Table::<()>::new("drag"),
+    on_drag_started(_, _),
+    gpui_luma::controls::table::TableEvent::RowDrag(gpui_luma::infra::drag_drop::DragDropEvent::DragStarted {
+        source: gpui::EntityId::from(1),
+        keys: vec!["a".into(), "b".into()]
+    })
+);
+
+check_look!(
+    table_items_removed_forwards,
+    crate::Table::<()>::new("drag"),
+    on_items_removed(_, _, _),
+    gpui_luma::controls::table::TableEvent::RowDrag(gpui_luma::infra::drag_drop::DragDropEvent::ItemsRemoved {
+        source: gpui::EntityId::from(1),
+        target: gpui::EntityId::from(2),
+        keys: vec!["a".into(), "b".into()]
+    })
+);
+
+check_look!(
+    table_items_added_forwards,
+    crate::Table::<()>::new("drag"),
+    on_items_added(_, _, _, _),
+    gpui_luma::controls::table::TableEvent::RowDrag(gpui_luma::infra::drag_drop::DragDropEvent::ItemsAdded {
+        source: gpui::EntityId::from(1),
+        target: gpui::EntityId::from(2),
+        keys: vec!["a".into(), "b".into()],
+        before: Some("c".into())
+    })
+);
+
+check_look!(
+    table_items_reordered_forwards,
+    crate::Table::<()>::new("drag"),
+    on_items_reordered(_, _, _),
+    gpui_luma::controls::table::TableEvent::RowDrag(gpui_luma::infra::drag_drop::DragDropEvent::ItemsReordered {
+        target: gpui::EntityId::from(2),
+        keys: vec!["a".into(), "b".into()],
+        before: Some("c".into())
+    })
+);
+
+check_look!(
+    table_dropped_forwards,
+    crate::Table::<()>::new("drag"),
+    on_dropped(_, _, _, _, _),
+    gpui_luma::controls::table::TableEvent::RowDrag(gpui_luma::infra::drag_drop::DragDropEvent::Dropped {
+        source: gpui::EntityId::from(1),
+        target: gpui::EntityId::from(2),
+        keys: vec!["a".into(), "b".into()],
+        before: Some("c".into()),
+        changed: false
+    })
+);
+
+check_look!(
+    table_drop_rejected_forwards,
+    crate::Table::<()>::new("drag"),
+    on_drop_rejected(_, _, _, _, _),
+    gpui_luma::controls::table::TableEvent::RowDrag(gpui_luma::infra::drag_drop::DragDropEvent::DropRejected {
+        source: gpui::EntityId::from(1),
+        target: gpui::EntityId::from(2),
+        keys: vec!["a".into(), "b".into()],
+        before: Some("c".into()),
+        error: "denied".into()
+    })
+);
+
+check_look!(
+    table_drag_ended_forwards,
+    crate::Table::<()>::new("drag"),
+    on_drag_ended(_, _, _),
+    gpui_luma::controls::table::TableEvent::RowDrag(gpui_luma::infra::drag_drop::DragDropEvent::DragEnded {
+        source: gpui::EntityId::from(1),
+        keys: vec!["a".into(), "b".into()],
+        reason: gpui_luma::infra::drag_drop::DragEndReason::Unchanged
+    })
+);
+
+check_look!(
+    tree_drag_started_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_drag_started(_, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::Started {
+            source: gpui::EntityId::from(1),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()]
+        }
+    )
+);
+
+check_look!(
+    tree_dropped_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_dropped(_, _, _, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::Dropped {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()],
+            location: gpui_luma::controls::tree_view::TreeDropLocation {
+                parent_id: None,
+                anchor_id: Some("c".into()),
+                position: gpui_luma::controls::tree_view::TreeDropPosition::Before
+            },
+            changed: false
+        }
+    )
+);
+
+check_look!(
+    tree_drop_rejected_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_drop_rejected(_, _, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::Rejected {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()],
+            error: "denied".into()
+        }
+    )
+);
+
+check_look!(
+    tree_drag_ended_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_drag_ended(_, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::Ended {
+            source: gpui::EntityId::from(1),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()],
+            reason: gpui_luma::controls::tree_view::TreeDragEndReason::Unchanged
+        }
+    )
+);
+
+check_look!(
+    tree_items_removed_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_items_removed(_, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::ItemsRemoved {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()]
+        }
+    )
+);
+
+check_look!(
+    tree_items_added_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_items_added(_, _, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::ItemsAdded {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()],
+            location: gpui_luma::controls::tree_view::TreeDropLocation {
+                parent_id: None,
+                anchor_id: Some("c".into()),
+                position: gpui_luma::controls::tree_view::TreeDropPosition::Before
+            }
+        }
+    )
+);
+
+check_look!(
+    tree_items_reordered_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_items_reordered(_, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::ItemsReordered {
+            target: gpui::EntityId::from(2),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()],
+            location: gpui_luma::controls::tree_view::TreeDropLocation {
+                parent_id: None,
+                anchor_id: Some("c".into()),
+                position: gpui_luma::controls::tree_view::TreeDropPosition::Before
+            }
+        }
+    )
+);

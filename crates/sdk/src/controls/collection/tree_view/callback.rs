@@ -13,6 +13,174 @@ where
         callback: impl Fn(&mut M, &crate::controls::tree_view::TreeViewEvent<T>, &mut gpui::Context<M>) + 'static,
     ) -> Self;
 
+    /// Observe the committed `ItemsRemoved` phase before successful completion.
+    fn on_items_removed<M: 'static>(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::tree_view::TreeViewDragEvent::ItemsRemoved { source, target, node_id, node_ids } =
+                event
+            {
+                callback(owner, *source, *target, node_id, node_ids, cx);
+            }
+        })
+    }
+
+    /// Observe the committed `ItemsAdded` phase before successful completion.
+    fn on_items_added<M: 'static>(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            &crate::controls::tree_view::TreeDropLocation,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::tree_view::TreeViewDragEvent::ItemsAdded {
+                source,
+                target,
+                node_id,
+                node_ids,
+                location,
+            } = event
+            {
+                callback(owner, *source, *target, node_id, node_ids, location, cx);
+            }
+        })
+    }
+
+    /// Observe the committed `ItemsReordered` phase before successful completion.
+    fn on_items_reordered<M: 'static>(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            &crate::controls::tree_view::TreeDropLocation,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::tree_view::TreeViewDragEvent::ItemsReordered {
+                target,
+                node_id,
+                node_ids,
+                location,
+            } = event
+            {
+                callback(owner, *target, node_id, node_ids, location, cx);
+            }
+        })
+    }
+
+    /// Observe `Started` through the existing drag/drop lifecycle.
+    fn on_drag_started<M: 'static>(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(&mut M, gpui::EntityId, &gpui::SharedString, &Vec<gpui::SharedString>, &mut gpui::Context<M>)
+        + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::tree_view::TreeViewDragEvent::Started { source, node_id, node_ids } = event {
+                callback(owner, *source, node_id, node_ids, cx);
+            }
+        })
+    }
+
+    /// Observe `Dropped` through the existing drag/drop lifecycle.
+    fn on_dropped<M: 'static>(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            &crate::controls::tree_view::TreeDropLocation,
+            bool,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::tree_view::TreeViewDragEvent::Dropped {
+                source,
+                target,
+                node_id,
+                node_ids,
+                location,
+                changed,
+            } = event
+            {
+                callback(owner, *source, *target, node_id, node_ids, location, *changed, cx);
+            }
+        })
+    }
+
+    /// Observe `Rejected` through the existing drag/drop lifecycle.
+    fn on_drop_rejected<M: 'static>(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            &gpui::SharedString,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::tree_view::TreeViewDragEvent::Rejected {
+                source,
+                target,
+                node_id,
+                node_ids,
+                error,
+            } = event
+            {
+                callback(owner, *source, *target, node_id, node_ids, error, cx);
+            }
+        })
+    }
+
+    /// Observe `Ended` through the existing drag/drop lifecycle.
+    fn on_drag_ended<M: 'static>(
+        self,
+        cx: &mut gpui::Context<M>,
+        callback: impl Fn(
+            &mut M,
+            gpui::EntityId,
+            &gpui::SharedString,
+            &Vec<gpui::SharedString>,
+            crate::controls::tree_view::TreeDragEndReason,
+            &mut gpui::Context<M>,
+        ) + 'static,
+    ) -> Self {
+        self.on_drag_drop(cx, move |owner, event, cx| {
+            if let crate::controls::tree_view::TreeViewDragEvent::Ended { source, node_id, node_ids, reason } = event {
+                callback(owner, *source, node_id, node_ids, *reason, cx);
+            }
+        })
+    }
+
     /// Handle `TreeViewEvent::DragDrop` through the existing event stream.
     fn on_drag_drop<M: 'static>(
         self,

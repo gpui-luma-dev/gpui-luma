@@ -229,7 +229,7 @@
   <div class="grid">
     <article class="card">
       <strong>38 public event types</strong>
-      <p>33 GPUI emitters, one returned batch (<code>ListBoxEvent</code>), one callback (<code>TooltipEvent</code>), and a handful of aliases and internal machines.</p>
+      <p>34 GPUI emitters (including the private persistent ListBox event source), returned ListBox update batches, one callback (<code>TooltipEvent</code>), and a handful of aliases and internal machines.</p>
     </article>
     <article class="card">
       <strong>Three delivery channels</strong>
@@ -396,9 +396,9 @@
   <ul class="variants">
     <li><code>TableEvent</code> — <code>RowDrag(DragDropEvent)</code>, <code>SelectionChanged { selected_indices }</code>, <code>SelectedKeysChanged { selected_keys }</code>, <code>ActiveIndexChanged</code>, <code>PageChanged</code>, <code>PageSizeChanged</code>, <code>ScrollChanged { top_index }</code>, <code>FocusChanged</code>, <code>RowHoverChanged { index, hovered }</code>, <code>EnabledChanged</code>. Index selection can fire on a reorder when key membership did not. Key events require <code>set_row_key</code> and fire only when membership changes. Enter/Space selects the active row and does not emit an activation event. <code>PagingTableControl</code> clones every <code>TableEvent</code> outward and also writes page changes back into the table.</li>
     <li><code>TreeViewEvent&lt;T&gt;</code> — <code>DragDrop(TreeViewDragEvent)</code>, <code>NodeActivated { node_id, data }</code>, <code>SelectionPolicyChanged</code>, <code>NodeExpanded</code>, <code>NodeCollapsed</code>, <code>SelectionChanged { selected_ids: HashSet }</code>, <code>ActiveNodeChanged</code>, <code>ScrollChanged</code>, <code>FocusChanged</code>, <code>RowHoverChanged { node_id, index, hovered }</code>, <code>EnabledChanged</code>. The selection set has no order.</li>
-    <li><code>TreeViewDragEvent</code> — <code>Started</code>, <code>Dropped</code>, <code>Rejected</code>, <code>Ended { reason }</code>. Not <code>non_exhaustive</code>. Narrower than <code>DragDropEvent</code>: no <code>ItemsRemoved</code> / <code>ItemsAdded</code> / <code>ItemsReordered</code> split, and its own <code>TreeDragEndReason</code>.</li>
-    <li><code>ListBoxEvent&lt;K&gt;</code> — <code>SelectionPolicyChanged</code>, <code>SelectionChanged { selected: Vec&lt;K&gt;, active }</code>, <code>ActiveItemChanged</code>, <code>ItemActivated { key }</code>, <code>ProjectionChanged { visible_count }</code>, <code>FocusChanged { is_focused }</code>. Returned in a <code>Vec</code> on <code>ListBoxUpdate</code>, which also carries <code>reveal: Option&lt;K&gt;</code> for host-owned scrolling. One transaction can emit selection and active together.</li>
-    <li><code>DragDropEvent&lt;S, K&gt;</code> — <code>DragStarted</code>, <code>ItemsRemoved</code>, <code>ItemsAdded</code>, <code>ItemsReordered</code>, <code>Dropped</code>, <code>DropRejected</code>, <code>DragEnded { reason }</code>. Domain-independent. Table nests it. Tree reimplements a cousin instead of reusing it.</li>
+    <li><code>TreeViewDragEvent</code> — <code>Started</code>, <code>ItemsRemoved</code>, <code>ItemsAdded</code>, <code>ItemsReordered</code>, <code>Dropped</code>, <code>Rejected</code>, <code>Ended { reason }</code>. Projects every shared phase, retaining tree locations, normalized roots, legacy spellings and <code>TreeDragEndReason</code>. Exhaustive matches must account for the new mutation variants.</li>
+    <li><code>ListBoxEvent&lt;K&gt;</code> — <code>DragDrop(DragDropEvent&lt;EntityId, K&gt;)</code>, <code>SelectionPolicyChanged</code>, <code>SelectionChanged { selected: Vec&lt;K&gt;, active }</code>, <code>ActiveItemChanged</code>, <code>ItemActivated { key }</code>, <code>ProjectionChanged { visible_count }</code>, <code>FocusChanged { is_focused }</code>. Selection/input events remain returned in a <code>Vec</code> on <code>ListBoxUpdate</code>; persistent control methods also emit the complete stream, including drag/drop, to registered handlers. The update carries <code>reveal: Option&lt;K&gt;</code> for host-owned scrolling. One transaction can emit selection and active together.</li>
+    <li><code>DragDropEvent&lt;S, K&gt;</code> — <code>DragStarted</code>, <code>ItemsRemoved</code>, <code>ItemsAdded</code>, <code>ItemsReordered</code>, <code>Dropped</code>, <code>DropRejected</code>, <code>DragEnded { reason }</code>. Domain-independent. ListBox and Table nest it. Tree exposes a full, domain-specific projection of it.</li>
   </ul>
 
   <h3>Layout</h3>
@@ -455,11 +455,7 @@
     <p>If radio group is exclusive, say so in the event (<code>Change { id }</code>) and stop implying a full selection set. If multi is legal, forward <code>selected_ids</code>.</p>
   </article>
 
-  <article class="finding reconsider">
-    <h3><span class="tag reconsider">Drag</span>Two drag lifecycles for one infra type</h3>
-    <p><code>DragDropEvent</code> is the shared keyed lifecycle: started, removed, added, reordered, dropped, rejected, ended. Table embeds it. Tree defines <code>TreeViewDragEvent</code> with a different reason enum and a single dropped/rejected pair, then wraps that in <code>TreeViewEvent::DragDrop</code>. End reasons are not interchangeable (<code>Transferred</code> / <code>Reordered</code> versus <code>MovedWithinTree</code> / <code>MovedAcrossTrees</code>).</p>
-    <p>Tree can keep domain fields (<code>TreeDropLocation</code>) on a payload inside <code>DragDropEvent</code>, or document the tree enum as a projection and map reasons in one function. A third shape — slider and scrollbar <code>DragStart</code> / <code>DragEnd</code> — is fine for a scalar thumb. It should not grow a third copy of rejected/cancelled.</p>
-  </article>
+
 
   <article class="finding reconsider">
     <h3><span class="tag reconsider">Resize</span>Three live payloads</h3>
@@ -570,6 +566,7 @@
   <div class="note">Do not introduce a single SDK-wide event enum. The controls are different types on purpose. The win is a shared set of names and payload shapes, applied per control, with layout noise kept off the path hosts match on.</div>
 </section>
 
+<section id="drag-drop"><h2>Collection drag/drop</h2><p>ListBox, Table and TreeView use a shared keyed lifecycle and the same nested aggregate/named callback hierarchy. See <a href="drag-drop.html">Drag and drop</a> for the authoritative lifecycle, proposal/completion rules, ownership and <a href="drag-drop.html#coverage">control/Look coverage matrix</a>; control pages retain their setup and domain payloads.</p></section>
 <footer>
   Review of <code>crates/sdk</code> event enums and <code>cx.emit</code> sites. Standalone document, no external assets.
 </footer>

@@ -155,3 +155,155 @@ fn programmatic_updates_and_direct_state_mutations_deliver_once() {
     assert!(!expected.is_empty());
     app.read(|cx| assert_eq!(owner.read(cx).batches, expected));
 }
+
+#[test]
+fn drag_handlers_register_on_the_control_and_share_its_event_stream() {
+    use crate::infra::drag_drop::DragDropEvent;
+    let app = TestAppContext::single();
+    let owner = app.update(|cx| {
+        cx.new(|cx| {
+            let list = list(cx)
+                .on_drag_started(cx, |owner, source, keys, _| {
+                    owner.log.push(ListBoxEvent::DragDrop(DragDropEvent::DragStarted { source, keys: keys.clone() }))
+                })
+                .on_items_removed(cx, |owner, source, target, keys, _| {
+                    owner.log.push(ListBoxEvent::DragDrop(DragDropEvent::ItemsRemoved {
+                        source,
+                        target,
+                        keys: keys.clone(),
+                    }))
+                })
+                .on_items_added(cx, |owner, source, target, keys, before, _| {
+                    owner.log.push(ListBoxEvent::DragDrop(DragDropEvent::ItemsAdded {
+                        source,
+                        target,
+                        keys: keys.clone(),
+                        before: before.clone(),
+                    }))
+                })
+                .on_items_reordered(cx, |owner, target, keys, before, _| {
+                    owner.log.push(ListBoxEvent::DragDrop(DragDropEvent::ItemsReordered {
+                        target,
+                        keys: keys.clone(),
+                        before: before.clone(),
+                    }))
+                })
+                .on_dropped(cx, |owner, source, target, keys, before, changed, _| {
+                    owner.log.push(ListBoxEvent::DragDrop(DragDropEvent::Dropped {
+                        source,
+                        target,
+                        keys: keys.clone(),
+                        before: before.clone(),
+                        changed,
+                    }))
+                })
+                .on_drop_rejected(cx, |owner, source, target, keys, before, error, _| {
+                    owner.log.push(ListBoxEvent::DragDrop(DragDropEvent::DropRejected {
+                        source,
+                        target,
+                        keys: keys.clone(),
+                        before: before.clone(),
+                        error: error.clone(),
+                    }))
+                })
+                .on_drag_ended(cx, |owner, source, keys, reason, _| {
+                    owner.log.push(ListBoxEvent::DragDrop(DragDropEvent::DragEnded {
+                        source,
+                        keys: keys.clone(),
+                        reason,
+                    }))
+                })
+                .on_event(cx, |owner, event, _| owner.batches.push(event.clone()));
+            Owner { list, log: vec![], batches: vec![] }
+        })
+    });
+    let events = vec![
+        ListBoxEvent::DragDrop(DragDropEvent::DragStarted {
+            source: gpui::EntityId::from(1),
+            keys: vec!["a".into(), "b".into()],
+        }),
+        ListBoxEvent::DragDrop(DragDropEvent::ItemsRemoved {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            keys: vec!["a".into(), "b".into()],
+        }),
+        ListBoxEvent::DragDrop(DragDropEvent::ItemsAdded {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            keys: vec!["a".into(), "b".into()],
+            before: Some("c".into()),
+        }),
+        ListBoxEvent::DragDrop(DragDropEvent::ItemsReordered {
+            target: gpui::EntityId::from(2),
+            keys: vec!["a".into(), "b".into()],
+            before: Some("c".into()),
+        }),
+        ListBoxEvent::DragDrop(DragDropEvent::Dropped {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            keys: vec!["a".into(), "b".into()],
+            before: Some("c".into()),
+            changed: false,
+        }),
+        ListBoxEvent::DragDrop(DragDropEvent::DropRejected {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            keys: vec!["a".into(), "b".into()],
+            before: Some("c".into()),
+            error: "locked".into(),
+        }),
+        ListBoxEvent::DragDrop(DragDropEvent::DragEnded {
+            source: gpui::EntityId::from(1),
+            keys: vec!["a".into(), "b".into()],
+            reason: crate::infra::drag_drop::DragEndReason::Unchanged,
+        }),
+    ];
+    app.update(|cx| {
+        owner.update(cx, |owner, cx| {
+            owner.list.handle_update(&ListBoxUpdate { changed: true, events: events.clone(), reveal: None }, cx);
+            assert!(owner.log.is_empty());
+        })
+    });
+    app.read(|cx| {
+        assert_eq!(owner.read(cx).log, events);
+        assert_eq!(owner.read(cx).batches, events);
+    });
+}
+
+#[test]
+fn releasing_list_control_skips_queued_events_and_releases_named_captures() {
+    use crate::infra::drag_drop::DragDropEvent;
+    let app = TestAppContext::single();
+    let capture = Rc::new(());
+    let owner = app.update(|cx| {
+        cx.new(|cx| {
+            let capture = capture.clone();
+            let list = list(cx).on_drag_started(cx, move |owner, _, _, _| {
+                let _keep = &capture;
+                owner.log.push(ListBoxEvent::FocusChanged { is_focused: true });
+            });
+            Owner { list, log: vec![], batches: vec![] }
+        })
+    });
+    let signal = app.update(|cx| {
+        owner.update(cx, |owner, cx| {
+            let weak = owner.list.event_source.downgrade();
+            owner.list.handle_update(
+                &ListBoxUpdate {
+                    changed: false,
+                    reveal: None,
+                    events: vec![ListBoxEvent::DragDrop(DragDropEvent::DragStarted {
+                        source: owner.list.drag_drop_id(),
+                        keys: vec!["a".into()],
+                    })],
+                },
+                cx,
+            );
+            owner.list = list(cx);
+            weak
+        })
+    });
+    assert!(signal.upgrade().is_none());
+    assert_eq!(Rc::strong_count(&capture), 1);
+    app.read(|cx| assert!(owner.read(cx).log.is_empty()));
+}

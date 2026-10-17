@@ -196,12 +196,27 @@ pub enum ListBoxInput<K> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum ListBoxEvent<K> {
-    SelectionPolicyChanged { policy: SelectionPolicy },
-    SelectionChanged { selected: Vec<K>, active: Option<K> },
-    ActiveItemChanged { active: Option<K> },
-    ItemActivated { key: K },
-    ProjectionChanged { visible_count: usize },
-    FocusChanged { is_focused: bool },
+    /// Shared keyed lifecycle, routed to this persistent control.
+    DragDrop(crate::infra::drag_drop::DragDropEvent<gpui::EntityId, K>),
+    SelectionPolicyChanged {
+        policy: SelectionPolicy,
+    },
+    SelectionChanged {
+        selected: Vec<K>,
+        active: Option<K>,
+    },
+    ActiveItemChanged {
+        active: Option<K>,
+    },
+    ItemActivated {
+        key: K,
+    },
+    ProjectionChanged {
+        visible_count: usize,
+    },
+    FocusChanged {
+        is_focused: bool,
+    },
 }
 
 /// Committed change and effects for the host to deliver. Activation can emit an

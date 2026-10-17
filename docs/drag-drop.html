@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Shared keyed drag/drop lifecycle, callbacks, transactions, and control coverage.">
+<title>Drag and drop · Luma SDK</title>
+<script src="theme-init.js"></script>
+<link rel="stylesheet" href="site.css">
+<!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
+<script src="vendor/prism/prism-core.min.js" data-manual defer></script>
+<script src="vendor/prism/prism-rust.min.js" defer></script>
+<script src="vendor/prism/prism-toml.min.js" defer></script>
+<script src="navigation.js" defer></script>
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-site-header></header>
+<div data-site-mobile-nav></div>
+<div class="layout">
+<aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
+<main id="main">
+<div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Composition &amp; helpers</span></div>
+<h1>Drag and drop</h1>
+<p class="intro">The shared contract for keyed collection drag/drop in ListBox, Table, and TreeView.</p>
+<section id="setup"><h2>Choose a control</h2>
+<p>Configure drag/drop once on the persistent SDK control or builder. Looks supply themed native sources, targets and previews while the SDK owns session admission and completion guards. Rebuilding a Look adapter reuses registrations; keep application collection state and controls across renders.</p>
+<ul><li><a href="listbox.html#drag-drop">ListBox</a>: host-owned keyed reorder and transfer, with automatic event routing in Shadcn and Radix.</li>
+<li><a href="table.html#drag-drop">Table</a>: SDK-owned same-table row reordering, automatic commits and an optional host policy override; also available through PagingTable and Shadcn.</li>
+<li><a href="tree-view.html#drag-drop">TreeView</a>: host-owned subtree moves within or between trees, retaining hierarchy and destination locations; SDK, Shadcn and Radix.</li></ul>
+<p>The linked control pages contain setup, exact domain payloads, compatibility notes and a compiled integration example. Collection drag/drop is opt-in. Slider, scrollbar, splitter, resize-handle and text-selection drags retain their gesture-specific contracts.</p>
+</section>
+<section id="proposals"><h2>Proposals and completion</h2>
+<p><code>on_drop</code> handles a proposed operation. Validate the live session, current keys and application policy, prepare all affected snapshots, apply data and selection/state changes, then synchronously commit or reject. <code>on_dropped</code> observes an accepted, completed operation after all those changes. Use completion for notifications or persistence, rather than making the proposal handler do both jobs.</p>
+<p>ListBox and TreeView hosts own transactions and report their outcome through proposal completion methods. Table validates and commits automatically unless <code>set_row_drop_handler</code> overrides that behavior. Unanswered synchronous handlers are rejected. Do not defer mutation or retain a proposal to complete it after the handler returns.</p>
+<p>A valid no-op completes with <code>changed=false</code> and the end reason <code>Unchanged</code>; it emits no mutation phases. Rejection leaves data unchanged and has its own rejected/end outcome. Cancellation ends the source session without rejection or completion. A gesture that never reaches an admitted proposal, including a foreign scope, can cancel without emitting rejection. Completion, rejection and preview-release cancellation share one guard, so retained clones cannot finish a session twice.</p>
+</section>
+<section id="callbacks"><h2>Callback registration and ownership</h2>
+<p>Use <code>on_event(cx, callback)</code> for the control event stream, <code>on_drag_drop(cx, callback)</code> for its nested drag/drop lifecycle, and the named helpers below for individual phases. Aggregate and named callbacks coexist. Table retains <code>on_row_drag</code> as a compatible aggregate alias.</p>
+<p>Register once on a persistent SDK control/builder; factory-created Table and TreeView entities also expose SDK event extension traits. ListBox handlers live on <code>ListBoxControl</code>, alongside its selection callbacks. The control owns callback registrations, holds the application owner weakly, and releases captures when the control is released. Capture owning entities weakly to avoid cycles. Retained native previews and proposals do not retain emitting controls.</p>
+<p>Registrations append in order within a binding. Delivery occurs after the current control/owner borrow ends, permitting callbacks to update the emitting control. Separate subscriptions follow GPUI dispatch order. Callback arguments are the owner, payload fields in the table, and the owner context; compound payloads are borrowed for that callback only, while scalar values are copied. Clone borrowed values to retain them.</p>
+</section>
+<section id="lifecycle"><h2>Lifecycle and payloads</h2>
+<p>The shared event is <code>DragDropEvent&lt;S, K&gt;</code>. Persistent ListBox and Table callbacks use <code>EntityId</code> collection identities; source and target identify controls rather than host entities or render-time elements. ListBox uses its configured key type <code>K</code>; Table uses <code>SharedString</code>. <code>before=None</code> is an append gap. TreeView projects every phase into its <a href="tree-view.html#drag-drop">domain payloads</a>, preserving locations and normalized subtree roots.</p>
+<div class="event-table"><table><thead><tr><th scope="col">Shared event</th><th scope="col">Named callback</th><th scope="col">ListBox / Table payload</th><th scope="col">Recipient and timing</th></tr></thead><tbody><tr><td><code>DragStarted</code></td><td><code>on_drag_started</code></td><td><code>source: EntityId, keys: &amp;Vec&lt;K&gt;</code></td><td>Source: native threshold crossed; no mutation.</td></tr><tr><td><code>ItemsRemoved</code></td><td><code>on_items_removed</code></td><td><code>source: EntityId, target: EntityId, keys: &amp;Vec&lt;K&gt;</code></td><td>Source: committed transfer removal, before target addition.</td></tr><tr><td><code>ItemsAdded</code></td><td><code>on_items_added</code></td><td><code>source: EntityId, target: EntityId, keys: &amp;Vec&lt;K&gt;, before: &amp;Option&lt;K&gt;</code></td><td>Target: committed transfer addition, before completion.</td></tr><tr><td><code>ItemsReordered</code></td><td><code>on_items_reordered</code></td><td><code>target: EntityId, keys: &amp;Vec&lt;K&gt;, before: &amp;Option&lt;K&gt;</code></td><td>Target: changed move within the same control, before completion.</td></tr><tr><td><code>Dropped</code></td><td><code>on_dropped</code></td><td><code>source: EntityId, target: EntityId, keys: &amp;Vec&lt;K&gt;, before: &amp;Option&lt;K&gt;, changed: bool</code></td><td>Target: accepted completion, including a valid no-op.</td></tr><tr><td><code>DropRejected</code></td><td><code>on_drop_rejected</code></td><td><code>source: EntityId, target: EntityId, keys: &amp;Vec&lt;K&gt;, before: &amp;Option&lt;K&gt;, error: &amp;SharedString</code></td><td>Target: rejected proposal, before end.</td></tr><tr><td><code>DragEnded</code></td><td><code>on_drag_ended</code></td><td><code>source: EntityId, keys: &amp;Vec&lt;K&gt;, reason: DragEndReason</code></td><td>Source: one terminal outcome, including cancellation.</td></tr></tbody></table></div>
+<p>All notifications in a committed batch observe the completed host transaction. Mutation/completion keys use host-reported destination order; start and end retain the drag’s captured order. TreeView retains normalized moving roots in displayed order, with descendants carried by their ancestor’s subtree.</p>
+<table><thead><tr><th scope="col">Outcome</th><th scope="col">Ordered phases after start</th><th scope="col">End reason</th></tr></thead><tbody>
+<tr><td>Changed transfer</td><td>Removed (source) → added (target) → dropped (target) → ended (source)</td><td><code>Transferred</code></td></tr>
+<tr><td>Changed move within one control</td><td>Reordered → dropped → ended</td><td><code>Reordered</code></td></tr>
+<tr><td>Valid no-op</td><td>Dropped → ended</td><td><code>Unchanged</code></td></tr>
+<tr><td>Rejected proposal</td><td>Rejected (target) → ended (source)</td><td><code>Rejected</code></td></tr>
+<tr><td>Cancelled gesture</td><td>Ended (source)</td><td><code>Cancelled</code></td></tr>
+</tbody></table>
+<p>Tree reparenting is a move within the same control. Its compatibility reason names map <code>Reordered → MovedWithinTree</code> and <code>Transferred → MovedAcrossTrees</code>; other reasons retain their meaning. Table currently does not enable cross-table transfer, although its shared event type and named helpers can represent transfer phases.</p>
+</section>
+<section id="scopes"><h2>Scopes, validation and interaction</h2>
+<p>A scope admits cooperating surfaces. Use one shared scope for collections allowed to exchange compatible payloads; different scopes reject admission. Matching scope IDs alone do not make different control domains interoperable. ListBox also requires a shared key type, and TreeView a shared domain type. TreeView and Table perform their domain validation; ListBox hosts validate current keys and application policy in addition to proposal lifetime checks.</p>
+<p>GPUI owns native gesture thresholds, hit testing and previews. SDK bindings provide keyed gaps and cancellation; Looks expose the applicable targets and auto-scroll behavior. Native preview release, including Escape cancellation through the SDK focus actions, closes an unfinished session. Embedded controls should use the SDK drag boundary so their clicks and native drags remain independent of the enclosing row.</p>
+</section>
+<section id="coverage"><h2>Control and Look coverage</h2>
+<div class="event-table"><table><thead><tr><th>Surface</th><th>Existing API</th><th>Resulting API</th><th>Supported phases</th><th>Compatibility / differences</th></tr></thead><tbody><tr><td>SDK ListBox control</td><td>Separate composition callbacks</td><td>on_event → on_drag_drop → seven named helpers; ListBoxDragDrop / ListBoxDropProposal</td><td>All seven; reorder and transfer</td><td>Host-owned snapshots; commits route notifications automatically</td></tr><tr><td>Shadcn ListBox</td><td>drag_and_drop(on_drop, on_event, preview)</td><td>from_control and render_listbox consume SDK configuration</td><td>All seven</td><td>Original raw-composition APIs remain compatible; migration shown in ListBox docs</td></tr><tr><td>Radix ListBox</td><td>No built-in collection DnD</td><td>new consumes SDK control configuration and native bindings</td><td>All seven</td><td>Same persistent registration and transaction APIs as Shadcn</td></tr><tr><td>SDK Table / PagingTable builders and entities</td><td>on_row_drag; set_row_drop_handler; commit/reject_row_drop</td><td>on_drag_drop alias + seven named helpers; existing APIs retained</td><td>Start, reorder, drop, reject, end; transfer filters available</td><td>Same-table reorder only; paging IDs are inner table IDs</td></tr><tr><td>Shadcn Table</td><td>on_row_drag; SDK entity commits</td><td>on_drag_drop alias + seven named helpers</td><td>Same as SDK Table</td><td>No Radix Table adapter exists</td></tr><tr><td>SDK / Shadcn / Radix TreeView</td><td>on_drag_drop; TreeViewDragDrop; committed/rejected; four public phases</td><td>Same aggregate + all seven named helpers and committed mutation phases</td><td>All seven; same-tree moves and cross-tree transfer</td><td>Tree locations/normalized roots/reason names preserved; exhaustive matches need new arms</td></tr><tr><td>Other native drag controls</td><td>Slider/scrollbar, splitters/panels, column resize, slide/overlay handles, text selection</td><td>Existing gesture-specific callbacks unchanged</td><td>Scalar/geometry/selection gestures</td><td>No collection drop proposals; no synthetic collection lifecycle</td></tr></tbody></table></div>
+<p>Sidebar, Tabs and Accordion are not collection drag/drop surfaces in this change. The inventory distinguishes collection transactions from existing scalar and geometry drags; adding support to another control is separate work.</p>
+</section>
+<section id="source"><h2>Source</h2>
+<p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/infra/drag_drop/mod.rs">Shared keyed lifecycle</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/collection/listbox/drag.rs">ListBox integration</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/collection/tree_view/drag.rs">Tree projection</a></p>
+</section><footer data-site-footer></footer>
+</main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#setup">Choose a control</a><a href="#proposals">Proposals &amp; completion</a><a href="#callbacks">Callbacks &amp; ownership</a><a href="#lifecycle">Lifecycle &amp; payloads</a><a href="#scopes">Scopes &amp; validation</a><a href="#coverage">Coverage</a><a href="#source">Source</a></nav>
+</div>
+</body>
+</html>

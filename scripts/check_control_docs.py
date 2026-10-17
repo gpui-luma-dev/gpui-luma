@@ -23,7 +23,7 @@ EXAMPLES = {
     "button.html": [0, 1],
     "icon-button.html": 0,
     "tooltip.html": 0,
-    "listbox.html": 0,
+    "listbox.html": [0, 1],
     "checkbox.html": 0,
     "switch.html": 0,
     "toggle.html": 0,
@@ -62,12 +62,12 @@ EXAMPLES = {
     "split-button.html": 0,
     "control-specialization.html": 0,
     "split-view.html": 0,
-    "table.html": 0,
+    "table.html": [0, 1],
     "tabs.html": 0,
     "textarea.html": 0,
     "textfield.html": 0,
     "toolbar.html": 0,
-    "tree-view.html": 0,
+    "tree-view.html": [0, 1],
     "combobox.html": 0,
 }
 

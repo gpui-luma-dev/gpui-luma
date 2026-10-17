@@ -50,6 +50,21 @@ fn drop_on(cx: &mut VisualTestContext, side: &str, id: &str, fraction: f32) {
     cx.simulate_mouse_up(point, MouseButton::Left, Default::default());
     cx.run_until_parked();
 }
+fn phases(events: &[TreeViewDragEvent]) -> Vec<&'static str> {
+    events
+        .iter()
+        .map(|event| match event {
+            TreeViewDragEvent::Started { .. } => "start",
+            TreeViewDragEvent::ItemsRemoved { .. } => "remove",
+            TreeViewDragEvent::ItemsAdded { .. } => "add",
+            TreeViewDragEvent::ItemsReordered { .. } => "reorder",
+            TreeViewDragEvent::Dropped { .. } => "drop",
+            TreeViewDragEvent::Rejected { .. } => "reject",
+            TreeViewDragEvent::Ended { .. } => "end",
+        })
+        .collect()
+}
+
 fn ended(events: &[TreeViewDragEvent]) -> Vec<TreeDragEndReason> {
     events
         .iter()
@@ -82,6 +97,12 @@ fn tree_view_workspace_drag_transfers_hidden_selection_and_expansion_once() {
         assert!(source.read(app).selected_ids().is_empty());
     });
     assert_eq!(ended(&events.borrow()), [TreeDragEndReason::MovedAcrossTrees]);
+    assert_eq!(phases(&events.borrow()), ["start", "remove", "add", "drop", "end"]);
+    assert!(events.borrow().iter().any(|event| matches!(event,
+        TreeViewDragEvent::ItemsAdded { node_ids, location, .. }
+            if node_ids == &["docs"] && location.position == TreeDropPosition::Into
+                && location.parent_id.as_deref() == Some("archive")
+    )));
     assert_eq!(events.borrow().iter().filter(|e| matches!(e, TreeViewDragEvent::Dropped { .. })).count(), 1);
 }
 
@@ -102,6 +123,13 @@ fn tree_view_workspace_before_after_into_and_root_append_follow_hierarchy() {
             assert_eq!(siblings[expected_index].id.as_ref(), "draft");
         });
         assert_eq!(ended(&events.borrow()), [TreeDragEndReason::MovedWithinTree]);
+        assert_eq!(phases(&events.borrow()), ["start", "reorder", "drop", "end"]);
+        assert!(events.borrow().iter().any(|event| matches!(event,
+            TreeViewDragEvent::ItemsReordered { node_ids, location, .. }
+                if node_ids == &["draft"] && location.parent_id.as_deref() == parent
+                    && location.anchor_id.as_deref() == Some(anchor)
+                    && location.position == if fraction < 0.25 { TreeDropPosition::Before } else if fraction > 0.75 { TreeDropPosition::After } else { TreeDropPosition::Into }
+        )));
     }
     let mut app = TestAppContext::single();
     let (view, cx, events) = setup(&mut app);

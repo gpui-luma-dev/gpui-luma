@@ -5,7 +5,6 @@ use gpui::{
 use super::{DragDropEvent, DropProposal, KeyedDrag};
 
 type EventHandler<M, S, K> = fn(&mut M, DragDropEvent<S, K>, &mut Context<M>);
-type DropHandler<M, S, K> = fn(&mut M, DropProposal<S, K>, &mut Window, &mut Context<M>);
 
 /// Attach a native drag to a host-styled surface. The host creates the preview;
 /// the SDK reports start and observes preview release for cancellation. GPUI
@@ -58,7 +57,7 @@ impl<S: Clone + 'static, K: Clone + 'static> KeyedDropTarget<S, K> {
         &self,
         surface: Stateful<Div>,
         cx: &mut Context<M>,
-        on_drop: DropHandler<M, S, K>,
+        on_drop: impl Fn(&mut M, DropProposal<S, K>, &mut Window, &mut Context<M>) + 'static,
     ) -> Stateful<Div> {
         let scope = self.scope;
         let target = self.target.clone();

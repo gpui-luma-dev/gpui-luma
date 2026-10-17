@@ -107,3 +107,116 @@ check_look!(
     on_focus_changed(_),
     gpui_luma::controls::context_menu::ContextMenuEvent::FocusChanged { focused: true }
 );
+
+check_look!(
+    tree_drag_started_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_drag_started(_, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::Started {
+            source: gpui::EntityId::from(1),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()]
+        }
+    )
+);
+
+check_look!(
+    tree_dropped_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_dropped(_, _, _, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::Dropped {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()],
+            location: gpui_luma::controls::tree_view::TreeDropLocation {
+                parent_id: None,
+                anchor_id: Some("c".into()),
+                position: gpui_luma::controls::tree_view::TreeDropPosition::Before
+            },
+            changed: false
+        }
+    )
+);
+
+check_look!(
+    tree_drop_rejected_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_drop_rejected(_, _, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::Rejected {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()],
+            error: "denied".into()
+        }
+    )
+);
+
+check_look!(
+    tree_drag_ended_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_drag_ended(_, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::Ended {
+            source: gpui::EntityId::from(1),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()],
+            reason: gpui_luma::controls::tree_view::TreeDragEndReason::Unchanged
+        }
+    )
+);
+
+check_look!(
+    tree_items_removed_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_items_removed(_, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::ItemsRemoved {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()]
+        }
+    )
+);
+
+check_look!(
+    tree_items_added_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_items_added(_, _, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::ItemsAdded {
+            source: gpui::EntityId::from(1),
+            target: gpui::EntityId::from(2),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()],
+            location: gpui_luma::controls::tree_view::TreeDropLocation {
+                parent_id: None,
+                anchor_id: Some("c".into()),
+                position: gpui_luma::controls::tree_view::TreeDropPosition::Before
+            }
+        }
+    )
+);
+
+check_look!(
+    tree_items_reordered_forwards,
+    crate::TreeView::<()>::new("drag"),
+    on_items_reordered(_, _, _, _),
+    gpui_luma::controls::tree_view::TreeViewEvent::<()>::DragDrop(
+        gpui_luma::controls::tree_view::TreeViewDragEvent::ItemsReordered {
+            target: gpui::EntityId::from(2),
+            node_id: "a".into(),
+            node_ids: vec!["a".into(), "b".into()],
+            location: gpui_luma::controls::tree_view::TreeDropLocation {
+                parent_id: None,
+                anchor_id: Some("c".into()),
+                position: gpui_luma::controls::tree_view::TreeDropPosition::Before
+            }
+        }
+    )
+);
