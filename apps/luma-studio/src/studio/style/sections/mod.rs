@@ -12,6 +12,7 @@ pub(crate) mod selectors;
 pub(crate) mod shadows;
 pub(crate) mod sidebar;
 pub(crate) mod slider;
+pub(crate) mod split_button;
 pub(crate) mod switch;
 pub(crate) mod tabs;
 pub(crate) mod textarea;

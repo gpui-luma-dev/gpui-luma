@@ -1,17 +1,12 @@
-//! Supported SplitButton behavior and independent face-state previews.
+//! Supported SplitButton behavior and custom face content.
 
 use gpui_luma::controls::split_button::SplitButtonEventExt;
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, Entity, FontWeight, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, FontWeight, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::infra::menu_item::MenuItem;
-use gpui_luma::controls::popup_menu::{
-    ControlFocusState, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, PopupMenuTriggerModel,
-    PopupMenuTriggerStyle,
-};
-use gpui_luma::motion::overlay_presence::OverlayPresence;
+use gpui_luma::controls::popup_menu::PopupMenuTriggerModel;
 use gpui_luma::infra::presenter::HasPresenter;
-use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma::{hstack, vstack};
 use gpui_luma::controls::split_button::{SplitButton, SplitButtonEvent};
 use gpui_luma_look_shadcn::prelude::*;
@@ -26,12 +21,6 @@ use super::model::ControlExpositionLayout;
 use super::inspector::{split_button_inspector_resolver, SPLIT_BUTTON_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 use crate::studio::controls::catalog::{catalog_entry, ControlDocEntry};
-use crate::studio::style::shared::preview_handlers::{
-    input_noop_bounds, input_noop_click, input_noop_hover, input_noop_mouse_down, input_noop_mouse_up,
-};
-use crate::studio::style::shared::samples::ButtonStateSample;
-use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
-use crate::studio::style::shared::button_matrix::render_icon_button_state_header_cell;
 use super::template::controls_mono_font;
 
 struct SplitButtonPair {
@@ -211,7 +200,7 @@ impl SplitButtonLeftPane {
 }
 
 impl Render for SplitButtonLeftPane {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let preview = vstack! {
                 gap=18.0;
@@ -220,14 +209,6 @@ impl Render for SplitButtonLeftPane {
                 })),
                 self.event_stream.clone(),
             };
-            let template_preview = vstack! {
-                gap=12.0;
-                div().text_sm().text_color(self.look.chrome().muted_text).child("Template Preview"),
-                div().w_full().child(render_split_button_template_preview(&self.look, window, cx)),
-            }
-            .w_full()
-            .px(px(16.0))
-            .pb(px(16.0));
             let content_example = vstack! {
                 gap=8.0;
                 div().text_sm().text_color(self.look.chrome().muted_text).child("Icon + Text"),
@@ -258,7 +239,6 @@ impl Render for SplitButtonLeftPane {
                         ControlExpositionLayout::BORDERLESS,
                     ),
                     content_example,
-                    template_preview,
                 })
         })
     }
@@ -290,132 +270,6 @@ fn render_split_button_content_code(look: &ShadcnLook) -> AnyElement {
                 ),
         )
         .into_any_element()
-}
-
-fn render_split_button_template_preview(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
-    let samples = [
-        ButtonStateSample { id: "default", header: "default", state: InteractionState::default() },
-        ButtonStateSample {
-            id: "hover",
-            header: "hover",
-            state: InteractionState { hovered: true, ..InteractionState::default() },
-        },
-        ButtonStateSample {
-            id: "focused",
-            header: "focused",
-            state: InteractionState { focused: true, ..InteractionState::default() },
-        },
-        ButtonStateSample {
-            id: "pressed",
-            header: "pressed",
-            state: InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
-        },
-        ButtonStateSample {
-            id: "disabled",
-            header: "disabled",
-            state: InteractionState { disabled: true, ..InteractionState::default() },
-        },
-    ];
-    let variants = [
-        ("Primary", PopupMenuTriggerStyle::Primary, "High emphasis actions"),
-        ("Secondary", PopupMenuTriggerStyle::Secondary, "Secondary actions"),
-        ("Outline", PopupMenuTriggerStyle::Outline, "Bordered actions"),
-        ("Ghost", PopupMenuTriggerStyle::Ghost, "Quiet utility actions"),
-    ];
-    let template = look.split_button_template();
-    let chrome = look.chrome();
-
-    VariantStateTable::new(VariantStateTableStyle::from_chrome(&chrome).state_column_width(140.0))
-        .row_group_label("Text")
-        .column_headers(samples.iter().map(|sample| render_icon_button_state_header_cell(sample, chrome.muted_text)))
-        .rows(variants.iter().map(|(label, style, description)| {
-            VariantStateTableRow {
-                label: SharedString::from(*label),
-                description: SharedString::from(*description),
-                cells: samples
-                    .iter()
-                    .map(|sample| render_split_button_template_cell(&template, *style, label, sample, window, cx))
-                    .collect(),
-            }
-        }))
-        .build()
-}
-
-fn render_split_button_template_cell(
-    template: &Arc<dyn gpui_luma::controls::split_button::SplitButtonTemplate>,
-    style: PopupMenuTriggerStyle,
-    label: &'static str,
-    sample: &ButtonStateSample,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    let id = SharedString::from(format!("controls-split-template-{}-{}", label.to_lowercase(), sample.id));
-    let label = SharedString::from("Text");
-    let items = split_button_items();
-    let model = PopupMenuRenderModel {
-        id: &id,
-        label: &label,
-        content: Arc::new(|model, _| {
-            div().flex_1().min_w(px(0.0)).truncate().child(model.label.clone()).into_any_element()
-        }),
-        items: &items,
-        open: false,
-        disclosure_progress: 0.0,
-        presence: OverlayPresence::new(false, false),
-        submenu_transition: None,
-        trigger_bounds: None,
-        placement: PopupMenuPlacement::BelowStart,
-        trigger_style: style,
-        trigger_size: ControlSize::Md,
-        menu_size: ControlSize::Md,
-        icon_only: false,
-        icon: None,
-        end_icon: None,
-        disclosure_icons: &gpui_luma::infra::icon::DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
-        full_width: false,
-        without_elevation: false,
-        split: true,
-        split_state: gpui_luma::controls::split_button::SplitButtonState {
-            primary: sample.state,
-            disclosure: InteractionState {
-                focused: sample.state.focused,
-                disabled: sample.state.disabled,
-                ..Default::default()
-            },
-        },
-        trigger_radius_override: None,
-        open_submenu: None,
-        active_path: None,
-        highlight: None,
-        enabled: !sample.state.disabled,
-        focus: ControlFocusState::default(),
-        state: sample.state,
-    };
-
-    div()
-        .w_full()
-        .flex()
-        .justify_center()
-        .items_center()
-        .child(template.render(&model, split_button_template_handlers(items.len()), window, cx))
-        .into_any_element()
-}
-
-fn split_button_template_handlers(item_count: usize) -> PopupMenuTemplateHandlers {
-    PopupMenuTemplateHandlers {
-        split_faces: None,
-        trigger_bounds: Box::new(input_noop_bounds),
-        action_click: Box::new(input_noop_click),
-        trigger_click: Box::new(input_noop_click),
-        trigger_hover: Box::new(input_noop_hover),
-        trigger_mouse_down: Box::new(input_noop_mouse_down),
-        trigger_mouse_up: Box::new(input_noop_mouse_up),
-        trigger_mouse_up_out: Box::new(input_noop_mouse_up),
-        root_mouse_down_out: Box::new(input_noop_mouse_down),
-        item_hovers: (0..item_count).map(|_| Box::new(input_noop_hover) as _).collect(),
-        submenu_hovers: Vec::new(),
-        item_clicks: (0..item_count).map(|_| Box::new(input_noop_click) as _).collect(),
-    }
 }
 
 fn split_button_items() -> [MenuItem; 3] {
