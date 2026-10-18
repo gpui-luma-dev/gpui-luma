@@ -36,6 +36,10 @@
 | Slide Panel | `common.slide_panel.geometry`, shared resize presets | Captured side/edge sizing and viewport ratio; bundled look state factories inherit; remaining divider/border template audit pending |
 | Resize-handle presets | `common.resizable_panels.geometry/sizes` | Lane, hit target, grip extents and radius migrated; SDK/Shadcn paint and available inspection wired |
 | Toolbar factory | `common.toolbar.geometry/sizes` | SDK applies existing padding/gap seam; other styling stays token-backed pending template/state audit |
+| Group template chrome | `common.control_group.geometry` | Vertical gap, border width, radius and disabled-item opacity migrated; themed looks carry resolved chrome; explicit builder styles and final modifiers retain precedence |
+| RadioGroup templates | `common.radio_group.geometry/sizes.vertical/horizontal` | Group/item gaps and disabled opacity migrated; wrappers capture styles; Radix authors its compact horizontal difference |
+| IconGroup capsule | `common.icon_group.geometry/sizes.toolbar` | Shared public template inherits group shell dimensions and pill-radius token; independent geometry replaces fixed template modifiers |
+| Selector/selection panel chrome | `common.selector_list`, `common.selection_panel`, metric border and Popover tokens | Border width and disabled opacity migrated across Selector, ComboBox, Autocomplete, SearchSelector and SelectionPanel templates; popup margins/offsets inherit shared placement and allow final independent overrides |
 
 ## Family coverage
 
@@ -48,10 +52,10 @@ have been classified. Shared token migration benefits every token-backed theme.
 | button/icon_button | Pending control-specific schema/factory/template audit. |
 | button/split_button | Uses shared PopupMenu factory/template geometry; face-specific states and divider/icon/template recipes still need audit. |
 | choice/checkbox | Factory and common indicator/row recipes migrated; state and template chrome still need audit. |
-| choice/control_group | Shell defaults migrated; item and template recipes still need audit. |
-| choice/icon_group | Pending control-specific schema/factory/template audit. |
+| choice/control_group | Shell spacing/radius/border and default-item opacity migrated; builder/render models carry captured styles. Item marker, state and remaining template recipes still need audit. |
+| choice/icon_group | Capsule template now inherits group chrome and pill token, with independent overrides. Reused control-group item state/marker audit remains. |
 | choice/radio_button | Factory and common proportional indicator/dot recipes migrated; state and template chrome still need audit. |
-| choice/radio_group | Pending control-specific schema/factory/template audit. |
+| choice/radio_group | Vertical/horizontal and item gaps plus disabled opacity migrated; both wrappers capture styles. Radio indicator size/role and remaining state/template audit pending. |
 | choice/switch | Factory and proportional track/thumb recipes migrated; explicit dimensions win; template chrome still needs audit. |
 | choice/toggle | Pending control-specific schema/factory/template audit. |
 | choice/toolbar | SDK factory now honors existing common padding/gap. Radius/separator token bindings and template/state recipes still need audit. |
@@ -77,12 +81,12 @@ have been classified. Shared token migration benefits every token-backed theme.
 | overlay/tooltip | Vanilla and compact geometry migrated; presentation coverage still needs audit. |
 | range/progress | Fixed geometry migrated; template decoration still needs audit. |
 | range/slider | Factory and proportional sizing migrated; pointer algorithms remain Rust; template chrome still needs audit. |
-| selection/autocomplete | Pending control-specific schema/factory/template audit. |
-| selection/combobox | Pending control-specific schema/factory/template audit. |
-| selection/search_selector | Pending control-specific schema/factory/template audit. |
-| selection/selection_panel | Shares resolved menu baseline with independent common geometry; template styling still needs audit. |
+| selection/autocomplete | Popup shell border, row opacity and placement now consume shared resolved panel look. Clear-icon sizing/offsets, fixed gaps and remaining templates still need audit. |
+| selection/combobox | Popup shell border, row opacity and placement now consume shared panel look. Clear-icon geometry and remaining trigger/template recipes still need audit. |
+| selection/search_selector | Popup shell border, row opacity and placement migrated. Search field chrome, trigger/trailing icons and hard-coded trailing color still need audit. |
+| selection/selection_panel | Menu baseline plus independent geometry, radii, border width and disabled opacity reach SDK/Shadcn templates. Selection icons, scrollbar reservation and remaining recipes still need audit. |
 | selection/selector | SDK trigger geometry, typography and popup offset migrated; Shadcn paint/inspection wired; icon/state/template recipes remain. |
-| selection/selector_list | SDK menu-derived panel recipes and independent geometry wired; Shadcn paint/inspection and Radix default panel wired; border/disabled-opacity/icon template literals remain. |
+| selection/selector_list | Shared public menu-to-panel factory owns metric borders, menu opacity and Popover placement before independent overrides. Template border/opacity and border-dependent inset calculations migrated; icon audit remains. |
 | text/textarea | Factory consumes common geometry; editing behavior unchanged; template and icon defaults still need audit. |
 | text/textfield | Factory consumes common geometry; editing behavior unchanged; template and icon defaults still need audit. |
 
@@ -92,8 +96,8 @@ have been classified. Shared token migration benefits every token-backed theme.
 source locations, context and proposed ownership across controls, themes, layouts,
 rendering and shared infrastructure. Rows still marked `needs classification` are unreviewed hints; reviewed rows
 record their migrated field or the rationale for staying in Rust. Source locations
-and context are from the original audit snapshot, retained to identify removed
-literals after migration.
+and context are historical audit snapshots, retained to identify removed literals
+after migration. Later reviews also include shorthand border/gap calls.
 Candidates include mathematical/structural values and must not be migrated blindly.
 The file excludes test modules and comments. Integer-only styles, icon identifiers,
 state/variant recipes and token references also require manual audit.

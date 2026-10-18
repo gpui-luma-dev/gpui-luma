@@ -91,8 +91,8 @@ crates/sdk/src/controls/choice/control_group/control/render.rs,116,control,1.0,r
 crates/sdk/src/controls/choice/control_group/control/render.rs,118,control,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/choice/control_group/menu_choice_template.rs,75,control_group,0.56,review owner / derived calculation,needs classification,row = row.opacity(0.56);
 crates/sdk/src/controls/choice/control_group/model.rs,639,control_group,27.0 | 4.0,common.control_group.geometry.ControlSize,needs classification,"self.with_menu_row_item_content_sized(theme, ControlSize::Sm, 27.0, 4.0, content)"
-crates/sdk/src/controls/choice/control_group/template.rs,386,control_group,0.56,review owner / derived calculation,needs classification,element = element.opacity(0.56);
-crates/sdk/src/controls/choice/icon_group/model.rs,59,icon_group,6.0 | 6.0 | 4.0,review owner / derived calculation,needs classification,".with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)));"
+crates/sdk/src/controls/choice/control_group/template.rs,386,control_group,0.56,common.control_group.geometry.disabled_opacity,migrated,element = element.opacity(0.56);
+crates/sdk/src/controls/choice/icon_group/model.rs,59,icon_group,6.0 | 6.0 | 4.0,common.icon_group geometry; group shell dimensions and shared pill-radius token,migrated,".with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)));"
 crates/sdk/src/controls/choice/radio_button/mod.rs,40,radio_button,1.0 | 0.0,common.radio_button.geometry.progress,needs classification,"Self { selected, progress: if selected { 1.0 } else { 0.0 } }"
 crates/sdk/src/controls/choice/radio_button/mod.rs,80,radio_button,1.0 | 0.0,review owner / derived calculation,needs classification,let progress = if selected { 1.0 } else { 0.0 };
 crates/sdk/src/controls/choice/radio_button/mod.rs,112,radio_button,1.0 | 0.0,review owner / derived calculation,needs classification,self.transition.set_target(if selected { 1.0 } else { 0.0 });
@@ -114,7 +114,7 @@ crates/sdk/src/controls/choice/radio_button/template.rs,211,radio_button,0.0 | 1
 crates/sdk/src/controls/choice/radio_button/template.rs,212,radio_button,0.0,common.radio_button.geometry.f32,needs classification,if progress <= f32::EPSILON || size <= 0.0 {
 crates/sdk/src/controls/choice/radio_button/template.rs,217,radio_button,1.0,review owner / derived calculation,needs classification,let dot_size = (size * progress).max(1.0);
 crates/sdk/src/controls/choice/radio_group/model.rs,318,radio_group,27.0 | 4.0,common.radio_group.geometry.ControlSize,needs classification,"self.with_menu_row_item_content_sized(theme, ControlSize::Sm, 27.0, 4.0, content)"
-crates/sdk/src/controls/choice/radio_group/template.rs,17,radio_group,0.56,common.radio_group.geometry.DISABLED_OPACITY,needs classification,const DISABLED_OPACITY: f32 = 0.56;
+crates/sdk/src/controls/choice/radio_group/template.rs,17,radio_group,0.56,common.radio_group.geometry.disabled_opacity,migrated,const DISABLED_OPACITY: f32 = 0.56;
 crates/sdk/src/controls/choice/switch/mod.rs,41,switch,1.0 | 0.0,common.switch.geometry.progress,needs classification,"Self { checked, progress: if checked { 1.0 } else { 0.0 } }"
 crates/sdk/src/controls/choice/switch/mod.rs,81,switch,1.0 | 0.0,review owner / derived calculation,needs classification,let progress = if on { 1.0 } else { 0.0 };
 crates/sdk/src/controls/choice/switch/mod.rs,120,switch,1.0 | 0.0,review owner / derived calculation,needs classification,self.transition.set_target(if on { 1.0 } else { 0.0 });
@@ -1047,10 +1047,10 @@ crates/sdk/src/controls/selection/autocomplete/template.rs,211,autocomplete,0.0,
 crates/sdk/src/controls/selection/autocomplete/template.rs,212,autocomplete,10.0,review owner / derived calculation,needs classification,.right(px(10.0))
 crates/sdk/src/controls/selection/autocomplete/template.rs,214,autocomplete,18.0,review owner / derived calculation,needs classification,.w(px(18.0))
 crates/sdk/src/controls/selection/autocomplete/template.rs,222,autocomplete,12.0,common.autocomplete.geometry.lucide_svg_static,needs classification,".child(lucide_icon(lucide_svg_static::Icon::X, model.muted_text_color, 12.0)),"
-crates/sdk/src/controls/selection/autocomplete/template.rs,231,autocomplete,8.0,review owner / derived calculation,needs classification,.snap_to_window_with_margin(px(8.0))
-crates/sdk/src/controls/selection/autocomplete/template.rs,234,autocomplete,0.0 | 4.0,review owner / derived calculation,needs classification,".offset(point(px(0.0), px(4.0)))"
+crates/sdk/src/controls/selection/autocomplete/template.rs,231,autocomplete,8.0,common.selector_list.geometry.window_margin (inherits common.popover placement),migrated,.snap_to_window_with_margin(px(8.0))
+crates/sdk/src/controls/selection/autocomplete/template.rs,234,autocomplete,0.0 | 4.0,common.selector_list.geometry.popup_offset_y (inherits common.popover placement),migrated,".offset(point(px(0.0), px(4.0)))"
 crates/sdk/src/controls/selection/autocomplete/template.rs,397,autocomplete,0.0,review owner / derived calculation,needs classification,.child(div().flex_1().min_w(px(0.0)).truncate().child(item.label_text().clone()));
-crates/sdk/src/controls/selection/autocomplete/template.rs,414,autocomplete,0.56,review owner / derived calculation,needs classification,row = row.opacity(0.56);
+crates/sdk/src/controls/selection/autocomplete/template.rs,414,autocomplete,0.56,common.selector_list.geometry.disabled_opacity (inherits menu baseline),migrated,row = row.opacity(0.56);
 crates/sdk/src/controls/selection/combobox/control.rs,495,combobox,20.0,common.combobox.geometry.crate,needs classification,"if crate::interaction::wheel_delta(event, px(20.0), false).is_none() {"
 crates/sdk/src/controls/selection/combobox/control.rs,644,combobox,2.0,review owner / derived calculation,needs classification,let textfield_side_padding = (textfield_look.padding_x * 2.0) + textfield_look.border_width;
 crates/sdk/src/controls/selection/combobox/control.rs,645,combobox,18.0 | 10.0 | 0.0,review owner / derived calculation,needs classification,let prefix_width = if self.model.show_down_arrow { 18.0 + 10.0 } else { 0.0 };
@@ -1063,9 +1063,9 @@ crates/sdk/src/controls/selection/combobox/control.rs,802,combobox,25.0,review o
 crates/sdk/src/controls/selection/combobox/control.rs,803,combobox,0.0,review owner / derived calculation,needs classification,"assert_eq!(page.read(app).scroll.offset().y, px(0.0));"
 crates/sdk/src/controls/selection/combobox/control.rs,814,combobox,25.0,review owner / derived calculation,needs classification,"assert_eq!(combo.read(app).popup_surface.vertical_offset(), px(25.0));"
 crates/sdk/src/controls/selection/combobox/control.rs,815,combobox,0.0,review owner / derived calculation,needs classification,assert!(page.read(app).scroll.offset().y < px(0.0));
-crates/sdk/src/controls/selection/combobox/items_template.rs,191,combobox,0.56,review owner / derived calculation,needs classification,row = row.opacity(0.56);
-crates/sdk/src/controls/selection/combobox/panel_template.rs,83,combobox,8.0,review owner / derived calculation,needs classification,.snap_to_window_with_margin(px(8.0))
-crates/sdk/src/controls/selection/combobox/panel_template.rs,86,combobox,0.0 | 4.0,review owner / derived calculation,needs classification,".offset(point(px(0.0), px(4.0)))"
+crates/sdk/src/controls/selection/combobox/items_template.rs,191,combobox,0.56,common.selector_list.geometry.disabled_opacity (inherits menu baseline),migrated,row = row.opacity(0.56);
+crates/sdk/src/controls/selection/combobox/panel_template.rs,83,combobox,8.0,common.selector_list.geometry.window_margin (inherits common.popover placement),migrated,.snap_to_window_with_margin(px(8.0))
+crates/sdk/src/controls/selection/combobox/panel_template.rs,86,combobox,0.0 | 4.0,common.selector_list.geometry.popup_offset_y (inherits common.popover placement),migrated,".offset(point(px(0.0), px(4.0)))"
 crates/sdk/src/controls/selection/combobox/template.rs,141,combobox,0.0,review owner / derived calculation,needs classification,.top(px(0.0))
 crates/sdk/src/controls/selection/combobox/template.rs,142,combobox,10.0,review owner / derived calculation,needs classification,.right(px(10.0))
 crates/sdk/src/controls/selection/combobox/template.rs,144,combobox,18.0,review owner / derived calculation,needs classification,.w(px(18.0))
@@ -1091,14 +1091,14 @@ crates/sdk/src/controls/selection/search_selector/control.rs,939,search_selector
 crates/sdk/src/controls/selection/search_selector/control.rs,942,search_selector,2.0,review owner / derived calculation,needs classification,let list_area = (available_below - POPUP_SEARCH_CHROME_HEIGHT - (look.padding * 2.0)).max(look.item_height);
 crates/sdk/src/controls/selection/search_selector/control.rs,960,search_selector,25.0 | 15.0,common.search_selector.geometry.Default,needs classification,"cx.simulate_click(point(px(25.0), px(15.0)), Default::default());"
 crates/sdk/src/controls/selection/search_selector/panel_template.rs,85,search_selector,8.0 | 1.0,review owner / derived calculation,needs classification,panel.child(div().p(px(8.0)).child(search)).child(div().h(px(1.0)).bg(look.border))
-crates/sdk/src/controls/selection/search_selector/panel_template.rs,92,search_selector,8.0,review owner / derived calculation,needs classification,.snap_to_window_with_margin(px(8.0))
-crates/sdk/src/controls/selection/search_selector/panel_template.rs,95,search_selector,0.0 | 4.0,review owner / derived calculation,needs classification,".offset(point(px(0.0), px(4.0)))"
+crates/sdk/src/controls/selection/search_selector/panel_template.rs,92,search_selector,8.0,common.selector_list.geometry.window_margin (inherits common.popover placement),migrated,.snap_to_window_with_margin(px(8.0))
+crates/sdk/src/controls/selection/search_selector/panel_template.rs,95,search_selector,0.0 | 4.0,common.selector_list.geometry.popup_offset_y (inherits common.popover placement),migrated,".offset(point(px(0.0), px(4.0)))"
 crates/sdk/src/controls/selection/search_selector/template.rs,176,search_selector,0.0,review owner / derived calculation,needs classification,.child(div().min_w(px(0.0)).truncate().text_color(label_color).child(model.trigger_label))
 crates/sdk/src/controls/selection/search_selector/template.rs,180,search_selector,18.0,review owner / derived calculation,needs classification,.w(px(18.0))
 crates/sdk/src/controls/selection/search_selector/template.rs,185,search_selector,12.0,common.search_selector.geometry.lucide_svg_static,needs classification,".child(lucide_icon(lucide_svg_static::Icon::Search, trigger_look.trigger_icon, 12.0)),"
 crates/sdk/src/controls/selection/search_selector/template.rs,189,search_selector,0.0,review owner / derived calculation,needs classification,if border.a > 0.0 {
 crates/sdk/src/controls/selection/search_selector/template.rs,411,search_selector,0.38 | 0.65 | 0.48 | 1.0 | 14.0,common.search_selector.geometry.crate,needs classification,"content.child(crate::infra::icon::lucide_icon(icon, gpui::hsla(0.38, 0.65, 0.48, 1.0), 14.0));"
-crates/sdk/src/controls/selection/search_selector/template.rs,444,search_selector,0.56,review owner / derived calculation,needs classification,row = row.opacity(0.56);
+crates/sdk/src/controls/selection/search_selector/template.rs,444,search_selector,0.56,common.selector_list.geometry.disabled_opacity (inherits menu baseline),migrated,row = row.opacity(0.56);
 crates/sdk/src/controls/selection/selection_panel/control.rs,454,selection_panel,20.0,common.selection_panel.geometry.crate,needs classification,"if crate::interaction::wheel_delta(event, px(20.0), false).is_none() {"
 crates/sdk/src/controls/selection/selection_panel/control.rs,697,selection_panel,0.0,review owner / derived calculation,needs classification,let content_top_padding = px(0.0);
 crates/sdk/src/controls/selection/selection_panel/control.rs,742,selection_panel,16.0 | 0.0,review owner / derived calculation,needs classification,let content_width = panel_min_width + if allow_scrolling { 16.0 } else { 0.0 };
@@ -1111,7 +1111,7 @@ crates/sdk/src/controls/selection/selection_panel/control.rs,885,selection_panel
 crates/sdk/src/controls/selection/selection_panel/control.rs,920,selection_panel,35.0 | 55.0,common.selection_panel.geometry.position,needs classification,"cx.simulate_event(MouseMoveEvent { position: point(px(35.0), px(55.0)), ..Default::default() });"
 crates/sdk/src/controls/selection/selection_panel/control.rs,934,selection_panel,35.0 | 55.0,common.selection_panel.geometry.Default,needs classification,"cx.simulate_click(point(px(35.0), px(55.0)), Default::default());"
 crates/sdk/src/controls/selection/selection_panel/item_template.rs,172,selection_panel,0.0,review owner / derived calculation,needs classification,div().flex_1().min_w(px(0.0)).truncate().child(model.item.label().clone()).into_any_element()
-crates/sdk/src/controls/selection/selection_panel/item_template.rs,230,selection_panel,0.56,review owner / derived calculation,needs classification,row = row.opacity(0.56);
+crates/sdk/src/controls/selection/selection_panel/item_template.rs,230,selection_panel,0.56,common.selection_panel.geometry.disabled_opacity (inherits menu baseline),migrated,row = row.opacity(0.56);
 crates/sdk/src/controls/selection/selection_panel/model.rs,416,selection_panel,0.0,common.selection_panel.geometry.gpui,needs classification,gpui::div().min_w(gpui::px(0.0)).truncate().child(item.item.label().clone())
 crates/sdk/src/controls/selection/selector/control.rs,409,selector,0.0 | 0.0,common.selector.geometry.gpui,needs classification,"self.popup_scroll.set_offset(gpui::point(gpui::px(0.0), gpui::px(0.0)));"
 crates/sdk/src/controls/selection/selector/template.rs,21,selector,1.0,common.selector.geometry.FOCUS_RING_GAP,needs classification,const FOCUS_RING_GAP: f32 = 1.0;
@@ -1154,9 +1154,9 @@ crates/sdk/src/controls/selection/selector_list/items_template.rs,50,selector_li
 crates/sdk/src/controls/selection/selector_list/items_template.rs,51,selector_list,180.0,common.selector_list.geometry.min_width,needs classification,"min_width: 180.0,"
 crates/sdk/src/controls/selection/selector_list/items_template.rs,56,selector_list,0.9,common.selector_list.geometry.item_height,needs classification,"item_height: metrics.control_height(size) * 0.9,"
 crates/sdk/src/controls/selection/selector_list/items_template.rs,57,selector_list,0.75,common.selector_list.geometry.item_padding_x,needs classification,"item_padding_x: metrics.padding_x(size) * 0.75,"
-crates/sdk/src/controls/selection/selector_list/items_template.rs,215,selector_list,2.0 | 2.0 | 0.0,review owner / derived calculation,needs classification,let content_max_height = (model.max_height - px(look.padding * 2.0 + 2.0)).max(px(0.0));
-crates/sdk/src/controls/selection/selector_list/items_template.rs,221,selector_list,1.0,review owner / derived calculation,needs classification,let inset = px(look.padding + 1.0);
-crates/sdk/src/controls/selection/selector_list/items_template.rs,333,selector_list,0.56,review owner / derived calculation,needs classification,row = row.opacity(0.56);
+crates/sdk/src/controls/selection/selector_list/items_template.rs,215,selector_list,2.0 | 2.0 | 0.0,common.selector_list.geometry.border_width; edge-count arithmetic stays derived,migrated,let content_max_height = (model.max_height - px(look.padding * 2.0 + 2.0)).max(px(0.0));
+crates/sdk/src/controls/selection/selector_list/items_template.rs,221,selector_list,1.0,common.selector_list.geometry.border_width; edge-count arithmetic stays derived,migrated,let inset = px(look.padding + 1.0);
+crates/sdk/src/controls/selection/selector_list/items_template.rs,333,selector_list,0.56,common.selector_list.geometry.disabled_opacity (inherits menu baseline),migrated,row = row.opacity(0.56);
 crates/sdk/src/controls/text/runs.rs,32,text,1.0,common.text.geometry.underline,needs classification,"underline: marked.then_some(UnderlineStyle { thickness: px(1.0), color: None, wavy: false }),"
 crates/sdk/src/controls/text/textarea/control/chrome.rs,11,control,10.0,common.control.geometry.TEXTAREA_RESIZE_ICON_SIZE,needs classification,pub(super) const TEXTAREA_RESIZE_ICON_SIZE: f32 = 10.0;
 crates/sdk/src/controls/text/textarea/control/chrome.rs,19,control,20.0 | 1.0,review owner / derived calculation,needs classification,self.layout_cache.as_ref().map(|cache| cache.line_height.as_f32()).unwrap_or(20.0).max(1.0)
@@ -1459,3 +1459,16 @@ crates/sdk/src/theme/tokens/elevation.rs,67,tokens,0.0,review owner / derived ca
 crates/sdk/src/theme/tokens/elevation.rs,165,tokens,0.0 | 0.0 | 0.0,common.tokens.geometry.preview,needs classification,"preview: Arc::new(LumaElevation::light_with(|a| gpui::hsla(0.0, 0.0, 0.0, a))),"
 crates/sdk/src/theme/tokens/elevation.rs,172,tokens,0.0 | 0.0 | 0.0,common.tokens.geometry.preview,needs classification,"preview: Arc::new(LumaElevation::dark_with(|a| gpui::hsla(0.0, 0.0, 0.0, a))),"
 crates/sdk/src/theme/tokens/typography.rs,131,tokens,1000.0,review owner / derived calculation,needs classification,if !weight.is_finite() || !(1.0..=1000.0).contains(&weight) {
+crates/sdk/src/controls/choice/control_group/themed_template.rs,47,control_group,.border_1(),common.control_group.geometry.border_width,migrated,.border_1()
+crates/sdk/src/controls/choice/control_group/themed_template.rs,54,control_group,.gap_2(),common.control_group.geometry.vertical_gap,migrated,"ControlGroupLayout::Vertical => root.flex_col().items_start().gap_2(),"
+crates/sdk/src/controls/choice/radio_group/template.rs,37,radio_group,.gap_2(),common.radio_group geometry.item_gap / sizes.vertical.gap,migrated,div().id(model.id.clone()).flex().flex_col().gap_2().items_start().children(rows)
+crates/sdk/src/controls/choice/radio_group/template.rs,39,radio_group,.gap_3(),common.radio_group.sizes.horizontal.gap,migrated,"RadioGroupLayout::Horizontal => div().id(model.id.clone()).flex().items_center().gap_3().children(rows),"
+crates/sdk/src/controls/choice/radio_group/template.rs,87,radio_group,.gap_2(),common.radio_group geometry.item_gap / sizes.vertical.gap,migrated,.gap_2()
+crates/sdk/src/controls/selection/selector_list/items_template.rs,351,selector_list,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()
+crates/sdk/src/controls/selection/selection_panel/template.rs,149,selection_panel,.border_1(),common.selection_panel.geometry.border_width,migrated,.border_1()
+crates/sdk/src/controls/selection/selection_panel/control.rs,748,selection_panel,.border_1(),common.selection_panel.geometry.border_width,migrated,.border_1()
+crates/sdk/src/controls/selection/combobox/panel_template.rs,92,combobox,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()
+crates/sdk/src/controls/selection/combobox/panel_template.rs,110,combobox,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()
+crates/sdk/src/controls/selection/search_selector/panel_template.rs,101,search_selector,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()
+crates/sdk/src/controls/selection/search_selector/panel_template.rs,118,search_selector,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()
+crates/sdk/src/controls/selection/autocomplete/template.rs,240,autocomplete,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()

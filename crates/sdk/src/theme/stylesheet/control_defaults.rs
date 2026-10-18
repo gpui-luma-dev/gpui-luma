@@ -373,3 +373,67 @@ fn sdk_toolbar_factory_uses_common_geometry_for_both_variants() {
         }
     }
 }
+
+#[test]
+fn selector_panel_chrome_inherits_tokens_and_placement_before_independent_overrides() {
+    use crate::controls::{selector_list::default_selector_items_panel_look, selection_panel::default_selection_panel_look};
+    let sheet = CommonStylesheet::resolve_layers(&[r#"
+[common.tokens.metrics.border_width]
+default=3
+[common.popover.geometry]
+window_margin=13
+[common.popover.sizes.panel]
+offset_y=9
+[common.floating_menu.geometry]
+disabled_opacity=0.3
+[common.selector_list.sizes.sm]
+border_width=0
+disabled_opacity=0
+popup_offset_y=0
+window_margin=0
+[common.selection_panel.geometry]
+border_width=0
+disabled_opacity=0
+radius=9
+"#])
+    .unwrap();
+    let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap();
+    for size in [ControlSize::Md, ControlSize::Lg] {
+        let look = default_selector_items_panel_look(&tokens, size);
+        assert_eq!(
+            (look.border_width, look.disabled_opacity, look.popup_offset_y, look.window_margin),
+            (3.0, 0.3, 9.0, 13.0)
+        );
+    }
+    let compact = default_selector_items_panel_look(&tokens, ControlSize::Sm);
+    assert_eq!(
+        (compact.border_width, compact.disabled_opacity, compact.popup_offset_y, compact.window_margin),
+        (0.0, 0.0, 0.0, 0.0)
+    );
+    let selection = default_selection_panel_look(&tokens, ControlSize::Md);
+    assert_eq!((selection.border_width, selection.disabled_opacity, selection.radius), (0.0, 0.0, 9.0));
+    for family in ["selector_list", "selection_panel"] {
+        for value in ["-1", "1.1", "nan"] {
+            assert!(CommonStylesheet::parse(&format!("[common.{family}.geometry]\ndisabled_opacity={value}")).is_err());
+        }
+    }
+}
+
+#[test]
+fn group_shell_factory_and_final_geometry_preserve_explicit_zero() {
+    use crate::controls::control_group::{ControlGroupTheme, DefaultControlGroupTheme};
+    let sheet =
+        CommonStylesheet::resolve_layers(&["[common.control_group.geometry]\npadding_x=0\nradius=0\ngap=11\nvertical_gap=0\nborder_width=0\ndisabled_opacity=0"]).unwrap();
+    let theme =
+        DefaultControlGroupTheme::new(sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap());
+    let shell = theme.resolve_list(true);
+    assert_eq!((shell.padding_x, shell.radius, shell.gap), (0.0, 0.0, 11.0));
+    assert_eq!((shell.vertical_gap, shell.border_width, shell.disabled_opacity), (0.0, 0.0, 0.0));
+    // Sparse final overrides preserve a supplied theme's other dimensions.
+    let final_sheet = CommonStylesheet::parse("[common.control_group.geometry]\ngap=0").unwrap();
+    let final_shell = shell.with_stylesheet(&final_sheet.control_group);
+    assert_eq!(
+        (final_shell.padding_x, final_shell.padding_y, final_shell.radius, final_shell.gap),
+        (shell.padding_x, shell.padding_y, shell.radius, 0.0)
+    );
+}

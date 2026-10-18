@@ -8,7 +8,7 @@ mod model;
 
 pub use model::{
     IconGroup, IconGroupBuilder, IconGroupEvent, IconGroupItem, IconGroupItemLike, horizontal, icon_toolbar,
-    icon_toolbar_multiple, new,
+    icon_toolbar_multiple, icon_toolbar_template, new,
 };
 
 pub use crate::controls::control_group::ControlGroupEventExt as IconGroupEventExt;

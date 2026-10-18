@@ -372,7 +372,7 @@ where
                         model.popup_geometry.unwrap_or(crate::controls::selector_list::SelectorPopupGeometry {
                             row_center: px(look.items_panel.item_height) * (index as f32 + 0.5),
                             content_height: px(look.items_panel.item_height) * model.items.len(),
-                            inset: px(look.items_panel.padding + 1.0),
+                            inset: px(look.items_panel.padding + look.items_panel.border_width),
                         });
                     popup_metrics =
                         resolve_centered_popup_metrics(model.trigger_bounds, geometry, window.viewport_size());

@@ -1,7 +1,7 @@
 //! Standard Radix radio groups backed by SDK selection and keyboard navigation.
 
 use std::sync::Arc;
-use gpui::{Context, SharedString, div, prelude::*};
+use gpui::{Context, SharedString, div, px, prelude::*};
 use gpui_luma::controls::button::ButtonRenderModel;
 use gpui_luma::controls::radio_button::RadioButtonData;
 use gpui_luma::controls::control_group::{ControlGroupItem, ControlGroupItemLike, ControlGroupItemHandlerExt};
@@ -43,10 +43,15 @@ pub fn radio_group_template<T: ControlGroupItemLike + 'static>(
                     .into_any_element()
             })
             .collect::<Vec<_>>();
+        let key = match layout {
+            RadioGroupLayout::Vertical => "vertical",
+            RadioGroupLayout::Horizontal => "horizontal",
+        };
+        let recipe = model.stylesheet.radio_group.authored_geometry(key);
         div()
             .id(model.id.clone())
             .flex()
-            .gap_2()
+            .gap(px(recipe.gap.unwrap_or_default()))
             .items_start()
             .when(layout == RadioGroupLayout::Vertical, |group| group.flex_col())
             .children(rows)
@@ -191,6 +196,7 @@ impl<T: ControlGroupItemLike + 'static> RadioGroup<T> {
                 self.size,
             ));
             self.builder
+                .stylesheet(&look.common_stylesheet())
                 .motion_defaults(look.motion_defaults().control_group)
                 .item_element_template(item)
                 .template(radio_group_template(&look, self.variant, self.paint, self.size, self.layout))

@@ -45,25 +45,12 @@ impl SelectorTheme for SelectorThemeAdapter {
                 palette.trigger_shadow
             },
             trigger_typography: palette.trigger_typography,
-            items_panel: SelectorItemsPanelLook {
-                background: panel.background,
-                foreground: panel.foreground,
-                border: panel.border,
-                shadow: panel.shadow,
-                radius: panel.radius,
-                padding: panel.padding,
-                min_width: panel.min_width,
-                item_disabled_foreground: panel.item_disabled_foreground,
-                item_hover_background: panel.item_hover_background,
-                item_hover_foreground: panel.item_hover_foreground,
-                item_typography: panel.item_typography,
-                item_height: panel.item_height,
-                item_padding_x: panel.item_padding_x,
-                item_gap: panel.item_gap,
-                item_icon_size: panel.item_icon_size,
-                item_radius: panel.item_radius,
-            }
-            .with_stylesheet(&self.look.common_stylesheet().selector_list, "2"),
+            items_panel: SelectorItemsPanelLook::from_menu(
+                panel,
+                &self.look.metrics(),
+                &self.look.common_stylesheet(),
+                "2",
+            ),
         }
     }
 
@@ -221,11 +208,15 @@ mod stylesheet_tests {
     fn default_panel_applies_common_selector_list_overrides() {
         let look = Look::built_in().fork();
         let sheet = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[
-            "[common.selector_list.geometry]\nmin_width=0\nradius=7\n[common.selector_list.sizes.\"2\"]\nitem_height=41",
+            "[common.selector_list.geometry]\nmin_width=0\nradius=7\nborder_width=0\ndisabled_opacity=0\npopup_offset_y=0\nwindow_margin=0\n[common.selector_list.sizes.\"2\"]\nitem_height=41",
         ]).unwrap();
         look.set_common_stylesheet(sheet);
         let theme = SelectorThemeAdapter { look };
         let panel = theme.resolve(SelectorTriggerStyle::Outline, Default::default(), false).items_panel;
         assert_eq!((panel.min_width, panel.radius, panel.item_height), (0.0, 7.0, 41.0));
+        assert_eq!(
+            (panel.border_width, panel.disabled_opacity, panel.popup_offset_y, panel.window_margin),
+            (0.0, 0.0, 0.0, 0.0)
+        );
     }
 }

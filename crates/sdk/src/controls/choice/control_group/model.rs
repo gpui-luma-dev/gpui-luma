@@ -169,6 +169,8 @@ where
     T: ControlGroupItemLike + 'static,
 {
     pub(crate) motion: crate::motion::MotionConfig<ControlGroupMotion>,
+    pub(crate) stylesheet: Arc<crate::theme::stylesheet::CommonStylesheet>,
+    pub(crate) stylesheet_overrides_shell: bool,
     pub(crate) id: SharedString,
     pub(crate) items: Vec<T>,
     pub(crate) default_selected_ids: Vec<SharedString>,
@@ -222,6 +224,9 @@ where
     T: ControlGroupItemLike + 'static,
 {
     pub group_id: &'a SharedString,
+    /// Captured visual defaults shared by the group and its item templates.
+    pub stylesheet: &'a crate::theme::stylesheet::CommonStylesheet,
+    pub layout: ControlGroupLayout,
     pub item: &'a T,
     pub index: usize,
     pub sibling_count: usize,
@@ -240,6 +245,9 @@ where
     T: ControlGroupItemLike + 'static,
 {
     pub id: &'a SharedString,
+    pub stylesheet: &'a crate::theme::stylesheet::CommonStylesheet,
+    /// Explicit builder styles override the supplied shell theme; defaults do not.
+    pub shell_stylesheet: Option<&'a crate::theme::stylesheet::CommonStylesheet>,
     pub items: Vec<ControlGroupItemRenderModel<'a, T>>,
     pub selected_ids: &'a [SharedString],
     pub active_id: Option<&'a SharedString>,
@@ -353,6 +361,8 @@ where
 
             model: ControlGroupModel {
                 motion: Default::default(),
+                stylesheet: default_group_stylesheet(),
+                stylesheet_overrides_shell: false,
                 id: id.into(),
                 items: Vec::new(),
                 default_selected_ids: Vec::new(),
@@ -374,6 +384,13 @@ where
                 item_element_template: None,
             },
         }
+    }
+
+    /// Capture shared group/preset styles; consumer template modifiers apply afterward.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        self.model.stylesheet = Arc::new(stylesheet.with_sdk_defaults());
+        self.model.stylesheet_overrides_shell = true;
+        self
     }
 
     pub fn layout(mut self, layout: ControlGroupLayout) -> Self {
@@ -784,5 +801,55 @@ mod tests {
         assert!(
             !ControlGroupArrowPolicy::ChildOwnsVerticalWhenFocused.child_owns_axis(ControlGroupArrowAxis::Horizontal)
         );
+    }
+}
+
+fn default_group_stylesheet() -> Arc<crate::theme::stylesheet::CommonStylesheet> {
+    static DEFAULT: std::sync::OnceLock<Arc<crate::theme::stylesheet::CommonStylesheet>> = std::sync::OnceLock::new();
+    DEFAULT
+        .get_or_init(|| Arc::new(crate::theme::stylesheet::CommonStylesheet::sdk_default().clone()))
+        .clone()
+}
+
+#[cfg(test)]
+mod stylesheet_tests {
+    use super::*;
+    use crate::theme::stylesheet::CommonStylesheet;
+
+    #[test]
+    fn grouped_builders_capture_defaults_and_custom_styles() {
+        let defaults = ControlGroupBuilder::<ControlGroupItem>::new("defaults");
+        assert!(!defaults.model.stylesheet_overrides_shell);
+        assert_eq!(defaults.model.stylesheet.control_group.geometry.vertical_gap, Some(8.0));
+        let mut sheet = CommonStylesheet::parse(
+            r#"
+[common.control_group.geometry]
+border_width=0
+vertical_gap=0
+disabled_opacity=0
+[common.radio_group.geometry]
+item_gap=3
+[common.radio_group.sizes.horizontal]
+gap=17
+[common.icon_group.geometry]
+padding_x=0
+radius=5
+"#,
+        )
+        .unwrap();
+        let group = ControlGroupBuilder::<ControlGroupItem>::new("custom").stylesheet(&sheet);
+        sheet.control_group.geometry.border_width = Some(9.0);
+        assert!(group.model.stylesheet_overrides_shell);
+        assert_eq!(group.model.stylesheet.control_group.geometry.border_width, Some(0.0));
+        assert_eq!(group.model.stylesheet.radio_group.authored_geometry("vertical").gap, Some(8.0));
+        assert_eq!(group.model.stylesheet.icon_group.geometry.padding_x, Some(0.0));
+        assert_eq!(group.model.stylesheet.icon_group.geometry.radius, Some(5.0));
+        for family in ["control_group", "radio_group"] {
+            for value in ["-1", "1.1", "nan"] {
+                assert!(
+                    CommonStylesheet::parse(&format!("[common.{family}.geometry]\ndisabled_opacity={value}")).is_err()
+                );
+            }
+        }
     }
 }

@@ -26,6 +26,22 @@ pub struct ControlGroupListLook {
     pub padding_x: f32,
     pub padding_y: f32,
     pub gap: f32,
+    /// Vertical layout gap in logical pixels; independent of horizontal spacing.
+    pub vertical_gap: f32,
+    /// Shell border thickness in logical pixels; zero removes it.
+    pub border_width: f32,
+    /// Opacity of default disabled items; custom item templates own their opacity.
+    pub disabled_opacity: f32,
+}
+
+impl ControlGroupListLook {
+    /// Apply explicit shared shell geometry before consumer template modifiers.
+    pub fn with_stylesheet(mut self, stylesheet: &crate::theme::stylesheet::ControlGroupStylesheet) -> Self {
+        crate::theme::stylesheet::apply_common_geometry!(stylesheet, "md", ControlGroupGeometry, self,
+            [padding_x => padding_x, padding_y => padding_y, gap => gap, radius => radius, vertical_gap => vertical_gap,
+             border_width => border_width, disabled_opacity => disabled_opacity]);
+        self
+    }
 }
 
 pub trait ControlGroupTheme: Send + Sync {
@@ -94,7 +110,13 @@ impl ControlGroupTheme for DefaultControlGroupTheme {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
 
-        let geometry = self.tokens.stylesheet.control_group.resolve_geometry("md", Default::default());
+        let geometry = self.tokens.stylesheet.control_group.resolve_geometry(
+            "md",
+            crate::theme::stylesheet::ControlGroupGeometry {
+                radius: metrics.radius(ControlSize::Md),
+                ..Default::default()
+            },
+        );
         ControlGroupListLook {
             background: if enabled {
                 palette.surface.subtle.background
@@ -102,10 +124,13 @@ impl ControlGroupTheme for DefaultControlGroupTheme {
                 palette.state.disabled.background
             },
             border: palette.border.default,
-            radius: metrics.radius(ControlSize::Md),
+            radius: geometry.radius.value_px,
             padding_x: geometry.padding_x.value_px,
             padding_y: geometry.padding_y.value_px,
             gap: geometry.gap.value_px,
+            vertical_gap: geometry.vertical_gap.value_px,
+            border_width: geometry.border_width.value_px,
+            disabled_opacity: geometry.disabled_opacity.value_px,
         }
     }
 

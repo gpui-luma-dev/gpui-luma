@@ -7,6 +7,10 @@ pub struct SelectionPanelLook {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
+    /// Panel border thickness in logical pixels; zero removes it.
+    pub border_width: f32,
+    /// Additional opacity applied to disabled rows.
+    pub disabled_opacity: f32,
     pub shadow: Vec<BoxShadow>,
     pub radius: f32,
     pub padding: f32,
@@ -24,10 +28,12 @@ pub struct SelectionPanelLook {
 
 pub fn default_selection_panel_look(tokens: &ThemeTokens, size: ControlSize) -> SelectionPanelLook {
     let menu = crate::controls::floating_menu::default_floating_menu_look(tokens, size);
-    let mut look = SelectionPanelLook {
+    let look = SelectionPanelLook {
         background: menu.background,
         foreground: menu.foreground,
         border: menu.border,
+        border_width: tokens.metrics.border_width.default,
+        disabled_opacity: menu.disabled_opacity,
         shadow: menu.shadow,
         radius: menu.radius,
         padding: menu.padding,
@@ -42,9 +48,21 @@ pub fn default_selection_panel_look(tokens: &ThemeTokens, size: ControlSize) -> 
         item_icon_size: menu.item_icon_size,
         item_radius: menu.item_radius,
     };
-    crate::theme::stylesheet::apply_common_geometry!(tokens.stylesheet.selection_panel, size.stylesheet_key(), SelectionPanelGeometry, look,
-        [padding => padding, min_width => min_width, item_height => item_height,
-         item_padding_x => item_padding_x, item_gap => item_gap, item_icon_size => item_icon_size,
-         font_size => item_typography.size, line_height => item_typography.line_height]);
-    look
+    look.with_stylesheet(&tokens.stylesheet.selection_panel, size.stylesheet_key())
+}
+
+impl SelectionPanelLook {
+    /// Independent panel overrides resolve after shared menu styling.
+    pub fn with_stylesheet(
+        mut self,
+        stylesheet: &crate::theme::stylesheet::SelectionPanelStylesheet,
+        key: &str,
+    ) -> Self {
+        crate::theme::stylesheet::apply_common_geometry!(stylesheet, key, SelectionPanelGeometry, self,
+            [padding => padding, min_width => min_width, item_height => item_height,
+             item_padding_x => item_padding_x, item_gap => item_gap, item_icon_size => item_icon_size,
+             font_size => item_typography.size, line_height => item_typography.line_height,
+             border_width => border_width, disabled_opacity => disabled_opacity, radius => radius, item_radius => item_radius]);
+        self
+    }
 }

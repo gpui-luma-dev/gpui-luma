@@ -585,6 +585,9 @@ separator_inset = 0.0
 min_width = 200.0
 
 [common.control_group.geometry]
+vertical_gap = 8.0
+border_width = 1.0
+disabled_opacity = 0.56
 padding_x = 6.0
 padding_y = 4.0
 gap = 6.0
@@ -703,3 +706,13 @@ lane_width = 18.0
 hit_target = 20.0
 grip_cross_axis = 8.0
 grip_main_axis = 44.0
+
+[common.radio_group.geometry]
+item_gap = 8.0
+disabled_opacity = 0.56
+
+[common.radio_group.sizes.vertical]
+gap = 8.0
+
+[common.radio_group.sizes.horizontal]
+gap = 12.0

@@ -227,7 +227,7 @@ where
             row = row.on_click(click);
         }
     } else {
-        row = row.opacity(0.56);
+        row = row.opacity(model.look.disabled_opacity);
     }
 
     row

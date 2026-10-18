@@ -15,6 +15,14 @@ pub struct SelectorItemsPanelLook {
     pub background: gpui::Hsla,
     pub foreground: gpui::Hsla,
     pub border: gpui::Hsla,
+    /// Shell border thickness, also used when aligning popup rows.
+    pub border_width: f32,
+    /// Additional opacity applied to disabled rows.
+    pub disabled_opacity: f32,
+    /// Vertical offset for anchored popups; inline panels ignore this value.
+    pub popup_offset_y: f32,
+    /// Minimum viewport edge margin for anchored popup placement.
+    pub window_margin: f32,
     pub shadow: Vec<gpui::BoxShadow>,
     pub radius: f32,
     pub padding: f32,
@@ -31,29 +39,49 @@ pub struct SelectorItemsPanelLook {
 }
 
 pub fn default_selector_items_panel_look(tokens: &ThemeTokens, size: ControlSize) -> SelectorItemsPanelLook {
-    let menu = crate::controls::floating_menu::default_floating_menu_look(tokens, size);
-    SelectorItemsPanelLook {
-        background: menu.background,
-        foreground: menu.foreground,
-        border: menu.border,
-        shadow: menu.shadow,
-        radius: menu.radius,
-        padding: menu.padding,
-        min_width: menu.min_width,
-        item_disabled_foreground: menu.item_disabled_foreground,
-        item_hover_background: menu.item_hover_background,
-        item_hover_foreground: menu.item_hover_foreground,
-        item_typography: menu.item_typography,
-        item_height: menu.item_height,
-        item_padding_x: menu.item_padding_x,
-        item_gap: menu.item_gap,
-        item_icon_size: menu.item_icon_size,
-        item_radius: menu.item_radius,
-    }
-    .with_stylesheet(&tokens.stylesheet.selector_list, size.stylesheet_key())
+    SelectorItemsPanelLook::from_menu(
+        crate::controls::floating_menu::default_floating_menu_look(tokens, size),
+        &tokens.metrics,
+        &tokens.stylesheet,
+        size.stylesheet_key(),
+    )
 }
 
 impl SelectorItemsPanelLook {
+    /// Share menu chrome, metric border width and popover placement before panel overrides.
+    pub fn from_menu(
+        menu: crate::controls::floating_menu::FloatingMenuLook,
+        metrics: &crate::theme::MetricTokens,
+        stylesheet: &crate::theme::stylesheet::CommonStylesheet,
+        key: &str,
+    ) -> Self {
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().popover.authored_geometry("panel");
+        let placement = stylesheet.popover.authored_geometry("panel").with_fallback(&baseline);
+        Self {
+            background: menu.background,
+            foreground: menu.foreground,
+            border: menu.border,
+            border_width: metrics.border_width.default,
+            disabled_opacity: menu.disabled_opacity,
+            popup_offset_y: placement.offset_y.unwrap_or_default(),
+            window_margin: placement.window_margin.unwrap_or_default(),
+            shadow: menu.shadow,
+            radius: menu.radius,
+            padding: menu.padding,
+            min_width: menu.min_width,
+            item_disabled_foreground: menu.item_disabled_foreground,
+            item_hover_background: menu.item_hover_background,
+            item_hover_foreground: menu.item_hover_foreground,
+            item_typography: menu.item_typography,
+            item_height: menu.item_height,
+            item_padding_x: menu.item_padding_x,
+            item_gap: menu.item_gap,
+            item_icon_size: menu.item_icon_size,
+            item_radius: menu.item_radius,
+        }
+        .with_stylesheet(&stylesheet.selector_list, key)
+    }
+
     /// Apply independent panel overrides after resolving the shared menu baseline.
     /// Looks use their own semantic size key; consumer look callbacks run afterward.
     pub fn with_stylesheet(mut self, stylesheet: &crate::theme::stylesheet::SelectorListStylesheet, key: &str) -> Self {
@@ -61,7 +89,8 @@ impl SelectorItemsPanelLook {
             [padding => padding, min_width => min_width, item_height => item_height,
              item_padding_x => item_padding_x, item_gap => item_gap, item_icon_size => item_icon_size,
              font_size => item_typography.size, line_height => item_typography.line_height,
-             radius => radius, item_radius => item_radius]);
+             radius => radius, item_radius => item_radius, border_width => border_width,
+             disabled_opacity => disabled_opacity, popup_offset_y => popup_offset_y, window_margin => window_margin]);
         self
     }
 }
@@ -217,13 +246,13 @@ where
         let SelectorItemsTemplateHandlers { item_hovers, item_mouse_downs, item_clicks, scroll_wheel, popup_geometry } =
             handlers;
         let look = &model.look;
-        let content_max_height = (model.max_height - px(look.padding * 2.0 + 2.0)).max(px(0.0));
+        let content_max_height = (model.max_height - px((look.padding + look.border_width) * 2.0)).max(px(0.0));
         let mut rows = div().relative().flex().flex_col().w_full();
 
         if let Some(report) = popup_geometry {
             let alignment_index =
                 model.selected_index.or_else(|| model.items.iter().position(|item| item.is_enabled()));
-            let inset = px(look.padding + 1.0);
+            let inset = px(look.padding + look.border_width);
             let scroll = model.scroll_handle.cloned();
             let item_count = model.items.len();
             rows = rows.on_children_prepainted(move |bounds, window, cx| {
@@ -335,7 +364,7 @@ where
                     row = row.on_click(click);
                 }
             } else {
-                row = row.opacity(0.56);
+                row = row.opacity(look.disabled_opacity);
             }
 
             rows = rows.child(row);
@@ -348,7 +377,7 @@ where
             .max_h(model.max_height)
             .p(px(look.padding))
             .bg(look.background)
-            .border_1()
+            .border(px(look.border_width))
             .border_color(look.border)
             .rounded(px(look.radius))
             .shadow(look.shadow.clone())

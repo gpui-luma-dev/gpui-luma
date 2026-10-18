@@ -1,9 +1,9 @@
 //! Look-owned icon-group builder. Spawn synthesizes the SDK icon-group control-group.
 
-use gpui::{App, Context, Entity, IntoElement, SharedString, px, prelude::*};
+use gpui::{App, Context, Entity, IntoElement, SharedString};
 use gpui_luma::controls::control_group::{
     ControlGroupBuilder, ControlGroupControl, ControlGroupItemLike, ControlGroupItemTemplate, ControlGroupRenderModel,
-    ControlGroupTemplate, control_group_template_with_theme,
+    ControlGroupTemplate,
 };
 use gpui_luma::controls::icon_group::{self, IconGroupItem};
 
@@ -257,15 +257,18 @@ where
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ControlGroupBuilder<T> {
-        let self_builder = self.builder.motion_defaults(look.motion_defaults().control_group);
+        let self_builder = self
+            .builder
+            .stylesheet(&look.mode_tokens().stylesheet().common)
+            .motion_defaults(look.motion_defaults().control_group);
         if self.custom_template {
             return self_builder;
         }
         match self.kind {
             IconGroupKind::Group => self_builder.template(look.control_group_template()),
-            IconGroupKind::Toolbar => self_builder
-                .template(control_group_template_with_theme(look.control_group_theme()))
-                .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0))),
+            IconGroupKind::Toolbar => {
+                self_builder.template(icon_group::icon_toolbar_template(look.control_group_theme()))
+            }
         }
     }
 }

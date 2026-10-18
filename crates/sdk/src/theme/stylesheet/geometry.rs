@@ -257,7 +257,20 @@ geometry_family!(
     SelectionPanelGeometry,
     ResolvedSelectionPanelGeometry,
     "selection_panel",
-    [padding, min_width, item_height, item_padding_x, item_gap, item_icon_size, font_size, line_height]
+    [
+        padding,
+        min_width,
+        item_height,
+        item_padding_x,
+        item_gap,
+        item_icon_size,
+        font_size,
+        line_height,
+        border_width,
+        radius,
+        item_radius
+    ],
+    unit[disabled_opacity]
 );
 geometry_family!(
     TooltipStylesheet,
@@ -407,7 +420,8 @@ geometry_family!(
     ControlGroupGeometry,
     ResolvedControlGroupGeometry,
     "control_group",
-    [padding_x, padding_y, gap]
+    [padding_x, padding_y, gap, radius, vertical_gap, border_width],
+    unit[disabled_opacity]
 );
 
 geometry_family!(
@@ -480,8 +494,12 @@ geometry_family!(
         font_size,
         line_height,
         radius,
-        item_radius
-    ]
+        item_radius,
+        border_width,
+        popup_offset_y,
+        window_margin
+    ],
+    unit[disabled_opacity]
 );
 
 geometry_family!(
@@ -502,6 +520,24 @@ geometry_family!(
     unit[edge_max_viewport_ratio]
 );
 
+geometry_family!(
+    RadioGroupStylesheet,
+    RadioGroupGeometryStylesheet,
+    RadioGroupGeometry,
+    ResolvedRadioGroupGeometry,
+    "radio_group",
+    [gap, item_gap],
+    unit[disabled_opacity]
+);
+geometry_family!(
+    IconGroupStylesheet,
+    IconGroupGeometryStylesheet,
+    IconGroupGeometry,
+    ResolvedIconGroupGeometry,
+    "icon_group",
+    [padding_x, padding_y, gap, radius]
+);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -515,6 +551,8 @@ mod tests {
         StepperStylesheet::validate_contract();
         SidebarStylesheet::validate_contract();
         ControlGroupStylesheet::validate_contract();
+        RadioGroupStylesheet::validate_contract();
+        IconGroupStylesheet::validate_contract();
         TableStylesheet::validate_contract();
         PagerStylesheet::validate_contract();
         PopoverStylesheet::validate_contract();

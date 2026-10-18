@@ -104,8 +104,7 @@ independent panel overrides under `common.selector_list.geometry` or `.sizes`:
 `item_icon_size`, `font_size`, `line_height`, `radius`, and `item_radius`.
 `SelectorItemsPanelLook::with_stylesheet` exposes this final resolution step to
 third-party looks. Shadcn uses semantic size keys; the current Radix default
-selector panel uses its existing size Two composition. Border, disabled-opacity,
-icon/state recipes and the remaining template audit are still outstanding.
+selector panel uses its existing size Two composition. Icon/state recipes and the remaining template audit are still outstanding.
 
 Raw SDK ListBox flow values describe host-supplied item geometry and scrolling,
 not a second set of visual defaults. Its placement/virtualization arithmetic
@@ -150,6 +149,37 @@ interaction classification.
 SDK Toolbar also applies its existing common padding and gap overrides. Template
 borders, icons, state/variant token recipes, and the remaining family audits are
 still outstanding; this does not complete #146.
+
+## Group and selection template styling
+
+`ControlGroupBuilder::stylesheet(&sheet)` and `RadioGroupBuilder::stylesheet(&sheet)`
+capture shared styles for the group and its item render models. Missing values
+inherit SDK defaults. Group border width, vertical gap, radius and disabled opacity
+are authored in `common.control_group`. The resolved `ControlGroupListLook` carries
+all shell dimensions so a supplied theme retains its choices unless the builder
+explicitly applies a stylesheet. Consumer template modifiers run last.
+
+Radio templates use `common.radio_group.geometry.item_gap` and `.disabled_opacity`,
+with per-orientation `gap` under `.sizes.vertical` / `.sizes.horizontal`. Radix
+keeps its existing compact horizontal gap as a look stylesheet difference.
+`icon_group::icon_toolbar_template` shares the group shell, uses the shared pill
+radius by default, and then applies `common.icon_group` dimensions/radius under
+`.geometry` or `.sizes.toolbar`. Shadcn reuses this public SDK template.
+
+Selector panels share `SelectorItemsPanelLook::from_menu`: border width comes from
+`MetricTokens::border_width.default`, disabled opacity from the resolved menu, and
+popup offset/window margin from the shared Popover panel placement. Independent
+`common.selector_list` overrides apply afterward, including `border_width`,
+`disabled_opacity`, `popup_offset_y`, and `window_margin`. Selector/ComboBox/
+Autocomplete/SearchSelector shells and disabled rows consume these resolved values.
+Selector alignment/inset calculations account for the actual border thickness.
+
+SelectionPanel independently supports `border_width`, `disabled_opacity`, `radius`
+and `item_radius` through `common.selection_panel`, after the shared menu/panel
+baseline. Both SDK and Shadcn factories resolve these fields. Explicit zero removes
+a border, margin, gap or disabled-item opacity; invalid opacity is rejected.
+Icons, search/clear affordance geometry and the remaining state/variant recipes are
+still pending the broader audit.
 
 ## Additional default factories
 

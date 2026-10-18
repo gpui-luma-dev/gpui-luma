@@ -228,16 +228,16 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
                     root.child(
                         deferred(
                             anchored()
-                                .snap_to_window_with_margin(px(8.0))
+                                .snap_to_window_with_margin(px(model.popup_look.window_margin))
                                 .anchor(gpui::Anchor::TopLeft)
                                 .position(point(bounds.left(), bounds.bottom()))
-                                .offset(point(px(0.0), px(4.0)))
+                                .offset(point(px(0.0), px(model.popup_look.popup_offset_y)))
                                 .child(
                                     div()
                                         .id("prototype-autocomplete-popup-shell")
                                         .w(model.popup_width)
                                         .bg(model.popup_look.background)
-                                        .border_1()
+                                        .border(px(model.popup_look.border_width))
                                         .border_color(model.popup_look.border)
                                         .rounded(px(model.popup_look.radius))
                                         .shadow(model.popup_look.shadow)
@@ -411,7 +411,7 @@ impl AutocompleteItemsTemplate for DefaultAutocompleteItemsTemplate {
                     row = row.on_click(click);
                 }
             } else {
-                row = row.opacity(0.56);
+                row = row.opacity(look.disabled_opacity);
             }
 
             root = root.child(row);

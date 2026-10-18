@@ -745,7 +745,7 @@ where
             .min_w(px(content_width))
             .p(px(look.padding))
             .bg(look.background)
-            .border_1()
+            .border(px(look.border_width))
             .border_color(look.border)
             .rounded(px(look.radius))
             .shadow(look.shadow)

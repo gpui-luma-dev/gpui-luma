@@ -513,3 +513,39 @@ edge_max_viewport_ratio="math(2 / 3)"
         assert_eq!(pager_metrics.button_size.value_px, pager.button_size);
     }
 }
+
+#[test]
+fn panel_and_group_chrome_use_selected_common_stylesheet() {
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.control_group.geometry]
+padding_x=0
+radius=7
+[common.selector_list.geometry]
+border_width=0
+disabled_opacity=0
+popup_offset_y=0
+window_margin=0
+[common.selection_panel.geometry]
+border_width=3
+disabled_opacity=0.2
+radius=11
+"#])
+    .unwrap();
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    let shell = look.control_group_theme().resolve_list(true);
+    assert_eq!((shell.padding_x, shell.radius), (0.0, 7.0));
+    let list = look.selector_items_panel_look(crate::ShadcnSize::Md);
+    assert_eq!(
+        (list.border_width, list.disabled_opacity, list.popup_offset_y, list.window_margin),
+        (0.0, 0.0, 0.0, 0.0)
+    );
+    let selection = look.selection_panel_look(crate::ShadcnSize::Md);
+    assert_eq!((selection.border_width, selection.disabled_opacity, selection.radius), (3.0, 0.2, 11.0));
+    #[cfg(feature = "inspect")]
+    {
+        let inspected = crate::inspect::ShadcnInspect::new(&look).inspect_control_group_metrics(ControlSize::Md);
+        assert_eq!(inspected.radius.value_px, shell.radius);
+        assert_eq!(inspected.padding_x.value_px, shell.padding_x);
+    }
+}

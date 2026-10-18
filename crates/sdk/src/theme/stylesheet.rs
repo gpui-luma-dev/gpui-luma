@@ -48,7 +48,9 @@ macro_rules! common_stylesheet {
             }
         }
         impl CommonStylesheet {
-            fn with_sdk_defaults(&self) -> Self {
+            /// Fill missing fields from the SDK baseline before capturing a style snapshot.
+            /// Explicit zero/false values and this layer's geometry retain precedence.
+            pub fn with_sdk_defaults(&self) -> Self {
                 let baseline = Self::sdk_default();
                 Self {
                     tokens: self.tokens.clone(), motion: self.motion.clone(),
@@ -90,6 +92,8 @@ common_stylesheet! {
     stepper: StepperStylesheet,
     sidebar: SidebarStylesheet,
     control_group: ControlGroupStylesheet,
+    radio_group: RadioGroupStylesheet,
+    icon_group: IconGroupStylesheet,
     table: TableStylesheet,
     pager: PagerStylesheet,
     context_menu: ContextMenuStylesheet,

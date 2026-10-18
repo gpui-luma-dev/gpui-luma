@@ -352,6 +352,8 @@ mod tests {
     ) -> ControlGroupModel<ControlGroupItem> {
         ControlGroupModel {
             motion: Default::default(),
+            stylesheet: crate::theme::ThemeTokens::default().stylesheet,
+            stylesheet_overrides_shell: false,
             id: "density".into(),
             items: items(),
             default_selected_ids: selected_ids,

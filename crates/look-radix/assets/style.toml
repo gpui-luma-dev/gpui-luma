@@ -270,3 +270,7 @@ line_height = 20.0
 
 [common.overlay_window.geometry]
 backdrop_opacity = 0.42
+
+# Radix radio groups keep the same compact gap in either orientation.
+[common.radio_group.sizes.horizontal]
+gap = 8.0

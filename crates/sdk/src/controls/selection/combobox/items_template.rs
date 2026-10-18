@@ -188,7 +188,7 @@ impl ComboBoxItemsTemplate for DefaultComboBoxItemsTemplate {
                     row = row.on_click(click);
                 }
             } else {
-                row = row.opacity(0.56);
+                row = row.opacity(look.disabled_opacity);
             }
 
             root = root.child(row);

@@ -9,6 +9,7 @@ use crate::mode::ShadcnModeTokens;
 
 pub fn selection_panel_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: ControlSize) -> SelectionPanelLook {
     selection_panel_from_items_panel(selector_items_panel_look(mode, theme_mode, size))
+        .with_stylesheet(&mode.stylesheet().common.selection_panel, size.stylesheet_key())
 }
 
 pub fn selection_panel_from_items_panel(panel: SelectorItemsPanelLook) -> SelectionPanelLook {
@@ -16,6 +17,8 @@ pub fn selection_panel_from_items_panel(panel: SelectorItemsPanelLook) -> Select
         background: panel.background,
         foreground: panel.foreground,
         border: panel.border,
+        border_width: panel.border_width,
+        disabled_opacity: panel.disabled_opacity,
         shadow: panel.shadow,
         radius: panel.radius,
         padding: panel.padding,
