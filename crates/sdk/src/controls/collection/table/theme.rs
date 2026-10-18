@@ -60,6 +60,8 @@ pub struct TableRowLook {
 /// Theme-owned visuals for the compact drag preview and insertion feedback.
 #[derive(Clone, Debug)]
 pub struct TableDragLook {
+    /// Captured, size-resolved preview and insertion feedback geometry.
+    pub geometry: crate::theme::stylesheet::ResolvedTableGeometry,
     pub background: Hsla,
     pub foreground: Hsla,
     pub valid_marker: Hsla,
@@ -73,6 +75,9 @@ pub trait TableTheme: Send + Sync {
         let look = self.resolve_look(true, true, size);
         let invalid = self.resolve_row(false, InteractionState { invalid: true, ..Default::default() }, size);
         TableDragLook {
+            geometry: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                .table
+                .resolve_geometry(size.stylesheet_key(), Default::default()),
             background: look.header_background,
             foreground: look.header_label_color,
             valid_marker: look.border,
@@ -117,6 +122,12 @@ impl TableTheme for DefaultTableTheme {
     fn resolve_drag(&self, size: ControlSize) -> TableDragLook {
         let palette = &self.tokens.palette;
         TableDragLook {
+            geometry: self
+                .tokens
+                .stylesheet
+                .table
+                .with_sdk_defaults()
+                .resolve_geometry(size.stylesheet_key(), Default::default()),
             background: palette.surface.floating.background,
             foreground: palette.surface.floating.foreground,
             valid_marker: palette.focus.ring,

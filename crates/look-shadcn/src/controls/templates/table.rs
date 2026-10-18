@@ -15,6 +15,12 @@ impl TableTheme for ShadcnTableTheme {
         let tokens = self.theme.mode_tokens();
         let palette = &tokens.palette;
         gpui_luma::controls::table::TableDragLook {
+            geometry: tokens
+                .stylesheet()
+                .common
+                .table
+                .with_sdk_defaults()
+                .resolve_geometry(size.stylesheet_key(), Default::default()),
             background: self.theme.token_color("popover").unwrap_or(palette.panel_background),
             foreground: self.theme.token_color("popover-foreground").unwrap_or(palette.body_text),
             valid_marker: self.theme.token_color("ring").unwrap_or(palette.focus_ring),

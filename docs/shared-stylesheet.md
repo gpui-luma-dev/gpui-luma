@@ -615,3 +615,5 @@ recipes are tracked in the migration inventory.
 Resizable panel frame and split stroke widths use `common.resizable_panels.geometry.border_width` and `divider_width` (pixels; zero hides the stroke). SlidePanel resize dividers share the resolved resize look. Stroke thickness is independent of resize hit targets. Shadcn also resolves disabled opacity from this family.
 
 Table shell chrome uses `common.table.geometry.border_width`, `header_divider_width` (pixels), and `header_padding_bottom_scale` (header bottom padding / resolved vertical padding). The default ratio is `math(3 / 4)`. Fixed shell height includes the resolved outer strokes and header separator, matching the painted header.
+
+Table drag feedback uses `common.table.geometry.drag_offset`, `drag_width`, `drag_padding_x`, `drag_padding_y`, `drag_border_width`, and `drag_marker_width` (pixels). The offset applies to both pointer axes; size overrides apply to the final table size. `TableDragLook.geometry` carries resolved metrics into the preview and drop targets. Edge-scroll thresholds and speed remain interaction behavior.

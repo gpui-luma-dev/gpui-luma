@@ -437,7 +437,13 @@ geometry_family!(
         row_radius,
         border_width,
         header_divider_width,
-        header_padding_bottom_scale
+        header_padding_bottom_scale,
+        drag_offset,
+        drag_width,
+        drag_padding_x,
+        drag_padding_y,
+        drag_border_width,
+        drag_marker_width
     ],
     unit[row_hover_opacity]
 );
@@ -593,6 +599,13 @@ geometry_family!(
         trailing_icon_size
     ]
 );
+
+impl TableStylesheet {
+    /// Fills absent table fields from SDK defaults without copying unrelated families.
+    pub fn with_sdk_defaults(&self) -> Self {
+        self.clone().with_baseline(&super::CommonStylesheet::sdk_default().table)
+    }
+}
 
 #[cfg(test)]
 mod tests {

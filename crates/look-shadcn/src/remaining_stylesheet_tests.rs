@@ -592,3 +592,39 @@ header_padding_bottom_scale="math(1 / 2)"
         );
     }
 }
+
+#[test]
+fn table_drag_preview_uses_selected_size_and_zero_strokes() {
+    use gpui_luma::controls::table::{DefaultTableTheme, TableTheme};
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.table.geometry]
+drag_offset=5
+drag_width=180
+drag_padding_x=7
+drag_padding_y=3
+drag_border_width=0
+drag_marker_width=0
+[common.table.sizes.lg]
+drag_width=310
+"#])
+    .unwrap();
+    let tokens = config.common.theme_tokens(ThemeMode::Light, gpui_luma::color::GamutMapping::CssLocalMinde).unwrap();
+    let sdk = DefaultTableTheme::new(tokens);
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    let themed = look.table_theme();
+    for theme in [&sdk as &dyn TableTheme, themed.as_ref()] {
+        let md = theme.resolve_drag(ControlSize::Md).geometry;
+        assert_eq!(
+            (
+                md.drag_offset.value_px,
+                md.drag_width.value_px,
+                md.drag_padding_x.value_px,
+                md.drag_padding_y.value_px
+            ),
+            (5.0, 180.0, 7.0, 3.0)
+        );
+        assert_eq!((md.drag_border_width.value_px, md.drag_marker_width.value_px), (0.0, 0.0));
+        assert_eq!(theme.resolve_drag(ControlSize::Lg).geometry.drag_width.value_px, 310.0);
+    }
+}

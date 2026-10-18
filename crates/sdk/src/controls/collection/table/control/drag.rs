@@ -20,15 +20,15 @@ impl Render for RowPreview {
             div()
                 .debug_selector(|| "table-row-drag-preview".to_string())
                 .relative()
-                .left(self.offset.x + px(12.0))
-                .top(self.offset.y + px(12.0))
-                .w(px(220.0))
-                .px(px(12.0))
-                .py(px(8.0))
+                .left(self.offset.x + px(self.look.geometry.drag_offset.value_px))
+                .top(self.offset.y + px(self.look.geometry.drag_offset.value_px))
+                .w(px(self.look.geometry.drag_width.value_px))
+                .px(px(self.look.geometry.drag_padding_x.value_px))
+                .py(px(self.look.geometry.drag_padding_y.value_px))
                 .rounded(px(self.look.radius))
                 .bg(self.look.background)
                 .text_color(self.look.foreground)
-                .border_1()
+                .border(px(self.look.geometry.drag_border_width.value_px))
                 .border_color(self.look.valid_marker)
                 .truncate()
                 .child(self.label.clone()),
@@ -66,15 +66,15 @@ impl<T: 'static> TableControl<T> {
         if self.active_row_drag.as_ref().is_some_and(|drag| drag.accepts(scope)) {
             for (edge, gap) in [(DropEdge::Before, index), (DropEdge::After, index + 1)] {
                 let before = self.row_keys.get(gap).cloned();
+                let look = self.model.theme.resolve_drag(self.model.size);
                 let zone = DropZone {
                     axis: Axis::Vertical,
                     edge,
                     item_extent: px(0.0),
                     following_gap: px(0.0),
-                    marker_width: px(2.0),
+                    marker_width: px(look.geometry.drag_marker_width.value_px),
                 };
                 let owner = cx.entity().downgrade();
-                let look = self.model.theme.resolve_drag(self.model.size);
                 let highlight_before = before.clone();
                 let cursor_before = before.clone();
                 let surface = zone

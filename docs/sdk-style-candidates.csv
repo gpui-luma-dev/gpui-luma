@@ -1472,3 +1472,4 @@ crates/sdk/src/controls/selection/combobox/panel_template.rs,110,combobox,.borde
 crates/sdk/src/controls/selection/search_selector/panel_template.rs,101,search_selector,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()
 crates/sdk/src/controls/selection/search_selector/panel_template.rs,118,search_selector,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()
 crates/sdk/src/controls/selection/autocomplete/template.rs,240,autocomplete,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()
+crates/sdk/src/controls/collection/table/control/drag.rs,0,table,12 | 220 | 12 | 8 | 1 | 2,common.table.geometry.drag_*,migrated,"Drag preview pointer offset, width, padding, border and insertion marker thickness"
