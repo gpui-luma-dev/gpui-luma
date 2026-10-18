@@ -107,6 +107,16 @@ where
         })
     }
 
+    crate::forward_motion!(crate::controls::control_group::ControlGroupMotion, builder inner);
+    pub fn motion_defaults(mut self, profile: crate::controls::control_group::ControlGroupMotion) -> Self {
+        self.inner = self.inner.motion_defaults(profile);
+        self
+    }
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.inner = self.inner.motion_enabled(enabled);
+        self
+    }
+
     fn from_inner(inner: InnerControlGroupBuilder<T>) -> Self {
         Self { callbacks: Default::default(), inner }
     }

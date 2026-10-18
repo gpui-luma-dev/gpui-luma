@@ -1,3 +1,4 @@
+use super::super::SidebarMotion;
 use std::sync::Arc;
 
 use gpui::{AnyElement, AppContext, Bounds, Entity, FocusHandle, IntoElement, Pixels, SharedString, Size, div, prelude::*};
@@ -138,6 +139,7 @@ impl NavNode {
 
 #[derive(Clone)]
 pub struct SidebarPanelEngineModel {
+    pub(crate) motion: crate::motion::MotionConfig<SidebarMotion>,
     pub(crate) id: SharedString,
     pub(crate) title: Option<SharedString>,
     pub(crate) subtitle: Option<SharedString>,
@@ -147,7 +149,7 @@ pub struct SidebarPanelEngineModel {
     pub(crate) selected_id: Option<SharedString>,
     pub(crate) enabled: bool,
     pub(crate) collapsed: bool,
-    pub(crate) animated: bool,
+    pub(crate) motion_enabled: bool,
     pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) template: Arc<dyn SidebarPanelTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
@@ -207,9 +209,11 @@ pub struct SidebarPanelEngineBuilder {
 }
 
 impl SidebarPanelEngineBuilder {
+    crate::motion_methods!(SidebarMotion, model.motion);
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
             model: SidebarPanelEngineModel {
+                motion: Default::default(),
                 id: id.into(),
                 title: None,
                 subtitle: None,
@@ -219,7 +223,7 @@ impl SidebarPanelEngineBuilder {
                 selected_id: None,
                 enabled: true,
                 collapsed: false,
-                animated: true,
+                motion_enabled: true,
                 disclosure_icons: DisclosureIcons::default(),
                 template: default_sidebar_panel_template(),
                 scrollbar_template: default_scrollbar_template(),
@@ -285,8 +289,8 @@ impl SidebarPanelEngineBuilder {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.model.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.model.motion_enabled = motion_enabled;
         self
     }
 

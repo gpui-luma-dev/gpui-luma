@@ -1,3 +1,6 @@
+crate::motion_profile!(ScrollContainerMotion => scroll_container {
+    scroll: crate::motion::Transition,
+});
 /// Whether the scrollbar reserves layout space or floats over content.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ScrollbarPlacement {

@@ -21,6 +21,12 @@ pub struct SearchSelector {
 }
 
 impl SearchSelector {
+    gpui_luma::forward_motion!(gpui_luma::controls::search_selector::SearchSelectorMotion, builder builder);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(enabled);
+        self
+    }
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -269,8 +275,9 @@ impl SearchSelector {
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> SearchSelectorBuilder {
+        let self_builder = self.builder.motion_defaults(look.motion_defaults().search_selector);
         let theme = look.clone();
-        self.builder
+        self_builder
             .size(self.size.control_size())
             .textfield_template(theme.input_textfield_template())
             .autocomplete_theme(theme.autocomplete_theme())

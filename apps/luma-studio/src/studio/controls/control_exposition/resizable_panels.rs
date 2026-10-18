@@ -132,7 +132,7 @@ impl Render for ResizablePanelsExpositionLeftPane {
                 ))
                 .child(demo_frame(
                     look,
-                    "Animated transition (animated: true)",
+                    "Animated transition (motion_enabled: true)",
                     &self.animated_sizes,
                     label_color,
                     chrome.border,
@@ -146,7 +146,7 @@ impl Render for ResizablePanelsExpositionLeftPane {
                 ))
                 .child(demo_frame(
                     look,
-                    "Instant / Non-animated (animated: false)",
+                    "Instant / Non-animated (motion_enabled: false)",
                     &self.instant_sizes,
                     label_color,
                     chrome.border,
@@ -315,7 +315,7 @@ impl ResizablePanelsControlExposition {
         let instant_panels = look
             .resizable_panels("controls-doc-resizable-instant")
             .orientation(ResizablePanelsOrientation::Horizontal)
-            .animated(false)
+            .motion_enabled(false)
             .show_handle(true)
             .resize_handle(ResizeHandleSize::Sm)
             .handle_grip(true)

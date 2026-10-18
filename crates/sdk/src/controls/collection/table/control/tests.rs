@@ -858,7 +858,11 @@ fn virtualized_drop_motion_tracks_only_visible_rows_and_finishes_after_commit() 
     let (table, cx) = setup(&mut app, 100_000, TableSelectionMode::Single);
     table.update(cx, |table, cx| {
         table.set_row_reordering(true, cx).unwrap();
-        table.drop_layout_motion().set_duration(Some(Duration::from_millis(1000)));
+        table.model.motion.configure(|m| {
+            m.drop_layout =
+                crate::motion::Transition::timed(Duration::from_millis(1000), crate::motion::Easing::OutCubic)
+        });
+        table.model.motion.freeze();
         // CI deliberately disables optimization; native commit/render work must
         // not consume the animation interval before we sample the first frame.
         table.drop_layout_motion().elapse_for_test(Duration::ZERO);

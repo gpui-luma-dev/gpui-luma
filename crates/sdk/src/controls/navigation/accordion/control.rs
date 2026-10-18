@@ -67,7 +67,22 @@ pub struct AccordionControl {
 impl EventEmitter<AccordionEvent> for AccordionControl {}
 
 impl AccordionControl {
+    pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.model.motion_enabled = enabled;
+        for transition in &mut self.transitions {
+            transition.set_motion_enabled(enabled);
+        }
+        if !enabled {
+            self.drop_layout.cancel();
+        }
+        cx.notify();
+    }
+    crate::motion_snapshot!(super::AccordionMotion, model.motion);
+
     pub(crate) fn from_builder(builder: AccordionBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
         let enabled = builder.model.enabled;
         let mut expanded_ids = HashSet::new();
 
@@ -86,7 +101,7 @@ impl AccordionControl {
             .iter()
             .map(|item| {
                 let initial = if expanded_ids.contains(&item.id) { 1.0 } else { 0.0 };
-                DisclosureMotion::new(initial, builder.model.animated)
+                DisclosureMotion::with_transition(initial, builder.model.motion_enabled, motion.expansion.clone())
             })
             .collect();
         let content_heights_px = vec![0.0; builder.model.items.len()];

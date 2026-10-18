@@ -9,6 +9,10 @@
                 "label": "Getting Started"
             },
             {
+                "href": "motion.html",
+                "label": "Motion"
+            },
+            {
                 "href": "control-specialization.html",
                 "label": "Create a control specialization"
             }

@@ -41,12 +41,18 @@ impl Render for Page {
 fn setup(app: &mut TestAppContext) -> (Entity<Page>, &mut VisualTestContext) {
     setup_animated(app, false)
 }
-fn setup_animated(app: &mut TestAppContext, animated: bool) -> (Entity<Page>, &mut VisualTestContext) {
+fn setup_animated(app: &mut TestAppContext, motion_enabled: bool) -> (Entity<Page>, &mut VisualTestContext) {
     let (page, cx) = app.add_window_view(|window, cx| {
         window.activate_window();
         crate::key_handling::bind_default_control_keys(cx);
         let sidebar = SidebarControl::new("nav")
-            .animated(animated)
+            .motion_enabled(motion_enabled)
+            .motion(|m| {
+                m.drop_layout = crate::motion::Transition::timed(
+                    std::time::Duration::from_millis(1000),
+                    crate::motion::Easing::OutCubic,
+                )
+            })
             .selected_id("a")
             .drag_drop(SidebarDragDrop::new())
             .sidebar(fixture())
@@ -213,7 +219,6 @@ fn reparenting_animates_row_positions_without_changing_selection() {
     let mut app = TestAppContext::single();
     let (page, cx) = setup_animated(&mut app, true);
     let sidebar = cx.update(|_, cx| page.read(cx).sidebar.clone());
-    sidebar.update(cx, |s, cx| s.drop_layout_motion(cx).set_duration(Some(Duration::from_millis(1000))));
     let old = cx.debug_bounds("sidebar-drag-a").unwrap();
     drag(cx, "a", "c", 0.2);
     assert!((cx.debug_bounds("sidebar-drag-a").unwrap().top() - old.top()).abs() < px(1.));

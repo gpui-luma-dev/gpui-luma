@@ -26,6 +26,8 @@ impl<T> TreeView<T>
 where
     T: Clone + Send + Sync + 'static,
 {
+    gpui_luma::forward_motion!(gpui_luma::controls::tree_view::TreeViewMotion, builder builder);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -443,8 +445,8 @@ where
 
     /// Animate small branches; transitions affecting over 256 displayed
     /// descendants settle before layout to preserve virtualization.
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.builder = self.builder.animated(animated);
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(motion_enabled);
         self
     }
 
@@ -521,7 +523,8 @@ where
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> TreeViewBuilder<T> {
-        let builder = self.builder.size(self.size.control_size()).scrollbar_template(look.scrollbar_template());
+        let self_builder = self.builder.motion_defaults(look.motion_defaults().tree_view);
+        let builder = self_builder.size(self.size.control_size()).scrollbar_template(look.scrollbar_template());
         if self.custom_template {
             builder
         } else {

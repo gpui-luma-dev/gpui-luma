@@ -64,3 +64,5 @@ pub use callback::SidebarEventExt;
 
 #[cfg(all(test, feature = "test-support"))]
 mod drag_tests;
+
+pub use model::SidebarMotion;

@@ -143,7 +143,16 @@ where
         cx.notify();
     }
 
-    pub(crate) fn from_builder(mut builder: TableBuilder<T>, cx: &mut Context<Self>) -> Self {
+    pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.model.motion.set_enabled(enabled);
+        self.drop_layout.cancel();
+        cx.notify();
+    }
+    crate::motion_snapshot!(super::TableMotion, model.motion);
+
+    pub(crate) fn from_builder(builder: TableBuilder<T>, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
         normalize_model(&mut builder.model);
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
 
@@ -182,13 +191,7 @@ where
         }
     }
 
-    /// Override post-drop duration; None restores the inherited Look value.
-    pub fn set_drop_layout_motion(&mut self, duration: Option<std::time::Duration>, cx: &mut Context<Self>) {
-        self.drop_layout.set_duration(duration);
-        cx.notify();
-    }
-
-    /// Retained keyed post-drop motion and resolved duration diagnostics.
+    /// Retained keyed post-drop geometry and running transitions.
     pub fn drop_layout_motion(&self) -> crate::motion::DropLayoutMotion<SharedString> {
         self.drop_layout.clone()
     }

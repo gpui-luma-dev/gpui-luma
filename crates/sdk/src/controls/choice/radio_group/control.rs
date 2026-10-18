@@ -39,6 +39,10 @@ where
         self.group.read(cx).active_id().cloned()
     }
 
+    pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.group.update(cx, |group, cx| group.set_motion_enabled(enabled, cx));
+        cx.notify();
+    }
     pub fn inner_group(&self) -> Entity<ControlGroupControl<T>> {
         self.group.clone()
     }

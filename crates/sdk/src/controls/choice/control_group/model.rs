@@ -1,3 +1,7 @@
+crate::motion_profile!(ControlGroupMotion => control_group {
+    selection: crate::motion::Transition,
+});
+
 use std::sync::Arc;
 
 use gpui::{
@@ -164,6 +168,7 @@ pub struct ControlGroupModel<T>
 where
     T: ControlGroupItemLike + 'static,
 {
+    pub(crate) motion: crate::motion::MotionConfig<ControlGroupMotion>,
     pub(crate) id: SharedString,
     pub(crate) items: Vec<T>,
     pub(crate) default_selected_ids: Vec<SharedString>,
@@ -262,6 +267,8 @@ impl<T> ControlGroupBuilder<T>
 where
     T: ControlGroupItemLike + 'static,
 {
+    crate::motion_methods!(ControlGroupMotion, model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -345,6 +352,7 @@ where
             callbacks: Default::default(),
 
             model: ControlGroupModel {
+                motion: Default::default(),
                 id: id.into(),
                 items: Vec::new(),
                 default_selected_ids: Vec::new(),
@@ -411,6 +419,10 @@ where
     }
 
     /// Animates selection progress for item templates that support it.
+    pub fn motion_enabled(self, enabled: bool) -> Self {
+        self.animated_selection(enabled)
+    }
+
     pub fn animated_selection(mut self, animated_selection: bool) -> Self {
         self.model.animated_selection = animated_selection;
         self

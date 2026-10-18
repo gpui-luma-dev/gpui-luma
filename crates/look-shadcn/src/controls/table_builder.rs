@@ -27,6 +27,13 @@ impl<T> Table<T>
 where
     T: 'static,
 {
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(enabled);
+        self
+    }
+
+    gpui_luma::forward_motion!(gpui_luma::controls::table::TableMotion, builder builder);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -508,7 +515,8 @@ where
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> TableBuilder<T> {
-        let mut builder = self.builder.size(self.size.control_size());
+        let self_builder = self.builder.motion_defaults(look.motion_defaults().table);
+        let mut builder = self_builder.size(self.size.control_size());
         if !self.custom_theme {
             builder = builder.theme(look.table_theme());
         }

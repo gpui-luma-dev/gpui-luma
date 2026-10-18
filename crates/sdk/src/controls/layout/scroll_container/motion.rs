@@ -1,11 +1,11 @@
 //! Frame-driven offset animation shared by scroll containers and item adapters.
 use std::{
-    cell::Cell,
+    cell::{Cell, RefCell},
     rc::{Rc, Weak},
     time::Instant,
 };
 use gpui::{App, EntityId, Pixels, Point, ScrollHandle, Window, px};
-use crate::motion::{DEFAULT_TRANSITION_DURATION, ease_out_cubic};
+use crate::motion::{Transition, MotionState, RunningMotion};
 
 type Destination = Rc<dyn Fn(&ScrollHandle) -> Option<Point<Pixels>>>;
 
@@ -13,6 +13,8 @@ type Destination = Rc<dyn Fn(&ScrollHandle) -> Option<Point<Pixels>>>;
 struct State {
     generation: Cell<u64>,
     active: Cell<bool>,
+    definition: RefCell<Transition>,
+    samples: Cell<[MotionState; 2]>,
 }
 
 /// Internal scrolling mechanism. Hosts resolve destinations; this owns timing,
@@ -21,6 +23,10 @@ struct State {
 pub(crate) struct ScrollMotion(Rc<State>);
 
 impl ScrollMotion {
+    pub fn configure(&self, definition: Transition) {
+        *self.0.definition.borrow_mut() = definition;
+    }
+
     pub fn cancel(&self) {
         self.0.generation.set(self.0.generation.get().wrapping_add(1));
         self.0.active.set(false);
@@ -39,6 +45,11 @@ impl ScrollMotion {
         window: &Window,
         cx: &App,
     ) {
+        let samples = if self.is_active() {
+            self.0.samples.get()
+        } else {
+            [MotionState::default(); 2]
+        };
         self.cancel();
         self.0.active.set(true);
         Frame {
@@ -48,7 +59,12 @@ impl ScrollMotion {
             destination: Rc::new(destination),
             view: window.current_view(),
             started: cx.background_executor().now(),
-            progress: 0.0,
+            began: cx.background_executor().now(),
+            definition: self.0.definition.borrow().clone(),
+            channels: None,
+            target: None,
+            samples,
+            last: None,
             settled: 0,
         }
         .schedule(window);
@@ -62,7 +78,12 @@ struct Frame {
     destination: Destination,
     view: EntityId,
     started: Instant,
-    progress: f32,
+    began: Instant,
+    definition: Transition,
+    channels: Option<[Box<dyn RunningMotion>; 2]>,
+    target: Option<Point<Pixels>>,
+    samples: [MotionState; 2],
+    last: Option<Point<Pixels>>,
     settled: u8,
 }
 
@@ -90,20 +111,62 @@ impl Frame {
                 px(target.x.as_f32().clamp(-max.x.as_f32().max(0.0), 0.0)),
                 px(target.y.as_f32().clamp(-max.y.as_f32().max(0.0), 0.0)),
             );
-            let elapsed = cx.background_executor().now().duration_since(self.started);
-            let t = (elapsed.as_secs_f32() / DEFAULT_TRANSITION_DURATION.as_secs_f32()).clamp(0.0, 1.0);
-            let progress = ease_out_cubic(t);
             let current = self.scroll.offset();
-            // Incremental interpolation preserves layout's anchor corrections.
-            let next = if progress >= 1.0 {
-                target
-            } else {
-                current + (target - current) * ((progress - self.progress) / (1.0 - self.progress))
+            let now = cx.background_executor().now();
+            // Rebase on native layout/anchor corrections and changing estimates.
+            // Each trajectory is in pixel units and retains its sampled velocity.
+            if self.target != Some(target) || self.last.is_some_and(|last| last != current) {
+                self.samples[0].value = current.x.as_f32();
+                self.samples[1].value = current.y.as_f32();
+                self.channels = Some(if self.channels.is_some() {
+                    self.started = now;
+                    let elapsed = now.duration_since(self.began);
+                    [
+                        self.definition.retarget(self.samples[0], target.x.as_f32(), elapsed),
+                        self.definition.retarget(self.samples[1], target.y.as_f32(), elapsed),
+                    ]
+                } else {
+                    [
+                        self.definition.start(self.samples[0], target.x.as_f32()),
+                        self.definition.start(self.samples[1], target.y.as_f32()),
+                    ]
+                });
+                self.target = Some(target);
+            }
+            let elapsed = now.duration_since(self.started);
+            let Some(channels) = &self.channels else {
+                state.active.set(false);
+                return;
             };
+            let x = channels[0].sample(elapsed);
+            let y = channels[1].sample(elapsed);
+            self.samples = [x.state, y.state];
+            state.samples.set(self.samples);
+            if !x.state.value.is_finite()
+                || !y.state.value.is_finite()
+                || !x.state.velocity.is_finite()
+                || !y.state.velocity.is_finite()
+            {
+                self.scroll.set_offset(target);
+                state.active.set(false);
+                return;
+            }
+            let next = gpui::point(
+                if x.complete {
+                    target.x
+                } else {
+                    px(x.state.value.clamp(-max.x.as_f32().max(0.0), 0.0))
+                },
+                if y.complete {
+                    target.y
+                } else {
+                    px(y.state.value.clamp(-max.y.as_f32().max(0.0), 0.0))
+                },
+            );
             self.scroll.set_offset(next);
-            self.progress = progress;
+            self.last = Some(next);
             let distance = (next.x - current.x).abs() + (next.y - current.y).abs();
-            self.settled = if t >= 1.0 && distance <= px(0.1) {
+            self.settled = if x.complete && y.complete && distance <= px(0.1) {
                 self.settled + 1
             } else {
                 0

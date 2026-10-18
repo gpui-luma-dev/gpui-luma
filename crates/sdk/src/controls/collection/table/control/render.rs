@@ -225,7 +225,8 @@ where
                 let _ = owner.update(cx, |table, cx| table.handle_scroll_wheel(event, window, cx));
             },
         );
-        self.drop_layout.configure(self.model.theme.drop_layout_motion(), true);
+        self.drop_layout.configure_transition(&self.model.motion.profile().drop_layout);
+        self.drop_layout.set_motion_enabled(self.model.motion.enabled());
         let scroll = self.list_state.clone();
         let list_element = self.drop_layout.scope(list_element, move || scroll.scroll_px_offset_for_scrollbar());
         let body = div()

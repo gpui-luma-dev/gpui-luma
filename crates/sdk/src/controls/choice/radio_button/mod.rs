@@ -1,3 +1,7 @@
+crate::motion_profile!(RadioMotion => radio {
+    state: crate::motion::Transition,
+});
+
 mod template;
 mod theme;
 
@@ -8,14 +12,13 @@ pub use theme::{
 };
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use gpui::{
     AnyElement, App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
     Render, SharedString, Subscription, Window, div,
 };
 
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::VisualTransition;
 use crate::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use crate::controls::button::{Button, ButtonBuilder, ButtonContentContext, ButtonEvent, ButtonTemplate};
 use crate::infra::presenter::{ControlPresenter, HasPresenter};
@@ -55,8 +58,9 @@ pub enum RadioButtonEvent {
 
 pub struct RadioButtonControl {
     selected: bool,
-    animated: bool,
+    motion_enabled: bool,
     transition: VisualTransition,
+    motion: RadioMotion,
     button: Entity<Button<RadioButtonData>>,
     _subscriptions: Vec<Subscription>,
 }
@@ -64,16 +68,17 @@ pub struct RadioButtonControl {
 impl EventEmitter<RadioButtonEvent> for RadioButtonControl {}
 
 impl RadioButtonControl {
+    /// Motion roles captured when this control was created.
+    pub fn motion_profile(&self) -> &RadioMotion {
+        &self.motion
+    }
+
     fn from_builder(builder: RadioButtonBuilder, cx: &mut Context<Self>) -> Self {
         let selected = builder.button.model.data.selected;
-        let animated = builder.animated;
-        let duration = if animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        };
+        let motion_enabled = builder.motion_enabled;
+        let motion = builder.motion_profile();
         let progress = if selected { 1.0 } else { 0.0 };
-        let transition = VisualTransition::new(progress, duration);
+        let transition = VisualTransition::with_transition(progress, motion.state.enabled(motion_enabled));
 
         let mut button_builder = builder.button;
         button_builder.model.data = RadioButtonData { selected, progress };
@@ -85,7 +90,7 @@ impl RadioButtonControl {
         });
         let subscription = cx.subscribe(&button, Self::handle_button_event);
 
-        Self { selected, animated, transition, button, _subscriptions: vec![subscription] }
+        Self { selected, motion_enabled, transition, motion, button, _subscriptions: vec![subscription] }
     }
 
     fn push_button_data(&mut self, cx: &mut Context<Self>) {
@@ -113,21 +118,16 @@ impl RadioButtonControl {
         &self.selected
     }
 
-    pub fn animated(&self) -> bool {
-        self.animated
+    pub fn motion_enabled(&self) -> bool {
+        self.motion_enabled
     }
 
-    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.motion_enabled == motion_enabled {
             return;
         }
-        self.animated = animated;
-        let duration = if animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        };
-        self.transition = VisualTransition::new(self.transition.progress(), duration);
+        self.motion_enabled = motion_enabled;
+        self.transition.set_transition(self.motion.state.enabled(motion_enabled));
         self.transition.set_target(if self.selected { 1.0 } else { 0.0 });
         self.push_button_data(cx);
         cx.notify();
@@ -201,10 +201,13 @@ pub struct RadioButtonBuilder {
     callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::radio_button::RadioButtonEvent>,
 
     button: ButtonBuilder<RadioButtonData>,
-    animated: bool,
+    motion_enabled: bool,
+    motion: crate::motion::MotionConfig<RadioMotion>,
 }
 
 impl RadioButtonBuilder {
+    crate::motion_methods!(RadioMotion, motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -297,8 +300,8 @@ impl RadioButtonBuilder {
     }
 
     /// Enables or disables the selected/unselected visual transition (default `true`).
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -325,7 +328,8 @@ pub fn new(id: impl Into<SharedString>) -> RadioButtonBuilder {
         callbacks: Default::default(),
 
         button: ButtonBuilder::new(id).typed(RadioButtonData::default()).template(default_radio_button_template()),
-        animated: true,
+        motion_enabled: true,
+        motion: Default::default(),
     }
 }
 
@@ -335,8 +339,8 @@ mod tests {
 
     #[test]
     fn radio_button_builder_animated_option() {
-        assert!(new("animated-default").animated);
-        assert!(!new("animated-off").animated(false).animated);
+        assert!(new("animated-default").motion_enabled);
+        assert!(!new("animated-off").motion_enabled(false).motion_enabled);
     }
 
     #[test]

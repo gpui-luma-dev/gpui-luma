@@ -22,3 +22,5 @@ pub use crate::infra::state::{ControlFocusState, MenuPath};
 
 mod callback;
 pub use callback::PopupMenuEventExt;
+
+pub use model::PopupMenuMotion;

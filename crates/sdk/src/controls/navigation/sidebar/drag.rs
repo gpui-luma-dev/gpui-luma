@@ -308,16 +308,7 @@ pub(super) fn set_expanded(panel: &mut SidebarPanelModel, key: &SharedString, ex
     }
 }
 impl SidebarControl {
-    /// Override post-drop duration; None restores the inherited Look value.
-    pub fn set_drop_layout_motion(&mut self, duration: Option<std::time::Duration>, cx: &mut Context<Self>) {
-        self.panel.update(cx, |panel, cx| {
-            panel.drop_layout.set_duration(duration);
-            cx.notify();
-        });
-        cx.notify();
-    }
-
-    /// Retained keyed post-drop motion and resolved duration diagnostics.
+    /// Retained keyed post-drop geometry and running transitions.
     pub fn drop_layout_motion(&self, cx: &gpui::App) -> crate::motion::DropLayoutMotion<SharedString> {
         self.panel.read(cx).drop_layout.clone()
     }

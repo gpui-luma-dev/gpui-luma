@@ -64,23 +64,12 @@
 <p>Table, Sidebar, Tabs and Accordion resolve drag appearance through their theme’s <code>resolve_drag</code> hook. Native previews use the floating surface and foreground, with theme typography and radius. Valid and rejected insertion feedback use the Look’s focus and destructive colors rather than ordinary label colors. Custom themes can override the hook.</p>
 <section id="drop-motion"><h2>Motion after a drop</h2>
 <p>Changed drops animate mounted items from their previous keyed positions to the committed layout. The shared SDK <code>DropLayoutMotion</code> uses <code>VisualTransition</code> with 200 ms cubic ease-out by default. Data, selection and lifecycle callbacks commit immediately; animation does not delay <code>Dropped</code> or <code>DragEnded</code>. Valid no-ops, rejected drops and cancellations do not start motion.</p>
-<p>Configure the inherited duration with <code>[common.drag_drop] drop_motion_ms = 200</code> in either Look’s stylesheet. Missing values retain the SDK fallback; explicit zero disables motion. Each SDK control exposes <code>set_drop_layout_motion(Some(duration), cx)</code> and <code>drop_layout_motion()</code> diagnostics; <code>None</code> restores the inherited Look value. The resolved value retains <code>MotionSource</code> provenance. Existing <code>animated(false)</code> on Tabs, Sidebar, TreeView or Accordion takes precedence. GPUI reduced motion also settles immediately.</p>
-<div class="codebox"><div class="codebar"><span>SDK · drop motion</span><button class="copy" aria-label="Copy drop motion example">Copy</button></div><pre><code class="language-rust">use std::time::Duration;
-use gpui::{App, Entity};
-use gpui_luma::controls::tabs::Tabs;
-use gpui_luma::theme::stylesheet::CommonStylesheet;
+<p>Configure <code>[common.motion.&lt;control&gt;.drop_layout]</code> in the look stylesheet or edit the role with <code>.motion(...)</code>. Untouched roles inherit the look defaults. <code>Transition::instant()</code> disables one role; <code>motion_enabled(false)</code> disables all roles. GPUI reduced motion also settles immediately. Inspect authored transitions through <code>motion_profile()</code>.</p>
+<div class="codebox"><div class="codebar"><span>SDK · drop motion</span><button class="copy" aria-label="Copy drop motion example">Copy</button></div><pre><code class="language-rust">use gpui_luma::{controls::tabs::Tabs, motion::Transition};
 
-fn configure(tabs: &amp;Entity&lt;Tabs&gt;, cx: &amp;mut App) {
-    tabs.update(cx, |tabs, cx| {
-        tabs.set_drop_layout_motion(Some(Duration::from_millis(350)), cx);
-        // Explicit zero disables only drop motion; None restores the Look.
-        tabs.set_drop_layout_motion(None, cx);
-    });
-    let stylesheet = CommonStylesheet::parse(
-        &quot;[common.drag_drop]\ndrop_motion_ms = 200&quot;
-    ).unwrap();
-    assert_eq!(stylesheet.drop_layout_motion(&quot;Custom&quot;).duration,
-        Duration::from_millis(200));
+fn settings_tabs() -&gt; gpui_luma::controls::tabs::TabsBuilder {
+    Tabs::new("settings")
+        .motion(|m| m.drop_layout = Transition::spring(300.0, 28.0))
 }</code></pre></div>
 <table><thead><tr><th>Control</th><th>Supported motion</th><th>Domain differences</th></tr></thead><tbody>
 <tr><td>Accordion</td><td>Moved and displaced whole sections</td><td>Keyed expansion, disclosure progress, focus, measurements and child entities survive. Header drags keep editor input independent.</td></tr>

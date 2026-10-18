@@ -39,7 +39,6 @@ const LAYOUT: ListBoxSampleLayout = ListBoxSampleLayout {
 type ItemDrop = DropProposal<Side, u32>;
 
 pub(super) struct TransferExample {
-    motion_controls: Entity<super::super::drop_motion::DropMotionControls<u32>>,
     model: TransferModel,
     drop_layout: [gpui_luma::motion::DropLayoutMotion<u32>; 2],
     bindings: [ListBoxBinding; 2],
@@ -54,11 +53,8 @@ impl TransferExample {
             list.set_selection_policy(super::selection_controls::DEFAULT_POLICY);
         }
         let drop_layout: [gpui_luma::motion::DropLayoutMotion<u32>; 2] = std::array::from_fn(|_| Default::default());
-        let motion_controls =
-            super::super::drop_motion::DropMotionControls::spawn(look.clone(), drop_layout.to_vec(), cx);
         Self {
             model,
-            motion_controls,
             drop_layout,
             bindings: Side::ALL.map(|_| ListBoxBinding::new(cx)),
             scrolls: [
@@ -210,7 +206,6 @@ impl Render for TransferExample {
         let right = self.render_list(Side::Right, window, cx);
         let look = &self.presentations[0].look;
         vstack! { gap=8.0;
-            self.motion_controls.clone(),
             div().typography_style(look.typography_scale(ShadcnTextSize::Sm)).font_weight(FontWeight::SEMIBOLD)
                 .text_color(look.chrome().title_text).child("Drag and drop"),
             div().typography_style(look.typography_scale(ShadcnTextSize::Xs)).text_color(look.chrome().muted_text)

@@ -1,3 +1,8 @@
+crate::motion_profile!(SearchSelectorMotion => search_selector {
+    disclosure: crate::motion::Transition,
+    presence: crate::motion::PresenceMotion,
+});
+
 use std::sync::Arc;
 
 use gpui::{App, AppContext, Entity, IntoElement, ParentElement, SharedString, Styled};
@@ -26,6 +31,7 @@ pub type SearchSelectorPopupLookProvider = Arc<dyn Fn(ControlSize) -> SelectorIt
 
 #[derive(Clone)]
 pub struct SearchSelectorModel {
+    pub(crate) motion: crate::motion::MotionConfig<SearchSelectorMotion>,
     pub(crate) id: SharedString,
     pub(crate) items: Vec<SelectionItem>,
     pub(crate) placeholder: SharedString,
@@ -61,6 +67,9 @@ pub struct SearchSelectorBuilder {
 }
 
 impl SearchSelectorBuilder {
+    crate::motion_methods!(SearchSelectorMotion, model.motion);
+    crate::motion_policy!(model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -169,6 +178,7 @@ impl SearchSelectorBuilder {
 
             initial_selected_id: None,
             model: SearchSelectorModel {
+                motion: Default::default(),
                 id: id.into(),
                 items: items.into_iter().collect(),
                 placeholder: SharedString::from("Select…"),
@@ -408,6 +418,7 @@ pub fn new(id: impl Into<SharedString>, items: impl IntoIterator<Item = Selectio
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]

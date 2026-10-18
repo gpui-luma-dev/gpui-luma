@@ -17,3 +17,5 @@ pub use crate::infra::state::{ControlFocusState, MenuPath};
 
 mod callback;
 pub use callback::ContextMenuEventExt;
+
+pub use model::ContextMenuMotion;

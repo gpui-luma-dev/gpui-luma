@@ -24,6 +24,8 @@ enum TriggerFace {
 
 /// Builder in the guise of a popup menu: Radix axes plus SDK options, until `.spawn(cx)`.
 pub struct PopupMenu {
+    motion_enabled: bool,
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::popup_menu::PopupMenuMotion>,
     callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::popup_menu::PopupMenuEvent>,
 
     id: SharedString,
@@ -155,6 +157,8 @@ impl PopupMenu {
 
             id: id.into(),
             look: None,
+            motion: Default::default(),
+            motion_enabled: true,
             variant: PopupMenuVariant::default(),
             tone: Tone::default(),
             size: ButtonSize::default(),
@@ -172,6 +176,12 @@ impl PopupMenu {
             face: TriggerFace::Default,
             modifiers: Vec::new(),
         }
+    }
+
+    gpui_luma::forward_motion!(gpui_luma::controls::popup_menu::PopupMenuMotion, edits motion);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.motion_enabled = enabled;
+        self
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
@@ -319,6 +329,9 @@ impl PopupMenu {
     fn into_sdk_builder(self, look: Look) -> PopupMenuBuilder {
         let template = popup_menu_template(&look, self.variant, self.tone);
         let mut builder = gpui_luma::controls::popup_menu::PopupMenu::new(self.id)
+            .motion_defaults(look.motion_defaults().popup_menu)
+            .with_motion_overrides(self.motion)
+            .motion_enabled(self.motion_enabled)
             .template(template)
             .size(self.size.control_size())
             .menu_size(self.menu_size.control_size())

@@ -23,7 +23,13 @@ fn setup(app: &mut TestAppContext, mode: u8) -> (Entity<Page>, &mut VisualTestCo
         let tabs = Tabs::new("drag-tabs")
             .reordering(true)
             .active("b")
-            .animated(false)
+            .motion_enabled(false)
+            .motion(|m| {
+                m.drop_layout = crate::motion::Transition::timed(
+                    std::time::Duration::from_millis(1000),
+                    crate::motion::Easing::OutCubic,
+                )
+            })
             .items([
                 TabsItem::new("a"),
                 TabsItem::new("b"),
@@ -377,8 +383,7 @@ fn native_drop_animates_positions_after_lifecycle_completion() {
     let (page, cx) = setup(&mut app, 0);
     let tabs = cx.update(|_, cx| page.read(cx).tabs.clone());
     tabs.update(cx, |tabs, cx| {
-        tabs.set_animated(true, cx);
-        tabs.drop_layout_motion().set_duration(Some(Duration::from_millis(1000)));
+        tabs.set_motion_enabled(true, cx);
     });
     cx.run_until_parked();
     let old = cx.debug_bounds("tab-drag-a").unwrap();

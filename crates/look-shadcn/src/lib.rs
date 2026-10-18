@@ -82,3 +82,15 @@ mod remaining_stylesheet_tests;
 
 #[cfg(all(test, feature = "test-support"))]
 mod event_callback_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+gpui_luma::test_look_motion_contract!(crate::ShadcnLook::from_css_str(crate::FALLBACK_CSS).unwrap(), crate);
+
+#[cfg(all(test, feature = "test-support"))]
+gpui_luma::test_stylesheet_motion_contract!(
+    |source: &str| {
+        let stylesheet = crate::stylesheet::StylesheetConfig::parse(source).unwrap();
+        crate::ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, stylesheet).unwrap()
+    },
+    crate
+);

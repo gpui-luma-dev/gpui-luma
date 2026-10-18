@@ -191,7 +191,7 @@ impl ResizablePanels {
             .filter(|restore| restore.handle_index == index && restore.target_index == target_index)
             .cloned()
         {
-            if self.model.animated
+            if self.model.motion_enabled
                 && (self.transitions[target_index].is_animating() || self.transitions[target_index].progress() < 1.0)
             {
                 self.show_panel(target_index, cx);
@@ -221,15 +221,16 @@ impl ResizablePanels {
         if let Some(collapse_restore) = self.collapse_restore.get_mut(index) {
             *collapse_restore = Some(restore);
         }
-        let animated =
-            self.model.animated && behavior.mode == ResizeCollapseMode::Completely && self.model.panels.len() == 2;
-        if animated {
+        let motion_enabled = self.model.motion_enabled
+            && behavior.mode == ResizeCollapseMode::Completely
+            && self.model.panels.len() == 2;
+        if motion_enabled {
             self.transitions[target_index].set_target(0.0);
         }
         self.refresh_panel_sizes_px();
         let sizes_px = self.panel_sizes_px.clone();
         cx.emit(ResizablePanelsEvent::ResizeStart);
-        if !animated {
+        if !motion_enabled {
             cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
             cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
         }

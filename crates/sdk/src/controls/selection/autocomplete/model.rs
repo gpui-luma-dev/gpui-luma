@@ -1,3 +1,7 @@
+crate::motion_profile!(AutocompleteMotion => autocomplete {
+    presence: crate::motion::PresenceMotion,
+});
+
 use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
@@ -18,6 +22,7 @@ pub type AutocompletePopupLookProvider = Arc<dyn Fn(ControlSize) -> SelectorItem
 
 #[derive(Clone)]
 pub struct AutocompleteModel {
+    pub(crate) motion: crate::motion::MotionConfig<AutocompleteMotion>,
     pub(crate) id: SharedString,
     pub(crate) items: Vec<SelectionItem>,
     pub(crate) placeholder: SharedString,
@@ -43,6 +48,9 @@ pub struct AutocompleteBuilder {
 }
 
 impl AutocompleteBuilder {
+    crate::motion_methods!(AutocompleteMotion, model.motion);
+    crate::motion_policy!(model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -150,6 +158,7 @@ impl AutocompleteBuilder {
             callbacks: Default::default(),
 
             model: AutocompleteModel {
+                motion: Default::default(),
                 id: id.into(),
                 items: items.into_iter().collect(),
                 placeholder: SharedString::from("Type to filter…"),
@@ -295,6 +304,7 @@ pub fn new(id: impl Into<SharedString>, items: impl IntoIterator<Item = Selectio
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]

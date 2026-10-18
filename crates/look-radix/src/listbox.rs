@@ -58,6 +58,8 @@ pub fn listbox_template<T: 'static>(label: impl Fn(&T) -> SharedString + 'static
 /// Borrowed list builder. Keep the SDK control on the host between renders;
 /// building does not reset focus, selection, or scroll position.
 pub struct ListBoxBuilder<'a, M: 'static, T, K: 'static> {
+    motion_edits: gpui_luma::motion::MotionOverrides<gpui_luma::controls::listbox::ListBoxMotion>,
+    motion_enabled: Option<bool>,
     id: &'static str,
     control: &'a mut ListBoxControl<M, T, K>,
     look: Option<Look>,
@@ -65,12 +67,20 @@ pub struct ListBoxBuilder<'a, M: 'static, T, K: 'static> {
     template: ListBoxItemTemplate<'a, T>,
 }
 impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<'a, M, T, K> {
+    gpui_luma::forward_motion!(gpui_luma::controls::listbox::ListBoxMotion, edits motion_edits);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.motion_enabled = Some(enabled);
+        self
+    }
+
     pub fn new(
         id: &'static str,
         control: &'a mut ListBoxControl<M, T, K>,
         template: ListBoxItemTemplate<'a, T>,
     ) -> Self {
         Self {
+            motion_edits: Default::default(),
+            motion_enabled: None,
             id,
             control,
             look: None,
@@ -90,6 +100,13 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
     pub fn build(self, window: &mut Window, cx: &mut Context<M>) -> Stateful<Div> {
         let look = resolve_look(self.look.as_ref(), cx.try_global::<Look>());
         let parts = self.control.render_parts();
+        if let Some(enabled) = self.motion_enabled {
+            parts.motion_config.set_enabled(enabled);
+        }
+        let motion_enabled = parts.motion_config.enabled();
+        let profile = parts.motion_config.inherit_with(|| look.motion_defaults().listbox, self.motion_edits);
+        parts.scroll.set_motion(profile.scroll.enabled(motion_enabled));
+        parts.drop_layout.configure_transition(&profile.drop_layout);
         parts.scroll.set_wheel_focus_owner(parts.binding.focus_handle().clone());
         let layout = self.flow.layout((0.0, 0.0));
         let (axis, extent) = match self.flow {
@@ -216,7 +233,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             None => parts.scroll.bind(surface, viewport, parts.state),
         };
         let surface = parts.binding.bind_root(surface, axis, parts.state.selection_mode(), window, cx, parts.on_input);
-        parts.drop_layout.configure(look.common_stylesheet().drop_layout_motion("Radix"), true);
+        parts.drop_layout.set_motion_enabled(motion_enabled);
         div()
             .id("radix-listbox-drop-motion")
             .w_full()
@@ -238,6 +255,40 @@ mod persistent_drag_tests {
             super::listbox_template(|row: &u32| row.to_string().into()),
         )
         .build(window, cx)
+    }
+
+    #[test]
+    fn retained_list_captures_typed_look_roles_once() {
+        use gpui_luma::motion::{Transition, Easing};
+        use std::time::Duration;
+        let make_look = |ms| {
+            let source =
+                format!("[common.motion.listbox.drop_layout]\nkind = 'timed'\nduration_ms = {ms}\neasing = 'linear'");
+            let look = crate::Look::built_in();
+            look.set_common_stylesheet(gpui_luma::theme::stylesheet::CommonStylesheet::parse(&source).unwrap());
+            look
+        };
+        let expected = Transition::timed(Duration::from_millis(350), Easing::Linear).description();
+        let mut app = TestAppContext::single();
+        let (view, cx) = app.add_window_view(|_, cx| {
+            cx.set_global(make_look(350));
+            DragHarness::new(cx)
+        });
+        cx.run_until_parked();
+        view.update(cx, |host, cx| {
+            assert_eq!(host.lists[0].motion_profile().drop_layout.description(), expected);
+            cx.set_global(make_look(800));
+            host.lists[0].set_motion_enabled(false);
+            cx.notify();
+        });
+        cx.run_until_parked();
+        view.update(cx, |host, cx| {
+            assert_eq!(host.lists[0].motion_profile().drop_layout.description(), expected);
+            host.lists[0].set_motion_enabled(true);
+            cx.notify();
+        });
+        cx.run_until_parked();
+        cx.update(|_, app| assert_eq!(view.read(app).lists[0].motion_profile().drop_layout.description(), expected));
     }
     include!("../../sdk/tests/support/listbox_drag.rs");
 }

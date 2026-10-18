@@ -101,8 +101,25 @@ impl SidebarPanelEngine {
         SidebarPanelEngineBuilder::new(id)
     }
 
+    pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.model.motion_enabled = enabled;
+        let definition = self.model.motion.profile().expansion.enabled(enabled);
+        for motion in self.branch_transitions.values_mut() {
+            motion.set_transition(definition.clone());
+        }
+        self.rail_submenu_lifecycle.set_motion_enabled(enabled);
+        self.main_scroll.set_motion_enabled(enabled);
+        if !enabled {
+            self.drop_layout.cancel();
+        }
+        cx.notify();
+    }
+
     pub(crate) fn from_builder(builder: SidebarPanelEngineBuilder, cx: &mut Context<Self>) -> Self {
-        let animated = builder.model.animated;
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
+        let motion_enabled = builder.model.motion_enabled;
         let main_scroll = ScrollContainer::new(
             format!("{}-main-scroll", builder.model.id),
             builder.model.scrollbar_template.clone(),
@@ -138,7 +155,7 @@ impl SidebarPanelEngine {
             open_rail_submenu: None,
             rail_submenu_open_submenu: None,
             rail_submenu_active_path: None,
-            rail_submenu_lifecycle: PopupLifecycle::new(animated),
+            rail_submenu_lifecycle: PopupLifecycle::with_motion(motion_enabled, motion.popup.clone()),
             rail_submenu_content: None,
             rail_submenu_content_size: None,
             visible_focus_nodes: Vec::new(),

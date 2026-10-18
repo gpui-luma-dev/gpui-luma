@@ -243,7 +243,7 @@ mod tests {
             Positioning::new(Arc::new(ShadcnLook::built_in()), cx)
         });
         let tree = cx.update(|_, app| view.read(app).tree.clone());
-        tree.update(cx, |tree, cx| tree.set_animated(false, cx));
+        tree.update(cx, |tree, cx| tree.set_motion_enabled(false, cx));
         // Exercise an open folder, a closed folder offscreen, and an already
         // closed folder in view through the actual SDK button.
         for (open, offscreen) in [(true, true), (true, false), (false, true), (false, false)] {

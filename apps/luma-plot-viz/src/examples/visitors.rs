@@ -1,3 +1,4 @@
+use gpui_luma::motion::{Transition, Easing};
 mod data;
 
 use gpui_luma::controls::selector::SelectorEventExt;
@@ -59,7 +60,10 @@ impl VisitorsExample {
                 days: 91,
                 range,
                 replay,
-                motion: VisualTransition::new(1.0, Duration::from_millis(1400)),
+                motion: VisualTransition::with_transition(
+                    1.0,
+                    Transition::timed(Duration::from_millis(1400), Easing::OutCubic),
+                ),
                 _subscriptions: { Vec::new() },
             }
         }))

@@ -64,9 +64,6 @@ pub trait AccordionTheme: Send + Sync {
     fn metrics(&self) -> MetricTokens;
 
     /// Inherited post-drop position motion.
-    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
-        crate::theme::stylesheet::CommonStylesheet::default().drop_layout_motion("SDK")
-    }
     /// Theme-owned preview and insertion feedback.
     fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
         crate::infra::drag_drop::DragDropLook::from_tokens(&ThemeTokens::default(), size)

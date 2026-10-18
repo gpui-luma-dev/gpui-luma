@@ -54,7 +54,6 @@ fn folder_content(node: &FlatTreeNode<'_, Entry>, _: &mut Window, _: &mut App) -
 }
 
 pub(super) struct Workspaces {
-    motion_controls: Entity<super::super::drop_motion::DropMotionControls<SharedString>>,
     look: Arc<ShadcnLook>,
     trees: [TreeView<Entry>; 2],
     actions: Vec<Entity<Button>>,
@@ -178,12 +177,7 @@ impl Workspaces {
                 "Drag row edges before/after; folder centers move into folders. Blank space appends to root. Escape cancels.",
             )
         });
-        let motion_controls = super::super::drop_motion::DropMotionControls::spawn(
-            look.clone(),
-            trees.iter().map(|tree| tree.read(cx).drop_layout_motion()).collect(),
-            cx,
-        );
-        Self { motion_controls, look, trees, actions: action_entities, search, sort, event_stream }
+        Self { look, trees, actions: action_entities, search, sort, event_stream }
     }
 
     fn log(&mut self, line: String, cx: &mut Context<Self>) {
@@ -309,7 +303,6 @@ impl Render for Workspaces {
                 .flex()
                 .flex_col()
                 .gap(px(10.0))
-                .child(self.motion_controls.clone())
                 .child(div().text_color(chrome.title_text).child("Move between workspaces"))
                 .child(
                     div().text_size(px(12.0)).text_color(chrome.muted_text).child(

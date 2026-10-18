@@ -1,3 +1,4 @@
+use gpui_luma::motion::{Transition, Easing};
 use std::time::Duration;
 use gpui::{App, Context, Entity, Render, Window, IntoElement, div, prelude::*, px};
 use gpui_luma::{DockPanel, vstack, motion::VisualTransition};
@@ -26,7 +27,10 @@ impl RadarGallery {
             selected: "Click a month to select its observations".into(),
             data,
             look,
-            motion: VisualTransition::new(0.0, Duration::from_millis(900)),
+            motion: VisualTransition::with_transition(
+                0.0,
+                Transition::timed(Duration::from_millis(900), Easing::OutCubic),
+            ),
         }))
     }
     pub(crate) fn enter(&mut self, cx: &mut Context<Self>) {
@@ -123,7 +127,10 @@ mod tests {
                 ))
                 .unwrap(),
             look: Look::built_in(),
-            motion: VisualTransition::new(1.0, Duration::from_millis(900)),
+            motion: VisualTransition::with_transition(
+                1.0,
+                Transition::timed(Duration::from_millis(900), Easing::OutCubic),
+            ),
         });
         host.update(cx, |host, cx| {
             host.enter(cx);

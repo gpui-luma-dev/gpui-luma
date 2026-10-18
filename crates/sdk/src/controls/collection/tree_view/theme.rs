@@ -45,11 +45,6 @@ pub struct TreeViewPalette {
 }
 
 pub trait TreeViewTheme: Send + Sync {
-    /// Inherited post-drop position motion; instance overrides remain SDK-owned.
-    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
-        crate::theme::stylesheet::CommonStylesheet::default().drop_layout_motion("SDK")
-    }
-
     fn resolve_row(&self, state: InteractionState, selected: bool, size: ControlSize) -> TreeViewPalette;
     /// Optional inset row outline, painted without changing row geometry.
     fn row_outline(&self, _state: InteractionState, _size: ControlSize) -> Option<Hsla> {

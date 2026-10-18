@@ -1,3 +1,8 @@
+crate::motion_profile!(ProgressMotion => progress {
+    value: crate::motion::Transition,
+    period: std::time::Duration,
+});
+
 use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
@@ -11,6 +16,7 @@ use crate::theme::ControlSize;
 
 #[derive(Clone)]
 pub struct ProgressModel {
+    pub(crate) motion: crate::motion::MotionConfig<ProgressMotion>,
     pub(crate) id: SharedString,
     pub(crate) range: ControlRange,
     pub(crate) value: f32,
@@ -37,13 +43,16 @@ pub struct ProgressRenderModel<'a> {
 
 pub struct ProgressBuilder {
     pub(crate) model: ProgressModel,
-    pub(crate) animated: bool,
+    pub(crate) motion_enabled: bool,
 }
 
 impl ProgressBuilder {
+    crate::motion_methods!(ProgressMotion, model.motion);
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
             model: ProgressModel {
+                motion: Default::default(),
                 id: id.into(),
                 range: ControlRange::default(),
                 value: 0.0,
@@ -54,7 +63,7 @@ impl ProgressBuilder {
                 indeterminate: false,
                 template: default_progress_template(),
             },
-            animated: true,
+            motion_enabled: true,
         }
     }
 
@@ -110,8 +119,8 @@ impl ProgressBuilder {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -177,8 +186,8 @@ mod tests {
 
     #[test]
     fn animated_defaults_true() {
-        assert!(ProgressBuilder::new("progress-animated").animated);
-        assert!(!ProgressBuilder::new("progress-animated-off").animated(false).animated);
+        assert!(ProgressBuilder::new("progress-animated").motion_enabled);
+        assert!(!ProgressBuilder::new("progress-animated-off").motion_enabled(false).motion_enabled);
     }
 
     #[test]

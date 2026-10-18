@@ -148,7 +148,11 @@ where
         cx.notify();
     }
 
+    crate::motion_snapshot!(super::TreeViewMotion, model.motion);
+
     pub(crate) fn from_builder(builder: TreeViewBuilder<T>, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
         let enabled = builder.model.enabled;
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         let scrollbar = builder.model.scrollbar_template.as_ref().map(|template| {
@@ -207,13 +211,7 @@ where
         control
     }
 
-    /// Override post-drop duration; None restores the inherited Look value.
-    pub fn set_drop_layout_motion(&mut self, duration: Option<std::time::Duration>, cx: &mut Context<Self>) {
-        self.drop_layout.set_duration(duration);
-        cx.notify();
-    }
-
-    /// Retained keyed post-drop motion and resolved duration diagnostics.
+    /// Retained keyed post-drop geometry and running transitions.
     pub fn drop_layout_motion(&self) -> crate::motion::DropLayoutMotion<SharedString> {
         self.drop_layout.clone()
     }
@@ -337,14 +335,14 @@ where
         Ok(())
     }
 
-    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.model.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.model.motion_enabled == motion_enabled {
             return;
         }
         self.cancel_position();
-        self.model.animated = animated;
+        self.model.motion_enabled = motion_enabled;
         for (id, transition) in &mut self.expand_transitions {
-            transition.set_animated(animated);
+            transition.set_motion_enabled(motion_enabled);
             transition.set_target(if self.expanded_ids.contains(id) { 1.0 } else { 0.0 });
         }
         self.rebuild_flat_cache(cx);
@@ -466,7 +464,7 @@ where
             self.pressed_node_id = None;
         }
 
-        if !self.model.animated {
+        if !self.model.motion_enabled {
             self.rebuild_flat_cache(cx);
         } else {
             cx.notify();
@@ -532,10 +530,20 @@ where
                 .entry(id)
                 .and_modify(|transition| {
                     if !transition.is_animating() {
-                        *transition = DisclosureMotion::new(target, self.model.animated);
+                        *transition = DisclosureMotion::with_transition(
+                            target,
+                            self.model.motion_enabled,
+                            self.model.motion.profile().expansion.clone(),
+                        );
                     }
                 })
-                .or_insert_with(|| DisclosureMotion::new(target, self.model.animated));
+                .or_insert_with(|| {
+                    DisclosureMotion::with_transition(
+                        target,
+                        self.model.motion_enabled,
+                        self.model.motion.profile().expansion.clone(),
+                    )
+                });
         }
     }
 
@@ -555,10 +563,13 @@ where
     }
 
     fn set_expand_target(&mut self, node_id: &SharedString, target: f32) {
-        let transition = self
-            .expand_transitions
-            .entry(node_id.clone())
-            .or_insert_with(|| DisclosureMotion::new(if target > 0.5 { 0.0 } else { 1.0 }, self.model.animated));
+        let transition = self.expand_transitions.entry(node_id.clone()).or_insert_with(|| {
+            DisclosureMotion::with_transition(
+                if target > 0.5 { 0.0 } else { 1.0 },
+                self.model.motion_enabled,
+                self.model.motion.profile().expansion.clone(),
+            )
+        });
         transition.set_target(target);
     }
 
@@ -598,8 +609,11 @@ where
         }
         for (id, motion) in &mut self.expand_transitions {
             if motion.is_animating() {
-                *motion =
-                    DisclosureMotion::new(if self.expanded_ids.contains(id) { 1.0 } else { 0.0 }, self.model.animated);
+                *motion = DisclosureMotion::with_transition(
+                    if self.expanded_ids.contains(id) { 1.0 } else { 0.0 },
+                    self.model.motion_enabled,
+                    self.model.motion.profile().expansion.clone(),
+                );
             }
         }
         true
@@ -1166,7 +1180,8 @@ where
         };
 
         let body = self.render_viewport(window, cx);
-        self.drop_layout.configure(self.model.template.drop_layout_motion(), self.model.animated);
+        self.drop_layout.configure_transition(&self.model.motion.profile().drop_layout);
+        self.drop_layout.set_motion_enabled(self.model.motion_enabled);
         let scroll = self.list_state.clone();
         let body = self.drop_layout.scope(body, move || scroll.scroll_px_offset_for_scrollbar());
 
@@ -1381,7 +1396,7 @@ fn wheel_policy_dispatch_matrix() {
         |policy, cx| {
             TreeViewBuilder::new("matrix-tree")
                 .items((0..100).map(|i| TreeNode::new(i.to_string(), i.to_string(), ())))
-                .animated(false)
+                .motion_enabled(false)
                 .wheel_scroll_policy(policy.wheel)
                 .scroll_boundary_policy(policy.boundary)
                 .spawn(cx)

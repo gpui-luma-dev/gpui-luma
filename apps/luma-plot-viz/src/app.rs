@@ -1,3 +1,4 @@
+use gpui_luma::motion::{Transition, Easing};
 use gpui_luma::controls::tabs::TabsEventExt;
 use gpui_luma::controls::scrollbar::ScrollbarEventExt;
 use gpui_luma::controls::radio_group::RadioGroupEventExt;
@@ -84,7 +85,10 @@ impl PlotVizApp {
             tabs,
             active_tab: "Line".into(),
             entrance: {
-                let mut motion = gpui_luma::motion::VisualTransition::new(0.0, std::time::Duration::from_millis(900));
+                let mut motion = gpui_luma::motion::VisualTransition::with_transition(
+                    0.0,
+                    Transition::timed(std::time::Duration::from_millis(900), Easing::OutCubic),
+                );
                 motion.set_target(1.0);
                 motion
             },

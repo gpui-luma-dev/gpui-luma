@@ -64,11 +64,6 @@ pub struct TableDragLook {
 }
 
 pub trait TableTheme: Send + Sync {
-    /// Inherited post-drop position motion; instance overrides remain SDK-owned.
-    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
-        crate::theme::stylesheet::CommonStylesheet::default().drop_layout_motion("SDK")
-    }
-
     /// Defaults to existing theme surfaces; themes can supply semantic accents.
     fn resolve_drag(&self, size: ControlSize) -> TableDragLook {
         let look = self.resolve_look(true, true, size);

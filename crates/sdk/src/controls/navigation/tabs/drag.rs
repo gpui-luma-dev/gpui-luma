@@ -24,14 +24,8 @@ impl Tabs {
         }
         cx.notify();
     }
-    /// Override post-drop duration; None restores the inherited Look value.
-    pub fn set_drop_layout_motion(&mut self, duration: Option<std::time::Duration>, cx: &mut Context<Self>) {
-        self.drop_layout.set_duration(duration);
-        self.group.update(cx, |_, cx| cx.notify());
-        cx.notify();
-    }
 
-    /// Retained keyed post-drop motion and resolved duration diagnostics.
+    /// Retained keyed post-drop geometry and running transitions.
     pub fn drop_layout_motion(&self) -> crate::motion::DropLayoutMotion<SharedString> {
         self.drop_layout.clone()
     }

@@ -22,6 +22,7 @@ pub struct ScrollContainer {
     focus_owner: Option<gpui::FocusHandle>,
     scroll_handle: ScrollHandle,
     motion: super::ScrollMotion,
+    motion_config: Rc<RefCell<crate::motion::MotionConfig<super::ScrollContainerMotion>>>,
     pending_smooth: Rc<Cell<Option<f32>>>,
     scrollbar: Entity<Scrollbar>,
     scrollbar_width: Pixels,
@@ -50,6 +51,7 @@ impl ScrollContainer {
             focus_owner: None,
             scroll_handle: ScrollHandle::new(),
             motion: super::ScrollMotion::default(),
+            motion_config: Rc::new(RefCell::new(Default::default())),
             pending_smooth: Rc::default(),
             scrollbar,
             scrollbar_width: px(12.0),
@@ -62,6 +64,33 @@ impl ScrollContainer {
             active_until: Rc::new(Cell::new(None)),
             hide_task: Rc::new(RefCell::new(None)),
         }
+    }
+
+    pub fn motion(self, configure: impl Fn(&mut super::ScrollContainerMotion) + Send + Sync + 'static) -> Self {
+        {
+            let mut config = self.motion_config.borrow_mut();
+            config.configure(configure);
+            self.motion.configure(config.resolve().scroll.enabled(config.enabled()));
+        }
+        self
+    }
+    pub fn motion_defaults(self, defaults: super::ScrollContainerMotion) -> Self {
+        {
+            let mut config = self.motion_config.borrow_mut();
+            config.defaults(defaults);
+            self.motion.configure(config.resolve().scroll.enabled(config.enabled()));
+        }
+        self
+    }
+    pub fn motion_enabled(self, enabled: bool) -> Self {
+        self.set_motion_enabled(enabled);
+        self
+    }
+    pub fn set_motion_enabled(&self, enabled: bool) {
+        let mut config = self.motion_config.borrow_mut();
+        config.set_enabled(enabled);
+        self.motion.cancel();
+        self.motion.configure(config.resolve().scroll.enabled(enabled));
     }
 
     /// Explicit owner for RequireFocus. Without one, RequireFocus passes through.

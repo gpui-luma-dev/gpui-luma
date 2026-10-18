@@ -1,21 +1,12 @@
 use std::collections::{HashMap, HashSet};
-use std::time::Duration;
 
 use gpui::{Context, SharedString, Window};
 
 use super::super::{NavNode, NavNodeKind};
 use super::SidebarPanelEngine;
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::VisualTransition;
 
 impl SidebarPanelEngine {
-    pub(super) fn transition_duration(&self) -> Duration {
-        if self.model.animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        }
-    }
-
     pub(super) fn sync_branch_state(&mut self) {
         let mut branch_ids = HashSet::new();
         fn collect(nodes: &[NavNode], ids: &mut HashSet<SharedString>) {
@@ -31,22 +22,22 @@ impl SidebarPanelEngine {
         collect(&self.model.footer_nodes, &mut branch_ids);
         self.branch_transitions.retain(|id, _| branch_ids.contains(id));
         self.branch_heights_px.retain(|id, _| branch_ids.contains(id));
-        let duration = self.transition_duration();
+        let definition = self.model.motion.profile().expansion.enabled(self.model.motion_enabled);
         for id in branch_ids {
             let expanded = self.find_node(&id).is_some_and(|node| node.expanded);
-            self.branch_transitions
-                .entry(id)
-                .or_insert_with(|| VisualTransition::new(if expanded { 1.0 } else { 0.0 }, duration));
+            self.branch_transitions.entry(id).or_insert_with(|| {
+                VisualTransition::with_transition(if expanded { 1.0 } else { 0.0 }, definition.clone())
+            });
         }
     }
 
     pub(super) fn set_branch_target(&mut self, node_id: &SharedString, expanded: bool) {
-        let duration = self.transition_duration();
+        let definition = self.model.motion.profile().expansion.enabled(self.model.motion_enabled);
         let transition = self
             .branch_transitions
             .entry(node_id.clone())
-            .or_insert_with(|| VisualTransition::new(if expanded { 0.0 } else { 1.0 }, duration));
-        if self.model.animated {
+            .or_insert_with(|| VisualTransition::with_transition(if expanded { 0.0 } else { 1.0 }, definition.clone()));
+        if self.model.motion_enabled {
             transition.set_target(if expanded { 1.0 } else { 0.0 });
         } else {
             transition.snap_to(if expanded { 1.0 } else { 0.0 });
@@ -174,8 +165,8 @@ pub(super) fn toggle_expanded_in_nodes(nodes: &mut [NavNode], node_id: &SharedSt
 }
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
     use std::time::Duration;
+    use std::collections::HashMap;
 
     use gpui::SharedString;
     use lucide_svg_static::Icon as LucideIcon;
@@ -224,8 +215,13 @@ mod tests {
     #[test]
     fn closing_branch_remains_visible_while_transition_is_active() {
         let branch_id: SharedString = "inputs".into();
-        let mut transitions =
-            HashMap::from([(branch_id.clone(), VisualTransition::new(1.0, Duration::from_millis(200)))]);
+        let mut transitions = HashMap::from([(
+            branch_id.clone(),
+            VisualTransition::with_transition(
+                1.0,
+                crate::motion::Transition::timed(Duration::from_millis(200), crate::motion::Easing::OutCubic),
+            ),
+        )]);
         transitions.get_mut(&branch_id).unwrap().set_target(0.0);
 
         assert!(branch_visible_for(&transitions, &branch_id, false));

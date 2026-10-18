@@ -28,6 +28,8 @@ pub struct Progress {
     modifiers: Vec<TemplateModifier>,
 }
 impl Progress {
+    gpui_luma::forward_motion!(gpui_luma::controls::progress::ProgressMotion, builder builder);
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
             look: None,
@@ -81,8 +83,8 @@ impl Progress {
         self.builder = self.builder.enabled(enabled);
         self
     }
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.builder = self.builder.animated(animated);
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(motion_enabled);
         self
     }
     pub fn indeterminate(mut self, indeterminate: bool) -> Self {
@@ -102,12 +104,11 @@ impl Progress {
     }
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> gpui_luma::controls::progress::Progress {
         let look = resolve_look(self.look.as_ref(), cx.try_global::<Look>());
-        let mut builder = self.builder.size(self.size.control_size()).template(progress_template(
-            &look,
-            self.variant,
-            self.paint,
-            self.radius,
-        ));
+        let mut builder = self
+            .builder
+            .motion_defaults(look.motion_defaults().progress)
+            .size(self.size.control_size())
+            .template(progress_template(&look, self.variant, self.paint, self.radius));
         for modifier in self.modifiers {
             builder = builder.with_template_modifier(modifier);
         }

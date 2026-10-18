@@ -27,7 +27,12 @@ impl<D: Default + 'static> PopoverButton<D> {
     pub fn new(id: impl Into<SharedString>) -> PopoverButtonBuilder<D> {
         PopoverButtonBuilder::new(id)
     }
+    pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.panel.update(cx, |panel, cx| panel.set_motion_enabled(enabled, cx));
+        cx.notify();
+    }
     pub(super) fn from_builder(builder: PopoverButtonBuilder<D>, cx: &mut Context<Self>) -> Self {
+        let motion = builder.motion_profile();
         let id = builder.id.clone();
         let data = Arc::new(builder.data);
         let content = builder.content;
@@ -55,7 +60,8 @@ impl<D: Default + 'static> PopoverButton<D> {
             .offset_y(builder.offset_y)
             .window_margin(builder.window_margin)
             .focus_on_open(builder.focus_on_open)
-            .animated(builder.animated);
+            .motion_enabled(builder.motion_enabled)
+            .motion_defaults(motion);
         let panel = if let Some(size) = builder.initial_content_size {
             panel.initial_content_size(size).spawn(cx)
         } else {

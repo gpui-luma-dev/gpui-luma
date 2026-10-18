@@ -18,3 +18,5 @@ pub use theme::{AutocompleteLook, AutocompleteTheme, DefaultAutocompleteTheme, d
 
 mod callback;
 pub use callback::AutocompleteEventExt;
+
+pub use model::AutocompleteMotion;

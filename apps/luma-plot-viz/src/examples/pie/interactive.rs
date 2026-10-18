@@ -1,3 +1,4 @@
+use gpui_luma::motion::{Transition, Easing};
 use gpui_luma::controls::selector::SelectorEventExt;
 use std::time::Duration;
 use gpui::{App, Context, Entity, Render, Window, div, prelude::*, px};
@@ -62,7 +63,10 @@ impl Stacked {
                 data,
                 look,
                 replay,
-                motion: VisualTransition::new(1.0, Duration::from_millis(1400)),
+                motion: VisualTransition::with_transition(
+                    1.0,
+                    Transition::timed(Duration::from_millis(1400), Easing::OutCubic),
+                ),
             }
         }))
     }

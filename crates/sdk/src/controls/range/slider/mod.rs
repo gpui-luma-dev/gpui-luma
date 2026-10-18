@@ -43,3 +43,5 @@ pub fn new(id: impl Into<SharedString>) -> SliderBuilder {
 
 mod callback;
 pub use callback::SliderEventExt;
+
+pub use model::SliderMotion;

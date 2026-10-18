@@ -1,6 +1,11 @@
+# Inherits the vanilla motion baseline from gpui-luma/assets/style.toml.
+# This file supplies look-specific overrides.
+
 # Radix body motion, previously supplied by Radix Studio.
-[common.tabs.content]
-fade_in_ms = 300
+[common.motion.tabs.content]
+kind = "timed"
+duration_ms = 300
+easing = "out_cubic"
 
 [common.tabs.geometry]
 indicator_height = 2.0

@@ -40,8 +40,7 @@ pub struct Tabs {
     pub(super) drop_handler: Option<super::drag::DropHandler>,
     pub(super) contents: HashMap<SharedString, TabsContent>,
     pub(super) body_transition: VisualTransition,
-    body_motion: crate::theme::stylesheet::ResolvedMotion,
-    inherited_motion: crate::theme::stylesheet::ResolvedMotion,
+    motion: super::TabsMotion,
     list_slot: Option<Entity<TabsList>>,
     body_slot: Option<Entity<TabsBody>>,
     pub(super) active_id: Option<SharedString>,
@@ -49,7 +48,7 @@ pub struct Tabs {
     pub(super) item_bounds: Vec<Option<Bounds<Pixels>>>,
     size: ControlSize,
     width_mode: TabsWidthMode,
-    pub(super) animated: bool,
+    pub(super) motion_enabled: bool,
     disclosure_icons: crate::infra::icon::DisclosureIcons,
     pub(super) indicator_motion: TabsIndicatorMotion,
     template: std::sync::Arc<dyn super::TabsTemplate>,
@@ -66,8 +65,11 @@ impl Tabs {
     }
 
     pub(crate) fn from_builder(builder: TabsBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.motion_profile();
         let model = builder.model.clone();
-        let indicator_motion = TabsIndicatorMotion::new(model.animated);
+        let indicator_motion = TabsIndicatorMotion::with_transition(model.motion_enabled, motion.indicator.clone());
         let disclosure_progress = Arc::new(Mutex::new(
             builder
                 .model
@@ -105,11 +107,17 @@ impl Tabs {
             .iter()
             .filter_map(|item| {
                 item.trailing_accessory_ref().map(|_| {
-                    (item.id().clone(), DisclosureMotion::new(item.disclosure_progress, builder.model.animated))
+                    (
+                        item.id().clone(),
+                        DisclosureMotion::with_transition(
+                            item.disclosure_progress,
+                            builder.model.motion_enabled,
+                            motion.disclosure.clone(),
+                        ),
+                    )
                 })
             })
             .collect();
-        let body_motion = builder.model.inherited_motion.clone().with_override(builder.model.fade_duration, true);
         Self {
             drag_scroll: gpui::ScrollHandle::new(),
             drop_layout: Default::default(),
@@ -121,9 +129,8 @@ impl Tabs {
             drop_handler: None,
             items: builder.model.items,
             contents: builder.model.contents,
-            body_transition: VisualTransition::new(1.0, body_motion.duration),
-            body_motion,
-            inherited_motion: builder.model.inherited_motion,
+            body_transition: VisualTransition::with_transition(1.0, motion.content.clone()),
+            motion,
             list_slot: None,
             body_slot: None,
             active_id,
@@ -131,7 +138,7 @@ impl Tabs {
             item_bounds: Vec::new(),
             size: builder.model.size,
             width_mode: builder.model.width_mode,
-            animated: builder.model.animated,
+            motion_enabled: builder.model.motion_enabled,
             disclosure_icons: builder.model.disclosure_icons.clone(),
             indicator_motion,
             template: builder.model.template,
@@ -156,17 +163,9 @@ impl Tabs {
         div().w_full().min_h_0().flex_1().flex().flex_col().children(self.body_slot.clone())
     }
 
-    /// Effective body motion for future selections, with its source.
-    pub fn body_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
-        self.body_motion.clone().with_override(None, self.animated)
-    }
-
-    /// Override the body fade for future selections. `None` restores the look
-    /// snapshot captured by the builder; explicit zero disables future fades.
-    /// A running transition keeps its duration and progress.
-    pub fn set_fade_in(&mut self, duration: Option<std::time::Duration>, cx: &mut Context<Self>) {
-        self.body_motion = self.inherited_motion.clone().with_override(duration, true);
-        cx.notify();
+    /// Authored profile captured at spawn. Animation disabling does not erase it.
+    pub fn motion_profile(&self) -> &super::TabsMotion {
+        &self.motion
     }
 
     /// Replace or attach a panel for an existing item. Unknown IDs return false.
@@ -208,8 +207,8 @@ impl Tabs {
     }
 
     fn restart_body_transition(&mut self) {
-        if self.animated && !self.body_motion.duration.is_zero() && !self.contents.is_empty() {
-            self.body_transition = VisualTransition::new(0.0, self.body_motion.duration);
+        if self.motion_enabled && !self.contents.is_empty() {
+            self.body_transition = VisualTransition::with_transition(0.0, self.motion.content.clone());
             self.body_transition.set_target(1.0);
         } else {
             self.body_transition.snap_to(1.0);
@@ -274,9 +273,13 @@ impl Tabs {
         self.disclosure_transitions.retain(|id, _| self.items.iter().any(|item| item.id() == id));
         for item in &self.items {
             if item.trailing_accessory_ref().is_some() {
-                self.disclosure_transitions
-                    .entry(item.id().clone())
-                    .or_insert_with(|| DisclosureMotion::new(item.disclosure_progress, self.animated));
+                self.disclosure_transitions.entry(item.id().clone()).or_insert_with(|| {
+                    DisclosureMotion::with_transition(
+                        item.disclosure_progress,
+                        self.motion_enabled,
+                        self.motion.disclosure.clone(),
+                    )
+                });
             }
         }
         self.indicator_motion.clear_geometry();
@@ -310,17 +313,17 @@ impl Tabs {
         true
     }
 
-    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.motion_enabled == motion_enabled {
             return;
         }
-        self.animated = animated;
-        if !animated {
+        self.motion_enabled = motion_enabled;
+        if !motion_enabled {
             self.body_transition.snap_to(1.0);
         }
-        self.indicator_motion.set_animated(animated);
+        self.indicator_motion.set_motion_enabled(motion_enabled);
         for transition in self.disclosure_transitions.values_mut() {
-            transition.set_animated(animated);
+            transition.set_motion_enabled(motion_enabled);
         }
         self.refresh_group_template(cx);
         cx.notify();
@@ -407,7 +410,7 @@ impl Tabs {
         let Some(bounds) = item_bounds_for_id(&self.items, &self.item_bounds, &active_id) else {
             return;
         };
-        self.indicator_motion.apply_item_bounds(bounds, animate && self.animated);
+        self.indicator_motion.apply_item_bounds(bounds, animate && self.motion_enabled);
     }
 
     pub(super) fn handle_group_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<Self>) {

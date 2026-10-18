@@ -8,7 +8,7 @@ use super::overlay_presence::OverlayPresence;
 /// click only dismisses the popup when it is outside both the popup content and
 /// its trigger. The content host owns the actual outside-click boundary; this
 /// type supplies the trigger exclusion used by that boundary.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct PopupLifecycle {
     open: bool,
     presence: OverlayPresence,
@@ -16,8 +16,20 @@ pub struct PopupLifecycle {
 }
 
 impl PopupLifecycle {
-    pub fn new(animated: bool) -> Self {
-        Self { open: false, presence: OverlayPresence::new(false, animated), trigger_bounds: None }
+    pub fn new(motion_enabled: bool) -> Self {
+        Self::with_motion(motion_enabled, super::PresenceMotion::default())
+    }
+
+    pub fn with_motion(motion_enabled: bool, motion: super::PresenceMotion) -> Self {
+        Self {
+            open: false,
+            presence: OverlayPresence::with_motion(false, motion_enabled, motion),
+            trigger_bounds: None,
+        }
+    }
+
+    pub fn set_motion_enabled(&mut self, enabled: bool) {
+        self.presence.set_motion_enabled(enabled);
     }
 
     pub fn is_open(&self) -> bool {
@@ -25,7 +37,7 @@ impl PopupLifecycle {
     }
 
     pub fn presence(&self) -> OverlayPresence {
-        self.presence
+        self.presence.clone()
     }
 
     pub fn trigger_bounds(&self) -> Option<Bounds<Pixels>> {

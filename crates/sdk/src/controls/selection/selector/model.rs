@@ -1,3 +1,7 @@
+crate::motion_profile!(SelectorMotion => selector {
+    presence: crate::motion::PresenceMotion,
+});
+
 use std::sync::Arc;
 
 use gpui::{App, AppContext, Bounds, Entity, IntoElement, Pixels, SharedString};
@@ -45,6 +49,7 @@ pub struct SelectorModel<T = SelectorItem>
 where
     T: SelectorItemLike + 'static,
 {
+    pub(crate) motion: crate::motion::MotionConfig<SelectorMotion>,
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
     pub(crate) items: Vec<T>,
@@ -124,6 +129,9 @@ impl<T> SelectorBuilder<T>
 where
     T: SelectorItemLike + 'static,
 {
+    crate::motion_methods!(SelectorMotion, model.motion);
+    crate::motion_policy!(model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -194,6 +202,7 @@ where
             callbacks: Default::default(),
 
             model: SelectorModel {
+                motion: Default::default(),
                 label: id.clone(),
                 id,
                 items: Vec::new(),

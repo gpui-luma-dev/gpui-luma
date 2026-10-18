@@ -13,6 +13,7 @@ use crate::tone::Tone;
 
 /// Builder in the guise of a radio: Radix axes plus SDK options, until `.spawn(cx)`.
 pub struct Radio {
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::radio_button::RadioMotion>,
     callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::radio_button::RadioButtonEvent>,
 
     id: SharedString,
@@ -25,7 +26,7 @@ pub struct Radio {
     tab_stop: bool,
     compact: bool,
     without_elevation: bool,
-    animated: bool,
+    motion_enabled: bool,
     role: Option<ButtonFamilyRole>,
     content: Option<ControlPresenter<ButtonContentContext<RadioButtonData>>>,
 }
@@ -100,6 +101,7 @@ impl Radio {
 
             id: id.into(),
             look: None,
+            motion: Default::default(),
             variant: RadioVariant::default(),
             paint: Paint::accent(),
             size: RadioSize::default(),
@@ -108,11 +110,13 @@ impl Radio {
             tab_stop: true,
             compact: false,
             without_elevation: false,
-            animated: true,
+            motion_enabled: true,
             role: None,
             content: None,
         }
     }
+
+    gpui_luma::forward_motion!(gpui_luma::controls::radio_button::RadioMotion, edits motion);
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
     pub fn look(mut self, look: &Look) -> Self {
@@ -188,8 +192,8 @@ impl Radio {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -216,12 +220,14 @@ impl Radio {
     fn into_sdk_builder(self, look: Look) -> RadioButtonBuilder {
         let template = radio_template_for(&look, self.variant, self.paint, self.size);
         let mut builder = gpui_luma::controls::radio_button::new(self.id)
+            .motion_defaults(look.motion_defaults().radio)
+            .with_motion_overrides(self.motion)
             .template(template)
             .size(self.size.control_size())
             .with_data(self.selected)
             .enabled(self.enabled)
             .tab_stop(self.tab_stop)
-            .animated(self.animated);
+            .motion_enabled(self.motion_enabled);
         if let Some(role) = self.role {
             builder = builder.role(role);
         }

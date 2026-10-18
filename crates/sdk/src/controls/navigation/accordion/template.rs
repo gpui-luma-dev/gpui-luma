@@ -37,9 +37,6 @@ pub trait AccordionTemplate: Send + Sync {
     fn resolve_drag(&self, size: crate::theme::ControlSize) -> crate::infra::drag_drop::DragDropLook {
         default_accordion_theme().resolve_drag(size)
     }
-    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
-        default_accordion_theme().drop_layout_motion()
-    }
 
     fn render(
         &self,
@@ -111,9 +108,6 @@ impl AccordionTemplate for ModifiedAccordionTemplate {
     fn resolve_drag(&self, size: crate::theme::ControlSize) -> crate::infra::drag_drop::DragDropLook {
         self.base.resolve_drag(size)
     }
-    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
-        self.base.drop_layout_motion()
-    }
 
     fn render(
         &self,
@@ -150,9 +144,6 @@ impl AccordionTemplate for ThemedAccordionTemplate {
 
     fn resolve_drag(&self, size: crate::theme::ControlSize) -> crate::infra::drag_drop::DragDropLook {
         self.theme.resolve_drag(size)
-    }
-    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
-        self.theme.drop_layout_motion()
     }
 
     fn render(

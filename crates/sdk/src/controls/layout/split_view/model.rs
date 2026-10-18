@@ -1,3 +1,7 @@
+crate::motion_profile!(SplitViewMotion => split_view {
+    extent: crate::motion::Transition,
+});
+
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -17,13 +21,14 @@ pub enum SplitViewSeparatorVisibility {
 
 #[derive(Clone)]
 pub struct SplitViewModel {
+    pub(crate) motion: crate::motion::MotionConfig<SplitViewMotion>,
     pub(crate) id: SharedString,
     pub(crate) sidebar_width: Pixels,
     pub(crate) sidebar_min_width: Pixels,
     pub(crate) sidebar_max_width: Pixels,
     pub(crate) sidebar_collapsed_width: Pixels,
     pub(crate) collapsed: bool,
-    pub(crate) animated: bool,
+    pub(crate) motion_enabled: bool,
     pub(crate) resizable: bool,
     pub(crate) enabled: bool,
     pub(crate) separator_visibility: SplitViewSeparatorVisibility,
@@ -57,6 +62,8 @@ pub struct SplitViewBuilder {
 }
 
 impl SplitViewBuilder {
+    crate::motion_methods!(SplitViewMotion, model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -151,13 +158,14 @@ impl SplitViewBuilder {
             callbacks: Default::default(),
 
             model: SplitViewModel {
+                motion: Default::default(),
                 id: id.into(),
                 sidebar_width: px(280.0),
                 sidebar_min_width: px(220.0),
                 sidebar_max_width: px(420.0),
                 sidebar_collapsed_width: px(0.0),
                 collapsed: false,
-                animated: true,
+                motion_enabled: true,
                 resizable: true,
                 enabled: true,
                 separator_visibility: SplitViewSeparatorVisibility::Always,
@@ -203,8 +211,8 @@ impl SplitViewBuilder {
     }
 
     /// Enables or disables the sidebar expand/collapse transition.
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.model.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.model.motion_enabled = motion_enabled;
         self
     }
 
@@ -335,7 +343,7 @@ mod tests {
 
     #[test]
     fn animated_defaults_true() {
-        assert!(SplitViewBuilder::new("split-animated").model.animated);
-        assert!(!SplitViewBuilder::new("split-animated-off").animated(false).model.animated);
+        assert!(SplitViewBuilder::new("split-animated").model.motion_enabled);
+        assert!(!SplitViewBuilder::new("split-animated-off").motion_enabled(false).model.motion_enabled);
     }
 }

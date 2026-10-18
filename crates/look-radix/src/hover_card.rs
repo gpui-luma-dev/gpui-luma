@@ -38,6 +38,8 @@ type HoverCardContent = Arc<dyn Fn(&mut Window, &mut App) -> AnyElement>;
 
 /// Look-owned builder for an interactive card attached to an SDK button.
 pub struct HoverCardBuilder {
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::popover_button::PopoverMotion>,
+    motion_enabled: bool,
     callbacks: gpui_luma::infra::callbacks::EventCallbacks<HoverCardEvent>,
     id: SharedString,
     trigger: Entity<Button>,
@@ -52,6 +54,8 @@ impl HoverCard {
             id: id.into(),
             trigger,
             look: None,
+            motion: Default::default(),
+            motion_enabled: true,
             content: Arc::new(|_, _| div().into_any_element()),
         }
     }
@@ -90,6 +94,11 @@ impl HoverCard {
     }
 }
 impl HoverCardBuilder {
+    gpui_luma::forward_motion!(gpui_luma::controls::popover_button::PopoverMotion, edits motion);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.motion_enabled = enabled;
+        self
+    }
     /// Append an owner-bound lifecycle callback. Owners are held weakly.
     pub fn on_event<M: 'static>(
         mut self,
@@ -127,6 +136,9 @@ impl HoverCardBuilder {
                 let weak = cx.entity().downgrade();
                 let trigger = self.trigger.clone();
                 let popup = PopoverButton::new(self.id)
+                    .motion_defaults(look.motion_defaults().popover)
+                    .with_motion_overrides(self.motion)
+                    .motion_enabled(self.motion_enabled)
                     .typed(())
                     .trigger(move |_, _| trigger.clone().into_any_element())
                     .content(move |_, window, cx| {

@@ -1,5 +1,10 @@
 //! Persistent state and bindings for look-owned ListBox composition.
 
+crate::motion_profile!(ListBoxMotion => listbox {
+    scroll: crate::motion::Transition,
+    drop_layout: crate::motion::Transition,
+});
+
 use std::hash::Hash;
 use gpui::{App, AppContext, Context, ElementId, SharedString, Window};
 
@@ -14,6 +19,7 @@ pub type ListBoxInputHandler<M, K> = fn(&mut M, ListBoxInput<K>, &mut Window, &m
 /// Persistent SDK objects shared by successive renders. This is host-owned,
 /// not a separately spawned entity; the look supplies the visual composition.
 pub struct ListBoxControl<M: 'static, T, K: 'static> {
+    motion_config: crate::motion::MotionConfig<ListBoxMotion>,
     /// Collection and selection state. Deliver updates from direct mutations
     /// through [`Self::handle_update`] to deliver effects and named callbacks.
     pub state: ListBoxState<T, K>,
@@ -31,6 +37,7 @@ pub struct ListBoxControl<M: 'static, T, K: 'static> {
 /// Borrowed integration point for look-owned builders. The binding is mutable
 /// only to register its persistent focus subscriptions during rendering.
 pub struct ListBoxRenderParts<'a, M: 'static, T, K: 'static> {
+    pub motion_config: &'a mut crate::motion::MotionConfig<ListBoxMotion>,
     /// Optional persistent SDK drag/drop binding; Looks attach native geometry.
     pub drag_drop: Option<super::ListBoxDragDropBinding<M, K>>,
     /// Persistent SDK geometry for post-drop transitions.
@@ -52,6 +59,17 @@ pub struct ListBoxRenderParts<'a, M: 'static, T, K: 'static> {
 }
 
 impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T, K> {
+    crate::motion_methods!(ListBoxMotion, motion_config);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.set_motion_enabled(enabled);
+        self
+    }
+    pub fn set_motion_enabled(&mut self, enabled: bool) {
+        self.motion_config.set_enabled(enabled);
+        self.scroll.set_motion(self.motion_config.resolve().scroll.enabled(enabled));
+        self.drop_layout.set_motion_enabled(enabled);
+    }
+
     /// Create once per list. IDs must remain stable across reorder/replacement;
     /// `on_input` must apply SDK input. Named callbacks are queued automatically;
     /// returned events remain available for manual delivery.
@@ -65,6 +83,7 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
         let motion = crate::motion::DropLayoutMotion::default();
         Self {
             state,
+            motion_config: Default::default(),
             drop_layout: motion.clone(),
             event_source: cx.new(|_| super::drag::ListBoxEventSource { motion }),
             drag_drop: None,
@@ -84,13 +103,7 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
         self
     }
 
-    /// Override post-drop duration; None restores the inherited Look value.
-    pub fn set_drop_layout_motion(&self, duration: Option<std::time::Duration>, cx: &mut Context<M>) {
-        self.drop_layout.set_duration(duration);
-        cx.notify();
-    }
-
-    /// Retained keyed post-drop motion and resolved duration diagnostics.
+    /// Retained keyed post-drop geometry and running transitions.
     pub fn drop_layout_motion(&self) -> crate::motion::DropLayoutMotion<K> {
         self.drop_layout.clone()
     }
@@ -247,6 +260,7 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
             .clone()
             .map(|config| super::ListBoxDragDropBinding { source: self.event_source.downgrade(), config });
         ListBoxRenderParts {
+            motion_config: &mut self.motion_config,
             drop_layout: self.drop_layout.clone(),
             drag_drop,
             state: &self.state,

@@ -62,3 +62,5 @@ pub use crate::infra::state::ControlFocusState;
 
 mod callback;
 pub use callback::SelectorEventExt;
+
+pub use model::SelectorMotion;

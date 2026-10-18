@@ -1,0 +1,104 @@
+# Vanilla SDK stylesheet. Looks overlay only the values they customize.
+# Motion values live here; Rust declares roles and implements transitions.
+# Geometry and palette continue to use the SDK template/theme factories.
+
+# Default for standalone transition helpers. Controls have explicit roles below.
+[common.motion.transition]
+kind = "timed"
+duration_ms = 200
+easing = "out_cubic"
+
+[common.motion.tabs_overlay]
+enter = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+exit = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.slide_panel]
+presence = { enter = { kind = "timed", duration_ms = 220, easing = "out_cubic" }, exit = { kind = "timed", duration_ms = 220, easing = "out_cubic" } }
+
+[common.motion.listbox]
+scroll = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+drop_layout = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.scroll_container]
+scroll = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.popover]
+presence = { enter = { kind = "timed", duration_ms = 200, easing = "out_cubic" }, exit = { kind = "timed", duration_ms = 200, easing = "out_cubic" } }
+
+[common.motion.checkbox]
+state = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.radio]
+state = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.toggle]
+state = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.control_group]
+selection = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.slider]
+thumb = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.progress]
+value = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+period_ms = 1200
+
+[common.motion.stepper]
+selection = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.accordion]
+expansion = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+drop_layout = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.tree_view]
+expansion = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+position = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+drop_layout = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.sidebar]
+expansion = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+popup = { enter = { kind = "timed", duration_ms = 200, easing = "out_cubic" }, exit = { kind = "timed", duration_ms = 200, easing = "out_cubic" } }
+drop_layout = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.split_view]
+extent = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.resizable_panels]
+extent = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.popup_menu]
+presence = { enter = { kind = "timed", duration_ms = 200, easing = "out_cubic" }, exit = { kind = "timed", duration_ms = 200, easing = "out_cubic" } }
+highlight = { kind = "timed", duration_ms = 180, easing = "out_cubic" }
+disclosure = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+submenu = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.context_menu]
+presence = { enter = { kind = "timed", duration_ms = 200, easing = "out_cubic" }, exit = { kind = "instant" } }
+submenu = { enter = { kind = "timed", duration_ms = 200, easing = "out_cubic" }, exit = { kind = "instant" } }
+disclosure = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.selector]
+presence = { enter = { kind = "timed", duration_ms = 200, easing = "out_cubic" }, exit = { kind = "instant" } }
+
+[common.motion.search_selector]
+presence = { enter = { kind = "timed", duration_ms = 200, easing = "out_cubic" }, exit = { kind = "instant" } }
+disclosure = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.autocomplete]
+presence = { enter = { kind = "timed", duration_ms = 200, easing = "out_cubic" }, exit = { kind = "instant" } }
+
+[common.motion.combobox]
+presence = { enter = { kind = "timed", duration_ms = 200, easing = "out_cubic" }, exit = { kind = "instant" } }
+
+[common.motion.table]
+drop_layout = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.switch]
+state = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.motion.tabs]
+indicator = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+content = { kind = "instant" }
+disclosure = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+drop_layout = { kind = "timed", duration_ms = 200, easing = "out_cubic" }

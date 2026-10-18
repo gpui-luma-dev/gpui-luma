@@ -2,7 +2,6 @@
 
 use std::sync::Arc;
 use std::collections::HashMap;
-use std::time::Duration;
 
 use gpui::{App, Context, Div, Entity, IntoElement, Render, SharedString, Stateful, Window};
 use gpui_luma::controls::tabs::{TabsBuilder, TabsContent, TabsItem, TabsRenderModel, TabsTemplate, TabsWidthMode};
@@ -24,9 +23,9 @@ pub struct Tabs {
     active_id: Option<SharedString>,
     reordering: bool,
     enabled: bool,
-    animated: bool,
+    motion_enabled: bool,
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::tabs::TabsMotion>,
     contents: HashMap<SharedString, TabsContent>,
-    fade_duration: Option<Duration>,
     disclosure_icons: Option<DisclosureIcons>,
     template: Option<Arc<dyn TabsTemplate>>,
     modifiers: Vec<TabsModifier>,
@@ -294,9 +293,9 @@ impl Tabs {
             active_id: None,
             reordering: false,
             enabled: true,
-            animated: true,
+            motion_enabled: true,
+            motion: Default::default(),
             contents: HashMap::new(),
-            fade_duration: None,
             disclosure_icons: None,
             template: None,
             modifiers: Vec::new(),
@@ -356,12 +355,6 @@ impl Tabs {
         self
     }
 
-    /// Override inherited body motion. Zero disables the fade.
-    pub fn fade_in(mut self, duration: Duration) -> Self {
-        self.fade_duration = Some(duration);
-        self
-    }
-
     pub fn active(mut self, active_id: impl Into<SharedString>) -> Self {
         self.active_id = Some(active_id.into());
         self
@@ -378,8 +371,10 @@ impl Tabs {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    gpui_luma::forward_motion!(gpui_luma::controls::tabs::TabsMotion, edits motion);
+
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -423,11 +418,9 @@ impl Tabs {
             .width_mode(self.width_mode)
             .enabled(self.enabled)
             .reordering(self.reordering)
-            .animated(self.animated)
-            .stylesheet(&look.common_stylesheet(), "shadcn");
-        if let Some(duration) = self.fade_duration {
-            builder = builder.fade_in(duration);
-        }
+            .motion_enabled(self.motion_enabled)
+            .motion_defaults(look.motion_defaults().tabs)
+            .with_motion_overrides(self.motion);
         for item in self.items {
             if let Some(content) = self.contents.get(item.id()) {
                 builder = builder.tab_content(item, content.clone());
@@ -451,43 +444,30 @@ impl Tabs {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[test]
-    fn custom_stylesheet_motion_and_content_reach_sdk() {
-        use gpui_luma::theme::stylesheet::MotionSource;
-        for (source, expected) in [("", None), ("[common.tabs.content]\nfade_in_ms = 175", Some(175))] {
-            let stylesheet = crate::stylesheet::StylesheetConfig::parse(source).unwrap();
-            let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, stylesheet).unwrap();
-            let copy = look.with_color_overrides(&Default::default()).unwrap();
-            assert_eq!(copy.common_stylesheet(), look.common_stylesheet());
-            let tabs = Tabs::new("custom").tab_with("one", "One", |_, _| gpui::div());
-            assert_eq!(tabs.contents.len(), 1);
-            let builder = tabs.into_sdk_builder(copy);
-            assert_eq!(builder.body_motion().duration, Duration::from_millis(expected.unwrap_or(0)));
-            assert_eq!(matches!(builder.body_motion().source, MotionSource::SdkFallback), expected.is_none());
-        }
-    }
-
-    #[test]
-    fn body_motion_inherits_look_and_respects_overrides() {
-        use gpui_luma::theme::stylesheet::MotionSource;
-        let look = ShadcnLook::built_in();
-        let inherited = Tabs::new("motion").into_sdk_builder(look.clone()).body_motion();
-        assert_eq!(inherited.duration, Duration::from_millis(300));
-        assert_eq!(
-            inherited.source,
-            MotionSource::Look { name: "shadcn".into(), field: "common.tabs.content.fade_in_ms" }
-        );
-        let explicit = Tabs::new("motion").fade_in(Duration::ZERO).into_sdk_builder(look.clone()).body_motion();
-        assert_eq!(explicit.duration, Duration::ZERO);
-        assert_eq!(explicit.source, MotionSource::InstanceOverride);
-        let disabled = Tabs::new("motion")
-            .fade_in(Duration::from_millis(900))
-            .animated(false)
-            .into_sdk_builder(look)
-            .body_motion();
-        assert_eq!(disabled.duration, Duration::ZERO);
-        assert_eq!(disabled.source, MotionSource::AnimationDisabled);
+    fn sdk_motion_roles_inherit_override_and_keep_their_snapshot() {
+        use gpui_luma::motion::{Easing, MotionState, Transition};
+        let look = ShadcnLook::from_css_str(crate::FALLBACK_CSS).unwrap();
+        look.motion(|m| {
+            m.tabs.indicator = Transition::timed(Duration::from_millis(800), Easing::Linear);
+            m.tabs.content = Transition::timed(Duration::from_millis(500), Easing::Linear);
+        });
+        let inherited = Tabs::new("inherited").into_sdk_builder(look.clone());
+        let edited = Tabs::new("edited")
+            .motion(|m| m.indicator = Transition::timed(Duration::from_millis(200), Easing::Linear))
+            .look(&look)
+            .into_sdk_builder(look.clone());
+        let sample = |transition: gpui_luma::motion::Transition| {
+            transition.start(MotionState::default(), 1.0).sample(Duration::from_millis(100)).state.value
+        };
+        assert_eq!(sample(inherited.motion_profile().indicator), 0.125);
+        assert_eq!(sample(edited.motion_profile().indicator), 0.5);
+        assert_eq!(sample(edited.motion_profile().content), 0.2);
+        look.motion(|m| m.tabs.content = Transition::instant());
+        assert_eq!(sample(inherited.motion_profile().content), 0.2);
+        assert_eq!(sample(Tabs::new("new").into_sdk_builder(look).motion_profile().content), 1.0);
     }
 
     #[test]

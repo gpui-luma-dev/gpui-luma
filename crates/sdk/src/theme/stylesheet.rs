@@ -4,18 +4,23 @@
 //! Other root sections remain look-owned. Unknown common fields are rejected;
 //! missing fields use SDK fallbacks, and explicit zero remains an override.
 
-use std::time::Duration;
 use std::collections::HashMap;
 use crate::theme::provenance::ResolvedMetric;
 use serde::Deserialize;
 
 mod geometry;
 pub use geometry::*;
+mod motion;
+pub use motion::*;
+
+/// Embedded vanilla SDK configuration. Looks author only their overrides.
+pub const DEFAULT_STYLE_TOML: &str = include_str!("../../assets/style.toml");
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
 pub struct CommonStylesheet {
-    pub drag_drop: DragDropStylesheet,
+    /// Typed role overrides, shared by SDK-only apps and all looks.
+    pub motion: MotionStylesheet,
     pub tabs: TabsStylesheet,
     pub switch: SwitchStylesheet,
     pub slider: SliderStylesheet,
@@ -46,27 +51,12 @@ pub struct CommonStylesheet {
     pub context_menu: ContextMenuStylesheet,
 }
 
-/// Common post-drop position transition. Explicit zero disables it.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
-#[serde(default, deny_unknown_fields)]
-pub struct DragDropStylesheet {
-    pub drop_motion_ms: Option<u32>,
-}
-
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
 pub struct TabsStylesheet {
-    pub content: TabsContentStylesheet,
     pub geometry: TabsGeometryStylesheet,
     /// Variant names belong to each look; fields use the same common contract.
     pub variants: HashMap<String, TabsGeometryStylesheet>,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
-#[serde(default, deny_unknown_fields)]
-pub struct TabsContentStylesheet {
-    /// Incoming-panel fade in milliseconds. Missing uses the SDK's zero fallback.
-    pub fade_in_ms: Option<u32>,
 }
 
 /// Common tab geometry in logical pixels. Missing fields retain the supplied
@@ -300,39 +290,14 @@ impl TabsStylesheet {
     }
 }
 
-/// Effective motion value and its origin, suitable for inspection.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ResolvedMotion {
-    pub duration: Duration,
-    pub source: MotionSource,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum MotionSource {
-    SdkFallback,
-    Look { name: String, field: &'static str },
-    InstanceOverride,
-    AnimationDisabled,
-}
-
-impl Default for ResolvedMotion {
-    fn default() -> Self {
-        Self { duration: Duration::ZERO, source: MotionSource::SdkFallback }
-    }
-}
-
 impl CommonStylesheet {
-    pub fn drop_layout_motion(&self, look_name: &str) -> ResolvedMotion {
-        match self.drag_drop.drop_motion_ms {
-            Some(ms) => ResolvedMotion {
-                duration: Duration::from_millis(u64::from(ms)),
-                source: MotionSource::Look { name: look_name.into(), field: "common.drag_drop.drop_motion_ms" },
-            },
-            None => ResolvedMotion {
-                duration: crate::motion::DEFAULT_TRANSITION_DURATION,
-                source: MotionSource::SdkFallback,
-            },
-        }
+    /// The SDK-owned baseline, independent of any look crate. `Default` remains
+    /// an empty overlay; resolving its motion inherits this baseline.
+    pub fn sdk_default() -> &'static Self {
+        static DEFAULT: std::sync::OnceLock<CommonStylesheet> = std::sync::OnceLock::new();
+        // A corrupt packaged asset settles motion safely. Tests require the
+        // embedded file to parse and define every role, preventing silent drift.
+        DEFAULT.get_or_init(|| Self::parse(DEFAULT_STYLE_TOML).unwrap_or_default())
     }
 
     /// Parse a complete look stylesheet. Look-owned root sections are ignored.
@@ -347,34 +312,18 @@ impl CommonStylesheet {
             .map(|document| document.common)
             .map_err(|err| anyhow::anyhow!("parse common style.toml: {err}"))
     }
-
-    pub fn tabs_content_motion(&self, look_name: &str) -> ResolvedMotion {
-        match self.tabs.content.fade_in_ms {
-            Some(ms) => ResolvedMotion {
-                duration: Duration::from_millis(u64::from(ms)),
-                source: MotionSource::Look { name: look_name.into(), field: "common.tabs.content.fade_in_ms" },
-            },
-            None => ResolvedMotion::default(),
-        }
-    }
-}
-
-impl ResolvedMotion {
-    /// Control-wide disable takes precedence over both inherited and explicit motion.
-    pub fn with_override(self, duration: Option<Duration>, animated: bool) -> Self {
-        if !animated {
-            Self { duration: Duration::ZERO, source: MotionSource::AnimationDisabled }
-        } else if let Some(duration) = duration {
-            Self { duration, source: MotionSource::InstanceOverride }
-        } else {
-            self
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn obsolete_motion_keys_are_rejected() {
+        for source in ["[common.tabs.content]\nfade_in_ms = 300", "[common.drag_drop]\ndrop_motion_ms = 200"] {
+            assert!(CommonStylesheet::parse(source).is_err(), "accepted {source}");
+        }
+    }
 
     #[test]
     fn semantic_size_keys_remain_independent_and_look_owned() {
@@ -495,72 +444,5 @@ gap = 7
         let other = config.tabs.resolve_geometry("other", fallback);
         assert_eq!(other.list_gap.value_px, 7.0);
         assert_eq!(other.indicator_height.value_px, 3.0);
-    }
-
-    #[test]
-    fn missing_and_explicit_zero_have_distinct_sources() {
-        let fallback = CommonStylesheet::parse("[button]\nheight = 40").unwrap().tabs_content_motion("test");
-        let zero = CommonStylesheet::parse("[common.tabs.content]\nfade_in_ms = 0")
-            .unwrap()
-            .tabs_content_motion("test");
-        assert_eq!(fallback.duration, zero.duration);
-        assert_eq!(fallback.source, MotionSource::SdkFallback);
-        assert!(matches!(zero.source, MotionSource::Look { .. }));
-    }
-
-    #[test]
-    fn invalid_common_values_are_rejected() {
-        for value in ["-1", "1.5", "\"300\"", "4294967296"] {
-            assert!(CommonStylesheet::parse(&format!("[common.tabs.content]\nfade_in_ms = {value}")).is_err());
-        }
-        assert!(CommonStylesheet::parse("[common.tabs.content]\nfade_ms = 300").is_err());
-    }
-
-    #[test]
-    fn precedence_keeps_zero_and_disable() {
-        let inherited = CommonStylesheet::parse("[common.tabs.content]\nfade_in_ms = 300")
-            .unwrap()
-            .tabs_content_motion("test");
-        assert_eq!(inherited.clone().with_override(None, true).duration, Duration::from_millis(300));
-        let zero = inherited.clone().with_override(Some(Duration::ZERO), true);
-        assert_eq!(zero.duration, Duration::ZERO);
-        assert_eq!(zero.source, MotionSource::InstanceOverride);
-        let disabled = inherited.with_override(Some(Duration::from_millis(900)), false);
-        assert_eq!(disabled.duration, Duration::ZERO);
-        assert_eq!(disabled.source, MotionSource::AnimationDisabled);
-    }
-}
-
-#[cfg(test)]
-mod drop_motion_tests {
-    use super::*;
-    #[test]
-    fn drop_motion_resolution_preserves_fallback_zero_override_and_provenance() {
-        let fallback = CommonStylesheet::default().drop_layout_motion("Test");
-        assert_eq!(fallback.duration, crate::motion::DEFAULT_TRANSITION_DURATION);
-        assert_eq!(fallback.source, MotionSource::SdkFallback);
-        let sheet = CommonStylesheet::parse("[common.drag_drop]\ndrop_motion_ms = 350").unwrap();
-        let resolved = sheet.drop_layout_motion("Test");
-        assert_eq!(resolved.duration, Duration::from_millis(350));
-        assert_eq!(
-            resolved.source,
-            MotionSource::Look { name: "Test".into(), field: "common.drag_drop.drop_motion_ms" }
-        );
-        assert_eq!(resolved.clone().with_override(Some(Duration::ZERO), true).source, MotionSource::InstanceOverride);
-        assert_eq!(
-            resolved.with_override(Some(Duration::from_millis(800)), false),
-            ResolvedMotion { duration: Duration::ZERO, source: MotionSource::AnimationDisabled }
-        );
-        for value in ["-1", "1.5", "\"fast\"", "4294967296"] {
-            assert!(CommonStylesheet::parse(&format!("[common.drag_drop]\ndrop_motion_ms = {value}")).is_err());
-        }
-        assert!(CommonStylesheet::parse("[common.drag_drop]\nunknown = 1").is_err());
-        assert!(
-            CommonStylesheet::parse("[common.drag_drop]\ndrop_motion_ms = 0")
-                .unwrap()
-                .drop_layout_motion("Test")
-                .duration
-                .is_zero()
-        );
     }
 }

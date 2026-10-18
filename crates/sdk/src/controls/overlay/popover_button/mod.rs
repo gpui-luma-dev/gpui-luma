@@ -12,3 +12,5 @@ pub use model::{
 
 mod callback;
 pub use callback::PopoverButtonEventExt;
+
+pub use panel::PopoverMotion;

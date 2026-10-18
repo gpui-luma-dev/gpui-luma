@@ -34,7 +34,6 @@ pub struct ScrollingTableControlExposition {
 }
 
 struct ScrollingTableExpositionLeftPane {
-    motion_controls: Entity<super::drop_motion::DropMotionControls<gpui::SharedString>>,
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     table: Table<Task>,
@@ -84,7 +83,6 @@ impl Render for ScrollingTableExpositionLeftPane {
                         .flex()
                         .flex_col()
                         .gap(px(4.0))
-                        .child(self.motion_controls.clone())
                         .child(div().text_lg().text_color(chrome.title_text).child(self.entry.title))
                         .child(
                             div()
@@ -233,15 +231,13 @@ impl ScrollingTableControlExposition {
             )
         });
 
-        let motion_controls =
-            super::drop_motion::DropMotionControls::spawn(look.clone(), vec![table.read(cx).drop_layout_motion()], cx);
         let left_pane = cx.new(|cx: &mut Context<ScrollingTableExpositionLeftPane>| {
             let pane = cx.entity().downgrade();
             let details = gpui_luma_look_shadcn::Accordion::new("scrolling-table-details")
                 .look(&look)
                 .single()
                 .collapsible(true)
-                .animated(false)
+                .motion_enabled(false)
                 .item(AccordionItem::new(
                     "details",
                     AccordionTrigger::new("Events and code sample"),
@@ -266,7 +262,6 @@ impl ScrollingTableControlExposition {
                 ))
                 .spawn(cx);
             ScrollingTableExpositionLeftPane {
-                motion_controls,
                 look: look.clone(),
                 entry,
                 table: table.clone(),

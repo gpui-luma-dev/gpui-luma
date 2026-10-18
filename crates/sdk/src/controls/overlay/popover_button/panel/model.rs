@@ -1,3 +1,7 @@
+crate::motion_profile!(PopoverMotion => popover {
+    presence: crate::motion::PresenceMotion,
+});
+
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, AppContext, Bounds, Context, Entity, IntoElement, Pixels, SharedString, Size, Window};
@@ -26,10 +30,11 @@ pub enum PopoverPanelDismissPolicy {
 
 #[derive(Clone)]
 pub struct PopoverPanelModel {
+    pub(crate) motion: crate::motion::MotionConfig<PopoverMotion>,
     pub(crate) id: SharedString,
     pub(crate) content: PopoverPanelContent,
     pub(crate) open: bool,
-    pub(crate) animated: bool,
+    pub(crate) motion_enabled: bool,
     pub(crate) anchor_bounds: Option<Bounds<Pixels>>,
     pub(crate) placement: PopoverPanelPlacement,
     pub(crate) dismiss_policy: PopoverPanelDismissPolicy,
@@ -60,13 +65,16 @@ pub fn new(id: impl Into<SharedString>) -> PopoverPanelBuilder {
 }
 
 impl PopoverPanelBuilder {
+    crate::motion_methods!(PopoverMotion, model.motion);
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
             model: PopoverPanelModel {
+                motion: Default::default(),
                 id: id.into(),
                 content: Arc::new(|_, _, _| gpui::div().into_any_element()),
                 open: false,
-                animated: true,
+                motion_enabled: true,
                 anchor_bounds: None,
                 placement: PopoverPanelPlacement::BelowStart,
                 dismiss_policy: PopoverPanelDismissPolicy::KeepOpen,
@@ -92,8 +100,8 @@ impl PopoverPanelBuilder {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.model.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.model.motion_enabled = motion_enabled;
         self
     }
 

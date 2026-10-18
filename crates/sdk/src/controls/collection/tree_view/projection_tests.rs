@@ -22,7 +22,7 @@ fn setup(app: &mut TestAppContext) -> (Entity<TreeViewControl<()>>, &mut VisualT
     app.add_window_view(|window, cx| {
         window.activate_window();
         crate::key_handling::bind_default_control_keys(cx);
-        TreeViewControl::from_builder(TreeViewBuilder::new("projection-tree").items(items()).animated(false), cx)
+        TreeViewControl::from_builder(TreeViewBuilder::new("projection-tree").items(items()).motion_enabled(false), cx)
     })
 }
 fn ids(tree: &TreeViewControl<()>) -> Vec<String> {
@@ -162,7 +162,7 @@ fn sorting_preserves_scroll_anchor_and_filter_change_settles_old_animation() {
         assert_eq!(tree.flat_cache[top.item_ix].id.as_ref(), "030");
         assert_eq!(top.offset_in_item, px(5.0));
         tree.set_items(items(), cx);
-        tree.set_animated(true, cx);
+        tree.set_motion_enabled(true, cx);
         tree.collapse("z", cx);
         assert!(tree.flat_cache.iter().filter(|n| n.depth > 0).all(|n| !n.enabled));
         tree.set_filter(|node| node.id == "guide", cx);

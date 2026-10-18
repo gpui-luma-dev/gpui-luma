@@ -10,6 +10,8 @@ type ContextMenuModifier = Box<dyn Fn(Stateful<Div>, &ContextMenuRenderModel<'_>
 
 /// Builder in the guise of a context menu: Shadcn axes plus SDK options, until `.spawn(cx)`.
 pub struct ContextMenu {
+    motion_enabled: bool,
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::context_menu::ContextMenuMotion>,
     callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::context_menu::ContextMenuEvent>,
 
     id: SharedString,
@@ -117,12 +119,20 @@ impl ContextMenu {
 
             id: id.into(),
             look: None,
+            motion: Default::default(),
+            motion_enabled: true,
             label: None,
             items: Vec::new(),
             enabled: true,
             target: None,
             modifiers: Vec::new(),
         }
+    }
+
+    gpui_luma::forward_motion!(gpui_luma::controls::context_menu::ContextMenuMotion, edits motion);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.motion_enabled = enabled;
+        self
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
@@ -184,6 +194,9 @@ impl ContextMenu {
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ContextMenuBuilder {
         let mut builder = gpui_luma::controls::context_menu::ContextMenu::new(self.id)
+            .motion_defaults(look.motion_defaults().context_menu)
+            .with_motion_overrides(self.motion)
+            .motion_enabled(self.motion_enabled)
             .template(look.context_menu_template())
             .items(self.items)
             .enabled(self.enabled);

@@ -1,3 +1,9 @@
+crate::motion_profile!(ContextMenuMotion => context_menu {
+    submenu: crate::motion::PresenceMotion,
+    disclosure: crate::motion::Transition,
+    presence: crate::motion::PresenceMotion,
+});
+
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, AppContext, Entity, IntoElement, Pixels, Point, SharedString};
@@ -10,6 +16,7 @@ use crate::motion::overlay_presence::OverlayPresence;
 
 #[derive(Clone)]
 pub struct ContextMenuModel {
+    pub(crate) motion: crate::motion::MotionConfig<ContextMenuMotion>,
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
     pub(crate) target_content: Option<ContextMenuTargetContent>,
@@ -43,6 +50,9 @@ pub struct ContextMenuBuilder {
 }
 
 impl ContextMenuBuilder {
+    crate::motion_methods!(ContextMenuMotion, model.motion);
+    crate::motion_policy!(model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -139,6 +149,7 @@ impl ContextMenuBuilder {
             callbacks: Default::default(),
 
             model: ContextMenuModel {
+                motion: Default::default(),
                 label: id.clone(),
                 id,
                 target_content: None,

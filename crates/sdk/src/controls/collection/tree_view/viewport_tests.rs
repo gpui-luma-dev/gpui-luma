@@ -33,7 +33,7 @@ fn setup(app: &mut TestAppContext, required: bool) -> (Entity<Page>, &mut Visual
         crate::key_handling::bind_default_control_keys(cx);
         let tree = TreeViewBuilder::new("viewport-tree")
             .items((0..150).map(|i| node(&i.to_string())))
-            .animated(false)
+            .motion_enabled(false)
             .wrap_navigation(false)
             .require_focus_for_scroll(required)
             .scrollbar_visibility(crate::controls::ScrollbarVisibility::AlwaysVisible)
@@ -215,7 +215,7 @@ fn completing_multiple_collapses_preserves_a_surviving_middle_scroll_anchor() {
             cx,
         );
         tree.select_node_by_id("a-0", cx);
-        tree.set_animated(true, cx);
+        tree.set_motion_enabled(true, cx);
         tree.list_state.scroll_to(gpui::ListOffset { item_ix: 51, offset_in_item: px(3.0) });
         tree.hovered_node_id = Some("a-0".into());
         tree.pressed_node_id = Some("a-0".into());
@@ -249,10 +249,10 @@ fn disabling_animation_settles_an_in_progress_collapse() {
     let tree = cx.update(|_, app| page.read(app).tree.clone());
     tree.update(cx, |tree, cx| {
         tree.set_items([node("root").expanded(true).children([node("child")])], cx);
-        tree.set_animated(true, cx);
+        tree.set_motion_enabled(true, cx);
         tree.collapse("root", cx);
         assert_eq!(tree.flat_cache.len(), 2);
-        tree.set_animated(false, cx);
+        tree.set_motion_enabled(false, cx);
         assert_eq!(tree.flat_cache.len(), 1);
         assert_eq!(tree.list_state.item_count(), 1);
     });
@@ -476,7 +476,7 @@ fn embedded_editor_focus_does_not_authorize_tree_keys_or_default_wheel() {
         let editor = field.clone();
         let tree = TreeViewBuilder::new("nested-focus-tree")
             .items((0..100).map(|i| node(&i.to_string())))
-            .animated(false)
+            .motion_enabled(false)
             .wheel_scroll_policy(WheelScrollPolicy::RequireFocus)
             .leaf_content(move |node, _, _| {
                 if node.id.as_ref() == "0" {

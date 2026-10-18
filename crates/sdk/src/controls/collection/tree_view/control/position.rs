@@ -2,7 +2,7 @@
 //! final alignment uses measured bounds and ListState's own boundary clamping.
 use std::time::Instant;
 use super::*;
-use crate::motion::{DEFAULT_TRANSITION_DURATION, ease_out_cubic};
+use crate::motion::{MotionState, RunningMotion};
 
 #[derive(Clone, Copy)]
 enum Alignment {
@@ -18,6 +18,7 @@ pub(super) struct PositionRequest {
     alignment: Option<Alignment>,
     started: Option<Instant>,
     progress: f32,
+    trajectory: Box<dyn RunningMotion>,
     last_correction: Option<gpui::ListOffset>,
 }
 
@@ -74,6 +75,13 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
             alignment: None,
             started: None,
             progress: 0.0,
+            trajectory: self
+                .model
+                .motion
+                .profile()
+                .position
+                .enabled(smooth && self.model.motion_enabled)
+                .start(MotionState::default(), 1.0),
             last_correction: None,
         });
         cx.notify();
@@ -182,16 +190,17 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
         let now = cx.background_executor().now();
         let first_frame = request.started.is_none();
         let started = *request.started.get_or_insert(now);
-        let t = if request.smooth {
-            (now.duration_since(started).as_secs_f32() / DEFAULT_TRANSITION_DURATION.as_secs_f32()).clamp(0.0, 1.0)
-        } else {
-            1.0
-        };
-        let progress = ease_out_cubic(t);
-        let fraction = if progress >= 1.0 {
+        let sample = request.trajectory.sample(now.duration_since(started));
+        let complete = sample.complete || !sample.state.value.is_finite() || !sample.state.velocity.is_finite();
+        let progress = if complete { 1.0 } else { sample.state.value };
+        let fraction = if complete {
             1.0
         } else {
-            ((progress - request.progress) / (1.0 - request.progress)).clamp(0.0, 1.0)
+            if (1.0 - request.progress).abs() <= f32::EPSILON {
+                0.0
+            } else {
+                (progress - request.progress) / (1.0 - request.progress)
+            }
         };
         request.progress = progress;
         if let Some(row) = bounds {
@@ -200,7 +209,7 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
                 Alignment::End => row.bottom() - viewport.bottom(),
                 Alignment::Center => row.center().y - viewport.center().y,
             };
-            if t >= 1.0 {
+            if complete {
                 // A repeated offset after correction means native layout clamped
                 // at a boundary (e.g. centering the first or last row).
                 if delta.abs() <= px(0.5)
@@ -232,7 +241,7 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
             let next = (from + (target - from) * fraction).max(0.0);
             // At completion, anchor the unmeasured target itself. The next layout
             // supplies exact bounds and measures preceding rows for alignment.
-            let offset = if t >= 1.0 {
+            let offset = if complete {
                 gpui::ListOffset { item_ix: index, offset_in_item: px(0.0) }
             } else {
                 gpui::ListOffset { item_ix: next.floor() as usize, offset_in_item: px(next.fract() * estimate) }
@@ -240,7 +249,7 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
             self.list_state.scroll_to(offset);
         }
         self.position = Some(request);
-        if first_frame || t >= 1.0 {
+        if first_frame || complete {
             cx.notify();
         }
     }

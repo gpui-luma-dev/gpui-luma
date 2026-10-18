@@ -20,7 +20,8 @@ pub struct Switch {
     tab_stop: bool,
     compact: bool,
     without_elevation: bool,
-    animated: bool,
+    motion_enabled: bool,
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::switch::SwitchMotion>,
     orientation: Option<SwitchOrientation>,
     track_length: Option<Pixels>,
     track_thickness: Option<Pixels>,
@@ -94,7 +95,8 @@ impl Switch {
             tab_stop: true,
             compact: false,
             without_elevation: false,
-            animated: true,
+            motion_enabled: true,
+            motion: Default::default(),
             orientation: None,
             track_length: None,
             track_thickness: None,
@@ -173,8 +175,10 @@ impl Switch {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    gpui_luma::forward_motion!(gpui_luma::controls::switch::SwitchMotion, edits motion);
+
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -245,7 +249,9 @@ impl Switch {
             .with_data(self.checked)
             .enabled(self.enabled)
             .tab_stop(self.tab_stop)
-            .animated(self.animated)
+            .motion_enabled(self.motion_enabled)
+            .motion_defaults(look.motion_defaults().switch)
+            .with_motion_overrides(self.motion)
             .with_callbacks(self.callbacks);
         if let Some(orientation) = self.orientation {
             builder = builder.orientation(orientation);
@@ -287,6 +293,52 @@ impl HasPresenter<ButtonContentContext<SwitchData>> for Switch {
 mod tests {
     use super::*;
     use gpui_luma::controls::button::HasPresenter;
+
+    #[test]
+    fn independent_look_copy_keeps_its_motion_defaults() {
+        use gpui_luma::motion::{Easing, MotionState, Transition};
+        use std::time::Duration;
+        let look = ShadcnLook::from_css_str(crate::FALLBACK_CSS).unwrap();
+        look.motion(|m| m.switch.state = Transition::timed(Duration::from_millis(400), Easing::Linear));
+        let copy = look.with_color_overrides(&Default::default()).unwrap();
+        look.motion(|m| m.switch.state = Transition::instant());
+        assert_eq!(
+            copy.motion_defaults()
+                .switch
+                .state
+                .start(MotionState::default(), 1.0)
+                .sample(Duration::from_millis(100))
+                .state
+                .value,
+            0.25
+        );
+        assert!(
+            look.motion_defaults()
+                .switch
+                .state
+                .start(MotionState::default(), 1.0)
+                .sample(Duration::ZERO)
+                .complete
+        );
+    }
+
+    #[test]
+    fn switch_inherits_look_motion_and_forwards_sdk_overrides() {
+        use gpui_luma::motion::{Easing, MotionState, Transition};
+        use std::time::Duration;
+        let look = ShadcnLook::from_css_str(crate::FALLBACK_CSS).unwrap();
+        look.motion(|m| m.switch.state = Transition::timed(Duration::from_millis(400), Easing::Linear));
+        let inherited = Switch::new("inherited").into_sdk_builder(look.clone());
+        let edited =
+            Switch::new("edited").motion(|m| m.state = Transition::instant()).look(&look).into_sdk_builder(look);
+        let sample = inherited
+            .motion_profile()
+            .state
+            .start(MotionState::default(), 1.0)
+            .sample(Duration::from_millis(100));
+        assert_eq!(sample.state.value, 0.25);
+        assert!(edited.motion_profile().state.start(MotionState::default(), 1.0).sample(Duration::ZERO).complete);
+    }
 
     #[test]
     fn with_data_keeps_shadcn_axes() {

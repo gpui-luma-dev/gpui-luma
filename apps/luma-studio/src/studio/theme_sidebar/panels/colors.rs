@@ -343,11 +343,7 @@ mod drag_tests {
             let scroll = panel.read(cx).scroll_handle.clone();
             let tabs =
                 crate::studio::theme_sidebar::sidebar_tabs_builder(look, host, blank.clone(), blank, scroll).spawn(cx);
-            panel
-                .read(cx)
-                .token_accordion
-                .clone()
-                .update(cx, |a, cx| a.set_drop_layout_motion(Some(std::time::Duration::ZERO), cx));
+            panel.read(cx).token_accordion.clone().update(cx, |a, cx| a.set_motion_enabled(false, cx));
             Page { panel, tabs }
         });
         cx.run_until_parked();

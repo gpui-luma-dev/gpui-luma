@@ -1,12 +1,10 @@
-use std::time::Duration;
-
 use gpui::{Context, IntoElement, Render, SharedString, Window, div, prelude::*};
 
 use super::model::{
     StepperBuilder, StepperLabelPlacement, StepperModel, StepperRenderModel, derive_step_states, visual_step_state,
 };
 use super::{StepState, StepperTemplate};
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::{VisualTransition};
 use crate::controls::progress::ProgressDirection;
 use crate::theme::{ControlSize, observe_theme_revision};
 
@@ -25,22 +23,23 @@ impl StepperControl {
         StepperBuilder::new(id, step_count)
     }
 
+    crate::motion_snapshot!(super::StepperMotion, model.motion);
+
     pub(crate) fn from_builder(builder: StepperBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         let step_states = derive_step_states(&builder.model);
         let current = builder.model.current_step;
-        let duration = if builder.model.animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        };
+        let definition = motion.selection.enabled(builder.model.motion_enabled);
         let mut control = Self {
             model: builder.model,
             step_states,
             visual_step_states: Vec::new(),
             from_step: current as f32,
             to_step: current,
-            transition: VisualTransition::new(1.0, duration),
+            transition: VisualTransition::with_transition(current as f32, definition),
         };
         control.refresh_visual_step_states();
         control
@@ -55,7 +54,7 @@ impl StepperControl {
     }
 
     pub fn display_step(&self) -> f32 {
-        self.transition.interpolate(self.from_step, self.to_step as f32)
+        self.transition.progress()
     }
 
     pub fn is_complete(&self) -> bool {
@@ -167,22 +166,15 @@ impl StepperControl {
         cx.notify();
     }
 
-    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.model.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.model.motion_enabled == motion_enabled {
             return;
         }
 
-        self.model.animated = animated;
-        let progress = self.transition.progress();
-        let duration = if animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        };
-        self.transition = VisualTransition::new(progress, duration);
-        if !animated {
-            self.from_step = self.to_step as f32;
-            self.transition.snap_to(1.0);
+        self.model.motion_enabled = motion_enabled;
+        self.transition.set_transition(self.model.motion.profile().selection.enabled(motion_enabled));
+        if !motion_enabled {
+            self.transition.snap_to(self.to_step as f32);
         }
         cx.notify();
     }
@@ -195,18 +187,7 @@ impl StepperControl {
     fn retarget_step(&mut self, next: usize) {
         self.from_step = self.display_step();
         self.to_step = next;
-        let duration = if self.model.animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        };
-        self.transition = VisualTransition::new(0.0, duration);
-        if self.model.animated {
-            self.transition.set_target(1.0);
-        } else {
-            self.from_step = next as f32;
-            self.transition.snap_to(1.0);
-        }
+        self.transition.set_target(next as f32);
     }
 
     fn refresh_step_states(&mut self) {
@@ -227,7 +208,11 @@ impl StepperControl {
             step_count: self.model.step_count,
             current_step: self.model.current_step,
             display_step: self.display_step(),
-            transition_progress: self.transition.progress(),
+            transition_progress: if (self.to_step as f32 - self.from_step).abs() <= f32::EPSILON {
+                1.0
+            } else {
+                (self.display_step() - self.from_step) / (self.to_step as f32 - self.from_step)
+            },
             from_step: self.from_step,
             to_step: self.to_step,
             step_states: &self.visual_step_states,

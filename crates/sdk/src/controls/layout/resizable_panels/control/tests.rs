@@ -7,9 +7,9 @@ use crate::controls::resizable_panels::{
     ResizablePanelSpec, ResizeCollapseBehavior, ResizeCollapseDirection, ResizeCollapseMode,
 };
 
-fn builder(animated: bool) -> ResizablePanelsBuilder {
+fn builder(motion_enabled: bool) -> ResizablePanelsBuilder {
     ResizablePanels::horizontal("shell-regression")
-        .animated(animated)
+        .motion_enabled(motion_enabled)
         .double_click_collapse(Some(ResizeCollapseBehavior::new(
             ResizeCollapseMode::Completely,
             ResizeCollapseDirection::Left,
@@ -20,10 +20,10 @@ fn builder(animated: bool) -> ResizablePanelsBuilder {
 
 #[test]
 fn toolbar_toggle_restores_double_click_collapse_and_can_hide_again() {
-    for animated in [false, true] {
+    for motion_enabled in [false, true] {
         let app = TestAppContext::single();
         app.update(|cx| {
-            let panels = cx.new(|cx| ResizablePanels::from_builder(builder(animated), cx));
+            let panels = cx.new(|cx| ResizablePanels::from_builder(builder(motion_enabled), cx));
             panels.update(cx, |panels, cx| {
                 panels.set_measured_size(size(px(1000.0), px(600.0)), cx);
                 assert!(panels.apply_pair_delta(0, 80.0, cx));
@@ -31,7 +31,7 @@ fn toolbar_toggle_restores_double_click_collapse_and_can_hide_again() {
                 let original = panels.panel_sizes_px();
                 assert_eq!(original[0], 340.0);
                 assert!(panels.apply_double_click_collapse(0, cx));
-                if animated {
+                if motion_enabled {
                     assert_eq!(panels.panel_sizes_px(), original, "collapse must start at the visible width");
                     assert!(panels.transitions[0].is_animating());
                     panels.transitions[0].snap_to(0.0);
@@ -39,7 +39,7 @@ fn toolbar_toggle_restores_double_click_collapse_and_can_hide_again() {
                 }
                 assert_eq!(panels.panel_sizes_px()[0], 0.0);
                 panels.toggle_panel_hidden(0, PanelHideMode::Completely, cx);
-                if animated {
+                if motion_enabled {
                     assert_eq!(panels.panel_sizes_px()[0], 0.0, "restore must start at the collapsed width");
                     assert!(panels.transitions[0].is_animating());
                     panels.transitions[0].snap_to(1.0);

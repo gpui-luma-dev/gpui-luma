@@ -8,24 +8,28 @@ pub use template::{ThemedSwitchTemplate, default_template as default_switch_temp
 pub use theme::{DefaultSwitchTheme, SwitchLook, SwitchPalette, SwitchScale, SwitchTheme, default_switch_theme};
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use gpui::{
     AnyElement, App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
     Pixels, Render, SharedString, Subscription, Window, div,
 };
 
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::{Transition, VisualTransition};
 use crate::controls::button_family::ButtonSize;
 use crate::controls::button::{Button, ButtonBuilder, ButtonContentContext, ButtonEvent, ButtonTemplate};
 use crate::infra::presenter::{ControlPresenter, HasPresenter};
 
 pub type Switch = Entity<SwitchControl>;
 
+// State progress drives thumb position and bounded colors.
+crate::motion_profile!(SwitchMotion => switch {
+    state: Transition,
+});
+
 /// Typed payload for [`Button<SwitchData>`] / [`ButtonTemplate<SwitchData>`].
 ///
 /// `checked` is the settled semantic value; `progress` is the continuous visual factor
-/// (`0.0`..`1.0`) driven by [`VisualTransition`].
+/// driven by [`VisualTransition`]. Springs may overshoot the endpoints.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SwitchData {
     pub checked: bool,
@@ -55,8 +59,9 @@ pub enum SwitchEvent {
 
 pub struct SwitchControl {
     on: bool,
-    animated: bool,
+    motion_enabled: bool,
     transition: VisualTransition,
+    motion: SwitchMotion,
     button: Entity<Button<SwitchData>>,
     _subscriptions: Vec<Subscription>,
 }
@@ -64,16 +69,24 @@ pub struct SwitchControl {
 impl EventEmitter<SwitchEvent> for SwitchControl {}
 
 impl SwitchControl {
+    /// Motion roles captured when this control was created.
+    pub fn motion_profile(&self) -> &SwitchMotion {
+        &self.motion
+    }
+
     fn from_builder(builder: SwitchBuilder, cx: &mut Context<Self>) -> Self {
         let on = builder.button.model.data.checked;
-        let animated = builder.animated;
-        let duration = if animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        };
+        let motion_enabled = builder.motion_enabled;
+        let motion = builder.motion_profile();
         let progress = if on { 1.0 } else { 0.0 };
-        let transition = VisualTransition::new(progress, duration);
+        let transition = VisualTransition::with_transition(
+            progress,
+            if motion_enabled {
+                motion.state.clone()
+            } else {
+                Transition::instant()
+            },
+        );
 
         let mut button_builder = builder.button;
         button_builder.model.data = SwitchData { checked: on, progress };
@@ -85,7 +98,7 @@ impl SwitchControl {
         });
         let subscription = cx.subscribe(&button, Self::handle_button_event);
 
-        Self { on, animated, transition, button, _subscriptions: vec![subscription] }
+        Self { on, motion_enabled, transition, motion, button, _subscriptions: vec![subscription] }
     }
 
     fn push_button_data(&mut self, cx: &mut Context<Self>) {
@@ -113,21 +126,20 @@ impl SwitchControl {
         &self.on
     }
 
-    pub fn animated(&self) -> bool {
-        self.animated
+    pub fn motion_enabled(&self) -> bool {
+        self.motion_enabled
     }
 
-    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.motion_enabled == motion_enabled {
             return;
         }
-        self.animated = animated;
-        let duration = if animated {
-            DEFAULT_TRANSITION_DURATION
+        self.motion_enabled = motion_enabled;
+        self.transition.set_transition(if motion_enabled {
+            self.motion.state.clone()
         } else {
-            Duration::ZERO
-        };
-        self.transition = VisualTransition::new(self.transition.progress(), duration);
+            Transition::instant()
+        });
         self.transition.set_target(if self.on { 1.0 } else { 0.0 });
         self.push_button_data(cx);
         cx.notify();
@@ -244,10 +256,13 @@ pub enum SwitchOrientation {
 pub struct SwitchBuilder {
     callbacks: SwitchCallbacks,
     button: ButtonBuilder<SwitchData>,
-    animated: bool,
+    motion_enabled: bool,
+    motion: crate::motion::MotionConfig<SwitchMotion>,
 }
 
 impl SwitchBuilder {
+    crate::motion_methods!(SwitchMotion, motion);
+
     /// Append an owner-bound callback; registrations are additive and owners are weak.
     pub fn on_event<M: 'static>(
         mut self,
@@ -331,8 +346,8 @@ impl SwitchBuilder {
     }
 
     /// Enables or disables the on/off visual transition (default `true`).
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -454,7 +469,8 @@ pub fn new(id: impl Into<SharedString>) -> SwitchBuilder {
     SwitchBuilder {
         callbacks: SwitchCallbacks::default(),
         button: ButtonBuilder::new(id).typed(SwitchData::default()).template(default_switch_template()),
-        animated: true,
+        motion_enabled: true,
+        motion: Default::default(),
     }
 }
 
@@ -491,8 +507,8 @@ mod tests {
 
     #[test]
     fn switch_builder_animated_option() {
-        assert!(new("animated-default").animated);
-        assert!(!new("animated-off").animated(false).animated);
+        assert!(new("animated-default").motion_enabled);
+        assert!(!new("animated-off").motion_enabled(false).motion_enabled);
     }
 
     #[test]

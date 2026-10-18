@@ -61,7 +61,7 @@ impl ResizablePanels {
             self.content_axis_size_px(),
         );
 
-        if !self.model.animated || self.transitions.is_empty() {
+        if !self.model.motion_enabled || self.transitions.is_empty() {
             self.panel_sizes_px = raw_sizes;
             return;
         }

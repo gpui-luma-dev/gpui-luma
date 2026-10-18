@@ -31,6 +31,8 @@ pub struct Sidebar {
 }
 
 impl Sidebar {
+    gpui_luma::forward_motion!(gpui_luma::controls::sidebar::SidebarMotion, builder builder);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     /// Observe the complete drag lifecycle through the semantic event stream.
@@ -297,8 +299,8 @@ impl Sidebar {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.builder = self.builder.animated(animated);
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(motion_enabled);
         self
     }
 
@@ -344,6 +346,7 @@ impl Sidebar {
             let theme = crate::tooltip_theme(&look);
             let entity = self
                 .builder
+                .motion_defaults(look.motion_defaults().sidebar)
                 .panel_template(look.sidebar_panel_template())
                 .scrollbar_template(look.scrollbar_template())
                 .spawn(cx);

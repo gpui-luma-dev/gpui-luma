@@ -21,6 +21,8 @@ type ContextMenuModifier = Box<dyn Fn(Stateful<Div>, &ContextMenuRenderModel<'_>
 /// }
 /// ```
 pub struct ContextMenu {
+    motion_enabled: bool,
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::context_menu::ContextMenuMotion>,
     callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::context_menu::ContextMenuEvent>,
 
     id: SharedString,
@@ -130,6 +132,8 @@ impl ContextMenu {
 
             id: id.into(),
             look: None,
+            motion: Default::default(),
+            motion_enabled: true,
             variant: ContextMenuVariant::default(),
             tone: Tone::Accent,
             label: None,
@@ -138,6 +142,12 @@ impl ContextMenu {
             target: None,
             modifiers: Vec::new(),
         }
+    }
+
+    gpui_luma::forward_motion!(gpui_luma::controls::context_menu::ContextMenuMotion, edits motion);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.motion_enabled = enabled;
+        self
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
@@ -220,6 +230,9 @@ impl ContextMenu {
 
     fn into_sdk_builder(self, look: Look) -> ContextMenuBuilder {
         let mut builder = gpui_luma::controls::context_menu::ContextMenu::new(self.id)
+            .motion_defaults(look.motion_defaults().context_menu)
+            .with_motion_overrides(self.motion)
+            .motion_enabled(self.motion_enabled)
             .template(context_menu_template(&look, self.variant, self.tone))
             .items(self.items)
             .enabled(self.enabled);

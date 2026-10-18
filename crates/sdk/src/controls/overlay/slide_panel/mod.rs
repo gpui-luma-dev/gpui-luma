@@ -15,3 +15,5 @@ pub use template::{
     render_slide_panel_inner_resize_handle, render_slide_panel_inset, render_slide_panel_overlay,
     render_slide_panel_resize_handle,
 };
+
+pub use model::SlidePanelMotion;

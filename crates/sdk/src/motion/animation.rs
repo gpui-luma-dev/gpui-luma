@@ -1,56 +1,54 @@
 use std::time::{Duration, Instant};
+use std::sync::Arc;
+use super::{MotionState, RunningMotion, Transition};
 use gpui::{Context, Pixels, Window, px};
 
-/// Default duration for visual UI transitions (200 milliseconds).
-pub const DEFAULT_TRANSITION_DURATION: Duration = Duration::from_millis(200);
-
-/// Default period for continuous looping motion such as indeterminate shimmer.
-pub const DEFAULT_CONTINUOUS_PERIOD: Duration = Duration::from_millis(1200);
-
 /// Shared open/closed motion for disclosure affordances and expandable content.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct DisclosureMotion {
     transition: VisualTransition,
-    animated: bool,
+    motion_enabled: bool,
+    definition: Transition,
 }
 
 impl DisclosureMotion {
-    pub fn new(initial_progress: f32, animated: bool) -> Self {
+    pub fn new(initial_progress: f32, motion_enabled: bool) -> Self {
+        Self::with_transition(initial_progress, motion_enabled, Transition::default())
+    }
+
+    pub fn with_transition(initial_progress: f32, motion_enabled: bool, definition: Transition) -> Self {
         Self {
-            transition: VisualTransition::new(
+            transition: VisualTransition::with_transition(
                 initial_progress,
-                if animated {
-                    DEFAULT_TRANSITION_DURATION
+                if motion_enabled {
+                    definition.clone()
                 } else {
-                    Duration::ZERO
+                    Transition::instant()
                 },
             ),
-            animated,
+            motion_enabled,
+            definition,
         }
     }
 
     pub fn set_target(&mut self, target: f32) {
-        if self.animated {
+        if self.motion_enabled {
             self.transition.set_target(target);
         } else {
             self.transition.snap_to(target);
         }
     }
 
-    pub fn set_animated(&mut self, animated: bool) {
-        if self.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool) {
+        if self.motion_enabled == motion_enabled {
             return;
         }
-        let progress = self.progress();
-        self.animated = animated;
-        self.transition = VisualTransition::new(
-            progress,
-            if animated {
-                DEFAULT_TRANSITION_DURATION
-            } else {
-                Duration::ZERO
-            },
-        );
+        self.motion_enabled = motion_enabled;
+        self.transition.set_transition(if motion_enabled {
+            self.definition.clone()
+        } else {
+            Transition::instant()
+        });
     }
 
     pub fn sync(&mut self) -> bool {
@@ -73,95 +71,115 @@ impl DisclosureMotion {
     }
 }
 
-/// Lightweight frame-driven state transition primitive for GPUI controls.
-///
-/// `VisualTransition` manages progress interpolation (`0.0`..`1.0`), cubic ease-out curve
-/// calculations, and frame scheduling via `cx.on_next_frame`.
-#[derive(Clone, Copy, Debug)]
+/// Frame-driven scalar channel. Timed, spring, and custom implementations all
+/// run through the same lifecycle. Samples may overshoot the target; clamp only
+/// bounded visual properties in templates. Retargeting passes current velocity
+/// to the selected implementation.
+#[derive(Clone, Debug)]
 pub struct VisualTransition {
     progress: f32,
-    from: f32,
+    velocity: f32,
     target: f32,
+    definition: Transition,
+    running: Option<Arc<dyn RunningMotion>>,
     started_at: Option<Instant>,
     #[cfg(all(test, feature = "test-support"))]
     test_elapsed: Option<Duration>,
-    duration: Duration,
 }
 
 impl Default for VisualTransition {
     fn default() -> Self {
-        Self::new(1.0, DEFAULT_TRANSITION_DURATION)
+        Self::with_transition(1.0, Transition::default())
     }
 }
 
 impl VisualTransition {
-    /// Creates a new transition initialized at `initial_target` (typically `0.0` or `1.0`).
-    pub fn new(initial_target: f32, duration: Duration) -> Self {
-        let target = initial_target.clamp(0.0, 1.0);
+    /// Creates a scalar channel, including positions and widths in logical pixels.
+    pub fn with_transition(initial_target: f32, definition: Transition) -> Self {
+        let target = if initial_target.is_finite() {
+            initial_target
+        } else {
+            0.0
+        };
         Self {
             progress: target,
-            from: target,
+            velocity: 0.0,
             target,
+            definition,
+            running: None,
             started_at: None,
-            duration,
             #[cfg(all(test, feature = "test-support"))]
             test_elapsed: None,
         }
     }
 
-    /// Sets a new target value (`0.0`..`1.0`) and initiates a transition if different.
     pub fn set_target(&mut self, target: f32) {
-        let target = target.clamp(0.0, 1.0);
-        if (self.target - target).abs() <= f32::EPSILON {
+        if !target.is_finite() || self.target == target {
             return;
         }
-
-        self.from = self.progress;
+        // Retarget from the last presented sample, avoiding a jump between frames.
         self.target = target;
+        self.running = Some(Arc::from(self.definition.start(self.state(), target)));
         self.started_at = Some(Instant::now());
         #[cfg(all(test, feature = "test-support"))]
         if self.test_elapsed.is_some() {
             self.test_elapsed = Some(Duration::ZERO);
         }
+        // Instant motion settles synchronously, without scheduling a frame.
+        self.sample(Duration::ZERO);
     }
 
-    /// Updates internal progress based on elapsed time since animation start.
-    /// Returns `true` if actively animating.
+    fn sample(&mut self, elapsed: Duration) -> bool {
+        let Some(running) = &self.running else {
+            return false;
+        };
+        let sample = running.sample(elapsed);
+        if sample.complete || !sample.state.value.is_finite() || !sample.state.velocity.is_finite() {
+            self.snap_to(self.target);
+            return false;
+        }
+        self.progress = sample.state.value;
+        self.velocity = sample.state.velocity;
+        true
+    }
+
+    /// Samples absolute elapsed time from the channel's clock.
     pub fn sync(&mut self) -> bool {
         let Some(started_at) = self.started_at else {
             return false;
         };
-
         let elapsed = started_at.elapsed();
         #[cfg(all(test, feature = "test-support"))]
         let elapsed = self.test_elapsed.unwrap_or(elapsed);
-        let elapsed_secs = elapsed.as_secs_f32();
-        let duration_secs = self.duration.as_secs_f32();
-
-        if duration_secs <= f32::EPSILON || elapsed_secs >= duration_secs {
-            self.progress = self.target;
-            self.started_at = None;
-            return false;
-        }
-
-        let linear = (elapsed_secs / duration_secs).clamp(0.0, 1.0);
-        let eased = ease_out_cubic(linear);
-        self.progress = self.from + ((self.target - self.from) * eased);
-        true
+        self.sample(elapsed)
     }
 
-    /// Schedules a context re-render notification on the next window frame if animating.
-    pub fn schedule_frame<T>(&self, window: &mut Window, cx: &mut Context<T>)
-    where
-        T: 'static,
-    {
-        if self.started_at.is_none() {
-            return;
+    /// Changes the configuration while retaining the channel's current target.
+    pub fn set_transition(&mut self, definition: Transition) {
+        self.definition = definition;
+        if self.is_animating() {
+            self.running = Some(Arc::from(self.definition.start(self.state(), self.target)));
+            self.started_at = Some(Instant::now());
+            #[cfg(all(test, feature = "test-support"))]
+            if self.test_elapsed.is_some() {
+                self.test_elapsed = Some(Duration::ZERO);
+            }
+            self.sample(Duration::ZERO);
         }
+    }
 
-        cx.on_next_frame(window, |_, _, cx| {
-            cx.notify();
-        });
+    pub fn state(&self) -> MotionState {
+        MotionState { value: self.progress, velocity: self.velocity }
+    }
+
+    pub(crate) fn finish(&mut self) {
+        self.snap_to(self.target);
+    }
+
+    pub fn schedule_frame<T: 'static>(&self, window: &mut Window, cx: &mut Context<T>) {
+        if self.is_animating() {
+            cx.on_next_frame(window, |_, _, cx| cx.notify());
+        }
     }
 
     #[cfg(all(test, feature = "test-support"))]
@@ -169,38 +187,30 @@ impl VisualTransition {
         self.test_elapsed = Some(elapsed);
     }
 
-    #[cfg(all(test, feature = "test-support"))]
-    pub(super) fn uses_test_clock(&self) -> bool {
-        self.test_elapsed.is_some()
-    }
-
-    /// Returns current progress in range `0.0`..`1.0`.
     pub fn progress(&self) -> f32 {
         self.progress
     }
-
-    /// Returns `true` if a transition is currently in progress.
     pub fn is_animating(&self) -> bool {
-        self.started_at.is_some()
+        self.running.is_some()
     }
 
-    /// Linearly interpolates progress between `start` and `end` scalar values.
     pub fn interpolate(&self, start: f32, end: f32) -> f32 {
         start + ((end - start) * self.progress)
     }
 
-    /// Linearly interpolates progress between `start` and `end` pixel bounds.
     pub fn interpolate_pixels(&self, start: Pixels, end: Pixels) -> Pixels {
         px(self.interpolate(start.as_f32(), end.as_f32()))
     }
 
-    /// Immediately settles at `target` without animating.
     pub fn snap_to(&mut self, target: f32) {
-        let target = target.clamp(0.0, 1.0);
+        if !target.is_finite() {
+            return;
+        }
         self.progress = target;
-        self.from = target;
+        self.velocity = 0.0;
         self.target = target;
         self.started_at = None;
+        self.running = None;
     }
 }
 
@@ -217,7 +227,7 @@ pub struct ContinuousPhase {
 
 impl Default for ContinuousPhase {
     fn default() -> Self {
-        Self::new(DEFAULT_CONTINUOUS_PERIOD)
+        Self::new(crate::theme::MotionDefaults::vanilla().progress.period)
     }
 }
 
@@ -230,7 +240,7 @@ impl ContinuousPhase {
     /// Starts (or restarts) the looping phase.
     pub fn start(&mut self) {
         self.started_at = Instant::now();
-        self.active = true;
+        self.active = !self.period.is_zero();
     }
 
     /// Stops the looping phase.
@@ -284,7 +294,10 @@ mod tests {
     #[cfg(feature = "test-support")]
     #[test]
     fn explicit_test_clock_ignores_wall_time_and_samples_interpolation() {
-        let mut transition = VisualTransition::new(0., Duration::from_secs(1));
+        let mut transition = VisualTransition::with_transition(
+            0.,
+            crate::motion::Transition::timed(Duration::from_secs(1), crate::motion::Easing::OutCubic),
+        );
         transition.elapse_for_test(Duration::ZERO);
         transition.set_target(1.);
         // Simulate a heavily delayed runner without sleeping or extending the
@@ -302,14 +315,20 @@ mod tests {
 
     #[test]
     fn transition_initial_state() {
-        let transition = VisualTransition::new(1.0, Duration::from_millis(200));
+        let transition = VisualTransition::with_transition(
+            1.0,
+            crate::motion::Transition::timed(Duration::from_millis(200), crate::motion::Easing::OutCubic),
+        );
         assert_eq!(transition.progress(), 1.0);
         assert!(!transition.is_animating());
     }
 
     #[test]
     fn transition_start_and_interpolation() {
-        let mut transition = VisualTransition::new(0.0, Duration::from_millis(200));
+        let mut transition = VisualTransition::with_transition(
+            0.0,
+            crate::motion::Transition::timed(Duration::from_millis(200), crate::motion::Easing::OutCubic),
+        );
         transition.set_target(1.0);
         assert!(transition.is_animating());
         assert_eq!(transition.interpolate(48.0, 240.0), 48.0);
@@ -317,14 +336,20 @@ mod tests {
 
     #[test]
     fn transition_idempotent_target() {
-        let mut transition = VisualTransition::new(1.0, Duration::from_millis(200));
+        let mut transition = VisualTransition::with_transition(
+            1.0,
+            crate::motion::Transition::timed(Duration::from_millis(200), crate::motion::Easing::OutCubic),
+        );
         transition.set_target(1.0);
         assert!(!transition.is_animating());
     }
 
     #[test]
     fn transition_snap_to_settles() {
-        let mut transition = VisualTransition::new(0.0, Duration::from_millis(200));
+        let mut transition = VisualTransition::with_transition(
+            0.0,
+            crate::motion::Transition::timed(Duration::from_millis(200), crate::motion::Easing::OutCubic),
+        );
         transition.set_target(1.0);
         transition.snap_to(0.4);
         assert_eq!(transition.progress(), 0.4);
@@ -333,7 +358,7 @@ mod tests {
 
     #[test]
     fn continuous_phase_inactive_by_default() {
-        let phase = ContinuousPhase::new(DEFAULT_CONTINUOUS_PERIOD);
+        let phase = ContinuousPhase::default();
         assert!(!phase.is_active());
         assert_eq!(phase.phase(), 0.0);
     }
@@ -352,6 +377,7 @@ mod tests {
         let mut phase = ContinuousPhase::new(Duration::ZERO);
         phase.start();
         assert_eq!(phase.phase(), 0.0);
+        assert!(!phase.is_active());
     }
 
     #[test]

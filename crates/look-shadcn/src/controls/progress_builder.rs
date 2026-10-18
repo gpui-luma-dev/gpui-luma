@@ -16,6 +16,8 @@ pub struct Progress {
 }
 
 impl Progress {
+    gpui_luma::forward_motion!(gpui_luma::controls::progress::ProgressMotion, builder builder);
+
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self { look: None, linear: false, builder: gpui_luma::controls::progress::new(id), size: ShadcnSize::Md }
     }
@@ -70,8 +72,8 @@ impl Progress {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.builder = self.builder.animated(animated);
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(motion_enabled);
         self
     }
 
@@ -98,12 +100,13 @@ impl Progress {
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ProgressBuilder {
+        let self_builder = self.builder.motion_defaults(look.motion_defaults().progress);
         let template = if self.linear {
             look.linear_progress_template()
         } else {
             look.progress_template()
         };
-        self.builder.size(self.size.control_size()).template(template)
+        self_builder.size(self.size.control_size()).template(template)
     }
 }
 

@@ -37,6 +37,7 @@ pub type TabsTemplateModifier =
 
 #[derive(Clone)]
 pub struct TabsOverlayState {
+    motion: Arc<Mutex<crate::motion::MotionConfig<crate::motion::PresenceMotion>>>,
     trigger_bounds: Arc<Mutex<Option<Bounds<Pixels>>>>,
     presence: Arc<Mutex<OverlayPresence>>,
     last_overlay: Arc<Mutex<Option<TabsCachedOverlay>>>,
@@ -53,6 +54,7 @@ struct TabsCachedOverlay {
 impl Default for TabsOverlayState {
     fn default() -> Self {
         Self {
+            motion: Arc::new(Mutex::new(Default::default())),
             trigger_bounds: Arc::new(Mutex::new(None)),
             presence: Arc::new(Mutex::new(OverlayPresence::new(false, true))),
             last_overlay: Arc::new(Mutex::new(None)),
@@ -65,12 +67,26 @@ impl TabsOverlayState {
         Self::default()
     }
 
+    /// Configure before first use; clones share this host's snapshot.
+    pub fn motion(self, configure: impl Fn(&mut crate::motion::PresenceMotion) + Send + Sync + 'static) -> Self {
+        lock::mutex(&self.motion).configure(configure);
+        self
+    }
+    pub fn motion_defaults(self, profile: crate::motion::PresenceMotion) -> Self {
+        lock::mutex(&self.motion).defaults(profile);
+        self
+    }
+    pub fn motion_enabled(self, enabled: bool) -> Self {
+        self.set_motion_enabled(enabled);
+        self
+    }
+
     pub fn trigger_bounds(&self) -> Option<Bounds<Pixels>> {
         *lock::mutex(&self.trigger_bounds)
     }
 
-    pub fn set_animated(&self, animated: bool) {
-        lock::mutex(&self.presence).set_animated(animated);
+    pub fn set_motion_enabled(&self, motion_enabled: bool) {
+        lock::mutex(&self.presence).set_motion_enabled(motion_enabled);
     }
 
     /// Sync presence for the current frame. Returns `true` while animating.
@@ -88,11 +104,21 @@ impl TabsOverlayState {
     }
 
     fn set_overlay_open(&self, open: bool) {
-        lock::mutex(&self.presence).set_open(open);
+        let mut config = lock::mutex(&self.motion);
+        let mut presence = lock::mutex(&self.presence);
+        if !config.is_frozen() {
+            config.freeze();
+            *presence = OverlayPresence::with_motion(
+                presence.is_logical_open(),
+                presence.motion_enabled(),
+                config.profile().clone(),
+            );
+        }
+        presence.set_open(open);
     }
 
     fn presence_snapshot(&self) -> OverlayPresence {
-        *lock::mutex(&self.presence)
+        lock::mutex(&self.presence).clone()
     }
 }
 
@@ -262,7 +288,8 @@ impl TabsTemplate for ThemedTabsTemplate {
         let drop_scope = model.drag_drop.as_ref().and_then(|owner| {
             owner
                 .update(cx, |tabs, _| {
-                    tabs.drop_layout.configure(self.theme.drop_layout_motion(), tabs.animated);
+                    tabs.drop_layout.configure_transition(&tabs.motion_profile().drop_layout);
+                    tabs.drop_layout.set_motion_enabled(tabs.motion_enabled);
                     (tabs.drop_layout.clone(), tabs.drag_scroll.clone())
                 })
                 .ok()

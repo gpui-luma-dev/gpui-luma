@@ -61,6 +61,9 @@ impl<K> Default for ListBoxScrollHandle<K> {
 }
 
 impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
+    pub fn set_motion(&self, definition: crate::motion::Transition) {
+        self.motion.configure(definition);
+    }
     /// Request a one-time reveal of this stable key, even without focus.
     /// Fully visible items stay in place; oversized items show their leading
     /// edge. Missing keys are ignored at layout. Selection is unchanged.

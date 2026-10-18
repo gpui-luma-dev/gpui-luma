@@ -11,9 +11,6 @@ struct ShadcnTreeViewTheme {
 }
 
 impl TreeViewTheme for ShadcnTreeViewTheme {
-    fn drop_layout_motion(&self) -> gpui_luma::theme::stylesheet::ResolvedMotion {
-        self.theme.stylesheet().common.drop_layout_motion("Shadcn")
-    }
     fn resolve_row(
         &self,
         state: InteractionState,

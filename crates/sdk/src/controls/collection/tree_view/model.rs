@@ -1,3 +1,9 @@
+crate::motion_profile!(TreeViewMotion => tree_view {
+    expansion: crate::motion::Transition,
+    position: crate::motion::Transition,
+    drop_layout: crate::motion::Transition,
+});
+
 use crate::interaction::{ScrollInteraction, WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
 use std::{sync::Arc, rc::Rc};
 
@@ -124,6 +130,7 @@ pub struct TreeViewModel<T>
 where
     T: Clone + Send + Sync + 'static,
 {
+    pub(crate) motion: crate::motion::MotionConfig<TreeViewMotion>,
     pub(crate) id: SharedString,
     pub(crate) items: Vec<TreeNode<T>>,
     pub(super) index: TreeIndex,
@@ -132,7 +139,7 @@ where
     pub(crate) selection_policy: TreeViewSelectionPolicy,
     pub(crate) enabled: bool,
     pub(crate) size: ControlSize,
-    pub(crate) animated: bool,
+    pub(crate) motion_enabled: bool,
     pub(super) drag_drop: Option<super::TreeViewDragDrop<T>>,
     pub(super) branch_content: Option<TreeViewContent<T>>,
     pub(super) leaf_content: Option<TreeViewContent<T>>,
@@ -167,6 +174,8 @@ impl<T> TreeViewBuilder<T>
 where
     T: Clone + Send + Sync + 'static,
 {
+    crate::motion_methods!(TreeViewMotion, model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -494,6 +503,7 @@ where
             callbacks: Default::default(),
 
             model: TreeViewModel {
+                motion: Default::default(),
                 id: id.into(),
                 items: Vec::new(),
                 index: TreeIndex::default(),
@@ -502,7 +512,7 @@ where
                 selection_policy: TreeViewSelectionPolicy::new(TreeViewSelectionMode::Single),
                 enabled: true,
                 size: ControlSize::Md,
-                animated: true,
+                motion_enabled: true,
                 drag_drop: None,
                 branch_content: None,
                 leaf_content: None,
@@ -600,8 +610,8 @@ where
     /// Animate small branch transitions. When simultaneous transitions affect
     /// more than 256 displayed descendants, settle before layout to keep row
     /// construction bounded as descendant heights shrink.
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.model.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.model.motion_enabled = motion_enabled;
         self
     }
 

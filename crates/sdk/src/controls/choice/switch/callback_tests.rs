@@ -8,6 +8,44 @@ struct Owner {
     _observer: Option<Subscription>,
 }
 
+#[test]
+fn spring_state_interrupts_completes_and_obeys_animation_disable() {
+    let app = TestAppContext::single();
+    let owner = app.update(|cx| {
+        cx.new(|cx| Owner {
+            control: new("spring").motion(|m| m.state = Transition::spring(200.0, 18.0)).spawn(cx),
+            log: Vec::new(),
+            _observer: None,
+        })
+    });
+    let control = app.read(|cx| owner.read(cx).control.clone());
+    app.update(|cx| {
+        control.update(cx, |control, cx| {
+            control.transition.elapse_for_test(std::time::Duration::ZERO);
+            control.set_data(true, cx);
+            control.transition.elapse_for_test(std::time::Duration::from_millis(100));
+            control.transition.sync();
+            let interrupted = control.transition.state();
+            assert!(interrupted.velocity > 0.0);
+            control.set_data(false, cx);
+            assert!((control.transition.state().value - interrupted.value).abs() < 0.0001);
+            assert!((control.transition.state().velocity - interrupted.velocity).abs() < 0.0001);
+            control.transition.elapse_for_test(std::time::Duration::from_secs(10));
+            assert!(!control.transition.sync());
+            assert_eq!(control.transition.progress(), 0.0);
+            control.set_data(true, cx);
+            control.set_motion_enabled(false, cx);
+            assert_eq!(control.transition.progress(), 1.0);
+            assert!(!control.transition.is_animating());
+            control.set_data(false, cx);
+            assert_eq!(control.transition.progress(), 0.0);
+            control.set_motion_enabled(true, cx);
+            control.set_data(true, cx);
+            assert!(control.transition.is_animating());
+        })
+    });
+}
+
 fn activate(control: &Switch, cx: &mut App) {
     let button = control.read(cx).button.clone();
     button.update(cx, |_, cx| cx.emit(ButtonEvent::Click));
@@ -143,4 +181,38 @@ fn owner_is_weak_and_captures_release_with_control_or_builder() {
         });
     });
     assert_eq!(Rc::strong_count(&capture), 1);
+}
+
+#[test]
+fn vanilla_sdk_defaults_and_stylesheet_work_without_a_look() {
+    use crate::{motion::MotionState, theme::stylesheet::CommonStylesheet};
+    use std::time::Duration;
+    let sheet = CommonStylesheet::parse(
+        r#"
+[common.motion.switch.state]
+kind = "timed"
+duration_ms = 800
+easing = "linear"
+"#,
+    )
+    .unwrap();
+    let app = TestAppContext::single();
+    app.update(|cx| {
+        let vanilla = cx.new(|cx| new("vanilla").spawn(cx));
+        let configured = cx.new(|cx| new("configured").motion_defaults(sheet.motion_defaults().switch).spawn(cx));
+        let edited = cx.new(|cx| {
+            new("edited")
+                .motion(|m| m.state = Transition::instant())
+                .motion_defaults(sheet.motion_defaults().switch)
+                .motion_enabled(false)
+                .spawn(cx)
+        });
+        let sample = |entity: &Entity<Switch>, elapsed| {
+            entity.read(cx).read(cx).motion_profile().state.start(MotionState::default(), 1.0).sample(elapsed)
+        };
+        assert!(!sample(&vanilla, Duration::from_millis(199)).complete);
+        assert!(sample(&vanilla, Duration::from_millis(200)).complete);
+        assert_eq!(sample(&configured, Duration::from_millis(200)).state.value, 0.25);
+        assert!(sample(&edited, Duration::ZERO).complete);
+    });
 }

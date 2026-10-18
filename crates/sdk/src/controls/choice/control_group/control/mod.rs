@@ -10,7 +10,7 @@ use super::model::{
     ControlGroupBuilder, ControlGroupFocusStrategy, ControlGroupItemLike, ControlGroupModel, ControlGroupStateMode,
     ControlSelectionMode,
 };
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::{VisualTransition};
 use crate::theme::observe_theme_revision;
 
 use self::selection::{enabled_item_index_by_id, normalize_active_id, normalize_model, selected_ids_contain};
@@ -54,7 +54,12 @@ where
         ControlGroupBuilder::new(id)
     }
 
-    pub(crate) fn from_builder(mut builder: ControlGroupBuilder<T>, cx: &mut Context<Self>) -> Self {
+    crate::motion_snapshot!(super::ControlGroupMotion, model.motion);
+
+    pub(crate) fn from_builder(builder: ControlGroupBuilder<T>, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
         normalize_model(&mut builder.model);
         let selection_transitions = builder
             .model
@@ -64,7 +69,7 @@ where
                 let selected = selected_ids_contain(builder.model.effective_selected_ids(), item.id());
                 (
                     item.id().clone(),
-                    VisualTransition::new(if selected { 1.0 } else { 0.0 }, DEFAULT_TRANSITION_DURATION),
+                    VisualTransition::with_transition(if selected { 1.0 } else { 0.0 }, motion.selection.clone()),
                 )
             })
             .collect();
@@ -250,13 +255,17 @@ where
         cx.notify();
     }
 
-    pub fn set_animated_selection(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.model.animated_selection == animated {
+    pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.set_animated_selection(enabled, cx);
+    }
+
+    pub fn set_animated_selection(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.model.animated_selection == motion_enabled {
             return;
         }
 
-        self.model.animated_selection = animated;
-        if !animated {
+        self.model.animated_selection = motion_enabled;
+        if !motion_enabled {
             let selected_ids = self.model.effective_selected_ids();
             for (id, transition) in &mut self.selection_transitions {
                 transition.snap_to(if selected_ids_contain(selected_ids, id) {

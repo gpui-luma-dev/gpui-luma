@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use std::collections::HashMap;
-use std::time::Duration;
 
 use gpui::{App, AppContext, Entity, IntoElement, Render, SharedString, Window};
 
@@ -12,6 +11,13 @@ use crate::infra::icon::IconSource;
 use crate::infra::icon::DisclosureIcons;
 use crate::controls::tabs::{ControlFocusState, TabsItemState};
 use crate::theme::ControlSize;
+
+crate::motion_profile!(TabsMotion => tabs {
+    drop_layout: crate::motion::Transition,
+    indicator: crate::motion::Transition,
+    content: crate::motion::Transition,
+    disclosure: crate::motion::Transition,
+});
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum TabsWidthMode {
@@ -192,10 +198,9 @@ pub struct TabsModel {
     pub(crate) items: Vec<TabsItem>,
     pub(crate) active_id: Option<SharedString>,
     pub(crate) enabled: bool,
-    pub(crate) animated: bool,
+    pub(crate) motion_enabled: bool,
     pub(crate) contents: HashMap<SharedString, TabsContent>,
-    pub(crate) fade_duration: Option<Duration>,
-    pub(crate) inherited_motion: crate::theme::stylesheet::ResolvedMotion,
+    pub(crate) motion: crate::motion::MotionConfig<TabsMotion>,
     pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) template: Arc<dyn TabsTemplate>,
 }
@@ -234,6 +239,8 @@ pub struct TabsBuilder {
 }
 
 impl TabsBuilder {
+    crate::motion_methods!(TabsMotion, model.motion);
+
     /// Observe the complete drag lifecycle through the semantic event stream.
     pub fn on_drag_drop<M: 'static>(
         self,
@@ -493,10 +500,9 @@ impl TabsBuilder {
                 items: Vec::new(),
                 active_id: None,
                 enabled: true,
-                animated: true,
+                motion_enabled: true,
                 contents: HashMap::new(),
-                fade_duration: None,
-                inherited_motion: Default::default(),
+                motion: Default::default(),
                 disclosure_icons: DisclosureIcons::new(
                     lucide_svg_static::Icon::ChevronUp,
                     lucide_svg_static::Icon::ChevronDown,
@@ -543,25 +549,6 @@ impl TabsBuilder {
         self
     }
 
-    /// Fade the incoming panel on selection changes. First render is fully visible.
-    /// Zero disables the fade; `animated(false)` also disables body motion.
-    pub fn fade_in(mut self, duration: Duration) -> Self {
-        self.model.fade_duration = Some(duration);
-        self
-    }
-
-    /// Snapshot the look's common configuration. Later look edits affect new builders only.
-    /// Explicit `fade_in` overrides win regardless of builder call order.
-    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet, look_name: &str) -> Self {
-        self.model.inherited_motion = stylesheet.tabs_content_motion(look_name);
-        self
-    }
-
-    /// Effective body motion, including provenance and control-wide animation disable.
-    pub fn body_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
-        self.model.inherited_motion.clone().with_override(self.model.fade_duration, self.model.animated)
-    }
-
     pub fn active(mut self, active_id: impl Into<SharedString>) -> Self {
         self.model.active_id = Some(active_id.into());
         self
@@ -588,8 +575,8 @@ impl TabsBuilder {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.model.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.model.motion_enabled = motion_enabled;
         self
     }
 
@@ -643,19 +630,28 @@ impl TabsBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[test]
-    fn motion_override_is_independent_of_builder_order() {
-        use crate::theme::stylesheet::{CommonStylesheet, MotionSource};
-        let stylesheet = CommonStylesheet::parse("[common.tabs.content]\nfade_in_ms = 300").unwrap();
+    fn sdk_role_edits_apply_after_defaults_regardless_of_builder_order() {
+        use crate::motion::{Easing, MotionState, Transition};
+        let defaults = TabsMotion {
+            indicator: Transition::timed(Duration::from_secs(1), Easing::Linear),
+            content: Transition::timed(Duration::from_millis(500), Easing::Linear),
+            ..TabsMotion::default()
+        };
+        let edit = |m: &mut TabsMotion| m.indicator = Transition::instant();
         for builder in [
-            TabsBuilder::new("before").fade_in(Duration::ZERO).stylesheet(&stylesheet, "test"),
-            TabsBuilder::new("after").stylesheet(&stylesheet, "test").fade_in(Duration::ZERO),
+            TabsBuilder::new("before").motion(edit).motion_defaults(defaults.clone()),
+            TabsBuilder::new("after").motion_defaults(defaults).motion(edit),
         ] {
-            assert_eq!(builder.body_motion().duration, Duration::ZERO);
-            assert_eq!(builder.body_motion().source, MotionSource::InstanceOverride);
+            let profile = builder.motion_profile();
+            assert!(profile.indicator.start(MotionState::default(), 1.0).sample(Duration::ZERO).complete);
+            assert_eq!(
+                profile.content.start(MotionState::default(), 1.0).sample(Duration::from_millis(100)).state.value,
+                0.2
+            );
         }
-        assert_eq!(TabsBuilder::new("default").body_motion().source, MotionSource::SdkFallback);
     }
 
     #[test]

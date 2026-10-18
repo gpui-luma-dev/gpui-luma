@@ -1,3 +1,8 @@
+crate::motion_profile!(AccordionMotion => accordion {
+    expansion: crate::motion::Transition,
+    drop_layout: crate::motion::Transition,
+});
+
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, AppContext, Div, Entity, IntoElement, SharedString, Stateful, Window};
@@ -91,12 +96,13 @@ impl AccordionItem {
 
 #[derive(Clone)]
 pub struct AccordionModel {
+    pub(crate) motion: crate::motion::MotionConfig<AccordionMotion>,
     pub(crate) id: SharedString,
     pub(crate) items: Vec<AccordionItem>,
     pub(crate) selection_mode: AccordionSelectionMode,
     pub(crate) collapsible: bool,
     pub(crate) enabled: bool,
-    pub(crate) animated: bool,
+    pub(crate) motion_enabled: bool,
     pub(crate) reordering: bool,
     pub(crate) size: ControlSize,
     pub(crate) item_dividers: bool,
@@ -151,6 +157,8 @@ pub struct AccordionBuilder {
 }
 
 impl AccordionBuilder {
+    crate::motion_methods!(AccordionMotion, model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -371,12 +379,13 @@ impl AccordionBuilder {
             callbacks: Default::default(),
 
             model: AccordionModel {
+                motion: Default::default(),
                 id: id.into(),
                 items: Vec::new(),
                 selection_mode: AccordionSelectionMode::Single,
                 collapsible: true,
                 enabled: true,
-                animated: true,
+                motion_enabled: true,
                 reordering: false,
                 size: ControlSize::Md,
                 item_dividers: true,
@@ -397,8 +406,8 @@ impl AccordionBuilder {
     }
 
     /// Enables or disables expand/collapse animation (default `true`).
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.model.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.model.motion_enabled = motion_enabled;
         self
     }
 
@@ -505,9 +514,9 @@ mod tests {
     #[test]
     fn test_accordion_builder_animated_option() {
         let builder_default = AccordionBuilder::new("accordion");
-        assert!(builder_default.model.animated);
+        assert!(builder_default.model.motion_enabled);
 
-        let builder_opt_out = AccordionBuilder::new("accordion").animated(false);
-        assert!(!builder_opt_out.model.animated);
+        let builder_opt_out = AccordionBuilder::new("accordion").motion_enabled(false);
+        assert!(!builder_opt_out.model.motion_enabled);
     }
 }

@@ -37,6 +37,12 @@ impl<T> MenuChoiceGroup<T>
 where
     T: ControlGroupItemLike + 'static,
 {
+    gpui_luma::forward_motion!(gpui_luma::controls::control_group::ControlGroupMotion, builder builder);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(enabled);
+        self
+    }
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -226,7 +232,8 @@ where
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ControlGroupBuilder<T> {
-        let mut builder = self.builder;
+        let self_builder = self.builder.motion_defaults(look.motion_defaults().control_group);
+        let mut builder = self_builder;
         if let Some(row) = self.menu_row {
             let content = row.content;
             builder = builder.with_menu_row_item_content_sized(

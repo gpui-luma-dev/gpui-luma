@@ -1,3 +1,4 @@
+use gpui_luma::motion::{Transition, Easing};
 use std::time::Duration;
 use gpui::{App, Context, Entity, Render, Window, IntoElement, div, px, prelude::*};
 use gpui_luma::{DockPanel, vstack, motion::VisualTransition};
@@ -39,7 +40,10 @@ impl RadialGallery {
             shape,
             stacked,
             look,
-            motion: VisualTransition::new(0.0, Duration::from_millis(900)),
+            motion: VisualTransition::with_transition(
+                0.0,
+                Transition::timed(Duration::from_millis(900), Easing::OutCubic),
+            ),
         }))
     }
     pub(crate) fn enter(&mut self, cx: &mut Context<Self>) {

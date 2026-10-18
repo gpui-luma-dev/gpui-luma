@@ -42,3 +42,5 @@ mod geometry;
 pub use drag::{AccordionDragBindings, AccordionDragEvent, AccordionDropProposal};
 #[cfg(all(test, feature = "test-support"))]
 mod drag_tests;
+
+pub use model::AccordionMotion;

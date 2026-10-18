@@ -198,7 +198,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
                 look.floating_menu,
                 item_hovers,
                 item_clicks,
-                model.submenu_presence,
+                model.submenu_presence.clone(),
                 model.submenu_transition,
             );
             let overlay = anchored()
