@@ -716,3 +716,33 @@ gap = 8.0
 
 [common.radio_group.sizes.horizontal]
 gap = 12.0
+
+# Composite input affordances; dimensions are logical pixels.
+[common.autocomplete.geometry]
+gap = 10.0
+status_gap = 10.0
+clear_inset = 10.0
+clear_width = 18.0
+clear_icon_size = 12.0
+trigger_width = 240.0
+popup_extra_width = 24.0
+
+[common.combobox.geometry]
+affordance_inset = 10.0
+affordance_width = 18.0
+affordance_icon_size = 12.0
+affordance_gap = 2.0
+trigger_extra_gap = 8.0
+
+[common.search_selector.geometry]
+search_icon_width = 18.0
+search_icon_size = 12.0
+trigger_icon_extra_width = 10.0
+trigger_extra_gap = 8.0
+search_padding = 8.0
+search_separator_height = 1.0
+search_padding_reduction = 3.0
+search_input_height_floor = 18.0
+# Estimated search field/chrome reservation when filling the viewport.
+search_chrome_height = 57.0
+trailing_icon_size = 14.0

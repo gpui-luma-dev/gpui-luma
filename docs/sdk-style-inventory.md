@@ -40,6 +40,7 @@
 | RadioGroup templates | `common.radio_group.geometry/sizes.vertical/horizontal` | Group/item gaps and disabled opacity migrated; wrappers capture styles; Radix authors its compact horizontal difference |
 | IconGroup capsule | `common.icon_group.geometry/sizes.toolbar` | Shared public template inherits group shell dimensions and pill-radius token; independent geometry replaces fixed template modifiers |
 | Selector/selection panel chrome | `common.selector_list`, `common.selection_panel`, metric border and Popover tokens | Border width and disabled opacity migrated across Selector, ComboBox, Autocomplete, SearchSelector and SelectionPanel templates; popup margins/offsets inherit shared placement and allow final independent overrides |
+| Composite-input affordances | `common.autocomplete`, `common.combobox`, `common.search_selector` | Captured clear/search slot geometry, status typography dimensions, width reservations and search panel chrome migrated; selected look builders and Studio previews use the same resolved fields |
 
 ## Family coverage
 
@@ -81,9 +82,9 @@ have been classified. Shared token migration benefits every token-backed theme.
 | overlay/tooltip | Vanilla and compact geometry migrated; presentation coverage still needs audit. |
 | range/progress | Fixed geometry migrated; template decoration still needs audit. |
 | range/slider | Factory and proportional sizing migrated; pointer algorithms remain Rust; template chrome still needs audit. |
-| selection/autocomplete | Popup shell border, row opacity and placement now consume shared resolved panel look. Clear-icon sizing/offsets, fixed gaps and remaining templates still need audit. |
-| selection/combobox | Popup shell border, row opacity and placement now consume shared panel look. Clear-icon geometry and remaining trigger/template recipes still need audit. |
-| selection/search_selector | Popup shell border, row opacity and placement migrated. Search field chrome, trigger/trailing icons and hard-coded trailing color still need audit. |
+| selection/autocomplete | Popup chrome plus clear geometry, root/status gaps, width reservations and theme-owned status typography migrated. Icon identity, viewport row-count defaults and remaining state/variant recipes still need audit. |
+| selection/combobox | Popup chrome, clear/arrow affordance geometry and matching trigger-width reservations migrated. Icon identity, clear-icon color semantics and remaining state/template recipes still need audit. |
+| selection/search_selector | Popup chrome, search/trailing icon sizes, input padding/floor and search panel reserve migrated; viewport budget uses resolved placement. Icon identity, hard-coded trailing color and remaining state/viewport recipes still need audit. |
 | selection/selection_panel | Menu baseline plus independent geometry, radii, border width and disabled opacity reach SDK/Shadcn templates. Selection icons, scrollbar reservation and remaining recipes still need audit. |
 | selection/selector | SDK trigger geometry, typography and popup offset migrated; Shadcn paint/inspection wired; icon/state/template recipes remain. |
 | selection/selector_list | Shared public menu-to-panel factory owns metric borders, menu opacity and Popover placement before independent overrides. Template border/opacity and border-dependent inset calculations migrated; icon audit remains. |

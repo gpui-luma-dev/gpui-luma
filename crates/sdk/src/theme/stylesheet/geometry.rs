@@ -538,6 +538,54 @@ geometry_family!(
     [padding_x, padding_y, gap, radius]
 );
 
+geometry_family!(
+    AutocompleteStylesheet,
+    AutocompleteGeometryStylesheet,
+    AutocompleteGeometry,
+    ResolvedAutocompleteGeometry,
+    "autocomplete",
+    [
+        gap,
+        status_gap,
+        clear_inset,
+        clear_width,
+        clear_icon_size,
+        status_font_size,
+        status_line_height,
+        trigger_width,
+        popup_extra_width
+    ]
+);
+
+geometry_family!(
+    ComboBoxStylesheet,
+    ComboBoxGeometryStylesheet,
+    ComboBoxGeometry,
+    ResolvedComboBoxGeometry,
+    "combobox",
+    [affordance_inset, affordance_width, affordance_icon_size, affordance_gap, trigger_extra_gap]
+);
+
+geometry_family!(
+    SearchSelectorStylesheet,
+    SearchSelectorGeometryStylesheet,
+    SearchSelectorGeometry,
+    ResolvedSearchSelectorGeometry,
+    "search_selector",
+    [
+        search_icon_width,
+        search_icon_size,
+        trigger_icon_extra_width,
+        trigger_extra_gap,
+        search_padding,
+        search_separator_height,
+        search_padding_reduction,
+        search_input_height_floor,
+        search_chrome_height,
+        trailing_icon_size
+    ]
+);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -552,6 +600,9 @@ mod tests {
         SidebarStylesheet::validate_contract();
         ControlGroupStylesheet::validate_contract();
         RadioGroupStylesheet::validate_contract();
+        AutocompleteStylesheet::validate_contract();
+        ComboBoxStylesheet::validate_contract();
+        SearchSelectorStylesheet::validate_contract();
         IconGroupStylesheet::validate_contract();
         TableStylesheet::validate_contract();
         PagerStylesheet::validate_contract();

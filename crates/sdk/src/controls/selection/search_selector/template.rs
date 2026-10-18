@@ -61,6 +61,8 @@ impl Default for SearchSelectorTemplateHandlers {
 }
 
 pub struct SearchSelectorRenderModel {
+    /// Captured and size-resolved affordance geometry.
+    pub geometry: crate::theme::stylesheet::ResolvedSearchSelectorGeometry,
     pub id: SharedString,
     pub trigger_label: SharedString,
     pub trigger_label_is_placeholder: bool,
@@ -177,12 +179,16 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                     .child(
                         div()
                             .id("icon")
-                            .w(px(18.0))
+                            .w(px(model.geometry.search_icon_width.value_px))
                             .flex()
                             .items_center()
                             .justify_center()
                             .text_color(trigger_look.trigger_icon)
-                            .child(lucide_icon(lucide_svg_static::Icon::Search, trigger_look.trigger_icon, 12.0)),
+                            .child(lucide_icon(
+                                lucide_svg_static::Icon::Search,
+                                trigger_look.trigger_icon,
+                                model.geometry.search_icon_size.value_px,
+                            )),
                     ),
             );
 
@@ -254,6 +260,7 @@ where
 }
 
 pub struct SearchSelectorItemsRenderModel<'a> {
+    pub trailing_icon_size: f32,
     pub menu_id: &'a SharedString,
     pub search_selector_id: &'a SharedString,
     pub items: &'a [SelectionItem],
@@ -407,8 +414,11 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
             } else {
                 let mut content = div().flex().items_center().justify_between().flex_1().child(item.label.clone());
                 if let Some(icon) = item.trailing_icon {
-                    content =
-                        content.child(crate::infra::icon::lucide_icon(icon, gpui::hsla(0.38, 0.65, 0.48, 1.0), 14.0));
+                    content = content.child(crate::infra::icon::lucide_icon(
+                        icon,
+                        gpui::hsla(0.38, 0.65, 0.48, 1.0),
+                        model.trailing_icon_size,
+                    ));
                 }
                 content.into_any_element()
             };

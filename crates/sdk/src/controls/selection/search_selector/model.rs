@@ -32,6 +32,7 @@ pub type SearchSelectorPopupLookProvider = Arc<dyn Fn(ControlSize) -> SelectorIt
 #[derive(Clone)]
 pub struct SearchSelectorModel {
     pub(crate) motion: crate::motion::MotionConfig<SearchSelectorMotion>,
+    pub(crate) stylesheet: crate::theme::stylesheet::SearchSelectorStylesheet,
     pub(crate) id: SharedString,
     pub(crate) items: Vec<SelectionItem>,
     pub(crate) placeholder: SharedString,
@@ -179,6 +180,7 @@ impl SearchSelectorBuilder {
             initial_selected_id: None,
             model: SearchSelectorModel {
                 motion: Default::default(),
+                stylesheet: crate::theme::stylesheet::CommonStylesheet::sdk_default().search_selector.clone(),
                 id: id.into(),
                 items: items.into_iter().collect(),
                 placeholder: SharedString::from("Select…"),
@@ -206,6 +208,13 @@ impl SearchSelectorBuilder {
                 popup_look_provider: Arc::new(|size| default_selector_items_panel_look(&ThemeTokens::default(), size)),
             },
         }
+    }
+
+    /// Capture shared affordance geometry; per-size values resolve at render time.
+    /// Text-field/popup providers and consumer template modifiers retain their own precedence.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        self.model.stylesheet = stylesheet.with_sdk_defaults().search_selector;
+        self
     }
 
     pub fn items(mut self, items: impl IntoIterator<Item = SelectionItem>) -> Self {
@@ -476,5 +485,27 @@ mod tests {
         assert!(!Arc::ptr_eq(&builder.model.template, &template));
         assert!(!Arc::ptr_eq(&builder.model.panel_template, &panel_template));
         assert!(!Arc::ptr_eq(builder.model.item_template.as_ref().unwrap(), &item_template));
+    }
+}
+
+#[cfg(test)]
+mod stylesheet_tests {
+    use super::*;
+
+    #[test]
+    fn search_affordance_snapshot_inherits_and_preserves_zero() {
+        let sheet = crate::theme::stylesheet::CommonStylesheet::parse("[common.search_selector.geometry]\nsearch_padding=0\nsearch_separator_height=0\nsearch_icon_size=21\nsearch_chrome_height=0").unwrap();
+        let builder = SearchSelectorBuilder::new("geometry", []).stylesheet(&sheet);
+        let geometry = builder.model.stylesheet.resolve_geometry("md", Default::default());
+        assert_eq!(
+            (
+                geometry.search_padding.value_px,
+                geometry.search_separator_height.value_px,
+                geometry.search_icon_size.value_px,
+                geometry.search_chrome_height.value_px
+            ),
+            (0.0, 0.0, 21.0, 0.0)
+        );
+        assert_eq!(geometry.search_icon_width.value_px, 18.0);
     }
 }

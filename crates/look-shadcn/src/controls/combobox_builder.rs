@@ -258,7 +258,10 @@ impl ComboBox {
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ComboBoxBuilder {
-        let self_builder = self.builder.motion_defaults(look.motion_defaults().combobox);
+        let self_builder = self
+            .builder
+            .stylesheet(&look.mode_tokens().stylesheet().common)
+            .motion_defaults(look.motion_defaults().combobox);
         let theme = look.clone();
         self_builder
             .size(self.size.control_size())

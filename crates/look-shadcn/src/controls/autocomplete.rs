@@ -62,7 +62,19 @@ pub fn autocomplete_textbox_look(
     let colors = resolve_autocomplete_chrome_colors(&resolver, true)
         .unwrap_or_else(|_| AutocompleteChromeColorTable::fallback());
 
+    let geometry = mode.stylesheet().common.autocomplete.resolve_geometry(
+        size.stylesheet_key(),
+        gpui_luma::theme::stylesheet::AutocompleteGeometry {
+            status_font_size: mode.typography.text.scale.sm.size,
+            status_line_height: mode.typography.text.scale.sm.line_height,
+            ..Default::default()
+        },
+    );
+    let mut status_typography = mode.typography.text.scale.sm;
+    status_typography.size = geometry.status_font_size.value_px;
+    status_typography.line_height = geometry.status_line_height.value_px;
     AutocompleteLook {
+        status_typography,
         status_color: colors.status_color.hsla(),
         muted_text_color: colors.muted_text_color.hsla(),
         clear_icon_color: colors.clear_icon_color.hsla(),

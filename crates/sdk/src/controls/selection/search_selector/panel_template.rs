@@ -9,6 +9,7 @@ use super::item_template::SearchSelectorItemTemplate;
 
 pub struct SearchSelectorPanelRenderModel<'a> {
     pub id: &'a SharedString,
+    pub geometry: crate::theme::stylesheet::ResolvedSearchSelectorGeometry,
     pub items: &'a [SelectionItem],
     pub visible_indices: &'a [usize],
     pub selected_source_index: Option<usize>,
@@ -82,7 +83,9 @@ impl SearchSelectorPanelTemplate for DefaultSearchSelectorPanelTemplate {
             .id("panel-content")
             .w_full()
             .when_some(model.search_content, |panel, search| {
-                panel.child(div().p(px(8.0)).child(search)).child(div().h(px(1.0)).bg(look.border))
+                panel
+                    .child(div().p(px(model.geometry.search_padding.value_px)).child(search))
+                    .child(div().h(px(model.geometry.search_separator_height.value_px)).bg(look.border))
             })
             .child(model.list_content);
 

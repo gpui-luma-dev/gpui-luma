@@ -98,6 +98,7 @@ struct ComboBoxPopupTemplates<'a> {
 }
 
 struct SearchSelectorPopupTemplates<'a> {
+    geometry: gpui_luma::theme::stylesheet::ResolvedSearchSelectorGeometry,
     items: &'a Arc<dyn SearchSelectorItemsTemplate>,
     panel: &'a Arc<dyn SearchSelectorPanelTemplate>,
 }
@@ -435,6 +436,15 @@ fn render_selector_autocomplete_trigger(
     let popup_look = look.selector_items_panel_look(shadcn_size(size));
 
     let model = AutocompleteRenderModel {
+        geometry: look.stylesheet().common.autocomplete.resolve_geometry(
+            size.stylesheet_key(),
+            gpui_luma::theme::stylesheet::AutocompleteGeometry {
+                status_font_size: status_theme.status_typography.size,
+                status_line_height: status_theme.status_typography.line_height,
+                ..Default::default()
+            },
+        ),
+        status_typography: status_theme.status_typography,
         id: id.clone(),
         textfield: render_selector_preview_textfield(
             SelectorPreviewTextfieldRequest {
@@ -499,6 +509,7 @@ fn render_selector_combobox_trigger(
     let popup_open = popup_bounds.is_some();
 
     let model = ComboBoxRenderModel {
+        geometry: look.stylesheet().common.combobox.resolve_geometry(size.stylesheet_key(), Default::default()),
         textfield: render_selector_preview_textfield(
             SelectorPreviewTextfieldRequest {
                 look,
@@ -574,6 +585,7 @@ fn render_selector_search_selector_trigger(
         false,
     );
     let model = SearchSelectorRenderModel {
+        geometry: look.stylesheet().common.search_selector.resolve_geometry(size.stylesheet_key(), Default::default()),
         id: id.clone(),
         trigger_label: if state.selector_selected {
             SharedString::from("California")
@@ -823,6 +835,11 @@ fn render_selector_popup_preview(
                 &items,
                 popup_look.clone(),
                 SearchSelectorPopupTemplates {
+                    geometry: look
+                        .stylesheet()
+                        .common
+                        .search_selector
+                        .resolve_geometry(size.stylesheet_key(), Default::default()),
                     items: &default_search_selector_items_template(),
                     panel: &default_search_selector_panel_template(),
                 },
@@ -1120,6 +1137,7 @@ fn render_selector_search_selector_popup_preview_from_templates(
         .items
         .render(
             &SearchSelectorItemsRenderModel {
+                trailing_icon_size: templates.geometry.trailing_icon_size.value_px,
                 menu_id: popup_id,
                 search_selector_id: popup_id,
                 items: &search_items,
@@ -1142,6 +1160,7 @@ fn render_selector_search_selector_popup_preview_from_templates(
 
     templates.panel.render(
         SearchSelectorPanelRenderModel {
+            geometry: templates.geometry,
             id: popup_id,
             items: &search_items,
             visible_indices: &visible_indices,

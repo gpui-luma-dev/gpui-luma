@@ -181,6 +181,39 @@ a border, margin, gap or disabled-item opacity; invalid opacity is rejected.
 Icons, search/clear affordance geometry and the remaining state/variant recipes are
 still pending the broader audit.
 
+## Composite input affordances
+
+Autocomplete, ComboBox and SearchSelector builders expose `.stylesheet(&sheet)`
+to capture their typed common geometry. Size-specific overrides resolve against
+the builder's final size. Existing text-field/popup providers and consumer template
+modifiers stay independent. Shadcn builders forward their selected common styles;
+Studio previews pass the same resolved geometry through the public render models.
+
+`common.autocomplete` owns `gap`, `status_gap`, clear-button `clear_inset`,
+`clear_width`, `clear_icon_size`, fallback `trigger_width`, and `popup_extra_width`
+(the extra width reserved beyond label and menu padding). Status typography comes
+from the selected theme's `text.scale.sm`; optional `status_font_size` and
+`status_line_height` override dimensions while preserving the theme's font weight.
+
+`common.combobox` owns `affordance_inset`, `affordance_width`,
+`affordance_icon_size`, `affordance_gap` and `trigger_extra_gap`. The clear button
+moves past the arrow slot plus the configured gap. Minimum trigger measurement
+uses the same dimensions and grows when the configured inter-affordance gap needs
+more space, retaining stock width reservation for the built-in defaults.
+
+`common.search_selector` owns the search slot/icon dimensions, extra trigger width
+reservation (`trigger_icon_extra_width`, `trigger_extra_gap`), search-field padding
+and separator thickness, the field's vertical padding reduction and height floor,
+and `trailing_icon_size`. `search_chrome_height` is the estimated search/chrome
+reservation used when filling the popup viewport; it defaults to the previous 57px
+reservation. Row budgeting now also reads the panel's configured popup offset and
+window margin, and guards zero-height rows before division.
+
+These dimensions accept ordinary numbers or `"math(...)"`. Explicit zero remains
+valid, missing fields inherit SDK defaults, and negative/nonfinite dimensions are
+rejected. Icon identifiers, the SearchSelector trailing-icon color and remaining
+viewport-count/state recipes still need the broader appearance audit.
+
 ## Additional default factories
 
 Choice scales now expose `compute_with_stylesheet` using the same typed common
