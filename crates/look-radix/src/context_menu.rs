@@ -15,6 +15,8 @@ struct ContextMenuThemeAdapter {
 impl ContextMenuTheme for ContextMenuThemeAdapter {
     fn resolve(&self, state: InteractionState) -> ContextMenuLook {
         let metrics = self.look.metrics();
+        let baseline = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default().context_menu.authored_geometry("");
+        let recipe = self.look.common_stylesheet().context_menu.authored_geometry("").with_fallback(&baseline);
         let geometry = self.look.common_stylesheet().context_menu.resolve_geometry(
             "",
             gpui_luma::theme::stylesheet::ContextMenuGeometry {
@@ -25,9 +27,13 @@ impl ContextMenuTheme for ContextMenuThemeAdapter {
                 padding_y: metrics.control.md.padding_y,
                 font_size: gpui_luma::theme::ThemeTokens::default().typography.text.label.size,
                 line_height: gpui_luma::theme::ThemeTokens::default().typography.text.label.line_height,
+                ..Default::default()
             },
         );
         ContextMenuLook {
+            border_width: recipe.border_width.unwrap_or_default(),
+            disabled_opacity: recipe.disabled_opacity.unwrap_or_default(),
+            window_margin: recipe.window_margin.unwrap_or_default(),
             target_background: self.look.resolve_role(SemanticRole::Surface).hsla(),
             target_foreground: self
                 .look
@@ -88,6 +94,18 @@ mod tests {
                 }
             }
         }
+    }
+    #[test]
+    fn context_chrome_uses_selected_shared_stylesheet() {
+        let look = Look::built_in();
+        let sheet = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[
+            "[common.context_menu.geometry]\nborder_width=0\ndisabled_opacity=0.2\nwindow_margin=17",
+        ])
+        .unwrap();
+        look.set_common_stylesheet(sheet);
+        let resolved =
+            context_menu_theme(&look, ContextMenuVariant::Solid, Tone::Accent).resolve(InteractionState::default());
+        assert_eq!((resolved.border_width, resolved.disabled_opacity, resolved.window_margin), (0.0, 0.2, 17.0));
     }
     #[test]
     fn focus_and_disabled_target_follow_radix_roles() {

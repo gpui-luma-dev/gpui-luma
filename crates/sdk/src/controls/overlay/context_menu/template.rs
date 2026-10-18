@@ -162,7 +162,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
                 .py(px(look.target_padding_y))
                 .bg(look.target_background)
                 .text_color(look.target_foreground)
-                .border_1()
+                .border(px(look.border_width))
                 .border_color(look.target_border)
                 .rounded(px(look.target_radius))
                 .text_size(px(look.target_typography.size))
@@ -172,7 +172,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
         }
 
         if !model.enabled {
-            target = target.opacity(0.56);
+            target = target.opacity(look.disabled_opacity);
         }
 
         let mut root = div()
@@ -202,7 +202,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
                 model.submenu_transition,
             );
             let overlay = anchored()
-                .snap_to_window_with_margin(px(8.0))
+                .snap_to_window_with_margin(px(look.window_margin))
                 .anchor(Anchor::TopLeft)
                 .position(position)
                 .child(div().opacity(model.presence.opacity()).child(menu));

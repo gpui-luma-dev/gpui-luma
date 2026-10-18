@@ -364,7 +364,8 @@ geometry_family!(
     ContextMenuGeometry,
     ResolvedContextMenuGeometry,
     "context_menu",
-    [min_width, padding_x, padding_y, font_size, line_height]
+    [min_width, padding_x, padding_y, font_size, line_height, border_width, window_margin],
+    unit[disabled_opacity]
 );
 
 geometry_family!(

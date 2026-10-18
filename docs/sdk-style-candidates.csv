@@ -761,9 +761,9 @@ crates/sdk/src/controls/overlay/context_menu/control.rs,222,context_menu,1.0 | 0
 crates/sdk/src/controls/overlay/context_menu/control.rs,249,context_menu,0.0 | 0.0,review owner / derived calculation,needs classification,".unwrap_or_else(|| point(px(0.0), px(0.0)))"
 crates/sdk/src/controls/overlay/context_menu/control.rs,524,context_menu,1.0,review owner / derived calculation,needs classification,root = root.w_full().min_h(relative(1.0));
 crates/sdk/src/controls/overlay/context_menu/template.rs,156,context_menu,1.0,review owner / derived calculation,needs classification,target = target.items_start().justify_start().w_full().min_h(relative(1.0)).child(content);
-crates/sdk/src/controls/overlay/context_menu/template.rs,175,context_menu,0.56,review owner / derived calculation,needs classification,target = target.opacity(0.56);
+crates/sdk/src/controls/overlay/context_menu/template.rs,175,context_menu,0.56,common.context_menu.geometry.disabled_opacity,migrated,target = target.opacity(0.56);
 crates/sdk/src/controls/overlay/context_menu/template.rs,189,context_menu,1.0,review owner / derived calculation,needs classification,root = root.w_full().min_h(relative(1.0));
-crates/sdk/src/controls/overlay/context_menu/template.rs,205,context_menu,8.0,review owner / derived calculation,needs classification,.snap_to_window_with_margin(px(8.0))
+crates/sdk/src/controls/overlay/context_menu/template.rs,205,context_menu,8.0,common.context_menu.geometry.window_margin,migrated,.snap_to_window_with_margin(px(8.0))
 crates/sdk/src/controls/overlay/context_menu/theme.rs,73,context_menu,0.0,common.context_menu.geometry.target_min_width,needs classification,"target_min_width: 0.0,"
 crates/sdk/src/controls/overlay/floating_menu/template.rs,480,floating_menu,1.0,review owner / derived calculation,needs classification,.left(relative(1.0))
 crates/sdk/src/controls/overlay/floating_menu/template.rs,481,floating_menu,0.0,review owner / derived calculation,needs classification,.ml(px(0.0))
@@ -1473,3 +1473,4 @@ crates/sdk/src/controls/selection/search_selector/panel_template.rs,101,search_s
 crates/sdk/src/controls/selection/search_selector/panel_template.rs,118,search_selector,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()
 crates/sdk/src/controls/selection/autocomplete/template.rs,240,autocomplete,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()
 crates/sdk/src/controls/collection/table/control/drag.rs,0,table,12 | 220 | 12 | 8 | 1 | 2,common.table.geometry.drag_*,migrated,"Drag preview pointer offset, width, padding, border and insertion marker thickness"
+crates/sdk/src/controls/overlay/context_menu/template.rs,165,context_menu,.border_1(),common.context_menu.geometry.border_width,migrated,Default target border stroke

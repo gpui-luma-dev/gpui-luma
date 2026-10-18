@@ -21,7 +21,7 @@
 | Slider | `common.slider.geometry`, size-specific dimensions | Width and proportional floor/thumb recipes migrated; explicit thumb size uses its own size key |
 | Floating menu | `common.floating_menu.geometry` | Width, proportional spacing/height recipes, disabled opacity and separator metrics migrated |
 | Selection panel | `common.selection_panel.geometry` | Shared menu baseline with independent final overrides and label typography |
-| Context menu target | `common.context_menu.geometry` | Target width migrated; remaining metrics come from shared tokens |
+| Context menu target | `common.context_menu.geometry` | Target width, border, disabled opacity and popup window margin migrated across SDK/Shadcn/Radix; remaining metrics come from shared tokens |
 | Control group shell | `common.control_group.geometry` | Default shell padding and gap migrated |
 | Dock splitter | `common.dock_splitter.geometry` | Hit width and visible line width migrated |
 | Resizable panels | `common.resizable_panels.geometry.disabled_opacity` | Disabled opacity migrated and validated in 0–1 |
@@ -73,7 +73,7 @@ have been classified. Shared token migration benefits every token-backed theme.
 | navigation/sidebar | Default metric scale migrated; engine/state and template recipes still need audit. |
 | navigation/stepper | Fixed geometry migrated; template decoration still needs audit. |
 | navigation/tabs | List padding/gap and indicator baseline wired; other recipes still need audit. |
-| overlay/context_menu | Target geometry wired and width migrated; shared menu factory wired; template styling still needs audit. |
+| overlay/context_menu | Target geometry, border, disabled opacity and popup placement migrated; shared menu factory wired; remaining menu styling still needs audit. |
 | overlay/floating_menu | Factory geometry, proportional recipes, opacity and separators migrated; template icon/state recipes still need audit. |
 | overlay/overlay_window | Factory dimensions/backdrop opacity and nonmodal shadow migrated; template recipes still need audit. |
 | overlay/popover_button | Placement defaults migrated for button/panel builders; focus/dismissal are behavior and supplied trigger/content chrome is host-owned. |

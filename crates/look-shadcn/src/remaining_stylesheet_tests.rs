@@ -712,3 +712,24 @@ popup_padding=11
         assert_eq!(theme.resolve(true, PagerStyle::MinimalEdge).popup_padding, 11.0);
     }
 }
+
+#[test]
+fn context_menu_chrome_uses_shared_stylesheet_with_zero_overrides() {
+    use gpui_luma::controls::context_menu::{DefaultContextMenuTheme, ContextMenuTheme};
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.context_menu.geometry]
+border_width=0
+disabled_opacity=0
+window_margin=19
+"#])
+    .unwrap();
+    let tokens = config.common.theme_tokens(ThemeMode::Light, gpui_luma::color::GamutMapping::CssLocalMinde).unwrap();
+    let sdk = DefaultContextMenuTheme::new(tokens);
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    let themed = look.context_menu_theme();
+    for theme in [&sdk as &dyn ContextMenuTheme, themed.as_ref()] {
+        let resolved = theme.resolve(InteractionState { disabled: true, ..Default::default() });
+        assert_eq!((resolved.border_width, resolved.disabled_opacity, resolved.window_margin), (0.0, 0.0, 19.0));
+    }
+}

@@ -625,3 +625,5 @@ Table column resize chrome uses `common.table.geometry.column_resize_hit_width`,
 Table text-column insets use `common.table.geometry.column_padding_x` (pixels), shared by header and body slots; control columns retain their centered layout. Default muted cells use `column_muted_opacity` (unit interval). Both support size overrides and explicit zero values.
 
 Pager page-size chrome uses `common.pager.geometry.border_width`, `page_size_label_gap`, `popup_offset_y`, `popup_gap`, `popup_padding`, `popup_item_padding_y`, and `popup_item_radius_inset` (pixels). Popup item radius is the resolved pager radius minus the inset, clamped to zero. PagingTable uses the same label gap and popup recipe; presentation overrides use the existing `minimal`, `minimal-edge`, and `numeric` keys.
+
+Context-menu target chrome uses `common.context_menu.geometry.border_width` (pixels) and `disabled_opacity` (unit interval, also applied to custom targets). Popup placement uses `window_margin` (pixels). SDK, Shadcn and Radix resolve the same fields, including explicit zero values.

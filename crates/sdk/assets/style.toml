@@ -582,6 +582,11 @@ separator_thickness = 1.0
 separator_inset = 0.0
 
 [common.context_menu.geometry]
+# Target border and popup window margin in pixels.
+border_width = 1.0
+window_margin = 8.0
+# Whole-target opacity when disabled (0 transparent, 1 opaque).
+disabled_opacity = 0.56
 min_width = 200.0
 
 [common.control_group.geometry]
