@@ -6,8 +6,6 @@ use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, ListRowScale, LumaTextStyle, MetricTokens, ThemeTokens,
 };
 
-const ROW_HOVER_ACCENT_ALPHA: f32 = 0.4;
-
 #[derive(Clone, Debug)]
 pub struct TableLook {
     pub background: Hsla,
@@ -125,7 +123,10 @@ impl TableTheme for DefaultTableTheme {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
 
-        TableLook {
+        let key = size.stylesheet_key();
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().table.authored_geometry(key);
+        let recipe = self.tokens.stylesheet.table.authored_geometry(key).with_fallback(&baseline);
+        let mut look = TableLook {
             background: if enabled {
                 palette.form.input.background
             } else {
@@ -144,9 +145,12 @@ impl TableTheme for DefaultTableTheme {
             },
             header_typography: self.tokens.typography.text.caption,
             radius: metrics.radius(size),
-            padding_x: 0.0,
-            padding_y: metrics.padding_y(size) * 0.5,
-        }
+            padding_x: recipe.padding_x.unwrap_or_default(),
+            padding_y: metrics.padding_y(size) * recipe.padding_y_scale.unwrap_or_default(),
+        };
+        crate::theme::stylesheet::apply_common_geometry!(self.tokens.stylesheet.table, key, TableGeometry, look,
+            [padding_x => padding_x, padding_y => padding_y], defaults = Default::default());
+        look
     }
 
     fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> TableRowPalette {
@@ -157,7 +161,10 @@ impl TableTheme for DefaultTableTheme {
         let layer = state.layer();
 
         let selected_background = palette.surface.subtle.background;
-        let hover_background = Hsla { a: ROW_HOVER_ACCENT_ALPHA, ..palette.data.accent_1 };
+        let key = size.stylesheet_key();
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().table.authored_geometry(key);
+        let recipe = self.tokens.stylesheet.table.authored_geometry(key).with_fallback(&baseline);
+        let hover_background = Hsla { a: recipe.row_hover_opacity.unwrap_or_default(), ..palette.data.accent_1 };
 
         let background = if state.disabled && !state.focused {
             transparent
@@ -186,6 +193,27 @@ impl TableTheme for DefaultTableTheme {
         TableRowPalette { background, label_color, divider: palette.form.input.border, label_typography }
     }
 
+    fn resolve_row_look(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: ControlSize,
+        scale: &ListRowScale,
+    ) -> TableRowLook {
+        let mut look = compose_table_row_look(&self.resolve_row(selected, state, size), scale);
+        let key = size.stylesheet_key();
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().table.authored_geometry(key);
+        look.radius = self
+            .tokens
+            .stylesheet
+            .table
+            .authored_geometry(key)
+            .row_radius
+            .or(baseline.row_radius)
+            .unwrap_or_default();
+        look
+    }
+
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
     }
@@ -197,7 +225,11 @@ pub(crate) fn compose_table_row_look(palette: &TableRowPalette, scale: &ListRowS
         label_color: palette.label_color,
         divider: palette.divider,
         label_typography: palette.label_typography,
-        radius: 0.0,
+        radius: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .table
+            .geometry
+            .row_radius
+            .unwrap_or_default(),
         padding_x: scale.padding_x,
         padding_y: scale.padding_y,
         min_height: scale.min_height,

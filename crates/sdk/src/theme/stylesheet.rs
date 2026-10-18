@@ -82,6 +82,7 @@ common_stylesheet! {
     callout: CalloutStylesheet,
     overlay_window: OverlayWindowStylesheet,
     selector: SelectorStylesheet,
+    selector_list: SelectorListStylesheet,
     popup_menu: PopupMenuStylesheet,
     scrollbar: ScrollbarStylesheet,
     stepper: StepperStylesheet,

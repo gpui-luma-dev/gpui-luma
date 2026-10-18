@@ -428,3 +428,40 @@ fn selected_color_rules_follow_the_same_configuration_as_geometry() {
         }
     }
 }
+
+#[test]
+fn selector_panel_and_trigger_apply_independent_common_overrides() {
+    use gpui_luma::controls::selector::SelectorTriggerStyle;
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.selector.geometry]
+radius=9
+menu_offset_y=0
+[common.selector_list.geometry]
+min_width=0
+item_height=42
+radius=7
+[common.selector_list.sizes.sm]
+item_height=0
+"#])
+    .unwrap();
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    let tokens = look.mode_tokens();
+    for size in [ControlSize::Sm, ControlSize::Md, ControlSize::Lg] {
+        let scale = StandardBoxScale::compute(size, &tokens.metrics, 1.0);
+        let resolved =
+            look.selector_theme()
+                .resolve_look(SelectorTriggerStyle::Outline, Default::default(), size, &scale, false);
+        assert_eq!((resolved.trigger_radius, resolved.menu_offset_y), (9.0, 0.0));
+        assert_eq!((resolved.items_panel.min_width, resolved.items_panel.radius), (0.0, 7.0));
+        #[cfg(feature = "inspect")]
+        {
+            let inspected = crate::inspect::ShadcnInspect::new(&look).inspect_selector_metrics(size);
+            assert_eq!(inspected.trigger.radius.value_px, resolved.trigger_radius);
+            assert_eq!(inspected.items_panel.min_width.value_px, resolved.items_panel.min_width);
+            assert_eq!(inspected.items_panel.radius.value_px, resolved.items_panel.radius);
+            assert_eq!(inspected.items_panel.item_height.value_px, resolved.items_panel.item_height);
+        }
+        assert_eq!(resolved.items_panel.item_height, if size == ControlSize::Sm { 0.0 } else { 42.0 });
+    }
+}

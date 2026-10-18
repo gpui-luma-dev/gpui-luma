@@ -86,5 +86,37 @@ pub fn inspect_selector_metrics(
     result.trigger.gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.gap, result.trigger.gap);
     result.trigger.icon_size =
         crate::tables::metrics::helpers::prefer_shared_metric(geometry.icon_size, result.trigger.icon_size);
+    result.trigger.radius =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.radius, result.trigger.radius);
+    let panel = mode.stylesheet().common.selector_list.resolve_geometry(
+        size.stylesheet_key(),
+        gpui_luma::theme::stylesheet::SelectorListGeometry {
+            padding: result.items_panel.padding.value_px,
+            min_width: result.items_panel.min_width.value_px,
+            item_height: result.items_panel.item_height.value_px,
+            item_padding_x: result.items_panel.item_padding_x.value_px,
+            item_gap: result.items_panel.item_gap.value_px,
+            item_icon_size: result.items_panel.item_icon_size.value_px,
+            radius: result.items_panel.radius.value_px,
+            item_radius: result.items_panel.item_radius.value_px,
+            ..Default::default()
+        },
+    );
+    result.items_panel.padding =
+        crate::tables::metrics::helpers::prefer_shared_metric(panel.padding, result.items_panel.padding);
+    result.items_panel.min_width =
+        crate::tables::metrics::helpers::prefer_shared_metric(panel.min_width, result.items_panel.min_width);
+    result.items_panel.item_height =
+        crate::tables::metrics::helpers::prefer_shared_metric(panel.item_height, result.items_panel.item_height);
+    result.items_panel.item_padding_x =
+        crate::tables::metrics::helpers::prefer_shared_metric(panel.item_padding_x, result.items_panel.item_padding_x);
+    result.items_panel.item_gap =
+        crate::tables::metrics::helpers::prefer_shared_metric(panel.item_gap, result.items_panel.item_gap);
+    result.items_panel.item_icon_size =
+        crate::tables::metrics::helpers::prefer_shared_metric(panel.item_icon_size, result.items_panel.item_icon_size);
+    result.items_panel.radius =
+        crate::tables::metrics::helpers::prefer_shared_metric(panel.radius, result.items_panel.radius);
+    result.items_panel.item_radius =
+        crate::tables::metrics::helpers::prefer_shared_metric(panel.item_radius, result.items_panel.item_radius);
     result
 }

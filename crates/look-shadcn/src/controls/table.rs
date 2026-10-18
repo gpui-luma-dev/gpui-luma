@@ -116,6 +116,10 @@ pub fn table_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: 
         .and_then(|max| resolve_stylesheet_metric(max, metrics, size))
         .map_or(radius, |max| radius.min(max));
 
+    let baseline = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default()
+        .table
+        .authored_geometry(size.stylesheet_key());
+    let recipe = mode.stylesheet().common.table.authored_geometry(size.stylesheet_key()).with_fallback(&baseline);
     let mut look = TableLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
@@ -123,12 +127,16 @@ pub fn table_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: 
         header_label_color: colors.header_label_color.hsla(),
         header_typography: ctx.typography().text.caption,
         radius,
-        padding_x: 0.0,
-        padding_y: metrics.padding_y(size) * 0.5,
+        padding_x: recipe.padding_x.unwrap_or_default(),
+        padding_y: metrics.padding_y(size) * recipe.padding_y_scale.unwrap_or_default(),
     };
     let geometry = mode.stylesheet().common.table.resolve_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
-        gpui_luma::theme::stylesheet::TableGeometry { padding_x: look.padding_x, padding_y: look.padding_y },
+        gpui_luma::theme::stylesheet::TableGeometry {
+            padding_x: look.padding_x,
+            padding_y: look.padding_y,
+            ..Default::default()
+        },
     );
     look.padding_x = geometry.padding_x.value_px;
     look.padding_y = geometry.padding_y.value_px;

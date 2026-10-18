@@ -31,33 +31,38 @@ pub struct SelectorItemsPanelLook {
 }
 
 pub fn default_selector_items_panel_look(tokens: &ThemeTokens, size: ControlSize) -> SelectorItemsPanelLook {
-    let palette = &tokens.palette;
-    let metrics = &tokens.metrics;
-    let typography = &tokens.typography;
-    let elevation = &tokens.elevation;
-    let item_typography = match size {
-        ControlSize::Sm => typography.text.scale.sm,
-        ControlSize::Md => typography.text.body,
-        ControlSize::Lg => typography.text.scale.lg,
-    };
-
+    let menu = crate::controls::floating_menu::default_floating_menu_look(tokens, size);
     SelectorItemsPanelLook {
-        background: palette.surface.floating.background,
-        foreground: palette.surface.floating.foreground,
-        border: palette.surface.floating.border,
-        shadow: elevation.menu.to_box_shadows(),
-        radius: metrics.radius.lg,
-        padding: metrics.padding_y(size) * 0.5,
-        min_width: 180.0,
-        item_disabled_foreground: palette.state.disabled.foreground,
-        item_hover_background: palette.state.hover.background,
-        item_hover_foreground: palette.state.hover.foreground,
-        item_typography,
-        item_height: metrics.control_height(size) * 0.9,
-        item_padding_x: metrics.padding_x(size) * 0.75,
-        item_gap: metrics.gap(size),
-        item_icon_size: metrics.icon_size(size),
-        item_radius: metrics.radius.sm,
+        background: menu.background,
+        foreground: menu.foreground,
+        border: menu.border,
+        shadow: menu.shadow,
+        radius: menu.radius,
+        padding: menu.padding,
+        min_width: menu.min_width,
+        item_disabled_foreground: menu.item_disabled_foreground,
+        item_hover_background: menu.item_hover_background,
+        item_hover_foreground: menu.item_hover_foreground,
+        item_typography: menu.item_typography,
+        item_height: menu.item_height,
+        item_padding_x: menu.item_padding_x,
+        item_gap: menu.item_gap,
+        item_icon_size: menu.item_icon_size,
+        item_radius: menu.item_radius,
+    }
+    .with_stylesheet(&tokens.stylesheet.selector_list, size.stylesheet_key())
+}
+
+impl SelectorItemsPanelLook {
+    /// Apply independent panel overrides after resolving the shared menu baseline.
+    /// Looks use their own semantic size key; consumer look callbacks run afterward.
+    pub fn with_stylesheet(mut self, stylesheet: &crate::theme::stylesheet::SelectorListStylesheet, key: &str) -> Self {
+        crate::theme::stylesheet::apply_common_geometry!(stylesheet, key, SelectorListGeometry, self,
+            [padding => padding, min_width => min_width, item_height => item_height,
+             item_padding_x => item_padding_x, item_gap => item_gap, item_icon_size => item_icon_size,
+             font_size => item_typography.size, line_height => item_typography.line_height,
+             radius => radius, item_radius => item_radius]);
+        self
     }
 }
 

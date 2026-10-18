@@ -75,14 +75,14 @@ pub fn selector_look(
         trigger_border,
         trigger_shadow: palette.trigger_shadow,
         trigger_typography: typography,
-        trigger_radius: scale.radius,
+        trigger_radius: geometry.radius.value_px,
         trigger_padding_x: geometry.padding_x.value_px,
         trigger_padding_y: geometry.padding_y.value_px,
         trigger_gap: geometry.gap.value_px,
         trigger_height: geometry.height.value_px,
         trigger_icon_size: geometry.icon_size.value_px,
         trigger_focus_border: None,
-        menu_offset_y: scale.gap * 0.5,
+        menu_offset_y: geometry.menu_offset_y.value_px,
         items_panel: selector_items_panel_look(mode, theme_mode, size),
     }
 }
@@ -120,6 +120,10 @@ pub(crate) fn selector_geometry(
         1.0,
     )
     .icon_size;
+    let baseline = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default()
+        .selector
+        .authored_geometry(size.stylesheet_key());
+    let recipe = mode.stylesheet().common.selector.authored_geometry(size.stylesheet_key()).with_fallback(&baseline);
     mode.stylesheet().common.selector.resolve_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
         gpui_luma::theme::stylesheet::SelectorGeometry {
@@ -130,6 +134,9 @@ pub(crate) fn selector_geometry(
             icon_size: icon,
             font_size: typography.size,
             line_height: typography.line_height,
+            radius: scale.radius,
+            menu_offset_y: scale.gap * recipe.menu_offset_scale.unwrap_or_default(),
+            ..Default::default()
         },
     )
 }

@@ -644,3 +644,14 @@ content_padding_scale = 1.5
 item_gap = 0.0
 icon_size = 16.0
 chevron_size = 14.0
+
+# Table surface padding scales with shared control metrics; row hover is accent alpha.
+[common.table.geometry]
+padding_x = 0.0
+padding_y_scale = "math(1 / 2)"
+row_radius = 0.0
+row_hover_opacity = 0.4
+
+# Popup separation scales with the trigger's gap unless menu_offset_y is explicit.
+[common.selector.geometry]
+menu_offset_scale = "math(1 / 2)"

@@ -171,3 +171,98 @@ fn math_values_resolve_through_tokens_layers_and_geometry_validation() {
         assert!(CommonStylesheet::parse(source).is_err(), "accepted {source}");
     }
 }
+
+#[test]
+fn table_and_selector_factories_resolve_snapshots_and_preserve_zero() {
+    use crate::controls::{
+        table::{DefaultTableTheme, TableTheme},
+        selector::{DefaultSelectorTheme, SelectorTheme, SelectorTriggerStyle},
+        selector_list::default_selector_items_panel_look,
+    };
+    use crate::theme::{InteractionState, ListRowScale};
+    let sheet = CommonStylesheet::resolve_layers(&[r#"
+[common.table.geometry]
+padding_x = 0
+padding_y_scale = "math(3 / 4)"
+row_hover_opacity = 0
+row_radius = 7
+[common.selector.geometry]
+height = 53
+padding_x = 0
+radius = 9
+font_size = 19
+menu_offset_scale = "math(3 / 2)"
+[common.floating_menu.geometry]
+min_width = 250
+item_height = 35
+[common.selector_list.geometry]
+min_width = 0
+item_height = 43
+font_size = 18
+radius = 6
+[common.selector_list.sizes.sm]
+item_height = 0
+"#])
+    .unwrap();
+    let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap();
+    let table = DefaultTableTheme::new(tokens.clone());
+    for size in [ControlSize::Sm, ControlSize::Md, ControlSize::Lg] {
+        let surface = table.resolve_look(true, false, size);
+        assert_eq!(surface.padding_x, 0.0);
+        assert_eq!(surface.padding_y, tokens.metrics.padding_y(size) * 0.75);
+        assert_eq!(
+            table
+                .resolve_row(false, InteractionState { hovered: true, ..Default::default() }, size)
+                .background
+                .a,
+            0.0
+        );
+        let row =
+            table.resolve_row_look(false, Default::default(), size, &ListRowScale::compute(size, &tokens.metrics, 1.0));
+        assert_eq!(row.radius, 7.0);
+        let selector = DefaultSelectorTheme::new(tokens.clone());
+        let scale = StandardBoxScale::compute(size, &tokens.metrics, 1.0);
+        let look = selector.resolve_look(SelectorTriggerStyle::Outline, Default::default(), size, &scale, false);
+        assert_eq!(
+            (look.trigger_height, look.trigger_padding_x, look.trigger_radius, look.trigger_typography.size),
+            (53.0, 0.0, 9.0, 19.0)
+        );
+        assert_eq!(look.menu_offset_y, scale.gap * 1.5);
+        let panel = default_selector_items_panel_look(&tokens, size);
+        assert_eq!((panel.min_width, panel.item_typography.size, panel.radius), (0.0, 18.0, 6.0));
+        assert_eq!(panel.item_height, if size == ControlSize::Sm { 0.0 } else { 43.0 });
+    }
+    let explicit =
+        CommonStylesheet::resolve_layers(&["[common.selector.geometry]\nmenu_offset_y=0\nmenu_offset_scale=3"])
+            .unwrap();
+    let selector =
+        DefaultSelectorTheme::new(explicit.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap());
+    let scale = StandardBoxScale::compute(ControlSize::Md, &tokens.metrics, 1.0);
+    assert_eq!(
+        selector
+            .resolve_look(SelectorTriggerStyle::Outline, Default::default(), ControlSize::Md, &scale, false)
+            .menu_offset_y,
+        0.0
+    );
+    for value in ["-1", "1.1", "nan"] {
+        assert!(CommonStylesheet::parse(&format!("[common.table.geometry]\nrow_hover_opacity={value}")).is_err());
+    }
+}
+
+#[test]
+fn selector_panel_baseline_retains_stock_metrics_and_inherits_menu_overrides() {
+    use crate::controls::selector_list::default_selector_items_panel_look;
+    let tokens = crate::theme::ThemeTokens::default();
+    for size in [ControlSize::Sm, ControlSize::Md, ControlSize::Lg] {
+        let panel = default_selector_items_panel_look(&tokens, size);
+        assert_eq!(panel.min_width, 180.0);
+        assert_eq!(panel.padding, tokens.metrics.padding_y(size) * 0.5);
+        assert_eq!(panel.item_height, tokens.metrics.control_height(size) * 0.9);
+        assert_eq!(panel.item_padding_x, tokens.metrics.padding_x(size) * 0.75);
+    }
+    let sheet =
+        CommonStylesheet::resolve_layers(&["[common.floating_menu.geometry]\nmin_width=273\nitem_height=31"]).unwrap();
+    let tokens = sheet.theme_tokens(ThemeMode::Dark, GamutMapping::CssLocalMinde).unwrap();
+    let panel = default_selector_items_panel_look(&tokens, ControlSize::Md);
+    assert_eq!((panel.min_width, panel.item_height), (273.0, 31.0));
+}

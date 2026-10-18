@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | MetricTokens and nested metric types | `common.tokens.metrics.*` | Migrated; typed validation and compiled constructors |
 | LumaTypography and nested font/text types | `common.tokens.typography.*` | Migrated; numeric weights validated in 1–1000 |
-| LumaPalette and semantic palette groups | `common.tokens.palette.light/dark.*` | Migrated; existing tagged ColorValue storage |
+| LumaPalette and semantic palette groups | `common.tokens.palette.light/dark.*` | Migrated; readable HSLA authoring, tagged ColorValue runtime storage |
 | LumaElevation and shadow layers | `common.tokens.elevation.light/dark.*` | Migrated; finite geometry, nonnegative blur |
 | Motion roles | `common.motion.*` | Existing #145 baseline and snapshot contract retained |
 | Progress dimensions | `common.progress.sizes.sm/md/lg` | Migrated |
@@ -27,6 +27,9 @@
 | Resizable panels | `common.resizable_panels.geometry.disabled_opacity` | Disabled opacity migrated and validated in 0–1 |
 | Sidebar metric scale | `common.sidebar.geometry` | Widths, rail hit width, popover offset and default item dimensions migrated |
 | Overlay window | `common.overlay_window`, `common.tokens.elevation.*.overlay_window` | Dimensions, backdrop opacity and nonmodal shadow migrated |
+| Table factory | `common.table.geometry` | SDK surface padding, proportional vertical padding, row hover opacity and row radius migrated; state/column/template recipes remain |
+| Selector trigger | `common.selector.geometry` | SDK dimensions, typography, radius and popup offset migrated; Shadcn paint/inspection share the common geometry |
+| Selector list panels | `common.selector_list.geometry/sizes` | SDK panels reuse floating-menu recipes; independent dimensions, typography and radii override afterward; bundled look adapters use the same seam |
 
 ## Family coverage
 
@@ -46,8 +49,8 @@ have been classified. Shared token migration benefits every token-backed theme.
 | choice/switch | Factory and proportional track/thumb recipes migrated; explicit dimensions win; template chrome still needs audit. |
 | choice/toggle | Pending control-specific schema/factory/template audit. |
 | choice/toolbar | Pending control-specific schema/factory/template audit. |
-| collection/listbox | Pending control-specific schema/factory/template audit. |
-| collection/table | Pending control-specific schema/factory/template audit. |
+| collection/listbox | Raw SDK flow/control modules own item placement, viewport/scroll/selection algorithms; visual item chrome is host/look-owned. Keep flow arithmetic in Rust. Host visual defaults still need audit. |
+| collection/table | SDK surface/row factory recipes migrated; column/header/template styling and full state recipes still need audit. |
 | collection/tree_view | Row scale factory and both look adapters wired; state and template chrome still need audit. |
 | layout/dock_splitter | Factory hit target and visible line migrated; template chrome still needs audit. |
 | layout/resizable_panels | Factory disabled opacity migrated; template grip/layout styling still needs audit. |
@@ -72,8 +75,8 @@ have been classified. Shared token migration benefits every token-backed theme.
 | selection/combobox | Pending control-specific schema/factory/template audit. |
 | selection/search_selector | Pending control-specific schema/factory/template audit. |
 | selection/selection_panel | Shares resolved menu baseline with independent common geometry; template styling still needs audit. |
-| selection/selector | Pending control-specific schema/factory/template audit. |
-| selection/selector_list | Pending control-specific schema/factory/template audit. |
+| selection/selector | SDK trigger geometry, typography and popup offset migrated; Shadcn paint/inspection wired; icon/state/template recipes remain. |
+| selection/selector_list | SDK menu-derived panel recipes and independent geometry wired; Shadcn paint/inspection and Radix default panel wired; border/disabled-opacity/icon template literals remain. |
 | text/textarea | Factory consumes common geometry; editing behavior unchanged; template and icon defaults still need audit. |
 | text/textfield | Factory consumes common geometry; editing behavior unchanged; template and icon defaults still need audit. |
 

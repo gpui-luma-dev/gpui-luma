@@ -86,6 +86,31 @@ tab body motion. Shadcn and Radix supply separate `assets/style.toml` files usin
 visual recipes remain look-owned. Both paint and available inspectors resolve
 against the selected configuration. SDK templates consume the resolved inputs.
 
+## Table and selector factory coverage
+
+The SDK Table factory reads `common.table` for surface padding, proportional
+`padding_y_scale`, `row_hover_opacity` (0–1), and `row_radius`. Explicit
+`padding_y` overrides the proportional result. Existing table state selection
+and consumer look callbacks retain their precedence.
+
+The SDK selector trigger now applies `common.selector` dimensions, typography,
+`radius`, and `menu_offset_y`. `menu_offset_scale` multiplies the supplied trigger
+scale's gap; an explicit offset wins, including zero. Shadcn uses the same
+geometry for paint and available inspector fields.
+
+SDK selector-list panels inherit the shared floating-menu recipes. Author
+independent panel overrides under `common.selector_list.geometry` or `.sizes`:
+`padding`, `min_width`, `item_height`, `item_padding_x`, `item_gap`,
+`item_icon_size`, `font_size`, `line_height`, `radius`, and `item_radius`.
+`SelectorItemsPanelLook::with_stylesheet` exposes this final resolution step to
+third-party looks. Shadcn uses semantic size keys; the current Radix default
+selector panel uses its existing size Two composition. Border, disabled-opacity,
+icon/state recipes and the remaining template audit are still outstanding.
+
+Raw SDK ListBox flow values describe host-supplied item geometry and scrolling,
+not a second set of visual defaults. Its placement/virtualization arithmetic
+stays in Rust; host/look-owned chrome needs a separate appearance audit.
+
 ## Additional default factories
 
 Choice scales now expose `compute_with_stylesheet` using the same typed common

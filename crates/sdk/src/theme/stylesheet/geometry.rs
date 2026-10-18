@@ -405,7 +405,8 @@ geometry_family!(
     TableGeometry,
     ResolvedTableGeometry,
     "table",
-    [padding_x, padding_y]
+    [padding_x, padding_y, padding_y_scale, row_radius],
+    unit[row_hover_opacity]
 );
 
 geometry_family!(
@@ -433,7 +434,38 @@ geometry_family!(
     SelectorGeometry,
     ResolvedSelectorGeometry,
     "selector",
-    [height, padding_x, padding_y, gap, icon_size, font_size, line_height]
+    [
+        height,
+        padding_x,
+        padding_y,
+        gap,
+        icon_size,
+        font_size,
+        line_height,
+        radius,
+        menu_offset_y,
+        menu_offset_scale
+    ]
+);
+
+geometry_family!(
+    SelectorListStylesheet,
+    SelectorListGeometryStylesheet,
+    SelectorListGeometry,
+    ResolvedSelectorListGeometry,
+    "selector_list",
+    [
+        padding,
+        min_width,
+        item_height,
+        item_padding_x,
+        item_gap,
+        item_icon_size,
+        font_size,
+        line_height,
+        radius,
+        item_radius
+    ]
 );
 
 #[cfg(test)]
@@ -452,6 +484,7 @@ mod tests {
         TableStylesheet::validate_contract();
         PagerStylesheet::validate_contract();
         SelectorStylesheet::validate_contract();
+        SelectorListStylesheet::validate_contract();
         ButtonStylesheet::validate_contract();
         ToggleStylesheet::validate_contract();
         CheckboxStylesheet::validate_contract();

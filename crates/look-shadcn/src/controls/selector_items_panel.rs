@@ -13,6 +13,7 @@ pub fn selector_items_panel_look(
 ) -> SelectorItemsPanelLook {
     let menu = floating_menu_look(mode, theme_mode, size);
     selector_items_panel_from_floating_menu(menu)
+        .with_stylesheet(&mode.stylesheet().common.selector_list, size.stylesheet_key())
 }
 
 pub fn selector_items_panel_from_floating_menu(
