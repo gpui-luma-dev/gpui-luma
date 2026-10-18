@@ -654,6 +654,11 @@ chevron_size = 14.0
 
 # Table surface padding scales with shared control metrics; row hover is accent alpha.
 [common.table.geometry]
+# Frame and header separator thickness in pixels; zero hides the stroke.
+border_width = 1.0
+header_divider_width = 1.0
+# Header bottom padding as a fraction of the resolved vertical padding.
+header_padding_bottom_scale = "math(3 / 4)"
 padding_x = 0.0
 padding_y_scale = "math(1 / 2)"
 row_radius = 0.0

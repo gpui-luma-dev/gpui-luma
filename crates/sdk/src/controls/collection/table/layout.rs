@@ -1,5 +1,4 @@
 use super::model::TableScrollMode;
-use super::template::SHELL_BORDER_WIDTH;
 use super::theme::{TableLook, TableRowLook};
 
 /// GPUI row elements use `min_h(min_height)` with `py(padding_y)` on the same node, so the
@@ -17,7 +16,10 @@ pub fn visible_row_height(row_look: &TableRowLook, override_height: Option<f32>)
 
 /// Matches [`DefaultTableShellTemplate::paint_shell`] header slot padding.
 pub fn header_height(list_look: &TableLook) -> f32 {
-    list_look.header_typography.line_height + list_look.padding_y + (list_look.padding_y * 0.75)
+    list_look.header_typography.line_height
+        + list_look.padding_y
+        + (list_look.padding_y * list_look.header_padding_bottom_scale)
+        + list_look.header_divider_width
 }
 
 /// Total scroll-body height for `visible_rows` data rows, including inter-row dividers.
@@ -68,7 +70,7 @@ pub fn compute_shell_height(visible_rows: usize, row_height: f32, list_look: &Ta
         total_height += header_height(list_look);
     }
 
-    total_height + (2.0 * SHELL_BORDER_WIDTH)
+    total_height + (2.0 * list_look.border_width)
 }
 
 /// Resolves the row count used for fixed shell/body height.
@@ -193,6 +195,9 @@ mod tests {
         TableLook {
             background: gpui::white(),
             border: gpui::black(),
+            border_width: 1.0,
+            header_divider_width: 1.0,
+            header_padding_bottom_scale: 0.75,
             header_background: gpui::white(),
             header_label_color: gpui::black(),
             header_typography: LumaTextStyle { size: 11.0, line_height: 14.0, weight: gpui::FontWeight::MEDIUM },
@@ -216,7 +221,7 @@ mod tests {
     #[test]
     fn header_height_matches_shell_header_slot() {
         let list = sample_list_look();
-        assert_eq!(header_height(&list), 14.0 + 4.0 + 3.0);
+        assert_eq!(header_height(&list), 14.0 + 4.0 + 3.0 + 1.0);
     }
 
     #[test]
@@ -293,5 +298,23 @@ mod tests {
         assert!((distributed_row_height(200.0, 5).unwrap() - 40.0).abs() < f32::EPSILON);
         assert!((distributed_row_height(200.0, 5).unwrap() * 5.0 - 200.0).abs() < f32::EPSILON);
         assert_eq!(distributed_row_height(100.0, 0), None);
+    }
+}
+
+#[cfg(test)]
+mod stroke_layout_tests {
+    #[test]
+    fn shell_height_uses_resolved_strokes_and_header_padding() {
+        use crate::controls::table::{DefaultTableTheme, TableTheme};
+        use crate::theme::ControlSize;
+        let mut look = DefaultTableTheme::default().resolve_look(true, false, ControlSize::Md);
+        look.border_width = 0.0;
+        look.header_divider_width = 3.0;
+        look.padding_y = 8.0;
+        look.header_padding_bottom_scale = 0.5;
+        let header = look.header_typography.line_height + 8.0 + 4.0 + 3.0;
+        assert_eq!(super::compute_shell_height(1, 30.0, &look, true), 30.0 + header);
+        look.border_width = 2.0;
+        assert_eq!(super::compute_shell_height(1, 30.0, &look, false), 34.0);
     }
 }

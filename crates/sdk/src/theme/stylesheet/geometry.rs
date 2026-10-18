@@ -430,7 +430,15 @@ geometry_family!(
     TableGeometry,
     ResolvedTableGeometry,
     "table",
-    [padding_x, padding_y, padding_y_scale, row_radius],
+    [
+        padding_x,
+        padding_y,
+        padding_y_scale,
+        row_radius,
+        border_width,
+        header_divider_width,
+        header_padding_bottom_scale
+    ],
     unit[row_hover_opacity]
 );
 

@@ -270,7 +270,7 @@ crates/sdk/src/controls/collection/table/row.rs,36,table,0.0,review owner / deri
 crates/sdk/src/controls/collection/table/row.rs,46,table,0.56,review owner / derived calculation,needs classification,row = row.opacity(0.56);
 crates/sdk/src/controls/collection/table/template.rs,8,table,1.0,common.table.geometry.SHELL_BORDER_WIDTH,needs classification,pub(crate) const SHELL_BORDER_WIDTH: f32 = 1.0;
 crates/sdk/src/controls/collection/table/template.rs,56,table,0.0,review owner / derived calculation,needs classification,let mut column = div().w_full().flex_1().min_h(px(0.0)).flex().flex_col();
-crates/sdk/src/controls/collection/table/template.rs,64,table,0.75,review owner / derived calculation,needs classification,.pb(px(list.padding_y * 0.75))
+crates/sdk/src/controls/collection/table/template.rs,64,table,0.75,common.table.geometry.header_padding_bottom_scale,migrated,.pb(px(list.padding_y * 0.75))
 crates/sdk/src/controls/collection/table/template.rs,78,table,0.0,review owner / derived calculation,needs classification,div().w_full().flex_1().min_h(px(0.0)).overflow_hidden().bg(list.background)
 crates/sdk/src/controls/collection/table/theme.rs,9,table,0.4,common.table.geometry.ROW_HOVER_ACCENT_ALPHA,needs classification,const ROW_HOVER_ACCENT_ALPHA: f32 = 0.4;
 crates/sdk/src/controls/collection/table/theme.rs,31,table,0.0,review owner / derived calculation,needs classification,self.radius.max(0.0)

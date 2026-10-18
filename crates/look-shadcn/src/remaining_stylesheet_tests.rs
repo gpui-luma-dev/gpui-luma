@@ -569,3 +569,26 @@ disabled_opacity=0.2
     let slide = crate::controls::slide_panel::slide_panel_panels_look(&look);
     assert_eq!((slide.border_width, slide.divider_width), (0.0, 3.0));
 }
+
+#[test]
+fn table_strokes_and_header_padding_use_selected_stylesheet() {
+    use gpui_luma::controls::table::{DefaultTableTheme, TableTheme};
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.table.geometry]
+border_width=0
+header_divider_width=3
+header_padding_bottom_scale="math(1 / 2)"
+"#])
+    .unwrap();
+    let tokens = config.common.theme_tokens(ThemeMode::Light, gpui_luma::color::GamutMapping::CssLocalMinde).unwrap();
+    let sdk = DefaultTableTheme::new(tokens).resolve_look(true, false, ControlSize::Md);
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    let themed = crate::controls::table::table_look(&look.mode_tokens(), true, false, ControlSize::Md);
+    for resolved in [sdk, themed] {
+        assert_eq!(
+            (resolved.border_width, resolved.header_divider_width, resolved.header_padding_bottom_scale),
+            (0.0, 3.0, 0.5)
+        );
+    }
+}

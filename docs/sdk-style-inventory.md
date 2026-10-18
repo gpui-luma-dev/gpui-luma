@@ -27,7 +27,7 @@
 | Resizable panels | `common.resizable_panels.geometry.disabled_opacity` | Disabled opacity migrated and validated in 0–1 |
 | Sidebar metric scale | `common.sidebar.geometry` | Widths, rail hit width, popover offset and default item dimensions migrated |
 | Overlay window | `common.overlay_window`, `common.tokens.elevation.*.overlay_window` | Dimensions, backdrop opacity and nonmodal shadow migrated |
-| Table factory | `common.table.geometry` | SDK surface padding, proportional vertical padding, row hover opacity and row radius migrated; state/column/template recipes remain |
+| Table factory | `common.table.geometry` | SDK surface padding, proportional vertical padding, row hover opacity, row radius, frame/header strokes and header padding ratio migrated; state/column/template recipes remain |
 | Selector trigger | `common.selector.geometry` | SDK dimensions, typography, radius and popup offset migrated; Shadcn paint/inspection share the common geometry |
 | Selector list panels | `common.selector_list.geometry/sizes` | SDK panels reuse floating-menu recipes; independent dimensions, typography and radii override afterward; bundled look adapters use the same seam |
 | Pager | `common.pager.geometry/sizes` | SDK factory dimensions/typography/radius/opacity and proportional padding/width recipes migrated; Shadcn fixed defaults removed from Rust; template/icon audit remains |
@@ -61,7 +61,7 @@ have been classified. Shared token migration benefits every token-backed theme.
 | choice/toggle | Pending control-specific schema/factory/template audit. |
 | choice/toolbar | SDK factory now honors existing common padding/gap. Radius/separator token bindings and template/state recipes still need audit. |
 | collection/listbox | Raw SDK flow/control modules own item placement, viewport/scroll/selection algorithms; visual item chrome is host/look-owned. Keep flow arithmetic in Rust. Host visual defaults still need audit. |
-| collection/table | SDK surface/row factory recipes migrated; column/header/template styling and full state recipes still need audit. |
+| collection/table | SDK surface/row factory recipes, shell/header strokes and header padding ratio migrated; remaining column/template styling and full state recipes still need audit. |
 | collection/tree_view | Row scale factory and both look adapters wired; state and template chrome still need audit. |
 | layout/dock_splitter | Factory hit target and visible line migrated; template chrome still needs audit. |
 | layout/resizable_panels | Opacity, lane/hit-target and grip extents/radius migrated. Split placement and collapse/keyboard thresholds are layout/interaction; Frame and split divider widths now use shared resizable-panel geometry. |

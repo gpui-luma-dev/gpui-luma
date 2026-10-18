@@ -10,6 +10,12 @@ use crate::theme::{
 pub struct TableLook {
     pub background: Hsla,
     pub border: Hsla,
+    /// Outer frame thickness in pixels.
+    pub border_width: f32,
+    /// Header separator thickness in pixels.
+    pub header_divider_width: f32,
+    /// Header bottom padding divided by resolved vertical padding.
+    pub header_padding_bottom_scale: f32,
     pub header_background: Hsla,
     pub header_label_color: Hsla,
     pub header_typography: LumaTextStyle,
@@ -133,6 +139,9 @@ impl TableTheme for DefaultTableTheme {
                 palette.state.disabled.background
             },
             border: palette.form.input.border,
+            border_width: recipe.border_width.unwrap_or_default(),
+            header_divider_width: recipe.header_divider_width.unwrap_or_default(),
+            header_padding_bottom_scale: recipe.header_padding_bottom_scale.unwrap_or_default(),
             header_background: if enabled {
                 palette.surface.subtle.background
             } else {

@@ -123,6 +123,9 @@ pub fn table_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: 
     let mut look = TableLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
+        border_width: recipe.border_width.unwrap_or_default(),
+        header_divider_width: recipe.header_divider_width.unwrap_or_default(),
+        header_padding_bottom_scale: recipe.header_padding_bottom_scale.unwrap_or_default(),
         header_background: colors.header_background.hsla(),
         header_label_color: colors.header_label_color.hsla(),
         header_typography: ctx.typography().text.caption,
