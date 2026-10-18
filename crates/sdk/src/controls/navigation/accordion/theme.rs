@@ -54,9 +54,23 @@ pub struct AccordionContentPalette {
 }
 
 pub trait AccordionTheme: Send + Sync {
+    /// Look-owned help for the drag handle.
+    fn drag_tooltip_theme(&self) -> Arc<dyn crate::controls::tooltip::TooltipTheme> {
+        crate::controls::tooltip::default_tooltip_theme()
+    }
+
     fn resolve_trigger(&self, state: InteractionState, size: ControlSize) -> AccordionPalette;
     fn resolve_content(&self, expanded: bool) -> AccordionContentPalette;
     fn metrics(&self) -> MetricTokens;
+
+    /// Inherited post-drop position motion.
+    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        crate::theme::stylesheet::CommonStylesheet::default().drop_layout_motion("SDK")
+    }
+    /// Theme-owned preview and insertion feedback.
+    fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
+        crate::infra::drag_drop::DragDropLook::from_tokens(&ThemeTokens::default(), size)
+    }
 
     /// Resolve pixel-snapped layout. Themes may share this result with inspection tools.
     /// The result must depend only on `metrics()`, `size`, and `scale_factor`, which key the layout cache.
@@ -83,6 +97,9 @@ impl DefaultAccordionTheme {
 }
 
 impl AccordionTheme for DefaultAccordionTheme {
+    fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
+        crate::infra::drag_drop::DragDropLook::from_tokens(&self.tokens, size)
+    }
     fn resolve_trigger(&self, state: InteractionState, size: ControlSize) -> AccordionPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;

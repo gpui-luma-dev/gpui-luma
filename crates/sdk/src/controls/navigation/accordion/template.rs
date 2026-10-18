@@ -18,6 +18,8 @@ pub type AccordionTemplateModifier =
 
 #[derive(Default)]
 pub struct AccordionTemplateHandlers {
+    /// Native drag handles, canonical targets and keyed geometry (opt-in).
+    pub drag: Option<super::AccordionDragBindings>,
     pub trigger_hovers: Vec<AccordionHoverHandler>,
     pub trigger_mouse_downs: Vec<AccordionMouseDownHandler>,
     pub trigger_mouse_ups: Vec<AccordionMouseUpHandler>,
@@ -26,6 +28,19 @@ pub struct AccordionTemplateHandlers {
 }
 
 pub trait AccordionTemplate: Send + Sync {
+    /// Theme for the retained drag-handle tooltip.
+    fn drag_tooltip_theme(&self) -> Arc<dyn crate::controls::tooltip::TooltipTheme> {
+        crate::controls::tooltip::default_tooltip_theme()
+    }
+
+    /// Appearance used by SDK native handles and previews.
+    fn resolve_drag(&self, size: crate::theme::ControlSize) -> crate::infra::drag_drop::DragDropLook {
+        default_accordion_theme().resolve_drag(size)
+    }
+    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        default_accordion_theme().drop_layout_motion()
+    }
+
     fn render(
         &self,
         model: &AccordionRenderModel<'_>,
@@ -89,6 +104,17 @@ impl ModifiedAccordionTemplate {
 }
 
 impl AccordionTemplate for ModifiedAccordionTemplate {
+    fn drag_tooltip_theme(&self) -> Arc<dyn crate::controls::tooltip::TooltipTheme> {
+        self.base.drag_tooltip_theme()
+    }
+
+    fn resolve_drag(&self, size: crate::theme::ControlSize) -> crate::infra::drag_drop::DragDropLook {
+        self.base.resolve_drag(size)
+    }
+    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        self.base.drop_layout_motion()
+    }
+
     fn render(
         &self,
         model: &AccordionRenderModel<'_>,
@@ -118,6 +144,17 @@ where
 }
 
 impl AccordionTemplate for ThemedAccordionTemplate {
+    fn drag_tooltip_theme(&self) -> Arc<dyn crate::controls::tooltip::TooltipTheme> {
+        self.theme.drag_tooltip_theme()
+    }
+
+    fn resolve_drag(&self, size: crate::theme::ControlSize) -> crate::infra::drag_drop::DragDropLook {
+        self.theme.resolve_drag(size)
+    }
+    fn drop_layout_motion(&self) -> crate::theme::stylesheet::ResolvedMotion {
+        self.theme.drop_layout_motion()
+    }
+
     fn render(
         &self,
         model: &AccordionRenderModel<'_>,
@@ -129,6 +166,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
         let scale = self.theme.resolve_scale(model.size, scale_factor);
 
         let AccordionTemplateHandlers {
+            drag,
             trigger_hovers,
             trigger_mouse_downs,
             trigger_mouse_ups,
@@ -142,7 +180,17 @@ impl AccordionTemplate for ThemedAccordionTemplate {
         let mut trigger_clicks = trigger_clicks.into_iter();
         let mut content_height_reports = content_height_reports.into_iter();
 
-        let mut root = div().id(model.id.clone()).flex().flex_col().w_full().gap(px(scale.item_gap)).cursor_default();
+        let (root, handles, targets, bounds, motion) = match drag {
+            Some(drag) => {
+                let scroll = drag.scroll.clone();
+                let root = drag.motion.begin_surface(drag.root, move || scroll.offset());
+                (root, drag.handles, drag.targets, Some(drag.bounds), Some(drag.motion))
+            }
+            None => (div().id(model.id.clone()), Vec::new(), Vec::new(), None, None),
+        };
+        let mut handles = handles.into_iter();
+        let mut root =
+            root.relative().min_h(px(0.)).flex().flex_col().w_full().gap(px(scale.item_gap)).cursor_default();
 
         for (index, item) in model.items.iter().enumerate() {
             let Some(hover_handler) = trigger_hovers.next() else {
@@ -165,6 +213,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
             let trigger_min_height = model.trigger_min_height.unwrap_or(scale.trigger_height);
             let trigger_padding_y = model.trigger_padding_y.unwrap_or(scale.padding_y);
 
+            let handle = handles.next().flatten();
             let mut trigger = div()
                 .id("trigger")
                 .flex()
@@ -215,7 +264,33 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 scale.chevron_size,
             );
 
-            let trigger_el = trigger.child(trigger_content).child(chevron);
+            let trigger_el = if let Some(handle) = handle {
+                trigger
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap(px(scale.inner_gap))
+                            .child(
+                                handle.flex_none().p(px(2.)).opacity(if item.state.hovered { 1. } else { 0. }).child(
+                                    render_icon(
+                                        LucideIcon::ListChevronsUpDown,
+                                        trigger_palette.chevron_color,
+                                        scale.icon_size,
+                                    ),
+                                ),
+                            )
+                            .child(trigger_content),
+                    )
+                    .child(chevron)
+            } else {
+                trigger.child(trigger_content).child(chevron)
+            };
+            #[cfg(any(test, feature = "test-support"))]
+            let trigger_el = {
+                let id = item.id.clone();
+                trigger_el.debug_selector(move || format!("accordion-trigger-{id}"))
+            };
 
             let content_padding_y = model.content_padding_y.unwrap_or(scale.content_padding_y);
             let content_padding_top = model.content_padding_top.unwrap_or(content_padding_y);
@@ -263,7 +338,8 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 None
             };
 
-            let mut item_container = div().id((item.id.clone(), 0usize)).flex().flex_col().w_full().child(trigger_el);
+            let mut item_container =
+                div().id((item.id.clone(), 0usize)).relative().flex().flex_col().w_full().child(trigger_el);
 
             if model.item_dividers && index + 1 < model.items.len() {
                 item_container = item_container.border_b_1().border_color(trigger_palette.border_color);
@@ -273,9 +349,25 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 item_container = item_container.child(cel);
             }
 
-            root = root.child(item_container);
+            #[cfg(any(test, feature = "test-support"))]
+            let item_container = {
+                let id = item.id.clone();
+                item_container.debug_selector(move || format!("accordion-item-{id}"))
+            };
+            root = match motion.as_ref().zip(bounds.as_ref()) {
+                Some((motion, bounds)) => root.child(super::AccordionDragBindings::measure_item(
+                    bounds,
+                    item.id.clone(),
+                    motion.item(item.id.clone(), item_container),
+                )),
+                None => root.child(item_container),
+            };
         }
 
+        root = root.children(targets);
+        if let Some(motion) = motion {
+            root = motion.end_surface(root);
+        }
         self.apply_modifiers(root, model)
     }
 }

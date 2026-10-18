@@ -11,6 +11,27 @@ struct ShadcnAccordionTheme {
 }
 
 impl AccordionTheme for ShadcnAccordionTheme {
+    fn drag_tooltip_theme(&self) -> Arc<dyn gpui_luma::controls::tooltip::TooltipTheme> {
+        crate::tooltip_theme(&self.theme)
+    }
+
+    fn drop_layout_motion(&self) -> gpui_luma::theme::stylesheet::ResolvedMotion {
+        self.theme.stylesheet().common.drop_layout_motion("Shadcn")
+    }
+    fn resolve_drag(&self, size: ControlSize) -> gpui_luma::infra::drag_drop::DragDropLook {
+        let tokens = self.theme.mode_tokens();
+        let palette = &tokens.palette;
+        gpui_luma::infra::drag_drop::DragDropLook {
+            background: self.theme.token_color("popover").unwrap_or(palette.panel_background),
+            foreground: self.theme.token_color("popover-foreground").unwrap_or(palette.body_text),
+            valid_marker: self.theme.token_color("ring").unwrap_or(palette.focus_ring),
+            invalid_marker: self.theme.token_color("destructive").unwrap_or(palette.destructive_background),
+            radius: tokens.metrics.radius(size),
+            typography: tokens.typography.text.label,
+            font_family: tokens.typography.font.sans.family.clone().into(),
+        }
+    }
+
     fn resolve_trigger(
         &self,
         state: InteractionState,
@@ -46,4 +67,25 @@ pub fn accordion_template(theme: ShadcnLook) -> Arc<dyn AccordionTemplate> {
 
 pub fn accordion_theme(theme: ShadcnLook) -> Arc<dyn AccordionTheme> {
     Arc::new(ShadcnAccordionTheme { theme: theme.clone() })
+}
+
+#[cfg(test)]
+mod drag_tests {
+    use super::*;
+    #[test]
+    fn drag_palette_and_motion_follow_live_look_in_both_modes() {
+        use gpui_luma::theme::ThemeMode;
+        let look = ShadcnLook::built_in();
+        let theme = accordion_theme(look.clone());
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            look.set_mode(mode);
+            let drag = theme.resolve_drag(ControlSize::Md);
+            let expected = super::super::tabs::tabs_theme(look.clone()).resolve_drag(ControlSize::Md);
+            assert_eq!(drag.background, expected.background);
+            assert_eq!(drag.foreground, expected.foreground);
+            assert_eq!(drag.valid_marker, expected.valid_marker);
+            assert_eq!(drag.invalid_marker, expected.invalid_marker);
+            assert_eq!(theme.drop_layout_motion(), look.stylesheet().common.drop_layout_motion("Shadcn"));
+        }
+    }
 }

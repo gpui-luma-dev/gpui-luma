@@ -76,7 +76,13 @@ impl<K: Clone + 'static> DropLayoutMotion<K> {
         }
         s.from = s.current.clone();
         s.pending = !s.from.is_empty();
+        #[cfg(all(test, feature = "test-support"))]
+        let test_clock = s.transition.uses_test_clock();
         s.transition = VisualTransition::new(0., duration);
+        #[cfg(all(test, feature = "test-support"))]
+        if test_clock {
+            s.transition.elapse_for_test(Duration::ZERO);
+        }
     }
     /// Settle on new input/data/presentation changes. Keep last measured geometry
     /// available for a synchronous host-owned drop commit in the same turn.
@@ -101,6 +107,8 @@ impl<K: Clone + Eq + Hash + 'static> DropLayoutMotion<K> {
     pub fn item(&self, key: K, content: impl IntoElement) -> AnyElement {
         Item { child: content.into_any_element(), key, motion: self.clone() }.into_any_element()
     }
+    /// Select an explicit elapsed time, independent of machine speed. Setting
+    /// zero before a drop freezes its first frame until advanced by the test.
     #[cfg(all(test, feature = "test-support"))]
     pub(crate) fn elapse_for_test(&self, elapsed: Duration) {
         self.0.borrow_mut().transition.elapse_for_test(elapsed);

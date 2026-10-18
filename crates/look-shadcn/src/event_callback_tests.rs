@@ -371,3 +371,24 @@ check_look!(
         }
     )
 );
+
+check_look!(
+    accordion_drag_started_forwards,
+    crate::Accordion::new("drag"),
+    on_drag_started(_, _),
+    gpui_luma::controls::accordion::AccordionEvent::DragDrop(gpui_luma::infra::drag_drop::DragDropEvent::DragStarted {
+        source: gpui::EntityId::from(1),
+        keys: vec!["a".into(), "b".into()]
+    })
+);
+
+check_look!(
+    accordion_drag_ended_forwards,
+    crate::Accordion::new("drag"),
+    on_drag_ended(_, _, _),
+    gpui_luma::controls::accordion::AccordionEvent::DragDrop(gpui_luma::infra::drag_drop::DragDropEvent::DragEnded {
+        source: gpui::EntityId::from(1),
+        keys: vec!["a".into(), "b".into()],
+        reason: gpui_luma::infra::drag_drop::DragEndReason::Unchanged
+    })
+);
