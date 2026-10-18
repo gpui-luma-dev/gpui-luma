@@ -264,7 +264,7 @@ crates/sdk/src/controls/collection/table/model.rs,1064,table,0.0,review owner / 
 crates/sdk/src/controls/collection/table/model.rs,1075,table,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
 crates/sdk/src/controls/collection/table/model.rs,1076,table,12.0,common.table.geometry.column_padding_x,migrated,.px(px(12.0))
 crates/sdk/src/controls/collection/table/paging.rs,141,table,0.0,review owner / derived calculation,needs classification,"render_info_slot(model, window, cx).unwrap_or_else(|| div().flex_1().min_w(px(0.0)).into_any_element()),"
-crates/sdk/src/controls/collection/table/paging.rs,149,table,8.0,review owner / derived calculation,needs classification,.child(div().flex_none().flex().items_center().gap(px(8.0)).when(
+crates/sdk/src/controls/collection/table/paging.rs,149,table,8.0,common.pager.geometry.page_size_label_gap,migrated,.child(div().flex_none().flex().items_center().gap(px(8.0)).when(
 crates/sdk/src/controls/collection/table/row.rs,21,table,0.0,review owner / derived calculation,needs classification,row = row.flex().items_center().child(div().flex_1().min_w(px(0.0)).h_full().child(content));
 crates/sdk/src/controls/collection/table/row.rs,36,table,0.0,review owner / derived calculation,needs classification,row = body.child(div().flex_1().min_w(px(0.0)).mt(px(look.label_baseline_shift)).child(content));
 crates/sdk/src/controls/collection/table/row.rs,46,table,0.56,common.table.geometry.row_disabled_opacity,migrated,row = row.opacity(0.56);
@@ -610,12 +610,12 @@ crates/sdk/src/controls/navigation/accordion/template.rs,298,accordion,0.0,revie
 crates/sdk/src/controls/navigation/pager/model.rs,48,pager,64.0,common.pager.geometry.page_size_trigger_width,needs classification,"page_size_trigger_width: 64.0,"
 crates/sdk/src/controls/navigation/pager/model.rs,192,pager,0.0 | 64.0,review owner / derived calculation,needs classification,if width.is_finite() && width > 0.0 { width } else { 64.0 }
 crates/sdk/src/controls/navigation/pager/template.rs,258,pager,0.0,review owner / derived calculation,needs classification,.map(|text| div().flex_1().min_w(px(0.0)).truncate().child(text.clone()).into_any_element())
-crates/sdk/src/controls/navigation/pager/template.rs,313,pager,4.0,review owner / derived calculation,needs classification,.top(px(look.control_height + 4.0))
+crates/sdk/src/controls/navigation/pager/template.rs,313,pager,4.0,common.pager.geometry.popup_*,migrated,.top(px(look.control_height + 4.0))
 crates/sdk/src/controls/navigation/pager/template.rs,314,pager,0.0,review owner / derived calculation,needs classification,.left(px(0.0))
-crates/sdk/src/controls/navigation/pager/template.rs,318,pager,2.0,review owner / derived calculation,needs classification,.gap(px(2.0))
-crates/sdk/src/controls/navigation/pager/template.rs,319,pager,4.0,review owner / derived calculation,needs classification,.p(px(4.0))
-crates/sdk/src/controls/navigation/pager/template.rs,331,pager,4.0,review owner / derived calculation,needs classification,.py(px(4.0))
-crates/sdk/src/controls/navigation/pager/template.rs,332,pager,2.0 | 0.0,review owner / derived calculation,needs classification,.rounded(px((look.radius - 2.0).max(0.0)))
+crates/sdk/src/controls/navigation/pager/template.rs,318,pager,2.0,common.pager.geometry.popup_*,migrated,.gap(px(2.0))
+crates/sdk/src/controls/navigation/pager/template.rs,319,pager,4.0,common.pager.geometry.popup_*,migrated,.p(px(4.0))
+crates/sdk/src/controls/navigation/pager/template.rs,331,pager,4.0,common.pager.geometry.popup_*,migrated,.py(px(4.0))
+crates/sdk/src/controls/navigation/pager/template.rs,332,pager,2.0 | 0.0,common.pager.geometry.popup_*,migrated,.rounded(px((look.radius - 2.0).max(0.0)))
 crates/sdk/src/controls/navigation/pager/template.rs,591,pager,0.0 | 0.0 | 0.5 | 1.0 | 16.0,common.pager.geometry.crate,needs classification,"crate::infra::icon::lucide_icon(LucideIcon::Ellipsis, gpui::hsla(0.0, 0.0, 0.5, 1.0), 16.0)"
 crates/sdk/src/controls/navigation/pager/theme.rs,68,pager,0.5 | 0.0,common.pager.geometry.padding_x_inset_scale (zero clamp remains mathematical),migrated,let padding_x = (metrics.padding_x(control_size) - (metrics.spacing.s1 * 0.5)).max(0.0);
 crates/sdk/src/controls/navigation/pager/theme.rs,69,pager,0.5,common.pager.geometry.padding_y_gap_scale,migrated,let padding_y = metrics.padding_y(control_size) + (metrics.gap(control_size) * 0.5);

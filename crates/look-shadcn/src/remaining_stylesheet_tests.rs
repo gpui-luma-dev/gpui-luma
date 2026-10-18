@@ -677,3 +677,38 @@ row_radius=11
         }
     }
 }
+
+#[test]
+fn pager_popup_chrome_uses_shared_stylesheet_and_presentation_overrides() {
+    use gpui_luma::controls::pager::{DefaultPagerTheme, PagerStyle, PagerTheme};
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.pager.geometry]
+border_width=0
+page_size_label_gap=17
+popup_offset_y=9
+popup_gap=0
+popup_padding=7
+popup_item_padding_y=6
+popup_item_radius_inset=0
+[common.pager.sizes.minimal-edge]
+popup_padding=11
+"#])
+    .unwrap();
+    let tokens = config.common.theme_tokens(ThemeMode::Light, gpui_luma::color::GamutMapping::CssLocalMinde).unwrap();
+    let sdk = DefaultPagerTheme::new(tokens);
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    let themed = look.pager_theme();
+    for theme in [&sdk as &dyn PagerTheme, themed.as_ref()] {
+        let numeric = theme.resolve(true, PagerStyle::Numeric);
+        assert_eq!(
+            (numeric.border_width, numeric.page_size_label_gap, numeric.popup_offset_y, numeric.popup_gap),
+            (0.0, 17.0, 9.0, 0.0)
+        );
+        assert_eq!(
+            (numeric.popup_padding, numeric.popup_item_padding_y, numeric.popup_item_radius_inset),
+            (7.0, 6.0, 0.0)
+        );
+        assert_eq!(theme.resolve(true, PagerStyle::MinimalEdge).popup_padding, 11.0);
+    }
+}

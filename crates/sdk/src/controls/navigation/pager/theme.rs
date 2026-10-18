@@ -9,6 +9,21 @@ use super::PagerStyle;
 
 #[derive(Clone, Debug)]
 pub struct PagerLook {
+    /// Page-size border width in pixels.
+    pub border_width: f32,
+    /// Gap between the page-size label and trigger, in pixels.
+    pub page_size_label_gap: f32,
+    /// Vertical gap below the page-size trigger, in pixels.
+    pub popup_offset_y: f32,
+    /// Page-size popup gap in pixels.
+    pub popup_gap: f32,
+    /// Page-size popup padding in pixels.
+    pub popup_padding: f32,
+    /// Page-size popup item padding y in pixels.
+    pub popup_item_padding_y: f32,
+    /// Amount subtracted from the popup radius for each item, in pixels.
+    pub popup_item_radius_inset: f32,
+
     pub panel_background: Hsla,
     pub border: Hsla,
     pub body_text: Hsla,
@@ -75,6 +90,14 @@ impl PagerTheme for DefaultPagerTheme {
             + metrics.gap(control_size) * recipe.padding_y_gap_scale.unwrap_or_default();
 
         let mut look = PagerLook {
+            border_width: recipe.border_width.unwrap_or_default(),
+            page_size_label_gap: recipe.page_size_label_gap.unwrap_or_default(),
+            popup_offset_y: recipe.popup_offset_y.unwrap_or_default(),
+            popup_gap: recipe.popup_gap.unwrap_or_default(),
+            popup_padding: recipe.popup_padding.unwrap_or_default(),
+            popup_item_padding_y: recipe.popup_item_padding_y.unwrap_or_default(),
+            popup_item_radius_inset: recipe.popup_item_radius_inset.unwrap_or_default(),
+
             panel_background: if enabled {
                 palette.surface.panel.background
             } else {

@@ -471,7 +471,14 @@ geometry_family!(
         radius,
         padding_x_inset_scale,
         padding_y_gap_scale,
-        button_extra_width_scale
+        button_extra_width_scale,
+        border_width,
+        page_size_label_gap,
+        popup_offset_y,
+        popup_gap,
+        popup_padding,
+        popup_item_padding_y,
+        popup_item_radius_inset
     ],
     unit[disabled_opacity]
 );

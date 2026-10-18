@@ -30,7 +30,7 @@
 | Table factory | `common.table.geometry` | SDK surface padding, proportional vertical padding, row hover opacity, row radius, frame/header strokes and header padding ratio migrated; state/column/template recipes remain |
 | Selector trigger | `common.selector.geometry` | SDK dimensions, typography, radius and popup offset migrated; Shadcn paint/inspection share the common geometry |
 | Selector list panels | `common.selector_list.geometry/sizes` | SDK panels reuse floating-menu recipes; independent dimensions, typography and radii override afterward; bundled look adapters use the same seam |
-| Pager | `common.pager.geometry/sizes` | SDK factory dimensions/typography/radius/opacity and proportional padding/width recipes migrated; Shadcn fixed defaults removed from Rust; template/icon audit remains |
+| Pager | `common.pager.geometry/sizes` | SDK factory dimensions/typography/radius/opacity and proportional padding/width recipes migrated; Shadcn fixed defaults removed from Rust; page-size popup chrome and paging-table label gap migrated; remaining template/icon audit remains |
 | Popup Menu / Split Button trigger | `common.popup_menu.geometry/sizes` | SDK factory now applies common dimensions/typography/radius/offset; bundled looks share final resolution; consumer radius wins |
 | Popover placement | `common.popover.geometry/sizes.button/panel` | Raw builders capture defaults; explicit consumer offset/margin wins independently of method order |
 | Slide Panel | `common.slide_panel.geometry`, shared resize presets | Captured side/edge sizing and viewport ratio; bundled look state factories inherit; resize divider thickness migrated; remaining shell border audit pending |

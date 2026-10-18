@@ -15,6 +15,14 @@ pub fn pager_look(theme: &ShadcnLook, enabled: bool, style: PagerStyle) -> Pager
     let recipe = tokens.stylesheet().common.pager.authored_geometry(key).with_fallback(&baseline);
 
     let mut look = PagerLook {
+        border_width: recipe.border_width.unwrap_or_default(),
+        page_size_label_gap: recipe.page_size_label_gap.unwrap_or_default(),
+        popup_offset_y: recipe.popup_offset_y.unwrap_or_default(),
+        popup_gap: recipe.popup_gap.unwrap_or_default(),
+        popup_padding: recipe.popup_padding.unwrap_or_default(),
+        popup_item_padding_y: recipe.popup_item_padding_y.unwrap_or_default(),
+        popup_item_radius_inset: recipe.popup_item_radius_inset.unwrap_or_default(),
+
         panel_background: if enabled {
             palette.panel_background
         } else {

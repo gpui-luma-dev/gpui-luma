@@ -688,6 +688,14 @@ menu_offset_scale = "math(1 / 2)"
 
 # Pager recipes are relative to small-control metrics; explicit geometry wins.
 [common.pager.geometry]
+# Page-size trigger/popup strokes, spacing and radius reduction (pixels).
+border_width = 1.0
+page_size_label_gap = 8.0
+popup_offset_y = 4.0
+popup_gap = 2.0
+popup_padding = 4.0
+popup_item_padding_y = 4.0
+popup_item_radius_inset = 2.0
 padding_x_inset_scale = "math(1 / 2)"
 padding_y_gap_scale = "math(1 / 2)"
 button_extra_width_scale = 1.0
