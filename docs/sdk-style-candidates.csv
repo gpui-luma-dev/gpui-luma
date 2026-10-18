@@ -192,7 +192,7 @@ crates/sdk/src/controls/collection/listbox/virtualization.rs,81,listbox,0.0,revi
 crates/sdk/src/controls/collection/listbox/virtualization.rs,93,listbox,0.0 | 0.0,review owner / derived calculation,needs classification,"offset.clamp(0.0, (self.total() - viewport).max(0.0))"
 crates/sdk/src/controls/collection/listbox/virtualization.rs,98,listbox,0.0,review owner / derived calculation,needs classification,if viewport > 0.0
 crates/sdk/src/controls/collection/listbox/virtualization.rs,153,listbox,0.0,review owner / derived calculation,needs classification,let visible_end = if viewport > 0.0 {
-crates/sdk/src/controls/collection/table/column_template.rs,29,table,0.65,review owner / derived calculation,needs classification,div().opacity(0.65).truncate().child(value.into()).into_any_element()
+crates/sdk/src/controls/collection/table/column_template.rs,29,table,0.65,common.table.geometry.column_muted_opacity,migrated,div().opacity(0.65).truncate().child(value.into()).into_any_element()
 crates/sdk/src/controls/collection/table/control/drag.rs,23,control,12.0,review owner / derived calculation,needs classification,.left(self.offset.x + px(12.0))
 crates/sdk/src/controls/collection/table/control/drag.rs,24,control,12.0,review owner / derived calculation,needs classification,.top(self.offset.y + px(12.0))
 crates/sdk/src/controls/collection/table/control/drag.rs,25,control,220.0,review owner / derived calculation,needs classification,.w(px(220.0))
@@ -255,14 +255,14 @@ crates/sdk/src/controls/collection/table/model.rs,671,table,480.0,common.table.g
 crates/sdk/src/controls/collection/table/model.rs,787,table,0.0,review owner / derived calculation,needs classification,self.model.overdraw = overdraw.into().max(0.0) as f32;
 crates/sdk/src/controls/collection/table/model.rs,829,table,1.0,review owner / derived calculation,needs classification,self.model.visible_row_height = Some(height.into().max(1.0));
 crates/sdk/src/controls/collection/table/model.rs,870,table,0.0,review owner / derived calculation,needs classification,look.radius = 0.0;
-crates/sdk/src/controls/collection/table/model.rs,1010,table,0.0 | 12.0,review owner / derived calculation,needs classification,.child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
+crates/sdk/src/controls/collection/table/model.rs,1010,table,0.0 | 12.0,common.table.geometry.column_padding_x,migrated,.child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
 crates/sdk/src/controls/collection/table/model.rs,1015,table,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
 crates/sdk/src/controls/collection/table/model.rs,1024,table,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
-crates/sdk/src/controls/collection/table/model.rs,1025,table,0.0 | 12.0,review owner / derived calculation,needs classification,.child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
+crates/sdk/src/controls/collection/table/model.rs,1025,table,0.0 | 12.0,common.table.geometry.column_padding_x,migrated,.child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
 crates/sdk/src/controls/collection/table/model.rs,1056,table,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
 crates/sdk/src/controls/collection/table/model.rs,1064,table,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
 crates/sdk/src/controls/collection/table/model.rs,1075,table,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
-crates/sdk/src/controls/collection/table/model.rs,1076,table,12.0,review owner / derived calculation,needs classification,.px(px(12.0))
+crates/sdk/src/controls/collection/table/model.rs,1076,table,12.0,common.table.geometry.column_padding_x,migrated,.px(px(12.0))
 crates/sdk/src/controls/collection/table/paging.rs,141,table,0.0,review owner / derived calculation,needs classification,"render_info_slot(model, window, cx).unwrap_or_else(|| div().flex_1().min_w(px(0.0)).into_any_element()),"
 crates/sdk/src/controls/collection/table/paging.rs,149,table,8.0,review owner / derived calculation,needs classification,.child(div().flex_none().flex().items_center().gap(px(8.0)).when(
 crates/sdk/src/controls/collection/table/row.rs,21,table,0.0,review owner / derived calculation,needs classification,row = row.flex().items_center().child(div().flex_1().min_w(px(0.0)).h_full().child(content));

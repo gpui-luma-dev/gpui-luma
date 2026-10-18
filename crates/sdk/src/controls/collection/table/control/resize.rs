@@ -34,6 +34,7 @@ impl<T: 'static> TableControl<T> {
                 column.width(),
                 column.fill_weight,
                 column.cell_layout(),
+                look.column_padding_x,
                 column.header().clone().into_any_element(),
             )
             .id(("table-column", index));

@@ -647,9 +647,13 @@ fn table_row_chrome_uses_selected_stylesheet_and_size() {
     let mut config = crate::embedded_stylesheet().clone();
     config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
 [common.table.geometry]
+column_padding_x=0
+column_muted_opacity=0
 row_disabled_opacity=0
 row_radius=7
 [common.table.sizes.lg]
+column_padding_x=19
+column_muted_opacity=0.4
 row_disabled_opacity=0.3
 row_radius=11
 "#])
@@ -664,6 +668,11 @@ row_radius=11
             let row =
                 theme.resolve_row_look(false, InteractionState { disabled: true, ..Default::default() }, size, &scale);
             assert_eq!((row.disabled_opacity, row.radius), (opacity, radius));
+            let expected_padding = if size == ControlSize::Lg { 19.0 } else { 0.0 };
+            let expected_muted = if size == ControlSize::Lg { 0.4 } else { 0.0 };
+            assert_eq!(row.column_padding_x, expected_padding);
+            assert_eq!(row.column_muted_opacity, expected_muted);
+            assert_eq!(theme.resolve_look(true, false, size).column_padding_x, expected_padding);
             assert_eq!(row.min_height, scale.min_height);
         }
     }

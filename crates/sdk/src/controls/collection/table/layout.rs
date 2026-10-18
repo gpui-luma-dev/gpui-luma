@@ -179,6 +179,8 @@ mod tests {
 
     fn sample_row_look() -> TableRowLook {
         TableRowLook {
+            column_padding_x: 12.0,
+            column_muted_opacity: 0.65,
             disabled_opacity: 0.56,
             background: gpui::transparent_black(),
             label_color: gpui::black(),
@@ -194,6 +196,7 @@ mod tests {
 
     fn sample_list_look() -> TableLook {
         TableLook {
+            column_padding_x: 12.0,
             column_resize_hit_width: 10.0,
             column_resize_line_width: 1.0,
             column_resize_vertical_extension: 4.0,

@@ -980,6 +980,7 @@ where
             column.width(),
             column.fill_weight,
             column.cell_layout(),
+            model.look.column_padding_x,
             column.render_cell(model, window, cx),
         ));
     }
@@ -991,6 +992,7 @@ fn render_grid_view_column_slot(
     width: TableColumnWidth,
     fill_weight: f32,
     cell_layout: TableColumnCellLayout,
+    padding_x: f32,
     content: AnyElement,
 ) -> AnyElement {
     match (width, cell_layout) {
@@ -1007,7 +1009,7 @@ fn render_grid_view_column_slot(
             .w(px(width))
             .min_w(px(width))
             .max_w(px(width))
-            .child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
+            .child(div().w_full().min_w(px(0.0)).px(px(padding_x)).truncate().child(content))
             .into_any_element(),
         (TableColumnWidth::Fill, TableColumnCellLayout::Control) => div()
             .flex_1()
@@ -1022,7 +1024,7 @@ fn render_grid_view_column_slot(
             .flex_1()
             .flex_grow(fill_weight)
             .min_w(px(0.0))
-            .child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
+            .child(div().w_full().min_w(px(0.0)).px(px(padding_x)).truncate().child(content))
             .into_any_element(),
     }
 }
@@ -1031,6 +1033,7 @@ pub(super) fn render_grid_view_header_column_slot(
     width: TableColumnWidth,
     fill_weight: f32,
     cell_layout: TableColumnCellLayout,
+    padding_x: f32,
     content: AnyElement,
 ) -> Div {
     match (width, cell_layout) {
@@ -1049,7 +1052,7 @@ pub(super) fn render_grid_view_header_column_slot(
             .flex()
             .items_center()
             .justify_center()
-            .child(grid_view_header_label_slot(content)),
+            .child(grid_view_header_label_slot(content, padding_x)),
         (TableColumnWidth::Fill, TableColumnCellLayout::Control) => div()
             .flex_1()
             .flex_grow(fill_weight)
@@ -1065,15 +1068,15 @@ pub(super) fn render_grid_view_header_column_slot(
             .flex()
             .items_center()
             .justify_center()
-            .child(grid_view_header_label_slot(content)),
+            .child(grid_view_header_label_slot(content, padding_x)),
     }
 }
 
-fn grid_view_header_label_slot(content: AnyElement) -> impl IntoElement {
+fn grid_view_header_label_slot(content: AnyElement, padding_x: f32) -> impl IntoElement {
     div()
         .w_full()
         .min_w(px(0.0))
-        .px(px(12.0))
+        .px(px(padding_x))
         .flex()
         .items_center()
         .justify_center()

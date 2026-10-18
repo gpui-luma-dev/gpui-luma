@@ -26,7 +26,7 @@ where
 {
     Arc::new(move |model, _window, _cx| {
         let value = value_fn(model.row);
-        div().opacity(0.65).truncate().child(value.into()).into_any_element()
+        div().opacity(model.look.column_muted_opacity).truncate().child(value.into()).into_any_element()
     })
 }
 

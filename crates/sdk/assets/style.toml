@@ -654,6 +654,10 @@ chevron_size = 14.0
 
 # Table surface padding scales with shared control metrics; row hover is accent alpha.
 [common.table.geometry]
+# Horizontal inset for text columns (header and body), in pixels.
+column_padding_x = 12.0
+# Opacity of the default muted-cell template (0 transparent, 1 opaque).
+column_muted_opacity = 0.65
 # Column resize hit target width, painted stroke and vertical hit extension (pixels).
 column_resize_hit_width = 10.0
 column_resize_line_width = 1.0

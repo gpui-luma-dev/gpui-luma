@@ -621,3 +621,5 @@ Table drag feedback uses `common.table.geometry.drag_offset`, `drag_width`, `dra
 Table disabled rows use `common.table.geometry.row_disabled_opacity` (unit interval, applied to the whole row). SDK and Shadcn row factories share `TableRowLook::from_palette`, resolving this setting and `row_radius` against the final control size while retaining the supplied row metrics.
 
 Table column resize chrome uses `common.table.geometry.column_resize_hit_width`, `column_resize_line_width`, and `column_resize_vertical_extension` (pixels). The hit target and painted stroke are centered on the column boundary; the vertical extension enlarges only the hit target. A zero line width hides the stroke while preserving the configured hit target.
+
+Table text-column insets use `common.table.geometry.column_padding_x` (pixels), shared by header and body slots; control columns retain their centered layout. Default muted cells use `column_muted_opacity` (unit interval). Both support size overrides and explicit zero values.
