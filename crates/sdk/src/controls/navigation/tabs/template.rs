@@ -17,13 +17,10 @@ use crate::controls::control_group::{
     ControlGroupMouseDownHandler, ControlGroupMouseUpHandler, ControlGroupRenderModel, ControlGroupTemplate,
     ControlGroupTemplateHandlers,
 };
-use crate::infra::icon::{DisclosureIcons, IconSource, lucide_icon, render_disclosure_icon};
+use crate::infra::icon::{DisclosureIcons, IconSource, render_icon_source, render_disclosure_icon};
 use crate::motion::overlay_presence::OverlayPresence;
 use crate::controls::tabs::{TabsItemLook, TabsTheme, default_tabs_theme};
 use crate::theme::{ControlSize, InteractionState};
-
-const TAB_ACCESSORY_SIZE: f32 = 12.0;
-const TAB_ACCESSORY_GAP: f32 = 4.0;
 
 pub type TabsClickHandler = ControlGroupClickHandler;
 pub type TabsBoundsHandler = ControlGroupBoundsHandler;
@@ -163,9 +160,8 @@ impl TabsItemButtonStyle {
             look,
             font_family,
             size,
-            disclosure_icons: DisclosureIcons::new(
-                lucide_svg_static::Icon::ChevronUp,
-                lucide_svg_static::Icon::ChevronDown,
+            disclosure_icons: DisclosureIcons::menu_from_stylesheet(
+                crate::theme::stylesheet::CommonStylesheet::sdk_default(),
             ),
         }
     }
@@ -319,7 +315,7 @@ impl TabsTemplate for ThemedTabsTemplate {
         }
 
         if let Some(border) = list_look.border {
-            root = root.border_1().border_color(border);
+            root = root.border(px(list_look.border_width)).border_color(border);
         }
 
         if let Some(baseline) = self.theme.baseline(model.enabled, model.size) {
@@ -440,9 +436,9 @@ pub fn resolve_tabs_uniform_item_width(
         let line = window.text_system().shape_line(item.label.clone(), px(look.label_typography.size), &[run], None);
         let accessory_count =
             usize::from(item.leading_accessory.is_some()) + usize::from(item.trailing_accessory.is_some());
-        let accessory_width = accessory_count as f32 * TAB_ACCESSORY_SIZE
+        let accessory_width = accessory_count as f32 * look.accessory_size
             + if accessory_count > 0 {
-                accessory_count as f32 * TAB_ACCESSORY_GAP
+                accessory_count as f32 * look.accessory_gap
             } else {
                 0.0
             };
@@ -641,7 +637,7 @@ fn tab_button_model(
         data: TabsButtonData { look, disclosure_icons },
         icon: None,
         content: Arc::new(move |model, _| {
-            let mut label_content = div().flex().items_center().gap(px(TAB_ACCESSORY_GAP));
+            let mut label_content = div().flex().items_center().gap(px(model.data.look.accessory_gap));
             if let Some((x, y, background, radius)) = inner_background {
                 label_content = label_content.px(px(x)).py(px(y)).rounded(px(radius));
                 if let Some(background) = background {
@@ -654,6 +650,7 @@ fn tab_button_model(
                     model.data.look.label_color,
                     &model.data.disclosure_icons,
                     disclosure_progress,
+                    model.data.look.accessory_size,
                 ));
             }
             label_content = label_content.child(label.clone());
@@ -663,6 +660,7 @@ fn tab_button_model(
                     model.data.look.label_color,
                     &model.data.disclosure_icons,
                     disclosure_progress,
+                    model.data.look.accessory_size,
                 ));
             }
             label_content.into_any_element()
@@ -696,9 +694,9 @@ fn tab_button_look(look: TabsItemLook, font_family: SharedString) -> ButtonFamil
         radius: look.radius,
         padding_x: look.padding_x,
         padding_y: 0.0,
-        gap: TAB_ACCESSORY_GAP,
+        gap: look.accessory_gap,
         height: look.height,
-        icon_size: TAB_ACCESSORY_SIZE,
+        icon_size: look.accessory_size,
         shadow: None,
     }
 }
@@ -708,20 +706,18 @@ fn render_accessory(
     color: gpui::Hsla,
     disclosure_icons: &crate::infra::icon::DisclosureIcons,
     disclosure_progress: f32,
+    accessory_size: f32,
 ) -> gpui::AnyElement {
     match accessory {
-        TabsItemAccessory::Icon(icon) => render_tab_icon_source(icon, color),
+        TabsItemAccessory::Icon(icon) => render_tab_icon_source(icon, color, accessory_size),
         TabsItemAccessory::Disclosure { .. } => {
-            render_disclosure_icon(disclosure_icons, disclosure_progress, color, TAB_ACCESSORY_SIZE)
+            render_disclosure_icon(disclosure_icons, disclosure_progress, color, accessory_size)
         }
     }
 }
 
-fn render_tab_icon_source(icon: &IconSource, color: gpui::Hsla) -> gpui::AnyElement {
-    match icon {
-        IconSource::Lucide(icon) => lucide_icon(*icon, color, TAB_ACCESSORY_SIZE),
-        IconSource::SvgPath(_) => div().size(px(TAB_ACCESSORY_SIZE)).into_any_element(),
-    }
+fn render_tab_icon_source(icon: &IconSource, color: gpui::Hsla, accessory_size: f32) -> gpui::AnyElement {
+    render_icon_source(icon, color, accessory_size)
 }
 
 pub(crate) fn tabs_control_group_template(

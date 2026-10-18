@@ -54,6 +54,7 @@ pub fn resolve_scrollbar_metrics_for_size(
             min_thumb_length: table.min_thumb_length.value_px,
             length_h: table.length.value_px,
             length_v: table.length.value_px,
+            ..Default::default()
         },
     );
     table.thickness = super::helpers::prefer_shared_metric(geometry.thickness, table.thickness);

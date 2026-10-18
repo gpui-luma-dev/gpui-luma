@@ -12,6 +12,8 @@ use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct SelectorItemsPanelLook {
+    /// Positive completion/status adornments.
+    pub positive: gpui::Hsla,
     pub background: gpui::Hsla,
     pub foreground: gpui::Hsla,
     pub border: gpui::Hsla,
@@ -58,6 +60,7 @@ impl SelectorItemsPanelLook {
         let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().popover.authored_geometry("panel");
         let placement = stylesheet.popover.authored_geometry("panel").with_fallback(&baseline);
         Self {
+            positive: menu.positive,
             background: menu.background,
             foreground: menu.foreground,
             border: menu.border,

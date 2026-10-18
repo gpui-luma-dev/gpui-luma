@@ -103,6 +103,9 @@ content = { kind = "instant" }
 disclosure = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
 drop_layout = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
 
+[common.tokens.metrics]
+disabled_opacity = 0.56
+
 [common.tokens.metrics.spacing]
 s0 = 0.0
 s1 = 4.0
@@ -126,6 +129,7 @@ default = 1.0
 strong = 2.0
 
 [common.tokens.metrics.focus]
+gap = 1.0
 width = 1.0
 offset = 0.0
 
@@ -214,6 +218,7 @@ selected_foreground = "hsla(0, 0%, 100%, 1)"
 border = "hsla(212.73, 26.83%, 83.92%, 1)"
 
 [common.tokens.palette.light.data]
+positive = "hsla(136.8, 65%, 48%, 1)"
 accent_1 = "hsla(221.21, 83.19%, 53.33%, 1)"
 accent_2 = "hsla(175.34, 77.44%, 26.08%, 1)"
 accent_3 = "hsla(17.47, 88.35%, 40.39%, 1)"
@@ -278,6 +283,7 @@ selected_foreground = "hsla(204, 80.25%, 15.88%, 1)"
 border = "hsla(215.29, 25%, 26.67%, 1)"
 
 [common.tokens.palette.dark.data]
+positive = "hsla(136.8, 65%, 48%, 1)"
 accent_1 = "hsla(213.12, 93.9%, 67.84%, 1)"
 accent_2 = "hsla(172.46, 66.01%, 50.39%, 1)"
 accent_3 = "hsla(27.02, 95.98%, 60.98%, 1)"
@@ -502,6 +508,15 @@ length_h = 260.0
 length_v = 180.0
 
 [common.tooltip.geometry]
+# Placement gap/margin and pointer triangle size/corner clearance (pixels).
+target_gap = 10.0
+window_margin = 8.0
+pointer_size = 6.0
+pointer_inset = 12.0
+# Shortcut spacing/font size in pixels, with separate de-emphasis opacity.
+shortcut_gap = 16.0
+shortcut_font_size = 12.0
+shortcut_opacity = 0.65
 padding = 12.0
 padding_y = 8.0
 max_width = 260.0
@@ -515,18 +530,27 @@ font_size = 12.0
 line_height = 16.0
 
 [common.tabs.geometry]
+# Accessory glyph size and label gap, in pixels.
+accessory_size = 12.0
+accessory_gap = 4.0
 list_padding = 0.0
 indicator_height = 2.0
 
 [common.checkbox.geometry]
+# Whole-control opacity when disabled (0 transparent, 1 opaque).
+disabled_opacity = 0.56
 control_padding_x = 0.0
 control_padding_y = 0.0
 
 [common.radio.geometry]
+# Whole-control opacity when disabled (0 transparent, 1 opaque).
+disabled_opacity = 0.56
 control_padding_x = 0.0
 control_padding_y = 0.0
 
 [common.switch.geometry]
+# Whole-control opacity when disabled (0 transparent, 1 opaque).
+disabled_opacity = 0.56
 track_padding = 2.0
 
 [common.checkbox.sizes.sm]
@@ -598,6 +622,11 @@ padding_y = 4.0
 gap = 6.0
 
 [common.dock_splitter.geometry]
+# Vertical grip dimensions and resting opacity.
+thumb_width = 4.0
+thumb_height = 36.0
+thumb_radius = 8.0
+thumb_rest_opacity = 0.4
 hit_target = 8.0
 visible_line = 1.0
 
@@ -609,11 +638,21 @@ grip_radius = 8.0
 disabled_opacity = 0.45
 
 [common.slider.geometry]
+# Radial dial extent/track radius in pixels; disabled active-track opacity.
+dial_size = 200.0
+track_radius = 72.0
+disabled_opacity = 0.56
 width = 260.0
 height_floor_scale = 0.5
 thumb_scale = 0.5
 
 [common.overlay_window.geometry]
+# Initial placement inset, drag clamp/window margin and header hit height (pixels).
+viewport_padding = 24.0
+window_margin = 12.0
+drag_header_height = 56.0
+# Shell border thickness in pixels; radius inherits theme tokens unless overridden.
+border_width = 1.0
 backdrop_opacity = 0.44
 
 [common.overlay_window.sizes.sm]
@@ -638,6 +677,25 @@ layers = [{ color = "hsla(0, 0%, 0%, 0.2)", offset_x = 0.0, offset_y = 18.0, blu
 layers = [{ color = "hsla(0, 0%, 0%, 0.2)", offset_x = 0.0, offset_y = 18.0, blur = 38.0, spread = -16.0, inset = false }]
 
 [common.sidebar.geometry]
+# Rail indicator size and outward overhang, in pixels.
+rail_branch_indicator_size = 18.0
+rail_branch_overhang = 10.0
+# Engine shell, title, row and rail-popup defaults in pixels.
+container_gap = 8.0
+region_gap = 4.0
+header_padding_bottom = 8.0
+footer_padding_top = 8.0
+title_gap = 2.0
+title_padding_bottom = 4.0
+section_padding_top = 8.0
+disclosure_icon_size = 14.0
+rail_submenu_offset_x = 12.0
+window_margin = 8.0
+engine_item_height = 30.0
+engine_section_height = 20.0
+engine_item_padding_x = 8.0
+subtitle_opacity = 0.72
+disabled_opacity = 0.56
 width_expanded = 256.0
 width_icon_rail = 48.0
 width_mobile = 288.0
@@ -647,11 +705,18 @@ rail_hit_width = 6.0
 popover_offset = 8.0
 
 [common.tree_view.geometry]
+# Whole disabled-row opacity and compact drag-preview padding (pixels).
+disabled_opacity = 0.4
+preview_padding_x = 12.0
+preview_padding_y = 4.0
 row_height_scale = 0.85
 indentation_width = 16.0
 chevron_inset = 2.0
 
 [common.accordion.geometry]
+# Drag-handle padding in pixels and disabled trigger opacity.
+drag_handle_padding = 2.0
+disabled_opacity = 0.56
 content_padding_scale = 1.5
 item_gap = 0.0
 icon_size = 16.0
@@ -659,6 +724,8 @@ chevron_size = 14.0
 
 # Table surface padding scales with shared control metrics; row hover is accent alpha.
 [common.table.geometry]
+# Inter-row stroke thickness in pixels, shared by paint and row budgeting.
+row_divider_width = 1.0
 # Horizontal inset for text columns (header and body), in pixels.
 column_padding_x = 12.0
 # Opacity of the default muted-cell template (0 transparent, 1 opaque).
@@ -693,6 +760,7 @@ menu_offset_scale = "math(1 / 2)"
 
 # Pager recipes are relative to small-control metrics; explicit geometry wins.
 [common.pager.geometry]
+gap_icon_size = 16.0
 # Page-size trigger/popup strokes, spacing and radius reduction (pixels).
 border_width = 1.0
 page_size_label_gap = 8.0
@@ -774,6 +842,7 @@ affordance_gap = 2.0
 trigger_extra_gap = 8.0
 
 [common.search_selector.geometry]
+border_width = 1.0
 search_icon_width = 18.0
 search_icon_size = 12.0
 trigger_icon_extra_width = 10.0
@@ -785,3 +854,72 @@ search_input_height_floor = 18.0
 # Estimated search field/chrome reservation when filling the viewport.
 search_chrome_height = 57.0
 trailing_icon_size = 14.0
+
+# Stepper decoration: lengths in pixels; glyph/number scales multiply badge size.
+[common.stepper.geometry]
+content_gap = 16.0
+label_gap = 6.0
+side_label_gap = 10.0
+content_height = 120.0
+font_size = 12.0
+line_height = 16.0
+glyph_scale = 0.45
+number_scale = 0.38
+border_width = 1.0
+
+[common.textfield.geometry]
+# Painted caret dimensions (pixels) and whole-input disabled opacity.
+caret_width = 1.5
+caret_height_extra = 2.0
+disabled_opacity = 0.6
+
+[common.textarea.geometry]
+# Painted caret dimensions (pixels) and whole-input disabled opacity.
+caret_width = 1.5
+caret_height_extra = 2.0
+disabled_opacity = 0.6
+
+[common.scrollbar.geometry]
+disabled_opacity = 0.56
+
+# SplitView separator hit target and visual cues, in pixels.
+[common.split_view.geometry]
+hitbox_width = 20.0
+expand_inset_y = 10.0
+expand_cue_left = 2.0
+cue_inset_y = 16.0
+cue_radius = 4.0
+cue_width = 4.0
+cue_hovered_width = 8.0
+
+# Lucide catalog names; use "svg:path/to/icon.svg" for an external SVG.
+[common.icons]
+clear = "x"
+search = "search"
+disclosure_expanded = "chevron-down"
+disclosure_collapsed = "chevron-right"
+menu_expanded = "chevron-up"
+menu_collapsed = "chevron-down"
+selected = "check"
+completed = "check"
+selector_trigger = "chevrons-up-down"
+pager_first = "chevrons-left"
+pager_previous = "chevron-left"
+pager_next = "chevron-right"
+pager_last = "chevrons-right"
+pager_gap = "ellipsis"
+textarea_resize = "scaling"
+folder_open = "folder-open"
+folder = "folder"
+file = "file"
+drag_handle = "list-chevrons-up-down"
+
+[common.progress.geometry]
+# Unit fractions for indeterminate sweep and layered shimmer appearance.
+indeterminate_fraction = 0.28
+shimmer_soft_opacity = 0.35
+shimmer_mid_opacity = 0.85
+shimmer_mid_offset = 0.2
+shimmer_mid_width = 0.6
+shimmer_core_offset = 0.35
+shimmer_core_width = 0.3

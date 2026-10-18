@@ -1,7 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{AnyElement, App, ClickEvent, Div, MouseDownEvent, SharedString, Stateful, Window, div, prelude::*, px};
-use lucide_svg_static::Icon as LucideIcon;
 
 use super::model::{PagerPageItem, PagerRenderModel, PagerStyle};
 use super::theme::{PagerLook, PagerTheme, default_pager_theme};
@@ -587,9 +586,11 @@ fn render_gap_button(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let content: ControlPresenter<ButtonContentContext<()>> = Arc::new(move |_, _| {
-        crate::infra::icon::lucide_icon(LucideIcon::Ellipsis, gpui::hsla(0.0, 0.0, 0.5, 1.0), 16.0)
-    });
+    let icon = model.icons.gap.clone();
+    let color = look.muted_text;
+    let size = look.gap_icon_size;
+    let content: ControlPresenter<ButtonContentContext<()>> =
+        Arc::new(move |_, _| crate::infra::icon::render_icon_source(&icon, color, size));
 
     let click = model.enabled.then(|| {
         let set_page = handlers.set_page.clone();

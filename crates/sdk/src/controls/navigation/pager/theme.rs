@@ -9,6 +9,8 @@ use super::PagerStyle;
 
 #[derive(Clone, Debug)]
 pub struct PagerLook {
+    /// Gap-jump glyph size in pixels.
+    pub gap_icon_size: f32,
     /// Page-size border width in pixels.
     pub border_width: f32,
     /// Gap between the page-size label and trigger, in pixels.
@@ -90,6 +92,7 @@ impl PagerTheme for DefaultPagerTheme {
             + metrics.gap(control_size) * recipe.padding_y_gap_scale.unwrap_or_default();
 
         let mut look = PagerLook {
+            gap_icon_size: recipe.gap_icon_size.unwrap_or_default(),
             border_width: recipe.border_width.unwrap_or_default(),
             page_size_label_gap: recipe.page_size_label_gap.unwrap_or_default(),
             popup_offset_y: recipe.popup_offset_y.unwrap_or_default(),

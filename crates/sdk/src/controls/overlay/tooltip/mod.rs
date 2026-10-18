@@ -56,5 +56,5 @@ mod theme;
 
 pub use model::{TooltipSettings, Tooltip, TooltipPlacement, TooltipDismissal, TooltipEvent};
 pub use template::{TooltipTemplate, bubble};
-pub use theme::{TooltipLook, TooltipRenderModel, TooltipTheme, default_tooltip_theme};
+pub use theme::{TooltipPlacementGeometry, TooltipLook, TooltipRenderModel, TooltipTheme, default_tooltip_theme};
 pub(crate) use control::Attachment;

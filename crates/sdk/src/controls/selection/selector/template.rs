@@ -18,8 +18,6 @@ use crate::theme::{StandardBoxScale, snap_to_pixel};
 
 use super::theme::{SelectorLook, SelectorTheme, default_selector_theme};
 
-const FOCUS_RING_GAP: f32 = 1.0;
-
 pub type SelectorBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type SelectorClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type SelectorHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -271,7 +269,7 @@ where
         let focus_metrics = self.theme.metrics().focus;
         let focus_extent = focus_border
             .filter(|border| border.a > 0.0)
-            .map(|_| FOCUS_RING_GAP + focus_metrics.width.max(0.0))
+            .map(|_| focus_metrics.gap + focus_metrics.width.max(0.0))
             .unwrap_or(0.0);
         let trigger_content = render_item_content(model, &control_look, cx);
         let mut trigger = div()
@@ -324,7 +322,7 @@ where
             );
 
         if border.a > 0.0 {
-            trigger = trigger.border_1().border_color(border);
+            trigger = trigger.border(px(self.theme.metrics().border_width.default)).border_color(border);
         }
 
         if !model.state.disabled
@@ -352,7 +350,7 @@ where
                     .left_0()
                     .border(px(focus_metrics.width))
                     .border_color(focus_border)
-                    .rounded(px(look.trigger_radius + FOCUS_RING_GAP + focus_metrics.width)),
+                    .rounded(px(look.trigger_radius + focus_metrics.gap + focus_metrics.width)),
             );
         }
 

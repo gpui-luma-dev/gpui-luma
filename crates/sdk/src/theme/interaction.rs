@@ -28,3 +28,31 @@ impl InteractionState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn visual_layer_precedence_is_independent_of_focus_and_validation() {
+        for bits in 0..32 {
+            let state = InteractionState {
+                disabled: bits & 1 != 0,
+                pressed: bits & 2 != 0,
+                hovered: bits & 4 != 0,
+                focused: bits & 8 != 0,
+                invalid: bits & 16 != 0,
+            };
+            let expected = if state.disabled {
+                InteractionLayer::Disabled
+            } else if state.pressed {
+                InteractionLayer::Pressed
+            } else if state.hovered {
+                InteractionLayer::Hovered
+            } else {
+                InteractionLayer::Default
+            };
+            assert_eq!(state.layer(), expected);
+        }
+    }
+}

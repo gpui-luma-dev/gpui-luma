@@ -12,6 +12,9 @@ struct ShadcnSidebarTheme {
 }
 
 impl SidebarTheme for ShadcnSidebarTheme {
+    fn geometry(&self) -> gpui_luma::theme::stylesheet::ResolvedSidebarGeometry {
+        self.theme.mode_tokens().stylesheet().common.sidebar.resolve_geometry("", Default::default())
+    }
     fn resolve_drag(&self, size: ControlSize) -> gpui_luma::infra::drag_drop::DragDropLook {
         let tokens = self.theme.mode_tokens();
         let palette = &tokens.palette;

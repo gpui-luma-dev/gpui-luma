@@ -7,6 +7,8 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens
 
 #[derive(Clone, Debug)]
 pub struct SliderLook {
+    /// Captured radial layout and disabled-track presentation.
+    pub decoration: crate::theme::stylesheet::SliderDecoration,
     pub track_background: Hsla,
     pub fill_background: Hsla,
     pub thumb_background: Hsla,
@@ -55,6 +57,7 @@ impl SliderTheme for DefaultSliderTheme {
 
         let selected_thumb = thumb_size.unwrap_or(size.into());
         let mut look = SliderLook {
+            decoration: self.tokens.stylesheet.slider.decoration(size.stylesheet_key()),
             track_background: if state.disabled {
                 palette.state.disabled.background
             } else {

@@ -124,6 +124,8 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
         .authored_geometry(crate::tables::metrics::helpers::control_size_key(size))
         .with_fallback(&base_recipe);
     let mut look = FloatingMenuLook {
+        positive: mode.data_positive,
+        border_width: mode.metrics.border_width.default,
         background: colors.background.hsla(),
         foreground: colors.foreground.hsla(),
         border: colors.border.hsla(),
@@ -161,6 +163,7 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
     let geometry = mode.stylesheet().common.floating_menu.resolve_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
         gpui_luma::theme::stylesheet::FloatingMenuGeometry {
+            border_width: look.border_width,
             padding: look.padding,
             min_width: look.min_width,
             item_height: look.item_height,
@@ -177,6 +180,7 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
             ..Default::default()
         },
     );
+    look.border_width = geometry.border_width.value_px;
     look.padding = geometry.padding.value_px;
     look.min_width = geometry.min_width.value_px;
     look.item_height = geometry.item_height.value_px;

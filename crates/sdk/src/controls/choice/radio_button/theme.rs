@@ -7,6 +7,8 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyl
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RadioScale {
+    /// Whole-control opacity when disabled.
+    pub disabled_opacity: f32,
     pub control_radius: f32,
     pub control_padding_x: f32,
     pub control_padding_y: f32,
@@ -45,6 +47,7 @@ impl RadioScale {
         );
 
         Self {
+            disabled_opacity: geometry.disabled_opacity.unwrap_or_default(),
             control_radius: metrics.radius(size),
             control_padding_x: snap_to_pixel(geometry.control_padding_x.unwrap_or_default(), scale_factor),
             control_padding_y: snap_to_pixel(geometry.control_padding_y.unwrap_or_default(), scale_factor),

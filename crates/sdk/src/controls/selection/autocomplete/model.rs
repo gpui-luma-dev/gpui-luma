@@ -22,6 +22,7 @@ pub type AutocompletePopupLookProvider = Arc<dyn Fn(ControlSize) -> SelectorItem
 
 #[derive(Clone)]
 pub struct AutocompleteModel {
+    pub(crate) icons: crate::theme::stylesheet::IconsStylesheet,
     pub(crate) motion: crate::motion::MotionConfig<AutocompleteMotion>,
     pub(crate) stylesheet: crate::theme::stylesheet::AutocompleteStylesheet,
     pub(crate) id: SharedString,
@@ -160,6 +161,7 @@ impl AutocompleteBuilder {
 
             model: AutocompleteModel {
                 motion: Default::default(),
+                icons: crate::theme::stylesheet::CommonStylesheet::sdk_default().icons.clone(),
                 stylesheet: crate::theme::stylesheet::CommonStylesheet::sdk_default().autocomplete.clone(),
                 id: id.into(),
                 items: items.into_iter().collect(),
@@ -184,6 +186,7 @@ impl AutocompleteBuilder {
     /// Capture shared affordance geometry; per-size values resolve at render time.
     /// Text-field/popup providers and consumer template modifiers retain their own precedence.
     pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        self.model.icons = stylesheet.with_sdk_defaults().icons;
         self.model.stylesheet = stylesheet.with_sdk_defaults().autocomplete;
         self
     }

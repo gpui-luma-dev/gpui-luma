@@ -2,9 +2,41 @@ use std::sync::Arc;
 use gpui::{BoxShadow, Hsla, SharedString};
 use crate::theme::ThemeTokens;
 
+/// Shared tooltip placement and pointer dimensions, in logical pixels.
+#[derive(Clone, Copy)]
+pub struct TooltipPlacementGeometry {
+    pub gap: f32,
+    pub margin: f32,
+    pub pointer_size: f32,
+    pub pointer_inset: f32,
+}
+impl From<&crate::theme::stylesheet::ResolvedTooltipGeometry> for TooltipPlacementGeometry {
+    fn from(value: &crate::theme::stylesheet::ResolvedTooltipGeometry) -> Self {
+        Self {
+            gap: value.target_gap.value_px,
+            margin: value.window_margin.value_px,
+            pointer_size: value.pointer_size.value_px,
+            pointer_inset: value.pointer_inset.value_px,
+        }
+    }
+}
+impl Default for TooltipPlacementGeometry {
+    fn default() -> Self {
+        (&crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .tooltip
+            .resolve_geometry("", Default::default()))
+            .into()
+    }
+}
+
 /// Resolved tooltip style. Looks own all ordinary presentation defaults.
 #[derive(Clone)]
 pub struct TooltipLook {
+    pub placement: TooltipPlacementGeometry,
+    /// Shortcut spacing, typography and de-emphasis from the shared stylesheet.
+    pub shortcut_gap: f32,
+    pub shortcut_font_size: f32,
+    pub shortcut_opacity: f32,
     pub background: Hsla,
     pub foreground: Hsla,
     pub padding: f32,
@@ -24,6 +56,10 @@ impl TooltipLook {
             .tooltip
             .resolve_geometry("compact", crate::theme::stylesheet::TooltipGeometry::default());
         Self {
+            placement: (&geometry).into(),
+            shortcut_gap: geometry.shortcut_gap.value_px,
+            shortcut_font_size: geometry.shortcut_font_size.value_px,
+            shortcut_opacity: geometry.shortcut_opacity.value_px,
             background,
             foreground,
             radius,
@@ -54,6 +90,10 @@ pub fn default_tooltip_theme() -> Arc<dyn TooltipTheme> {
         .tooltip
         .resolve_geometry("md", crate::theme::stylesheet::TooltipGeometry::default());
     Arc::new(TooltipLook {
+        placement: (&geometry).into(),
+        shortcut_gap: geometry.shortcut_gap.value_px,
+        shortcut_font_size: geometry.shortcut_font_size.value_px,
+        shortcut_opacity: geometry.shortcut_opacity.value_px,
         background: tokens.palette.surface.floating.background,
         foreground: tokens.palette.surface.floating.foreground,
         padding: geometry.padding.value_px,
@@ -69,6 +109,10 @@ pub fn default_tooltip_theme() -> Arc<dyn TooltipTheme> {
 /// Presentation-only input, resolved from the explicitly bound draft look on every frame.
 #[derive(Clone)]
 pub struct TooltipRenderModel {
+    pub placement: TooltipPlacementGeometry,
+    pub shortcut_gap: f32,
+    pub shortcut_font_size: f32,
+    pub shortcut_opacity: f32,
     pub text: SharedString,
     pub shortcut: Option<SharedString>,
     pub background: Hsla,

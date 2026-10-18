@@ -37,6 +37,7 @@ pub fn resolve_toolbar_metrics(
             padding_x: table.padding_x.value_px,
             padding_y: table.padding_y.value_px,
             gap: table.gap.value_px,
+            ..Default::default()
         },
     );
     table.padding_x = super::helpers::prefer_shared_metric(geometry.padding_x, table.padding_x);

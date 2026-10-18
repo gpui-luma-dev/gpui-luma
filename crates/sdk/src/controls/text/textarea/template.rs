@@ -9,13 +9,9 @@ use super::{TextAreaDrag, TextAreaRenderModel, TextAreaState};
 use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
 use crate::theme::StandardBoxScale;
 
-const TEXTAREA_CARET_WIDTH: f32 = 1.5;
-const TEXTAREA_CARET_HEIGHT_EXTRA: f32 = 2.0;
 const TEXTAREA_TRAILING_HITBOX_WIDTH: f32 = 4.0;
 const TEXTAREA_CARET_EDGE_OFFSET: f32 = 0.0;
 const TEXTAREA_MIN_WIDTH: f32 = 0.0;
-const TEXTAREA_DISABLED_OPACITY: f32 = 0.6;
-const FOCUS_RING_GAP: f32 = 1.0;
 
 pub type TextAreaHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type TextAreaMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -157,7 +153,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let selection = model.state.selection_range();
         let cursor = model.state.cursor.min(model.value.chars().count());
-        let caret_height = look.typography.size + TEXTAREA_CARET_HEIGHT_EXTRA;
+        let caret_height = look.typography.size + look.caret_height_extra;
         let row_height = look.typography.line_height;
         let viewport_height = row_height * model.rows.max(1) as f32;
 
@@ -208,7 +204,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
                                                 .absolute()
                                                 .left(px(TEXTAREA_CARET_EDGE_OFFSET))
                                                 .top(px(TEXTAREA_CARET_EDGE_OFFSET))
-                                                .w(px(TEXTAREA_CARET_WIDTH))
+                                                .w(px(look.caret_width))
                                                 .h(px(caret_height))
                                                 .bg(look.caret),
                                         )
@@ -230,7 +226,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
                                                 .absolute()
                                                 .left(px(TEXTAREA_CARET_EDGE_OFFSET))
                                                 .top(px(TEXTAREA_CARET_EDGE_OFFSET))
-                                                .w(px(TEXTAREA_CARET_WIDTH))
+                                                .w(px(look.caret_width))
                                                 .h(px(caret_height))
                                                 .bg(look.caret),
                                         )
@@ -264,7 +260,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
             .font_weight(look.typography.weight)
             .when(model.full_width, |root| root.w_full())
             .when(model.enabled, |root| root.cursor_text())
-            .when(!model.enabled, |root| root.cursor_not_allowed().opacity(TEXTAREA_DISABLED_OPACITY))
+            .when(!model.enabled, |root| root.cursor_not_allowed().opacity(look.disabled_opacity))
             .child(text_viewport);
 
         if model.enabled
@@ -275,7 +271,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
 
         let focused = model.state.focused && model.state.focus_visible && model.enabled;
         let focus_extent = if look.focus_border.is_some() {
-            FOCUS_RING_GAP + look.border_width.max(0.0)
+            self.theme.metrics().focus.gap + look.border_width.max(0.0)
         } else {
             0.0
         };
@@ -301,7 +297,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
                     .left(px(0.0))
                     .border(px(look.border_width))
                     .border_color(look.focus_border.unwrap_or(look.border))
-                    .rounded(px(look.radius + FOCUS_RING_GAP + look.border_width)),
+                    .rounded(px(look.radius + self.theme.metrics().focus.gap + look.border_width)),
             );
         }
 

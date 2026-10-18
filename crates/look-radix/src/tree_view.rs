@@ -24,6 +24,9 @@ pub fn tree_view_frame(look: &Look) -> Div {
 }
 
 impl TreeViewTheme for RadixTreeViewTheme {
+    fn icon(&self, role: gpui_luma::theme::stylesheet::IconRole) -> gpui_luma::infra::icon::IconSource {
+        self.look.common_stylesheet().icons.resolve(role)
+    }
     fn resolve_row(&self, state: InteractionState, selected: bool, size: ControlSize) -> TreeViewPalette {
         let gray = |step| self.look.resolve_step(ScaleFamily::Gray, step).hsla();
         let accent = |step| self.look.resolve_step(ScaleFamily::Color, step).hsla();
@@ -463,6 +466,7 @@ impl<T: Clone + Send + Sync + 'static> TreeView<T> {
         let control = {
             let look = crate::look::resolve_look(self.look.as_ref(), cx.try_global::<Look>());
             self.builder
+                .stylesheet(&look.common_stylesheet())
                 .motion_defaults(look.motion_defaults().tree_view)
                 .template(tree_view_template(&look))
                 .spawn(cx)

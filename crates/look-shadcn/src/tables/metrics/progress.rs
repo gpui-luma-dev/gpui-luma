@@ -38,6 +38,7 @@ pub fn resolve_progress_metrics_for_size(
             stroke_width: table.stroke_width.value_px,
             track_height: table.track_height.value_px,
             thumb_size: table.thumb_size.value_px,
+            ..Default::default()
         },
     );
     table.size = super::helpers::prefer_shared_metric(geometry.size, table.size);

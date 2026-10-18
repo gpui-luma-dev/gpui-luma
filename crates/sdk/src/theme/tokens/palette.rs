@@ -118,6 +118,8 @@ pub struct NavigationPalette<C = ColorValue> {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DataPalette<C = ColorValue> {
+    /// Positive completion/status affordances.
+    pub positive: C,
     pub accent_1: C,
     pub accent_2: C,
     pub accent_3: C,
@@ -238,6 +240,7 @@ impl<C> LumaPalette<C> {
                 border: map(self.navigation.border).with_context(|| "palette.navigation.border")?,
             },
             data: DataPalette {
+                positive: map(self.data.positive).with_context(|| "palette.data.positive")?,
                 accent_1: map(self.data.accent_1).with_context(|| "palette.data.accent_1")?,
                 accent_2: map(self.data.accent_2).with_context(|| "palette.data.accent_2")?,
                 accent_3: map(self.data.accent_3).with_context(|| "palette.data.accent_3")?,

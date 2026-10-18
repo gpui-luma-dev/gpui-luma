@@ -5,7 +5,6 @@ use gpui::{
     anchored, deferred, div, point, prelude::*, px,
 };
 
-use crate::infra::icon::lucide_icon;
 use crate::controls::selector_list::{
     SelectorItem, SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler,
 };
@@ -43,6 +42,8 @@ impl Default for AutocompleteTemplateHandlers {
 }
 
 pub struct AutocompleteRenderModel {
+    /// Captured shared default glyph choices.
+    pub icons: crate::theme::stylesheet::IconsStylesheet,
     /// Captured and size-resolved affordance geometry.
     pub geometry: crate::theme::stylesheet::ResolvedAutocompleteGeometry,
     pub id: SharedString,
@@ -222,8 +223,8 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
                                 .text_color(model.muted_text_color)
                                 .hover(|style| style.text_color(model.status_color))
                                 .on_click(clear_click)
-                                .child(lucide_icon(
-                                    lucide_svg_static::Icon::X,
+                                .child(crate::infra::icon::render_icon_source(
+                                    &model.icons.resolve(crate::theme::stylesheet::IconRole::Clear),
                                     model.muted_text_color,
                                     model.geometry.clear_icon_size.value_px,
                                 )),

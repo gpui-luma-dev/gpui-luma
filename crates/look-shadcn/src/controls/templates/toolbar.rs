@@ -15,7 +15,17 @@ impl ToolbarTheme for ShadcnToolbarTheme {
         let metrics = crate::tables::metrics::resolve_toolbar_metrics(&tokens, self.theme.mode(), size);
         let colors = crate::tables::resolve_toolbar_colors(&tokens, self.theme.mode(), enabled, variant);
 
+        let chrome = tokens.stylesheet().common.toolbar.resolve_geometry(
+            size.stylesheet_key(),
+            gpui_luma::theme::stylesheet::ToolbarGeometry {
+                border_width: tokens.metrics.border_width.default,
+                separator_width: tokens.metrics.border_width.default,
+                ..Default::default()
+            },
+        );
         ToolbarLook {
+            border_width: chrome.border_width.value_px,
+            separator_width: chrome.separator_width.value_px,
             background: colors.background.hsla(),
             border: colors.border.hsla(),
             separator: colors.separator.hsla(),

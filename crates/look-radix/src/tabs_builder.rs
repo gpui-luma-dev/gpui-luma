@@ -420,6 +420,7 @@ impl Tabs {
     fn into_sdk_builder(self, look: Look) -> TabsBuilder {
         let template = tabs_template_for(&look, self.variant);
         let mut builder = gpui_luma::controls::tabs::Tabs::new(self.id)
+            .stylesheet(&look.common_stylesheet())
             .template(template)
             .size(self.size.control_size())
             .width_mode(self.width_mode)

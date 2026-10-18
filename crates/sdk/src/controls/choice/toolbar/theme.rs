@@ -15,6 +15,10 @@ pub enum ToolbarVariant {
 
 #[derive(Clone, Debug)]
 pub struct ToolbarLook {
+    /// Shell stroke thickness in pixels.
+    pub border_width: f32,
+    /// Vertical separator thickness in pixels.
+    pub separator_width: f32,
     pub background: Hsla,
     pub border: Hsla,
     pub separator: Hsla,
@@ -69,6 +73,8 @@ impl ToolbarTheme for DefaultToolbarTheme {
         };
 
         let mut look = ToolbarLook {
+            border_width: metrics.border_width.default,
+            separator_width: metrics.border_width.default,
             background,
             border,
             separator: self.tokens.palette.border.default,
@@ -79,7 +85,7 @@ impl ToolbarTheme for DefaultToolbarTheme {
             separator_height: control.height,
         };
         crate::theme::stylesheet::apply_common_geometry!(self.tokens.stylesheet.toolbar, size.stylesheet_key(), ToolbarGeometry, look,
-            [padding_x => padding_x, padding_y => padding_y, gap => gap]);
+            [padding_x => padding_x, padding_y => padding_y, gap => gap, border_width => border_width, separator_width => separator_width]);
         look
     }
 }

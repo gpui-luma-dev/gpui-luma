@@ -15,6 +15,7 @@ pub fn pager_look(theme: &ShadcnLook, enabled: bool, style: PagerStyle) -> Pager
     let recipe = tokens.stylesheet().common.pager.authored_geometry(key).with_fallback(&baseline);
 
     let mut look = PagerLook {
+        gap_icon_size: recipe.gap_icon_size.unwrap_or_default(),
         border_width: recipe.border_width.unwrap_or_default(),
         page_size_label_gap: recipe.page_size_label_gap.unwrap_or_default(),
         popup_offset_y: recipe.popup_offset_y.unwrap_or_default(),

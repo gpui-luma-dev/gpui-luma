@@ -2,7 +2,7 @@ use gpui::{AnyElement, Hsla, SharedString, Transformation, px, prelude::*, radia
 use lucide_svg_static::Icon as LucideIcon;
 use lucide_svg_static::Icon as SvgIcon;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum IconSource {
     Lucide(LucideIcon),
     SvgPath(SharedString),
@@ -53,6 +53,19 @@ pub fn render_disclosure_icon(icons: &DisclosureIcons, progress: f32, color: Hsl
 }
 
 impl DisclosureIcons {
+    /// Resolve the standard disclosure pair from a selected stylesheet.
+    pub fn from_stylesheet(stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        use crate::theme::stylesheet::IconRole;
+        Self::new(
+            stylesheet.icons.resolve(IconRole::DisclosureExpanded),
+            stylesheet.icons.resolve(IconRole::DisclosureCollapsed),
+        )
+    }
+    /// Resolve the opening/closing pair used by popup triggers.
+    pub fn menu_from_stylesheet(stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        use crate::theme::stylesheet::IconRole;
+        Self::new(stylesheet.icons.resolve(IconRole::MenuExpanded), stylesheet.icons.resolve(IconRole::MenuCollapsed))
+    }
     pub fn new(expanded: impl Into<IconSource>, collapsed: impl Into<IconSource>) -> Self {
         Self { expanded: expanded.into(), collapsed: collapsed.into() }
     }
@@ -60,7 +73,11 @@ impl DisclosureIcons {
 
 impl Default for DisclosureIcons {
     fn default() -> Self {
-        Self::new(LucideIcon::ChevronDown, LucideIcon::ChevronRight)
+        let icons = &crate::theme::stylesheet::CommonStylesheet::sdk_default().icons;
+        Self::new(
+            icons.resolve(crate::theme::stylesheet::IconRole::DisclosureExpanded),
+            icons.resolve(crate::theme::stylesheet::IconRole::DisclosureCollapsed),
+        )
     }
 }
 
@@ -73,7 +90,18 @@ pub struct SelectionStatusIcons {
 
 impl Default for SelectionStatusIcons {
     fn default() -> Self {
-        Self { selected: LucideIcon::Check.into(), completed: LucideIcon::Check.into() }
+        Self::from_stylesheet(crate::theme::stylesheet::CommonStylesheet::sdk_default())
+    }
+}
+
+impl SelectionStatusIcons {
+    /// Resolve shared selection/completion icons before consumer overrides.
+    pub fn from_stylesheet(stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        use crate::theme::stylesheet::IconRole;
+        Self {
+            selected: stylesheet.icons.resolve(IconRole::Selected),
+            completed: stylesheet.icons.resolve(IconRole::Completed),
+        }
     }
 }
 

@@ -7,6 +7,8 @@ use crate::theme::{ControlSize, InteractionState, LumaTextStyle, MetricTokens, T
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SwitchScale {
+    /// Whole-control opacity when disabled.
+    pub disabled_opacity: f32,
     pub track_width: f32,
     pub track_height: f32,
     pub track_padding: f32,
@@ -40,6 +42,7 @@ impl SwitchScale {
         // sizing when metric tokens change. Explicit dimensions take precedence below.
         let height = metrics.control_height(size);
         let fallback = Self {
+            disabled_opacity: recipe.disabled_opacity.or(baseline.disabled_opacity).unwrap_or_default(),
             track_width: snap_to_pixel(
                 height * recipe.track_width_scale.or(baseline.track_width_scale).unwrap_or_default(),
                 scale_factor,

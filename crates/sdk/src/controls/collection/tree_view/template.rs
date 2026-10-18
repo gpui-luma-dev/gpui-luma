@@ -1,10 +1,8 @@
 use std::{rc::Rc, sync::Arc};
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, FontWeight, MouseDownEvent, MouseUpEvent, Stateful, Window, SharedString, div,
-    prelude::*, px,
+    AnyElement, App, ClickEvent, Div, MouseDownEvent, MouseUpEvent, Stateful, Window, SharedString, div, prelude::*, px,
 };
-use lucide_svg_static::Icon as LucideIcon;
 
 use super::{FlatTreeNode, TreeViewRenderModel, TreeViewTheme, default_tree_view_theme};
 use crate::infra::icon::render_disclosure_icon;
@@ -231,11 +229,12 @@ where
         let palette =
             self.theme
                 .resolve_row(crate::theme::InteractionState { hovered: true, ..Default::default() }, true, size);
+        let scale = self.theme.resolve_scale(size, _window.scale_factor());
         div()
-            .px_3()
-            .py_1()
-            .rounded_md()
-            .border_1()
+            .px(px(scale.preview_padding_x))
+            .py(px(scale.preview_padding_y))
+            .rounded(px(scale.radius))
+            .border(px(self.theme.metrics().border_width.default))
             .border_color(palette.chevron_color)
             .when_some(palette.background, |preview, color| preview.bg(color))
             .text_color(palette.foreground)
@@ -302,7 +301,7 @@ impl ThemedTreeViewTemplate {
                 .on_mouse_up(gpui::MouseButton::Left, move |event, window, cx| (handlers.mouse_up)(event, window, cx))
                 .on_click(move |event, window, cx| (handlers.click)(event, window, cx));
         } else {
-            row = row.opacity(0.40 * height_factor.max(0.0));
+            row = row.opacity(scale.disabled_opacity * height_factor.max(0.0));
         }
 
         if node.has_children {
@@ -335,16 +334,19 @@ impl ThemedTreeViewTemplate {
 
         row = row.child(div().w(px(scale.inner_gap)));
 
-        let display_icon = node.icon.unwrap_or(if node.has_children {
-            if node.expanded {
-                LucideIcon::FolderOpen
+        let display_icon = node.icon.map(crate::infra::icon::IconSource::from).unwrap_or_else(|| {
+            use crate::theme::stylesheet::IconRole;
+            self.theme.icon(if node.has_children {
+                if node.expanded {
+                    IconRole::FolderOpen
+                } else {
+                    IconRole::Folder
+                }
             } else {
-                LucideIcon::Folder
-            }
-        } else {
-            LucideIcon::File
+                IconRole::File
+            })
         });
-        row = row.child(render_icon(display_icon, palette.icon_color, icon_size));
+        row = row.child(crate::infra::icon::render_icon_source(&display_icon, palette.icon_color, icon_size));
         row = row.child(div().w(px(scale.inner_gap)));
         row = row.child(match content {
             Some(content) => div().flex_1().min_w(px(0.0)).child(content),
@@ -352,23 +354,16 @@ impl ThemedTreeViewTemplate {
         });
 
         if let Some(color) = self.theme.row_outline(node.state.interaction_state(), node.size) {
-            row = row.child(div().absolute().inset_0().rounded(px(scale.radius)).border_1().border_color(color));
+            row = row.child(
+                div()
+                    .absolute()
+                    .inset_0()
+                    .rounded(px(scale.radius))
+                    .border(px(self.theme.metrics().border_width.default))
+                    .border_color(color),
+            );
         }
 
         row.into_any_element()
     }
-}
-
-fn render_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
-    div()
-        .size(px(size))
-        .flex()
-        .items_center()
-        .justify_center()
-        .font_weight(FontWeight::NORMAL)
-        .text_size(px(size))
-        .line_height(px(size))
-        .text_color(color)
-        .child(crate::infra::icon::lucide_icon(icon, color, size))
-        .into_any_element()
 }

@@ -4,8 +4,10 @@ use gpui::Hsla;
 
 use crate::theme::{ControlSize, ThemeTokens};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct ProgressLook {
+    /// Resolved sweep and shimmer appearance, independent of phase/timing.
+    pub geometry: crate::theme::stylesheet::ResolvedProgressGeometry,
     pub track_color: Hsla,
     pub progress_color: Hsla,
     pub thumb_color: Hsla,
@@ -64,6 +66,7 @@ impl ProgressTheme for DefaultProgressTheme {
             thumb_size: geometry.thumb_size.value_px,
             size: geometry.size.value_px,
             stroke_width: geometry.stroke_width.value_px,
+            geometry,
         }
     }
 }

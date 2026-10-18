@@ -55,6 +55,7 @@ pub struct StepperModel {
     pub(crate) enabled: bool,
     pub(crate) workflow_complete: bool,
     pub(crate) motion_enabled: bool,
+    pub(crate) icons_explicit: bool,
     pub(crate) icons: SelectionStatusIcons,
     pub(crate) step_contents: Vec<Option<StepperContentRenderer>>,
     pub(crate) content_height: Option<f32>,
@@ -111,6 +112,7 @@ impl StepperBuilder {
                 enabled: true,
                 workflow_complete: false,
                 motion_enabled: true,
+                icons_explicit: false,
                 icons: SelectionStatusIcons::default(),
                 step_contents: vec![None; step_count],
                 content_height: None,
@@ -124,7 +126,16 @@ impl StepperBuilder {
         self
     }
 
+    /// Capture shared completion defaults; explicit glyphs retain precedence.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        if !self.model.icons_explicit {
+            self.model.icons = SelectionStatusIcons::from_stylesheet(stylesheet);
+        }
+        self
+    }
+
     pub fn icons(mut self, icons: SelectionStatusIcons) -> Self {
+        self.model.icons_explicit = true;
         self.model.icons = icons;
         self
     }

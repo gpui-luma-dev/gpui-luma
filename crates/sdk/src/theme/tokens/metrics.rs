@@ -4,6 +4,9 @@ use serde::Deserialize;
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct MetricTokens {
+    /// Default whole-control disabled opacity; family recipes may override it.
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_unit")]
+    pub disabled_opacity: f32,
     pub spacing: SpacingTokens,
     pub radius: RadiusTokens,
     pub border_width: BorderWidthTokens,
@@ -61,6 +64,9 @@ pub struct BorderWidthTokens {
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct FocusMetricTokens {
+    /// Visual gap between a control and its focus ring, in pixels.
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
+    pub gap: f32,
     #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub width: f32,
     #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]

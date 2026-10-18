@@ -26,6 +26,7 @@ pub struct TextAreaModel {
     pub(crate) clean_on_escape: bool,
     pub(crate) select_all_on_tab_focus: bool,
     pub(crate) max_clipboard_paste_bytes: Option<usize>,
+    pub(crate) resize_handle_icon_explicit: bool,
     pub(crate) resize_handle_icon: IconSource,
     pub(crate) validator: Option<Validator>,
     pub(crate) look_override: Option<TextAreaLookOverride>,
@@ -131,7 +132,10 @@ impl TextAreaBuilder {
                 clean_on_escape: false,
                 select_all_on_tab_focus: false,
                 max_clipboard_paste_bytes: Some(crate::controls::text::DEFAULT_MAX_CLIPBOARD_PASTE_BYTES),
-                resize_handle_icon: lucide_svg_static::Icon::Scaling.into(),
+                resize_handle_icon_explicit: false,
+                resize_handle_icon: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .icons
+                    .resolve(crate::theme::stylesheet::IconRole::TextareaResize),
                 validator: None,
                 look_override: None,
                 template: default_textarea_template(),
@@ -214,7 +218,17 @@ impl TextAreaBuilder {
     }
 
     /// Set the icon displayed by the draggable resize handle.
+    /// Capture shared resize glyphs while preserving explicit consumer glyphs.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        if !self.model.resize_handle_icon_explicit {
+            self.model.resize_handle_icon =
+                stylesheet.icons.resolve(crate::theme::stylesheet::IconRole::TextareaResize);
+        }
+        self
+    }
+
     pub fn resize_handle_icon(mut self, icon: impl Into<IconSource>) -> Self {
+        self.model.resize_handle_icon_explicit = true;
         self.model.resize_handle_icon = icon.into();
         self
     }

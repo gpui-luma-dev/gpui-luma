@@ -37,12 +37,12 @@ use crate::inspect::controls::{
     inspect_popup_menu_metrics, inspect_progress_color_palette, inspect_progress_metrics,
     inspect_resizable_panels_color_palette, inspect_resizable_panels_metrics, inspect_scrollbar_color_palette,
     inspect_scrollbar_metrics, inspect_selector_color_palette, inspect_selector_metrics, inspect_slider_color_palette,
-    inspect_split_view_color_palette, inspect_split_view_metrics, inspect_stepper_color_palette,
-    inspect_stepper_metrics, inspect_switch_color_palette, inspect_switch_elevation,
-    inspect_tabs_item_color_palette_for_look, inspect_tabs_list_color_palette_for_look, inspect_tabs_metrics_for_look,
-    inspect_textarea_color_palette, inspect_textarea_metrics, inspect_textfield_color_palette,
-    inspect_textfield_elevation, inspect_textfield_metrics, inspect_toolbar_color_palette, inspect_toolbar_metrics,
-    inspect_tree_view_metrics, inspect_tree_view_row_color_palette, inspect_color_chrome_sections,
+    inspect_split_view_color_palette, inspect_stepper_color_palette, inspect_stepper_metrics,
+    inspect_switch_color_palette, inspect_switch_elevation, inspect_tabs_item_color_palette_for_look,
+    inspect_tabs_list_color_palette_for_look, inspect_tabs_metrics_for_look, inspect_textarea_color_palette,
+    inspect_textarea_metrics, inspect_textfield_color_palette, inspect_textfield_elevation, inspect_textfield_metrics,
+    inspect_toolbar_color_palette, inspect_toolbar_metrics, inspect_tree_view_metrics,
+    inspect_tree_view_row_color_palette, inspect_color_chrome_sections,
 };
 
 /// Inspect-time wrapper around a [`ShadcnLook`] look resolver.
@@ -477,7 +477,8 @@ impl<'a> ShadcnInspect<'a> {
     }
 
     pub fn inspect_split_view_metrics(&self) -> SplitViewInspectMetrics {
-        inspect_split_view_metrics()
+        crate::tables::metrics::resolve_split_view_metrics_with_stylesheet(&self.mode_tokens().stylesheet().common)
+            .into()
     }
 
     pub fn inspect_resizable_panels_color_palette(&self, state: InteractionState) -> ResizablePanelsInspectPalette {

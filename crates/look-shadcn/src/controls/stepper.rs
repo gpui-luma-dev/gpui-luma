@@ -117,6 +117,7 @@ pub fn stepper_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -
         .unwrap_or((DEFAULT_STEP_BADGE_SIZE, DEFAULT_TRACK_THICKNESS));
 
     let mut look = StepperLook {
+        geometry: mode.stylesheet().common.stepper.resolve_geometry(size.stylesheet_key(), Default::default()),
         complete_bg: colors.complete_bg.hsla(),
         complete_fg: colors.complete_fg.hsla(),
         in_progress_bg: colors.in_progress_bg.hsla(),
@@ -134,6 +135,7 @@ pub fn stepper_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -
         gpui_luma::theme::stylesheet::StepperGeometry {
             step_badge_size: look.step_badge_size,
             track_thickness: look.track_thickness,
+            ..Default::default()
         },
     );
     look.step_badge_size = geometry.step_badge_size.value_px;

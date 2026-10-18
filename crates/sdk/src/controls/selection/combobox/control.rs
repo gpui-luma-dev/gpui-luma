@@ -742,6 +742,7 @@ impl Render for ComboBoxControl {
         };
 
         let render_model = ComboBoxRenderModel {
+            icons: self.model.icons.clone(),
             geometry,
             textfield: self.textfield.clone().into_any_element(),
             query_is_empty: self.behavior.state.query.is_empty(),

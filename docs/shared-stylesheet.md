@@ -627,3 +627,21 @@ Table text-column insets use `common.table.geometry.column_padding_x` (pixels), 
 Pager page-size chrome uses `common.pager.geometry.border_width`, `page_size_label_gap`, `popup_offset_y`, `popup_gap`, `popup_padding`, `popup_item_padding_y`, and `popup_item_radius_inset` (pixels). Popup item radius is the resolved pager radius minus the inset, clamped to zero. PagingTable uses the same label gap and popup recipe; presentation overrides use the existing `minimal`, `minimal-edge`, and `numeric` keys.
 
 Context-menu target chrome uses `common.context_menu.geometry.border_width` (pixels) and `disabled_opacity` (unit interval, also applied to custom targets). Popup placement uses `window_margin` (pixels). SDK, Shadcn and Radix resolve the same fields, including explicit zero values.
+
+Overlay-window shells use `common.overlay_window.geometry.border_width` and optional `radius` (pixels). Missing radius inherits the theme radius token; zero explicitly produces square corners or no border. SDK, Shadcn and Radix honor these fields, and Shadcn inspection reports the resolved radius. Inset SlidePanel borders share `common.resizable_panels.geometry.divider_width` with their resize divider.
+
+
+The common control pass also covers:
+- `common.tokens.metrics.focus.gap` (focus-ring separation) and `disabled_opacity` (default whole-control opacity).
+- Independent disabled opacity for Checkbox, Radio, Switch, Accordion, TreeView, Scrollbar, and text inputs; opacity is never pixel-snapped.
+- Text input `caret_width`/`caret_height_extra`, Stepper panel/label/glyph recipes, DockSplitter grip decoration, Toolbar strokes, Sidebar shell/title/rail chrome, and SplitView separator geometry.
+- `common.tabs.geometry.accessory_size/accessory_gap`, with variant inheritance, and Tooltip shortcut gap/font size/opacity.
+- OverlayWindow placement inset, window/drag margin, header hit height, and shell chrome resolve through the active template theme. Template modifiers delegate that resolution to their base.
+
+`common.icons` owns stock Lucide glyph choices. Names are validated against the installed catalog; `svg:path/to/icon.svg` selects an external SVG. Picker builders capture these defaults with their stylesheet. Pager, Selector, Checkbox, SelectionPanel and Stepper accept `.stylesheet(...)`; explicit `.icons(...)` wins regardless of call order. Tabs, PopupMenu, Accordion and TreeView preserve explicit disclosure pairs. Sidebar captures host defaults across content replacement, while panel-local icon choices take precedence. Public icon factories expose the same defaults to third-party looks. Consumer-supplied node icons and template content retain precedence.
+
+SplitView's former exported appearance constants are replaced by `common.split_view.geometry` and resolved `SplitViewLook.geometry`. Structural centering arithmetic, empty/transparent sentinels, pointer capture, caret hit targets, scrolling, and interpolation remain Rust behavior.
+
+Radial Slider presentation now resolves `dial_size`, `track_radius`, and `disabled_opacity` from the existing slider geometry, and uses the same radius for thumbs, annulus paint, and end caps. Progress indeterminate sweep/shimmer fractions and layer opacity live in `common.progress.geometry`; motion phase and timing remain under the existing motion policy. Tooltip target gap, window margin, pointer size and pointer corner clearance resolve with its theme and participate in placement/paint together.
+
+Table row-divider width now participates in both row paint and explicit divider-aware height helpers. Those public helpers accept the resolved divider width instead of an exported fixed constant. SearchSelector completion adornments inherit `common.tokens.palette.light/dark.data.positive` through the shared menu/panel look, preserving the stock green while allowing theme overrides.

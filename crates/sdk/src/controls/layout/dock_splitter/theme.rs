@@ -4,8 +4,10 @@ use gpui::Hsla;
 
 use crate::theme::ThemeTokens;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct DockSplitterLook {
+    /// Captured, resolved thumb geometry and resting opacity.
+    pub geometry: crate::theme::stylesheet::ResolvedDockSplitterGeometry,
     pub line_color: Hsla,
     pub hover_color: Hsla,
     pub thumb_color: Hsla,
@@ -57,6 +59,7 @@ impl DockSplitterTheme for DefaultDockSplitterTheme {
             },
             hit_target_px: geometry.hit_target.value_px,
             visible_line_px: geometry.visible_line.value_px,
+            geometry,
         }
     }
 }

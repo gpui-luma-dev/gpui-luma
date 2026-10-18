@@ -168,7 +168,7 @@ pub fn render_slide_panel_inset(
         .top_0()
         .bottom_0()
         .w(panel_width)
-        .border_l_1()
+        .border_l(px(panels_look.divider_width))
         .border_color(panels_look.divider)
         .bg(panel_background)
         .on_key_down(handlers.key_down)

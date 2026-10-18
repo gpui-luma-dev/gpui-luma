@@ -118,6 +118,11 @@ impl ProgressTheme for ProgressThemeAdapter {
             .track_height
             .value_px;
         ProgressLook {
+            geometry: self
+                .look
+                .common_stylesheet()
+                .progress
+                .resolve_geometry(size.stylesheet_key(), Default::default()),
             track_color: track,
             progress_color: fill,
             thumb_color: fill,

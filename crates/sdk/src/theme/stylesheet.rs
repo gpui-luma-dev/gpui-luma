@@ -8,6 +8,8 @@ use std::collections::HashMap;
 use crate::theme::provenance::ResolvedMetric;
 use serde::Deserialize;
 
+mod icons;
+pub use icons::*;
 mod geometry;
 pub use geometry::*;
 mod motion;
@@ -61,6 +63,7 @@ macro_rules! common_stylesheet {
     };
 }
 common_stylesheet! {
+    icons: IconsStylesheet,
     tree_view: TreeViewStylesheet,
     accordion: AccordionStylesheet,
     tabs: TabsStylesheet,
@@ -101,6 +104,7 @@ common_stylesheet! {
     pager: PagerStylesheet,
     context_menu: ContextMenuStylesheet,
     dock_splitter: DockSplitterStylesheet,
+    split_view: SplitViewStylesheet,
     resizable_panels: ResizablePanelsStylesheet,
 }
 
@@ -117,6 +121,10 @@ pub struct TabsStylesheet {
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
 pub struct TabsGeometryStylesheet {
+    #[serde(deserialize_with = "optional_length")]
+    pub accessory_size: Option<f32>,
+    #[serde(deserialize_with = "optional_length")]
+    pub accessory_gap: Option<f32>,
     #[serde(deserialize_with = "optional_length")]
     pub list_gap: Option<f32>,
     #[serde(deserialize_with = "optional_length")]
@@ -136,6 +144,14 @@ fn optional_length<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<
 fn optional_unit<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<f32>, D::Error> {
     let value = Option::<f32>::deserialize(deserializer)?;
     if value.is_some_and(|value| !value.is_finite() || !(0.0..=1.0).contains(&value)) {
+        return Err(serde::de::Error::custom("opacity must be finite and in 0..=1"));
+    }
+    Ok(value)
+}
+
+pub(crate) fn required_unit<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<f32, D::Error> {
+    let value = f32::deserialize(deserializer)?;
+    if !value.is_finite() || !(0.0..=1.0).contains(&value) {
         return Err(serde::de::Error::custom("opacity must be finite and in 0..=1"));
     }
     Ok(value)
@@ -169,6 +185,8 @@ pub struct SwitchStylesheet {
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
 pub struct SwitchGeometryStylesheet {
+    #[serde(deserialize_with = "optional_unit")]
+    pub disabled_opacity: Option<f32>,
     #[serde(deserialize_with = "optional_length")]
     pub track_width: Option<f32>,
     #[serde(deserialize_with = "optional_length")]
@@ -192,6 +210,7 @@ pub struct SwitchGeometryStylesheet {
 
 #[derive(Clone, Debug)]
 pub struct ResolvedSwitchGeometry {
+    pub disabled_opacity: ResolvedMetric,
     pub track_width: ResolvedMetric,
     pub track_height: ResolvedMetric,
     pub track_padding: ResolvedMetric,
@@ -210,7 +229,8 @@ geometry::inherit_geometry!(
         gap,
         track_width_scale,
         track_height_scale,
-        thumb_scale
+        thumb_scale,
+        disabled_opacity
     ]
 );
 
@@ -224,6 +244,7 @@ impl SwitchStylesheet {
             };
         }
         SwitchGeometryStylesheet {
+            disabled_opacity: field!(disabled_opacity),
             track_width: field!(track_width),
             track_height: field!(track_height),
             track_padding: field!(track_padding),
@@ -257,7 +278,15 @@ impl SwitchStylesheet {
                 ResolvedMetric::constant(fallback, format!("switch {field} fallback"))
             }
         };
+        let disabled_opacity = if let Some(value) = specific.disabled_opacity {
+            ResolvedMetric::authored(value, format!("common.switch.sizes.{key}.disabled_opacity"))
+        } else if let Some(value) = self.geometry.disabled_opacity {
+            ResolvedMetric::authored(value, "common.switch.geometry.disabled_opacity")
+        } else {
+            ResolvedMetric::constant(fallback.disabled_opacity, "switch disabled opacity fallback")
+        };
         ResolvedSwitchGeometry {
+            disabled_opacity,
             track_width: resolve("track_width", specific.track_width, self.geometry.track_width, fallback.track_width),
             track_height: resolve(
                 "track_height",
@@ -280,6 +309,7 @@ impl SwitchStylesheet {
 impl ResolvedSwitchGeometry {
     /// Preserve the look-owned radius and baseline shift while supplying common inputs.
     pub fn apply_to(&self, mut scale: crate::controls::switch::SwitchScale) -> crate::controls::switch::SwitchScale {
+        scale.disabled_opacity = self.disabled_opacity.value_px;
         scale.track_width = self.track_width.value_px;
         scale.track_height = self.track_height.value_px;
         scale.track_padding = self.track_padding.value_px;
@@ -301,6 +331,12 @@ pub struct SliderStylesheet {
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
 pub struct SliderGeometryStylesheet {
+    #[serde(deserialize_with = "optional_length")]
+    pub dial_size: Option<f32>,
+    #[serde(deserialize_with = "optional_length")]
+    pub track_radius: Option<f32>,
+    #[serde(deserialize_with = "optional_unit")]
+    pub disabled_opacity: Option<f32>,
     #[serde(deserialize_with = "optional_length")]
     pub width: Option<f32>,
     #[serde(deserialize_with = "optional_length")]
@@ -328,10 +364,38 @@ pub struct ResolvedSliderGeometry {
 geometry::inherit_geometry!(
     SliderStylesheet,
     sizes,
-    [width, height, track_height, thumb_size, height_floor_scale, thumb_scale]
+    [
+        width,
+        height,
+        track_height,
+        thumb_size,
+        height_floor_scale,
+        thumb_scale,
+        dial_size,
+        track_radius,
+        disabled_opacity
+    ]
 );
 
+/// Nonlinear slider presentation metrics, in logical pixels and unit opacity.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SliderDecoration {
+    pub dial_size: f32,
+    pub track_radius: f32,
+    pub disabled_opacity: f32,
+}
+
 impl SliderStylesheet {
+    /// Resolve radial paint dimensions and disabled opacity for the selected size.
+    pub fn decoration(&self, key: &str) -> SliderDecoration {
+        let recipe = self.authored_geometry(key);
+        let baseline = CommonStylesheet::sdk_default().slider.authored_geometry(key);
+        SliderDecoration {
+            dial_size: recipe.dial_size.or(baseline.dial_size).unwrap_or_default(),
+            track_radius: recipe.track_radius.or(baseline.track_radius).unwrap_or_default(),
+            disabled_opacity: recipe.disabled_opacity.or(baseline.disabled_opacity).unwrap_or_default(),
+        }
+    }
     /// Optional size/general inputs, including token-derived recipe coefficients.
     pub fn authored_geometry(&self, key: &str) -> SliderGeometryStylesheet {
         let specific = self.sizes.get(key).cloned().unwrap_or_default();
@@ -341,6 +405,9 @@ impl SliderStylesheet {
             };
         }
         SliderGeometryStylesheet {
+            dial_size: field!(dial_size),
+            track_radius: field!(track_radius),
+            disabled_opacity: field!(disabled_opacity),
             width: field!(width),
             height: field!(height),
             track_height: field!(track_height),
@@ -410,9 +477,30 @@ pub struct ResolvedTabsGeometry {
     pub indicator_height: ResolvedMetric,
 }
 
-geometry::inherit_geometry!(TabsStylesheet, variants, [list_gap, list_padding, indicator_height]);
+geometry::inherit_geometry!(
+    TabsStylesheet,
+    variants,
+    [list_gap, list_padding, indicator_height, accessory_size, accessory_gap]
+);
 
 impl TabsStylesheet {
+    /// Accessory glyph size and gap in pixels, with variant and SDK inheritance.
+    pub fn accessory_metrics(&self, variant: &str) -> (f32, f32) {
+        let baseline = &CommonStylesheet::sdk_default().tabs.geometry;
+        let specific = self.variants.get(variant);
+        (
+            specific
+                .and_then(|v| v.accessory_size)
+                .or(self.geometry.accessory_size)
+                .or(baseline.accessory_size)
+                .unwrap_or_default(),
+            specific
+                .and_then(|v| v.accessory_gap)
+                .or(self.geometry.accessory_gap)
+                .or(baseline.accessory_gap)
+                .unwrap_or_default(),
+        )
+    }
     /// Resolve variant, general, then supplied look-token/SDK fallback values.
     pub fn resolve_geometry(&self, variant: &str, fallback: ResolvedTabsGeometry) -> ResolvedTabsGeometry {
         let specific = self.variants.get(variant);

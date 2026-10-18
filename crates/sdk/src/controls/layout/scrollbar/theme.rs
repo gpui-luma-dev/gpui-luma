@@ -8,6 +8,8 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens
 
 #[derive(Clone, Copy, Debug)]
 pub struct ScrollbarLook {
+    /// Whole-scrollbar opacity when disabled.
+    pub disabled_opacity: f32,
     pub track_background: Hsla,
     pub thumb_background: Hsla,
     pub length: f32,
@@ -77,6 +79,7 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
         };
 
         ScrollbarLook {
+            disabled_opacity: geometry.disabled_opacity.value_px,
             track_background: if state.disabled {
                 palette.state.disabled.background
             } else if style == ScrollbarStyle::Soft {

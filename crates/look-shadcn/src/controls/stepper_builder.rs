@@ -108,7 +108,8 @@ impl Stepper {
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> StepperBuilder {
-        let self_builder = self.builder.motion_defaults(look.motion_defaults().stepper);
+        let self_builder =
+            self.builder.stylesheet(&look.stylesheet().common).motion_defaults(look.motion_defaults().stepper);
         let builder = self_builder.size(self.size.control_size());
         if self.custom_template {
             builder

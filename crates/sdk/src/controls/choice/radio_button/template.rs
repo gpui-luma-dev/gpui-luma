@@ -7,8 +7,6 @@ use crate::controls::radio_button::{RadioButtonData, RadioButtonPalette, RadioBu
 use crate::infra::template::TemplateWithModifiers;
 use crate::define_control_template;
 
-const FOCUS_RING_GAP: f32 = 1.0;
-
 define_control_template!(
     ThemedRadioButtonTemplate,
     dyn RadioButtonTheme,
@@ -81,7 +79,7 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         };
         let focus_metrics = self.theme.metrics().focus;
         let focus_ring_extent = if focus_palette.indicator_border.a > 0.0 {
-            FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+            focus_metrics.gap + focus_metrics.width.max(0.0)
         } else {
             0.0
         };
@@ -98,7 +96,7 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
                 .justify_center()
                 .size(px(scale.indicator_size))
                 .bg(palette.indicator_background)
-                .border_1()
+                .border(px(self.theme.metrics().border_width.default))
                 .border_color(palette.indicator_border)
                 .rounded(px(scale.indicator_size))
                 .child(render_dot(progress, scale.dot_size, palette.dot_color));
@@ -136,7 +134,7 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
                         .left_0()
                         .border(px(focus_metrics.width))
                         .border_color(focus_palette.indicator_border)
-                        .rounded(px(scale.indicator_size + FOCUS_RING_GAP + focus_metrics.width)),
+                        .rounded(px(scale.indicator_size + focus_metrics.gap + focus_metrics.width)),
                 );
             }
 
@@ -192,13 +190,13 @@ impl ButtonTemplate<RadioButtonData> for ThemedRadioButtonTemplate {
         }
 
         if let Some(border) = palette.control_border {
-            control = control.border_1().border_color(border);
+            control = control.border(px(self.theme.metrics().border_width.default)).border_color(border);
         }
 
         let mut root = self.apply_modifiers(control, model);
 
         if model.state.disabled {
-            root = root.opacity(0.56);
+            root = root.opacity(scale.disabled_opacity);
         } else if !indicator_only {
             root = root.cursor_pointer();
         }

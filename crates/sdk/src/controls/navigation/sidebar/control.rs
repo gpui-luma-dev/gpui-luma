@@ -236,7 +236,7 @@ fn spawn_panel_engine(model: &SidebarControlModel, cx: &mut Context<SidebarContr
         .enabled(model.enabled)
         .motion_enabled(model.motion_enabled)
         .motion_defaults(model.motion.profile().clone())
-        .disclosure_icons(panel_model.as_ref().map(|panel| panel.disclosure_icons.clone()).unwrap_or_default())
+        .disclosure_icons(model.resolved_disclosure_icons())
         .collapsed(model.presentation == SidebarPresentation::Icons)
         .template(model.panel_template.clone())
         .scrollbar_template(model.scrollbar_template.clone())

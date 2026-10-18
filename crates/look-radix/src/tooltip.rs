@@ -21,8 +21,13 @@ impl TooltipTheme for RadixTooltipTheme {
                 max_width: resolved.max_width,
                 font_size: resolved.text_size,
                 line_height: resolved.line_height,
+                ..Default::default()
             },
         );
+        resolved.placement = (&geometry).into();
+        resolved.shortcut_gap = geometry.shortcut_gap.value_px;
+        resolved.shortcut_font_size = geometry.shortcut_font_size.value_px;
+        resolved.shortcut_opacity = geometry.shortcut_opacity.value_px;
         resolved.padding = geometry.padding.value_px;
         resolved.padding_y = geometry.padding_y.value_px;
         resolved.max_width = geometry.max_width.value_px;

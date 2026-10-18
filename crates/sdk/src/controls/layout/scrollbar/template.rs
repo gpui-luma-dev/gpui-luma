@@ -242,7 +242,7 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
         if model.enabled {
             root = root.cursor_pointer();
         } else {
-            root = root.opacity(0.56);
+            root = root.opacity(look.disabled_opacity);
         }
 
         self.apply_modifiers(root, model)

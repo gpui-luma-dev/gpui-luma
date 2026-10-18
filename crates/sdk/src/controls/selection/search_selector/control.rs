@@ -889,6 +889,7 @@ impl Render for SearchSelectorControl {
             self.model.without_elevation,
         );
         let render_model = SearchSelectorRenderModel {
+            icons: self.model.icons.clone(),
             geometry,
             id: self.model.id.clone(),
             trigger_label: selected_label.map(SharedString::from).unwrap_or_else(|| self.model.placeholder.clone()),

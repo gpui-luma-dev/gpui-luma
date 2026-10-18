@@ -7,6 +7,9 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyl
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct AccordionScale {
+    /// Drag-handle padding in pixels and disabled-trigger opacity.
+    pub drag_handle_padding: f32,
+    pub disabled_opacity: f32,
     pub trigger_height: f32,
     pub padding_x: f32,
     pub padding_y: f32,
@@ -40,6 +43,8 @@ impl AccordionScale {
             .authored_geometry(size.stylesheet_key());
         let geometry = stylesheet.accordion.authored_geometry(size.stylesheet_key()).with_fallback(&baseline);
         Self {
+            drag_handle_padding: geometry.drag_handle_padding.unwrap_or_default(),
+            disabled_opacity: geometry.disabled_opacity.unwrap_or_default(),
             trigger_height: snap_to_pixel(
                 geometry.trigger_height.unwrap_or_else(|| metrics.control_height(size)),
                 scale_factor,
@@ -79,6 +84,12 @@ pub struct AccordionContentPalette {
 }
 
 pub trait AccordionTheme: Send + Sync {
+    /// Default reorder handle glyph, resolved independently of item icons.
+    fn drag_handle_icon(&self) -> crate::infra::icon::IconSource {
+        crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .icons
+            .resolve(crate::theme::stylesheet::IconRole::DragHandle)
+    }
     /// Look-owned help for the drag handle.
     fn drag_tooltip_theme(&self) -> Arc<dyn crate::controls::tooltip::TooltipTheme> {
         crate::controls::tooltip::default_tooltip_theme()
@@ -119,6 +130,9 @@ impl DefaultAccordionTheme {
 }
 
 impl AccordionTheme for DefaultAccordionTheme {
+    fn drag_handle_icon(&self) -> crate::infra::icon::IconSource {
+        self.tokens.stylesheet.icons.resolve(crate::theme::stylesheet::IconRole::DragHandle)
+    }
     fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
         crate::infra::drag_drop::DragDropLook::from_tokens(&self.tokens, size)
     }

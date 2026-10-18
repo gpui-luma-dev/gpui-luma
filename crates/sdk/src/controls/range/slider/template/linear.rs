@@ -5,7 +5,7 @@ use gpui::{App, Div, Pixels, Stateful, Window, div, px, prelude::*};
 use super::{
     SliderBoundsHandler, SliderInteractionHandlers, SliderTemplate, SliderTemplateHandlers, attach_linear_interaction,
     attach_thumb_drag, effective_thumb_radius, render_domain_track_layer, render_linear_thumb, track_bounds_canvas,
-    track_surface_background, DISABLED_OPACITY,
+    track_surface_background,
 };
 use crate::infra::StyledExt;
 use crate::controls::slider::{SliderTheme, default_slider_theme};
@@ -169,7 +169,7 @@ fn render_horizontal_track(
         .overflow_hidden()
         .when(model.domain_track.is_none() && !uses_sibling_segments, |this| {
             this.bg(track_surface_background(model, look))
-                .when(!model.enabled, |track| track.opacity(DISABLED_OPACITY))
+                .when(!model.enabled, |track| track.opacity(look.decoration.disabled_opacity))
         });
 
     if let Some(layer) = render_domain_track_layer(model, track_radius) {
@@ -222,7 +222,7 @@ fn render_vertical_track(
         .overflow_hidden()
         .when(model.domain_track.is_none() && !uses_sibling_segments, |this| {
             this.bg(track_surface_background(model, look))
-                .when(!model.enabled, |track| track.opacity(DISABLED_OPACITY))
+                .when(!model.enabled, |track| track.opacity(look.decoration.disabled_opacity))
         });
 
     if let Some(layer) = render_domain_track_layer(model, track_radius) {
@@ -279,7 +279,7 @@ fn render_fill_segment(
             .bg(background)
             .corner_radii(corner_radii);
         if dim_active {
-            segment = segment.opacity(super::DISABLED_OPACITY);
+            segment = segment.opacity(look.decoration.disabled_opacity);
         }
         segment
     } else {
@@ -292,7 +292,7 @@ fn render_fill_segment(
             .bg(background)
             .corner_radii(corner_radii);
         if dim_active {
-            segment = segment.opacity(super::DISABLED_OPACITY);
+            segment = segment.opacity(look.decoration.disabled_opacity);
         }
         segment
     }

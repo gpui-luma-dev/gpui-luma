@@ -62,6 +62,7 @@ pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) 
         ));
 
     let mut look = ProgressLook {
+        geometry: mode.stylesheet().common.progress.resolve_geometry(size_key, Default::default()),
         track_color: colors.track_color.hsla(),
         progress_color: colors.progress_color.hsla(),
         thumb_color: colors.progress_color.hsla(),
@@ -77,6 +78,7 @@ pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) 
             stroke_width: look.stroke_width,
             track_height: look.track_height,
             thumb_size: look.thumb_size,
+            ..Default::default()
         },
     );
     look.size = geometry.size.value_px;

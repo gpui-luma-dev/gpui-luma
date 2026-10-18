@@ -532,6 +532,7 @@ impl Render for AutocompleteControl {
         };
 
         let render_model = AutocompleteRenderModel {
+            icons: self.model.icons.clone(),
             geometry,
             status_typography,
             id: self.model.id.clone(),

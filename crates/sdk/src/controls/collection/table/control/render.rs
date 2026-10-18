@@ -47,7 +47,8 @@ where
         let visible_rows =
             effective_visible_rows(self.model.visible_rows, self.model.scroll_mode, self.model.fill_height);
         let row_height = visible_row_height(&row_look, self.model.visible_row_height);
-        let body_rows_height = visible_rows.map(|count| layout_body_rows_height(count, row_height));
+        let body_rows_height =
+            visible_rows.map(|count| layout_body_rows_height(count, row_height, row_look.row_divider_width));
         let shell_height = visible_rows.map(|count| compute_shell_height(count, row_height, &look, has_header));
 
         TableRenderModel {

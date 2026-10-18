@@ -129,8 +129,11 @@ geometry_family!(
         radius,
         icon_size,
         chevron_size,
-        chevron_inset
-    ]
+        chevron_inset,
+        preview_padding_x,
+        preview_padding_y
+    ],
+    unit[disabled_opacity]
 );
 geometry_family!(
     AccordionStylesheet,
@@ -148,8 +151,18 @@ geometry_family!(
         item_gap,
         inner_gap,
         icon_size,
-        chevron_size
-    ]
+        chevron_size,
+        drag_handle_padding
+    ],
+    unit[disabled_opacity]
+);
+geometry_family!(
+    SplitViewStylesheet,
+    SplitViewGeometryStylesheet,
+    SplitViewGeometry,
+    ResolvedSplitViewGeometry,
+    "split_view",
+    [hitbox_width, expand_inset_y, expand_cue_left, cue_inset_y, cue_radius, cue_width, cue_hovered_width]
 );
 geometry_family!(
     DockSplitterStylesheet,
@@ -157,7 +170,8 @@ geometry_family!(
     DockSplitterGeometry,
     ResolvedDockSplitterGeometry,
     "dock_splitter",
-    [hit_target, visible_line]
+    [hit_target, visible_line, thumb_width, thumb_height, thumb_radius],
+    unit[thumb_rest_opacity]
 );
 geometry_family!(
     ResizablePanelsStylesheet,
@@ -191,7 +205,8 @@ geometry_family!(
         control_padding_x,
         control_padding_y,
         gap
-    ]
+    ],
+    unit[disabled_opacity]
 );
 geometry_family!(
     RadioStylesheet,
@@ -199,7 +214,8 @@ geometry_family!(
     RadioGeometry,
     ResolvedRadioGeometry,
     "radio",
-    [indicator_size, indicator_scale, dot_size, dot_scale, control_padding_x, control_padding_y, gap]
+    [indicator_size, indicator_scale, dot_size, dot_scale, control_padding_x, control_padding_y, gap],
+    unit[disabled_opacity]
 );
 geometry_family!(
     TextFieldStylesheet,
@@ -207,7 +223,18 @@ geometry_family!(
     TextFieldGeometry,
     ResolvedTextFieldGeometry,
     "textfield",
-    [min_height, padding_x, padding_y, gap, icon_size, font_size, line_height]
+    [
+        min_height,
+        padding_x,
+        padding_y,
+        gap,
+        icon_size,
+        font_size,
+        line_height,
+        caret_width,
+        caret_height_extra
+    ],
+    unit[disabled_opacity]
 );
 geometry_family!(
     TextAreaStylesheet,
@@ -215,7 +242,8 @@ geometry_family!(
     TextAreaGeometry,
     ResolvedTextAreaGeometry,
     "textarea",
-    [min_height, padding_x, padding_y, font_size, line_height]
+    [min_height, padding_x, padding_y, font_size, line_height, caret_width, caret_height_extra],
+    unit[disabled_opacity]
 );
 geometry_family!(
     ProgressStylesheet,
@@ -223,7 +251,8 @@ geometry_family!(
     ProgressGeometry,
     ResolvedProgressGeometry,
     "progress",
-    [track_height, size, stroke_width, thumb_size]
+    [track_height, size, stroke_width, thumb_size],
+    unit[indeterminate_fraction, shimmer_soft_opacity, shimmer_mid_opacity, shimmer_mid_offset, shimmer_mid_width, shimmer_core_offset, shimmer_core_width]
 );
 geometry_family!(
     FloatingMenuStylesheet,
@@ -232,6 +261,7 @@ geometry_family!(
     ResolvedFloatingMenuGeometry,
     "floating_menu",
     [
+        border_width,
         padding,
         min_width,
         item_height,
@@ -278,7 +308,20 @@ geometry_family!(
     TooltipGeometry,
     ResolvedTooltipGeometry,
     "tooltip",
-    [padding, padding_y, max_width, font_size, line_height]
+    [
+        target_gap,
+        window_margin,
+        pointer_size,
+        pointer_inset,
+        padding,
+        padding_y,
+        max_width,
+        font_size,
+        line_height,
+        shortcut_gap,
+        shortcut_font_size
+    ],
+    unit[shortcut_opacity]
 );
 geometry_family!(
     ToolbarStylesheet,
@@ -286,7 +329,7 @@ geometry_family!(
     ToolbarGeometry,
     ResolvedToolbarGeometry,
     "toolbar",
-    [padding_x, padding_y, gap]
+    [padding_x, padding_y, gap, border_width, separator_width]
 );
 geometry_family!(
     SegmentedStylesheet,
@@ -335,7 +378,19 @@ geometry_family!(
     OverlayWindowGeometry,
     ResolvedOverlayWindowGeometry,
     "overlay_window",
-    [padding, min_width, max_width, estimated_height, font_size, line_height],
+    [
+        viewport_padding,
+        window_margin,
+        drag_header_height,
+        padding,
+        min_width,
+        max_width,
+        estimated_height,
+        font_size,
+        line_height,
+        border_width,
+        radius
+    ],
     unit[backdrop_opacity]
 );
 
@@ -383,7 +438,8 @@ geometry_family!(
     ScrollbarGeometry,
     ResolvedScrollbarGeometry,
     "scrollbar",
-    [thickness, track_thickness, thumb_thickness, min_thumb_length, length_h, length_v]
+    [thickness, track_thickness, thumb_thickness, min_thumb_length, length_h, length_v],
+    unit[disabled_opacity]
 );
 
 geometry_family!(
@@ -392,7 +448,19 @@ geometry_family!(
     StepperGeometry,
     ResolvedStepperGeometry,
     "stepper",
-    [step_badge_size, track_thickness]
+    [
+        step_badge_size,
+        track_thickness,
+        content_gap,
+        label_gap,
+        side_label_gap,
+        content_height,
+        font_size,
+        line_height,
+        glyph_scale,
+        number_scale,
+        border_width
+    ]
 );
 
 geometry_family!(
@@ -411,8 +479,22 @@ geometry_family!(
         width_icon_rail,
         width_mobile,
         rail_hit_width,
-        popover_offset
-    ]
+        popover_offset,
+        container_gap,
+        region_gap,
+        header_padding_bottom,
+        footer_padding_top,
+        title_gap,
+        title_padding_bottom,
+        section_padding_top,
+        disclosure_icon_size,
+        rail_submenu_offset_x,
+        window_margin,
+        engine_item_height,
+        engine_section_height,
+        engine_item_padding_x, rail_branch_indicator_size, rail_branch_overhang
+    ],
+    unit[subtitle_opacity, disabled_opacity]
 );
 
 geometry_family!(
@@ -432,6 +514,7 @@ geometry_family!(
     ResolvedTableGeometry,
     "table",
     [
+        row_divider_width,
         padding_x,
         padding_y,
         padding_y_scale,
@@ -460,6 +543,7 @@ geometry_family!(
     ResolvedPagerGeometry,
     "pager",
     [
+        gap_icon_size,
         button_size,
         button_min_width,
         control_height,
@@ -599,6 +683,7 @@ geometry_family!(
     ResolvedSearchSelectorGeometry,
     "search_selector",
     [
+        border_width,
         search_icon_width,
         search_icon_size,
         trigger_icon_extra_width,
@@ -628,6 +713,7 @@ mod tests {
         TreeViewStylesheet::validate_contract();
         AccordionStylesheet::validate_contract();
         DockSplitterStylesheet::validate_contract();
+        SplitViewStylesheet::validate_contract();
         ResizablePanelsStylesheet::validate_contract();
         StepperStylesheet::validate_contract();
         SidebarStylesheet::validate_contract();

@@ -9,9 +9,6 @@ use crate::controls::button_family::{
 };
 use crate::theme::InteractionState;
 
-const DISABLED_OPACITY: f32 = 0.56;
-const FOCUS_RING_GAP: f32 = 1.0;
-
 use crate::infra::template::{Modifier, TemplateWithModifiers};
 use crate::theme::StandardBoxScale;
 
@@ -185,7 +182,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         let focus_border = button_family_effective_border(look.border);
         let focus_metrics = self.theme.metrics().focus;
         let focus_ring_extent = if focus_border.a > 0.0 {
-            FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+            focus_metrics.gap + focus_metrics.width.max(0.0)
         } else {
             0.0
         };
@@ -209,7 +206,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             .h(px(look.height));
 
         if border.a > 0.0 {
-            control = control.border_1().border_color(border);
+            control = control.border(px(self.theme.metrics().border_width.default)).border_color(border);
         }
 
         let square_icon_toggle = matches!(model.role, ButtonFamilyRole::Toggle { .. })
@@ -306,12 +303,12 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
                     .left(px(ring_inset))
                     .border(px(focus_metrics.width))
                     .border_color(focus_border)
-                    .rounded(px(radius + FOCUS_RING_GAP + focus_metrics.width)),
+                    .rounded(px(radius + focus_metrics.gap + focus_metrics.width)),
             );
         }
 
         if model.state.disabled {
-            root = root.opacity(DISABLED_OPACITY);
+            root = root.opacity(self.theme.metrics().disabled_opacity);
         } else {
             root = root.cursor_pointer();
         }

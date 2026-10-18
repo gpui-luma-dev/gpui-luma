@@ -5,6 +5,8 @@ use crate::{LookContext, ResolvedMetric, ShadcnModeTokens};
 
 #[derive(Clone, Debug)]
 pub struct AccordionMetricTable {
+    pub disabled_opacity: ResolvedMetric,
+    pub drag_handle_padding: ResolvedMetric,
     pub trigger_height: ResolvedMetric,
     pub padding_x: ResolvedMetric,
     pub padding_y: ResolvedMetric,
@@ -34,6 +36,8 @@ pub fn resolve_accordion_metrics(
     let size_key = control_size_key(size);
 
     let mut table = AccordionMetricTable {
+        disabled_opacity: derived_metric("configured disabled trigger opacity", scale.disabled_opacity),
+        drag_handle_padding: derived_metric("configured drag handle padding", scale.drag_handle_padding),
         trigger_height: scaffold_control_metric(size_key, "control_height", scale.trigger_height),
         padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, scale.padding_x),
         padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, scale.padding_y),
@@ -87,6 +91,8 @@ impl AccordionMetricTable {
     /// Converts the complete resolved table to the SDK layout contract.
     pub fn scale(&self) -> gpui_luma::controls::accordion::AccordionScale {
         gpui_luma::controls::accordion::AccordionScale {
+            disabled_opacity: self.disabled_opacity.value_px,
+            drag_handle_padding: self.drag_handle_padding.value_px,
             trigger_height: self.trigger_height.value_px,
             padding_x: self.padding_x.value_px,
             padding_y: self.padding_y.value_px,

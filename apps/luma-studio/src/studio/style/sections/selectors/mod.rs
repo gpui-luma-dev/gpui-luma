@@ -436,6 +436,7 @@ fn render_selector_autocomplete_trigger(
     let popup_look = look.selector_items_panel_look(shadcn_size(size));
 
     let model = AutocompleteRenderModel {
+        icons: look.stylesheet().common.icons.clone(),
         geometry: look.stylesheet().common.autocomplete.resolve_geometry(
             size.stylesheet_key(),
             gpui_luma::theme::stylesheet::AutocompleteGeometry {
@@ -509,6 +510,7 @@ fn render_selector_combobox_trigger(
     let popup_open = popup_bounds.is_some();
 
     let model = ComboBoxRenderModel {
+        icons: look.stylesheet().common.icons.clone(),
         geometry: look.stylesheet().common.combobox.resolve_geometry(size.stylesheet_key(), Default::default()),
         textfield: render_selector_preview_textfield(
             SelectorPreviewTextfieldRequest {
@@ -585,6 +587,7 @@ fn render_selector_search_selector_trigger(
         false,
     );
     let model = SearchSelectorRenderModel {
+        icons: look.stylesheet().common.icons.clone(),
         geometry: look.stylesheet().common.search_selector.resolve_geometry(size.stylesheet_key(), Default::default()),
         id: id.clone(),
         trigger_label: if state.selector_selected {

@@ -31,6 +31,7 @@ pub type SearchSelectorPopupLookProvider = Arc<dyn Fn(ControlSize) -> SelectorIt
 
 #[derive(Clone)]
 pub struct SearchSelectorModel {
+    pub(crate) icons: crate::theme::stylesheet::IconsStylesheet,
     pub(crate) motion: crate::motion::MotionConfig<SearchSelectorMotion>,
     pub(crate) stylesheet: crate::theme::stylesheet::SearchSelectorStylesheet,
     pub(crate) id: SharedString,
@@ -180,6 +181,7 @@ impl SearchSelectorBuilder {
             initial_selected_id: None,
             model: SearchSelectorModel {
                 motion: Default::default(),
+                icons: crate::theme::stylesheet::CommonStylesheet::sdk_default().icons.clone(),
                 stylesheet: crate::theme::stylesheet::CommonStylesheet::sdk_default().search_selector.clone(),
                 id: id.into(),
                 items: items.into_iter().collect(),
@@ -213,6 +215,7 @@ impl SearchSelectorBuilder {
     /// Capture shared affordance geometry; per-size values resolve at render time.
     /// Text-field/popup providers and consumer template modifiers retain their own precedence.
     pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        self.model.icons = stylesheet.with_sdk_defaults().icons;
         self.model.stylesheet = stylesheet.with_sdk_defaults().search_selector;
         self
     }

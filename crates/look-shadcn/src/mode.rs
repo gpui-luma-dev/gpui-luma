@@ -10,6 +10,8 @@ use crate::tokens::ShadcnToken;
 
 #[derive(Clone, Debug)]
 pub struct ShadcnModeTokens {
+    /// Shared positive status color projected once with the selected stylesheet.
+    pub data_positive: gpui::Hsla,
     pub(crate) theme_mode: ThemeMode,
     pub catalog: CssTokenMap,
     pub palette: ShadcnPalette,
@@ -43,7 +45,12 @@ impl ShadcnModeTokens {
                 shadow_previews.insert(token.to_string(), previews);
             }
         }
+        let data_positive = gpui_luma::color::gpui_bridge::to_hsla(
+            stylesheet.common.tokens.source(theme_mode).palette.data.positive,
+            gpui_luma::color::GamutMapping::CssLocalMinde,
+        )?;
         Ok(Self {
+            data_positive,
             theme_mode,
             metrics: metrics_from_catalog(&catalog, MetricTokens::default()),
             typography: typography_from_catalog(&catalog, LumaTypography::default()),

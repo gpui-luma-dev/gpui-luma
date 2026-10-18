@@ -95,6 +95,13 @@ pub fn scrollbar_look(
             DEFAULT_SCROLLBAR_MIN_THUMB_LENGTH,
         ));
     let mut look = ScrollbarLook {
+        disabled_opacity: mode
+            .stylesheet()
+            .common
+            .scrollbar
+            .resolve_geometry(size.stylesheet_key(), Default::default())
+            .disabled_opacity
+            .value_px,
         track_background: colors.track_background.hsla(),
         thumb_background: colors.thumb_background.hsla(),
         length,
@@ -113,6 +120,7 @@ pub fn scrollbar_look(
             min_thumb_length: look.min_thumb_length,
             length_h: DEFAULT_SCROLLBAR_LENGTH_H,
             length_v: DEFAULT_SCROLLBAR_LENGTH_V,
+            ..Default::default()
         },
     );
     look.thickness = geometry.thickness.value_px;

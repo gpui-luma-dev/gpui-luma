@@ -150,6 +150,12 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
         gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default().floating_menu.authored_geometry("2");
     let recipe = look.common_stylesheet().floating_menu.authored_geometry("2").with_fallback(&base_recipe);
     let mut resolved = FloatingMenuLook {
+        border_width: recipe.border_width.unwrap_or(metrics.border_width.default),
+        positive: gpui_luma::color::gpui_bridge::to_hsla(
+            look.common_stylesheet().tokens.source(look.mode()).palette.data.positive,
+            gpui_luma::color::GamutMapping::CssLocalMinde,
+        )
+        .unwrap_or_else(|_| gpui_luma::theme::ThemeTokens::default().palette.data.positive),
         background: look.resolve_role(SemanticRole::Surface).hsla(),
         foreground: look.resolve_role(SemanticRole::Foreground).hsla(),
         border: look.resolve_role(SemanticRole::Border).hsla(),
@@ -182,6 +188,7 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
     let geometry = look.common_stylesheet().floating_menu.resolve_geometry(
         "2",
         gpui_luma::theme::stylesheet::FloatingMenuGeometry {
+            border_width: resolved.border_width,
             padding: resolved.padding,
             min_width: resolved.min_width,
             item_height: resolved.item_height,
@@ -198,6 +205,7 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
             ..Default::default()
         },
     );
+    resolved.border_width = geometry.border_width.value_px;
     resolved.padding = geometry.padding.value_px;
     resolved.min_width = geometry.min_width.value_px;
     resolved.item_height = geometry.item_height.value_px;

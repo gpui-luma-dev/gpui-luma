@@ -144,6 +144,7 @@ where
     pub(crate) role: SelectionPanelRole,
     pub(crate) hover_activation: Option<HoverActivationPolicy>,
     pub(crate) show_selection_marker: bool,
+    pub(crate) icons_explicit: bool,
     pub(crate) icons: SelectionStatusIcons,
     pub(crate) scrolling: bool,
     pub(crate) scrollbar_visibility: ScrollbarVisibility,
@@ -342,7 +343,16 @@ where
         self
     }
 
+    /// Capture default selection glyphs; explicit icons retain precedence.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        if !self.model.icons_explicit {
+            self.model.icons = SelectionStatusIcons::from_stylesheet(stylesheet);
+        }
+        self
+    }
+
     pub fn icons(mut self, icons: SelectionStatusIcons) -> Self {
+        self.model.icons_explicit = true;
         self.model.icons = icons;
         self
     }
@@ -477,6 +487,7 @@ where
         role: SelectionPanelRole::Embedded,
         hover_activation: None,
         show_selection_marker: true,
+        icons_explicit: false,
         icons: SelectionStatusIcons::default(),
         scrolling: true,
         scrollbar_visibility: ScrollbarVisibility::default(),

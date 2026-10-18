@@ -61,6 +61,7 @@ where
     pub(crate) placement: SelectorPlacement,
     pub(crate) opening_mode: SelectorOpeningMode,
     pub(crate) trigger_style: SelectorTriggerStyle,
+    pub(crate) icons_explicit: bool,
     pub(crate) icons: SelectorIcons,
     pub(crate) without_elevation: bool,
     pub(crate) item_template: Option<SelectorItemTemplate<T>>,
@@ -76,9 +77,16 @@ pub struct SelectorIcons {
 
 impl Default for SelectorIcons {
     fn default() -> Self {
+        Self::from_stylesheet(crate::theme::stylesheet::CommonStylesheet::sdk_default())
+    }
+}
+impl SelectorIcons {
+    /// Resolve default icon roles before applying explicit consumer icon overrides.
+    pub fn from_stylesheet(sheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        use crate::theme::stylesheet::IconRole;
         Self {
-            trigger: lucide_svg_static::Icon::ChevronsUpDown.into(),
-            selected: lucide_svg_static::Icon::Check.into(),
+            trigger: sheet.icons.resolve(IconRole::SelectorTrigger),
+            selected: sheet.icons.resolve(IconRole::Selected),
         }
     }
 }
@@ -214,6 +222,7 @@ where
                 placement: SelectorPlacement::Smart,
                 opening_mode: SelectorOpeningMode::default(),
                 trigger_style: SelectorTriggerStyle::default(),
+                icons_explicit: false,
                 icons: SelectorIcons::default(),
                 without_elevation: false,
                 item_template: None,
@@ -239,7 +248,16 @@ where
         self
     }
 
+    /// Capture default glyphs; explicit `.icons(...)` wins in either method order.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        if !self.model.icons_explicit {
+            self.model.icons = SelectorIcons::from_stylesheet(stylesheet);
+        }
+        self
+    }
+
     pub fn icons(mut self, icons: SelectorIcons) -> Self {
+        self.model.icons_explicit = true;
         self.model.icons = icons;
         self
     }

@@ -8,6 +8,8 @@ use crate::theme::{
 
 #[derive(Clone, Debug)]
 pub struct TableLook {
+    /// Inter-row divider thickness in pixels.
+    pub row_divider_width: f32,
     /// Horizontal text-column inset shared by header and body, in pixels.
     pub column_padding_x: f32,
     /// Column resize hit target width in pixels.
@@ -54,6 +56,8 @@ pub struct TableRowPalette {
 
 #[derive(Clone, Copy, Debug)]
 pub struct TableRowLook {
+    /// Inter-row divider thickness in pixels.
+    pub row_divider_width: f32,
     /// Horizontal text-column inset in pixels.
     pub column_padding_x: f32,
     /// Opacity of default muted cells.
@@ -163,6 +167,7 @@ impl TableTheme for DefaultTableTheme {
         let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().table.authored_geometry(key);
         let recipe = self.tokens.stylesheet.table.authored_geometry(key).with_fallback(&baseline);
         let mut look = TableLook {
+            row_divider_width: recipe.row_divider_width.unwrap_or_default(),
             column_padding_x: recipe.column_padding_x.unwrap_or_default(),
             column_resize_hit_width: recipe.column_resize_hit_width.unwrap_or_default(),
             column_resize_line_width: recipe.column_resize_line_width.unwrap_or_default(),
@@ -266,6 +271,7 @@ impl TableRowLook {
         Self {
             column_padding_x: recipe.column_padding_x.unwrap_or_default(),
             column_muted_opacity: recipe.column_muted_opacity.unwrap_or_default(),
+            row_divider_width: recipe.row_divider_width.unwrap_or_default(),
             disabled_opacity: recipe.row_disabled_opacity.unwrap_or_default(),
             background: palette.background,
             label_color: palette.label_color,

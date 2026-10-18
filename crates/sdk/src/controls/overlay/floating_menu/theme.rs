@@ -6,6 +6,10 @@ use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct FloatingMenuLook {
+    /// Positive completion/status adornments.
+    pub positive: Hsla,
+    /// Popup border thickness in pixels.
+    pub border_width: f32,
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
@@ -88,6 +92,8 @@ pub(crate) fn default_floating_menu_look(tokens: &ThemeTokens, size: ControlSize
     let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().floating_menu.authored_geometry(key);
     let recipe = tokens.stylesheet.floating_menu.authored_geometry(key).with_fallback(&baseline);
     let mut look = FloatingMenuLook {
+        positive: tokens.palette.data.positive,
+        border_width: recipe.border_width.unwrap_or(metrics.border_width.default),
         background: palette.surface.floating.background,
         foreground: palette.surface.floating.foreground,
         border: palette.surface.floating.border,
@@ -112,7 +118,7 @@ pub(crate) fn default_floating_menu_look(tokens: &ThemeTokens, size: ControlSize
         separator_inset: recipe.separator_inset.unwrap_or_default(),
     };
     crate::theme::stylesheet::apply_common_geometry!(tokens.stylesheet.floating_menu, key, FloatingMenuGeometry, look,
-        [padding => padding, min_width => min_width, item_height => item_height,
+        [border_width => border_width, padding => padding, min_width => min_width, item_height => item_height,
          item_padding_x => item_padding_x, item_gap => item_gap, item_icon_size => item_icon_size,
          font_size => item_typography.size, line_height => item_typography.line_height,
          submenu_offset_x => submenu_offset_x, separator_thickness => separator_thickness,

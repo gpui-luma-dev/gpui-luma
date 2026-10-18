@@ -12,17 +12,24 @@ pub struct SplitViewMetricTable {
 }
 
 pub fn resolve_split_view_metrics() -> SplitViewMetricTable {
+    resolve_split_view_metrics_with_stylesheet(gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default())
+}
+
+/// Resolve separator inspection from the same selected stylesheet used for paint.
+pub fn resolve_split_view_metrics_with_stylesheet(
+    stylesheet: &gpui_luma::theme::stylesheet::CommonStylesheet,
+) -> SplitViewMetricTable {
     use super::helpers::derived_metric;
-    use gpui_luma::controls::split_view::*;
+    let geometry = stylesheet.split_view.resolve_geometry("", Default::default());
 
     SplitViewMetricTable {
-        separator_hitbox_width: derived_metric("split view separator hitbox width", SEPARATOR_HITBOX_WIDTH),
-        separator_cue_width: derived_metric("split view separator cue width", SEPARATOR_CUE_WIDTH),
+        separator_hitbox_width: derived_metric("split view separator hitbox width", geometry.hitbox_width.value_px),
+        separator_cue_width: derived_metric("split view separator cue width", geometry.cue_width.value_px),
         separator_cue_hovered_width: derived_metric(
             "split view separator cue hovered width",
-            SEPARATOR_CUE_HOVERED_WIDTH,
+            geometry.cue_hovered_width.value_px,
         ),
-        separator_cue_radius: derived_metric("split view separator cue radius", SEPARATOR_CUE_RADIUS),
-        separator_cue_inset_y: derived_metric("split view separator cue inset y", SEPARATOR_CUE_INSET_Y),
+        separator_cue_radius: derived_metric("split view separator cue radius", geometry.cue_radius.value_px),
+        separator_cue_inset_y: derived_metric("split view separator cue inset y", geometry.cue_inset_y.value_px),
     }
 }

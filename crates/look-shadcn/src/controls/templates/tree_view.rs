@@ -11,6 +11,9 @@ struct ShadcnTreeViewTheme {
 }
 
 impl TreeViewTheme for ShadcnTreeViewTheme {
+    fn icon(&self, role: gpui_luma::theme::stylesheet::IconRole) -> gpui_luma::infra::icon::IconSource {
+        self.theme.mode_tokens().stylesheet().common.icons.resolve(role)
+    }
     fn resolve_row(
         &self,
         state: InteractionState,

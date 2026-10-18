@@ -22,6 +22,11 @@ pub struct TextAreaPalette {
 
 #[derive(Clone, Debug)]
 pub struct TextAreaLook {
+    /// Painted caret width and extra height in pixels.
+    pub caret_width: f32,
+    pub caret_height_extra: f32,
+    /// Whole-input opacity when disabled.
+    pub disabled_opacity: f32,
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
@@ -139,7 +144,7 @@ impl TextAreaTheme for DefaultTextAreaTheme {
         let mut look = compose_textarea_look(&palette, scale, self.metrics().border_width.default);
         crate::theme::stylesheet::apply_common_geometry!(
             self.tokens.stylesheet.textarea, size.stylesheet_key(), TextAreaGeometry, look,
-            [min_height => min_height, padding_x => padding_x, padding_y => padding_y, font_size => typography.size, line_height => typography.line_height]
+            [min_height => min_height, padding_x => padding_x, padding_y => padding_y, font_size => typography.size, line_height => typography.line_height, caret_width => caret_width, caret_height_extra => caret_height_extra, disabled_opacity => disabled_opacity]
         );
         look
     }
@@ -147,6 +152,21 @@ impl TextAreaTheme for DefaultTextAreaTheme {
 
 pub fn compose_textarea_look(palette: &TextAreaPalette, scale: &StandardBoxScale, border_width: f32) -> TextAreaLook {
     TextAreaLook {
+        caret_width: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .textarea
+            .geometry
+            .caret_width
+            .unwrap_or_default(),
+        caret_height_extra: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .textarea
+            .geometry
+            .caret_height_extra
+            .unwrap_or_default(),
+        disabled_opacity: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .textarea
+            .geometry
+            .disabled_opacity
+            .unwrap_or_default(),
         background: palette.background,
         foreground: palette.foreground,
         border: palette.border,

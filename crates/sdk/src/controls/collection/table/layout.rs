@@ -3,8 +3,7 @@ use super::theme::{TableLook, TableRowLook};
 
 /// GPUI row elements use `min_h(min_height)` with `py(padding_y)` on the same node, so the
 /// laid-out row height is [`TableRowLook::min_height`], not min_height + padding.
-pub const ROW_DIVIDER_WIDTH: f32 = 1.0;
-
+///
 /// Per-row layout height for [`TableRowLook::min_height`] rows (see module comment).
 pub fn default_row_height(row_look: &TableRowLook) -> f32 {
     row_look.min_height
@@ -23,9 +22,9 @@ pub fn header_height(list_look: &TableLook) -> f32 {
 }
 
 /// Total scroll-body height for `visible_rows` data rows, including inter-row dividers.
-pub fn body_rows_height(visible_rows: usize, row_height: f32) -> f32 {
+pub fn body_rows_height(visible_rows: usize, row_height: f32, divider_width: f32) -> f32 {
     let row_count = visible_rows as f32;
-    let dividers = visible_rows.saturating_sub(1) as f32 * ROW_DIVIDER_WIDTH;
+    let dividers = visible_rows.saturating_sub(1) as f32 * divider_width;
     row_count * row_height + dividers
 }
 
@@ -34,12 +33,12 @@ pub fn body_rows_height(visible_rows: usize, row_height: f32) -> f32 {
 /// dividers are `border_t` on the row (inside `.h(...)`).
 ///
 /// Returns `None` when height is not yet known (zero / non-finite).
-pub fn rows_for_viewport_height(viewport_height: f32, row_height: f32) -> Option<usize> {
+pub fn rows_for_viewport_height(viewport_height: f32, row_height: f32, divider_width: f32) -> Option<usize> {
     if viewport_height <= 0.0 || !viewport_height.is_finite() || row_height <= 0.0 || !row_height.is_finite() {
         return None;
     }
-    let stride = row_height + ROW_DIVIDER_WIDTH;
-    let rows = ((viewport_height + ROW_DIVIDER_WIDTH) / stride).floor() as usize;
+    let stride = row_height + divider_width;
+    let rows = ((viewport_height + divider_width) / stride).floor() as usize;
     Some(rows.max(1))
 }
 
@@ -64,7 +63,7 @@ pub fn distributed_row_height(viewport_height: f32, row_count: usize) -> Option<
 }
 
 pub fn compute_shell_height(visible_rows: usize, row_height: f32, list_look: &TableLook, has_header: bool) -> f32 {
-    let mut total_height = body_rows_height(visible_rows, row_height);
+    let mut total_height = body_rows_height(visible_rows, row_height, list_look.row_divider_width);
 
     if has_header {
         total_height += header_height(list_look);
@@ -179,6 +178,7 @@ mod tests {
 
     fn sample_row_look() -> TableRowLook {
         TableRowLook {
+            row_divider_width: 1.0,
             column_padding_x: 12.0,
             column_muted_opacity: 0.65,
             disabled_opacity: 0.56,
@@ -196,6 +196,7 @@ mod tests {
 
     fn sample_list_look() -> TableLook {
         TableLook {
+            row_divider_width: 1.0,
             column_padding_x: 12.0,
             column_resize_hit_width: 10.0,
             column_resize_line_width: 1.0,
@@ -222,7 +223,9 @@ mod tests {
 
     #[test]
     fn body_rows_height_includes_dividers() {
-        assert_eq!(body_rows_height(5, 36.0), 5.0 * 36.0 + 4.0);
+        assert_eq!(body_rows_height(5, 36.0, 1.0), 5.0 * 36.0 + 4.0);
+        assert_eq!(body_rows_height(5, 36.0, 0.0), 180.0);
+        assert_eq!(body_rows_height(5, 36.0, 3.0), 192.0);
     }
 
     #[test]
@@ -285,11 +288,11 @@ mod tests {
 
     #[test]
     fn rows_for_viewport_height_accounts_for_dividers() {
-        assert_eq!(rows_for_viewport_height(0.0, 36.0), None);
+        assert_eq!(rows_for_viewport_height(0.0, 36.0, 1.0), None);
         // 5 rows at 36px + 4 dividers = 184
-        assert_eq!(rows_for_viewport_height(184.0, 36.0), Some(5));
-        assert_eq!(rows_for_viewport_height(183.0, 36.0), Some(4));
-        assert_eq!(rows_for_viewport_height(1.0, 36.0), Some(1));
+        assert_eq!(rows_for_viewport_height(184.0, 36.0, 1.0), Some(5));
+        assert_eq!(rows_for_viewport_height(183.0, 36.0, 1.0), Some(4));
+        assert_eq!(rows_for_viewport_height(1.0, 36.0, 1.0), Some(1));
     }
 
     #[test]

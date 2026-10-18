@@ -233,7 +233,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                     .on_mouse_up(gpui::MouseButton::Left, up_handler)
                     .on_click(click_handler);
             } else {
-                trigger = trigger.opacity(0.56);
+                trigger = trigger.opacity(scale.disabled_opacity);
             }
 
             let trigger_content = match &item.trigger.custom_element {
@@ -263,13 +263,15 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                             .items_center()
                             .gap(px(scale.inner_gap))
                             .child(
-                                handle.flex_none().p(px(2.)).opacity(if item.state.hovered { 1. } else { 0. }).child(
-                                    render_icon(
-                                        LucideIcon::ListChevronsUpDown,
+                                handle
+                                    .flex_none()
+                                    .p(px(scale.drag_handle_padding))
+                                    .opacity(if item.state.hovered { 1. } else { 0. })
+                                    .child(crate::infra::icon::render_icon_source(
+                                        &self.theme.drag_handle_icon(),
                                         trigger_palette.chevron_color,
                                         scale.icon_size,
-                                    ),
-                                ),
+                                    )),
                             )
                             .child(trigger_content),
                     )
@@ -333,7 +335,9 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 div().id((item.id.clone(), 0usize)).relative().flex().flex_col().w_full().child(trigger_el);
 
             if model.item_dividers && index + 1 < model.items.len() {
-                item_container = item_container.border_b_1().border_color(trigger_palette.border_color);
+                item_container = item_container
+                    .border_b(px(self.theme.metrics().border_width.default))
+                    .border_color(trigger_palette.border_color);
             }
 
             if let Some(cel) = content_el {

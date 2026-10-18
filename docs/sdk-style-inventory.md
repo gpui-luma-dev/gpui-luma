@@ -33,7 +33,7 @@
 | Pager | `common.pager.geometry/sizes` | SDK factory dimensions/typography/radius/opacity and proportional padding/width recipes migrated; Shadcn fixed defaults removed from Rust; page-size popup chrome and paging-table label gap migrated; remaining template/icon audit remains |
 | Popup Menu / Split Button trigger | `common.popup_menu.geometry/sizes` | SDK factory now applies common dimensions/typography/radius/offset; bundled looks share final resolution; consumer radius wins |
 | Popover placement | `common.popover.geometry/sizes.button/panel` | Raw builders capture defaults; explicit consumer offset/margin wins independently of method order |
-| Slide Panel | `common.slide_panel.geometry`, shared resize presets | Captured side/edge sizing and viewport ratio; bundled look state factories inherit; resize divider thickness migrated; remaining shell border audit pending |
+| Slide Panel | `common.slide_panel.geometry`, shared resize presets | Captured side/edge sizing and viewport ratio; bundled look state factories inherit; resize divider thickness migrated; inset shell divider border migrated |
 | Resize-handle presets | `common.resizable_panels.geometry/sizes` | Lane, hit target, grip extents and radius migrated; SDK/Shadcn paint and available inspection wired |
 | Toolbar factory | `common.toolbar.geometry/sizes` | SDK applies existing padding/gap seam; other styling stays token-backed pending template/state audit |
 | Group template chrome | `common.control_group.geometry` | Vertical gap, border width, radius and disabled-item opacity migrated; themed looks carry resolved chrome; explicit builder styles and final modifiers retain precedence |
@@ -50,7 +50,7 @@ have been classified. Shared token migration benefits every token-backed theme.
 | SDK family | Migration status |
 | --- | --- |
 | button/family | Default Button/Icon/Toggle themes consume common geometry; state and template recipes still need audit. |
-| button/icon_button | Pending control-specific schema/factory/template audit. |
+| button/icon_button | Thin SDK Button role adapter; inherits shared Button geometry, stroke, disabled opacity and focus-gap tokens. No independent interactive chrome. |
 | button/split_button | Uses shared PopupMenu factory/template geometry; face-specific states and divider/icon/template recipes still need audit. |
 | choice/checkbox | Factory and common indicator/row recipes migrated; state and template chrome still need audit. |
 | choice/control_group | Shell spacing/radius/border and default-item opacity migrated; builder/render models carry captured styles. Item marker, state and remaining template recipes still need audit. |
@@ -58,16 +58,16 @@ have been classified. Shared token migration benefits every token-backed theme.
 | choice/radio_button | Factory and common proportional indicator/dot recipes migrated; state and template chrome still need audit. |
 | choice/radio_group | Vertical/horizontal and item gaps plus disabled opacity migrated; both wrappers capture styles. Radio indicator size/role and remaining state/template audit pending. |
 | choice/switch | Factory and proportional track/thumb recipes migrated; explicit dimensions win; template chrome still needs audit. |
-| choice/toggle | Pending control-specific schema/factory/template audit. |
+| choice/toggle | Reuses the Button engine with a Toggle role and common.toggle geometry; strokes, disabled opacity and focus separation use shared tokens. |
 | choice/toolbar | SDK factory now honors existing common padding/gap. Radius/separator token bindings and template/state recipes still need audit. |
 | collection/listbox | Raw SDK flow/control modules own item placement, viewport/scroll/selection algorithms; visual item chrome is host/look-owned. Keep flow arithmetic in Rust. Host visual defaults still need audit. |
 | collection/table | SDK surface/row factory recipes, shell/header strokes, header padding ratio and drag preview/marker geometry and disabled-row opacity and column resize chrome, text-column padding and muted-cell opacity migrated; remaining column/template styling and full state recipes still need audit. |
 | collection/tree_view | Row scale factory and both look adapters wired; state and template chrome still need audit. |
 | layout/dock_splitter | Factory hit target and visible line migrated; template chrome still needs audit. |
 | layout/resizable_panels | Opacity, lane/hit-target and grip extents/radius migrated. Split placement and collapse/keyboard thresholds are layout/interaction; Frame and split divider widths now use shared resizable-panel geometry. |
-| layout/scroll_container | Pending control-specific schema/factory/template audit. |
+| layout/scroll_container | Wraps the existing viewport and configured Scrollbar; inset arithmetic is derived from scrollbar geometry. No independent painted item chrome. |
 | layout/scrollbar | Fixed geometry migrated; template/scroll algorithms still need classification. |
-| layout/split_view | Pending control-specific schema/factory/template audit. |
+| layout/split_view | Separator hit target, cue widths/radius/insets migrated to common.split_view, with shared paint/inspection resolution. Centering and collapse interaction remain algorithms. |
 | navigation/accordion | Scale factory and Shadcn paint/inspection wired; state and template chrome still need audit. |
 | navigation/pager | Factory recipes/dimensions/typography/radius/opacity migrated; page-size trigger width, icons, button-state/template styling still need audit. |
 | navigation/sidebar | Default metric scale migrated; engine/state and template recipes still need audit. |
@@ -75,16 +75,16 @@ have been classified. Shared token migration benefits every token-backed theme.
 | navigation/tabs | List padding/gap and indicator baseline wired; other recipes still need audit. |
 | overlay/context_menu | Target geometry, border, disabled opacity and popup placement migrated; shared menu factory wired; remaining menu styling still needs audit. |
 | overlay/floating_menu | Factory geometry, proportional recipes, opacity and separators migrated; template icon/state recipes still need audit. |
-| overlay/overlay_window | Factory dimensions/backdrop opacity and nonmodal shadow migrated; template recipes still need audit. |
+| overlay/overlay_window | Factory dimensions/backdrop opacity, nonmodal shadow and shell border/radius migrated; placement, drag header and remaining template recipes still need audit. |
 | overlay/popover_button | Placement defaults migrated for button/panel builders; focus/dismissal are behavior and supplied trigger/content chrome is host-owned. |
 | overlay/popup_menu | Factory dimensions/typography/radius/offset migrated and shared with looks; state/icon/template recipes still need audit. |
-| overlay/slide_panel | Side/edge defaults and viewport ratio captured; resize grip shares migrated presets. Resize divider thickness migrated; remaining shell border audit pending; movement/interpolation and resize clamps stay behavioral/layout code. |
+| overlay/slide_panel | Side/edge defaults and viewport ratio captured; resize grip shares migrated presets. Resize divider thickness migrated; inset shell divider border migrated; movement/interpolation and resize clamps stay behavioral/layout code. |
 | overlay/tooltip | Vanilla and compact geometry migrated; presentation coverage still needs audit. |
 | range/progress | Fixed geometry migrated; template decoration still needs audit. |
 | range/slider | Factory and proportional sizing migrated; pointer algorithms remain Rust; template chrome still needs audit. |
 | selection/autocomplete | Popup chrome plus clear geometry, root/status gaps, width reservations and theme-owned status typography migrated. Icon identity, viewport row-count defaults and remaining state/variant recipes still need audit. |
 | selection/combobox | Popup chrome, clear/arrow affordance geometry and matching trigger-width reservations migrated. Icon identity, clear-icon color semantics and remaining state/template recipes still need audit. |
-| selection/search_selector | Popup chrome, search/trailing icon sizes, input padding/floor and search panel reserve migrated; viewport budget uses resolved placement. Icon identity, hard-coded trailing color and remaining state/viewport recipes still need audit. |
+| selection/search_selector | Popup chrome, search/trailing icon sizes, input padding/floor and search panel reserve migrated; viewport budget uses resolved placement. Shared icon roles and positive status color migrated; remaining state/viewport recipes still need audit. |
 | selection/selection_panel | Menu baseline plus independent geometry, radii, border width and disabled opacity reach SDK/Shadcn templates. Selection icons, scrollbar reservation and remaining recipes still need audit. |
 | selection/selector | SDK trigger geometry, typography and popup offset migrated; Shadcn paint/inspection wired; icon/state/template recipes remain. |
 | selection/selector_list | Shared public menu-to-panel factory owns metric borders, menu opacity and Popover placement before independent overrides. Template border/opacity and border-dependent inset calculations migrated; icon audit remains. |
@@ -113,3 +113,78 @@ configurable appearance even when written as arithmetic.
 Before #146 is complete, classify every candidate, audit nonnumeric styling,
 extend the existing common family schemas, wire remaining default factories and
 helpers, remove duplicate authored defaults and verify bundled-look output.
+
+## Expanded control template pass
+
+Shared control chrome now includes token-backed strokes/focus gaps; Checkbox/Radio/Switch, text input, Accordion, TreeView and Scrollbar disabled opacity; input carets; Stepper decoration; Toolbar/DockSplitter/SplitView separators; Sidebar shell/title/rail spacing; Tooltip shortcut appearance; and OverlayWindow placement/header sizing. Default glyph choices are typed under `common.icons`, with picker capture and explicit Pager/Selector override precedence.
+
+The historical candidate inventory still needs full reconciliation before #146 can close. The icon and state/variant audit below supersedes the earlier per-family “audit pending” notes for those two concerns.
+
+Slider radial presentation, Progress sweep/shimmer decoration and Tooltip placement/pointer dimensions are also migrated in the expanded pass. The icon and state/variant audit results follow. Numeric candidate reconciliation remains independent of this audit.
+
+
+## Icon binding audit
+
+All control-owned default glyphs are authored under `common.icons`. Raw SDK
+defaults resolve the embedded sheet; bundled builders capture their selected
+common sheet. Explicit control icons override captured defaults. Theme-rendered
+TreeView node defaults and Accordion drag handles resolve through the selected
+theme. User-supplied item icons remain content.
+
+| Binding | Resolution and precedence checked |
+| --- | --- |
+| Autocomplete, ComboBox, SearchSelector | Captured clear/search/menu roles |
+| Pager, Selector, Checkbox, SelectionPanel, Stepper | Captured navigation/selection roles; explicit icon objects win |
+| Accordion, TreeView | Captured disclosures; theme-owned drag/file/folder defaults |
+| Tabs, PopupMenu / SplitButton | Menu disclosures; SDK and both bundled looks; explicit pairs win |
+| TextArea | Captured resize glyph; explicit resize icon wins |
+| Sidebar | Host defaults survive replacement content; explicit panel icons or a panel stylesheet win |
+
+Tabs accessories now render external SVG sources through the same renderer as
+Lucide sources. Sidebar resolves defaults when creating its panel engine, including
+after runtime content replacement. Disclosure rotation's chevron matching is an
+animation optimization; it does not choose the default glyph. Title-bar window
+action icons belong to shell chrome, outside this control binding audit.
+
+## State and variant audit
+
+The shared interaction layer resolves **disabled > pressed > hovered > default**.
+Focus and invalid are independent signals; each control decides which edge or
+ring uses them. A regression covers every combination of these five signals.
+Disabled active Tabs previously retained their focus indicator color; the resolver
+now suppresses that focus paint for all three control sizes.
+
+| Family / axis | Source and ownership |
+| --- | --- |
+| Button, IconButton, Toggle | Shared semantic state palette; selected Toggle uses selected roles. Icon-only zero padding and circular radius are role geometry. |
+| Checkbox, Radio, Switch | Checked/on selects semantic selected roles; disabled uses disabled roles. Focus ring is suppressed when disabled. Geometry and opacity are stylesheet values. |
+| TextField, TextArea, Selector | Input/invalid/selection/caret colors come from semantic input/state roles; disabled takes precedence over invalid paint. Focus visibility is interaction state. |
+| TreeView, Sidebar, Accordion | Navigation selected/hover roles and pressed/disabled roles. TreeView intentionally retains selected background during hover/press; Sidebar intentionally permits transient hover/press paint. |
+| Tabs | Active label/indicator uses selected roles; disabled label/indicator uses disabled roles. Focus affects enabled active indicators. Accessory metrics and list geometry come from common styles. |
+| Pager, Stepper, Progress, Slider | Enabled/selected/completed state selects semantic roles; visual dimensions, opacity and range decoration come from common families. |
+| FloatingMenu, ContextMenu, SelectionPanel, SelectorList | Shared menu/panel look supplies hover, selection, disabled colors and opacity. Selection/open state comes from models. |
+| PopupMenu / SplitButton | Trigger variants map to subtle/app/transparent surfaces and shared interaction roles; split halves have independent interaction state. |
+| Toolbar, splitters, scrollbars, overlays | Shared stroke, surface, opacity, placement and motion values; active drag/resize/presence arithmetic stays in Rust. |
+| Shadcn variants | Button color/elevation rules and metrics are authored in the look stylesheet; adapters resolve variant, selection, mode and interaction axes. |
+| Radix variants | Tone scales and semantic colors are data-backed; variant-to-scale-step selection remains Rust recipes (see outstanding issue scope below). |
+
+Semantic role selection in SDK factories remains explicit Rust resolution code.
+It uses stylesheet-authored color values, rather than duplicating color literals.
+Transparent/absent surfaces are absence sentinels. This audit does not introduce a
+second theme rule language or change the intentional differences between looks.
+
+### Outstanding #146 scope identified by this audit
+
+- Radix still selects palette steps and Classic/Ghost/Page exceptions in Rust
+  (notably `crates/look-radix/src/button.rs`). Declarative variant recipes require
+  a separate schema/resolver change; the current common geometry work does not
+  make these recipes TOML-authored.
+- SDK per-control semantic role mappings are also Rust recipes. If #146 requires
+  authoring the mappings themselves, rather than their color values, these need
+  that same explicit recipe design.
+- The numeric CSV remains a historical candidate list; unclassified entries and
+  host/shell styles are not certified migrated by this control audit.
+
+The icon binding audit and state/variant classification are complete for this
+pass. These outstanding items keep #146 open; they must not be represented as
+fully migrated state/variant recipes.

@@ -9,10 +9,6 @@ use crate::theme::InteractionState;
 use crate::infra::attachments::AttachmentTarget;
 use super::{TooltipSettings, Tooltip, TooltipTheme, TooltipRenderModel, TooltipPlacement, TooltipDismissal, TooltipEvent};
 
-const GAP: f32 = 10.0;
-const MARGIN: f32 = 8.0;
-const POINTER: f32 = 6.0;
-
 #[derive(Clone)]
 pub(crate) struct Attachment {
     controller: Entity<Controller>,
@@ -389,6 +385,10 @@ impl Controller {
     fn render_model(&self) -> TooltipRenderModel {
         let look = self.config.theme.as_ref().unwrap_or(&self.theme).resolve();
         TooltipRenderModel {
+            placement: look.placement,
+            shortcut_gap: look.shortcut_gap,
+            shortcut_font_size: look.shortcut_font_size,
+            shortcut_opacity: look.shortcut_opacity,
             text: self.config.text.clone(),
             shortcut: self.config.shortcut.clone(),
             background: look.background,
@@ -416,27 +416,38 @@ fn placement(
     size: Size<Pixels>,
     viewport: Size<Pixels>,
     preferred: TooltipPlacement,
+    geometry: super::TooltipPlacementGeometry,
 ) -> Placement {
     let center = target.origin.x + target.size.width / 2.0;
     let x = (center - size.width / 2.0)
-        .max(px(MARGIN))
-        .min((viewport.width - size.width - px(MARGIN)).max(px(MARGIN)));
-    let above_y = target.origin.y - size.height - px(GAP);
-    let below_fits = target.bottom() + px(GAP) + size.height <= viewport.height - px(MARGIN);
+        .max(px(geometry.margin))
+        .min((viewport.width - size.width - px(geometry.margin)).max(px(geometry.margin)));
+    let above_y = target.origin.y - size.height - px(geometry.gap);
+    let below_fits = target.bottom() + px(geometry.gap) + size.height <= viewport.height - px(geometry.margin);
     let above = match preferred {
-        TooltipPlacement::Above => above_y >= px(MARGIN) || !below_fits,
-        TooltipPlacement::Below => !below_fits && above_y >= px(MARGIN),
+        TooltipPlacement::Above => above_y >= px(geometry.margin) || !below_fits,
+        TooltipPlacement::Below => !below_fits && above_y >= px(geometry.margin),
     };
-    let y = (if above { above_y } else { target.bottom() + px(GAP) })
-        .max(px(MARGIN))
-        .min((viewport.height - size.height - px(MARGIN)).max(px(MARGIN)));
-    Placement { origin: point(x, y), above, pointer_x: center.max(x + px(12.0)).min(x + size.width - px(12.0)) }
+    let y = (if above {
+        above_y
+    } else {
+        target.bottom() + px(geometry.gap)
+    })
+    .max(px(geometry.margin))
+    .min((viewport.height - size.height - px(geometry.margin)).max(px(geometry.margin)));
+    Placement {
+        origin: point(x, y),
+        above,
+        pointer_x: center.max(x + px(geometry.pointer_inset)).min(x + size.width - px(geometry.pointer_inset)),
+    }
 }
 
 impl Render for Controller {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let mut model = self.render_model();
-        model.max_width = model.max_width.min((f32::from(window.viewport_size().width) - 2.0 * MARGIN).max(1.0));
+        model.max_width = model
+            .max_width
+            .min((f32::from(window.viewport_size().width) - 2.0 * model.placement.margin).max(1.0));
         let template = self.config.template.clone();
         let target = self.target;
         let preferred = self.config.placement;
@@ -445,7 +456,7 @@ impl Render for Controller {
             move |_, window, cx| {
                 let mut bubble = template(&model);
                 let size = bubble.layout_as_root(AvailableSpace::min_size(), window, cx);
-                let position = placement(target, size, window.viewport_size(), preferred);
+                let position = placement(target, size, window.viewport_size(), preferred, model.placement);
                 if let Some(entity) = weak.upgrade() {
                     entity.update(cx, |tip, cx| {
                         tip.bubble = Bounds::new(position.origin, size);
@@ -465,20 +476,20 @@ impl Render for Controller {
                     });
                 }
                 window.with_absolute_element_offset(position.origin, |window| bubble.prepaint(window, cx));
-                (bubble, position, size, model.background)
+                (bubble, position, size, model.background, model.placement.pointer_size)
             },
-            |_, (mut bubble, position, size, background), window, cx| {
+            |_, (mut bubble, position, size, background, pointer_size), window, cx| {
                 bubble.paint(window, cx);
                 let base = if position.above {
                     position.origin.y + size.height
                 } else {
                     position.origin.y
                 };
-                let tip = base + px(if position.above { POINTER } else { -POINTER });
+                let tip = base + px(if position.above { pointer_size } else { -pointer_size });
                 let mut path = PathBuilder::fill();
-                path.move_to(point(position.pointer_x - px(POINTER), base));
+                path.move_to(point(position.pointer_x - px(pointer_size), base));
                 path.line_to(point(position.pointer_x, tip));
-                path.line_to(point(position.pointer_x + px(POINTER), base));
+                path.line_to(point(position.pointer_x + px(pointer_size), base));
                 path.close();
                 if let Ok(path) = path.build() {
                     window.paint_path(path, background);
@@ -491,6 +502,8 @@ impl Render for Controller {
 
 #[cfg(test)]
 mod tests {
+    const GAP: f32 = 10.0;
+    const MARGIN: f32 = 8.0;
     use super::*;
 
     #[test]
@@ -538,12 +551,12 @@ mod tests {
         let size = Size { width: px(100.0), height: px(36.0) };
         let viewport = Size { width: px(500.0), height: px(400.0) };
         let target = Bounds::new(point(px(200.0), px(100.0)), Size { width: px(32.0), height: px(32.0) });
-        let position = placement(target, size, viewport, TooltipPlacement::Above);
+        let position = placement(target, size, viewport, TooltipPlacement::Above, Default::default());
         assert!(position.above);
         assert_eq!(position.origin.x, px(166.0));
         assert_eq!(position.origin.y + size.height, target.origin.y - px(GAP));
         let top = Bounds::new(point(px(0.0), px(0.0)), target.size);
-        let position = placement(top, size, viewport, TooltipPlacement::Above);
+        let position = placement(top, size, viewport, TooltipPlacement::Above, Default::default());
         assert!(!position.above);
         assert_eq!(position.origin.y, top.bottom() + px(GAP));
         assert_eq!(position.origin.x, px(MARGIN));
@@ -567,7 +580,7 @@ mod tests {
         let size = Size { width: px(240.0), height: px(60.0) };
         let viewport = Size { width: px(500.0), height: px(400.0) };
         let target = Bounds::new(point(px(460.0), px(340.0)), Size { width: px(32.0), height: px(32.0) });
-        let position = placement(target, size, viewport, TooltipPlacement::Above);
+        let position = placement(target, size, viewport, TooltipPlacement::Above, Default::default());
         assert_eq!(position.origin.x + size.width, viewport.width - px(MARGIN));
         assert!(position.above);
         assert_eq!(position.pointer_x, target.origin.x + target.size.width / 2.0);
@@ -578,13 +591,13 @@ mod tests {
         let viewport = Size { width: px(500.0), height: px(400.0) };
         let size = Size { width: px(100.0), height: px(36.0) };
         let target = Bounds::new(point(px(200.0), px(100.0)), Size { width: px(32.0), height: px(32.0) });
-        let below = placement(target, size, viewport, TooltipPlacement::Below);
+        let below = placement(target, size, viewport, TooltipPlacement::Below, Default::default());
         assert!(!below.above);
         assert_eq!(below.origin.y, target.bottom() + px(GAP));
         let bottom = Bounds::new(point(px(200.0), px(360.0)), target.size);
-        assert!(placement(bottom, size, viewport, TooltipPlacement::Below).above);
+        assert!(placement(bottom, size, viewport, TooltipPlacement::Below, Default::default()).above);
         let tall = Size { width: px(100.0), height: px(350.0) };
-        let position = placement(target, tall, viewport, TooltipPlacement::Above);
+        let position = placement(target, tall, viewport, TooltipPlacement::Above, Default::default());
         assert!(position.origin.y >= px(MARGIN));
         assert!(position.origin.y + tall.height <= viewport.height - px(MARGIN));
     }

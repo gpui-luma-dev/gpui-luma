@@ -33,6 +33,7 @@ pub enum TypingPolicy {
 
 #[derive(Clone)]
 pub struct ComboBoxModel {
+    pub(crate) icons: crate::theme::stylesheet::IconsStylesheet,
     pub(crate) motion: crate::motion::MotionConfig<ComboBoxMotion>,
     pub(crate) stylesheet: crate::theme::stylesheet::ComboBoxStylesheet,
     pub(crate) id: SharedString,
@@ -178,6 +179,7 @@ impl ComboBoxBuilder {
 
             model: ComboBoxModel {
                 motion: Default::default(),
+                icons: crate::theme::stylesheet::CommonStylesheet::sdk_default().icons.clone(),
                 stylesheet: crate::theme::stylesheet::CommonStylesheet::sdk_default().combobox.clone(),
                 id: id.into(),
                 items: items.into_iter().collect(),
@@ -209,6 +211,7 @@ impl ComboBoxBuilder {
     /// Capture shared affordance geometry; per-size values resolve at render time.
     /// Text-field/popup providers and consumer template modifiers retain their own precedence.
     pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        self.model.icons = stylesheet.with_sdk_defaults().icons;
         self.model.stylesheet = stylesheet.with_sdk_defaults().combobox;
         self
     }

@@ -322,6 +322,7 @@ impl PopupMenu {
         if let Some(ControlIcon::Lucide(icon)) = self.end_icon {
             builder = builder.end_icon(icon);
         }
+        builder = builder.disclosure_icons(DisclosureIcons::menu_from_stylesheet(&look.stylesheet().common));
         if let Some(icons) = self.disclosure_icons {
             builder = builder.disclosure_icons(icons);
         }

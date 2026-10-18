@@ -121,6 +121,7 @@ pub fn table_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: 
         .authored_geometry(size.stylesheet_key());
     let recipe = mode.stylesheet().common.table.authored_geometry(size.stylesheet_key()).with_fallback(&baseline);
     let mut look = TableLook {
+        row_divider_width: recipe.row_divider_width.unwrap_or_default(),
         column_padding_x: recipe.column_padding_x.unwrap_or_default(),
         column_resize_hit_width: recipe.column_resize_hit_width.unwrap_or_default(),
         column_resize_line_width: recipe.column_resize_line_width.unwrap_or_default(),

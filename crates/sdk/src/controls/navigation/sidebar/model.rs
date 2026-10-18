@@ -69,6 +69,7 @@ pub struct SidebarPanelModel {
     pub(crate) header: Option<SidebarHeaderModel>,
     pub(crate) content: Option<SidebarContentModel>,
     pub(crate) footer: Option<SidebarFooterModel>,
+    pub(crate) disclosure_icons_explicit: bool,
     pub(crate) disclosure_icons: DisclosureIcons,
 }
 
@@ -82,11 +83,22 @@ pub struct SidebarControlModel {
     pub(crate) selected_id: Option<SharedString>,
     pub(crate) drag_drop: Option<super::SidebarDragDrop>,
     pub(crate) sidebar: Option<SidebarPanelModel>,
+    pub(crate) default_disclosure_icons: DisclosureIcons,
     pub(crate) panel_template: Arc<dyn SidebarPanelTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) scrollbar_placement: ScrollbarPlacement,
     pub(crate) scrollbar_visibility: ScrollbarVisibility,
     pub(crate) scrollbar_auto_hide_activate: ScrollbarAutoHideActivate,
+}
+
+impl SidebarControlModel {
+    pub(crate) fn resolved_disclosure_icons(&self) -> DisclosureIcons {
+        self.sidebar
+            .as_ref()
+            .filter(|panel| panel.disclosure_icons_explicit)
+            .map(|panel| panel.disclosure_icons.clone())
+            .unwrap_or_else(|| self.default_disclosure_icons.clone())
+    }
 }
 
 pub struct SidebarMenuItemBuilder {
@@ -350,6 +362,7 @@ impl SidebarBuilder {
                 header: None,
                 content: None,
                 footer: None,
+                disclosure_icons_explicit: false,
                 disclosure_icons: DisclosureIcons::default(),
             },
         }
@@ -370,8 +383,18 @@ impl SidebarBuilder {
         self
     }
 
-    /// Sets the expanded and collapsed disclosure icons for nested menu rows.
+    /// Capture a panel-local disclosure pair that takes precedence over host defaults.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        if !self.model.disclosure_icons_explicit {
+            self.model.disclosure_icons = DisclosureIcons::from_stylesheet(stylesheet);
+            self.model.disclosure_icons_explicit = true;
+        }
+        self
+    }
+
+    /// Set explicit expanded and collapsed glyphs for nested menu rows.
     pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
+        self.model.disclosure_icons_explicit = true;
         self.model.disclosure_icons = icons;
         self
     }
@@ -634,6 +657,7 @@ impl SidebarControlBuilder {
                 selected_id: None,
                 drag_drop: None,
                 sidebar: None,
+                default_disclosure_icons: DisclosureIcons::default(),
                 panel_template: default_sidebar_panel_template(),
                 scrollbar_template: default_scrollbar_template(),
                 scrollbar_placement: ScrollbarPlacement::Inset,
@@ -667,6 +691,12 @@ impl SidebarControlBuilder {
 
     pub fn selected_id(mut self, selected_id: impl Into<SharedString>) -> Self {
         self.model.selected_id = Some(selected_id.into());
+        self
+    }
+
+    /// Capture defaults for current and subsequently supplied sidebar content.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        self.model.default_disclosure_icons = DisclosureIcons::from_stylesheet(stylesheet);
         self
     }
 
@@ -859,5 +889,25 @@ mod tests {
 
         let builder_opt_out = SidebarControlBuilder::new("sidebar").motion_enabled(false);
         assert!(!builder_opt_out.model.motion_enabled);
+    }
+}
+
+#[cfg(test)]
+mod stylesheet_icon_tests {
+    use super::*;
+    use crate::theme::stylesheet::CommonStylesheet;
+
+    #[test]
+    fn sidebar_defaults_survive_content_replacement_and_preserve_local_icons() {
+        let sheet = CommonStylesheet::parse("[common.icons]\ndisclosure_collapsed='svg:branch.svg'").unwrap();
+        let builder = SidebarControlBuilder::new("sidebar").stylesheet(&sheet).sidebar(SidebarBuilder::new("first"));
+        assert_eq!(builder.model.resolved_disclosure_icons().collapsed.svg_path().unwrap().as_ref(), "branch.svg");
+        let builder = builder.sidebar(SidebarBuilder::new("replacement"));
+        assert_eq!(builder.model.resolved_disclosure_icons().collapsed.svg_path().unwrap().as_ref(), "branch.svg");
+        let explicit = DisclosureIcons::default();
+        let builder = builder
+            .sidebar(SidebarBuilder::new("explicit").disclosure_icons(explicit.clone()))
+            .stylesheet(&sheet);
+        assert_eq!(builder.model.resolved_disclosure_icons().collapsed, explicit.collapsed);
     }
 }

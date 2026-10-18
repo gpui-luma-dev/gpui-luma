@@ -329,6 +329,7 @@ impl PopupMenu {
     fn into_sdk_builder(self, look: Look) -> PopupMenuBuilder {
         let template = popup_menu_template(&look, self.variant, self.tone);
         let mut builder = gpui_luma::controls::popup_menu::PopupMenu::new(self.id)
+            .stylesheet(&look.common_stylesheet())
             .motion_defaults(look.motion_defaults().popup_menu)
             .with_motion_overrides(self.motion)
             .motion_enabled(self.motion_enabled)

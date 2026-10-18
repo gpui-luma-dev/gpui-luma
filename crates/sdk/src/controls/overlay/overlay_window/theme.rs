@@ -8,6 +8,13 @@ use super::OverlayWindowMode;
 
 #[derive(Clone, Debug)]
 pub struct OverlayWindowLook {
+    /// Placement inset, clamp margin and draggable header hit height in pixels.
+    pub viewport_padding: f32,
+    pub window_margin: f32,
+    pub drag_header_height: f32,
+
+    /// Shell border thickness in pixels.
+    pub border_width: f32,
     pub background: Hsla,
     pub border: Hsla,
     pub foreground: Hsla,
@@ -53,6 +60,7 @@ impl OverlayWindowTheme for DefaultOverlayWindowTheme {
             size.stylesheet_key(),
             crate::theme::stylesheet::OverlayWindowGeometry {
                 padding: metrics.padding_x(size),
+                radius: metrics.radius.xl,
                 font_size: typography.text.body.size,
                 line_height: typography.text.body.line_height,
                 ..Default::default()
@@ -60,6 +68,11 @@ impl OverlayWindowTheme for DefaultOverlayWindowTheme {
         );
 
         OverlayWindowLook {
+            viewport_padding: geometry.viewport_padding.value_px,
+            window_margin: geometry.window_margin.value_px,
+            drag_header_height: geometry.drag_header_height.value_px,
+
+            border_width: geometry.border_width.value_px,
             background: palette.surface.floating.background,
             border: palette.surface.floating.border,
             foreground: palette.surface.floating.foreground,
@@ -73,7 +86,7 @@ impl OverlayWindowTheme for DefaultOverlayWindowTheme {
             } else {
                 elevation.overlay_window.to_box_shadows()
             },
-            radius: metrics.radius.xl,
+            radius: geometry.radius.value_px,
             padding: geometry.padding.value_px,
             min_width: geometry.min_width.value_px,
             max_width: geometry.max_width.value_px,

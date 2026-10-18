@@ -149,6 +149,7 @@ where
     pub(super) wrap_navigation: bool,
     pub(super) scrollbar_visibility: crate::controls::ScrollbarVisibility,
     pub(super) scrollbar_template: Option<Arc<dyn crate::controls::scrollbar::ScrollbarTemplate>>,
+    pub(crate) disclosure_icons_explicit: bool,
     pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) template: Arc<dyn TreeViewTemplate<T>>,
 }
@@ -522,6 +523,7 @@ where
                 wrap_navigation: true,
                 scrollbar_visibility: crate::controls::ScrollbarVisibility::AutoHide,
                 scrollbar_template: None,
+                disclosure_icons_explicit: false,
                 disclosure_icons: DisclosureIcons::default(),
                 template: default_tree_view_template::<T>(),
             },
@@ -678,7 +680,16 @@ where
     }
 
     /// Sets the expanded and collapsed disclosure icons used by branch rows.
+    /// Capture shared disclosure defaults; explicit glyphs win in either method order.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        if !self.model.disclosure_icons_explicit {
+            self.model.disclosure_icons = DisclosureIcons::from_stylesheet(stylesheet);
+        }
+        self
+    }
+
     pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
+        self.model.disclosure_icons_explicit = true;
         self.model.disclosure_icons = icons;
         self
     }

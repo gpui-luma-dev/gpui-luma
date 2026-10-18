@@ -4,8 +4,10 @@ use gpui::Hsla;
 
 use crate::theme::ThemeTokens;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct SplitViewLook {
+    /// Resolved separator hit target and decoration in pixels.
+    pub geometry: crate::theme::stylesheet::ResolvedSplitViewGeometry,
     pub separator: Hsla,
     pub separator_hover: Hsla,
 }
@@ -45,7 +47,11 @@ impl SplitViewTheme for DefaultSplitViewTheme {
             palette.state.disabled.foreground
         };
 
-        SplitViewLook { separator, separator_hover }
+        SplitViewLook {
+            geometry: self.tokens.stylesheet.split_view.resolve_geometry("", Default::default()),
+            separator,
+            separator_hover,
+        }
     }
 }
 

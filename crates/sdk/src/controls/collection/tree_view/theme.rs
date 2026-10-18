@@ -7,6 +7,10 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyl
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TreeViewScale {
+    /// Disabled-row opacity and drag-preview padding in pixels.
+    pub disabled_opacity: f32,
+    pub preview_padding_x: f32,
+    pub preview_padding_y: f32,
     pub row_height: f32,
     pub base_padding_x: f32,
     pub indentation_width: f32,
@@ -38,6 +42,9 @@ impl TreeViewScale {
             .authored_geometry(size.stylesheet_key());
         let geometry = stylesheet.tree_view.authored_geometry(size.stylesheet_key()).with_fallback(&baseline);
         Self {
+            disabled_opacity: geometry.disabled_opacity.unwrap_or_default(),
+            preview_padding_x: geometry.preview_padding_x.unwrap_or_default(),
+            preview_padding_y: geometry.preview_padding_y.unwrap_or_default(),
             row_height: snap_to_pixel(
                 geometry
                     .row_height
@@ -73,6 +80,10 @@ pub struct TreeViewPalette {
 }
 
 pub trait TreeViewTheme: Send + Sync {
+    /// Resolve default file/folder glyphs; node-supplied icons take precedence.
+    fn icon(&self, role: crate::theme::stylesheet::IconRole) -> crate::infra::icon::IconSource {
+        crate::theme::stylesheet::CommonStylesheet::sdk_default().icons.resolve(role)
+    }
     fn resolve_row(&self, state: InteractionState, selected: bool, size: ControlSize) -> TreeViewPalette;
     /// Optional inset row outline, painted without changing row geometry.
     fn row_outline(&self, _state: InteractionState, _size: ControlSize) -> Option<Hsla> {
@@ -104,6 +115,9 @@ impl DefaultTreeViewTheme {
 }
 
 impl TreeViewTheme for DefaultTreeViewTheme {
+    fn icon(&self, role: crate::theme::stylesheet::IconRole) -> crate::infra::icon::IconSource {
+        self.tokens.stylesheet.icons.resolve(role)
+    }
     fn resolve_row(&self, state: InteractionState, selected: bool, size: ControlSize) -> TreeViewPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;

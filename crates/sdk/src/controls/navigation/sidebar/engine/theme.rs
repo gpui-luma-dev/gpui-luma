@@ -26,6 +26,12 @@ pub struct SidebarItemLook {
 }
 
 pub trait SidebarTheme: Send + Sync {
+    /// Shared shell and row decoration used by the stock template.
+    fn geometry(&self) -> crate::theme::stylesheet::ResolvedSidebarGeometry {
+        crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .sidebar
+            .resolve_geometry("", Default::default())
+    }
     /// Appearance of native drag previews and insertion feedback.
     fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
         let mut drag = crate::infra::drag_drop::DragDropLook::from_tokens(&ThemeTokens::default(), size);
@@ -83,15 +89,18 @@ impl DefaultSidebarTheme {
             icon_color: foreground,
             typography: typography.text.label,
             radius: metrics.radius(size),
-            height: 30.0,
-            padding_x: 8.0,
+            height: self.geometry().engine_item_height.value_px,
+            padding_x: self.geometry().engine_item_padding_x.value_px,
             gap: size_metrics.gap,
-            icon_size: 16.0,
+            icon_size: self.geometry().item_icon_size.value_px,
         }
     }
 }
 
 impl SidebarTheme for DefaultSidebarTheme {
+    fn geometry(&self) -> crate::theme::stylesheet::ResolvedSidebarGeometry {
+        self.tokens.stylesheet.sidebar.resolve_geometry("", Default::default())
+    }
     fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
         crate::infra::drag_drop::DragDropLook::from_tokens(&self.tokens, size)
     }
@@ -103,7 +112,7 @@ impl SidebarTheme for DefaultSidebarTheme {
         SidebarSectionLook {
             label_color: self.tokens.palette.navigation.muted_foreground,
             typography: self.tokens.typography.text.caption,
-            height: 20.0,
+            height: self.geometry().engine_section_height.value_px,
         }
     }
 

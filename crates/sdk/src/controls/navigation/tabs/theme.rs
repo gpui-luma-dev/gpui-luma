@@ -6,6 +6,8 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyl
 
 #[derive(Clone, Copy, Debug)]
 pub struct TabsListLook {
+    /// List border thickness in pixels.
+    pub border_width: f32,
     pub background: Option<Hsla>,
     pub border: Option<Hsla>,
     pub radius: f32,
@@ -15,6 +17,9 @@ pub struct TabsListLook {
 
 #[derive(Clone, Copy, Debug)]
 pub struct TabsItemLook {
+    /// Accessory glyph size and gap in pixels.
+    pub accessory_size: f32,
+    pub accessory_gap: f32,
     pub label_color: Hsla,
     pub indicator: Option<Hsla>,
     /// Selected-chip fill. `None` is transparent (line / underline tabs).
@@ -96,6 +101,7 @@ impl TabsTheme for DefaultTabsTheme {
         let metrics = &self.tokens.metrics;
 
         TabsListLook {
+            border_width: metrics.border_width.default,
             background: (!enabled).then_some(palette.state.disabled.background),
             border: None,
             radius: metrics.radius(size),
@@ -122,13 +128,16 @@ impl TabsTheme for DefaultTabsTheme {
             InteractionLayer::Default => palette.state.selected.background,
         };
 
+        let (accessory_size, accessory_gap) = self.tokens.stylesheet.tabs.accessory_metrics("");
         TabsItemLook {
+            accessory_size,
+            accessory_gap,
             label_color: match (active, state.disabled) {
                 (_, true) => palette.state.disabled.foreground,
                 (true, false) => active_color,
                 (false, false) => palette.app.foreground,
             },
-            indicator: active.then_some(if state.focused {
+            indicator: active.then_some(if state.focused && !state.disabled {
                 palette.focus.ring
             } else {
                 active_color
@@ -144,5 +153,25 @@ impl TabsTheme for DefaultTabsTheme {
 
     fn font_family(&self) -> SharedString {
         self.tokens.typography.font.sans.family.clone().into()
+    }
+}
+
+#[cfg(test)]
+mod state_audit_tests {
+    use super::*;
+
+    #[test]
+    fn disabled_active_tab_does_not_paint_a_focus_indicator() {
+        let tokens = ThemeTokens::default();
+        let theme = DefaultTabsTheme::new(tokens.clone());
+        for size in [ControlSize::Sm, ControlSize::Md, ControlSize::Lg] {
+            let look = theme.resolve_item(
+                true,
+                InteractionState { disabled: true, focused: true, hovered: true, pressed: true, ..Default::default() },
+                size,
+            );
+            assert_eq!(look.label_color, tokens.palette.state.disabled.foreground);
+            assert_eq!(look.indicator, Some(tokens.palette.state.disabled.foreground));
+        }
     }
 }

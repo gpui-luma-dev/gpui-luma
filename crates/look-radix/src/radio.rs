@@ -102,6 +102,7 @@ fn radio_scale_with_stylesheet(
     );
     let box_size = geometry.indicator_size.value_px;
     RadioScale {
+        disabled_opacity: geometry.disabled_opacity.value_px,
         control_radius: box_size / 2.0,
         control_padding_x: geometry.control_padding_x.value_px,
         control_padding_y: geometry.control_padding_y.value_px,

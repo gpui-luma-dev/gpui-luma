@@ -37,7 +37,7 @@ pub use slider::{
     resolve_slider_metrics_for_size, SliderMetricTable, resolve_slider_metrics_with_stylesheet, resolve_slider_metrics,
 };
 mod split_view;
-pub use split_view::{SplitViewMetricTable, resolve_split_view_metrics};
+pub use split_view::{SplitViewMetricTable, resolve_split_view_metrics, resolve_split_view_metrics_with_stylesheet};
 mod stepper;
 pub use stepper::{StepperMetricTable, resolve_stepper_metrics, resolve_stepper_metrics_for_size};
 mod switch;

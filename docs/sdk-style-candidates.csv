@@ -37,9 +37,9 @@ crates/sdk/src/controls/button/model.rs,112,button,0.0,common.button.geometry.sw
 crates/sdk/src/controls/button/model.rs,147,button,0.0,common.button.geometry.switch_track_width_extra,needs classification,"switch_track_width_extra: 0.0,"
 crates/sdk/src/controls/button/model.rs,201,button,0.0,common.button.geometry.switch_track_width_extra,needs classification,"switch_track_width_extra: 0.0,"
 crates/sdk/src/controls/button/template.rs,12,button,0.56,common.button.geometry.DISABLED_OPACITY,needs classification,const DISABLED_OPACITY: f32 = 0.56;
-crates/sdk/src/controls/button/template.rs,13,button,1.0,common.button.geometry.FOCUS_RING_GAP,needs classification,const FOCUS_RING_GAP: f32 = 1.0;
+crates/sdk/src/controls/button/template.rs,13,button,1.0,common.tokens.metrics.focus.gap,migrated,const FOCUS_RING_GAP: f32 = 1.0;
 crates/sdk/src/controls/button/template.rs,187,button,0.0,review owner / derived calculation,needs classification,let focus_ring_extent = if focus_border.a > 0.0 {
-crates/sdk/src/controls/button/template.rs,188,button,0.0,review owner / derived calculation,needs classification,FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+crates/sdk/src/controls/button/template.rs,188,button,0.0,common.tokens.metrics.focus.gap,migrated,FOCUS_RING_GAP + focus_metrics.width.max(0.0)
 crates/sdk/src/controls/button/template.rs,190,button,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/button/template.rs,195,button,0.0,review owner / derived calculation,needs classification,let focus_extent = if model.compact { 0.0 } else { focus_ring_extent };
 crates/sdk/src/controls/button/template.rs,211,button,0.0,review owner / derived calculation,needs classification,if border.a > 0.0 {
@@ -55,18 +55,18 @@ crates/sdk/src/controls/choice/checkbox/mod.rs,90,checkbox,1.0 | 0.0,review owne
 crates/sdk/src/controls/choice/checkbox/mod.rs,123,checkbox,1.0 | 0.0,review owner / derived calculation,needs classification,self.transition.set_target(if checked { 1.0 } else { 0.0 });
 crates/sdk/src/controls/choice/checkbox/mod.rs,142,checkbox,1.0 | 0.0,review owner / derived calculation,needs classification,self.transition.set_target(if self.checked { 1.0 } else { 0.0 });
 crates/sdk/src/controls/choice/checkbox/mod.rs,171,checkbox,1.0 | 0.0,review owner / derived calculation,needs classification,self.transition.set_target(if checked { 1.0 } else { 0.0 });
-crates/sdk/src/controls/choice/checkbox/template.rs,10,checkbox,1.0,common.checkbox.geometry.FOCUS_RING_GAP,needs classification,const FOCUS_RING_GAP: f32 = 1.0;
+crates/sdk/src/controls/choice/checkbox/template.rs,10,checkbox,1.0,common.tokens.metrics.focus.gap,migrated,const FOCUS_RING_GAP: f32 = 1.0;
 crates/sdk/src/controls/choice/checkbox/template.rs,36,checkbox,0.5,review owner / derived calculation,needs classification,"(Some(a), None) if t < 0.5 => Some(a),"
 crates/sdk/src/controls/choice/checkbox/template.rs,37,checkbox,0.5,review owner / derived calculation,needs classification,"(None, Some(b)) if t >= 0.5 => Some(b),"
 crates/sdk/src/controls/choice/checkbox/template.rs,52,checkbox,0.0 | 1.0,review owner / derived calculation,needs classification,"let t = progress.clamp(0.0, 1.0);"
 crates/sdk/src/controls/choice/checkbox/template.rs,64,checkbox,0.0 | 1.0,review owner / derived calculation,needs classification,"let progress = model.data.progress.clamp(0.0, 1.0);"
 crates/sdk/src/controls/choice/checkbox/template.rs,83,checkbox,0.0,review owner / derived calculation,needs classification,let focus_ring_extent = if focus_palette.indicator_border.a > 0.0 {
-crates/sdk/src/controls/choice/checkbox/template.rs,84,checkbox,0.0,review owner / derived calculation,needs classification,FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+crates/sdk/src/controls/choice/checkbox/template.rs,84,checkbox,0.0,common.tokens.metrics.focus.gap,migrated,FOCUS_RING_GAP + focus_metrics.width.max(0.0)
 crates/sdk/src/controls/choice/checkbox/template.rs,86,checkbox,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/choice/checkbox/template.rs,122,checkbox,0.0,review owner / derived calculation,needs classification,let indicator = if focus_ring_extent > 0.0 {
 crates/sdk/src/controls/choice/checkbox/template.rs,129,checkbox,2.0,review owner / derived calculation,needs classification,.size(px(scale.indicator_size + (focus_ring_extent * 2.0)))
 crates/sdk/src/controls/choice/checkbox/template.rs,168,checkbox,0.0 | 0.0 | 0.0 | 0.0,common.checkbox.geometry.background,needs classification,"background: settled_palette.control_background.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0)),"
-crates/sdk/src/controls/choice/checkbox/template.rs,204,checkbox,0.56,review owner / derived calculation,needs classification,root = root.opacity(0.56);
+crates/sdk/src/controls/choice/checkbox/template.rs,204,checkbox,0.56,common.checkbox.geometry.disabled_opacity,migrated,root = root.opacity(0.56);
 crates/sdk/src/controls/choice/checkbox/template.rs,214,checkbox,0.0 | 1.0,review owner / derived calculation,needs classification,"let progress = progress.clamp(0.0, 1.0);"
 crates/sdk/src/controls/choice/checkbox/theme.rs,59,checkbox,2.0 | 0.0,review owner / derived calculation,needs classification,"geometry.glyph_size.unwrap_or_else(|| (indicator_size - glyph_inset * 2.0).max(0.0)),"
 crates/sdk/src/controls/choice/control_group/control/mod.rs,72,control,1.0 | 0.0,common.control.geometry.VisualTransition,needs classification,"VisualTransition::with_transition(if selected { 1.0 } else { 0.0 }, motion.selection.clone()),"
@@ -98,18 +98,18 @@ crates/sdk/src/controls/choice/radio_button/mod.rs,80,radio_button,1.0 | 0.0,rev
 crates/sdk/src/controls/choice/radio_button/mod.rs,112,radio_button,1.0 | 0.0,review owner / derived calculation,needs classification,self.transition.set_target(if selected { 1.0 } else { 0.0 });
 crates/sdk/src/controls/choice/radio_button/mod.rs,131,radio_button,1.0 | 0.0,review owner / derived calculation,needs classification,self.transition.set_target(if self.selected { 1.0 } else { 0.0 });
 crates/sdk/src/controls/choice/radio_button/mod.rs,160,radio_button,1.0 | 0.0,review owner / derived calculation,needs classification,self.transition.set_target(if selected { 1.0 } else { 0.0 });
-crates/sdk/src/controls/choice/radio_button/template.rs,10,radio_button,1.0,common.radio_button.geometry.FOCUS_RING_GAP,needs classification,const FOCUS_RING_GAP: f32 = 1.0;
+crates/sdk/src/controls/choice/radio_button/template.rs,10,radio_button,1.0,common.tokens.metrics.focus.gap,migrated,const FOCUS_RING_GAP: f32 = 1.0;
 crates/sdk/src/controls/choice/radio_button/template.rs,36,radio_button,0.5,review owner / derived calculation,needs classification,"(Some(a), None) if t < 0.5 => Some(a),"
 crates/sdk/src/controls/choice/radio_button/template.rs,37,radio_button,0.5,review owner / derived calculation,needs classification,"(None, Some(b)) if t >= 0.5 => Some(b),"
 crates/sdk/src/controls/choice/radio_button/template.rs,52,radio_button,0.0 | 1.0,review owner / derived calculation,needs classification,"let t = progress.clamp(0.0, 1.0);"
 crates/sdk/src/controls/choice/radio_button/template.rs,64,radio_button,0.0 | 1.0,review owner / derived calculation,needs classification,"let progress = model.data.progress.clamp(0.0, 1.0);"
 crates/sdk/src/controls/choice/radio_button/template.rs,83,radio_button,0.0,review owner / derived calculation,needs classification,let focus_ring_extent = if focus_palette.indicator_border.a > 0.0 {
-crates/sdk/src/controls/choice/radio_button/template.rs,84,radio_button,0.0,review owner / derived calculation,needs classification,FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+crates/sdk/src/controls/choice/radio_button/template.rs,84,radio_button,0.0,common.tokens.metrics.focus.gap,migrated,FOCUS_RING_GAP + focus_metrics.width.max(0.0)
 crates/sdk/src/controls/choice/radio_button/template.rs,86,radio_button,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/choice/radio_button/template.rs,119,radio_button,0.0,review owner / derived calculation,needs classification,let indicator = if focus_ring_extent > 0.0 {
 crates/sdk/src/controls/choice/radio_button/template.rs,126,radio_button,2.0,review owner / derived calculation,needs classification,.size(px(scale.indicator_size + (focus_ring_extent * 2.0)))
 crates/sdk/src/controls/choice/radio_button/template.rs,149,radio_button,0.0 | 0.0 | 0.0 | 0.0,common.radio_button.geometry.background,needs classification,"background: settled_palette.control_background.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0)),"
-crates/sdk/src/controls/choice/radio_button/template.rs,201,radio_button,0.56,review owner / derived calculation,needs classification,root = root.opacity(0.56);
+crates/sdk/src/controls/choice/radio_button/template.rs,201,radio_button,0.56,common.radio.geometry.disabled_opacity,migrated,root = root.opacity(0.56);
 crates/sdk/src/controls/choice/radio_button/template.rs,211,radio_button,0.0 | 1.0,review owner / derived calculation,needs classification,"let progress = progress.clamp(0.0, 1.0);"
 crates/sdk/src/controls/choice/radio_button/template.rs,212,radio_button,0.0,common.radio_button.geometry.f32,needs classification,if progress <= f32::EPSILON || size <= 0.0 {
 crates/sdk/src/controls/choice/radio_button/template.rs,217,radio_button,1.0,review owner / derived calculation,needs classification,let dot_size = (size * progress).max(1.0);
@@ -125,10 +125,10 @@ crates/sdk/src/controls/choice/switch/mod.rs,386,switch,0.0,common.switch.geomet
 crates/sdk/src/controls/choice/switch/mod.rs,387,switch,0.0,common.switch.geometry.f32,needs classification,self.button.model.switch_track_height = Some(f32::from(track_thickness.into()).max(0.0));
 crates/sdk/src/controls/choice/switch/mod.rs,388,switch,0.0,common.switch.geometry.f32,needs classification,self.button.model.switch_thumb_size = Some(f32::from(thumb_size.into()).max(0.0));
 crates/sdk/src/controls/choice/switch/mod.rs,441,switch,0.0,review owner / derived calculation,needs classification,self.model.switch_track_width_extra = extra_length.max(0.0);
-crates/sdk/src/controls/choice/switch/template.rs,12,switch,1.0,common.switch.geometry.FOCUS_RING_GAP,needs classification,const FOCUS_RING_GAP: f32 = 1.0;
+crates/sdk/src/controls/choice/switch/template.rs,12,switch,1.0,common.tokens.metrics.focus.gap,migrated,const FOCUS_RING_GAP: f32 = 1.0;
 crates/sdk/src/controls/choice/switch/template.rs,44,switch,0.0 | 1.0,review owner / derived calculation,needs classification,"let t = progress.clamp(0.0, 1.0);"
 crates/sdk/src/controls/choice/switch/template.rs,74,switch,0.0,review owner / derived calculation,needs classification,let focus_ring_extent = if focus_palette.track_border.a > 0.0 {
-crates/sdk/src/controls/choice/switch/template.rs,75,switch,0.0,review owner / derived calculation,needs classification,FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+crates/sdk/src/controls/choice/switch/template.rs,75,switch,0.0,common.tokens.metrics.focus.gap,migrated,FOCUS_RING_GAP + focus_metrics.width.max(0.0)
 crates/sdk/src/controls/choice/switch/template.rs,77,switch,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/choice/switch/template.rs,98,switch,0.5,review owner / derived calculation,needs classification,let thumb_radius = track_radius.min(scale.thumb_size * 0.5);
 crates/sdk/src/controls/choice/switch/template.rs,106,switch,0.5 | 1.0 | 0.0,review owner / derived calculation,needs classification,"snap_to_pixel(((scale.track_height - scale.thumb_size) * 0.5 - 1.0).max(0.0), scale_factor);"
@@ -138,7 +138,7 @@ crates/sdk/src/controls/choice/switch/template.rs,142,switch,0.0,common.switch.g
 crates/sdk/src/controls/choice/switch/template.rs,184,switch,0.0,review owner / derived calculation,needs classification,let track = if focus_ring_extent > 0.0 {
 crates/sdk/src/controls/choice/switch/template.rs,191,switch,2.0,review owner / derived calculation,needs classification,.w(px(scale.track_width + (focus_ring_extent * 2.0)))
 crates/sdk/src/controls/choice/switch/template.rs,192,switch,2.0,review owner / derived calculation,needs classification,.h(px(scale.track_height + (focus_ring_extent * 2.0)))
-crates/sdk/src/controls/choice/switch/template.rs,236,switch,0.56,review owner / derived calculation,needs classification,root = root.opacity(0.56);
+crates/sdk/src/controls/choice/switch/template.rs,236,switch,0.56,common.switch.geometry.disabled_opacity,migrated,root = root.opacity(0.56);
 crates/sdk/src/controls/choice/toggle/mod.rs,39,toggle,1.0 | 0.0,common.toggle.geometry.progress,needs classification,"Self { selected, progress: if selected { 1.0 } else { 0.0 } }"
 crates/sdk/src/controls/choice/toggle/mod.rs,79,toggle,1.0 | 0.0,review owner / derived calculation,needs classification,let progress = if selected { 1.0 } else { 0.0 };
 crates/sdk/src/controls/choice/toggle/mod.rs,116,toggle,1.0 | 0.0,review owner / derived calculation,needs classification,self.transition.set_target(if selected { 1.0 } else { 0.0 });
@@ -335,7 +335,7 @@ crates/sdk/src/controls/collection/tree_view/control.rs,613,tree_view,1.0 | 0.0,
 crates/sdk/src/controls/collection/tree_view/template.rs,82,tree_view,0x64748b,common.tree_view.geometry.gpui,needs classification,gpui::rgb(0x64748b).into()
 crates/sdk/src/controls/collection/tree_view/template.rs,270,tree_view,0.0 | 1.0,review owner / derived calculation,needs classification,"let height_factor = node.row_height_factor.clamp(0.0, 1.0);"
 crates/sdk/src/controls/collection/tree_view/template.rs,281,tree_view,0.0,review owner / derived calculation,needs classification,.opacity(height_factor.max(0.0))
-crates/sdk/src/controls/collection/tree_view/template.rs,305,tree_view,0.40 | 0.0,review owner / derived calculation,needs classification,row = row.opacity(0.40 * height_factor.max(0.0));
+crates/sdk/src/controls/collection/tree_view/template.rs,305,tree_view,0.40 | 0.0,common.tree_view.geometry.disabled_opacity,migrated,row = row.opacity(0.40 * height_factor.max(0.0));
 crates/sdk/src/controls/collection/tree_view/template.rs,321,tree_view,0.0 | 1.0,review owner / derived calculation,needs classification,"node.expand_progress.clamp(0.0, 1.0),"
 crates/sdk/src/controls/collection/tree_view/template.rs,350,tree_view,0.0,review owner / derived calculation,needs classification,"Some(content) => div().flex_1().min_w(px(0.0)).child(content),"
 crates/sdk/src/controls/collection/tree_view/theme.rs,58,tree_view,0.0,review owner / derived calculation,needs classification,".unwrap_or_else(|| (metrics.icon_size(size) - geometry.chevron_inset.unwrap_or_default()).max(0.0)),"
@@ -353,10 +353,10 @@ crates/sdk/src/controls/layout/dock_splitter/template.rs,191,dock_splitter,0.0,r
 crates/sdk/src/controls/layout/dock_splitter/template.rs,192,dock_splitter,0.0,review owner / derived calculation,needs classification,.right(px(0.0))
 crates/sdk/src/controls/layout/dock_splitter/template.rs,210,dock_splitter,0.0,review owner / derived calculation,needs classification,.left(px(0.0))
 crates/sdk/src/controls/layout/dock_splitter/template.rs,211,dock_splitter,0.0,review owner / derived calculation,needs classification,.right(px(0.0))
-crates/sdk/src/controls/layout/dock_splitter/template.rs,221,dock_splitter,8.0,review owner / derived calculation,needs classification,.rounded(px(8.0))
-crates/sdk/src/controls/layout/dock_splitter/template.rs,225,dock_splitter,0.4,review owner / derived calculation,needs classification,look.thumb_color.opacity(0.4)
-crates/sdk/src/controls/layout/dock_splitter/template.rs,227,dock_splitter,4.0,review owner / derived calculation,needs classification,.w(px(4.0))
-crates/sdk/src/controls/layout/dock_splitter/template.rs,228,dock_splitter,36.0,review owner / derived calculation,needs classification,".h(px(36.0)),"
+crates/sdk/src/controls/layout/dock_splitter/template.rs,221,dock_splitter,8.0,common.dock_splitter.geometry.thumb_radius,migrated,.rounded(px(8.0))
+crates/sdk/src/controls/layout/dock_splitter/template.rs,225,dock_splitter,0.4,common.dock_splitter.geometry.thumb_rest_opacity,migrated,look.thumb_color.opacity(0.4)
+crates/sdk/src/controls/layout/dock_splitter/template.rs,227,dock_splitter,4.0,common.dock_splitter.geometry.thumb_width,migrated,.w(px(4.0))
+crates/sdk/src/controls/layout/dock_splitter/template.rs,228,dock_splitter,36.0,common.dock_splitter.geometry.thumb_height,migrated,".h(px(36.0)),"
 crates/sdk/src/controls/layout/frame.rs,43,layout,0.0,common.layout.geometry.border_widths,needs classification,"border_widths: Edges::all(px(0.0)),"
 crates/sdk/src/controls/layout/frame.rs,44,layout,0.0,common.layout.geometry.radius,needs classification,"radius: px(0.0),"
 crates/sdk/src/controls/layout/frame.rs,45,layout,0.0,common.layout.geometry.padding,needs classification,"padding: Edges::all(px(0.0)),"
@@ -566,7 +566,7 @@ crates/sdk/src/controls/layout/scrollbar/template.rs,163,scrollbar,0.0 | 0.0,rev
 crates/sdk/src/controls/layout/scrollbar/template.rs,170,scrollbar,0.0,review owner / derived calculation,needs classification,"0.0,"
 crates/sdk/src/controls/layout/scrollbar/template.rs,181,scrollbar,0.0 | 0.0,review owner / derived calculation,needs classification,"let thumb_top = ((length - thumb_length).max(0.0) * percentage).clamp(0.0, length);"
 crates/sdk/src/controls/layout/scrollbar/template.rs,189,scrollbar,0.0,review owner / derived calculation,needs classification,"0.0,"
-crates/sdk/src/controls/layout/scrollbar/template.rs,245,scrollbar,0.56,review owner / derived calculation,needs classification,root = root.opacity(0.56);
+crates/sdk/src/controls/layout/scrollbar/template.rs,245,scrollbar,0.56,common.scrollbar.geometry.disabled_opacity,migrated,root = root.opacity(0.56);
 crates/sdk/src/controls/layout/scrollbar/theme.rs,85,scrollbar,0.0 | 0.0 | 0.0 | 0.0,review owner / derived calculation,needs classification,"hsla(0.0, 0.0, 0.0, 0.0)"
 crates/sdk/src/controls/layout/split_view/control.rs,55,split_view,2.0,common.split_view.geometry.DRAG_CLICK_SUPPRESS_THRESHOLD_PX,needs classification,const DRAG_CLICK_SUPPRESS_THRESHOLD_PX: f32 = 2.0;
 crates/sdk/src/controls/layout/split_view/control.rs,69,split_view,0.0 | 1.0,review owner / derived calculation,needs classification,let initial_progress = if builder.model.collapsed { 0.0 } else { 1.0 };
@@ -604,7 +604,7 @@ crates/sdk/src/controls/navigation/accordion/control.rs,221,accordion,0.5,review
 crates/sdk/src/controls/navigation/accordion/control.rs,246,accordion,1.0 | 0.0,review owner / derived calculation,needs classification,.unwrap_or_else(|| if expanded { 1.0 } else { 0.0 });
 crates/sdk/src/controls/navigation/accordion/control.rs,247,accordion,0.0,review owner / derived calculation,needs classification,let content_height_px = self.content_heights_px.get(index).copied().unwrap_or(0.0);
 crates/sdk/src/controls/navigation/accordion/template.rs,201,accordion,0.0,review owner / derived calculation,needs classification,let content_visible = item.expanded || item.progress > 0.0;
-crates/sdk/src/controls/navigation/accordion/template.rs,236,accordion,0.56,review owner / derived calculation,needs classification,trigger = trigger.opacity(0.56);
+crates/sdk/src/controls/navigation/accordion/template.rs,236,accordion,0.56,common.accordion.geometry.disabled_opacity,migrated,trigger = trigger.opacity(0.56);
 crates/sdk/src/controls/navigation/accordion/template.rs,297,accordion,1.0,common.accordion.geometry.f32,needs classification,} else if item.progress < 1.0 - f32::EPSILON {
 crates/sdk/src/controls/navigation/accordion/template.rs,298,accordion,0.0,review owner / derived calculation,needs classification,clip = clip.h(px(0.0));
 crates/sdk/src/controls/navigation/pager/model.rs,48,pager,64.0,common.pager.geometry.page_size_trigger_width,needs classification,"page_size_trigger_width: 64.0,"
@@ -669,37 +669,37 @@ crates/sdk/src/controls/navigation/stepper/control.rs,212,stepper,1.0,review own
 crates/sdk/src/controls/navigation/stepper/model.rs,176,stepper,0.0,review owner / derived calculation,needs classification,self.model.content_height = Some(height.max(0.0));
 crates/sdk/src/controls/navigation/stepper/model.rs,240,stepper,0.5,review owner / derived calculation,needs classification,if display_step >= index_f + 0.5 {
 crates/sdk/src/controls/navigation/stepper/model.rs,242,stepper,0.5,review owner / derived calculation,needs classification,} else if (display_step - index_f).abs() < 0.5 {
-crates/sdk/src/controls/navigation/stepper/template.rs,99,stepper,16.0,review owner / derived calculation,needs classification,.gap(px(16.0))
-crates/sdk/src/controls/navigation/stepper/template.rs,109,stepper,16.0,review owner / derived calculation,needs classification,.gap(px(16.0))
+crates/sdk/src/controls/navigation/stepper/template.rs,99,stepper,16.0,common.stepper.geometry.content_gap,migrated,.gap(px(16.0))
+crates/sdk/src/controls/navigation/stepper/template.rs,109,stepper,16.0,common.stepper.geometry.content_gap,migrated,.gap(px(16.0))
 crates/sdk/src/controls/navigation/stepper/template.rs,130,stepper,0.0 | 1.0,review owner / derived calculation,needs classification,"(display_step - from_index as f32).clamp(0.0, 1.0)"
 crates/sdk/src/controls/navigation/stepper/template.rs,150,stepper,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/navigation/stepper/template.rs,155,stepper,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/navigation/stepper/template.rs,164,stepper,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
-crates/sdk/src/controls/navigation/stepper/template.rs,168,stepper,6.0,review owner / derived calculation,needs classification,.gap(px(6.0))
+crates/sdk/src/controls/navigation/stepper/template.rs,168,stepper,6.0,common.stepper.geometry.label_gap,migrated,.gap(px(6.0))
 crates/sdk/src/controls/navigation/stepper/template.rs,216,stepper,120.0,review owner / derived calculation,needs classification,badge_size + 120.0
 crates/sdk/src/controls/navigation/stepper/template.rs,218,stepper,48.0,review owner / derived calculation,needs classification,badge_size + 48.0
 crates/sdk/src/controls/navigation/stepper/template.rs,231,stepper,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/navigation/stepper/template.rs,236,stepper,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/navigation/stepper/template.rs,271,stepper,0.0,review owner / derived calculation,needs classification,.min_h(px(0.0))
 crates/sdk/src/controls/navigation/stepper/template.rs,280,stepper,0.0,review owner / derived calculation,needs classification,.min_h(px(0.0))
-crates/sdk/src/controls/navigation/stepper/template.rs,284,stepper,10.0,review owner / derived calculation,needs classification,.gap(px(10.0))
+crates/sdk/src/controls/navigation/stepper/template.rs,284,stepper,10.0,common.stepper.geometry.side_label_gap,migrated,.gap(px(10.0))
 crates/sdk/src/controls/navigation/stepper/template.rs,291,stepper,0.0,review owner / derived calculation,needs classification,.min_h(px(0.0))
-crates/sdk/src/controls/navigation/stepper/template.rs,295,stepper,10.0,review owner / derived calculation,needs classification,.gap(px(10.0))
+crates/sdk/src/controls/navigation/stepper/template.rs,295,stepper,10.0,common.stepper.geometry.side_label_gap,migrated,.gap(px(10.0))
 crates/sdk/src/controls/navigation/stepper/template.rs,311,stepper,0.0 | 1.0,review owner / derived calculation,needs classification,"let progress = model.transition_progress.clamp(0.0, 1.0);"
 crates/sdk/src/controls/navigation/stepper/template.rs,313,stepper,0.0,review owner / derived calculation,needs classification,"let from_index = model.from_step.round().clamp(0.0, max_index as f32) as usize;"
 crates/sdk/src/controls/navigation/stepper/template.rs,315,stepper,1.0,common.stepper.geometry.f32,needs classification,let settled = progress >= 1.0 - f32::EPSILON || from_index == to_index;
-crates/sdk/src/controls/navigation/stepper/template.rs,323,stepper,120.0,review owner / derived calculation,needs classification,host = host.h(px(120.0));
+crates/sdk/src/controls/navigation/stepper/template.rs,323,stepper,120.0,common.stepper.geometry.content_height,migrated,host = host.h(px(120.0));
 crates/sdk/src/controls/navigation/stepper/template.rs,328,stepper,0.0,review owner / derived calculation,needs classification,"host = host.child(positioned_panel(renderer(window, cx), horizontal, 0.0, ""current""));"
 crates/sdk/src/controls/navigation/stepper/template.rs,333,stepper,1.0,review owner / derived calculation,needs classification,"(-progress, 1.0 - progress)"
 crates/sdk/src/controls/navigation/stepper/template.rs,335,stepper,1.0,review owner / derived calculation,needs classification,"(progress, -(1.0 - progress))"
-crates/sdk/src/controls/navigation/stepper/template.rs,363,stepper,12.0,review owner / derived calculation,needs classification,.text_size(px(12.0))
-crates/sdk/src/controls/navigation/stepper/template.rs,364,stepper,16.0,review owner / derived calculation,needs classification,.line_height(px(16.0))
+crates/sdk/src/controls/navigation/stepper/template.rs,363,stepper,12.0,common.stepper.geometry.font_size,migrated,.text_size(px(12.0))
+crates/sdk/src/controls/navigation/stepper/template.rs,364,stepper,16.0,common.stepper.geometry.line_height,migrated,.line_height(px(16.0))
 crates/sdk/src/controls/navigation/stepper/template.rs,376,stepper,0.0,common.stepper.geometry.usize,needs classification,"let mut slot = div().id((""label-slot"", usize::from(align_end))).flex_1().min_w(px(0.0)).flex().items_center();"
 crates/sdk/src/controls/navigation/stepper/template.rs,403,stepper,0.0 | 1.0,review owner / derived calculation,needs classification,"let fill = fill.clamp(0.0, 1.0);"
 crates/sdk/src/controls/navigation/stepper/template.rs,427,stepper,0.0 | 1.0,review owner / derived calculation,needs classification,"let fill = fill.clamp(0.0, 1.0);"
 crates/sdk/src/controls/navigation/stepper/template.rs,445,stepper,2.0,review owner / derived calculation,needs classification,let badge_radius = badge_size / 2.0;
-crates/sdk/src/controls/navigation/stepper/template.rs,463,stepper,0.45,common.stepper.geometry.StepState,needs classification,"StepState::Complete => render_checkmark(foreground, badge_size * 0.45, &icons.completed),"
-crates/sdk/src/controls/navigation/stepper/template.rs,465,stepper,0.38,review owner / derived calculation,needs classification,"render_step_number(step_index + 1, foreground, badge_size * 0.38)"
+crates/sdk/src/controls/navigation/stepper/template.rs,463,stepper,0.45,common.stepper.geometry.glyph_scale,migrated,"StepState::Complete => render_checkmark(foreground, badge_size * 0.45, &icons.completed),"
+crates/sdk/src/controls/navigation/stepper/template.rs,465,stepper,0.38,common.stepper.geometry.number_scale,migrated,"render_step_number(step_index + 1, foreground, badge_size * 0.38)"
 crates/sdk/src/controls/navigation/tabs/content.rs,77,tabs,0.0 | 1.0,review owner / derived calculation,needs classification,"root = root.opacity(opacity.clamp(0.0, 1.0));"
 crates/sdk/src/controls/navigation/tabs/content.rs,124,tabs,1.0,review owner / derived calculation,needs classification,"assert_eq!(tabs.body_transition.progress(), 1.0);"
 crates/sdk/src/controls/navigation/tabs/content.rs,135,tabs,200.0 | 18.0,common.tabs.geometry.crate,needs classification,".motion(|m| m.content = crate::motion::Transition::spring(200.0, 18.0))"
@@ -817,14 +817,14 @@ crates/sdk/src/controls/overlay/popup_menu/control.rs,403,popup_menu,1.0,review 
 crates/sdk/src/controls/overlay/popup_menu/model.rs,56,popup_menu,0.0,common.popup_menu.geometry.Arc,needs classification,"Arc::new(|model, _| div().flex_1().min_w(px(0.0)).truncate().child(model.label.clone()).into_any_element())"
 crates/sdk/src/controls/overlay/popup_menu/model.rs,63,popup_menu,0.0 | 0.0 | 1.0 | 1.0 | 16.0,common.popup_menu.geometry.Arc,needs classification,"Arc::new(move |_, _| crate::infra::icon::lucide_icon(icon, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0))"
 crates/sdk/src/controls/overlay/popup_menu/model.rs,65,popup_menu,16.0,common.popup_menu.geometry.ControlIcon,needs classification,"ControlIcon::SvgPath(path) => Arc::new(move |_, _| svg().size(px(16.0)).path(path.clone()).into_any_element()),"
-crates/sdk/src/controls/overlay/popup_menu/template.rs,16,popup_menu,1.0,common.popup_menu.geometry.FOCUS_RING_GAP,needs classification,const FOCUS_RING_GAP: f32 = 1.0;
+crates/sdk/src/controls/overlay/popup_menu/template.rs,16,popup_menu,1.0,common.tokens.metrics.focus.gap,migrated,const FOCUS_RING_GAP: f32 = 1.0;
 crates/sdk/src/controls/overlay/popup_menu/template.rs,192,popup_menu,0.0,review owner / derived calculation,needs classification,let focus_extent = if focus_border.a > 0.0 {
-crates/sdk/src/controls/overlay/popup_menu/template.rs,193,popup_menu,0.0,review owner / derived calculation,needs classification,FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+crates/sdk/src/controls/overlay/popup_menu/template.rs,193,popup_menu,0.0,common.tokens.metrics.focus.gap,migrated,FOCUS_RING_GAP + focus_metrics.width.max(0.0)
 crates/sdk/src/controls/overlay/popup_menu/template.rs,195,popup_menu,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/overlay/popup_menu/template.rs,249,popup_menu,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
-crates/sdk/src/controls/overlay/popup_menu/template.rs,305,popup_menu,0.56,review owner / derived calculation,needs classification,action_face = action_face.opacity(0.56);
+crates/sdk/src/controls/overlay/popup_menu/template.rs,305,popup_menu,0.56,common.tokens.metrics.disabled_opacity,migrated,action_face = action_face.opacity(0.56);
 crates/sdk/src/controls/overlay/popup_menu/template.rs,363,popup_menu,0.0,review owner / derived calculation,needs classification,if border.a > 0.0 && !model.split {
-crates/sdk/src/controls/overlay/popup_menu/template.rs,372,popup_menu,0.56,review owner / derived calculation,needs classification,trigger = trigger.opacity(0.56);
+crates/sdk/src/controls/overlay/popup_menu/template.rs,372,popup_menu,0.56,common.tokens.metrics.disabled_opacity,migrated,trigger = trigger.opacity(0.56);
 crates/sdk/src/controls/overlay/popup_menu/template.rs,394,popup_menu,0.0,review owner / derived calculation,needs classification,if oversize_extent > 0.0 {
 crates/sdk/src/controls/overlay/popup_menu/template.rs,398,popup_menu,0.0,review owner / derived calculation,needs classification,.top(px(0.0))
 crates/sdk/src/controls/overlay/popup_menu/template.rs,399,popup_menu,0.0,review owner / derived calculation,needs classification,.right(px(0.0))
@@ -1114,9 +1114,9 @@ crates/sdk/src/controls/selection/selection_panel/item_template.rs,172,selection
 crates/sdk/src/controls/selection/selection_panel/item_template.rs,230,selection_panel,0.56,common.selection_panel.geometry.disabled_opacity (inherits menu baseline),migrated,row = row.opacity(0.56);
 crates/sdk/src/controls/selection/selection_panel/model.rs,416,selection_panel,0.0,common.selection_panel.geometry.gpui,needs classification,gpui::div().min_w(gpui::px(0.0)).truncate().child(item.item.label().clone())
 crates/sdk/src/controls/selection/selector/control.rs,409,selector,0.0 | 0.0,common.selector.geometry.gpui,needs classification,"self.popup_scroll.set_offset(gpui::point(gpui::px(0.0), gpui::px(0.0)));"
-crates/sdk/src/controls/selection/selector/template.rs,21,selector,1.0,common.selector.geometry.FOCUS_RING_GAP,needs classification,const FOCUS_RING_GAP: f32 = 1.0;
+crates/sdk/src/controls/selection/selector/template.rs,21,selector,1.0,common.tokens.metrics.focus.gap,migrated,const FOCUS_RING_GAP: f32 = 1.0;
 crates/sdk/src/controls/selection/selector/template.rs,273,selector,0.0,review owner / derived calculation,needs classification,.filter(|border| border.a > 0.0)
-crates/sdk/src/controls/selection/selector/template.rs,274,selector,0.0,review owner / derived calculation,needs classification,.map(|_| FOCUS_RING_GAP + focus_metrics.width.max(0.0))
+crates/sdk/src/controls/selection/selector/template.rs,274,selector,0.0,common.tokens.metrics.focus.gap,migrated,.map(|_| FOCUS_RING_GAP + focus_metrics.width.max(0.0))
 crates/sdk/src/controls/selection/selector/template.rs,275,selector,0.0,review owner / derived calculation,needs classification,.unwrap_or(0.0);
 crates/sdk/src/controls/selection/selector/template.rs,304,selector,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
 crates/sdk/src/controls/selection/selector/template.rs,326,selector,0.0,review owner / derived calculation,needs classification,if border.a > 0.0 {
@@ -1168,7 +1168,7 @@ crates/sdk/src/controls/text/textarea/control/chrome.rs,39,control,0.0,review ow
 crates/sdk/src/controls/text/textarea/control/chrome.rs,40,control,1.0,review owner / derived calculation,needs classification,let step = cache.line_height.as_f32().max(1.0);
 crates/sdk/src/controls/text/textarea/control/chrome.rs,45,control,0.85,review owner / derived calculation,needs classification,"scrollbar.set_page_step((viewport_height * 0.85).max(step), cx);"
 crates/sdk/src/controls/text/textarea/control/chrome.rs,46,control,0.0 | 1.0,review owner / derived calculation,needs classification,"scrollbar.set_viewport(0.0, content_height.max(1.0), value, value + viewport_height, cx);"
-crates/sdk/src/controls/text/textarea/control/chrome.rs,125,control,0.0,review owner / derived calculation,needs classification,FOCUS_RING_GAP + look.border_width.max(0.0)
+crates/sdk/src/controls/text/textarea/control/chrome.rs,125,control,0.0,common.tokens.metrics.focus.gap,migrated,FOCUS_RING_GAP + look.border_width.max(0.0)
 crates/sdk/src/controls/text/textarea/control/chrome.rs,127,control,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/text/textarea/control/chrome.rs,137,control,12.0,review owner / derived calculation,needs classification,let scrollbar_width = px(12.0);
 crates/sdk/src/controls/text/textarea/control/chrome.rs,141,control,3.0,review owner / derived calculation,needs classification,.right(px(3.0))
@@ -1212,7 +1212,7 @@ crates/sdk/src/controls/text/textarea/control/layout.rs,220,control,0.0,review o
 crates/sdk/src/controls/text/textarea/control/layout.rs,232,control,0.0,review owner / derived calculation,needs classification,if local_x < px(0.0) {
 crates/sdk/src/controls/text/textarea/control/layout.rs,280,control,0.0,review owner / derived calculation,needs classification,if line_count == 0 || line_height <= px(0.0) {
 crates/sdk/src/controls/text/textarea/control/layout.rs,284,control,0.0,review owner / derived calculation,needs classification,let scrolled_y = (local_y + vertical_scroll).max(px(0.0));
-crates/sdk/src/controls/text/textarea/control/mod.rs,20,control,1.0,common.control.geometry.FOCUS_RING_GAP,needs classification,pub(super) const FOCUS_RING_GAP: f32 = 1.0;
+crates/sdk/src/controls/text/textarea/control/mod.rs,20,control,1.0,common.tokens.metrics.focus.gap,migrated,pub(super) const FOCUS_RING_GAP: f32 = 1.0;
 crates/sdk/src/controls/text/textarea/control/mod.rs,162,control,0.0,common.control.geometry.vertical_scroll,needs classification,"vertical_scroll: px(0.0),"
 crates/sdk/src/controls/text/textarea/control/mod.rs,168,control,0.0,common.control.geometry.resize_start_y,needs classification,"resize_start_y: 0.0,"
 crates/sdk/src/controls/text/textarea/control/mod.rs,482,control,20.0,review owner / derived calculation,needs classification,view.vertical_scroll = px(20.0);
@@ -1226,11 +1226,11 @@ crates/sdk/src/controls/text/textarea/template.rs,14,textarea,4.0,common.textare
 crates/sdk/src/controls/text/textarea/template.rs,15,textarea,0.0,common.textarea.geometry.TEXTAREA_CARET_EDGE_OFFSET,needs classification,const TEXTAREA_CARET_EDGE_OFFSET: f32 = 0.0;
 crates/sdk/src/controls/text/textarea/template.rs,16,textarea,0.0,common.textarea.geometry.TEXTAREA_MIN_WIDTH,needs classification,const TEXTAREA_MIN_WIDTH: f32 = 0.0;
 crates/sdk/src/controls/text/textarea/template.rs,17,textarea,0.6,common.textarea.geometry.TEXTAREA_DISABLED_OPACITY,needs classification,const TEXTAREA_DISABLED_OPACITY: f32 = 0.6;
-crates/sdk/src/controls/text/textarea/template.rs,18,textarea,1.0,common.textarea.geometry.FOCUS_RING_GAP,needs classification,const FOCUS_RING_GAP: f32 = 1.0;
+crates/sdk/src/controls/text/textarea/template.rs,18,textarea,1.0,common.tokens.metrics.focus.gap,migrated,const FOCUS_RING_GAP: f32 = 1.0;
 crates/sdk/src/controls/text/textarea/template.rs,188,textarea,0.0,review owner / derived calculation,needs classification,".map(|(next, current)| (next - current).max(0.0))"
 crates/sdk/src/controls/text/textarea/template.rs,189,textarea,0.0,review owner / derived calculation,needs classification,.unwrap_or(0.0);
 crates/sdk/src/controls/text/textarea/template.rs,252,textarea,2.0,review owner / derived calculation,needs classification,.h(px(look.padding_y * 2.0 + viewport_height))
-crates/sdk/src/controls/text/textarea/template.rs,278,textarea,0.0,review owner / derived calculation,needs classification,FOCUS_RING_GAP + look.border_width.max(0.0)
+crates/sdk/src/controls/text/textarea/template.rs,278,textarea,0.0,common.tokens.metrics.focus.gap,migrated,FOCUS_RING_GAP + look.border_width.max(0.0)
 crates/sdk/src/controls/text/textarea/template.rs,280,textarea,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/text/textarea/template.rs,284,textarea,0.0,review owner / derived calculation,needs classification,if focus_extent > 0.0 {
 crates/sdk/src/controls/text/textarea/template.rs,298,textarea,0.0,review owner / derived calculation,needs classification,.top(px(0.0))
@@ -1252,16 +1252,16 @@ crates/sdk/src/controls/text/textfield/control.rs,992,textfield,0.0,review owner
 crates/sdk/src/controls/text/textfield/template.rs,13,textfield,1.5,common.textfield.geometry.TEXTFIELD_CARET_WIDTH,needs classification,const TEXTFIELD_CARET_WIDTH: f32 = 1.5;
 crates/sdk/src/controls/text/textfield/template.rs,14,textfield,2.0,common.textfield.geometry.TEXTFIELD_CARET_HEIGHT_EXTRA,needs classification,const TEXTFIELD_CARET_HEIGHT_EXTRA: f32 = 2.0;
 crates/sdk/src/controls/text/textfield/template.rs,15,textfield,0.0,common.textfield.geometry.CARET_EDGE_OFFSET,needs classification,const CARET_EDGE_OFFSET: f32 = 0.0;
-crates/sdk/src/controls/text/textfield/template.rs,16,textfield,1.0,common.textfield.geometry.FOCUS_RING_GAP,needs classification,const FOCUS_RING_GAP: f32 = 1.0;
+crates/sdk/src/controls/text/textfield/template.rs,16,textfield,1.0,common.tokens.metrics.focus.gap,migrated,const FOCUS_RING_GAP: f32 = 1.0;
 crates/sdk/src/controls/text/textfield/template.rs,50,textfield,1.0,common.textfield.geometry.StandardBoxScale,needs classification,"&StandardBoxScale::compute(size, &default_textfield_theme().metrics(), 1.0),"
 crates/sdk/src/controls/text/textfield/template.rs,167,textfield,1.0,common.textfield.geometry.StandardBoxScale,needs classification,".resolve_look(state, enabled, size, &StandardBoxScale::compute(size, &self.theme.metrics(), 1.0))"
 crates/sdk/src/controls/text/textfield/template.rs,208,textfield,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
 crates/sdk/src/controls/text/textfield/template.rs,239,textfield,0.0,review owner / derived calculation,needs classification,div().min_w(px(0.0)).flex_1().h(px(look.typography.line_height)).overflow_hidden().child(
 crates/sdk/src/controls/text/textfield/template.rs,311,textfield,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
-crates/sdk/src/controls/text/textfield/template.rs,325,textfield,0.0,review owner / derived calculation,needs classification,FOCUS_RING_GAP + look.border_width.max(0.0)
+crates/sdk/src/controls/text/textfield/template.rs,325,textfield,0.0,common.tokens.metrics.focus.gap,migrated,FOCUS_RING_GAP + look.border_width.max(0.0)
 crates/sdk/src/controls/text/textfield/template.rs,327,textfield,0.0,review owner / derived calculation,needs classification,0.0
 crates/sdk/src/controls/text/textfield/template.rs,334,textfield,0.0,review owner / derived calculation,needs classification,.min_w(px(0.0))
-crates/sdk/src/controls/text/textfield/template.rs,349,textfield,0.6,review owner / derived calculation,needs classification,".when(!model.enabled, |root| root.cursor_not_allowed().opacity(0.6))"
+crates/sdk/src/controls/text/textfield/template.rs,349,textfield,0.6,common.textfield.geometry.disabled_opacity,migrated,".when(!model.enabled, |root| root.cursor_not_allowed().opacity(0.6))"
 crates/sdk/src/controls/text/textfield/template.rs,360,textfield,0.0,review owner / derived calculation,needs classification,if focus_extent > 0.0 {
 crates/sdk/src/controls/text/textfield/template.rs,388,textfield,0.0,review owner / derived calculation,needs classification,.top(px(0.0))
 crates/sdk/src/controls/text/textfield/template.rs,389,textfield,0.0,review owner / derived calculation,needs classification,.right(px(0.0))
@@ -1474,3 +1474,5 @@ crates/sdk/src/controls/selection/search_selector/panel_template.rs,118,search_s
 crates/sdk/src/controls/selection/autocomplete/template.rs,240,autocomplete,.border_1(),common.selector_list.geometry.border_width,migrated,.border_1()
 crates/sdk/src/controls/collection/table/control/drag.rs,0,table,12 | 220 | 12 | 8 | 1 | 2,common.table.geometry.drag_*,migrated,"Drag preview pointer offset, width, padding, border and insertion marker thickness"
 crates/sdk/src/controls/overlay/context_menu/template.rs,165,context_menu,.border_1(),common.context_menu.geometry.border_width,migrated,Default target border stroke
+crates/sdk/src/controls/overlay/overlay_window/template.rs,143,overlay_window,.border_1(),common.overlay_window.geometry.border_width,migrated,Shell stroke
+crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,171,slide_panel,.border_l_1(),common.resizable_panels.geometry.divider_width,migrated,Inset shell divider stroke

@@ -22,6 +22,11 @@ pub struct TextFieldPalette {
 
 #[derive(Clone, Debug)]
 pub struct TextFieldLook {
+    /// Painted caret width and extra height in pixels.
+    pub caret_width: f32,
+    pub caret_height_extra: f32,
+    /// Whole-input opacity when disabled.
+    pub disabled_opacity: f32,
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
@@ -145,7 +150,7 @@ impl TextFieldTheme for DefaultTextFieldTheme {
         let mut look = compose_textfield_look(&palette, scale, self.metrics().border_width.default);
         crate::theme::stylesheet::apply_common_geometry!(
             self.tokens.stylesheet.textfield, size.stylesheet_key(), TextFieldGeometry, look,
-            [min_height => min_height, padding_x => padding_x, padding_y => padding_y, gap => gap, icon_size => icon_size, font_size => typography.size, line_height => typography.line_height]
+            [min_height => min_height, padding_x => padding_x, padding_y => padding_y, gap => gap, icon_size => icon_size, font_size => typography.size, line_height => typography.line_height, caret_width => caret_width, caret_height_extra => caret_height_extra, disabled_opacity => disabled_opacity]
         );
         look
     }
@@ -175,6 +180,21 @@ pub fn compose_textfield_look(
     border_width: f32,
 ) -> TextFieldLook {
     TextFieldLook {
+        caret_width: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .textfield
+            .geometry
+            .caret_width
+            .unwrap_or_default(),
+        caret_height_extra: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .textfield
+            .geometry
+            .caret_height_extra
+            .unwrap_or_default(),
+        disabled_opacity: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .textfield
+            .geometry
+            .disabled_opacity
+            .unwrap_or_default(),
         background: palette.background,
         foreground: palette.foreground,
         border: palette.border,

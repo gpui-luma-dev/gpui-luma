@@ -220,6 +220,7 @@ impl TextArea {
     fn into_sdk_builder(self, look: Look) -> TextAreaBuilder {
         let template = textarea_template(&look, self.variant);
         let mut builder = gpui_luma::controls::textarea::TextArea::new(self.id)
+            .stylesheet(&look.common_stylesheet())
             .template(template)
             .placeholder(self.placeholder)
             .value(self.value)

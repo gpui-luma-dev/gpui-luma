@@ -4,8 +4,10 @@ use gpui::Hsla;
 
 use crate::theme::{ControlSize, ThemeTokens};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct StepperLook {
+    /// Resolved decoration and layout defaults shared with templates.
+    pub geometry: crate::theme::stylesheet::ResolvedStepperGeometry,
     pub complete_bg: Hsla,
     pub complete_fg: Hsla,
     pub in_progress_bg: Hsla,
@@ -87,6 +89,7 @@ impl StepperTheme for DefaultStepperTheme {
             track_muted_color,
             step_badge_size: geometry.step_badge_size.value_px,
             track_thickness: geometry.track_thickness.value_px,
+            geometry,
         }
     }
 }

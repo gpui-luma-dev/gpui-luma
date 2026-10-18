@@ -11,6 +11,14 @@ struct ShadcnAccordionTheme {
 }
 
 impl AccordionTheme for ShadcnAccordionTheme {
+    fn drag_handle_icon(&self) -> gpui_luma::infra::icon::IconSource {
+        self.theme
+            .mode_tokens()
+            .stylesheet()
+            .common
+            .icons
+            .resolve(gpui_luma::theme::stylesheet::IconRole::DragHandle)
+    }
     fn drag_tooltip_theme(&self) -> Arc<dyn gpui_luma::controls::tooltip::TooltipTheme> {
         crate::tooltip_theme(&self.theme)
     }

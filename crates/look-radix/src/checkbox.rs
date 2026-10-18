@@ -133,6 +133,7 @@ fn checkbox_scale_with_stylesheet(
     let glyph = geometry.glyph_size.value_px;
     let indicator_radius = geometry.indicator_radius.value_px;
     CheckboxScale {
+        disabled_opacity: geometry.disabled_opacity.value_px,
         control_radius: indicator_radius,
         control_padding_x: geometry.control_padding_x.value_px,
         control_padding_y: geometry.control_padding_y.value_px,

@@ -733,3 +733,170 @@ window_margin=19
         assert_eq!((resolved.border_width, resolved.disabled_opacity, resolved.window_margin), (0.0, 0.0, 19.0));
     }
 }
+
+#[test]
+fn overlay_shell_chrome_uses_shared_stylesheet_and_size() {
+    use gpui_luma::controls::overlay_window::{DefaultOverlayWindowTheme, OverlayWindowTheme, OverlayWindowMode};
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.overlay_window.geometry]
+border_width=0
+radius=0
+[common.overlay_window.sizes.lg]
+border_width=3
+radius=17
+"#])
+    .unwrap();
+    let tokens = config.common.theme_tokens(ThemeMode::Light, gpui_luma::color::GamutMapping::CssLocalMinde).unwrap();
+    let sdk = DefaultOverlayWindowTheme::new(tokens);
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    let themed = look.overlay_window_theme();
+    for theme in [&sdk as &dyn OverlayWindowTheme, themed.as_ref()] {
+        for mode in [OverlayWindowMode::Modal, OverlayWindowMode::Modeless] {
+            let md = theme.resolve(ControlSize::Md, mode);
+            let lg = theme.resolve(ControlSize::Lg, mode);
+            assert_eq!((md.border_width, md.radius), (0.0, 0.0));
+            assert_eq!((lg.border_width, lg.radius), (3.0, 17.0));
+        }
+    }
+    #[cfg(feature = "inspect")]
+    assert_eq!(
+        crate::inspect::ShadcnInspect::new(&look)
+            .inspect_overlay_window_metrics(ControlSize::Lg, OverlayWindowMode::Modal)
+            .radius
+            .value_px,
+        17.0
+    );
+}
+
+#[test]
+fn remaining_control_chrome_inherits_shared_overrides() {
+    use gpui_luma::controls::{
+        checkbox::{DefaultCheckboxTheme, CheckboxTheme},
+        radio_button::{DefaultRadioButtonTheme, RadioButtonTheme},
+        switch::{DefaultSwitchTheme, SwitchTheme},
+        toolbar::{DefaultToolbarTheme, ToolbarTheme, ToolbarVariant},
+        stepper::{DefaultStepperTheme, StepperTheme},
+        split_view::{DefaultSplitViewTheme, SplitViewTheme},
+        dock_splitter::{DefaultDockSplitterTheme, DockSplitterTheme},
+    };
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.checkbox.geometry]
+disabled_opacity=0
+[common.radio.geometry]
+disabled_opacity=0.3
+[common.switch.geometry]
+disabled_opacity=0.4
+[common.toolbar.geometry]
+border_width=0
+separator_width=3
+[common.dock_splitter.geometry]
+thumb_width=9
+thumb_rest_opacity=0
+[common.stepper.geometry]
+content_gap=0
+glyph_scale=0.7
+[common.split_view.geometry]
+hitbox_width=32
+cue_width=0
+[common.accordion.geometry]
+disabled_opacity=0
+drag_handle_padding=9
+[common.sidebar.geometry]
+container_gap=0
+subtitle_opacity=0.2
+"#])
+    .unwrap();
+    let tokens = config.common.theme_tokens(ThemeMode::Light, gpui_luma::color::GamutMapping::CssLocalMinde).unwrap();
+    let sdk_checkbox = DefaultCheckboxTheme::new(tokens.clone());
+    let sdk_radio = DefaultRadioButtonTheme::new(tokens.clone());
+    let sdk_switch = DefaultSwitchTheme::new(tokens.clone());
+    let sdk_toolbar = DefaultToolbarTheme::new(tokens.clone());
+    let sdk_dock = DefaultDockSplitterTheme::new(tokens.clone());
+    let sdk_stepper = DefaultStepperTheme::new(tokens.clone());
+    let sdk_split = DefaultSplitViewTheme::new(tokens.clone());
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    for scale in [sdk_checkbox.scale(ControlSize::Md, 2.0), look.checkbox_theme().scale(ControlSize::Md, 2.0)] {
+        assert_eq!(scale.disabled_opacity, 0.0);
+    }
+    for scale in [sdk_radio.scale(ControlSize::Md, 2.0), look.radio_button_theme().scale(ControlSize::Md, 2.0)] {
+        assert_eq!(scale.disabled_opacity, 0.3);
+    }
+    for scale in [sdk_switch.scale(ControlSize::Md, 2.0), look.switch_theme().scale(ControlSize::Md, 2.0)] {
+        assert_eq!(scale.disabled_opacity, 0.4);
+    }
+    for resolved in [
+        sdk_toolbar.resolve(true, ControlSize::Md, ToolbarVariant::Outline),
+        look.toolbar_theme().resolve(true, ControlSize::Md, ToolbarVariant::Outline),
+    ] {
+        assert_eq!((resolved.border_width, resolved.separator_width), (0.0, 3.0));
+    }
+    for resolved in [sdk_dock.resolve(true), look.dock_splitter_theme().resolve(true)] {
+        assert_eq!((resolved.geometry.thumb_width.value_px, resolved.geometry.thumb_rest_opacity.value_px), (9.0, 0.0));
+    }
+    for resolved in [sdk_stepper.resolve(true, ControlSize::Md), look.stepper_theme().resolve(true, ControlSize::Md)] {
+        assert_eq!((resolved.geometry.content_gap.value_px, resolved.geometry.glyph_scale.value_px), (0.0, 0.7));
+    }
+    for resolved in [sdk_split.resolve(false, true), look.split_view_theme().resolve(false, true)] {
+        assert_eq!((resolved.geometry.hitbox_width.value_px, resolved.geometry.cue_width.value_px), (32.0, 0.0));
+    }
+}
+
+#[test]
+fn range_and_tooltip_decoration_use_selected_common_stylesheet() {
+    use gpui_luma::controls::{
+        slider::{DefaultSliderTheme, SliderTheme},
+        progress::{DefaultProgressTheme, ProgressTheme},
+    };
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.slider.geometry]
+dial_size=160
+track_radius=52
+disabled_opacity=0.3
+[common.progress.geometry]
+indeterminate_fraction=0
+shimmer_soft_opacity=0
+[common.tooltip.geometry]
+target_gap=17
+window_margin=0
+pointer_size=9
+shortcut_opacity=0
+"#])
+    .unwrap();
+    let tokens = config.common.theme_tokens(ThemeMode::Light, gpui_luma::color::GamutMapping::CssLocalMinde).unwrap();
+    let sdk_slider = DefaultSliderTheme::new(tokens.clone());
+    let sdk_progress = DefaultProgressTheme::new(tokens);
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    for resolved in [
+        sdk_slider.resolve(ControlSize::Md, None, Default::default()),
+        look.slider_theme().resolve(ControlSize::Md, None, Default::default()),
+    ] {
+        assert_eq!(
+            (
+                resolved.decoration.dial_size,
+                resolved.decoration.track_radius,
+                resolved.decoration.disabled_opacity
+            ),
+            (160.0, 52.0, 0.3)
+        );
+    }
+    for resolved in [sdk_progress.resolve(true, ControlSize::Md), look.progress_theme().resolve(true, ControlSize::Md)]
+    {
+        assert_eq!(
+            (resolved.geometry.indeterminate_fraction.value_px, resolved.geometry.shimmer_soft_opacity.value_px),
+            (0.0, 0.0)
+        );
+    }
+    let tooltip = crate::tooltip_theme(&look).resolve();
+    assert_eq!(
+        (
+            tooltip.placement.gap,
+            tooltip.placement.margin,
+            tooltip.placement.pointer_size,
+            tooltip.shortcut_opacity
+        ),
+        (17.0, 0.0, 9.0, 0.0)
+    );
+}

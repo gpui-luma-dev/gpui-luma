@@ -6,7 +6,6 @@ use gpui::{
 };
 
 use crate::controls::button_family::button_family_effective_border;
-use crate::infra::icon::lucide_icon;
 use crate::controls::selector::SelectorLook;
 use crate::controls::selector_list::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::motion::overlay_presence::OverlayPresence;
@@ -61,6 +60,8 @@ impl Default for SearchSelectorTemplateHandlers {
 }
 
 pub struct SearchSelectorRenderModel {
+    /// Captured shared default glyph choices.
+    pub icons: crate::theme::stylesheet::IconsStylesheet,
     /// Captured and size-resolved affordance geometry.
     pub geometry: crate::theme::stylesheet::ResolvedSearchSelectorGeometry,
     pub id: SharedString,
@@ -184,8 +185,8 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                             .items_center()
                             .justify_center()
                             .text_color(trigger_look.trigger_icon)
-                            .child(lucide_icon(
-                                lucide_svg_static::Icon::Search,
+                            .child(crate::infra::icon::render_icon_source(
+                                &model.icons.resolve(crate::theme::stylesheet::IconRole::Search),
                                 trigger_look.trigger_icon,
                                 model.geometry.search_icon_size.value_px,
                             )),
@@ -193,7 +194,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             );
 
         if border.a > 0.0 {
-            trigger = trigger.border_1().border_color(border);
+            trigger = trigger.border(px(model.geometry.border_width.value_px)).border_color(border);
         }
 
         let has_elevation = trigger_look.trigger_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty());
@@ -414,11 +415,8 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
             } else {
                 let mut content = div().flex().items_center().justify_between().flex_1().child(item.label.clone());
                 if let Some(icon) = item.trailing_icon {
-                    content = content.child(crate::infra::icon::lucide_icon(
-                        icon,
-                        gpui::hsla(0.38, 0.65, 0.48, 1.0),
-                        model.trailing_icon_size,
-                    ));
+                    content =
+                        content.child(crate::infra::icon::lucide_icon(icon, look.positive, model.trailing_icon_size));
                 }
                 content.into_any_element()
             };

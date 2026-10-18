@@ -14,9 +14,14 @@ impl TooltipTheme for ShadcnTooltipTheme {
                 max_width: 260.0,
                 font_size: 12.0,
                 line_height: 16.0,
+                ..Default::default()
             },
         );
         TooltipLook {
+            placement: (&geometry).into(),
+            shortcut_gap: geometry.shortcut_gap.value_px,
+            shortcut_font_size: geometry.shortcut_font_size.value_px,
+            shortcut_opacity: geometry.shortcut_opacity.value_px,
             background: self.0.color(ShadcnToken::Foreground),
             foreground: self.0.color(ShadcnToken::Background),
             padding: geometry.padding.value_px,
