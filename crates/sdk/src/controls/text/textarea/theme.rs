@@ -136,7 +136,12 @@ impl TextAreaTheme for DefaultTextAreaTheme {
     ) -> TextAreaLook {
         let mut palette = self.resolve(state, enabled);
         apply_control_size_typography(&mut palette.typography, &self.tokens.typography, size);
-        compose_textarea_look(&palette, scale, self.metrics().border_width.default)
+        let mut look = compose_textarea_look(&palette, scale, self.metrics().border_width.default);
+        crate::theme::stylesheet::apply_common_geometry!(
+            self.tokens.stylesheet.textarea, size.stylesheet_key(), TextAreaGeometry, look,
+            [min_height => min_height, padding_x => padding_x, padding_y => padding_y, font_size => typography.size, line_height => typography.line_height]
+        );
+        look
     }
 }
 

@@ -1,19 +1,23 @@
 use gpui::FontWeight;
+use serde::Deserialize;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct LumaTypography {
     pub font: FontTokens,
     pub text: TextTokens,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct FontTokens {
     pub sans: FontFamilyToken,
     pub mono: FontFamilyToken,
     pub serif: FontFamilyToken,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct FontFamilyToken {
     pub family: String,
 }
@@ -37,7 +41,8 @@ pub enum LumaTextScale {
     TwoXl,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct TextScaleTokens {
     pub xs: LumaTextStyle,
     pub sm: LumaTextStyle,
@@ -47,7 +52,8 @@ pub struct TextScaleTokens {
     pub two_xl: LumaTextStyle,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct TextRoleTokens {
     pub h1: LumaTextStyle,
     pub h2: LumaTextStyle,
@@ -56,7 +62,8 @@ pub struct TextRoleTokens {
     pub p: LumaTextStyle,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct TextTokens {
     pub body: LumaTextStyle,
     pub label: LumaTextStyle,
@@ -67,51 +74,20 @@ pub struct TextTokens {
     pub role: TextRoleTokens,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct LumaTextStyle {
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub size: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub line_height: f32,
+    #[serde(deserialize_with = "font_weight")]
     pub weight: FontWeight,
 }
 
 impl Default for LumaTypography {
     fn default() -> Self {
-        let scale = TextScaleTokens {
-            xs: LumaTextStyle { size: 11.0, line_height: 16.0, weight: FontWeight::MEDIUM },
-            sm: LumaTextStyle { size: 12.5, line_height: 18.0, weight: FontWeight::NORMAL },
-            md: LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight::NORMAL },
-            lg: LumaTextStyle { size: 16.0, line_height: 22.0, weight: FontWeight::MEDIUM },
-            xl: LumaTextStyle { size: 18.0, line_height: 24.0, weight: FontWeight::SEMIBOLD },
-            two_xl: LumaTextStyle { size: 20.0, line_height: 28.0, weight: FontWeight::SEMIBOLD },
-        };
-        let role = TextRoleTokens {
-            h1: LumaTextStyle { size: 44.0, line_height: 52.0, weight: FontWeight::BOLD },
-            h2: LumaTextStyle { size: 28.0, line_height: 36.0, weight: FontWeight::SEMIBOLD },
-            h3: scale.two_xl,
-            h4: scale.lg,
-            p: scale.md,
-        };
-
-        Self {
-            font: FontTokens {
-                sans: FontFamilyToken { family: "System UI".to_string() },
-                mono: FontFamilyToken { family: "Monaco".to_string() },
-                serif: FontFamilyToken { family: "New York".to_string() },
-            },
-            text: TextTokens {
-                body: role.p,
-                label: LumaTextStyle {
-                    size: scale.sm.size,
-                    line_height: scale.sm.line_height,
-                    weight: FontWeight::MEDIUM,
-                },
-                caption: scale.xs,
-                title: role.h3,
-                code: LumaTextStyle { size: 13.0, line_height: 18.0, weight: FontWeight::NORMAL },
-                scale,
-                role,
-            },
-        }
+        include!(concat!(env!("OUT_DIR"), "/typography.rs"))
     }
 }
 
@@ -148,4 +124,12 @@ impl TextTokens {
     pub fn role(&self, role: LumaTextRole) -> LumaTextStyle {
         self.role.style(role)
     }
+}
+
+fn font_weight<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<FontWeight, D::Error> {
+    let weight = <f32 as Deserialize>::deserialize(deserializer)?;
+    if !weight.is_finite() || !(1.0..=1000.0).contains(&weight) {
+        return Err(serde::de::Error::custom("font weight must be finite and in 1..=1000"));
+    }
+    Ok(FontWeight(weight))
 }

@@ -192,10 +192,18 @@ pub(crate) fn checkbox_scale_with_stylesheet(
 ) -> (gpui_luma::controls::checkbox::CheckboxScale, gpui_luma::theme::stylesheet::ResolvedCheckboxGeometry) {
     use gpui_luma::controls::checkbox::CheckboxScale;
     use gpui_luma::theme::{snap_to_pixel, stylesheet::CheckboxGeometry};
-    let mut scale = CheckboxScale::compute(size, ctx.metrics(), scale_factor);
+    let mut scale = CheckboxScale::compute_with_stylesheet(size, ctx.metrics(), scale_factor, &stylesheet.common);
     let mut geometry = stylesheet.common.checkbox.resolve_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
-        CheckboxGeometry { indicator_size: scale.indicator_size, glyph_size: scale.glyph_size, gap: scale.gap },
+        CheckboxGeometry {
+            indicator_size: scale.indicator_size,
+            glyph_size: scale.glyph_size,
+            gap: scale.gap,
+            indicator_radius: scale.indicator_radius,
+            control_padding_x: scale.control_padding_x,
+            control_padding_y: scale.control_padding_y,
+            ..Default::default()
+        },
     );
     for metric in [&mut geometry.indicator_size, &mut geometry.glyph_size, &mut geometry.gap] {
         metric.value_px = snap_to_pixel(metric.value_px, scale_factor);
@@ -203,6 +211,10 @@ pub(crate) fn checkbox_scale_with_stylesheet(
     scale.indicator_size = geometry.indicator_size.value_px;
     scale.glyph_size = geometry.glyph_size.value_px;
     scale.gap = geometry.gap.value_px;
+    scale.indicator_radius = snap_to_pixel(geometry.indicator_radius.value_px, scale_factor);
+    scale.control_padding_x = snap_to_pixel(geometry.control_padding_x.value_px, scale_factor);
+    scale.control_padding_y = snap_to_pixel(geometry.control_padding_y.value_px, scale_factor);
+
     (scale, geometry)
 }
 

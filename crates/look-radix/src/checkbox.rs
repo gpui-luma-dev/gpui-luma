@@ -125,15 +125,17 @@ fn checkbox_scale_with_stylesheet(
             indicator_size: fallback.indicator_size,
             glyph_size: fallback.glyph_size,
             gap: fallback.gap,
+            indicator_radius: resolve_checkbox_radius(size, radius),
+            ..Default::default()
         },
     );
     let box_size = geometry.indicator_size.value_px;
     let glyph = geometry.glyph_size.value_px;
-    let indicator_radius = resolve_checkbox_radius(size, radius);
+    let indicator_radius = geometry.indicator_radius.value_px;
     CheckboxScale {
         control_radius: indicator_radius,
-        control_padding_x: 0.0,
-        control_padding_y: 0.0,
+        control_padding_x: geometry.control_padding_x.value_px,
+        control_padding_y: geometry.control_padding_y.value_px,
         indicator_size: box_size,
         indicator_radius,
         height: box_size,

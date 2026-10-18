@@ -108,7 +108,9 @@ impl StylesheetConfig {
     /// Parses stylesheet TOML without imposing an input-size limit.
     /// Applications own file access and any limits required for untrusted input.
     pub fn parse(source: &str) -> anyhow::Result<Self> {
-        toml::from_str(source).map_err(|err| anyhow::anyhow!("parse style.toml: {err}"))
+        let mut stylesheet: Self = toml::from_str(source).map_err(|err| anyhow::anyhow!("parse style.toml: {err}"))?;
+        stylesheet.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[source])?;
+        Ok(stylesheet)
     }
 }
 

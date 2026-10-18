@@ -20,15 +20,18 @@ impl TooltipLook {
     /// Shared compact geometry for look adapters. Colors and corner radius remain
     /// look-owned; adapters may override any resolved field before returning it.
     pub fn compact(background: Hsla, foreground: Hsla, radius: f32) -> Self {
+        let geometry = crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .tooltip
+            .resolve_geometry("compact", crate::theme::stylesheet::TooltipGeometry::default());
         Self {
             background,
             foreground,
             radius,
-            padding: 8.0,
-            padding_y: 4.0,
-            max_width: 260.0,
-            text_size: 12.0,
-            line_height: 16.0,
+            padding: geometry.padding.value_px,
+            padding_y: geometry.padding_y.value_px,
+            max_width: geometry.max_width.value_px,
+            text_size: geometry.font_size.value_px,
+            line_height: geometry.line_height.value_px,
             shadow: Vec::new(),
         }
     }
@@ -46,15 +49,19 @@ impl TooltipTheme for TooltipLook {
 
 pub fn default_tooltip_theme() -> Arc<dyn TooltipTheme> {
     let tokens = ThemeTokens::default();
+    let geometry = tokens
+        .stylesheet
+        .tooltip
+        .resolve_geometry("md", crate::theme::stylesheet::TooltipGeometry::default());
     Arc::new(TooltipLook {
         background: tokens.palette.surface.floating.background,
         foreground: tokens.palette.surface.floating.foreground,
-        padding: 12.0,
-        padding_y: 8.0,
-        radius: 6.0,
-        max_width: 260.0,
-        text_size: 14.0,
-        line_height: 20.0,
+        padding: geometry.padding.value_px,
+        padding_y: geometry.padding_y.value_px,
+        radius: tokens.metrics.radius.md,
+        max_width: geometry.max_width.value_px,
+        text_size: geometry.font_size.value_px,
+        line_height: geometry.line_height.value_px,
         shadow: tokens.elevation.menu.to_box_shadows(),
     })
 }

@@ -38,6 +38,7 @@ impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
     fn resolve(&self, state: InteractionState) -> ResizablePanelsLook {
         let palette = &self.tokens.palette;
         let disabled = state.layer() == InteractionLayer::Disabled;
+        let geometry = self.tokens.stylesheet.resizable_panels.resolve_geometry("md", Default::default());
 
         ResizablePanelsLook {
             border: palette.border.default,
@@ -56,7 +57,11 @@ impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
             } else {
                 palette.state.hover.background
             },
-            disabled_opacity: if disabled { 0.45 } else { 1.0 },
+            disabled_opacity: if disabled {
+                geometry.disabled_opacity.value_px
+            } else {
+                1.0
+            },
         }
     }
 }

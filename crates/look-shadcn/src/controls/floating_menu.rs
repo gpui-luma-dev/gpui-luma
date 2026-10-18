@@ -114,29 +114,38 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
     super::typography::apply_button_metrics_typography(&mut item_typography, mode, size);
     let item_icon_size = super::button::button_box_scale(&ctx, mode.stylesheet(), size, 1.0).icon_size;
 
+    let base_recipe = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default()
+        .floating_menu
+        .authored_geometry(crate::tables::metrics::helpers::control_size_key(size));
+    let recipe = mode
+        .stylesheet()
+        .common
+        .floating_menu
+        .authored_geometry(crate::tables::metrics::helpers::control_size_key(size))
+        .with_fallback(&base_recipe);
     let mut look = FloatingMenuLook {
         background: colors.background.hsla(),
         foreground: colors.foreground.hsla(),
         border: colors.border.hsla(),
         shadow,
         radius: metrics.radius.lg,
-        padding: metrics.padding_y(size) * 0.5,
-        min_width: 180.0,
+        padding: metrics.padding_y(size) * recipe.padding_scale.unwrap_or_default(),
+        min_width: recipe.min_width.unwrap_or_default(),
         item_disabled_foreground: colors.item_disabled_foreground.hsla(),
         item_hover_background: colors.item_hover_background.hsla(),
         item_hover_foreground: colors.item_hover_foreground.hsla(),
         item_typography,
-        item_height: metrics.control_height(size) * 0.9,
-        item_padding_x: metrics.padding_x(size) * 0.75,
+        item_height: metrics.control_height(size) * recipe.item_height_scale.unwrap_or_default(),
+        item_padding_x: metrics.padding_x(size) * recipe.item_padding_scale.unwrap_or_default(),
         item_gap: metrics.gap(size),
         item_icon_size: item_icon_size,
         item_radius: metrics.radius.sm,
-        disabled_opacity: 0.56,
+        disabled_opacity: recipe.disabled_opacity.unwrap_or_default(),
         separator_color: colors.border.hsla(),
-        separator_thickness: 1.0,
-        separator_spacing: metrics.gap(size) * 0.5,
-        separator_inset: 0.0,
-        submenu_offset_x: metrics.gap(size) * 0.5,
+        separator_thickness: recipe.separator_thickness.unwrap_or_default(),
+        separator_spacing: metrics.gap(size) * recipe.submenu_offset_scale.unwrap_or_default(),
+        separator_inset: recipe.separator_inset.unwrap_or_default(),
+        submenu_offset_x: metrics.gap(size) * recipe.submenu_offset_scale.unwrap_or_default(),
     };
     if let Some(rule) =
         mode.stylesheet().floating_menu.metrics.get(crate::tables::metrics::helpers::control_size_key(size))
@@ -161,6 +170,11 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
             submenu_offset_x: look.submenu_offset_x,
             font_size: look.item_typography.size,
             line_height: look.item_typography.line_height,
+            separator_thickness: look.separator_thickness,
+            separator_spacing: look.separator_spacing,
+            separator_inset: look.separator_inset,
+            disabled_opacity: look.disabled_opacity,
+            ..Default::default()
         },
     );
     look.padding = geometry.padding.value_px;
@@ -170,6 +184,11 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
     look.item_gap = geometry.item_gap.value_px;
     look.item_icon_size = geometry.item_icon_size.value_px;
     look.submenu_offset_x = geometry.submenu_offset_x.value_px;
+    look.separator_thickness = geometry.separator_thickness.value_px;
+    look.separator_spacing = geometry.separator_spacing.value_px;
+    look.separator_inset = geometry.separator_inset.value_px;
+    look.disabled_opacity = geometry.disabled_opacity.value_px;
+
     crate::tables::typography::apply_resolved_geometry_typography(
         &mut look.item_typography,
         &geometry.font_size,

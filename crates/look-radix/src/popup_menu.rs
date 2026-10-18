@@ -142,6 +142,9 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
         PopupMenuVariant::Soft => (tone.step(look, 4), look.resolve_role(SemanticRole::Foreground).hsla()),
     };
 
+    let base_recipe =
+        gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default().floating_menu.authored_geometry("2");
+    let recipe = look.common_stylesheet().floating_menu.authored_geometry("2").with_fallback(&base_recipe);
     let mut resolved = FloatingMenuLook {
         background: look.resolve_role(SemanticRole::Surface).hsla(),
         foreground: look.resolve_role(SemanticRole::Foreground).hsla(),
@@ -155,19 +158,19 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
         }],
         radius: metrics.radius.lg,
         padding: metrics.spacing.s2,
-        min_width: 180.0,
+        min_width: recipe.min_width.unwrap_or_default(),
         item_disabled_foreground: look.resolve_role(SemanticRole::MutedForeground).hsla(),
         item_hover_background,
         item_hover_foreground,
         item_typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight::NORMAL },
-        item_height: metrics.control.md.height * 0.9,
-        item_padding_x: metrics.control.md.padding_x * 0.75,
+        item_height: metrics.control.md.height * recipe.item_height_scale.unwrap_or_default(),
+        item_padding_x: metrics.control.md.padding_x * recipe.item_padding_scale.unwrap_or_default(),
         item_gap: metrics.spacing.s2,
         item_icon_size: metrics.control.md.icon_size,
         item_radius: metrics.radius.sm,
-        disabled_opacity: 0.56,
+        disabled_opacity: recipe.disabled_opacity.unwrap_or_default(),
         separator_color: look.resolve_role(SemanticRole::Border).hsla(),
-        separator_thickness: 1.0,
+        separator_thickness: recipe.separator_thickness.unwrap_or_default(),
         separator_spacing: metrics.spacing.s2,
         separator_inset: metrics.spacing.s3,
         submenu_offset_x: metrics.spacing.s1,
@@ -184,6 +187,11 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
             font_size: resolved.item_typography.size,
             line_height: resolved.item_typography.line_height,
             submenu_offset_x: resolved.submenu_offset_x,
+            separator_thickness: resolved.separator_thickness,
+            separator_spacing: resolved.separator_spacing,
+            separator_inset: resolved.separator_inset,
+            disabled_opacity: resolved.disabled_opacity,
+            ..Default::default()
         },
     );
     resolved.padding = geometry.padding.value_px;
@@ -195,6 +203,11 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
     resolved.item_typography.size = geometry.font_size.value_px;
     resolved.item_typography.line_height = geometry.line_height.value_px;
     resolved.submenu_offset_x = geometry.submenu_offset_x.value_px;
+    resolved.separator_thickness = geometry.separator_thickness.value_px;
+    resolved.separator_spacing = geometry.separator_spacing.value_px;
+    resolved.separator_inset = geometry.separator_inset.value_px;
+    resolved.disabled_opacity = geometry.disabled_opacity.value_px;
+
     resolved
 }
 

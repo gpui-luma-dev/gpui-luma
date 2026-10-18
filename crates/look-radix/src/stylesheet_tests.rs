@@ -102,7 +102,7 @@ fn size_and_state_baselines_survive_shared_geometry_migration() {
 }
 
 #[test]
-fn numeric_ranges_are_preserved_without_sdk_size_aliases() {
+fn numeric_ranges_remain_independent_of_inherited_sdk_presets() {
     let stylesheet = Look::built_in().common_stylesheet();
     for (sizes, count) in [
         (stylesheet.button.sizes.keys().collect::<Vec<_>>(), 4),
@@ -111,13 +111,13 @@ fn numeric_ranges_are_preserved_without_sdk_size_aliases() {
         (stylesheet.radio.sizes.keys().collect(), 3),
         (stylesheet.badge.sizes.keys().collect(), 3),
     ] {
-        assert_eq!(sizes.len(), count);
+        assert_eq!(sizes.iter().filter(|key| key.parse::<usize>().is_ok()).count(), count);
         for index in 1..=count {
             assert!(sizes.iter().any(|key| **key == index.to_string()));
         }
-        assert!(!sizes.iter().any(|key| ["sm", "md", "lg"].contains(&key.as_str())));
     }
-    assert!(stylesheet.tooltip.sizes.is_empty());
+    // SDK helper recipes are inherited alongside Radix's own semantic sizes.
+    assert_eq!(stylesheet.tooltip.sizes.keys().collect::<Vec<_>>(), vec!["compact"]);
     assert!(stylesheet.toolbar.sizes.is_empty());
 }
 

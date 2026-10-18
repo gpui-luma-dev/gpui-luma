@@ -10,7 +10,7 @@
 //! surface).
 
 use gpui_luma::controls::switch::{SwitchPalette, SwitchScale};
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeMode, snap_to_pixel};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeMode};
 
 use super::apply_button_metrics_typography;
 
@@ -22,7 +22,6 @@ use super::ShadcnButtonStyle;
 use crate::mode::ShadcnModeTokens;
 use crate::stylesheet::{
     StylesheetConfig, find_switch_color_rule, resolve_layered_elevation_shadow, resolve_switch_color_rule,
-    resolve_switch_metrics,
 };
 
 #[derive(Clone, Debug)]
@@ -76,7 +75,7 @@ pub fn resolve_switch_radius_preset(preset: ButtonRadiusPreset, metrics: &Metric
     resolve_button_radius_preset(preset, metrics, track_height)
 }
 
-/// Switch geometry from the embedded common contract, with legacy metric fallback.
+/// Switch geometry from the embedded common contract, over the vanilla SDK baseline.
 pub fn switch_scale(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
@@ -104,14 +103,7 @@ pub(crate) fn switch_geometry_with_stylesheet(
     size: ControlSize,
     scale_factor: f32,
 ) -> gpui_luma::theme::stylesheet::ResolvedSwitchGeometry {
-    let mut fallback = SwitchScale::compute(size, &mode.metrics, scale_factor);
-    // Legacy sections remain a compatibility fallback below the common contract.
-    if let Some(rule) = stylesheet.switch.metrics_for_size(size) {
-        let resolved = resolve_switch_metrics(rule);
-        fallback.track_width = snap_to_pixel(resolved.width, scale_factor);
-        fallback.track_height = snap_to_pixel(resolved.height, scale_factor);
-        fallback.thumb_size = snap_to_pixel(resolved.thumb_size, scale_factor);
-    }
+    let fallback = SwitchScale::compute_with_stylesheet(size, &mode.metrics, scale_factor, &stylesheet.common);
     stylesheet.common.switch.resolve_geometry(
         match size {
             ControlSize::Sm => "sm",
@@ -290,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn legacy_switch_metrics_remain_a_fallback_below_common_fields() {
+    fn common_switch_geometry_inherits_sdk_baseline_and_ignores_legacy_metrics() {
         let stylesheet = crate::stylesheet::StylesheetConfig::parse(
             "[switch.metrics.md]\nwidth = 46\nheight = 24\nthumb_size = 20\n[common.switch.sizes.md]\ntrack_width = 50",
         )
@@ -305,7 +297,7 @@ mod tests {
             None,
             1.0,
         );
-        assert_eq!((scale.track_width, scale.track_height, scale.thumb_size), (50.0, 24.0, 20.0));
+        assert_eq!((scale.track_width, scale.track_height, scale.thumb_size), (50.0, 18.0, 14.0));
         let missing = super::switch_scale_with_stylesheet(
             &mode,
             &crate::stylesheet::StylesheetConfig::default(),

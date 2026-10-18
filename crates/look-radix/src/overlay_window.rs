@@ -55,12 +55,16 @@ impl OverlayWindowTheme for OverlayWindowThemeAdapter {
                 estimated_height: resolved.estimated_height,
                 font_size: resolved.body.size,
                 line_height: resolved.body.line_height,
+                backdrop_opacity: resolved.backdrop_background.a,
             },
         );
         resolved.padding = geometry.padding.value_px;
         resolved.min_width = geometry.min_width.value_px;
         resolved.max_width = geometry.max_width.value_px;
         resolved.estimated_height = geometry.estimated_height.value_px;
+        if mode == OverlayWindowMode::Modal {
+            resolved.backdrop_background.a = geometry.backdrop_opacity.value_px;
+        }
         resolved.body.size = geometry.font_size.value_px;
         resolved.body.line_height = geometry.line_height.value_px;
         resolved

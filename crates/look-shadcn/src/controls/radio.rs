@@ -192,10 +192,17 @@ pub(crate) fn radio_scale_with_stylesheet(
 ) -> (gpui_luma::controls::radio_button::RadioScale, gpui_luma::theme::stylesheet::ResolvedRadioGeometry) {
     use gpui_luma::controls::radio_button::RadioScale;
     use gpui_luma::theme::{snap_to_pixel, stylesheet::RadioGeometry};
-    let mut scale = RadioScale::compute(size, ctx.metrics(), scale_factor);
+    let mut scale = RadioScale::compute_with_stylesheet(size, ctx.metrics(), scale_factor, &stylesheet.common);
     let mut geometry = stylesheet.common.radio.resolve_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
-        RadioGeometry { indicator_size: scale.indicator_size, dot_size: scale.dot_size, gap: scale.gap },
+        RadioGeometry {
+            indicator_size: scale.indicator_size,
+            dot_size: scale.dot_size,
+            gap: scale.gap,
+            control_padding_x: scale.control_padding_x,
+            control_padding_y: scale.control_padding_y,
+            ..Default::default()
+        },
     );
     for metric in [&mut geometry.indicator_size, &mut geometry.dot_size, &mut geometry.gap] {
         metric.value_px = snap_to_pixel(metric.value_px, scale_factor);
@@ -203,6 +210,9 @@ pub(crate) fn radio_scale_with_stylesheet(
     scale.indicator_size = geometry.indicator_size.value_px;
     scale.dot_size = geometry.dot_size.value_px;
     scale.gap = geometry.gap.value_px;
+    scale.control_padding_x = snap_to_pixel(geometry.control_padding_x.value_px, scale_factor);
+    scale.control_padding_y = snap_to_pixel(geometry.control_padding_y.value_px, scale_factor);
+
     (scale, geometry)
 }
 

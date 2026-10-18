@@ -21,6 +21,15 @@ impl TreeViewTheme for ShadcnTreeViewTheme {
         tree_view_row_palette(tokens.as_ref(), selected, state, size)
     }
 
+    fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> gpui_luma::controls::tree_view::TreeViewScale {
+        gpui_luma::controls::tree_view::TreeViewScale::compute_with_stylesheet(
+            size,
+            &self.metrics(),
+            scale_factor,
+            &self.theme.mode_tokens().stylesheet().common,
+        )
+    }
+
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }

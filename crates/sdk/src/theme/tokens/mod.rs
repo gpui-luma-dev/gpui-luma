@@ -23,6 +23,17 @@ pub enum ControlSize {
     Lg,
 }
 
+impl ControlSize {
+    /// Vanilla semantic key used by the shared stylesheet.
+    pub fn stylesheet_key(self) -> &'static str {
+        match self {
+            Self::Sm => "sm",
+            Self::Md => "md",
+            Self::Lg => "lg",
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct LumaTheme {
     pub name: String,
@@ -42,6 +53,8 @@ pub struct LumaThemeMode {
 /// Metrics/typography remain editable; color edits require rebuilding the palette.
 #[derive(Clone, Debug)]
 pub struct ThemeTokens {
+    /// Resolved shared styling captured with this token snapshot.
+    pub stylesheet: std::sync::Arc<crate::theme::stylesheet::CommonStylesheet>,
     pub palette: SrgbPalette,
     pub metrics: MetricTokens,
     pub typography: LumaTypography,
@@ -51,6 +64,7 @@ pub struct ThemeTokens {
 impl ThemeTokens {
     pub fn light() -> Self {
         Self {
+            stylesheet: std::sync::Arc::new(crate::theme::stylesheet::CommonStylesheet::sdk_default().clone()),
             palette: SrgbPalette::light(),
             metrics: MetricTokens::default(),
             typography: LumaTypography::default(),
@@ -59,6 +73,7 @@ impl ThemeTokens {
     }
     pub fn dark() -> Self {
         Self {
+            stylesheet: std::sync::Arc::new(crate::theme::stylesheet::CommonStylesheet::sdk_default().clone()),
             palette: SrgbPalette::dark(),
             metrics: MetricTokens::default(),
             typography: LumaTypography::default(),
@@ -69,6 +84,7 @@ impl ThemeTokens {
     /// Resolve once before passing tokens to control themes; invalid colors return a field-specific error.
     pub fn from_source(source: LumaThemeMode, mapping: crate::color::GamutMapping) -> anyhow::Result<Self> {
         Ok(Self {
+            stylesheet: std::sync::Arc::new(crate::theme::stylesheet::CommonStylesheet::sdk_default().clone()),
             palette: source.palette.snapshot_srgb(mapping)?,
             metrics: source.metrics,
             typography: source.typography,

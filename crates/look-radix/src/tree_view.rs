@@ -64,6 +64,15 @@ impl TreeViewTheme for RadixTreeViewTheme {
         (state.hovered && !state.disabled).then(|| self.look.resolve_step(ScaleFamily::Color, 8).hsla())
     }
 
+    fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> gpui_luma::controls::tree_view::TreeViewScale {
+        gpui_luma::controls::tree_view::TreeViewScale::compute_with_stylesheet(
+            size,
+            &self.metrics(),
+            scale_factor,
+            &self.look.common_stylesheet(),
+        )
+    }
+
     fn metrics(&self) -> MetricTokens {
         self.look.metrics()
     }

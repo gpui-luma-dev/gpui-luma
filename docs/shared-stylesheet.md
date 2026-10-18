@@ -1,10 +1,133 @@
 # Shared stylesheet ownership and migration
 
+
+## Vanilla token baseline (#146)
+
+The SDK stylesheet now owns shared metric, typography, light/dark palette and
+light/dark elevation defaults under `[common.tokens]`. The existing public token
+types remain the runtime representation. The build script compiles the embedded
+data into their infallible default constructors; malformed packaged values fail
+the build. There is no second authored token table in Rust. Runtime token tables
+inherit missing fields from the same asset and reject unknown fields, invalid
+lengths, invalid font weights and invalid colors/shadows.
+
+Author palette and shadow colors consistently as `"hsla(h, s%, l%, a)"`:
+hue is in degrees, saturation/lightness are percentages, and alpha is 0–1.
+For example:
+
+```toml
+[common.tokens.palette.light.app]
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+```
+
+The build and runtime loaders share the same HSLA conversion. Tagged
+`ColorValue` persistence remains available for explicit source color spaces.
+
+Numeric fields under `[common]` also accept quoted `"math(...)"` expressions,
+evaluated once with `fasteval` before the usual field validation:
+
+```toml
+[common.switch.sizes.sm]
+track_width_scale = "math(32 / 28)" # width / default control height
+track_height_scale = "math(13 / 28)"
+thumb_scale = "math(9 / 28)"
+```
+
+Ordinary numbers remain valid. Expressions support numeric literals (including
+scientific notation), parentheses and `+ - * / % ^`; division uses floating-point
+arithmetic. Variables, token references and function calls are not supported.
+Malformed expressions, nonfinite results and results outside the f32 range are
+rejected with the field path. Existing field constraints still apply (for example,
+nonnegative dimensions and opacity in 0–1). Evaluation uses the same code for
+compiled defaults and runtime loading, and respects `fasteval`'s parser limits.
+
+`CommonStylesheet::resolve_layers(&[look_toml, application_toml])` validates each
+layer and resolves SDK baseline → look → application. A later layer's general
+geometry outranks earlier size/variant geometry; its own size/variant values apply
+last. Explicit zero, false, and empty arrays replace prior values. Motion
+transitions remain atomic: incomplete transitions are rejected rather than filled
+from a previous transition. Existing motion policy and builder snapshots remain.
+
+Call `sheet.theme_tokens(mode, mapping)` to capture shared tokens and the resolved
+stylesheet for SDK theme factories. Public fields allow programmatic customization
+after stylesheet resolution. Existing theme snapshots retain their original
+configuration; rebuild tokens/themes to apply edits. Control-specific builder
+callbacks and template modifiers still apply at the instance boundary.
+
+Button/Icon/Toggle common geometry, Progress, Stepper, Scrollbar, Tabs list/indicator
+geometry and Tooltip defaults now
+consume the captured baseline. Shadcn and Radix load their common sections over
+the SDK baseline, and matching migrated values have been removed from look files.
+Shadcn's old `progress.metrics` fields no longer outrank inherited common geometry;
+author overrides under `common.progress` instead. Radix explicitly authors its
+surface-tab padding, which differs from vanilla.
+
+```rust
+use gpui_luma::{
+    color::GamutMapping,
+    controls::progress::{DefaultProgressTheme, ProgressTheme},
+    theme::{ControlSize, ThemeMode, stylesheet::CommonStylesheet},
+};
+let sheet = CommonStylesheet::resolve_layers(&[
+    "[common.progress.sizes.md]\ntrack_height = 9",
+])?;
+let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde)?;
+let theme = DefaultProgressTheme::new(tokens);
+assert_eq!(theme.resolve(true, ControlSize::Md).track_height, 9.0);
+```
+
+This is the token/factory stage of #146. The older family notes below describe
+remaining recipe/fallback ownership, not a completed migration of every control.
+See [the migration inventory](sdk-style-inventory.md) for outstanding work.
+
 Issue #105 now has a shared SDK contract for configurable control geometry and
 tab body motion. Shadcn and Radix supply separate `assets/style.toml` files using
 `CommonStylesheet`; their palettes, numeric size semantics, token references and
 visual recipes remain look-owned. Both paint and available inspectors resolve
 against the selected configuration. SDK templates consume the resolved inputs.
+
+## Additional default factories
+
+Choice scales now expose `compute_with_stylesheet` using the same typed common
+geometry as the look adapters. Their proportional coefficients are authored as
+`indicator_scale`, `dot_scale`, `track_width_scale`, `track_height_scale` and
+`thumb_scale`; explicit dimensions take precedence. Checkbox `glyph_inset` is
+snapped before calculating the remaining glyph box, preserving display-scale
+behavior. Shared metric edits still affect proportional dimensions.
+
+Text Field and Text Area default themes now apply common geometry after resolving
+their shared token inputs. Slider width, target-height floor and default thumb
+proportion come from the baseline; explicit thumb selection resolves its own size
+key. Floating Menu owns shared proportional row/padding recipes and validated
+opacity/separator fields. Selection Panel reuses that baseline and applies its
+own `common.selection_panel` geometry afterward, retaining label typography.
+
+Context Menu, Control Group, Dock Splitter, Resizable Panels and Overlay Window
+factories now consume their common geometry. The nonmodal overlay shadow is a
+shared elevation token; both modes retain their original values. Bundled looks
+author their backdrop-opacity and menu-inset differences. Sidebar hosts can call
+`SidebarMetricScale::from_stylesheet` and then apply explicit host edits.
+
+Calling `theme_tokens` on a sparse parsed sheet now fills the complete baseline,
+including size/variant fields, while preserving explicit zero. Themes retain an
+immutable snapshot. Shadcn Switch no longer reads legacy `switch.metrics`; author
+its overrides in `common.switch`. Inherited SDK size presets remain separate from
+Radix's numeric semantic sizes; the adapters continue selecting numeric keys.
+
+Geometry coefficient fields are finite and nonnegative. Opacity fields are finite
+and constrained to 0–1. Absolute dimensions override proportional derivation;
+clamping, pixel snapping, center calculations and interaction behavior stay in
+Rust. Tree View and Accordion use the same geometry seam for their proportional rows,
+indentation, content padding and icon sizes. SDK themes capture their resolved
+configuration; bundled look adapters resolve their current configuration on render.
+Inspection preserves authored paths while reporting the final snapped paint values.
+Accordion's logical icon/chevron dimensions keep their original snapping behavior.
+
+Shadow layers now include a required boolean `inset`, authored explicitly in the
+baseline. The public constructors accept it as their final argument. An explicit
+false replaces true through stylesheet layering and reaches GPUI unchanged; inset
+shadows do not reserve outer projection space. Control-specific template/icon/state
+recipes still require the audit tracked in the inventory.
 
 ## Ownership matrix
 
@@ -358,4 +481,5 @@ Rust. Existing public duration constants are generated from the file at build ti
 `CommonStylesheet::default()` is still an empty override sheet, and resolving its
 motion inherits the SDK baseline. `common.motion.transition` configures the
 standalone `Transition::default()`; controls use their explicit typed roles.
-Geometry and palette continue to use the existing SDK template/theme factories.
+Shared token defaults now come from `common.tokens`; remaining control-specific
+recipes are tracked in the migration inventory.

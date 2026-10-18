@@ -34,6 +34,7 @@ homepage = "https://gpui-luma.dev"
 publish = false
 
 [workspace.dependencies]
+fasteval = { version = "0.2.4", default-features = false }
 anyhow = "1"
 gpui-luma = { version = "0.1.16", path = "crates/sdk" }
 gpui-luma-color = { version = "0.1.16", path = "crates/luma-color" }

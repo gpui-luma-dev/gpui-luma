@@ -99,8 +99,8 @@ impl TabsTheme for DefaultTabsTheme {
             background: (!enabled).then_some(palette.state.disabled.background),
             border: None,
             radius: metrics.radius(size),
-            padding: 0.0,
-            gap: metrics.gap(size),
+            padding: self.tokens.stylesheet.tabs.geometry.list_padding.unwrap_or_default(),
+            gap: self.tokens.stylesheet.tabs.geometry.list_gap.unwrap_or_else(|| metrics.gap(size)),
         }
     }
 
@@ -138,7 +138,7 @@ impl TabsTheme for DefaultTabsTheme {
             radius: metrics.radius(size),
             padding_x: metrics.padding_x(size),
             height: label_typography.line_height + metrics.padding_y(size) * 2.0,
-            indicator_height: 2.0,
+            indicator_height: self.tokens.stylesheet.tabs.geometry.indicator_height.unwrap_or_default(),
         }
     }
 

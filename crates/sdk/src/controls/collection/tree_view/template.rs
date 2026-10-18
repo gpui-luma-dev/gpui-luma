@@ -260,7 +260,7 @@ impl ThemedTreeViewTemplate {
         _cx: &mut App,
     ) -> AnyElement {
         let scale_factor = window.scale_factor();
-        let scale = super::theme::TreeViewScale::compute(node.size, &self.theme.metrics(), scale_factor);
+        let scale = self.theme.resolve_scale(node.size, scale_factor);
 
         let palette = self.theme.resolve_row(node.state.interaction_state(), node.state.selected, node.size);
         let icon_size = scale.icon_size;

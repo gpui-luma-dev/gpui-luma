@@ -1,11 +1,52 @@
 //! Typed common dimensions for remaining control families.
 use std::collections::HashMap;
 use serde::Deserialize;
-use super::optional_length;
+use super::{optional_length, optional_unit};
 use crate::theme::provenance::ResolvedMetric;
 
+// Adapt an existing resolved theme value without duplicating its token-derived
+// fallback construction. Only field mappings vary between control families.
+macro_rules! apply_common_geometry {
+    ($sheet:expr, $key:expr, $fallback:ident, $look:ident, [$($field:ident => $($target:ident).+),+ $(,)?] $(, defaults = $defaults:expr)?) => {{
+        let geometry = $sheet.resolve_geometry($key, $crate::theme::stylesheet::$fallback {
+            $($field: $look.$($target).+,)+
+            $(..$defaults)?
+        });
+        $($look.$($target).+ = geometry.$field.value_px;)+
+    }};
+}
+pub(crate) use apply_common_geometry;
+
+macro_rules! inherit_geometry {
+    ($stylesheet:ident, $axis:ident, [$($field:ident),+]) => {
+        impl $stylesheet {
+            pub(super) fn with_baseline(mut self, baseline: &Self) -> Self {
+                let mut inherited = baseline.$axis.clone();
+                for value in inherited.values_mut() {
+                    $(if self.geometry.$field.is_some() { value.$field = None; })+
+                }
+                for (key, authored) in self.$axis {
+                    let value = inherited.entry(key).or_default();
+                    $(value.$field = authored.$field.or(value.$field);)+
+                }
+                $(self.geometry.$field = self.geometry.$field.or(baseline.geometry.$field);)+
+                self.$axis = inherited;
+                self
+            }
+        }
+    };
+}
+pub(super) use inherit_geometry;
+
 macro_rules! geometry_family {
-    ($stylesheet:ident, $authored:ident, $fallback:ident, $resolved:ident, $family:literal, [$($field:ident),+]) => {
+    ($stylesheet:ident, $authored:ident, $fallback:ident, $resolved:ident, $family:literal, [$($field:ident),*] $(, unit [$($unit:ident),+])?) => {
+        geometry_family_impl!($stylesheet, $authored, $fallback, $resolved, $family,
+            [$(($field, "optional_length"),)* $($(($unit, "optional_unit"),)+)?]);
+    };
+}
+
+macro_rules! geometry_family_impl {
+    ($stylesheet:ident, $authored:ident, $fallback:ident, $resolved:ident, $family:literal, [$(($field:ident, $validator:literal)),+ ,]) => {
         /// Common template dimensions, with semantic size keys supplied by each look.
         #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
         #[serde(default, deny_unknown_fields)]
@@ -17,7 +58,13 @@ macro_rules! geometry_family {
         #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
         #[serde(default, deny_unknown_fields)]
         pub struct $authored {
-            $(#[serde(deserialize_with = "optional_length")] pub $field: Option<f32>,)+
+            $(#[serde(deserialize_with = $validator)] pub $field: Option<f32>,)+
+        }
+        impl $authored {
+            /// Fill missing fields without replacing explicit zero values.
+            pub fn with_fallback(self, fallback: &Self) -> Self {
+                Self { $($field: self.$field.or(fallback.$field),)+ }
+            }
         }
         /// Dimensions supplied by the SDK or look tokens when configuration is unset.
         #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -25,6 +72,7 @@ macro_rules! geometry_family {
         /// Resolved common dimensions with the source of each value.
         #[derive(Clone, Debug)]
         pub struct $resolved { $(pub $field: ResolvedMetric,)+ }
+        inherit_geometry!($stylesheet, sizes, [$($field),+]);
         #[cfg(test)]
         impl $stylesheet {
             fn validate_contract() {
@@ -46,6 +94,10 @@ macro_rules! geometry_family {
             }
         }
         impl $stylesheet {
+            /// Preserve optional derived inputs while resolving size over general fields.
+            pub fn authored_geometry(&self, key: &str) -> $authored {
+                self.sizes.get(key).cloned().unwrap_or_default().with_fallback(&self.geometry)
+            }
             /// Per-size values override general geometry, then supplied fallbacks.
             pub fn resolve_geometry(&self, key: &str, fallback: $fallback) -> $resolved {
                 let specific = self.sizes.get(key);
@@ -63,6 +115,60 @@ macro_rules! geometry_family {
     };
 }
 geometry_family!(
+    TreeViewStylesheet,
+    TreeViewGeometryStylesheet,
+    TreeViewGeometry,
+    ResolvedTreeViewGeometry,
+    "tree_view",
+    [
+        row_height,
+        row_height_scale,
+        base_padding_x,
+        indentation_width,
+        inner_gap,
+        radius,
+        icon_size,
+        chevron_size,
+        chevron_inset
+    ]
+);
+geometry_family!(
+    AccordionStylesheet,
+    AccordionGeometryStylesheet,
+    AccordionGeometry,
+    ResolvedAccordionGeometry,
+    "accordion",
+    [
+        trigger_height,
+        padding_x,
+        padding_y,
+        content_padding_y,
+        content_padding_scale,
+        radius,
+        item_gap,
+        inner_gap,
+        icon_size,
+        chevron_size
+    ]
+);
+geometry_family!(
+    DockSplitterStylesheet,
+    DockSplitterGeometryStylesheet,
+    DockSplitterGeometry,
+    ResolvedDockSplitterGeometry,
+    "dock_splitter",
+    [hit_target, visible_line]
+);
+geometry_family!(
+    ResizablePanelsStylesheet,
+    ResizablePanelsGeometryStylesheet,
+    ResizablePanelsGeometry,
+    ResolvedResizablePanelsGeometry,
+    "resizable_panels",
+    [],
+    unit[disabled_opacity]
+);
+geometry_family!(
     ButtonStylesheet,
     ButtonGeometryStylesheet,
     ButtonGeometry,
@@ -76,7 +182,16 @@ geometry_family!(
     CheckboxGeometry,
     ResolvedCheckboxGeometry,
     "checkbox",
-    [indicator_size, glyph_size, gap]
+    [
+        indicator_size,
+        indicator_scale,
+        indicator_radius,
+        glyph_size,
+        glyph_inset,
+        control_padding_x,
+        control_padding_y,
+        gap
+    ]
 );
 geometry_family!(
     RadioStylesheet,
@@ -84,7 +199,7 @@ geometry_family!(
     RadioGeometry,
     ResolvedRadioGeometry,
     "radio",
-    [indicator_size, dot_size, gap]
+    [indicator_size, indicator_scale, dot_size, dot_scale, control_padding_x, control_padding_y, gap]
 );
 geometry_family!(
     TextFieldStylesheet,
@@ -125,8 +240,24 @@ geometry_family!(
         item_icon_size,
         font_size,
         line_height,
-        submenu_offset_x
-    ]
+        submenu_offset_x,
+        padding_scale,
+        item_height_scale,
+        item_padding_scale,
+        submenu_offset_scale,
+        separator_thickness,
+        separator_spacing,
+        separator_inset
+    ],
+    unit[disabled_opacity]
+);
+geometry_family!(
+    SelectionPanelStylesheet,
+    SelectionPanelGeometryStylesheet,
+    SelectionPanelGeometry,
+    ResolvedSelectionPanelGeometry,
+    "selection_panel",
+    [padding, min_width, item_height, item_padding_x, item_gap, item_icon_size, font_size, line_height]
 );
 geometry_family!(
     TooltipStylesheet,
@@ -191,7 +322,8 @@ geometry_family!(
     OverlayWindowGeometry,
     ResolvedOverlayWindowGeometry,
     "overlay_window",
-    [padding, min_width, max_width, estimated_height, font_size, line_height]
+    [padding, min_width, max_width, estimated_height, font_size, line_height],
+    unit[backdrop_opacity]
 );
 
 geometry_family!(
@@ -244,7 +376,18 @@ geometry_family!(
     SidebarGeometry,
     ResolvedSidebarGeometry,
     "sidebar",
-    [section_height, item_height, item_padding_x, item_gap, item_icon_size]
+    [
+        section_height,
+        item_height,
+        item_padding_x,
+        item_gap,
+        item_icon_size,
+        width_expanded,
+        width_icon_rail,
+        width_mobile,
+        rail_hit_width,
+        popover_offset
+    ]
 );
 
 geometry_family!(
@@ -299,6 +442,10 @@ mod tests {
     #[test]
     fn typed_family_contracts_validate_every_field_and_preserve_precedence() {
         ScrollbarStylesheet::validate_contract();
+        TreeViewStylesheet::validate_contract();
+        AccordionStylesheet::validate_contract();
+        DockSplitterStylesheet::validate_contract();
+        ResizablePanelsStylesheet::validate_contract();
         StepperStylesheet::validate_contract();
         SidebarStylesheet::validate_contract();
         ControlGroupStylesheet::validate_contract();
@@ -314,6 +461,7 @@ mod tests {
         ProgressStylesheet::validate_contract();
         FloatingMenuStylesheet::validate_contract();
         TooltipStylesheet::validate_contract();
+        SelectionPanelStylesheet::validate_contract();
         ToolbarStylesheet::validate_contract();
         SegmentedStylesheet::validate_contract();
         AvatarStylesheet::validate_contract();

@@ -18,18 +18,46 @@ pub struct TreeViewScale {
 
 impl TreeViewScale {
     pub fn compute(size: ControlSize, metrics: &MetricTokens, scale_factor: f32) -> Self {
-        let base_height = metrics.control_height(size);
+        Self::compute_with_stylesheet(
+            size,
+            metrics,
+            scale_factor,
+            crate::theme::stylesheet::CommonStylesheet::sdk_default(),
+        )
+    }
 
+    /// Derive the row layout from common appearance and shared metric tokens.
+    pub fn compute_with_stylesheet(
+        size: ControlSize,
+        metrics: &MetricTokens,
+        scale_factor: f32,
+        stylesheet: &crate::theme::stylesheet::CommonStylesheet,
+    ) -> Self {
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .tree_view
+            .authored_geometry(size.stylesheet_key());
+        let geometry = stylesheet.tree_view.authored_geometry(size.stylesheet_key()).with_fallback(&baseline);
         Self {
-            row_height: snap_to_pixel(base_height * 0.85, scale_factor),
-            base_padding_x: snap_to_pixel(metrics.padding_x(size), scale_factor),
-            indentation_width: snap_to_pixel(16.0, scale_factor),
-            inner_gap: snap_to_pixel(metrics.gap(size), scale_factor),
-            radius: metrics.radius(size),
-            // Keep tree affordances aligned with the shared control-size icon scale while
-            // giving the chevron a slightly lighter visual weight than the content icon.
-            icon_size: snap_to_pixel(metrics.icon_size(size), scale_factor),
-            chevron_size: snap_to_pixel((metrics.icon_size(size) - 2.0).max(0.0), scale_factor),
+            row_height: snap_to_pixel(
+                geometry
+                    .row_height
+                    .unwrap_or_else(|| metrics.control_height(size) * geometry.row_height_scale.unwrap_or_default()),
+                scale_factor,
+            ),
+            base_padding_x: snap_to_pixel(
+                geometry.base_padding_x.unwrap_or_else(|| metrics.padding_x(size)),
+                scale_factor,
+            ),
+            indentation_width: snap_to_pixel(geometry.indentation_width.unwrap_or_default(), scale_factor),
+            inner_gap: snap_to_pixel(geometry.inner_gap.unwrap_or_else(|| metrics.gap(size)), scale_factor),
+            radius: geometry.radius.unwrap_or_else(|| metrics.radius(size)),
+            icon_size: snap_to_pixel(geometry.icon_size.unwrap_or_else(|| metrics.icon_size(size)), scale_factor),
+            chevron_size: snap_to_pixel(
+                geometry
+                    .chevron_size
+                    .unwrap_or_else(|| (metrics.icon_size(size) - geometry.chevron_inset.unwrap_or_default()).max(0.0)),
+                scale_factor,
+            ),
         }
     }
 }
@@ -51,6 +79,11 @@ pub trait TreeViewTheme: Send + Sync {
         None
     }
     fn metrics(&self) -> MetricTokens;
+
+    /// Resolve row layout; themes may use the same common schema as SDK defaults.
+    fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> TreeViewScale {
+        TreeViewScale::compute(size, &self.metrics(), scale_factor)
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -115,6 +148,10 @@ impl TreeViewTheme for DefaultTreeViewTheme {
 
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
+    }
+
+    fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> TreeViewScale {
+        TreeViewScale::compute_with_stylesheet(size, &self.tokens.metrics, scale_factor, &self.tokens.stylesheet)
     }
 }
 

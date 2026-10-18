@@ -5,7 +5,6 @@
 track_padding = 2.0
 
 [common.tabs.geometry]
-list_padding = 0.0
 indicator_height = 3.0
 
 [common.motion.tabs.content]
@@ -1036,22 +1035,10 @@ divider = "border"
 # 8. SCROLLBAR
 # =====================================================================
 [common.scrollbar.sizes.sm]
-thickness = 10.0
-track_thickness = 3.0
-thumb_thickness = 6.0
-min_thumb_length = 24.0
 
 [common.scrollbar.sizes.md]
-thickness = 12.0
-track_thickness = 4.0
-thumb_thickness = 8.0
-min_thumb_length = 28.0
 
 [common.scrollbar.sizes.lg]
-thickness = 14.0
-track_thickness = 5.0
-thumb_thickness = 10.0
-min_thumb_length = 32.0
 
 [[scrollbar.color_rules]]
 disabled = true
@@ -1207,7 +1194,6 @@ grip_emphasis = "accent"
 # 11. FLOATING MENU
 # =====================================================================
 [common.floating_menu.geometry]
-min_width = 180.0
 
 [[floating_menu.surface.elevation_rules]]
 shadow = "shadow-md"
@@ -1255,22 +1241,10 @@ foreground = "foreground"
 # 12. PROGRESS
 # =====================================================================
 [common.progress.sizes.sm]
-size = 48.0
-stroke_width = 5.0
-track_height = 4.0
-thumb_size = 12.0
 
 [common.progress.sizes.md]
-size = 64.0
-stroke_width = 6.0
-track_height = 6.0
-thumb_size = 16.0
 
 [common.progress.sizes.lg]
-size = 80.0
-stroke_width = 8.0
-track_height = 8.0
-thumb_size = 20.0
 
 [[progress.color_rules]]
 enabled = true
@@ -1286,16 +1260,10 @@ progress_color = "muted-foreground"
 # 12b. STEPPER
 # =====================================================================
 [common.stepper.sizes.sm]
-step_badge_size = 24.0
-track_thickness = 2.0
 
 [common.stepper.sizes.md]
-step_badge_size = 32.0
-track_thickness = 2.0
 
 [common.stepper.sizes.lg]
-step_badge_size = 40.0
-track_thickness = 3.0
 
 # Stepper colors derive from [[progress.color_rules]] (track_color + progress_color).
 
@@ -1636,7 +1604,6 @@ background = "accent"
 [common.tooltip.geometry]
 padding = 8.0
 padding_y = 4.0
-max_width = 260.0
 font_size = 12.0
 line_height = 16.0
 
@@ -1649,33 +1616,22 @@ padding_x = 6.0
 padding_y = 4.0
 
 [common.control_group.geometry]
-padding_x = 6.0
-padding_y = 4.0
-gap = 6.0
 
 [common.sidebar.geometry]
 section_height = 20.0
 item_height = 30.0
 item_padding_x = 8.0
-item_icon_size = 16.0
 
 [common.context_menu.geometry]
 min_width = 200.0
 
 [common.overlay_window.sizes.sm]
-min_width = 320.0
 max_width = 420.0
-estimated_height = 196.0
 
 [common.overlay_window.sizes.md]
-min_width = 400.0
-max_width = 520.0
-estimated_height = 228.0
 
 [common.overlay_window.sizes.lg]
-min_width = 480.0
 max_width = 620.0
-estimated_height = 264.0
 
 [common.pager.geometry]
 padding_x = 8.0
@@ -1694,3 +1650,6 @@ group_gap = 16.0
 [common.pager.sizes.numeric]
 button_min_width = 32.0
 group_gap = 16.0
+
+[common.overlay_window.geometry]
+backdrop_opacity = 0.42

@@ -90,7 +90,8 @@ pub(crate) fn resolve_look(explicit: Option<&Look>, ambient: Option<&Look>) -> L
 pub(crate) fn embedded_common_stylesheet() -> &'static gpui_luma::theme::stylesheet::CommonStylesheet {
     static STYLESHEET: std::sync::OnceLock<gpui_luma::theme::stylesheet::CommonStylesheet> = std::sync::OnceLock::new();
     STYLESHEET.get_or_init(|| {
-        gpui_luma::theme::stylesheet::CommonStylesheet::parse(include_str!("../assets/style.toml")).unwrap_or_default()
+        gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[include_str!("../assets/style.toml")])
+            .unwrap_or_default()
     })
 }
 

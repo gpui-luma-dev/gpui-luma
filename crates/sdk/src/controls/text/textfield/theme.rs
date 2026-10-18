@@ -142,7 +142,12 @@ impl TextFieldTheme for DefaultTextFieldTheme {
     ) -> TextFieldLook {
         let mut palette = self.resolve(state, enabled);
         apply_control_size_typography(&mut palette.typography, &self.tokens.typography, size);
-        compose_textfield_look(&palette, scale, self.metrics().border_width.default)
+        let mut look = compose_textfield_look(&palette, scale, self.metrics().border_width.default);
+        crate::theme::stylesheet::apply_common_geometry!(
+            self.tokens.stylesheet.textfield, size.stylesheet_key(), TextFieldGeometry, look,
+            [min_height => min_height, padding_x => padding_x, padding_y => padding_y, gap => gap, icon_size => icon_size, font_size => typography.size, line_height => typography.line_height]
+        );
+        look
     }
 }
 

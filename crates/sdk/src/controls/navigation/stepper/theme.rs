@@ -42,6 +42,11 @@ impl DefaultStepperTheme {
 
 impl StepperTheme for DefaultStepperTheme {
     fn resolve(&self, enabled: bool, size: ControlSize) -> StepperLook {
+        let geometry = self
+            .tokens
+            .stylesheet
+            .stepper
+            .resolve_geometry(size.stylesheet_key(), crate::theme::stylesheet::StepperGeometry::default());
         let palette = &self.tokens.palette;
 
         let track_color = if enabled {
@@ -80,24 +85,8 @@ impl StepperTheme for DefaultStepperTheme {
             incomplete_fg,
             track_active_color,
             track_muted_color,
-            step_badge_size: step_badge_size(size),
-            track_thickness: track_thickness(size),
+            step_badge_size: geometry.step_badge_size.value_px,
+            track_thickness: geometry.track_thickness.value_px,
         }
-    }
-}
-
-fn step_badge_size(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 24.0,
-        ControlSize::Md => 32.0,
-        ControlSize::Lg => 40.0,
-    }
-}
-
-fn track_thickness(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 2.0,
-        ControlSize::Md => 2.0,
-        ControlSize::Lg => 3.0,
     }
 }

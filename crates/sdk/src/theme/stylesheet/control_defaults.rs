@@ -1,0 +1,173 @@
+use super::CommonStylesheet;
+use crate::{
+    color::GamutMapping,
+    controls::{
+        checkbox::{CheckboxScale, CheckboxTheme, DefaultCheckboxTheme},
+        context_menu::{ContextMenuTheme, DefaultContextMenuTheme},
+        floating_menu::{DefaultFloatingMenuTheme, FloatingMenuTheme},
+        overlay_window::{DefaultOverlayWindowTheme, OverlayWindowMode, OverlayWindowTheme},
+        radio_button::RadioScale,
+        selection_panel::default_selection_panel_look,
+        slider::{DefaultSliderTheme, SliderTheme, SliderThumbSize},
+        switch::SwitchScale,
+        textfield::{DefaultTextFieldTheme, TextFieldTheme},
+    },
+    theme::{ControlSize, MetricTokens, StandardBoxScale, ThemeMode, snap_to_pixel},
+};
+
+#[test]
+fn choice_baseline_keeps_stock_metrics_at_multiple_display_scales() {
+    let metrics = MetricTokens::default();
+    for (size, indicator_scale, radius, inset, width, height, thumb) in [
+        (ControlSize::Sm, 0.45, 2.0, 2.0, 32.0, 13.0, 9.0),
+        (ControlSize::Md, 0.5, 4.0, 3.0, 40.0, 18.0, 14.0),
+        (ControlSize::Lg, 0.55, 6.0, 4.0, 48.0, 24.0, 20.0),
+    ] {
+        for scale in [1.0, 1.25, 1.5, 2.0] {
+            let checkbox = CheckboxScale::compute(size, &metrics, scale);
+            let radio = RadioScale::compute(size, &metrics, scale);
+            let switch = SwitchScale::compute(size, &metrics, scale);
+            let indicator = snap_to_pixel(metrics.control_height(size) * indicator_scale, scale);
+            assert_eq!(checkbox.indicator_size, indicator);
+            assert_eq!(checkbox.indicator_radius, snap_to_pixel(radius, scale));
+            assert_eq!(
+                checkbox.glyph_size,
+                snap_to_pixel((indicator - snap_to_pixel(inset, scale) * 2.0).max(0.0), scale)
+            );
+            assert_eq!(radio.indicator_size, indicator);
+            assert_eq!(radio.dot_size, snap_to_pixel(metrics.control_height(size) * 0.24, scale));
+            assert_eq!(switch.track_width, snap_to_pixel(width, scale));
+            assert_eq!(switch.track_height, snap_to_pixel(height, scale));
+            assert_eq!(switch.thumb_size, snap_to_pixel(thumb, scale));
+        }
+    }
+}
+
+#[test]
+fn sparse_sheet_prepares_a_complete_sdk_theme_and_preserves_zero() {
+    let sheet = CommonStylesheet::parse("[common.checkbox.sizes.md]\nindicator_size=0\nglyph_size=0").unwrap();
+    let mut tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap();
+    tokens.metrics.control.md.control_height = 54.0;
+    let theme = DefaultCheckboxTheme::new(tokens.clone());
+    let scale = theme.scale(ControlSize::Md, 1.0);
+    assert_eq!((scale.indicator_size, scale.glyph_size, scale.height), (0.0, 0.0, 54.0));
+    assert_eq!(tokens.stylesheet.progress.sizes["md"].size, Some(64.0));
+    assert_eq!(RadioScale::compute(ControlSize::Md, &tokens.metrics, 1.0).indicator_size, 27.0);
+}
+
+#[test]
+fn captured_input_geometry_overrides_shared_metrics_without_affecting_palette() {
+    let sheet =
+        CommonStylesheet::parse("[common.textfield.geometry]\nmin_height=47\npadding_x=0\nfont_size=19").unwrap();
+    let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap();
+    let scale = StandardBoxScale::compute(ControlSize::Md, &tokens.metrics, 1.0);
+    let expected_background = tokens.palette.form.input.background;
+    let theme = DefaultTextFieldTheme::new(tokens);
+    let look = theme.resolve_look(Default::default(), true, ControlSize::Md, &scale);
+    assert_eq!((look.min_height, look.padding_x, look.typography.size), (47.0, 0.0, 19.0));
+    assert_eq!(look.background, expected_background);
+    assert_eq!(look.padding_y, scale.padding_y);
+}
+
+#[test]
+fn menu_and_selection_panel_share_a_baseline_with_independent_final_overrides() {
+    let sheet = CommonStylesheet::parse("[common.floating_menu.geometry]\nmin_width=207\nitem_height_scale=2\nitem_padding_scale=0\ndisabled_opacity=0\nseparator_thickness=0\n[common.selection_panel.geometry]\nmin_width=0\n[common.context_menu.geometry]\nmin_width=99").unwrap();
+    let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap();
+    let menu = DefaultFloatingMenuTheme::new(tokens.clone()).resolve();
+    assert_eq!((menu.min_width, menu.item_height, menu.item_padding_x), (207.0, 72.0, 0.0));
+    assert_eq!((menu.disabled_opacity, menu.separator_thickness), (0.0, 0.0));
+    let panel = default_selection_panel_look(&tokens, ControlSize::Md);
+    assert_eq!((panel.min_width, panel.item_height), (0.0, 72.0));
+    assert_eq!(panel.item_typography.size, tokens.typography.text.label.size);
+    let context = DefaultContextMenuTheme::new(tokens).resolve(Default::default());
+    assert_eq!((context.target_min_width, context.floating_menu.min_width), (99.0, 207.0));
+}
+
+#[test]
+fn explicit_slider_thumb_uses_its_own_recipe_and_size() {
+    let sheet =
+        CommonStylesheet::parse("[common.slider.geometry]\nthumb_scale=0.25\n[common.slider.sizes.lg]\nthumb_size=0")
+            .unwrap();
+    let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap();
+    let theme = DefaultSliderTheme::new(tokens);
+    let ordinary = theme.resolve(ControlSize::Md, None, Default::default());
+    let explicit = theme.resolve(ControlSize::Md, Some(SliderThumbSize::Lg), Default::default());
+    assert_eq!((ordinary.width, ordinary.height, ordinary.thumb_size), (260.0, 32.0, 8.0));
+    assert_eq!((explicit.height, explicit.thumb_size), (32.0, 0.0));
+}
+
+#[test]
+fn overlay_windows_use_shared_shadow_data_and_explicit_backdrop_opacity() {
+    let sheet = CommonStylesheet::parse("[common.overlay_window.geometry]\nbackdrop_opacity=0").unwrap();
+    let tokens = sheet.theme_tokens(ThemeMode::Dark, GamutMapping::CssLocalMinde).unwrap();
+    let expected_shadow = tokens.elevation.overlay_window.to_box_shadows();
+    let theme = DefaultOverlayWindowTheme::new(tokens);
+    let modal = theme.resolve(ControlSize::Sm, OverlayWindowMode::Modal);
+    let floating = theme.resolve(ControlSize::Sm, OverlayWindowMode::Modeless);
+    assert_eq!((modal.min_width, modal.max_width, modal.estimated_height), (320.0, 440.0, 196.0));
+    assert_eq!(modal.backdrop_background.a, 0.0);
+    assert_eq!(floating.shadow, expected_shadow);
+    for family in ["floating_menu", "overlay_window", "resizable_panels"] {
+        let field = if family == "overlay_window" {
+            "backdrop_opacity"
+        } else {
+            "disabled_opacity"
+        };
+        for value in ["-1", "1.1", "nan", "inf"] {
+            assert!(CommonStylesheet::parse(&format!("[common.{family}.geometry]\n{field}={value}")).is_err());
+        }
+    }
+}
+
+#[test]
+fn explicit_false_replaces_an_inset_shadow_and_reaches_rendering() {
+    let layer = "color = 'hsla(0, 0%, 0%, 0.2)', offset_x=0, offset_y=1, blur=2, spread=0";
+    let first = format!("[common.tokens.elevation.light.menu]\nlayers=[{{ {layer}, inset=true }}]");
+    let last = format!("[common.tokens.elevation.light.menu]\nlayers=[{{ {layer}, inset=false }}]");
+    let initial = CommonStylesheet::resolve_layers(&[&first]).unwrap();
+    assert!(initial.tokens.elevation.light.menu.layers[0].inset);
+    let resolved = CommonStylesheet::resolve_layers(&[&first, &last]).unwrap();
+    assert!(!resolved.tokens.elevation.light.menu.layers[0].inset);
+    let tokens = resolved.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap();
+    assert!(!tokens.elevation.menu.to_box_shadows()[0].inset);
+}
+
+#[test]
+fn tree_and_accordion_themes_resolve_captured_common_geometry() {
+    use crate::controls::{
+        accordion::{AccordionTheme, DefaultAccordionTheme},
+        tree_view::{DefaultTreeViewTheme, TreeViewTheme},
+    };
+    let sheet = CommonStylesheet::parse("[common.tree_view.geometry]\nrow_height_scale=0.5\nindentation_width=0\nchevron_size=0\n[common.accordion.geometry]\ntrigger_height=0\ncontent_padding_scale=2\nicon_size=0").unwrap();
+    let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap();
+    let tree = DefaultTreeViewTheme::new(tokens.clone()).resolve_scale(ControlSize::Md, 1.0);
+    assert_eq!((tree.row_height, tree.indentation_width, tree.chevron_size), (18.0, 0.0, 0.0));
+    assert_eq!(tree.icon_size, tokens.metrics.icon_size(ControlSize::Md));
+    let accordion = DefaultAccordionTheme::new(tokens).resolve_scale(ControlSize::Md, 1.0);
+    assert_eq!((accordion.trigger_height, accordion.content_padding_y, accordion.icon_size), (0.0, 16.0, 0.0));
+    assert_eq!(accordion.chevron_size, 14.0);
+}
+
+#[test]
+fn math_values_resolve_through_tokens_layers_and_geometry_validation() {
+    let sheet = CommonStylesheet::resolve_layers(&[
+        "[common.switch.sizes.sm]\ntrack_width_scale = 'math(32 / 28)'\n[common.tokens.metrics.control.sm]\ncontrol_height = 'math(28 * 2)'\n[common.overlay_window.geometry]\nbackdrop_opacity = 'math(1 / 4)'",
+        "[common.switch.sizes.sm]\nthumb_scale = 'math(0 / 28)'",
+    ]).unwrap();
+    assert_eq!(sheet.tokens.metrics.control.sm.control_height, 56.0);
+    assert_eq!(sheet.overlay_window.geometry.backdrop_opacity, Some(0.25));
+    let scale = SwitchScale::compute_with_stylesheet(ControlSize::Sm, &sheet.tokens.metrics, 1.0, &sheet);
+    assert_eq!(scale.track_width, 64.0);
+    assert_eq!(scale.thumb_size, 0.0);
+    // Direct serde ingress is also used by look-owned stylesheet documents.
+    let direct: CommonStylesheet = toml::from_str("[switch.geometry]\ngap = 'math(2 * 3)'").unwrap();
+    assert_eq!(direct.switch.geometry.gap, Some(6.0));
+    for source in [
+        "[common.switch.geometry]\ntrack_width_scale = 'math(-1 / 2)'",
+        "[common.overlay_window.geometry]\nbackdrop_opacity = 'math(3 / 2)'",
+        "[common.tokens.metrics.control.sm]\ncontrol_height = 'math(-28 * 2)'",
+        "[common.switch.geometry]\nunknown = 'math(1 + 2)'",
+    ] {
+        assert!(CommonStylesheet::parse(source).is_err(), "accepted {source}");
+    }
+}

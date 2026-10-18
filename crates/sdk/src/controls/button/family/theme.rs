@@ -87,6 +87,24 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
     }
+
+    fn resolve_look(
+        &self,
+        role: ButtonFamilyRole,
+        size: ControlSize,
+        state: InteractionState,
+        scale: &StandardBoxScale,
+        pill_radius: f32,
+    ) -> Option<ButtonFamilyLook> {
+        let palette = self.resolve(role, size, state);
+        let mut look = compose_button_family_look(&palette, role, scale, pill_radius);
+        if matches!(role, ButtonFamilyRole::Toggle { .. }) {
+            crate::theme::stylesheet::apply_common_geometry!(self.tokens.stylesheet.toggle, size.stylesheet_key(), ToggleGeometry, look, [height => height, padding_x => padding_x, padding_y => padding_y, gap => gap, icon_size => icon_size, font_size => typography.size, line_height => typography.line_height]);
+        } else {
+            crate::theme::stylesheet::apply_common_geometry!(self.tokens.stylesheet.button, size.stylesheet_key(), ButtonGeometry, look, [height => height, padding_x => padding_x, padding_y => padding_y, gap => gap, icon_size => icon_size, font_size => typography.size, line_height => typography.line_height]);
+        }
+        Some(look)
+    }
 }
 
 fn native_button_palette(tokens: &ThemeTokens, role: ButtonFamilyRole, state: InteractionState) -> ButtonFamilyPalette {

@@ -53,12 +53,16 @@ pub fn overlay_window_look(theme: &ShadcnLook, size: ControlSize, mode: OverlayW
             estimated_height: look.estimated_height,
             font_size: look.body.size,
             line_height: look.body.line_height,
+            backdrop_opacity: look.backdrop_background.a,
         },
     );
     look.padding = geometry.padding.value_px;
     look.min_width = geometry.min_width.value_px;
     look.max_width = geometry.max_width.value_px;
     look.estimated_height = geometry.estimated_height.value_px;
+    if mode == OverlayWindowMode::Modal {
+        look.backdrop_background.a = geometry.backdrop_opacity.value_px;
+    }
     crate::tables::typography::apply_resolved_geometry_typography(
         &mut look.body,
         &geometry.font_size,

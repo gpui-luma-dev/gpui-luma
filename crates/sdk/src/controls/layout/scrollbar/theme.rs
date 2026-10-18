@@ -57,6 +57,11 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
         size: ControlSize,
         style: ScrollbarStyle,
     ) -> ScrollbarLook {
+        let geometry = self
+            .tokens
+            .stylesheet
+            .scrollbar
+            .resolve_geometry(size.stylesheet_key(), crate::theme::stylesheet::ScrollbarGeometry::default());
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let thumb_background = match state.layer() {
@@ -67,8 +72,8 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
         };
 
         let length = match orientation {
-            ScrollbarOrientation::Horizontal => 260.0,
-            ScrollbarOrientation::Vertical => 180.0,
+            ScrollbarOrientation::Horizontal => geometry.length_h.value_px,
+            ScrollbarOrientation::Vertical => geometry.length_v.value_px,
         };
 
         ScrollbarLook {
@@ -81,47 +86,15 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
             },
             thumb_background,
             length,
-            thickness: scrollbar_thickness(size),
-            track_thickness: scrollbar_track_thickness(size),
-            thumb_thickness: scrollbar_thumb_thickness(size),
-            min_thumb_length: scrollbar_min_thumb_length(size),
+            thickness: geometry.thickness.value_px,
+            track_thickness: geometry.track_thickness.value_px,
+            thumb_thickness: geometry.thumb_thickness.value_px,
+            min_thumb_length: geometry.min_thumb_length.value_px,
             radius: metrics.radius.pill,
         }
     }
 
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
-    }
-}
-
-fn scrollbar_thickness(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 10.0,
-        ControlSize::Md => 12.0,
-        ControlSize::Lg => 14.0,
-    }
-}
-
-fn scrollbar_track_thickness(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 3.0,
-        ControlSize::Md => 4.0,
-        ControlSize::Lg => 5.0,
-    }
-}
-
-fn scrollbar_thumb_thickness(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 6.0,
-        ControlSize::Md => 8.0,
-        ControlSize::Lg => 10.0,
-    }
-}
-
-fn scrollbar_min_thumb_length(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 24.0,
-        ControlSize::Md => 28.0,
-        ControlSize::Lg => 32.0,
     }
 }

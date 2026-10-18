@@ -59,7 +59,7 @@ mod drag_tests {
     use gpui_luma::theme::ThemeMode;
     #[test]
     fn navigation_drag_surfaces_follow_table_tokens_in_both_modes() {
-        let look = ShadcnLook::built_in();
+        let look = crate::test_support::fallback_look();
         for mode in [ThemeMode::Light, ThemeMode::Dark] {
             look.set_mode(mode);
             let tabs = tabs_theme(look.clone()).resolve_drag(ControlSize::Md);

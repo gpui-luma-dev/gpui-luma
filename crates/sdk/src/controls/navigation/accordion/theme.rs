@@ -20,18 +20,43 @@ pub struct AccordionScale {
 
 impl AccordionScale {
     pub fn compute(size: ControlSize, metrics: &MetricTokens, scale_factor: f32) -> Self {
-        let base_height = metrics.control_height(size);
+        Self::compute_with_stylesheet(
+            size,
+            metrics,
+            scale_factor,
+            crate::theme::stylesheet::CommonStylesheet::sdk_default(),
+        )
+    }
 
+    /// Derive the row layout from common appearance and shared metric tokens.
+    pub fn compute_with_stylesheet(
+        size: ControlSize,
+        metrics: &MetricTokens,
+        scale_factor: f32,
+        stylesheet: &crate::theme::stylesheet::CommonStylesheet,
+    ) -> Self {
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .accordion
+            .authored_geometry(size.stylesheet_key());
+        let geometry = stylesheet.accordion.authored_geometry(size.stylesheet_key()).with_fallback(&baseline);
         Self {
-            trigger_height: snap_to_pixel(base_height, scale_factor),
-            padding_x: snap_to_pixel(metrics.padding_x(size), scale_factor),
-            padding_y: snap_to_pixel(metrics.padding_y(size), scale_factor),
-            content_padding_y: snap_to_pixel(metrics.padding_y(size) * 1.5, scale_factor),
-            radius: metrics.radius(size),
-            item_gap: 0.0,
-            inner_gap: snap_to_pixel(metrics.gap(size), scale_factor),
-            icon_size: 16.0,
-            chevron_size: 14.0,
+            trigger_height: snap_to_pixel(
+                geometry.trigger_height.unwrap_or_else(|| metrics.control_height(size)),
+                scale_factor,
+            ),
+            padding_x: snap_to_pixel(geometry.padding_x.unwrap_or_else(|| metrics.padding_x(size)), scale_factor),
+            padding_y: snap_to_pixel(geometry.padding_y.unwrap_or_else(|| metrics.padding_y(size)), scale_factor),
+            content_padding_y: snap_to_pixel(
+                geometry
+                    .content_padding_y
+                    .unwrap_or_else(|| metrics.padding_y(size) * geometry.content_padding_scale.unwrap_or_default()),
+                scale_factor,
+            ),
+            radius: geometry.radius.unwrap_or_else(|| metrics.radius(size)),
+            item_gap: snap_to_pixel(geometry.item_gap.unwrap_or_default(), scale_factor),
+            inner_gap: snap_to_pixel(geometry.inner_gap.unwrap_or_else(|| metrics.gap(size)), scale_factor),
+            icon_size: geometry.icon_size.unwrap_or_default(),
+            chevron_size: geometry.chevron_size.unwrap_or_default(),
         }
     }
 }
@@ -70,7 +95,7 @@ pub trait AccordionTheme: Send + Sync {
     }
 
     /// Resolve pixel-snapped layout. Themes may share this result with inspection tools.
-    /// The result must depend only on `metrics()`, `size`, and `scale_factor`, which key the layout cache.
+    /// Resolve against the selected theme snapshot; live looks refresh this on render.
     fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> AccordionScale {
         AccordionScale::compute(size, &self.metrics(), scale_factor)
     }
@@ -136,5 +161,9 @@ impl AccordionTheme for DefaultAccordionTheme {
 
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
+    }
+
+    fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> AccordionScale {
+        AccordionScale::compute_with_stylesheet(size, &self.tokens.metrics, scale_factor, &self.tokens.stylesheet)
     }
 }

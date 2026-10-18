@@ -1,6 +1,8 @@
 use super::ControlSize;
+use serde::Deserialize;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct MetricTokens {
     pub spacing: SpacingTokens,
     pub radius: RadiusTokens,
@@ -9,71 +11,92 @@ pub struct MetricTokens {
     pub control: ControlMetricScale,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct SpacingTokens {
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub s0: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub s1: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub s2: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub s3: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub s4: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub s5: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub s6: f32,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct RadiusTokens {
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub none: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub sm: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub md: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub lg: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub xl: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub pill: f32,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct BorderWidthTokens {
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub hairline: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub default: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub strong: f32,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct FocusMetricTokens {
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub width: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub offset: f32,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct ControlMetricScale {
     pub sm: ControlMetricTokens,
     pub md: ControlMetricTokens,
     pub lg: ControlMetricTokens,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct ControlMetricTokens {
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub radius: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub height: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub control_height: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub padding_x: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub padding_y: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub gap: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub icon_size: f32,
 }
 
 impl Default for MetricTokens {
     fn default() -> Self {
-        let sm = ControlMetricTokens::new(28.0, 10.0, 5.0, 6.0, 5.0, 14.0);
-        let md = ControlMetricTokens::new(36.0, 14.0, 8.0, 8.0, 6.0, 16.0);
-        let lg = ControlMetricTokens::new(44.0, 18.0, 10.0, 10.0, 8.0, 18.0);
-
-        Self {
-            spacing: SpacingTokens { s0: 0.0, s1: 4.0, s2: 6.0, s3: 8.0, s4: 12.0, s5: 16.0, s6: 24.0 },
-            radius: RadiusTokens { none: 0.0, sm: 3.0, md: 6.0, lg: 8.0, xl: 12.0, pill: 999.0 },
-            border_width: BorderWidthTokens { hairline: 0.5, default: 1.0, strong: 2.0 },
-            focus: FocusMetricTokens { width: 1.0, offset: 0.0 },
-            control: ControlMetricScale { sm, md, lg },
-        }
+        include!(concat!(env!("OUT_DIR"), "/metrics.rs"))
     }
 }
 

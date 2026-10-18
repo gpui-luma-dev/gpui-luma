@@ -38,6 +38,11 @@ impl DefaultProgressTheme {
 
 impl ProgressTheme for DefaultProgressTheme {
     fn resolve(&self, enabled: bool, size: ControlSize) -> ProgressLook {
+        let geometry = self
+            .tokens
+            .stylesheet
+            .progress
+            .resolve_geometry(size.stylesheet_key(), crate::theme::stylesheet::ProgressGeometry::default());
         let palette = &self.tokens.palette;
 
         let track_color = if enabled {
@@ -55,42 +60,10 @@ impl ProgressTheme for DefaultProgressTheme {
             track_color,
             progress_color,
             thumb_color: progress_color,
-            track_height: progress_track_height(size),
-            thumb_size: progress_thumb_size(size),
-            size: progress_ring_size(size),
-            stroke_width: progress_stroke_width(size),
+            track_height: geometry.track_height.value_px,
+            thumb_size: geometry.thumb_size.value_px,
+            size: geometry.size.value_px,
+            stroke_width: geometry.stroke_width.value_px,
         }
-    }
-}
-
-fn progress_ring_size(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 48.0,
-        ControlSize::Md => 64.0,
-        ControlSize::Lg => 80.0,
-    }
-}
-
-fn progress_stroke_width(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 5.0,
-        ControlSize::Md => 6.0,
-        ControlSize::Lg => 8.0,
-    }
-}
-
-fn progress_track_height(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 4.0,
-        ControlSize::Md => 6.0,
-        ControlSize::Lg => 8.0,
-    }
-}
-
-fn progress_thumb_size(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 12.0,
-        ControlSize::Md => 16.0,
-        ControlSize::Lg => 20.0,
     }
 }

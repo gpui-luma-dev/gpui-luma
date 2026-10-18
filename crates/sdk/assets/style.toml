@@ -1,6 +1,6 @@
 # Vanilla SDK stylesheet. Looks overlay only the values they customize.
-# Motion values live here; Rust declares roles and implements transitions.
-# Geometry and palette continue to use the SDK template/theme factories.
+# Shared tokens and migrated geometry live here alongside motion.
+# Rust resolves, validates, projects colors, and calculates derived geometry.
 
 # Default for standalone transition helpers. Controls have explicit roles below.
 [common.motion.transition]
@@ -102,3 +102,545 @@ indicator = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
 content = { kind = "instant" }
 disclosure = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
 drop_layout = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.tokens.metrics.spacing]
+s0 = 0.0
+s1 = 4.0
+s2 = 6.0
+s3 = 8.0
+s4 = 12.0
+s5 = 16.0
+s6 = 24.0
+
+[common.tokens.metrics.radius]
+none = 0.0
+sm = 3.0
+md = 6.0
+lg = 8.0
+xl = 12.0
+pill = 999.0
+
+[common.tokens.metrics.border_width]
+hairline = 0.5
+default = 1.0
+strong = 2.0
+
+[common.tokens.metrics.focus]
+width = 1.0
+offset = 0.0
+
+[common.tokens.metrics.control.sm]
+height = 28.0
+control_height = 28.0
+padding_x = 10.0
+padding_y = 5.0
+gap = 6.0
+radius = 5.0
+icon_size = 14.0
+
+[common.tokens.metrics.control.md]
+height = 36.0
+control_height = 36.0
+padding_x = 14.0
+padding_y = 8.0
+gap = 8.0
+radius = 6.0
+icon_size = 16.0
+
+[common.tokens.metrics.control.lg]
+height = 44.0
+control_height = 44.0
+padding_x = 18.0
+padding_y = 10.0
+gap = 10.0
+radius = 8.0
+icon_size = 18.0
+
+[common.tokens.palette.light.app]
+background = "hsla(210, 40%, 98.04%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+muted_foreground = "hsla(215.38, 16.32%, 46.86%, 1)"
+
+[common.tokens.palette.light.surface.panel]
+background = "hsla(0, 0%, 100%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+border = "hsla(212.73, 26.83%, 83.92%, 1)"
+
+[common.tokens.palette.light.surface.floating]
+background = "hsla(0, 0%, 100%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+border = "hsla(212.73, 26.83%, 83.92%, 1)"
+
+[common.tokens.palette.light.surface.subtle]
+background = "hsla(210, 40%, 96.08%, 1)"
+foreground = "hsla(215.29, 25%, 26.67%, 1)"
+
+[common.tokens.palette.light.state.hover]
+background = "hsla(214.29, 31.82%, 91.37%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+
+[common.tokens.palette.light.state.pressed]
+background = "hsla(212.73, 26.83%, 83.92%, 1)"
+
+[common.tokens.palette.light.state.selected]
+background = "hsla(221.21, 83.19%, 53.33%, 1)"
+foreground = "hsla(0, 0%, 100%, 1)"
+
+[common.tokens.palette.light.state.disabled]
+background = "hsla(210, 40%, 96.08%, 1)"
+foreground = "hsla(215, 20.22%, 65.1%, 1)"
+
+[common.tokens.palette.light.form.input]
+background = "hsla(0, 0%, 100%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+border = "hsla(215, 20.22%, 65.1%, 1)"
+invalid_border = "hsla(333.33, 71.43%, 50.59%, 1)"
+placeholder = "hsla(215, 20.22%, 65.1%, 1)"
+
+[common.tokens.palette.light.focus]
+ring = "hsla(37.69, 92.13%, 50.2%, 1)"
+
+[common.tokens.palette.light.border]
+default = "hsla(212.73, 26.83%, 83.92%, 1)"
+strong = "hsla(215.38, 16.32%, 46.86%, 1)"
+
+[common.tokens.palette.light.navigation]
+background = "hsla(0, 0%, 100%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+muted_foreground = "hsla(215.38, 16.32%, 46.86%, 1)"
+hover_background = "hsla(210, 40%, 96.08%, 1)"
+selected_background = "hsla(221.21, 83.19%, 53.33%, 1)"
+selected_foreground = "hsla(0, 0%, 100%, 1)"
+border = "hsla(212.73, 26.83%, 83.92%, 1)"
+
+[common.tokens.palette.light.data]
+accent_1 = "hsla(221.21, 83.19%, 53.33%, 1)"
+accent_2 = "hsla(175.34, 77.44%, 26.08%, 1)"
+accent_3 = "hsla(17.47, 88.35%, 40.39%, 1)"
+accent_4 = "hsla(262.12, 83.26%, 57.84%, 1)"
+accent_5 = "hsla(345.35, 82.69%, 40.78%, 1)"
+
+[common.tokens.palette.dark.app]
+background = "hsla(222.86, 48.84%, 8.43%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+muted_foreground = "hsla(215, 20.22%, 65.1%, 1)"
+
+[common.tokens.palette.dark.surface.panel]
+background = "hsla(220.91, 39.29%, 10.98%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+border = "hsla(215.29, 25%, 26.67%, 1)"
+
+[common.tokens.palette.dark.surface.floating]
+background = "hsla(220.91, 39.29%, 10.98%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+border = "hsla(215.29, 25%, 26.67%, 1)"
+
+[common.tokens.palette.dark.surface.subtle]
+background = "hsla(217.24, 32.58%, 17.45%, 1)"
+foreground = "hsla(212.73, 26.83%, 83.92%, 1)"
+
+[common.tokens.palette.dark.state.hover]
+background = "hsla(215.29, 25%, 26.67%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+
+[common.tokens.palette.dark.state.pressed]
+background = "hsla(215.29, 19.32%, 34.51%, 1)"
+
+[common.tokens.palette.dark.state.selected]
+background = "hsla(213.12, 93.9%, 67.84%, 1)"
+foreground = "hsla(204, 80.25%, 15.88%, 1)"
+
+[common.tokens.palette.dark.state.disabled]
+background = "hsla(217.24, 32.58%, 17.45%, 1)"
+foreground = "hsla(215.38, 16.32%, 46.86%, 1)"
+
+[common.tokens.palette.dark.form.input]
+background = "hsla(222.22, 47.37%, 11.18%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+border = "hsla(215.29, 19.32%, 34.51%, 1)"
+invalid_border = "hsla(328.62, 85.53%, 70.2%, 1)"
+placeholder = "hsla(215.38, 16.32%, 46.86%, 1)"
+
+[common.tokens.palette.dark.focus]
+ring = "hsla(43.26, 96.41%, 56.27%, 1)"
+
+[common.tokens.palette.dark.border]
+default = "hsla(215.29, 25%, 26.67%, 1)"
+strong = "hsla(215, 20.22%, 65.1%, 1)"
+
+[common.tokens.palette.dark.navigation]
+background = "hsla(220.91, 39.29%, 10.98%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+muted_foreground = "hsla(215, 20.22%, 65.1%, 1)"
+hover_background = "hsla(217.24, 32.58%, 17.45%, 1)"
+selected_background = "hsla(213.12, 93.9%, 67.84%, 1)"
+selected_foreground = "hsla(204, 80.25%, 15.88%, 1)"
+border = "hsla(215.29, 25%, 26.67%, 1)"
+
+[common.tokens.palette.dark.data]
+accent_1 = "hsla(213.12, 93.9%, 67.84%, 1)"
+accent_2 = "hsla(172.46, 66.01%, 50.39%, 1)"
+accent_3 = "hsla(27.02, 95.98%, 60.98%, 1)"
+accent_4 = "hsla(255.14, 91.74%, 76.27%, 1)"
+accent_5 = "hsla(351.3, 94.52%, 71.37%, 1)"
+
+[common.tokens.typography.font.sans]
+family = "System UI"
+
+[common.tokens.typography.font.mono]
+family = "Monaco"
+
+[common.tokens.typography.font.serif]
+family = "New York"
+
+[common.tokens.typography.text.scale.xs]
+size = 11.0
+line_height = 16.0
+weight = 500.0
+
+[common.tokens.typography.text.scale.sm]
+size = 12.5
+line_height = 18.0
+weight = 400.0
+
+[common.tokens.typography.text.scale.md]
+size = 14.0
+line_height = 20.0
+weight = 400.0
+
+[common.tokens.typography.text.scale.lg]
+size = 16.0
+line_height = 22.0
+weight = 500.0
+
+[common.tokens.typography.text.scale.xl]
+size = 18.0
+line_height = 24.0
+weight = 600.0
+
+[common.tokens.typography.text.scale.two_xl]
+size = 20.0
+line_height = 28.0
+weight = 600.0
+
+[common.tokens.typography.text.role.h1]
+size = 44.0
+line_height = 52.0
+weight = 700.0
+
+[common.tokens.typography.text.role.h2]
+size = 28.0
+line_height = 36.0
+weight = 600.0
+
+[common.tokens.typography.text.role.h3]
+size = 20.0
+line_height = 28.0
+weight = 600.0
+
+[common.tokens.typography.text.role.h4]
+size = 16.0
+line_height = 22.0
+weight = 500.0
+
+[common.tokens.typography.text.role.p]
+size = 14.0
+line_height = 20.0
+weight = 400.0
+
+[common.tokens.typography.text.body]
+size = 14.0
+line_height = 20.0
+weight = 400.0
+
+[common.tokens.typography.text.label]
+size = 12.5
+line_height = 18.0
+weight = 500.0
+
+[common.tokens.typography.text.caption]
+size = 11.0
+line_height = 16.0
+weight = 500.0
+
+[common.tokens.typography.text.title]
+size = 20.0
+line_height = 28.0
+weight = 600.0
+
+[common.tokens.typography.text.code]
+size = 13.0
+line_height = 18.0
+weight = 400.0
+
+[common.tokens.elevation.light.none]
+layers = [
+]
+
+[common.tokens.elevation.light.control]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.05)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.light.thumb]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.14)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.light.menu]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0.0, offset_y = 1.0, blur = 3.0, spread = 0.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = -1.0, inset = false },
+]
+
+[common.tokens.elevation.light.popover]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.12)", offset_x = 0.0, offset_y = 4.0, blur = 8.0, spread = -2.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.06)", offset_x = 0.0, offset_y = 2.0, blur = 4.0, spread = -1.0, inset = false },
+]
+
+[common.tokens.elevation.light.panel]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.06)", offset_x = 0.0, offset_y = 1.0, blur = 3.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.light.dialog]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.16)", offset_x = 0.0, offset_y = 18.0, blur = 32.0, spread = -8.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.08)", offset_x = 0.0, offset_y = 6.0, blur = 12.0, spread = -4.0, inset = false },
+]
+
+[common.tokens.elevation.dark.none]
+layers = [
+]
+
+[common.tokens.elevation.dark.control]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.18)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.dark.thumb]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.14)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.dark.menu]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.28)", offset_x = 0.0, offset_y = 1.0, blur = 3.0, spread = 0.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.18)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = -1.0, inset = false },
+]
+
+[common.tokens.elevation.dark.popover]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.32)", offset_x = 0.0, offset_y = 4.0, blur = 8.0, spread = -2.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.22)", offset_x = 0.0, offset_y = 2.0, blur = 4.0, spread = -1.0, inset = false },
+]
+
+[common.tokens.elevation.dark.panel]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.2)", offset_x = 0.0, offset_y = 1.0, blur = 3.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.dark.dialog]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.42)", offset_x = 0.0, offset_y = 18.0, blur = 32.0, spread = -8.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.24)", offset_x = 0.0, offset_y = 6.0, blur = 12.0, spread = -4.0, inset = false },
+]
+
+[common.progress.sizes.sm]
+track_height = 4.0
+size = 48.0
+stroke_width = 5.0
+thumb_size = 12.0
+
+[common.progress.sizes.md]
+track_height = 6.0
+size = 64.0
+stroke_width = 6.0
+thumb_size = 16.0
+
+[common.progress.sizes.lg]
+track_height = 8.0
+size = 80.0
+stroke_width = 8.0
+thumb_size = 20.0
+
+[common.stepper.sizes.sm]
+step_badge_size = 24.0
+track_thickness = 2.0
+
+[common.stepper.sizes.md]
+step_badge_size = 32.0
+track_thickness = 2.0
+
+[common.stepper.sizes.lg]
+step_badge_size = 40.0
+track_thickness = 3.0
+
+[common.scrollbar.sizes.sm]
+thickness = 10.0
+track_thickness = 3.0
+thumb_thickness = 6.0
+min_thumb_length = 24.0
+length_h = 260.0
+length_v = 180.0
+
+[common.scrollbar.sizes.md]
+thickness = 12.0
+track_thickness = 4.0
+thumb_thickness = 8.0
+min_thumb_length = 28.0
+length_h = 260.0
+length_v = 180.0
+
+[common.scrollbar.sizes.lg]
+thickness = 14.0
+track_thickness = 5.0
+thumb_thickness = 10.0
+min_thumb_length = 32.0
+length_h = 260.0
+length_v = 180.0
+
+[common.tooltip.geometry]
+padding = 12.0
+padding_y = 8.0
+max_width = 260.0
+font_size = 14.0
+line_height = 20.0
+
+[common.tooltip.sizes.compact]
+padding = 8.0
+padding_y = 4.0
+font_size = 12.0
+line_height = 16.0
+
+[common.tabs.geometry]
+list_padding = 0.0
+indicator_height = 2.0
+
+[common.checkbox.geometry]
+control_padding_x = 0.0
+control_padding_y = 0.0
+
+[common.radio.geometry]
+control_padding_x = 0.0
+control_padding_y = 0.0
+
+[common.switch.geometry]
+track_padding = 2.0
+
+[common.checkbox.sizes.sm]
+indicator_scale = 0.45
+indicator_radius = 2.0
+glyph_inset = 2.0
+
+[common.radio.sizes.sm]
+indicator_scale = 0.45
+dot_scale = 0.24
+
+[common.switch.sizes.sm]
+track_width_scale = "math(32 / 28)" # 32px track width at the default 28px control height
+track_height_scale = "math(13 / 28)" # 13px track height at the default 28px control height
+thumb_scale = "math(9 / 28)" # 9px thumb at the default 28px control height
+
+[common.checkbox.sizes.md]
+indicator_scale = 0.5
+indicator_radius = 4.0
+glyph_inset = 3.0
+
+[common.radio.sizes.md]
+indicator_scale = 0.5
+dot_scale = 0.24
+
+[common.switch.sizes.md]
+track_width_scale = "math(40 / 36)" # 40px track width at the default 36px control height
+track_height_scale = "math(18 / 36)" # 18px track height at the default 36px control height
+thumb_scale = "math(14 / 36)" # 14px thumb at the default 36px control height
+
+[common.checkbox.sizes.lg]
+indicator_scale = 0.55
+indicator_radius = 6.0
+glyph_inset = 4.0
+
+[common.radio.sizes.lg]
+indicator_scale = 0.55
+dot_scale = 0.24
+
+[common.switch.sizes.lg]
+track_width_scale = "math(48 / 44)" # 48px track width at the default 44px control height
+track_height_scale = "math(24 / 44)" # 24px track height at the default 44px control height
+thumb_scale = "math(20 / 44)" # 20px thumb at the default 44px control height
+
+[common.floating_menu.geometry]
+min_width = 180.0
+padding_scale = 0.5
+item_height_scale = 0.9
+item_padding_scale = 0.75
+submenu_offset_scale = 0.5
+disabled_opacity = 0.56
+separator_thickness = 1.0
+separator_inset = 0.0
+
+[common.context_menu.geometry]
+min_width = 200.0
+
+[common.control_group.geometry]
+padding_x = 6.0
+padding_y = 4.0
+gap = 6.0
+
+[common.dock_splitter.geometry]
+hit_target = 8.0
+visible_line = 1.0
+
+[common.resizable_panels.geometry]
+disabled_opacity = 0.45
+
+[common.slider.geometry]
+width = 260.0
+height_floor_scale = 0.5
+thumb_scale = 0.5
+
+[common.overlay_window.geometry]
+backdrop_opacity = 0.44
+
+[common.overlay_window.sizes.sm]
+min_width = 320.0
+max_width = 440.0
+estimated_height = 196.0
+
+[common.overlay_window.sizes.md]
+min_width = 400.0
+max_width = 520.0
+estimated_height = 228.0
+
+[common.overlay_window.sizes.lg]
+min_width = 480.0
+max_width = 600.0
+estimated_height = 264.0
+
+[common.tokens.elevation.light.overlay_window]
+layers = [{ color = "hsla(0, 0%, 0%, 0.2)", offset_x = 0.0, offset_y = 18.0, blur = 38.0, spread = -16.0, inset = false }]
+
+[common.tokens.elevation.dark.overlay_window]
+layers = [{ color = "hsla(0, 0%, 0%, 0.2)", offset_x = 0.0, offset_y = 18.0, blur = 38.0, spread = -16.0, inset = false }]
+
+[common.sidebar.geometry]
+width_expanded = 256.0
+width_icon_rail = 48.0
+width_mobile = 288.0
+item_height = 32.0
+item_icon_size = 16.0
+rail_hit_width = 6.0
+popover_offset = 8.0
+
+[common.tree_view.geometry]
+row_height_scale = 0.85
+indentation_width = 16.0
+chevron_inset = 2.0
+
+[common.accordion.geometry]
+content_padding_scale = 1.5
+item_gap = 0.0
+icon_size = 16.0
+chevron_size = 14.0

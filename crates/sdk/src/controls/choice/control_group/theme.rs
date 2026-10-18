@@ -94,6 +94,7 @@ impl ControlGroupTheme for DefaultControlGroupTheme {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
 
+        let geometry = self.tokens.stylesheet.control_group.resolve_geometry("md", Default::default());
         ControlGroupListLook {
             background: if enabled {
                 palette.surface.subtle.background
@@ -102,9 +103,9 @@ impl ControlGroupTheme for DefaultControlGroupTheme {
             },
             border: palette.border.default,
             radius: metrics.radius(ControlSize::Md),
-            padding_x: 6.0,
-            padding_y: 4.0,
-            gap: 6.0,
+            padding_x: geometry.padding_x.value_px,
+            padding_y: geometry.padding_y.value_px,
+            gap: geometry.gap.value_px,
         }
     }
 

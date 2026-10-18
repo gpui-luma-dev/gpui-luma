@@ -2,7 +2,7 @@
 //!
 //! Looks embed this contract under `[common]` in their own `style.toml`.
 //! Other root sections remain look-owned. Unknown common fields are rejected;
-//! missing fields use SDK fallbacks, and explicit zero remains an override.
+//! missing fields inherit SDK data, and explicit zero remains an override.
 
 use std::collections::HashMap;
 use crate::theme::provenance::ResolvedMetric;
@@ -12,43 +12,86 @@ mod geometry;
 pub use geometry::*;
 mod motion;
 pub use motion::*;
+mod colors;
+mod math;
+mod tokens;
+pub use tokens::*;
+
+#[cfg(test)]
+mod control_defaults;
 
 /// Embedded vanilla SDK configuration. Looks author only their overrides.
 pub const DEFAULT_STYLE_TOML: &str = include_str!("../../assets/style.toml");
 
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
-#[serde(default, deny_unknown_fields)]
-pub struct CommonStylesheet {
-    /// Typed role overrides, shared by SDK-only apps and all looks.
-    pub motion: MotionStylesheet,
-    pub tabs: TabsStylesheet,
-    pub switch: SwitchStylesheet,
-    pub slider: SliderStylesheet,
-    pub button: ButtonStylesheet,
-    pub toggle: ToggleStylesheet,
-    pub checkbox: CheckboxStylesheet,
-    pub radio: RadioStylesheet,
-    pub textfield: TextFieldStylesheet,
-    pub textarea: TextAreaStylesheet,
-    pub progress: ProgressStylesheet,
-    pub floating_menu: FloatingMenuStylesheet,
-    pub tooltip: TooltipStylesheet,
-    pub toolbar: ToolbarStylesheet,
-    pub segmented: SegmentedStylesheet,
-    pub avatar: AvatarStylesheet,
-    pub badge: BadgeStylesheet,
-    pub card: CardStylesheet,
-    pub callout: CalloutStylesheet,
-    pub overlay_window: OverlayWindowStylesheet,
-    pub selector: SelectorStylesheet,
-    pub popup_menu: PopupMenuStylesheet,
-    pub scrollbar: ScrollbarStylesheet,
-    pub stepper: StepperStylesheet,
-    pub sidebar: SidebarStylesheet,
-    pub control_group: ControlGroupStylesheet,
-    pub table: TableStylesheet,
-    pub pager: PagerStylesheet,
-    pub context_menu: ContextMenuStylesheet,
+macro_rules! common_stylesheet {
+    ($($field:ident: $kind:ty),+ $(,)?) => {
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct CommonStylesheet {
+            pub tokens: TokenStylesheet,
+            /// Typed role overrides, shared by SDK-only apps and all looks.
+            pub motion: MotionStylesheet,
+            $(pub $field: $kind,)+
+        }
+        impl<'de> serde::Deserialize<'de> for CommonStylesheet {
+            fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+                #[derive(Default, Deserialize)]
+                #[serde(default, deny_unknown_fields)]
+                struct Fields {
+                    tokens: TokenStylesheet,
+                    motion: MotionStylesheet,
+                    $($field: $kind,)+
+                }
+                let mut value = toml::Value::deserialize(deserializer)?;
+                math::normalize(&mut value).map_err(serde::de::Error::custom)?;
+                let fields: Fields = value.try_into().map_err(serde::de::Error::custom)?;
+                Ok(Self { tokens: fields.tokens, motion: fields.motion, $($field: fields.$field,)+ })
+            }
+        }
+        impl CommonStylesheet {
+            fn with_sdk_defaults(&self) -> Self {
+                let baseline = Self::sdk_default();
+                Self {
+                    tokens: self.tokens.clone(), motion: self.motion.clone(),
+                    $($field: self.$field.clone().with_baseline(&baseline.$field),)+
+                }
+            }
+        }
+    };
+}
+common_stylesheet! {
+    tree_view: TreeViewStylesheet,
+    accordion: AccordionStylesheet,
+    tabs: TabsStylesheet,
+    switch: SwitchStylesheet,
+    slider: SliderStylesheet,
+    button: ButtonStylesheet,
+    toggle: ToggleStylesheet,
+    checkbox: CheckboxStylesheet,
+    radio: RadioStylesheet,
+    textfield: TextFieldStylesheet,
+    textarea: TextAreaStylesheet,
+    progress: ProgressStylesheet,
+    floating_menu: FloatingMenuStylesheet,
+    selection_panel: SelectionPanelStylesheet,
+    tooltip: TooltipStylesheet,
+    toolbar: ToolbarStylesheet,
+    segmented: SegmentedStylesheet,
+    avatar: AvatarStylesheet,
+    badge: BadgeStylesheet,
+    card: CardStylesheet,
+    callout: CalloutStylesheet,
+    overlay_window: OverlayWindowStylesheet,
+    selector: SelectorStylesheet,
+    popup_menu: PopupMenuStylesheet,
+    scrollbar: ScrollbarStylesheet,
+    stepper: StepperStylesheet,
+    sidebar: SidebarStylesheet,
+    control_group: ControlGroupStylesheet,
+    table: TableStylesheet,
+    pager: PagerStylesheet,
+    context_menu: ContextMenuStylesheet,
+    dock_splitter: DockSplitterStylesheet,
+    resizable_panels: ResizablePanelsStylesheet,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
@@ -80,6 +123,30 @@ fn optional_length<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<
     Ok(value)
 }
 
+fn optional_unit<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<f32>, D::Error> {
+    let value = Option::<f32>::deserialize(deserializer)?;
+    if value.is_some_and(|value| !value.is_finite() || !(0.0..=1.0).contains(&value)) {
+        return Err(serde::de::Error::custom("opacity must be finite and in 0..=1"));
+    }
+    Ok(value)
+}
+
+pub(crate) fn required_length<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<f32, D::Error> {
+    let value = f32::deserialize(deserializer)?;
+    if !value.is_finite() || value < 0.0 {
+        return Err(serde::de::Error::custom("length must be finite and nonnegative"));
+    }
+    Ok(value)
+}
+
+pub(crate) fn required_finite<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<f32, D::Error> {
+    let value = f32::deserialize(deserializer)?;
+    if !value.is_finite() {
+        return Err(serde::de::Error::custom("value must be finite"));
+    }
+    Ok(value)
+}
+
 /// Shared switch dimensions. Size fields override general geometry field by field.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
@@ -102,6 +169,15 @@ pub struct SwitchGeometryStylesheet {
     pub thumb_size: Option<f32>,
     #[serde(deserialize_with = "optional_length")]
     pub gap: Option<f32>,
+    /// Track width divided by control height; applied before pixel snapping.
+    #[serde(deserialize_with = "optional_length")]
+    pub track_width_scale: Option<f32>,
+    /// Track height divided by control height; applied before pixel snapping.
+    #[serde(deserialize_with = "optional_length")]
+    pub track_height_scale: Option<f32>,
+    /// Thumb size divided by control height; applied before pixel snapping.
+    #[serde(deserialize_with = "optional_length")]
+    pub thumb_scale: Option<f32>,
 }
 
 #[derive(Clone, Debug)]
@@ -113,7 +189,42 @@ pub struct ResolvedSwitchGeometry {
     pub gap: ResolvedMetric,
 }
 
+geometry::inherit_geometry!(
+    SwitchStylesheet,
+    sizes,
+    [
+        track_width,
+        track_height,
+        track_padding,
+        thumb_size,
+        gap,
+        track_width_scale,
+        track_height_scale,
+        thumb_scale
+    ]
+);
+
 impl SwitchStylesheet {
+    /// Resolve optional dimensions and proportional recipes over general fields.
+    pub fn authored_geometry(&self, key: &str) -> SwitchGeometryStylesheet {
+        let specific = self.sizes.get(key).cloned().unwrap_or_default();
+        macro_rules! field {
+            ($name:ident) => {
+                specific.$name.or(self.geometry.$name)
+            };
+        }
+        SwitchGeometryStylesheet {
+            track_width: field!(track_width),
+            track_height: field!(track_height),
+            track_padding: field!(track_padding),
+            thumb_size: field!(thumb_size),
+            gap: field!(gap),
+            track_width_scale: field!(track_width_scale),
+            track_height_scale: field!(track_height_scale),
+            thumb_scale: field!(thumb_scale),
+        }
+    }
+
     /// Resolve per-size, general, then supplied SDK/legacy fallback geometry.
     /// Authored values are snapped once at the requested display scale factor.
     pub fn resolve_geometry(
@@ -188,6 +299,12 @@ pub struct SliderGeometryStylesheet {
     pub track_height: Option<f32>,
     #[serde(deserialize_with = "optional_length")]
     pub thumb_size: Option<f32>,
+    /// Minimum target height relative to the shared control height.
+    #[serde(deserialize_with = "optional_length")]
+    pub height_floor_scale: Option<f32>,
+    /// Default thumb diameter relative to the selected target height.
+    #[serde(deserialize_with = "optional_length")]
+    pub thumb_scale: Option<f32>,
 }
 
 #[derive(Clone, Debug)]
@@ -198,7 +315,31 @@ pub struct ResolvedSliderGeometry {
     pub thumb_size: ResolvedMetric,
 }
 
+geometry::inherit_geometry!(
+    SliderStylesheet,
+    sizes,
+    [width, height, track_height, thumb_size, height_floor_scale, thumb_scale]
+);
+
 impl SliderStylesheet {
+    /// Optional size/general inputs, including token-derived recipe coefficients.
+    pub fn authored_geometry(&self, key: &str) -> SliderGeometryStylesheet {
+        let specific = self.sizes.get(key).cloned().unwrap_or_default();
+        macro_rules! field {
+            ($name:ident) => {
+                specific.$name.or(self.geometry.$name)
+            };
+        }
+        SliderGeometryStylesheet {
+            width: field!(width),
+            height: field!(height),
+            track_height: field!(track_height),
+            thumb_size: field!(thumb_size),
+            height_floor_scale: field!(height_floor_scale),
+            thumb_scale: field!(thumb_scale),
+        }
+    }
+
     /// Resolve per-size, general, then SDK/legacy dimensions. Explicit thumb-size
     /// selections use the corresponding look size, independently of control size.
     /// Slider dimensions retain logical pixels without introducing display snapping.
@@ -259,6 +400,8 @@ pub struct ResolvedTabsGeometry {
     pub indicator_height: ResolvedMetric,
 }
 
+geometry::inherit_geometry!(TabsStylesheet, variants, [list_gap, list_padding, indicator_height]);
+
 impl TabsStylesheet {
     /// Resolve variant, general, then supplied look-token/SDK fallback values.
     pub fn resolve_geometry(&self, variant: &str, fallback: ResolvedTabsGeometry) -> ResolvedTabsGeometry {
@@ -291,8 +434,48 @@ impl TabsStylesheet {
 }
 
 impl CommonStylesheet {
+    /// Resolve validated layers over the SDK baseline, in order. Look-specific
+    /// roots are ignored. Programmatic edits precede explicit control overrides.
+    pub fn resolve_layers(layers: &[&str]) -> anyhow::Result<Self> {
+        let mut document: toml::Value = toml::from_str(DEFAULT_STYLE_TOML)?;
+        for source in layers {
+            Self::parse(source)?;
+            let authored: toml::Value = toml::from_str(source)?;
+            tokens::overlay(&mut document, authored);
+        }
+        Self::parse(&toml::to_string(&document)?)
+    }
+
+    /// Prepare an immutable SDK-only or custom-look snapshot. Rebuild tokens
+    /// after editing the sheet; existing themes retain their captured styling.
+    ///
+    /// ```
+    /// use gpui_luma::{
+    ///     color::GamutMapping,
+    ///     controls::progress::{DefaultProgressTheme, ProgressTheme},
+    ///     theme::{ControlSize, ThemeMode, stylesheet::CommonStylesheet},
+    /// };
+    /// let sheet = CommonStylesheet::resolve_layers(&[
+    ///     "[common.progress.sizes.md]\ntrack_height = 9",
+    /// ])?;
+    /// let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde)?;
+    /// let theme = DefaultProgressTheme::new(tokens);
+    /// assert_eq!(theme.resolve(true, ControlSize::Md).track_height, 9.0);
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    pub fn theme_tokens(
+        &self,
+        mode: crate::theme::ThemeMode,
+        mapping: crate::color::GamutMapping,
+    ) -> anyhow::Result<crate::theme::ThemeTokens> {
+        let sheet = self.with_sdk_defaults();
+        let mut tokens = crate::theme::ThemeTokens::from_source(sheet.tokens.source(mode), mapping)?;
+        tokens.stylesheet = std::sync::Arc::new(sheet);
+        Ok(tokens)
+    }
+
     /// The SDK-owned baseline, independent of any look crate. `Default` remains
-    /// an empty overlay; resolving its motion inherits this baseline.
+    /// an empty geometry/motion overlay with inherited token data.
     pub fn sdk_default() -> &'static Self {
         static DEFAULT: std::sync::OnceLock<CommonStylesheet> = std::sync::OnceLock::new();
         // A corrupt packaged asset settles motion safely. Tests require the

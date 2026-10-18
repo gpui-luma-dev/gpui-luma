@@ -361,7 +361,7 @@ fn migrated_literal_families_keep_their_bundled_size_baselines() {
 }
 
 #[test]
-fn sparse_common_geometry_preserves_legacy_fallback_and_explicit_zero() {
+fn sparse_common_geometry_inherits_sdk_baseline_and_preserves_explicit_zero() {
     let config = StylesheetConfig::parse(
         r#"
 [progress.metrics.md]
@@ -380,14 +380,14 @@ size=0
     let progress = look.progress_theme().resolve(true, ControlSize::Md);
     assert_eq!(
         (progress.size, progress.stroke_width, progress.track_height, progress.thumb_size),
-        (0.0, 7.0, 0.0, 19.0)
+        (0.0, 6.0, 0.0, 16.0)
     );
     #[cfg(feature = "inspect")]
     {
         let p = crate::inspect::ShadcnInspect::new(&look).inspect_progress_metrics_for_size(ControlSize::Md);
         assert_eq!(p.size.value_px, 0.0);
         assert!(format!("{:?}", p.size.source).contains("common.progress.sizes.md.size"));
-        assert_eq!(p.thumb_size.value_px, 19.0);
+        assert_eq!(p.thumb_size.value_px, 16.0);
     }
 }
 
